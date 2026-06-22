@@ -21,3 +21,8 @@ Real values go ONLY in `.env` (gitignored). `.env.example` ships empty placehold
   stores (Netlify env, etc.).
 - Never embed secrets in launchd/cron/systemd unit files — load them from `.env` at runtime.
 - Secret-scan every commit; never `git add .` / `git add -A`.
+
+> ⚠️ **Never put `SUPABASE_SERVICE_ROLE_KEY` (or any token) in a `VITE_*` variable.** `VITE_*`
+> vars are bundled into the browser. The service role bypasses RLS — exposing it to the
+> frontend would hand every visitor full read/write to the ledger. The browser gets the
+> **anon key** only, and reads are gated by the authenticated-admin policy (migration 0002).

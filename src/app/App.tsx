@@ -24,7 +24,9 @@ export function App() {
         <span className="sub">Communication · Monetization · Automation — one ledger, one truth</span>
       </div>
       <div className="muted" style={{ fontSize: 12 }}>
-        {isSupabaseConfigured ? 'Supabase ledger connected.' : 'Supabase not configured — showing setup state (no fake data).'}
+        {isSupabaseConfigured
+          ? 'Supabase ledger connected. Ledger data requires an authenticated admin session (admin_users + migration 0002) — sign-in flow lands Day 2B.'
+          : 'Supabase not configured — showing setup state (no fake data).'}
       </div>
 
       <div className="tabs">

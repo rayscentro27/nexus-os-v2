@@ -16,10 +16,11 @@
 - Small commits, secret-scanned, pushed. No long-lived preview branches.
 
 ## RLS / frontend reads
-RLS blocks anon reads until a policy exists. Two safe options:
-1. **Authenticated admin** (preferred): add Supabase Auth, then policies that allow the
-   authenticated admin role to read the relevant tables.
-2. **Public read-only projection**: create a restricted view + policy exposing only
-   non-sensitive columns for the dashboard.
+The chosen model (migration `0002_admin_read_policies.sql`) is **authenticated admin**:
+- The browser uses the **anon key** to authenticate a Supabase session (sign-in).
+- Only users in `admin_users` (active) can SELECT dashboard tables — no anon/public reads.
+- The service role is **never** used in the browser; writes stay server/script-side.
 
-Do not "fix" reads by loosening to the service role in the browser.
+To make the deployed dashboard show data: apply 0001 → seed → 0002, create an auth user for
+the admin, add them to `admin_users`, and add a sign-in flow (Day 2B). Do not "fix" reads by
+adding a public anon policy or by putting the service-role key in `VITE_*`.
