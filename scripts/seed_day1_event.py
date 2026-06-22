@@ -60,7 +60,7 @@ def main() -> int:
     try:
         insert(url, key, "nexus_events", [{
             "lane": "communication",
-            "source": "seed_day1",
+            "source": "day1_seed",
             "action": "nexus_os_v2_initialized",
             "status": "success",
             "title": "Nexus OS v2 initialized",
@@ -80,7 +80,7 @@ def main() -> int:
         ])
         insert(url, key, "approvals", [{
             "lane": "social",
-            "item_type": "facebook_publish_test",
+            "item_type": "social_publish_test",
             "status": "pending",
             "title": "Approve first Facebook publish test after Day 3",
             "summary": "Publisher + queue land Day 3; approve one item before any real post.",
