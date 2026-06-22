@@ -1,0 +1,37 @@
+# Supabase Setup
+
+## 1. Create the project
+1. Create a **new** Supabase project (do not reuse the old Nexus project).
+2. Copy from Project Settings → API:
+   - Project URL → `VITE_SUPABASE_URL` (and `SUPABASE_URL` for scripts)
+   - `anon` public key → `VITE_SUPABASE_ANON_KEY`
+   - `service_role` secret key → `SUPABASE_SERVICE_ROLE_KEY` (server/scripts only)
+3. Put these in `.env` (never commit them).
+
+## 2. Apply the schema
+In the Supabase SQL editor (or `supabase db push`):
+```sql
+-- run in order:
+-- 1) supabase/migrations/0001_nexus_os_v2_core.sql
+-- 2) supabase/seed/0001_social_accounts.sql
+```
+This creates the 13 tables, indexes, and enables RLS on all of them.
+
+## 3. Seed the Day 1 proof
+```bash
+python3 scripts/seed_day1_event.py
+```
+Inserts: 1 `nexus_events` row, 6 `system_health` rows, 1 pending `approval`. Uses the
+service-role key from `.env`. The key is never printed.
+
+## 4. Verify in the dashboard
+```bash
+npm run dev
+```
+Overview should show health pills; Approvals/Proof Log should show the seed event.
+
+## RLS note
+RLS is enabled on every table. Day 1: only the service role (server/scripts) can read/write;
+the anon frontend has **no** row access until explicit read policies are added (next migration,
+once the admin auth model is chosen). Until then the dashboard reads succeed only if you add a
+temporary read policy or use an authenticated session — documented in DEPLOYMENT.md.

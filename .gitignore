@@ -1,0 +1,22 @@
+# secrets — never commit real values
+.env
+.env.*
+!.env.example
+
+# deps / build
+node_modules/
+dist/
+build/
+
+# runtime junk (NOT system state — Supabase is the source of truth)
+logs/
+outputs/
+reports/runtime/
+receipts/
+secrets/
+*.key
+
+# python / misc
+__pycache__/
+.venv/
+.DS_Store

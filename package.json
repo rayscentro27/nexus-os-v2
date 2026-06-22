@@ -1,0 +1,26 @@
+{
+  "name": "nexus-os-v2",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Nexus OS v2 — Supabase-first operating system for Communication, Monetization, Automation.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "seed:day1": "python3 scripts/seed_day1_event.py"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.2"
+  }
+}
