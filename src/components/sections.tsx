@@ -72,7 +72,7 @@ export function CommandCenter({ email }: { email: string | null }) {
 
   return (
     <>
-      <div className="note">Hermes is Ray's private advisor. It can recommend and queue work, but it cannot publish, send, trade, or deploy without approvals and runner gates. Client agents are separate: Supabase-approved-knowledge only — no web, no external API by default.</div>
+      <div className="note">Hermes is Ray's private advisor. It can recommend and queue work, but it cannot publish, send, trade, or deploy without approvals and runner gates. Client agents are separate: Supabase-approved-knowledge only — no web, no external API by default. Hermes can route tasks, but external model calls are off by default; sensitive GoClear/client/credit/funding data cannot go to public/free cloud routes; manual Claude/OpenCode/Codex packet generation is supported.</div>
       <SectionTitle>Hermes system awareness</SectionTitle>
       <div className="grid">
         <Stat title="Pending approvals" value={aware.data.approvals} />
@@ -380,11 +380,25 @@ export function ModelRouter() {
         <div className="card" key={p.id}><h3>{p.name}</h3><Pill status={p.enabled ? 'enabled' : 'registered'} />
           <div className="meta muted" style={{ marginTop: 6 }}>{p.provider_type} · privacy: {p.privacy_level} · env: {p.secret_env_name || '—'}</div></div>
       ))}</div>
-      <SectionTitle>Routes</SectionTitle>
-      <DataList table="model_routes" what="routes" order="route_key" render={(r) => (
-        <><div className="t">{r.route_key} <Pill status={r.sensitive_data_allowed ? 'ok' : 'registered'} label={r.sensitive_data_allowed ? 'sensitive ok' : 'public only'} /></div>
-          <div className="meta">{r.task_type} → {r.primary_provider_key} · policy {r.policy}</div></>
+      <SectionTitle>Routes (policy-gated)</SectionTitle>
+      <DataList table="model_routes" what="routes" order="priority" render={(r) => (
+        <><div className="t">{r.route_key} <Pill status={r.route_type === 'blocked' ? 'failed' : (r.active ? 'active' : 'registered')} label={r.route_type || r.policy} />{!r.active && r.route_type !== 'blocked' && <span className="pill warn" style={{ marginLeft: 6 }}>candidate</span>}</div>
+          <div className="meta">provider: {r.provider_key || r.primary_provider_key || '—'} · external call: {r.external_call_allowed ? '✅' : '⛔'} · sensitive: {r.sensitive_data_allowed ? '✅' : '⛔'} · approval: {r.requires_approval ? '✅' : '—'} · cost: {r.cost_tier || '—'}</div>
+          {r.notes && <div className="meta muted">{r.notes}</div>}</>
       )} />
+      <SectionTitle>Recent route decisions</SectionTitle>
+      <DataList table="model_route_decisions" what="route decisions" render={(d) => (
+        <><div className="t"><Pill status={d.decision === 'blocked' ? 'failed' : (d.decision === 'selected' ? 'ok' : 'pending')} label={d.decision} /> {d.sensitivity}</div>
+          <div className="meta">{d.task_type} → {d.selected_route_key || '—'}{d.requires_approval ? ' · approval required' : ''}</div>
+          {d.reason && <div className="meta muted">{d.reason}</div>}</>
+      )} />
+      <SectionTitle>Recent Hermes model requests</SectionTitle>
+      <DataList table="hermes_model_requests" what="Hermes requests" render={(h) => (
+        <><div className="t"><Pill status={h.status === 'blocked' ? 'failed' : 'info'} label={h.status} /> {h.sensitivity}</div>
+          <div className="meta">{h.task_type} → {h.selected_route_key || '—'} · dry_run {String(h.dry_run)}</div>
+          {h.response_summary && <div className="body" style={{ opacity: .85 }}>{String(h.response_summary).slice(0, 160)}</div>}</>
+      )} />
+      <div className="note">External model calls are OFF by default (need <code>NEXUS_ALLOW_EXTERNAL_MODEL_CALLS=true</code> + approval). Sensitive GoClear/client/credit/funding data never routes to public/free cloud. Manual Claude/OpenCode/Codex packets are supported.</div>
     </>
   );
 }

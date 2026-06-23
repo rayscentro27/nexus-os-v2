@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # for agent_policy
-from ._base import sb, ok
+from ._base import sb, ok, run_script
 import agent_policy  # noqa: E402
 
 # Categories that are risky/public → require an approval, never executed by Hermes.
@@ -69,6 +69,11 @@ def command_ack(job, ctx) -> dict:
     queued_job, approval = None, None
     did_not = ["publish anything", "send Telegram", "trade", "deploy", "call a live model"]
 
+    # Research/strategy/build-prompt/feasibility/transcript/"which AI" → route via the Model Router.
+    ROUTE_RX = (r"research|strateg|what do you think|review this|summar|build (a )?prompt|"
+                r"run (this|it) on|mac ?mini|local hardware|transcript|which (ai|model|resource)|feasib")
+    route_request = bool(re.search(ROUTE_RX, cmd.lower())) and category not in RISKY
+
     if category in RISKY:
         action = RISKY[category]
         if agent_policy.requires_approval(agent, action) or True:
@@ -78,6 +83,13 @@ def command_ack(job, ctx) -> dict:
                 "summary": f"Command: {cmd[:160]}", "payload": {"action": action, "command": cmd, "category": category},
             })
             approval = row[0]["id"] if isinstance(row, list) and row else "created"
+    elif route_request and agent.get("can_create_jobs"):
+        st, row = sb.insert("agent_jobs", {
+            "lane": "hermes", "job_type": "hermes_model_route_decision", "status": "queued",
+            "input": {"source": "hermes_command", "prompt": cmd},
+        })
+        queued_job = row[0]["id"] if isinstance(row, list) and row else "queued"
+        category = "model_route_request"
     elif category in JOB_FOR and agent.get("can_create_jobs"):
         jt = JOB_FOR[category]
         st, row = sb.insert("agent_jobs", {
@@ -92,13 +104,21 @@ def command_ack(job, ctx) -> dict:
     if approval:
         note += f"Because it asks for a public/risky action, I created a PENDING approval (id {approval}) and did nothing else. "
     elif queued_job:
-        note += f"I queued a safe '{JOB_FOR[category]}' job (id {queued_job}) for the runner to execute under gates. "
+        qjt = "hermes_model_route_decision" if category == "model_route_request" else JOB_FOR.get(category, "follow_up")
+        note += f"I queued a safe '{qjt}' job (id {queued_job}) for the runner to execute under gates (dry-run, no external model call). "
     else:
         note += "No executable job applies yet — recommend reviewing or routing. "
     note += "No live model route was called."
 
     return ok({"category": category, "queued_job": queued_job, "approval_id": approval,
                "did_not_do": did_not, "response": note})
+
+
+def model_route_decision(job, ctx) -> dict:
+    """Run the Hermes model-route decision (DRY-RUN). No external model call."""
+    prompt = (job.get("input") or {}).get("prompt") or (job.get("input") or {}).get("command") or "(no prompt)"
+    r = run_script("scripts/hermes/request_model_route.py", ["--agent", "hermes_advisor", "--prompt", prompt, "--dry-run"])
+    return ok({"script": "request_model_route", "dry_run": True, **r})
 
 
 def intake_stub(job, ctx) -> dict:

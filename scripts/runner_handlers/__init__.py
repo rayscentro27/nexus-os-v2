@@ -30,6 +30,7 @@ REGISTRY = {
     # hermes
     "hermes_command": (H.command_ack, False),
     "command_route_stub": (H.command_ack, False),
+    "hermes_model_route_decision": (H.model_route_decision, False),
 }
 
 
