@@ -248,10 +248,29 @@ export function OpportunityLab() {
 }
 
 // ── Creative Intelligence Studio ──
-export function CreativeStudio() {
+export function CreativeStudio({ email }: { email: string | null }) {
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function queue(jobType: string) {
+    setBusy(true);
+    const id = await createJob({ lane: 'creative', job_type: jobType, status: 'queued', input: { campaign_key: 'goclear_funding_readiness_review', requested_by: email } });
+    await createEvent({ lane: 'monetization', action: 'creative_job_queued', status: 'pending', title: `Queued ${jobType}`, job_id: id });
+    setMsg(id ? `Queued ${jobType}. Run the matching script to execute.` : 'Could not queue (RLS?).');
+    setBusy(false);
+  }
   return (
     <>
       <div className="note">Nexus never makes random content. Every asset ties to a campaign, offer, CTA, audience, and money goal — and passes compliance QA before publishing.</div>
+      <div className="card" style={{ marginBottom: 6 }}>
+        <h3>Actions (queue jobs only — never publishes)</h3>
+        <div className="chips">
+          <button className="chip" disabled={busy} onClick={() => queue('creative_generate_assets')}>Create sample campaign assets</button>
+          <button className="chip" disabled={busy} onClick={() => queue('creative_score_assets')}>Score assets</button>
+          <button className="chip" disabled={busy} onClick={() => queue('creative_create_approvals')}>Create approvals</button>
+          <button className="chip" disabled={busy} onClick={() => queue('creative_create_social_drafts')}>Create Facebook drafts</button>
+        </div>
+        {msg && <div className="meta" style={{ marginTop: 6 }}>{msg}</div>}
+      </div>
       <SectionTitle>Campaigns</SectionTitle>
       <DataList table="creative_campaigns" what="campaigns" render={(c) => (
         <><div className="t">{c.name} <Pill status={c.status} /></div><div className="meta">{c.goal} · {c.offer}</div></>
@@ -260,10 +279,24 @@ export function CreativeStudio() {
       <DataList table="creative_briefs" what="briefs" render={(b) => (
         <><div className="t">{b.title} <Pill status={b.status} /></div><div className="meta">{b.platform} · {b.audience}</div>{b.hook && <div className="body">Hook: {b.hook}</div>}</>
       )} />
+      <SectionTitle>Generated assets</SectionTitle>
+      <DataList table="creative_assets" what="assets" render={(a) => (
+        <><div className="t">{a.title || a.asset_type} <Pill status={a.status} />{a.score != null && <span className="muted"> · {a.score}/100</span>}{a.approval_id && <span className="pill info" style={{ marginLeft: 6 }}>approval created</span>}</div>
+          <div className="meta">{a.asset_type} · {a.platform} · {(a.payload?.campaign_key) || ''}</div>
+          {a.hook && <div className="body">Hook: {a.hook}</div>}
+          {(a.body || a.content) && <div className="body" style={{ opacity: .85 }}>{String(a.body || a.content).slice(0, 180)}{String(a.body || a.content).length > 180 ? '…' : ''}</div>}</>
+      )} />
+      <SectionTitle>Creative QA</SectionTitle>
+      <DataList table="creative_scores" what="QA scores" render={(s) => (
+        <><div className="t">Overall {s.overall_score}/100 <Pill status={(s.notes || '').startsWith('blocked') ? 'failed' : 'ok'} /></div>
+          <div className="meta">hook {s.hook_strength} · clarity {s.clarity} · compliance {s.compliance_safety} · CTA {s.cta_strength} · unique {s.uniqueness}</div>
+          {s.notes && <div className="meta muted">{s.notes}</div>}</>
+      )} />
       <SectionTitle>Studio outputs (NotebookLM-style)</SectionTitle>
       <DataList table="studio_outputs" what="studio outputs" render={(s) => (
-        <><div className="t">{s.title} <Pill status={s.status} /></div><div className="meta">{s.output_type}</div></>
+        <><div className="t">{s.title} <Pill status={s.status} /></div><div className="meta">{s.output_type}</div>{s.script_text && <div className="body" style={{ opacity: .85 }}>{String(s.script_text).slice(0, 160)}…</div>}</>
       )} />
+      <div className="note">Run order (manual scripts): <code>seed_day4_creative_studio.py</code> → <code>generate_campaign_assets.py</code> → <code>score_creative_assets.py</code> → <code>create_creative_approvals.py</code> → <code>create_social_post_drafts.py</code>. Frontend buttons create jobs/ledger rows only — never publish.</div>
     </>
   );
 }

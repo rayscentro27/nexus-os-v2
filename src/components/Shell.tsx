@@ -15,7 +15,7 @@ const NAV: NavItem[] = [
   { key: 'approvals', label: 'Approvals', icon: '✓', sub: 'Approve / reject / request changes', render: (e) => <ApprovalCenter email={e} /> },
   { key: 'goclear', label: 'GoClear / Apex', icon: '◆', sub: 'Funding readiness workspace', render: () => <GoClearWorkspace /> },
   { key: 'opportunities', label: 'Opportunity Lab', icon: '⊛', sub: 'Money ideas, scored', render: () => <OpportunityLab /> },
-  { key: 'creative', label: 'Creative Studio', icon: '✦', sub: 'Campaigns, briefs, QA', render: () => <CreativeStudio /> },
+  { key: 'creative', label: 'Creative Studio', icon: '✦', sub: 'Campaigns, briefs, QA', render: (e) => <CreativeStudio email={e} /> },
   { key: 'trading', label: 'Trading Lab', icon: '↗', sub: 'Research/testing (no live)', render: () => <TradingLab /> },
   { key: 'seo', label: 'SEO / Marketing', icon: '⌕', sub: 'Sites + opportunities', render: () => <SeoOs /> },
   { key: 'models', label: 'Model Router', icon: '⌥', sub: 'Providers + routes', render: () => <ModelRouter /> },
