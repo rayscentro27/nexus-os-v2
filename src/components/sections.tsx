@@ -138,6 +138,7 @@ export function ApprovalCenter({ email }: { email: string | null }) {
   const { data, reload } = useData<Row[]>(() => listTable('approvals', { limit: 30 }), []);
   const [fb, setFb] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string>('');
+  const [jobMsg, setJobMsg] = useState<Record<string, string>>({});
 
   async function act(a: Row, decision: 'approved' | 'rejected' | 'revise') {
     setBusy(a.id);
@@ -151,16 +152,40 @@ export function ApprovalCenter({ email }: { email: string | null }) {
     setBusy(''); reload();
   }
 
+  // Create a DRY-RUN publish job for an approved social post (frontend creates the job row
+  // only — it never publishes; a server-side script runs the gated dry-run).
+  async function createDryRunJob(a: Row) {
+    setBusy(a.id);
+    const posts = await listTable('social_posts', { eq: ['approval_id', a.id], limit: 1 });
+    const post = posts[0];
+    if (!post) { setJobMsg({ ...jobMsg, [a.id]: 'No linked social_posts row found.' }); setBusy(''); return; }
+    const jobId = await createJob({ lane: 'social', job_type: 'social_publish', status: 'queued',
+      input: { post_id: post.id, mode: 'dry_run', requested_by: email } });
+    await createEvent({ lane: 'social', action: 'social_publish_job_queued', status: 'pending',
+      title: 'Queued dry-run Facebook publish job', approval_id: a.id, job_id: jobId, payload: { post_id: post.id } });
+    setJobMsg({ ...jobMsg, [a.id]: jobId ? 'Dry-run job queued. Run scripts/run_social_publish_job.py --dry-run.' : 'Could not create job (RLS?).' });
+    setBusy('');
+  }
+
   if (data.length === 0) return <Empty what="approvals" />;
   return (
     <div className="list">
-      {data.map((a) => (
+      {data.map((a) => {
+        const isSocial = a.item_type === 'social_publish' || a.payload?.platform === 'facebook';
+        return (
         <div className="item" key={a.id}>
-          <div className="t">{a.title ?? a.item_type} <Pill status={a.status} /></div>
-          <div className="meta">{a.lane} · {a.item_type} · {timeAgo(a.created_at)}{a.approved_by ? ` · by ${a.approved_by}` : ''}</div>
+          <div className="t">{a.title ?? a.item_type} <Pill status={a.status} />{isSocial && <span className="pill info" style={{ marginLeft: 6 }}>facebook</span>}</div>
+          <div className="meta">{a.lane} · {a.item_type} · {timeAgo(a.created_at)}{a.approved_by ? ` · by ${a.approved_by}` : ''}{isSocial ? ' · target: Clear Credentials (131069194210954)' : ''}</div>
           {a.summary && <div className="body">{a.summary}</div>}
           {a.payload?.caption && <div className="body">“{a.payload.caption}”</div>}
           {a.payload?.preview_url && <a href={a.payload.preview_url} target="_blank" rel="noreferrer">preview asset ↗</a>}
+          {isSocial && a.status === 'approved' && (
+            <div style={{ marginTop: 8 }}>
+              <div className="meta" style={{ marginBottom: 6 }}>Ready for dry-run publish job. Real publish stays gated (token + publish_enabled + server script).</div>
+              <button className="btn ghost" disabled={busy === a.id} onClick={() => createDryRunJob(a)}>Create dry-run publish job</button>
+              {jobMsg[a.id] && <div className="meta" style={{ marginTop: 6 }}>{jobMsg[a.id]}</div>}
+            </div>
+          )}
           {a.status === 'pending' && (
             <>
               <textarea className="cmd" style={{ minHeight: 44, marginTop: 8 }} placeholder="Feedback (for request changes)…"
@@ -174,7 +199,8 @@ export function ApprovalCenter({ email }: { email: string | null }) {
             </>
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
