@@ -46,5 +46,16 @@ python3 scripts/seed_day1_event.py
 - `docs/operations/SCHEDULER_POLICY.md`
 
 ## Status
-**Day 1:** repo + Supabase ledger schema + dashboard shell + Day 1 proof seed. No publishing,
-no trading, no secrets committed.
+**Day 1:** repo + Supabase ledger schema + dashboard shell + Day 1 proof seed.
+
+**Premium foundation (Day 2):** migration `0003` adds 24 foundation tables (workspaces, agents,
+research, monetization, creative, model router, integrations, trading lab, SEO, ops, improvements)
+with RLS + admin-only policies. Supabase auth sign-in; premium dark dashboard with 13 sections
+(Command Center / Hermes operator, System Health, Agent Jobs, Approvals, GoClear·Apex, Opportunity
+Lab, Creative Studio, Trading Lab, SEO/Marketing, Model Router, Integrations, Ops & Improvements,
+Events Feed) reading real Supabase data. Hermes composer queues jobs + ledger events (no external
+execution). Approvals write to the ledger only (no publishing). Telegram guard is dry-run only.
+Idempotent seeds. No publishing, no trading, no secrets committed.
+
+Run the foundation seed: `python3 scripts/seed_premium_foundation.py` (service-role, after
+`supabase db push`).

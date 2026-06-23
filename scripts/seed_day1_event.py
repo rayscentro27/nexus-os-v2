@@ -48,6 +48,19 @@ def insert(url: str, key: str, table: str, rows: list[dict]) -> int:
         return r.status
 
 
+def exists(url: str, key: str, table: str, filt: str) -> bool:
+    """Return True if at least one row matches the PostgREST filter."""
+    req = urllib.request.Request(
+        f"{url}/rest/v1/{table}?select=id&{filt}&limit=1",
+        headers={"apikey": key, "Authorization": f"Bearer {key}"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return bool(json.loads(r.read() or "[]"))
+    except Exception:
+        return False
+
+
 def main() -> int:
     env = load_env()
     url = (env.get("SUPABASE_URL") or env.get("VITE_SUPABASE_URL") or "").rstrip("/")
@@ -58,33 +71,35 @@ def main() -> int:
         return 2
 
     try:
-        insert(url, key, "nexus_events", [{
-            "lane": "communication",
-            "source": "day1_seed",
-            "action": "nexus_os_v2_initialized",
-            "status": "success",
-            "title": "Nexus OS v2 initialized",
-            "summary": "Supabase event ledger and dashboard shell created.",
-            "severity": "info",
-        }])
-        insert(url, key, "system_health", [
-            {"component": c, "status": s, "summary": msg}
-            for c, s, msg in [
-                ("dashboard", "ok", "7-tab shell live"),
-                ("supabase", "ok", "ledger reachable"),
-                ("social", "partial", "accounts seeded; publish off until approved"),
-                ("trading", "rebuild_needed", "executor wired Day 6"),
-                ("telegram", "ok", "guard ported Day 2"),
-                ("hermes", "partial", "snapshot fallback; live AI optional"),
-            ]
-        ])
-        insert(url, key, "approvals", [{
-            "lane": "social",
-            "item_type": "social_publish_test",
-            "status": "pending",
-            "title": "Approve first Facebook publish test after Day 3",
-            "summary": "Publisher + queue land Day 3; approve one item before any real post.",
-        }])
+        # Idempotent: only insert rows that don't already exist (re-running won't duplicate).
+        if not exists(url, key, "nexus_events", "action=eq.nexus_os_v2_initialized"):
+            insert(url, key, "nexus_events", [{
+                "lane": "communication",
+                "source": "day1_seed",
+                "action": "nexus_os_v2_initialized",
+                "status": "success",
+                "title": "Nexus OS v2 initialized",
+                "summary": "Supabase event ledger and dashboard shell created.",
+                "severity": "info",
+            }])
+        for c, s, msg in [
+            ("dashboard", "ok", "7-tab shell live"),
+            ("supabase", "ok", "ledger reachable"),
+            ("social", "partial", "accounts seeded; publish off until approved"),
+            ("trading", "rebuild_needed", "executor wired Day 6"),
+            ("telegram", "ok", "guard ported Day 2"),
+            ("hermes", "partial", "snapshot fallback; live AI optional"),
+        ]:
+            if not exists(url, key, "system_health", f"component=eq.{c}"):
+                insert(url, key, "system_health", [{"component": c, "status": s, "summary": msg}])
+        if not exists(url, key, "approvals", "item_type=eq.social_publish_test"):
+            insert(url, key, "approvals", [{
+                "lane": "social",
+                "item_type": "social_publish_test",
+                "status": "pending",
+                "title": "Approve first Facebook publish test after Day 3",
+                "summary": "Publisher + queue land Day 3; approve one item before any real post.",
+            }])
     except urllib.error.HTTPError as e:
         body = e.read().decode(errors="ignore")
         body = body.replace(key, "<redacted>") if key else body
