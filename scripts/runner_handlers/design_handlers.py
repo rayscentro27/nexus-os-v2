@@ -52,3 +52,29 @@ def review_ui_quality(job, ctx):
     inp = job.get("input") or {}
     args = ["--title", str(inp["title"])] if inp.get("title") else ["--sample"]
     return _run("scripts/design/review_ui_quality.py", args, "review_ui_quality")
+
+
+# ── Day 10: manual publish readiness (no real publish) ──
+def _pkg_args(job):
+    pid = (job.get("input") or {}).get("package_id")
+    return ["--package-id", str(pid)] if pid else ["--sample"]
+
+
+def create_publish_package(job, ctx):
+    inp = job.get("input") or {}
+    args = ["--design-variant-id", str(inp["design_variant_id"])] if inp.get("design_variant_id") else ["--sample"]
+    return _run("scripts/creative/create_publish_readiness_package.py", args, "create_publish_readiness_package")
+
+
+def review_publish_package(job, ctx):
+    return _run("scripts/creative/review_publish_package.py", _pkg_args(job), "review_publish_package")
+
+
+def create_manual_publish_receipt(job, ctx):
+    # Always dry-run from the runner (never posts).
+    args = _pkg_args(job) + ["--dry-run"]
+    return _run("scripts/creative/create_manual_publish_receipt.py", args, "create_manual_publish_receipt")
+
+
+def export_publish_package(job, ctx):
+    return _run("scripts/creative/export_publish_package.py", _pkg_args(job), "export_publish_package")

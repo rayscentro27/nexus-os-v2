@@ -71,6 +71,11 @@ def command_ack(job, ctx) -> dict:
 
     # Creative design department (Day 9) — most specific, checked first.
     DESIGN_MAP = [
+        # Day 10 publish readiness (manual only — never auto-publishes)
+        (r"manual publish receipt|create .*receipt", "creative_create_manual_publish_receipt"),
+        (r"export (the )?(facebook|fb|publish|post)|export .*package", "creative_export_publish_package"),
+        (r"review (this )?post before publish|review .*before publish", "creative_review_publish_package"),
+        (r"publish package|ready to publish|prepare .*(for )?(manual )?post|make this post ready", "creative_create_publish_package"),
         (r"register .*(as )?design inspiration|design inspiration", "design_register_inspiration"),
         (r"design packet|feature design", "design_create_feature_packet"),
         (r"review .*(ui|interface) quality|ui quality", "design_review_ui_quality"),

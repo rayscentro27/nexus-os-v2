@@ -39,6 +39,11 @@ REGISTRY = {
     "design_extract_patterns": (D.extract_patterns, False),
     "design_create_feature_packet": (D.create_feature_packet, False),
     "design_review_ui_quality": (D.review_ui_quality, False),
+    # publish readiness (Day 10 — no real publish)
+    "creative_create_publish_package": (D.create_publish_package, False),
+    "creative_review_publish_package": (D.review_publish_package, False),
+    "creative_create_manual_publish_receipt": (D.create_manual_publish_receipt, False),
+    "creative_export_publish_package": (D.export_publish_package, False),
     # ops
     "ops_diagnostic": (O.ops_diagnostic, False),
     "system_status": (O.system_status, False),

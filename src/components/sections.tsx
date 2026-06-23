@@ -349,7 +349,26 @@ export function CreativeStudio({ email }: { email: string | null }) {
         <><div className="t">{c.summary} <Pill status={c.next_action} /></div>
           <div className="meta">{c.reason}{c.approval_required ? ' · approval required before publish' : ''}</div></>
       )} />
-      <div className="note">Design pipeline (manual/jobs): <code>create_design_brief</code> → <code>generate_design_variants</code> → <code>score_design_variants</code> → <code>compare_design_variants</code>. Credit/funding copy is compliance-gated (no guarantees) and a winner still needs approval before any publish. No external image/model calls.</div>
+      <SectionTitle>Publish readiness packages (manual only)</SectionTitle>
+      <DataList table="publish_readiness_packages" what="publish packages" render={(p) => (
+        <><div className="t">{p.package_title} <Pill status={p.approval_status} /><span className="pill info" style={{ marginLeft: 6 }}>{p.platform}</span>{p.compliance_status === 'ok' ? <span className="pill ok" style={{ marginLeft: 6 }}>compliant</span> : <span className="pill warn" style={{ marginLeft: 6 }}>{p.compliance_status}</span>}</div>
+          <div className="body" style={{ opacity: .9 }}>{String(p.final_post_copy || '').slice(0, 200)}</div>
+          {p.cta && <div className="meta" style={{ color: 'var(--accent)' }}>{p.cta}</div>}
+          {p.risk_flags?.length > 0 && <div className="meta" style={{ color: 'var(--warn)' }}>risk flags: {(p.risk_flags || []).join(', ')}</div>}
+          <div className="meta muted">Manual publish only — approval required before any real post. No auto-publish.</div></>
+      )} />
+      <SectionTitle>Publish package reviews</SectionTitle>
+      <DataList table="publish_package_reviews" what="package reviews" render={(r) => (
+        <><div className="t"><Pill status={r.decision === 'approve_manual_use' ? 'ok' : 'warn'} label={r.decision} /> {r.score}/100</div>
+          <div className="meta">{r.review_type} · {r.reason}{r.risk_flags?.length ? ` · flags: ${(r.risk_flags || []).join(', ')}` : ''}</div>
+          {r.revision_notes?.length > 0 && <div className="meta muted">{(r.revision_notes || []).join(' ')}</div>}</>
+      )} />
+      <SectionTitle>Manual publish receipts</SectionTitle>
+      <DataList table="manual_publish_receipts" what="manual receipts" render={(m) => (
+        <><div className="t"><Pill status={m.receipt_type === 'dry_run' ? 'info' : 'ok'} label={m.receipt_type} /> {m.platform}</div>
+          <div className="meta">{m.summary}{m.external_url ? ` · ${m.external_url}` : ''}</div></>
+      )} />
+      <div className="note">Design + publish pipeline (manual/jobs): <code>create_design_brief</code> → <code>generate_design_variants</code> → <code>score</code> → <code>compare</code> → <code>create_publish_readiness_package</code> → <code>review</code> → <code>export</code>. Credit/funding copy is compliance-gated (no guarantees); a package still needs approval before any real publish. No auto-publish, no external image/model calls.</div>
     </>
   );
 }
