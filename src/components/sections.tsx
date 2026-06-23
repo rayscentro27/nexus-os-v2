@@ -61,8 +61,27 @@ export function CommandCenter({ email }: { email: string | null }) {
     events.reload(); jobs.reload();
   }
 
+  const aware = useData<{ approvals: number; jobs: number; incidents: number; campaigns: number; receipts: number }>(
+    async () => ({
+      approvals: (await listTable('approvals', { eq: ['status', 'pending'], limit: 200 })).length,
+      jobs: (await listTable('agent_jobs', { eq: ['status', 'queued'], limit: 200 })).length,
+      incidents: (await listTable('ops_incidents', { eq: ['status', 'open'], limit: 200 })).length,
+      campaigns: (await listTable('creative_campaigns', { eq: ['status', 'active'], limit: 200 })).length,
+      receipts: (await listTable('social_publish_receipts', { limit: 200 })).length,
+    }), { approvals: 0, jobs: 0, incidents: 0, campaigns: 0, receipts: 0 });
+
   return (
     <>
+      <div className="note">Hermes is Ray's private advisor. It can recommend and queue work, but it cannot publish, send, trade, or deploy without approvals and runner gates. Client agents are separate: Supabase-approved-knowledge only — no web, no external API by default.</div>
+      <SectionTitle>Hermes system awareness</SectionTitle>
+      <div className="grid">
+        <Stat title="Pending approvals" value={aware.data.approvals} />
+        <Stat title="Queued jobs" value={aware.data.jobs} />
+        <Stat title="Open incidents" value={aware.data.incidents} />
+        <Stat title="Active campaigns" value={aware.data.campaigns} />
+        <Stat title="Publish receipts" value={aware.data.receipts} />
+        <Stat title="Safety" value="gated" sub="no publish/send/trade/deploy without approval" />
+      </div>
       <div className="card">
         <h3>Hermes — plain-language operator</h3>
         <textarea className="cmd" placeholder="Tell Hermes what you want in normal words… e.g. “what should we do to make money this week?”"
@@ -129,10 +148,15 @@ export function AgentJobsView() {
         </div>
         <div className="meta muted" style={{ marginTop: 6 }}>Default is dry-run. Real Facebook publish needs --real-publish + all Day 3 gates. Unknown job types are blocked, not guessed. The frontend only queues jobs.</div>
       </div>
-      <SectionTitle count={agents.data.length}>Agent registry</SectionTitle>
-      <div className="grid">{agents.data.map((a) => (
-        <div className="card" key={a.id}><h3>{a.name}</h3><Pill status={a.status} />
-          <div className="meta muted" style={{ marginTop: 6 }}>{a.role}</div></div>
+      <SectionTitle count={agents.data.length}>Agent permission matrix</SectionTitle>
+      <div className="grid two">{agents.data.map((a) => (
+        <div className="card" key={a.id}>
+          <h3>{a.name} <Pill status={a.agent_class || 'worker'} /></h3>
+          <div className="meta muted" style={{ marginBottom: 6 }}>audience: {a.audience_type || 'internal'} · {a.role}</div>
+          <div className="meta">web: {a.web_access_allowed ? '✅' : '⛔'} · external API: {a.external_api_allowed ? '✅' : '⛔'} · create jobs: {a.can_create_jobs ? '✅' : '⛔'} · create approvals: {a.can_create_approvals ? '✅' : '⛔'} · execute: {a.can_execute_actions ? '✅' : '⛔'}</div>
+          <div className="meta muted" style={{ marginTop: 4 }}>cost: {a.cost_policy || '—'} · compliance: {a.compliance_policy || '—'}</div>
+          {a.requires_approval_for?.length > 0 && <div className="meta muted">approval required for: {(a.requires_approval_for || []).join(', ')}</div>}
+        </div>
       ))}</div>
       <SectionTitle>Jobs</SectionTitle>
       <DataList table="agent_jobs" what="jobs" render={(j) => (

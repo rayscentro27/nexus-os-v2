@@ -17,6 +17,9 @@ def system_status(job, ctx) -> dict:
         "approvals_pending": _count("approvals", "select=id&status=eq.pending"),
         "creative_assets": _count("creative_assets"),
         "social_drafts": _count("social_posts", "select=id&status=eq.draft"),
+        "agents_client": _count("agent_registry", "select=id&agent_class=eq.client_agent"),
+        "agents_hermes": _count("agent_registry", "select=id&agent_class=eq.hermes_advisor"),
+        "agents_can_execute": _count("agent_registry", "select=id&can_execute_actions=eq.true"),
     }
     sb.health("dashboard", "ok", f"system_status: {counts}")
     return ok({"summary": counts})
