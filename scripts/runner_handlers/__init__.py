@@ -7,6 +7,7 @@ from . import social_handlers as S
 from . import hermes_handlers as H
 from . import ops_handlers as O
 from . import intake_handlers as I
+from . import design_handlers as D
 
 # job_type -> (handler_fn, risky)
 # risky=True means a *real* side effect is possible; the handler still enforces its own gates
@@ -29,6 +30,15 @@ REGISTRY = {
     "transcript_intake_review": (I.transcript_intake_review, False),
     "claim_risk_classify": (I.claim_risk_classify, False),
     "service_opportunity_extract": (I.service_opportunity_extract, False),
+    # creative design department (Day 9)
+    "creative_create_design_brief": (D.create_design_brief, False),
+    "creative_generate_design_variants": (D.generate_design_variants, False),
+    "creative_score_design_variants": (D.score_design_variants, False),
+    "creative_compare_design_variants": (D.compare_design_variants, False),
+    "design_register_inspiration": (D.register_inspiration, False),
+    "design_extract_patterns": (D.extract_patterns, False),
+    "design_create_feature_packet": (D.create_feature_packet, False),
+    "design_review_ui_quality": (D.review_ui_quality, False),
     # ops
     "ops_diagnostic": (O.ops_diagnostic, False),
     "system_status": (O.system_status, False),

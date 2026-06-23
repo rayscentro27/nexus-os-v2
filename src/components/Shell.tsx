@@ -3,7 +3,7 @@ import { UserMenu } from './auth';
 import {
   CommandCenter, SystemHealth, AgentJobsView, ApprovalCenter, GoClearWorkspace,
   OpportunityLab, CreativeStudio, TradingLab, SeoOs, ModelRouter, Integrations,
-  OpsImprovements, EventsFeed, IntakeOrientation,
+  OpsImprovements, EventsFeed, IntakeOrientation, DesignLibrary,
 } from './sections';
 
 interface NavItem { key: string; label: string; icon: string; sub: string; render: (email: string | null) => ReactNode; }
@@ -16,7 +16,8 @@ const NAV: NavItem[] = [
   { key: 'goclear', label: 'GoClear / Apex', icon: '◆', sub: 'Funding readiness workspace', render: () => <GoClearWorkspace /> },
   { key: 'opportunities', label: 'Opportunity Lab', icon: '⊛', sub: 'Money ideas, scored', render: () => <OpportunityLab /> },
   { key: 'intake', label: 'Intake & Orientation', icon: '⇪', sub: 'Transcripts → decisions', render: () => <IntakeOrientation /> },
-  { key: 'creative', label: 'Creative Studio', icon: '✦', sub: 'Campaigns, briefs, QA', render: (e) => <CreativeStudio email={e} /> },
+  { key: 'creative', label: 'Creative Studio', icon: '✦', sub: 'Campaigns, briefs, design dept', render: (e) => <CreativeStudio email={e} /> },
+  { key: 'design', label: 'Design Library', icon: '◈', sub: 'Inspiration, patterns, UI quality', render: () => <DesignLibrary /> },
   { key: 'trading', label: 'Trading Lab', icon: '↗', sub: 'Research/testing (no live)', render: () => <TradingLab /> },
   { key: 'seo', label: 'SEO / Marketing', icon: '⌕', sub: 'Sites + opportunities', render: () => <SeoOs /> },
   { key: 'models', label: 'Model Router', icon: '⌥', sub: 'Providers + routes', render: () => <ModelRouter /> },

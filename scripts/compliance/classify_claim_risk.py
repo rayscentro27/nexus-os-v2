@@ -38,9 +38,9 @@ DOMAINS = {
 # (flag, regex, severity) — severity 3 = hype/misleading, 2 = compliance, 1 = verify
 FLAGS = [
     ("guarantee", r"(?<!no )guarantee[ds]?\b", 2),
-    ("guaranteed_approval", r"guarantee[ds]?\s+(\w+\s+){0,2}?(funding|approval|loan|approved)", 3),
-    ("guaranteed_deletion", r"guaranteed (deletion|removal)|will (be )?delete", 3),
-    ("guaranteed_score", r"(score|points?) (increase|boost) guaranteed|guaranteed \d+ points", 3),
+    ("guaranteed_approval", r"(?<!no )guarantee[ds]?\s+(\w+\s+){0,2}?(funding|approval|loan|approved)", 3),
+    ("guaranteed_deletion", r"(?<!no )guaranteed (deletion|removal)|(?<!won't )will (be )?delete", 3),
+    ("guaranteed_score", r"(score|points?) (increase|boost) guaranteed|(?<!no )guaranteed \d+ points", 3),
     ("no_choice", r"they have no choice|legally must|forced to delete", 3),
     ("secret_loophole", r"secret|hack|loophole|trick the (bank|lender|system)", 3),
     ("both_ways", r"make money both ways|win either way|can'?t lose", 3),

@@ -332,7 +332,56 @@ export function CreativeStudio({ email }: { email: string | null }) {
       <DataList table="studio_outputs" what="studio outputs" render={(s) => (
         <><div className="t">{s.title} <Pill status={s.status} /></div><div className="meta">{s.output_type}</div>{s.script_text && <div className="body" style={{ opacity: .85 }}>{String(s.script_text).slice(0, 160)}…</div>}</>
       )} />
-      <div className="note">Run order (manual scripts): <code>seed_day4_creative_studio.py</code> → <code>generate_campaign_assets.py</code> → <code>score_creative_assets.py</code> → <code>create_creative_approvals.py</code> → <code>create_social_post_drafts.py</code>. Frontend buttons create jobs/ledger rows only — never publish.</div>
+      <SectionTitle>Creative Design Department — briefs</SectionTitle>
+      <DataList table="creative_design_briefs" what="design briefs" render={(b) => (
+        <><div className="t">{b.title} <Pill status={b.status} /></div>
+          <div className="meta">{b.platform} · {b.audience}{b.visual_metaphor ? ` · metaphor: ${b.visual_metaphor}` : ''}</div>
+          {b.compliance_rules?.length > 0 && <div className="meta muted">compliance: {(b.compliance_rules || []).join(', ')}</div>}</>
+      )} />
+      <SectionTitle>Design variants</SectionTitle>
+      <DataList table="creative_design_variants" what="design variants" render={(v) => (
+        <><div className="t">{v.title} <Pill status="info" label={v.route_key} /></div>
+          {v.post_copy && <div className="body" style={{ opacity: .85 }}>{String(v.post_copy).slice(0, 160)}</div>}
+          {v.image_prompt && <div className="meta muted">image prompt: {String(v.image_prompt).slice(0, 120)}</div>}</>
+      )} />
+      <SectionTitle>Design comparisons (winner)</SectionTitle>
+      <DataList table="creative_asset_comparisons" what="comparisons" render={(c) => (
+        <><div className="t">{c.summary} <Pill status={c.next_action} /></div>
+          <div className="meta">{c.reason}{c.approval_required ? ' · approval required before publish' : ''}</div></>
+      )} />
+      <div className="note">Design pipeline (manual/jobs): <code>create_design_brief</code> → <code>generate_design_variants</code> → <code>score_design_variants</code> → <code>compare_design_variants</code>. Credit/funding copy is compliance-gated (no guarantees) and a winner still needs approval before any publish. No external image/model calls.</div>
+    </>
+  );
+}
+
+// ── Design Library (Day 9) ──
+export function DesignLibrary() {
+  return (
+    <>
+      <div className="note">Inspiration is stored as <b>reference only</b> — Nexus does not clone, import, or depend on external repos/assets. Deterministic; no external image/model calls.</div>
+      <SectionTitle>Inspiration sources</SectionTitle>
+      <DataList table="design_inspiration_sources" what="inspiration sources" render={(s) => (
+        <><div className="t">{s.source_name} <Pill status="info" label={s.category} /></div>
+          <div className="meta">{s.source_type} · usefulness {s.usefulness_score} · risk {s.risk_level} · reference only</div>
+          {s.summary && <div className="body" style={{ opacity: .85 }}>{s.summary}</div>}</>
+      )} />
+      <SectionTitle>Pattern registry</SectionTitle>
+      <DataList table="design_pattern_registry" what="design patterns" render={(p) => (
+        <><div className="t">{p.pattern_name} <Pill status="info" label={p.pattern_category} /></div>
+          <div className="meta">{p.use_case}</div><div className="body" style={{ opacity: .85 }}>{p.description}</div></>
+      )} />
+      <SectionTitle>Feature design packets</SectionTitle>
+      <DataList table="feature_design_packets" what="feature packets" render={(f) => (
+        <><div className="t">{f.feature_name} <Pill status={f.status} /></div>
+          <div className="meta">{f.target_surface} · goal: {f.user_goal}</div>
+          <div className="meta muted">sections: {(f.required_sections || []).join(', ')}</div></>
+      )} />
+      <SectionTitle>UI quality reviews</SectionTitle>
+      <DataList table="ui_quality_reviews" what="UI reviews" render={(u) => (
+        <><div className="t">{u.review_title} <Pill status={u.overall_score >= 80 ? 'ok' : 'warn'} label={`${u.overall_score}/100`} /></div>
+          <div className="meta">layout {u.layout_score} · readability {u.readability_score} · mobile {u.mobile_score} · a11y {u.accessibility_score} · compliance {u.compliance_score} · {u.recommendation}</div>
+          {u.revision_notes?.length > 0 && <div className="meta muted">notes: {(u.revision_notes || []).join(' ')}</div>}</>
+      )} />
     </>
   );
 }

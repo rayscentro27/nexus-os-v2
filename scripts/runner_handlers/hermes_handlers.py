@@ -66,8 +66,21 @@ def command_ack(job, ctx) -> dict:
     cmd = (job.get("input") or {}).get("command", "")
     agent = agent_policy.load_agent("hermes_advisor") or {}
     category = classify(cmd)
-    queued_job, approval = None, None
+    queued_job, approval, queued_type = None, None, None
     did_not = ["publish anything", "send Telegram", "trade", "deploy", "call a live model"]
+
+    # Creative design department (Day 9) — most specific, checked first.
+    DESIGN_MAP = [
+        (r"register .*(as )?design inspiration|design inspiration", "design_register_inspiration"),
+        (r"design packet|feature design", "design_create_feature_packet"),
+        (r"review .*(ui|interface) quality|ui quality", "design_review_ui_quality"),
+        (r"compare .*(design|creative|variant)", "creative_compare_design_variants"),
+        (r"score (this )?(creative|design|variant)", "creative_score_design_variants"),
+        (r"(facebook|fb) post design|design (a )?(facebook|fb) post|credit readiness post|goclear .*post|make a design",
+         "creative_generate_design_variants"),
+    ]
+    design_job = (next((jt for rx, jt in DESIGN_MAP if re.search(rx, cmd.lower())), None)
+                  if category not in RISKY else None)
 
     # Transcript/idea intake → deterministic intake review (Day 8).
     INTAKE_RX = (r"transcript|process this (video|idea)|where does this fit|what should nexus do with|"
@@ -87,6 +100,15 @@ def command_ack(job, ctx) -> dict:
                 "summary": f"Command: {cmd[:160]}", "payload": {"action": action, "command": cmd, "category": category},
             })
             approval = row[0]["id"] if isinstance(row, list) and row else "created"
+    elif design_job and agent.get("can_create_jobs"):
+        di = {"source": "hermes_command", "command": cmd}
+        if design_job == "design_register_inspiration":
+            di.update(source_name=cmd[:80], category="reference", source_type="reference")
+        if design_job == "design_review_ui_quality":
+            di.update(title=cmd[:80])
+        st, row = sb.insert("agent_jobs", {"lane": "hermes", "job_type": design_job, "status": "queued", "input": di})
+        queued_job = row[0]["id"] if isinstance(row, list) and row else "queued"
+        queued_type = design_job
     elif intake_request and agent.get("can_create_jobs"):
         jt = "service_opportunity_extract" if "service opportunity" in cmd.lower() else "transcript_intake_review"
         st, row = sb.insert("agent_jobs", {
@@ -94,14 +116,14 @@ def command_ack(job, ctx) -> dict:
             "input": {"source": "hermes_command", "text": cmd, "title": cmd[:80]},
         })
         queued_job = row[0]["id"] if isinstance(row, list) and row else "queued"
-        category = jt
+        queued_type = jt
     elif route_request and agent.get("can_create_jobs"):
         st, row = sb.insert("agent_jobs", {
             "lane": "hermes", "job_type": "hermes_model_route_decision", "status": "queued",
             "input": {"source": "hermes_command", "prompt": cmd},
         })
         queued_job = row[0]["id"] if isinstance(row, list) and row else "queued"
-        category = "model_route_request"
+        queued_type = "hermes_model_route_decision"
     elif category in JOB_FOR and agent.get("can_create_jobs"):
         jt = JOB_FOR[category]
         st, row = sb.insert("agent_jobs", {
@@ -109,6 +131,7 @@ def command_ack(job, ctx) -> dict:
             "input": {"source": "hermes_command", "command": cmd, "campaign_key": "goclear_funding_readiness_review"},
         })
         queued_job = row[0]["id"] if isinstance(row, list) and row else "queued"
+        queued_type = jt
 
     allowed = ("research, recommend, and queue allowlisted jobs; create approvals for risky/public actions. "
                "Cannot publish/send/trade/deploy without Ray approval + runner gates.")
@@ -116,9 +139,7 @@ def command_ack(job, ctx) -> dict:
     if approval:
         note += f"Because it asks for a public/risky action, I created a PENDING approval (id {approval}) and did nothing else. "
     elif queued_job:
-        qjt = ("hermes_model_route_decision" if category == "model_route_request"
-               else category if category in ("transcript_intake_review", "service_opportunity_extract")
-               else JOB_FOR.get(category, "follow_up"))
+        qjt = queued_type or "follow_up"
         note += f"I queued a safe '{qjt}' job (id {queued_job}) for the runner to execute under gates (dry-run, no external model call). "
     else:
         note += "No executable job applies yet — recommend reviewing or routing. "
