@@ -114,11 +114,21 @@ export function SystemHealth() {
   ))}</div>;
 }
 
-// ── Agent Jobs (+ registry) ──
+// ── Agent Jobs (+ registry + runner) ──
 export function AgentJobsView() {
   const agents = useData<Row[]>(() => listTable('agent_registry', { order: 'agent_key', ascending: true }), []);
   return (
     <>
+      <div className="card" style={{ marginBottom: 6 }}>
+        <h3>Manual Runner Commands (no scheduler — run by hand)</h3>
+        <div className="list">
+          <div className="item"><code>python3 scripts/nexus_runner.py --once --limit 1 --dry-run</code></div>
+          <div className="item"><code>python3 scripts/nexus_runner.py --once --limit 5 --dry-run</code></div>
+          <div className="item"><code>python3 scripts/nexus_runner.py --job-id &lt;id&gt; --dry-run</code></div>
+          <div className="item"><code>python3 scripts/nexus_runner.py --list-handlers</code></div>
+        </div>
+        <div className="meta muted" style={{ marginTop: 6 }}>Default is dry-run. Real Facebook publish needs --real-publish + all Day 3 gates. Unknown job types are blocked, not guessed. The frontend only queues jobs.</div>
+      </div>
       <SectionTitle count={agents.data.length}>Agent registry</SectionTitle>
       <div className="grid">{agents.data.map((a) => (
         <div className="card" key={a.id}><h3>{a.name}</h3><Pill status={a.status} />
@@ -126,8 +136,10 @@ export function AgentJobsView() {
       ))}</div>
       <SectionTitle>Jobs</SectionTitle>
       <DataList table="agent_jobs" what="jobs" render={(j) => (
-        <><div className="t">{j.job_type} <Pill status={j.status} /></div>
-          <div className="meta">{j.lane} · {timeAgo(j.created_at)}{j.error ? ` · ${j.error}` : ''}</div></>
+        <><div className="t">{j.job_type} <Pill status={j.status} />{j.attempts ? <span className="muted"> · attempt {j.attempts}/{j.max_attempts ?? 1}</span> : null}</div>
+          <div className="meta">{j.lane} · {timeAgo(j.created_at)}{j.claimed_by ? ` · ${j.claimed_by}` : ''}{j.completed_at ? ` · done ${timeAgo(j.completed_at)}` : ''}</div>
+          {(j.last_error || j.error) && <div className="meta" style={{ color: 'var(--bad)' }}>{j.last_error || j.error}</div>}
+          {j.output && Object.keys(j.output).length > 0 && <div className="body" style={{ opacity: .8 }}>{JSON.stringify(j.output).slice(0, 160)}</div>}</>
       )} />
     </>
   );
