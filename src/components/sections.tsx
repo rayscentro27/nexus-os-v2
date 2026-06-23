@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { listTable, type Row } from '../services/db';
 import { createEvent, createJob, decideApproval } from '../lib/ledger';
 import { Card, Stat, Pill, Empty, SectionTitle, timeAgo, useData } from './ui';
+import { planResponse, detectModeSwitch, MODE_DESC, type HermesMode } from '../lib/hermesIntent';
 
 // ── reusable list ──
 function DataList({ table, render, what, order }: {
@@ -13,53 +14,20 @@ function DataList({ table, render, what, order }: {
   return <div className="list">{data.map((r) => <div className="item" key={r.id}>{render(r)}</div>)}</div>;
 }
 
-// ── 1 + Command Center (Hermes plain-language operator) ──
-const CMD_CATEGORIES: Record<string, string> = {
-  system_status: 'Summarize current system status',
-  monetization_review: 'Review monetization opportunities',
-  opportunity_research: 'Research a new money opportunity',
-  creative_campaign: 'Plan a creative campaign',
-  approval_review: "What's waiting for my approval?",
-  trading_research: 'Research a trading strategy',
-  seo_recommendation: 'Find SEO/content opportunities',
-  ops_diagnostic: 'Run an ops diagnostic',
-};
+// ── Command Center (Hermes — conversation-first) ──
+interface ChatMsg { role: 'user' | 'hermes'; text: string; meta?: string; }
 
-function classify(text: string): string {
-  const t = text.toLowerCase();
-  if (/approve|approval|review queue/.test(t)) return 'approval_review';
-  if (/money|monetiz|offer|revenue|\$/.test(t)) return 'monetization_review';
-  if (/opportunit|idea|repo|video|transcript/.test(t)) return 'opportunity_research';
-  if (/post|reel|campaign|creative|content|caption/.test(t)) return 'creative_campaign';
-  if (/trade|trading|strategy|backtest|oanda/.test(t)) return 'trading_research';
-  if (/seo|keyword|search console|rank/.test(t)) return 'seo_recommendation';
-  if (/ops|incident|health|broken|fail/.test(t)) return 'ops_diagnostic';
-  return 'system_status';
-}
+const PLACEHOLDER =
+  "Talk to Hermes naturally… e.g. ‘Good morning’, ‘What do you think about GoClear?’, or ‘Switch to Advisor Mode and check Nexus.’";
 
 export function CommandCenter({ email }: { email: string | null }) {
+  const [mode, setMode] = useState<HermesMode>('interview');     // DEFAULT: interview
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const events = useData<Row[]>(() => listTable('nexus_events', { limit: 8 }), []);
-  const jobs = useData<Row[]>(() => listTable('agent_jobs', { limit: 6 }), []);
-  const [last, setLast] = useState<{ category: string; reply: string } | null>(null);
-
-  async function send(t?: string) {
-    const content = (t ?? text).trim();
-    if (!content || busy) return;
-    setBusy(true);
-    const category = classify(content);
-    const jobId = await createJob({ lane: 'communication', job_type: `hermes_${category}`, status: 'stubbed', input: { command: content, requested_by: email } });
-    await createEvent({ lane: 'communication', action: 'hermes_command', status: 'pending', title: content.slice(0, 80), summary: `Routed to ${category}`, job_id: jobId, payload: { category } });
-    setLast({
-      category,
-      reply: `Got it. I read this as a **${category.replace('_', ' ')}** request. I've queued a job (no external action taken). `
-        + `When the executor + model route for this task type are wired, I'll do the work and report receipts here. `
-        + `I won't pretend work happened — right now this is a queued job, not a finished result.`,
-    });
-    setText(''); setBusy(false);
-    events.reload(); jobs.reload();
-  }
+  const [showAware, setShowAware] = useState(false);             // awareness collapsed by default
+  const [messages, setMessages] = useState<ChatMsg[]>([
+    { role: 'hermes', text: "Hi Ray — I'm in Interview Mode, so this is just a normal conversation. I won't touch Nexus unless you switch me to Advisor or Operator Mode." },
+  ]);
 
   const aware = useData<{ approvals: number; jobs: number; incidents: number; campaigns: number; receipts: number }>(
     async () => ({
@@ -70,52 +38,85 @@ export function CommandCenter({ email }: { email: string | null }) {
       receipts: (await listTable('social_publish_receipts', { limit: 200 })).length,
     }), { approvals: 0, jobs: 0, incidents: 0, campaigns: 0, receipts: 0 });
 
+  function push(m: ChatMsg) { setMessages((prev) => [...prev, m]); }
+
+  async function send() {
+    const content = text.trim();
+    if (!content || busy) return;
+    setBusy(true);
+    push({ role: 'user', text: content });
+    setText('');
+
+    // Explicit mode switch — never touches Nexus, just changes the conversation mode.
+    const target = detectModeSwitch(content);
+    if (target) {
+      setMode(target);
+      push({ role: 'hermes', text: `Switched to ${target[0].toUpperCase() + target.slice(1)} Mode — ${MODE_DESC[target]}.`, meta: 'mode change' });
+      setBusy(false);
+      return;
+    }
+
+    const plan = planResponse(content, mode, aware.data);
+    // Jobs are created ONLY in Operator Mode for action/read intents. Casual/general/opinion/
+    // current-info never queue anything in any mode.
+    if (plan.allowJob && mode === 'operator') {
+      const jobId = await createJob({ lane: 'communication', job_type: 'hermes_command', status: 'queued', input: { command: content, requested_by: email } });
+      await createEvent({ lane: 'communication', action: 'hermes_command', status: 'pending', title: content.slice(0, 80), summary: `operator: ${plan.intent}`, job_id: jobId, payload: { intent: plan.intent } });
+      push({ role: 'hermes', text: plan.reply, meta: 'operator · gated job queued' });
+    } else {
+      push({ role: 'hermes', text: plan.reply, meta: plan.suggestMode ? `suggests: ${plan.suggestMode} mode` : `${plan.intent} · no Nexus action` });
+    }
+    setBusy(false);
+  }
+
+  function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  }
+
   return (
     <>
-      <div className="note">Hermes is Ray's private advisor. It can recommend and queue work, but it cannot publish, send, trade, or deploy without approvals and runner gates. Client agents are separate: Supabase-approved-knowledge only — no web, no external API by default. Hermes can route tasks, but external model calls are off by default; sensitive GoClear/client/credit/funding data cannot go to public/free cloud routes; manual Claude/OpenCode/Codex packet generation is supported.</div>
-      <SectionTitle>Hermes system awareness</SectionTitle>
-      <div className="grid">
-        <Stat title="Pending approvals" value={aware.data.approvals} />
-        <Stat title="Queued jobs" value={aware.data.jobs} />
-        <Stat title="Open incidents" value={aware.data.incidents} />
-        <Stat title="Active campaigns" value={aware.data.campaigns} />
-        <Stat title="Publish receipts" value={aware.data.receipts} />
-        <Stat title="Safety" value="gated" sub="no publish/send/trade/deploy without approval" />
-      </div>
-      <div className="card">
-        <h3>Hermes — plain-language operator</h3>
-        <textarea className="cmd" placeholder="Tell Hermes what you want in normal words… e.g. “what should we do to make money this week?”"
-          value={text} onChange={(e) => setText(e.target.value)} />
-        <div className="chips">
-          {Object.entries(CMD_CATEGORIES).map(([k, label]) => (
-            <button className="chip" key={k} onClick={() => send(label)} disabled={busy}>{label}</button>
-          ))}
+      {/* Mode selector + current mode */}
+      <div className="card" style={{ marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['interview', 'advisor', 'operator'] as HermesMode[]).map((m) => (
+              <button key={m} className={`tab ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
+                {m[0].toUpperCase() + m.slice(1)}
+              </button>
+            ))}
+          </div>
+          <button className="btn ghost" onClick={() => setShowAware((s) => !s)}>{showAware ? 'Hide' : 'Show'} system awareness</button>
         </div>
-        <button className="btn" onClick={() => send()} disabled={busy || !text.trim()}>{busy ? 'Routing…' : 'Send to Hermes'}</button>
-        {last && (
-          <div className="hermes">
-            <Pill status="info" label={last.category.replace('_', ' ')} />
-            <div className="body" style={{ marginTop: 6 }}>{last.reply}</div>
-            <div className="meta" style={{ marginTop: 6 }}>Safety: queued a job + ledger event only. No publish, no trade, no send.</div>
+        <div className="meta muted" style={{ marginTop: 8 }}>
+          Current mode: <b style={{ color: 'var(--text)' }}>{mode}</b> — {MODE_DESC[mode]}.
+          {mode === 'interview' && ' Conversation only; I won’t create jobs or read Nexus.'}
+        </div>
+        {showAware && (
+          <div className="meta" style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+            pending approvals {aware.data.approvals} · queued jobs {aware.data.jobs} · open incidents {aware.data.incidents}
+            {' '}· active campaigns {aware.data.campaigns} · publish receipts {aware.data.receipts}
+            <span className="muted"> · safety: no publish/send/trade/deploy without approval</span>
           </div>
         )}
       </div>
 
-      <SectionTitle>Recent jobs</SectionTitle>
-      {jobs.data.length === 0 ? <Empty what="jobs" /> : (
-        <div className="list">{jobs.data.map((j) => (
-          <div className="item" key={j.id}><div className="t">{j.job_type} <Pill status={j.status} /></div>
-            <div className="meta">{j.lane} · {timeAgo(j.created_at)}</div></div>
-        ))}</div>
-      )}
-
-      <SectionTitle>Proof log</SectionTitle>
-      {events.data.length === 0 ? <Empty what="events" /> : (
-        <div className="list">{events.data.map((e) => (
-          <div className="item" key={e.id}><div className="t"><Pill status={e.status} /> {e.title ?? e.action}</div>
-            <div className="meta">{e.lane} · {e.source} · {timeAgo(e.created_at)}</div></div>
-        ))}</div>
-      )}
+      {/* Chat — the main focus of the page */}
+      <div className="card" style={{ minHeight: 360 }}>
+        <h3>Hermes</h3>
+        <div className="list" style={{ marginBottom: 12 }}>
+          {messages.map((m, i) => (
+            <div key={i} className={m.role === 'hermes' ? 'hermes' : 'item'}>
+              <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
+              {m.meta && <div className="meta muted" style={{ marginTop: 4 }}>{m.role === 'hermes' ? 'Hermes' : 'You'} · {m.meta}</div>}
+            </div>
+          ))}
+        </div>
+        <textarea className="cmd" placeholder={PLACEHOLDER} value={text}
+          onChange={(e) => setText(e.target.value)} onKeyDown={handleKey} rows={3} />
+        <div style={{ marginTop: 8 }}>
+          <button className="btn" onClick={send} disabled={busy || !text.trim()}>{busy ? 'Thinking…' : 'Send'}</button>
+        </div>
+      </div>
     </>
   );
 }
