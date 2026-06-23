@@ -69,9 +69,13 @@ def command_ack(job, ctx) -> dict:
     queued_job, approval = None, None
     did_not = ["publish anything", "send Telegram", "trade", "deploy", "call a live model"]
 
-    # Research/strategy/build-prompt/feasibility/transcript/"which AI" → route via the Model Router.
+    # Transcript/idea intake → deterministic intake review (Day 8).
+    INTAKE_RX = (r"transcript|process this (video|idea)|where does this fit|what should nexus do with|"
+                 r"is this (useful|a trading idea|hype)|extract the service opportunity")
+    intake_request = bool(re.search(INTAKE_RX, cmd.lower())) and category not in RISKY
+    # Research/strategy/build-prompt/feasibility/"which AI" → route via the Model Router.
     ROUTE_RX = (r"research|strateg|what do you think|review this|summar|build (a )?prompt|"
-                r"run (this|it) on|mac ?mini|local hardware|transcript|which (ai|model|resource)|feasib")
+                r"run (this|it) on|mac ?mini|local hardware|which (ai|model|resource)|feasib")
     route_request = bool(re.search(ROUTE_RX, cmd.lower())) and category not in RISKY
 
     if category in RISKY:
@@ -83,6 +87,14 @@ def command_ack(job, ctx) -> dict:
                 "summary": f"Command: {cmd[:160]}", "payload": {"action": action, "command": cmd, "category": category},
             })
             approval = row[0]["id"] if isinstance(row, list) and row else "created"
+    elif intake_request and agent.get("can_create_jobs"):
+        jt = "service_opportunity_extract" if "service opportunity" in cmd.lower() else "transcript_intake_review"
+        st, row = sb.insert("agent_jobs", {
+            "lane": "hermes", "job_type": jt, "status": "queued",
+            "input": {"source": "hermes_command", "text": cmd, "title": cmd[:80]},
+        })
+        queued_job = row[0]["id"] if isinstance(row, list) and row else "queued"
+        category = jt
     elif route_request and agent.get("can_create_jobs"):
         st, row = sb.insert("agent_jobs", {
             "lane": "hermes", "job_type": "hermes_model_route_decision", "status": "queued",
@@ -104,7 +116,9 @@ def command_ack(job, ctx) -> dict:
     if approval:
         note += f"Because it asks for a public/risky action, I created a PENDING approval (id {approval}) and did nothing else. "
     elif queued_job:
-        qjt = "hermes_model_route_decision" if category == "model_route_request" else JOB_FOR.get(category, "follow_up")
+        qjt = ("hermes_model_route_decision" if category == "model_route_request"
+               else category if category in ("transcript_intake_review", "service_opportunity_extract")
+               else JOB_FOR.get(category, "follow_up"))
         note += f"I queued a safe '{qjt}' job (id {queued_job}) for the runner to execute under gates (dry-run, no external model call). "
     else:
         note += "No executable job applies yet — recommend reviewing or routing. "

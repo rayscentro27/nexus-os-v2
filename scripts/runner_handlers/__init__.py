@@ -6,6 +6,7 @@ from . import creative_handlers as C
 from . import social_handlers as S
 from . import hermes_handlers as H
 from . import ops_handlers as O
+from . import intake_handlers as I
 
 # job_type -> (handler_fn, risky)
 # risky=True means a *real* side effect is possible; the handler still enforces its own gates
@@ -24,6 +25,10 @@ REGISTRY = {
     "orient_intake_event": (H.intake_stub, False),
     "niche_research": (H.intake_stub, False),
     "monetization_review": (H.intake_stub, False),
+    # intake / orientation (Day 8)
+    "transcript_intake_review": (I.transcript_intake_review, False),
+    "claim_risk_classify": (I.claim_risk_classify, False),
+    "service_opportunity_extract": (I.service_opportunity_extract, False),
     # ops
     "ops_diagnostic": (O.ops_diagnostic, False),
     "system_status": (O.system_status, False),

@@ -434,6 +434,34 @@ export function OpsImprovements() {
   );
 }
 
+// ── Intake & Orientation (Day 8) ──
+export function IntakeOrientation() {
+  return (
+    <>
+      <div className="note">Paste videos/transcripts/ideas → Nexus decides what to do (use now / phase 2 / improvement candidate / GoClear test / content / research / park / reject). Deterministic + compliance-gated; no external model calls. High-compliance items (credit/funding/trading) require human review.</div>
+      <SectionTitle>Transcript reviews</SectionTitle>
+      <DataList table="transcript_reviews" what="transcript reviews" render={(r) => (
+        <><div className="t">{r.title} <Pill status={r.decision} /> {r.score != null ? '' : ''}<span className="pill info" style={{ marginLeft: 6 }}>{r.category}</span></div>
+          <div className="meta">use {r.usefulness_score} · money {r.money_now_score} · auto {r.automation_score} · risk {r.risk_score} · compliance: <b style={{ color: (r.compliance_risk === 'very_high' || r.compliance_risk === 'high') ? 'var(--bad)' : 'var(--muted)' }}>{r.compliance_risk}</b></div>
+          <div className="body" style={{ opacity: .85 }}>{r.recommended_action}</div>
+          {r.claim_flags?.length > 0 && <div className="meta" style={{ color: 'var(--warn)' }}>claim flags: {(r.claim_flags || []).join(', ')}</div>}</>
+      )} />
+      <SectionTitle>Claim risk / compliance queue</SectionTitle>
+      <DataList table="orientation_notes" what="orientation notes" render={(o) => (
+        <><div className="t">{o.summary} <Pill status={o.decision} /></div>
+          <div className="meta">{o.category}{o.risk_flags?.length ? ` · flags: ${(o.risk_flags || []).join(', ')}` : ''}</div>
+          {o.reason && <div className="body" style={{ opacity: .8 }}>{o.reason}</div>}</>
+      )} />
+      <SectionTitle>Intake inbox</SectionTitle>
+      <DataList table="intake_events" what="intake events" render={(e) => (
+        <><div className="t">{e.title} <Pill status={e.status} /></div>
+          <div className="meta">{e.source_type}{e.category ? ` · ${e.category}` : ''} · {timeAgo(e.created_at)}</div></>
+      )} />
+      <div className="note">Improvement candidates (AI resource / GoClear / trading / workforce) appear in <b>Ops &amp; Improvements</b>; service opportunities appear in <b>Opportunity Lab</b>. Manual run order: <code>capture_intake_event.py</code> → <code>review_transcript.py</code> → <code>extract_service_opportunity.py</code> (or queue jobs for the runner).</div>
+    </>
+  );
+}
+
 // ── Events Feed ──
 export function EventsFeed() {
   return (
