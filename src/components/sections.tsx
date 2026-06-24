@@ -7,9 +7,9 @@ import {
   type HermesMode, type ProposedTask,
 } from '../lib/hermesIntent';
 import { containsSensitive } from '../lib/dataScopes';
-import { hermesChat, publicSearch, CHAT_NOT_CONFIGURED_MSG, SEARCH_NOT_CONFIGURED_MSG } from '../lib/hermesProviders';
-import { readLatestReport } from '../lib/reportReader';
-import { createTaskRequest } from '../lib/taskRequests';
+import { hermesChat, publicSearch, CHAT_NOT_CONFIGURED_MSG, SEARCH_NOT_CONFIGURED_MSG, type HermesContext } from '../lib/hermesProviders';
+import { readLatestReport, summaryForPrompt } from '../lib/reportReader';
+import { createTaskRequest, latestStatusForPrompt } from '../lib/taskRequests';
 
 // ── reusable list ──
 function DataList({ table, render, what, order }: {
@@ -126,7 +126,16 @@ export function CommandCenter({ email }: { email: string | null }) {
       }
 
       // Default: normal conversation via the real chat provider (or not-configured).
-      const res = await hermesChat(content, mode);
+      // Assemble a small, safe (public/internal_summary only) context for the model.
+      const a = aware.data;
+      const [report, taskStatus] = await Promise.all([summaryForPrompt(), latestStatusForPrompt()]);
+      const ctx: HermesContext = {
+        pending: pendingTask ? pendingTask.task_type : undefined,
+        facts: `approvals_pending=${a.approvals}, queued_jobs=${a.jobs}, open_incidents=${a.incidents}, active_campaigns=${a.campaigns}`,
+        report: report || undefined,
+        taskStatus: taskStatus || undefined,
+      };
+      const res = await hermesChat(content, mode, ctx);
       if (res.blocked) { push({ role: 'hermes', text: res.text, meta: 'firewall · refused' }); return; }
       push({ role: 'hermes', text: res.configured ? res.text : CHAT_NOT_CONFIGURED_MSG, meta: res.configured ? 'chat provider' : 'chat not configured' });
     } finally {

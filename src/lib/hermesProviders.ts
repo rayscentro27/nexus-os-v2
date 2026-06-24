@@ -24,13 +24,34 @@ export interface ProviderResult {
 
 const NOT_CONFIGURED: ProviderResult = { configured: false, text: '' };
 
+/** Safe, internal_summary-only context the model may see (no private data). */
+export interface HermesContext {
+  pending?: string;     // task_type awaiting approval, or undefined
+  facts?: string;       // safe counts snapshot
+  report?: string;      // compact safe report summary
+  taskStatus?: string;  // redacted latest task status
+}
+
+/** Drop any context field that trips the firewall — belt-and-suspenders before it leaves the browser. */
+function sanitizeContext(ctx?: HermesContext): HermesContext | undefined {
+  if (!ctx) return undefined;
+  const out: HermesContext = {};
+  for (const k of ['pending', 'facts', 'report', 'taskStatus'] as const) {
+    const v = ctx[k];
+    if (v && !containsSensitive(v)) out[k] = v;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** Conversational reply from the real chat provider (server-side), or not-configured. */
-export async function hermesChat(message: string, mode: string): Promise<ProviderResult> {
+export async function hermesChat(message: string, mode: string, context?: HermesContext): Promise<ProviderResult> {
   if (!CHAT_ENABLED || !supabase) return NOT_CONFIGURED;
   if (containsSensitive(message))
     return { configured: true, blocked: true, text: "I won't send that to an external model — it looks like private data." };
   try {
-    const { data, error } = await supabase.functions.invoke('hermes-chat', { body: { message, mode } });
+    const { data, error } = await supabase.functions.invoke('hermes-chat', {
+      body: { message, mode, context: sanitizeContext(context) },
+    });
     if (error || !data || data.configured === false) return NOT_CONFIGURED;
     return { configured: true, text: String(data.reply ?? '') };
   } catch {

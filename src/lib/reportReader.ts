@@ -37,3 +37,26 @@ export async function readLatestReport(): Promise<ReportSummary> {
   lines.push('Want me to explain any of these in more detail, or pull public context on what a healthy benchmark looks like? (I won’t send these private numbers to any public source.)');
   return { ok: true, text: lines.join('\n') };
 }
+
+/**
+ * Compact, safe one-liner for the model's dynamic context block (internal_summary only).
+ * Same safe sources as readLatestReport — no private data. Returns '' when nothing is available.
+ */
+export async function summaryForPrompt(): Promise<string> {
+  const [events, health] = await Promise.all([
+    listTable('nexus_events', { limit: 3, order: 'created_at' }),
+    listTable('system_health', { limit: 6, order: 'created_at' }),
+  ]);
+  if (events.length === 0 && health.length === 0) return '';
+  const parts: string[] = [];
+  if (health.length) {
+    const seen = new Set<string>();
+    const hs = health
+      .filter((r: Row) => { const c = String(r.component ?? r.area ?? 'system'); if (seen.has(c)) return false; seen.add(c); return true; })
+      .slice(0, 4)
+      .map((r: Row) => `${r.component ?? r.area ?? 'system'}=${r.status ?? 'ok'}`);
+    if (hs.length) parts.push(`health ${hs.join(', ')}`);
+  }
+  if (events.length) parts.push(`recent ${events.map((e: Row) => e.action ?? 'event').slice(0, 3).join('/')}`);
+  return parts.join('; ').slice(0, 300);
+}

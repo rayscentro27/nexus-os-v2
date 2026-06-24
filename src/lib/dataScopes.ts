@@ -29,7 +29,7 @@ export function hermesCanRead(s: Sensitivity): boolean {
  * Order does not matter; the first match is returned for labelling.
  */
 const SENSITIVE_PATTERNS: { re: RegExp; label: Sensitivity }[] = [
-  { re: /\bssn\b|social security (number|#|no\b)/i, label: 'customer_private' },
+  { re: /\bssns?\b|social security (number|#|no\b)/i, label: 'customer_private' },
   { re: /credit report|full credit (file|report)|fico (file|report|details)/i, label: 'credit_sensitive' },
   { re: /bank statement|account number|routing number|bank balance/i, label: 'customer_private' },
   { re: /tax (return|document|transcript)|w-?2\b|1099\b/i, label: 'customer_private' },
