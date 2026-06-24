@@ -32,6 +32,7 @@ export type HermesIntent =
   | 'privileged_action'   // reset password / publish / send / trade / deploy → propose private task
   | 'public_action'       // build a public-safe thing (landing page, content) → propose task
   | 'action_approval'     // Ray approves → create the task_request
+  | 'approval_review'     // review pending approval queue details, read-only
   | 'report_read'         // read + explain a safe Nexus report
   | 'public_info'         // current/public info → needs public search
   | 'conversation';       // normal conversation → chat provider
@@ -96,8 +97,15 @@ function isPublicInfo(t: string): boolean {
   return /\bexamples? of\b|\bcompetitor research\b|\bbusiness research\b|\bcompare .*(tools?|platforms?|options?|apps?)\b|\bbest (tools?|platforms?|apps?) for\b|\blanding page examples?\b/.test(t);
 }
 
+function isApprovalReview(t: string): boolean {
+  return /\b(approvals? waiting|pending approvals?|review (my |all )?approvals?|walk me through approvals?|show me approval|what needs my approval|what should i approve|approval queue|approve queue)\b/.test(t);
+}
+
 export function classify(text: string): HermesIntent {
   const t = (text || '').toLowerCase().trim();
+
+  // 0. Read-only approval queue review. This must not execute approval decisions.
+  if (isApprovalReview(t)) return 'approval_review';
 
   // 1. Privileged action verbs first — so "reset Jane's password" is an action (private worker),
   //    not a request to reveal a password. Approval of a privileged action creates the task.

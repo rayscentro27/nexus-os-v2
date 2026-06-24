@@ -17,6 +17,16 @@ import { containsSensitive } from '../lib/dataScopes';
 import { hermesChat, publicSearch, CHAT_NOT_CONFIGURED_MSG, SEARCH_NOT_CONFIGURED_MSG, type HermesContext, type HermesHistoryTurn, type HermesPendingActionContext } from '../lib/hermesProviders';
 import { readLatestReport, summaryForPrompt } from '../lib/reportReader';
 import { createTaskRequest, latestStatusForPrompt } from '../lib/taskRequests';
+import {
+  approvalRefFromPrompt,
+  findApprovalReview,
+  formatApprovalReviewDetail,
+  formatApprovalReviewList,
+  isApprovalDirectAction,
+  isApprovalReviewPrompt,
+  loadPendingApprovalReviews,
+  type ApprovalReviewItem,
+} from '../lib/approvalReview';
 
 // ── reusable list ──
 function DataList({ table, render, what, order }: {
@@ -98,6 +108,7 @@ export function CommandCenter({ email }: { email: string | null }) {
   const [showAware, setShowAware] = useState(false);              // awareness collapsed by default
   const [pendingTask, setPendingTask] = useState<ProposedTask | null>(null); // awaiting Ray's approval
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [approvalReviewItems, setApprovalReviewItems] = useState<ApprovalReviewItem[]>([]);
   const [messages, setMessages] = useState<ChatMsg[]>([
     { role: 'hermes', text: "Hi Ray — I'm a conversational advisor. I can talk, look up public info, read safe Nexus reports, and (only after you approve) set up task requests. I never see SSNs, credit reports, passwords, or secrets, and I never publish/send/trade/deploy directly." },
   ]);
@@ -217,6 +228,22 @@ export function CommandCenter({ email }: { email: string | null }) {
         return;
       }
 
+      if (isApprovalDirectAction(content)) {
+        push({ role: 'hermes', text: 'I can review approvals and explain the risk, but I cannot approve, reject, publish, send, trade, deploy, or set publish_enabled from chat. Use the Approvals tab buttons after reviewing the preview card.', meta: 'approval review · read only' });
+        return;
+      }
+
+      const requestedApprovalRef = approvalRefFromPrompt(content);
+      if (requestedApprovalRef && approvalReviewItems.length > 0) {
+        const item = findApprovalReview(approvalReviewItems, requestedApprovalRef);
+        push({
+          role: 'hermes',
+          text: item ? formatApprovalReviewDetail(item, approvalReviewItems.indexOf(item) + 1) : `I don’t see approval ${requestedApprovalRef} in the current pending approval review list. Ask me to review approvals again to refresh the queue.`,
+          meta: 'approval review · read only',
+        });
+        return;
+      }
+
       if (pendingAction && isCancel(content)) {
         setPendingAction(null);
         setPendingTask(null);
@@ -237,6 +264,19 @@ export function CommandCenter({ email }: { email: string | null }) {
       if (pendingTask && isApproval(content)) { await fileTask(pendingTask); return; }
 
       const intent = classify(content);
+
+      if (intent === 'approval_review' || isApprovalReviewPrompt(content)) {
+        const review = await loadPendingApprovalReviews(20);
+        setApprovalReviewItems(review.items);
+        const ref = approvalRefFromPrompt(content);
+        const item = ref ? findApprovalReview(review.items, ref) : null;
+        push({
+          role: 'hermes',
+          text: item ? formatApprovalReviewDetail(item, review.items.indexOf(item) + 1) : formatApprovalReviewList(review.items),
+          meta: review.query.errorMessage ? `approval review · ${review.query.status}` : 'approval review · read only',
+        });
+        return;
+      }
 
       if (intent === 'sensitive_refusal') {
         push({ role: 'hermes', text: "I can't help with that — it would mean viewing private data (SSN, full credit report, bank/tax docs, passwords, tokens, or secrets). I never read that kind of data. If you want an action taken with it, I can set up a private task request for an internal worker instead.", meta: 'firewall · refused' });
@@ -419,18 +459,20 @@ export function AgentJobsView() {
 
 // ── Approval Center ──
 export function ApprovalCenter({ email }: { email: string | null }) {
-  const { data: diag, reload } = useData<{ approvals: TableQueryResult; admin: AdminDiagnostic }>(
-    async () => ({
-      approvals: await listTableDetailed('approvals', { limit: 30 }),
-      admin: await getAdminDiagnostic(),
-    }),
+  const { data: diag, reload } = useData<{ approvals: TableQueryResult; admin: AdminDiagnostic; reviews: ApprovalReviewItem[] }>(
+    async () => {
+      const [review, admin] = await Promise.all([loadPendingApprovalReviews(30), getAdminDiagnostic()]);
+      return { approvals: review.query, reviews: review.items, admin };
+    },
     {
       approvals: { ...emptyTableResult('approvals'), filter: 'limit=30 order=created_at.desc' },
       admin: { found: null, active: null, role: null, status: 'unknown', errorMessage: null },
+      reviews: [],
     },
     email ?? 'anonymous',
   );
   const data = diag.approvals.data;
+  const reviewById = new Map(diag.reviews.map((item) => [item.id, item]));
   const [fb, setFb] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string>('');
   const [jobMsg, setJobMsg] = useState<Record<string, string>>({});
@@ -486,8 +528,7 @@ export function ApprovalCenter({ email }: { email: string | null }) {
           <div className="t">{a.title ?? a.item_type} <Pill status={a.status} />{isSocial && <span className="pill info" style={{ marginLeft: 6 }}>facebook</span>}</div>
           <div className="meta">{a.lane} · {a.item_type} · {timeAgo(a.created_at)}{a.approved_by ? ` · by ${a.approved_by}` : ''}{isSocial ? ' · target: Clear Credentials (131069194210954)' : ''}</div>
           {a.summary && <div className="body">{a.summary}</div>}
-          {a.payload?.caption && <div className="body">“{a.payload.caption}”</div>}
-          {a.payload?.preview_url && <a href={a.payload.preview_url} target="_blank" rel="noreferrer">preview asset ↗</a>}
+          <ApprovalPreviewCard item={reviewById.get(String(a.id)) ?? null} approval={a} />
           {isSocial && a.status === 'approved' && (
             <div style={{ marginTop: 8 }}>
               <div className="meta" style={{ marginBottom: 6 }}>Ready for dry-run publish job. Real publish stays gated (token + publish_enabled + server script).</div>
@@ -528,6 +569,74 @@ function ApprovalDiagnosticPanel({ approvals, admin }: { approvals: TableQueryRe
       <div className="meta">Table queried: {approvals.table} · filter: {approvals.filter} · count: {approvals.resultCount}</div>
       <div className="meta">Query status: {statusLabel(approvals.status)}{approvals.errorCategory ? ` · category ${statusLabel(approvals.errorCategory)}` : ''}</div>
       {err && <div className="meta">Safe error: {err}</div>}
+    </div>
+  );
+}
+
+function isImageUrl(url: string): boolean {
+  return /\.(png|jpe?g|gif|webp|avif|svg)(\?.*)?$/i.test(url);
+}
+
+function isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url);
+}
+
+function ApprovalPreviewCard({ item, approval }: { item: ApprovalReviewItem | null; approval: Row }) {
+  const p = item?.preview;
+  const payload = approval.payload || {};
+  const caption = p?.caption || p?.packageCopy || p?.body || payload.caption || payload.copy || payload.body || payload.text;
+  const urls = [
+    p?.imageUrl,
+    p?.videoUrl,
+    p?.thumbnailUrl,
+    p?.assetUrl,
+    p?.previewUrl,
+    p?.landingPageUrl,
+  ].filter((u): u is string => Boolean(u));
+  const primaryUrl = urls[0];
+  const platform = p?.platform || payload.platform;
+  const target = p?.targetAccount || payload.account_name || payload.account_id;
+  const cta = p?.cta || payload.cta || payload.cta_url;
+  const risk = p?.riskNotes?.filter(Boolean) ?? [];
+  const missing = p?.missingFields ?? [];
+  const packageType = p?.packageType || (approval.item_type === 'publish_package' ? 'manual_publish_package' : null);
+
+  return (
+    <div className="card" style={{ marginTop: 10, padding: 12 }}>
+      <h3 style={{ marginBottom: 6 }}>Preview</h3>
+      <div className="meta">
+        {platform ? `platform: ${platform}` : 'platform: unknown'}
+        {target ? ` · target: ${target}` : ''}
+        {packageType ? ` · package: ${packageType}` : ''}
+        {p?.assetType ? ` · asset: ${p.assetType}` : ''}
+        {p?.score ? ` · score: ${p.score}` : ''}
+      </div>
+
+      {caption ? (
+        <div className="body" style={{ marginTop: 8, whiteSpace: 'pre-wrap' }}>{String(caption)}</div>
+      ) : (
+        <div className="empty" style={{ marginTop: 8 }}>Preview not available. Missing: {missing.join(', ') || 'caption/body/preview_url'}.</div>
+      )}
+
+      {cta && <div className="meta" style={{ marginTop: 8, color: 'var(--accent)' }}>CTA: {String(cta)}</div>}
+
+      {primaryUrl && (
+        <div style={{ marginTop: 10 }}>
+          {isImageUrl(primaryUrl) && <img src={primaryUrl} alt="Approval preview" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />}
+          {isVideoUrl(primaryUrl) && <video src={primaryUrl} controls preload="metadata" style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />}
+          {!isImageUrl(primaryUrl) && !isVideoUrl(primaryUrl) && <a className="btn ghost" href={primaryUrl} target="_blank" rel="noreferrer">Open preview</a>}
+        </div>
+      )}
+
+      {p?.landingPageUrl && (
+        <div style={{ marginTop: 8 }}>
+          <a className="btn ghost" href={p.landingPageUrl} target="_blank" rel="noreferrer">Open landing page preview</a>
+        </div>
+      )}
+
+      {risk.length > 0 && <div className="meta" style={{ marginTop: 8 }}>Risk/compliance: {risk.join(' · ')}</div>}
+      {item?.recommendation && <div className="meta" style={{ marginTop: 8 }}>Hermes review note: {item.recommendation}</div>}
+      {missing.length > 0 && caption && <div className="meta muted" style={{ marginTop: 8 }}>Missing preview fields: {missing.join(', ')}</div>}
     </div>
   );
 }
