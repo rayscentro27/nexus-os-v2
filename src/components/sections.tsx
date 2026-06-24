@@ -1,7 +1,14 @@
 import { useState } from 'react';
-import { listTable, type Row } from '../services/db';
+import {
+  getAdminDiagnostic,
+  listTable,
+  listTableDetailed,
+  type AdminDiagnostic,
+  type Row,
+  type TableQueryResult,
+} from '../services/db';
 import { createEvent, createJob, decideApproval } from '../lib/ledger';
-import { Card, Stat, Pill, Empty, SectionTitle, timeAgo, useData } from './ui';
+import { Card, Stat, Pill, SectionTitle, timeAgo, useData } from './ui';
 import {
   classify, proposeTask, detectModeSwitch, isApproval, isCancel, isModification, MODE_DESC,
   type HermesMode, type ProposedTask,
@@ -16,9 +23,50 @@ function DataList({ table, render, what, order }: {
   table: string; what: string; order?: string;
   render: (r: Row) => React.ReactNode;
 }) {
-  const { data } = useData<Row[]>(() => listTable(table, { order }), []);
-  if (data.length === 0) return <Empty what={what} />;
-  return <div className="list">{data.map((r) => <div className="item" key={r.id}>{render(r)}</div>)}</div>;
+  const { data } = useData<TableQueryResult>(() => listTableDetailed(table, { order }), emptyTableResult(table, order));
+  if (data.data.length === 0) return <ConnectionEmpty result={data} what={what} />;
+  return (
+    <>
+      <ConnectionLine result={data} />
+      <div className="list">{data.data.map((r) => <div className="item" key={r.id}>{render(r)}</div>)}</div>
+    </>
+  );
+}
+
+function emptyTableResult(table: string, order?: string): TableQueryResult {
+  return {
+    table,
+    filter: `limit=50 order=${order ?? 'created_at'}.desc`,
+    supabaseConfigured: true,
+    authSessionPresent: false,
+    userEmail: null,
+    userIdPrefix: null,
+    status: 'no_authenticated_session',
+    resultCount: 0,
+    errorCategory: null,
+    errorMessage: null,
+    data: [],
+  };
+}
+
+function statusLabel(status: string): string {
+  return status.replaceAll('_', ' ');
+}
+
+function ConnectionLine({ result }: { result: TableQueryResult }) {
+  return <div className="meta">Connection: {statusLabel(result.status)} · {result.table} · {result.resultCount} rows</div>;
+}
+
+function ConnectionEmpty({ result, what }: { result: TableQueryResult; what: string }) {
+  if (result.status === 'no_records') {
+    return <div className="empty">Connected to {result.table}, but no {what} records matched. Filter: {result.filter}.</div>;
+  }
+  const message = result.errorMessage ? ` Safe error: ${result.errorMessage}` : '';
+  return (
+    <div className="empty">
+      No {what} visible. Status: {statusLabel(result.status)}. Table: {result.table}. Filter: {result.filter}.{message}
+    </div>
+  );
 }
 
 // ── Command Center (Hermes — conversation-first) ──
@@ -316,20 +364,26 @@ function labelFor(m: HermesMode): string {
 
 // ── System Health ──
 export function SystemHealth() {
-  const { data } = useData<Row[]>(() => listTable('system_health', { limit: 100 }), []);
+  const { data: result } = useData<TableQueryResult>(() => listTableDetailed('system_health', { limit: 100 }), { ...emptyTableResult('system_health'), filter: 'limit=100 order=created_at.desc' });
+  const data = result.data;
   const latest = new Map<string, Row>();
   for (const r of data) if (!latest.has(r.component)) latest.set(r.component, r);
   const rows = [...latest.values()];
-  if (rows.length === 0) return <Empty what="health rows" />;
-  return <div className="grid">{rows.map((r) => (
-    <div className="card" key={r.component}><h3>{r.component.replaceAll('_', ' ')}</h3>
-      <Pill status={r.status} /><div className="meta muted" style={{ marginTop: 8 }}>{r.summary}</div></div>
-  ))}</div>;
+  if (rows.length === 0) return <ConnectionEmpty result={result} what="health rows" />;
+  return (
+    <>
+      <ConnectionLine result={result} />
+      <div className="grid">{rows.map((r) => (
+        <div className="card" key={r.component}><h3>{r.component.replaceAll('_', ' ')}</h3>
+          <Pill status={r.status} /><div className="meta muted" style={{ marginTop: 8 }}>{r.summary}</div></div>
+      ))}</div>
+    </>
+  );
 }
 
 // ── Agent Jobs (+ registry + runner) ──
 export function AgentJobsView() {
-  const agents = useData<Row[]>(() => listTable('agent_registry', { order: 'agent_key', ascending: true }), []);
+  const agents = useData<TableQueryResult>(() => listTableDetailed('agent_registry', { order: 'agent_key', ascending: true }), { ...emptyTableResult('agent_registry', 'agent_key'), filter: 'limit=50 order=agent_key.asc' });
   return (
     <>
       <div className="card" style={{ marginBottom: 6 }}>
@@ -342,8 +396,8 @@ export function AgentJobsView() {
         </div>
         <div className="meta muted" style={{ marginTop: 6 }}>Default is dry-run. Real Facebook publish needs --real-publish + all Day 3 gates. Unknown job types are blocked, not guessed. The frontend only queues jobs.</div>
       </div>
-      <SectionTitle count={agents.data.length}>Agent permission matrix</SectionTitle>
-      <div className="grid two">{agents.data.map((a) => (
+      <SectionTitle count={agents.data.resultCount}>Agent permission matrix</SectionTitle>
+      {agents.data.data.length === 0 ? <ConnectionEmpty result={agents.data} what="agent registry rows" /> : <div className="grid two">{agents.data.data.map((a) => (
         <div className="card" key={a.id}>
           <h3>{a.name} <Pill status={a.agent_class || 'worker'} /></h3>
           <div className="meta muted" style={{ marginBottom: 6 }}>audience: {a.audience_type || 'internal'} · {a.role}</div>
@@ -351,7 +405,7 @@ export function AgentJobsView() {
           <div className="meta muted" style={{ marginTop: 4 }}>cost: {a.cost_policy || '—'} · compliance: {a.compliance_policy || '—'}</div>
           {a.requires_approval_for?.length > 0 && <div className="meta muted">approval required for: {(a.requires_approval_for || []).join(', ')}</div>}
         </div>
-      ))}</div>
+      ))}</div>}
       <SectionTitle>Jobs</SectionTitle>
       <DataList table="agent_jobs" what="jobs" render={(j) => (
         <><div className="t">{j.job_type} <Pill status={j.status} />{j.attempts ? <span className="muted"> · attempt {j.attempts}/{j.max_attempts ?? 1}</span> : null}</div>
@@ -365,7 +419,18 @@ export function AgentJobsView() {
 
 // ── Approval Center ──
 export function ApprovalCenter({ email }: { email: string | null }) {
-  const { data, reload } = useData<Row[]>(() => listTable('approvals', { limit: 30 }), []);
+  const { data: diag, reload } = useData<{ approvals: TableQueryResult; admin: AdminDiagnostic }>(
+    async () => ({
+      approvals: await listTableDetailed('approvals', { limit: 30 }),
+      admin: await getAdminDiagnostic(),
+    }),
+    {
+      approvals: { ...emptyTableResult('approvals'), filter: 'limit=30 order=created_at.desc' },
+      admin: { found: null, active: null, role: null, status: 'unknown', errorMessage: null },
+    },
+    email ?? 'anonymous',
+  );
+  const data = diag.approvals.data;
   const [fb, setFb] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState<string>('');
   const [jobMsg, setJobMsg] = useState<Record<string, string>>({});
@@ -397,17 +462,24 @@ export function ApprovalCenter({ email }: { email: string | null }) {
     setBusy('');
   }
 
+  const panel = <ApprovalDiagnosticPanel approvals={diag.approvals} admin={diag.admin} />;
+
   if (data.length === 0) return (
-    <div className="empty">
-      No approvals are visible for your session.
-      {email
-        ? ' If you expect approvals here, your admin sign-in may have expired — sign out, sign back in, and reload. (Approvals are admin-only via row-level security.)'
-        : ' Sign in as an admin to view approvals.'}
-    </div>
+    <>
+      {panel}
+      <div className="empty">
+        No approvals are visible for this session. Status: {statusLabel(diag.approvals.status)}.
+        {diag.admin.status === 'not_found'
+          ? ' The signed-in user is not mapped in admin_users, so admin-only RLS will hide approvals.'
+          : diag.approvals.errorMessage ? ` Safe error: ${diag.approvals.errorMessage}` : ''}
+      </div>
+    </>
   );
   return (
-    <div className="list">
-      {data.map((a) => {
+    <>
+      {panel}
+      <div className="list">
+        {data.map((a) => {
         const isSocial = a.item_type === 'social_publish' || a.payload?.platform === 'facebook';
         return (
         <div className="item" key={a.id}>
@@ -437,7 +509,25 @@ export function ApprovalCenter({ email }: { email: string | null }) {
           )}
         </div>
         );
-      })}
+        })}
+      </div>
+    </>
+  );
+}
+
+function ApprovalDiagnosticPanel({ approvals, admin }: { approvals: TableQueryResult; admin: AdminDiagnostic }) {
+  const adminFound = admin.found == null ? 'unknown' : admin.found ? 'yes' : 'no';
+  const adminSuffix = admin.role ? ` · role ${admin.role}` : '';
+  const err = approvals.errorMessage || admin.errorMessage;
+  return (
+    <div className="note" style={{ marginBottom: 12 }}>
+      <div className="t">Approvals connection diagnostics</div>
+      <div className="meta">Supabase configured: {approvals.supabaseConfigured ? 'yes' : 'no'} · Auth session: {approvals.authSessionPresent ? 'yes' : 'no'}</div>
+      <div className="meta">User: {approvals.userEmail ?? 'none'} · id prefix: {approvals.userIdPrefix ?? 'none'}</div>
+      <div className="meta">Admin mapping found: {adminFound}{admin.active != null ? ` · active ${admin.active ? 'yes' : 'no'}` : ''}{adminSuffix} · admin check {statusLabel(admin.status)}</div>
+      <div className="meta">Table queried: {approvals.table} · filter: {approvals.filter} · count: {approvals.resultCount}</div>
+      <div className="meta">Query status: {statusLabel(approvals.status)}{approvals.errorCategory ? ` · category ${statusLabel(approvals.errorCategory)}` : ''}</div>
+      {err && <div className="meta">Safe error: {err}</div>}
     </div>
   );
 }
@@ -640,15 +730,15 @@ export function SeoOs() {
 
 // ── Model Router ──
 export function ModelRouter() {
-  const providers = useData<Row[]>(() => listTable('model_providers', { order: 'provider_key', ascending: true }), []);
+  const providers = useData<TableQueryResult>(() => listTableDetailed('model_providers', { order: 'provider_key', ascending: true }), { ...emptyTableResult('model_providers', 'provider_key'), filter: 'limit=50 order=provider_key.asc' });
   return (
     <>
       <div className="note">Free cloud models handle public/non-sensitive work. Sensitive client/credit/financial/secret data must use local/private or manual premium routes — never free cloud.</div>
-      <SectionTitle count={providers.data.length}>Providers</SectionTitle>
-      <div className="grid">{providers.data.map((p) => (
+      <SectionTitle count={providers.data.resultCount}>Providers</SectionTitle>
+      {providers.data.data.length === 0 ? <ConnectionEmpty result={providers.data} what="model providers" /> : <div className="grid">{providers.data.data.map((p) => (
         <div className="card" key={p.id}><h3>{p.name}</h3><Pill status={p.enabled ? 'enabled' : 'registered'} />
           <div className="meta muted" style={{ marginTop: 6 }}>{p.provider_type} · privacy: {p.privacy_level} · env: {p.secret_env_name || '—'}</div></div>
-      ))}</div>
+      ))}</div>}
       <SectionTitle>Routes (policy-gated)</SectionTitle>
       <DataList table="model_routes" what="routes" order="priority" render={(r) => (
         <><div className="t">{r.route_key} <Pill status={r.route_type === 'blocked' ? 'failed' : (r.active ? 'active' : 'registered')} label={r.route_type || r.policy} />{!r.active && r.route_type !== 'blocked' && <span className="pill warn" style={{ marginLeft: 6 }}>candidate</span>}</div>
