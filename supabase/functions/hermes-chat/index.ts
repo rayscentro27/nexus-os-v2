@@ -31,16 +31,35 @@ Deno.serve(async (req: Request) => {
     if (provider === 'openrouter') {
       const key = Deno.env.get('OPENROUTER_API_KEY');
       if (!key) return json({ configured: false });
-      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-        body: JSON.stringify({
-          model: model ?? 'openai/gpt-4o-mini',
-          messages: [{ role: 'system', content: SYSTEM(mode) }, { role: 'user', content: message }],
-        }),
-      });
-      const d = await r.json();
-      return json({ configured: true, reply: d?.choices?.[0]?.message?.content ?? '' });
+      // Try the primary model first, then an optional fallback. A non-2xx response, a provider
+      // error in the body, or an empty reply each count as a miss → try the next model. Provider
+      // error details are never returned to the client (they can leak internals). The message was
+      // already firewall-checked above, so no private data reaches OpenRouter.
+      const models = [model ?? 'openai/gpt-4o-mini', Deno.env.get('HERMES_CHAT_FALLBACK_MODEL')]
+        .filter((m): m is string => Boolean(m && m.trim()));
+      for (const m of models) {
+        try {
+          const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+            body: JSON.stringify({
+              model: m,
+              messages: [{ role: 'system', content: SYSTEM(mode) }, { role: 'user', content: message }],
+            }),
+          });
+          if (!r.ok) continue;                       // HTTP non-2xx → next model
+          const d = await r.json();
+          if (d?.error) continue;                    // provider error in body → next model
+          const reply = d?.choices?.[0]?.message?.content;
+          if (reply && String(reply).trim())
+            return json({ configured: true, reply: String(reply), model: m });
+          // empty / missing reply → next model
+        } catch {
+          continue;                                  // network error → next model
+        }
+      }
+      // All configured models failed — honest unavailable, never fabricated content.
+      return json({ configured: true, reply: "I'm configured, but the chat model is unavailable right now. Please try again shortly." });
     }
 
     if (provider === 'gemini') {
