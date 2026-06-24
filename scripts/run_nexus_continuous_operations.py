@@ -46,6 +46,7 @@ def env_missing(*names: str) -> list[str]:
 
 def secret_post(url: str, body: dict, headers: dict, timeout: int = 30) -> tuple[bool, dict]:
     data = json.dumps(body).encode()
+    headers = {"User-Agent": "nexus-os-v2/1.0", **headers}
     req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     try:
         context = ssl.create_default_context()
@@ -368,10 +369,11 @@ def write_netlify_deploy_package(integrations: dict) -> dict:
         "auto_deploy_assumption": "No netlify.toml found. If the GitHub repo is already connected in Netlify, pushing main should deploy the Vite build using npm run build and dist as the publish directory.",
         "manual_steps": [
             "Run npm run build.",
-            "In Netlify, create or open the site connected to this GitHub repo.",
-            "Use build command: npm run build.",
-            "Use publish directory: dist.",
-            "Deploy main, then open /goclear-apex-readiness.html.",
+            "If using CLI, run: netlify login.",
+            "Run: netlify init, choose this GitHub repo, set build command npm run build, and publish directory dist.",
+            "Or set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID in local runtime env.",
+            "Deploy with: netlify deploy --prod --dir=dist.",
+            "Open the deployed site at /goclear-apex-readiness.html.",
             "Optionally add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally for future CLI deploy checks.",
         ],
     }
@@ -457,6 +459,19 @@ def social_publish_test(drafts: list[dict], integrations: dict) -> dict:
     if not account.get("publish_enabled"):
         result["manual_publish_required"].append("facebook")
         result["blocked"].append("facebook_publish_enabled_false")
+        st, approvals = sb.get("approvals", "item_type=eq.facebook_publish_enablement&status=eq.pending&select=id,title&order=created_at.desc&limit=1")
+        if isinstance(approvals, list) and approvals:
+            result["approval_required"] = {
+                "status": "pending",
+                "approval_id": approvals[0]["id"],
+                "title": approvals[0].get("title"),
+                "next_step": "Approve this request, then set social_accounts.publish_enabled=true for the Clear Credentials Facebook row before running one real publish.",
+            }
+        else:
+            result["approval_required"] = {
+                "status": "missing",
+                "next_step": "Create an approval for facebook_publish_enablement before setting social_accounts.publish_enabled=true.",
+            }
         result["manual_publish_required"] = sorted(set(result["manual_publish_required"]))
         return result
 
@@ -499,6 +514,18 @@ def newsletter_test(drafts: list[dict], integrations: dict) -> dict:
     email = first_env("RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
     draft = next(d for d in drafts if d["type"] == "newsletter_email")["copy"]
     (MANUAL_DIR / "goclear_apex_test_newsletter.txt").write_text(draft + "\n")
+    if sb.configured():
+        st, sent = sb.get("nexus_events", "action=eq.resend_test_email&status=eq.success&select=payload,summary,created_at&order=created_at.desc&limit=1")
+        if isinstance(sent, list) and sent:
+            payload = sent[0].get("payload") or {}
+            return {
+                "created": True,
+                "sent": True,
+                "status": "already_sent",
+                "message_id": payload.get("message_id"),
+                "recipient_configured": True,
+                "path": "reports/manual_publish/goclear_apex_test_newsletter.txt",
+            }
     if not integrations["resend"]["connected"]:
         missing = [*integrations["resend"].get("missing_names", []), *integrations["resend"].get("recipient_missing_names", [])]
         result = {"created": True, "sent": False, "status": "email_send_blocked_missing_resend", "missing_env_names": missing, "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
@@ -696,6 +723,7 @@ def markdown_report(data: dict) -> str:
         f"- published: {json.dumps(data['social']['published'])}",
         f"- manual_publish_required: {json.dumps(data['social']['manual_publish_required'])}",
         f"- blocked: {json.dumps(data['social']['blocked'])}",
+        f"- approval_required: {json.dumps(data['social'].get('approval_required', {}))}",
         f"- manual_package: reports/manual_publish/goclear_apex_social_manual_publish_package.json",
         "",
         "## Newsletter",
