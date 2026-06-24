@@ -1,8 +1,8 @@
 {
-  "status": "github_connected_assumed_provide_public_url",
-  "deploy_mode": "github_connected_assumed",
-  "public_url": null,
-  "public_page_url": null,
+  "status": "github_connected_public_url_configured",
+  "deploy_mode": "github_connected_public_url",
+  "public_url": "https://nexusv20.netlify.app",
+  "public_page_url": "https://nexusv20.netlify.app/goclear-apex-readiness.html",
   "landing_page_source": "public/goclear-apex-readiness.html",
   "built_file": "dist/goclear-apex-readiness.html",
   "public_path": "/goclear-apex-readiness.html",
@@ -12,7 +12,7 @@
   ],
   "netlify_toml": true,
   "auto_deploy_assumption": "GitHub-connected deploy: pushing main builds on Netlify using netlify.toml (command npm run build, publish dir dist). Local NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID are NOT required for this path \u2014 they are only for CLI/API verification.",
-  "next_value_needed": "public Netlify domain/URL (set NEXUS_NETLIFY_PUBLIC_URL or VITE_GOCLEAR_PUBLIC_URL)",
+  "next_value_needed": null,
   "manual_steps": [
     "Preferred: push main to GitHub; Netlify builds and deploys automatically (netlify.toml present).",
     "Provide the public URL to Nexus by setting NEXUS_NETLIFY_PUBLIC_URL (or VITE_GOCLEAR_PUBLIC_URL).",

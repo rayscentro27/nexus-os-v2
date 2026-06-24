@@ -1,9 +1,9 @@
 # GoClear/Apex Landing Page Deploy Package
 
-- Status: github_connected_assumed_provide_public_url
-- Deploy mode: github_connected_assumed
-- Public URL: not provided yet (set NEXUS_NETLIFY_PUBLIC_URL or VITE_GOCLEAR_PUBLIC_URL)
-- Public landing page: pending public URL
+- Status: github_connected_public_url_configured
+- Deploy mode: github_connected_public_url
+- Public URL: https://nexusv20.netlify.app
+- Public landing page: https://nexusv20.netlify.app/goclear-apex-readiness.html
 - Source: `public/goclear-apex-readiness.html`
 - Built file: `dist/goclear-apex-readiness.html`
 - Public path after deploy: `/goclear-apex-readiness.html`
