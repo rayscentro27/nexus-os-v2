@@ -1,0 +1,14 @@
+# Netlify build settings for Nexus OS v2 (GitHub-connected deploy: push main → Netlify build).
+# Self-documents the build so the dashboard settings and the repo agree.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback so the React app's client routes resolve. The static landing page
+# (public/goclear-apex-readiness.html → dist/goclear-apex-readiness.html) is a real file and is
+# served directly; this redirect only catches unknown app routes.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

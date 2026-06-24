@@ -96,12 +96,39 @@ def integration_summary() -> dict:
     demo = demo or trading_values["PAPER_ONLY"] == "true" or trading_values["NEXUS_DRY_RUN"] == "true"
     live = any(v in {"live", "real", "funded"} for v in trading_values.values())
     live = live or trading_values["LIVE_TRADING"] == "true" or trading_values["TRADING_LIVE_EXECUTION_ENABLED"] == "true"
+    # Netlify is deployed via GitHub (push main → Netlify build). That path does NOT need local
+    # NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID — those are only for CLI/API verification. So detect the
+    # GitHub-connected mode by (a) a committed netlify.toml and (b) a configured public URL.
+    netlify_url_names = ("NEXUS_NETLIFY_PUBLIC_URL", "VITE_GOCLEAR_PUBLIC_URL", "NETLIFY_SITE_URL", "URL", "DEPLOY_PRIME_URL", "DEPLOY_URL")
+    netlify_public_url = first_env(*netlify_url_names).strip()
+    netlify_cli_capable = not env_missing(*netlify_required)
+    netlify_toml = (ROOT / "netlify.toml").exists()
+    if netlify_public_url:
+        netlify_connected: object = True
+        netlify_mode = "github_connected_public_url"
+        netlify_status = "public_url_configured_needs_live_verification"
+        netlify_blocker = None
+    elif netlify_toml or netlify_cli_capable:
+        netlify_connected = "unknown"
+        netlify_mode = "github_connected_assumed"
+        netlify_status = "github_connected_assumed_no_public_url"
+        netlify_blocker = "missing_public_url_in_repo_or_env"
+    else:
+        netlify_connected = False
+        netlify_mode = "not_configured"
+        netlify_status = "not_configured"
+        netlify_blocker = "missing_public_url_in_repo_or_env"
     return {
         "netlify": {
-            "connected": not env_missing(*netlify_required),
-            "present_names": env_present(*netlify_required, "NETLIFY_SITE_URL", "URL", "DEPLOY_URL"),
+            "connected": netlify_connected,
+            "deploy_mode": netlify_mode,
+            "public_url": netlify_public_url or None,
+            "status": netlify_status,
+            "blocker": netlify_blocker,
+            "cli_capable": netlify_cli_capable,
+            "present_names": env_present(*netlify_required, *netlify_url_names),
             "missing_names": env_missing(*netlify_required),
-            "netlify_toml": (ROOT / "netlify.toml").exists(),
+            "netlify_toml": netlify_toml,
         },
         "resend": {
             "connected": not env_missing(*resend_required) and bool(first_env(*resend_recipients)),
@@ -360,41 +387,60 @@ def write_manual_packages(drafts: list[dict], integrations: dict) -> dict:
 
 
 def write_netlify_deploy_package(integrations: dict) -> dict:
+    net = integrations["netlify"]
+    public_url = net.get("public_url")
+    if public_url:
+        status = "github_connected_public_url_configured"
+    elif net.get("deploy_mode") == "github_connected_assumed":
+        status = "github_connected_assumed_provide_public_url"
+    else:
+        status = "deploy_ready_manual_netlify_required"
+    public_page_url = f"{public_url.rstrip('/')}/goclear-apex-readiness.html" if public_url else None
     package = {
-        "status": "deploy_ready_manual_netlify_required" if not integrations["netlify"]["connected"] else "netlify_connected",
+        "status": status,
+        "deploy_mode": net.get("deploy_mode"),
+        "public_url": public_url,
+        "public_page_url": public_page_url,
         "landing_page_source": "public/goclear-apex-readiness.html",
         "built_file": "dist/goclear-apex-readiness.html",
         "public_path": "/goclear-apex-readiness.html",
-        "missing_env_names": integrations["netlify"].get("missing_names", []),
-        "auto_deploy_assumption": "No netlify.toml found. If the GitHub repo is already connected in Netlify, pushing main should deploy the Vite build using npm run build and dist as the publish directory.",
+        "missing_env_names": net.get("missing_names", []),
+        "netlify_toml": net.get("netlify_toml", False),
+        "auto_deploy_assumption": (
+            "GitHub-connected deploy: pushing main builds on Netlify using netlify.toml "
+            "(command npm run build, publish dir dist). Local NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID "
+            "are NOT required for this path — they are only for CLI/API verification."
+        ),
+        "next_value_needed": None if public_url else "public Netlify domain/URL (set NEXUS_NETLIFY_PUBLIC_URL or VITE_GOCLEAR_PUBLIC_URL)",
         "manual_steps": [
-            "Run npm run build.",
-            "If using CLI, run: netlify login.",
-            "Run: netlify init, choose this GitHub repo, set build command npm run build, and publish directory dist.",
-            "Or set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID in local runtime env.",
-            "Deploy with: netlify deploy --prod --dir=dist.",
-            "Open the deployed site at /goclear-apex-readiness.html.",
-            "Optionally add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally for future CLI deploy checks.",
+            "Preferred: push main to GitHub; Netlify builds and deploys automatically (netlify.toml present).",
+            "Provide the public URL to Nexus by setting NEXUS_NETLIFY_PUBLIC_URL (or VITE_GOCLEAR_PUBLIC_URL).",
+            "CLI/API verification (optional): set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally.",
+            "Manual deploy is only needed if the GitHub-connected deploy fails: netlify deploy --prod --dir=dist.",
         ],
     }
     md = [
         "# GoClear/Apex Landing Page Deploy Package",
         "",
         f"- Status: {package['status']}",
+        f"- Deploy mode: {package['deploy_mode']}",
+        f"- Public URL: {public_url or 'not provided yet (set NEXUS_NETLIFY_PUBLIC_URL or VITE_GOCLEAR_PUBLIC_URL)'}",
+        f"- Public landing page: {public_page_url or 'pending public URL'}",
         f"- Source: `{package['landing_page_source']}`",
         f"- Built file: `{package['built_file']}`",
         f"- Public path after deploy: `{package['public_path']}`",
-        f"- Missing Netlify env names: {', '.join(package['missing_env_names']) or 'none'}",
+        f"- netlify.toml present: {package['netlify_toml']}",
         "",
-        "## Netlify Settings",
+        "## Netlify Settings (self-documented in netlify.toml)",
         "- Build command: `npm run build`",
         "- Publish directory: `dist`",
         "- Landing page path: `/goclear-apex-readiness.html`",
+        "- GitHub-connected deploy does NOT need NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID.",
         "",
-        "## Manual Steps",
+        "## Steps",
         *[f"{idx}. {step}" for idx, step in enumerate(package["manual_steps"], start=1)],
         "",
-        "No public URL is claimed until Netlify is connected or a manual deploy completes.",
+        "No public URL is claimed live until the URL is configured (and verified).",
     ]
     (MANUAL_DIR / "goclear_apex_netlify_deploy_package.md").write_text("\n".join(md) + "\n")
     write_json(MANUAL_DIR / "goclear_apex_netlify_deploy_package.json", package)
@@ -612,18 +658,26 @@ def oracle_status() -> dict:
 
 
 def landing_status(integrations: dict) -> dict:
-    if integrations["netlify"]["connected"] and integrations["netlify"]["netlify_toml"]:
-        status = "netlify_connected_existing_config_push_should_deploy"
-    elif integrations["netlify"]["connected"]:
-        status = "netlify_token_present_but_no_netlify_toml_manual_site_config_required"
+    net = integrations["netlify"]
+    public_url = net.get("public_url")
+    if public_url:
+        status = "github_connected_public_url_configured_needs_live_verification"
+    elif net.get("deploy_mode") == "github_connected_assumed":
+        status = "github_connected_assumed_provide_public_url"
+    elif net.get("cli_capable") and net.get("netlify_toml"):
+        status = "netlify_cli_token_present_config_push_should_deploy"
     else:
         status = "deploy_ready_manual_netlify_required"
+    public_page_url = f"{public_url.rstrip('/')}/goclear-apex-readiness.html" if public_url else None
     return {
         "created": LANDING_PAGE.exists(),
         "path": "public/goclear-apex-readiness.html",
         "local_url_path": "/goclear-apex-readiness.html",
-        "netlify_connected": integrations["netlify"]["connected"],
-        "missing_env_names": integrations["netlify"].get("missing_names", []),
+        "netlify_connected": net.get("connected"),
+        "deploy_mode": net.get("deploy_mode"),
+        "public_url": public_url,
+        "public_page_url": public_page_url,
+        "missing_env_names": net.get("missing_names", []),
         "status": status,
         "form_backend": "missing_public_form_backend_manual_email_cta_used",
         "deploy_package": "reports/manual_publish/goclear_apex_netlify_deploy_package.md",
@@ -704,6 +758,8 @@ def markdown_report(data: dict) -> str:
         extra = ""
         if name == "oanda":
             extra = f" demo_or_paper={info['demo_or_paper']} live_signal={info['live_signal']}"
+        if name == "netlify":
+            extra = f" deploy_mode={info.get('deploy_mode')} public_url={info.get('public_url') or 'none'} cli_capable={info.get('cli_capable')} netlify_toml={info.get('netlify_toml')}"
         lines.append(f"- {name}: connected={info['connected']} present_names={','.join(info.get('present_names', [])) or 'none'} missing_names={','.join(info.get('missing_names', [])) or 'none'}{extra}")
     lines += [
         "",

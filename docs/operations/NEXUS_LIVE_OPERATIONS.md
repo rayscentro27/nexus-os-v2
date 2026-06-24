@@ -12,6 +12,30 @@ npm run nexus:watch
 
 This runs one bounded activation pass. It checks GoClear/Apex landing page readiness, Netlify config, Resend email readiness, social publish gates, Oanda demo/paper status, Oracle worker reachability, and Hermes report explanation.
 
+## Netlify (GitHub-connected deploy)
+
+The deploy path is **push `main` → Netlify builds and deploys**. Build settings are self-documented
+in `netlify.toml` (command `npm run build`, publish dir `dist`, SPA fallback redirect).
+
+GitHub-connected deploy does **not** require local Netlify CLI tokens:
+
+- `NETLIFY_AUTH_TOKEN` / `NETLIFY_SITE_ID` are only for optional Netlify **CLI/API verification**.
+  The watch loop reports their presence as `cli_capable`, not as a deploy blocker.
+- To let Nexus track the live site, set the **public URL** (safe, not a secret):
+  `NEXUS_NETLIFY_PUBLIC_URL` (or browser-exposed `VITE_GOCLEAR_PUBLIC_URL`).
+
+The watch loop classifies Netlify as:
+
+- `deploy_mode=github_connected_public_url` when a public URL is set (status
+  `public_url_configured_needs_live_verification`).
+- `deploy_mode=github_connected_assumed` when `netlify.toml` is present but no URL is set yet
+  (blocker `missing_public_url_in_repo_or_env`).
+
+Nexus does not claim the landing page is live until a public URL is provided (and ideally verified).
+Once the URL is known, point Resend follow-up and the Facebook test post at
+`<public-url>/goclear-apex-readiness.html`. Also set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+and `VITE_HERMES_CHAT_ENABLED=true` in the Netlify UI so the app build has its Supabase/Hermes config.
+
 ## Scheduler
 
 No scheduler is installed or started by default.

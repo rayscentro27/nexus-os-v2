@@ -1,5 +1,8 @@
 {
-  "status": "deploy_ready_manual_netlify_required",
+  "status": "github_connected_assumed_provide_public_url",
+  "deploy_mode": "github_connected_assumed",
+  "public_url": null,
+  "public_page_url": null,
   "landing_page_source": "public/goclear-apex-readiness.html",
   "built_file": "dist/goclear-apex-readiness.html",
   "public_path": "/goclear-apex-readiness.html",
@@ -7,14 +10,13 @@
     "NETLIFY_AUTH_TOKEN",
     "NETLIFY_SITE_ID"
   ],
-  "auto_deploy_assumption": "No netlify.toml found. If the GitHub repo is already connected in Netlify, pushing main should deploy the Vite build using npm run build and dist as the publish directory.",
+  "netlify_toml": true,
+  "auto_deploy_assumption": "GitHub-connected deploy: pushing main builds on Netlify using netlify.toml (command npm run build, publish dir dist). Local NETLIFY_AUTH_TOKEN / NETLIFY_SITE_ID are NOT required for this path \u2014 they are only for CLI/API verification.",
+  "next_value_needed": "public Netlify domain/URL (set NEXUS_NETLIFY_PUBLIC_URL or VITE_GOCLEAR_PUBLIC_URL)",
   "manual_steps": [
-    "Run npm run build.",
-    "If using CLI, run: netlify login.",
-    "Run: netlify init, choose this GitHub repo, set build command npm run build, and publish directory dist.",
-    "Or set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID in local runtime env.",
-    "Deploy with: netlify deploy --prod --dir=dist.",
-    "Open the deployed site at /goclear-apex-readiness.html.",
-    "Optionally add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally for future CLI deploy checks."
+    "Preferred: push main to GitHub; Netlify builds and deploys automatically (netlify.toml present).",
+    "Provide the public URL to Nexus by setting NEXUS_NETLIFY_PUBLIC_URL (or VITE_GOCLEAR_PUBLIC_URL).",
+    "CLI/API verification (optional): set NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally.",
+    "Manual deploy is only needed if the GitHub-connected deploy fails: netlify deploy --prod --dir=dist."
   ]
 }
