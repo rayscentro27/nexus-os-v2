@@ -24,12 +24,33 @@ export interface ProviderResult {
 
 const NOT_CONFIGURED: ProviderResult = { configured: false, text: '' };
 
+export interface HermesHistoryTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface HermesPendingActionContext {
+  action_type: string;
+  title: string;
+  safe_summary: string;
+  sensitivity: string;
+  proposed_worker_type: string;
+  allowed_data_scope: string[];
+  forbidden_data: string[];
+  hermes_visibility: string;
+  requires_approval: true;
+  source_assistant_message_id?: string;
+  source_timestamp?: string;
+}
+
 /** Safe, internal_summary-only context the model may see (no private data). */
 export interface HermesContext {
   pending?: string;     // task_type awaiting approval, or undefined
   facts?: string;       // safe counts snapshot
   report?: string;      // compact safe report summary
   taskStatus?: string;  // redacted latest task status
+  pendingAction?: HermesPendingActionContext;
+  history?: HermesHistoryTurn[];
 }
 
 /** Drop any context field that trips the firewall — belt-and-suspenders before it leaves the browser. */
@@ -39,6 +60,33 @@ function sanitizeContext(ctx?: HermesContext): HermesContext | undefined {
   for (const k of ['pending', 'facts', 'report', 'taskStatus'] as const) {
     const v = ctx[k];
     if (v && !containsSensitive(v)) out[k] = v;
+  }
+  if (ctx.pendingAction) {
+    const summary = String(ctx.pendingAction.safe_summary || '').slice(0, 600);
+    const title = String(ctx.pendingAction.title || '').slice(0, 120);
+    if (!containsSensitive(summary) && !containsSensitive(title)) {
+      out.pendingAction = {
+        ...ctx.pendingAction,
+        title,
+        safe_summary: summary,
+        forbidden_data: (ctx.pendingAction.forbidden_data || []).slice(0, 12),
+        allowed_data_scope: (ctx.pendingAction.allowed_data_scope || []).slice(0, 8),
+      };
+    }
+  }
+  if (Array.isArray(ctx.history)) {
+    const safeTurns = ctx.history
+      .slice(-10)
+      .map((turn) => ({ role: turn.role, content: String(turn.content || '').slice(0, 700) }))
+      .filter((turn) => turn.content.trim() && !containsSensitive(turn.content));
+    let total = 0;
+    out.history = [];
+    for (const turn of safeTurns) {
+      if (total + turn.content.length > 3500) break;
+      out.history.push(turn);
+      total += turn.content.length;
+    }
+    if (out.history.length === 0) delete out.history;
   }
   return Object.keys(out).length ? out : undefined;
 }

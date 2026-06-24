@@ -9,7 +9,8 @@
 // Prompt layout (ordered for prompt caching):
 //   1. system: STABLE_CONTEXT_BLOCK  — byte-stable identity/Nexus/GoClear context (cached prefix)
 //   2. system: dynamic safe context  — small, per-request, from the admin frontend (not cached)
-//   3. user:   Ray's current message
+//   3. recent safe history + pending action context (bounded / firewall-checked)
+//   4. user:   Ray's current message
 // Only PUBLIC / internal_summary data ever reaches the provider; the firewall scans the message
 // (refuse) and every dynamic-context field (dropped if it trips the gate) before any external call.
 //
@@ -92,6 +93,8 @@ const blocked = (text: string): boolean => isSensitive(text) || PLURAL_SSN.test(
 
 const MAX_CONTEXT_FIELD = 600;   // cap each dynamic field
 const MAX_CONTEXT_TOTAL = 2000;  // cap the whole dynamic block
+const MAX_HISTORY_TURNS = 10;
+const MAX_HISTORY_CHARS = 4000;
 
 // Build the small dynamic context block from safe frontend-supplied fields. Any field that trips
 // the firewall is dropped (never sent to the model). Returns '' when there's nothing safe to add.
@@ -107,12 +110,34 @@ function buildDynamicContext(mode: string, ctx: Record<string, unknown> | undefi
     add('Safe Nexus snapshot', ctx.facts);
     add('Latest safe report (internal_summary)', ctx.report);
     add('Latest task status (redacted)', ctx.taskStatus);
+    const pending = ctx.pendingAction as Record<string, unknown> | undefined;
+    if (pending) {
+      add('Pending action title', pending.title);
+      add('Pending action safe summary', pending.safe_summary);
+      add('Pending action worker', pending.proposed_worker_type);
+      add('Pending action visibility', pending.hermes_visibility);
+    }
   }
   if (lines.length <= 2) return '';               // only the header/mode → nothing useful
   return lines.join('\n').slice(0, MAX_CONTEXT_TOTAL);
 }
 
-interface ChatMessage { role: 'system' | 'user'; content: string; }
+interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string; }
+
+function buildSafeHistory(ctx: Record<string, unknown> | undefined): ChatMessage[] {
+  const raw = Array.isArray(ctx?.history) ? ctx.history : [];
+  const out: ChatMessage[] = [];
+  let total = 0;
+  for (const item of raw.slice(-MAX_HISTORY_TURNS)) {
+    const role = (item as Record<string, unknown>)?.role === 'assistant' ? 'assistant' : 'user';
+    const content = String((item as Record<string, unknown>)?.content ?? '').trim().slice(0, 700);
+    if (!content || blocked(content)) continue;
+    if (total + content.length > MAX_HISTORY_CHARS) break;
+    out.push({ role, content });
+    total += content.length;
+  }
+  return out;
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors() });
@@ -127,10 +152,12 @@ Deno.serve(async (req: Request) => {
     return json({ configured: true, reply: "I won't process private data through an external model." });
 
   const dynamic = buildDynamicContext(mode, context);
+  const history = buildSafeHistory(context);
 
   // Ordered for prompt caching: stable cached block, then small dynamic block, then user message.
   const messages: ChatMessage[] = [{ role: 'system', content: stableSystem() }];
   if (dynamic) messages.push({ role: 'system', content: dynamic });
+  messages.push(...history);
   messages.push({ role: 'user', content: message });
 
   // Gemini takes a single text blob; flatten the same ordered content.

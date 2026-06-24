@@ -56,9 +56,19 @@ export function detectModeSwitch(text: string): HermesMode | null {
   return null;
 }
 
-const APPROVAL_RE = /\b(approved?|i approve|go ahead|do it|yes,? (create|do|go)|create (the|this|that)\b|confirmed|make it)\b/i;
+const APPROVAL_RE = /\b(approved?|i approve|go ahead|do it|yes|yes please|create it|create (the|this|that)\b|proceed|send it|confirmed)\b/i;
 export function isApproval(text: string): boolean {
   return APPROVAL_RE.test(text || '');
+}
+
+const CANCEL_RE = /\b(never mind|nevermind|cancel|stop|not now|forget it|hold off)\b/i;
+export function isCancel(text: string): boolean {
+  return CANCEL_RE.test(text || '');
+}
+
+const MODIFY_RE = /\b(change it to|make it|update it|revise it|adjust it)\b/i;
+export function isModification(text: string): boolean {
+  return MODIFY_RE.test(text || '');
 }
 
 function isPrivilegedAction(t: string): boolean {

@@ -3,11 +3,11 @@ import { listTable, type Row } from '../services/db';
 import { createEvent, createJob, decideApproval } from '../lib/ledger';
 import { Card, Stat, Pill, Empty, SectionTitle, timeAgo, useData } from './ui';
 import {
-  classify, proposeTask, detectModeSwitch, isApproval, MODE_DESC,
+  classify, proposeTask, detectModeSwitch, isApproval, isCancel, isModification, MODE_DESC,
   type HermesMode, type ProposedTask,
 } from '../lib/hermesIntent';
 import { containsSensitive } from '../lib/dataScopes';
-import { hermesChat, publicSearch, CHAT_NOT_CONFIGURED_MSG, SEARCH_NOT_CONFIGURED_MSG, type HermesContext } from '../lib/hermesProviders';
+import { hermesChat, publicSearch, CHAT_NOT_CONFIGURED_MSG, SEARCH_NOT_CONFIGURED_MSG, type HermesContext, type HermesHistoryTurn, type HermesPendingActionContext } from '../lib/hermesProviders';
 import { readLatestReport, summaryForPrompt } from '../lib/reportReader';
 import { createTaskRequest, latestStatusForPrompt } from '../lib/taskRequests';
 
@@ -23,6 +23,20 @@ function DataList({ table, render, what, order }: {
 
 // ── Command Center (Hermes — conversation-first) ──
 interface ChatMsg { role: 'user' | 'hermes'; text: string; meta?: string; }
+interface PendingAction {
+  action_type: string;
+  title: string;
+  safe_summary: string;
+  sensitivity: ProposedTask['sensitivity'];
+  proposed_worker_type: string;
+  allowed_data_scope: ProposedTask['allowed_data_scope'];
+  forbidden_data: string[];
+  hermes_visibility: ProposedTask['hermes_visibility'];
+  requires_approval: true;
+  source_assistant_message_id?: string;
+  source_timestamp: string;
+  task: ProposedTask;
+}
 
 const PLACEHOLDER =
   "Talk to Hermes naturally… e.g. ‘Good morning’, ‘What do you think about GoClear?’, ‘Who won last night?’, or ‘Read the latest Nexus report.’";
@@ -35,6 +49,7 @@ export function CommandCenter({ email }: { email: string | null }) {
   const [busy, setBusy] = useState(false);
   const [showAware, setShowAware] = useState(false);              // awareness collapsed by default
   const [pendingTask, setPendingTask] = useState<ProposedTask | null>(null); // awaiting Ray's approval
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([
     { role: 'hermes', text: "Hi Ray — I'm a conversational advisor. I can talk, look up public info, read safe Nexus reports, and (only after you approve) set up task requests. I never see SSNs, credit reports, passwords, or secrets, and I never publish/send/trade/deploy directly." },
   ]);
@@ -50,8 +65,77 @@ export function CommandCenter({ email }: { email: string | null }) {
 
   function push(m: ChatMsg) { setMessages((prev) => [...prev, m]); }
 
+  function pendingContext(action: PendingAction | null): HermesPendingActionContext | undefined {
+    if (!action) return undefined;
+    return {
+      action_type: action.action_type,
+      title: action.title,
+      safe_summary: action.safe_summary,
+      sensitivity: action.sensitivity,
+      proposed_worker_type: action.proposed_worker_type,
+      allowed_data_scope: action.allowed_data_scope,
+      forbidden_data: action.forbidden_data,
+      hermes_visibility: action.hermes_visibility,
+      requires_approval: true,
+      source_assistant_message_id: action.source_assistant_message_id,
+      source_timestamp: action.source_timestamp,
+    };
+  }
+
+  function makePendingAction(task: ProposedTask, title: string, summary: string, source?: string): PendingAction {
+    return {
+      action_type: task.task_type === 'public_build_task' ? 'draft_private_worker_task_request' : `create_${task.task_type}`,
+      title,
+      safe_summary: summary.slice(0, 600),
+      sensitivity: task.sensitivity,
+      proposed_worker_type: task.assigned_worker_type,
+      allowed_data_scope: task.allowed_data_scope,
+      forbidden_data: task.forbidden_data,
+      hermes_visibility: task.hermes_visibility,
+      requires_approval: true,
+      source_assistant_message_id: source,
+      source_timestamp: new Date().toISOString(),
+      task: { ...task, payload: { ...task.payload, safe_summary: summary.slice(0, 600) } },
+    };
+  }
+
+  function inferPendingAction(userText: string, assistantText: string): PendingAction | null {
+    if (containsSensitive(userText) || containsSensitive(assistantText)) return null;
+    const offer = /\b(i can|want me to|if you want|i can also|i'll|i will)\b[\s\S]{0,180}\b(draft|create|set up|file|prepare)\b[\s\S]{0,120}\b(task request|private worker|worker task|request)\b/i;
+    if (!offer.test(assistantText)) return null;
+    const task: ProposedTask = {
+      task_type: 'public_build_task',
+      sensitivity: 'internal_summary',
+      allowed_data_scope: ['public', 'internal_summary'],
+      forbidden_data: ['customer_private', 'credit_sensitive', 'funding_sensitive', 'auth_sensitive', 'secrets'],
+      assigned_worker_type: 'general_worker',
+      hermes_visibility: 'summary',
+      payload: { request: userText, source: 'hermes_conversation_offer' },
+      summary: 'a safe task request for the concept we just discussed. Hermes will not access private customer data or execute the work directly.',
+    };
+    return makePendingAction(task, 'Draft task request from current conversation', userText, `assistant_${Date.now()}`);
+  }
+
+  function safeHistoryForModel(extraUser?: string): HermesHistoryTurn[] {
+    const turns: HermesHistoryTurn[] = messages
+      .slice(-10)
+      .map((m) => ({ role: m.role === 'hermes' ? 'assistant' as const : 'user' as const, content: m.text.slice(0, 700) }))
+      .filter((m) => m.content.trim() && !containsSensitive(m.content));
+    if (extraUser && !containsSensitive(extraUser)) turns.push({ role: 'user', content: extraUser.slice(0, 700) });
+    return turns.slice(-10);
+  }
+
+  function updatePendingAction(action: PendingAction, content: string): PendingAction {
+    const summary = `${action.safe_summary}; requested change: ${content}`.slice(0, 600);
+    return {
+      ...action,
+      safe_summary: summary,
+      task: { ...action.task, payload: { ...action.task.payload, requested_change: content, safe_summary: summary } },
+    };
+  }
+
   // Create a Ray-approved task request and confirm it. Hermes never executes — it only files it.
-  async function fileTask(task: ProposedTask) {
+  async function fileTask(task: ProposedTask, action?: PendingAction) {
     const id = await createTaskRequest(task, email);
     await createEvent({
       lane: 'communication', action: 'hermes_task_request', status: 'pending',
@@ -60,10 +144,13 @@ export function CommandCenter({ email }: { email: string | null }) {
     });
     push({
       role: 'hermes',
-      text: `Created a task request: ${task.task_type} (sensitivity: ${task.sensitivity}). It’s assigned to ${task.assigned_worker_type}, I’ll only see ${task.hermes_visibility} updates, and I won’t execute it. ${id ? `Ref ${id}.` : ''}`,
+      text: action
+        ? `Approved. I’m drafting the ${action.proposed_worker_type} task request for the concept we just discussed: ${action.safe_summary}. It will be ${action.hermes_visibility} for Hermes and will not expose private customer data. ${id ? `Ref ${id}.` : ''}`
+        : `Created a task request: ${task.task_type} (sensitivity: ${task.sensitivity}). It’s assigned to ${task.assigned_worker_type}, I’ll only see ${task.hermes_visibility} updates, and I won’t execute it. ${id ? `Ref ${id}.` : ''}`,
       meta: 'task_request created · approved',
     });
     setPendingTask(null);
+    setPendingAction(null);
   }
 
   async function send() {
@@ -82,7 +169,23 @@ export function CommandCenter({ email }: { email: string | null }) {
         return;
       }
 
+      if (pendingAction && isCancel(content)) {
+        setPendingAction(null);
+        setPendingTask(null);
+        push({ role: 'hermes', text: `Canceled the pending task request: ${pendingAction.title}. I won’t create anything.`, meta: 'pending action cleared' });
+        return;
+      }
+
+      if (pendingAction && isModification(content)) {
+        const next = updatePendingAction(pendingAction, content);
+        setPendingAction(next);
+        setPendingTask(next.task);
+        push({ role: 'hermes', text: `Updated the pending task request: ${next.safe_summary}. Say “approved” or “yes please” when you want me to file it.`, meta: 'pending action updated' });
+        return;
+      }
+
       // Approval of the pending proposed task — the ONLY path that creates work.
+      if (pendingAction && isApproval(content)) { await fileTask(pendingAction.task, pendingAction); return; }
       if (pendingTask && isApproval(content)) { await fileTask(pendingTask); return; }
 
       const intent = classify(content);
@@ -95,16 +198,18 @@ export function CommandCenter({ email }: { email: string | null }) {
       if (intent === 'privileged_action' || intent === 'public_action') {
         const task = proposeTask(content);
         if (!task) { push({ role: 'hermes', text: "I’m not sure what to set up — tell me the action and I’ll propose a task request.", meta: 'no task' }); return; }
+        const action = makePendingAction(task, task.task_type, task.summary || content, `deterministic_${Date.now()}`);
         setPendingTask(task);
+        setPendingAction(action);
         const forbids = task.forbidden_data.length ? task.forbidden_data.join(', ') : 'any private data';
         push({ role: 'hermes', text: `I can set up ${task.summary}\nI won’t do it directly, and I won’t access ${forbids}. Approve and I’ll file the task request — just say “approved”.`, meta: `proposed · ${task.assigned_worker_type}` });
         return;
       }
 
       if (intent === 'action_approval') {
-        const task = pendingTask ?? proposeTask(content);
+        const task = pendingAction?.task ?? pendingTask ?? proposeTask(content);
         if (!task) { push({ role: 'hermes', text: "I don’t have a pending action to create. Tell me what you’d like set up.", meta: 'no pending task' }); return; }
-        await fileTask(task);
+        await fileTask(task, pendingAction ?? undefined);
         return;
       }
 
@@ -130,14 +235,24 @@ export function CommandCenter({ email }: { email: string | null }) {
       const a = aware.data;
       const [report, taskStatus] = await Promise.all([summaryForPrompt(), latestStatusForPrompt()]);
       const ctx: HermesContext = {
-        pending: pendingTask ? pendingTask.task_type : undefined,
+        pending: pendingAction ? pendingAction.title : (pendingTask ? pendingTask.task_type : undefined),
         facts: `approvals_pending=${a.approvals}, queued_jobs=${a.jobs}, open_incidents=${a.incidents}, active_campaigns=${a.campaigns}`,
         report: report || undefined,
         taskStatus: taskStatus || undefined,
+        pendingAction: pendingContext(pendingAction),
+        history: safeHistoryForModel(),
       };
       const res = await hermesChat(content, mode, ctx);
       if (res.blocked) { push({ role: 'hermes', text: res.text, meta: 'firewall · refused' }); return; }
-      push({ role: 'hermes', text: res.configured ? res.text : CHAT_NOT_CONFIGURED_MSG, meta: res.configured ? 'chat provider' : 'chat not configured' });
+      const reply = res.configured ? res.text : CHAT_NOT_CONFIGURED_MSG;
+      push({ role: 'hermes', text: reply, meta: res.configured ? 'chat provider' : 'chat not configured' });
+      if (res.configured) {
+        const inferred = inferPendingAction(content, reply);
+        if (inferred) {
+          setPendingAction(inferred);
+          setPendingTask(inferred.task);
+        }
+      }
     } finally {
       setBusy(false);
     }
@@ -163,7 +278,7 @@ export function CommandCenter({ email }: { email: string | null }) {
         </div>
         <div className="meta muted" style={{ marginTop: 8 }}>
           Current mode: <b style={{ color: 'var(--text)' }}>{labelFor(mode)}</b> — {MODE_DESC[mode]}.
-          {pendingTask && <span style={{ color: 'var(--text)' }}> · awaiting your approval for a “{pendingTask.task_type}” task</span>}
+          {(pendingAction || pendingTask) && <span style={{ color: 'var(--text)' }}> · awaiting your approval for “{pendingAction?.title ?? pendingTask?.task_type}”</span>}
         </div>
         {showAware && (
           <div className="meta" style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
