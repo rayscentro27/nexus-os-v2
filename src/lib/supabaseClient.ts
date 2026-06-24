@@ -13,5 +13,11 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 export const isSupabaseConfigured = Boolean(url && anonKey);
 
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url as string, anonKey as string, { auth: { persistSession: false } })
+  ? createClient(url as string, anonKey as string, {
+      // Persist + auto-refresh the admin session so authenticated queries keep a valid JWT.
+      // Without this the access token expires (~1h) and is not refreshed, so admin-only RLS
+      // tables (approvals, jobs, etc.) silently return 0 rows even while the UI looks signed in.
+      // Anon key only — the service-role key is never used in the browser.
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    })
   : null;

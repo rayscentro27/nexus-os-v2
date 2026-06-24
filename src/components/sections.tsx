@@ -397,7 +397,14 @@ export function ApprovalCenter({ email }: { email: string | null }) {
     setBusy('');
   }
 
-  if (data.length === 0) return <Empty what="approvals" />;
+  if (data.length === 0) return (
+    <div className="empty">
+      No approvals are visible for your session.
+      {email
+        ? ' If you expect approvals here, your admin sign-in may have expired — sign out, sign back in, and reload. (Approvals are admin-only via row-level security.)'
+        : ' Sign in as an admin to view approvals.'}
+    </div>
+  );
   return (
     <div className="list">
       {data.map((a) => {
