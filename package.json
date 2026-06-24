@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "seed:day1": "python3 scripts/seed_day1_event.py",
-    "nexus:watch": "python3 scripts/run_nexus_continuous_operations.py --mode manual"
+    "nexus:watch": "python3 scripts/run_nexus_continuous_operations.py --mode manual",
+    "nexus:overnight": "python3 scripts/run_nexus_overnight_safe_ops.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
