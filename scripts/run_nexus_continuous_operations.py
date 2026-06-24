@@ -224,11 +224,14 @@ def creative_drafts() -> list[dict]:
             "platform": "facebook",
             "title": "Apply-ready before applying",
             "copy": (
-                "Business owners often ask about funding after they have already started applying. "
-                "The smarter move is a readiness check first: business profile, credit picture, "
-                "documentation story, and the gaps that may slow down a lender conversation.\n\n"
-                "GoClear/Apex is testing a $97 Credit & Funding Readiness Review for founders who want a clearer next step before they apply. "
-                "Reply or email Ray to request the review.\n\n"
+                "Small business owners: before you apply for funding, make sure your credit and "
+                "business profile are actually ready.\n\n"
+                "GoClear/Apex now has a $97 Credit & Funding Readiness Review to help identify gaps "
+                "before you waste time applying.\n\n"
+                "Start here:\n"
+                "https://nexusv20.netlify.app/goclear-apex-readiness.html\n\n"
+                "No funding guarantees. This is a readiness review to help you understand what needs "
+                "to be fixed or prepared first.\n\n"
                 f"{DISCLAIMER}"
             ),
         },
