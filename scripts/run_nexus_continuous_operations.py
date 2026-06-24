@@ -1,0 +1,606 @@
+#!/usr/bin/env python3
+"""Manual Nexus activation loop.
+
+Bounded, operator-run command. It does not install a scheduler, run forever, print
+secrets, buy ads, mass email, or trade live funds.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import ssl
+import sys
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "scripts" / "social"))
+import _supabase as sb  # noqa: E402
+
+REPORT_DIR = ROOT / "reports" / "runtime"
+MANUAL_DIR = ROOT / "reports" / "manual_publish"
+LANDING_PAGE = ROOT / "public" / "goclear-apex-readiness.html"
+CAMPAIGN_KEY = "goclear_apex_97_readiness_activation"
+DISCLAIMER = "Education/readiness only. No guaranteed funding, approval, score change, or deletion outcome."
+
+
+def now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def env_present(*names: str) -> list[str]:
+    return [name for name in names if sb.ENV.get(name)]
+
+
+def secret_post(url: str, body: dict, headers: dict, timeout: int = 30) -> tuple[bool, dict]:
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        context = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+            raw = resp.read().decode(errors="ignore")
+            return True, json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode(errors="ignore")
+        return False, {"status": exc.code, "error": raw[:220]}
+    except Exception as exc:  # noqa: BLE001
+        return False, {"error": str(exc)[:220]}
+
+
+def secret_get(url: str, headers: dict, timeout: int = 30) -> tuple[bool, dict]:
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    try:
+        context = ssl.create_default_context()
+        with urllib.request.urlopen(req, timeout=timeout, context=context) as resp:
+            raw = resp.read().decode(errors="ignore")
+            return True, json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode(errors="ignore")
+        return False, {"status": exc.code, "error": raw[:220]}
+    except Exception as exc:  # noqa: BLE001
+        return False, {"error": str(exc)[:220]}
+
+
+def integration_summary() -> dict:
+    trading_values = {
+        "OANDA_ENVIRONMENT": sb.ENV.get("OANDA_ENVIRONMENT", "").lower(),
+        "OANDA_PRACTICE": sb.ENV.get("OANDA_PRACTICE", "").lower(),
+        "TRADING_MODE": sb.ENV.get("TRADING_MODE", "").lower(),
+        "BROKER_ENV": sb.ENV.get("BROKER_ENV", "").lower(),
+    }
+    demo = any(v in {"practice", "demo", "paper", "true", "sandbox"} for v in trading_values.values())
+    live = any(v in {"live", "real", "funded"} for v in trading_values.values())
+    return {
+        "netlify": {
+            "connected": bool(env_present("NETLIFY_AUTH_TOKEN", "NETLIFY_SITE_ID")),
+            "present_names": env_present("NETLIFY_AUTH_TOKEN", "NETLIFY_SITE_ID"),
+            "netlify_toml": (ROOT / "netlify.toml").exists(),
+        },
+        "resend": {
+            "connected": bool(env_present("RESEND_API_KEY")),
+            "present_names": env_present("RESEND_API_KEY"),
+            "ray_email_configured": bool(first_env("RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")),
+        },
+        "meta": {
+            "connected": bool(env_present("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_IG_ACCESS_TOKEN", "INSTAGRAM_ACCESS_TOKEN")),
+            "present_names": env_present("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_IG_ACCESS_TOKEN", "INSTAGRAM_ACCESS_TOKEN", "META_PAGE_ID", "FACEBOOK_PAGE_ID", "INSTAGRAM_BUSINESS_ACCOUNT_ID"),
+        },
+        "tiktok": {
+            "connected": bool(env_present("TIKTOK_ACCESS_TOKEN")),
+            "present_names": env_present("TIKTOK_ACCESS_TOKEN", "TIKTOK_CLIENT_KEY", "TIKTOK_OPEN_ID"),
+        },
+        "oanda": {
+            "connected": bool(env_present("OANDA_API_KEY", "OANDA_ACCESS_TOKEN") and env_present("OANDA_ACCOUNT_ID")),
+            "present_names": env_present("OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV"),
+            "demo_or_paper": demo,
+            "live_signal": live,
+        },
+        "supabase": {
+            "connected": sb.configured(),
+            "present_names": env_present("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"),
+        },
+        "openrouter_hermes": {
+            "connected": bool(env_present("OPENROUTER_API_KEY", "VITE_HERMES_CHAT_ENABLED")),
+            "present_names": env_present("OPENROUTER_API_KEY", "HERMES_MODEL", "HERMES_FALLBACK_MODEL", "VITE_HERMES_CHAT_ENABLED", "VITE_HERMES_SEARCH_ENABLED"),
+        },
+    }
+
+
+def first_env(*names: str) -> str:
+    for name in names:
+        if sb.ENV.get(name):
+            return sb.ENV[name]
+    return ""
+
+
+def score_text(text: str, platform: str) -> dict:
+    low = text.lower()
+    banned_patterns = [
+        r"(?<!no )guaranteed funding",
+        r"(?<!no )guaranteed approval",
+        r"\b100% approval\b",
+        r"\bdelete all\b",
+        r"\berase your debt\b",
+        r"\bwe guarantee\b",
+        r"\bwill get approved\b",
+    ]
+    risk = [pattern for pattern in banned_patterns if re.search(pattern, low)]
+    has_disclaimer = bool(re.search(r"no guarantee|education|readiness", low))
+    has_cta = bool(re.search(r"\b(dm|request|book|reply|comment|tap|email|start|review)\b", low))
+    specifics = sum(1 for word in ["readiness", "credit", "funding", "business", "lender", "entity", "profile", "checklist"] if word in low)
+    hook_strength = min(95, 66 + specifics * 4 + (8 if len(text) < 900 else 0))
+    clarity = 92 if 40 <= len(text.split()) <= 180 else 82
+    compliance_safety = 25 if risk else (96 if has_disclaimer else 82)
+    money_alignment = min(96, 68 + specifics * 4)
+    goclear_fit = min(95, 70 + specifics * 3)
+    cta_strength = 90 if has_cta else 58
+    uniqueness = min(90, 66 + specifics * 3)
+    platform_fit = 90 if platform in {"facebook", "instagram", "tiktok", "email", "landing_page"} else 82
+    overall = round((hook_strength + clarity + compliance_safety + money_alignment + goclear_fit + cta_strength + uniqueness + platform_fit) / 8)
+    return {
+        "hook_strength": hook_strength,
+        "clarity": clarity,
+        "compliance_safety": compliance_safety,
+        "money_alignment": money_alignment,
+        "goclear_apex_fit": goclear_fit,
+        "cta_strength": cta_strength,
+        "uniqueness": uniqueness,
+        "lead_generation_potential": min(96, round((cta_strength + money_alignment + clarity) / 3)),
+        "platform_fit": platform_fit,
+        "overall_score": overall,
+        "risk_flags": risk,
+    }
+
+
+def creative_drafts() -> list[dict]:
+    drafts = [
+        {
+            "type": "facebook_post",
+            "platform": "facebook",
+            "title": "Apply-ready before applying",
+            "copy": (
+                "Business owners often ask about funding after they have already started applying. "
+                "The smarter move is a readiness check first: business profile, credit picture, "
+                "documentation story, and the gaps that may slow down a lender conversation.\n\n"
+                "GoClear/Apex is testing a $97 Credit & Funding Readiness Review for founders who want a clearer next step before they apply. "
+                "Reply or email Ray to request the review.\n\n"
+                f"{DISCLAIMER}"
+            ),
+        },
+        {
+            "type": "instagram_caption",
+            "platform": "instagram",
+            "title": "Funding prep caption",
+            "copy": (
+                "Before you apply, check readiness.\n\n"
+                "A funding conversation can get messy when the business profile, credit picture, entity details, and documents do not tell the same story. "
+                "The $97 GoClear/Apex Readiness Review gives you a plain-language snapshot and next-step checklist.\n\n"
+                "DM “READY” to ask about the review.\n\n"
+                f"{DISCLAIMER}"
+            ),
+        },
+        {
+            "type": "tiktok_script",
+            "platform": "tiktok",
+            "title": "Three checks before applying",
+            "copy": (
+                "Hook: Stop applying for funding before you check these three things.\n"
+                "Scene 1: Show a checklist: credit picture, business profile, documents.\n"
+                "Scene 2: Explain that lenders may look for consistency before they care about the story.\n"
+                "Scene 3: Offer the $97 GoClear/Apex Readiness Review for a simple prep snapshot.\n"
+                "CTA: Comment READY or message Ray for the review.\n"
+                f"{DISCLAIMER}"
+            ),
+        },
+        {
+            "type": "landing_page_variants",
+            "platform": "landing_page",
+            "title": "Hero/headline variants",
+            "copy": (
+                "1. Get your credit and funding profile application-ready before you apply.\n"
+                "2. The $97 readiness review for business owners who want fewer surprises.\n"
+                "3. Know the gaps in your funding story before a lender sees them.\n"
+                f"{DISCLAIMER}"
+            ),
+        },
+        {
+            "type": "lead_magnet",
+            "platform": "lead_magnet",
+            "title": "Readiness checklist",
+            "copy": (
+                "Lead magnet idea: Business Funding Readiness Checklist. Sections: entity consistency, business address and phone, website and email, bank relationship, credit profile, basic documents, and application timing notes. "
+                "CTA: Use the checklist, then request the $97 review for a personalized readiness snapshot. "
+                f"{DISCLAIMER}"
+            ),
+        },
+        {
+            "type": "dm_script",
+            "platform": "direct_message",
+            "title": "Warm DM response",
+            "copy": (
+                "Thanks for reaching out. The $97 GoClear/Apex Readiness Review is an education-first snapshot of your credit/funding preparation: what looks ready, what may need cleanup, and what to organize before you apply. "
+                "It does not guarantee funding or approvals. If that works, send your best email and Ray can share the next step."
+            ),
+        },
+        {
+            "type": "newsletter_email",
+            "platform": "email",
+            "title": "Test newsletter draft",
+            "copy": (
+                "Subject: TEST - GoClear/Apex $97 readiness review\n\n"
+                "Ray,\n\n"
+                "This is a test email for the GoClear/Apex activation loop.\n\n"
+                "The offer: a $97 Credit & Funding Readiness Review for business owners who want to understand application readiness before they apply. The review focuses on business profile consistency, credit/funding preparation, documentation basics, and a short next-action checklist.\n\n"
+                f"{DISCLAIMER}\n\n"
+                "CTA: Reply to request the review path."
+            ),
+        },
+        {
+            "type": "carousel_outline",
+            "platform": "instagram",
+            "title": "Readiness carousel",
+            "copy": (
+                "Slide 1: Before you apply, check readiness.\n"
+                "Slide 2: Is your business profile consistent?\n"
+                "Slide 3: Does your credit picture match your funding goal?\n"
+                "Slide 4: Are your documents organized?\n"
+                "Slide 5: Do you know what to fix first?\n"
+                "Slide 6: $97 GoClear/Apex Readiness Review.\n"
+                f"{DISCLAIMER}"
+            ),
+        },
+    ]
+    for draft in drafts:
+        draft["score"] = score_text(draft["copy"], draft["platform"])
+    return drafts
+
+
+def write_json(path: Path, data: dict | list) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + "\n")
+
+
+def write_manual_packages(drafts: list[dict], integrations: dict) -> dict:
+    packages = {
+        "status": "manual_publish_required",
+        "reason": "Social publishing tokens/config are not connected locally, or no approved adapter exists.",
+        "facebook": next(d for d in drafts if d["type"] == "facebook_post")["copy"],
+        "instagram": next(d for d in drafts if d["type"] == "instagram_caption")["copy"],
+        "tiktok": next(d for d in drafts if d["type"] == "tiktok_script")["copy"],
+        "asset_instructions": {
+            "facebook": "Use a clean founder-readiness image or short checklist graphic. Do not include income, approval, deletion, or score-change claims.",
+            "instagram": "Use a 4:5 checklist graphic with three checks: profile, credit picture, documents.",
+            "tiktok": "Record a simple talking-head or checklist screen recording. Keep the disclaimer in caption or spoken close.",
+        },
+        "integration_status": {
+            "meta_connected": integrations["meta"]["connected"],
+            "tiktok_connected": integrations["tiktok"]["connected"],
+        },
+    }
+    write_json(MANUAL_DIR / "goclear_apex_social_manual_publish_package.json", packages)
+    return packages
+
+
+def insert_creative_assets(drafts: list[dict]) -> dict:
+    if not sb.configured():
+        return {"written": False, "reason": "supabase_not_configured"}
+    written = 0
+    for draft in drafts:
+        payload = {
+            "campaign_key": CAMPAIGN_KEY,
+            "activation_run": True,
+            "score": draft["score"],
+            "compliance_footer": DISCLAIMER,
+        }
+        st, existing = sb.get("creative_assets", f"payload->>campaign_key=eq.{sb.q(CAMPAIGN_KEY)}&asset_type=eq.{sb.q(draft['type'])}&select=id&limit=1")
+        if isinstance(existing, list) and existing:
+            sb.update("creative_assets", f"id=eq.{sb.q(existing[0]['id'])}", {
+                "score": draft["score"]["overall_score"],
+                "status": "scored" if not draft["score"]["risk_flags"] else "blocked_compliance",
+                "payload": payload,
+            })
+            continue
+        st, row = sb.insert("creative_assets", {
+            "asset_type": draft["type"],
+            "title": draft["title"],
+            "content": draft["copy"],
+            "platform": draft["platform"],
+            "offer": "GoClear/Apex $97 Credit/Funding Readiness Review",
+            "score": draft["score"]["overall_score"],
+            "status": "scored" if not draft["score"]["risk_flags"] else "blocked_compliance",
+            "payload": payload,
+        })
+        if 200 <= st < 300:
+            written += 1
+    sb.event("monetization", "activation_creative_drafts_generated", "success", "GoClear/Apex creative drafts generated", f"{len(drafts)} drafts, {written} new DB rows", payload={"campaign_key": CAMPAIGN_KEY})
+    return {"written": True, "new_rows": written}
+
+
+def social_publish_test(drafts: list[dict], integrations: dict) -> dict:
+    result = {"published": [], "manual_publish_required": [], "blocked": []}
+    if not integrations["tiktok"]["connected"]:
+        result["manual_publish_required"].append("tiktok")
+    fb_token = first_env("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN")
+    if not (integrations["meta"]["connected"] and fb_token and sb.configured()):
+        result["manual_publish_required"] += ["facebook", "instagram"]
+        return result
+
+    st, accounts = sb.get("social_accounts", "platform=eq.facebook&select=id,account_name,account_id,publish_enabled,token_env_key&limit=5")
+    if not isinstance(accounts, list) or not accounts:
+        result["manual_publish_required"].append("facebook")
+        result["blocked"].append("facebook_account_not_registered")
+        return result
+    account = accounts[0]
+    if not account.get("publish_enabled"):
+        result["manual_publish_required"].append("facebook")
+        result["blocked"].append("facebook_publish_enabled_false")
+        return result
+
+    copy = next(d for d in drafts if d["type"] == "facebook_post")["copy"]
+    st, approval = sb.insert("approvals", {
+        "lane": "social",
+        "item_type": "social_post",
+        "status": "approved",
+        "title": "Approved activation test post",
+        "summary": "Ray-approved activation packet: one compliant GoClear/Apex test post.",
+        "payload": {"campaign_key": CAMPAIGN_KEY, "no_paid_boost": True},
+        "approved_by": "activation_packet",
+        "decided_at": now(),
+    })
+    approval_id = approval[0]["id"] if isinstance(approval, list) and approval else None
+    st, post = sb.insert("social_posts", {
+        "platform": "facebook",
+        "account_id": account["id"],
+        "content": copy,
+        "status": "approved",
+        "approval_id": approval_id,
+        "payload": {"campaign_key": CAMPAIGN_KEY, "activation_test": True},
+    })
+    post_id = post[0]["id"] if isinstance(post, list) and post else None
+    if not post_id:
+        result["blocked"].append("facebook_post_insert_failed")
+        return result
+    from facebook_publisher import publish  # noqa: PLC0415
+    published = publish(post_id, real_publish=True)
+    if published.get("ok") and published.get("published"):
+        result["published"].append({"platform": "facebook", "status": "published", "url": published.get("permalink"), "receipt": published.get("post_id")})
+    else:
+        result["blocked"].append({"platform": "facebook", "reason": published.get("blocker") or published.get("error") or "publish_failed"})
+    return result
+
+
+def newsletter_test(drafts: list[dict], integrations: dict) -> dict:
+    email = first_env("RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
+    draft = next(d for d in drafts if d["type"] == "newsletter_email")["copy"]
+    (MANUAL_DIR / "goclear_apex_test_newsletter.txt").write_text(draft + "\n")
+    if not integrations["resend"]["connected"]:
+        return {"created": True, "sent": False, "status": "email_send_blocked_missing_resend", "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
+    if not email:
+        return {"created": True, "sent": False, "status": "email_send_blocked_missing_ray_email", "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
+
+    api_key = sb.ENV["RESEND_API_KEY"]
+    from_email = sb.ENV.get("RESEND_FROM_EMAIL", "Nexus <onboarding@resend.dev>")
+    ok, resp = secret_post("https://api.resend.com/emails", {
+        "from": from_email,
+        "to": [email],
+        "subject": "TEST - GoClear/Apex $97 readiness review",
+        "text": draft,
+    }, {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
+    return {"created": True, "sent": ok, "recipient": email, "status": "sent" if ok else "failed", "message_id": resp.get("id") if ok else None, "error": None if ok else resp.get("error")}
+
+
+def trading_test(integrations: dict) -> dict:
+    oanda = integrations["oanda"]
+    if not oanda["connected"]:
+        return {"connection_tested": False, "trade_placed": False, "status": "blocked_missing_oanda_config"}
+    if oanda["live_signal"] or not oanda["demo_or_paper"]:
+        return {"connection_tested": False, "trade_placed": False, "status": "blocked_live_trade_requires_explicit_approval"}
+    token = first_env("OANDA_API_KEY", "OANDA_ACCESS_TOKEN")
+    account_id = first_env("OANDA_ACCOUNT_ID")
+    ok, resp = secret_get(f"https://api-fxpractice.oanda.com/v3/accounts/{urllib.parse.quote(account_id)}/summary", {"Authorization": f"Bearer {token}"})
+    status = "demo_connection_ok" if ok else "demo_connection_failed"
+    if sb.configured():
+        sb.event("trading", "oanda_demo_connection_test", "success" if ok else "failed", "Oanda demo connection test", status, payload={"environment": "demo/paper", "trade_placed": False})
+    return {"connection_tested": True, "trade_placed": False, "status": status, "demo_paper_only": True, "account_summary_seen": bool(ok and resp)}
+
+
+def landing_status(integrations: dict) -> dict:
+    if integrations["netlify"]["connected"] and integrations["netlify"]["netlify_toml"]:
+        status = "netlify_connected_existing_config_push_should_deploy"
+    elif integrations["netlify"]["connected"]:
+        status = "netlify_token_present_but_no_netlify_toml_manual_site_config_required"
+    else:
+        status = "deploy_ready_manual_netlify_required"
+    return {
+        "created": LANDING_PAGE.exists(),
+        "path": "public/goclear-apex-readiness.html",
+        "local_url_path": "/goclear-apex-readiness.html",
+        "netlify_connected": integrations["netlify"]["connected"],
+        "status": status,
+        "form_backend": "missing_public_form_backend_manual_email_cta_used",
+    }
+
+
+def hermes_explanation(report_summary: str) -> dict:
+    if not sb.configured():
+        return {"ok": False, "status": "blocked_missing_supabase", "text": fallback_explanation()}
+    url = (sb.URL or "").rstrip("/") + "/functions/v1/hermes-chat"
+    key = sb.KEY
+    if not url or not key:
+        return {"ok": False, "status": "blocked_missing_hermes_endpoint", "text": fallback_explanation()}
+    ok, resp = secret_post(url, {
+        "message": "Read the latest Nexus Watch Report and explain what happened, what worked, what failed, and what Ray should do next.",
+        "mode": "report_reader",
+        "context": {"report": report_summary[:2400]},
+    }, {"Authorization": f"Bearer {key}", "apikey": key, "Content-Type": "application/json"})
+    text = str(resp.get("reply") or resp.get("text") or "").strip() if isinstance(resp, dict) else ""
+    if ok and text:
+        return {"ok": True, "status": "hermes_explained_report", "text": text[:1800]}
+    return {"ok": False, "status": "hermes_unavailable_fallback_used", "text": fallback_explanation()}
+
+
+def fallback_explanation() -> str:
+    return (
+        "Hermes fallback summary: the activation loop created the GoClear/Apex offer page, "
+        "generated and scored compliant creative drafts, prepared manual publish and email packages, "
+        "checked integrations, avoided live trading and mass actions, and wrote a watch report. "
+        "Ray should connect Netlify/form intake, Resend, social tokens, and demo trading credentials before the next field test."
+    )
+
+
+def markdown_report(data: dict) -> str:
+    top = data["top_draft"]
+    lines = [
+        "# Nexus Watch Report",
+        "",
+        f"- generated_at: {data['generated_at']}",
+        "- mode: manual activation run",
+        "- safety: no secrets printed, no paid ads, no mass email, no funded/live trades, no private customer data used",
+        "",
+        "## What Ran",
+        "- Integration discovery without secret values",
+        "- GoClear/Apex landing page readiness check",
+        "- Creative draft generation and scoring",
+        "- Manual publish package creation",
+        "- Newsletter draft/send gate",
+        "- Trading demo/paper gate",
+        "- Supabase event proof write when configured",
+        "- Hermes report explanation attempt",
+        "",
+        "## Landing Page",
+        f"- created: {data['landing']['created']}",
+        f"- path: {data['landing']['path']}",
+        f"- url_path: {data['landing']['local_url_path']}",
+        f"- status: {data['landing']['status']}",
+        f"- form_backend: {data['landing']['form_backend']}",
+        "",
+        "## Integrations",
+    ]
+    for name, info in data["integrations"].items():
+        extra = ""
+        if name == "oanda":
+            extra = f" demo_or_paper={info['demo_or_paper']} live_signal={info['live_signal']}"
+        lines.append(f"- {name}: connected={info['connected']} present_names={','.join(info.get('present_names', [])) or 'none'}{extra}")
+    lines += [
+        "",
+        "## Creative Scores",
+    ]
+    for draft in data["drafts"]:
+        s = draft["score"]
+        lines.append(f"- {draft['type']} ({draft['platform']}): overall={s['overall_score']} hook={s['hook_strength']} clarity={s['clarity']} compliance={s['compliance_safety']} money={s['money_alignment']} cta={s['cta_strength']} platform={s['platform_fit']}")
+    lines += [
+        "",
+        "## Top Draft",
+        f"- type: {top['type']}",
+        f"- score: {top['score']['overall_score']}",
+        f"- why: strongest blend of readiness positioning, compliant CTA, money alignment, and immediate lead-generation fit.",
+        "",
+        "## Social",
+        f"- published: {json.dumps(data['social']['published'])}",
+        f"- manual_publish_required: {json.dumps(data['social']['manual_publish_required'])}",
+        f"- blocked: {json.dumps(data['social']['blocked'])}",
+        f"- manual_package: reports/manual_publish/goclear_apex_social_manual_publish_package.json",
+        "",
+        "## Newsletter",
+        f"- created: {data['newsletter']['created']}",
+        f"- sent: {data['newsletter']['sent']}",
+        f"- status: {data['newsletter']['status']}",
+        f"- message_id: {data['newsletter'].get('message_id') or 'none'}",
+        "",
+        "## Trading",
+        f"- connection_tested: {data['trading']['connection_tested']}",
+        f"- demo_paper_trade_placed: {data['trading']['trade_placed']}",
+        f"- status: {data['trading']['status']}",
+        "- funded_live_trade: false",
+        "",
+        "## Proofs",
+        f"- nexus_events_written: {data['proofs']['nexus_events_written']}",
+        f"- creative_assets_db: {json.dumps(data['proofs']['creative_assets_db'])}",
+        "",
+        "## Hermes Explanation",
+        f"- status: {data['hermes']['status']}",
+        "",
+        data["hermes"]["text"],
+        "",
+        "## Recommended Next Actions",
+        "1. Connect Netlify or confirm the existing site so `/goclear-apex-readiness.html` can go live.",
+        "2. Add a real intake/checkout path for the $97 review before public traffic.",
+        "3. Connect one social platform token and keep the one-post gate for the next field test.",
+        "4. Configure Resend with Ray's test recipient before sending any campaign email.",
+        "5. Add Oanda demo credentials only if demo/paper testing is still desired.",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def run(mode: str) -> dict:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    MANUAL_DIR.mkdir(parents=True, exist_ok=True)
+    integrations = integration_summary()
+    drafts = creative_drafts()
+    write_json(REPORT_DIR / "goclear_apex_creative_scores.json", drafts)
+    manual_package = write_manual_packages(drafts, integrations)
+    creative_db = insert_creative_assets(drafts)
+    landing = landing_status(integrations)
+    social = social_publish_test(drafts, integrations)
+    newsletter = newsletter_test(drafts, integrations)
+    trading = trading_test(integrations)
+    if sb.configured():
+        sb.event("automation", "nexus_watch_activation_run", "success", "Nexus Watch activation run completed", "GoClear/Apex activation report generated", payload={"campaign_key": CAMPAIGN_KEY, "mode": mode})
+        sb.health("nexus_watch", "ok", "Manual activation loop completed; report generated.")
+    top = sorted(drafts, key=lambda d: d["score"]["overall_score"], reverse=True)[0]
+    report_probe = f"Landing {landing['status']}; top draft {top['type']} score {top['score']['overall_score']}; social {social}; newsletter {newsletter['status']}; trading {trading['status']}."
+    hermes = hermes_explanation(report_probe)
+    data = {
+        "generated_at": now(),
+        "mode": mode,
+        "integrations": integrations,
+        "landing": landing,
+        "drafts": drafts,
+        "top_draft": top,
+        "manual_package": manual_package,
+        "social": social,
+        "newsletter": newsletter,
+        "trading": trading,
+        "hermes": hermes,
+        "proofs": {
+            "nexus_events_written": sb.configured(),
+            "creative_assets_db": creative_db,
+        },
+    }
+    report_path = REPORT_DIR / f"nexus_watch_report_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.md"
+    report_path.write_text(markdown_report(data))
+    latest = REPORT_DIR / "nexus_watch_report_latest.md"
+    latest.write_text(report_path.read_text())
+    data["report_path"] = str(report_path.relative_to(ROOT))
+    data["latest_report_path"] = str(latest.relative_to(ROOT))
+    write_json(REPORT_DIR / "nexus_watch_report_latest.json", data)
+    if sb.configured():
+        sb.event("communication", "nexus_watch_report_generated", "success", "Nexus Watch Report generated", data["latest_report_path"], payload={"report_path": data["latest_report_path"], "safe_report": True})
+    return data
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Run the manual Nexus activation loop.")
+    parser.add_argument("--mode", default="manual", choices=["manual"])
+    args = parser.parse_args()
+    data = run(args.mode)
+    print(json.dumps({
+        "ok": True,
+        "report_path": data["latest_report_path"],
+        "landing_page": data["landing"],
+        "social": data["social"],
+        "newsletter": {k: v for k, v in data["newsletter"].items() if k != "error"},
+        "trading": data["trading"],
+        "hermes": {"status": data["hermes"]["status"], "ok": data["hermes"]["ok"]},
+        "nexus_events_written": data["proofs"]["nexus_events_written"],
+    }, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

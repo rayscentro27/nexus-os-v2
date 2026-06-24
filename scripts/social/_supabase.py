@@ -6,12 +6,19 @@ On macOS, run scripts with: SSL_CERT_FILE="$(python3 -m certifi)" python3 <scrip
 from __future__ import annotations
 
 import json
+import os
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent  # repo root
+
+try:
+    import certifi  # type: ignore
+    os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+except Exception:
+    pass
 
 
 def load_env() -> dict:

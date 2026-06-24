@@ -1,0 +1,16 @@
+{
+  "status": "manual_publish_required",
+  "reason": "Social publishing tokens/config are not connected locally, or no approved adapter exists.",
+  "facebook": "Business owners often ask about funding after they have already started applying. The smarter move is a readiness check first: business profile, credit picture, documentation story, and the gaps that may slow down a lender conversation.\n\nGoClear/Apex is testing a $97 Credit & Funding Readiness Review for founders who want a clearer next step before they apply. Reply or email Ray to request the review.\n\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+  "instagram": "Before you apply, check readiness.\n\nA funding conversation can get messy when the business profile, credit picture, entity details, and documents do not tell the same story. The $97 GoClear/Apex Readiness Review gives you a plain-language snapshot and next-step checklist.\n\nDM \u201cREADY\u201d to ask about the review.\n\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+  "tiktok": "Hook: Stop applying for funding before you check these three things.\nScene 1: Show a checklist: credit picture, business profile, documents.\nScene 2: Explain that lenders may look for consistency before they care about the story.\nScene 3: Offer the $97 GoClear/Apex Readiness Review for a simple prep snapshot.\nCTA: Comment READY or message Ray for the review.\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+  "asset_instructions": {
+    "facebook": "Use a clean founder-readiness image or short checklist graphic. Do not include income, approval, deletion, or score-change claims.",
+    "instagram": "Use a 4:5 checklist graphic with three checks: profile, credit picture, documents.",
+    "tiktok": "Record a simple talking-head or checklist screen recording. Keep the disclaimer in caption or spoken close."
+  },
+  "integration_status": {
+    "meta_connected": false,
+    "tiktok_connected": false
+  }
+}
