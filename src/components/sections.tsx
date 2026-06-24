@@ -2,7 +2,14 @@ import { useState } from 'react';
 import { listTable, type Row } from '../services/db';
 import { createEvent, createJob, decideApproval } from '../lib/ledger';
 import { Card, Stat, Pill, Empty, SectionTitle, timeAgo, useData } from './ui';
-import { planResponse, detectModeSwitch, MODE_DESC, type HermesMode } from '../lib/hermesIntent';
+import {
+  classify, proposeTask, detectModeSwitch, isApproval, MODE_DESC,
+  type HermesMode, type ProposedTask,
+} from '../lib/hermesIntent';
+import { containsSensitive } from '../lib/dataScopes';
+import { hermesChat, publicSearch, CHAT_NOT_CONFIGURED_MSG, SEARCH_NOT_CONFIGURED_MSG } from '../lib/hermesProviders';
+import { readLatestReport } from '../lib/reportReader';
+import { createTaskRequest } from '../lib/taskRequests';
 
 // ── reusable list ──
 function DataList({ table, render, what, order }: {
@@ -18,15 +25,18 @@ function DataList({ table, render, what, order }: {
 interface ChatMsg { role: 'user' | 'hermes'; text: string; meta?: string; }
 
 const PLACEHOLDER =
-  "Talk to Hermes naturally… e.g. ‘Good morning’, ‘What do you think about GoClear?’, or ‘Switch to Advisor Mode and check Nexus.’";
+  "Talk to Hermes naturally… e.g. ‘Good morning’, ‘What do you think about GoClear?’, ‘Who won last night?’, or ‘Read the latest Nexus report.’";
+
+const MODES: HermesMode[] = ['conversation', 'report_reader', 'task_request']; // Operator Mode hidden for now
 
 export function CommandCenter({ email }: { email: string | null }) {
-  const [mode, setMode] = useState<HermesMode>('interview');     // DEFAULT: interview
+  const [mode, setMode] = useState<HermesMode>('conversation');   // DEFAULT: conversation
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [showAware, setShowAware] = useState(false);             // awareness collapsed by default
+  const [showAware, setShowAware] = useState(false);              // awareness collapsed by default
+  const [pendingTask, setPendingTask] = useState<ProposedTask | null>(null); // awaiting Ray's approval
   const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: 'hermes', text: "Hi Ray — I'm in Interview Mode, so this is just a normal conversation. I won't touch Nexus unless you switch me to Advisor or Operator Mode." },
+    { role: 'hermes', text: "Hi Ray — I'm a conversational advisor. I can talk, look up public info, read safe Nexus reports, and (only after you approve) set up task requests. I never see SSNs, credit reports, passwords, or secrets, and I never publish/send/trade/deploy directly." },
   ]);
 
   const aware = useData<{ approvals: number; jobs: number; incidents: number; campaigns: number; receipts: number }>(
@@ -40,6 +50,22 @@ export function CommandCenter({ email }: { email: string | null }) {
 
   function push(m: ChatMsg) { setMessages((prev) => [...prev, m]); }
 
+  // Create a Ray-approved task request and confirm it. Hermes never executes — it only files it.
+  async function fileTask(task: ProposedTask) {
+    const id = await createTaskRequest(task, email);
+    await createEvent({
+      lane: 'communication', action: 'hermes_task_request', status: 'pending',
+      title: task.task_type, summary: `${task.sensitivity} · worker ${task.assigned_worker_type}`,
+      payload: { task_type: task.task_type, sensitivity: task.sensitivity, assigned_worker_type: task.assigned_worker_type },
+    });
+    push({
+      role: 'hermes',
+      text: `Created a task request: ${task.task_type} (sensitivity: ${task.sensitivity}). It’s assigned to ${task.assigned_worker_type}, I’ll only see ${task.hermes_visibility} updates, and I won’t execute it. ${id ? `Ref ${id}.` : ''}`,
+      meta: 'task_request created · approved',
+    });
+    setPendingTask(null);
+  }
+
   async function send() {
     const content = text.trim();
     if (!content || busy) return;
@@ -47,26 +73,65 @@ export function CommandCenter({ email }: { email: string | null }) {
     push({ role: 'user', text: content });
     setText('');
 
-    // Explicit mode switch — never touches Nexus, just changes the conversation mode.
-    const target = detectModeSwitch(content);
-    if (target) {
-      setMode(target);
-      push({ role: 'hermes', text: `Switched to ${target[0].toUpperCase() + target.slice(1)} Mode — ${MODE_DESC[target]}.`, meta: 'mode change' });
-      setBusy(false);
-      return;
-    }
+    try {
+      // Explicit mode switch — changes the conversation surface, never executes anything.
+      const target = detectModeSwitch(content);
+      if (target) {
+        setMode(target);
+        push({ role: 'hermes', text: `Switched to ${labelFor(target)} — ${MODE_DESC[target]}.`, meta: 'mode change' });
+        return;
+      }
 
-    const plan = planResponse(content, mode, aware.data);
-    // Jobs are created ONLY in Operator Mode for action/read intents. Casual/general/opinion/
-    // current-info never queue anything in any mode.
-    if (plan.allowJob && mode === 'operator') {
-      const jobId = await createJob({ lane: 'communication', job_type: 'hermes_command', status: 'queued', input: { command: content, requested_by: email } });
-      await createEvent({ lane: 'communication', action: 'hermes_command', status: 'pending', title: content.slice(0, 80), summary: `operator: ${plan.intent}`, job_id: jobId, payload: { intent: plan.intent } });
-      push({ role: 'hermes', text: plan.reply, meta: 'operator · gated job queued' });
-    } else {
-      push({ role: 'hermes', text: plan.reply, meta: plan.suggestMode ? `suggests: ${plan.suggestMode} mode` : `${plan.intent} · no Nexus action` });
+      // Approval of the pending proposed task — the ONLY path that creates work.
+      if (pendingTask && isApproval(content)) { await fileTask(pendingTask); return; }
+
+      const intent = classify(content);
+
+      if (intent === 'sensitive_refusal') {
+        push({ role: 'hermes', text: "I can't help with that — it would mean viewing private data (SSN, full credit report, bank/tax docs, passwords, tokens, or secrets). I never read that kind of data. If you want an action taken with it, I can set up a private task request for an internal worker instead.", meta: 'firewall · refused' });
+        return;
+      }
+
+      if (intent === 'privileged_action' || intent === 'public_action') {
+        const task = proposeTask(content);
+        if (!task) { push({ role: 'hermes', text: "I’m not sure what to set up — tell me the action and I’ll propose a task request.", meta: 'no task' }); return; }
+        setPendingTask(task);
+        const forbids = task.forbidden_data.length ? task.forbidden_data.join(', ') : 'any private data';
+        push({ role: 'hermes', text: `I can set up ${task.summary}\nI won’t do it directly, and I won’t access ${forbids}. Approve and I’ll file the task request — just say “approved”.`, meta: `proposed · ${task.assigned_worker_type}` });
+        return;
+      }
+
+      if (intent === 'action_approval') {
+        const task = pendingTask ?? proposeTask(content);
+        if (!task) { push({ role: 'hermes', text: "I don’t have a pending action to create. Tell me what you’d like set up.", meta: 'no pending task' }); return; }
+        await fileTask(task);
+        return;
+      }
+
+      if (intent === 'report_read') {
+        const r = await readLatestReport();
+        push({ role: 'hermes', text: r.text, meta: r.ok ? 'report reader · safe summary' : 'report reader · nothing yet' });
+        return;
+      }
+
+      if (intent === 'public_info') {
+        if (containsSensitive(content)) {
+          push({ role: 'hermes', text: "That looks like private data — I won’t search public sources for it.", meta: 'firewall · refused' });
+          return;
+        }
+        const res = await publicSearch(content);
+        if (res.blocked) { push({ role: 'hermes', text: res.text, meta: 'firewall · refused' }); return; }
+        push({ role: 'hermes', text: res.configured ? res.text : SEARCH_NOT_CONFIGURED_MSG, meta: res.configured ? 'public search' : 'search not configured' });
+        return;
+      }
+
+      // Default: normal conversation via the real chat provider (or not-configured).
+      const res = await hermesChat(content, mode);
+      if (res.blocked) { push({ role: 'hermes', text: res.text, meta: 'firewall · refused' }); return; }
+      push({ role: 'hermes', text: res.configured ? res.text : CHAT_NOT_CONFIGURED_MSG, meta: res.configured ? 'chat provider' : 'chat not configured' });
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -79,23 +144,23 @@ export function CommandCenter({ email }: { email: string | null }) {
       <div className="card" style={{ marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {(['interview', 'advisor', 'operator'] as HermesMode[]).map((m) => (
+            {MODES.map((m) => (
               <button key={m} className={`tab ${mode === m ? 'active' : ''}`} onClick={() => setMode(m)}>
-                {m[0].toUpperCase() + m.slice(1)}
+                {labelFor(m)}
               </button>
             ))}
           </div>
           <button className="btn ghost" onClick={() => setShowAware((s) => !s)}>{showAware ? 'Hide' : 'Show'} system awareness</button>
         </div>
         <div className="meta muted" style={{ marginTop: 8 }}>
-          Current mode: <b style={{ color: 'var(--text)' }}>{mode}</b> — {MODE_DESC[mode]}.
-          {mode === 'interview' && ' Conversation only; I won’t create jobs or read Nexus.'}
+          Current mode: <b style={{ color: 'var(--text)' }}>{labelFor(mode)}</b> — {MODE_DESC[mode]}.
+          {pendingTask && <span style={{ color: 'var(--text)' }}> · awaiting your approval for a “{pendingTask.task_type}” task</span>}
         </div>
         {showAware && (
           <div className="meta" style={{ marginTop: 8, borderTop: '1px solid var(--border)', paddingTop: 8 }}>
             pending approvals {aware.data.approvals} · queued jobs {aware.data.jobs} · open incidents {aware.data.incidents}
             {' '}· active campaigns {aware.data.campaigns} · publish receipts {aware.data.receipts}
-            <span className="muted"> · safety: no publish/send/trade/deploy without approval</span>
+            <span className="muted"> · firewall: Hermes reads public + internal_summary only; no publish/send/trade/deploy without approval</span>
           </div>
         )}
       </div>
@@ -119,6 +184,10 @@ export function CommandCenter({ email }: { email: string | null }) {
       </div>
     </>
   );
+}
+
+function labelFor(m: HermesMode): string {
+  return m === 'conversation' ? 'Conversation' : m === 'report_reader' ? 'Report Reader' : 'Task Request';
 }
 
 // ── System Health ──

@@ -1,126 +1,180 @@
 /**
- * Hermes conversation-first intent layer (pure, deterministic, no side effects).
+ * Hermes intent + firewall router (pure, deterministic, no side effects).
  *
- * Hermes defaults to Interview Mode: normal conversation, NO command routing, NO jobs.
- * Casual/general/opinion/public questions never queue Nexus jobs. Nexus is touched only in
- * Operator Mode for clear action requests; Advisor Mode reads context but does not create jobs.
+ * Hermes is an internet-connected conversational advisor and report interpreter — NOT a command
+ * bot. The free-form replies come from a real chat/search provider (see hermesProviders.ts); this
+ * module only CLASSIFIES intent and enforces the safety firewall:
+ *   • requests to view/reveal sensitive data            → refuse (never read it)
+ *   • privileged actions (reset password/publish/send/   → propose an approval-gated task_request
+ *     trade/deploy) and public build actions               routed to a private/internal worker
+ *   • Ray's explicit approval                            → create the task_request (the real gate)
+ *   • report reading                                     → safe internal-summary interpretation
+ *   • public/current-info questions                      → public search
+ *   • everything else                                    → normal conversation (chat provider)
+ *
+ * Rule (per Ray): Hermes must not AUTO-create tasks from normal conversation. It may create a
+ * structured task_request ONLY after Ray clearly approves.
  */
 
-export type HermesMode = 'interview' | 'advisor' | 'operator';
+import type { Sensitivity } from './dataScopes';
+import { containsSensitive } from './dataScopes';
 
-export type Intent =
-  | 'casual_conversation'
-  | 'general_question'
-  | 'opinion_request'
-  | 'public_current_info_question'
-  | 'nexus_read_request'
-  | 'nexus_action_request'
-  | 'publish_request'
-  | 'trading_request'
-  | 'deploy_request';
+export type HermesMode = 'conversation' | 'report_reader' | 'task_request';
 
 export const MODE_DESC: Record<HermesMode, string> = {
-  interview: 'conversation only, no Nexus access',
-  advisor: 'read-only Nexus context',
-  operator: 'can queue gated jobs',
+  conversation: 'normal conversation + public search; no Nexus private data; no automatic tasks',
+  report_reader: 'reads only safe reports / internal summaries and explains them; no execution',
+  task_request: 'creates structured task requests only after your approval; no execution',
 };
 
-export interface AwareSnapshot {
-  approvals?: number; jobs?: number; incidents?: number; campaigns?: number; receipts?: number;
+export type HermesIntent =
+  | 'sensitive_refusal'   // asked to view/reveal private data → refuse
+  | 'privileged_action'   // reset password / publish / send / trade / deploy → propose private task
+  | 'public_action'       // build a public-safe thing (landing page, content) → propose task
+  | 'action_approval'     // Ray approves → create the task_request
+  | 'report_read'         // read + explain a safe Nexus report
+  | 'public_info'         // current/public info → needs public search
+  | 'conversation';       // normal conversation → chat provider
+
+export interface ProposedTask {
+  task_type: string;
+  sensitivity: Sensitivity;
+  allowed_data_scope: Sensitivity[];
+  forbidden_data: string[];
+  assigned_worker_type: string;
+  hermes_visibility: 'status_only' | 'summary';
+  payload: Record<string, unknown>;
+  summary: string;        // plain-English description Hermes uses when proposing the task
 }
 
-/** "switch to advisor/operator/interview mode" → target mode, else null. */
+/** "switch to conversation/report/task mode" → target mode, else null. */
 export function detectModeSwitch(text: string): HermesMode | null {
   const t = (text || '').toLowerCase();
-  if (/\b(switch to |go to |enter |back to )?(interview|chat) mode\b/.test(t)) return 'interview';
-  if (/\b(switch to |go to |enter )?advisor mode\b/.test(t)) return 'advisor';
-  if (/\b(switch to |go to |enter )?operator mode\b/.test(t)) return 'operator';
+  if (/\b(switch to |go to |enter |back to )?(conversation|chat) mode\b/.test(t)) return 'conversation';
+  if (/\b(switch to |go to |enter )?report( reader)? mode\b/.test(t)) return 'report_reader';
+  if (/\b(switch to |go to |enter )?task( request)? mode\b/.test(t)) return 'task_request';
   return null;
 }
 
-export function classifyIntent(text: string): Intent {
-  const t = (text || '').toLowerCase().trim();
-  const negatedAction = /\b(do not|don'?t|never|without)\b/.test(t);
+const APPROVAL_RE = /\b(approved?|i approve|go ahead|do it|yes,? (create|do|go)|create (the|this|that)\b|confirmed|make it)\b/i;
+export function isApproval(text: string): boolean {
+  return APPROVAL_RE.test(text || '');
+}
 
-  if (!negatedAction && /\b(publish|post (it|this|to)|go live)\b/.test(t)) return 'publish_request';
-  if (/\b(buy|sell|go (long|short)|execute (a )?trade|place (a )?trade|live trade)\b/.test(t)) return 'trading_request';
-  if (/\b(deploy|ship to prod|restart (the )?(server|service))\b/.test(t)) return 'deploy_request';
+function isPrivilegedAction(t: string): boolean {
+  return /\breset .*(password|login|account)\b/.test(t)
+    || /\b(publish|post (it|this|to)|go live)\b/.test(t)
+    || /\bsend (an? )?(email|telegram|message|dm|text)\b/.test(t)
+    || /\b(buy|sell|execute (a )?trade|place (a )?trade|go (long|short)|live trade)\b/.test(t)
+    || /\b(deploy|ship to prod|restart (the )?(server|service))\b/.test(t);
+}
 
-  // Clear Nexus ACTION verbs only.
-  if (/\b(queue|run (a |the )?job|create (a |the )?job|kick off|prepare (a |the )?(publish )?package|review .*transcript in nexus|generate .*in nexus)\b/.test(t))
-    return 'nexus_action_request';
-  // Nexus READ requests.
-  if (/\b(check (nexus|approvals)|nexus status|summari[sz]e nexus|show (me )?(the )?(jobs|approvals|queue|status)|read nexus|what'?s queued)\b/.test(t))
-    return 'nexus_read_request';
+/** Asked to VIEW/REVEAL sensitive data (vs. perform a privileged action through a worker). */
+function isRevealSensitive(t: string): boolean {
+  if (!containsSensitive(t)) return false;
+  return /\b(what'?s|what is|show|tell|give|read|reveal|look up|get|fetch|display)\b/.test(t);
+}
 
-  // Public / current-info questions Hermes cannot answer from its own knowledge.
+function isPublicActionProposal(t: string): boolean {
+  if (/\bexamples? of\b|\bcompare\b|\bresearch\b|what do you think/.test(t)) return false; // those are search/chat
+  return /\b(create|build|make|set up|draft|prepare|spin up) (me )?(a |an |the )?(landing page|task|campaign|funnel|content|post|offer|workflow|sequence)\b/.test(t);
+}
+
+function isPublicInfo(t: string): boolean {
   if (/\b(who (won|played|is winning|scored)|score of|world cup|super bowl|last night|today'?s (game|news|weather|price)|current (price|news|weather|score)|latest news|right now|stock price)\b/.test(t))
-    return 'public_current_info_question';
-
-  // Opinion / advice.
-  if (/\b(what do you think|your (honest )?(take|opinion|view)|should (i|we)|do you think|how do you feel|thoughts on)\b/.test(t))
-    return 'opinion_request';
-
-  // Casual greetings / chit-chat.
-  if (/^(hi|hey+|hello|yo|sup|good (morning|afternoon|evening|night)|how are you|how'?s it going|what'?s up|howdy|morning|evening)\b/.test(t))
-    return 'casual_conversation';
-
-  return 'general_question';
+    return true;
+  return /\bexamples? of\b|\bcompetitor research\b|\bbusiness research\b|\bcompare .*(tools?|platforms?|options?|apps?)\b|\bbest (tools?|platforms?|apps?) for\b|\blanding page examples?\b/.test(t);
 }
 
-export interface HermesPlan {
-  intent: Intent;
-  reply: string;
-  allowJob: boolean;        // true ONLY when a Nexus job should actually be queued (operator mode)
-  suggestMode: HermesMode | null;
+export function classify(text: string): HermesIntent {
+  const t = (text || '').toLowerCase().trim();
+
+  // 1. Privileged action verbs first — so "reset Jane's password" is an action (private worker),
+  //    not a request to reveal a password. Approval of a privileged action creates the task.
+  if (isPrivilegedAction(t)) return isApproval(t) ? 'action_approval' : 'privileged_action';
+
+  // 2. Request to view/reveal sensitive data → always refuse.
+  if (isRevealSensitive(t)) return 'sensitive_refusal';
+
+  // 3. Explicit approval to create a (public-safe) task.
+  if (isApproval(t) && /\btask\b|landing page|campaign|content/.test(t)) return 'action_approval';
+
+  // 4. A public action that needs approval first.
+  if (isPublicActionProposal(t)) return 'public_action';
+
+  // 5. Report reading / interpretation.
+  if (/\b(read|explain|interpret|summari[sz]e|what does|break down).*(report|nexus|status|summary|numbers?)\b/.test(t)
+      || /\blatest (nexus )?report\b/.test(t))
+    return 'report_read';
+
+  // 6. Public / current-info question (needs search).
+  if (isPublicInfo(t)) return 'public_info';
+
+  // 7. Default: normal conversation (chat provider).
+  return 'conversation';
 }
 
-const ACTIONISH: Intent[] = ['nexus_action_request', 'publish_request', 'trading_request', 'deploy_request'];
-
-export function planResponse(text: string, mode: HermesMode, aware?: AwareSnapshot): HermesPlan {
-  const intent = classifyIntent(text);
+/** Builds the approval-gated task for a privileged/public action, or null if none applies. */
+export function proposeTask(text: string): ProposedTask | null {
   const t = (text || '').toLowerCase();
-  const plan = (reply: string, allowJob = false, suggestMode: HermesMode | null = null): HermesPlan =>
-    ({ intent, reply, allowJob, suggestMode });
+  const base = (o: Partial<ProposedTask>): ProposedTask => ({
+    task_type: 'public_build_task',
+    sensitivity: 'public',
+    allowed_data_scope: ['public'],
+    forbidden_data: [],
+    assigned_worker_type: 'general_worker',
+    hermes_visibility: 'summary',
+    payload: { request: text },
+    summary: '',
+    ...o,
+  });
 
-  // Conversational intents NEVER queue jobs, in any mode.
-  if (intent === 'casual_conversation') {
-    const morning = /good morning|^morning\b/.test(t);
-    return plan(morning
-      ? 'Good morning Ray. What are we focused on today — GoClear leads, Nexus testing, or clearing blockers?'
-      : "Hey Ray — what's on your mind? GoClear leads, Nexus testing, or clearing blockers?");
-  }
-  if (intent === 'public_current_info_question') {
-    return plan('I need current public info to verify that. I can check public sources if you want, but I will not touch Nexus for that.');
-  }
-  if (intent === 'opinion_request') {
-    if (/goclear|apex|funding readiness/.test(t)) {
-      return plan('My honest take: GoClear is closest to money if we turn it into a simple $97 readiness review with a clear intake, a safe report, and a follow-up path. The current dashboard is more of a concept board than an operating workflow.');
-    }
-    return plan("My honest take, briefly: tell me the specific thing and I'll give you a direct recommendation, the trade-offs, and the fastest safe next step — no fluff.");
-  }
-  if (intent === 'general_question') {
-    return plan("Happy to talk it through. In Interview Mode I answer from what I know and won't touch Nexus — if you want me to pull live Nexus context, say 'switch to Advisor Mode.'");
-  }
+  if (/\breset .*(password|login|account)\b/.test(t))
+    return base({
+      task_type: 'auth_password_reset', sensitivity: 'auth_sensitive',
+      allowed_data_scope: ['auth_sensitive'], forbidden_data: ['password', 'reset_token', 'otp'],
+      assigned_worker_type: 'private_auth_worker', hermes_visibility: 'status_only',
+      summary: 'a private auth task to reset the account — handled by an internal, non-internet worker. I never see the password or reset token; I only get a status update.',
+    });
 
-  // From here: read/action intents — behavior depends on mode.
-  if (mode === 'interview') {
-    if (intent === 'nexus_read_request')
-      return plan('I can do that, but that means switching from Interview Mode into Advisor Mode so I can read Nexus context. Do you want me to switch?', false, 'advisor');
-    return plan('That requires Operator Mode. I can switch and queue it through the safe runner if you approve.', false, 'operator');
-  }
+  if (/\b(publish|post (it|this|to)|go live)\b/.test(t))
+    return base({
+      task_type: 'publish_request', sensitivity: 'internal_summary',
+      allowed_data_scope: ['public', 'internal_summary'], forbidden_data: ['customer_private'],
+      assigned_worker_type: 'private_publish_worker', hermes_visibility: 'summary',
+      summary: 'a publish task — nothing goes live without your explicit approval, and I don’t publish directly.',
+    });
 
-  if (mode === 'advisor') {
-    if (intent === 'nexus_read_request') {
-      const a = aware || {};
-      return plan(`Advisor Mode (read-only): pending approvals ${a.approvals ?? 0}, queued jobs ${a.jobs ?? 0}, open incidents ${a.incidents ?? 0}, active campaigns ${a.campaigns ?? 0}, publish receipts ${a.receipts ?? 0}. I can summarize any of these — but I can't create jobs or approvals here.`);
-    }
-    return plan('That is an action. Switch to Operator Mode and I will queue it through the safe runner (dry-run; approval required before any real publish/send/trade/deploy).', false, 'operator');
-  }
+  if (/\bsend (an? )?(email|telegram|message|dm|text)\b/.test(t))
+    return base({
+      task_type: 'send_message', sensitivity: 'customer_private',
+      allowed_data_scope: ['internal_summary'], forbidden_data: ['customer_private'],
+      assigned_worker_type: 'private_comms_worker', hermes_visibility: 'status_only',
+      summary: 'a private comms task — an internal worker handles the recipient and contents; I only see status.',
+    });
 
-  // operator mode — read/action requests queue a single gated job
-  if (ACTIONISH.includes(intent) || intent === 'nexus_read_request') {
-    return plan('Queuing that as a gated job for the runner (dry-run by default; no real publish/send/trade/deploy without explicit approval).', true);
-  }
-  return plan('Got it.');
+  if (/\b(buy|sell|execute (a )?trade|place (a )?trade|go (long|short)|live trade)\b/.test(t))
+    return base({
+      task_type: 'trading_request', sensitivity: 'trading_sensitive',
+      allowed_data_scope: ['internal_summary'], forbidden_data: ['trading_sensitive'],
+      assigned_worker_type: 'private_trading_worker', hermes_visibility: 'status_only',
+      summary: 'a private trading task (paper/education only) — an internal worker handles it; I only see status.',
+    });
+
+  if (/\b(deploy|ship to prod|restart (the )?(server|service))\b/.test(t))
+    return base({
+      task_type: 'deploy_request', sensitivity: 'internal_summary',
+      allowed_data_scope: ['internal_summary'], forbidden_data: ['secrets'],
+      assigned_worker_type: 'private_ops_worker', hermes_visibility: 'status_only',
+      summary: 'a private ops/deploy task — an internal worker handles it; nothing deploys without your approval.',
+    });
+
+  // Public-safe build (landing page, content, campaign, research task).
+  if (/\b(landing page|campaign|funnel|content|post|offer|workflow|sequence|task)\b/.test(t))
+    return base({
+      task_type: 'public_build_task',
+      summary: 'a public-safe task (no private data) for the general worker.',
+    });
+
+  return null;
 }
