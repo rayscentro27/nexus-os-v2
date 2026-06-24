@@ -7,6 +7,7 @@ secrets, buy ads, mass email, or trade live funds.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -25,6 +26,7 @@ import _supabase as sb  # noqa: E402
 REPORT_DIR = ROOT / "reports" / "runtime"
 MANUAL_DIR = ROOT / "reports" / "manual_publish"
 LANDING_PAGE = ROOT / "public" / "goclear-apex-readiness.html"
+LOCK_FILE = REPORT_DIR / "nexus_watch.lock"
 CAMPAIGN_KEY = "goclear_apex_97_readiness_activation"
 DISCLAIMER = "Education/readiness only. No guaranteed funding, approval, score change, or deletion outcome."
 
@@ -35,6 +37,10 @@ def now() -> str:
 
 def env_present(*names: str) -> list[str]:
     return [name for name in names if sb.ENV.get(name)]
+
+
+def env_missing(*names: str) -> list[str]:
+    return [name for name in names if not sb.ENV.get(name)]
 
 
 def secret_post(url: str, body: dict, headers: dict, timeout: int = 30) -> tuple[bool, dict]:
@@ -67,7 +73,14 @@ def secret_get(url: str, headers: dict, timeout: int = 30) -> tuple[bool, dict]:
 
 
 def integration_summary() -> dict:
+    netlify_required = ("NETLIFY_AUTH_TOKEN", "NETLIFY_SITE_ID")
+    resend_required = ("RESEND_API_KEY", "RESEND_FROM_EMAIL")
+    resend_recipients = ("RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
+    meta_names = ("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ID", "FACEBOOK_PAGE_ID", "META_INSTAGRAM_ACCOUNT_ID", "INSTAGRAM_BUSINESS_ACCOUNT_ID")
+    tiktok_names = ("TIKTOK_ACCESS_TOKEN", "TIKTOK_CLIENT_KEY", "TIKTOK_OPEN_ID")
+    oanda_names = ("OANDA_ENV", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID")
     trading_values = {
+        "OANDA_ENV": sb.ENV.get("OANDA_ENV", "").lower(),
         "OANDA_ENVIRONMENT": sb.ENV.get("OANDA_ENVIRONMENT", "").lower(),
         "OANDA_PRACTICE": sb.ENV.get("OANDA_PRACTICE", "").lower(),
         "TRADING_MODE": sb.ENV.get("TRADING_MODE", "").lower(),
@@ -77,26 +90,32 @@ def integration_summary() -> dict:
     live = any(v in {"live", "real", "funded"} for v in trading_values.values())
     return {
         "netlify": {
-            "connected": bool(env_present("NETLIFY_AUTH_TOKEN", "NETLIFY_SITE_ID")),
-            "present_names": env_present("NETLIFY_AUTH_TOKEN", "NETLIFY_SITE_ID"),
+            "connected": not env_missing(*netlify_required),
+            "present_names": env_present(*netlify_required, "NETLIFY_SITE_URL", "URL", "DEPLOY_URL"),
+            "missing_names": env_missing(*netlify_required),
             "netlify_toml": (ROOT / "netlify.toml").exists(),
         },
         "resend": {
-            "connected": bool(env_present("RESEND_API_KEY")),
-            "present_names": env_present("RESEND_API_KEY"),
-            "ray_email_configured": bool(first_env("RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")),
+            "connected": not env_missing(*resend_required) and bool(first_env(*resend_recipients)),
+            "present_names": env_present(*resend_required, *resend_recipients),
+            "missing_names": env_missing(*resend_required),
+            "recipient_missing_names": list(resend_recipients) if not first_env(*resend_recipients) else [],
+            "ray_email_configured": bool(first_env(*resend_recipients)),
         },
         "meta": {
-            "connected": bool(env_present("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_IG_ACCESS_TOKEN", "INSTAGRAM_ACCESS_TOKEN")),
-            "present_names": env_present("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_IG_ACCESS_TOKEN", "INSTAGRAM_ACCESS_TOKEN", "META_PAGE_ID", "FACEBOOK_PAGE_ID", "INSTAGRAM_BUSINESS_ACCOUNT_ID"),
+            "connected": bool(env_present("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN")),
+            "present_names": env_present(*meta_names),
+            "missing_names": env_missing(*meta_names),
         },
         "tiktok": {
             "connected": bool(env_present("TIKTOK_ACCESS_TOKEN")),
-            "present_names": env_present("TIKTOK_ACCESS_TOKEN", "TIKTOK_CLIENT_KEY", "TIKTOK_OPEN_ID"),
+            "present_names": env_present(*tiktok_names),
+            "missing_names": env_missing(*tiktok_names),
         },
         "oanda": {
             "connected": bool(env_present("OANDA_API_KEY", "OANDA_ACCESS_TOKEN") and env_present("OANDA_ACCOUNT_ID")),
-            "present_names": env_present("OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV"),
+            "present_names": env_present(*oanda_names),
+            "missing_names": env_missing(*oanda_names),
             "demo_or_paper": demo,
             "live_signal": live,
         },
@@ -107,6 +126,7 @@ def integration_summary() -> dict:
         "openrouter_hermes": {
             "connected": bool(env_present("OPENROUTER_API_KEY", "VITE_HERMES_CHAT_ENABLED")),
             "present_names": env_present("OPENROUTER_API_KEY", "HERMES_MODEL", "HERMES_FALLBACK_MODEL", "VITE_HERMES_CHAT_ENABLED", "VITE_HERMES_SEARCH_ENABLED"),
+            "missing_names": env_missing("OPENROUTER_API_KEY", "HERMES_MODEL", "HERMES_FALLBACK_MODEL"),
         },
     }
 
@@ -180,7 +200,7 @@ def creative_drafts() -> list[dict]:
                 "Before you apply, check readiness.\n\n"
                 "A funding conversation can get messy when the business profile, credit picture, entity details, and documents do not tell the same story. "
                 "The $97 GoClear/Apex Readiness Review gives you a plain-language snapshot and next-step checklist.\n\n"
-                "DM “READY” to ask about the review.\n\n"
+                "DM \"READY\" to ask about the review.\n\n"
                 f"{DISCLAIMER}"
             ),
         },
@@ -266,12 +286,52 @@ def write_json(path: Path, data: dict | list) -> None:
 
 
 def write_manual_packages(drafts: list[dict], integrations: dict) -> dict:
+    hashtags = ["#BusinessCredit", "#FundingReadiness", "#SmallBusiness", "#GoClear", "#ApexReadiness"]
+    cta = "Request the $97 GoClear/Apex Readiness Review."
+    compliance = DISCLAIMER
     packages = {
         "status": "manual_publish_required",
         "reason": "Social publishing tokens/config are not connected locally, or no approved adapter exists.",
-        "facebook": next(d for d in drafts if d["type"] == "facebook_post")["copy"],
-        "instagram": next(d for d in drafts if d["type"] == "instagram_caption")["copy"],
-        "tiktok": next(d for d in drafts if d["type"] == "tiktok_script")["copy"],
+        "cta": cta,
+        "hashtags": hashtags,
+        "compliance_disclaimer": compliance,
+        "facebook": {
+            "copy": next(d for d in drafts if d["type"] == "facebook_post")["copy"],
+            "hashtags": hashtags[:4],
+            "asset_prompt": "A clean desk with a small business funding readiness checklist, laptop, and organized documents. Professional, trustworthy, no cash piles, no approval guarantee text.",
+            "posting_checklist": [
+                "Paste the copy exactly.",
+                "Attach one readiness/checklist image.",
+                "Confirm the disclaimer is present.",
+                "Do not boost or run ads.",
+                "After posting, save the URL as a manual publish receipt.",
+            ],
+        },
+        "instagram": {
+            "caption": next(d for d in drafts if d["type"] == "instagram_caption")["copy"],
+            "hashtags": hashtags,
+            "asset_prompt": "4:5 carousel cover reading 'Before you apply, check readiness' with three checklist items: profile, credit picture, documents. Modern business style.",
+            "posting_checklist": [
+                "Use a 4:5 checklist graphic or carousel.",
+                "Paste the caption and hashtags.",
+                "Keep the disclaimer in the caption.",
+                "Do not imply approval, score change, or deletion results.",
+                "Save the live URL or screenshot after posting.",
+            ],
+        },
+        "tiktok": {
+            "script": next(d for d in drafts if d["type"] == "tiktok_script")["copy"],
+            "caption": f"Before you apply, check readiness. {cta} {compliance}",
+            "hashtags": ["#BusinessFunding", "#CreditReadiness", "#SmallBusinessTips", "#GoClear"],
+            "asset_prompt": "Talking-head video with a checklist overlay: credit picture, business profile, documents. Calm advisory tone.",
+            "posting_checklist": [
+                "Record the script as a short talking-head or screen checklist.",
+                "Paste the caption with disclaimer.",
+                "Do not mention guaranteed approvals or funding.",
+                "Do not promote paid ads.",
+                "Save the post URL or screenshot after publishing.",
+            ],
+        },
         "asset_instructions": {
             "facebook": "Use a clean founder-readiness image or short checklist graphic. Do not include income, approval, deletion, or score-change claims.",
             "instagram": "Use a 4:5 checklist graphic with three checks: profile, credit picture, documents.",
@@ -284,6 +344,47 @@ def write_manual_packages(drafts: list[dict], integrations: dict) -> dict:
     }
     write_json(MANUAL_DIR / "goclear_apex_social_manual_publish_package.json", packages)
     return packages
+
+
+def write_netlify_deploy_package(integrations: dict) -> dict:
+    package = {
+        "status": "deploy_ready_manual_netlify_required" if not integrations["netlify"]["connected"] else "netlify_connected",
+        "landing_page_source": "public/goclear-apex-readiness.html",
+        "built_file": "dist/goclear-apex-readiness.html",
+        "public_path": "/goclear-apex-readiness.html",
+        "missing_env_names": integrations["netlify"].get("missing_names", []),
+        "auto_deploy_assumption": "No netlify.toml found. If the GitHub repo is already connected in Netlify, pushing main should deploy the Vite build using npm run build and dist as the publish directory.",
+        "manual_steps": [
+            "Run npm run build.",
+            "In Netlify, create or open the site connected to this GitHub repo.",
+            "Use build command: npm run build.",
+            "Use publish directory: dist.",
+            "Deploy main, then open /goclear-apex-readiness.html.",
+            "Optionally add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally for future CLI deploy checks.",
+        ],
+    }
+    md = [
+        "# GoClear/Apex Landing Page Deploy Package",
+        "",
+        f"- Status: {package['status']}",
+        f"- Source: `{package['landing_page_source']}`",
+        f"- Built file: `{package['built_file']}`",
+        f"- Public path after deploy: `{package['public_path']}`",
+        f"- Missing Netlify env names: {', '.join(package['missing_env_names']) or 'none'}",
+        "",
+        "## Netlify Settings",
+        "- Build command: `npm run build`",
+        "- Publish directory: `dist`",
+        "- Landing page path: `/goclear-apex-readiness.html`",
+        "",
+        "## Manual Steps",
+        *[f"{idx}. {step}" for idx, step in enumerate(package["manual_steps"], start=1)],
+        "",
+        "No public URL is claimed until Netlify is connected or a manual deploy completes.",
+    ]
+    (MANUAL_DIR / "goclear_apex_netlify_deploy_package.md").write_text("\n".join(md) + "\n")
+    write_json(MANUAL_DIR / "goclear_apex_netlify_deploy_package.json", package)
+    return package
 
 
 def insert_creative_assets(drafts: list[dict]) -> dict:
@@ -375,38 +476,46 @@ def social_publish_test(drafts: list[dict], integrations: dict) -> dict:
 
 
 def newsletter_test(drafts: list[dict], integrations: dict) -> dict:
-    email = first_env("RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
+    email = first_env("RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
     draft = next(d for d in drafts if d["type"] == "newsletter_email")["copy"]
     (MANUAL_DIR / "goclear_apex_test_newsletter.txt").write_text(draft + "\n")
     if not integrations["resend"]["connected"]:
-        return {"created": True, "sent": False, "status": "email_send_blocked_missing_resend", "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
+        missing = [*integrations["resend"].get("missing_names", []), *integrations["resend"].get("recipient_missing_names", [])]
+        result = {"created": True, "sent": False, "status": "email_send_blocked_missing_resend", "missing_env_names": missing, "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
+        if sb.configured():
+            sb.event("communication", "resend_test_email_blocked", "pending", "Resend test email blocked", f"missing env names: {', '.join(missing)}", payload={"missing_env_names": missing})
+        return result
     if not email:
-        return {"created": True, "sent": False, "status": "email_send_blocked_missing_ray_email", "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
+        missing = ["RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL"]
+        return {"created": True, "sent": False, "status": "email_send_blocked_missing_ray_email", "missing_env_names": missing, "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
 
     api_key = sb.ENV["RESEND_API_KEY"]
-    from_email = sb.ENV.get("RESEND_FROM_EMAIL", "Nexus <onboarding@resend.dev>")
+    from_email = sb.ENV["RESEND_FROM_EMAIL"]
     ok, resp = secret_post("https://api.resend.com/emails", {
         "from": from_email,
         "to": [email],
         "subject": "TEST - GoClear/Apex $97 readiness review",
         "text": draft,
     }, {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
-    return {"created": True, "sent": ok, "recipient": email, "status": "sent" if ok else "failed", "message_id": resp.get("id") if ok else None, "error": None if ok else resp.get("error")}
+    result = {"created": True, "sent": ok, "recipient_configured": True, "status": "sent" if ok else "failed", "message_id": resp.get("id") if ok else None, "error": None if ok else resp.get("error")}
+    if sb.configured():
+        sb.event("communication", "resend_test_email", "success" if ok else "failed", "Resend test email", result["status"], payload={"sent": ok, "message_id": result["message_id"]})
+    return result
 
 
 def trading_test(integrations: dict) -> dict:
     oanda = integrations["oanda"]
     if not oanda["connected"]:
-        return {"connection_tested": False, "trade_placed": False, "status": "blocked_missing_oanda_config"}
+        return {"connection_tested": False, "trade_placed": False, "status": "blocked_missing_oanda_config", "missing_env_names": oanda.get("missing_names", [])}
     if oanda["live_signal"] or not oanda["demo_or_paper"]:
-        return {"connection_tested": False, "trade_placed": False, "status": "blocked_live_trade_requires_explicit_approval"}
+        return {"connection_tested": False, "trade_placed": False, "status": "blocked_live_trade_requires_explicit_approval", "missing_env_names": oanda.get("missing_names", [])}
     token = first_env("OANDA_API_KEY", "OANDA_ACCESS_TOKEN")
     account_id = first_env("OANDA_ACCOUNT_ID")
     ok, resp = secret_get(f"https://api-fxpractice.oanda.com/v3/accounts/{urllib.parse.quote(account_id)}/summary", {"Authorization": f"Bearer {token}"})
     status = "demo_connection_ok" if ok else "demo_connection_failed"
     if sb.configured():
         sb.event("trading", "oanda_demo_connection_test", "success" if ok else "failed", "Oanda demo connection test", status, payload={"environment": "demo/paper", "trade_placed": False})
-    return {"connection_tested": True, "trade_placed": False, "status": status, "demo_paper_only": True, "account_summary_seen": bool(ok and resp)}
+    return {"connection_tested": True, "trade_placed": False, "status": status, "demo_paper_only": True, "account_summary_seen": bool(ok and resp), "missing_env_names": []}
 
 
 def landing_status(integrations: dict) -> dict:
@@ -421,8 +530,23 @@ def landing_status(integrations: dict) -> dict:
         "path": "public/goclear-apex-readiness.html",
         "local_url_path": "/goclear-apex-readiness.html",
         "netlify_connected": integrations["netlify"]["connected"],
+        "missing_env_names": integrations["netlify"].get("missing_names", []),
         "status": status,
         "form_backend": "missing_public_form_backend_manual_email_cta_used",
+        "deploy_package": "reports/manual_publish/goclear_apex_netlify_deploy_package.md",
+    }
+
+
+def scheduler_status() -> dict:
+    return {
+        "installed": False,
+        "started": False,
+        "manual_command": "npm run nexus:watch",
+        "recommended_schedule": "Every business morning and once mid-afternoon while offers are being tested; do not run more frequently than hourly without adding stronger deduplication.",
+        "lock_overlap_protection": "file lock at reports/runtime/nexus_watch.lock; overlapping runs exit without starting a second pass",
+        "logs_reports": "reports/runtime/nexus_watch_report_latest.md and reports/runtime/nexus_watch_report_latest.json",
+        "hermes_report_access": "Hermes report-reader receives the safe report summary from the watch loop and can also summarize recent nexus_events/system_health.",
+        "disabled_config_path": "docs/operations/NEXUS_WATCH_LOOP.md",
     }
 
 
@@ -477,6 +601,8 @@ def markdown_report(data: dict) -> str:
         f"- path: {data['landing']['path']}",
         f"- url_path: {data['landing']['local_url_path']}",
         f"- status: {data['landing']['status']}",
+        f"- missing_netlify_env_names: {', '.join(data['landing'].get('missing_env_names', [])) or 'none'}",
+        f"- deploy_package: {data['landing']['deploy_package']}",
         f"- form_backend: {data['landing']['form_backend']}",
         "",
         "## Integrations",
@@ -485,7 +611,7 @@ def markdown_report(data: dict) -> str:
         extra = ""
         if name == "oanda":
             extra = f" demo_or_paper={info['demo_or_paper']} live_signal={info['live_signal']}"
-        lines.append(f"- {name}: connected={info['connected']} present_names={','.join(info.get('present_names', [])) or 'none'}{extra}")
+        lines.append(f"- {name}: connected={info['connected']} present_names={','.join(info.get('present_names', [])) or 'none'} missing_names={','.join(info.get('missing_names', [])) or 'none'}{extra}")
     lines += [
         "",
         "## Creative Scores",
@@ -510,13 +636,24 @@ def markdown_report(data: dict) -> str:
         f"- created: {data['newsletter']['created']}",
         f"- sent: {data['newsletter']['sent']}",
         f"- status: {data['newsletter']['status']}",
+        f"- missing_env_names: {', '.join(data['newsletter'].get('missing_env_names', [])) or 'none'}",
         f"- message_id: {data['newsletter'].get('message_id') or 'none'}",
         "",
         "## Trading",
         f"- connection_tested: {data['trading']['connection_tested']}",
         f"- demo_paper_trade_placed: {data['trading']['trade_placed']}",
         f"- status: {data['trading']['status']}",
+        f"- missing_env_names: {', '.join(data['trading'].get('missing_env_names', [])) or 'none'}",
         "- funded_live_trade: false",
+        "",
+        "## Scheduler Ready",
+        f"- installed: {data['scheduler']['installed']}",
+        f"- started: {data['scheduler']['started']}",
+        f"- manual_command: {data['scheduler']['manual_command']}",
+        f"- recommended_schedule: {data['scheduler']['recommended_schedule']}",
+        f"- lock_overlap_protection: {data['scheduler']['lock_overlap_protection']}",
+        f"- logs_reports: {data['scheduler']['logs_reports']}",
+        f"- hermes_report_access: {data['scheduler']['hermes_report_access']}",
         "",
         "## Proofs",
         f"- nexus_events_written: {data['proofs']['nexus_events_written']}",
@@ -537,10 +674,31 @@ def markdown_report(data: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+@contextlib.contextmanager
+def watch_lock():
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    handle = LOCK_FILE.open("w")
+    try:
+        import fcntl  # type: ignore
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError("nexus_watch_already_running")
+        handle.write(now())
+        handle.flush()
+        yield
+    finally:
+        with contextlib.suppress(Exception):
+            import fcntl  # type: ignore
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        handle.close()
+
+
 def run(mode: str) -> dict:
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     MANUAL_DIR.mkdir(parents=True, exist_ok=True)
     integrations = integration_summary()
+    deploy_package = write_netlify_deploy_package(integrations)
     drafts = creative_drafts()
     write_json(REPORT_DIR / "goclear_apex_creative_scores.json", drafts)
     manual_package = write_manual_packages(drafts, integrations)
@@ -553,6 +711,7 @@ def run(mode: str) -> dict:
         sb.event("automation", "nexus_watch_activation_run", "success", "Nexus Watch activation run completed", "GoClear/Apex activation report generated", payload={"campaign_key": CAMPAIGN_KEY, "mode": mode})
         sb.health("nexus_watch", "ok", "Manual activation loop completed; report generated.")
     top = sorted(drafts, key=lambda d: d["score"]["overall_score"], reverse=True)[0]
+    scheduler = scheduler_status()
     report_probe = f"Landing {landing['status']}; top draft {top['type']} score {top['score']['overall_score']}; social {social}; newsletter {newsletter['status']}; trading {trading['status']}."
     hermes = hermes_explanation(report_probe)
     data = {
@@ -560,12 +719,14 @@ def run(mode: str) -> dict:
         "mode": mode,
         "integrations": integrations,
         "landing": landing,
+        "deploy_package": deploy_package,
         "drafts": drafts,
         "top_draft": top,
         "manual_package": manual_package,
         "social": social,
         "newsletter": newsletter,
         "trading": trading,
+        "scheduler": scheduler,
         "hermes": hermes,
         "proofs": {
             "nexus_events_written": sb.configured(),
@@ -588,14 +749,23 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run the manual Nexus activation loop.")
     parser.add_argument("--mode", default="manual", choices=["manual"])
     args = parser.parse_args()
-    data = run(args.mode)
+    try:
+        with watch_lock():
+            data = run(args.mode)
+    except RuntimeError as exc:
+        if str(exc) == "nexus_watch_already_running":
+            print(json.dumps({"ok": False, "status": "blocked_overlap", "reason": "nexus_watch_already_running"}, indent=2))
+            return 2
+        raise
     print(json.dumps({
         "ok": True,
         "report_path": data["latest_report_path"],
         "landing_page": data["landing"],
+        "deploy_package": data["deploy_package"],
         "social": data["social"],
         "newsletter": {k: v for k, v in data["newsletter"].items() if k != "error"},
         "trading": data["trading"],
+        "scheduler": data["scheduler"],
         "hermes": {"status": data["hermes"]["status"], "ok": data["hermes"]["ok"]},
         "nexus_events_written": data["proofs"]["nexus_events_written"],
     }, indent=2))

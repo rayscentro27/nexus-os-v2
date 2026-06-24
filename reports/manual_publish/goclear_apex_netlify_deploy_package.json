@@ -1,0 +1,19 @@
+{
+  "status": "deploy_ready_manual_netlify_required",
+  "landing_page_source": "public/goclear-apex-readiness.html",
+  "built_file": "dist/goclear-apex-readiness.html",
+  "public_path": "/goclear-apex-readiness.html",
+  "missing_env_names": [
+    "NETLIFY_AUTH_TOKEN",
+    "NETLIFY_SITE_ID"
+  ],
+  "auto_deploy_assumption": "No netlify.toml found. If the GitHub repo is already connected in Netlify, pushing main should deploy the Vite build using npm run build and dist as the publish directory.",
+  "manual_steps": [
+    "Run npm run build.",
+    "In Netlify, create or open the site connected to this GitHub repo.",
+    "Use build command: npm run build.",
+    "Use publish directory: dist.",
+    "Deploy main, then open /goclear-apex-readiness.html.",
+    "Optionally add NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID locally for future CLI deploy checks."
+  ]
+}

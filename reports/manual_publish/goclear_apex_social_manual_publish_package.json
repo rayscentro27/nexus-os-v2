@@ -1,9 +1,68 @@
 {
   "status": "manual_publish_required",
   "reason": "Social publishing tokens/config are not connected locally, or no approved adapter exists.",
-  "facebook": "Business owners often ask about funding after they have already started applying. The smarter move is a readiness check first: business profile, credit picture, documentation story, and the gaps that may slow down a lender conversation.\n\nGoClear/Apex is testing a $97 Credit & Funding Readiness Review for founders who want a clearer next step before they apply. Reply or email Ray to request the review.\n\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
-  "instagram": "Before you apply, check readiness.\n\nA funding conversation can get messy when the business profile, credit picture, entity details, and documents do not tell the same story. The $97 GoClear/Apex Readiness Review gives you a plain-language snapshot and next-step checklist.\n\nDM \u201cREADY\u201d to ask about the review.\n\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
-  "tiktok": "Hook: Stop applying for funding before you check these three things.\nScene 1: Show a checklist: credit picture, business profile, documents.\nScene 2: Explain that lenders may look for consistency before they care about the story.\nScene 3: Offer the $97 GoClear/Apex Readiness Review for a simple prep snapshot.\nCTA: Comment READY or message Ray for the review.\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+  "cta": "Request the $97 GoClear/Apex Readiness Review.",
+  "hashtags": [
+    "#BusinessCredit",
+    "#FundingReadiness",
+    "#SmallBusiness",
+    "#GoClear",
+    "#ApexReadiness"
+  ],
+  "compliance_disclaimer": "Education/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+  "facebook": {
+    "copy": "Business owners often ask about funding after they have already started applying. The smarter move is a readiness check first: business profile, credit picture, documentation story, and the gaps that may slow down a lender conversation.\n\nGoClear/Apex is testing a $97 Credit & Funding Readiness Review for founders who want a clearer next step before they apply. Reply or email Ray to request the review.\n\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+    "hashtags": [
+      "#BusinessCredit",
+      "#FundingReadiness",
+      "#SmallBusiness",
+      "#GoClear"
+    ],
+    "asset_prompt": "A clean desk with a small business funding readiness checklist, laptop, and organized documents. Professional, trustworthy, no cash piles, no approval guarantee text.",
+    "posting_checklist": [
+      "Paste the copy exactly.",
+      "Attach one readiness/checklist image.",
+      "Confirm the disclaimer is present.",
+      "Do not boost or run ads.",
+      "After posting, save the URL as a manual publish receipt."
+    ]
+  },
+  "instagram": {
+    "caption": "Before you apply, check readiness.\n\nA funding conversation can get messy when the business profile, credit picture, entity details, and documents do not tell the same story. The $97 GoClear/Apex Readiness Review gives you a plain-language snapshot and next-step checklist.\n\nDM \"READY\" to ask about the review.\n\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+    "hashtags": [
+      "#BusinessCredit",
+      "#FundingReadiness",
+      "#SmallBusiness",
+      "#GoClear",
+      "#ApexReadiness"
+    ],
+    "asset_prompt": "4:5 carousel cover reading 'Before you apply, check readiness' with three checklist items: profile, credit picture, documents. Modern business style.",
+    "posting_checklist": [
+      "Use a 4:5 checklist graphic or carousel.",
+      "Paste the caption and hashtags.",
+      "Keep the disclaimer in the caption.",
+      "Do not imply approval, score change, or deletion results.",
+      "Save the live URL or screenshot after posting."
+    ]
+  },
+  "tiktok": {
+    "script": "Hook: Stop applying for funding before you check these three things.\nScene 1: Show a checklist: credit picture, business profile, documents.\nScene 2: Explain that lenders may look for consistency before they care about the story.\nScene 3: Offer the $97 GoClear/Apex Readiness Review for a simple prep snapshot.\nCTA: Comment READY or message Ray for the review.\nEducation/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+    "caption": "Before you apply, check readiness. Request the $97 GoClear/Apex Readiness Review. Education/readiness only. No guaranteed funding, approval, score change, or deletion outcome.",
+    "hashtags": [
+      "#BusinessFunding",
+      "#CreditReadiness",
+      "#SmallBusinessTips",
+      "#GoClear"
+    ],
+    "asset_prompt": "Talking-head video with a checklist overlay: credit picture, business profile, documents. Calm advisory tone.",
+    "posting_checklist": [
+      "Record the script as a short talking-head or screen checklist.",
+      "Paste the caption with disclaimer.",
+      "Do not mention guaranteed approvals or funding.",
+      "Do not promote paid ads.",
+      "Save the post URL or screenshot after publishing."
+    ]
+  },
   "asset_instructions": {
     "facebook": "Use a clean founder-readiness image or short checklist graphic. Do not include income, approval, deletion, or score-change claims.",
     "instagram": "Use a 4:5 checklist graphic with three checks: profile, credit picture, documents.",
