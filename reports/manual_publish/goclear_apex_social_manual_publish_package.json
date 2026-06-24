@@ -69,7 +69,7 @@
     "tiktok": "Record a simple talking-head or checklist screen recording. Keep the disclaimer in caption or spoken close."
   },
   "integration_status": {
-    "meta_connected": false,
+    "meta_connected": true,
     "tiktok_connected": false
   }
 }

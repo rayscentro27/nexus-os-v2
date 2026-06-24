@@ -12,6 +12,7 @@ import json
 import os
 import re
 import ssl
+import subprocess
 import sys
 import urllib.error
 import urllib.parse
@@ -78,16 +79,22 @@ def integration_summary() -> dict:
     resend_recipients = ("RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
     meta_names = ("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ID", "FACEBOOK_PAGE_ID", "META_INSTAGRAM_ACCOUNT_ID", "INSTAGRAM_BUSINESS_ACCOUNT_ID")
     tiktok_names = ("TIKTOK_ACCESS_TOKEN", "TIKTOK_CLIENT_KEY", "TIKTOK_OPEN_ID")
-    oanda_names = ("OANDA_ENV", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID")
+    oanda_names = ("OANDA_ENV", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID", "PAPER_ONLY", "LIVE_TRADING", "NEXUS_DRY_RUN", "TRADING_LIVE_EXECUTION_ENABLED")
     trading_values = {
         "OANDA_ENV": sb.ENV.get("OANDA_ENV", "").lower(),
         "OANDA_ENVIRONMENT": sb.ENV.get("OANDA_ENVIRONMENT", "").lower(),
         "OANDA_PRACTICE": sb.ENV.get("OANDA_PRACTICE", "").lower(),
         "TRADING_MODE": sb.ENV.get("TRADING_MODE", "").lower(),
         "BROKER_ENV": sb.ENV.get("BROKER_ENV", "").lower(),
+        "PAPER_ONLY": sb.ENV.get("PAPER_ONLY", "").lower(),
+        "NEXUS_DRY_RUN": sb.ENV.get("NEXUS_DRY_RUN", "").lower(),
+        "LIVE_TRADING": sb.ENV.get("LIVE_TRADING", "").lower(),
+        "TRADING_LIVE_EXECUTION_ENABLED": sb.ENV.get("TRADING_LIVE_EXECUTION_ENABLED", "").lower(),
     }
-    demo = any(v in {"practice", "demo", "paper", "true", "sandbox"} for v in trading_values.values())
+    demo = any(v in {"practice", "demo", "paper", "sandbox"} for v in trading_values.values())
+    demo = demo or trading_values["PAPER_ONLY"] == "true" or trading_values["NEXUS_DRY_RUN"] == "true"
     live = any(v in {"live", "real", "funded"} for v in trading_values.values())
+    live = live or trading_values["LIVE_TRADING"] == "true" or trading_values["TRADING_LIVE_EXECUTION_ENABLED"] == "true"
     return {
         "netlify": {
             "connected": not env_missing(*netlify_required),
@@ -127,6 +134,11 @@ def integration_summary() -> dict:
             "connected": bool(env_present("OPENROUTER_API_KEY", "VITE_HERMES_CHAT_ENABLED")),
             "present_names": env_present("OPENROUTER_API_KEY", "HERMES_MODEL", "HERMES_FALLBACK_MODEL", "VITE_HERMES_CHAT_ENABLED", "VITE_HERMES_SEARCH_ENABLED"),
             "missing_names": env_missing("OPENROUTER_API_KEY", "HERMES_MODEL", "HERMES_FALLBACK_MODEL"),
+        },
+        "oracle": {
+            "connected": bool(env_present("ORACLE_HOST", "ORACLE_VM_IP")) or (Path.home() / ".ssh" / "oracle_vm").exists(),
+            "present_names": env_present("ORACLE_HOST", "ORACLE_USER", "ORACLE_SSH_KEY", "ORACLE_VM_IP", "OCI_CLI_PROFILE", "OCI_CONFIG_FILE", "OCI_COMPARTMENT_ID"),
+            "missing_names": env_missing("ORACLE_HOST", "ORACLE_USER", "ORACLE_SSH_KEY", "ORACLE_VM_IP"),
         },
     }
 
@@ -426,20 +438,26 @@ def social_publish_test(drafts: list[dict], integrations: dict) -> dict:
     result = {"published": [], "manual_publish_required": [], "blocked": []}
     if not integrations["tiktok"]["connected"]:
         result["manual_publish_required"].append("tiktok")
+    # The current repo has a gated Facebook adapter only. Instagram stays manual until a
+    # dedicated safe adapter exists, even when Meta credentials are present.
+    result["manual_publish_required"].append("instagram")
     fb_token = first_env("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN")
     if not (integrations["meta"]["connected"] and fb_token and sb.configured()):
         result["manual_publish_required"] += ["facebook", "instagram"]
+        result["manual_publish_required"] = sorted(set(result["manual_publish_required"]))
         return result
 
     st, accounts = sb.get("social_accounts", "platform=eq.facebook&select=id,account_name,account_id,publish_enabled,token_env_key&limit=5")
     if not isinstance(accounts, list) or not accounts:
         result["manual_publish_required"].append("facebook")
         result["blocked"].append("facebook_account_not_registered")
+        result["manual_publish_required"] = sorted(set(result["manual_publish_required"]))
         return result
     account = accounts[0]
     if not account.get("publish_enabled"):
         result["manual_publish_required"].append("facebook")
         result["blocked"].append("facebook_publish_enabled_false")
+        result["manual_publish_required"] = sorted(set(result["manual_publish_required"]))
         return result
 
     copy = next(d for d in drafts if d["type"] == "facebook_post")["copy"]
@@ -465,6 +483,7 @@ def social_publish_test(drafts: list[dict], integrations: dict) -> dict:
     post_id = post[0]["id"] if isinstance(post, list) and post else None
     if not post_id:
         result["blocked"].append("facebook_post_insert_failed")
+        result["manual_publish_required"] = sorted(set(result["manual_publish_required"]))
         return result
     from facebook_publisher import publish  # noqa: PLC0415
     published = publish(post_id, real_publish=True)
@@ -472,6 +491,7 @@ def social_publish_test(drafts: list[dict], integrations: dict) -> dict:
         result["published"].append({"platform": "facebook", "status": "published", "url": published.get("permalink"), "receipt": published.get("post_id")})
     else:
         result["blocked"].append({"platform": "facebook", "reason": published.get("blocker") or published.get("error") or "publish_failed"})
+    result["manual_publish_required"] = sorted(set(result["manual_publish_required"]))
     return result
 
 
@@ -516,6 +536,52 @@ def trading_test(integrations: dict) -> dict:
     if sb.configured():
         sb.event("trading", "oanda_demo_connection_test", "success" if ok else "failed", "Oanda demo connection test", status, payload={"environment": "demo/paper", "trade_placed": False})
     return {"connection_tested": True, "trade_placed": False, "status": status, "demo_paper_only": True, "account_summary_seen": bool(ok and resp), "missing_env_names": []}
+
+
+def oracle_status() -> dict:
+    user = first_env("ORACLE_USER") or "opc"
+    host = first_env("ORACLE_HOST", "ORACLE_VM_IP") or "161.153.40.41"
+    key_name = first_env("ORACLE_SSH_KEY")
+    key_candidates = [Path(key_name).expanduser()] if key_name else []
+    key_candidates.append(Path.home() / ".ssh" / "oracle_vm")
+    key = next((path for path in key_candidates if path.exists()), None)
+    result = {
+        "reachable": False,
+        "status": "missing_key_or_host",
+        "host_known": bool(host),
+        "key_present": bool(key),
+        "user": user if user in {"opc", "ubuntu", "ec2-user"} else "configured",
+        "host_label": "documented_default_or_env",
+        "summary": [],
+    }
+    if not key or not host:
+        result["missing_config_names"] = [name for name in ("ORACLE_HOST", "ORACLE_VM_IP", "ORACLE_SSH_KEY") if not sb.ENV.get(name)]
+        return result
+    cmd = [
+        "ssh", "-i", str(key), "-o", "BatchMode=yes", "-o", "ConnectTimeout=6",
+        "-o", "StrictHostKeyChecking=accept-new", f"{user}@{host}",
+        "hostname; uptime; df -h / | tail -n 1; free -m | head -n 2; pgrep -af 'nexus|ollama|python|node' | head -n 20",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=12)
+    except subprocess.TimeoutExpired:
+        result["status"] = "ssh_timeout"
+        return result
+    result["reachable"] = proc.returncode == 0
+    result["status"] = "reachable" if proc.returncode == 0 else "ssh_failed"
+    if proc.stdout:
+        lines = proc.stdout.splitlines()
+        result["summary"] = lines[:30]
+        result["hostname"] = lines[0] if lines else ""
+        result["ollama_seen"] = any("ollama" in line for line in lines)
+        result["nexus_process_seen"] = any("nexus" in line.lower() for line in lines)
+    if proc.stderr and proc.returncode != 0:
+        result["error_summary"] = proc.stderr.splitlines()[-3:]
+    if sb.configured():
+        sb.event("automation", "oracle_worker_status", "success" if result["reachable"] else "pending",
+                 "Oracle worker status checked", result["status"],
+                 payload={"reachable": result["reachable"], "status": result["status"], "hostname": result.get("hostname"), "ollama_seen": result.get("ollama_seen")})
+    return result
 
 
 def landing_status(integrations: dict) -> dict:
@@ -646,6 +712,17 @@ def markdown_report(data: dict) -> str:
         f"- missing_env_names: {', '.join(data['trading'].get('missing_env_names', [])) or 'none'}",
         "- funded_live_trade: false",
         "",
+        "## Oracle Worker",
+        f"- reachable: {data['oracle']['reachable']}",
+        f"- status: {data['oracle']['status']}",
+        f"- hostname: {data['oracle'].get('hostname') or 'unknown'}",
+        f"- key_present: {data['oracle']['key_present']}",
+        f"- ollama_seen: {data['oracle'].get('ollama_seen', False)}",
+        f"- nexus_process_seen: {data['oracle'].get('nexus_process_seen', False)}",
+        "- action_taken: read_only_status_check",
+        "- summary:",
+        *[f"  - {line}" for line in data["oracle"].get("summary", [])[:8]],
+        "",
         "## Scheduler Ready",
         f"- installed: {data['scheduler']['installed']}",
         f"- started: {data['scheduler']['started']}",
@@ -707,12 +784,13 @@ def run(mode: str) -> dict:
     social = social_publish_test(drafts, integrations)
     newsletter = newsletter_test(drafts, integrations)
     trading = trading_test(integrations)
+    oracle = oracle_status()
     if sb.configured():
         sb.event("automation", "nexus_watch_activation_run", "success", "Nexus Watch activation run completed", "GoClear/Apex activation report generated", payload={"campaign_key": CAMPAIGN_KEY, "mode": mode})
         sb.health("nexus_watch", "ok", "Manual activation loop completed; report generated.")
     top = sorted(drafts, key=lambda d: d["score"]["overall_score"], reverse=True)[0]
     scheduler = scheduler_status()
-    report_probe = f"Landing {landing['status']}; top draft {top['type']} score {top['score']['overall_score']}; social {social}; newsletter {newsletter['status']}; trading {trading['status']}."
+    report_probe = f"Landing {landing['status']}; top draft {top['type']} score {top['score']['overall_score']}; social {social}; newsletter {newsletter['status']}; trading {trading['status']}; oracle {oracle['status']}."
     hermes = hermes_explanation(report_probe)
     data = {
         "generated_at": now(),
@@ -726,6 +804,7 @@ def run(mode: str) -> dict:
         "social": social,
         "newsletter": newsletter,
         "trading": trading,
+        "oracle": oracle,
         "scheduler": scheduler,
         "hermes": hermes,
         "proofs": {
@@ -765,6 +844,7 @@ def main() -> int:
         "social": data["social"],
         "newsletter": {k: v for k, v in data["newsletter"].items() if k != "error"},
         "trading": data["trading"],
+        "oracle": {"reachable": data["oracle"]["reachable"], "status": data["oracle"]["status"], "hostname": data["oracle"].get("hostname"), "ollama_seen": data["oracle"].get("ollama_seen")},
         "scheduler": data["scheduler"],
         "hermes": {"status": data["hermes"]["status"], "ok": data["hermes"]["ok"]},
         "nexus_events_written": data["proofs"]["nexus_events_written"],
