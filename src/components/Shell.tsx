@@ -6,7 +6,9 @@ import {
   OpsImprovements, EventsFeed, IntakeOrientation, DesignLibrary,
 } from './sections';
 import { tabById } from '../config/nexusTabs';
-import { StatusBadge, TabConnectionStatus, SystemStatusOverview } from './TabStatus';
+import { StatusBadge, TabConnectionStatus } from './TabStatus';
+import { CommandCenterMissionControl } from './command-center/MissionControl';
+import { SourceIntakeReviewPage } from './source-intake/SourceIntakeReviewPage';
 
 interface NavItem { key: string; label: string; icon: string; sub: string; render: (email: string | null) => ReactNode; }
 
@@ -52,9 +54,12 @@ export function Shell({ email }: { email: string | null }) {
           <div><h2>{current.label}</h2><div className="sub">{current.sub}</div></div>
           <UserMenu email={email} />
         </div>
-        {active === 'command' && <SystemStatusOverview onOpenTab={setActive} />}
         <TabConnectionStatus tabId={active} />
-        {current.render(email)}
+        {active === 'command'
+          ? <CommandCenterMissionControl email={email} onNavigate={setActive} />
+          : active === 'intake'
+            ? <SourceIntakeReviewPage email={email} onNavigate={setActive} />
+            : current.render(email)}
       </main>
     </div>
   );
