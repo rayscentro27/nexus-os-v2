@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { loadMessages, saveMessages, loadMode, saveMode, type StoredMsg } from '../lib/hermesChatStore';
 import {
   getAdminDiagnostic,
   listTable,
@@ -101,17 +102,28 @@ const PLACEHOLDER =
 
 const MODES: HermesMode[] = ['conversation', 'report_reader', 'task_request']; // Operator Mode hidden for now
 
+const HERMES_GREETING: ChatMsg = { role: 'hermes', text: "Hi Ray — I'm a conversational advisor. I can talk, look up public info, read safe Nexus reports, and (only after you approve) set up task requests. I never see SSNs, credit reports, passwords, or secrets, and I never publish/send/trade/deploy directly." };
+
 export function CommandCenter({ email }: { email: string | null }) {
-  const [mode, setMode] = useState<HermesMode>('conversation');   // DEFAULT: conversation
+  // Persisted across tab navigation + reloads via localStorage (sensitive text never stored).
+  const [mode, setMode] = useState<HermesMode>(() => (loadMode() as HermesMode) || 'conversation');
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [showAware, setShowAware] = useState(false);              // awareness collapsed by default
   const [pendingTask, setPendingTask] = useState<ProposedTask | null>(null); // awaiting Ray's approval
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [approvalReviewItems, setApprovalReviewItems] = useState<ApprovalReviewItem[]>([]);
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    { role: 'hermes', text: "Hi Ray — I'm a conversational advisor. I can talk, look up public info, read safe Nexus reports, and (only after you approve) set up task requests. I never see SSNs, credit reports, passwords, or secrets, and I never publish/send/trade/deploy directly." },
-  ]);
+  const [messages, setMessages] = useState<ChatMsg[]>(() => {
+    const saved = loadMessages() as ChatMsg[] | null;
+    return saved && saved.length ? saved : [HERMES_GREETING];
+  });
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Persist chat + mode so switching tabs / reloading does not reset Hermes.
+  useEffect(() => { saveMessages(messages as StoredMsg[]); }, [messages]);
+  useEffect(() => { saveMode(mode); }, [mode]);
+  // Keep the latest message in view inside the scrollable panel.
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ block: 'end' }); }, [messages]);
 
   const aware = useData<{ approvals: number; jobs: number; incidents: number; campaigns: number; receipts: number }>(
     async () => ({
@@ -377,21 +389,28 @@ export function CommandCenter({ email }: { email: string | null }) {
         )}
       </div>
 
-      {/* Chat — the main focus of the page */}
-      <div className="card" style={{ minHeight: 360 }}>
-        <h3>Hermes</h3>
-        <div className="list" style={{ marginBottom: 12 }}>
+      {/* Chat — bounded height; messages scroll INSIDE the card, composer pinned at the bottom. */}
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', height: 'min(64vh, 720px)', minHeight: 360 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+          <h3 style={{ margin: 0 }}>Hermes</h3>
+          <span className="meta muted" style={{ fontSize: 11 }}>Hermes can recommend, but Ray approves risky actions.</span>
+        </div>
+        <div className="list" style={{ flex: 1, overflowY: 'auto', margin: '10px 0' }}>
           {messages.map((m, i) => (
             <div key={i} className={m.role === 'hermes' ? 'hermes' : 'item'}>
               <div className="body" style={{ whiteSpace: 'pre-wrap' }}>{m.text}</div>
               {m.meta && <div className="meta muted" style={{ marginTop: 4 }}>{m.role === 'hermes' ? 'Hermes' : 'You'} · {m.meta}</div>}
             </div>
           ))}
+          <div ref={chatEndRef} />
         </div>
-        <textarea className="cmd" placeholder={PLACEHOLDER} value={text}
-          onChange={(e) => setText(e.target.value)} onKeyDown={handleKey} rows={3} />
-        <div style={{ marginTop: 8 }}>
-          <button className="btn" onClick={send} disabled={busy || !text.trim()}>{busy ? 'Thinking…' : 'Send'}</button>
+        <div style={{ flexShrink: 0 }}>
+          <textarea className="cmd" placeholder={PLACEHOLDER} value={text}
+            onChange={(e) => setText(e.target.value)} onKeyDown={handleKey} rows={2} />
+          <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="meta muted" style={{ fontSize: 11 }}>History persists across tabs. No publish/send/trade/deploy without your approval.</span>
+            <button className="btn" onClick={send} disabled={busy || !text.trim()}>{busy ? 'Thinking…' : 'Send'}</button>
+          </div>
         </div>
       </div>
     </>

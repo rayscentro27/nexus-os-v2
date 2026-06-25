@@ -31,6 +31,19 @@ export async function createJob(job: {
   return data?.id ?? null;
 }
 
+export async function createApproval(a: {
+  lane?: string; item_type: string; title: string; summary?: string;
+  payload?: Record<string, unknown>;
+}): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('approvals').insert({
+    lane: a.lane ?? 'research', status: 'pending', item_type: a.item_type,
+    title: a.title, summary: a.summary ?? '', payload: a.payload ?? {},
+  }).select('id').single();
+  if (error) { console.warn('[ledger] createApproval:', error.message); return null; }
+  return data?.id ?? null;
+}
+
 export async function decideApproval(
   id: string, status: 'approved' | 'rejected' | 'revise', email?: string,
 ): Promise<boolean> {

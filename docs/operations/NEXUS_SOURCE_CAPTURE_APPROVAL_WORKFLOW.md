@@ -76,3 +76,11 @@ Build a small **approved-capture worker**: poll `task_requests` where
 `task_type=youtube_capture_request AND status=approved`, run the stored command once, set the row to
 `done` with a `result_summary`, and write a `nexus_events` proof. Add an Approvals-UI button that
 flips the request to approved (no execution in the browser).
+
+## Update (policy + visibility, 2026-06-25)
+- Safe admin-submitted capture is now a **Capture Queue** item (`approval_required=false`), not an
+  approval. See `NEXUS_SOURCE_CAPTURE_POLICY.md`.
+- Review-required items file a linked `approvals` row so they show in the Approvals tab. See
+  `NEXUS_APPROVAL_VISIBILITY_MODEL.md` (root cause: Source Intake wrote `task_requests`, Approvals
+  reads `approvals`).
+- UI: "Pending Approval" rail → **Capture Queue**; shows Safe capture vs Approval required + next step.
