@@ -12,20 +12,30 @@ allowlist, bounded MAX_VIDEOS). This wrapper does NOT duplicate that. It:
   * writes a nexus_events proof (only with --write-events and not dry-run);
   * writes a report to reports/runtime + reports/manual_publish.
 
-It NEVER: starts a scheduler, scrapes broadly, downloads private/unlisted media, bypasses logins/
-captcha/paywalls, or sends private data to external AI. Real capture (yt-dlp shell-out to the legacy
-collector) is gated behind --no-dry-run AND --allow-capture and is intentionally NOT enabled here.
+DEFAULT mode is DRY-RUN: no network, no yt-dlp, no external AI. Real capture runs ONLY with
+--no-dry-run, uses yt-dlp transcript/subtitle extraction on PUBLIC videos (--skip-download — never
+downloads media), is bounded by --limit (max 3), dedupes by source_url, writes ONLY to v2 tables,
+and NEVER calls external AI / summarize.py / the v1 research table.
 
-Usage (safe demo):
-  python3 scripts/intake/run_existing_youtube_monitor.py --once --limit 1 --dry-run --no-external-ai \
-      --source-url https://www.youtube.com/watch?v=EXAMPLE
+It NEVER: starts a scheduler, scrapes broadly, downloads media, bypasses logins/captcha/paywalls/
+rate limits, or sends transcript text to external AI.
+
+Usage:
+  # safe dry-run (no network):
+  python3 scripts/intake/run_existing_youtube_monitor.py --once --limit 1 --dry-run --no-external-ai
+  # one gated real capture (approved public URL only):
+  python3 scripts/intake/run_existing_youtube_monitor.py --source-url "<APPROVED_URL>" --once \
+      --limit 1 --no-external-ai --write-events --no-dry-run
 """
 from __future__ import annotations
 
 import argparse
 import json
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -34,9 +44,12 @@ sys.path.insert(0, str(ROOT / "scripts" / "social"))
 import _supabase as sb  # noqa: E402
 
 RATING_MODEL_VERSION = "v1"
+MAX_LIMIT = 3  # hard cap; never process more than this per run
 LEGACY_COLLECTOR = Path.home() / "nexus-ai" / "research-engine" / "collector.py"
+ALLOWLIST = ROOT / "config" / "youtube_sources_allowlist.json"
 RUNTIME = ROOT / "reports" / "runtime" / "nexus_youtube_monitor_latest.md"
 MANUAL = ROOT / "reports" / "manual_publish" / "nexus_youtube_monitor_latest.md"
+REAL_REPORT = ROOT / "reports" / "manual_publish" / "nexus_youtube_real_capture_latest.md"
 
 # Deterministic keyword → category/tag signals (no external AI).
 SIGNALS = {
@@ -135,21 +148,145 @@ def score_source(title: str, text: str) -> dict:
     }
 
 
-def build_record(url: str, title: str | None, text: str, no_external_ai: bool) -> dict:
+# ── Approved-source allowlist ─────────────────────────────────────────────────
+def load_allowlist() -> list[dict]:
+    if not ALLOWLIST.exists():
+        return []
+    try:
+        data = json.loads(ALLOWLIST.read_text())
+        return [s for s in data.get("sources", []) if s.get("enabled")]
+    except Exception:
+        return []
+
+
+def is_approved(url: str) -> bool:
+    """True if the url (or its channel/video id) matches an enabled allowlist entry."""
     vid = youtube_id(url)
+    for s in load_allowlist():
+        su = (s.get("url") or "").strip()
+        if not su:
+            continue
+        if su == url or (vid and vid in su) or (su in url):
+            return True
+    return False
+
+
+# ── yt-dlp capture (PUBLIC, transcript-only, no media download) ───────────────
+def have_ytdlp() -> bool:
+    return shutil.which("yt-dlp") is not None
+
+
+def _run(cmd: list[str], timeout: int = 90) -> tuple[int, str, str]:
+    p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+    return p.returncode, p.stdout, p.stderr
+
+
+def ytdlp_metadata(url: str) -> dict:
+    """Public metadata via yt-dlp -J --skip-download. No media downloaded."""
+    rc, out, _ = _run(["yt-dlp", "-J", "--skip-download", "--no-warnings", url])
+    if rc != 0 or not out.strip():
+        return {}
+    try:
+        d = json.loads(out)
+    except Exception:
+        return {}
+    up = d.get("upload_date")  # YYYYMMDD
+    published = f"{up[0:4]}-{up[4:6]}-{up[6:8]}T00:00:00Z" if up and len(up) == 8 else None
+    return {
+        "title": d.get("title"),
+        "creator": d.get("channel") or d.get("uploader"),
+        "published_at": published,
+        "description": (d.get("description") or "")[:1000],
+        "video_id": d.get("id"),
+        "is_private": bool(d.get("availability") and d.get("availability") != "public"),
+    }
+
+
+def _vtt_to_text(vtt: str) -> str:
+    lines: list[str] = []
+    for ln in vtt.splitlines():
+        ln = ln.strip()
+        if (not ln or ln == "WEBVITT" or ln.startswith("WEBVTT") or "-->" in ln
+                or ln.isdigit() or ln.startswith(("Kind:", "Language:", "NOTE"))):
+            continue
+        ln = re.sub(r"<[^>]+>", "", ln)  # strip inline timing tags
+        if ln and (not lines or lines[-1] != ln):
+            lines.append(ln)
+    return " ".join(lines)[:20000]
+
+
+def ytdlp_transcript(url: str) -> tuple[str, str]:
+    """Returns (transcript_text, transcript_status). Public auto/uploaded English subs only."""
+    with tempfile.TemporaryDirectory() as td:
+        rc, _, _ = _run([
+            "yt-dlp", "--skip-download", "--write-auto-sub", "--write-sub",
+            "--sub-lang", "en.*", "--convert-subs", "vtt", "--no-warnings",
+            "-o", str(Path(td) / "%(id)s.%(ext)s"), url,
+        ])
+        vtts = list(Path(td).glob("*.vtt"))
+        if not vtts:
+            return "", "unavailable"
+        try:
+            text = _vtt_to_text(vtts[0].read_text(errors="ignore"))
+        except Exception:
+            return "", "failed"
+        return (text, "captured") if text.strip() else ("", "partial")
+
+
+def capture_one(url: str, no_external_ai: bool) -> dict:
+    """Capture metadata + transcript for ONE public video. No media download, no external AI."""
+    meta = ytdlp_metadata(url)
+    if meta.get("is_private"):
+        # never process non-public media
+        return build_record(url, meta.get("title"), "", no_external_ai, meta={"transcript_status": "unavailable", "note": "non_public_skipped"})
+    text, status = ytdlp_transcript(url)
+    return build_record(url, meta.get("title"), text, no_external_ai,
+                        meta={"transcript_status": status, **{k: meta.get(k) for k in ("creator", "published_at", "description", "video_id")}})
+
+
+def resolve_urls(args) -> list[str]:
+    """Return the bounded list of single-video URLs to process (≤ MAX_LIMIT)."""
+    limit = max(1, min(args.limit, MAX_LIMIT))
+    if args.source_url:
+        return [args.source_url][:limit]
+    src = args.channel_url or args.playlist_url
+    if not src:
+        return []
+    # Flat playlist/channel listing (latest first), bounded. No media downloaded.
+    rc, out, _ = _run(["yt-dlp", "--flat-playlist", "-J", "--no-warnings",
+                       "--playlist-end", str(limit), src])
+    if rc != 0 or not out.strip():
+        return []
+    try:
+        entries = json.loads(out).get("entries", [])
+    except Exception:
+        return []
+    urls = []
+    for e in entries[:limit]:
+        vid = e.get("id")
+        if vid:
+            urls.append(f"https://www.youtube.com/watch?v={vid}")
+    return urls
+
+
+def build_record(url: str, title: str | None, text: str, no_external_ai: bool, meta: dict | None = None) -> dict:
+    meta = meta or {}
+    vid = meta.get("video_id") or youtube_id(url)
     title = title or (f"YouTube {vid}" if vid else (url or "manual idea"))
-    rating = score_source(title, text)
+    # Score on title + transcript + description (all public). External AI never used.
+    rating = score_source(title, f"{text}\n{meta.get('description', '')}")
+    transcript_status = meta.get("transcript_status") or ("missing" if not text else "captured")
     return {
         "source_id": vid or url,
         "source_type": source_type_for(url),
         "source_url": url,
         "title": title,
-        "creator": None,
-        "published_at": None,
+        "creator": meta.get("creator"),
+        "published_at": meta.get("published_at"),
         "captured_at": datetime.now(timezone.utc).isoformat(),
-        "transcript_status": "missing" if not text else "captured",
+        "transcript_status": transcript_status,
         "review_status": "needs_ray_review" if rating["ray_decision_needed"] else "reviewed",
-        "external_ai_used": (not no_external_ai),
+        "external_ai_used": False,  # this wrapper never calls external AI
         "plain_english_summary": (title[:200]),
         "why_it_matters": f"Auto-categorized as {rating['primary_category']} → {rating['recommended_destination']}.",
         "recommended_next_action": "Review in Source Intake & Review; route to destination on Ray approval.",
@@ -157,6 +294,7 @@ def build_record(url: str, title: str | None, text: str, no_external_ai: bool) -
         "required_assets": [],
         "rating": rating,
         "video_id": vid,
+        "transcript_chars": len(text or ""),
     }
 
 
@@ -223,50 +361,103 @@ def write_report(records: list[dict], dry: bool) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="no writes/network/AI (default-safe)")
-    ap.add_argument("--no-dry-run", dest="dry_run", action="store_false")
+    ap.add_argument("--no-dry-run", dest="dry_run", action="store_false", help="enable real capture + v2 writes")
     ap.set_defaults(dry_run=True)
     ap.add_argument("--once", action="store_true")
-    ap.add_argument("--limit", type=int, default=1)
-    ap.add_argument("--source-url", default="")
-    ap.add_argument("--no-external-ai", action="store_true", default=True)
-    ap.add_argument("--write-events", action="store_true")
+    ap.add_argument("--limit", type=int, default=1, help=f"videos to process (hard cap {MAX_LIMIT})")
+    ap.add_argument("--source-url", default="", help="single public video URL")
+    ap.add_argument("--channel-url", default="", help="allowlisted channel URL (latest --limit)")
+    ap.add_argument("--playlist-url", default="", help="allowlisted playlist URL (first --limit)")
+    ap.add_argument("--no-external-ai", action="store_true", default=True, help="deterministic only (default on)")
+    ap.add_argument("--write-events", action="store_true", help="write nexus_events proof (live only)")
     ap.add_argument("--max-age-days", type=int, default=30)
-    ap.add_argument("--allow-capture", action="store_true",
-                    help="(reserved) permit real yt-dlp capture via the legacy collector; NOT used in dry-run")
+    ap.add_argument("--approved-only", action="store_true", help="require the URL to be in the allowlist")
     args = ap.parse_args()
 
-    if not args.source_url:
-        print("DRY-RUN demo needs --source-url (no broad scraping). Example: --source-url https://www.youtube.com/watch?v=EXAMPLE")
+    urls = resolve_urls(args)
+    if not urls:
+        print("Need --source-url (or allowlisted --channel-url/--playlist-url). No broad scraping. "
+              "Example: --source-url https://www.youtube.com/watch?v=EXAMPLE")
         return 2
 
-    # In dry-run we do NOT fetch a transcript; deterministic scoring runs on the title/url only.
-    text = ""  # real capture (yt-dlp) is intentionally not invoked here
-    rec = build_record(args.source_url, None, text, args.no_external_ai)
-    records = [rec][: max(1, args.limit)]
+    if args.approved_only:
+        urls = [u for u in urls if is_approved(u)]
+        if not urls:
+            print("--approved-only: no provided URL is in config/youtube_sources_allowlist.json. Refusing.")
+            return 3
 
-    run_id = None
-    if not args.dry_run and sb.configured():
-        st, run = sb.insert("research_runs", {
-            "requested_by": "youtube_monitor_wrapper", "question": "YouTube source intake",
-            "research_type": "youtube_monitor", "status": "completed",
-            "summary": f"Processed {len(records)} source(s)", "payload": {"rating_model_version": RATING_MODEL_VERSION}})
-        run_id = run[0]["id"] if isinstance(run, list) and run else None
-        for r in records:
-            refs = write_supabase(r, run_id)
-            if args.write_events:
-                sb.event("research", "youtube_source_reviewed", "success",
-                         f"Reviewed: {r['title']}", f"score {r['rating']['total_opportunity_score']} → {r['rating']['recommended_destination']}",
-                         payload={"source_url": r["source_url"], "dedup": refs.get("dedup", False)})
+    # ── DRY-RUN: no network, no yt-dlp, deterministic scoring on title/url only ──
+    if args.dry_run:
+        records = [build_record(u, None, "", args.no_external_ai) for u in urls]
+        write_report(records, dry=True)
+        rec = records[0]
+        print(json.dumps({"ok": True, "dry_run": True, "no_external_ai": True, "captured": False,
+                          "processed": len(records), "run_id": None, "report": str(RUNTIME),
+                          "sample": {"title": rec["title"], "category": rec["rating"]["primary_category"],
+                                     "score": rec["rating"]["total_opportunity_score"],
+                                     "priority": rec["rating"]["priority"],
+                                     "destination": rec["rating"]["recommended_destination"]}}, indent=2))
+        return 0
 
-    write_report(records, args.dry_run)
-    print(json.dumps({"ok": True, "dry_run": args.dry_run, "no_external_ai": args.no_external_ai,
+    # ── REAL CAPTURE (yt-dlp, public, transcript-only, no media, no external AI) ──
+    if not have_ytdlp():
+        print("yt-dlp not installed. Install with: pip3 install yt-dlp. (No capture performed.)")
+        return 4
+    if not sb.configured():
+        print("Supabase not configured; refusing live write.")
+        return 5
+
+    records = [capture_one(u, args.no_external_ai) for u in urls]
+    st, run = sb.insert("research_runs", {
+        "requested_by": "youtube_monitor_wrapper", "question": "YouTube source intake",
+        "research_type": "youtube_monitor", "status": "completed",
+        "summary": f"Captured {len(records)} source(s)",
+        "payload": {"rating_model_version": RATING_MODEL_VERSION, "no_external_ai": True}})
+    run_id = run[0]["id"] if isinstance(run, list) and run else None
+    written = []
+    for r in records:
+        refs = write_supabase(r, run_id)
+        event_id = None
+        if args.write_events:
+            st, ev = sb.insert("nexus_events", {
+                "lane": "research", "action": "youtube_source_reviewed",
+                "status": "success", "source": "youtube_monitor_wrapper",
+                "title": r["title"][:80],
+                "summary": f"score {r['rating']['total_opportunity_score']} → {r['rating']['recommended_destination']} (transcript {r['transcript_status']})",
+                "payload": {"source_url": r["source_url"], "dedup": refs.get("dedup", False),
+                            "rating_model_version": RATING_MODEL_VERSION}})
+            event_id = ev[0]["id"] if isinstance(ev, list) and ev else None
+        written.append({"title": r["title"], "source_url": r["source_url"],
+                        "transcript_status": r["transcript_status"],
+                        "category": r["rating"]["primary_category"],
+                        "destination": r["rating"]["recommended_destination"],
+                        "score": r["rating"]["total_opportunity_score"],
+                        "dedup": refs.get("dedup", False), "refs": refs, "nexus_event_id": event_id})
+
+    write_report(records, dry=False)
+    write_real_report(written, run_id)
+    print(json.dumps({"ok": True, "dry_run": False, "no_external_ai": True, "captured": True,
                       "processed": len(records), "run_id": run_id,
-                      "report": str(RUNTIME),
-                      "sample": {"title": rec["title"], "category": rec["rating"]["primary_category"],
-                                 "score": rec["rating"]["total_opportunity_score"],
-                                 "priority": rec["rating"]["priority"],
-                                 "destination": rec["rating"]["recommended_destination"]}}, indent=2))
+                      "report": str(REAL_REPORT), "written": written}, indent=2))
     return 0
+
+
+def write_real_report(written: list[dict], run_id: str | None) -> None:
+    lines = ["# Nexus YouTube Real Capture", "",
+             f"- generated_at: {datetime.now(timezone.utc).isoformat()}",
+             f"- rating_model_version: {RATING_MODEL_VERSION}",
+             f"- research_run_id: {run_id}",
+             "- external_ai_used: false · summarize.py used: false · v1 research table written: false",
+             f"- sources captured: {len(written)}", "", "## Captured"]
+    for w in written:
+        lines += [f"### {w['title']}",
+                  f"- source_url: {w['source_url']}",
+                  f"- transcript_status: {w['transcript_status']}",
+                  f"- category/destination: {w['category']} → {w['destination']} · score {w['score']}/100",
+                  f"- dedup: {w['dedup']} · refs: {json.dumps(w['refs'])}",
+                  f"- nexus_event_id: {w['nexus_event_id']}", ""]
+    REAL_REPORT.parent.mkdir(parents=True, exist_ok=True)
+    REAL_REPORT.write_text("\n".join(lines) + "\n")
 
 
 if __name__ == "__main__":
