@@ -3,6 +3,8 @@
  *  publish, capture, or send transcript text to external AI. */
 import { useState } from 'react';
 import { createTaskRequest } from '../../lib/taskRequests';
+import { SAFE_DESTINATIONS, getApprovalRequirement, type NexusAction, type RiskTrigger } from '../../config/nexusActionPolicy';
+import { ApprovalVisibilityNote } from '../common/ActionStatusBadge';
 import type { SourceRow } from './RecentSourcesTable';
 
 const ROUTES: { key: string; label: string; task: string }[] = [
@@ -69,8 +71,24 @@ export function ReviewDetailPanel({ source, email, onAskHermes }: { source: Sour
 
       {source.summary && field('Plain-English summary', source.summary)}
       {source.why_it_matters && field('Why it matters', source.why_it_matters)}
-      {field('Recommended next action', `Review, then route to ${source.destination} (on your approval).`)}
+      {field('Recommended next action', `Review, then route to ${source.destination}.`)}
       {typeof m.compliance_notes === 'string' && <div className="nx-amber" style={{ fontSize: 12, marginTop: 8 }}>⚠ {m.compliance_notes}</div>}
+
+      {(() => {
+        const triggers: RiskTrigger[] = [];
+        if (typeof m.compliance_notes === 'string' && /guarantee|high|risk/i.test(m.compliance_notes)) triggers.push('high_compliance_risk');
+        if (!SAFE_DESTINATIONS.has(source.destination)) triggers.push('risky_destination');
+        const action: NexusAction = { category: triggers.length ? 'needs_review' : 'safe_internal_route', triggers };
+        const needs = getApprovalRequirement(action);
+        return (
+          <div className="nx-soft" style={{ padding: 10, marginTop: 8 }}>
+            <ApprovalVisibilityNote action={action} />
+            <div className="nx-muted" style={{ fontSize: 11, marginTop: 4 }}>
+              Approval {needs ? 'required' : 'not required'} — {needs ? `reason: ${triggers.join(', ')}` : `destination "${source.destination}" is a safe internal route`}.
+            </div>
+          </div>
+        );
+      })()}
       {tags.length > 0 && <div className="nx-chiprow" style={{ marginTop: 8 }}>{tags.map((t) => <span key={t} className="nx-tag">{t}</span>)}</div>}
 
       {(reasonsFor.length > 0 || reasonsAgainst.length > 0) && showWhy && (

@@ -42,3 +42,14 @@ export function saveMode(mode: string): void {
 export function clearChat(): void {
   const ls = safe(); if (ls) try { ls.removeItem(MSG_KEY); } catch { /* ignore */ }
 }
+
+/** Reusable universal Hermes-state API (used by Command Center + any tab). Persistence is
+ *  localStorage-backed; the chosen model (vs. a context provider) is documented in
+ *  NEXUS_HERMES_CHAT_PERSISTENCE.md. */
+export const hermesStore = {
+  getMessages: (): StoredMsg[] => loadMessages() ?? [],
+  addMessage: (m: StoredMsg): StoredMsg[] => { const next = [...(loadMessages() ?? []), m]; saveMessages(next); return next.slice(-MAX); },
+  clearHistory: clearChat,
+  setMode: saveMode,
+  getMode: loadMode,
+};
