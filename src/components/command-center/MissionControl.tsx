@@ -92,18 +92,46 @@ function RecentOutputsPanel() {
 export function CommandCenterMissionControl({ email, onNavigate }: { email: string | null; onNavigate?: (id: string) => void }) {
   return (
     <div className="nx-scope">
-      <SystemStatusOverview onOpenTab={onNavigate} />
-      <div className="nx-grid" style={{ gridTemplateColumns: 'minmax(0,1.3fr) minmax(0,.7fr)', alignItems: 'start' }}>
-        <div className="nx-grid">
+      <div className="nx-mc-grid">
+        {/* Column 1 — Hermes workspace + source notebook + recent outputs */}
+        <div className="nx-col">
           {/* Existing Hermes workspace — Conversation / Report Reader / Task Request preserved */}
           <CommandCenter email={email} />
+          <SourceNotebookCard onNavigate={onNavigate} />
           <RecentOutputsPanel />
         </div>
-        <div className="nx-grid">
+        {/* Column 2 — Jarvis + compact System Awareness */}
+        <div className="nx-col">
           <HermesJarvisCard onNavigate={onNavigate} />
+          <SystemStatusOverview onOpenTab={onNavigate} compact />
+        </div>
+        {/* Column 3 — Oracle + Memory Galaxy */}
+        <div className="nx-col">
           <HermesOracleCard />
           <MemoryGalaxyCard />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SourceNotebookCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const { data } = useData<Row[]>(() => listTable('research_sources', { order: 'created_at', limit: 3 }), []);
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 8 }}>
+        <div><h3 style={{ margin: 0 }}>Source Intake / Notebook</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Give Hermes context. Capture runs via approved CLI only.</div></div>
+        <button className="nx-btn ghost" onClick={() => onNavigate?.('intake')}>Open Source Intake</button>
+      </div>
+      <div className="nx-chiprow">
+        {['▶ YouTube', '📄 Transcript', '💡 Idea', '🌐 Website', '◈ NotebookLM'].map((s) => <span key={s} className="nx-pill">{s}</span>)}
+      </div>
+      <div className="nx-muted" style={{ fontSize: 12, marginTop: 10 }}>Recent sources ({data.length}):</div>
+      <div style={{ display: 'grid', gap: 4, marginTop: 4 }}>
+        {data.map((r) => <div key={r.id} className="nx-soft" style={{ padding: '6px 10px', fontSize: 12 }}>
+          <span className="nx-truncate">{r.title}</span></div>)}
+        {data.length === 0 && <div className="nx-muted" style={{ fontSize: 12 }}>None yet — capture an approved source.</div>}
       </div>
     </div>
   );

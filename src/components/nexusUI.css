@@ -39,6 +39,25 @@
 
 /* layout helpers (no Tailwind) */
 .nx-grid { display:grid; gap:14px; }
+.nx-col { display:grid; gap:14px; align-content:start; }
+
+/* Command Center 3-column mission-control grid (from the mockup), responsive. */
+.nx-mc-grid { display:grid; gap:14px; align-items:start;
+  grid-template-columns: minmax(520px,1.35fr) minmax(300px,.62fr) minmax(360px,.8fr); }
+@media (max-width:1480px){ .nx-mc-grid { grid-template-columns: minmax(0,1.4fr) minmax(0,.85fr); } }
+@media (max-width:1024px){ .nx-mc-grid { grid-template-columns: 1fr; } }
+
+/* Source Intake 2-column grid (table/main + review rail), responsive. */
+.nx-si-grid { display:grid; gap:14px; align-items:start;
+  grid-template-columns: minmax(0,1.55fr) minmax(320px,.55fr); }
+@media (max-width:1100px){ .nx-si-grid { grid-template-columns: 1fr; } }
+.nx-si-tiles { display:grid; gap:10px; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); }
+
+/* compact collapsible */
+details.nx-collapse > summary { cursor:pointer; list-style:none; font-weight:600; font-size:13px; padding:2px 0; }
+details.nx-collapse > summary::-webkit-details-marker { display:none; }
+details.nx-collapse[open] > summary { margin-bottom:6px; }
+.nx-truncate { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
 .nx-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .nx-between { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .nx-chiprow { display:flex; flex-wrap:wrap; gap:8px; }

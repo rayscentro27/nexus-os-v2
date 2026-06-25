@@ -19,7 +19,7 @@ const NAV: NavItem[] = [
   { key: 'approvals', label: 'Approvals', icon: '✓', sub: 'Approve / reject / request changes', render: (e) => <ApprovalCenter email={e} /> },
   { key: 'goclear', label: 'GoClear / Apex', icon: '◆', sub: 'Funding readiness workspace', render: () => <GoClearWorkspace /> },
   { key: 'opportunities', label: 'Opportunity Lab', icon: '⊛', sub: 'Money ideas, scored', render: () => <OpportunityLab /> },
-  { key: 'intake', label: 'Intake & Orientation', icon: '⇪', sub: 'Transcripts → decisions', render: () => <IntakeOrientation /> },
+  { key: 'intake', label: 'Source Intake & Review', icon: '⇪', sub: 'Submit, score, and route sources', render: () => <IntakeOrientation /> },
   { key: 'creative', label: 'Creative Studio', icon: '✦', sub: 'Campaigns, briefs, design dept', render: (e) => <CreativeStudio email={e} /> },
   { key: 'design', label: 'Design Library', icon: '◈', sub: 'Inspiration, patterns, UI quality', render: () => <DesignLibrary /> },
   { key: 'trading', label: 'Trading Lab', icon: '↗', sub: 'Research/testing (no live)', render: () => <TradingLab /> },
@@ -49,7 +49,7 @@ export function Shell({ email }: { email: string | null }) {
           })}
         </nav>
       </aside>
-      <main className="main">
+      <main className={`main${active === 'command' || active === 'intake' ? ' wide' : ''}`}>
         <div className="topbar">
           <div><h2>{current.label}</h2><div className="sub">{current.sub}</div></div>
           <UserMenu email={email} />

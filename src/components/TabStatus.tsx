@@ -50,8 +50,9 @@ function group(status: TabStatus[]): TabConfig[] {
   return NEXUS_TABS.filter((t) => t.visible && status.includes(t.status));
 }
 
-/** Command Center overview: status of all tabs + detected v1 fleet + failing jobs. Read-only. */
-export function SystemStatusOverview({ onOpenTab }: { onOpenTab?: (id: string) => void }) {
+/** Command Center overview: status of all tabs + detected v1 fleet + failing jobs. Read-only.
+ *  `compact` renders a small System Awareness card (counts + failing/unsafe) inside a collapsible. */
+export function SystemStatusOverview({ onOpenTab, compact }: { onOpenTab?: (id: string) => void; compact?: boolean }) {
   const live = group(['live_connected']);
   const partial = group(['partial_connected', 'manual_cli_backed']);
   const legacy = group(['v1_available_not_wrapped']);
@@ -68,6 +69,34 @@ export function SystemStatusOverview({ onOpenTab }: { onOpenTab?: (id: string) =
       ))}
     </div>
   );
+
+  if (compact) {
+    return (
+      <div className="nx-glass">
+        <div className="nx-between"><strong style={{ fontSize: 14 }}>System Awareness</strong>
+          <span className="nx-muted" style={{ fontSize: 11 }}>{live.length} live · {partial.length} partial · {legacy.length} legacy</span></div>
+        <div className="nx-chiprow" style={{ marginTop: 8 }}>
+          <span className="nx-badge ok">Live {live.length}</span>
+          <span className="nx-badge infob">Partial {partial.length}</span>
+          <span className="nx-badge warnb">Legacy {legacy.length}</span>
+          <span className="nx-badge warnb">Seed {seed.length}</span>
+        </div>
+        {failing.length > 0 && (
+          <div className="nx-amber" style={{ fontSize: 12, marginTop: 8 }}>
+            ⚠ Failing v1 jobs: {failing.map((w) => w.name).join(', ')}.
+          </div>
+        )}
+        <div className="nx-red" style={{ fontSize: 11, marginTop: 6 }}>
+          Action-capable v1 (never raw-exposed): {unsafe.length}.
+        </div>
+        <details className="nx-collapse" style={{ marginTop: 8 }}>
+          <summary className="nx-muted">All tabs & fleet detail</summary>
+          {row('Live', live)}{row('Partial / Manual', partial)}{row('Legacy', legacy)}{row('Seed', seed)}
+          <div className="meta bad" style={{ marginTop: 6 }}>Action-capable: {unsafe.map((w) => w.name).join(', ')}.</div>
+        </details>
+      </div>
+    );
+  }
 
   return (
     <div className="card" style={{ marginBottom: 12 }}>

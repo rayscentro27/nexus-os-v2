@@ -38,6 +38,7 @@ code { background: #060a13; padding: 1px 6px; border-radius: 6px; color: var(--a
 .nav .ico { width: 18px; text-align: center; opacity: .9; }
 
 .main { padding: 22px 26px 70px; max-width: 1180px; }
+.main.wide { max-width: none; }  /* mission-control + source intake use full desktop width */
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
 .topbar h2 { margin: 0; font-size: 20px; font-weight: 800; }
 .topbar .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }

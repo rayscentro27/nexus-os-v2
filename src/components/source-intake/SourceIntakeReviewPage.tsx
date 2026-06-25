@@ -1,6 +1,6 @@
-/** Source Intake & Review — converted from the HTML mockup. Reads REAL v2 Supabase
- *  (research_sources) and shows the captured YouTube source. Actions are safe (task_requests only).
- *  No browser capture, no publish/send/trade. */
+/** Source Intake & Review — converted + polished from the HTML mockup. Reads REAL v2 Supabase
+ *  (research_sources). Row selection populates the Hermes Review rail. Actions are safe
+ *  (task_requests only). No browser capture, no publish/send/trade. */
 import { useState } from 'react';
 import { AddSourcePanel, type SourceType } from './AddSourcePanel';
 import { SourceEntryForm } from './SourceEntryForm';
@@ -12,19 +12,23 @@ function ConnectionStatusCard() {
   const sources = [['YouTube (yt-dlp, approved)', 'CLI'], ['research_sources', 'Live'], ['transcript_reviews', 'Live'], ['nexus_events', 'Live']];
   const notYet = [['Browser capture', 'CLI-only'], ['Auto schedule', 'Off'], ['Reddit / X / News API', 'Planned'], ['File upload parse', 'Planned']];
   const block = (title: string, cls: string, rows: string[][]) => (
-    <div style={{ marginBottom: 12 }}>
-      <div className={`${cls}`} style={{ fontSize: 12, fontWeight: 600 }}>● {title}</div>
-      <ul style={{ margin: '6px 0 0', paddingLeft: 16, fontSize: 12 }} className="nx-muted">
+    <div style={{ marginBottom: 8 }}>
+      <div className={cls} style={{ fontSize: 12, fontWeight: 600 }}>● {title}</div>
+      <ul style={{ margin: '4px 0 0', paddingLeft: 14, fontSize: 12 }} className="nx-muted">
         {rows.map(([k, v]) => <li key={k} className="nx-between"><span>{k}</span><span>{v}</span></li>)}
       </ul>
     </div>
   );
   return (
     <div className="nx-glass">
-      <h3 style={{ margin: '0 0 10px' }}>Connection Status</h3>
-      {block('What works now', 'nx-green', works)}
-      {block('Data sources', 'nx-green', sources)}
-      {block('Not connected yet', 'nx-red', notYet)}
+      <details className="nx-collapse">
+        <summary>Connection Status <span className="nx-muted" style={{ fontWeight: 400, fontSize: 11 }}>(tap to expand)</span></summary>
+        <div style={{ marginTop: 8 }}>
+          {block('What works now', 'nx-green', works)}
+          {block('Data sources', 'nx-green', sources)}
+          {block('Not connected yet', 'nx-red', notYet)}
+        </div>
+      </details>
     </div>
   );
 }
@@ -37,23 +41,25 @@ export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | 
     <div className="nx-scope">
       <div className="nx-row" style={{ marginBottom: 12 }}>
         <span className="nx-pill nx-amber">● Research Engine: Partial</span>
-        <span className="nx-pill nx-green">● YouTube capture: CLI (approved)</span>
+        <span className="nx-pill nx-green">● YouTube Capture (CLI): Approved</span>
         <span className="nx-pill nx-blue">♟ Hermes Review: Available</span>
         <span className="nx-pill nx-green">● Rating Model v1: Active</span>
       </div>
 
-      <div className="nx-grid" style={{ gridTemplateColumns: 'minmax(0,1.1fr) minmax(0,.6fr)', alignItems: 'start' }}>
-        <div className="nx-grid">
-          <div className="nx-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))' }}>
+      <div className="nx-si-grid">
+        {/* Main column — add source + entry, then full-width recent sources */}
+        <div className="nx-col">
+          <div className="nx-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))' }}>
             <AddSourcePanel onPick={setPicked} picked={picked?.key ?? null} />
             <SourceEntryForm picked={picked} email={email} />
           </div>
           <RecentSourcesTable selectedId={selected?.id ?? null} onSelect={setSelected} />
         </div>
-        <div className="nx-grid">
-          <ConnectionStatusCard />
+        {/* Right rail — Hermes Review (populated on selection) + compact Connection Status */}
+        <div className="nx-col">
           <ReviewDetailPanel source={selected} email={email}
             onAskHermes={(s) => { setSelected(s); onNavigate?.('command'); }} />
+          <ConnectionStatusCard />
         </div>
       </div>
     </div>

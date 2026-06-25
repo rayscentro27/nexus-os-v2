@@ -1,11 +1,13 @@
-/** Recent Sources — REAL v2 Supabase data (research_sources). Shows the captured YouTube source. */
+/** Recent Sources — REAL v2 Supabase data (research_sources). Shows captured YouTube sources. */
+import { useState } from 'react';
 import { listTable, type Row } from '../../services/db';
 import { useData } from '../ui';
 
 export interface SourceRow {
   id: string; title: string; source_type: string; url: string; created_at: string;
   transcript_status: string; review_status: string; score: number | null;
-  category: string; destination: string; meta: Record<string, unknown>;
+  category: string; destination: string; summary: string; why_it_matters: string;
+  meta: Record<string, unknown>;
 }
 
 export function normalize(r: Row): SourceRow {
@@ -15,7 +17,8 @@ export function normalize(r: Row): SourceRow {
     created_at: r.created_at, transcript_status: String(m.transcript_status ?? 'unknown'),
     review_status: String(m.review_status ?? 'queued'),
     score: typeof m.total_opportunity_score === 'number' ? (m.total_opportunity_score as number) : null,
-    category: String(m.primary_category ?? '—'), destination: String(m.recommended_destination ?? '—'), meta: m,
+    category: String(m.primary_category ?? '—'), destination: String(m.recommended_destination ?? '—'),
+    summary: String(r.snippet ?? ''), why_it_matters: String(r.why_it_matters ?? ''), meta: m,
   };
 }
 
@@ -27,23 +30,37 @@ const TYPE_ICON: Record<string, string> = {
 function badge(status: string): string {
   const s = status.toLowerCase();
   if (s.includes('captured') || s.includes('reviewed') || s.includes('scored')) return 'ok';
-  if (s.includes('needs') || s.includes('partial') || s.includes('queued') || s.includes('park')) return 'warnb';
   if (s.includes('reject') || s.includes('failed') || s.includes('unavailable')) return 'warnb';
-  return 'infob';
+  return 'warnb';
 }
+
+const FILTERS = [
+  { key: 'all', label: 'All', test: () => true },
+  { key: 'review', label: 'Needs Review', test: (s: SourceRow) => /needs|queued/i.test(s.review_status) },
+  { key: 'scored', label: 'Scored', test: (s: SourceRow) => /reviewed|scored/i.test(s.review_status) },
+  { key: 'park', label: 'Parked', test: (s: SourceRow) => /park|reject/i.test(s.review_status) },
+];
 
 export function RecentSourcesTable({ selectedId, onSelect }: { selectedId: string | null; onSelect: (s: SourceRow) => void }) {
   const { data, reload } = useData<Row[]>(() => listTable('research_sources', { order: 'created_at', limit: 30 }), []);
-  const rows = data.map(normalize);
+  const [filter, setFilter] = useState('all');
+  const all = data.map(normalize);
+  const rows = all.filter(FILTERS.find((f) => f.key === filter)!.test);
 
   return (
     <div className="nx-glass">
-      <div className="nx-between" style={{ marginBottom: 10 }}>
-        <h3 style={{ margin: 0 }}>Recent Sources <span className="nx-muted" style={{ fontSize: 12 }}>({rows.length} from research_sources)</span></h3>
-        <button className="nx-btn ghost" onClick={reload}>⟳ Refresh</button>
+      <div className="nx-between" style={{ marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+        <h3 style={{ margin: 0 }}>Recent Sources <span className="nx-muted" style={{ fontSize: 12 }}>({all.length} · research_sources)</span></h3>
+        <div className="nx-chiprow">
+          {FILTERS.map((f) => (
+            <button key={f.key} className="nx-pill" style={{ cursor: 'pointer', outline: filter === f.key ? '1px solid #8b5cf6' : 'none' }}
+              onClick={() => setFilter(f.key)}>{f.label} {f.key !== 'all' ? all.filter(f.test).length : ''}</button>
+          ))}
+          <button className="nx-btn ghost" onClick={reload}>⟳</button>
+        </div>
       </div>
       {rows.length === 0 ? (
-        <div className="nx-muted" style={{ fontSize: 13 }}>No sources captured yet. Run an approved capture, then they appear here from Supabase.</div>
+        <div className="nx-muted" style={{ fontSize: 13 }}>No sources in this view. Run an approved capture; they appear here from Supabase.</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
           <table className="nx-table">
@@ -53,15 +70,15 @@ export function RecentSourcesTable({ selectedId, onSelect }: { selectedId: strin
             <tbody>
               {rows.map((s) => (
                 <tr key={s.id} className={selectedId === s.id ? 'sel' : ''} style={{ cursor: 'pointer' }} onClick={() => onSelect(s)}>
-                  <td style={{ maxWidth: 260 }}><span style={{ marginRight: 6 }}>{TYPE_ICON[s.source_type] ?? '•'}</span>{s.title}</td>
+                  <td style={{ maxWidth: 280 }}><span style={{ marginRight: 6 }}>{TYPE_ICON[s.source_type] ?? '•'}</span><span className="nx-truncate" style={{ display: 'inline-block', maxWidth: 240, verticalAlign: 'bottom' }}>{s.title}</span></td>
                   <td className="nx-muted">{s.source_type}</td>
                   <td><span className={`nx-badge ${badge(s.transcript_status)}`}>{s.transcript_status}</span></td>
-                  <td><span className={`nx-badge ${badge(s.review_status)}`}>{s.review_status}</span></td>
+                  <td><span className="nx-badge infob">{s.review_status}</span></td>
                   <td>{s.score == null ? '—' : `${s.score}/100`}
                     {s.score != null && <div className="nx-mini-progress" style={{ width: 60, marginTop: 3 }}><span style={{ width: `${s.score}%` }} /></div>}</td>
                   <td><span className="nx-tag">{s.category}</span></td>
                   <td><span className="nx-tag blue">{s.destination}</span></td>
-                  <td className="nx-muted">{s.created_at ? new Date(s.created_at).toLocaleString() : '—'}</td>
+                  <td className="nx-muted">{s.created_at ? new Date(s.created_at).toLocaleDateString() : '—'}</td>
                 </tr>
               ))}
             </tbody>
