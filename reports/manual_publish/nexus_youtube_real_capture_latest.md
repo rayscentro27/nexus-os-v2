@@ -1,41 +1,16 @@
-# Nexus YouTube Real Capture — Status
+# Nexus YouTube Real Capture
 
-- generated_at: 2026-06-25
+- generated_at: 2026-06-25T12:39:57.880128+00:00
 - rating_model_version: v1
-- wrapper: scripts/intake/run_existing_youtube_monitor.py
+- research_run_id: 34240556-54e7-4f1f-ab67-a835e92cbe00
+- external_ai_used: false · summarize.py used: false · v1 research table written: false
+- sources captured: 1
 
-## Was a real capture run? — NO (awaiting a Ray-approved public URL)
-The gated real-capture path is **built and verified for safety**, but **no real capture was run**
-because no approved public YouTube URL was provided. Per the safety rules, the script does not pick
-its own URL, and the only allowlist entry is a disabled placeholder.
+## Captured
+### Hermes SEO Agent OS: How I Rank #1 on Google
+- source_url: https://www.youtube.com/watch?v=CDurz54yrNI
+- transcript_status: captured
+- category/destination: ai_tooling → Ops & Improvements · score 22/100
+- dedup: False · refs: {"research_source_id": "741b4d6a-1884-419b-b2b4-8f7c9a2e3a50", "intake_event_id": "dbc0bbeb-3ac9-4949-834e-7d2f271745f5"}
+- nexus_event_id: 1886d709-15b4-47a5-beb6-575b6182ee84
 
-| Item | Status |
-|---|---|
-| Real capture run | **No** — paused for an approved URL |
-| Source URL used | none |
-| Rows written by table | none (dry-run only wrote reports; `research_sources` still 0) |
-| Transcript status | n/a |
-| Category / destination / score | n/a (dry-run example: `ignore_or_park` / Ignore/Park / 19) |
-| nexus_event proof id | none |
-| External AI used | **No** (deterministic only) |
-| summarize.py used | **No** |
-| v1 `research` table written | **No** |
-| Scheduler loaded | **No** |
-
-## What was verified (safe)
-- Syntax OK; dry-run runs offline, writes nothing to Supabase (`captured:false`).
-- `--approved-only` **refuses** a non-allowlisted URL **before** any yt-dlp/network call.
-- Real-capture path uses `yt-dlp --skip-download` (transcript only, no media), bounded `--limit`
-  (hard cap 3), dedup by `source_url`, writes only to v2 tables, no external AI.
-
-## To run the one real capture (Ray)
-Provide an approved **public** YouTube URL, then either add it to
-`config/youtube_sources_allowlist.json` (`enabled:true`) or pass it directly:
-```
-python3 scripts/intake/run_existing_youtube_monitor.py \
-    --source-url "<APPROVED_PUBLIC_YOUTUBE_URL>" --once --limit 1 \
-    --no-external-ai --write-events --no-dry-run
-```
-This will: capture metadata + transcript (if public subs exist), score it (v1), write
-`research_sources` + `intake_events` + `transcript_reviews` (+ `research_runs`), and a
-`nexus_events` proof. No external AI, no scheduler, no publish/send/trade/deploy.
