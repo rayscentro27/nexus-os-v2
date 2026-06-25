@@ -2,121 +2,84 @@
 
 Date: 2026-06-24
 
-## Purpose
+## Current Reality
 
-The bridge lets Ray ask Hermes, Claude, or Codex for work in plain language while keeping actual Mac execution bounded, observable, and approval-gated.
+Nexus OS v2 has the pieces for a safe local execution bridge, but the bridge is not complete.
 
-The bridge must not become a hidden shell. It should translate approved work into allowlisted Nexus commands, run them locally, and write safe proof back to Supabase and reports.
+Working pieces:
 
-## Flow
+- `agent_jobs` table exists.
+- UI can create some jobs.
+- Hermes can create `task_requests` after approval and some `agent_jobs` through handler paths.
+- `scripts/nexus_runner.py` manually consumes jobs.
+- `scripts/runner_handlers/__init__.py` is an allowlist.
+- Runner writes job output, heartbeats, and `nexus_events`.
+- Agent Jobs and Events Feed can display results.
+
+Not yet working:
+
+- No secure UI button that runs local Mac commands.
+- No daemon controlled by nexus-os-v2.
+- No explicit command registry table.
+- No signed request/claim protocol between UI and Mac worker.
+- No unified audit display for command stdout/stderr summaries.
+- Existing `nexus-ai` and `mac-mini-worker` processes are outside nexus-os-v2 control.
+
+## Target Flow
 
 1. Ray gives a prompt to Hermes, Claude, or Codex.
-2. The agent classifies the request into a Nexus capability, such as watch loop, report generation, creative draft, landing page package, safe status check, or queued job.
-3. If the request is risky or external-facing, the agent creates an approval or task request instead of executing.
-4. After explicit approval, the local bridge selects an allowlisted command.
-5. The bridge runs the command with bounded arguments, timeout, and lock protection.
-6. Output is reduced to a safe summary.
-7. Proof is written to `nexus_events`, relevant status tables, and/or `reports/runtime`.
-8. Nexus UI displays the result through the relevant tab and the Events Feed.
-9. Hermes can explain the result from safe report summaries and ledger rows.
+2. Hermes classifies the request and either answers, creates a task request, or queues an approved job.
+3. Risky work creates an approval first.
+4. A local bridge reads only approved/allowlisted jobs.
+5. The bridge runs a fixed command with fixed args, timeout, lock, and redaction.
+6. It writes output summaries to `agent_jobs`, `nexus_events`, and reports.
+7. Nexus UI displays the result.
+8. Hermes can explain only safe summaries.
 
-## Tool Selection
+## Command Allowlist
 
-The agent should choose commands from a registry, not from arbitrary shell text. Each registry entry should define:
-
-- command key
-- exact executable and allowed arguments
-- required environment names, names only
-- timeout
-- lock key
-- whether network is allowed
-- whether Supabase writes are allowed
-- whether approval is required
-- output redaction rules
-- tables/reports written
-
-Examples:
+Initial allowlist should include only:
 
 - `nexus_watch`: `npm run nexus:watch`
 - `nexus_runner_dry_run`: `python3 scripts/nexus_runner.py --once --limit 1 --dry-run`
-- `facebook_token_status`: `python3 scripts/social/facebook_token_status.py`
+- `transcript_review`: `python3 scripts/intake/review_transcript.py --intake-event-id <id>`
 - `creative_score_assets`: `python3 scripts/creative/score_creative_assets.py`
-- `oanda_demo_status`: demo connection check only
+- `facebook_token_status`: `python3 scripts/social/facebook_token_status.py`
+- `model_route_dry_run`: `python3 scripts/hermes/request_model_route.py --dry-run`
 
-## Allowlist Rules
+Do not include real publish, live trade, deploy, restart, or scheduler commands in v1.
 
-Allowed by default:
+## Approval Rules
 
-- read-only status checks
-- local deterministic scoring
-- report generation
-- dry-run runners
-- Supabase proof/event writes for safe operations
+Always require approval for:
 
-Requires explicit approval:
-
-- approval status changes
-- job creation for public-facing outputs
-- email test sends
 - social publishing
+- email sends
 - deploys
-- any demo/paper order
+- demo/paper orders
+- scheduler start
+- anything touching customer-private data
+- any command not in the allowlist
 
-Never allowed:
+Never allow:
 
 - live/funded trading
-- paid ads or boosted posts
+- paid ads
 - mass email
-- scraping or exposing private customer files
+- broad RLS weakening
 - printing secrets
 - committing `.env`
-- service-role key in frontend
-- broad RLS weakening
-- unbounded daemon loops
-- production Oracle restarts without a specific approved maintenance plan
+- service-role key in browser
+- Oracle production restarts from UI
 
-## Approval Handling
+## Recommended First Implementation
 
-Hermes can propose an action and store a pending action, but it does not execute it. Approval phrases such as "approved" or "yes please" resolve only against the current pending action.
+Create one safe bridge path:
 
-Approval records should include:
+1. Add `mac_command_registry` or checked-in JSON registry.
+2. Add one command: `nexus_watch`.
+3. Add UI card: "Run one safe watch pass".
+4. Runner writes `agent_jobs.output`, `nexus_events`, and report path.
+5. Hermes can explain the result.
 
-- action type
-- safe summary
-- worker assignment
-- allowed data scope
-- forbidden data
-- Hermes visibility
-- required runtime gate
-- status
-
-The bridge checks approval status immediately before execution.
-
-## Output Handling
-
-The bridge writes:
-
-- `nexus_events` proof row
-- `agent_jobs` result/update when job-based
-- relevant domain table update when safe
-- `reports/runtime` log/report
-- optional `reports/manual_publish` package for manual next steps
-
-Outputs sent to Hermes must be summaries only. Raw secrets, tokens, customer private data, SSNs, credit reports, bank docs, tax docs, passwords, and reset tokens must never be included.
-
-## UI Display
-
-The Nexus UI should show:
-
-- command status in Events Feed
-- jobs in Agent Jobs
-- approvals in Approvals
-- report summaries in Ops/System Health
-- revenue packages in Creative Studio or GoClear/Apex
-- integration blockers in Integrations
-
-Every UI data surface should show whether it is connected, blocked by auth/RLS, empty, or query-failed.
-
-## First Implementation Step
-
-Create a Supabase-backed `mac_command_registry` or a checked-in registry file, then add one bridge command: `nexus_watch`. It should run `npm run nexus:watch` with a lock, timeout, redaction, and proof write. Add more commands only after that path is observable in the UI.
+Only after that works should more commands be added.
