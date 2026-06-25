@@ -6,6 +6,7 @@ import { AddSourcePanel, type SourceType } from './AddSourcePanel';
 import { SourceEntryForm } from './SourceEntryForm';
 import { RecentSourcesTable, type SourceRow } from './RecentSourcesTable';
 import { ReviewDetailPanel } from './ReviewDetailPanel';
+import { PendingCaptureRequests } from './PendingCaptureRequests';
 
 function ConnectionStatusCard() {
   const works = [['Scoring Model v1', 'Active'], ['Routing (canonical map)', 'Active'], ['Hermes Review', 'Available'], ['Proof events', 'On']];
@@ -36,6 +37,7 @@ function ConnectionStatusCard() {
 export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | null; onNavigate?: (id: string) => void }) {
   const [picked, setPicked] = useState<SourceType | null>(null);
   const [selected, setSelected] = useState<SourceRow | null>(null);
+  const [captureRefresh, setCaptureRefresh] = useState(0);
 
   return (
     <div className="nx-scope">
@@ -51,14 +53,15 @@ export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | 
         <div className="nx-col">
           <div className="nx-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))' }}>
             <AddSourcePanel onPick={setPicked} picked={picked?.key ?? null} />
-            <SourceEntryForm picked={picked} email={email} />
+            <SourceEntryForm picked={picked} email={email} onSubmitted={() => setCaptureRefresh((n) => n + 1)} />
           </div>
           <RecentSourcesTable selectedId={selected?.id ?? null} onSelect={setSelected} />
         </div>
-        {/* Right rail — Hermes Review (populated on selection) + compact Connection Status */}
+        {/* Right rail — Hermes Review (populated on selection) + pending captures + compact Connection Status */}
         <div className="nx-col">
           <ReviewDetailPanel source={selected} email={email}
             onAskHermes={(s) => { setSelected(s); onNavigate?.('command'); }} />
+          <PendingCaptureRequests refresh={captureRefresh} />
           <ConnectionStatusCard />
         </div>
       </div>
