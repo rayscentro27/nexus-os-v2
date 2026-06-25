@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- EXAMPLE ONLY — not loaded. Copy to ~/Library/LaunchAgents/, edit absolute paths, then
+     `launchctl load`. One host only. Daily. Dry-run until Ray approves a live run. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.v2.youtube-monitor</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/intake/run_existing_youtube_monitor.py</string>
+    <string>--once</string>
+    <string>--limit</string>
+    <string>3</string>
+    <string>--dry-run</string>
+    <string>--no-external-ai</string>
+    <!-- Replace with an approved source URL, or extend the wrapper to read an allowlist file: -->
+    <string>--source-url</string>
+    <string>https://www.youtube.com/watch?v=EXAMPLE</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2/reports/runtime/nexus_youtube_monitor.out</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2/reports/runtime/nexus_youtube_monitor.err</string>
+  <key>RunAtLoad</key>
+  <false/>
+</dict>
+</plist>
