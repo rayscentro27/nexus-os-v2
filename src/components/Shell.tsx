@@ -5,6 +5,8 @@ import {
   OpportunityLab, CreativeStudio, TradingLab, SeoOs, ModelRouter, Integrations,
   OpsImprovements, EventsFeed, IntakeOrientation, DesignLibrary,
 } from './sections';
+import { tabById } from '../config/nexusTabs';
+import { StatusBadge, TabConnectionStatus, SystemStatusOverview } from './TabStatus';
 
 interface NavItem { key: string; label: string; icon: string; sub: string; render: (email: string | null) => ReactNode; }
 
@@ -34,11 +36,15 @@ export function Shell({ email }: { email: string | null }) {
       <aside className="sidebar">
         <div className="brand"><div className="logo" /><h1>Nexus <span className="v">OS v2</span></h1></div>
         <nav className="nav">
-          {NAV.map((n) => (
-            <button key={n.key} className={active === n.key ? 'active' : ''} onClick={() => setActive(n.key)}>
-              <span className="ico">{n.icon}</span>{n.label}
-            </button>
-          ))}
+          {NAV.map((n) => {
+            const cfg = tabById(n.key);
+            return (
+              <button key={n.key} className={active === n.key ? 'active' : ''} onClick={() => setActive(n.key)}>
+                <span className="ico">{n.icon}</span>{n.label}
+                {cfg && <StatusBadge status={cfg.status} label={cfg.statusLabel} />}
+              </button>
+            );
+          })}
         </nav>
       </aside>
       <main className="main">
@@ -46,6 +52,8 @@ export function Shell({ email }: { email: string | null }) {
           <div><h2>{current.label}</h2><div className="sub">{current.sub}</div></div>
           <UserMenu email={email} />
         </div>
+        {active === 'command' && <SystemStatusOverview onOpenTab={setActive} />}
+        <TabConnectionStatus tabId={active} />
         {current.render(email)}
       </main>
     </div>
