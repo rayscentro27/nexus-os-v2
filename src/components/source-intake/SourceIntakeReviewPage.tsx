@@ -4,9 +4,9 @@
 import { useState } from 'react';
 import { AddSourcePanel, type SourceType } from './AddSourcePanel';
 import { SourceEntryForm } from './SourceEntryForm';
-import { RecentSourcesTable, type SourceRow } from './RecentSourcesTable';
-import { ReviewDetailPanel } from './ReviewDetailPanel';
 import { PendingCaptureRequests } from './PendingCaptureRequests';
+import { DepartmentWorkspace } from '../common/DepartmentWorkspace';
+import { DEPARTMENT_WORKSPACES } from '../../config/nexusProjectTypes';
 
 function ConnectionStatusCard() {
   const works = [['Scoring Model v1', 'Active'], ['Routing (canonical map)', 'Active'], ['Hermes Review', 'Available'], ['Proof events', 'On']];
@@ -36,8 +36,13 @@ function ConnectionStatusCard() {
 
 export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | null; onNavigate?: (id: string) => void }) {
   const [picked, setPicked] = useState<SourceType | null>(null);
-  const [selected, setSelected] = useState<SourceRow | null>(null);
   const [captureRefresh, setCaptureRefresh] = useState(0);
+  const [workspaceKey, setWorkspaceKey] = useState(0);
+
+  function submitted() {
+    setCaptureRefresh((n) => n + 1);
+    setWorkspaceKey((n) => n + 1);
+  }
 
   return (
     <div className="nx-scope">
@@ -48,23 +53,22 @@ export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | 
         <span className="nx-pill nx-green">● Rating Model v1: Active</span>
       </div>
 
-      <div className="nx-si-grid">
-        {/* Main column — add source + entry, then full-width recent sources */}
-        <div className="nx-col">
-          <div className="nx-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))' }}>
+      <DepartmentWorkspace
+        key={workspaceKey}
+        config={DEPARTMENT_WORKSPACES.intake}
+        email={email}
+        leading={(
+          <div className="nx-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', marginBottom: 14 }}>
             <AddSourcePanel onPick={setPicked} picked={picked?.key ?? null} />
-            <SourceEntryForm picked={picked} email={email} onSubmitted={() => setCaptureRefresh((n) => n + 1)} />
+            <SourceEntryForm picked={picked} email={email} onSubmitted={submitted} />
+            <div className="nx-col">
+              <PendingCaptureRequests refresh={captureRefresh} />
+              <ConnectionStatusCard />
+              <button className="nx-btn ghost" onClick={() => onNavigate?.('command')}>Open Command Center Hermes</button>
+            </div>
           </div>
-          <RecentSourcesTable selectedId={selected?.id ?? null} onSelect={setSelected} />
-        </div>
-        {/* Right rail — Hermes Review (populated on selection) + pending captures + compact Connection Status */}
-        <div className="nx-col">
-          <ReviewDetailPanel source={selected} email={email}
-            onAskHermes={(s) => { setSelected(s); onNavigate?.('command'); }} />
-          <PendingCaptureRequests refresh={captureRefresh} />
-          <ConnectionStatusCard />
-        </div>
-      </div>
+        )}
+      />
     </div>
   );
 }

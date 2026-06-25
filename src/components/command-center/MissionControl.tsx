@@ -6,6 +6,9 @@ import { CommandCenter } from '../sections';
 import { SystemStatusOverview } from '../TabStatus';
 import { listTable, type Row } from '../../services/db';
 import { useData } from '../ui';
+import { DEPARTMENT_WORKSPACES } from '../../config/nexusProjectTypes';
+import { getProjectHermesRecommendation, loadDepartmentProjects } from '../../lib/nexusProjects';
+import type { NexusProject } from '../../config/nexusProjectTypes';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -89,9 +92,78 @@ function RecentOutputsPanel() {
   );
 }
 
+function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const workspaces = [
+    DEPARTMENT_WORKSPACES.intake,
+    DEPARTMENT_WORKSPACES.opportunities,
+    DEPARTMENT_WORKSPACES.design,
+    DEPARTMENT_WORKSPACES.creative,
+    DEPARTMENT_WORKSPACES.seo,
+    DEPARTMENT_WORKSPACES.ops,
+    DEPARTMENT_WORKSPACES.jobs,
+  ];
+  const { data } = useData<Record<string, NexusProject[]>>(
+    async () => {
+      const entries = await Promise.all(workspaces.map(async (w) => [w.tabId, await loadDepartmentProjects(w.tabId)] as const));
+      return Object.fromEntries(entries);
+    },
+    {},
+  );
+  const all = Object.values(data).flat();
+  const needs = all.filter((p) => p.status === 'needs_review' || p.approval_required).length;
+  const blocked = all.filter((p) => p.status === 'blocked').length;
+  const scheduled = all.filter((p) => p.status === 'scheduled').length;
+  const top = all.find((p) => p.approval_required || p.status === 'needs_review' || p.status === 'blocked') ?? all[0] ?? null;
+
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 10 }}>
+        <div>
+          <h3 style={{ margin: 0 }}>Executive Office</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Department overview, decisions, blocks, schedule, and Hermes recommendation.</div>
+        </div>
+        <span className="nx-badge infob">{all.length} active work items</span>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 10 }}>
+        <span className="nx-pill">needs review {needs}</span>
+        <span className="nx-pill">blocked {blocked}</span>
+        <span className="nx-pill">scheduled {scheduled}</span>
+      </div>
+      <div className="note" style={{ marginBottom: 10 }}>
+        Hermes top recommendation: {top ? getProjectHermesRecommendation(top) : 'No live department projects yet. Start with Source Intake or run the manual watch report.'}
+      </div>
+      <div className="dept-exec-grid">
+        {workspaces.map((workspace) => {
+          const projects = data[workspace.tabId] ?? [];
+          const last = projects.map((p) => Date.parse(p.updated_at || p.created_at)).filter(Boolean).sort((a, b) => b - a)[0];
+          return (
+            <button key={workspace.tabId} className="dept-exec-card" onClick={() => onNavigate?.(workspace.tabId)}>
+              <div className="dept-project-title">{workspace.title}</div>
+              <div className="dept-project-meta">
+                <span>active {projects.length}</span>
+                <span>review {projects.filter((p) => p.status === 'needs_review' || p.approval_required).length}</span>
+                <span>blocked {projects.filter((p) => p.status === 'blocked').length}</span>
+                <span>scheduled {projects.filter((p) => p.status === 'scheduled').length}</span>
+              </div>
+              <div className="meta muted" style={{ marginTop: 8 }}>
+                Last update: {last ? new Date(last).toLocaleDateString() : 'none'}.
+              </div>
+              <div className="meta" style={{ marginTop: 6 }}>
+                Next decision: {projects.find((p) => p.approval_required || p.status === 'needs_review')?.next_action || 'No decision pending.'}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function CommandCenterMissionControl({ email, onNavigate }: { email: string | null; onNavigate?: (id: string) => void }) {
   return (
     <div className="nx-scope">
+      <ExecutiveOfficePanel onNavigate={onNavigate} />
+      <div style={{ height: 14 }} />
       <div className="nx-mc-grid">
         {/* Column 1 — Hermes workspace + source notebook + recent outputs */}
         <div className="nx-col">

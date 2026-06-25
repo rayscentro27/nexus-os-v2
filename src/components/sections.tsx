@@ -28,6 +28,8 @@ import {
   loadPendingApprovalReviews,
   type ApprovalReviewItem,
 } from '../lib/approvalReview';
+import { DepartmentWorkspace } from './common/DepartmentWorkspace';
+import { DEPARTMENT_WORKSPACES } from '../config/nexusProjectTypes';
 
 // ── reusable list ──
 function DataList({ table, render, what, order }: {
@@ -442,9 +444,11 @@ export function SystemHealth() {
 
 // ── Agent Jobs (+ registry + runner) ──
 export function AgentJobsView() {
-  const agents = useData<TableQueryResult>(() => listTableDetailed('agent_registry', { order: 'agent_key', ascending: true }), { ...emptyTableResult('agent_registry', 'agent_key'), filter: 'limit=50 order=agent_key.asc' });
   return (
-    <>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.jobs}
+      email={null}
+      leading={(
       <div className="card" style={{ marginBottom: 6 }}>
         <h3>Manual Runner Commands (no scheduler — run by hand)</h3>
         <div className="list">
@@ -455,24 +459,8 @@ export function AgentJobsView() {
         </div>
         <div className="meta muted" style={{ marginTop: 6 }}>Default is dry-run. Real Facebook publish needs --real-publish + all Day 3 gates. Unknown job types are blocked, not guessed. The frontend only queues jobs.</div>
       </div>
-      <SectionTitle count={agents.data.resultCount}>Agent permission matrix</SectionTitle>
-      {agents.data.data.length === 0 ? <ConnectionEmpty result={agents.data} what="agent registry rows" /> : <div className="grid two">{agents.data.data.map((a) => (
-        <div className="card" key={a.id}>
-          <h3>{a.name} <Pill status={a.agent_class || 'worker'} /></h3>
-          <div className="meta muted" style={{ marginBottom: 6 }}>audience: {a.audience_type || 'internal'} · {a.role}</div>
-          <div className="meta">web: {a.web_access_allowed ? '✅' : '⛔'} · external API: {a.external_api_allowed ? '✅' : '⛔'} · create jobs: {a.can_create_jobs ? '✅' : '⛔'} · create approvals: {a.can_create_approvals ? '✅' : '⛔'} · execute: {a.can_execute_actions ? '✅' : '⛔'}</div>
-          <div className="meta muted" style={{ marginTop: 4 }}>cost: {a.cost_policy || '—'} · compliance: {a.compliance_policy || '—'}</div>
-          {a.requires_approval_for?.length > 0 && <div className="meta muted">approval required for: {(a.requires_approval_for || []).join(', ')}</div>}
-        </div>
-      ))}</div>}
-      <SectionTitle>Jobs</SectionTitle>
-      <DataList table="agent_jobs" what="jobs" render={(j) => (
-        <><div className="t">{j.job_type} <Pill status={j.status} />{j.attempts ? <span className="muted"> · attempt {j.attempts}/{j.max_attempts ?? 1}</span> : null}</div>
-          <div className="meta">{j.lane} · {timeAgo(j.created_at)}{j.claimed_by ? ` · ${j.claimed_by}` : ''}{j.completed_at ? ` · done ${timeAgo(j.completed_at)}` : ''}</div>
-          {(j.last_error || j.error) && <div className="meta" style={{ color: 'var(--bad)' }}>{j.last_error || j.error}</div>}
-          {j.output && Object.keys(j.output).length > 0 && <div className="body" style={{ opacity: .8 }}>{JSON.stringify(j.output).slice(0, 160)}</div>}</>
-      )} />
-    </>
+      )}
+    />
   );
 }
 
@@ -690,15 +678,13 @@ export function GoClearWorkspace() {
 // ── Business Opportunity Lab ──
 export function OpportunityLab() {
   return (
-    <>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.opportunities}
+      email={null}
+      leading={(
       <div className="note">Every idea is scored, not rejected: can it make money, become a tool, an offer, content, a lead source, or an affiliate path? What's the smallest low/no-cost test?</div>
-      <SectionTitle>Opportunity inbox</SectionTitle>
-      <DataList table="monetization_opportunities" what="opportunities" order="created_at" render={(o) => (
-        <><div className="t">{o.title} <Pill status={o.decision} /> {o.overall_score != null && <span className="muted">· {o.overall_score}/100</span>}</div>
-          {o.money_angle && <div className="body">{o.money_angle}</div>}
-          {o.smallest_test && <div className="meta">Smallest test: {o.smallest_test}</div>}</>
-      )} />
-    </>
+      )}
+    />
   );
 }
 
@@ -714,7 +700,11 @@ export function CreativeStudio({ email }: { email: string | null }) {
     setBusy(false);
   }
   return (
-    <>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.creative}
+      email={email}
+      leading={(
+        <>
       <div className="note">Nexus never makes random content. Every asset ties to a campaign, offer, CTA, audience, and money goal — and passes compliance QA before publishing.</div>
       <div className="card" style={{ marginBottom: 6 }}>
         <h3>Actions (queue jobs only — never publishes)</h3>
@@ -726,101 +716,23 @@ export function CreativeStudio({ email }: { email: string | null }) {
         </div>
         {msg && <div className="meta" style={{ marginTop: 6 }}>{msg}</div>}
       </div>
-      <SectionTitle>Campaigns</SectionTitle>
-      <DataList table="creative_campaigns" what="campaigns" render={(c) => (
-        <><div className="t">{c.name} <Pill status={c.status} /></div><div className="meta">{c.goal} · {c.offer}</div></>
-      )} />
-      <SectionTitle>Briefs</SectionTitle>
-      <DataList table="creative_briefs" what="briefs" render={(b) => (
-        <><div className="t">{b.title} <Pill status={b.status} /></div><div className="meta">{b.platform} · {b.audience}</div>{b.hook && <div className="body">Hook: {b.hook}</div>}</>
-      )} />
-      <SectionTitle>Generated assets</SectionTitle>
-      <DataList table="creative_assets" what="assets" render={(a) => (
-        <><div className="t">{a.title || a.asset_type} <Pill status={a.status} />{a.score != null && <span className="muted"> · {a.score}/100</span>}{a.approval_id && <span className="pill info" style={{ marginLeft: 6 }}>approval created</span>}</div>
-          <div className="meta">{a.asset_type} · {a.platform} · {(a.payload?.campaign_key) || ''}</div>
-          {a.hook && <div className="body">Hook: {a.hook}</div>}
-          {(a.body || a.content) && <div className="body" style={{ opacity: .85 }}>{String(a.body || a.content).slice(0, 180)}{String(a.body || a.content).length > 180 ? '…' : ''}</div>}</>
-      )} />
-      <SectionTitle>Creative QA</SectionTitle>
-      <DataList table="creative_scores" what="QA scores" render={(s) => (
-        <><div className="t">Overall {s.overall_score}/100 <Pill status={(s.notes || '').startsWith('blocked') ? 'failed' : 'ok'} /></div>
-          <div className="meta">hook {s.hook_strength} · clarity {s.clarity} · compliance {s.compliance_safety} · CTA {s.cta_strength} · unique {s.uniqueness}</div>
-          {s.notes && <div className="meta muted">{s.notes}</div>}</>
-      )} />
-      <SectionTitle>Studio outputs (NotebookLM-style)</SectionTitle>
-      <DataList table="studio_outputs" what="studio outputs" render={(s) => (
-        <><div className="t">{s.title} <Pill status={s.status} /></div><div className="meta">{s.output_type}</div>{s.script_text && <div className="body" style={{ opacity: .85 }}>{String(s.script_text).slice(0, 160)}…</div>}</>
-      )} />
-      <SectionTitle>Creative Design Department — briefs</SectionTitle>
-      <DataList table="creative_design_briefs" what="design briefs" render={(b) => (
-        <><div className="t">{b.title} <Pill status={b.status} /></div>
-          <div className="meta">{b.platform} · {b.audience}{b.visual_metaphor ? ` · metaphor: ${b.visual_metaphor}` : ''}</div>
-          {b.compliance_rules?.length > 0 && <div className="meta muted">compliance: {(b.compliance_rules || []).join(', ')}</div>}</>
-      )} />
-      <SectionTitle>Design variants</SectionTitle>
-      <DataList table="creative_design_variants" what="design variants" render={(v) => (
-        <><div className="t">{v.title} <Pill status="info" label={v.route_key} /></div>
-          {v.post_copy && <div className="body" style={{ opacity: .85 }}>{String(v.post_copy).slice(0, 160)}</div>}
-          {v.image_prompt && <div className="meta muted">image prompt: {String(v.image_prompt).slice(0, 120)}</div>}</>
-      )} />
-      <SectionTitle>Design comparisons (winner)</SectionTitle>
-      <DataList table="creative_asset_comparisons" what="comparisons" render={(c) => (
-        <><div className="t">{c.summary} <Pill status={c.next_action} /></div>
-          <div className="meta">{c.reason}{c.approval_required ? ' · approval required before publish' : ''}</div></>
-      )} />
-      <SectionTitle>Publish readiness packages (manual only)</SectionTitle>
-      <DataList table="publish_readiness_packages" what="publish packages" render={(p) => (
-        <><div className="t">{p.package_title} <Pill status={p.approval_status} /><span className="pill info" style={{ marginLeft: 6 }}>{p.platform}</span>{p.compliance_status === 'ok' ? <span className="pill ok" style={{ marginLeft: 6 }}>compliant</span> : <span className="pill warn" style={{ marginLeft: 6 }}>{p.compliance_status}</span>}</div>
-          <div className="body" style={{ opacity: .9 }}>{String(p.final_post_copy || '').slice(0, 200)}</div>
-          {p.cta && <div className="meta" style={{ color: 'var(--accent)' }}>{p.cta}</div>}
-          {p.risk_flags?.length > 0 && <div className="meta" style={{ color: 'var(--warn)' }}>risk flags: {(p.risk_flags || []).join(', ')}</div>}
-          <div className="meta muted">Manual publish only — approval required before any real post. No auto-publish.</div></>
-      )} />
-      <SectionTitle>Publish package reviews</SectionTitle>
-      <DataList table="publish_package_reviews" what="package reviews" render={(r) => (
-        <><div className="t"><Pill status={r.decision === 'approve_manual_use' ? 'ok' : 'warn'} label={r.decision} /> {r.score}/100</div>
-          <div className="meta">{r.review_type} · {r.reason}{r.risk_flags?.length ? ` · flags: ${(r.risk_flags || []).join(', ')}` : ''}</div>
-          {r.revision_notes?.length > 0 && <div className="meta muted">{(r.revision_notes || []).join(' ')}</div>}</>
-      )} />
-      <SectionTitle>Manual publish receipts</SectionTitle>
-      <DataList table="manual_publish_receipts" what="manual receipts" render={(m) => (
-        <><div className="t"><Pill status={m.receipt_type === 'dry_run' ? 'info' : 'ok'} label={m.receipt_type} /> {m.platform}</div>
-          <div className="meta">{m.summary}{m.external_url ? ` · ${m.external_url}` : ''}</div></>
-      )} />
       <div className="note">Design + publish pipeline (manual/jobs): <code>create_design_brief</code> → <code>generate_design_variants</code> → <code>score</code> → <code>compare</code> → <code>create_publish_readiness_package</code> → <code>review</code> → <code>export</code>. Credit/funding copy is compliance-gated (no guarantees); a package still needs approval before any real publish. No auto-publish, no external image/model calls.</div>
-    </>
+        </>
+      )}
+    />
   );
 }
 
 // ── Design Library (Day 9) ──
 export function DesignLibrary() {
   return (
-    <>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.design}
+      email={null}
+      leading={(
       <div className="note">Inspiration is stored as <b>reference only</b> — Nexus does not clone, import, or depend on external repos/assets. Deterministic; no external image/model calls.</div>
-      <SectionTitle>Inspiration sources</SectionTitle>
-      <DataList table="design_inspiration_sources" what="inspiration sources" render={(s) => (
-        <><div className="t">{s.source_name} <Pill status="info" label={s.category} /></div>
-          <div className="meta">{s.source_type} · usefulness {s.usefulness_score} · risk {s.risk_level} · reference only</div>
-          {s.summary && <div className="body" style={{ opacity: .85 }}>{s.summary}</div>}</>
-      )} />
-      <SectionTitle>Pattern registry</SectionTitle>
-      <DataList table="design_pattern_registry" what="design patterns" render={(p) => (
-        <><div className="t">{p.pattern_name} <Pill status="info" label={p.pattern_category} /></div>
-          <div className="meta">{p.use_case}</div><div className="body" style={{ opacity: .85 }}>{p.description}</div></>
-      )} />
-      <SectionTitle>Feature design packets</SectionTitle>
-      <DataList table="feature_design_packets" what="feature packets" render={(f) => (
-        <><div className="t">{f.feature_name} <Pill status={f.status} /></div>
-          <div className="meta">{f.target_surface} · goal: {f.user_goal}</div>
-          <div className="meta muted">sections: {(f.required_sections || []).join(', ')}</div></>
-      )} />
-      <SectionTitle>UI quality reviews</SectionTitle>
-      <DataList table="ui_quality_reviews" what="UI reviews" render={(u) => (
-        <><div className="t">{u.review_title} <Pill status={u.overall_score >= 80 ? 'ok' : 'warn'} label={`${u.overall_score}/100`} /></div>
-          <div className="meta">layout {u.layout_score} · readability {u.readability_score} · mobile {u.mobile_score} · a11y {u.accessibility_score} · compliance {u.compliance_score} · {u.recommendation}</div>
-          {u.revision_notes?.length > 0 && <div className="meta muted">notes: {(u.revision_notes || []).join(' ')}</div>}</>
-      )} />
-    </>
+      )}
+    />
   );
 }
 
@@ -844,15 +756,13 @@ export function TradingLab() {
 // ── SEO / Marketing OS ──
 export function SeoOs() {
   return (
-    <>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.seo}
+      email={null}
+      leading={(
       <div className="note">Hermes asks for Ray's real experience before finalizing important client-facing content. GSC / GA / DataForSEO are registered only (no OAuth/keys yet).</div>
-      <SectionTitle>Sites</SectionTitle>
-      <DataList table="seo_sites" what="sites" render={(s) => (<><div className="t">{s.name}</div><div className="meta">{s.domain} · {s.status}</div></>)} />
-      <SectionTitle>SEO opportunities</SectionTitle>
-      <DataList table="seo_opportunities" what="SEO opportunities" render={(o) => (
-        <><div className="t">{o.title} <Pill status={o.status} /></div><div className="meta">{o.opportunity_type}{o.keyword ? ` · ${o.keyword}` : ''}</div></>
-      )} />
-    </>
+      )}
+    />
   );
 }
 
@@ -907,17 +817,13 @@ export function Integrations() {
 // ── Ops & Improvements ──
 export function OpsImprovements() {
   return (
-    <>
-      <SectionTitle>Incidents (Ops Doctor)</SectionTitle>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.ops}
+      email={null}
+      leading={(
       <div className="note">Detect/diagnose later. Safe repairs only; risky repairs require approval. Never auto-change code, deploy, trade, post, or expose secrets.</div>
-      <DataList table="ops_incidents" what="incidents" render={(i) => (
-        <><div className="t">{i.title} <Pill status={i.status} /></div><div className="meta">{i.component} · {i.severity}{i.approval_required ? ' · approval required' : ''}</div></>
-      )} />
-      <SectionTitle>Improvement candidates</SectionTitle>
-      <DataList table="improvement_candidates" what="improvement candidates" render={(c) => (
-        <><div className="t">{c.title} <Pill status={c.decision} /></div><div className="meta">{c.capability_area} · effort {c.implementation_effort ?? '—'} · risk {c.security_risk ?? '—'}</div></>
-      )} />
-    </>
+      )}
+    />
   );
 }
 

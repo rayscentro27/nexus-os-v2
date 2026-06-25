@@ -3,6 +3,7 @@
  *  Capture Queue item or a review-required item (which also lands in Approvals). */
 import { useEffect, useState } from 'react';
 import { submitSourceCapture } from '../../lib/nexusRequests';
+import { saveInstantResearchSource } from '../../lib/nexusProjects';
 import { containsSensitive } from '../../lib/dataScopes';
 import { ACTION_COPY } from '../../config/nexusActionPolicy';
 import type { SourceType } from './AddSourcePanel';
@@ -34,6 +35,16 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
       setMsg({ ok: false, text: 'That does not look like a public YouTube video URL (youtube.com/watch?v=… or youtu.be/…).' }); return;
     }
     setBusy(true);
+    const saved = await saveInstantResearchSource({
+      source_type: type,
+      source_url: url.trim() || null,
+      title: title || null,
+      snippet: snippet || null,
+      target_use: targetUse,
+      priority,
+      tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+      requested_by: email,
+    });
     const res = await submitSourceCapture({
       source_type: type, source_url: url.trim() || null, title: title || null, snippet: snippet || null,
       target_use: targetUse, priority, tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
@@ -41,7 +52,8 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
     }, email);
     setBusy(false);
     onSubmitted?.();
-    setMsg({ ok: res.ok, text: res.message });
+    if (!saved.id) setMsg({ ok: false, text: `Could not save source immediately: ${saved.error || 'unknown error'}` });
+    else setMsg({ ok: true, text: `Saved source immediately (${saved.id.slice(0, 8)}...). ${res.ok ? res.message : 'Enrichment request was not filed yet.'}` });
   }
 
   return (
@@ -49,7 +61,7 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
       <div className="nx-row" style={{ marginBottom: 12 }}>
         <span className="nx-pill nx-violet">2</span>
         <div><h3 style={{ margin: 0 }}>Source Entry</h3>
-          <div className="nx-muted" style={{ fontSize: 12 }}>{ACTION_COPY.safeQueue} Risky/uncertain ones go to Approvals.</div></div>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Saved immediately. Enrichment can happen later. Risky next actions go to Approvals.</div></div>
       </div>
       <div style={{ display: 'grid', gap: 10 }}>
         <label className="nx-muted" style={{ fontSize: 12 }}>Source type
@@ -69,9 +81,9 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
           <input className="nx-input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="ai_tooling, credit_funding_readiness" /></label>
         <label className="nx-muted" style={{ fontSize: 12 }}>Text snippet (optional, public only)
           <textarea className="nx-input" style={{ minHeight: 48 }} value={snippet} onChange={(e) => setSnippet(e.target.value)} /></label>
-        <button className="nx-btn" disabled={busy} onClick={submit}>{busy ? 'Filing…' : '✈ Submit Source'}</button>
+        <button className="nx-btn" disabled={busy} onClick={submit}>{busy ? 'Saving…' : 'Add Source / Research Now'}</button>
         {msg && <div className={msg.ok ? 'nx-green' : 'nx-amber'} style={{ fontSize: 12 }}>{msg.text}</div>}
-        <div className="nx-muted" style={{ fontSize: 11 }}>🔒 Browser capture is disabled. Approved/queued capture runs through the local CLI wrapper. {ACTION_COPY.hermesRecommends}</div>
+        <div className="nx-muted" style={{ fontSize: 11 }}>Browser capture is disabled. The saved card appears now; approved/queued enrichment runs through the local CLI wrapper. {ACTION_COPY.hermesRecommends}</div>
       </div>
     </div>
   );

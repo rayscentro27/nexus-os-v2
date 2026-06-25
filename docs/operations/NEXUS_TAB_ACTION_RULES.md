@@ -19,3 +19,19 @@ Every tab follows these (enforced by `nexusActionPolicy` + `nexusRequests` + `Ac
   gated). Opportunity Lab: candidate only. GoClear/Apex: offer changes = needs review. Trading Lab:
   Demo only / live trading hidden-disabled. SEO: Seed. Integrations: status-only (no keys). Ops:
   Live + legacy v1 detected. Events: Live (read). Model Router: Live.
+
+## Department workspace action studio
+
+Department rooms show function buttons, not backend queue management. The visible action studio may
+show Analyze, Create Report, Send to Creative, Send to Opportunity Lab, Send to Design Library,
+Create Task, Request More Research, Generate Summary, Generate Slide Deck, Generate Social Draft,
+Mark Research Only, Park, Reject, and Approve / Approve & Queue only when required.
+
+Safe internal actions create `task_requests` or metadata/proof rows. Risky actions create
+`approvals`. Disconnected actions are disabled and must read as "Not connected yet." The UI must not
+pretend that unimplemented generation, publishing, sending, trading, deployment, scheduler
+activation, raw local execution, or raw v1 worker control exists.
+
+Source Intake is instant-first: a pasted source is saved as a visible `research_sources` project
+immediately. Enrichment/capture can be filed as safe follow-up work, but the UI should say
+"Saved. Summary/enrichment pending" rather than "queued and unavailable."
