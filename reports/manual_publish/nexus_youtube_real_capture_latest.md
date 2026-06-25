@@ -1,16 +1,16 @@
 # Nexus YouTube Real Capture
 
-- generated_at: 2026-06-25T12:39:57.880128+00:00
+- generated_at: 2026-06-25T12:43:49.260137+00:00
 - rating_model_version: v1
-- research_run_id: 34240556-54e7-4f1f-ab67-a835e92cbe00
+- research_run_id: 784c03dc-c5c8-42af-a81a-05edcf894d67
 - external_ai_used: false · summarize.py used: false · v1 research table written: false
 - sources captured: 1
 
 ## Captured
-### Hermes SEO Agent OS: How I Rank #1 on Google
-- source_url: https://www.youtube.com/watch?v=CDurz54yrNI
+### 5 Ways to Improve Your Credit Score in 30 Days | The 700 Credit Club
+- source_url: https://www.youtube.com/watch?v=wqpOal7IE9M
 - transcript_status: captured
-- category/destination: ai_tooling → Ops & Improvements · score 22/100
-- dedup: False · refs: {"research_source_id": "741b4d6a-1884-419b-b2b4-8f7c9a2e3a50", "intake_event_id": "dbc0bbeb-3ac9-4949-834e-7d2f271745f5"}
-- nexus_event_id: 1886d709-15b4-47a5-beb6-575b6182ee84
+- category/destination: credit_funding_readiness → GoClear/Apex Revenue Hub · score 29/100
+- dedup: False · refs: {"research_source_id": "b5307732-c7c1-4d45-b230-cd78bd1efe98", "intake_event_id": "a6695352-59cf-4ad7-b177-f5ff87a8c61e"}
+- nexus_event_id: 3aa3d837-12a8-4c59-9640-12ea3e9c40c2
 
