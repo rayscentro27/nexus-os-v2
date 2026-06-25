@@ -84,3 +84,8 @@ flips the request to approved (no execution in the browser).
   `NEXUS_APPROVAL_VISIBILITY_MODEL.md` (root cause: Source Intake wrote `task_requests`, Approvals
   reads `approvals`).
 - UI: "Pending Approval" rail → **Capture Queue**; shows Safe capture vs Approval required + next step.
+
+## Worker (built 2026-06-25)
+`scripts/intake/run_capture_queue_worker.py` polls `task_requests` for safe queued (and approved
+review-required) capture items and runs the wrapper once each. See `NEXUS_CAPTURE_QUEUE_WORKER.md`.
+Manual/bounded/dry-run-default; not scheduled; not in the browser.
