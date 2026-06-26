@@ -286,7 +286,7 @@ export function mapTaskRequestToProject(row: Row): NexusProject {
   const enrichment = mergeEnrichment(deterministicEnrichment(row), normalizeEnrichment(row.payload?.project_enrichment));
   return base(row, {
     project_id: `task:${row.id}`,
-    title: text(row.payload?.title ?? row.payload?.source_title ?? row.summary ?? row.task_type, 'Task request'),
+    title: text(row.payload?.title ?? row.payload?.strategy_name ?? row.payload?.source_title ?? row.summary ?? row.task_type, 'Task request'),
     department: getDepartmentFromTab(text(row.payload?.owner_tab ?? row.payload?.target_tab ?? row.payload?.department, 'agent_jobs')),
     owner_tab: text(row.payload?.owner_tab ?? row.payload?.target_tab, 'jobs'),
     project_type: text(row.task_type, 'task_request'),
@@ -568,7 +568,10 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
         risk_triggers: ['live_trading_blocked'],
         data_sources: ['trading_strategy_candidates'],
       })),
-      ...tasks.filter((t) => taskBelongsToTab(t, 'trading', ['trading_lab_research_project'])).map(mapTaskRequestToProject),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'trading', [
+        'trading_lab_research_project',
+        'trading_lab_backtest_import',
+      ])).map(mapTaskRequestToProject),
     ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }
   return [];

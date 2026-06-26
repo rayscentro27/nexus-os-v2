@@ -41,7 +41,25 @@ The adapter reports these templates. It does not run them automatically.
 python3 scripts/trading/vibe_trading_adapter.py --dry-run --mode status --no-live-trading
 ```
 
-It writes local status reports only and returns safe JSON. It does not place trades, call broker APIs, modify credentials, start loops, or start schedulers.
+It also accepts `--mode import-report` as a status/report mode for the importer boundary. It writes local status reports only and returns safe JSON. It does not place trades, call broker APIs, modify credentials, start loops, or start schedulers.
+
+## Backtest Importer
+
+`scripts/trading/import_backtest_report.py` imports one explicit safe backtest/report file into deterministic Trading Lab project metadata.
+
+Dry-run:
+
+```bash
+python3 scripts/trading/import_backtest_report.py --sample --dry-run --no-live-trading --json
+```
+
+Bounded live import:
+
+```bash
+python3 scripts/trading/import_backtest_report.py --input-file tests/fixtures/trading/sample_backtest_report.json --no-dry-run --no-live-trading --json
+```
+
+The importer writes local JSON/Markdown reports and, when live mode is explicitly used, may write `task_requests` and `nexus_events` proof. It never calls broker APIs, starts Vibe Trading services, invokes `auto_executor`, or places trades.
 
 ## Feeder
 
@@ -63,4 +81,4 @@ Live feeder writes are limited to `task_requests` and `nexus_events` proof. No t
 
 ## Next Safe Test
 
-Review the paper-only Trading Lab status card in Nexus. The next implementation should add a bounded backtest import command that writes a local JSON report without calling broker APIs or starting persistent services.
+Review the imported sample backtest card in Nexus Trading Lab, then add a Ray-selected safe import folder for real paper/backtest reports.

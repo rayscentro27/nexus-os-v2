@@ -1,0 +1,23 @@
+{
+  "strategy_name": "Sample EURUSD Mean Reversion Paper Test",
+  "instrument": "EURUSD",
+  "market": "forex",
+  "timeframe": "H1",
+  "date_range": {
+    "start": "2026-01-01",
+    "end": "2026-03-31"
+  },
+  "metrics": {
+    "win_rate_pct": 57.8,
+    "profit_factor": 1.62,
+    "total_return_pct": 8.4,
+    "max_drawdown_pct": 6.9,
+    "trade_count": 64
+  },
+  "summary": "Sample fixture for Nexus Trading Lab importer verification. Paper/backtest only; not an execution signal.",
+  "risk_notes": [
+    "Fixture data only.",
+    "Requires out-of-sample validation.",
+    "No live trading recommendation."
+  ]
+}

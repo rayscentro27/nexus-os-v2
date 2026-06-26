@@ -7,6 +7,7 @@ Trading Lab is a demo research department. It may review strategy ideas, backtes
 - Strategy research.
 - Bounded backtest review.
 - Paper/demo result import.
+- Explicit backtest report import from a safe selected local file.
 - Paper-only report generation.
 - Risk scoring and strategy scorecards.
 - Hermes advisory review.
@@ -36,6 +37,7 @@ Every Trading Lab card created by Nexus v2 must include:
 - `paper_only=true`
 - `live_trading_blocked=true`
 - source/report reference
+- imported metrics when available
 - risk notes
 - proof event id
 
@@ -49,10 +51,11 @@ Hermes may summarize, recommend, compare pros/cons, and propose paper-only next 
 
 ## Vibe Trading Boundary
 
-The first integration is status/report only:
+The first integration is status/report/import only:
 
 - safe status discovery
 - safe backtest command templates
+- explicit selected backtest report import
 - blocked command list
 - local reports
 - Trading Lab research cards

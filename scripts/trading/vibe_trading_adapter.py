@@ -140,7 +140,7 @@ def main() -> int:
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")
     parser.add_argument("--no-dry-run", dest="dry_run", action="store_false")
     parser.set_defaults(dry_run=True)
-    parser.add_argument("--mode", choices=["backtest", "paper-report", "status"], default="status")
+    parser.add_argument("--mode", choices=["backtest", "paper-report", "status", "import-report"], default="status")
     parser.add_argument("--strategy-id", default="")
     parser.add_argument("--limit", type=int, default=5)
     parser.add_argument("--no-live-trading", action="store_true", default=True)
