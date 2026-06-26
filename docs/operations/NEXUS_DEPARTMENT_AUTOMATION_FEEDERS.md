@@ -25,7 +25,7 @@ Common fields:
 | `approvals_decision_desk_feeder` | Approvals | manual_only | `task_requests`, `nexus_events` | `approval_decision_project_created` |
 | `events_feed_ledger_feeder` | Events Feed | manual_only | `task_requests`, `nexus_events` | `event_ledger_summary_created` |
 | `integrations_status_feeder` | Integrations | manual_only | `task_requests`, `nexus_events` | `integration_status_project_created` |
-| `trading_lab_demo_research_feeder` | Trading Lab | blocked | none in this pass | blocked |
+| `trading_lab_demo_research_feeder` | Trading Lab | manual_only | `task_requests`, `nexus_events` | `trading_lab_research_project_created` |
 
 ## Commands
 
@@ -52,9 +52,9 @@ Live runs are bounded and use duplicate prevention via:
 - Safe feeders write internal task/project cards and proof only.
 - Risky next actions remain advisory or approval-required.
 - Publish, send, trade, deploy, scheduler activation, credential modification, capture, scraping, and external AI are not performed by these feeders.
-- Events and Integrations feeders explicitly skip trading/Oanda items in this pass.
-- Trading Lab is excluded until a separate Vibe Trading integration defines paper-only safety.
+- Events and Integrations feeders explicitly skip trading/Oanda items unless the Trading Lab paper-only adapter owns the record.
+- Trading Lab is paper/demo research only. Live trading, broker execution, `auto_executor`, schedulers, and persistent loops remain blocked.
 
 ## Next Recommendation
 
-Review the newly created department cards, then design a separate Trading Lab/Vibe Trading feeder with a paper-only broker boundary, no live execution, explicit account segregation, and proof-first dry-run reporting.
+Review the Trading Lab paper-only status card, then add bounded backtest report import without exposing broker execution.

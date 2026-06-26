@@ -41,6 +41,8 @@ function obj(value: unknown): Record<string, unknown> {
 function statusFrom(value: unknown): NexusProjectStatus {
   const s = text(value).toLowerCase();
   if (s.includes('block') || s.includes('fail')) return 'blocked';
+  if (s.includes('paper') || s.includes('demo')) return 'paper_demo';
+  if (s.includes('backtest')) return 'backtested';
   if (s.includes('proposed')) return 'proposed';
   if (s.includes('reject')) return 'rejected';
   if (s.includes('park') || s.includes('skip')) return 'parked';
@@ -411,6 +413,7 @@ function getDepartmentFromTab(tab: string): NexusDepartment {
   if (tab === 'approvals') return 'approvals';
   if (tab === 'events') return 'events_feed';
   if (tab === 'integrations') return 'integrations';
+  if (tab === 'trading') return 'trading_lab';
   return 'agent_jobs';
 }
 
@@ -544,6 +547,30 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
   if (tabId === 'integrations') return (await listTable('task_requests', { order: 'created_at', limit: 40 }))
     .filter((t) => taskBelongsToTab(t, 'integrations', ['integration_status_project']))
     .map(mapTaskRequestToProject);
+  if (tabId === 'trading') {
+    const [strategies, tasks] = await Promise.all([
+      listTable('trading_strategy_candidates', { order: 'created_at', limit: 40 }),
+      listTable('task_requests', { order: 'created_at', limit: 40 }),
+    ]);
+    return [
+      ...strategies.map((r) => base(r, {
+        project_id: `trading-strategy:${r.id}`,
+        title: text(r.title ?? r.strategy_name ?? r.name, 'Trading strategy candidate'),
+        department: 'trading_lab',
+        owner_tab: 'trading',
+        project_type: 'paper_strategy_research',
+        status: statusFrom(r.status),
+        score: score(r.score ?? r.total_score),
+        summary: text(r.summary ?? r.thesis ?? r.description, ''),
+        recommendation: 'Research/backtest only. Live trading and broker execution are blocked.',
+        next_action: 'Review strategy notes and request bounded backtest/report only.',
+        approval_required: false,
+        risk_triggers: ['live_trading_blocked'],
+        data_sources: ['trading_strategy_candidates'],
+      })),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'trading', ['trading_lab_research_project'])).map(mapTaskRequestToProject),
+    ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
   return [];
 }
 

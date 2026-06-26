@@ -739,17 +739,13 @@ export function DesignLibrary() {
 // ── Trading Lab ──
 export function TradingLab() {
   return (
-    <>
-      <div className="note">Research/testing only. Live + funded trading disabled. No execution this pass. All actions route through jobs/signals/demo_trades/events. No client performance claims without proof + approval.</div>
-      <SectionTitle>Strategy candidates</SectionTitle>
-      <DataList table="trading_strategy_candidates" what="strategy candidates" render={(c) => (
-        <><div className="t">{c.title} <Pill status={c.status} /></div><div className="meta">{c.market} · {c.timeframe} · hype risk {c.hype_risk ?? '—'}</div></>
-      )} />
-      <SectionTitle>Risk rules</SectionTitle>
-      <DataList table="trading_risk_rules" what="risk rules" order="created_at" render={(r) => (
-        <><div className="t">{r.rule_key} <Pill status={r.enabled ? 'enabled' : 'registered'} /></div><div className="meta">{r.description}</div></>
-      )} />
-    </>
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.trading}
+      email={null}
+      leading={(
+        <div className="note">Paper/demo research only. Live and funded trading, broker execution, auto_executor, and schedulers are blocked. Backtest/report actions are disabled unless connected through the paper-only adapter.</div>
+      )}
+    />
   );
 }
 

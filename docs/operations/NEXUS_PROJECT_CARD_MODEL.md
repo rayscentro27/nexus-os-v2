@@ -70,5 +70,8 @@ The project adapter now reads feeder-created `task_requests` for:
 - Approvals: `approval_decision_project`
 - Events Feed: `event_ledger_project`
 - Integrations: `integration_status_project`
+- Trading Lab: `trading_lab_research_project`
 
 Each feeder card stores canonical card fields in `task_requests.payload` and `task_requests.payload.project_enrichment`, including title, department, owner tab, project type, score, summary, pros, cons, recommendation, proposed schedule, next action, risk triggers, approval requirement, source reference, and proof event id. Department workspaces and Command Center use the same adapter path, so counts update from real stored cards rather than fake data.
+
+Trading Lab cards must also include `paper_only=true`, `live_trading_blocked=true`, `vibe_trading_status`, and `risk_notes` in the payload/enrichment. Live broker execution is never represented as an available card action.

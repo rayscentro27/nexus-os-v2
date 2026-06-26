@@ -14,6 +14,8 @@ export type NexusDepartment =
 
 export type NexusProjectStatus =
   | 'proposed'
+  | 'paper_demo'
+  | 'backtested'
   | 'researching'
   | 'summarized'
   | 'scored'
@@ -148,6 +150,8 @@ export interface DepartmentWorkspaceConfig {
 
 export const PROJECT_STATUSES: NexusProjectStatus[] = [
   'proposed',
+  'paper_demo',
+  'backtested',
   'researching',
   'summarized',
   'scored',
@@ -267,6 +271,21 @@ export const DEPARTMENT_WORKSPACES: Record<string, DepartmentWorkspaceConfig> = 
       { key: 'proof', label: 'View Proof', category: 'safe', description: 'Open linked proof when present.' },
       { key: 'schedule', label: 'Schedule Later', category: 'approval', description: 'Scheduler activation requires approval.' },
       { key: 'park', label: 'Park', category: 'safe', description: 'Park the job review.' },
+    ],
+  },
+  trading: {
+    department: 'trading_lab',
+    tabId: 'trading',
+    title: 'Demo Research Department',
+    subtitle: 'Paper-only strategy research, backtests, risk notes, and proof.',
+    emptyFeed: 'Vibe Trading paper reports, backtests, strategy candidates, and paper demo journals',
+    actions: [
+      { key: 'backtest', label: 'Run Backtest', category: 'disabled', description: 'Not connected yet; adapter only reports safe command templates.' },
+      { key: 'report', label: 'Generate Report', category: 'safe', description: 'Create internal paper-only research report task.' },
+      { key: 'task', label: 'Create Task', category: 'safe', description: 'Create internal research task.' },
+      { key: 'ops', label: 'Send to Ops', category: 'safe', description: 'Route safety/process follow-up to Ops.' },
+      { key: 'paper_demo', label: 'Paper Demo Only', category: 'safe', description: 'Mark as paper/demo research only.' },
+      { key: 'park', label: 'Park Strategy', category: 'safe', description: 'Park the strategy research card.' },
     ],
   },
   command: {

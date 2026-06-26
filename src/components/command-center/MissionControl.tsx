@@ -106,6 +106,7 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
     DEPARTMENT_WORKSPACES.approvals,
     DEPARTMENT_WORKSPACES.events,
     DEPARTMENT_WORKSPACES.integrations,
+    DEPARTMENT_WORKSPACES.trading,
   ];
   const { data } = useData<Record<string, NexusProject[]>>(
     async () => {

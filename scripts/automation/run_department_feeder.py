@@ -27,6 +27,7 @@ from feeders import (  # noqa: E402
     integrations_status_feeder,
     opportunity_lab_research_feeder,
     seo_marketing_project_feeder,
+    trading_lab_demo_research_feeder,
 )
 
 MAX_LIMIT = 50
@@ -48,6 +49,7 @@ IMPLEMENTED_FEEDERS = {
     approvals_decision_desk_feeder.FEEDER_ID: approvals_decision_desk_feeder,
     events_feed_ledger_feeder.FEEDER_ID: events_feed_ledger_feeder,
     integrations_status_feeder.FEEDER_ID: integrations_status_feeder,
+    trading_lab_demo_research_feeder.FEEDER_ID: trading_lab_demo_research_feeder,
 }
 
 FEEDERS: list[dict[str, Any]] = [
@@ -212,13 +214,13 @@ FEEDERS: list[dict[str, Any]] = [
         "name": "Trading Lab Demo Research Feeder",
         "department": "trading_lab",
         "owner_tab": "trading",
-        "source_type": "demo_research",
+        "source_type": "vibe_trading_status/backtests/paper_reports",
         "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id trading_lab_demo_research_feeder --dry-run --limit 5 --no-external-ai",
-        "enabled_state": "blocked",
+        "enabled_state": "manual_only",
         "risk_level": "high",
         "writes_to_tables": ["task_requests", "nexus_events"],
-        "proof_event_type": "department_feeder_trading_demo_reported",
-        "next_action": "Keep research-only; do not place trades.",
+        "proof_event_type": "trading_lab_research_project_created",
+        "next_action": "Dry-run paper/demo research cards only; live trading remains blocked.",
     },
 ]
 

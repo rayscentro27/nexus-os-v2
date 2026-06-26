@@ -50,4 +50,13 @@ The remaining non-trading feeders are manual-only and bounded:
 | `events_feed_ledger_feeder` | Events Feed | `python3 scripts/automation/run_department_feeder.py --feeder-id events_feed_ledger_feeder --dry-run --limit 5 --no-external-ai` | `event_ledger_summary_created` |
 | `integrations_status_feeder` | Integrations | `python3 scripts/automation/run_department_feeder.py --feeder-id integrations_status_feeder --dry-run --limit 5 --no-external-ai` | `integration_status_project_created` |
 
-No scheduler is activated for these feeders. Trading Lab remains blocked and requires a separate Vibe Trading paper-only safety plan.
+No scheduler is activated for these feeders. Trading Lab is manual-only paper research and requires a separate approval before any future paper/demo loop. Live trading remains blocked.
+
+## Trading Lab / Vibe Trading
+
+| Process | Owning tab | Script/process | Writes | Suggested schedule | Risk | Approval requirement | Manual command | Proof event | State |
+|---|---|---|---|---|---|---|---|---|---|
+| Vibe Trading status adapter | Trading Lab | `scripts/trading/vibe_trading_adapter.py` | local report only | Manual only | High | Required for anything beyond status/backtest report | `python3 scripts/trading/vibe_trading_adapter.py --dry-run --mode status --no-live-trading` | local report | Manual only |
+| Trading Lab paper research feeder | Trading Lab | `scripts/automation/run_department_feeder.py --feeder-id trading_lab_demo_research_feeder` | `task_requests`, `nexus_events` | Manual only | High | Required before any demo loop/scheduler/broker connection | `python3 scripts/automation/run_department_feeder.py --feeder-id trading_lab_demo_research_feeder --dry-run --limit 5 --no-external-ai` | `trading_lab_research_project_created` | Manual only |
+
+Blocked commands: `auto_executor.py`, `nexus_trading_engine.py`, `tournament_service.py`, webhook/manual signal endpoints, broker order paths, and scheduler activation.

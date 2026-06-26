@@ -1,16 +1,16 @@
 # Nexus Department Automation Feeders
 
 - generated_at: 2026-06-26
-- latest grouped build: remaining non-trading feeders
+- latest grouped build: Trading Lab paper-only integration
 - scheduler_started: false
 - capture_run: false
 - publish/send/trade/deploy: false
 - external_ai: false
-- trading_lab: excluded
+- live_trading_blocked: true
 
 ## Implemented Live Feeders
 
-- `opportunity_lab_research_feeder` from the prior pass.
+- `opportunity_lab_research_feeder`
 - `creative_studio_project_feeder`
 - `design_library_project_feeder`
 - `seo_marketing_project_feeder`
@@ -19,25 +19,21 @@
 - `approvals_decision_desk_feeder`
 - `events_feed_ledger_feeder`
 - `integrations_status_feeder`
+- `trading_lab_demo_research_feeder`
 
-## Write Path
+## Trading Lab Addition
 
-All live department feeders write:
+Trading Lab is now manual-only, paper/demo research only. Its feeder writes `task_requests` and `nexus_events` proof with `paper_only=true` and `live_trading_blocked=true`.
 
-- `task_requests`
-- `task_requests.payload.project_enrichment`
-- `task_requests.payload.feeder_id`
-- `task_requests.payload.unique_key`
-- `nexus_events` proof rows
+It does not expose live broker execution, `auto_executor`, persistent trading loops, or schedulers.
 
-They do not publish, send, trade, deploy, capture, scrape, call external AI, modify credentials, or activate schedulers.
+## Latest Trading Result
 
-## Latest Grouped Result
-
-The grouped non-trading build created 33 internal project/task cards and 33 proof events across Creative Studio, Design Library, SEO / Marketing, Agent Jobs, Command Center, Approvals, Events Feed, and Integrations.
-
-See `reports/manual_publish/nexus_remaining_department_feeders_latest.md` for per-feeder counts and verification.
+- feeder: `trading_lab_demo_research_feeder`
+- created: 1 paper-only research card
+- duplicate dry-run after live: 1 duplicate, 0 created
+- proof event: `trading_lab_research_project_created`
 
 ## Next Recommendation
 
-Review created department cards, then design Trading Lab/Vibe Trading as a separate paper-only integration with stronger broker/account safety boundaries.
+Add a bounded backtest report importer that writes local JSON only and still does not call broker APIs or start trading services.
