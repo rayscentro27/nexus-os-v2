@@ -34,6 +34,15 @@ Schedulers are not activated by this UI work. Future scheduler activation must g
 
 Deterministic capture/enrichment results flow back into department project cards through the canonical `project_enrichment` payload. NotebookLM enrichment can later write the same payload with `enrichment_source=notebooklm`.
 
+## Department Feeder Layer
+
+The feeder layer defines how manual/scheduled processes will feed department project boards. It is a registry plus a dry-run-first manual runner:
+
+- Registry: `src/config/nexusDepartmentFeeders.ts`
+- Runner: `scripts/automation/run_department_feeder.py`
+
+The runner currently reports feeder targets and proof events. Live scheduler activation is intentionally disabled until Ray approves it.
+
 ## C. Review/Approval Mode
 
 Risky next actions belong in Approvals:

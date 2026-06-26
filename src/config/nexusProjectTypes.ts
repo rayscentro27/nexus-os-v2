@@ -66,6 +66,28 @@ export interface NexusProjectEnrichment {
   proof_event_id: string | null;
 }
 
+export interface NexusDepartmentFeederOutput {
+  feeder_id: string;
+  department: NexusDepartment;
+  project_type: string;
+  title: string;
+  summary: string;
+  score: number | null;
+  pros: string[];
+  cons: string[];
+  recommendation: string;
+  proposed_schedule: string;
+  next_action: string;
+  source_url: string | null;
+  source_title: string | null;
+  data_sources: string[];
+  risk_triggers: string[];
+  approval_required: boolean;
+  status: NexusProjectStatus;
+  proof_event_type: string;
+  metadata: Record<string, unknown>;
+}
+
 export interface NexusProject {
   project_id: string;
   title: string;

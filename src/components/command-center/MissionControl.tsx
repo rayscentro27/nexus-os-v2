@@ -9,6 +9,7 @@ import { useData } from '../ui';
 import { DEPARTMENT_WORKSPACES } from '../../config/nexusProjectTypes';
 import { getProjectHermesRecommendation, loadDepartmentProjects } from '../../lib/nexusProjects';
 import type { NexusProject } from '../../config/nexusProjectTypes';
+import { feederStateCounts, NEXUS_DEPARTMENT_FEEDERS } from '../../config/nexusDepartmentFeeders';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -116,6 +117,9 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   const enriched = all.filter((p) => ['enriched', 'scored', 'needs_review'].includes(p.enrichment_status)).length;
   const missingEnrichment = all.filter((p) => p.enrichment_status.startsWith('pending') || p.enrichment_status === 'metadata_saved').length;
   const top = all.find((p) => p.approval_required || p.status === 'needs_review' || p.status === 'blocked') ?? all[0] ?? null;
+  const feederCounts = feederStateCounts();
+  const topFeeder = NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'needs_connector' || f.enabled_state === 'blocked')
+    ?? NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'manual_only');
 
   return (
     <div className="nx-glass">
@@ -133,9 +137,20 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
         <span className="nx-pill">enriched {enriched}</span>
         <span className="nx-pill">missing enrichment {missingEnrichment}</span>
       </div>
+      <div className="nx-chiprow" style={{ marginBottom: 10 }}>
+        <span className="nx-pill">feeders manual {feederCounts.manual_only}</span>
+        <span className="nx-pill">ready {feederCounts.ready_for_schedule}</span>
+        <span className="nx-pill">blocked {feederCounts.blocked}</span>
+        <span className="nx-pill">needs connector {feederCounts.needs_connector}</span>
+      </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Hermes top recommendation: {top ? getProjectHermesRecommendation(top) : 'No live department projects yet. Start with Source Intake or run the manual watch report.'}
       </div>
+      {topFeeder && (
+        <div className="note" style={{ marginBottom: 10 }}>
+          Top feeder recommendation: {topFeeder.name} · {topFeeder.next_action}
+        </div>
+      )}
       <div className="dept-exec-grid">
         {workspaces.map((workspace) => {
           const projects = data[workspace.tabId] ?? [];

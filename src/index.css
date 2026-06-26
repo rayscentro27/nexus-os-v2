@@ -130,6 +130,8 @@ textarea.cmd:focus { outline: none; border-color: var(--accent); }
 .dept-exec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
 .dept-exec-card { text-align: left; color: var(--text); background: rgba(10,36,73,.74); border: 1px solid rgba(78,137,210,.22); border-radius: 8px; padding: 12px; cursor: pointer; }
 .dept-exec-card:hover { border-color: var(--accent); background: rgba(255,255,255,.05); }
+.dept-feeder-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin: 0 0 14px; }
+.dept-feeder-card { background: #0c1422; border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
 
 @media (max-width: 1180px) {
   .dept-grid { grid-template-columns: 1fr; height: auto; min-height: 0; }

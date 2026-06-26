@@ -17,6 +17,14 @@ Storage priority:
 3. `task_requests.payload.project_enrichment`
 4. deterministic fallback from available row fields
 
+## Feeder Output Shape
+
+`NexusDepartmentFeederOutput` defines the standard intake shape for future feeders:
+
+`feeder_id`, `department`, `project_type`, `title`, `summary`, `score`, `pros`, `cons`, `recommendation`, `proposed_schedule`, `next_action`, `source_url`, `source_title`, `data_sources`, `risk_triggers`, `approval_required`, `status`, `proof_event_type`, and `metadata`.
+
+Feeder outputs should map into existing project card fields, `project_enrichment`, `task_requests.payload`, or metadata JSON. Schema changes should be avoided unless absolutely required.
+
 ## Statuses
 
 `researching`, `summarized`, `scored`, `needs_review`, `approved`, `scheduled`, `implementing`, `done`, `parked`, `rejected`, `blocked`.

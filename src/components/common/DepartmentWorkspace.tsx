@@ -9,6 +9,27 @@ import { DepartmentProjectSummary } from './DepartmentProjectSummary';
 import { HermesAdvisorWorkspace } from './HermesAdvisorWorkspace';
 import { DepartmentActionStudio } from './DepartmentActionStudio';
 import { DepartmentOutputPanel } from './DepartmentOutputPanel';
+import { feedersForTab } from '../../config/nexusDepartmentFeeders';
+
+function FeederStatusPanel({ tabId }: { tabId: string }) {
+  const feeders = feedersForTab(tabId);
+  if (feeders.length === 0) return null;
+  return (
+    <div className="dept-feeder-strip">
+      {feeders.map((feeder) => (
+        <div className="dept-feeder-card" key={feeder.feeder_id}>
+          <div className="dept-kicker">Feeder · {feeder.enabled_state.replaceAll('_', ' ')}</div>
+          <div className="dept-project-title">{feeder.name}</div>
+          <div className="meta">{feeder.purpose}</div>
+          <div className="meta muted" style={{ marginTop: 6 }}>
+            Data: {feeder.source_type} · Proof: {feeder.proof_event_type}
+          </div>
+          <div className="meta" style={{ marginTop: 6 }}>Next action: {feeder.next_action}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function DepartmentWorkspace({
   config,
@@ -99,6 +120,7 @@ export function DepartmentWorkspace({
         <button className="btn ghost" onClick={() => loadDepartmentProjects(config.tabId).then(setProjects)}>Refresh</button>
       </div>
       {leading}
+      <FeederStatusPanel tabId={config.tabId} />
       {message && <div className="note">{message}</div>}
       <div className="dept-grid">
         <DepartmentProjectList
