@@ -9,6 +9,7 @@ import { tabById } from '../config/nexusTabs';
 import { StatusBadge, TabConnectionStatus } from './TabStatus';
 import { CommandCenterMissionControl } from './command-center/MissionControl';
 import { SourceIntakeReviewPage } from './source-intake/SourceIntakeReviewPage';
+import { RayReviewQueueView } from './review/RayReviewQueueView';
 
 interface NavItem { key: string; label: string; icon: string; sub: string; render: (email: string | null) => ReactNode; }
 
@@ -17,6 +18,7 @@ const NAV: NavItem[] = [
   { key: 'health', label: 'System Health', icon: '✚', sub: 'Live component status', render: () => <SystemHealth /> },
   { key: 'jobs', label: 'Agent Jobs', icon: '⚙', sub: 'Agents + job runner', render: () => <AgentJobsView /> },
   { key: 'approvals', label: 'Approvals', icon: '✓', sub: 'Approve / reject / request changes', render: (e) => <ApprovalCenter email={e} /> },
+  { key: 'review', label: 'Ray Review Queue', icon: '◇', sub: 'True decisions only', render: () => <RayReviewQueueView /> },
   { key: 'goclear', label: 'GoClear / Apex', icon: '◆', sub: 'Funding readiness workspace', render: () => <GoClearWorkspace /> },
   { key: 'opportunities', label: 'Opportunity Lab', icon: '⊛', sub: 'Money ideas, scored', render: () => <OpportunityLab /> },
   { key: 'intake', label: 'Source Intake & Review', icon: '⇪', sub: 'Submit, score, and route sources', render: () => <IntakeOrientation /> },

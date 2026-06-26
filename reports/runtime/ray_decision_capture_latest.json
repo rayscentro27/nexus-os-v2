@@ -1,0 +1,26 @@
+{
+  "title": "Ray Decision Capture",
+  "generated_at": "2026-06-26T16:30:11.352926+00:00",
+  "ok": true,
+  "dry_run": true,
+  "review_id": "sample-review-id",
+  "decision": "changes_requested",
+  "feedback": "Make this more focused on business funding leads.",
+  "counts": {
+    "updated": 0,
+    "created": 0,
+    "failed": 0
+  },
+  "hermes_memory": {
+    "kind": "ray_feedback",
+    "summary": "Make this more focused on business funding leads.",
+    "source_type": "ray_review_queue",
+    "source_id": "sample-review-id",
+    "safe_visibility": "internal_summary"
+  },
+  "safety": {
+    "publish_send_trade_deploy": false,
+    "scheduler_started": false,
+    "external_ai_called": false
+  }
+}

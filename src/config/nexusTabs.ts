@@ -89,6 +89,17 @@ export const NEXUS_TABS: TabConfig[] = [
     recommendedNextAction: 'None — connected. Approve = sign-off record only; never publishes.',
   },
   {
+    id: 'review', label: 'Ray Review Queue', route: 'review', status: 'manual_cli_backed', statusLabel: 'Manual',
+    description: 'Focused decision queue for Ray. Not a research backlog.', dataSources: ['Supabase + CLI reports'],
+    tables: ['task_requests', 'approvals', 'nexus_events'],
+    scripts: ['scripts/review/build_ray_review_queue.py', 'scripts/review/generate_ray_review_report.py'],
+    v1Dependencies: [], v2Dependencies: ['rayReviewQueue policy'],
+    actions: ['view true decisions', 'capture feedback', 'request changes'],
+    hermesCan: 'explain why a decision is in the queue and what happens if Ray approves; never execute directly',
+    riskLevel: 'medium', visible: true,
+    recommendedNextAction: 'Run the dry-run builder and review the generated decision report.',
+  },
+  {
     id: 'goclear', label: 'GoClear / Apex', route: 'goclear', status: 'partial_connected', statusLabel: 'Partial',
     description: 'Funding readiness workspace / $97 revenue hub.', dataSources: ['Supabase'], tables: ['partner_offers', 'client_recommendations', 'monetization_opportunities', 'task_requests'],
     scripts: ['nexus:watch', 'scripts/automation/run_department_feeder.py --feeder-id goclear_revenue_hub_feeder'], v1Dependencies: [], v2Dependencies: ['landing page (nexusv20.netlify.app)'],

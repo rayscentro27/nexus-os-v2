@@ -40,6 +40,20 @@ Hermes recommendation history tracks:
 
 This lets Hermes prioritize patterns Ray repeatedly approves and downgrade ideas Ray repeatedly rejects.
 
+## Ray Review Queue Use
+
+Hermes should use Ray Review Queue to answer:
+
+- what needs Ray's decision
+- what Nexus can handle without Ray
+- what the top decisions are this week
+- why a decision is in the queue
+- what happens if Ray approves
+- what risks exist
+- what can be ignored for now
+
+Feedback captured from Review Queue decisions should be stored as safe internal decision memory.
+
 ## Command
 
 ```bash

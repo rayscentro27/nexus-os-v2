@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "generated_at": "2026-06-26",
+  "model_added": true,
+  "policy_added": true,
+  "builder_dry_run": {
+    "ok": true,
+    "candidates_scanned": 55,
+    "qualifies": 25,
+    "skipped_autonomous_or_other": 12,
+    "created": 0,
+    "failed": 0
+  },
+  "report_dry_run": {
+    "ok": true,
+    "total_pending_decisions": 10,
+    "urgent_decisions": 1,
+    "campaign_approvals": 8,
+    "scheduler_decisions": 1,
+    "connector_setup_decisions": 1
+  },
+  "decision_capture_dry_run": {
+    "ok": true,
+    "updated": 0,
+    "created": 0,
+    "failed": 0
+  },
+  "bounded_live_run": false,
+  "storage": "task_requests.task_type=ray_review_item",
+  "scheduler_activated": false,
+  "publish_send_trade_deploy": false,
+  "external_ai_called": false
+}

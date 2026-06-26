@@ -43,3 +43,9 @@ Approval is required for:
 - Risk flags can request internal review without forcing Approvals.
 
 Scheduler activation remains disabled until Ray approves it in a future Scheduler Approval Center.
+
+## Ray Review Queue Boundary
+
+Ray Review Queue is for true decisions only. It should not receive every scored transcript, SEO keyword, affiliate opportunity, watched resource update, internal report, or paper-only trading research card.
+
+Review Queue items are created for outbound/risky execution decisions, connector/scheduler/production decisions, high-value strategic choices, and compliance-sensitive actions.
