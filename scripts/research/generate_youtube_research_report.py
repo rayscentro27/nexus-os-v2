@@ -68,6 +68,10 @@ def channel_quality(channels: list[dict[str, Any]], items: list[dict[str, Any]])
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", action="store_true", default=True)
+    parser.add_argument("--mode", default="weekly", choices=[
+        "weekly", "top-videos", "top-channels", "goclear-opportunities",
+        "seo-affiliate-opportunities", "ai-automation-ideas", "trading-paper-ideas",
+    ])
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--no-external-ai", action="store_true", default=True)
     parser.add_argument("--json", action="store_true")
@@ -89,6 +93,7 @@ def main() -> int:
         "title": "YouTube Research Report",
         "generated_at": now(),
         "dry_run": True,
+        "mode": args.mode,
         "summary": f"Prepared a dry-run YouTube research report across {len(channels)} Ray-approved watched channels and {len(items)} local candidate/review items. No live YouTube lookup, media download, scheduler, external AI, or Ray Review Queue item creation occurred.",
         "channels": channels,
         "top_videos_or_candidates": top,
@@ -103,6 +108,11 @@ def main() -> int:
             "transcript_reviews": transcript.get("counts", {}).get("reviews", 0) if isinstance(transcript.get("counts"), dict) else 0,
         },
         "what_needs_ray_decision": [],
+        "what_ray_can_ignore_for_now": [
+            "ordinary metadata candidates",
+            "autonomous transcript scoring",
+            "paper-only trading research unless it asks for live execution",
+        ],
         "hermes_recommended_direction": "Start with Credit Plug for GoClear/SEO angles, compare Michael Ionita and Alec Delpuech for AI/online business experiments, and keep Stedman Waiters paper-only in Trading Lab.",
         "counts": {
             "watched_channels": len(channels),

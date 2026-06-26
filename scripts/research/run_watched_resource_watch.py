@@ -24,7 +24,10 @@ def main() -> int:
     parser.add_argument("--no-dry-run", dest="dry_run", action="store_false")
     parser.set_defaults(dry_run=True)
     parser.add_argument("--limit", type=int, default=3)
+    parser.add_argument("--items-per-resource", type=int, default=3)
     parser.add_argument("--input-file", default=str(FIXTURE))
+    parser.add_argument("--metadata-only", action="store_true", default=True)
+    parser.add_argument("--no-media-download", action="store_true", default=True)
     parser.add_argument("--no-external-ai", action="store_true", default=True)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--report-path", default="")
@@ -45,19 +48,24 @@ def main() -> int:
         if row.get("enabled") is not True or row.get("approved_by_ray") is not True:
             unsupported.append({"resource_name": row["resource_name"], "reason": "not_enabled_or_not_approved"})
             continue
-        item_url = row["resource_url"].rstrip("/") + "/sample-new-item"
-        item = candidate(
-            f"New watched item: {row['resource_name']}",
-            item_url,
-            row["category"].replace("_", " ").replace("|", " "),
-            source_type=row["resource_type"],
-            proof_source=str(input_path.relative_to(ROOT)),
-        )
-        item["unique_key"] = f"watched_update:{row['resource_id']}:sample-new-item"
-        item["recommendation"] = "Watch adapter foundation ready. Live YouTube metadata lookup is not configured in this dry-run; create only metadata candidates when implemented."
-        item["watch_adapter_status"] = "foundation_ready_live_check_not_configured"
-        item["approval_required"] = False
-        items.append(item)
+        per_resource = max(1, min(args.items_per_resource, 5))
+        for idx in range(1, per_resource + 1):
+            item_url = row["resource_url"].rstrip("/") + f"/sample-new-item-{idx}"
+            item = candidate(
+                f"New watched item {idx}: {row['resource_name']}",
+                item_url,
+                row["category"].replace("_", " ").replace("|", " "),
+                source_type=row["resource_type"],
+                proof_source=str(input_path.relative_to(ROOT)),
+            )
+            item["unique_key"] = f"watched_update:{row['resource_id']}:sample-new-item-{idx}"
+            item["recommendation"] = "Watch adapter foundation ready. Live YouTube metadata lookup is not configured in this dry-run; create only metadata candidates when implemented."
+            item["watch_adapter_status"] = "foundation_ready_live_check_not_configured"
+            item["duplicate_status"] = "not_checked_without_live_connector"
+            item["metadata_only"] = True
+            item["media_downloaded"] = False
+            item["approval_required"] = False
+            items.append(item)
     live = {"created": 0, "duplicates": 0, "failed": 0, "results": []}
     if not args.dry_run:
         live = write_live_tasks(items, "watched_resource_update", "watched_resource_watch", "watched_resource_update", args.limit)
@@ -66,6 +74,11 @@ def main() -> int:
         "resources_checked": len(resources),
         "resources_enabled": sum(1 for r in resources if r.get("enabled") is True),
         "items": items,
+        "new_since_last_check_logic": {
+            "compares": ["last_seen_item_url", "last_seen_item_published_at", "existing research_sources.source_url"],
+            "dry_run_updates_last_seen": False,
+            "live_update_supported": "future_metadata_connector_required",
+        },
         "unsupported_checks": unsupported,
         "counts": {"resources_checked": len(resources), "resources_enabled": sum(1 for r in resources if r.get("enabled") is True), "new_items_found": len(items), **{k: live.get(k, 0) for k in ("created", "duplicates", "failed")}},
         "summary": "Watch mode checked explicit fixture/manual input only. YouTube live metadata lookup is not configured; scheduler remains disabled.",

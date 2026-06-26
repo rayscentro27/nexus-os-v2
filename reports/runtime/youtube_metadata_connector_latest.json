@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "title": "YouTube Metadata Connector",
+  "generated_at": "2026-06-26T19:45:16.077902+00:00",
+  "dry_run": true,
+  "mode": "status",
+  "connector_status": "not_configured",
+  "status": {
+    "configured": false,
+    "status": "not_configured",
+    "method": "none",
+    "requires_key": true,
+    "secrets_printed": false,
+    "media_downloaded": false,
+    "transcripts_captured": false,
+    "scheduler_started": false
+  },
+  "candidates": [],
+  "counts": {
+    "candidates": 0,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "summary": "Metadata connector foundation ready. Live metadata lookup requires a configured safe connector.",
+  "safety": {
+    "media_downloaded": false,
+    "audio_downloaded": false,
+    "transcripts_captured": false,
+    "scheduler_started": false,
+    "broad_scraping": false,
+    "external_ai_called": false
+  }
+}

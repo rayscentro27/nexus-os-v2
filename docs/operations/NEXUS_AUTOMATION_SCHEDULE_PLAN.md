@@ -56,6 +56,10 @@ The remaining non-trading feeders are manual-only and bounded:
 
 No scheduler is activated for these feeders. Trading Lab is manual-only paper research and requires a separate approval before any future paper/demo loop. Live trading remains blocked.
 
+## Scheduler approval candidates
+
+`scripts/automation/generate_scheduler_approval_candidates.py` creates proposal cards/reports only. It does not install or activate any scheduler.
+
 ## Trading Lab / Vibe Trading
 
 | Process | Owning tab | Script/process | Writes | Suggested schedule | Risk | Approval requirement | Manual command | Proof event | State |

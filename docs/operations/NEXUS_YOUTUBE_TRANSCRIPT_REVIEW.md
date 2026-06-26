@@ -10,6 +10,10 @@ python3 scripts/research/youtube_transcript_review.py --input-file tests/fixture
 
 It does not scrape channels, download media, run yt-dlp, start a scheduler, or use external AI.
 
+Allowed transcript sources: public captions if safely accessible, local transcript file, manual transcript paste, approved transcript import, or existing captured transcript records.
+
+Blocked transcript sources: audio/video download, media ripping, broad scraping, private/member-only content, paywalled transcripts, or sensitive/private/customer data without explicit permission.
+
 Scores:
 
 - money potential

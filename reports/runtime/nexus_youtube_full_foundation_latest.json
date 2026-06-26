@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "generated_at": "2026-06-26",
+  "metadata_connector_foundation_added": true,
+  "metadata_connector_status": "not_configured",
+  "watched_resource_live_import": {
+    "ran": true,
+    "created": 4,
+    "duplicates": 0,
+    "failed": 0,
+    "post_import_duplicate_confirmation": 4
+  },
+  "dry_runs": {
+    "metadata_check": {"ok": true, "channels_checked": 4, "metadata_candidates": 12},
+    "watch_check": {"ok": true, "resources_checked": 4, "new_items_found": 12},
+    "metadata_backfill": {"ok": true, "channels_considered": 4, "proposed_items": 12},
+    "transcript_availability": {"ok": true, "checked": 1, "available": 0},
+    "transcript_review": {"ok": true, "reviews": 1},
+    "youtube_report": {"ok": true, "items_considered": 24, "top_items": 10},
+    "hermes_prep": {"ok": true, "top_items": 10, "memory_hooks": 5},
+    "seo_affiliate_plan": {"ok": true, "plans": 10},
+    "content_experiments": {"ok": true, "experiments": 10},
+    "scheduler_candidates": {"ok": true, "candidates": 6},
+    "pre_ui_audit": {"ok": true, "checks": 12, "ready": 12}
+  },
+  "metadata_backfill_live_ran": false,
+  "scheduler_activation": false,
+  "publish_send_trade_deploy": false,
+  "media_downloaded": false,
+  "broad_scraping": false,
+  "external_ai_called": false
+}

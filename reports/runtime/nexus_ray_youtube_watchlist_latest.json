@@ -38,7 +38,12 @@
     "top_items": 10,
     "ray_review_items_created": 0
   },
-  "optional_live_metadata_import": false,
+  "optional_live_metadata_import": true,
+  "live_metadata_import_result": {
+    "created": 4,
+    "duplicates": 0,
+    "failed": 0
+  },
   "scheduler_activated": false,
   "media_downloaded": false,
   "broad_scraping": false,

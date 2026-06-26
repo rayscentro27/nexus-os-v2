@@ -24,6 +24,8 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=3)
     parser.add_argument("--items-per-resource", type=int, default=3)
     parser.add_argument("--input-file", default=str(FIXTURE))
+    parser.add_argument("--metadata-only", action="store_true", default=True)
+    parser.add_argument("--no-media-download", action="store_true", default=True)
     parser.add_argument("--no-external-ai", action="store_true", default=True)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--report-path", default="")
@@ -72,6 +74,8 @@ def main() -> int:
         "items_per_resource": max(1, min(args.items_per_resource, 5)),
         "counts": {"channels_considered": len(resources), "proposed_items": len(items), **{k: live.get(k, 0) for k in ("created", "duplicates", "failed")}},
         "summary": "Backfill mode simulated bounded metadata-only historical review from explicit fixture/manual input; no scraping/capture/media download.",
+        "metadata_backfill_status": "dry_run_metadata_candidates_only",
+        "research_sources_live_write_supported": "requires_configured_metadata_connector_candidates",
         "safety": {"approval_required_for_internal_research": False, "ray_review_queue_flood": False, "scheduler_started": False, "media_downloaded": False, "broad_scraping": False, "external_ai_called": False},
         "live": live,
     }

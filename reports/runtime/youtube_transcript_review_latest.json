@@ -1,0 +1,88 @@
+{
+  "ok": true,
+  "title": "YouTube Transcript Review",
+  "generated_at": "2026-06-26T19:46:06.121444+00:00",
+  "dry_run": true,
+  "scores": {
+    "profile": "ai_online_business_marketing",
+    "offer_potential": 58,
+    "product_strategy_value": 58,
+    "content_potential": 50,
+    "automation_leverage": 40,
+    "seo_potential": 40,
+    "affiliate_potential": 48,
+    "implementation_speed": 60,
+    "uniqueness": 50,
+    "testability": 50,
+    "risk": 8,
+    "overall_score": 59
+  },
+  "items": [
+    {
+      "title": "YouTube transcript review: Business Credit Readiness Checklist for New LLCs",
+      "source_url": "tests/fixtures/research/sample_youtube_transcript.txt",
+      "source_type": "youtube_video",
+      "owner_tab": "goclear",
+      "score": 59,
+      "summary": "Title: Business Credit Readiness Checklist for New LLCs\n\nThis sample transcript explains how a new LLC can prepare before applying for funding. It covers business profile consistency, EIN and entity details, bank account behavior, vendor accounts, net-30 education, credit monitoring, and documentation basics.\n\nIt does not promise approvals, funding, deletions, score increases, or guaranteed outcomes. The best next step is a readiness review and a checklist-driven plan before applying.\n\nPotential content angles include a blog post, short-form video, and lead magnet around funding readiness.\n",
+      "recommendation": "Route to GoClear/Apex Revenue Hub for review and smallest safe experiment planning.",
+      "next_action": "Create a safe experiment card or park after review.",
+      "proof_source": "tests/fixtures/research/sample_youtube_transcript.txt",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "enrichment_source": "deterministic",
+        "summary": "Title: Business Credit Readiness Checklist for New LLCs\n\nThis sample transcript explains how a new LLC can prepare before applying for funding. It covers business profile consistency, EIN and entity details, bank account behavior, vendor accounts, net-30 education, credit monitoring, and documentation basics.\n\nIt does not promise approvals, funding, deletions, score increases, or guaranteed outcomes. The best next step is a readiness review and a checklist-driven plan before applying.\n\nPotential content angles include a blog post, short-form video, and lead magnet around funding readiness.\n",
+        "score": 59,
+        "score_label": "medium",
+        "category": "credit_funding_readiness",
+        "destination": "GoClear/Apex Revenue Hub",
+        "pros": [
+          "GoClear/Apex Revenue Hub relevance detected.",
+          "Overall score: 59/100."
+        ],
+        "cons": [
+          "Needs validation with a small manual test."
+        ],
+        "recommendation": "Route to GoClear/Apex Revenue Hub for review and smallest safe experiment planning.",
+        "proposed_schedule": "Manual review in the next department digest; scheduler remains disabled.",
+        "next_action": "Create a safe experiment card or park after review.",
+        "confidence": 0.7,
+        "risk_triggers": [],
+        "approval_required": false,
+        "internal_review_requested": false,
+        "hermes_memory_summary": "Business Credit Readiness Checklist for New LLCs: credit_funding_readiness -> GoClear/Apex Revenue Hub; score=59/100.",
+        "source_summary": "Title: Business Credit Readiness Checklist for New LLCs\n\nThis sample transcript explains how a new LLC can prepare before applying for funding. It covers business profile consistency, EIN and entity details, bank account behavior, vendor accounts, net-30 education, credit monitoring, and documentation basics.\n\nIt does not promise approvals, funding, deletions, score increases, or guaranteed outcomes. The best next step is a readiness review and a checklist-driven plan before applying.\n\nPotential content angles include a blog post, short-form video, and lead magnet around funding readiness.\n",
+        "scores": {
+          "money_potential": 58,
+          "goclear_apex_relevance": 70,
+          "seo_potential": 40,
+          "affiliate_potential": 48,
+          "content_potential": 50,
+          "implementation_difficulty": 40,
+          "compliance_risk": 8,
+          "urgency": 35,
+          "uniqueness": 50,
+          "testability": 50,
+          "overall_score": 59
+        },
+        "paper_only": false,
+        "live_trading_blocked": false,
+        "enriched_at": "2026-06-26T19:46:06.120615+00:00"
+      },
+      "unique_key": "youtube_transcript_review:tests/fixtures/research/sample_youtube_transcript.txt"
+    }
+  ],
+  "counts": {
+    "reviews": 1,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "summary": "Transcript scored deterministically. No media download or external AI.",
+  "live": {
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0,
+    "results": []
+  }
+}

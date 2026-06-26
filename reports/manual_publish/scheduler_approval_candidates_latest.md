@@ -1,6 +1,6 @@
-# YouTube Transcript Review
+# Scheduler Approval Candidates
 
-- generated_at: 2026-06-26T19:46:06.121444+00:00
+- generated_at: 2026-06-26T19:46:19.450900+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -9,10 +9,9 @@
 - publish_send_trade_deploy: false
 
 ## Summary
-Transcript scored deterministically. No media download or external AI.
+Generated schedule-ready proposals only. No scheduler activated.
 
 ## Counts
-- reviews: 1
+- candidates: 6
 - created: 0
-- duplicates: 0
 - failed: 0

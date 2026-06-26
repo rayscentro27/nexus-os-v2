@@ -1,6 +1,6 @@
-# Watched Resource Registry
+# YouTube to Content Experiments
 
-- generated_at: 2026-06-26T19:45:51.033602+00:00
+- generated_at: 2026-06-26T19:46:19.406001+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -9,10 +9,10 @@
 - publish_send_trade_deploy: false
 
 ## Summary
-Watched resources loaded from safe fixture/manual input. Scheduler remains disabled.
+Generated internal YouTube-to-content experiment candidates. No outbound action.
 
 ## Counts
-- resources: 4
+- experiments: 10
 - created: 0
 - duplicates: 0
 - failed: 0

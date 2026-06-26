@@ -1,6 +1,6 @@
-# YouTube Transcript Review
+# Hermes YouTube Prep Brief
 
-- generated_at: 2026-06-26T19:46:06.121444+00:00
+- generated_at: 2026-06-26T19:46:19.274248+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -9,10 +9,10 @@
 - publish_send_trade_deploy: false
 
 ## Summary
-Transcript scored deterministically. No media download or external AI.
+Prepared deterministic Hermes YouTube context without external AI.
 
 ## Counts
-- reviews: 1
+- top_items: 10
+- memory_hooks: 5
 - created: 0
-- duplicates: 0
 - failed: 0

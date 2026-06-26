@@ -1,0 +1,406 @@
+{
+  "ok": true,
+  "title": "YouTube to Content Experiments",
+  "generated_at": "2026-06-26T19:46:19.406001+00:00",
+  "dry_run": true,
+  "experiments": [
+    {
+      "title": "YouTube experiment 1: YouTube transcript review: Business Credit Readiness Checklist for New LLCs",
+      "source_url": "tests/fixtures/research/sample_youtube_transcript.txt",
+      "owner_tab": "trading",
+      "score": 59,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:1:tests/fixtures/research/sample_youtube_transcript.txt",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 59,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 2: New watched item 1: Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug/sample-new-item-1",
+      "owner_tab": "trading",
+      "score": 44,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:2:https://www.youtube.com/@creditplug/sample-new-item-1",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 44,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 3: New watched item 2: Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug/sample-new-item-2",
+      "owner_tab": "trading",
+      "score": 44,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:3:https://www.youtube.com/@creditplug/sample-new-item-2",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 44,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 4: New watched item 3: Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug/sample-new-item-3",
+      "owner_tab": "trading",
+      "score": 44,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:4:https://www.youtube.com/@creditplug/sample-new-item-3",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 44,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 5: Backfill candidate 1: Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug/sample-backfill-1",
+      "owner_tab": "trading",
+      "score": 44,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:5:https://www.youtube.com/@creditplug/sample-backfill-1",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 44,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 6: Backfill candidate 2: Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug/sample-backfill-2",
+      "owner_tab": "trading",
+      "score": 44,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:6:https://www.youtube.com/@creditplug/sample-backfill-2",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 44,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 7: Backfill candidate 3: Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug/sample-backfill-3",
+      "owner_tab": "trading",
+      "score": 44,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:7:https://www.youtube.com/@creditplug/sample-backfill-3",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 44,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 8: New watched item 1: Alec Delpuech",
+      "source_url": "https://www.youtube.com/@alecdelpuech/sample-new-item-1",
+      "owner_tab": "trading",
+      "score": 39,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:8:https://www.youtube.com/@alecdelpuech/sample-new-item-1",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 39,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 9: New watched item 2: Alec Delpuech",
+      "source_url": "https://www.youtube.com/@alecdelpuech/sample-new-item-2",
+      "owner_tab": "trading",
+      "score": 39,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:9:https://www.youtube.com/@alecdelpuech/sample-new-item-2",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 39,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    },
+    {
+      "title": "YouTube experiment 10: New watched item 3: Alec Delpuech",
+      "source_url": "https://www.youtube.com/@alecdelpuech/sample-new-item-3",
+      "owner_tab": "trading",
+      "score": 39,
+      "summary": "Internal YouTube-derived content experiment candidate.",
+      "recommendation": "Create internal test plan only; publish/send requires later approval.",
+      "next_action": "Draft a small experiment card and review after results.",
+      "proof_source": "youtube_research_report_latest.json",
+      "unique_key": "youtube_content_experiment:10:https://www.youtube.com/@alecdelpuech/sample-new-item-3",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "summary": "Internal YouTube-derived content experiment candidate.",
+        "score": 39,
+        "score_label": "medium",
+        "category": "youtube_content_experiment",
+        "destination": "Trading Lab",
+        "pros": [
+          "Turns research into a testable internal hypothesis."
+        ],
+        "cons": [
+          "Execution and publishing remain approval-gated."
+        ],
+        "recommendation": "Create internal test plan only; publish/send requires later approval.",
+        "proposed_schedule": "Manual review in next department digest.",
+        "next_action": "Draft a small experiment card and review after results.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "paper_only_required"
+        ],
+        "approval_required": false,
+        "hermes_memory_summary": "YouTube research converted into internal experiment candidate.",
+        "source_summary": "YouTube research conversion",
+        "enrichment_source": "deterministic",
+        "paper_only": true,
+        "live_trading_blocked": true
+      }
+    }
+  ],
+  "counts": {
+    "experiments": 10,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "summary": "Generated internal YouTube-to-content experiment candidates. No outbound action.",
+  "live": {
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0,
+    "results": []
+  },
+  "safety": {
+    "publish_send_trade_deploy": false,
+    "external_ai_called": false,
+    "ray_review_queue_flood": false
+  }
+}

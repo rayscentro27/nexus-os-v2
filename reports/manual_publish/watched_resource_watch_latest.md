@@ -1,6 +1,6 @@
 # Watched Resource Watch
 
-- generated_at: 2026-06-26T17:09:38.370391+00:00
+- generated_at: 2026-06-26T19:45:50.442322+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -14,7 +14,7 @@ Watch mode checked explicit fixture/manual input only. YouTube live metadata loo
 ## Counts
 - resources_checked: 4
 - resources_enabled: 4
-- new_items_found: 4
+- new_items_found: 12
 - created: 0
 - duplicates: 0
 - failed: 0

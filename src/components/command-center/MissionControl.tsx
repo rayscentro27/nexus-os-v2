@@ -121,6 +121,17 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   const { data: reviewItems } = useData(() => loadRayReviewQueue(50), []);
   const reviewCounts = summarizeRayReviewCounts(reviewItems);
   const youtubeEnabled = RAY_YOUTUBE_WATCHLIST.filter((x) => x.enabled).length;
+  const youtubeFoundationStatus = [
+    ['metadata connector', 'not configured'],
+    ['metadata check', 'dry-run'],
+    ['backfill', 'dry-run'],
+    ['transcript path', 'dry-run'],
+    ['Hermes prep', 'manual'],
+    ['SEO/affiliate plan', 'manual'],
+    ['content experiments', 'manual'],
+    ['scheduler candidates', 'approval only'],
+    ['pre-UI audit', 'manual'],
+  ];
   const all = Object.values(data).flat();
   const needs = all.filter((p) => p.status === 'needs_review' || p.approval_required).length;
   const blocked = all.filter((p) => p.status === 'blocked').length;
@@ -171,6 +182,11 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
         <span className="nx-pill">watched YouTube {RAY_YOUTUBE_WATCHLIST.length}</span>
         <span className="nx-pill">enabled channels {youtubeEnabled}</span>
         <span className="nx-pill">YouTube report manual</span>
+        <span className="nx-pill">metadata connector not configured</span>
+        <span className="nx-pill">scheduler candidates approval-only</span>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 10 }}>
+        {youtubeFoundationStatus.map(([label, status]) => <span key={label} className="nx-pill">{label}: {status}</span>)}
       </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Research autonomy: {researchReportStatusSummary()}

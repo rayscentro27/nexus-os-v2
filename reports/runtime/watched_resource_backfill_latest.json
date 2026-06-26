@@ -1,7 +1,7 @@
 {
   "ok": true,
   "title": "Watched Resource Backfill",
-  "generated_at": "2026-06-26T17:09:07.576225+00:00",
+  "generated_at": "2026-06-26T19:45:50.529575+00:00",
   "dry_run": true,
   "items": [
     {
@@ -58,7 +58,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.574509+00:00"
+        "enriched_at": "2026-06-26T19:45:50.528239+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_creditplug:sample-1",
       "transcript_review_available": false,
@@ -130,7 +130,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575052+00:00"
+        "enriched_at": "2026-06-26T19:45:50.528655+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_creditplug:sample-2",
       "transcript_review_available": false,
@@ -202,7 +202,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575264+00:00"
+        "enriched_at": "2026-06-26T19:45:50.528810+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_creditplug:sample-3",
       "transcript_review_available": false,
@@ -272,7 +272,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575409+00:00"
+        "enriched_at": "2026-06-26T19:45:50.528935+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_michaelionita:sample-1",
       "transcript_review_available": false,
@@ -342,7 +342,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575560+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529019+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_michaelionita:sample-2",
       "transcript_review_available": false,
@@ -412,7 +412,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575704+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529095+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_michaelionita:sample-3",
       "transcript_review_available": false,
@@ -482,7 +482,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575814+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529178+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_alecdelpuech:sample-1",
       "transcript_review_available": false,
@@ -552,7 +552,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575899+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529251+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_alecdelpuech:sample-2",
       "transcript_review_available": false,
@@ -622,7 +622,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:09:07.575973+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529322+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_alecdelpuech:sample-3",
       "transcript_review_available": false,
@@ -694,7 +694,7 @@
         },
         "paper_only": true,
         "live_trading_blocked": true,
-        "enriched_at": "2026-06-26T17:09:07.576048+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529404+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_stedmanwaiters:sample-1",
       "transcript_review_available": false,
@@ -764,7 +764,7 @@
         },
         "paper_only": true,
         "live_trading_blocked": true,
-        "enriched_at": "2026-06-26T17:09:07.576130+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529478+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_stedmanwaiters:sample-2",
       "transcript_review_available": false,
@@ -834,7 +834,7 @@
         },
         "paper_only": true,
         "live_trading_blocked": true,
-        "enriched_at": "2026-06-26T17:09:07.576211+00:00"
+        "enriched_at": "2026-06-26T19:45:50.529561+00:00"
       },
       "unique_key": "watched_backfill:ray_youtube_stedmanwaiters:sample-3",
       "transcript_review_available": false,
@@ -861,6 +861,8 @@
     "failed": 0
   },
   "summary": "Backfill mode simulated bounded metadata-only historical review from explicit fixture/manual input; no scraping/capture/media download.",
+  "metadata_backfill_status": "dry_run_metadata_candidates_only",
+  "research_sources_live_write_supported": "requires_configured_metadata_connector_candidates",
   "safety": {
     "approval_required_for_internal_research": false,
     "ray_review_queue_flood": false,

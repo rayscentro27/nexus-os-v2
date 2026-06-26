@@ -9,7 +9,7 @@ import argparse
 import json
 from pathlib import Path
 
-from common import RESOURCE_TYPES, ROOT, candidate, now, read_json, write_live_tasks, write_report
+from common import RESOURCE_TYPES, ROOT, candidate, duplicate_task, now, read_json, write_live_tasks, write_report
 
 FIXTURE = ROOT / "tests" / "fixtures" / "research" / "sample_watched_resources.json"
 RUNTIME = ROOT / "reports" / "runtime" / "watched_resource_registry_latest.json"
@@ -40,6 +40,11 @@ def resource_to_candidate(row: dict) -> dict:
     return item
 
 
+def duplicate_status(item: dict) -> str:
+    dup = duplicate_task("watched_resource", item["unique_key"])
+    return "duplicate_existing_task_request" if dup else "new_candidate"
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")
@@ -53,6 +58,8 @@ def main() -> int:
 
     rows = read_json(Path(args.input_file))[: max(1, min(args.limit, 50))]
     items = [resource_to_candidate(row) for row in rows]
+    for item in items:
+        item["duplicate_status"] = duplicate_status(item)
     live = {"created": 0, "duplicates": 0, "failed": 0, "results": []}
     if not args.dry_run:
         live = write_live_tasks(items, "watched_resource", "watched_resource_registry", "watched_resource", args.limit)

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "title": "Watched Resource Registry",
-  "generated_at": "2026-06-26T17:08:38.845968+00:00",
+  "generated_at": "2026-06-26T19:45:51.033602+00:00",
   "dry_run": true,
   "resource_types_supported": [
     "youtube_channel",
@@ -77,7 +77,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:08:38.845057+00:00"
+        "enriched_at": "2026-06-26T19:45:50.411507+00:00"
       },
       "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@creditplug",
       "resource": {
@@ -110,7 +110,8 @@
         "https://www.youtube.com/@creditplug",
         "@creditplug",
         "youtube_channel"
-      ]
+      ],
+      "duplicate_status": "duplicate_existing_task_request"
     },
     {
       "title": "Michael Ionita",
@@ -164,7 +165,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:08:38.845631+00:00"
+        "enriched_at": "2026-06-26T19:45:50.411881+00:00"
       },
       "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@michaelionita",
       "resource": {
@@ -197,7 +198,8 @@
         "https://www.youtube.com/@michaelionita",
         "@michaelionita",
         "youtube_channel"
-      ]
+      ],
+      "duplicate_status": "duplicate_existing_task_request"
     },
     {
       "title": "Alec Delpuech",
@@ -251,7 +253,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:08:38.845798+00:00"
+        "enriched_at": "2026-06-26T19:45:50.411967+00:00"
       },
       "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@alecdelpuech",
       "resource": {
@@ -284,7 +286,8 @@
         "https://www.youtube.com/@alecdelpuech",
         "@alecdelpuech",
         "youtube_channel"
-      ]
+      ],
+      "duplicate_status": "duplicate_existing_task_request"
     },
     {
       "title": "Stedman Waiters",
@@ -340,7 +343,7 @@
         },
         "paper_only": false,
         "live_trading_blocked": false,
-        "enriched_at": "2026-06-26T17:08:38.845933+00:00"
+        "enriched_at": "2026-06-26T19:45:50.412041+00:00"
       },
       "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@stedmanwaiters",
       "resource": {
@@ -372,7 +375,8 @@
         "https://www.youtube.com/@stedmanwaiters",
         "@stedmanwaiters",
         "youtube_channel"
-      ]
+      ],
+      "duplicate_status": "duplicate_existing_task_request"
     }
   ],
   "counts": {

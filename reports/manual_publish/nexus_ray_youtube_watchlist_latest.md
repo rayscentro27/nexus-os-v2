@@ -33,4 +33,4 @@ Ray's first four YouTube watched resources were added as a safe fixture/config p
 
 ## Live Import
 
-The optional metadata-only live import was not run. No watched resource rows/cards/proof events were created in this pass.
+The metadata-only live import was run after dry-run passed. It created 4 safe watched-resource task cards/proof events and did not scrape videos, download media, capture transcripts, publish, send, trade, deploy, or schedule anything.

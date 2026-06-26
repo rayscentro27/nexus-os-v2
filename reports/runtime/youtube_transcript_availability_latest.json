@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "title": "YouTube Transcript Availability",
+  "generated_at": "2026-06-26T19:45:50.703786+00:00",
+  "dry_run": true,
+  "items": [
+    {
+      "video_url": "https://www.youtube.com/watch?v=sample",
+      "availability_status": "not_checked_connector_required",
+      "allowed_sources": [
+        "public captions if safely accessible",
+        "local transcript file",
+        "manual transcript paste",
+        "approved transcript import",
+        "existing captured transcript records"
+      ],
+      "blocked_sources": [
+        "audio/video download",
+        "media ripping",
+        "broad scraping",
+        "private/member-only content",
+        "paywalled transcripts"
+      ]
+    }
+  ],
+  "counts": {
+    "checked": 1,
+    "available": 0,
+    "not_configured": 1
+  },
+  "summary": "Transcript availability path is ready; no media download, scraping, or transcript capture occurred.",
+  "safety": {
+    "media_downloaded": false,
+    "broad_scraping": false,
+    "external_ai_called": false
+  }
+}

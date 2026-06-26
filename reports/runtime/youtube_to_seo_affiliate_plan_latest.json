@@ -1,0 +1,140 @@
+{
+  "ok": true,
+  "title": "YouTube to SEO Affiliate Plan",
+  "generated_at": "2026-06-26T19:46:19.366563+00:00",
+  "dry_run": true,
+  "plans": [
+    {
+      "source_video": "tests/fixtures/research/sample_youtube_transcript.txt",
+      "channel": "Business Credit Readiness Checklist for New LLCs",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 59
+    },
+    {
+      "source_video": "https://www.youtube.com/@creditplug/sample-new-item-1",
+      "channel": "Credit Plug",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 44
+    },
+    {
+      "source_video": "https://www.youtube.com/@creditplug/sample-new-item-2",
+      "channel": "Credit Plug",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 44
+    },
+    {
+      "source_video": "https://www.youtube.com/@creditplug/sample-new-item-3",
+      "channel": "Credit Plug",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 44
+    },
+    {
+      "source_video": "https://www.youtube.com/@creditplug/sample-backfill-1",
+      "channel": "Credit Plug",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 44
+    },
+    {
+      "source_video": "https://www.youtube.com/@creditplug/sample-backfill-2",
+      "channel": "Credit Plug",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 44
+    },
+    {
+      "source_video": "https://www.youtube.com/@creditplug/sample-backfill-3",
+      "channel": "Credit Plug",
+      "target_keyword": "business funding readiness checklist",
+      "article_angle": "How to evaluate business funding readiness checklist",
+      "affiliate_offer_hint": "business credit/funding partner",
+      "GoClear_offer_tie_in": "$97 readiness review",
+      "CTA": "Request a readiness review",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 44
+    },
+    {
+      "source_video": "https://www.youtube.com/@alecdelpuech/sample-new-item-1",
+      "channel": "Alec Delpuech",
+      "target_keyword": "ai automation tools for small business",
+      "article_angle": "How to evaluate ai automation tools for small business",
+      "affiliate_offer_hint": "AI/SEO tool affiliate",
+      "GoClear_offer_tie_in": "",
+      "CTA": "Download the checklist",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 39
+    },
+    {
+      "source_video": "https://www.youtube.com/@alecdelpuech/sample-new-item-2",
+      "channel": "Alec Delpuech",
+      "target_keyword": "ai automation tools for small business",
+      "article_angle": "How to evaluate ai automation tools for small business",
+      "affiliate_offer_hint": "AI/SEO tool affiliate",
+      "GoClear_offer_tie_in": "",
+      "CTA": "Download the checklist",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 39
+    },
+    {
+      "source_video": "https://www.youtube.com/@alecdelpuech/sample-new-item-3",
+      "channel": "Alec Delpuech",
+      "target_keyword": "ai automation tools for small business",
+      "article_angle": "How to evaluate ai automation tools for small business",
+      "affiliate_offer_hint": "AI/SEO tool affiliate",
+      "GoClear_offer_tie_in": "",
+      "CTA": "Download the checklist",
+      "compliance_note": "No guarantees; include education/disclosure language.",
+      "recommended_department": "SEO / Marketing",
+      "priority_score": 39
+    }
+  ],
+  "counts": {
+    "plans": 10,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "summary": "Generated internal SEO/affiliate plan candidates from YouTube research. No public content created.",
+  "safety": {
+    "publish_send_trade_deploy": false,
+    "external_ai_called": false,
+    "ray_review_queue_flood": false
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "ok": true,
+  "title": "Nexus Pre-UI Backend Audit",
+  "generated_at": "2026-06-26T19:46:19.525058+00:00",
+  "dry_run": true,
+  "checks": {
+    "watched_resources": {
+      "status": "ready",
+      "path": "reports/runtime/watched_resource_registry_latest.json",
+      "counts": {
+        "resources": 4,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "youtube_metadata_connector": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_metadata_connector_latest.json",
+      "counts": {
+        "candidates": 0,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "youtube_metadata_check": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_metadata_check_latest.json",
+      "counts": {
+        "channels_checked": 4,
+        "metadata_candidates": 12,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "youtube_backfill": {
+      "status": "ready",
+      "path": "reports/runtime/watched_resource_backfill_latest.json",
+      "counts": {
+        "channels_considered": 4,
+        "proposed_items": 12,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "transcript_availability": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_transcript_availability_latest.json",
+      "counts": {
+        "checked": 1,
+        "available": 0,
+        "not_configured": 1
+      }
+    },
+    "transcript_review": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_transcript_review_latest.json",
+      "counts": {
+        "reviews": 1,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "youtube_report": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_research_report_latest.json",
+      "counts": {
+        "watched_channels": 4,
+        "enabled_channels": 4,
+        "items_considered": 25,
+        "top_items": 10,
+        "ray_review_items_created": 0
+      }
+    },
+    "hermes_prep": {
+      "status": "ready",
+      "path": "reports/runtime/hermes_youtube_prep_brief_latest.json",
+      "counts": {
+        "top_items": 10,
+        "memory_hooks": 5,
+        "created": 0,
+        "failed": 0
+      }
+    },
+    "seo_affiliate_conversion": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_to_seo_affiliate_plan_latest.json",
+      "counts": {
+        "plans": 10,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "content_experiments": {
+      "status": "ready",
+      "path": "reports/runtime/youtube_to_content_experiments_latest.json",
+      "counts": {
+        "experiments": 10,
+        "created": 0,
+        "duplicates": 0,
+        "failed": 0
+      }
+    },
+    "scheduler_candidates": {
+      "status": "ready",
+      "path": "reports/runtime/scheduler_approval_candidates_latest.json",
+      "counts": {
+        "candidates": 6,
+        "created": 0,
+        "failed": 0
+      }
+    },
+    "ray_review_queue": {
+      "status": "ready",
+      "path": "reports/runtime/ray_review_queue_builder_latest.json",
+      "counts": {
+        "candidates_scanned": 55,
+        "qualifies": 25,
+        "skipped_autonomous_or_other": 12,
+        "duplicates": 0,
+        "created": 0,
+        "failed": 0
+      }
+    }
+  },
+  "ready": [
+    "watched_resources",
+    "youtube_metadata_connector",
+    "youtube_metadata_check",
+    "youtube_backfill",
+    "transcript_availability",
+    "transcript_review",
+    "youtube_report",
+    "hermes_prep",
+    "seo_affiliate_conversion",
+    "content_experiments",
+    "scheduler_candidates",
+    "ray_review_queue"
+  ],
+  "partial": [],
+  "disabled": [
+    "scheduler_activation",
+    "media_download",
+    "publish_send_trade_deploy",
+    "live_trading"
+  ],
+  "needs_ray_decision": [
+    "scheduler approval candidates only"
+  ],
+  "can_run_autonomously": [
+    "metadata dry-runs",
+    "transcript scoring from safe text",
+    "reports",
+    "Hermes prep",
+    "internal experiment candidates"
+  ],
+  "next_ui_image_set": [
+    "Command Center YouTube status",
+    "Source Intake watched channels",
+    "YouTube report cards",
+    "Hermes prep brief panel",
+    "Scheduler Approval Center"
+  ],
+  "counts": {
+    "checks": 12,
+    "ready": 12,
+    "missing": 0
+  },
+  "safety": {
+    "publish_send_trade_deploy": false,
+    "scheduler_started": false,
+    "media_downloaded": false,
+    "external_ai_called": false
+  }
+}

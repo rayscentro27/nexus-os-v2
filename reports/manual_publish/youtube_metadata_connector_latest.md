@@ -1,6 +1,6 @@
-# Watched Resource Registry
+# YouTube Metadata Connector
 
-- generated_at: 2026-06-26T19:45:51.033602+00:00
+- generated_at: 2026-06-26T19:45:16.077902+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -9,10 +9,10 @@
 - publish_send_trade_deploy: false
 
 ## Summary
-Watched resources loaded from safe fixture/manual input. Scheduler remains disabled.
+Metadata connector foundation ready. Live metadata lookup requires a configured safe connector.
 
 ## Counts
-- resources: 4
+- candidates: 0
 - created: 0
 - duplicates: 0
 - failed: 0
