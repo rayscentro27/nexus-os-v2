@@ -63,3 +63,15 @@ The first integration is status/report/import only:
 - Trading Lab research cards
 
 The adapter does not import or execute the Vibe Trading engine, `auto_executor`, tournament service, webhooks, or broker APIs.
+
+## Automation Levels
+
+See [NEXUS_AUTOMATION_LEVELS.md](NEXUS_AUTOMATION_LEVELS.md) and
+[NEXUS_HIGH_RISK_GUARDS.md](NEXUS_HIGH_RISK_GUARDS.md).
+
+- **Level 1 (autonomous):** paper-only strategy research, local backtest imports, scoring, internal
+  reports.
+- **Level 3 (blocked):** live trading, broker execution, funded account actions, raw
+  `auto_executor` exposure. These are hard-blocked by guards and require a separate design doc,
+  explicit Ray approval, proof plan, rollback plan, hard guard tests, and a safety contract before
+  any execution path could ever exist.

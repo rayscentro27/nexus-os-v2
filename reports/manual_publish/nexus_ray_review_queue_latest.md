@@ -1,6 +1,6 @@
 # Nexus Ray Review Queue
 
-- generated_at: 2026-06-26T17:11:58.964419+00:00
+- generated_at: 2026-06-26T23:31:55.731474+00:00
 - dry_run: True
 - ok: True
 - publish_send_trade_deploy: false
@@ -8,9 +8,9 @@
 - external_ai_called: false
 
 ## Counts
-- candidates_scanned: 55
+- candidates_scanned: 59
 - qualifies: 25
-- skipped_autonomous_or_other: 12
+- skipped_autonomous_or_other: 16
 - duplicates: 0
 - created: 0
 - failed: 0

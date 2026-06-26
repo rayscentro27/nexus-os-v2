@@ -41,3 +41,19 @@ Formal Approvals are required before execution:
 - sensitive/private data in external tools
 
 Approving a Ray Review Queue item does not bypass formal execution gates unless a specific approval path is implemented and active.
+
+## Automation Levels
+
+See [NEXUS_AUTOMATION_LEVELS.md](NEXUS_AUTOMATION_LEVELS.md). Helpers in
+`src/config/nexusActionPolicy.ts`:
+
+- **Level 1 (autonomous):** no approval row. Never create approvals for research, scoring, routing,
+  internal reports, watched-resource updates, transcript reviews, paper-only trading research, or
+  Hermes internal recommendations.
+- **Level 2 (approval-gated):** create an approval row ONLY when execution-ready
+  (`shouldCreateApprovalRow(action, executionReady)`). Covers publish-ready campaigns, send-ready
+  messages, client-contact actions, scheduler activation, connector activation, production change,
+  spend request.
+- **Level 3 (blocked):** no direct execution approval (`isBlockedFromDirectApproval`). Live
+  trading, broker execution, raw `auto_executor`, payment modification, destructive DB actions, and
+  external AI on sensitive data require a separate contract/design review first.

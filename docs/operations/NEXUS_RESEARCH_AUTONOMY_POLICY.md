@@ -51,3 +51,12 @@ Ray Review Queue is for true decisions only. It should not receive every scored 
 Review Queue items are created for outbound/risky execution decisions, connector/scheduler/production decisions, high-value strategic choices, and compliance-sensitive actions.
 
 For Ray's watched YouTube resources, transcript/video scoring, routing, and reports are autonomous internal research. They should not create Ray Review Queue items unless a finding becomes campaign-ready, send-ready, scheduler-ready, client-contact, production-change, or live trading/execution-related.
+
+## Automation Levels
+
+This policy is the Level 1 (autonomous internal) lane of the universal model in
+[NEXUS_AUTOMATION_LEVELS.md](NEXUS_AUTOMATION_LEVELS.md). Research, scoring, routing, internal
+cards/reports, transcript review, SEO/affiliate scoring, Hermes prep, and paper-only trading
+research are all Level 1 — autonomous after the category is approved, with nothing leaving the
+building. The moment a finding would publish, send, contact, schedule, connect, deploy, or spend,
+it becomes Level 2 (approval-gated) or Level 3 (blocked).

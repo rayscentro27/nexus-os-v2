@@ -134,9 +134,39 @@ def options(decision_type: str) -> list[str]:
     return ["Proceed with internal prep", "Request changes", "Park", "Escalate to Approvals"]
 
 
+DECISION_TYPE_TO_REASON = {
+    "trading_live_execution_blocked": "trading_live_blocked",
+    "scheduler_activation": "scheduler_activation_request",
+    "connector_setup": "connector_activation_request",
+    "production_change": "production_change_request",
+    "campaign_publish": "campaign_ready",
+    "social_post": "campaign_ready",
+    "email_send": "send_ready",
+    "lead_contact": "client_contact_ready",
+    "client_action": "client_contact_ready",
+    "revenue_decision": "spend_request",
+}
+
+
+def decision_reason(row: dict[str, Any], decision_type: str) -> str:
+    """Automation-level decision reason. Level 3 escalates, never executes."""
+    if decision_type == "trading_live_execution_blocked":
+        return "trading_live_blocked"
+    blob = f"{row.get('task_type', '')} {row.get('item_type', '')} {row.get('title', '')} {row.get('summary', '')} {json.dumps(payload(row))}".lower()
+    if re.search(r"auto_executor|broker|funded|destructive|rls|broad scrape|media download|external ai.*(sensitive|private|customer)", blob):
+        return "blocked_high_risk_escalation"
+    if re.search(r"sensitive|private|customer data|credit-sensitive", blob):
+        return "sensitive_data_request"
+    if risk(decision_type) == "critical":
+        return "blocked_high_risk_escalation"
+    return DECISION_TYPE_TO_REASON.get(decision_type, "approval_gated_execution")
+
+
 def candidate_from_row(row: dict[str, Any], source_table: str, reason: str) -> dict[str, Any]:
     p = payload(row)
     decision_type = classify(row)
+    d_reason = decision_reason(row, decision_type)
+    blocked_escalation_only = d_reason in ("blocked_high_risk_escalation", "trading_live_blocked")
     source_id = text(row.get("id"), text(p.get("source_id"), "local"))
     title = text(p.get("title"), text(row.get("title"), f"Ray decision: {decision_type.replace('_', ' ')}"))
     summary = text(p.get("summary"), text(row.get("summary"), text(row.get("result_summary"), reason)))
@@ -144,6 +174,8 @@ def candidate_from_row(row: dict[str, Any], source_table: str, reason: str) -> d
         "review_id": f"{source_table}:{source_id}:{decision_type}",
         "title": title,
         "decision_type": decision_type,
+        "decision_reason": d_reason,
+        "blocked_escalation_only": blocked_escalation_only,
         "department": text(p.get("department"), text(row.get("lane"), "command_center")),
         "source_table": source_table,
         "source_id": source_id,

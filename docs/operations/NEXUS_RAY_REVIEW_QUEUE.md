@@ -62,3 +62,18 @@ The queue builder and decision capture scripts never publish, send, trade, deplo
 ## YouTube Research Boundary
 
 Ray's watched YouTube resources do not flood this queue. New videos, transcript reviews, scores, department routing, and YouTube research reports remain autonomous internal research. Only execution-ready or high-risk decision items enter Ray Review Queue.
+
+## Automation Levels
+
+See [NEXUS_AUTOMATION_LEVELS.md](NEXUS_AUTOMATION_LEVELS.md).
+
+- **Level 1 (autonomous internal):** never enters the queue.
+- **Level 2 (approval-gated):** enters when execution-ready.
+- **Level 3 (blocked / high-risk):** enters only as a blocked/escalation card — never as an
+  executable approval.
+
+`getRayReviewDecisionReason()` (config) / `decision_reason()` (builder) classify each item into a
+reason: `approval_gated_execution`, `blocked_high_risk_escalation`, `scheduler_activation_request`,
+`connector_activation_request`, `campaign_ready`, `send_ready`, `client_contact_ready`,
+`trading_live_blocked`, `production_change_request`, `spend_request`, `sensitive_data_request`.
+Items flagged `blocked_escalation_only` must never be presented as a direct approval.

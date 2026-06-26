@@ -1,94 +1,219 @@
 {
   "ok": true,
   "title": "Scheduler Approval Candidates",
-  "generated_at": "2026-06-26T19:46:19.450900+00:00",
+  "generated_at": "2026-06-26T23:31:44.197709+00:00",
   "dry_run": true,
   "candidates": [
     {
-      "schedule_name": "Weekly YouTube watched resource check",
+      "schedule_name": "Daily Department Digest",
+      "category": "scheduler_automation",
+      "automation_level": "approval_gated",
+      "frequency": "daily",
+      "allowed_writes": [
+        "safe task cards",
+        "nexus_events proof"
+      ],
+      "forbidden_actions": "no capture/live connector/publish/send",
+      "owner": "ops_improvements",
+      "risk_level": "medium",
+      "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
+      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
+    },
+    {
+      "schedule_name": "Weekly YouTube Watched Resource Check",
+      "category": "youtube_research",
+      "automation_level": "approval_gated",
       "frequency": "weekly",
       "allowed_writes": [
         "research_sources metadata",
         "nexus_events proof"
       ],
       "forbidden_actions": "no publish/send/trade/deploy/media download",
+      "owner": "source_intake",
       "risk_level": "medium",
-      "disable_rollback_plan": "Do not install scheduler until Ray approves; rollback is deleting the proposed item.",
       "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": true,
+      "external_api_required": true,
+      "high_risk_guard_applies": true,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
       "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
     },
     {
-      "schedule_name": "Weekly YouTube top report",
+      "schedule_name": "Weekly YouTube Research Report",
+      "category": "youtube_research",
+      "automation_level": "autonomous_internal",
       "frequency": "weekly",
       "allowed_writes": [
         "local reports"
       ],
       "forbidden_actions": "no external AI or outbound action",
-      "risk_level": "medium",
-      "disable_rollback_plan": "Do not install scheduler until Ray approves; rollback is deleting the proposed item.",
+      "owner": "source_intake",
+      "risk_level": "low",
       "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
       "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
     },
     {
-      "schedule_name": "Daily Department Digest",
-      "frequency": "daily",
-      "allowed_writes": [
-        "safe task cards",
-        "nexus_events proof"
-      ],
-      "forbidden_actions": "no capture/live connector unless separately approved",
-      "risk_level": "medium",
-      "disable_rollback_plan": "Do not install scheduler until Ray approves; rollback is deleting the proposed item.",
-      "ray_approval_required": true,
-      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
-    },
-    {
-      "schedule_name": "Weekly Hermes prep brief",
+      "schedule_name": "Weekly Hermes Prep Brief",
+      "category": "hermes_jarvis",
+      "automation_level": "autonomous_internal",
       "frequency": "weekly",
       "allowed_writes": [
         "local reports",
         "Hermes memory summaries"
       ],
       "forbidden_actions": "no external AI on sensitive data",
-      "risk_level": "medium",
-      "disable_rollback_plan": "Do not install scheduler until Ray approves; rollback is deleting the proposed item.",
+      "owner": "command_center",
+      "risk_level": "low",
       "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
       "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
     },
     {
-      "schedule_name": "Weekly GoClear Revenue Hub report",
+      "schedule_name": "Weekly GoClear Revenue Report",
+      "category": "goclear_revenue_hub",
+      "automation_level": "autonomous_internal",
       "frequency": "weekly",
       "allowed_writes": [
         "safe revenue metric cards/reports"
       ],
       "forbidden_actions": "no payment or email action",
-      "risk_level": "medium",
-      "disable_rollback_plan": "Do not install scheduler until Ray approves; rollback is deleting the proposed item.",
+      "owner": "opportunity_lab",
+      "risk_level": "low",
       "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
       "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
     },
     {
-      "schedule_name": "Weekly Trading Lab paper performance report",
+      "schedule_name": "Weekly Trading Paper Report",
+      "category": "trading_lab",
+      "automation_level": "autonomous_internal",
       "frequency": "weekly",
       "allowed_writes": [
         "paper-only summaries"
       ],
       "forbidden_actions": "no broker API or live trading",
-      "risk_level": "medium",
-      "disable_rollback_plan": "Do not install scheduler until Ray approves; rollback is deleting the proposed item.",
+      "owner": "trading_lab",
+      "risk_level": "low",
       "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": true,
+      "high_risk_guard_applies": true,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
+      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
+    },
+    {
+      "schedule_name": "Weekly Automation Control Report",
+      "category": "scheduler_automation",
+      "automation_level": "autonomous_internal",
+      "frequency": "weekly",
+      "allowed_writes": [
+        "local automation control report"
+      ],
+      "forbidden_actions": "no activation of any automation",
+      "owner": "ops_improvements",
+      "risk_level": "low",
+      "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
+      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
+    },
+    {
+      "schedule_name": "Weekly SEO Opportunity Report",
+      "category": "seo_marketing",
+      "automation_level": "autonomous_internal",
+      "frequency": "weekly",
+      "allowed_writes": [
+        "local reports",
+        "internal cards"
+      ],
+      "forbidden_actions": "no publish/site change",
+      "owner": "growth",
+      "risk_level": "low",
+      "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
+      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
+    },
+    {
+      "schedule_name": "Weekly Affiliate Opportunity Report",
+      "category": "affiliate_marketing",
+      "automation_level": "autonomous_internal",
+      "frequency": "weekly",
+      "allowed_writes": [
+        "local reports",
+        "internal cards"
+      ],
+      "forbidden_actions": "no outbound contact/publish",
+      "owner": "opportunity_lab",
+      "risk_level": "low",
+      "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
+      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
+    },
+    {
+      "schedule_name": "Weekly Client Readiness Report",
+      "category": "goclear_apex_client_intake",
+      "automation_level": "autonomous_internal",
+      "frequency": "weekly",
+      "allowed_writes": [
+        "internal readiness cards/reports"
+      ],
+      "forbidden_actions": "no client contact/notification; no client data exposure",
+      "owner": "opportunity_lab",
+      "risk_level": "low",
+      "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": true,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
       "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
     }
   ],
   "counts": {
-    "candidates": 6,
+    "candidates": 10,
+    "proposed": 10,
+    "approved": 0,
+    "active": 0,
+    "blocked": 0,
     "created": 0,
     "failed": 0
   },
-  "summary": "Generated schedule-ready proposals only. No scheduler activated.",
+  "summary": "Generated schedule-ready proposals only. No scheduler activated. No cron/launchd/systemd created.",
   "safety": {
     "scheduler_started": false,
     "cron_launchd_systemd_created": false,
-    "publish_send_trade_deploy": false
+    "publish_send_trade_deploy": false,
+    "external_ai_called": false
   }
 }

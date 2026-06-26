@@ -127,6 +127,42 @@ export interface CaptureClassification {
   outcome: ActionOutcome; itemType: string | null; statusLabel: string; safetyCopy: string;
 }
 
+// ---- Automation-level approval bridge ---------------------------------------
+// Ties the universal action policy to the three-level automation model:
+//   Level 1 (autonomous_internal)  → no approval row.
+//   Level 2 (approval_gated)        → approval row ONLY when execution-ready.
+//   Level 3 (blocked_high_risk)     → NO direct execution approval; separate contract/escalation.
+
+import { classifyAutomationLevel, type AutomationActionInput } from '../lib/nexusAutomationPolicy';
+
+export type AutomationApprovalDisposition =
+  | 'no_approval_needed'
+  | 'approval_when_execution_ready'
+  | 'blocked_separate_contract';
+
+export function getAutomationApprovalDisposition(input: AutomationActionInput): AutomationApprovalDisposition {
+  const level = classifyAutomationLevel(input);
+  if (level === 'blocked_high_risk') return 'blocked_separate_contract';
+  if (level === 'approval_gated') return 'approval_when_execution_ready';
+  return 'no_approval_needed';
+}
+
+/** Should this action create an Approvals row now? Only Level 2 AND execution-ready. */
+export function shouldCreateApprovalRow(input: AutomationActionInput, executionReady = false): boolean {
+  return getAutomationApprovalDisposition(input) === 'approval_when_execution_ready' && executionReady;
+}
+
+/** Level 3 must never become a direct execution approval. */
+export function isBlockedFromDirectApproval(input: AutomationActionInput): boolean {
+  return getAutomationApprovalDisposition(input) === 'blocked_separate_contract';
+}
+
+/** Actions that must NEVER create approvals (pure internal Level 1 work). */
+export const NO_APPROVAL_ACTIONS = [
+  'research', 'scoring', 'routing', 'internal report', 'watched resource update',
+  'transcript review', 'paper-only trading research', 'hermes internal recommendation',
+] as const;
+
 /** The keystone: classify a source-capture submission. Used by Source Intake (and any tab). */
 export function classifyCaptureSubmission(payload: Record<string, unknown>): CaptureClassification {
   const triggers = getReviewTriggers(payload);

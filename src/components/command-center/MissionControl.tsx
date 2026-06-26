@@ -13,6 +13,8 @@ import { feederStateCounts, NEXUS_DEPARTMENT_FEEDERS } from '../../config/nexusD
 import { NEXUS_RESEARCH_REPORTS, researchReportStatusSummary } from '../../lib/nexusResearchReports';
 import { loadRayReviewQueue, summarizeRayReviewCounts } from '../../lib/rayReviewQueue';
 import { RAY_YOUTUBE_WATCHLIST } from '../../config/youtubeChannelWatchlist';
+import { automationStatusCounts, nextRecommendedSafeAutomation, topAutomationRisk } from '../../lib/nexusAutomationStatus';
+import { NEXUS_HIGH_RISK_GUARDS } from '../../config/nexusHighRiskGuards';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -146,6 +148,10 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   const approvalNeededCount = all.filter((p) => p.approval_required).length;
   const topFeeder = NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'needs_connector' || f.enabled_state === 'blocked')
     ?? NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'manual_only');
+  const automation = automationStatusCounts();
+  const nextSafe = nextRecommendedSafeAutomation();
+  const topRisk = topAutomationRisk();
+  const guardsBlocked = NEXUS_HIGH_RISK_GUARDS.length;
 
   return (
     <div className="nx-glass">
@@ -187,6 +193,23 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
       </div>
       <div className="nx-chiprow" style={{ marginBottom: 10 }}>
         {youtubeFoundationStatus.map(([label, status]) => <span key={label} className="nx-pill">{label}: {status}</span>)}
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 10 }}>
+        <span className="nx-pill">L1 internal {automation.level_1_internal}</span>
+        <span className="nx-pill">L2 approval-gated {automation.level_2_gated}</span>
+        <span className="nx-pill">L3 blocked {automation.level_3_blocked}</span>
+        <span className="nx-pill">schedule-ready {automation.schedule_ready}</span>
+        <span className="nx-pill">scheduler approval {automation.scheduler_approval_required}</span>
+        <span className="nx-pill">connector required {automation.connector_required}</span>
+        <span className="nx-pill">external API {automation.external_api_required}</span>
+        <span className="nx-pill">high-risk guards {guardsBlocked} blocked</span>
+        <span className="nx-pill">automation report manual</span>
+      </div>
+      <div className="note" style={{ marginBottom: 10 }}>
+        Next safe automation: {nextSafe ? `${nextSafe.category_name} — ${nextSafe.next_recommended_action}` : 'None ready.'}
+      </div>
+      <div className="note" style={{ marginBottom: 10 }}>
+        Top automation risk: {topRisk ? `${topRisk.category_name} — ${topRisk.risk_notes}` : 'None.'}
       </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Research autonomy: {researchReportStatusSummary()}

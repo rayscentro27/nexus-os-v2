@@ -514,3 +514,88 @@ export function feederStateCounts(feeders = NEXUS_DEPARTMENT_FEEDERS): Record<Ne
     return acc;
   }, { manual_only: 0, ready_for_schedule: 0, disabled: 0, blocked: 0, needs_connector: 0 });
 }
+
+// ---- Feeder automation classification (additive, backward-compatible) --------
+// Maps each existing feeder to the three-level automation model without changing the feeder
+// objects above. Use feederAutomation(feederId) to read a feeder's automation contract.
+import type { AutomationLevelId } from './nexusAutomationLevels';
+import type { AutomationCategoryId } from './nexusAutomationCategories';
+
+export interface NexusFeederAutomation {
+  feeder_id: string;
+  automation_level: AutomationLevelId;
+  automation_category: AutomationCategoryId;
+  allowed_actions: string[];
+  forbidden_actions: string[];
+  approval_required_for_live_run: boolean;
+  schedule_ready: boolean;
+  scheduler_approval_required: boolean;
+  high_risk_blocked_actions: string[];
+  last_safety_review: string;
+  rollback_plan: string;
+  proof_report_path: string;
+}
+
+const SAFETY_REVIEW_DATE = '2026-06-26';
+const DEFAULT_ALLOWED = ['research', 'scoring', 'routing', 'internal cards', 'internal reports', 'proof events'];
+const DEFAULT_FORBIDDEN = ['publish', 'send', 'trade', 'spend', 'deploy', 'scheduler activation', 'client contact'];
+
+function fa(
+  feeder_id: string,
+  automation_level: AutomationLevelId,
+  automation_category: AutomationCategoryId,
+  opts: Partial<NexusFeederAutomation> = {},
+): NexusFeederAutomation {
+  return {
+    feeder_id,
+    automation_level,
+    automation_category,
+    allowed_actions: opts.allowed_actions ?? DEFAULT_ALLOWED,
+    forbidden_actions: opts.forbidden_actions ?? DEFAULT_FORBIDDEN,
+    approval_required_for_live_run: opts.approval_required_for_live_run ?? (automation_level !== 'autonomous_internal'),
+    schedule_ready: opts.schedule_ready ?? false,
+    scheduler_approval_required: opts.scheduler_approval_required ?? true,
+    high_risk_blocked_actions: opts.high_risk_blocked_actions ?? [],
+    last_safety_review: SAFETY_REVIEW_DATE,
+    rollback_plan: opts.rollback_plan ?? 'Disable feeder by leaving it manual-only; delete any proposed cards. No persistent job is installed.',
+    proof_report_path: opts.proof_report_path ?? 'reports/manual_publish/automation_control_report_latest.md',
+  };
+}
+
+export const NEXUS_FEEDER_AUTOMATION: NexusFeederAutomation[] = [
+  fa('watched_resource_registry', 'autonomous_internal', 'research_source_intake'),
+  fa('watched_resource_watch', 'autonomous_internal', 'research_source_intake', { schedule_ready: true, high_risk_blocked_actions: ['broad scraping', 'media download'] }),
+  fa('research_content_growth_engine', 'autonomous_internal', 'content_opportunity_lab', { schedule_ready: true }),
+  fa('daily_department_digest', 'autonomous_internal', 'scheduler_automation', { schedule_ready: true, forbidden_actions: ['capture run', 'live connector', 'publish', 'send'] }),
+  fa('source_intake_enrichment_backfill', 'autonomous_internal', 'research_source_intake'),
+  fa('notebooklm_connector_status_feeder', 'autonomous_internal', 'notebooklm_research_library', { allowed_actions: ['connector status reporting', 'internal cards/reports'], forbidden_actions: ['connector activation', 'external AI on sensitive data'] }),
+  fa('direct_source_enrichment_feeder', 'autonomous_internal', 'research_source_intake'),
+  fa('source_capture_queue_worker', 'autonomous_internal', 'research_source_intake'),
+  fa('ops_improvement_research_feeder', 'autonomous_internal', 'monitoring_health'),
+  fa('opportunity_lab_research_feeder', 'autonomous_internal', 'opportunity_lab'),
+  fa('creative_studio_project_feeder', 'autonomous_internal', 'creative_studio', { allowed_actions: ['draft creative', 'internal review cards'], forbidden_actions: ['publish creative', 'send to clients', 'ad activation'] }),
+  fa('seo_marketing_project_feeder', 'autonomous_internal', 'seo_marketing', { schedule_ready: true, allowed_actions: ['SEO keyword scoring', 'internal cards/reports'], forbidden_actions: ['publish to site', 'site/production change'] }),
+  fa('design_library_project_feeder', 'autonomous_internal', 'design_library'),
+  fa('agent_jobs_process_feeder', 'autonomous_internal', 'agent_jobs', { high_risk_blocked_actions: ['raw auto_executor exposure'] }),
+  fa('command_center_summary_feeder', 'autonomous_internal', 'ray_review_queue'),
+  fa('approvals_decision_desk_feeder', 'autonomous_internal', 'approvals', { allowed_actions: ['approvals reporting (read-only)'], forbidden_actions: ['auto-approve', 'execute approved item'] }),
+  fa('events_feed_ledger_feeder', 'autonomous_internal', 'events_feed_proof_ledger', { high_risk_blocked_actions: ['destructive ledger writes'] }),
+  fa('integrations_status_feeder', 'autonomous_internal', 'integrations', { allowed_actions: ['integration status reporting', 'internal cards/reports'], forbidden_actions: ['connector activation', 'credential connection'] }),
+  fa('goclear_revenue_hub_feeder', 'autonomous_internal', 'goclear_revenue_hub', { allowed_actions: ['internal revenue cards', 'internal reports'], forbidden_actions: ['lead contact', 'payment link', 'campaign publish'], high_risk_blocked_actions: ['payment/spend actions'] }),
+  fa('trading_lab_demo_research_feeder', 'autonomous_internal', 'trading_lab', { allowed_actions: ['paper-only strategy research', 'backtest imports (local)'], forbidden_actions: ['live trading', 'broker execution'], high_risk_blocked_actions: ['live trading', 'broker execution', 'funded account actions', 'raw auto_executor exposure'] }),
+];
+
+export function feederAutomation(feederId: string): NexusFeederAutomation | undefined {
+  return NEXUS_FEEDER_AUTOMATION.find((f) => f.feeder_id === feederId);
+}
+
+export function feederAutomationCounts(items = NEXUS_FEEDER_AUTOMATION) {
+  return {
+    total: items.length,
+    level_1: items.filter((f) => f.automation_level === 'autonomous_internal').length,
+    level_2: items.filter((f) => f.automation_level === 'approval_gated').length,
+    level_3: items.filter((f) => f.automation_level === 'blocked_high_risk').length,
+    schedule_ready: items.filter((f) => f.schedule_ready).length,
+    high_risk_guarded: items.filter((f) => f.high_risk_blocked_actions.length > 0).length,
+  };
+}

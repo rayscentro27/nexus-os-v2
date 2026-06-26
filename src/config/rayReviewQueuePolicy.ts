@@ -73,6 +73,56 @@ export function summarizeRayDecisionOptions(input: Record<string, unknown>): str
   return ['Proceed with internal prep', 'Request changes', 'Park', 'Escalate to Approvals'];
 }
 
+/**
+ * Automation-level decision reasons. Level 1 items never reach the queue; Level 2 enter as
+ * execution-ready approvals; Level 3 enter ONLY as blocked/escalation (never executable approval).
+ */
+export type RayReviewDecisionReason =
+  | 'approval_gated_execution'
+  | 'blocked_high_risk_escalation'
+  | 'scheduler_activation_request'
+  | 'connector_activation_request'
+  | 'campaign_ready'
+  | 'send_ready'
+  | 'client_contact_ready'
+  | 'trading_live_blocked'
+  | 'production_change_request'
+  | 'spend_request'
+  | 'sensitive_data_request';
+
+const DECISION_TYPE_TO_REASON: Partial<Record<RayDecisionType, RayReviewDecisionReason>> = {
+  trading_live_execution_blocked: 'trading_live_blocked',
+  scheduler_activation: 'scheduler_activation_request',
+  connector_setup: 'connector_activation_request',
+  production_change: 'production_change_request',
+  campaign_publish: 'campaign_ready',
+  social_post: 'campaign_ready',
+  email_send: 'send_ready',
+  lead_contact: 'client_contact_ready',
+  client_action: 'client_contact_ready',
+  revenue_decision: 'spend_request',
+};
+
+/** Map a queue item to its automation-level decision reason. Level 3 escalates, never executes. */
+export function getRayReviewDecisionReason(input: Record<string, unknown>): RayReviewDecisionReason {
+  const decision = classifyRayDecisionType(input);
+  const risk = getRayReviewRisk(input);
+  if (decision === 'trading_live_execution_blocked') return 'trading_live_blocked';
+  const blob = `${input.task_type ?? ''} ${input.item_type ?? ''} ${input.title ?? ''} ${input.summary ?? ''} ${JSON.stringify(input.payload ?? {})}`.toLowerCase();
+  if (/auto_executor|broker|funded|destructive|rls|broad scrape|media download|external ai.*(sensitive|private|customer)/.test(blob)) {
+    return 'blocked_high_risk_escalation';
+  }
+  if (/sensitive|private|customer data|credit-sensitive/.test(blob)) return 'sensitive_data_request';
+  if (risk === 'critical') return 'blocked_high_risk_escalation';
+  return DECISION_TYPE_TO_REASON[decision] ?? 'approval_gated_execution';
+}
+
+/** Level 3 items are escalation-only: they must never be presented as an executable approval. */
+export function isBlockedEscalationOnly(input: Record<string, unknown>): boolean {
+  const reason = getRayReviewDecisionReason(input);
+  return reason === 'blocked_high_risk_escalation' || reason === 'trading_live_blocked';
+}
+
 export const RAY_REVIEW_QUEUE_EXCLUSIONS = [
   'reviewed transcripts',
   'scored videos',
