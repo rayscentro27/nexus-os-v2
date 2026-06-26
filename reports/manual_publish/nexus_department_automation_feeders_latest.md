@@ -1,24 +1,57 @@
 # Nexus Department Automation Feeders
 
-## Verification Summary
+- generated_at: 2026-06-26
+- latest implemented feeder: `opportunity_lab_research_feeder`
+- scheduler_started: false
+- capture_run: false
+- publish/send/trade/deploy: false
+- external_ai: false
 
-- Department feeder model added in `src/config/nexusDepartmentFeeders.ts`.
-- Manual feeder runner added at `scripts/automation/run_department_feeder.py`.
-- Department rooms show feeder status and next action.
-- Command Center shows feeder state counts and top feeder recommendation.
-- `npm run build` passed.
-- `npm run nexus:watch` passed in manual mode.
-- Feeder dry-run passed and wrote only local reports.
-- No scheduler, capture, yt-dlp, external AI, publish, send, trade, deploy, social publish job, or v1 worker path was run.
+## Implemented Live Feeder
 
-- generated_at: 2026-06-26T02:30:56.113337+00:00
-- mode: DRY-RUN (no Supabase writes)
-- feeders: 5 · no_external_ai: true
-- scheduler_started: false · capture_run: false · publish/send/trade/deploy: false
+`opportunity_lab_research_feeder` is now a bounded manual live feeder. It scans existing enriched `research_sources` rows and creates safe Opportunity Lab project cards as `task_requests`.
 
-## Results
-- {"candidates": ["research_sources"], "department": "source_intake", "dry_run": true, "enabled_state": "manual_only", "feeder_id": "source_intake_enrichment_backfill", "manual_command": "python3 scripts/intake/backfill_project_enrichment.py --dry-run --limit 10 --no-external-ai", "name": "Source Intake Enrichment Backfill", "next_action": "Run dry-run, then bounded metadata-only live backfill when safe.", "proof_event_type": "project_enrichment_backfilled", "risk_level": "low", "status": "dry_run_reported", "target_tables": ["research_sources.metadata", "transcript_reviews.metadata", "nexus_events"], "would_write": []}
-- {"candidates": ["task_requests"], "department": "source_intake", "dry_run": true, "enabled_state": "manual_only", "feeder_id": "source_capture_queue_worker", "manual_command": "python3 scripts/intake/run_capture_queue_worker.py --once --limit 1 --dry-run --no-external-ai", "name": "Source Capture Queue Worker", "next_action": "Keep dry-run default; live run only for safe queued items.", "proof_event_type": "source_enriched_for_project_card", "risk_level": "medium", "status": "dry_run_reported", "target_tables": ["task_requests", "research_sources", "intake_events", "transcript_reviews", "nexus_events"], "would_write": []}
-- {"candidates": ["reports/manual_publish/nexus_active_automation_audit_latest.md", "reports/manual_publish/nexus_approval_preview_and_hermes_review_latest.md", "reports/manual_publish/nexus_capture_queue_worker_latest.md", "reports/manual_publish/nexus_command_center_and_source_intake_polish_latest.md", "reports/manual_publish/nexus_department_automation_feeders_latest.md"], "department": "ops_improvements", "dry_run": true, "enabled_state": "manual_only", "feeder_id": "ops_improvement_research_feeder", "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id ops_improvement_research_feeder --dry-run --limit 5 --no-external-ai", "name": "Ops Improvement Research Feeder", "next_action": "Dry-run candidate creation from existing safe reports; live writes deferred.", "proof_event_type": "department_feeder_ops_improvement_reported", "risk_level": "low", "status": "dry_run_reported", "target_tables": ["task_requests", "nexus_events"], "would_write": []}
-- {"candidates": ["research_sources with project_enrichment destination Opportunity Lab/GoClear/Apex"], "department": "opportunity_lab", "dry_run": true, "enabled_state": "manual_only", "feeder_id": "opportunity_lab_research_feeder", "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --dry-run --limit 5 --no-external-ai", "name": "Opportunity Lab Research Feeder", "next_action": "Dry-run promotion candidates; live creation can be added after review.", "proof_event_type": "department_feeder_opportunity_reported", "risk_level": "low", "status": "dry_run_reported", "target_tables": ["task_requests", "nexus_events"], "would_write": []}
-- {"candidates": ["creative_assets", "social_posts", "publish_readiness_packages"], "department": "creative_studio", "dry_run": true, "enabled_state": "manual_only", "feeder_id": "creative_design_project_feeder", "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id creative_design_project_feeder --dry-run --limit 5 --no-external-ai", "name": "Creative and Design Project Feeder", "next_action": "Dry-run candidate mapping; publish remains approval-gated.", "proof_event_type": "department_feeder_creative_design_reported", "risk_level": "medium", "status": "dry_run_reported", "target_tables": ["task_requests", "creative_assets.metadata", "nexus_events"], "would_write": []}
+Live write path:
+
+- `task_requests.task_type=opportunity_lab_project`
+- `task_requests.payload.project_enrichment`
+- `task_requests.payload.related_research_source_id`
+- `task_requests.payload.department=opportunity_lab`
+- `task_requests.payload.project_type=monetization_opportunity`
+- `nexus_events.action=opportunity_lab_project_created`
+
+## Verification Snapshot
+
+- initial dry-run: passed
+- bounded live run: created 2 Opportunity Lab task cards
+- proof events written: 2
+- follow-up dry-run: passed and skipped both rows as duplicates
+- duplicate task_requests created: 0
+
+## Manual Commands
+
+Dry-run:
+
+```bash
+python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --dry-run --limit 5 --no-external-ai
+```
+
+Bounded live:
+
+```bash
+python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --no-dry-run --limit 5 --no-external-ai
+```
+
+## Remaining Feeders
+
+The remaining feeders are still report-only or connector-dependent:
+
+- `ops_improvement_research_feeder`
+- `creative_design_project_feeder`
+- `seo_marketing_project_feeder`
+- `design_library_asset_organizer`
+- `agent_jobs_process_registry_feeder`
+
+## Next Recommendation
+
+Review the two Opportunity Lab cards in the UI, then implement the Ops & Improvements feeder using the same task-request and `nexus_events` proof pattern.

@@ -122,8 +122,8 @@ export const NEXUS_DEPARTMENT_FEEDERS: NexusDepartmentFeeder[] = [
     required_env: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
     required_connector: null,
     last_run_source: 'reports/manual_publish/nexus_department_automation_feeders_latest.md',
-    proof_event_type: 'department_feeder_opportunity_reported',
-    next_action: 'Dry-run promotion candidates; live creation can be added after review.',
+    proof_event_type: 'opportunity_lab_project_created',
+    next_action: 'Dry-run promotion candidates, then run bounded live creation only after reviewing candidates.',
     disabled_reason: null,
   },
   {

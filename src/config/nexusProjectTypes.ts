@@ -13,6 +13,7 @@ export type NexusDepartment =
   | 'trading_lab';
 
 export type NexusProjectStatus =
+  | 'proposed'
   | 'researching'
   | 'summarized'
   | 'scored'
@@ -146,6 +147,7 @@ export interface DepartmentWorkspaceConfig {
 }
 
 export const PROJECT_STATUSES: NexusProjectStatus[] = [
+  'proposed',
   'researching',
   'summarized',
   'scored',

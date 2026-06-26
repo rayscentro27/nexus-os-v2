@@ -41,6 +41,7 @@ function obj(value: unknown): Record<string, unknown> {
 function statusFrom(value: unknown): NexusProjectStatus {
   const s = text(value).toLowerCase();
   if (s.includes('block') || s.includes('fail')) return 'blocked';
+  if (s.includes('proposed')) return 'proposed';
   if (s.includes('reject')) return 'rejected';
   if (s.includes('park') || s.includes('skip')) return 'parked';
   if (s.includes('done') || s.includes('complete') || s.includes('success') || s.includes('published')) return 'done';
@@ -283,8 +284,8 @@ export function mapTaskRequestToProject(row: Row): NexusProject {
   const enrichment = mergeEnrichment(deterministicEnrichment(row), normalizeEnrichment(row.payload?.project_enrichment));
   return base(row, {
     project_id: `task:${row.id}`,
-    title: text(row.summary ?? row.task_type, 'Task request'),
-    department: getDepartmentFromTab(text(row.payload?.owner_tab ?? row.payload?.target_tab, 'agent_jobs')),
+    title: text(row.payload?.title ?? row.payload?.source_title ?? row.summary ?? row.task_type, 'Task request'),
+    department: getDepartmentFromTab(text(row.payload?.owner_tab ?? row.payload?.target_tab ?? row.payload?.department, 'agent_jobs')),
     owner_tab: text(row.payload?.owner_tab ?? row.payload?.target_tab, 'jobs'),
     project_type: text(row.task_type, 'task_request'),
     status: statusFrom(row.payload?.capture_status ?? row.status),
@@ -294,7 +295,10 @@ export function mapTaskRequestToProject(row: Row): NexusProject {
     recommendation: text(enrichment.recommendation, text(row.payload?.recommendation, 'Review this safe request before assigning worker time.')),
     approval_required: enrichment.approval_required ?? Boolean(row.payload?.approval_required),
     risk_triggers: enrichment.risk_triggers?.length ? enrichment.risk_triggers : arr(row.payload?.risk_triggers ?? (row.payload?.review_trigger ? [row.payload.review_trigger] : [])),
+    source_url: text(row.payload?.source_url, '') || null,
+    source_title: text(row.payload?.source_title, '') || null,
     related_task_request_id: text(row.id),
+    proof_event_id: text(row.payload?.proof_event_id, '') || null,
     data_sources: ['task_requests'],
   });
 }
@@ -391,6 +395,7 @@ export function mapOpportunityToProject(row: Row): NexusProject {
 
 function getDepartmentFromTab(tab: string): NexusDepartment {
   if (tab === 'intake') return 'source_intake';
+  if (tab === 'opportunity_lab') return 'opportunity_lab';
   if (tab === 'opportunities') return 'opportunity_lab';
   if (tab === 'design') return 'design_library';
   if (tab === 'creative') return 'creative_studio';
@@ -431,7 +436,18 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
     ]
       .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }
-  if (tabId === 'opportunities') return (await listTable('monetization_opportunities', { order: 'created_at', limit: 40 })).map(mapOpportunityToProject);
+  if (tabId === 'opportunities') {
+    const [opportunities, tasks] = await Promise.all([
+      listTable('monetization_opportunities', { order: 'created_at', limit: 40 }),
+      listTable('task_requests', { order: 'created_at', limit: 40 }),
+    ]);
+    return [
+      ...opportunities.map(mapOpportunityToProject),
+      ...tasks
+        .filter((t) => t.task_type === 'opportunity_lab_project' || t.payload?.owner_tab === 'opportunities' || t.payload?.department === 'opportunity_lab')
+        .map(mapTaskRequestToProject),
+    ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
   if (tabId === 'creative') return (await listTable('creative_assets', { order: 'created_at', limit: 40 })).map(mapCreativeAssetToProject);
   if (tabId === 'seo') return (await listTable('seo_opportunities', { order: 'created_at', limit: 40 })).map(mapSeoOpportunityToProject);
   if (tabId === 'ops') return (await listTable('improvement_candidates', { order: 'created_at', limit: 40 })).map(mapImprovementToProject);

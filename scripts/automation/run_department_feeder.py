@@ -15,12 +15,16 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts" / "social"))
+sys.path.insert(0, str(ROOT / "scripts" / "automation"))
 import _supabase as sb  # noqa: E402
+from feeders import opportunity_lab_research_feeder  # noqa: E402
 
 MAX_LIMIT = 50
 DEFAULT_LIMIT = 5
 RUNTIME = ROOT / "reports" / "runtime" / "nexus_department_automation_feeders_latest.md"
 MANUAL = ROOT / "reports" / "manual_publish" / "nexus_department_automation_feeders_latest.md"
+OPP_RUNTIME = ROOT / "reports" / "runtime" / "nexus_opportunity_lab_feeder_latest.md"
+OPP_MANUAL = ROOT / "reports" / "manual_publish" / "nexus_opportunity_lab_feeder_latest.md"
 
 FEEDERS: list[dict[str, Any]] = [
     {
@@ -72,8 +76,8 @@ FEEDERS: list[dict[str, Any]] = [
         "enabled_state": "manual_only",
         "risk_level": "low",
         "writes_to_tables": ["task_requests", "nexus_events"],
-        "proof_event_type": "department_feeder_opportunity_reported",
-        "next_action": "Dry-run promotion candidates; live creation can be added after review.",
+        "proof_event_type": "opportunity_lab_project_created",
+        "next_action": "Dry-run promotion candidates, then run bounded live creation only after reviewing candidates.",
     },
     {
         "feeder_id": "creative_design_project_feeder",
@@ -221,6 +225,24 @@ def local_candidates(feeder: dict[str, Any], limit: int) -> list[str]:
 
 
 def run_feeder(feeder: dict[str, Any], args) -> dict[str, Any]:
+    if feeder["feeder_id"] == opportunity_lab_research_feeder.FEEDER_ID:
+        if not sb.configured():
+            return {**feeder, "status": "supabase_not_configured", "dry_run": args.dry_run, "results": []}
+        res = opportunity_lab_research_feeder.run(sb, dry_run=args.dry_run, limit=args.limit)
+        return {
+            "feeder_id": feeder["feeder_id"],
+            "name": feeder["name"],
+            "department": feeder["department"],
+            "enabled_state": feeder["enabled_state"],
+            "risk_level": feeder["risk_level"],
+            "manual_command": feeder["manual_command"],
+            "target_tables": res["target_tables"],
+            "proof_event_type": res["proof_event_type"],
+            "dry_run": args.dry_run,
+            "status": "dry_run_reported" if args.dry_run else "live_completed",
+            "next_action": feeder["next_action"],
+            **res,
+        }
     candidates = local_candidates(feeder, args.limit)
     out = {
         "feeder_id": feeder["feeder_id"],
@@ -266,6 +288,10 @@ def write_report(report: dict[str, Any]) -> None:
     for path in (RUNTIME, MANUAL):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("\n".join(lines) + "\n")
+    if any(r.get("feeder_id") == opportunity_lab_research_feeder.FEEDER_ID for r in report["results"]):
+        for path in (OPP_RUNTIME, OPP_MANUAL):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("\n".join(lines) + "\n")
 
 
 def main() -> int:

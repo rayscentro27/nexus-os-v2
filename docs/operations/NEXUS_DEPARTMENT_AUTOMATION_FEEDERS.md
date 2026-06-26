@@ -23,7 +23,7 @@ Enabled states:
 | `source_intake_enrichment_backfill` | Source Intake | manual_only | `python3 scripts/intake/backfill_project_enrichment.py --dry-run --limit 10 --no-external-ai` | `research_sources.metadata`, `transcript_reviews.metadata`, `nexus_events` | `project_enrichment_backfilled` |
 | `source_capture_queue_worker` | Source Intake | manual_only | `python3 scripts/intake/run_capture_queue_worker.py --once --limit 1 --dry-run --no-external-ai` | `task_requests`, `research_sources`, `intake_events`, `transcript_reviews`, `nexus_events` | `source_enriched_for_project_card` |
 | `ops_improvement_research_feeder` | Ops & Improvements | manual_only | `python3 scripts/automation/run_department_feeder.py --feeder-id ops_improvement_research_feeder --dry-run --limit 5 --no-external-ai` | future `task_requests`, `nexus_events` | `department_feeder_ops_improvement_reported` |
-| `opportunity_lab_research_feeder` | Opportunity Lab | manual_only | `python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --dry-run --limit 5 --no-external-ai` | future `task_requests`, `nexus_events` | `department_feeder_opportunity_reported` |
+| `opportunity_lab_research_feeder` | Opportunity Lab | manual_only | `python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --dry-run --limit 5 --no-external-ai` | `task_requests`, `nexus_events` | `opportunity_lab_project_created` |
 | `creative_design_project_feeder` | Creative Studio | manual_only | `python3 scripts/automation/run_department_feeder.py --feeder-id creative_design_project_feeder --dry-run --limit 5 --no-external-ai` | future `task_requests`, `creative_assets.metadata`, `nexus_events` | `department_feeder_creative_design_reported` |
 | `seo_marketing_project_feeder` | SEO / Marketing | needs_connector | `python3 scripts/automation/run_department_feeder.py --feeder-id seo_marketing_project_feeder --dry-run --limit 5 --no-external-ai` | future `task_requests`, `seo_opportunities`, `nexus_events` | `department_feeder_seo_reported` |
 | `design_library_asset_organizer` | Design Library | manual_only | `python3 scripts/automation/run_department_feeder.py --feeder-id design_library_asset_organizer --dry-run --limit 5 --no-external-ai` | future `task_requests`, `nexus_events` | `department_feeder_design_reported` |
@@ -48,7 +48,34 @@ Specific feeder dry-run:
 python3 scripts/automation/run_department_feeder.py --feeder-id source_intake_enrichment_backfill --dry-run --limit 5 --no-external-ai
 ```
 
+Opportunity Lab bounded dry-run:
+
+```bash
+python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --dry-run --limit 5 --no-external-ai
+```
+
+Opportunity Lab bounded live run:
+
+```bash
+python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --no-dry-run --limit 5 --no-external-ai
+```
+
 The runner reports what a feeder would target, which tables it would write, and which proof event it would emit. It does not run capture, `yt-dlp`, external AI, publishing, sending, trading, deployment, broad scraping, v1 workers, or scheduler activation.
+
+## Opportunity Lab Feeder
+
+`opportunity_lab_research_feeder` is the first live non-capture feeder. It scans existing `research_sources` rows that already have `metadata.project_enrichment`, filters for public/internal monetization candidates, and creates `task_requests` with `task_type=opportunity_lab_project`.
+
+Candidate rows must have a useful deterministic recommendation, a score of at least 20 unless Ray review is required, and signals such as Opportunity Lab destination, funding/credit, monetization, business, grants, marketing, sales, SEO, AI tooling, automation, creative/design, lead generation, client acquisition, GoClear, or Apex. It excludes sensitive/private/customer data, high-risk triggers, rejected/parked rows, and existing task requests created by the same feeder for the same research source.
+
+Live writes are limited to safe internal project-card data:
+
+- `task_requests.payload.project_enrichment`
+- `task_requests.payload.related_research_source_id`
+- `task_requests.payload.department=opportunity_lab`
+- `task_requests.payload.project_type=monetization_opportunity`
+- `task_requests.status=proposed` or `needs_review`
+- `nexus_events` proof with `action=opportunity_lab_project_created`
 
 ## UI
 
@@ -60,4 +87,4 @@ All feeders requiring schedule activation have `approval_required_for_schedule=t
 
 ## Next Recommendation
 
-Implement the first live non-capture feeder as a bounded `opportunity_lab_research_feeder` that creates task_requests from already-enriched `research_sources` with Opportunity Lab/GoClear destinations, after Ray reviews the dry-run report.
+Next feeder implementation should be either `ops_improvement_research_feeder` for deterministic improvement cards or `creative_design_project_feeder` for existing asset/project cards. Scheduler activation remains disabled until Ray explicitly approves it.

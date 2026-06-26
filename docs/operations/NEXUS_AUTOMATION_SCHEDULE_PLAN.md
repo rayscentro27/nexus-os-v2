@@ -9,7 +9,7 @@ The feeder registry in `src/config/nexusDepartmentFeeders.ts` prepares manual/sc
 | YouTube/research collector | Source Intake | `scripts/intake/run_existing_youtube_monitor.py` | `research_sources`, `intake_events`, `nexus_events` | 2-4 times/day after allowlist review | Medium | Required before scheduler activation | `python3 scripts/intake/run_existing_youtube_monitor.py --once --limit 1 --no-external-ai --write-events` | `source_capture_*` | Disabled/manual |
 | NotebookLM source enrichment | Source Intake | Connector TBD | summaries/metadata on `research_sources` | On demand or hourly batch | Medium | Required if external connector or sensitive text | Not connected yet | `notebooklm_enrichment_*` | Disabled |
 | SEO/marketing scanner | SEO / Marketing | Future scanner | `seo_opportunities`, `nexus_events` | Daily | Low/medium | Required before scheduler activation | Not connected yet | `seo_scan_*` | Disabled |
-| Opportunity monetization scanner | Opportunity Lab | `scripts/intake/extract_service_opportunity.py` and future scanner | `monetization_opportunities` | Daily/manual batch | Medium | Required for client-facing promotion | `python3 scripts/intake/extract_service_opportunity.py` | `opportunity_scan_*` | Disabled/manual |
+| Opportunity monetization scanner | Opportunity Lab | `scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder` | `task_requests`, `nexus_events` | Manual now; future daily after approval | Low/medium | Required before scheduler activation and for any client-facing promotion | `python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --dry-run --limit 5 --no-external-ai` | `opportunity_lab_project_created` | Manual only |
 | Creative idea/project generator | Creative Studio | `scripts/creative/*` | creative tables, approvals when needed | Manual or weekly | Medium | Publish/send requires approval | Existing creative scripts manually | `creative_job_*` | Manual |
 | Design asset organizer | Design Library | `scripts/design/*` | design tables | Weekly/manual | Low | Approval for public/client-facing use | Existing design scripts manually | `design_refresh_*` | Manual |
 | Ops self-audit | Ops & Improvements | `scripts/run_nexus_continuous_operations.py --mode manual` | health/events/improvements | Manual now; future daily | Medium | Required before scheduler activation | `npm run nexus:watch` | `watch_report_*` | Manual |
@@ -26,3 +26,11 @@ python3 scripts/automation/run_department_feeder.py --dry-run --limit 5 --no-ext
 ```
 
 This reports target departments, write tables, and proof event types. It does not install or start cron, launchd, systemd, or any persistent process.
+
+Opportunity Lab bounded live command, only after reviewing dry-run candidates:
+
+```bash
+python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_research_feeder --no-dry-run --limit 5 --no-external-ai
+```
+
+This command creates internal `task_requests` project cards and `nexus_events` proof only. It does not publish, send, trade, deploy, scrape, capture, or activate scheduling.

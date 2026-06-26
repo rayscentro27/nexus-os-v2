@@ -27,7 +27,7 @@ Feeder outputs should map into existing project card fields, `project_enrichment
 
 ## Statuses
 
-`researching`, `summarized`, `scored`, `needs_review`, `approved`, `scheduled`, `implementing`, `done`, `parked`, `rejected`, `blocked`.
+`researching`, `summarized`, `scored`, `proposed`, `needs_review`, `approved`, `scheduled`, `implementing`, `done`, `parked`, `rejected`, `blocked`.
 
 ## Mappers
 
@@ -48,3 +48,12 @@ Feeder outputs should map into existing project card fields, `project_enrichment
 - `getProjectHermesRecommendation` gives Hermes a contextual recommendation and uses the pending-enrichment fallback when no summary exists.
 
 No fake live data should be presented. If a department has no mapped rows, the UI says "No live projects yet" and names the feeder process/source.
+
+## Opportunity Lab Feeder Cards
+
+Opportunity Lab now also reads feeder-created `task_requests` where `task_type=opportunity_lab_project` or the payload marks `department=opportunity_lab`. These rows are created by `opportunity_lab_research_feeder` from existing enriched `research_sources`, and their payload maps directly to card fields:
+
+- title and source reference from the related research source
+- score, summary, pros, cons, recommendation, proposed schedule, and next action from `payload.project_enrichment`
+- status from `task_requests.status`, including `proposed` and `needs_review`
+- proof connection from the corresponding `nexus_events` row with `action=opportunity_lab_project_created`
