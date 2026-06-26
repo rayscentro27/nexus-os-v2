@@ -12,6 +12,7 @@ import type { NexusProject } from '../../config/nexusProjectTypes';
 import { feederStateCounts, NEXUS_DEPARTMENT_FEEDERS } from '../../config/nexusDepartmentFeeders';
 import { NEXUS_RESEARCH_REPORTS, researchReportStatusSummary } from '../../lib/nexusResearchReports';
 import { loadRayReviewQueue, summarizeRayReviewCounts } from '../../lib/rayReviewQueue';
+import { RAY_YOUTUBE_WATCHLIST } from '../../config/youtubeChannelWatchlist';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -119,6 +120,7 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   );
   const { data: reviewItems } = useData(() => loadRayReviewQueue(50), []);
   const reviewCounts = summarizeRayReviewCounts(reviewItems);
+  const youtubeEnabled = RAY_YOUTUBE_WATCHLIST.filter((x) => x.enabled).length;
   const all = Object.values(data).flat();
   const needs = all.filter((p) => p.status === 'needs_review' || p.approval_required).length;
   const blocked = all.filter((p) => p.status === 'blocked').length;
@@ -166,6 +168,9 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
         <span className="nx-pill">scheduler decisions {reviewCounts.scheduler}</span>
         <span className="nx-pill">connector decisions {reviewCounts.connector}</span>
         <span className="nx-pill">top reports {NEXUS_RESEARCH_REPORTS.length}</span>
+        <span className="nx-pill">watched YouTube {RAY_YOUTUBE_WATCHLIST.length}</span>
+        <span className="nx-pill">enabled channels {youtubeEnabled}</span>
+        <span className="nx-pill">YouTube report manual</span>
       </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Research autonomy: {researchReportStatusSummary()}

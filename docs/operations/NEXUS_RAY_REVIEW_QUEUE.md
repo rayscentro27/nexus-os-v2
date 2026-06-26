@@ -58,3 +58,7 @@ python3 scripts/review/capture_ray_decision.py --dry-run --review-id "sample-rev
 ## Safety
 
 The queue builder and decision capture scripts never publish, send, trade, deploy, start schedulers, call external AI, or approve/reject the underlying risky action.
+
+## YouTube Research Boundary
+
+Ray's watched YouTube resources do not flood this queue. New videos, transcript reviews, scores, department routing, and YouTube research reports remain autonomous internal research. Only execution-ready or high-risk decision items enter Ray Review Queue.

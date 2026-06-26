@@ -46,6 +46,16 @@ Supported department/source groups include:
 
 Each report includes top items, counts, and a suggested Hermes prompt.
 
+## YouTube Research Report
+
+Command:
+
+```bash
+python3 scripts/research/generate_youtube_research_report.py --dry-run --limit 10 --no-external-ai --json
+```
+
+This report summarizes watched YouTube candidates, channel opportunity quality, GoClear content opportunities, SEO/affiliate ideas, AI/automation ideas, and paper-only trading ideas.
+
 ## Ask Hermes About This Report
 
 Reports include `hermes_context.suggested_prompt` so Ray can ask:

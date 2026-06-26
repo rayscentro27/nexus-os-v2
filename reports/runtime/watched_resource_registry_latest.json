@@ -1,0 +1,391 @@
+{
+  "ok": true,
+  "title": "Watched Resource Registry",
+  "generated_at": "2026-06-26T17:08:38.845968+00:00",
+  "dry_run": true,
+  "resource_types_supported": [
+    "youtube_channel",
+    "youtube_playlist",
+    "youtube_video",
+    "rss_feed",
+    "affiliate_website",
+    "affiliate_program_page",
+    "competitor_website",
+    "seo_blog",
+    "credit_repair_resource",
+    "business_funding_resource",
+    "business_credit_resource",
+    "online_business_opportunity_resource",
+    "ai_tools_directory",
+    "ai_automation_blog_channel",
+    "trading_strategy_resource",
+    "newsletter_archive",
+    "manual_url_list"
+  ],
+  "items": [
+    {
+      "title": "Credit Plug",
+      "source_url": "https://www.youtube.com/@creditplug",
+      "source_type": "youtube_channel",
+      "category": "credit_funding_readiness",
+      "department_destination": "GoClear/Apex Revenue Hub",
+      "owner_tab": "goclear",
+      "score": 44,
+      "summary": "Watched resource candidate: Credit Plug (youtube_channel).",
+      "recommendation": "Approved for autonomous internal research only. Scheduler remains disabled until Ray approves activation.",
+      "next_action": "Use manual dry-run watch/backfill; do not scrape broadly or download media.",
+      "risk_level": "medium",
+      "proof_source": "manual_fixture",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "enrichment_source": "deterministic",
+        "summary": "Research candidate for credit repair   business credit   business funding: Credit Plug.",
+        "score": 44,
+        "score_label": "low",
+        "category": "credit_funding_readiness",
+        "destination": "GoClear/Apex Revenue Hub",
+        "pros": [
+          "GoClear/Apex Revenue Hub relevance detected.",
+          "Overall score: 44/100."
+        ],
+        "cons": [
+          "Needs Ray review before public/client-facing use."
+        ],
+        "recommendation": "Route to GoClear/Apex Revenue Hub for review and smallest safe experiment planning.",
+        "proposed_schedule": "Manual review in the next department digest; scheduler remains disabled.",
+        "next_action": "Create a safe experiment card or park after review.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "compliance_review"
+        ],
+        "approval_required": false,
+        "internal_review_requested": true,
+        "hermes_memory_summary": "Credit Plug: credit_funding_readiness -> GoClear/Apex Revenue Hub; score=44/100.",
+        "source_summary": "Research candidate for credit repair   business credit   business funding: Credit Plug.",
+        "scores": {
+          "money_potential": 58,
+          "goclear_apex_relevance": 70,
+          "seo_potential": 40,
+          "affiliate_potential": 20,
+          "content_potential": 25,
+          "implementation_difficulty": 40,
+          "compliance_risk": 20,
+          "urgency": 35,
+          "uniqueness": 50,
+          "testability": 30,
+          "overall_score": 44
+        },
+        "paper_only": false,
+        "live_trading_blocked": false,
+        "enriched_at": "2026-06-26T17:08:38.845057+00:00"
+      },
+      "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@creditplug",
+      "resource": {
+        "resource_id": "ray_youtube_creditplug",
+        "resource_name": "Credit Plug",
+        "resource_type": "youtube_channel",
+        "resource_url": "https://www.youtube.com/@creditplug",
+        "category": "credit_repair | business_credit | business_funding",
+        "department_destination": [
+          "Source Intake",
+          "Opportunity Lab",
+          "SEO / Marketing",
+          "GoClear / Apex",
+          "Creative Studio"
+        ],
+        "watch_frequency": "weekly, schedule-ready only",
+        "enabled": true,
+        "approved_by_ray": true,
+        "risk_level": "medium",
+        "scrape_policy": "metadata/transcript-only, bounded, no media download",
+        "last_checked_at": null,
+        "last_seen_item_id": null,
+        "last_seen_item_url": null,
+        "last_seen_item_published_at": null,
+        "backfill_status": "manual_dry_run_ready",
+        "watch_status": "manual_dry_run_ready",
+        "notes": "Research for credit repair, business credit, funding, content offers, SEO opportunities, and GoClear positioning."
+      },
+      "duplicate_keys": [
+        "https://www.youtube.com/@creditplug",
+        "@creditplug",
+        "youtube_channel"
+      ]
+    },
+    {
+      "title": "Michael Ionita",
+      "source_url": "https://www.youtube.com/@michaelionita",
+      "source_type": "youtube_channel",
+      "category": "ai_tooling",
+      "department_destination": "Ops & Improvements",
+      "owner_tab": "ops",
+      "score": 38,
+      "summary": "Watched resource candidate: Michael Ionita (youtube_channel).",
+      "recommendation": "Approved for autonomous internal research only. Scheduler remains disabled until Ray approves activation.",
+      "next_action": "Use manual dry-run watch/backfill; do not scrape broadly or download media.",
+      "risk_level": "low",
+      "proof_source": "manual_fixture",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "enrichment_source": "deterministic",
+        "summary": "Research candidate for online business   ai tools   marketing   automation   product strategy: Michael Ionita.",
+        "score": 38,
+        "score_label": "low",
+        "category": "ai_tooling",
+        "destination": "Ops & Improvements",
+        "pros": [
+          "Ops & Improvements relevance detected.",
+          "Overall score: 38/100."
+        ],
+        "cons": [
+          "Needs validation with a small manual test."
+        ],
+        "recommendation": "Route to Ops & Improvements for review and smallest safe experiment planning.",
+        "proposed_schedule": "Manual review in the next department digest; scheduler remains disabled.",
+        "next_action": "Create a safe experiment card or park after review.",
+        "confidence": 0.7,
+        "risk_triggers": [],
+        "approval_required": false,
+        "internal_review_requested": false,
+        "hermes_memory_summary": "Michael Ionita: ai_tooling -> Ops & Improvements; score=38/100.",
+        "source_summary": "Research candidate for online business   ai tools   marketing   automation   product strategy: Michael Ionita.",
+        "scores": {
+          "money_potential": 20,
+          "goclear_apex_relevance": 25,
+          "seo_potential": 40,
+          "affiliate_potential": 20,
+          "content_potential": 25,
+          "implementation_difficulty": 55,
+          "compliance_risk": 8,
+          "urgency": 35,
+          "uniqueness": 50,
+          "testability": 50,
+          "overall_score": 38
+        },
+        "paper_only": false,
+        "live_trading_blocked": false,
+        "enriched_at": "2026-06-26T17:08:38.845631+00:00"
+      },
+      "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@michaelionita",
+      "resource": {
+        "resource_id": "ray_youtube_michaelionita",
+        "resource_name": "Michael Ionita",
+        "resource_type": "youtube_channel",
+        "resource_url": "https://www.youtube.com/@michaelionita",
+        "category": "online_business | ai_tools | marketing | automation | product_strategy",
+        "department_destination": [
+          "Source Intake",
+          "Opportunity Lab",
+          "SEO / Marketing",
+          "Creative Studio",
+          "Ops & Improvements"
+        ],
+        "watch_frequency": "weekly, schedule-ready only",
+        "enabled": true,
+        "approved_by_ray": true,
+        "risk_level": "low_medium",
+        "scrape_policy": "metadata/transcript-only, bounded, no media download",
+        "last_checked_at": null,
+        "last_seen_item_id": null,
+        "last_seen_item_url": null,
+        "last_seen_item_published_at": null,
+        "backfill_status": "manual_dry_run_ready",
+        "watch_status": "manual_dry_run_ready",
+        "notes": "Research for online business ideas, AI automation, marketing, offer/product strategy, and content testing."
+      },
+      "duplicate_keys": [
+        "https://www.youtube.com/@michaelionita",
+        "@michaelionita",
+        "youtube_channel"
+      ]
+    },
+    {
+      "title": "Alec Delpuech",
+      "source_url": "https://www.youtube.com/@alecdelpuech",
+      "source_type": "youtube_channel",
+      "category": "ai_tooling",
+      "department_destination": "Ops & Improvements",
+      "owner_tab": "ops",
+      "score": 39,
+      "summary": "Watched resource candidate: Alec Delpuech (youtube_channel).",
+      "recommendation": "Approved for autonomous internal research only. Scheduler remains disabled until Ray approves activation.",
+      "next_action": "Use manual dry-run watch/backfill; do not scrape broadly or download media.",
+      "risk_level": "low",
+      "proof_source": "manual_fixture",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "enrichment_source": "deterministic",
+        "summary": "Research candidate for online business   ai tools   marketing   content strategy: Alec Delpuech.",
+        "score": 39,
+        "score_label": "low",
+        "category": "ai_tooling",
+        "destination": "Ops & Improvements",
+        "pros": [
+          "Ops & Improvements relevance detected.",
+          "Overall score: 39/100."
+        ],
+        "cons": [
+          "Needs validation with a small manual test."
+        ],
+        "recommendation": "Route to Ops & Improvements for review and smallest safe experiment planning.",
+        "proposed_schedule": "Manual review in the next department digest; scheduler remains disabled.",
+        "next_action": "Create a safe experiment card or park after review.",
+        "confidence": 0.7,
+        "risk_triggers": [],
+        "approval_required": false,
+        "internal_review_requested": false,
+        "hermes_memory_summary": "Alec Delpuech: ai_tooling -> Ops & Improvements; score=39/100.",
+        "source_summary": "Research candidate for online business   ai tools   marketing   content strategy: Alec Delpuech.",
+        "scores": {
+          "money_potential": 20,
+          "goclear_apex_relevance": 25,
+          "seo_potential": 40,
+          "affiliate_potential": 20,
+          "content_potential": 25,
+          "implementation_difficulty": 40,
+          "compliance_risk": 8,
+          "urgency": 35,
+          "uniqueness": 50,
+          "testability": 50,
+          "overall_score": 39
+        },
+        "paper_only": false,
+        "live_trading_blocked": false,
+        "enriched_at": "2026-06-26T17:08:38.845798+00:00"
+      },
+      "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@alecdelpuech",
+      "resource": {
+        "resource_id": "ray_youtube_alecdelpuech",
+        "resource_name": "Alec Delpuech",
+        "resource_type": "youtube_channel",
+        "resource_url": "https://www.youtube.com/@alecdelpuech",
+        "category": "online_business | ai_tools | marketing | content_strategy",
+        "department_destination": [
+          "Source Intake",
+          "Opportunity Lab",
+          "SEO / Marketing",
+          "Creative Studio",
+          "Ops & Improvements"
+        ],
+        "watch_frequency": "weekly, schedule-ready only",
+        "enabled": true,
+        "approved_by_ray": true,
+        "risk_level": "low_medium",
+        "scrape_policy": "metadata/transcript-only, bounded, no media download",
+        "last_checked_at": null,
+        "last_seen_item_id": null,
+        "last_seen_item_url": null,
+        "last_seen_item_published_at": null,
+        "backfill_status": "manual_dry_run_ready",
+        "watch_status": "manual_dry_run_ready",
+        "notes": "Research for business/product strategy, AI, marketing, content ideas, and experiments."
+      },
+      "duplicate_keys": [
+        "https://www.youtube.com/@alecdelpuech",
+        "@alecdelpuech",
+        "youtube_channel"
+      ]
+    },
+    {
+      "title": "Stedman Waiters",
+      "source_url": "https://www.youtube.com/@StedmanWaiters",
+      "source_type": "youtube_channel",
+      "category": "public_research",
+      "department_destination": "Source Intake",
+      "owner_tab": "intake",
+      "score": 34,
+      "summary": "Watched resource candidate: Stedman Waiters (youtube_channel).",
+      "recommendation": "Approved for autonomous internal research only. Scheduler remains disabled until Ray approves activation.",
+      "next_action": "Use manual dry-run watch/backfill; do not scrape broadly or download media.",
+      "risk_level": "medium",
+      "proof_source": "manual_fixture",
+      "project_enrichment": {
+        "enrichment_status": "scored",
+        "enrichment_source": "deterministic",
+        "summary": "Research candidate for trading strategy   online business   market research: Stedman Waiters.",
+        "score": 34,
+        "score_label": "low",
+        "category": "public_research",
+        "destination": "Source Intake",
+        "pros": [
+          "Source Intake relevance detected.",
+          "Overall score: 34/100."
+        ],
+        "cons": [
+          "Needs Ray review before public/client-facing use."
+        ],
+        "recommendation": "Route to Source Intake for review and smallest safe experiment planning.",
+        "proposed_schedule": "Manual review in the next department digest; scheduler remains disabled.",
+        "next_action": "Create a safe experiment card or park after review.",
+        "confidence": 0.7,
+        "risk_triggers": [
+          "compliance_review"
+        ],
+        "approval_required": false,
+        "internal_review_requested": true,
+        "hermes_memory_summary": "Stedman Waiters: public_research -> Source Intake; score=34/100.",
+        "source_summary": "Research candidate for trading strategy   online business   market research: Stedman Waiters.",
+        "scores": {
+          "money_potential": 20,
+          "goclear_apex_relevance": 25,
+          "seo_potential": 40,
+          "affiliate_potential": 20,
+          "content_potential": 25,
+          "implementation_difficulty": 40,
+          "compliance_risk": 20,
+          "urgency": 35,
+          "uniqueness": 50,
+          "testability": 30,
+          "overall_score": 34
+        },
+        "paper_only": false,
+        "live_trading_blocked": false,
+        "enriched_at": "2026-06-26T17:08:38.845933+00:00"
+      },
+      "unique_key": "watched_resource:youtube_channel:https://www.youtube.com/@stedmanwaiters",
+      "resource": {
+        "resource_id": "ray_youtube_stedmanwaiters",
+        "resource_name": "Stedman Waiters",
+        "resource_type": "youtube_channel",
+        "resource_url": "https://www.youtube.com/@StedmanWaiters",
+        "category": "trading_strategy | online_business | market_research",
+        "department_destination": [
+          "Source Intake",
+          "Trading Lab",
+          "Opportunity Lab",
+          "SEO / Marketing"
+        ],
+        "watch_frequency": "weekly, schedule-ready only",
+        "enabled": true,
+        "approved_by_ray": true,
+        "risk_level": "medium_high",
+        "scrape_policy": "metadata/transcript-only, bounded, no media download, paper-only",
+        "last_checked_at": null,
+        "last_seen_item_id": null,
+        "last_seen_item_url": null,
+        "last_seen_item_published_at": null,
+        "backfill_status": "manual_dry_run_ready",
+        "watch_status": "manual_dry_run_ready",
+        "notes": "Research for trading strategies, market ideas, educational content, and paper-only Trading Lab experiments."
+      },
+      "duplicate_keys": [
+        "https://www.youtube.com/@stedmanwaiters",
+        "@stedmanwaiters",
+        "youtube_channel"
+      ]
+    }
+  ],
+  "counts": {
+    "resources": 4,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "summary": "Watched resources loaded from safe fixture/manual input. Scheduler remains disabled.",
+  "live": {
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0,
+    "results": []
+  }
+}

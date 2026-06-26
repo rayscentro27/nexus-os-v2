@@ -1,6 +1,6 @@
 # YouTube Channel Watchlist
 
-- generated_at: 2026-06-26T15:38:20.510047+00:00
+- generated_at: 2026-06-26T17:08:38.845047+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -9,8 +9,8 @@
 - publish_send_trade_deploy: false
 
 ## Summary
-Watchlist entries are disabled by default until Ray approves. No capture or scraping ran.
+Watchlist entries loaded from explicit fixture/manual input. No capture, scraping, media download, or scheduling ran.
 
 ## Counts
-- channels: 2
-- enabled: 0
+- channels: 4
+- enabled: 4

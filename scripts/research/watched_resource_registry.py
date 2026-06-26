@@ -17,19 +17,25 @@ MANUAL = ROOT / "reports" / "manual_publish" / "watched_resource_registry_latest
 
 
 def resource_to_candidate(row: dict) -> dict:
+    category = str(row["category"]).replace("_", " ").replace("|", " ")
     item = candidate(
         row["resource_name"],
         row["resource_url"],
-        row["category"].replace("_", " "),
+        category,
         source_type=row["resource_type"],
-        proof_source="tests/fixtures/research/sample_watched_resources.json",
+        proof_source="manual_fixture",
     )
     item.update({
-        "unique_key": f"watched_resource:{row['resource_id']}",
+        "unique_key": f"watched_resource:{row['resource_type']}:{row['resource_url'].rstrip('/').lower()}",
         "resource": row,
         "summary": f"Watched resource candidate: {row['resource_name']} ({row['resource_type']}).",
-        "recommendation": "Approve and enable only after Ray reviews the source and scrape policy.",
-        "next_action": "Keep disabled until Ray approves watch/backfill.",
+        "recommendation": "Approved for autonomous internal research only. Scheduler remains disabled until Ray approves activation.",
+        "next_action": "Use manual dry-run watch/backfill; do not scrape broadly or download media.",
+        "duplicate_keys": [
+            row["resource_url"].rstrip("/").lower(),
+            row["resource_url"].rstrip("/").lower().split("/")[-1],
+            row["resource_type"],
+        ],
     })
     return item
 

@@ -49,3 +49,5 @@ Scheduler activation remains disabled until Ray approves it in a future Schedule
 Ray Review Queue is for true decisions only. It should not receive every scored transcript, SEO keyword, affiliate opportunity, watched resource update, internal report, or paper-only trading research card.
 
 Review Queue items are created for outbound/risky execution decisions, connector/scheduler/production decisions, high-value strategic choices, and compliance-sensitive actions.
+
+For Ray's watched YouTube resources, transcript/video scoring, routing, and reports are autonomous internal research. They should not create Ray Review Queue items unless a finding becomes campaign-ready, send-ready, scheduler-ready, client-contact, production-change, or live trading/execution-related.

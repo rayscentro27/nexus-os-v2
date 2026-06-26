@@ -1,0 +1,47 @@
+{
+  "ok": true,
+  "generated_at": "2026-06-26",
+  "channels": 4,
+  "enabled_for_manual_dry_run": 4,
+  "registry_dry_run": {
+    "ok": true,
+    "resources": 4,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "watchlist_dry_run": {
+    "ok": true,
+    "channels": 4,
+    "enabled": 4
+  },
+  "watch_dry_run": {
+    "ok": true,
+    "resources_checked": 4,
+    "resources_enabled": 4,
+    "new_items_found": 4,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "backfill_dry_run": {
+    "ok": true,
+    "channels_considered": 4,
+    "proposed_items": 12,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  },
+  "youtube_report_dry_run": {
+    "ok": true,
+    "items_considered": 17,
+    "top_items": 10,
+    "ray_review_items_created": 0
+  },
+  "optional_live_metadata_import": false,
+  "scheduler_activated": false,
+  "media_downloaded": false,
+  "broad_scraping": false,
+  "external_ai_called": false,
+  "ray_review_queue_flood": false
+}

@@ -55,3 +55,9 @@ python3 scripts/research/watched_resource_registry.py --dry-run --json
 ```
 
 Resources are disabled by default unless explicitly approved/enabled.
+
+## Ray YouTube resources
+
+Ray's first approved/enabled manual YouTube watchlist is stored in `tests/fixtures/research/ray_watched_youtube_channels.json`.
+
+These resources are enabled for manual dry-run/watch only. Scheduler activation remains disabled until Ray approves it separately.

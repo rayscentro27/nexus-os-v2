@@ -1,6 +1,6 @@
 # Watched Resource Watch
 
-- generated_at: 2026-06-26T15:37:06.461169+00:00
+- generated_at: 2026-06-26T17:09:38.370391+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -9,10 +9,12 @@
 - publish_send_trade_deploy: false
 
 ## Summary
-Watch mode checked safe fixtures only. Scheduler remains disabled.
+Watch mode checked explicit fixture/manual input only. YouTube live metadata lookup is not configured; scheduler remains disabled.
 
 ## Counts
-- new_items_found: 3
+- resources_checked: 4
+- resources_enabled: 4
+- new_items_found: 4
 - created: 0
 - duplicates: 0
 - failed: 0

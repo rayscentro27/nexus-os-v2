@@ -1,6 +1,6 @@
 # Watched Resource Registry
 
-- generated_at: 2026-06-26T15:37:06.460966+00:00
+- generated_at: 2026-06-26T17:08:38.845968+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -12,7 +12,7 @@
 Watched resources loaded from safe fixture/manual input. Scheduler remains disabled.
 
 ## Counts
-- resources: 3
+- resources: 4
 - created: 0
 - duplicates: 0
 - failed: 0

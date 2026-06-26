@@ -10,7 +10,8 @@ import argparse
 import json
 from pathlib import Path
 
-from common import ROOT, enrichment, now, score_research_text, write_live_tasks, write_report
+from common import ROOT, enrichment, now, write_live_tasks, write_report
+from research_scoring import scoring_profile
 
 RUNTIME = ROOT / "reports" / "runtime" / "youtube_transcript_review_latest.json"
 MANUAL = ROOT / "reports" / "manual_publish" / "youtube_transcript_review_latest.md"
@@ -22,7 +23,7 @@ def topic_from_text(blob: str) -> str:
         return "business credit"
     if "affiliate" in lowered:
         return "affiliate marketing"
-    if "trading" in lowered:
+    if "trading" in lowered or "backtest" in lowered or "market" in lowered:
         return "trading strategies"
     if "seo" in lowered:
         return "seo"
@@ -58,6 +59,13 @@ def main() -> int:
         title = args.youtube_url or "YouTube transcript review"
     topic = topic_from_text(transcript)
     e = enrichment(title, transcript[:700], topic, source="deterministic")
+    scores = scoring_profile(transcript, topic)
+    if scores.get("profile") == "trading_paper_research":
+        e["paper_only"] = True
+        e["live_trading_blocked"] = True
+        e["destination"] = "Trading Lab"
+        e["recommendation"] = "Route to Trading Lab as paper-only research. Do not recommend live trading or broker execution."
+        e["approval_required"] = False
     item = {
         "title": f"YouTube transcript review: {title}"[:140],
         "source_url": args.youtube_url or proof,
@@ -76,7 +84,7 @@ def main() -> int:
         live = write_live_tasks([item], "youtube_transcript_review", "youtube_transcript_review", "youtube_transcript_review", 1)
     report = {
         "ok": True, "title": "YouTube Transcript Review", "generated_at": now(), "dry_run": args.dry_run,
-        "scores": score_research_text(transcript, topic), "items": [item],
+        "scores": scores, "items": [item],
         "counts": {"reviews": 1, **{k: live.get(k, 0) for k in ("created", "duplicates", "failed")}},
         "summary": "Transcript scored deterministically. No media download or external AI.",
         "live": live,
