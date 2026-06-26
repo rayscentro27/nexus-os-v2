@@ -36,8 +36,11 @@ export function DepartmentProjectSummary({ project }: { project: NexusProject | 
         <Pill status={project.status} />
       </div>
       <div className="dept-summary-grid">
-        <div><span className="dept-kicker">Score</span><strong>{project.score == null ? 'Not scored' : `${project.score}/100`}</strong></div>
+        <div><span className="dept-kicker">Score</span><strong>{project.score == null ? 'Not scored' : `${project.score}/100 · ${project.score_label}`}</strong></div>
         <div><span className="dept-kicker">Review</span><strong>{getProjectReviewState(project)}</strong></div>
+        <div><span className="dept-kicker">Enrichment</span><strong>{project.enrichment_status.replaceAll('_', ' ')}</strong></div>
+        <div><span className="dept-kicker">Category</span><strong>{project.category || 'Uncategorized'}</strong></div>
+        <div><span className="dept-kicker">Destination</span><strong>{project.destination || project.department.replaceAll('_', ' ')}</strong></div>
         <div><span className="dept-kicker">Updated</span><strong>{timeAgo(project.updated_at || project.created_at) || 'Unknown'}</strong></div>
       </div>
       {project.source_url && (
@@ -71,7 +74,7 @@ export function DepartmentProjectSummary({ project }: { project: NexusProject | 
         </div>
       )}
       <div className="meta muted">
-        Data: {project.data_sources.join(', ') || 'live Supabase source'}{project.proof_event_id ? ` · proof ${project.proof_event_id}` : ''}
+        Data: {project.data_sources.join(', ') || 'live Supabase source'} · enrichment: {project.enrichment_source}{project.confidence != null ? ` · confidence ${project.confidence}` : ''}{project.proof_event_id ? ` · proof ${project.proof_event_id}` : ''}
       </div>
     </div>
   );

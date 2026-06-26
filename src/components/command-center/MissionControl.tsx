@@ -113,6 +113,8 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   const needs = all.filter((p) => p.status === 'needs_review' || p.approval_required).length;
   const blocked = all.filter((p) => p.status === 'blocked').length;
   const scheduled = all.filter((p) => p.status === 'scheduled').length;
+  const enriched = all.filter((p) => ['enriched', 'scored', 'needs_review'].includes(p.enrichment_status)).length;
+  const missingEnrichment = all.filter((p) => p.enrichment_status.startsWith('pending') || p.enrichment_status === 'metadata_saved').length;
   const top = all.find((p) => p.approval_required || p.status === 'needs_review' || p.status === 'blocked') ?? all[0] ?? null;
 
   return (
@@ -128,6 +130,8 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
         <span className="nx-pill">needs review {needs}</span>
         <span className="nx-pill">blocked {blocked}</span>
         <span className="nx-pill">scheduled {scheduled}</span>
+        <span className="nx-pill">enriched {enriched}</span>
+        <span className="nx-pill">missing enrichment {missingEnrichment}</span>
       </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Hermes top recommendation: {top ? getProjectHermesRecommendation(top) : 'No live department projects yet. Start with Source Intake or run the manual watch report.'}
@@ -144,12 +148,16 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
                 <span>review {projects.filter((p) => p.status === 'needs_review' || p.approval_required).length}</span>
                 <span>blocked {projects.filter((p) => p.status === 'blocked').length}</span>
                 <span>scheduled {projects.filter((p) => p.status === 'scheduled').length}</span>
+                <span>enriched {projects.filter((p) => ['enriched', 'scored', 'needs_review'].includes(p.enrichment_status)).length}</span>
               </div>
               <div className="meta muted" style={{ marginTop: 8 }}>
                 Last update: {last ? new Date(last).toLocaleDateString() : 'none'}.
               </div>
               <div className="meta" style={{ marginTop: 6 }}>
                 Next decision: {projects.find((p) => p.approval_required || p.status === 'needs_review')?.next_action || 'No decision pending.'}
+              </div>
+              <div className="meta" style={{ marginTop: 6 }}>
+                Top recommendation: {projects[0] ? getProjectHermesRecommendation(projects[0]) : 'No live projects yet.'}
               </div>
             </button>
           );

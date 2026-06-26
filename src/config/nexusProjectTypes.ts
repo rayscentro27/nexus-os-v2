@@ -27,6 +27,45 @@ export type NexusProjectStatus =
 
 export type NexusProjectPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export type NexusEnrichmentStatus =
+  | 'metadata_saved'
+  | 'pending_transcript'
+  | 'pending_notebooklm'
+  | 'enriched'
+  | 'scored'
+  | 'needs_review'
+  | 'failed';
+
+export type NexusEnrichmentSource =
+  | 'deterministic'
+  | 'transcript_capture'
+  | 'notebooklm'
+  | 'manual'
+  | 'fallback';
+
+export interface NexusProjectEnrichment {
+  enrichment_status: NexusEnrichmentStatus;
+  summary: string;
+  score: number | null;
+  score_label: string;
+  category: string;
+  destination: string;
+  pros: string[];
+  cons: string[];
+  recommendation: string;
+  proposed_schedule: string;
+  next_action: string;
+  confidence: number | null;
+  risk_triggers: string[];
+  approval_required: boolean;
+  hermes_memory_summary: string;
+  source_summary: string;
+  enrichment_source: NexusEnrichmentSource;
+  enriched_at: string | null;
+  reviewed_at: string | null;
+  proof_event_id: string | null;
+}
+
 export interface NexusProject {
   project_id: string;
   title: string;
@@ -35,7 +74,11 @@ export interface NexusProject {
   project_type: string;
   status: NexusProjectStatus;
   score: number | null;
+  score_label: string;
   priority: NexusProjectPriority;
+  enrichment_status: NexusEnrichmentStatus;
+  enrichment_source: NexusEnrichmentSource;
+  confidence: number | null;
   summary: string;
   pros: string[];
   cons: string[];
@@ -43,6 +86,9 @@ export interface NexusProject {
   proposed_changes: string[];
   proposed_schedule: string;
   next_action: string;
+  hermes_memory_summary: string;
+  category: string;
+  destination: string;
   approval_required: boolean;
   feedback_requested: boolean;
   risk_triggers: string[];
@@ -54,6 +100,8 @@ export interface NexusProject {
   related_task_request_id: string | null;
   related_approval_id: string | null;
   proof_event_id: string | null;
+  enriched_at: string | null;
+  reviewed_at: string | null;
   created_at: string;
   updated_at: string;
   raw?: Record<string, unknown>;

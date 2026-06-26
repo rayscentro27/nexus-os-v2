@@ -23,7 +23,7 @@ export function HermesAdvisorWorkspace({ project }: { project: NexusProject | nu
           <div className="dept-advice-grid">
             <div>
               <div className="dept-kicker">Why this matters</div>
-              <div className="meta">{project.summary || 'The source exists now, so metadata can be reviewed before enrichment finishes.'}</div>
+              <div className="meta">{project.hermes_memory_summary || project.summary || 'I can review saved metadata now.'}</div>
             </div>
             <div>
               <div className="dept-kicker">Pros</div>

@@ -29,6 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts" / "social"))
 import _supabase as sb  # noqa: E402
+from nexus_enrichment import build_project_enrichment  # noqa: E402
 
 WRAPPER = ROOT / "scripts" / "intake" / "run_existing_youtube_monitor.py"
 MAX_LIMIT = 3
@@ -112,6 +113,78 @@ def update_task(tid: str, status: str, patch_payload: dict, result_summary: str)
               {"status": status, "payload": base, "result_summary": result_summary[:300], "updated_at": now()})
 
 
+def fetch_source(source_id: str | None, url: str) -> dict:
+    if source_id:
+        st, rows = sb.get("research_sources", f"select=*&id=eq.{sb.q(source_id)}&limit=1")
+        if isinstance(rows, list) and rows:
+            return rows[0]
+    st, rows = sb.get("research_sources", f"select=*&url=eq.{sb.q(url)}&limit=1")
+    return rows[0] if isinstance(rows, list) and rows else {}
+
+
+def fetch_transcript_review(source: dict, url: str) -> dict:
+    source_id = source.get("id")
+    if source_id:
+        st, rows = sb.get("transcript_reviews",
+                          f"select=*&metadata->>research_source_id=eq.{sb.q(source_id)}&order=created_at.desc&limit=1")
+        if isinstance(rows, list) and rows:
+            return rows[0]
+    if url:
+        st, rows = sb.get("transcript_reviews",
+                          f"select=*&metadata->>source_url=eq.{sb.q(url)}&order=created_at.desc&limit=1")
+        if isinstance(rows, list) and rows:
+            return rows[0]
+    title = source.get("title")
+    if title:
+        st, rows = sb.get("transcript_reviews", f"select=*&title=eq.{sb.q(title)}&order=created_at.desc&limit=1")
+        if isinstance(rows, list) and rows:
+            return rows[0]
+    return {}
+
+
+def write_project_enrichment(task_id: str, source_id: str | None, url: str, task_payload: dict,
+                             wrapper_item: dict | None = None, existing_event_id: str | None = None) -> dict:
+    source = fetch_source(source_id, url)
+    review = fetch_transcript_review(source, url)
+    enrichment_source = "transcript_capture" if (wrapper_item or {}).get("transcript_status") == "captured" or review else "deterministic"
+    enrichment = build_project_enrichment(
+        source=source or {"title": task_payload.get("title"), "url": url, "snippet": task_payload.get("snippet"),
+                          "metadata": {"transcript_status": task_payload.get("transcript_status") or "pending_transcript"}},
+        transcript_review=review,
+        task_payload=task_payload,
+        proof_event_id=existing_event_id,
+        enrichment_source=enrichment_source,
+    )
+    st, ev = sb.insert("nexus_events", {
+        "lane": "research", "action": "source_enriched_for_project_card",
+        "status": "success" if enrichment["enrichment_status"] != "failed" else "failed",
+        "source": "capture_queue_worker",
+        "title": (source.get("title") or task_payload.get("title") or url)[:80],
+        "summary": f"{enrichment['enrichment_status']} · {enrichment['category']} -> {enrichment['destination']} · score {enrichment['score']}",
+        "payload": {"task_request_id": task_id, "research_source_id": source.get("id"),
+                    "transcript_review_id": review.get("id"), "source_url": url,
+                    "project_enrichment": enrichment},
+    })
+    proof_id = ev[0]["id"] if isinstance(ev, list) and ev else existing_event_id
+    enrichment["proof_event_id"] = proof_id
+    if source.get("id"):
+        meta = (source.get("metadata") or {}) | {
+            "project_enrichment": enrichment,
+            "enrichment_status": enrichment["enrichment_status"],
+            "proof_event_id": proof_id,
+        }
+        sb.update("research_sources", f"id=eq.{sb.q(source['id'])}", {"metadata": meta})
+    if review.get("id"):
+        meta = (review.get("metadata") or {}) | {
+            "project_enrichment": enrichment,
+            "research_source_id": source.get("id"),
+            "source_url": url,
+            "proof_event_id": proof_id,
+        }
+        sb.update("transcript_reviews", f"id=eq.{sb.q(review['id'])}", {"metadata": meta})
+    return enrichment
+
+
 def run_wrapper(url: str) -> tuple[int, dict, str]:
     cmd = ["python3", str(WRAPPER), "--source-url", url, "--once", "--limit", "1",
            "--no-external-ai", "--write-events", "--no-dry-run"]
@@ -145,16 +218,25 @@ def process_one(row: dict, dry: bool) -> dict:
     ok = bool(data.get("ok")) and bool(w)
     if ok:
         refs = w.get("refs") or {}
-        summary = f"captured: {str(w.get('title', ''))[:50]} | {w.get('category')} -> {w.get('destination')} | score {w.get('score')} | transcript {w.get('transcript_status')}"
+        enrichment = write_project_enrichment(row["id"], refs.get("research_source_id"), url, p, w, w.get("nexus_event_id"))
+        summary = f"captured+enriched: {str(w.get('title', ''))[:50]} | {enrichment.get('category')} -> {enrichment.get('destination')} | score {enrichment.get('score')} | {enrichment.get('enrichment_status')}"
         update_task(row["id"], "done",
                     {"capture_status": "captured", "completed_at": now(),
                      "research_source_id": refs.get("research_source_id"),
-                     "nexus_event_id": w.get("nexus_event_id"), "transcript_status": w.get("transcript_status")},
+                     "nexus_event_id": w.get("nexus_event_id"), "transcript_status": w.get("transcript_status"),
+                     "project_enrichment": enrichment, "enrichment_status": enrichment.get("enrichment_status")},
                     summary)
         sb.event("research", "capture_worker_completed", "success", (str(w.get("title")) or url)[:80], summary,
                  payload={"task_request_id": row["id"], "research_source_id": refs.get("research_source_id")})
         return {"request_id": row["id"], "ok": True, "status": "done", "result_summary": summary,
                 "research_source_id": refs.get("research_source_id")}
+    source = fetch_source(None, url)
+    if source:
+        enrichment = write_project_enrichment(row["id"], source.get("id"), url, p, None, None)
+        update_task(row["id"], "requested",
+                    {"capture_status": "queued", "enrichment_status": enrichment.get("enrichment_status"),
+                     "project_enrichment": enrichment, "research_source_id": source.get("id")},
+                    "source metadata saved; transcript enrichment pending")
     emsg = f"capture failed (rc={rc}): {err or json.dumps(data)[:200]}"
     update_task(row["id"], "failed", {"capture_status": "failed", "completed_at": now()}, emsg)
     sb.event("research", "capture_worker_failed", "failed", url[:80], emsg[:200], payload={"task_request_id": row["id"]})

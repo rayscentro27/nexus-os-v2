@@ -42,6 +42,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts" / "social"))
 import _supabase as sb  # noqa: E402
+from nexus_enrichment import build_project_enrichment  # noqa: E402
 
 RATING_MODEL_VERSION = "v1"
 MAX_LIMIT = 3  # hard cap; never process more than this per run
@@ -301,9 +302,26 @@ def build_record(url: str, title: str | None, text: str, no_external_ai: bool, m
 def write_supabase(rec: dict, run_id: str | None) -> dict:
     """Insert into research_sources + intake_events + transcript_reviews (dedup by url). Live only."""
     refs = {}
-    existing = sb.get("research_sources", f"select=id&url=eq.{sb.q(rec['source_url'])}&limit=1")[1]
+    existing = sb.get("research_sources", f"select=*&url=eq.{sb.q(rec['source_url'])}&limit=1")[1]
     if isinstance(existing, list) and existing:
-        return {"dedup": True, "research_source_id": existing[0]["id"]}
+        source = existing[0]
+        enrichment = build_project_enrichment(
+            source=source,
+            rating=rec["rating"],
+            enrichment_source="transcript_capture" if rec["transcript_status"] == "captured" else "deterministic",
+        )
+        meta = (source.get("metadata") or {}) | {"project_enrichment": enrichment, "enrichment_status": enrichment["enrichment_status"]}
+        sb.update("research_sources", f"id=eq.{sb.q(source['id'])}", {"metadata": meta})
+        return {"dedup": True, "research_source_id": source["id"]}
+    preliminary_enrichment = build_project_enrichment(
+        source={
+            "title": rec["title"], "url": rec["source_url"], "snippet": rec["plain_english_summary"],
+            "why_it_matters": rec["why_it_matters"], "confidence": rec["rating"]["scores"]["confidence"],
+            "metadata": {"transcript_status": rec["transcript_status"], "review_status": rec["review_status"], **rec["rating"]},
+        },
+        rating=rec["rating"],
+        enrichment_source="transcript_capture" if rec["transcript_status"] == "captured" else "deterministic",
+    )
     st, src = sb.insert("research_sources", {
         "research_run_id": run_id, "source_type": rec["source_type"], "title": rec["title"],
         "url": rec["source_url"], "author": rec["creator"], "accessed_at": rec["captured_at"],
@@ -311,6 +329,8 @@ def write_supabase(rec: dict, run_id: str | None) -> dict:
         "confidence": rec["rating"]["scores"]["confidence"],
         "metadata": {"rating_model_version": RATING_MODEL_VERSION, "video_id": rec["video_id"],
                      "transcript_status": rec["transcript_status"], "review_status": rec["review_status"],
+                     "project_enrichment": preliminary_enrichment,
+                     "enrichment_status": preliminary_enrichment["enrichment_status"],
                      **rec["rating"]},
     })
     refs["research_source_id"] = src[0]["id"] if isinstance(src, list) and src else None
@@ -321,7 +341,7 @@ def write_supabase(rec: dict, run_id: str | None) -> dict:
     })
     refs["intake_event_id"] = ie[0]["id"] if isinstance(ie, list) and ie else None
     r = rec["rating"]; sc = r["scores"]
-    sb.insert("transcript_reviews", {
+    review_row = {
         "intake_event_id": refs["intake_event_id"], "title": rec["title"],
         "core_idea": rec["plain_english_summary"], "category": r["primary_category"],
         "usefulness_score": round(r["total_opportunity_score"] / 10),
@@ -331,8 +351,26 @@ def write_supabase(rec: dict, run_id: str | None) -> dict:
         "decision": r["priority"], "recommended_action": rec["recommended_next_action"],
         "tables_to_update": [r["recommended_destination"]],
         "claim_flags": r["reasons_against"],
-        "metadata": {"rating_model_version": RATING_MODEL_VERSION, **r},
-    })
+        "metadata": {"rating_model_version": RATING_MODEL_VERSION, "research_source_id": refs["research_source_id"],
+                     "source_url": rec["source_url"], **r},
+    }
+    enrichment = build_project_enrichment(
+        source={"title": rec["title"], "url": rec["source_url"], "snippet": rec["plain_english_summary"],
+                "why_it_matters": rec["why_it_matters"], "confidence": rec["rating"]["scores"]["confidence"],
+                "metadata": {"transcript_status": rec["transcript_status"], "review_status": rec["review_status"], **rec["rating"]}},
+        transcript_review=review_row,
+        rating=rec["rating"],
+        enrichment_source="transcript_capture" if rec["transcript_status"] == "captured" else "deterministic",
+    )
+    review_row["metadata"]["project_enrichment"] = enrichment
+    st, tr = sb.insert("transcript_reviews", review_row)
+    refs["transcript_review_id"] = tr[0]["id"] if isinstance(tr, list) and tr else None
+    if refs["research_source_id"]:
+        sb.update("research_sources", f"id=eq.{sb.q(refs['research_source_id'])}",
+                  {"metadata": {"rating_model_version": RATING_MODEL_VERSION, "video_id": rec["video_id"],
+                                "transcript_status": rec["transcript_status"], "review_status": rec["review_status"],
+                                "project_enrichment": enrichment, "enrichment_status": enrichment["enrichment_status"],
+                                **rec["rating"]}})
     return refs
 
 

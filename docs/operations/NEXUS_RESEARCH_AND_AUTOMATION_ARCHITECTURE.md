@@ -12,6 +12,7 @@ Instant mode behavior:
 - Mark enrichment as pending without making the UI queue-first.
 - Allow Hermes to say: "I can review the saved metadata now. Summary/enrichment is pending."
 - File safe enrichment/capture work through existing `task_requests` and policy helpers.
+- Store deterministic card enrichment in `research_sources.metadata.project_enrichment`, then prefer richer `transcript_reviews.metadata.project_enrichment` when available.
 - Do not call external AI on sensitive/private/customer text.
 - Do not run broad scraping or browser capture.
 
@@ -30,6 +31,8 @@ Planned feeds:
 - Process health scans feed Agent Jobs, Ops, and Command Center.
 
 Schedulers are not activated by this UI work. Future scheduler activation must go through Approvals.
+
+Deterministic capture/enrichment results flow back into department project cards through the canonical `project_enrichment` payload. NotebookLM enrichment can later write the same payload with `enrichment_source=notebooklm`.
 
 ## C. Review/Approval Mode
 

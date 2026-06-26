@@ -4,7 +4,18 @@ Department rooms use one project/work card shape defined in `src/config/nexusPro
 
 ## Fields
 
-`project_id`, `title`, `department`, `owner_tab`, `project_type`, `status`, `score`, `priority`, `summary`, `pros`, `cons`, `recommendation`, `proposed_changes`, `proposed_schedule`, `next_action`, `approval_required`, `feedback_requested`, `risk_triggers`, `visual_url`, `source_url`, `source_title`, `data_sources`, `related_process_id`, `related_task_request_id`, `related_approval_id`, `proof_event_id`, `created_at`, `updated_at`.
+`project_id`, `title`, `department`, `owner_tab`, `project_type`, `status`, `score`, `score_label`, `priority`, `enrichment_status`, `enrichment_source`, `confidence`, `summary`, `pros`, `cons`, `recommendation`, `proposed_changes`, `proposed_schedule`, `next_action`, `hermes_memory_summary`, `category`, `destination`, `approval_required`, `feedback_requested`, `risk_triggers`, `visual_url`, `source_url`, `source_title`, `data_sources`, `related_process_id`, `related_task_request_id`, `related_approval_id`, `proof_event_id`, `enriched_at`, `reviewed_at`, `created_at`, `updated_at`.
+
+## Canonical Enrichment Payload
+
+The card model now recognizes `project_enrichment` from existing JSON fields. The payload includes `enrichment_status`, `summary`, `score`, `score_label`, `category`, `destination`, `pros`, `cons`, `recommendation`, `proposed_schedule`, `next_action`, `confidence`, `risk_triggers`, `approval_required`, `hermes_memory_summary`, `source_summary`, `enrichment_source`, `enriched_at`, `reviewed_at`, and `proof_event_id`.
+
+Storage priority:
+
+1. `transcript_reviews.metadata.project_enrichment`
+2. `research_sources.metadata.project_enrichment`
+3. `task_requests.payload.project_enrichment`
+4. deterministic fallback from available row fields
 
 ## Statuses
 

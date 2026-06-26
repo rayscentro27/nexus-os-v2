@@ -31,14 +31,19 @@ Flags: `--once --limit N` (cap 3) · `--dry-run`/`--no-dry-run` · `--no-externa
 2. Runs once: `run_existing_youtube_monitor.py --source-url "<URL>" --once --limit 1 --no-external-ai
    --write-events --no-dry-run` (transcript-only, no media, no external AI).
 3. Parses the wrapper output for `research_source_id` / score / category / destination.
-4. On success → `status=done`, `payload.capture_status=captured`, `result_summary`, `completed_at`,
+4. Builds deterministic `project_enrichment` with `scripts/intake/nexus_enrichment.py`.
+5. Updates `research_sources.metadata.project_enrichment`, `transcript_reviews.metadata.project_enrichment`
+   when available, and `task_requests.payload.project_enrichment`.
+6. Writes proof event `source_enriched_for_project_card`.
+7. On success → `status=done`, `payload.capture_status=captured`, `result_summary`, `completed_at`,
    `research_source_id`, `nexus_event_id`; proof `capture_worker_completed`.
-5. On failure → `status=failed`, `payload.capture_status=failed`, safe error summary; proof
+8. On failure → `status=failed`, `payload.capture_status=failed`, safe error summary; proof
    `capture_worker_failed`. No endless retry.
 
 ## Tables written (live only)
 `task_requests` (status/payload/result), `nexus_events` (proofs), and — via the wrapper —
-`research_runs`/`research_sources`/`intake_events`/`transcript_reviews`. **Never** the v1 `research`
+`research_runs`/`research_sources`/`intake_events`/`transcript_reviews`. Enrichment is stored in
+existing `metadata`/`payload` JSON fields. **Never** the v1 `research`
 table, social tables, or `social_accounts`.
 
 ## Never
