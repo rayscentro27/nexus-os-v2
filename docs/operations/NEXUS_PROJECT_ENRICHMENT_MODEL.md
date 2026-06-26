@@ -63,5 +63,22 @@ Hermes reads the selected project's `hermes_memory_summary`, summary, recommenda
 ## Remaining Work
 
 - NotebookLM connector enrichment is still planned, not connected.
-- Existing historical rows may need a manual backfill if richer cards are desired without new captures.
+- Existing historical rows can be backfilled with `scripts/intake/backfill_project_enrichment.py`.
 - Future dedicated Hermes memory table migration can replace storing `hermes_memory_summary` in metadata.
+
+## Manual Backfill
+
+Dry-run:
+
+```bash
+python3 scripts/intake/backfill_project_enrichment.py --dry-run --limit 10 --no-external-ai
+```
+
+Bounded live run:
+
+```bash
+python3 scripts/intake/backfill_project_enrichment.py --no-dry-run --limit 10 --no-external-ai
+```
+
+The backfill writes only existing metadata JSON fields and proof events. It does not run capture,
+`yt-dlp`, external AI, v1 workers, publishing, sending, trading, deployment, or schedulers.
