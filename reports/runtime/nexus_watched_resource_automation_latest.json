@@ -1,0 +1,39 @@
+{
+  "ok": true,
+  "generated_at": "2026-06-26",
+  "resource_types_supported": [
+    "youtube_channel",
+    "youtube_playlist",
+    "youtube_video",
+    "rss_feed",
+    "affiliate_website",
+    "affiliate_program_page",
+    "competitor_website",
+    "seo_blog",
+    "credit_repair_resource",
+    "business_funding_resource",
+    "business_credit_resource",
+    "online_business_opportunity_resource",
+    "ai_tools_directory",
+    "ai_automation_blog_channel",
+    "trading_strategy_resource",
+    "newsletter_archive",
+    "manual_url_list"
+  ],
+  "backfill_mode_added": true,
+  "watch_mode_added": true,
+  "scheduler_activated": false,
+  "dry_runs": {
+    "registry": {"ok": true, "resources": 3},
+    "backfill": {"ok": true, "scanned": 3},
+    "watch": {"ok": true, "new_items_found": 3},
+    "youtube_watchlist": {"ok": true, "channels": 2, "enabled": 0},
+    "transcript_review": {"ok": true, "reviews": 1}
+  },
+  "live_writes": {
+    "ran": false,
+    "created": 0,
+    "duplicates": 0,
+    "failed": 0
+  }
+}

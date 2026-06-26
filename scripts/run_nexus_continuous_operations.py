@@ -569,12 +569,20 @@ def newsletter_test(drafts: list[dict], integrations: dict) -> dict:
             payload = sent[0].get("payload") or {}
             return {
                 "created": True,
-                "sent": True,
-                "status": "already_sent",
-                "message_id": payload.get("message_id"),
+                "sent": False,
+                "status": "previous_send_record_found_no_send_attempted",
+                "previous_message_id": payload.get("message_id"),
                 "recipient_configured": True,
                 "path": "reports/manual_publish/goclear_apex_test_newsletter.txt",
             }
+    if sb.ENV.get("NEXUS_WATCH_ALLOW_EMAIL_SEND", "").lower() != "true":
+        return {
+            "created": True,
+            "sent": False,
+            "status": "email_send_blocked_manual_opt_in_required",
+            "recipient_configured": bool(email),
+            "path": "reports/manual_publish/goclear_apex_test_newsletter.txt",
+        }
     if not integrations["resend"]["connected"]:
         missing = [*integrations["resend"].get("missing_names", []), *integrations["resend"].get("recipient_missing_names", [])]
         result = {"created": True, "sent": False, "status": "email_send_blocked_missing_resend", "missing_env_names": missing, "path": "reports/manual_publish/goclear_apex_test_newsletter.txt"}
@@ -601,6 +609,8 @@ def newsletter_test(drafts: list[dict], integrations: dict) -> dict:
 
 def trading_test(integrations: dict) -> dict:
     oanda = integrations["oanda"]
+    if sb.ENV.get("NEXUS_WATCH_ALLOW_BROKER_STATUS", "").lower() != "true":
+        return {"connection_tested": False, "trade_placed": False, "status": "broker_status_blocked_manual_opt_in_required", "missing_env_names": []}
     if not oanda["connected"]:
         return {"connection_tested": False, "trade_placed": False, "status": "blocked_missing_oanda_config", "missing_env_names": oanda.get("missing_names", [])}
     if oanda["live_signal"] or not oanda["demo_or_paper"]:

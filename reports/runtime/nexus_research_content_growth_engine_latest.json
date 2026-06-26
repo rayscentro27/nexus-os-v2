@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "generated_at": "2026-06-26",
+  "scheduler_activated": false,
+  "live_sample_write_ran": false,
+  "cards_created": 0,
+  "proof_events_created": 0,
+  "dry_runs": {
+    "watched_resource_registry": {"ok": true, "counts": {"resources": 3, "created": 0, "duplicates": 0, "failed": 0}},
+    "watched_resource_backfill": {"ok": true, "counts": {"scanned": 3, "created": 0, "duplicates": 0, "failed": 0}},
+    "watched_resource_watch": {"ok": true, "counts": {"new_items_found": 3, "created": 0, "duplicates": 0, "failed": 0}},
+    "research_source_scout": {"ok": true, "counts": {"candidates": 5, "created": 0, "duplicates": 0, "failed": 0}},
+    "youtube_channel_watchlist": {"ok": true, "counts": {"channels": 2, "enabled": 0}},
+    "youtube_transcript_review": {"ok": true, "counts": {"reviews": 1, "created": 0, "duplicates": 0, "failed": 0}},
+    "affiliate_opportunity_tracker": {"ok": true, "counts": {"programs": 2, "created": 0, "duplicates": 0, "failed": 0}},
+    "seo_keyword_scout": {"ok": true, "counts": {"keywords": 3, "created": 0, "duplicates": 0, "failed": 0}},
+    "seo_affiliate_content_planner": {"ok": true, "counts": {"plans": 3, "created": 0, "duplicates": 0, "failed": 0}},
+    "research_to_experiment": {"ok": true, "counts": {"experiments": 5, "created": 0, "duplicates": 0, "failed": 0}},
+    "content_opportunity_lab": {"ok": true, "counts": {"content_opportunities": 3, "created": 0, "duplicates": 0, "failed": 0}},
+    "content_test_tracker": {"ok": true, "counts": {"content_tests": 2, "created": 0, "duplicates": 0, "failed": 0}}
+  },
+  "safety": {
+    "capture_run": false,
+    "yt_dlp_run": false,
+    "publish_send_trade_deploy": false,
+    "external_ai_used": false,
+    "broker_api_called_by_watch_after_hardening": false,
+    "secrets_added": false
+  }
+}

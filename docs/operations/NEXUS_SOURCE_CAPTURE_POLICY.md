@@ -47,3 +47,14 @@ This does not run capture, yt-dlp, NotebookLM, browser automation, scraping, or 
 ## NotebookLM connector boundary
 
 `scripts/intake/notebooklm_connector.py` is optional and status-only until configured. Do not store NotebookLM cookies, session files, browser profiles, or tokens in the repo.
+
+## Watched resource boundary
+
+Watched resources are saved as disabled/manual assets first. Backfill/watch commands are dry-run first and bounded:
+
+```bash
+python3 scripts/research/run_watched_resource_backfill.py --dry-run --limit 3 --no-external-ai --json
+python3 scripts/research/run_watched_resource_watch.py --dry-run --limit 3 --no-external-ai --json
+```
+
+YouTube channel watch does not imply channel scraping or media download. Transcript review accepts only an explicit URL, local transcript file, or already captured transcript.

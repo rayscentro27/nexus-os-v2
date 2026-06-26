@@ -454,7 +454,10 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
         reviewBySourceId.get(String(source.id)) ?? reviewByUrl.get(String(source.url)) ?? reviewByTitle.get(String(source.title ?? '').toLowerCase()),
         taskBySourceId.get(String(source.id)) ?? taskByUrl.get(String(source.url)),
       )),
-      ...tasks.map(mapTaskRequestToProject).filter((p) => p.project_type.includes('source')),
+      ...tasks.map(mapTaskRequestToProject).filter((p) => (
+        p.project_type.includes('source')
+        || ['watched_resource', 'watched_resource_update', 'youtube_transcript_review'].includes(p.project_type)
+      )),
     ]
       .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }

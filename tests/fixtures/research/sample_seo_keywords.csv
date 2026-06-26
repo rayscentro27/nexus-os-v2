@@ -1,0 +1,4 @@
+keyword,topic_cluster,search_intent,difficulty_estimate,cpc_estimate,affiliate_relevance,GoClear_relevance,content_type_recommendation,funnel_stage,target_offer,source,proof_source,notes
+best business credit vendors for new LLC,business_credit,commercial,medium,8.50,85,90,affiliate review article,middle,$97 readiness review,fixture,tests/fixtures/research/sample_seo_keywords.csv,Safe sample
+business funding readiness checklist,business_funding,informational,low,6.25,40,95,lead magnet/PDF,top,$97 readiness review,fixture,tests/fixtures/research/sample_seo_keywords.csv,Safe sample
+best AI tools for small business automation,ai_automation,commercial,medium,4.10,75,30,blog post,middle,automation consult,fixture,tests/fixtures/research/sample_seo_keywords.csv,Safe sample

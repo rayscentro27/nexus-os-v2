@@ -123,6 +123,8 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   const missingEnrichment = all.filter((p) => p.enrichment_status.startsWith('pending') || p.enrichment_status === 'metadata_saved').length;
   const top = all.find((p) => p.approval_required || p.status === 'needs_review' || p.status === 'blocked') ?? all[0] ?? null;
   const feederCounts = feederStateCounts();
+  const watchedFeederCount = NEXUS_DEPARTMENT_FEEDERS.filter((f) => f.feeder_id.includes('watched_resource')).length;
+  const researchFeederCount = NEXUS_DEPARTMENT_FEEDERS.filter((f) => /research|content|affiliate|seo/i.test(`${f.feeder_id} ${f.name}`)).length;
   const topFeeder = NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'needs_connector' || f.enabled_state === 'blocked')
     ?? NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'manual_only');
 
@@ -147,6 +149,8 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
         <span className="nx-pill">ready {feederCounts.ready_for_schedule}</span>
         <span className="nx-pill">blocked {feederCounts.blocked}</span>
         <span className="nx-pill">needs connector {feederCounts.needs_connector}</span>
+        <span className="nx-pill">watched resources {watchedFeederCount}</span>
+        <span className="nx-pill">research/content {researchFeederCount}</span>
       </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Hermes top recommendation: {top ? getProjectHermesRecommendation(top) : 'No live department projects yet. Start with Source Intake or run the manual watch report.'}
