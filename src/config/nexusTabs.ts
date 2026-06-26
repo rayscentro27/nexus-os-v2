@@ -90,9 +90,9 @@ export const NEXUS_TABS: TabConfig[] = [
   },
   {
     id: 'goclear', label: 'GoClear / Apex', route: 'goclear', status: 'partial_connected', statusLabel: 'Partial',
-    description: 'Funding readiness workspace / $97 revenue hub.', dataSources: ['Supabase'], tables: ['partner_offers', 'client_recommendations', 'monetization_opportunities'],
-    scripts: ['nexus:watch'], v1Dependencies: [], v2Dependencies: ['landing page (nexusv20.netlify.app)'],
-    actions: ['view offers/recommendations'], hermesCan: 'advise on the $97 readiness funnel (no guarantees)',
+    description: 'Funding readiness workspace / $97 revenue hub.', dataSources: ['Supabase'], tables: ['partner_offers', 'client_recommendations', 'monetization_opportunities', 'task_requests'],
+    scripts: ['nexus:watch', 'scripts/automation/run_department_feeder.py --feeder-id goclear_revenue_hub_feeder'], v1Dependencies: [], v2Dependencies: ['landing page (nexusv20.netlify.app)'],
+    actions: ['view offers/recommendations', 'view revenue metric cards', 'run dry-run revenue feeder'], hermesCan: 'advise on the $97 readiness funnel and revenue metrics (no guarantees)',
     riskLevel: 'low', visible: true, recommendedNextAction: 'Seed offers + wire $97 intake/checkout backend.',
   },
   {

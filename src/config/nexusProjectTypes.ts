@@ -200,6 +200,21 @@ export const DEPARTMENT_WORKSPACES: Record<string, DepartmentWorkspaceConfig> = 
       { key: 'reject', label: 'Reject', category: 'safe', description: 'Reject as internal disposition.' },
     ],
   },
+  goclear: {
+    department: 'opportunity_lab',
+    tabId: 'goclear',
+    title: 'GoClear / Apex Revenue Hub',
+    subtitle: 'Readiness-review leads, revenue metrics, partner referrals, and safe next actions.',
+    emptyFeed: 'goclear_revenue_hub_feeder, partner_offers, client_recommendations, and safe revenue reports',
+    actions: [
+      { key: 'report', label: 'Create Report', category: 'safe', description: 'Create an internal revenue snapshot.' },
+      { key: 'task', label: 'Create Task', category: 'safe', description: 'Create an internal follow-up task.' },
+      { key: 'opportunity', label: 'Send to Opportunity Lab', category: 'safe', description: 'Route as monetization review.' },
+      { key: 'creative', label: 'Send to Creative', category: 'safe', description: 'Draft creative only.' },
+      { key: 'connector', label: 'Configure Connector', category: 'approval', description: 'Revenue/affiliate connectors require approval.' },
+      { key: 'park', label: 'Park', category: 'safe', description: 'Park the revenue signal.' },
+    ],
+  },
   design: {
     department: 'design_library',
     tabId: 'design',

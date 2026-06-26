@@ -16,6 +16,12 @@ Instant mode behavior:
 - Do not call external AI on sensitive/private/customer text.
 - Do not run broad scraping or browser capture.
 
+Metadata-first direct enrichment is available for one explicit public source:
+
+```bash
+python3 scripts/intake/direct_source_enrichment.py --source-url "https://example.com/test-source" --title "Safe Test Source" --dry-run --no-external-ai --json
+```
+
 ## B. Scheduled Automation Mode
 
 Scheduled automation is for background intelligence, not Ray's one-off intake. These processes can collect, enrich, score, and feed department boards after deliberate activation.
@@ -33,6 +39,14 @@ Planned feeds:
 Schedulers are not activated by this UI work. Future scheduler activation must go through Approvals.
 
 Deterministic capture/enrichment results flow back into department project cards through the canonical `project_enrichment` payload. NotebookLM enrichment can later write the same payload with `enrichment_source=notebooklm`.
+
+NotebookLM is optional. `scripts/intake/notebooklm_connector.py` currently supports dry-run/status reports only and fails safely with `NotebookLM connector not configured` when no approved connector/session exists.
+
+The daily department digest is manual-only for now:
+
+```bash
+python3 scripts/automation/run_daily_department_digest.py --dry-run --limit-per-feeder 3 --no-external-ai --skip-capture
+```
 
 ## Department Feeder Layer
 

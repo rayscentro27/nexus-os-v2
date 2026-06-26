@@ -16,10 +16,22 @@ Dry-run with a Ray-selected local report:
 python3 scripts/trading/import_backtest_report.py --input-file tests/fixtures/trading/sample_backtest_report.json --dry-run --no-live-trading --json
 ```
 
+Dry-run with a file Ray places in the safe import folder:
+
+```bash
+python3 scripts/trading/import_backtest_report.py --input-file reports/trading/imports/<file>.json --dry-run --no-live-trading --json
+```
+
 Bounded live import from an explicit safe file:
 
 ```bash
 python3 scripts/trading/import_backtest_report.py --input-file tests/fixtures/trading/sample_backtest_report.json --no-dry-run --no-live-trading --json
+```
+
+Bounded live metadata import from the safe import folder:
+
+```bash
+python3 scripts/trading/import_backtest_report.py --input-file reports/trading/imports/<file>.json --no-dry-run --no-live-trading --json
 ```
 
 Live import only writes Trading Lab research metadata. It does not place trades, call brokers, start schedulers, run `auto_executor`, or publish/send/deploy anything.
@@ -34,7 +46,9 @@ Supported formats:
 - CSV metrics tables or trade/result exports.
 - Markdown/text reports that are already local reports.
 
-Allowed file roots are intentionally narrow: `tests/fixtures/trading`, `reports`, and `samples`. Files outside those paths are rejected until Ray selects a safe import location.
+Allowed file roots are intentionally narrow: `tests/fixtures/trading`, `reports`, and `samples`. Ray-selected paper/backtest files should be placed under `reports/trading/imports/`.
+
+`reports/trading/imports/` is for paper/backtest reports only. Do not place broker credentials, tokens, private keys, live order instructions, funded-account statements, account-sensitive data, or customer/private financial data in this folder. The importer still does not scan folders automatically.
 
 ## Parsed Fields
 
@@ -108,4 +122,4 @@ Trading Lab reads `trading_lab_backtest_import` task requests through the existi
 
 ## Next Recommendation
 
-After validating the sample import in Trading Lab, add a Ray-selected `reports/trading/imports/` directory and require explicit file placement there for future real backtest imports.
+Place one sanitized paper/backtest report in `reports/trading/imports/`, run the dry-run command first, then decide whether to do a bounded metadata import.

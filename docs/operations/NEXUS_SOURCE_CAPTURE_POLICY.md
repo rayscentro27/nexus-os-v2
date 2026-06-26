@@ -33,3 +33,17 @@ raw local/v1 command · external AI on sensitive text.
 ## Submit behavior
 Browser never runs yt-dlp/capture. Safe → Capture Queue + proof event. Review-required → Capture
 Queue + `approvals` row + proof. The stored `capture_command_preview` is what a worker runs later.
+
+## Direct metadata enrichment
+
+For one explicit public source where Ray only wants metadata-first review, use:
+
+```bash
+python3 scripts/intake/direct_source_enrichment.py --source-url "https://example.com/test-source" --title "Safe Test Source" --dry-run --no-external-ai --json
+```
+
+This does not run capture, yt-dlp, NotebookLM, browser automation, scraping, or external AI. Live mode writes only `research_sources.metadata.project_enrichment` and proof.
+
+## NotebookLM connector boundary
+
+`scripts/intake/notebooklm_connector.py` is optional and status-only until configured. Do not store NotebookLM cookies, session files, browser profiles, or tokens in the repo.

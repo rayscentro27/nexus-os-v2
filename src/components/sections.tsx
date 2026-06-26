@@ -651,6 +651,10 @@ function ApprovalPreviewCard({ item, approval }: { item: ApprovalReviewItem | nu
 // ── GoClear / Apex Funding ──
 export function GoClearWorkspace() {
   return (
+    <DepartmentWorkspace
+      config={DEPARTMENT_WORKSPACES.goclear}
+      email={null}
+      leading={(
     <>
       <div className="grid">
         <Stat title="Funding Readiness" value="Score model" sub="Readiness scoring (foundation)" />
@@ -672,6 +676,8 @@ export function GoClearWorkspace() {
         <><div className="t">{r.title} <Pill status={r.status} /></div><div className="meta">{r.recommendation_type}</div>{r.reason && <div className="body">{r.reason}</div>}</>
       )} />
     </>
+      )}
+    />
   );
 }
 

@@ -8,6 +8,7 @@ Trading Lab is a demo research department. It may review strategy ideas, backtes
 - Bounded backtest review.
 - Paper/demo result import.
 - Explicit backtest report import from a safe selected local file.
+- Ray-selected paper/backtest files under `reports/trading/imports/`.
 - Paper-only report generation.
 - Risk scoring and strategy scorecards.
 - Hermes advisory review.
@@ -23,6 +24,7 @@ Trading Lab is a demo research department. It may review strategy ideas, backtes
 - Scheduler activation.
 - Unbounded strategy runs.
 - Copying, printing, storing, or modifying secrets/tokens.
+- Broker credentials, tokens, private keys, live order instructions, funded-account statements, or customer/private financial data in `reports/trading/imports/`.
 - Broker credential changes.
 - Webhook/manual signal execution paths.
 

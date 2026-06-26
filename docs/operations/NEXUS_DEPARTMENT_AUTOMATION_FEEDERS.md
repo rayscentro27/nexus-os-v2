@@ -15,6 +15,9 @@ Common fields:
 | Feeder | Department | State | Writes | Proof event |
 |---|---|---|---|---|
 | `source_intake_enrichment_backfill` | Source Intake | manual_only | `research_sources.metadata`, `transcript_reviews.metadata`, `nexus_events` | `project_enrichment_backfilled` |
+| `daily_department_digest` | Command Center | ready_for_schedule | local reports, optional safe feeder writes | `daily_department_digest_completed` |
+| `notebooklm_connector_status_feeder` | Source Intake | needs_connector | local reports | `notebooklm_connector_status_reported` |
+| `direct_source_enrichment_feeder` | Source Intake | manual_only | `research_sources.metadata`, `nexus_events` | `direct_source_enrichment_created` |
 | `source_capture_queue_worker` | Source Intake | manual_only | safe queued capture tables only when explicitly run | `source_enriched_for_project_card` |
 | `opportunity_lab_research_feeder` | Opportunity Lab | manual_only | `task_requests`, `nexus_events` | `opportunity_lab_project_created` |
 | `creative_studio_project_feeder` | Creative Studio | manual_only | `task_requests`, `nexus_events` | `creative_studio_project_created` |
@@ -25,6 +28,7 @@ Common fields:
 | `approvals_decision_desk_feeder` | Approvals | manual_only | `task_requests`, `nexus_events` | `approval_decision_project_created` |
 | `events_feed_ledger_feeder` | Events Feed | manual_only | `task_requests`, `nexus_events` | `event_ledger_summary_created` |
 | `integrations_status_feeder` | Integrations | manual_only | `task_requests`, `nexus_events` | `integration_status_project_created` |
+| `goclear_revenue_hub_feeder` | GoClear / Apex | manual_only | `task_requests`, `nexus_events` | `goclear_revenue_hub_metrics_updated` |
 | `trading_lab_demo_research_feeder` | Trading Lab | manual_only | `task_requests`, `nexus_events` | `trading_lab_research_project_created` |
 
 ## Commands
@@ -47,6 +51,12 @@ Live runs are bounded and use duplicate prevention via:
 - `payload.feeder_id`
 - `payload.unique_key`
 
+Daily dry-run:
+
+```bash
+python3 scripts/automation/run_daily_department_digest.py --dry-run --limit-per-feeder 3 --no-external-ai --skip-capture
+```
+
 ## Safety Gates
 
 - Safe feeders write internal task/project cards and proof only.
@@ -57,4 +67,4 @@ Live runs are bounded and use duplicate prevention via:
 
 ## Next Recommendation
 
-Review the Trading Lab paper-only status card, then add bounded backtest report import without exposing broker execution.
+Run the daily digest dry-run while Ray is out, then review GoClear Revenue Hub candidates before connecting any live payment/referral source.

@@ -404,6 +404,7 @@ function getDepartmentFromTab(tab: string): NexusDepartment {
   if (tab === 'intake') return 'source_intake';
   if (tab === 'opportunity_lab') return 'opportunity_lab';
   if (tab === 'opportunities') return 'opportunity_lab';
+  if (tab === 'goclear') return 'opportunity_lab';
   if (tab === 'design') return 'design_library';
   if (tab === 'creative') return 'creative_studio';
   if (tab === 'seo') return 'growth';
@@ -468,6 +469,13 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
         .filter((t) => t.task_type === 'opportunity_lab_project' || t.payload?.owner_tab === 'opportunities' || t.payload?.department === 'opportunity_lab')
         .map(mapTaskRequestToProject),
     ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
+  if (tabId === 'goclear') {
+    const tasks = await listTable('task_requests', { order: 'created_at', limit: 50 });
+    return tasks
+      .filter((t) => taskBelongsToTab(t, 'goclear', ['goclear_revenue_metric_project']))
+      .map(mapTaskRequestToProject)
+      .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }
   if (tabId === 'creative') {
     const [assets, tasks] = await Promise.all([
