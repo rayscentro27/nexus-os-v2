@@ -10,6 +10,7 @@ import { DEPARTMENT_WORKSPACES } from '../../config/nexusProjectTypes';
 import { getProjectHermesRecommendation, loadDepartmentProjects } from '../../lib/nexusProjects';
 import type { NexusProject } from '../../config/nexusProjectTypes';
 import { feederStateCounts, NEXUS_DEPARTMENT_FEEDERS } from '../../config/nexusDepartmentFeeders';
+import { NEXUS_RESEARCH_REPORTS, researchReportStatusSummary } from '../../lib/nexusResearchReports';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -125,6 +126,8 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
   const feederCounts = feederStateCounts();
   const watchedFeederCount = NEXUS_DEPARTMENT_FEEDERS.filter((f) => f.feeder_id.includes('watched_resource')).length;
   const researchFeederCount = NEXUS_DEPARTMENT_FEEDERS.filter((f) => /research|content|affiliate|seo/i.test(`${f.feeder_id} ${f.name}`)).length;
+  const internalResearchCount = all.filter((p) => !p.approval_required && ['researching', 'summarized', 'scored', 'proposed', 'paper_demo', 'backtested'].includes(p.status)).length;
+  const approvalNeededCount = all.filter((p) => p.approval_required).length;
   const topFeeder = NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'needs_connector' || f.enabled_state === 'blocked')
     ?? NEXUS_DEPARTMENT_FEEDERS.find((f) => f.enabled_state === 'manual_only');
 
@@ -151,6 +154,12 @@ function ExecutiveOfficePanel({ onNavigate }: { onNavigate?: (id: string) => voi
         <span className="nx-pill">needs connector {feederCounts.needs_connector}</span>
         <span className="nx-pill">watched resources {watchedFeederCount}</span>
         <span className="nx-pill">research/content {researchFeederCount}</span>
+        <span className="nx-pill">internal research {internalResearchCount}</span>
+        <span className="nx-pill">approval needed {approvalNeededCount}</span>
+        <span className="nx-pill">top reports {NEXUS_RESEARCH_REPORTS.length}</span>
+      </div>
+      <div className="note" style={{ marginBottom: 10 }}>
+        Research autonomy: {researchReportStatusSummary()}
       </div>
       <div className="note" style={{ marginBottom: 10 }}>
         Hermes top recommendation: {top ? getProjectHermesRecommendation(top) : 'No live department projects yet. Start with Source Intake or run the manual watch report.'}

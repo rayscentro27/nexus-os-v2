@@ -11,7 +11,7 @@ export type ActionCategory =
   | 'safe_queue'           // safe work that may queue automatically (no approval)
   | 'safe_draft'           // produces a draft, not published
   | 'safe_internal_route'  // routes to an internal/non-client destination
-  | 'needs_review'         // Ray must review (appears in Approvals)
+  | 'needs_review'         // Ray should review internally (does NOT imply Approvals)
   | 'approval_required'    // hard approval gate (publish/send/trade/deploy/etc.)
   | 'disabled'             // not connected yet
   | 'dangerous_blocked';   // never allowed from the UI
@@ -45,7 +45,6 @@ export const ACTION_COPY = {
 const HARD_TRIGGERS: RiskTrigger[] = [
   'publish_send_trade_deploy', 'scheduler_or_local_command', 'raw_v1_worker',
   'sensitive_data', 'external_ai_sensitive_text', 'broad_scrape', 'client_facing',
-  'high_compliance_risk', 'risky_destination',
 ];
 
 const SAFE_SOURCE_TYPES = new Set(['youtube_video', 'manual_idea', 'transcript_file']);
@@ -78,7 +77,7 @@ export function getReviewTriggers(payload: Record<string, unknown>): RiskTrigger
 }
 
 export function getApprovalRequirement(action: NexusAction): boolean {
-  if (action.category === 'approval_required' || action.category === 'needs_review') return true;
+  if (action.category === 'approval_required') return true;
   return (action.triggers ?? []).some((x) => HARD_TRIGGERS.includes(x));
 }
 
