@@ -292,9 +292,14 @@ export function mapTaskRequestToProject(row: Row): NexusProject {
     enrichment_status: enrichment.enrichment_status,
     score: enrichment.score,
     summary: text(enrichment.summary, text(row.summary ?? row.result_summary, '')),
+    pros: enrichment.pros?.length ? enrichment.pros : arr(row.payload?.pros),
+    cons: enrichment.cons?.length ? enrichment.cons : arr(row.payload?.cons),
     recommendation: text(enrichment.recommendation, text(row.payload?.recommendation, 'Review this safe request before assigning worker time.')),
+    proposed_schedule: text(enrichment.proposed_schedule, text(row.payload?.proposed_schedule, 'Manual review only.')),
+    next_action: text(enrichment.next_action, text(row.payload?.next_action, 'Review this department card.')),
     approval_required: enrichment.approval_required ?? Boolean(row.payload?.approval_required),
     risk_triggers: enrichment.risk_triggers?.length ? enrichment.risk_triggers : arr(row.payload?.risk_triggers ?? (row.payload?.review_trigger ? [row.payload.review_trigger] : [])),
+    visual_url: text(row.payload?.visual_url, '') || null,
     source_url: text(row.payload?.source_url, '') || null,
     source_title: text(row.payload?.source_title, '') || null,
     related_task_request_id: text(row.id),
@@ -401,7 +406,20 @@ function getDepartmentFromTab(tab: string): NexusDepartment {
   if (tab === 'creative') return 'creative_studio';
   if (tab === 'seo') return 'growth';
   if (tab === 'ops') return 'ops_improvements';
+  if (tab === 'jobs') return 'agent_jobs';
+  if (tab === 'command') return 'command_center';
+  if (tab === 'approvals') return 'approvals';
+  if (tab === 'events') return 'events_feed';
+  if (tab === 'integrations') return 'integrations';
   return 'agent_jobs';
+}
+
+function taskBelongsToTab(row: Row, tabId: string, taskTypes: string[] = []): boolean {
+  const payload = row.payload ?? {};
+  return taskTypes.includes(String(row.task_type))
+    || payload.owner_tab === tabId
+    || payload.target_tab === tabId
+    || payload.department === getDepartmentFromTab(tabId);
 }
 
 export async function loadDepartmentProjects(tabId: string): Promise<NexusProject[]> {
@@ -448,15 +466,43 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
         .map(mapTaskRequestToProject),
     ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }
-  if (tabId === 'creative') return (await listTable('creative_assets', { order: 'created_at', limit: 40 })).map(mapCreativeAssetToProject);
-  if (tabId === 'seo') return (await listTable('seo_opportunities', { order: 'created_at', limit: 40 })).map(mapSeoOpportunityToProject);
+  if (tabId === 'creative') {
+    const [assets, tasks] = await Promise.all([
+      listTable('creative_assets', { order: 'created_at', limit: 40 }),
+      listTable('task_requests', { order: 'created_at', limit: 40 }),
+    ]);
+    return [
+      ...assets.map(mapCreativeAssetToProject),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'creative', ['creative_studio_project'])).map(mapTaskRequestToProject),
+    ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
+  if (tabId === 'seo') {
+    const [seoRows, tasks] = await Promise.all([
+      listTable('seo_opportunities', { order: 'created_at', limit: 40 }),
+      listTable('task_requests', { order: 'created_at', limit: 40 }),
+    ]);
+    return [
+      ...seoRows.map(mapSeoOpportunityToProject),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'seo', ['seo_marketing_project'])).map(mapTaskRequestToProject),
+    ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
   if (tabId === 'ops') return (await listTable('improvement_candidates', { order: 'created_at', limit: 40 })).map(mapImprovementToProject);
-  if (tabId === 'jobs') return (await listTable('agent_jobs', { order: 'created_at', limit: 40 })).map(mapProcessRegistryItemToProject);
+  if (tabId === 'jobs') {
+    const [jobs, tasks] = await Promise.all([
+      listTable('agent_jobs', { order: 'created_at', limit: 40 }),
+      listTable('task_requests', { order: 'created_at', limit: 60 }),
+    ]);
+    return [
+      ...jobs.map(mapProcessRegistryItemToProject),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'jobs', ['agent_job_project'])).map(mapTaskRequestToProject),
+    ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
   if (tabId === 'design') {
-    const [sources, packets, reviews] = await Promise.all([
+    const [sources, packets, reviews, tasks] = await Promise.all([
       listTable('design_inspiration_sources', { order: 'created_at', limit: 20 }),
       listTable('feature_design_packets', { order: 'created_at', limit: 20 }),
       listTable('ui_quality_reviews', { order: 'created_at', limit: 20 }),
+      listTable('task_requests', { order: 'created_at', limit: 40 }),
     ]);
     return [
       ...sources.map((r) => base(r, {
@@ -476,8 +522,28 @@ export async function loadDepartmentProjects(tabId: string): Promise<NexusProjec
         status: 'scored', score: score(r.overall_score), summary: text(r.recommendation, ''),
         data_sources: ['ui_quality_reviews'],
       })),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'design', ['design_library_project'])).map(mapTaskRequestToProject),
     ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
   }
+  if (tabId === 'command') return (await listTable('task_requests', { order: 'created_at', limit: 40 }))
+    .filter((t) => taskBelongsToTab(t, 'command', ['command_center_summary']))
+    .map(mapTaskRequestToProject);
+  if (tabId === 'approvals') {
+    const [approvals, tasks] = await Promise.all([
+      listTable('approvals', { order: 'created_at', limit: 40 }),
+      listTable('task_requests', { order: 'created_at', limit: 40 }),
+    ]);
+    return [
+      ...approvals.map(mapApprovalToProject),
+      ...tasks.filter((t) => taskBelongsToTab(t, 'approvals', ['approval_decision_project'])).map(mapTaskRequestToProject),
+    ].sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+  }
+  if (tabId === 'events') return (await listTable('task_requests', { order: 'created_at', limit: 40 }))
+    .filter((t) => taskBelongsToTab(t, 'events', ['event_ledger_project']))
+    .map(mapTaskRequestToProject);
+  if (tabId === 'integrations') return (await listTable('task_requests', { order: 'created_at', limit: 40 }))
+    .filter((t) => taskBelongsToTab(t, 'integrations', ['integration_status_project']))
+    .map(mapTaskRequestToProject);
   return [];
 }
 

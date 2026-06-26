@@ -34,3 +34,20 @@ python3 scripts/automation/run_department_feeder.py --feeder-id opportunity_lab_
 ```
 
 This command creates internal `task_requests` project cards and `nexus_events` proof only. It does not publish, send, trade, deploy, scrape, capture, or activate scheduling.
+
+## Non-Trading Department Feeders
+
+The remaining non-trading feeders are manual-only and bounded:
+
+| Feeder | Department | Manual dry-run | Proof |
+|---|---|---|---|
+| `creative_studio_project_feeder` | Creative Studio | `python3 scripts/automation/run_department_feeder.py --feeder-id creative_studio_project_feeder --dry-run --limit 5 --no-external-ai` | `creative_studio_project_created` |
+| `design_library_project_feeder` | Design Library | `python3 scripts/automation/run_department_feeder.py --feeder-id design_library_project_feeder --dry-run --limit 5 --no-external-ai` | `design_library_project_created` |
+| `seo_marketing_project_feeder` | SEO / Marketing | `python3 scripts/automation/run_department_feeder.py --feeder-id seo_marketing_project_feeder --dry-run --limit 5 --no-external-ai` | `seo_marketing_project_created` |
+| `agent_jobs_process_feeder` | Agent Jobs | `python3 scripts/automation/run_department_feeder.py --feeder-id agent_jobs_process_feeder --dry-run --limit 5 --no-external-ai` | `agent_job_project_created` |
+| `command_center_summary_feeder` | Command Center | `python3 scripts/automation/run_department_feeder.py --feeder-id command_center_summary_feeder --dry-run --limit 5 --no-external-ai` | `command_center_summary_created` |
+| `approvals_decision_desk_feeder` | Approvals | `python3 scripts/automation/run_department_feeder.py --feeder-id approvals_decision_desk_feeder --dry-run --limit 5 --no-external-ai` | `approval_decision_project_created` |
+| `events_feed_ledger_feeder` | Events Feed | `python3 scripts/automation/run_department_feeder.py --feeder-id events_feed_ledger_feeder --dry-run --limit 5 --no-external-ai` | `event_ledger_summary_created` |
+| `integrations_status_feeder` | Integrations | `python3 scripts/automation/run_department_feeder.py --feeder-id integrations_status_feeder --dry-run --limit 5 --no-external-ai` | `integration_status_project_created` |
+
+No scheduler is activated for these feeders. Trading Lab remains blocked and requires a separate Vibe Trading paper-only safety plan.

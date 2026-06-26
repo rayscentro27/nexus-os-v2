@@ -17,7 +17,17 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "scripts" / "social"))
 sys.path.insert(0, str(ROOT / "scripts" / "automation"))
 import _supabase as sb  # noqa: E402
-from feeders import opportunity_lab_research_feeder  # noqa: E402
+from feeders import (  # noqa: E402
+    agent_jobs_process_feeder,
+    approvals_decision_desk_feeder,
+    command_center_summary_feeder,
+    creative_studio_project_feeder,
+    design_library_project_feeder,
+    events_feed_ledger_feeder,
+    integrations_status_feeder,
+    opportunity_lab_research_feeder,
+    seo_marketing_project_feeder,
+)
 
 MAX_LIMIT = 50
 DEFAULT_LIMIT = 5
@@ -25,6 +35,20 @@ RUNTIME = ROOT / "reports" / "runtime" / "nexus_department_automation_feeders_la
 MANUAL = ROOT / "reports" / "manual_publish" / "nexus_department_automation_feeders_latest.md"
 OPP_RUNTIME = ROOT / "reports" / "runtime" / "nexus_opportunity_lab_feeder_latest.md"
 OPP_MANUAL = ROOT / "reports" / "manual_publish" / "nexus_opportunity_lab_feeder_latest.md"
+REMAINING_RUNTIME = ROOT / "reports" / "runtime" / "nexus_remaining_department_feeders_latest.md"
+REMAINING_MANUAL = ROOT / "reports" / "manual_publish" / "nexus_remaining_department_feeders_latest.md"
+
+IMPLEMENTED_FEEDERS = {
+    opportunity_lab_research_feeder.FEEDER_ID: opportunity_lab_research_feeder,
+    creative_studio_project_feeder.FEEDER_ID: creative_studio_project_feeder,
+    design_library_project_feeder.FEEDER_ID: design_library_project_feeder,
+    seo_marketing_project_feeder.FEEDER_ID: seo_marketing_project_feeder,
+    agent_jobs_process_feeder.FEEDER_ID: agent_jobs_process_feeder,
+    command_center_summary_feeder.FEEDER_ID: command_center_summary_feeder,
+    approvals_decision_desk_feeder.FEEDER_ID: approvals_decision_desk_feeder,
+    events_feed_ledger_feeder.FEEDER_ID: events_feed_ledger_feeder,
+    integrations_status_feeder.FEEDER_ID: integrations_status_feeder,
+}
 
 FEEDERS: list[dict[str, Any]] = [
     {
@@ -80,69 +104,69 @@ FEEDERS: list[dict[str, Any]] = [
         "next_action": "Dry-run promotion candidates, then run bounded live creation only after reviewing candidates.",
     },
     {
-        "feeder_id": "creative_design_project_feeder",
-        "name": "Creative and Design Project Feeder",
+        "feeder_id": "creative_studio_project_feeder",
+        "name": "Creative Studio Project Feeder",
         "department": "creative_studio",
         "owner_tab": "creative",
-        "source_type": "creative_assets",
-        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id creative_design_project_feeder --dry-run --limit 5 --no-external-ai",
+        "source_type": "creative_assets/social_posts/enriched_research",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id creative_studio_project_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "medium",
-        "writes_to_tables": ["task_requests", "creative_assets.metadata", "nexus_events"],
-        "proof_event_type": "department_feeder_creative_design_reported",
-        "next_action": "Dry-run candidate mapping; publish remains approval-gated.",
+        "writes_to_tables": ["task_requests", "nexus_events"],
+        "proof_event_type": "creative_studio_project_created",
+        "next_action": "Dry-run creative draft candidates; publish remains approval-gated and unexecuted.",
     },
     {
         "feeder_id": "seo_marketing_project_feeder",
         "name": "SEO / Marketing Project Feeder",
         "department": "growth",
         "owner_tab": "seo",
-        "source_type": "seo_reports",
+        "source_type": "seo_reports/enriched_research",
         "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id seo_marketing_project_feeder --dry-run --limit 5 --no-external-ai",
-        "enabled_state": "needs_connector",
+        "enabled_state": "manual_only",
         "risk_level": "medium",
-        "writes_to_tables": ["task_requests", "seo_opportunities", "nexus_events"],
-        "proof_event_type": "department_feeder_seo_reported",
-        "next_action": "Seed or connect SEO inputs before live feeder writes.",
+        "writes_to_tables": ["task_requests", "nexus_events"],
+        "proof_event_type": "seo_marketing_project_created",
+        "next_action": "Dry-run existing growth inputs; connector-backed scans remain future work.",
     },
     {
-        "feeder_id": "design_library_asset_organizer",
-        "name": "Design Library Asset Organizer",
+        "feeder_id": "design_library_project_feeder",
+        "name": "Design Library Project Feeder",
         "department": "design_library",
         "owner_tab": "design",
-        "source_type": "design_tables",
-        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id design_library_asset_organizer --dry-run --limit 5 --no-external-ai",
+        "source_type": "design_tables/creative_assets/enriched_research",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id design_library_project_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "low",
         "writes_to_tables": ["task_requests", "nexus_events"],
-        "proof_event_type": "department_feeder_design_reported",
-        "next_action": "Dry-run existing design rows; live writes deferred.",
+        "proof_event_type": "design_library_project_created",
+        "next_action": "Dry-run existing design rows; no public use or image generation.",
     },
     {
-        "feeder_id": "agent_jobs_process_registry_feeder",
-        "name": "Agent Jobs Process Registry Feeder",
+        "feeder_id": "agent_jobs_process_feeder",
+        "name": "Agent Jobs Process Feeder",
         "department": "agent_jobs",
         "owner_tab": "jobs",
-        "source_type": "agent_jobs",
-        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id agent_jobs_process_registry_feeder --dry-run --limit 5 --no-external-ai",
+        "source_type": "agent_jobs/task_requests/reports",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id agent_jobs_process_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "low",
         "writes_to_tables": ["task_requests", "nexus_events"],
-        "proof_event_type": "department_feeder_agent_jobs_reported",
-        "next_action": "Dry-run job/process summary.",
+        "proof_event_type": "agent_job_project_created",
+        "next_action": "Dry-run job/process summaries; do not run or schedule jobs.",
     },
     {
-        "feeder_id": "command_center_executive_summary_feeder",
-        "name": "Command Center Executive Summary Feeder",
+        "feeder_id": "command_center_summary_feeder",
+        "name": "Command Center Summary Feeder",
         "department": "command_center",
         "owner_tab": "command",
         "source_type": "feeder_registry",
-        "manual_command": "python3 scripts/automation/run_department_feeder.py --department command_center --dry-run --limit 5 --no-external-ai",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id command_center_summary_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "low",
-        "writes_to_tables": ["nexus_events"],
-        "proof_event_type": "department_feeder_command_center_reported",
-        "next_action": "Review feeder summary in Command Center.",
+        "writes_to_tables": ["task_requests", "nexus_events"],
+        "proof_event_type": "command_center_summary_created",
+        "next_action": "Dry-run executive summary; no actions are executed.",
     },
     {
         "feeder_id": "approvals_decision_desk_feeder",
@@ -150,12 +174,12 @@ FEEDERS: list[dict[str, Any]] = [
         "department": "approvals",
         "owner_tab": "approvals",
         "source_type": "approvals",
-        "manual_command": "Open Approvals tab",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id approvals_decision_desk_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "medium",
-        "writes_to_tables": ["approvals", "nexus_events"],
-        "proof_event_type": "approval_required",
-        "next_action": "Ray reviews pending approvals manually.",
+        "writes_to_tables": ["task_requests", "nexus_events"],
+        "proof_event_type": "approval_decision_project_created",
+        "next_action": "Dry-run approval decision cards; never approve or reject.",
     },
     {
         "feeder_id": "events_feed_ledger_feeder",
@@ -163,25 +187,25 @@ FEEDERS: list[dict[str, Any]] = [
         "department": "events_feed",
         "owner_tab": "events",
         "source_type": "nexus_events",
-        "manual_command": "Open Events Feed tab",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id events_feed_ledger_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "low",
-        "writes_to_tables": ["nexus_events"],
-        "proof_event_type": "nexus_event",
-        "next_action": "Use as proof stream for feeder runs.",
+        "writes_to_tables": ["task_requests", "nexus_events"],
+        "proof_event_type": "event_ledger_summary_created",
+        "next_action": "Dry-run proof summaries; never modify historical events.",
     },
     {
-        "feeder_id": "integrations_connection_status_feeder",
-        "name": "Integrations Connection Status Feeder",
+        "feeder_id": "integrations_status_feeder",
+        "name": "Integrations Status Feeder",
         "department": "integrations",
         "owner_tab": "integrations",
         "source_type": "integration_registry",
-        "manual_command": "npm run nexus:watch",
+        "manual_command": "python3 scripts/automation/run_department_feeder.py --feeder-id integrations_status_feeder --dry-run --limit 5 --no-external-ai",
         "enabled_state": "manual_only",
         "risk_level": "medium",
-        "writes_to_tables": ["system_health", "nexus_events"],
-        "proof_event_type": "integration_status_reported",
-        "next_action": "Run manual watch report; never print secrets.",
+        "writes_to_tables": ["task_requests", "nexus_events"],
+        "proof_event_type": "integration_status_project_created",
+        "next_action": "Dry-run connector status cards; never modify credentials.",
     },
     {
         "feeder_id": "trading_lab_demo_research_feeder",
@@ -217,7 +241,7 @@ def local_candidates(feeder: dict[str, Any], limit: int) -> list[str]:
         return [str(p.relative_to(ROOT)) for p in sorted((ROOT / "reports" / "manual_publish").glob("nexus_*latest.md"))[:limit]]
     if feeder["feeder_id"] == "opportunity_lab_research_feeder":
         return ["research_sources with project_enrichment destination Opportunity Lab/GoClear/Apex"]
-    if feeder["feeder_id"] == "creative_design_project_feeder":
+    if feeder["feeder_id"] == "creative_studio_project_feeder":
         return ["creative_assets", "social_posts", "publish_readiness_packages"]
     if feeder["feeder_id"] == "seo_marketing_project_feeder":
         return ["seo_opportunities or configured SEO connector required"]
@@ -225,10 +249,13 @@ def local_candidates(feeder: dict[str, Any], limit: int) -> list[str]:
 
 
 def run_feeder(feeder: dict[str, Any], args) -> dict[str, Any]:
-    if feeder["feeder_id"] == opportunity_lab_research_feeder.FEEDER_ID:
+    if feeder["enabled_state"] in ("blocked", "disabled"):
+        return {**feeder, "status": feeder["enabled_state"], "dry_run": args.dry_run, "results": [], "would_write": []}
+    module = IMPLEMENTED_FEEDERS.get(feeder["feeder_id"])
+    if module:
         if not sb.configured():
             return {**feeder, "status": "supabase_not_configured", "dry_run": args.dry_run, "results": []}
-        res = opportunity_lab_research_feeder.run(sb, dry_run=args.dry_run, limit=args.limit)
+        res = module.run(sb, dry_run=args.dry_run, limit=args.limit)
         return {
             "feeder_id": feeder["feeder_id"],
             "name": feeder["name"],
@@ -290,6 +317,11 @@ def write_report(report: dict[str, Any]) -> None:
         path.write_text("\n".join(lines) + "\n")
     if any(r.get("feeder_id") == opportunity_lab_research_feeder.FEEDER_ID for r in report["results"]):
         for path in (OPP_RUNTIME, OPP_MANUAL):
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("\n".join(lines) + "\n")
+    remaining_ids = set(IMPLEMENTED_FEEDERS) - {opportunity_lab_research_feeder.FEEDER_ID}
+    if any(r.get("feeder_id") in remaining_ids for r in report["results"]):
+        for path in (REMAINING_RUNTIME, REMAINING_MANUAL):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text("\n".join(lines) + "\n")
 

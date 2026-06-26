@@ -57,3 +57,18 @@ Opportunity Lab now also reads feeder-created `task_requests` where `task_type=o
 - score, summary, pros, cons, recommendation, proposed schedule, and next action from `payload.project_enrichment`
 - status from `task_requests.status`, including `proposed` and `needs_review`
 - proof connection from the corresponding `nexus_events` row with `action=opportunity_lab_project_created`
+
+## Department Feeder Cards
+
+The project adapter now reads feeder-created `task_requests` for:
+
+- Creative Studio: `creative_studio_project`
+- Design Library: `design_library_project`
+- SEO / Marketing: `seo_marketing_project`
+- Agent Jobs: `agent_job_project`
+- Command Center: `command_center_summary`
+- Approvals: `approval_decision_project`
+- Events Feed: `event_ledger_project`
+- Integrations: `integration_status_project`
+
+Each feeder card stores canonical card fields in `task_requests.payload` and `task_requests.payload.project_enrichment`, including title, department, owner tab, project type, score, summary, pros, cons, recommendation, proposed schedule, next action, risk triggers, approval requirement, source reference, and proof event id. Department workspaces and Command Center use the same adapter path, so counts update from real stored cards rather than fake data.
