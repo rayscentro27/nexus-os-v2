@@ -27,3 +27,10 @@ Core principle: Nexus can work internally; it cannot leave the building without 
 6. Specialists + Client Chat must use approved knowledge only.
 
 Verify: `python3 scripts/ai_access/verify_ai_department_access.py --dry-run --json`.
+
+## Runtime enforcement
+
+These invariants are enforced at call time by the [Nexus AI Agent Runtime](NEXUS_AGENT_RUNTIME.md)
+(`src/lib/nexusAgentRuntime.ts`): agents read the Client Vault only through the runtime, which gates
+every read on `canUseTool` + `canAccessData` + own-client scoping and records a `ClientAuditEvent`
+(allowed or denied). Verify: `python3 scripts/ai_access/verify_agent_runtime.py --dry-run --json`.

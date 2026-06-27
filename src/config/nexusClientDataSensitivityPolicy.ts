@@ -25,7 +25,16 @@ export type ClientDataCategory =
   | 'credit_score_raw'
   | 'raw_letter'
   | 'funding_document'
-  | 'client_consent_record';
+  | 'client_consent_record'
+  // client-scoped business / workflow records (vault-only via adapter)
+  | 'business_profile'
+  | 'business_setup_item'
+  | 'workflow_task'
+  | 'reminder_task'
+  | 'funding_readiness'
+  | 'proof_upload'
+  | 'mailing_record'
+  | 'affiliate_attribution';
 
 export type DataSensitivity =
   | 'public'
@@ -73,6 +82,14 @@ export const CLIENT_DATA_CATEGORIES: DataCategoryDef[] = [
   def('raw_letter', 'credit_sensitive', false, false, true),
   def('funding_document', 'funding_sensitive', false, false, true),
   def('client_consent_record', 'client_private', false, false, true),
+  def('business_profile', 'client_private', false, false, true),
+  def('business_setup_item', 'client_private', false, false, true),
+  def('workflow_task', 'client_private', false, false, true),
+  def('reminder_task', 'client_private', false, false, true),
+  def('funding_readiness', 'funding_sensitive', false, false, true),
+  def('proof_upload', 'client_private', false, false, true),
+  def('mailing_record', 'client_private', false, false, true),
+  def('affiliate_attribution', 'client_private', false, false, true),
 ];
 
 const BY_CATEGORY = new Map(CLIENT_DATA_CATEGORIES.map((d) => [d.category, d]));

@@ -11,11 +11,21 @@ export type AuditDataCategory =
   | 'sanitized_signal'
   | 'workflow_status_internal'
   | 'raw_credit_report'
+  | 'credit_score'
   | 'smartcredit_file'
   | 'bank_statement'
   | 'raw_letter'
   | 'funding_document'
-  | 'client_profile';
+  | 'funding_readiness'
+  | 'client_profile'
+  | 'business_profile'
+  | 'business_setup_item'
+  | 'workflow_task'
+  | 'reminder_task'
+  | 'proof_upload'
+  | 'mailing_record'
+  | 'affiliate_attribution'
+  | 'consent_event';
 
 export interface ClientAuditEvent {
   event_id: string;

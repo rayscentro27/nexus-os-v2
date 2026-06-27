@@ -20,6 +20,7 @@ import type { ClientWorkflowProfile } from '../../config/clientWorkflow';
 import { verifyAccessInvariants } from '../../lib/nexusAIAccessPolicy';
 import { clientVaultStatus } from '../../lib/clientVaultAdapter';
 import { AI_DEPARTMENT_ROLE_LIST } from '../../config/nexusAIDepartmentRoles';
+import { AuditSink, createAgentRuntime } from '../../lib/nexusAgentRuntime';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -122,6 +123,15 @@ function ClientWorkflowCard({ onNavigate }: { onNavigate?: (id: string) => void 
   const d = buildHermesWorkflowDigest(data);
   const accessViolations = verifyAccessInvariants();
   const vault = clientVaultStatus();
+  // Live runtime proof: a Credit Specialist read is allowed + audited; a Hermes raw read is denied + audited.
+  const { data: runtimeAudit } = useData(async () => {
+    const sink = new AuditSink();
+    const specialist = createAgentRuntime({ role: 'credit_specialist_ai', actorId: 'credit_specialist', sink });
+    const hermes = createAgentRuntime({ role: 'hermes_ceo_advisor', actorId: 'hermes', sink });
+    await specialist.getCreditReport('dev-c1');
+    await hermes.getCreditReport('dev-c1');
+    return { allowed: sink.allowed().length, denied: sink.denied().length };
+  }, { allowed: 0, denied: 0 });
   return (
     <div className="nx-glass">
       <div className="nx-between" style={{ marginBottom: 8 }}>
@@ -134,6 +144,7 @@ function ClientWorkflowCard({ onNavigate }: { onNavigate?: (id: string) => void 
         <span className="nx-pill">AI roles {AI_DEPARTMENT_ROLE_LIST.length}</span>
         <span className="nx-pill">Hermes raw client data: blocked</span>
         <span className="nx-pill">Credit Specialist: Supabase-only</span>
+        <span className="nx-pill">runtime audit: {runtimeAudit.allowed} allowed / {runtimeAudit.denied} denied</span>
         <span className="nx-pill">Client Vault: {vault.connection_status}</span>
         <span className="nx-pill">vault adapter: {vault.adapter_in_use}</span>
         <span className="nx-pill">2nd Supabase: {vault.second_supabase_connected ? 'connected' : 'none'}</span>

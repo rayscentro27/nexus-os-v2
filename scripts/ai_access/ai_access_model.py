@@ -68,6 +68,14 @@ DATA_CATEGORIES = {
     "raw_letter": {"hermes_allowed": False, "vault_only": True},
     "funding_document": {"hermes_allowed": False, "vault_only": True},
     "client_consent_record": {"hermes_allowed": False, "vault_only": True},
+    "business_profile": {"hermes_allowed": False, "vault_only": True},
+    "business_setup_item": {"hermes_allowed": False, "vault_only": True},
+    "workflow_task": {"hermes_allowed": False, "vault_only": True},
+    "reminder_task": {"hermes_allowed": False, "vault_only": True},
+    "funding_readiness": {"hermes_allowed": False, "vault_only": True},
+    "proof_upload": {"hermes_allowed": False, "vault_only": True},
+    "mailing_record": {"hermes_allowed": False, "vault_only": True},
+    "affiliate_attribution": {"hermes_allowed": False, "vault_only": True},
 }
 
 HERMES_FORBIDDEN_FIELDS = [

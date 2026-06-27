@@ -1,6 +1,6 @@
 # AI Department Access Report
 
-- generated_at: 2026-06-27T00:29:36.960722+00:00
+- generated_at: 2026-06-27T01:36:18.686702+00:00
 - ok: True
 
 ## Roles
