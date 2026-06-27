@@ -31,6 +31,7 @@ import { ALL_GOCLEAR_OFFERS } from '../../config/goclearSubscriptionOffers';
 import { PAYMENT_CONTRACT_META } from '../../config/goclearPaymentOfferContract';
 import { affiliateApprovalCounts } from '../../config/affiliateApprovalStatus';
 import { readinessReviewLaunchGate } from '../../lib/firstOfferLaunchGate';
+import { MONEY_OPPORTUNITY_HIGHLIGHTS } from '../../config/moneyOpportunityHighlights';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -202,6 +203,29 @@ function NightRunMonetizationCard({ onNavigate }: { onNavigate?: (id: string) =>
         <span className="nx-pill">high-funding tasks {mon.high_funding_tasks}</span>
       </div>
       <div className="note">Pricing figures are internal market-research estimates to validate, not live offers. No client charged.</div>
+    </div>
+  );
+}
+
+function MoneyOpportunityCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const m = MONEY_OPPORTUNITY_HIGHLIGHTS;
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 8 }}>
+        <div><h3 style={{ margin: 0 }}>Overnight Money Opportunities</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Draft-only research for the morning. Nothing published, sent, or charged.</div></div>
+        <button className="nx-btn ghost" onClick={() => onNavigate?.('command')}>Open reports</button>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 8 }}>
+        <span className="nx-pill ok">draft only</span>
+        <span className="nx-pill">fastest: {m.fastest_launch_path.split(' — ')[0]}</span>
+        <span className="nx-pill">lowest risk</span>
+        <span className="nx-pill">best affiliate: SmartCredit</span>
+        <span className="nx-pill warnb">{m.approval_needed}</span>
+      </div>
+      <div className="note" style={{ marginBottom: 6 }}>Top opportunity: {m.top_money_opportunity}</div>
+      <div className="note" style={{ marginBottom: 6 }}>Best creative: {m.best_creative_asset}</div>
+      <div className="note">Hermes: {m.hermes_recommendation}</div>
     </div>
   );
 }
@@ -450,6 +474,7 @@ export function CommandCenterMissionControl({ email, onNavigate }: { email: stri
           <NightRunMonetizationCard onNavigate={onNavigate} />
           <LaunchReadinessCard onNavigate={onNavigate} />
           <AffiliateWaitingRoomCard onNavigate={onNavigate} />
+          <MoneyOpportunityCard onNavigate={onNavigate} />
           <SystemStatusOverview onOpenTab={onNavigate} compact />
         </div>
         {/* Column 3 — Oracle + Memory Galaxy */}
