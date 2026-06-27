@@ -1107,3 +1107,119 @@ a {
   opacity: .45;
   cursor: not-allowed;
 }
+
+/* ============================================================
+   FIXED DESKTOP APP SHELL — layout cleanup (overrides above).
+   Locks the dashboard to the viewport so the whole tab fits on
+   one 16:9 screen; scrolling happens only inside panels.
+   ============================================================ */
+html, body, #root { height: 100%; width: 100%; margin: 0; overflow: hidden; }
+body { min-width: 0; }
+
+.os-root {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr 56px;   /* shell + status bar */
+  overflow: hidden;
+}
+
+.app-shell {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 286px 1fr;
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+/* Sidebar in-flow with its own scroll */
+.sidebar {
+  position: relative;
+  inset: auto;
+  width: auto;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  z-index: 1;
+}
+
+/* Main column = topbar row + scrollable page row */
+.content {
+  grid-column: 2;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 72px 1fr;
+  padding: 0;
+  overflow: hidden;
+}
+
+.topbar {
+  position: relative;
+  top: auto;
+  margin: 0;
+  height: 72px;
+  padding: 0 24px;
+  align-items: center;
+}
+
+.page-content {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: 10px 24px 14px;
+}
+
+.page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.page-title { margin-top: 0; margin-bottom: 2px; }
+.page-title h2 { font-size: 26px; }
+
+/* Footer pinned as the shell's bottom row (no fixed overlay) */
+.footer {
+  position: relative;
+  inset: auto;
+  height: 56px;
+}
+
+/* ---- Command Center: stacked rows; right rail fixed width ---- */
+.command-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.metrics-grid { flex: none; }
+.command-layout {
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 16px;
+  overflow: hidden;
+}
+.command-layout > * { min-width: 0; }
+.main-stack, .side-stack { min-height: 0; overflow: auto; }
+.spotlight { min-height: 200px; }
+
+/* ---- Workspace rooms: title row + 3 columns that fill height ---- */
+.workspace {
+  grid-template-rows: auto 1fr;
+  align-items: stretch;
+  overflow: hidden;
+}
+.workspace > * { min-width: 0; }
+.workspace .page-title { grid-column: 1 / -1; }
+.list-panel, .detail-panel {
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+.workspace .side-stack {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}

@@ -6,7 +6,7 @@ import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
   FileWarning, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
-  ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, TrendingUp,
+  Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
   TriangleAlert, WandSparkles, Youtube, Zap
 } from 'lucide-react'
 
@@ -23,8 +23,14 @@ const IconMap = {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
   FileWarning, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
-  ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, TrendingUp,
+  Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
   TriangleAlert, WandSparkles, Youtube, Zap
+}
+
+// Meaningful thumbnail icon per workspace kind (replaces generic numbered squares).
+const kindThumbIcon = {
+  source: 'Youtube', opportunity: 'Building2', campaign: 'Megaphone', design: 'Image',
+  trading: 'TrendingUp', seo: 'SearchCheck', integrations: 'DatabaseZap', ops: 'Star', jobs: 'Database'
 }
 
 const navGroups = [
@@ -33,7 +39,7 @@ const navGroups = [
     items: [
       { id: 'command', label: 'Command Center', icon: 'LayoutDashboard' },
       { id: 'source', label: 'Source Intake & Review', icon: 'ScanSearch', status: 'Live', statusTone: 'green' },
-      { id: 'opportunity', label: 'Opportunity Lab', icon: 'CircleX', status: 'Active', statusTone: 'blue' }
+      { id: 'opportunity', label: 'Opportunity Lab', icon: 'Target', status: 'Active', statusTone: 'blue' }
     ]
   },
   {
@@ -48,7 +54,7 @@ const navGroups = [
   {
     label: 'Growth',
     items: [
-      { id: 'integrations', label: 'Integrations', icon: 'CopyPlus', status: 'Partial', statusTone: 'blue' },
+      { id: 'integrations', label: 'Integrations', icon: 'Plug', status: 'Partial', statusTone: 'blue' },
       { id: 'ops', label: 'Ops & Improvements', icon: 'BadgeDollarSign', status: 'Live', statusTone: 'green' },
       { id: 'jobs', label: 'Agent Jobs', icon: 'Bot', status: 'Live', statusTone: 'green' }
     ]
@@ -56,7 +62,7 @@ const navGroups = [
   {
     label: 'System',
     items: [
-      { id: 'health', label: 'System Health', icon: 'Cross', status: 'Live', statusTone: 'green' },
+      { id: 'health', label: 'System Health', icon: 'Activity', status: 'Live', statusTone: 'green' },
       { id: 'hermes', label: 'Hermes Advisor', icon: 'Sparkles', status: 'Online', statusTone: 'green' },
       { id: 'settings', label: 'Settings', icon: 'Settings', disabled: true },
       { id: 'help', label: 'Help & Docs', icon: 'CircleHelp', disabled: true }
@@ -483,7 +489,7 @@ function ListPanel({ title, kind }) {
       <div className="list-items">
         {rows.map((row, index) => (
           <article className={`list-card ${index === 0 ? 'selected' : ''}`} key={row[0]}>
-            <div className={`list-thumb thumb-${index % 4}`}>{index + 1}</div>
+            <div className={`list-thumb thumb-${index % 4}`}><Icon name={kindThumbIcon[kind] || 'FileText'} size={20} /></div>
             <div className="list-content">
               <strong>{row[0]}</strong>
               <span>{row[1]}</span>
@@ -740,15 +746,15 @@ export default function NexusAdminUI({ email }) {
   }[activePage] || <CommandCenter />
 
   return (
-    <>
+    <div className="os-root">
       <div className="app-shell">
         <Sidebar activePage={activePage} onNavigate={setActivePage} />
         <main className="content">
           <Topbar email={email} />
-          {page}
+          <div className="page-content">{page}</div>
         </main>
       </div>
       <Footer activePage={activePage} />
-    </>
+    </div>
   )
 }
