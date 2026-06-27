@@ -17,6 +17,9 @@ import { automationStatusCounts, nextRecommendedSafeAutomation, topAutomationRis
 import { NEXUS_HIGH_RISK_GUARDS } from '../../config/nexusHighRiskGuards';
 import { buildHermesWorkflowDigest } from '../../lib/clientWorkflowHermes';
 import type { ClientWorkflowProfile } from '../../config/clientWorkflow';
+import { verifyAccessInvariants } from '../../lib/nexusAIAccessPolicy';
+import { clientVaultStatus } from '../../lib/clientVaultAdapter';
+import { AI_DEPARTMENT_ROLE_LIST } from '../../config/nexusAIDepartmentRoles';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -117,12 +120,23 @@ function ClientWorkflowCard({ onNavigate }: { onNavigate?: (id: string) => void 
     return rows.map(mapClientProfileRow);
   }, []);
   const d = buildHermesWorkflowDigest(data);
+  const accessViolations = verifyAccessInvariants();
+  const vault = clientVaultStatus();
   return (
     <div className="nx-glass">
       <div className="nx-between" style={{ marginBottom: 8 }}>
         <div><h3 style={{ margin: 0 }}>Client Workflow (GoClear / Apex)</h3>
           <div className="nx-muted" style={{ fontSize: 12 }}>Signup → funding-ready. Internal only; client plan hidden until Ray-approved.</div></div>
         <button className="nx-btn ghost" onClick={() => onNavigate?.('goclear')}>Open GoClear / Apex</button>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 8 }}>
+        <span className={`nx-pill ${accessViolations.length === 0 ? 'ok' : 'warnb'}`}>AI access {accessViolations.length === 0 ? 'verified' : `${accessViolations.length} violations`}</span>
+        <span className="nx-pill">AI roles {AI_DEPARTMENT_ROLE_LIST.length}</span>
+        <span className="nx-pill">Hermes raw client data: blocked</span>
+        <span className="nx-pill">Credit Specialist: Supabase-only</span>
+        <span className="nx-pill">Client Vault: {vault.connection_status}</span>
+        <span className="nx-pill">vault adapter: {vault.adapter_in_use}</span>
+        <span className="nx-pill">2nd Supabase: {vault.second_supabase_connected ? 'connected' : 'none'}</span>
       </div>
       <div className="nx-chiprow" style={{ marginBottom: 8 }}>
         <span className="nx-pill">clients {d.total_clients}</span>
