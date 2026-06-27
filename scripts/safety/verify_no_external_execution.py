@@ -27,6 +27,10 @@ MUST_BE_FALSE = [
     "payment_link_activated", "subscription_activated", "stripe_connected", "partner_contacted",
     "partner_connector_activated", "affiliate_url_activated", "url_navigated", "url_activated",
     "raw_client_data_used",
+    # scheduler / automation install flags (must never be true)
+    "scheduler_activated", "scheduler_started", "cron_installed", "launchd_installed",
+    "systemd_installed", "daemon_created", "cron_launchd_systemd_created",
+    "claims_launched", "offer_launched", "streams_launched",
 ]
 # Flags that must be TRUE if present.
 MUST_BE_TRUE = ["level_3_blocked"]

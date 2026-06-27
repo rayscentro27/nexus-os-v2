@@ -32,6 +32,7 @@ import { PAYMENT_CONTRACT_META } from '../../config/goclearPaymentOfferContract'
 import { affiliateApprovalCounts } from '../../config/affiliateApprovalStatus';
 import { readinessReviewLaunchGate } from '../../lib/firstOfferLaunchGate';
 import { MONEY_OPPORTUNITY_HIGHLIGHTS } from '../../config/moneyOpportunityHighlights';
+import { proposalSummary } from '../../lib/overnightMoneySchedulerPolicy';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -226,6 +227,29 @@ function MoneyOpportunityCard({ onNavigate }: { onNavigate?: (id: string) => voi
       <div className="note" style={{ marginBottom: 6 }}>Top opportunity: {m.top_money_opportunity}</div>
       <div className="note" style={{ marginBottom: 6 }}>Best creative: {m.best_creative_asset}</div>
       <div className="note">Hermes: {m.hermes_recommendation}</div>
+      <OvernightMoneyRunProposalRow />
+    </div>
+  );
+}
+
+function OvernightMoneyRunProposalRow() {
+  const s = proposalSummary();
+  return (
+    <div style={{ marginTop: 10, borderTop: '1px solid var(--nx-border, rgba(255,255,255,.08))', paddingTop: 8 }}>
+      <div className="nx-row" style={{ marginBottom: 6 }}>
+        <strong style={{ fontSize: 13 }}>Overnight Money Run Proposal</strong>
+        <span className="nx-badge warnb" style={{ marginLeft: 'auto' }}>awaiting Ray approval</span>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 6 }}>
+        <span className="nx-pill">proposal_ready</span>
+        <span className="nx-pill warnb">activation: {s.activation_status}</span>
+        <span className="nx-pill">dry_run_only</span>
+        <span className="nx-pill">{s.schedule}</span>
+        <span className="nx-pill">{s.cycles} cycles · {s.interval_minutes}m</span>
+        <span className="nx-pill ok">safe_internal</span>
+      </div>
+      <div className="nx-muted" style={{ fontSize: 11, fontFamily: 'monospace', wordBreak: 'break-all', marginBottom: 4 }}>{s.command}</div>
+      <div className="note">Next Ray action: approve the proposal for future activation — activation stays a separate, approval-gated step. No cron/launchd/systemd installed.</div>
     </div>
   );
 }
