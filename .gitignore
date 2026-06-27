@@ -21,3 +21,6 @@ __pycache__/
 .venv/
 .DS_Store
 supabase/.temp/
+
+# UI backup folders (local only)
+.nexus_ui_backup_*/
