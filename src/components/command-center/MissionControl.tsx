@@ -15,6 +15,8 @@ import { loadRayReviewQueue, summarizeRayReviewCounts } from '../../lib/rayRevie
 import { RAY_YOUTUBE_WATCHLIST } from '../../config/youtubeChannelWatchlist';
 import { automationStatusCounts, nextRecommendedSafeAutomation, topAutomationRisk } from '../../lib/nexusAutomationStatus';
 import { NEXUS_HIGH_RISK_GUARDS } from '../../config/nexusHighRiskGuards';
+import { buildHermesWorkflowDigest } from '../../lib/clientWorkflowHermes';
+import type { ClientWorkflowProfile } from '../../config/clientWorkflow';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -75,6 +77,70 @@ function MemoryGalaxyCard() {
         {labels.map((lab, i) => <span key={lab} className="nx-soft" style={{ position: 'absolute', fontSize: 10, padding: '2px 6px', left: `${8 + i * 16}%`, top: i % 2 ? 14 : 120 }}>{lab}</span>)}
       </div>
       <div className="nx-between" style={{ fontSize: 12 }}><span className="nx-muted">{data} lessons (nexus_lessons)</span></div>
+    </div>
+  );
+}
+
+function mapClientProfileRow(r: Row): ClientWorkflowProfile {
+  const md = (r.metadata ?? {}) as Record<string, unknown>;
+  return {
+    client_id: String(r.id ?? ''),
+    tenant_id: String(r.workspace_id ?? ''),
+    client_label: String(r.client_label ?? 'Client'),
+    current_stage: String(r.current_stage ?? 'signup_started') as ClientWorkflowProfile['current_stage'],
+    next_required_action: String(r.next_required_action ?? ''),
+    due_at: (r.due_at as string | null) ?? null,
+    days_stuck: Number(r.days_stuck ?? 0),
+    progress_percentage: Number(r.progress_percentage ?? 0),
+    funding_readiness_impact: Number(r.funding_readiness_impact ?? 0),
+    revenue_risk_level: String(r.revenue_risk_level ?? 'low') as ClientWorkflowProfile['revenue_risk_level'],
+    ray_review_status: String(r.ray_review_status ?? 'not_needed') as ClientWorkflowProfile['ray_review_status'],
+    client_visible_status: String(r.client_visible_status ?? ''),
+    selected_credit_report_source: (r.selected_credit_report_source as ClientWorkflowProfile['selected_credit_report_source']) ?? null,
+    source_selected_at: (r.source_selected_at as string | null) ?? null,
+    affiliate_partner_id: (r.affiliate_partner_id as string | null) ?? null,
+    affiliate_url: (r.affiliate_url as string | null) ?? null,
+    affiliate_disclosure_accepted: Boolean(r.affiliate_disclosure_accepted),
+    client_consent_accepted: Boolean(r.client_consent_accepted),
+    score_available: Boolean(r.score_available),
+    score_source: String(r.score_source ?? 'unavailable') as ClientWorkflowProfile['score_source'],
+    report_upload_status: String(r.report_upload_status ?? 'not_started') as ClientWorkflowProfile['report_upload_status'],
+    report_import_status: String(r.report_import_status ?? 'not_started') as ClientWorkflowProfile['report_import_status'],
+    updated_at: String(r.updated_at ?? new Date().toISOString()),
+    signals: md.signals as Record<string, unknown> | undefined,
+  } as ClientWorkflowProfile;
+}
+
+function ClientWorkflowCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const { data } = useData<ClientWorkflowProfile[]>(async () => {
+    const rows = await listTable('client_profiles', { order: 'updated_at', limit: 200 });
+    return rows.map(mapClientProfileRow);
+  }, []);
+  const d = buildHermesWorkflowDigest(data);
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 8 }}>
+        <div><h3 style={{ margin: 0 }}>Client Workflow (GoClear / Apex)</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Signup → funding-ready. Internal only; client plan hidden until Ray-approved.</div></div>
+        <button className="nx-btn ghost" onClick={() => onNavigate?.('goclear')}>Open GoClear / Apex</button>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 8 }}>
+        <span className="nx-pill">clients {d.total_clients}</span>
+        <span className="nx-pill">stuck {d.stuck_clients}</span>
+        <span className="nx-pill">reports pending {d.credit_reports_pending}</span>
+        <span className="nx-pill">SmartCredit incomplete {d.smartcredit_incomplete}</span>
+        <span className="nx-pill">no score {d.no_score}</span>
+        <span className="nx-pill">business incomplete {d.business_incomplete}</span>
+        <span className="nx-pill">letters unmailed {d.letters_unmailed}</span>
+        <span className="nx-pill">mailing proof missing {d.mailing_proof_missing}</span>
+        <span className="nx-pill">Ray review {d.ready_for_ray_review}</span>
+        <span className="nx-pill">near funding-ready {d.near_funding_ready}</span>
+        <span className="nx-pill">upsell {d.upsell_opportunities}</span>
+        <span className="nx-pill">revenue risk {d.revenue_risk_clients}</span>
+        <span className="nx-pill">SmartCredit connector: not configured</span>
+      </div>
+      <div className="note">Hermes: {d.top_recommendation}</div>
+      {data.length === 0 && <div className="nx-muted" style={{ fontSize: 12, marginTop: 6 }}>No client_profiles yet — run the dry-run client workflow reports to preview engine output.</div>}
     </div>
   );
 }
@@ -269,6 +335,7 @@ export function CommandCenterMissionControl({ email, onNavigate }: { email: stri
         {/* Column 2 — Jarvis + compact System Awareness */}
         <div className="nx-col">
           <HermesJarvisCard onNavigate={onNavigate} />
+          <ClientWorkflowCard onNavigate={onNavigate} />
           <SystemStatusOverview onOpenTab={onNavigate} compact />
         </div>
         {/* Column 3 — Oracle + Memory Galaxy */}
