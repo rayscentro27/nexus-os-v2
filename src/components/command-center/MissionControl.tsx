@@ -29,6 +29,8 @@ import { partnerOfferCounts } from '../../lib/partnerOfferStatus';
 import { pricingValidationSummary } from '../../lib/goclearPricingValidation';
 import { ALL_GOCLEAR_OFFERS } from '../../config/goclearSubscriptionOffers';
 import { PAYMENT_CONTRACT_META } from '../../config/goclearPaymentOfferContract';
+import { affiliateApprovalCounts } from '../../config/affiliateApprovalStatus';
+import { readinessReviewLaunchGate } from '../../lib/firstOfferLaunchGate';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -200,6 +202,30 @@ function NightRunMonetizationCard({ onNavigate }: { onNavigate?: (id: string) =>
         <span className="nx-pill">high-funding tasks {mon.high_funding_tasks}</span>
       </div>
       <div className="note">Pricing figures are internal market-research estimates to validate, not live offers. No client charged.</div>
+    </div>
+  );
+}
+
+function AffiliateWaitingRoomCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const approvals = affiliateApprovalCounts();
+  const gate = readinessReviewLaunchGate();
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 8 }}>
+        <div><h3 style={{ margin: 0 }}>Affiliate Approval Waiting Room</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Track partner approvals + URL intake. No partner contacted or activated.</div></div>
+        <button className="nx-btn ghost" onClick={() => onNavigate?.('approvals')}>Open Approvals</button>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 8 }}>
+        <span className="nx-pill">programs {approvals.total}</span>
+        <span className="nx-pill warnb">not applied {approvals.not_applied}</span>
+        <span className="nx-pill">pending {approvals.pending_review + approvals.application_submitted}</span>
+        <span className="nx-pill ok">approved {approvals.approved}</span>
+        <span className="nx-pill">awaiting URLs {approvals.awaiting_urls}</span>
+        <span className={`nx-pill ${gate.can_launch ? 'ok' : 'warnb'}`}>$97 launch gate: {gate.can_launch ? 'ready' : `${gate.blockers.length} blockers`}</span>
+        <span className="nx-pill">payment: {gate.payment_status}</span>
+      </div>
+      <div className="note">First offer next step: {gate.recommended_next_action}</div>
     </div>
   );
 }
@@ -423,6 +449,7 @@ export function CommandCenterMissionControl({ email, onNavigate }: { email: stri
           <ClientWorkflowCard onNavigate={onNavigate} />
           <NightRunMonetizationCard onNavigate={onNavigate} />
           <LaunchReadinessCard onNavigate={onNavigate} />
+          <AffiliateWaitingRoomCard onNavigate={onNavigate} />
           <SystemStatusOverview onOpenTab={onNavigate} compact />
         </div>
         {/* Column 3 — Oracle + Memory Galaxy */}

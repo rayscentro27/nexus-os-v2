@@ -130,3 +130,104 @@ REVENUE_STREAMS = [
     {"stream_id": "affiliate_partner_engine", "name": "Affiliate + Partner Recommendations"},
     {"stream_id": "funding_commission_pipeline", "name": "Funding Commission Pipeline"},
 ]
+
+# ---- Affiliate Approval Waiting Room (mirrors affiliateApprovalStatus.ts) ----
+
+import re as _re  # noqa: E402
+
+APPROVAL_PRIORITY = [
+    "smartcredit", "bluevine", "docupost", "business_formation", "mercury", "relay",
+    "registered_agent", "business_address", "business_phone", "website_domain_email",
+    "bookkeeping", "vendor_credit", "funding_readiness_service",
+]
+
+
+def affiliate_approval_records() -> list[dict]:
+    """One record per non-free partner; default not_applied / awaiting_urls."""
+    out = []
+    for o in partner_offer_dicts():
+        if o["is_free"]:
+            continue
+        out.append({
+            "partner_offer_id": o["partner_offer_id"], "partner_name": o["partner_name"], "category": o["category"],
+            "program_name": f"{o['partner_name']} affiliate/referral program",
+            "application_status": "not_applied", "applied_at": None, "decision_at": None,
+            "url_intake_status": "awaiting_urls",
+            "notes": "Default state — no application submitted yet.",
+            "next_action": "Apply to the partner/affiliate program.",
+        })
+    return out
+
+
+_UNSAFE = _re.compile(r"(javascript:|data:|vbscript:|\s|<|>|\")", _re.I)
+
+
+def validate_url(field: str, value: str) -> dict:
+    v = (value or "").strip()
+    if not v:
+        return {"field": field, "value": v, "valid": False, "reason": "empty"}
+    if _UNSAFE.search(v):
+        return {"field": field, "value": v, "valid": False, "reason": "unsafe characters or scheme"}
+    m = _re.match(r"^https://([^/\s]+)", v)
+    if not m:
+        return {"field": field, "value": v, "valid": False, "reason": "must be https with a host"}
+    host = m.group(1)
+    if "." not in host:
+        return {"field": field, "value": v, "valid": False, "reason": "missing/invalid host"}
+    if host.lower().endswith("placeholder.invalid"):
+        return {"field": field, "value": v, "valid": False, "reason": "placeholder host — not a real URL yet"}
+    return {"field": field, "value": v, "valid": True, "reason": "ok"}
+
+
+def intake_partner_urls(intake: dict) -> dict:
+    """Validate an intake dict against a partner offer. Derived only — no persistence."""
+    pid = intake.get("partner_offer_id")
+    offer = next((o for o in partner_offer_dicts() if o["partner_offer_id"] == pid), None)
+    if not offer:
+        return {"partner_offer_id": pid, "partner_name": "unknown", "accepted": False, "validations": [],
+                "has_disclosure": False, "has_diy_option": False, "resulting_config_status": "needs_config",
+                "errors": [f"unknown partner_offer_id: {pid}"], "next_action": "Use a valid partner_offer_id."}
+    validations = []
+    for field in ("affiliate_url", "referral_url", "application_url"):
+        val = intake.get(field)
+        if val:
+            validations.append(validate_url(field, val))
+    errors = []
+    any_valid = any(v["valid"] for v in validations)
+    if not validations:
+        errors.append("no URL provided")
+    elif not any_valid:
+        errors.append("no valid URL among the provided fields")
+    has_disclosure = bool((intake.get("disclosure_text") or offer["disclosure_text"] or "").strip())
+    has_diy = bool((intake.get("diy_option_name") or offer["diy_option_name"] or "").strip())
+    if not has_disclosure:
+        errors.append("missing affiliate disclosure text")
+    if not has_diy:
+        errors.append("missing DIY/free option")
+    accepted = any_valid and has_disclosure and has_diy
+    return {"partner_offer_id": pid, "partner_name": offer["partner_name"], "accepted": accepted,
+            "validations": validations, "has_disclosure": has_disclosure, "has_diy_option": has_diy,
+            "resulting_config_status": "configured" if accepted else "needs_config", "errors": errors,
+            "next_action": "URLs valid — request Ray approval to place this offer." if accepted
+            else f"Fix: {'; '.join(errors)}."}
+
+
+def readiness_review_launch_gate(state: dict | None = None) -> dict:
+    s = {"ray_offer_approved": False, "ray_copy_approved": False,
+         "no_guarantee_language_present": True, "payment_connected": False}
+    if state:
+        s.update(state)
+    checks = [
+        (s["ray_offer_approved"], "Ray approved the $97 Readiness Review offer.", "Ray must approve the offer (launch review card)."),
+        (s["ray_copy_approved"], "Ray approved the client-facing copy.", "Ray must approve the readiness-review copy draft."),
+        (s["no_guarantee_language_present"], "No-guarantee/compliance language present.", "Add no-guarantee language to the copy."),
+        (s["payment_connected"], "Payment/billing connected.", "Connect payment/billing in a separate, explicitly-approved step (contract-only now)."),
+    ]
+    satisfied = [c[1] for c in checks if c[0]]
+    blockers = [c[2] for c in checks if not c[0]]
+    can = len(blockers) == 0
+    return {"offer_id": "readiness_review", "offer_name": "GoClear/Apex Credit + Business Funding Readiness Review",
+            "price": 97, "can_launch": can, "satisfied": satisfied, "blockers": blockers,
+            "external_action_taken": False, "payment_status": "not_connected",
+            "recommended_next_action": "All conditions met — proceed with the separately-approved launch step." if can
+            else f"Resolve {len(blockers)} blocker(s); start with Ray approving offer + copy. No launch occurs automatically."}
