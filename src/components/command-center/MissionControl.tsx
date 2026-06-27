@@ -25,6 +25,10 @@ import { GOCLEAR_TIERS } from '../../config/goclearSubscriptionTiers';
 import { REVENUE_STREAMS } from '../../config/nexusRevenueStreams';
 import { ONLINE_BANK_RECOMMENDATION } from '../../config/onlineBusinessBankAffiliates';
 import { summarizeMonetization } from '../../lib/clientWorkflowMonetization';
+import { partnerOfferCounts } from '../../lib/partnerOfferStatus';
+import { pricingValidationSummary } from '../../lib/goclearPricingValidation';
+import { ALL_GOCLEAR_OFFERS } from '../../config/goclearSubscriptionOffers';
+import { PAYMENT_CONTRACT_META } from '../../config/goclearPaymentOfferContract';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -196,6 +200,32 @@ function NightRunMonetizationCard({ onNavigate }: { onNavigate?: (id: string) =>
         <span className="nx-pill">high-funding tasks {mon.high_funding_tasks}</span>
       </div>
       <div className="note">Pricing figures are internal market-research estimates to validate, not live offers. No client charged.</div>
+    </div>
+  );
+}
+
+function LaunchReadinessCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const partners = partnerOfferCounts();
+  const pricing = pricingValidationSummary();
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 8 }}>
+        <div><h3 style={{ margin: 0 }}>Launch Readiness</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Approval-ready only. No offer published, no payment connected, nothing charged.</div></div>
+        <button className="nx-btn ghost" onClick={() => onNavigate?.('approvals')}>Open Approvals</button>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 8 }}>
+        <span className="nx-pill">partner offers {partners.total}</span>
+        <span className="nx-pill warnb">needs config {partners.needs_config}</span>
+        <span className="nx-pill">offers {ALL_GOCLEAR_OFFERS.length}</span>
+        <span className="nx-pill">pricing in-range {pricing.in_range}/{pricing.offers}</span>
+        <span className="nx-pill">launch packages 4</span>
+        <span className="nx-pill">Ray review cards 10</span>
+        <span className="nx-pill">copy drafts 10</span>
+        <span className="nx-pill">payment: {PAYMENT_CONTRACT_META.activation_status}</span>
+        <span className="nx-pill ok">level 3 blocked</span>
+      </div>
+      <div className="note">Hermes: approve the $97 Readiness Review first (lowest risk, fastest money); add partner URLs; keep payment + connectors blocked until approved.</div>
     </div>
   );
 }
@@ -392,6 +422,7 @@ export function CommandCenterMissionControl({ email, onNavigate }: { email: stri
           <HermesJarvisCard onNavigate={onNavigate} />
           <ClientWorkflowCard onNavigate={onNavigate} />
           <NightRunMonetizationCard onNavigate={onNavigate} />
+          <LaunchReadinessCard onNavigate={onNavigate} />
           <SystemStatusOverview onOpenTab={onNavigate} compact />
         </div>
         {/* Column 3 — Oracle + Memory Galaxy */}
