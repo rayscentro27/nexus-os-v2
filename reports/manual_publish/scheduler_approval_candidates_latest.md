@@ -1,6 +1,6 @@
 # Scheduler Approval Candidates
 
-- generated_at: 2026-06-26T23:31:44.197709+00:00
+- generated_at: 2026-06-27T01:53:06.518618+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -12,8 +12,8 @@
 Generated schedule-ready proposals only. No scheduler activated. No cron/launchd/systemd created.
 
 ## Counts
-- candidates: 10
-- proposed: 10
+- candidates: 11
+- proposed: 11
 - approved: 0
 - active: 0
 - blocked: 0

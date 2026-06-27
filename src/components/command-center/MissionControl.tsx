@@ -21,6 +21,10 @@ import { verifyAccessInvariants } from '../../lib/nexusAIAccessPolicy';
 import { clientVaultStatus } from '../../lib/clientVaultAdapter';
 import { AI_DEPARTMENT_ROLE_LIST } from '../../config/nexusAIDepartmentRoles';
 import { AuditSink, createAgentRuntime } from '../../lib/nexusAgentRuntime';
+import { GOCLEAR_TIERS } from '../../config/goclearSubscriptionTiers';
+import { REVENUE_STREAMS } from '../../config/nexusRevenueStreams';
+import { ONLINE_BANK_RECOMMENDATION } from '../../config/onlineBusinessBankAffiliates';
+import { summarizeMonetization } from '../../lib/clientWorkflowMonetization';
 
 function HermesJarvisCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const btn = (icon: string, label: string, onClick: () => void) => (
@@ -166,6 +170,32 @@ function ClientWorkflowCard({ onNavigate }: { onNavigate?: (id: string) => void 
       </div>
       <div className="note">Hermes: {d.top_recommendation}</div>
       {data.length === 0 && <div className="nx-muted" style={{ fontSize: 12, marginTop: 6 }}>No client_profiles yet — run the dry-run client workflow reports to preview engine output.</div>}
+    </div>
+  );
+}
+
+function NightRunMonetizationCard({ onNavigate }: { onNavigate?: (id: string) => void }) {
+  const mon = summarizeMonetization();
+  const core = GOCLEAR_TIERS.find((t) => t.pricing_band === 'core');
+  return (
+    <div className="nx-glass">
+      <div className="nx-between" style={{ marginBottom: 8 }}>
+        <div><h3 style={{ margin: 0 }}>Night Run · Monetization</h3>
+          <div className="nx-muted" style={{ fontSize: 12 }}>Internal/report-only. Proposed pricing — nothing launched or charged.</div></div>
+        <button className="nx-btn ghost" onClick={() => onNavigate?.('goclear')}>Open GoClear / Apex</button>
+      </div>
+      <div className="nx-chiprow" style={{ marginBottom: 8 }}>
+        <span className="nx-pill ok">night run: 28/28 dry-runs</span>
+        <span className="nx-pill">revenue streams {REVENUE_STREAMS.length} (proposed)</span>
+        <span className="nx-pill">subscription tiers {GOCLEAR_TIERS.length}</span>
+        <span className="nx-pill">core tier ~${core?.recommended_monthly ?? 97}/mo</span>
+        <span className="nx-pill">readiness review $97</span>
+        <span className="nx-pill">online bank: {ONLINE_BANK_RECOMMENDATION.primary}</span>
+        <span className="nx-pill">monetized tasks {mon.total_tasks}</span>
+        <span className="nx-pill">avg revenue score {mon.avg_revenue_score}</span>
+        <span className="nx-pill">high-funding tasks {mon.high_funding_tasks}</span>
+      </div>
+      <div className="note">Pricing figures are internal market-research estimates to validate, not live offers. No client charged.</div>
     </div>
   );
 }
@@ -361,6 +391,7 @@ export function CommandCenterMissionControl({ email, onNavigate }: { email: stri
         <div className="nx-col">
           <HermesJarvisCard onNavigate={onNavigate} />
           <ClientWorkflowCard onNavigate={onNavigate} />
+          <NightRunMonetizationCard onNavigate={onNavigate} />
           <SystemStatusOverview onOpenTab={onNavigate} compact />
         </div>
         {/* Column 3 — Oracle + Memory Galaxy */}

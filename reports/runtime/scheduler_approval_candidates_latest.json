@@ -1,7 +1,7 @@
 {
   "ok": true,
   "title": "Scheduler Approval Candidates",
-  "generated_at": "2026-06-26T23:31:44.197709+00:00",
+  "generated_at": "2026-06-27T01:53:06.518618+00:00",
   "dry_run": true,
   "candidates": [
     {
@@ -198,11 +198,31 @@
       "high_risk_guard_applies": true,
       "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
       "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
+    },
+    {
+      "schedule_name": "Weekly Ops Improvement Report",
+      "category": "monitoring_health",
+      "automation_level": "autonomous_internal",
+      "frequency": "weekly",
+      "allowed_writes": [
+        "internal status reports",
+        "proof events"
+      ],
+      "forbidden_actions": "no destructive remediation",
+      "owner": "ops_improvements",
+      "risk_level": "low",
+      "ray_approval_required": true,
+      "current_status": "proposed",
+      "connector_required": false,
+      "external_api_required": false,
+      "high_risk_guard_applies": false,
+      "disable_rollback_command": "Do not install scheduler until Ray approves; rollback is deleting the proposed item / unloading the (not-yet-created) job.",
+      "proof_report_path": "reports/manual_publish/scheduler_approval_candidates_latest.md"
     }
   ],
   "counts": {
-    "candidates": 10,
-    "proposed": 10,
+    "candidates": 11,
+    "proposed": 11,
     "approved": 0,
     "active": 0,
     "blocked": 0,
