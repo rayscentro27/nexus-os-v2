@@ -1,6 +1,6 @@
 # Nexus Git / Supabase Deployment Gate
 
-Generated: 2026-06-29T16:57:07.670671+00:00
+Generated: 2026-06-29T16:58:51.702750+00:00
 
 - ok: true
 - repo_clean_at_start: true
@@ -22,6 +22,7 @@ Generated: 2026-06-29T16:57:07.670671+00:00
 - client_portal_using_live_supabase_data: false
 - exact_next_command: Start Docker Desktop, then run: supabase status && supabase db diff --local
 - exact_next_decision: Approve separate local testing and reconciliation of pending migration 0012 before any --include-all or production db push.
-- evidence_commit_created: by the commit containing this report
-- evidence_commit_pushed: planned after final secret/build check
+- evidence_commit_created: true
+- evidence_commit: d26fc13
+- evidence_commit_pushed: true
 - external_action_performed: false

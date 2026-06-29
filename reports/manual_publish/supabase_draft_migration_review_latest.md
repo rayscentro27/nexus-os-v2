@@ -1,6 +1,6 @@
 # Supabase Draft Migration Review
 
-Generated: 2026-06-29T16:57:07.670107+00:00
+Generated: 2026-06-29T16:58:51.702326+00:00
 
 - ok: true
 - safe_to_timestamp: true

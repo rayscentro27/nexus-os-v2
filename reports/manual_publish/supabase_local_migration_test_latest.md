@@ -1,6 +1,6 @@
 # Supabase Local Migration Test
 
-Generated: 2026-06-29T16:57:07.670130+00:00
+Generated: 2026-06-29T16:58:51.702348+00:00
 
 - ok: true
 - local_test_attempted: true

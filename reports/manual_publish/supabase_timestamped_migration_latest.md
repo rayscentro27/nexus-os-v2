@@ -1,6 +1,6 @@
 # Supabase Timestamped Migration
 
-Generated: 2026-06-29T16:57:07.670126+00:00
+Generated: 2026-06-29T16:58:51.702344+00:00
 
 - ok: true
 - timestamped: true
