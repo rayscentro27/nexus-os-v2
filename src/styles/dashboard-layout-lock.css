@@ -1,0 +1,244 @@
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.os-root,
+.app-shell,
+.content,
+.page-content,
+.page,
+.command-page,
+.command-layout,
+.command-main,
+.command-right,
+.simple-page,
+.source-layout,
+.source-center,
+.source-right {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.os-root {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 38px;
+}
+
+.app-shell {
+  width: 100vw;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+}
+
+.sidebar {
+  position: relative;
+  width: auto;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.content {
+  grid-column: 2;
+  height: 100%;
+  display: grid;
+  grid-template-rows: 54px minmax(0, 1fr);
+}
+
+.topbar {
+  position: relative;
+  height: 54px;
+  min-height: 54px;
+  padding: 0 14px;
+}
+
+.page-content {
+  height: 100%;
+  padding: 8px 14px;
+}
+
+.footer {
+  position: relative;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 18px;
+  overflow: hidden;
+}
+
+.command-layout {
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 10px;
+}
+
+.command-page > .metrics-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.command-page .metric {
+  padding: 8px;
+}
+
+.command-page .metric-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.command-page .metric-value {
+  font-size: 19px;
+}
+
+.command-page .main-stack {
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(112px, 22%) minmax(210px, 1fr) auto;
+  gap: 8px;
+}
+
+.command-page .side-stack {
+  height: 100%;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.command-page .panel,
+.command-page .side-panel,
+.command-page .hermes-card {
+  overflow: hidden;
+}
+
+.command-page .department-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.workspace {
+  height: 100%;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.workspace.source-layout {
+  grid-template-columns: 360px minmax(0, 1fr) 350px;
+}
+
+.workspace .list-panel {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.workspace .detail-panel,
+.workspace .side-stack {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(0, .8fr);
+}
+
+.workspace .detail-panel {
+  padding: 12px;
+}
+
+.workspace .detail-panel .asset-preview,
+.workspace .detail-panel .pros-cons {
+  display: none;
+}
+
+.workspace .side-stack .side-panel,
+.workspace .side-stack .hermes-card {
+  overflow: hidden;
+}
+
+.workspace .side-stack .action-button:nth-child(n + 5),
+.workspace .side-stack .output-row:nth-child(n + 5) {
+  display: none;
+}
+
+.subscription-loop-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.subscription-loop-grid > div {
+  display: grid;
+  gap: 5px;
+  min-height: 60px;
+  padding: 8px;
+}
+
+.subscription-loop-grid small {
+  color: var(--muted);
+}
+
+.subscription-loop-grid strong {
+  font-size: 11px;
+}
+
+.compact-operating-panel {
+  padding: 10px 14px;
+}
+
+.compact-operating-panel p {
+  margin: 5px 0;
+  font-size: 11px;
+}
+
+.feedback-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.simple-page .command-layout > .main-stack,
+.simple-page .command-layout > .side-stack {
+  overflow: hidden;
+}
+
+.simple-page .panel,
+.simple-page .side-panel {
+  overflow: hidden;
+}
+
+@media (max-height: 800px) {
+  .command-page .department-card:nth-child(n + 7) {
+    display: none;
+  }
+
+  .command-page .spotlight {
+    padding: 10px;
+  }
+
+  .command-page .event-row:nth-of-type(n + 5) {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 210px minmax(0, 1fr);
+  }
+
+  .command-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .workspace.source-layout {
+    grid-template-columns: 300px minmax(0, 1fr) 300px;
+  }
+}

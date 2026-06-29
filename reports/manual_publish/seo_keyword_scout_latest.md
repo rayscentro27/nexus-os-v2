@@ -1,6 +1,6 @@
 # SEO Keyword Scout
 
-- generated_at: 2026-06-26T15:38:20.594395+00:00
+- generated_at: 2026-06-29T14:52:32.968485+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -12,7 +12,7 @@
 Keywords loaded from manual CSV. No paid API called.
 
 ## Counts
-- keywords: 3
+- keywords: 2
 - created: 0
 - duplicates: 0
 - failed: 0

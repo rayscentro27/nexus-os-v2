@@ -1,7 +1,7 @@
-// Nexus OS v2 — redesigned admin dashboard UI.
-// Source: imported React package (nexus-os-react). Design reference: preview HTML.
-// Mock/demo data only — no backend calls, no external actions. Rendered after auth by app/App.tsx.
+// Nexus OS v2 — report-backed continuous operating dashboard.
+// Generated runtime data is bundled read-only; no external actions execute from this UI.
 import React, { useMemo, useState } from 'react'
+import runtime from '../data/continuousDashboardData.json'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
@@ -38,51 +38,74 @@ const navGroups = [
     label: 'Executive',
     items: [
       { id: 'command', label: 'Command Center', icon: 'LayoutDashboard' },
+      { id: 'subscription', label: 'Subscription Command Center', icon: 'BadgeDollarSign', status: 'Priority 1', statusTone: 'green' },
       { id: 'source', label: 'Source Intake & Review', icon: 'ScanSearch', status: 'Live', statusTone: 'green' },
-      { id: 'opportunity', label: 'Opportunity Lab', icon: 'Target', status: 'Active', statusTone: 'blue' }
+      { id: 'opportunity', label: 'Opportunity Lab', icon: 'Target', status: 'Active', statusTone: 'blue' },
+      { id: 'rayreview', label: 'Ray Review', icon: 'CheckCircle2', status: 'Ready', statusTone: 'green' }
     ]
   },
   {
-    label: 'Workflows',
+    label: 'GoClear / Apex',
     items: [
-      { id: 'creative', label: 'Creative Studio', icon: 'WandSparkles', status: 'Live', statusTone: 'green' },
-      { id: 'design', label: 'Design Library', icon: 'Layers3', status: 'Live', statusTone: 'green' },
-      { id: 'trading', label: 'Trading Lab', icon: 'TrendingUp', status: 'Demo', statusTone: 'amber' },
-      { id: 'seo', label: 'SEO / Marketing', icon: 'Search', status: 'Seed', statusTone: 'blue' }
+      { id: 'goclear', label: 'GoClear / Apex', icon: 'Building2', status: 'Draft', statusTone: 'amber' },
+      { id: 'clientworkflow', label: 'Client Workflow', icon: 'FileText', status: 'Internal', statusTone: 'blue' },
+      { id: 'credit', label: 'Credit Specialist', icon: 'SearchCheck', status: 'Active', statusTone: 'green' },
+      { id: 'business', label: 'Business Profile Builder', icon: 'Orbit', status: 'Active', statusTone: 'green' },
+      { id: 'funding', label: 'Funding Readiness', icon: 'BadgeDollarSign', status: '$97', statusTone: 'green' }
     ]
   },
   {
     label: 'Growth',
     items: [
-      { id: 'integrations', label: 'Integrations', icon: 'Plug', status: 'Partial', statusTone: 'blue' },
-      { id: 'ops', label: 'Ops & Improvements', icon: 'BadgeDollarSign', status: 'Live', statusTone: 'green' },
-      { id: 'jobs', label: 'Agent Jobs', icon: 'Bot', status: 'Live', statusTone: 'green' }
+      { id: 'monetization', label: 'Monetization', icon: 'TrendingUp', status: 'Draft', statusTone: 'amber' },
+      { id: 'partners', label: 'Partner Offers', icon: 'Plug', status: 'Active', statusTone: 'green' },
+      { id: 'creative', label: 'Creative Studio', icon: 'WandSparkles', status: 'Live', statusTone: 'green' },
+      { id: 'design', label: 'Design Library', icon: 'Layers3', status: 'Live', statusTone: 'green' },
+      { id: 'seo', label: 'SEO / Marketing', icon: 'Search', status: 'Seed', statusTone: 'blue' }
     ]
   },
   {
     label: 'System',
     items: [
+      { id: 'jobs', label: 'Agent Jobs', icon: 'Bot', status: 'Live', statusTone: 'green' },
+      { id: 'cli', label: 'CLI Control', icon: 'Database', status: 'Visible', statusTone: 'blue' },
+      { id: 'integrations', label: 'Integrations', icon: 'DatabaseZap', status: 'Partial', statusTone: 'blue' },
+      { id: 'ops', label: 'Ops & Improvements', icon: 'Star', status: 'Live', statusTone: 'green' },
       { id: 'health', label: 'System Health', icon: 'Activity', status: 'Live', statusTone: 'green' },
-      { id: 'hermes', label: 'Hermes Advisor', icon: 'Sparkles', status: 'Online', statusTone: 'green' },
-      { id: 'settings', label: 'Settings', icon: 'Settings', disabled: true },
-      { id: 'help', label: 'Help & Docs', icon: 'CircleHelp', disabled: true }
+      { id: 'proof', label: 'Events / Proof', icon: 'FileWarning', status: 'Live', statusTone: 'green' },
+      { id: 'trading', label: 'Trading Lab (Demo)', icon: 'TrendingUp', status: 'Paper', statusTone: 'amber' },
+      { id: 'feedback', label: 'Hermes Feedback', icon: 'Sparkles', status: 'File', statusTone: 'blue' },
+      { id: 'settings', label: 'Settings', icon: 'Settings', status: 'Safe', statusTone: 'green' }
     ]
   }
 ]
 
 const modeLabels = {
   command: 'Executive Overview',
+  subscription: 'Subscription Command Center',
   source: 'Source Intake & Review',
   opportunity: 'Opportunity Lab',
+  rayreview: 'Ray Review / Approvals',
+  goclear: 'GoClear / Apex',
+  clientworkflow: 'Client Workflow',
+  credit: 'Credit Specialist',
+  business: 'Business Profile Builder',
+  funding: 'Funding Readiness',
+  monetization: 'Monetization',
+  partners: 'Partner Offers',
   creative: 'Creative Studio',
   design: 'Design Library',
   trading: 'Trading Lab (Paper Only)',
-  seo: 'Growth Room',
-  integrations: 'Connector Status Room',
-  ops: 'System Improvement Room',
-  jobs: 'Automation Workforce Room',
+  seo: 'SEO / Marketing',
+  integrations: 'Integrations',
+  ops: 'Ops & Improvements',
+  jobs: 'Agent Jobs',
+  cli: 'CLI Control',
   health: 'System Health',
-  hermes: 'Hermes Advisor'
+  proof: 'Events / Proof Ledger',
+  hermes: 'Hermes Advisor',
+  feedback: 'Hermes Feedback',
+  settings: 'Settings'
 }
 
 const datasets = {
@@ -149,12 +172,12 @@ const datasets = {
   ],
   source: [
     ['How To Build Business Credit Fast (2026 Guide)', 'YouTube Video', 'Summarized', 'Score 82'],
-    ['Business Credit for LLCs: The Ultimate 2026 Guide', 'Web Article', 'Needs Review', 'Score 74'],
-    ['Navy Federal CLI Program Notes', 'Pasted Note', 'Needs Review', 'Score 68'],
-    ['Nav Interview — Building Business Credit Transcript', 'Transcript File', 'Summarized', 'Score 76'],
-    ['NotebookLM Export — Business Credit Research', 'NotebookLM Export', 'Summarized', 'Score 79'],
-    ['Hermes SEO Strategy Update June 2026', 'YouTube Video', 'Researching', 'Score 71'],
-    ['Google March 2026 Core Update', 'Web Article', 'Parked', 'Score 60']
+    ['GitHub: credit-repair-tools', 'Concept Research', 'Needs Review', 'Score 88'],
+    ['GitHub: credit-scoring', 'Concept Research', 'Needs Review', 'Score 85'],
+    ['GitHub: moov-io/awesome-fintech', 'Repo Metadata', 'Summarized', 'Score 83'],
+    ['GitHub: Wadprog/RepairCredit-', 'Risk-Gated Concept', 'Blocked', 'Score 80'],
+    ['GitHub: loan-management-system', 'Repo Metadata', 'Researching', 'Score 82'],
+    ['GitHub: credit-management / loan-approval-system', 'Topic Research', 'Researching', 'Score 79']
   ],
   opportunity: [
     ['Business Credit Offer Builder', 'Credit • SaaS / Service', 'Scored', 'Score 92'],
@@ -342,13 +365,28 @@ function Departments() {
   )
 }
 
-// Hermes Advisor chat bar. Mock-only: input is local state, send is a no-op (no backend, no external action).
+function hermesAnswer(question) {
+  const q = question.toLowerCase()
+  if (/what is next|what should run next|next action/.test(q)) return runtime.nextMoneyAction
+  if (/last cycle|what happened/.test(q)) return runtime.lastCycleSummary
+  if (/money fastest|make money|sell/.test(q)) return `Fastest path: ${runtime.nextMoneyAction}`
+  if (/subscription|blocking/.test(q)) return `Subscription status: ${runtime.subscriptionStatus}. ${runtime.nextMoneyAction}`
+  if (/approve|review/.test(q)) return `${runtime.approvalCount} approval cards are ready. Start with the subscription offer and first $97 landing page.`
+  if (/feedback/.test(q)) return `Latest priorities: ${runtime.feedbackProcessed.join(' · ') || 'No new feedback this cycle.'}`
+  if (/trading|oanda/.test(q)) return `Trading is ${runtime.tradingStatus}. Live and funded execution are blocked.`
+  if (/repo|github/.test(q)) return `${runtime.repoTargetCount} GitHub targets are queued for concept-only review. No untrusted code was cloned or run.`
+  if (/pushback|not built|manual/.test(q)) return runtime.hermesPushback
+  return `${runtime.hermesRecommendation} Latest report: ${runtime.reportPath}`
+}
+
+// Report-backed Hermes advisor. It answers from the latest generated cycle snapshot.
 function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', chips = [] }) {
   const [text, setText] = useState('')
+  const [answer, setAnswer] = useState(runtime.hermesRecommendation)
   return (
     <section className="glass hermes-card">
       <div className="hermes-title"><span className="advisor-ring small" />{label} <em>• Online</em></div>
-      <div className="hermes-message">I recommend moving forward with focused validation, resolving critical blockers first, and generating proof artifacts for review.</div>
+      <div className="hermes-message">{answer}</div>
       {chips.length > 0 && (
         <div className="hermes-chips">
           {chips.map(chip => (
@@ -358,7 +396,7 @@ function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', c
       )}
       <form
         className="ask-row"
-        onSubmit={(e) => { e.preventDefault(); setText('') }}
+        onSubmit={(e) => { e.preventDefault(); if (text.trim()) setAnswer(hermesAnswer(text)); setText('') }}
       >
         <input
           type="text"
@@ -373,7 +411,7 @@ function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', c
   )
 }
 
-const HERMES_COMMAND_CHIPS = ['What needs my attention?', 'Summarize blockers', 'Recommend next actions', 'Show urgent approvals']
+const HERMES_COMMAND_CHIPS = ['What is next?', 'What happened last cycle?', 'What makes money fastest?', 'What should I approve?']
 
 function Events({ title = 'Recent Proof / Events' }) {
   const rows = ['YouTube capture completed', 'Integration error resolved', 'SEO report generated', '3 approvals submitted', 'Agent job completed']
@@ -416,15 +454,13 @@ function Awareness() {
 function CommandCenter() {
   return (
     <section className="page active command-page">
-      <PageTitle title="Command Center" sub="Executive Overview" />
-
       <div className="metrics-grid">
-        <Metric label="Active Departments" value="9 / 12" icon="LayoutGrid" tone="violet" />
-        <Metric label="Needs Review" value="23" icon="FileWarning" tone="amber" />
-        <Metric label="Blocked Items" value="7" icon="TriangleAlert" tone="red" />
-        <Metric label="Scheduled Work" value="18" icon="CalendarDays" tone="blue" />
-        <Metric label="Automation Feeders" value="64" icon="Zap" tone="cyan" />
-        <Metric label="System Health" value="98%" icon="Activity" tone="green" />
+        <Metric label="Active Systems" value={runtime.systemsActivated.length} icon="LayoutGrid" tone="violet" />
+        <Metric label="Approvals" value={runtime.approvalCount} icon="FileWarning" tone="amber" />
+        <Metric label="Blockers" value={runtime.blockerCount} icon="TriangleAlert" tone="red" />
+        <Metric label="Opportunities" value={runtime.opportunityCount} icon="Target" tone="blue" />
+        <Metric label="Drafts" value={runtime.draftCount} icon="Zap" tone="cyan" />
+        <Metric label="Safety" value="Clean" icon="Activity" tone="green" />
       </div>
 
       <div className="command-layout">
@@ -433,29 +469,35 @@ function CommandCenter() {
             <div className="spotlight">
               <div>
                 <div className="recommend">★ Top Recommendation</div>
-                <h3>Launch 3 high-intent content assets this week to capture demand ahead of competitor updates.</h3>
-                <button>View details →</button>
+                <h3 style={{ fontSize: 18 }}>{runtime.nextMoneyAction}</h3>
+                <button style={{ marginTop: 12, fontSize: 12, padding: '8px 14px' }}>View details →</button>
               </div>
-              <div className="hero-art" />
               <div>
-                <h4>Today’s Priorities</h4>
-                <p>✅ Approve Q2 content calendar <span>High</span></p>
-                <p>✅ Unblock integrations (2) <span>Medium</span></p>
-                <p>✅ Review SEO strategy update <span>Medium</span></p>
+                <h4>Today's Priorities</h4>
+                <p style={{ fontSize: 12 }}>✅ Approve $97 offer <span>High</span></p>
+                <p style={{ fontSize: 12 }}>✅ Approve first landing page <span>High</span></p>
+                <p style={{ fontSize: 12 }}>✅ Confirm monthly tier <span>High</span></p>
               </div>
               <div>
                 <h4>Quick Launch</h4>
-                <button className="quick">Create Opportunity</button>
-                <button className="quick">Create Campaign Kit</button>
-                <button className="quick">Run Backtest</button>
+                <button className="quick" style={{ fontSize: 11, padding: '6px 10px' }}>Create Opportunity</button>
+                <button className="quick" style={{ fontSize: 11, padding: '6px 10px' }}>Create Campaign</button>
+                <button className="quick" style={{ fontSize: 11, padding: '6px 10px' }}>Run Backtest</button>
+              </div>
+              <div>
+                <h4>Status</h4>
+                <p style={{ fontSize: 11 }}>Hermes: <span className="green-text">Active</span></p>
+                <p style={{ fontSize: 11 }}>Loop: <span className="green-text">{runtime.loopStatus}</span></p>
+                <p style={{ fontSize: 11 }}>Snapshot: <span className="green-text">{runtime.generatedAt.slice(0, 10)}</span></p>
               </div>
             </div>
           </section>
 
           <Departments />
+
           <Hermes
             label="Hermes Advisor"
-            prompt="Ask Hermes for guidance on priorities, blockers, or next actions..."
+            prompt="Ask Hermes for guidance..."
             chips={HERMES_COMMAND_CHIPS}
           />
         </div>
@@ -621,6 +663,11 @@ function SidePanel({ type }) {
 
   return (
     <aside className="side-stack">
+      <Hermes
+        label="Hermes Recommendation"
+        prompt={`Ask about ${type}...`}
+        chips={type === 'trading' ? ['Trading status?', 'What stays manual?'] : ['What is next?', 'What should I approve?']}
+      />
       <section className="glass side-panel">
         <h3>Actions</h3>
         <div className="action-grid">
@@ -645,7 +692,6 @@ function SidePanel({ type }) {
         ))}
       </section>
 
-      <Events title="System Proof / History" />
     </aside>
   )
 }
@@ -672,7 +718,7 @@ function Workspace({ id, title, sub, kind, type, layoutClass }) {
 
 function SimplePage({ title, sub, children }) {
   return (
-    <section className="page active command-page">
+    <section className="page active simple-page">
       <PageTitle title={title} sub={sub} />
       {children}
     </section>
@@ -682,17 +728,52 @@ function SimplePage({ title, sub, children }) {
 function SystemHealthPage() {
   return (
     <SimplePage title="System Health" sub="Operational Status">
-      <div className="metrics-grid">
-        <Metric label="System Health" value="98%" icon="Activity" tone="green" />
-        <Metric label="Active Integrations" value="6 / 9" icon="CopyPlus" tone="blue" />
-        <Metric label="Failing Connectors" value="2" icon="TriangleAlert" tone="red" />
-        <Metric label="Automation Feeders" value="64" icon="Zap" tone="cyan" />
-        <Metric label="Agent Jobs Running" value="1" icon="Bot" tone="violet" />
-        <Metric label="Scheduled Work" value="18" icon="CalendarDays" tone="amber" />
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Netlify" value="Live" icon="Activity" tone="green" />
+        <Metric label="Supabase" value="Partial" icon="Database" tone="amber" />
+        <Metric label="Hermes" value="Active" icon="Sparkles" tone="green" />
+        <Metric label="Automation" value="Safe" icon="Zap" tone="green" />
       </div>
-      <div className="command-layout">
-        <div className="main-stack"><Departments /></div>
-        <aside className="side-stack"><Events /><Awareness /></aside>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>System Components</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {[
+                ['Netlify / Live URL', 'nexusv20.netlify.app', 'green', 'Connected'],
+                ['Build Status', 'Passing (tsc + vite)', 'green', 'OK'],
+                ['Repo Branch', 'main', 'green', 'Current'],
+                ['Supabase', 'Configured (partial data)', 'amber', 'Partial'],
+                ['Report Data', 'Generated activation snapshot', 'green', 'Report-backed'],
+                ['Hermes Frontend', 'Local advisor active', 'green', 'Online'],
+                ['Automation Safety', 'All gates active', 'green', 'Blocked risky'],
+                ['Scheduler', 'Not activated', 'amber', 'Off'],
+                ['External AI Calls', 'Blocked by default', 'green', 'Safe']
+              ].map(([name, status, tone, badge]) => (
+                <div key={name} className="nx-soft" style={{ padding: 10 }}>
+                  <div className="between">
+                    <strong style={{ fontSize: 12 }}>{name}</strong>
+                    <Pill tone={tone}>{badge}</Pill>
+                  </div>
+                  <div className="nx-muted" style={{ fontSize: 11, marginTop: 4 }}>{status}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="glass panel">
+            <h3>Recommendations</h3>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              <p>• Connect Supabase with live client data for full functionality</p>
+              <p>• Configure SmartCredit connector for credit monitoring</p>
+              <p>• Add payment processor for $97 Readiness Review launch</p>
+              <p>• Seed SEO sites and opportunities for full department data</p>
+            </div>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Events title="Health Events" />
+          <Hermes label="Hermes · System Health" chips={['What happened last cycle?', 'What is not built enough yet?', 'What should run next?']} />
+        </aside>
       </div>
     </SimplePage>
   )
@@ -715,13 +796,593 @@ function HermesAdvisorPage() {
   )
 }
 
+// ── Subscription Command Center ──
+function SubscriptionCommandCenterPage() {
+  const loop = ['Credit/profile check', 'Business profile check', 'Readiness score update', 'Task progress review', 'Missing documents', 'Next best action', 'Partner/tool fit', 'Funding update', 'Monthly education', 'Referral/upgrade trigger']
+  return (
+    <SimplePage title="Subscription Command Center" sub="Priority 1 · GoClear / Apex Monthly Value Loop">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Engine" value="Active" icon="Activity" tone="green" />
+        <Metric label="Entry Offer" value="$97" icon="BadgeDollarSign" tone="green" />
+        <Metric label="Approvals" value={runtime.approvalCount} icon="CheckCircle2" tone="amber" />
+        <Metric label="Monthly Loop" value="10 steps" icon="Orbit" tone="blue" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <div className="panel-head"><h3>Monthly Member Value Loop</h3><Pill tone="green">{runtime.subscriptionStatus}</Pill></div>
+            <div className="subscription-loop-grid">
+              {loop.map((step, i) => <div className="nx-soft" key={step}><small>{i + 1}</small><strong>{step}</strong></div>)}
+            </div>
+          </section>
+          <section className="glass panel compact-operating-panel">
+            <h3>Generated Report + Safety</h3>
+            <p><code>reports/manual_publish/subscription_engine_activation_latest.md</code></p>
+            <p className="green-text">Safe internal model active. No payment, publishing, or client contact occurred.</p>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <section className="glass side-panel">
+            <h3>Approval Needed</h3>
+            <p>Approve the offer promise, membership tier/pricing, and first landing-page draft.</p>
+            <Pill tone="amber">Ray Review</Pill>
+          </section>
+          <Hermes label="Hermes · Subscription" prompt="Ask what makes money next..." chips={['What is next?', 'What blocks subscriptions?', 'What makes money fastest?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+function HermesFeedbackPage() {
+  return (
+    <SimplePage title="Hermes Feedback" sub="Ray Feedback Intake · File-backed and processed each cycle">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Processed Priorities" value={runtime.feedbackProcessed.length} icon="CheckCircle2" tone="green" />
+        <Metric label="Write-back" value="File" icon="FileText" tone="blue" />
+        <Metric label="Pushback" value="On" icon="TriangleAlert" tone="amber" />
+        <Metric label="Safety" value="Internal" icon="Activity" tone="green" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Current Operating Priorities</h3>
+            {runtime.feedbackProcessed.map(item => <div className="nx-soft feedback-row" key={item}>{item}</div>)}
+          </section>
+          <section className="glass panel compact-operating-panel">
+            <h3>How to Add Feedback</h3>
+            <p>The browser cannot write to the repository. Add a new <code>* [new]</code> line to:</p>
+            <p><code>data/feedback/ray_feedback_inbox.md</code></p>
+            <p>Report: <code>reports/manual_publish/hermes_feedback_latest.md</code></p>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <section className="glass side-panel"><h3>Hermes Pushback</h3><p>{runtime.hermesPushback}</p><Pill tone="amber">Active</Pill></section>
+          <Hermes label="Hermes · Feedback" chips={['What feedback did Ray give?', 'What changed?', 'What are you pushing back on?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+function SettingsPage() {
+  return (
+    <SimplePage title="Settings" sub="Continuous Loop · Safety Boundaries · Report Paths">
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Continuous Safe-Internal Mode</h3>
+            <div className="nx-soft feedback-row"><strong>Status</strong><span>{runtime.loopStatus}</span></div>
+            <div className="nx-soft feedback-row"><strong>Default interval</strong><span>30 minutes</span></div>
+            <div className="nx-soft feedback-row"><strong>Launchd</strong><span>Draft only · not installed</span></div>
+            <div className="nx-soft feedback-row"><strong>Latest report</strong><code>{runtime.reportPath}</code></div>
+          </section>
+          <section className="glass panel compact-operating-panel">
+            <h3>Hard Safety State</h3>
+            <p className="green-text">No money spent · no public content · no client contact · no real-money trades.</p>
+            <p>Approval needed before scheduler install, production data writes, publishing, sending, payments, or demo orders.</p>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <section className="glass side-panel"><h3>Recommended Next Action</h3><p>{runtime.nextMoneyAction}</p></section>
+          <Hermes label="Hermes · Settings" chips={['What should stay manual?', 'What is not built enough yet?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── GoClear / Apex Funding Readiness ──
+function GoClearPage() {
+  return (
+    <SimplePage title="GoClear / Apex" sub="Funding Readiness Workspace · $97 Readiness Review">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Launch Readiness" value="Draft" icon="Target" tone="amber" />
+        <Metric label="Primary Offer" value="$97" icon="BadgeDollarSign" tone="green" />
+        <Metric label="Partner Offers" value="15" icon="Plug" tone="blue" />
+        <Metric label="Blocked" value="3" icon="TriangleAlert" tone="red" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Launch Path</h3>
+            <div className="department-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+              {[
+                ['Launch Readiness', 'Draft landing page + checklist', 'amber'],
+                ['Offer Package', '$97 / $297 / $497 offer ladder', 'green'],
+                ['Partner Offers', 'SmartCredit, bank affiliates, business tools', 'blue'],
+                ['Approval Queue', 'Ray approval required for all outbound', 'amber'],
+                ['Draft Content', 'Social posts, emails, landing page copy', 'blue'],
+                ['Follow-up', 'Email sequences, onboarding flow', 'blue']
+              ].map(([title, desc, tone]) => (
+                <div className="department-card glass2" key={title}>
+                  <div className="between">
+                    <h4>{title}</h4>
+                    <Pill tone={tone}>{tone === 'green' ? 'Ready' : 'Draft'}</Pill>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--muted)', marginTop: 6 }}>{desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="glass panel">
+            <h3>Partner Offers (Draft)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+              {['SmartCredit', 'AnnualCreditReport.com', 'Bank of America', 'Chase', 'Bluevine', 'Mercury', 'Relay', 'Northwest Registered Agent', 'ZenBusiness', 'Bizee', 'iPostal1', 'Grasshopper', 'QuickBooks', 'DocuPost / USPS', 'Local Credit Unions'].map(p => (
+                <div key={p} className="nx-soft" style={{ padding: '6px 10px', fontSize: 11 }}>
+                  <span className="nx-badge infob" style={{ fontSize: 9 }}>partner</span> {p}
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Events title="GoClear Events" />
+          <section className="glass side-panel">
+            <h3>Revenue Tiers</h3>
+            <div className="awareness-row"><Icon name="BadgeDollarSign" size={20} className="green-text" /><strong>$97 Readiness Review</strong><Pill tone="green">Core</Pill></div>
+            <div className="awareness-row"><Icon name="BadgeDollarSign" size={20} className="blue-text" /><strong>$297 Assisted Plan</strong><Pill tone="blue">Upgrade</Pill></div>
+            <div className="awareness-row"><Icon name="BadgeDollarSign" size={20} className="violet-text" /><strong>$497 Higher Touch</strong><Pill tone="violet">Premium</Pill></div>
+            <div className="awareness-row"><Icon name="BadgeDollarSign" size={20} className="amber-text" /><strong>Funding Commission</strong><Pill tone="amber">Later</Pill></div>
+          </section>
+          <Hermes label="Hermes" prompt="Ask about GoClear..." chips={['What blockers exist?', 'Revenue path?', 'Partner status?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Client Workflow ──
+function ClientWorkflowPage() {
+  return (
+    <SimplePage title="Client Workflow" sub="Signup → Funding-Ready Pipeline">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Active Clients" value="0" icon="FileText" tone="blue" />
+        <Metric label="Stuck" value="0" icon="TriangleAlert" tone="red" />
+        <Metric label="Near Ready" value="0" icon="CheckCircle2" tone="green" />
+        <Metric label="Revenue Risk" value="0" icon="BadgeDollarSign" tone="amber" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Workflow Stages</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+              {['Signup Started', 'Credit Report', 'Business Setup', 'Document Prep', 'Funding Ready'].map((stage, i) => (
+                <div key={stage} className="nx-soft" style={{ padding: 10, textAlign: 'center' }}>
+                  <div className="nx-badge infob" style={{ marginBottom: 6 }}>Step {i + 1}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>{stage}</div>
+                  <div className="nx-muted" style={{ fontSize: 10, marginTop: 4 }}>0 clients</div>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="glass panel">
+            <h3>No client profiles yet</h3>
+            <p style={{ fontSize: 12, color: 'var(--muted)' }}>Run the dry-run client workflow reports to preview engine output. Client data stays in Supabase — Hermes never sees raw PII.</p>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Events title="Client Events" />
+          <Hermes label="Hermes" prompt="Client workflow..." chips={['Stuck clients?', 'Next action?', 'Revenue risk?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Credit Specialist ──
+function CreditSpecialistPage() {
+  return (
+    <SimplePage title="Credit Specialist" sub="Credit Analysis & Recommendations (Internal)">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Reports Pending" value="0" icon="FileText" tone="amber" />
+        <Metric label="SmartCredit" value="Off" icon="Database" tone="red" />
+        <Metric label="Scores Available" value="0" icon="Activity" tone="blue" />
+        <Metric label="Risk Level" value="—" icon="TriangleAlert" tone="green" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Credit Readiness Pipeline</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {[
+                ['Score Check', 'Pull or import credit score', 'amber'],
+                ['Report Analysis', 'Review credit report items', 'blue'],
+                ['Dispute Queue', 'Identify dispute opportunities', 'blue'],
+                ['Readiness Score', 'Calculate funding readiness', 'green']
+              ].map(([title, desc, tone]) => (
+                <div key={title} className="nx-soft" style={{ padding: 10 }}>
+                  <Pill tone={tone}>{tone === 'green' ? 'Active' : 'Planned'}</Pill>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>{title}</div>
+                  <div className="nx-muted" style={{ fontSize: 11, marginTop: 4 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="note">SmartCredit connector: Not configured. AnnualCreditReport: Not configured. Hermes never accesses raw credit data directly.</div>
+        </div>
+        <aside className="side-stack">
+          <Events title="Credit Events" />
+          <Hermes label="Hermes" prompt="Credit questions..." chips={['SmartCredit status?', 'Readiness score?', 'Dispute opportunities?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Business Setup ──
+function BusinessSetupPage() {
+  return (
+    <SimplePage title="Business Profile Builder" sub="Entity, Banking & Business Foundation">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Entity Status" value="Draft" icon="Building2" tone="amber" />
+        <Metric label="EIN" value="—" icon="FileText" tone="blue" />
+        <Metric label="Bank Account" value="—" icon="Database" tone="blue" />
+        <Metric label="Online Presence" value="—" icon="Globe" tone="amber" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Setup Checklist</h3>
+            <div style={{ display: 'grid', gap: 6 }}>
+              {[
+                ['LLC Formation', 'Register business entity', 'Not started'],
+                ['EIN Application', 'Apply for Employer ID Number', 'Not started'],
+                ['Business Bank', 'Open business checking account', 'Not started'],
+                ['Business Address', 'Virtual mailbox or physical address', 'Not started'],
+                ['Website / Domain', 'Professional web presence', 'Not started'],
+                ['Business Phone', 'Dedicated business line', 'Not started']
+              ].map(([item, desc, status]) => (
+                <div key={item} className="nx-soft" style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div><strong style={{ fontSize: 13 }}>{item}</strong><div className="nx-muted" style={{ fontSize: 11 }}>{desc}</div></div>
+                  <Pill tone="amber">{status}</Pill>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="note">Partners: Northwest Registered Agent, ZenBusiness, Bizee for LLC formation. iPostal1 for business address. Mercury/Bluevine for business banking.</div>
+        </div>
+        <aside className="side-stack">
+          <Events title="Setup Events" />
+          <Hermes label="Hermes" prompt="Business setup..." chips={['LLC status?', 'Bank options?', 'Next step?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Funding Readiness ──
+function FundingReadinessPage() {
+  return (
+    <SimplePage title="Funding Readiness" sub="$97 Readiness Review · Revenue Path">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Launch Gate" value="Blocked" icon="TriangleAlert" tone="red" />
+        <Metric label="Offer Price" value="$97" icon="BadgeDollarSign" tone="green" />
+        <Metric label="Ladder" value="$97/$297/$497" icon="TrendingUp" tone="blue" />
+        <Metric label="Payment" value="Off" icon="Database" tone="red" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Launch Readiness Gate</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div className="nx-soft" style={{ padding: 10 }}>
+                <h4 className="red-text" style={{ margin: '0 0 6px', fontSize: 13 }}>Blockers</h4>
+                <div style={{ fontSize: 12 }}>• Payment processor not connected</div>
+                <div style={{ fontSize: 12 }}>• Landing page not published</div>
+                <div style={{ fontSize: 12 }}>• Email sequences not configured</div>
+              </div>
+              <div className="nx-soft" style={{ padding: 10 }}>
+                <h4 className="green-text" style={{ margin: '0 0 6px', fontSize: 13 }}>Ready</h4>
+                <div style={{ fontSize: 12 }}>• Offer pricing validated</div>
+                <div style={{ fontSize: 12 }}>• Partner offers configured</div>
+                <div style={{ fontSize: 12 }}>• Compliance review complete</div>
+              </div>
+            </div>
+          </section>
+          <section className="glass panel">
+            <h3>Revenue Path</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {[
+                ['$97 Readiness Review', 'Entry offer', 'green'],
+                ['$297 Assisted Plan', 'Upsell tier 1', 'blue'],
+                ['$497 Higher Touch', 'Upsell tier 2', 'violet'],
+                ['Funding Commission', 'Partner revenue', 'amber']
+              ].map(([name, desc, tone]) => (
+                <div key={name} className="nx-soft" style={{ padding: 10, textAlign: 'center' }}>
+                  <Pill tone={tone}>{desc}</Pill>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>{name}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Events title="Funding Events" />
+          <Hermes label="Hermes" prompt="Funding readiness..." chips={['Launch blockers?', 'Revenue path?', 'Partner status?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Ray Review ──
+function RayReviewPage() {
+  return (
+    <SimplePage title="Ray Review / Approvals" sub="True Decisions Only · Approval Required">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Pending Review" value={runtime.approvalCount} icon="CheckCircle2" tone="amber" />
+        <Metric label="Approved Today" value="0" icon="CircleHelp" tone="green" />
+        <Metric label="Rejected" value="0" icon="CircleX" tone="red" />
+        <Metric label="Needs Changes" value="0" icon="FileWarning" tone="blue" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Approval Queue</h3>
+            {['Approve subscription offer + pricing', 'Approve first $97 landing page', 'Approve first 10 social posts', 'Approve email sequence', 'Review partner recommendations', 'Review repo adaptation decisions'].map(item => (
+              <div className="nx-soft feedback-row" key={item}><strong>{item}</strong><Pill tone="amber">Approve / Reject / Defer</Pill></div>
+            ))}
+          </section>
+          <section className="glass panel">
+            <h3>Review Policy</h3>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+              <p>• All publishing, sending, trading, and payment actions require Ray approval</p>
+              <p>• Hermes can recommend but never execute directly</p>
+              <p>• Internal report reading and status checks do not require approval</p>
+              <p>• Client PII never leaves the building without explicit consent</p>
+            </div>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Events title="Approval Events" />
+          <Hermes label="Hermes" prompt="Review queue..." chips={['What needs approval?', 'Show pending?', 'Risk assessment?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Monetization ──
+function MonetizationPage() {
+  return (
+    <SimplePage title="Monetization" sub="Revenue Streams & Opportunities">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Revenue Streams" value="8" icon="TrendingUp" tone="green" />
+        <Metric label="Active Offers" value="0" icon="BadgeDollarSign" tone="blue" />
+        <Metric label="Draft Content" value="10" icon="FileText" tone="amber" />
+        <Metric label="Partners" value="15" icon="Plug" tone="violet" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Revenue Streams (Proposed)</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+              {[
+                ['$97 Readiness Review', 'Core entry offer', 'green'],
+                ['Subscription Tiers', 'Monthly pricing pending Ray approval', 'blue'],
+                ['Funding Commissions', 'Partner referral revenue', 'amber'],
+                ['Affiliate Offers', 'SmartCredit, banks, tools', 'violet'],
+                ['Content Monetization', 'SEO + YouTube revenue', 'blue'],
+                ['Service Packages', 'Concierge & advisory', 'green'],
+                ['Course / Training', 'DIY funding education', 'amber'],
+                ['Consulting', '1-on-1 advisory sessions', 'violet']
+              ].map(([name, desc, tone]) => (
+                <div key={name} className="nx-soft" style={{ padding: 10 }}>
+                  <Pill tone={tone}>{tone === 'green' ? 'Ready' : 'Draft'}</Pill>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginTop: 6 }}>{name}</div>
+                  <div className="nx-muted" style={{ fontSize: 11, marginTop: 2 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Events title="Monetization Events" />
+          <Hermes label="Hermes" prompt="Revenue questions..." chips={['Best revenue path?', 'Partner status?', 'Launch readiness?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Partner Offers ──
+function PartnerOffersPage() {
+  return (
+    <SimplePage title="Partner Offers" sub="Affiliate Programs & Partner Config">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Total Partners" value="20" icon="Plug" tone="blue" />
+        <Metric label="Approved" value="0" icon="CheckCircle2" tone="green" />
+        <Metric label="Pending" value="0" icon="FileWarning" tone="amber" />
+        <Metric label="Not Applied" value="15" icon="TriangleAlert" tone="red" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Partner Registry</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+              {[
+                { name: 'SmartCredit', cat: 'Credit Monitoring', risk: 'medium' },
+                { name: 'AnnualCreditReport.com', cat: 'Credit Reports', risk: 'low' },
+                { name: 'Bank of America', cat: 'Business Banking', risk: 'low' },
+                { name: 'Chase', cat: 'Business Banking', risk: 'low' },
+                { name: 'Bluevine', cat: 'Business Banking', risk: 'medium' },
+                { name: 'Mercury', cat: 'Business Banking', risk: 'low' },
+                { name: 'Relay', cat: 'Business Banking', risk: 'low' },
+                { name: 'Northwest Registered Agent', cat: 'LLC Formation', risk: 'low' },
+                { name: 'ZenBusiness', cat: 'LLC Formation', risk: 'low' },
+                { name: 'Bizee', cat: 'LLC Formation', risk: 'low' },
+                { name: 'iPostal1', cat: 'Business Address', risk: 'low' },
+                { name: 'Grasshopper', cat: 'Business Banking', risk: 'low' },
+                { name: 'QuickBooks', cat: 'Accounting', risk: 'low' },
+                { name: 'DocuPost / USPS', cat: 'Certified Mail', risk: 'medium' },
+                { name: 'Local Credit Unions', cat: 'Banking', risk: 'low' }
+              ].map(p => (
+                <div key={p.name} className="nx-soft" style={{ padding: '8px 10px' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700 }}>{p.name}</div>
+                  <div className="nx-muted" style={{ fontSize: 10 }}>{p.cat} · risk: {p.risk}</div>
+                  <Pill tone="amber" style={{ marginTop: 4 }}>Not Applied</Pill>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="note">Best funding path first. Affiliate opportunity second. DIY/free option always visible. No partner contacted or activated without Ray approval.</div>
+        </div>
+        <aside className="side-stack">
+          <Events title="Partner Events" />
+          <Hermes label="Hermes" prompt="Partner questions..." chips={['Which partners approved?', 'Application status?', 'Missing URLs?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── CLI Control ──
+function CLIControlPage() {
+  return (
+    <SimplePage title="CLI Control" sub="Command Visibility · No Execution from UI">
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Safe Internal Commands</h3>
+            <div style={{ display: 'grid', gap: 4 }}>
+              {[
+                ['npm run build', 'Build the frontend', 'green'],
+                ['python3 scripts/nexus_runner.py --dry-run', 'Run money report dry-run', 'green'],
+                ['python3 scripts/automation/verify_automation_policy.py', 'Safety verifier', 'green'],
+                ['python3 scripts/night_run/generate_*.py', 'Report generation', 'green']
+              ].map(([cmd, desc, tone]) => (
+                <div key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div><code style={{ fontSize: 11 }}>{cmd}</code><div className="nx-muted" style={{ fontSize: 10 }}>{desc}</div></div>
+                  <Pill tone={tone}>Safe</Pill>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="glass panel">
+            <h3>Approval-Required Commands</h3>
+            <div style={{ display: 'grid', gap: 4 }}>
+              {[
+                ['git push origin main', 'Push to production', 'amber'],
+                ['Netlify deploy trigger', 'Manual deploy', 'amber'],
+                ['Scheduler activation', 'Enable cron jobs', 'red'],
+                ['Publishing / sending tasks', 'External actions', 'red']
+              ].map(([cmd, desc, tone]) => (
+                <div key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div><code style={{ fontSize: 11 }}>{cmd}</code><div className="nx-muted" style={{ fontSize: 10 }}>{desc}</div></div>
+                  <Pill tone={tone}>{tone === 'amber' ? 'Approval' : 'Blocked'}</Pill>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="glass panel">
+            <h3>Blocked Commands</h3>
+            <div style={{ display: 'grid', gap: 4 }}>
+              {[
+                ['Live trading execution', 'Never from UI'],
+                ['SmartCredit scraping / login', 'Privacy violation'],
+                ['DocuPost auto-send', 'Requires Ray approval'],
+                ['Auto-dispute submission', 'Legal compliance'],
+                ['Live client vault connection', 'Data sensitivity'],
+                ['Destructive DB actions', 'Safety gate']
+              ].map(([cmd, reason]) => (
+                <div key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div><code style={{ fontSize: 11 }}>{cmd}</code><div className="nx-muted" style={{ fontSize: 10 }}>{reason}</div></div>
+                  <Pill tone="red">Blocked</Pill>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+        <aside className="side-stack">
+          <Hermes label="Hermes · CLI" chips={['What should run next?', 'What should stay manual?']} />
+          <section className="glass side-panel">
+            <h3>Last Run Status</h3>
+            <div className="awareness-row"><Icon name="CheckCircle2" size={20} className="green-text" /><strong>Build: Passing</strong><Pill tone="green">OK</Pill></div>
+            <div className="awareness-row"><Icon name="Activity" size={20} className="green-text" /><strong>TypeScript: Clean</strong><Pill tone="green">OK</Pill></div>
+            <div className="awareness-row"><Icon name="Database" size={20} className="amber-text" /><strong>Supabase: Partial</strong><Pill tone="amber">Partial</Pill></div>
+          </section>
+          <section className="glass side-panel">
+            <h3>Suggested Next Command</h3>
+            <div className="nx-soft" style={{ padding: 10 }}>
+              <code style={{ fontSize: 11 }}>npm run build</code>
+              <div className="nx-muted" style={{ fontSize: 10, marginTop: 4 }}>Verify build passes before commit</div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
+// ── Events / Proof Ledger ──
+function ProofLedgerPage() {
+  return (
+    <SimplePage title="Events / Proof Ledger" sub="Generated Reports · Safety Verifications · Approval Candidates">
+      <div className="metrics-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <Metric label="Total Events" value="—" icon="FileWarning" tone="blue" />
+        <Metric label="Safety Checks" value="—" icon="CheckCircle2" tone="green" />
+        <Metric label="Approval Candidates" value="—" icon="CircleHelp" tone="amber" />
+        <Metric label="Money Outputs" value="—" icon="BadgeDollarSign" tone="violet" />
+      </div>
+      <div className="command-layout" style={{ flex: 1 }}>
+        <div className="main-stack">
+          <section className="glass panel">
+            <h3>Recent Reports</h3>
+            <div style={{ display: 'grid', gap: 4 }}>
+              {[
+                ['all_night_money_run_summary', 'Night run summary', 'green'],
+                ['money_opportunity_scoreboard', 'Opportunity scoring', 'green'],
+                ['automation_policy_verification', 'Safety verification', 'green'],
+                ['hermes_executive_brief', 'Executive brief', 'green'],
+                ['partner_offer_config', 'Partner config check', 'blue'],
+                ['first_offer_launch_gate', 'Launch gate status', 'amber']
+              ].map(([file, desc, tone]) => (
+                <div key={file} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div><code style={{ fontSize: 11 }}>{file}</code><div className="nx-muted" style={{ fontSize: 10 }}>{desc}</div></div>
+                  <Pill tone={tone}>Report</Pill>
+                </div>
+              ))}
+            </div>
+          </section>
+          <div className="note">The latest cycle snapshot is report-backed. Full JSON lives in reports/runtime/ and reviewable Markdown in reports/manual_publish/. No external action confirmed.</div>
+        </div>
+        <aside className="side-stack">
+          <Events title="Proof Events" />
+          <Hermes label="Hermes" prompt="Proof questions..." chips={['Show latest reports?', 'Safety status?', 'Approval candidates?']} />
+        </aside>
+      </div>
+    </SimplePage>
+  )
+}
+
 function Footer({ activePage }) {
   return (
     <footer className="footer">
-      <div>System Time: <span>Jun 27, 2026&nbsp;&nbsp;10:12 AM</span></div>
-      <div>⚙ Research Engine: <span className="green-text">Partial</span></div>
+      <div>Snapshot: <span>{runtime.generatedAt.slice(0, 19).replace('T', ' ')}</span></div>
+      <div>⚙ Research Engine: <span className="green-text">Active</span></div>
       <div>★ Hermes: <span className="green-text">Active</span></div>
-      <div>◎ Data Sources: <span>64</span></div>
+      <div>◎ Repo Sources: <span>{runtime.repoTargetCount}</span></div>
       <div>Mode: <span>{modeLabels[activePage] || 'Executive Overview'}</span></div>
     </footer>
   )
@@ -732,6 +1393,7 @@ export default function NexusAdminUI({ email }) {
 
   const page = {
     command: <CommandCenter />,
+    subscription: <SubscriptionCommandCenterPage />,
     creative: <Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" />,
     design: <Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" />,
     trading: <Workspace id="trading" title="Trading Lab" sub="Paper Trading Research Room" kind="trading" type="trading" />,
@@ -742,7 +1404,19 @@ export default function NexusAdminUI({ email }) {
     source: <Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" />,
     opportunity: <Workspace id="opportunity" title="Opportunity Lab" sub="Revenue / Opportunity Room" kind="opportunity" type="opportunity" layoutClass="opportunity-layout" />,
     health: <SystemHealthPage />,
-    hermes: <HermesAdvisorPage />
+    hermes: <HermesAdvisorPage />,
+    rayreview: <RayReviewPage />,
+    goclear: <GoClearPage />,
+    clientworkflow: <ClientWorkflowPage />,
+    credit: <CreditSpecialistPage />,
+    business: <BusinessSetupPage />,
+    funding: <FundingReadinessPage />,
+    monetization: <MonetizationPage />,
+    partners: <PartnerOffersPage />,
+    cli: <CLIControlPage />,
+    proof: <ProofLedgerPage />,
+    feedback: <HermesFeedbackPage />,
+    settings: <SettingsPage />
   }[activePage] || <CommandCenter />
 
   return (

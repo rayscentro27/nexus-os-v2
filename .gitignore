@@ -24,3 +24,4 @@ supabase/.temp/
 
 # UI backup folders (local only)
 .nexus_ui_backup_*/
+.nexus_backups/

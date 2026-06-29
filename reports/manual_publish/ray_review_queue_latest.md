@@ -1,34 +1,29 @@
-# Ray Review Queue Report
+# Ray Review Queue
 
-- generated_at: 2026-06-26T16:30:12.627670+00:00
-- dry_run: True
-- ok: True
+- generated_at: 2026-06-29T14:52:31.817991+00:00
+- ok: true
+- status: queue_ready
+- summary: Generated 13 exact decision cards; no external action was taken.
+- recommended_next_action: Approve or revise the subscription offer and first landing page before lower-value work.
+- external_action_performed: false
+- money_spent: false
+- public_content_published: false
+- client_contacted: false
+- real_money_trade_placed: false
+- demo_trade_placed: false
 
-## Counts
-- total_pending_decisions: 10
-- urgent_decisions: 1
-- campaign_approvals: 8
-- revenue_decisions: 0
-- scheduler_decisions: 1
-- connector_setup_decisions: 1
-- trading_blocked_decisions: 0
+## Approval cards
 
-## Hermes Recommended First Reviews
-- medium / connector_setup: Enable one Facebook GoClear/Apex test post
-- medium / social_post: Approve manual publish package: GoClear Credit Readiness — Facebook post — manual package
-- medium / campaign_publish: IG: readiness before applying
-- medium / email_send: Carousel: the bankability stack
-- medium / email_send: Lead magnet: Funding Readiness Checklist
-- medium / social_post: Approve sample Facebook readiness post
-- medium / campaign_publish: Review sample creative brief before drafting assets
-- medium / social_post: Approve first Facebook publish test after Day 3
-- medium / social_post: Approve first Facebook publish test after Day 3
-- urgent / scheduler_activation: GoClear revenue signal: Approval decision: Enable one Facebook GoClear/Apex test post
-
-## Autonomous Work That Does Not Need Review
-Transcript review, video scoring, SEO keyword scoring, affiliate scoring, watched resource updates, internal experiment cards, internal reports, and paper-only trading research stay out of this queue.
-
-## Safety
-- no publish/send/trade/deploy
-- no scheduler activation
-- no external AI
+- **Approve first $97 landing page**
+- **Approve first 10 social posts**
+- **Approve first email sequence**
+- **Approve subscription offer and monthly value loop**
+- **Approve partner recommendations**
+- **Review credit letter drafts**
+- **Review funding recommendations**
+- **Approve local safe-loop scheduler installation**
+- **Approve Supabase insertion plan**
+- **Approve Oanda demo action design**
+- **Decide whether to inspect/import moov-io/awesome-fintech**
+- **Decide whether to inspect/import Wadprog/RepairCredit-**
+- **Decide whether to inspect/import chandachewe10/loan-management-system**

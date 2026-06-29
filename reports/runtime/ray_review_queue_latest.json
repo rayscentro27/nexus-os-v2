@@ -1,752 +1,228 @@
 {
-  "title": "Ray Review Queue Report",
-  "generated_at": "2026-06-26T16:30:12.627670+00:00",
+  "title": "Ray Review Queue",
+  "generated_at": "2026-06-29T14:52:31.817991+00:00",
   "ok": true,
-  "dry_run": true,
-  "counts": {
-    "total_pending_decisions": 10,
-    "urgent_decisions": 1,
-    "campaign_approvals": 8,
-    "revenue_decisions": 0,
-    "scheduler_decisions": 1,
-    "connector_setup_decisions": 1,
-    "trading_blocked_decisions": 0
-  },
-  "top_decisions": [
+  "status": "queue_ready",
+  "summary": "Generated 13 exact decision cards; no external action was taken.",
+  "approval_cards": [
     {
-      "review_id": "approvals:13eafcab-6940-4612-8239-54786e8c9e60:connector_setup",
-      "title": "Enable one Facebook GoClear/Apex test post",
-      "decision_type": "connector_setup",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "13eafcab-6940-4612-8239-54786e8c9e60",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "medium",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Token is valid and publish scopes exist. Approval is required before setting social_accounts.publish_enabled=true for one compliant GoClear/Apex test post. No ads, no boost, no private data, no guarantee claims.",
-      "hermes_recommendation": "Review this connector setup before any execution path.",
+      "id": "approve-first-landing-page",
+      "title": "Approve first $97 landing page",
+      "category": "landing_page",
+      "why_it_matters": "Enable the first lead-conversion asset.",
+      "expected_outcome": "Enable the first lead-conversion asset.",
+      "risk": "medium",
+      "exact_action_requested": "Approve exact draft for manual publication.",
       "options": [
-        "Proceed with internal prep",
-        "Request changes",
-        "Park",
-        "Escalate to Approvals"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-24T04:36:00.58132+00:00",
-      "updated_at": "2026-06-24T04:36:00.58132+00:00",
-      "unique_key": "approvals:13eafcab-6940-4612-8239-54786e8c9e60:connector_setup"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:dd8cefa8-ae66-48b1-967c-9b8182502a4c:social_post",
-      "title": "Approve manual publish package: GoClear Credit Readiness \u2014 Facebook post \u2014 manual package",
-      "decision_type": "social_post",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "dd8cefa8-ae66-48b1-967c-9b8182502a4c",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Manual publish readiness only \u2014 no real post. Approve before any future real publish.",
-      "hermes_recommendation": "Review this social post before any execution path.",
+      "id": "approve-social-10",
+      "title": "Approve first 10 social posts",
+      "category": "social",
+      "why_it_matters": "Create a safe lead-generation content queue.",
+      "expected_outcome": "Create a safe lead-generation content queue.",
+      "risk": "medium",
+      "exact_action_requested": "Approve/revise the exact account and post queue; publishing remains manual.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T22:03:23.259331+00:00",
-      "updated_at": "2026-06-23T22:03:23.259331+00:00",
-      "unique_key": "approvals:dd8cefa8-ae66-48b1-967c-9b8182502a4c:social_post"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:7248417a-ae22-46a4-9594-4ffbab22912d:campaign_publish",
-      "title": "IG: readiness before applying",
-      "decision_type": "campaign_publish",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "7248417a-ae22-46a4-9594-4ffbab22912d",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Your LLC is not enough to get business funding.",
-      "hermes_recommendation": "Review this campaign publish before any execution path.",
+      "id": "approve-email-sequence",
+      "title": "Approve first email sequence",
+      "category": "email",
+      "why_it_matters": "Create a follow-up path for interested leads.",
+      "expected_outcome": "Create a follow-up path for interested leads.",
+      "risk": "high",
+      "exact_action_requested": "Approve copy, recipients, and sending tool separately.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:33:27.47223+00:00",
-      "updated_at": "2026-06-23T17:33:27.47223+00:00",
-      "unique_key": "approvals:7248417a-ae22-46a4-9594-4ffbab22912d:campaign_publish"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:8f99cfa6-3818-4291-b438-1412f7835a4a:email_send",
-      "title": "Carousel: the bankability stack",
-      "decision_type": "email_send",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "8f99cfa6-3818-4291-b438-1412f7835a4a",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Your LLC is not enough to get business funding.",
-      "hermes_recommendation": "Review this email send before any execution path.",
+      "id": "approve-subscription-offer",
+      "title": "Approve subscription offer and monthly value loop",
+      "category": "subscription",
+      "why_it_matters": "Make recurring revenue sellable.",
+      "expected_outcome": "Make recurring revenue sellable.",
+      "risk": "medium",
+      "exact_action_requested": "Approve tier/pricing language and scope.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:33:26.296408+00:00",
-      "updated_at": "2026-06-23T17:33:26.296408+00:00",
-      "unique_key": "approvals:8f99cfa6-3818-4291-b438-1412f7835a4a:email_send"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:7ef854fe-a542-4167-8fb6-482c1897abd2:email_send",
-      "title": "Lead magnet: Funding Readiness Checklist",
-      "decision_type": "email_send",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "7ef854fe-a542-4167-8fb6-482c1897abd2",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "The Funding Readiness Checklist (free)",
-      "hermes_recommendation": "Review this email send before any execution path.",
+      "id": "approve-partners",
+      "title": "Approve partner recommendations",
+      "category": "partners",
+      "why_it_matters": "Support outcomes and later affiliate revenue.",
+      "expected_outcome": "Support outcomes and later affiliate revenue.",
+      "risk": "medium",
+      "exact_action_requested": "Approve exact tools, URLs, disclosures, and free alternatives.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:33:25.809446+00:00",
-      "updated_at": "2026-06-23T17:33:25.809446+00:00",
-      "unique_key": "approvals:7ef854fe-a542-4167-8fb6-482c1897abd2:email_send"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:a2919225-095f-406b-b097-b12ca26da66f:social_post",
-      "title": "Approve sample Facebook readiness post",
-      "decision_type": "social_post",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "a2919225-095f-406b-b097-b12ca26da66f",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Sample compliance-safe FB post for the Day 3 dry-run pipeline.",
-      "hermes_recommendation": "Review this social post before any execution path.",
+      "id": "approve-credit-letters",
+      "title": "Review credit letter drafts",
+      "category": "credit",
+      "why_it_matters": "Support compliant assisted readiness work.",
+      "expected_outcome": "Support compliant assisted readiness work.",
+      "risk": "high",
+      "exact_action_requested": "Review client-specific facts and approve manual use; do not auto-send.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:21:56.218178+00:00",
-      "updated_at": "2026-06-23T17:21:56.218178+00:00",
-      "unique_key": "approvals:a2919225-095f-406b-b097-b12ca26da66f:social_post"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:776e481e-f971-4604-8565-3231fe9f7c19:campaign_publish",
-      "title": "Review sample creative brief before drafting assets",
-      "decision_type": "campaign_publish",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "776e481e-f971-4604-8565-3231fe9f7c19",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Approve the 'LLC was never the whole game' brief direction (no publish).",
-      "hermes_recommendation": "Review this campaign publish before any execution path.",
+      "id": "approve-funding-guidance",
+      "title": "Review funding recommendations",
+      "category": "funding",
+      "why_it_matters": "Prevent premature or unsuitable applications.",
+      "expected_outcome": "Prevent premature or unsuitable applications.",
+      "risk": "high",
+      "exact_action_requested": "Approve any client-facing lender/path recommendation.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T15:56:17.773938+00:00",
-      "updated_at": "2026-06-23T15:56:17.773938+00:00",
-      "unique_key": "approvals:776e481e-f971-4604-8565-3231fe9f7c19:campaign_publish"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:b80d897e-5f10-48aa-99f9-a2545b2d7d98:social_post",
-      "title": "Approve first Facebook publish test after Day 3",
-      "decision_type": "social_post",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "b80d897e-5f10-48aa-99f9-a2545b2d7d98",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Publisher + queue land Day 3; approve one item before any real post.",
-      "hermes_recommendation": "Review this social post before any execution path.",
+      "id": "approve-scheduler",
+      "title": "Approve local safe-loop scheduler installation",
+      "category": "scheduler",
+      "why_it_matters": "Keep internal reports refreshed.",
+      "expected_outcome": "Keep internal reports refreshed.",
+      "risk": "medium",
+      "exact_action_requested": "Review launchd draft and explicitly approve loading it.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T15:33:56.284389+00:00",
-      "updated_at": "2026-06-23T15:33:56.284389+00:00",
-      "unique_key": "approvals:b80d897e-5f10-48aa-99f9-a2545b2d7d98:social_post"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "approvals:13f2fdd9-3ee6-4dcc-91a0-b91525501dd3:social_post",
-      "title": "Approve first Facebook publish test after Day 3",
-      "decision_type": "social_post",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "13f2fdd9-3ee6-4dcc-91a0-b91525501dd3",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Publisher + queue land Day 3; approve one item before any real post.",
-      "hermes_recommendation": "Review this social post before any execution path.",
+      "id": "approve-supabase-plan",
+      "title": "Approve Supabase insertion plan",
+      "category": "data",
+      "why_it_matters": "Connect generated reports safely.",
+      "expected_outcome": "Connect generated reports safely.",
+      "risk": "high",
+      "exact_action_requested": "Review schema, privacy, and RLS before production inserts.",
       "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T00:26:22.131445+00:00",
-      "updated_at": "2026-06-23T00:26:22.131445+00:00",
-      "unique_key": "approvals:13f2fdd9-3ee6-4dcc-91a0-b91525501dd3:social_post"
+      "approval_required": true,
+      "external_action_performed": false
     },
     {
-      "review_id": "task_requests:3bfcebf1-f3f2-4b96-9a7c-3256acfcd4ae:scheduler_activation",
-      "title": "GoClear revenue signal: Approval decision: Enable one Facebook GoClear/Apex test post",
-      "decision_type": "scheduler_activation",
-      "department": "opportunity_lab",
-      "source_table": "task_requests",
-      "source_id": "3bfcebf1-f3f2-4b96-9a7c-3256acfcd4ae",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "urgent",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Token is valid and publish scopes exist. Approval is required before setting social_accounts.publish_enabled=true for one compliant GoClear/Apex test post. No ads, no boost, no private data, no guarantee claims.",
-      "hermes_recommendation": "Review this scheduler activation before any execution path.",
+      "id": "approve-oanda-demo",
+      "title": "Approve Oanda demo action design",
+      "category": "trading",
+      "why_it_matters": "Permit a controlled demo proof only.",
+      "expected_outcome": "Permit a controlled demo proof only.",
+      "risk": "high",
+      "exact_action_requested": "Confirm practice environment, credentials, instrument, bounds, and safe executor before any demo order.",
       "options": [
-        "Keep manual only",
-        "Approve scheduler plan later",
-        "Request narrower schedule"
+        "approve",
+        "reject",
+        "defer"
       ],
-      "pros": [
-        "Existing Nexus task/request already points at GoClear, funding, credit, lead, or affiliate work."
+      "approval_required": true,
+      "external_action_performed": false
+    },
+    {
+      "id": "repo-import-github-moov-awesome-fintech",
+      "title": "Decide whether to inspect/import moov-io/awesome-fintech",
+      "category": "repo_adaptation",
+      "why_it_matters": "Determine whether a safe, licensed component can reduce Nexus build time.",
+      "expected_outcome": "Determine whether a safe, licensed component can reduce Nexus build time.",
+      "risk": "medium",
+      "exact_action_requested": "Approve a bounded license and security review; do not import code yet.",
+      "options": [
+        "approve",
+        "reject",
+        "defer"
       ],
-      "cons": [
-        "Actual revenue remains connector-dependent until payment/referral sources are safely connected."
+      "approval_required": true,
+      "external_action_performed": false
+    },
+    {
+      "id": "repo-import-github-wadprog-repaircredit",
+      "title": "Decide whether to inspect/import Wadprog/RepairCredit-",
+      "category": "repo_adaptation",
+      "why_it_matters": "Determine whether a safe, licensed component can reduce Nexus build time.",
+      "expected_outcome": "Determine whether a safe, licensed component can reduce Nexus build time.",
+      "risk": "medium",
+      "exact_action_requested": "Approve a bounded license and security review; do not import code yet.",
+      "options": [
+        "approve",
+        "reject",
+        "defer"
       ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
+      "approval_required": true,
+      "external_action_performed": false
+    },
+    {
+      "id": "repo-import-github-loan-management-system",
+      "title": "Decide whether to inspect/import chandachewe10/loan-management-system",
+      "category": "repo_adaptation",
+      "why_it_matters": "Determine whether a safe, licensed component can reduce Nexus build time.",
+      "expected_outcome": "Determine whether a safe, licensed component can reduce Nexus build time.",
+      "risk": "medium",
+      "exact_action_requested": "Approve a bounded license and security review; do not import code yet.",
+      "options": [
+        "approve",
+        "reject",
+        "defer"
       ],
-      "proof_event_id": "ee5f7f9c-4917-4a02-8beb-4606fd300d57",
-      "report_path": "",
-      "created_at": "2026-06-26T13:23:08.35233+00:00",
-      "updated_at": "2026-06-26T13:23:08.35233+00:00",
-      "unique_key": "task_requests:3bfcebf1-f3f2-4b96-9a7c-3256acfcd4ae:scheduler_activation"
+      "approval_required": true,
+      "external_action_performed": false
     }
   ],
-  "what_nexus_completed_autonomously": [
-    "research scoring",
-    "transcript review",
-    "SEO/affiliate/content report generation",
-    "paper-only trading research"
-  ],
-  "what_can_wait": [
-    {
-      "review_id": "approvals:13eafcab-6940-4612-8239-54786e8c9e60:connector_setup",
-      "title": "Enable one Facebook GoClear/Apex test post",
-      "decision_type": "connector_setup",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "13eafcab-6940-4612-8239-54786e8c9e60",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "medium",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Token is valid and publish scopes exist. Approval is required before setting social_accounts.publish_enabled=true for one compliant GoClear/Apex test post. No ads, no boost, no private data, no guarantee claims.",
-      "hermes_recommendation": "Review this connector setup before any execution path.",
-      "options": [
-        "Proceed with internal prep",
-        "Request changes",
-        "Park",
-        "Escalate to Approvals"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-24T04:36:00.58132+00:00",
-      "updated_at": "2026-06-24T04:36:00.58132+00:00",
-      "unique_key": "approvals:13eafcab-6940-4612-8239-54786e8c9e60:connector_setup"
-    },
-    {
-      "review_id": "approvals:dd8cefa8-ae66-48b1-967c-9b8182502a4c:social_post",
-      "title": "Approve manual publish package: GoClear Credit Readiness \u2014 Facebook post \u2014 manual package",
-      "decision_type": "social_post",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "dd8cefa8-ae66-48b1-967c-9b8182502a4c",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Manual publish readiness only \u2014 no real post. Approve before any future real publish.",
-      "hermes_recommendation": "Review this social post before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T22:03:23.259331+00:00",
-      "updated_at": "2026-06-23T22:03:23.259331+00:00",
-      "unique_key": "approvals:dd8cefa8-ae66-48b1-967c-9b8182502a4c:social_post"
-    },
-    {
-      "review_id": "approvals:7248417a-ae22-46a4-9594-4ffbab22912d:campaign_publish",
-      "title": "IG: readiness before applying",
-      "decision_type": "campaign_publish",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "7248417a-ae22-46a4-9594-4ffbab22912d",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Your LLC is not enough to get business funding.",
-      "hermes_recommendation": "Review this campaign publish before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:33:27.47223+00:00",
-      "updated_at": "2026-06-23T17:33:27.47223+00:00",
-      "unique_key": "approvals:7248417a-ae22-46a4-9594-4ffbab22912d:campaign_publish"
-    },
-    {
-      "review_id": "approvals:8f99cfa6-3818-4291-b438-1412f7835a4a:email_send",
-      "title": "Carousel: the bankability stack",
-      "decision_type": "email_send",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "8f99cfa6-3818-4291-b438-1412f7835a4a",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Your LLC is not enough to get business funding.",
-      "hermes_recommendation": "Review this email send before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:33:26.296408+00:00",
-      "updated_at": "2026-06-23T17:33:26.296408+00:00",
-      "unique_key": "approvals:8f99cfa6-3818-4291-b438-1412f7835a4a:email_send"
-    },
-    {
-      "review_id": "approvals:7ef854fe-a542-4167-8fb6-482c1897abd2:email_send",
-      "title": "Lead magnet: Funding Readiness Checklist",
-      "decision_type": "email_send",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "7ef854fe-a542-4167-8fb6-482c1897abd2",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "The Funding Readiness Checklist (free)",
-      "hermes_recommendation": "Review this email send before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:33:25.809446+00:00",
-      "updated_at": "2026-06-23T17:33:25.809446+00:00",
-      "unique_key": "approvals:7ef854fe-a542-4167-8fb6-482c1897abd2:email_send"
-    },
-    {
-      "review_id": "approvals:a2919225-095f-406b-b097-b12ca26da66f:social_post",
-      "title": "Approve sample Facebook readiness post",
-      "decision_type": "social_post",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "a2919225-095f-406b-b097-b12ca26da66f",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Sample compliance-safe FB post for the Day 3 dry-run pipeline.",
-      "hermes_recommendation": "Review this social post before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T17:21:56.218178+00:00",
-      "updated_at": "2026-06-23T17:21:56.218178+00:00",
-      "unique_key": "approvals:a2919225-095f-406b-b097-b12ca26da66f:social_post"
-    },
-    {
-      "review_id": "approvals:776e481e-f971-4604-8565-3231fe9f7c19:campaign_publish",
-      "title": "Review sample creative brief before drafting assets",
-      "decision_type": "campaign_publish",
-      "department": "creative",
-      "source_table": "approvals",
-      "source_id": "776e481e-f971-4604-8565-3231fe9f7c19",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Approve the 'LLC was never the whole game' brief direction (no publish).",
-      "hermes_recommendation": "Review this campaign publish before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T15:56:17.773938+00:00",
-      "updated_at": "2026-06-23T15:56:17.773938+00:00",
-      "unique_key": "approvals:776e481e-f971-4604-8565-3231fe9f7c19:campaign_publish"
-    },
-    {
-      "review_id": "approvals:b80d897e-5f10-48aa-99f9-a2545b2d7d98:social_post",
-      "title": "Approve first Facebook publish test after Day 3",
-      "decision_type": "social_post",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "b80d897e-5f10-48aa-99f9-a2545b2d7d98",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Publisher + queue land Day 3; approve one item before any real post.",
-      "hermes_recommendation": "Review this social post before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T15:33:56.284389+00:00",
-      "updated_at": "2026-06-23T15:33:56.284389+00:00",
-      "unique_key": "approvals:b80d897e-5f10-48aa-99f9-a2545b2d7d98:social_post"
-    },
-    {
-      "review_id": "approvals:13f2fdd9-3ee6-4dcc-91a0-b91525501dd3:social_post",
-      "title": "Approve first Facebook publish test after Day 3",
-      "decision_type": "social_post",
-      "department": "social",
-      "source_table": "approvals",
-      "source_id": "13f2fdd9-3ee6-4dcc-91a0-b91525501dd3",
-      "source_url": "",
-      "status": "pending_review",
-      "priority": "medium",
-      "risk_level": "high",
-      "approval_required": false,
-      "ray_decision_required": true,
-      "due_at": null,
-      "summary": "Publisher + queue land Day 3; approve one item before any real post.",
-      "hermes_recommendation": "Review this social post before any execution path.",
-      "options": [
-        "Approve prep only",
-        "Request changes",
-        "Park",
-        "Create formal approval item"
-      ],
-      "pros": [
-        "Clarifies Ray's direction before risky or strategic work moves forward."
-      ],
-      "cons": [
-        "No outbound action should happen until the proper approval path is active."
-      ],
-      "expected_outcome": "Decision guides internal prep only unless a separate execution approval is recorded.",
-      "risk_notes": [
-        "outbound_or_risky_keyword"
-      ],
-      "proof_event_id": "",
-      "report_path": "",
-      "created_at": "2026-06-23T00:26:22.131445+00:00",
-      "updated_at": "2026-06-23T00:26:22.131445+00:00",
-      "unique_key": "approvals:13f2fdd9-3ee6-4dcc-91a0-b91525501dd3:social_post"
-    }
-  ],
-  "hermes_recommended_direction": "Review urgent execution/scheduler/connector decisions first; let autonomous research continue in departments.",
-  "safety": {
-    "publish_send_trade_deploy": false,
-    "scheduler_started": false,
-    "external_ai_called": false
-  }
+  "recommended_next_action": "Approve or revise the subscription offer and first landing page before lower-value work.",
+  "external_action_performed": false,
+  "money_spent": false,
+  "public_content_published": false,
+  "client_contacted": false,
+  "real_money_trade_placed": false,
+  "demo_trade_placed": false,
+  "disputes_submitted": false,
+  "letters_mailed": false,
+  "paid_api_called": false,
+  "level_3_blocked": true
 }

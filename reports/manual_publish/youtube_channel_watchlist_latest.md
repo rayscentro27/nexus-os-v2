@@ -1,6 +1,6 @@
 # YouTube Channel Watchlist
 
-- generated_at: 2026-06-26T17:08:38.845047+00:00
+- generated_at: 2026-06-29T14:52:32.238925+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false
@@ -12,5 +12,5 @@
 Watchlist entries loaded from explicit fixture/manual input. No capture, scraping, media download, or scheduling ran.
 
 ## Counts
-- channels: 4
-- enabled: 4
+- channels: 2
+- enabled: 0

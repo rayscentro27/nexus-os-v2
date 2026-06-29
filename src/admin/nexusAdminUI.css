@@ -1109,18 +1109,23 @@ a {
 }
 
 /* ============================================================
-   FIXED DESKTOP APP SHELL — layout cleanup (overrides above).
-   Locks the dashboard to the viewport so the whole tab fits on
-   one 16:9 screen; scrolling happens only inside panels.
+   NEXUS OS V2 — DESKTOP APP SHELL LOCK
+   Forces the entire app to fit within 100vh. No body/root scroll.
+   Only internal panels scroll.
    ============================================================ */
-html, body, #root { height: 100%; width: 100%; margin: 0; overflow: hidden; }
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
 body { min-width: 0; }
 
 .os-root {
   width: 100vw;
   height: 100vh;
   display: grid;
-  grid-template-rows: 1fr 56px;   /* shell + status bar */
+  grid-template-rows: 1fr 44px;
   overflow: hidden;
 }
 
@@ -1128,12 +1133,12 @@ body { min-width: 0; }
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-columns: 286px 1fr;
+  grid-template-columns: 260px 1fr;
   padding-bottom: 0;
   overflow: hidden;
 }
 
-/* Sidebar in-flow with its own scroll */
+/* Sidebar: its own scroll, fills height */
 .sidebar {
   position: relative;
   inset: auto;
@@ -1141,16 +1146,17 @@ body { min-width: 0; }
   height: 100%;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   z-index: 1;
 }
 
-/* Main column = topbar row + scrollable page row */
+/* Main column = topbar + page-content, no scroll on container */
 .content {
   grid-column: 2;
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: 72px 1fr;
+  grid-template-rows: 56px 1fr;
   padding: 0;
   overflow: hidden;
 }
@@ -1159,8 +1165,9 @@ body { min-width: 0; }
   position: relative;
   top: auto;
   margin: 0;
-  height: 72px;
-  padding: 0 24px;
+  height: 56px;
+  min-height: 56px;
+  padding: 0 20px;
   align-items: center;
 }
 
@@ -1168,7 +1175,7 @@ body { min-width: 0; }
   min-height: 0;
   height: 100%;
   overflow: hidden;
-  padding: 10px 24px 14px;
+  padding: 8px 16px 10px;
 }
 
 .page {
@@ -1178,48 +1185,186 @@ body { min-width: 0; }
 }
 
 .page-title { margin-top: 0; margin-bottom: 2px; }
-.page-title h2 { font-size: 26px; }
+.page-title h2 { font-size: 22px; }
+.page-title p { margin: 2px 0 0; font-size: 12px; }
 
-/* Footer pinned as the shell's bottom row (no fixed overlay) */
+/* Footer pinned as bottom row */
 .footer {
   position: relative;
   inset: auto;
-  height: 56px;
+  height: 44px;
+  min-height: 44px;
+  font-size: 12px;
+  padding: 0 24px;
 }
 
-/* ---- Command Center: stacked rows; right rail fixed width ---- */
+/* ---- Command Center: single-screen operating room ---- */
 .command-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
-.metrics-grid { flex: none; }
+
+.metrics-grid {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.metric {
+  min-height: 0;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.metric-icon {
+  width: 40px;
+  height: 40px;
+}
+
+.metric-value { font-size: 22px; }
+
 .command-layout {
   flex: 1;
   min-height: 0;
-  grid-template-columns: minmax(0, 1fr) 400px;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 12px;
   overflow: hidden;
 }
 .command-layout > * { min-width: 0; }
-.main-stack, .side-stack { min-height: 0; overflow: auto; }
-.spotlight { min-height: 200px; }
 
-/* ---- Workspace rooms: title row + 3 columns that fill height ---- */
+.main-stack {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-stack {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Spotlight: compact, no oversized art */
+.spotlight-wrap {
+  flex: none;
+}
+.spotlight {
+  min-height: 0;
+  max-height: 180px;
+  padding: 16px;
+  grid-template-columns: 1fr 240px 180px 160px;
+}
+
+/* Departments grid: compact */
+.department-grid {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.department-card { padding: 10px; }
+.three-stats { margin-top: 10px; }
+.three-stats strong { font-size: 16px; }
+.mini-spark { height: 20px; margin-top: 8px; }
+
+/* Hermes card: compact, pinned at bottom of main stack */
+.hermes-card {
+  flex: none;
+  padding: 12px;
+}
+.hermes-message {
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.hermes-chips { margin-bottom: 6px; }
+.hermes-chip { padding: 4px 10px; font-size: 11px; }
+.ask-row { padding: 8px 12px; }
+
+/* Side panels: compact */
+.side-panel { padding: 12px; }
+.event-row { min-height: 44px; padding: 6px 0; }
+.awareness-row { min-height: 44px; padding: 6px 0; }
+
+/* ---- Workspace rooms: 3-column fill ---- */
 .workspace {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
   grid-template-rows: auto 1fr;
   align-items: stretch;
-  overflow: hidden;
 }
 .workspace > * { min-width: 0; }
 .workspace .page-title { grid-column: 1 / -1; }
-.list-panel, .detail-panel {
+
+.workspace .list-panel,
+.workspace .detail-panel {
   min-height: 0;
   height: 100%;
   overflow-y: auto;
+  padding: 14px;
 }
+
 .workspace .side-stack {
   height: 100%;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* ---- Workspace layouts ---- */
+.workspace.source-layout { grid-template-columns: 380px 1fr 360px; }
+.workspace.opportunity-layout { grid-template-columns: 340px 1fr 360px; }
+.workspace.narrow-left { grid-template-columns: 320px 1fr 360px; }
+.workspace.wide-left { grid-template-columns: 380px 1fr 360px; }
+
+/* ---- Simple page layout ---- */
+.simple-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ---- Responsive overrides ---- */
+@media (max-width: 1500px) {
+  .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+  .command-layout,
+  .workspace.source-layout,
+  .workspace.opportunity-layout,
+  .workspace.narrow-left,
+  .workspace.wide-left {
+    grid-template-columns: 320px 1fr;
+  }
+  .side-stack { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .spotlight { grid-template-columns: 1fr 240px; }
+}
+
+@media (max-width: 900px) {
+  body { min-width: 0; }
+  .app-shell { display: block; }
+  .sidebar { position: relative; width: auto; height: auto; }
+  .content { padding: 12px; }
+  .topbar { position: relative; margin: 0; padding: 8px 0; flex-direction: column; }
+  .searchbar, .hermes-status, .profile { width: 100%; }
+  .page-title { margin-top: 0; }
+  .metrics-grid, .command-layout, .department-grid, .workspace,
+  .workspace.source-layout, .workspace.opportunity-layout,
+  .workspace.narrow-left, .workspace.wide-left,
+  .detail-metrics, .pros-cons, .triple-grid, .side-stack, .spotlight {
+    grid-template-columns: 1fr;
+  }
+  .footer { position: static; height: auto; grid-template-columns: 1fr; gap: 4px; padding: 10px; }
 }

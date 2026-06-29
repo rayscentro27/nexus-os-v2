@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.continuous-loop</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/activation/run_nexus_continuous_loop.py</string>
+    <string>--interval-minutes</string>
+    <string>30</string>
+    <string>--json</string>
+    <string>--safe-internal</string>
+    <string>--feedback-enabled</string>
+    <string>--heartbeat</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2/reports/runtime/continuous_loop_launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2/reports/runtime/continuous_loop_launchd_error.log</string>
+</dict>
+</plist>

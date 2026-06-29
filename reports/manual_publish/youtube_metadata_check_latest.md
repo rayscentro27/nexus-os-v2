@@ -1,6 +1,6 @@
 # YouTube Metadata Check
 
-- generated_at: 2026-06-26T19:45:16.122020+00:00
+- generated_at: 2026-06-29T14:52:32.647533+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false

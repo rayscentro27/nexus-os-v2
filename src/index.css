@@ -24,7 +24,7 @@ body {
 a { color: var(--accent); }
 code { background: #060a13; padding: 1px 6px; border-radius: 6px; color: var(--accent); font-size: 12px; }
 
-/* layout */
+/* layout — main app uses nexusAdminUI.css shell; these are legacy fallbacks */
 .layout { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
 .sidebar { background: linear-gradient(180deg, var(--bg2), var(--bg)); border-right: 1px solid var(--border); padding: 16px 12px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 16px; }

@@ -4,6 +4,7 @@ import { App } from './app/App';
 import './index.css';
 import './components/nexusUI.css';
 import './admin/nexusAdminUI.css';
+import './styles/dashboard-layout-lock.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

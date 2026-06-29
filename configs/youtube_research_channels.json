@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "mode": "metadata_and_research_queue_only",
+  "rules": [
+    "Do not download copyrighted video or audio.",
+    "Do not bypass platform controls or scrape aggressively.",
+    "Do not publish reused content."
+  ],
+  "channel_slots": [
+    {"category": "credit repair", "status": "needs_channel_selection"},
+    {"category": "personal credit education", "status": "needs_channel_selection"},
+    {"category": "business credit", "status": "needs_channel_selection"},
+    {"category": "business funding", "status": "needs_channel_selection"},
+    {"category": "grants", "status": "needs_channel_selection"},
+    {"category": "AI automation", "status": "needs_channel_selection"},
+    {"category": "SEO/content marketing", "status": "needs_channel_selection"},
+    {"category": "trading research", "status": "needs_channel_selection"},
+    {"category": "local business marketing", "status": "needs_channel_selection"}
+  ]
+}
