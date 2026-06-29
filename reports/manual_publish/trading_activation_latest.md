@@ -1,6 +1,6 @@
 # Trading Engine Activation
 
-- generated_at: 2026-06-29T14:52:31.815253+00:00
+- generated_at: 2026-06-29T16:13:37.272516+00:00
 - ok: true
 - status: paper_backtest_only
 - summary: Ran 2 bounded local backtests; no confirmed bounded Oanda demo executor exists in this repo.

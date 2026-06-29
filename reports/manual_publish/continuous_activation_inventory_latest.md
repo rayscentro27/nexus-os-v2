@@ -1,6 +1,6 @@
 # Continuous Activation Inventory
 
-- generated_at: 2026-06-29T14:52:31.505246+00:00
+- generated_at: 2026-06-29T16:13:36.956683+00:00
 - ok: true
 - status: inventory_complete
 - summary: Nexus has mature local report generators and safety policies; UI and continuous activation were partial before this pass.

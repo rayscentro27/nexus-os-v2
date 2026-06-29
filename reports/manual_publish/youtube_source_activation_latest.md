@@ -1,6 +1,6 @@
 # YouTube / Source Activation
 
-- generated_at: 2026-06-29T14:52:31.513152+00:00
+- generated_at: 2026-06-29T16:13:36.965076+00:00
 - ok: true
 - status: active_metadata_queue
 - summary: Prepared 9 source-category queues without downloading media or bypassing platform controls.

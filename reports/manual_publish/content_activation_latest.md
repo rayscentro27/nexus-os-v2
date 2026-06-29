@@ -1,6 +1,6 @@
 # Content Creation Activation
 
-- generated_at: 2026-06-29T14:52:31.519052+00:00
+- generated_at: 2026-06-29T16:13:36.970772+00:00
 - ok: true
 - status: draft_only_active
 - summary: Generated 31 approval-gated content assets.

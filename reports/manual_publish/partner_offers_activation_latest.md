@@ -1,6 +1,6 @@
 # Partner Offers Activation
 
-- generated_at: 2026-06-29T14:52:31.816846+00:00
+- generated_at: 2026-06-29T16:13:37.274776+00:00
 - ok: true
 - status: active_internal_registry
 - summary: Tracked 20 partner/tool options with outcome-first and disclosure rules.

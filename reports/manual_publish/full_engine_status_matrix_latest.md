@@ -1,0 +1,54 @@
+# Full Engine Status Matrix
+
+- generated_at: 2026-06-29T16:22:25.163922+00:00
+- ok: true
+- status: internal_active
+- external_action_performed: false
+
+## Systems
+
+- **item** — live_connected
+- **item** — internal_active
+- **item** — approval_gated
+- **item** — internal_active
+- **item** — internal_active
+- **item** — internal_active
+- **item** — internal_active
+- **item** — connector_missing
+- **item** — generated_report_only
+- **item** — internal_active
+- **item** — internal_active
+- **item** — internal_active
+- **item** — internal_active
+- **item** — internal_active
+- **item** — internal_active
+- **item** — approval_gated
+- **item** — internal_active
+- **item** — internal_active
+- **item** — live_connected
+- **item** — demo_static
+- **item** — generated_report_only
+- **item** — internal_active
+- **item** — internal_active
+- **item** — blocked
+- **item** — generated_report_only
+- **item** — generated_report_only
+- **item** — generated_report_only
+- **item** — generated_report_only
+- **item** — approval_gated
+- **item** — demo_static
+- **item** — demo_static
+- **item** — internal_active
+- **item** — missing
+- **item** — missing
+- **item** — missing
+- **item** — connector_missing
+- **item** — internal_active
+- **item** — internal_active
+- **item** — blocked
+- **item** — approval_gated
+- **item** — live_connected
+- **item** — live_connected
+- **item** — approval_gated
+- **item** — approval_gated
+- **item** — generated_report_only

@@ -101,6 +101,7 @@ def main() -> int:
     parser.add_argument("--max-cycles", type=int)
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--safe-internal", action="store_true", default=True)
+    parser.add_argument("--local-only", action="store_true", default=True)
     parser.add_argument("--feedback-enabled", action="store_true")
     parser.add_argument("--heartbeat", action="store_true")
     parser.add_argument("--once", action="store_true")

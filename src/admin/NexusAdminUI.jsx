@@ -2,6 +2,7 @@
 // Generated runtime data is bundled read-only; no external actions execute from this UI.
 import React, { useMemo, useState } from 'react'
 import runtime from '../data/continuousDashboardData.json'
+import nexusEngineStatusData from '../data/nexusEngineStatusData'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
@@ -733,7 +734,7 @@ function SystemHealthPage() {
         <Metric label="Netlify" value="Live" icon="Activity" tone="green" />
         <Metric label="Supabase" value="Partial" icon="Database" tone="amber" />
         <Metric label="Hermes" value="Active" icon="Sparkles" tone="green" />
-        <Metric label="Automation" value="Safe" icon="Zap" tone="green" />
+        <Metric label="Audit Engines" value={`${nexusEngineStatusData.enginesPassed}/${nexusEngineStatusData.enginesRun}`} icon="Zap" tone="green" />
       </div>
       <div className="command-layout" style={{ flex: 1 }}>
         <div className="main-stack">
@@ -747,7 +748,10 @@ function SystemHealthPage() {
                 ['Supabase', 'Configured (partial data)', 'amber', 'Partial'],
                 ['Report Data', 'Generated activation snapshot', 'green', 'Report-backed'],
                 ['Hermes Frontend', 'Local advisor active', 'green', 'Online'],
-                ['Automation Safety', 'All gates active', 'green', 'Blocked risky'],
+                ['Automation Safety', `${nexusEngineStatusData.connectorTest.connectorsTested} connectors checked; no external actions`, 'green', 'Blocked risky'],
+                ['Dispute Lab', `${nexusEngineStatusData.disputeSimulation.casesTested} synthetic cases; ${nexusEngineStatusData.disputeSimulation.realDisputesSent} sent`, 'green', 'Simulation'],
+                ['YouTube Review', `${nexusEngineStatusData.youtubeReview.queuedItems} queued; real video review not active`, 'amber', 'Queue only'],
+                ['Social Engine', `${nexusEngineStatusData.socialDrafts.draftsCreated} drafts; publishing disabled`, 'green', 'Drafts active'],
                 ['Scheduler', 'Not activated', 'amber', 'Off'],
                 ['External AI Calls', 'Blocked by default', 'green', 'Safe']
               ].map(([name, status, tone, badge]) => (

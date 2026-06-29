@@ -1,6 +1,6 @@
 # Hermes Current Brief
 
-- generated_at: 2026-06-29T14:52:33.556329+00:00
+- generated_at: 2026-06-29T16:13:39.030612+00:00
 - ok: true
 - status: current_report_backed_brief
 - external_action_performed: false

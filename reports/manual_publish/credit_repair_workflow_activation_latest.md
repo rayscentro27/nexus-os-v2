@@ -1,6 +1,6 @@
 # Credit Repair / Improvement Workflow Activation
 
-- generated_at: 2026-06-29T14:52:31.507515+00:00
+- generated_at: 2026-06-29T16:13:36.959183+00:00
 - ok: true
 - status: active_safe_internal
 - summary: Credit improvement workflow is active for education, checklists, analysis notes, and draft queues only.
