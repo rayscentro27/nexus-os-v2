@@ -1,6 +1,6 @@
 # Post-DB Schema Verification Plan
 
-Generated: 2026-06-29T17:35:27.543997+00:00
+Generated: 2026-06-29T17:35:53.760589+00:00
 
 - ok: true
 - status: plan_ready

@@ -1,6 +1,6 @@
 # No-Docker Supabase Dry-Run Gate
 
-Generated: 2026-06-29T17:35:27.543932+00:00
+Generated: 2026-06-29T17:35:53.760561+00:00
 
 - ok: true
 - decision: dry_run_passed_ready_for_db_push

@@ -1,6 +1,6 @@
 # No-Docker SQL Safety Review
 
-Generated: 2026-06-29T17:35:27.543887+00:00
+Generated: 2026-06-29T17:35:53.760547+00:00
 
 - ok: true
 - destructive_sql_found: false
