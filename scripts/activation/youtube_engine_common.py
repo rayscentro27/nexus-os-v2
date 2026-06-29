@@ -7,10 +7,13 @@ sys.path.insert(0,str(ROOT/"scripts"/"ops"))
 from same_day_common import SUPABASE_READY,now,parse_env,read_json,write_json,write_report  # noqa:E402,F401
 
 TARGETS=ROOT/"configs"/"youtube_research_channels.json"
+SOURCE_TARGETS=ROOT/"configs"/"youtube_source_targets.json"
 CACHE=ROOT/"data"/"cache"/"youtube"
 
 def approved_targets():
- return [x for x in read_json(TARGETS,{}).get("channels",[]) if x.get("enabled") and x.get("approved_by_ray") and x.get("url")]
+ channels=[{**x,"target_type":"channel"} for x in read_json(TARGETS,{}).get("channels",[]) if x.get("enabled") and x.get("approved_by_ray") and x.get("url")]
+ videos=[{**x,"target_type":"video","approved_by_ray":True} for x in read_json(SOURCE_TARGETS,{}).get("targets",[]) if x.get("enabled") and x.get("approved") and x.get("url")]
+ return list({x["id"]:x for x in channels+videos}.values())
 
 def env_values():
  values={}

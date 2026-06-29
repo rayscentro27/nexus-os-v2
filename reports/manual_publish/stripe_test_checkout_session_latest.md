@@ -1,11 +1,12 @@
 # Stripe Test Checkout Session
 
-Generated: 2026-06-29T18:45:24.829976+00:00
+Generated: 2026-06-29T20:15:10.541844+00:00
 
 - ok: true
-- status: test_checkout_session_created_open_not_completed
+- status: test_checkout_session_reused_open_not_completed
 - attempted: true
 - created: true
+- reused_existing: true
 - livemode: false
 - session_id_masked: cs_t***EMU1
 - session_id_fingerprint: f677c159b4a8
@@ -19,4 +20,4 @@ Generated: 2026-06-29T18:45:24.829976+00:00
 - browser_opened: false
 - raw_object_saved_gitignored: true
 - cli_exit_code: 0
-- external_action_performed: true
+- external_action_performed: false

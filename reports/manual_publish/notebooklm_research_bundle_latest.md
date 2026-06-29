@@ -1,12 +1,12 @@
 # NotebookLM Research Bundle
 
-Generated: 2026-06-29T18:31:32.597462+00:00
+Generated: 2026-06-29T20:20:41.370044+00:00
 
 - ok: true
 - status: manual_notebooklm_bundle_ready
 - bundle_path: data/exports/notebooklm/research_bundles/nexus_research_bundle_latest.json
 - source_groups: 3
-- source_records: 48
+- source_records: 70
 - consumer_browser_automation: false
 - external_action_performed: false
 

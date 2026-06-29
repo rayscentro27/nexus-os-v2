@@ -1,0 +1,43 @@
+# Walk-Away Activation Master
+
+Generated: 2026-06-29T20:22:21.517775+00:00
+
+- ok: true
+- build_start_result: passed
+- stripe_webhook_endpoint_implemented: true
+- stripe_listener_ready: true
+- stripe_trigger_attempted: false
+- local_signed_fixture_received: true
+- checkout_status: test_checkout_session_reused_open_not_completed
+- payment_intent_status: requires_payment_method
+- payment_onboarding_dry_run_status: onboarding_dry_run_created
+- persistent_database_insert: false
+- rls_verification_result: remote_rls_inspection_blocked_docker_static_migration_verified
+- schema_verification_result: production_schema_visible_readonly
+- synthetic_rollback_result: skipped_no_guaranteed_transaction_channel
+- persistent_fake_customer_gate: blocked_gate_not_passed
+- frontend_live_data_readiness: ready_for_Ray_review_feature_flag_off
+- resend_connected: false
+- resend_status: resend_verification_failed
+- email_sent: false
+- email_draft_created: true
+- youtube_video_target_added: true
+- youtube_metadata_probe_result: approved_video_metadata_reviewed
+- youtube_transcript_imported: false
+- notebooklm_adapter_recovered: true
+- notebooklm_sources_imported: 0
+- oanda_demo_verified: false
+- oanda_orders_placed: false
+- vibe_cli_installed: false
+- vibe_paper_adapter_recovered: true
+- safe_automation_loop_run: true
+- external_actions_performed: false
+- readonly_external_checks_performed: true
+- real_charge_made: false
+- social_posts_published: false
+- disputes_sent: false
+- live_trades_placed: false
+- ray_review_cards: 12
+- hermes_recommendations_count: 7
+- what_Ray_should_approve_next: Stripe webhook listener test using the implemented local signature verifier.
+- exact_next_command: stripe listen --forward-to localhost:8787/api/stripe/webhook

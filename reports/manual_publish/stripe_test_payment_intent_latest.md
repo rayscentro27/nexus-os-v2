@@ -1,11 +1,12 @@
 # Stripe Test PaymentIntent
 
-Generated: 2026-06-29T18:45:45.813793+00:00
+Generated: 2026-06-29T20:15:11.615545+00:00
 
 - ok: true
-- status: test_payment_intent_created_unconfirmed
+- status: test_payment_intent_reused_unconfirmed
 - attempted: true
 - created: true
+- reused_existing: true
 - livemode: false
 - payment_intent_id_masked: pi_3***RjgZ
 - payment_intent_fingerprint: 9bcaadf5e5da
@@ -15,4 +16,4 @@ Generated: 2026-06-29T18:45:45.813793+00:00
 - real_charge_created: false
 - raw_object_saved_gitignored: true
 - cli_exit_code: 0
-- external_action_performed: true
+- external_action_performed: false

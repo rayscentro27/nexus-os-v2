@@ -6,4 +6,7 @@
   "local_transcript_directory": "data/sources/youtube_transcripts",
   "media_download_allowed": false,
   "automatic_publication_allowed": false
+  ,"targets": [
+    {"id":"video_zbAmmnMh5ew","name":"Ray-approved YouTube video zbAmmnMh5ew","source_type":"video","video_id":"zbAmmnMh5ew","url":"https://www.youtube.com/watch?v=zbAmmnMh5ew","approved":true,"approved_by":"Ray","enabled":true,"allowed_connectors":["youtube_api_metadata_connector","youtube_ytdlp_local_probe"],"no_video_download":true,"no_audio_download":true,"no_cookies":true,"transcript_import_requires_approval":true}
+  ]
 }

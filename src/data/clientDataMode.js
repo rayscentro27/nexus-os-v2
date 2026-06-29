@@ -11,6 +11,8 @@ export const clientDataMode = {
   usesRealClientData: false,
   supabaseSchemaReady: true,
   supabaseLiveReadsEnabled: false,
+  liveSupabaseTestClientEnabled: false,
+  firstLiveReadRoute: '/client/dashboard',
   adminOrDemoPreview: true,
   internalLabel: 'Live Data Pending',
 }

@@ -12,5 +12,8 @@
     {"id":"alec_delpuech","name":"Alec Delpuech","handle":"alecdelpuech","url":"https://www.youtube.com/@alecdelpuech","categories":["online_business","marketing","content_strategy"],"approved_by_ray":true,"enabled":true},
     {"id":"stedman_waiters","name":"Stedman Waiters","handle":"StedmanWaiters","url":"https://www.youtube.com/@StedmanWaiters","categories":["trading_research","market_research"],"approved_by_ray":true,"enabled":true,"paper_only":true}
   ],
+  "videos": [
+    {"id":"video_zbAmmnMh5ew","name":"Ray-approved YouTube video zbAmmnMh5ew","video_id":"zbAmmnMh5ew","url":"https://www.youtube.com/watch?v=zbAmmnMh5ew","categories":["approved_video_research"],"approved_by_ray":true,"enabled":true,"no_video_download":true,"no_audio_download":true,"no_cookies":true,"transcript_import_requires_approval":true}
+  ],
   "unfilled_categories": ["personal_credit_education","grants","seo_content_marketing","local_business_marketing"]
 }

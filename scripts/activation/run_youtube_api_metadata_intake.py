@@ -13,12 +13,17 @@ def api(path,params,key):
   context=ssl.create_default_context()
  with urllib.request.urlopen(f"https://www.googleapis.com/youtube/v3/{path}?{q}",timeout=20,context=context) as r:return json.loads(r.read())
 def build():
- policy=read_json(ROOT/"configs/youtube_quota_policy.json",{});key=api_key_status();targets=approved_targets()[:policy.get("max_channels_per_run",4)];records=[];errors=[];units=0;cache_hits=0
+ policy=read_json(ROOT/"configs/youtube_quota_policy.json",{});key=api_key_status();all_targets=approved_targets();channels=[x for x in all_targets if x.get("target_type")!="video"][:policy.get("max_channels_per_run",4)];videos=[x for x in all_targets if x.get("target_type")=="video"][:policy.get("max_new_videos_per_run",25)];targets=channels+videos;records=[];errors=[];units=0;cache_hits=0
  if key["present"]:
   for target in targets:
    cached=get("youtube_api",target["id"],policy.get("refresh_existing_after_hours",24)) if policy.get("prefer_cache") else None
    if cached:records.extend(cached.get("data",[]));cache_hits+=1;continue
    try:
+    if target.get("target_type")=="video":
+     result=api("videos",{"part":"id,snippet,contentDetails,statistics","id":target.get("video_id"),"maxResults":1},key["value"]);units+=1;batch=[]
+     for item in result.get("items",[]):
+      sn=item.get("snippet",{});vid=item.get("id");batch.append(record(f"youtube-{vid}","youtube_video_metadata",sn.get("title","YouTube video"),status="real_metadata",source_id=target["id"],channel_name=sn.get("channelTitle"),video_id=vid,url=f"https://www.youtube.com/watch?v={vid}",description=sn.get("description","")[:1000],published_at=sn.get("publishedAt"),metadata_source="youtube_data_api_v3",approved_source=True,media_downloaded=False))
+     records.extend(batch);put("youtube_api",target["id"],batch);continue
     channel=api("channels",{"part":"id,snippet,contentDetails","forHandle":target["handle"],"maxResults":1},key["value"]);units+=1
     items=channel.get("items",[])
     if not items:errors.append({"target":target["id"],"error":"handle_not_resolved"});continue

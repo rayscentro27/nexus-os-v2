@@ -1,0 +1,34 @@
+{
+  "cache_key": "video_zbAmmnMh5ew",
+  "connector_used": "youtube_api",
+  "last_checked_at": "2026-06-29T20:18:52.924387+00:00",
+  "contains_secrets": false,
+  "data": [
+    {
+      "id": "youtube-zbAmmnMh5ew",
+      "tenant_id": "tenant_demo_goclear",
+      "client_id": "synthetic_research_only",
+      "category": "youtube_video_metadata",
+      "title": "10 Tiny Apps Making $30K to $1M a Month (Built With AI)",
+      "summary": "10 Tiny Apps Making $30K to $1M a Month (Built With AI)",
+      "status": "real_metadata",
+      "priority": "medium",
+      "risk_level": "low",
+      "automation_level": "internal_active",
+      "client_visible": false,
+      "approval_required": false,
+      "source": "approved_youtube_research",
+      "recommended_next_action": "Review internally.",
+      "created_at": "2026-06-29T20:18:52.924357+00:00",
+      "source_id": "video_zbAmmnMh5ew",
+      "channel_name": "Hyperautomation Labs",
+      "video_id": "zbAmmnMh5ew",
+      "url": "https://www.youtube.com/watch?v=zbAmmnMh5ew",
+      "description": "Tiny apps \u2014 most built by one person, many built mostly by AI \u2014 are quietly making $30,000 to over $1,000,000 a month. I dug through Stripe screenshots, press reports and founder interviews to separate the real ones from the hype, and for every app you get the simple mechanic AND the exact way you could build your own version this weekend.\n\n\u23f1\ufe0f Tip: watch at 1.25x\u20131.5x if you like a faster pace (Settings \u2192 Playback speed).\n\n\ud83d\udce5 FREE \u2014 The Tiny App Blueprint (all 10 apps, the build stack, the 4 money patterns + copy-paste prompts):\nComment TINY and I'll send it to you, or grab it here \u2192 https://hyperautomationlabs.co/free/tiny\n\nEvery revenue number is tagged on screen as VERIFIED (real press) or SELF-REPORTED (founder's own post). Numbers are point-in-time.\n\nTHE 10 TINY APPS:\n1. fly.pieter.com \u2014 Pieter Levels \u2014 browser flight sim, ~$50K/mo from in-game ads \u2014 built 100% in Cursor in ~3 hrs (404 Media)\n2. Launch Fast \u2014 Hasaam Bhatti \u2014 Amazon-seller tool, $30K/mo \u2014 built in Cursor by a non-co",
+      "published_at": "2026-06-24T14:21:32Z",
+      "metadata_source": "youtube_data_api_v3",
+      "approved_source": true,
+      "media_downloaded": false
+    }
+  ]
+}

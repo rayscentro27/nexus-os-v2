@@ -1,6 +1,6 @@
 # YouTube Transcript Import
 
-Generated: 2026-06-29T18:33:26.900876+00:00
+Generated: 2026-06-29T20:21:06.622219+00:00
 
 - ok: true
 - status: configured_missing_transcripts
