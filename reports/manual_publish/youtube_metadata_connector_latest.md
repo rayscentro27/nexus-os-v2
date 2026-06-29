@@ -1,6 +1,6 @@
 # YouTube Metadata Connector
 
-- generated_at: 2026-06-29T16:39:24.095049+00:00
+- generated_at: 2026-06-29T17:09:26.738182+00:00
 - dry_run: True
 - ok: True
 - scheduler_started: false

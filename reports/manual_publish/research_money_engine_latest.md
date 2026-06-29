@@ -1,6 +1,6 @@
 # Research + Keyword Money Engine
 
-- generated_at: 2026-06-29T16:39:22.653858+00:00
+- generated_at: 2026-06-29T17:09:25.177611+00:00
 - ok: true
 - status: active_internal_scoring
 - summary: Generated 8 scored money/keyword opportunities with subscription-first routing.
