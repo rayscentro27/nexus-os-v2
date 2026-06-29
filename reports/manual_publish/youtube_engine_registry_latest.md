@@ -1,6 +1,6 @@
 # YouTube Engine Registry
 
-Generated: 2026-06-29T18:02:39.060706+00:00
+Generated: 2026-06-29T18:19:24.367526+00:00
 
 - ok: true
 - status: registry_active

@@ -1,13 +1,13 @@
 # YouTube API Metadata Intake
 
-Generated: 2026-06-29T18:04:13.758828+00:00
+Generated: 2026-06-29T18:19:46.334156+00:00
 
 - ok: true
-- status: targets_configured_connector_missing
-- api_key_present: false
+- status: real_metadata_review_active_api
+- api_key_present: true
 - raw_key_included: false
-- approved_targets_checked: 0
-- metadata_records_created: 0
+- approved_targets_checked: 4
+- metadata_records_created: 20
 - cache_hits: 0
 - video_downloaded: false
 - audio_downloaded: false

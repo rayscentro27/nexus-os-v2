@@ -41,8 +41,8 @@ def build()->dict:
  existing_approvals=read_json(SUPABASE_READY/"youtube_approval_cards_latest.json",[])
  approvals=list({item.get("title",item.get("id")):item for item in existing_approvals+approvals}.values())
  if transcripts: mode="real_transcript_review_active"
+ elif metadata and any(item.get("metadata_source")=="youtube_data_api_v3" for item in metadata): mode="real_metadata_review_active_api"
  elif metadata and any(item.get("metadata_source")=="yt_dlp_local_probe" for item in metadata): mode="real_metadata_review_active_ytdlp_local"
- elif metadata: mode="real_metadata_review_active_api"
  elif channels and local_tool["local_ytdlp_available"]: mode="targets_configured_ytdlp_available_needs_approved_probe"
  elif local_tool["local_ytdlp_available"]: mode="local_ytdlp_available_no_approved_targets"
  elif channels and not intake.get("api_key_present"): mode="targets_configured_connector_missing"

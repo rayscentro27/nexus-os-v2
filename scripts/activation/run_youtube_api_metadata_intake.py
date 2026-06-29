@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse,json,urllib.parse,urllib.request
+import argparse,json,ssl,urllib.parse,urllib.request
 from youtube_cache import get,put,status as cache_status
 from youtube_engine_common import ROOT,SUPABASE_READY,api_key_status,approved_targets,now,read_json,record,write_json,write_report
 
 def api(path,params,key):
  q=urllib.parse.urlencode({**params,"key":key})
- with urllib.request.urlopen(f"https://www.googleapis.com/youtube/v3/{path}?{q}",timeout=20) as r:return json.loads(r.read())
+ try:
+  import certifi
+  context=ssl.create_default_context(cafile=certifi.where())
+ except ImportError:
+  context=ssl.create_default_context()
+ with urllib.request.urlopen(f"https://www.googleapis.com/youtube/v3/{path}?{q}",timeout=20,context=context) as r:return json.loads(r.read())
 def build():
  policy=read_json(ROOT/"configs/youtube_quota_policy.json",{});key=api_key_status();targets=approved_targets()[:policy.get("max_channels_per_run",4)];records=[];errors=[];units=0;cache_hits=0
  if key["present"]:

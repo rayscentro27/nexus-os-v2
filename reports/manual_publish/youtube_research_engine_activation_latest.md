@@ -1,12 +1,12 @@
 # YouTube Research Engine Activation
 
-Generated: 2026-06-29T18:04:53.834658+00:00
+Generated: 2026-06-29T18:20:22.902513+00:00
 
 - ok: true
 - yt_dlp_installed: true
-- youtube_api_key_present: false
-- connector_ran: youtube_ytdlp_local_probe
-- api_metadata_intake_ran: false
+- youtube_api_key_present: true
+- connector_ran: youtube_api
+- api_metadata_intake_ran: true
 - ytdlp_probe_ran: true
 - videos_downloaded: false
 - audio_downloaded: false
@@ -14,13 +14,13 @@ Generated: 2026-06-29T18:04:53.834658+00:00
 - transcripts_imported: 0
 - real_metadata_review: true
 - real_transcript_review: false
-- current_mode: real_metadata_review_active_ytdlp_local
+- current_mode: real_metadata_review_active_api
 - approved_targets: 4
-- targets_checked: 4
-- metadata_records: 4
-- review_items: 4
-- opportunities: 4
-- content_ideas: 4
+- targets_checked: 8
+- metadata_records: 24
+- review_items: 24
+- opportunities: 24
+- content_ideas: 24
 - ray_review_cards: 5
 - hermes_recommendations: 1
 - automation_schedules_created: 16
