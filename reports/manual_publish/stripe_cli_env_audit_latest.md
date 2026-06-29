@@ -1,14 +1,15 @@
 # Stripe CLI and Environment Audit
 
-Generated: 2026-06-29T18:33:28.243557+00:00
+Generated: 2026-06-29T18:40:27.748302+00:00
 
 - ok: true
-- status: stripe_test_setup_incomplete
+- status: stripe_test_mode_ready_for_Ray_approval
 - test_secret_detected: false
 - test_publishable_detected: false
 - live_key_detected_but_not_used: true
 - raw_values_included: false
-- stripe_api_called: false
+- stripe_read_only_test_request_performed: true
+- stripe_api_write_performed: false
 - real_charge_created: false
 - external_action_performed: false
 

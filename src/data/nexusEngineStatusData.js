@@ -74,9 +74,9 @@ export const nexusEngineStatusData = {
   connectorActivation: {
     testCustomerPackage: 'synthetic_test_package_ready_not_inserted',
     stripeCli: 'installed_1.40.8',
-    stripeTestCheckout: 'plan_ready_test_keys_missing',
-    stripeTestPaymentIntent: 'plan_ready_test_keys_missing',
-    stripeWebhook: 'plan_ready_webhook_secret_missing',
+    stripeTestCheckout: 'stripe_cli_test_mode_verified_approval_required',
+    stripeTestPaymentIntent: 'stripe_cli_test_mode_verified_approval_required',
+    stripeWebhook: 'plan_ready_webhook_secret_pending',
     paymentToClientOnboarding: 'dry_run_idempotent_flow_ready',
     notebooklmCliRecovered: false,
     notebooklmLegacyAdapterFound: true,

@@ -1,6 +1,6 @@
 # Nexus Test Customer Connector Activation
 
-Generated: 2026-06-29T18:33:28.713797+00:00
+Generated: 2026-06-29T18:40:30.978985+00:00
 
 - ok: true
 - status: test_connector_activation_complete
@@ -8,7 +8,7 @@ Generated: 2026-06-29T18:33:28.713797+00:00
 - package: $97 readiness review
 - live_records_inserted: false
 - stripe_cli_found: true
-- stripe_test_mode_ready: false
+- stripe_test_mode_ready: true
 - checkout_test_plan_ready: true
 - payment_intent_test_plan_ready: true
 - webhook_test_plan_ready: true
@@ -34,7 +34,7 @@ Generated: 2026-06-29T18:33:28.713797+00:00
 
 ## Blocked by env
 
-- Stripe test secret/publishable keys
+- Stripe server-side test keys for application integration
 - Stripe test webhook secret
 - Explicit Oanda practice environment
 - Approved YouTube transcript TXT

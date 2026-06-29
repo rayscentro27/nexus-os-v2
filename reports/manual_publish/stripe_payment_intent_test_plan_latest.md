@@ -1,10 +1,10 @@
 # Stripe PaymentIntent Test Plan
 
-Generated: 2026-06-29T18:31:31.539187+00:00
+Generated: 2026-06-29T18:40:29.794888+00:00
 
 - ok: true
-- status: test_key_or_cli_missing
-- test_mode_ready: false
+- status: ready_for_Ray_approval
+- test_mode_ready: true
 - payment_intent_created: false
 - real_charge_created: false
 - external_action_performed: false
@@ -37,4 +37,4 @@ Generated: 2026-06-29T18:31:31.539187+00:00
 - **options:** ["approve", "reject", "defer"]
 - **test_mode_only:** True
 - **external_action_performed:** False
-- **created_at:** 2026-06-29T18:31:31.538742+00:00
+- **created_at:** 2026-06-29T18:40:29.794536+00:00

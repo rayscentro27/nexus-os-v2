@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse,json
 from payment_test_common import SUPABASE_READY,approval,env_data,now,payment_record,stripe_cli,write_json,write_report
 def build():
- env=env_data();cli=stripe_cli();ready=cli["installed"] and env["test_secret_detected"]
+ env=env_data();cli=stripe_cli();ready=cli["test_mode_verified"] or (cli["installed"] and env["test_secret_detected"])
  card=approval("approve_stripe_test_checkout","Approve Stripe CLI test Checkout","Approve one test-mode Checkout Session for the synthetic $97 package; no live mode.")
  plan={"product_name":"GoClear / Apex $97 Readiness Review (TEST)","amount_cents":9700,"currency":"usd","mode":"test","customer":"client_test_julius_erving","success_event":"checkout.session.completed","idempotency_key_template":"test-readiness-{client_id}-{attempt}","command_template":"stripe checkout sessions create --mode=payment --line-items[0][price_data][currency]=usd --line-items[0][price_data][unit_amount]=9700 ...","requires_Ray_approval":True,"executed":False}
  report={"ok":True,"generated_at":now(),"status":"ready_for_Ray_approval" if ready else "test_key_or_cli_missing","test_mode_ready":ready,"checkout_session_created":False,"live_payment_link_created":False,"real_charge_created":False,"external_action_performed":False,"plan":plan}

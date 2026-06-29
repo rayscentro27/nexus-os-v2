@@ -1,10 +1,11 @@
 # Stripe Webhook Test Plan
 
-Generated: 2026-06-29T18:31:31.908725+00:00
+Generated: 2026-06-29T18:40:30.797874+00:00
 
 - ok: true
 - status: plan_ready_requires_Ray_approval
 - stripe_cli_installed: true
+- stripe_cli_test_mode_verified: true
 - webhook_secret_present: false
 - listener_started: false
 - test_event_sent: false
@@ -38,4 +39,4 @@ Generated: 2026-06-29T18:31:31.908725+00:00
 - **options:** ["approve", "reject", "defer"]
 - **test_mode_only:** True
 - **external_action_performed:** False
-- **created_at:** 2026-06-29T18:31:31.909346+00:00
+- **created_at:** 2026-06-29T18:40:30.798184+00:00

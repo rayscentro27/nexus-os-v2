@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Shared Stripe test-plan helpers. No Stripe API writes are permitted here."""
 from __future__ import annotations
-import os, shutil, subprocess, sys
+import json, os, shutil, subprocess, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ops"))
 from same_day_common import ROOT, SUPABASE_READY, env_presence, now, parse_env, write_json, write_report  # noqa:E402,F401
@@ -31,8 +31,20 @@ def stripe_cli():
     if path:
         run = subprocess.run([path, "config", "--list"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
         auth_checked = True; auth_available = run.returncode == 0
+    test_mode_verified = False
+    read_only_check = False
+    if path and auth_available:
+        run = subprocess.run([path, "balance", "retrieve", "--confirm"], capture_output=True, text=True, timeout=30)
+        read_only_check = True
+        if run.returncode == 0:
+            try:
+                test_mode_verified = json.loads(run.stdout).get("livemode") is False
+            except (json.JSONDecodeError, AttributeError):
+                test_mode_verified = False
     return {"installed": bool(path), "path": path, "version": version,
-            "auth_checked_without_output": auth_checked, "config_available": auth_available}
+            "auth_checked_without_output": auth_checked, "config_available": auth_available,
+            "read_only_test_request_performed": read_only_check,
+            "test_mode_verified": test_mode_verified, "live_mode_requested": False}
 
 def approval(card_id, title, decision):
     return {"id": card_id, "tenant_id": "tenant_test_goclear", "client_id": "client_test_julius_erving",

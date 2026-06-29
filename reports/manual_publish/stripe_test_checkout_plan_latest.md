@@ -1,10 +1,10 @@
 # Stripe Test Checkout Plan
 
-Generated: 2026-06-29T18:31:30.800984+00:00
+Generated: 2026-06-29T18:40:28.746604+00:00
 
 - ok: true
-- status: test_key_or_cli_missing
-- test_mode_ready: false
+- status: ready_for_Ray_approval
+- test_mode_ready: true
 - checkout_session_created: false
 - live_payment_link_created: false
 - real_charge_created: false
@@ -40,4 +40,4 @@ Generated: 2026-06-29T18:31:30.800984+00:00
 - **options:** ["approve", "reject", "defer"]
 - **test_mode_only:** True
 - **external_action_performed:** False
-- **created_at:** 2026-06-29T18:31:30.800369+00:00
+- **created_at:** 2026-06-29T18:40:28.746268+00:00
