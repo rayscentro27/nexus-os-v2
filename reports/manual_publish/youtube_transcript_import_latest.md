@@ -1,6 +1,6 @@
 # YouTube Transcript Import
 
-Generated: 2026-06-29T18:04:13.993315+00:00
+Generated: 2026-06-29T18:33:26.900876+00:00
 
 - ok: true
 - status: configured_missing_transcripts
@@ -11,7 +11,7 @@ Generated: 2026-06-29T18:04:13.993315+00:00
 - video_downloaded: false
 - audio_downloaded: false
 - external_action_performed: false
-- next_required_action: Place an approved target-named TXT transcript in data/sources/youtube_transcripts/.
+- next_required_action: Place one approved .txt transcript in data/sources/youtube_transcripts/ and rerun.
 
 ## Imports
 

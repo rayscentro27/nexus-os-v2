@@ -49,7 +49,7 @@ def write_report(stem: str, title: str, data: dict[str, Any], sections: dict[str
         else:
             lines.append(str(value))
     (MANUAL / f"{stem}_latest.md").parent.mkdir(parents=True, exist_ok=True)
-    (MANUAL / f"{stem}_latest.md").write_text("\n".join(lines).rstrip() + "\n")
+    (MANUAL / f"{stem}_latest.md").write_text("\n".join(line.rstrip() for line in lines).rstrip() + "\n")
 
 
 def parse_env(path: Path) -> dict[str, str]:
