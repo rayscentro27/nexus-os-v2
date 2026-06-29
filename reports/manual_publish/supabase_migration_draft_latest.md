@@ -1,6 +1,6 @@
 # Supabase Migration Draft
 
-Generated: 2026-06-29T16:39:08.530294+00:00
+Generated: 2026-06-29T16:54:23.886021+00:00
 
 - ok: true
 - status: draft_generated
