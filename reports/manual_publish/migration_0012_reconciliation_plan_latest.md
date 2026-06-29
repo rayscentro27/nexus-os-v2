@@ -1,6 +1,6 @@
 # Migration 0012 Reconciliation Plan
 
-Generated: 2026-06-29T17:07:04.064768+00:00
+Generated: 2026-06-29T17:08:20.923932+00:00
 
 - ok: true
 - chosen_option: Option B/C — local migration exists, remote lacks it, and its numeric version sorts before a later remote migration

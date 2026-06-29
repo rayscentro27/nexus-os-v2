@@ -1,6 +1,6 @@
 # Migration 0012 Local Test
 
-Generated: 2026-06-29T17:07:04.064774+00:00
+Generated: 2026-06-29T17:08:20.923942+00:00
 
 - ok: true
 - local_test_attempted: false

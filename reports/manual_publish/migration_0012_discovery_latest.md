@@ -1,6 +1,6 @@
 # Migration 0012 Discovery
 
-Generated: 2026-06-29T17:07:04.064705+00:00
+Generated: 2026-06-29T17:08:20.923845+00:00
 
 - ok: true
 - 0012_found: true
