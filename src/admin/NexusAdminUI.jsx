@@ -750,7 +750,8 @@ function SystemHealthPage() {
                 ['Hermes Frontend', 'Local advisor active', 'green', 'Online'],
                 ['Automation Safety', `${nexusEngineStatusData.connectorTest.connectorsTested} connectors checked; no external actions`, 'green', 'Blocked risky'],
                 ['Dispute Lab', `${nexusEngineStatusData.disputeSimulation.casesTested} synthetic cases; ${nexusEngineStatusData.disputeSimulation.realDisputesSent} sent`, 'green', 'Simulation'],
-                ['YouTube Review', `${nexusEngineStatusData.youtubeReview.queuedItems} queued; real video review not active`, 'amber', 'Queue only'],
+                ['YouTube Review', `${nexusEngineStatusData.youtubeResearch.reviewedItems} metadata items reviewed via local yt-dlp; API key pending`, 'green', 'Metadata active'],
+                ['Automation Registry', `${nexusEngineStatusData.automationSchedules.enabledInternal}/${nexusEngineStatusData.automationSchedules.total} internal schedules enabled`, 'green', 'Validated'],
                 ['Social Engine', `${nexusEngineStatusData.socialDrafts.draftsCreated} drafts; publishing disabled`, 'green', 'Drafts active'],
                 ['Scheduler', 'Not activated', 'amber', 'Off'],
                 ['External AI Calls', 'Blocked by default', 'green', 'Safe']

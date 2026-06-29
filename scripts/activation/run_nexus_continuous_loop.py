@@ -63,6 +63,8 @@ def cycle(cycle_number: int, interval_minutes: float, is_continuous: bool) -> di
     cmd = [sys.executable, str(ROOT / "scripts" / "activation" / "run_nexus_full_activation.py"),
            "--run-all", "--json", "--continuous-cycle"]
     proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=900)
+    schedule_cmd = [sys.executable, str(ROOT / "scripts" / "activation" / "run_automation_schedule_registry.py"), "--json", "--run-loop-safe"]
+    schedule_proc = subprocess.run(schedule_cmd, cwd=ROOT, capture_output=True, text=True, timeout=900)
     activation = load_json(RUNTIME / "nexus_full_activation_latest.json")
     hermes = load_json(RUNTIME / "hermes_current_brief_latest.json")
     trading = load_json(RUNTIME / "trading_activation_latest.json")
@@ -74,6 +76,8 @@ def cycle(cycle_number: int, interval_minutes: float, is_continuous: bool) -> di
         "cycle": cycle_number, "cycle_started_at": started, "cycle_completed_at": finished_dt.isoformat(),
         "ok": bool(activation.get("ok", proc.returncode == 0)), "activation_exit_code": proc.returncode,
         "activation_error": proc.stderr[-1000:] if proc.returncode else "",
+        "automation_schedule_exit_code": schedule_proc.returncode,
+        "automation_schedule_error": schedule_proc.stderr[-1000:] if schedule_proc.returncode else "",
         "is_nexus_running": is_continuous and not STOP_REQUESTED,
         "last_cycle_time": finished_dt.isoformat(), "next_cycle_time": next_dt.isoformat() if next_dt else None,
         "systems_updated": activation.get("systems_activated", []),

@@ -1,0 +1,10 @@
+{
+  "daily_unit_budget": 1000,
+  "reserve_units": 250,
+  "max_channels_per_run": 4,
+  "max_new_videos_per_run": 25,
+  "refresh_existing_after_hours": 24,
+  "cache_enabled": true,
+  "prefer_cache": true,
+  "stop_when_budget_remaining_below": 250
+}

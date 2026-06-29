@@ -1,33 +1,22 @@
 #!/usr/bin/env python3
-"""Import locally supplied transcript text for internal analysis."""
+"""Import only approved local transcript text; never fetches media."""
 from __future__ import annotations
-
-import argparse,json,sys
-from pathlib import Path
-ROOT=Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0,str(ROOT/"scripts"/"ops"))
-from same_day_common import SUPABASE_READY,now,write_json,write_report  # noqa:E402
-SOURCE=ROOT/"data"/"sources"/"youtube_transcripts"
-
-
-def build()->dict:
- SOURCE.mkdir(parents=True,exist_ok=True); files=sorted([p for p in SOURCE.glob("*.txt") if p.is_file()]); records=[]
+import argparse,json
+from youtube_engine_common import ROOT,SUPABASE_READY,approved_targets,ensure_dirs,now,read_json,record,write_json,write_report
+SOURCE=ROOT/"data/sources/youtube_transcripts"
+def build():
+ ensure_dirs();targets=approved_targets();tokens={str(v).lower() for x in targets for v in (x.get("id"),x.get("handle")) if v};files=sorted(SOURCE.glob("*.txt"));imports=[];rejected=[]
  for i,path in enumerate(files,1):
+  approved=any(t in path.stem.lower() for t in tokens) or path.with_suffix(path.suffix+".approved").exists()
+  if not approved:rejected.append({"file":path.name,"reason":"not_attached_to_approved_target"});continue
   text=path.read_text(errors="replace").strip()
-  if not text: continue
-  terms=[x for x in ("credit","utilization","business profile","funding","documents","banking","marketing","subscription") if x in text.lower()]
-  records.append({"id":f"manual-transcript-{i}","title":path.stem.replace("_"," ").title(),"source_file":str(path.relative_to(ROOT)),
-    "source_type":"manual_local_transcript","approved_for_internal_review":True,"character_count":len(text),"extracted_topics":terms,
-    "content_excerpt":text[:500],"media_downloaded":False,"created_at":now()})
- write_json(SUPABASE_READY/"youtube_transcript_imports_latest.json",records)
- status="real_transcript_review_active" if records else "configured_missing_transcripts"
- report={"ok":True,"generated_at":now(),"status":status,"transcript_directory":str(SOURCE.relative_to(ROOT)),"files_found":len(files),
-  "transcripts_imported":len(records),"media_downloaded":False,"instructions":["Place approved UTF-8 .txt transcripts in data/sources/youtube_transcripts/.","Use a filename that identifies the source; do not add copyrighted video/audio.","Run this importer, then run_youtube_review_proof.py."],
-  "next_required_action":"Run review proof." if records else "Add one approved transcript text file, then rerun this importer.",
-  "external_action_performed":False,"summary":f"Imported {len(records)} local approved transcript files."}
- write_report("youtube_transcript_import","YouTube Transcript Import",report,{"Imported records":records,"Instructions":report["instructions"]});return report
-
-
-def main()->int:
- p=argparse.ArgumentParser();p.add_argument("--json",action="store_true");a=p.parse_args();r=build();print(json.dumps(r,indent=2) if a.json else r["summary"]);return 0
+  if not text:continue
+  topics=[x for x in ("credit","funding","business profile","documents","banking","marketing","subscription") if x in text.lower()]
+  imports.append(record(f"manual-transcript-{i}","youtube_review_item",path.stem.replace("_"," ").title(),status="real_transcript",source_file=str(path.relative_to(ROOT)),review_type="real_transcript",character_count=len(text),extracted_topics=topics,content_excerpt=text[:500],media_downloaded=False))
+ opportunities=[record(f"yt-transcript-opportunity-{i+1}","youtube_opportunity",f"Source-derived opportunity: {x['title']}",source_item_id=x["id"],approval_required=True) for i,x in enumerate(imports)]
+ ideas=[record(f"yt-transcript-content-{i+1}","youtube_content_idea",f"Original explainer from {x['title']}",source_item_id=x["id"],approval_required=True,draft_only=True) for i,x in enumerate(imports)]
+ write_json(SUPABASE_READY/"youtube_transcript_imports_latest.json",imports);write_json(SUPABASE_READY/"youtube_review_items_latest.json",imports);write_json(SUPABASE_READY/"youtube_opportunities_latest.json",opportunities);write_json(SUPABASE_READY/"youtube_content_ideas_latest.json",ideas)
+ report={"ok":True,"generated_at":now(),"status":"real_transcript_review_active" if imports else "configured_missing_transcripts","files_found":len(files),"transcripts_imported":len(imports),"rejected_unapproved":rejected,"opportunities_created":len(opportunities),"content_ideas_created":len(ideas),"video_downloaded":False,"audio_downloaded":False,"external_action_performed":False,"next_required_action":"Review imported transcript outputs." if imports else "Place an approved target-named TXT transcript in data/sources/youtube_transcripts/."};write_report("youtube_transcript_import","YouTube Transcript Import",report,{"Imports":imports,"Rejected":rejected});return report
+def main():
+ p=argparse.ArgumentParser();p.add_argument("--json",action="store_true");a=p.parse_args();r=build();print(json.dumps(r,indent=2) if a.json else r);return 0
 if __name__=="__main__":raise SystemExit(main())
