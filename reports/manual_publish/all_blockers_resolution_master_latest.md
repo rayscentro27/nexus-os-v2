@@ -1,0 +1,46 @@
+# All Blockers Resolution Master
+
+Generated: 2026-06-29T23:10:10.785485+00:00
+
+- ok: true
+- build_result: passed
+- safety_result: passed_with_approved_stripe_test_triggers
+- stripe_webhook_server_status: bounded_test_listener_and_triggers_passed
+- stripe_listener_status: passed_and_stopped
+- stripe_trigger_status: test_triggers_verified
+- stripe_events_received: true
+- signature_verified: true
+- checkout_status: test_checkout_session_reused_open_not_completed
+- checkout_completed: false
+- payment_intent_status: requires_payment_method
+- payment_intent_confirmed: false
+- webhook_onboarding: webhook_events_mapped_to_onboarding_dry_run
+- persistent_database_insert: false
+- real_charge: false
+- resend_key_detected: true
+- resend_403_likely_cause: restricted/wrong-account key scope plus configured .cc sender mismatch
+- resend_fix_required: Use intended Resend account/full or domain-read key; verify goclearonline.com; configure .com sender.
+- email_sent: false
+- rls_static_verification: static_rls_migration_verified
+- rls_sql_packet: read_only_sql_packet_generated
+- fake_customer_gate: blocked_gate_not_passed
+- fake_customer_cleanup: synthetic_cleanup_packet_ready_default_rollback
+- frontend_live_flag: live_read_path_implemented_flag_off
+- youtube_transcript_import: configured_missing_transcripts
+- youtube_dropzone: dropzone_ready_waiting_for_approved_txt
+- notebooklm_adapter: legacy_adapter_recovered_safe_wrapper_ready
+- notebooklm_import: manual_import_folder_ready
+- oanda_demo: blocked_explicit_practice_environment_missing
+- oanda_orders_placed: false
+- vibe_cli: vibe_cli_missing_legacy_backtest_available
+- vibe_backtest: synthetic_paper_backtest_passed
+- safe_loop: 8/8 passed
+- schedule_install: launchd_plan_ready_not_installed
+- external_actions_performed: true
+- external_actions_detail: Approved Stripe test-mode fixture triggers only; no live actions.
+- social_posts_published: false
+- disputes_sent: false
+- live_trades_placed: false
+- ray_review_cards: 14
+- hermes_recommendations: 8
+- exact_next_command: Open reports/manual_publish/rls_sql_editor_verification_packet_latest.sql and run it in Supabase SQL Editor for project iqjwgpnujbeoyaeuwehj.

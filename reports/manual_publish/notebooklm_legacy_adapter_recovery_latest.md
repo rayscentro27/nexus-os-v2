@@ -1,6 +1,6 @@
 # NotebookLM Legacy Adapter Recovery
 
-Generated: 2026-06-29T20:20:41.132688+00:00
+Generated: 2026-06-29T23:06:33.110512+00:00
 
 - ok: true
 - status: legacy_adapter_recovered_safe_wrapper_ready

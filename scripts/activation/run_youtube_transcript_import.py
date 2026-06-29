@@ -5,9 +5,9 @@ import argparse,json
 from youtube_engine_common import ROOT,SUPABASE_READY,approved_targets,ensure_dirs,now,read_json,record,write_json,write_report
 SOURCE=ROOT/"data/sources/youtube_transcripts"
 def build():
- ensure_dirs();targets=approved_targets();tokens={str(v).lower() for x in targets for v in (x.get("id"),x.get("handle")) if v};files=sorted(SOURCE.glob("*.txt"));imports=[];rejected=[]
+ ensure_dirs();(SOURCE/"pending").mkdir(parents=True,exist_ok=True);(SOURCE/"approved").mkdir(parents=True,exist_ok=True);targets=approved_targets();tokens={str(v).lower() for x in targets for v in (x.get("id"),x.get("handle"),x.get("video_id")) if v};files=sorted(list(SOURCE.glob("*.txt"))+list((SOURCE/"approved").glob("*.txt")));imports=[];rejected=[]
  for i,path in enumerate(files,1):
-  approved=any(t in path.stem.lower() for t in tokens) or path.with_suffix(path.suffix+".approved").exists()
+  approved=path.parent.name=="approved" or any(t in path.stem.lower() for t in tokens) or path.with_suffix(path.suffix+".approved").exists()
   if not approved:rejected.append({"file":path.name,"reason":"not_attached_to_approved_target"});continue
   text=path.read_text(errors="replace").strip()
   if not text:continue

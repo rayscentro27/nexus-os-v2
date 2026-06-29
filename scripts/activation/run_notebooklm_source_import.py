@@ -5,7 +5,8 @@ from youtube_engine_common import ROOT,SUPABASE_READY,ensure_dirs,now,record,wri
 def build():
  ensure_dirs();paths=[]
  for folder in (ROOT/"data/sources/notebooklm_exports",ROOT/"data/sources/notebooklm_notes"):
-  paths.extend([p for p in folder.iterdir() if p.is_file() and p.name.lower() != "readme.md" and p.suffix.lower() in {".txt",".md",".json"}])
+  approved=folder/"approved";approved.mkdir(parents=True,exist_ok=True)
+  paths.extend([p for p in list(folder.iterdir())+list(approved.iterdir()) if p.is_file() and p.name.lower() != "readme.md" and p.suffix.lower() in {".txt",".md",".json"}])
  sources=[]
  for i,p in enumerate(sorted(paths),1):
   text=p.read_text(errors="replace");lower=text.lower();domains=[x for x in ("credit repair","business funding","client portal","content","social","affiliate","partner","trading") if x in lower]

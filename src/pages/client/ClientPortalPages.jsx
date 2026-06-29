@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   BadgeCheck, Building2, CheckCircle2, CircleAlert, FileCheck2, FileText, Gauge,
   Landmark, LockKeyhole, Mail, SearchCheck, Settings, TrendingUp, Upload,
@@ -9,12 +9,21 @@ import {
   ClientSection, ClientStatusBadge,
 } from '../../components/client/ClientPortalUI'
 import { clientPortalData as data } from '../../data/clientPortalData'
+import { clientDataMode } from '../../data/clientDataMode'
+import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveData'
 
 const score = data.readinessScores
 
 export function ClientDashboard() {
+  const [live, setLive] = useState(null)
+  useEffect(() => {
+    if (clientDataMode.liveSupabaseTestClientEnabled) loadClientDashboardLiveData().then(setLive)
+  }, [])
+  const liveProfile = live?.profile
+  const dashboardTasks = live?.tasks?.length ? live.tasks : data.clientTasks
+  const badge = liveProfile ? 'Live test data' : 'Demo data'
   return <div className="client-page client-dashboard-page">
-    <ClientPageHeader title="Dashboard" subtitle="Your approved credit, business, and funding-readiness snapshot." badge="Demo data" />
+    <ClientPageHeader title="Dashboard" subtitle="Your approved credit, business, and funding-readiness snapshot." badge={badge} />
     <div className="client-metric-grid dashboard">
       <ClientScoreCard title="Overall Readiness" value={71} status="Building momentum" text="Complete this month’s highest-impact tasks before requesting funding review." />
       <ClientMetricCard icon={Gauge} label="Credit Repair" value={`${score.creditRepairProgress}%`} note="In progress" />
@@ -23,7 +32,7 @@ export function ClientDashboard() {
       <ClientMetricCard icon={Landmark} label="Funding Readiness" value={score.fundingReadiness} note="Almost Ready" tone="orange" />
     </div>
     <div className="client-dashboard-grid">
-      <ClientSection title="Your next actions" action="4 open"><ClientActionList rows={data.clientTasks} /></ClientSection>
+      <ClientSection title="Your next actions" action={`${dashboardTasks.length} open`}><ClientActionList rows={dashboardTasks} /></ClientSection>
       <ClientSection title="Readiness overview">
         {[['Credit profile', score.creditProfileReadiness], ['Business profile', score.businessProfileReadiness], ['Funding readiness', score.fundingReadiness], ['Business opportunities', score.businessOpportunityScore]].map(([name, value]) => <div className="client-bar-row" key={name}><span>{name}</span><div><i style={{ width: `${value}%` }} /></div><strong>{value}</strong></div>)}
       </ClientSection>

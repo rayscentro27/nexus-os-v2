@@ -1,12 +1,12 @@
 # YouTube Research Outputs
 
-Generated: 2026-06-29T20:21:06.951220+00:00
+Generated: 2026-06-29T23:08:33.502933+00:00
 
 - ok: true
 - status: outputs_ready_for_review
 - source_items: 25
 - score_items: 25
-- approval_cards: 5
+- approval_cards: 6
 - hermes_recommendations: 1
 - content_drafts: 25
 - social_drafts: 25

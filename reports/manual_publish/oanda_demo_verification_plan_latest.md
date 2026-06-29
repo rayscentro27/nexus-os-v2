@@ -1,6 +1,6 @@
 # Oanda Demo Verification Plan
 
-Generated: 2026-06-29T20:20:42.042740+00:00
+Generated: 2026-06-29T23:07:54.362455+00:00
 
 - ok: true
 - status: blocked_explicit_practice_environment_missing
@@ -19,4 +19,4 @@ Generated: 2026-06-29T20:20:42.042740+00:00
 - **paper_only:** True
 - **orders_allowed:** False
 - **external_action_performed:** False
-- **created_at:** 2026-06-29T20:20:42.042300+00:00
+- **created_at:** 2026-06-29T23:07:54.362084+00:00
