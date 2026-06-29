@@ -4,6 +4,7 @@ import {
   Gauge, Home, Mail, Menu, Settings, Sparkles, UserRound, X,
 } from 'lucide-react'
 import { clientPortalData } from '../../data/clientPortalData'
+import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
 
 export const clientRoutes = [
   { path: '/client/dashboard', label: 'Dashboard', icon: Home },
@@ -49,7 +50,7 @@ export function ClientTopBar({ onMenu }) {
   return (
     <header className="client-topbar">
       <button className="client-menu" onClick={onMenu} aria-label="Open navigation"><Menu size={21} /></button>
-      <div className="client-welcome">Welcome back, {profile.name.replace(' (Demo)', '')} <span>Demo portal</span></div>
+      <div className="client-welcome">Welcome back, {profile.name.replace(' (Demo)', '')} {shouldShowInternalDataBadge && <span>{clientDataMode.internalLabel}</span>}</div>
       <div className="client-top-actions">
         <a href="/" className="client-admin-link">Admin sign-in</a>
         <button className="client-icon-button" aria-label="Notifications"><Bell size={21} /><em>2</em></button>

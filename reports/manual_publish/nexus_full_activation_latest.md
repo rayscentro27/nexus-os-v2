@@ -1,6 +1,6 @@
 # Nexus Full Activation
 
-- generated_at: 2026-06-29T16:13:39.034038+00:00
+- generated_at: 2026-06-29T16:39:25.026567+00:00
 - ok: true
 - mode: continuous_full_activation_safe_internal
 - next_money_action: Approve the $97 Readiness Review offer and first landing-page copy so Ray can begin manual sales conversations.

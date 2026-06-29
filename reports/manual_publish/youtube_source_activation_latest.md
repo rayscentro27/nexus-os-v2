@@ -1,9 +1,9 @@
 # YouTube / Source Activation
 
-- generated_at: 2026-06-29T16:13:36.965076+00:00
+- generated_at: 2026-06-29T16:39:22.651259+00:00
 - ok: true
 - status: active_metadata_queue
-- summary: Prepared 9 source-category queues without downloading media or bypassing platform controls.
+- summary: Prepared 0 source-category queues without downloading media or bypassing platform controls.
 - recommended_next_action: Select one reputable credit education channel and one business funding channel for metadata review.
 - external_action_performed: false
 - money_spent: false
@@ -14,15 +14,7 @@
 
 ## Research queue
 
-- **youtube-1** — Select an allowed public channel and capture metadata only.
-- **youtube-2** — Select an allowed public channel and capture metadata only.
-- **youtube-3** — Select an allowed public channel and capture metadata only.
-- **youtube-4** — Select an allowed public channel and capture metadata only.
-- **youtube-5** — Select an allowed public channel and capture metadata only.
-- **youtube-6** — Select an allowed public channel and capture metadata only.
-- **youtube-7** — Select an allowed public channel and capture metadata only.
-- **youtube-8** — Select an allowed public channel and capture metadata only.
-- **youtube-9** — Select an allowed public channel and capture metadata only.
+- none
 
 ## Rules
 

@@ -1,6 +1,6 @@
 # Funding Readiness Activation
 
-- generated_at: 2026-06-29T16:13:36.963094+00:00
+- generated_at: 2026-06-29T16:39:22.649467+00:00
 - ok: true
 - status: active_internal_scoring_model
 - summary: Funding readiness scoring is active as educational guidance, not underwriting or a funding guarantee.

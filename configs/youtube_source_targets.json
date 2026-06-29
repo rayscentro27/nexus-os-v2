@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "approval_scope": "bounded public metadata and manually supplied transcript text only",
+  "max_results_per_channel": 3,
+  "channels_config": "configs/youtube_research_channels.json",
+  "local_transcript_directory": "data/sources/youtube_transcripts",
+  "media_download_allowed": false,
+  "automatic_publication_allowed": false
+}

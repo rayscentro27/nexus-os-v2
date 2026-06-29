@@ -1,3 +1,5 @@
+import { clientDataMode } from './clientDataMode'
+
 const DEMO_TENANT_ID = 'tenant_demo_goclear'
 const DEMO_CLIENT_ID = 'client_demo_001'
 
@@ -26,6 +28,10 @@ export const clientPortalData = {
   metadata: {
     demo_only: true,
     real_client_data_used: false,
+    data_mode: clientDataMode.current,
+    supported_modes: clientDataMode.supported,
+    supabase_ready: clientDataMode.supabaseSchemaReady,
+    live_supabase_pending: !clientDataMode.supabaseLiveReadsEnabled,
     client_id: DEMO_CLIENT_ID,
     tenant_id: DEMO_TENANT_ID,
   },
@@ -125,12 +131,16 @@ export const clientPortalData = {
     uploadedDocuments: ['Formation documents', 'EIN confirmation', 'Demo bank statements'],
     missingDocuments: ['Current address proof', 'Revenue summary'],
     underReviewDocuments: ['Demo account statement'],
+    uploadState: 'storage_and_rls_pending',
+    reviewStatuses: ['missing', 'uploaded', 'under_review', 'approved', 'needs_replacement'],
   },
   messages: {
     advisorMessages: [{ id: 'msg-1', title: 'GoClear review update', body: 'Your demo document checklist was reviewed. Two items still need attention.', date: 'June 29, 2026' }],
     systemMessages: [{ id: 'msg-2', title: 'Monthly readiness refresh', body: 'Your Nexus Readiness Scores were refreshed from demo data.', date: 'June 29, 2026' }],
     goclearReviewUpdates: [{ id: 'msg-3', title: 'Letter review pending', body: 'Three drafts remain internal until GoClear and client approvals are complete.', date: 'June 29, 2026' }],
     actionRequiredMessages: [{ id: 'msg-4', title: 'Documents needed', body: 'Upload current address proof and a revenue summary.', date: 'June 29, 2026' }],
+    deliveryMode: 'portal_demo_only',
+    externalMessagesSent: false,
   },
   clientTasks: [
     record('task-1', 'documents', 'Upload current address proof', { due_date: '2026-07-03', priority: 'high', status: 'open', goclear_review_status: 'pending' }),

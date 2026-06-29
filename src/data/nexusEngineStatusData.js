@@ -30,6 +30,19 @@ export const nexusEngineStatusData = {
   nexusGuide: { status: 'demo_static', approvedDataOnly: true },
   supabaseReady: { status: 'ready_for_Supabase_insertion', liveInsertionPerformed: false },
   continuousLoop: { status: 'internal_active', lastProof: 'one_cycle', daemonRunning: false },
+  sameDayOperations: {
+    envInventory: 'internal_active',
+    youtubeIntake: 'targets_configured_connector_missing',
+    youtubeExactBlocker: 'YOUTUBE_API_KEY or one approved local transcript .txt file',
+    supabase: 'ready_for_migration_review',
+    supabaseInsertDryRun: 'passed',
+    clientDataMode: 'live_supabase_pending',
+    documentsMessages: 'schema_hardened_storage_pending',
+    disputeSandbox: 'plan_ready_real_send_blocked',
+    metaConnector: 'configuration_present_validation_pending',
+    payment: 'configuration_found_approval_pending',
+    rayReview: 'prioritized',
+  },
   proofReports: [
     'reports/runtime/nexus_full_system_audit_latest.json',
     'reports/runtime/full_engine_status_matrix_latest.json',
@@ -42,7 +55,7 @@ export const nexusEngineStatusData = {
     'Real dispute submission', 'Public social publishing', 'Live Supabase insertion',
     'Oanda trading until demo/practice environment is confirmed'
   ],
-  nextMoneyAction: 'Approve the $97 Readiness Review offer and run one manual demo-client fulfillment rehearsal.'
+  nextMoneyAction: 'Approve the Supabase migration/RLS test plan and $97 test-mode payment workflow.'
 }
 
 export default nexusEngineStatusData

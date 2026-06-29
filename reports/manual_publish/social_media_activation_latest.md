@@ -1,6 +1,6 @@
 # Social Media Activation
 
-- generated_at: 2026-06-29T16:13:36.976979+00:00
+- generated_at: 2026-06-29T16:39:22.664295+00:00
 - ok: true
 - status: approval_queue_only
 - summary: Social pipeline prepared 10 drafts; no publisher was invoked.

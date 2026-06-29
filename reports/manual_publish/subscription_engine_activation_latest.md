@@ -1,6 +1,6 @@
 # Subscription Engine Activation
 
-- generated_at: 2026-06-29T16:13:36.957472+00:00
+- generated_at: 2026-06-29T16:39:22.645492+00:00
 - ok: true
 - status: active_internal_model
 - summary: GoClear/Apex monthly subscription is the primary Nexus money engine; the $97 review is the entry conversion event.

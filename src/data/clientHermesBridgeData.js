@@ -18,4 +18,7 @@ export const clientHermesBridgeData = {
   client_bot_response_templates: Object.keys(clientGuideResponses || {}),
   client_hermes_guidance_latest: 'Only approved_client_guidance is client-visible.',
   admin_review_queue: ['credit-sensitive recommendations', 'draft letters', 'funding path', 'partner fit', 'client escalations'],
+  data_mode: 'live_supabase_pending',
+  live_bridge_enabled: false,
+  safe_status: 'structured_records_ready_for_rls_review',
 }

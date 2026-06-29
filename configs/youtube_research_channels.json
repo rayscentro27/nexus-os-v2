@@ -1,20 +1,16 @@
 {
-  "version": 1,
-  "mode": "metadata_and_research_queue_only",
+  "version": 2,
+  "mode": "approved_bounded_metadata_and_manual_transcript",
   "rules": [
-    "Do not download copyrighted video or audio.",
-    "Do not bypass platform controls or scrape aggressively.",
-    "Do not publish reused content."
+    "Metadata only; never download video or audio.",
+    "Manual transcript files must be lawfully obtained and approved for internal review.",
+    "No reused content is published automatically."
   ],
-  "channel_slots": [
-    {"category": "credit repair", "status": "needs_channel_selection"},
-    {"category": "personal credit education", "status": "needs_channel_selection"},
-    {"category": "business credit", "status": "needs_channel_selection"},
-    {"category": "business funding", "status": "needs_channel_selection"},
-    {"category": "grants", "status": "needs_channel_selection"},
-    {"category": "AI automation", "status": "needs_channel_selection"},
-    {"category": "SEO/content marketing", "status": "needs_channel_selection"},
-    {"category": "trading research", "status": "needs_channel_selection"},
-    {"category": "local business marketing", "status": "needs_channel_selection"}
-  ]
+  "channels": [
+    {"id":"credit_plug","name":"Credit Plug","handle":"creditplug","url":"https://www.youtube.com/@creditplug","categories":["credit_repair","business_credit","business_funding"],"approved_by_ray":true,"enabled":true},
+    {"id":"michael_ionita","name":"Michael Ionita","handle":"michaelionita","url":"https://www.youtube.com/@michaelionita","categories":["ai_automation","marketing","product_strategy"],"approved_by_ray":true,"enabled":true},
+    {"id":"alec_delpuech","name":"Alec Delpuech","handle":"alecdelpuech","url":"https://www.youtube.com/@alecdelpuech","categories":["online_business","marketing","content_strategy"],"approved_by_ray":true,"enabled":true},
+    {"id":"stedman_waiters","name":"Stedman Waiters","handle":"StedmanWaiters","url":"https://www.youtube.com/@StedmanWaiters","categories":["trading_research","market_research"],"approved_by_ray":true,"enabled":true,"paper_only":true}
+  ],
+  "unfilled_categories": ["personal_credit_education","grants","seo_content_marketing","local_business_marketing"]
 }

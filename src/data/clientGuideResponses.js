@@ -6,6 +6,8 @@ export const clientGuideResponses = {
   documents_needed: 'The demo checklist still needs current address proof and a revenue summary. A demo account statement is already under review.',
   what_goclear_is_reviewing: 'GoClear is reviewing three draft letters, one account statement, and your readiness blockers. Nothing has been sent externally.',
   can_i_apply_for_funding_now: 'Not yet. The portal shows Almost Ready, and GoClear has not approved an application path. Finish the listed blockers and request review first.',
+  what_can_i_safely_do_today: 'Complete the listed document and profile tasks, avoid unnecessary applications, and send questions into GoClear review. Nothing is submitted automatically.',
+  what_does_my_readiness_score_mean: 'The Nexus Readiness Score organizes educational readiness factors. It is not a FICO score, approval prediction, or guarantee.',
   what_opportunity_should_i_focus_on: 'Focus on the Business Credit Builder workflow first because it addresses business-profile gaps that affect several later paths.',
   escalation: 'I can flag this for GoClear review. The question will enter the admin review queue; I cannot give final legal, credit, or lender-specific advice.',
 }
@@ -16,5 +18,7 @@ export const clientGuideQuestionLabels = {
   documents_needed: 'Which documents are needed?',
   what_goclear_is_reviewing: 'What is GoClear reviewing?',
   can_i_apply_for_funding_now: 'Can I apply for funding now?',
+  what_can_i_safely_do_today: 'What can I safely do today?',
+  what_does_my_readiness_score_mean: 'What does my readiness score mean?',
   what_opportunity_should_i_focus_on: 'Which opportunity should I focus on?',
 }
