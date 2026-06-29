@@ -15,6 +15,7 @@ reports/runtime/
 receipts/
 secrets/
 *.key
+.stripe_test_runtime/
 
 # python / misc
 __pycache__/
