@@ -1,6 +1,9 @@
 {
-  "version": 1,
+  "version": 2,
+  "mode": "static_seed_research_only",
+  "github_network_access_allowed": false,
   "policy": {
+    "fetch_urls": false,
     "clone_repositories": false,
     "run_untrusted_code": false,
     "copy_code_before_license_security_review": false,
@@ -10,51 +13,59 @@
     {
       "id": "github-topic-credit-repair-tools",
       "type": "github_topic",
-      "name": "Credit repair tools",
+      "name": "credit-repair-tools topic",
       "url": "https://github.com/topics/credit-repair-tools",
-      "purpose": "Find credit repair scripts, debt negotiation bots, dispute letter generators, checklist tools, and workflow concepts."
+      "purpose": "Static concept seed for credit-repair workflows.",
+      "concepts": ["dispute workflow concepts", "letter draft queues", "goodwill letter concepts", "debt validation concepts", "client checklist ideas", "documentation requirements", "debt negotiation task flow"]
     },
     {
       "id": "github-topic-credit-scoring",
       "type": "github_topic",
-      "name": "Credit scoring",
+      "name": "credit-scoring topic",
       "url": "https://github.com/topics/credit-scoring?o=desc&s=updated",
-      "purpose": "Find alternative credit scoring demos, rejection explanation tools, credit risk scoring concepts, and score factor models."
+      "purpose": "Static concept seed for explainable Nexus Readiness scoring.",
+      "concepts": ["score-factor categories", "utilization logic", "payment history importance", "inquiry risk", "credit age", "account mix", "explainable rejection/readiness reasons", "alternative readiness scoring concepts"]
     },
     {
       "id": "github-moov-awesome-fintech",
       "type": "github_repository",
       "name": "moov-io/awesome-fintech",
       "url": "https://github.com/moov-io/awesome-fintech",
-      "purpose": "Find fintech infrastructure patterns, compliance-aware tools, banking and finance APIs, and funding-readiness components."
+      "purpose": "Static concept seed for compliance-aware fintech architecture.",
+      "concepts": ["fintech infrastructure patterns", "compliance-aware financial data modeling", "banking/payment/funding ecosystem categories", "Metro 2 awareness only", "proof/ledger architecture ideas"]
     },
     {
       "id": "github-wadprog-repaircredit",
       "type": "github_repository",
       "name": "Wadprog/RepairCredit-",
       "url": "https://github.com/Wadprog/RepairCredit-",
-      "purpose": "Study credit repair app concepts; automatic bureau contact remains blocked until separately designed and approved."
+      "purpose": "Static concept seed for a reviewed credit-repair lifecycle.",
+      "concepts": ["credit repair app workflow", "bureau communication lifecycle as a concept", "dispute tracking lifecycle", "status tracking", "admin review steps", "automatic bureau contact"],
+      "blocked_concepts": ["automatic bureau contact"]
     },
     {
       "id": "github-loan-management-system",
       "type": "github_repository",
       "name": "chandachewe10/loan-management-system",
       "url": "https://github.com/chandachewe10/loan-management-system",
-      "purpose": "Study loan workflow, borrower and lender management, approval criteria, repayment tracking, and funding workflow concepts."
+      "purpose": "Static concept seed for funding workflow and document readiness.",
+      "concepts": ["loan application workflow", "borrower profile", "approval criteria", "repayment/status tracking", "document readiness", "funding pipeline"]
     },
     {
       "id": "github-topic-credit-management",
       "type": "github_topic",
-      "name": "Credit management",
+      "name": "credit-management topic",
       "url": "https://github.com/topics/credit-management",
-      "purpose": "Study debt and customer credit management, invoicing, payment tracking, and account-status workflows."
+      "purpose": "Static concept seed for business financial record readiness.",
+      "concepts": ["customer credit tracking", "balance/payment tracking", "receivables organization", "invoice/debt tracking", "business financial record readiness"]
     },
     {
       "id": "github-topic-loan-approval-system",
       "type": "github_topic",
-      "name": "Loan approval system",
+      "name": "loan-approval-system topic",
       "url": "https://github.com/topics/loan-approval-system",
-      "purpose": "Study loan intake, eligibility checks, underwriting-like workflows, and approval dashboards."
+      "purpose": "Static concept seed for reviewed funding-readiness decisions.",
+      "concepts": ["application intake", "eligibility checks", "underwriting-style workflow", "decision status", "approval dashboard concepts"]
     }
   ]
 }
