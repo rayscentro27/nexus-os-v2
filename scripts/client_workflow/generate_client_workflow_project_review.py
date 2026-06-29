@@ -78,7 +78,7 @@ FILES_TO_UPDATE = [
 FILES_TO_CREATE = [
     "src/config/clientWorkflow.ts, src/config/clientWorkflowReminders.ts, src/config/clientWorkflowAffiliate.ts",
     "src/lib/clientWorkflowEngine.ts, src/lib/clientWorkflowHermes.ts",
-    "supabase/migrations/0012_client_workflow_engine.sql",
+    "supabase/migrations/20260629090000_client_workflow_engine.sql",
     "scripts/client_workflow/* (model + 6 generators/verifier)",
     "docs/operations/NEXUS_CLIENT_WORKFLOW_ENGINE.md",
 ]
@@ -92,7 +92,7 @@ TABLES_SUPPORTING = [
 ]
 
 MIGRATIONS_NEEDED = [
-    "0012_client_workflow_engine.sql — additive, admin-only RLS (reusing existing pattern), sensitivity-labeled: client_profiles, client_workflow_stage_history, credit_score_history, business_setup_items, credit_letter_packets, client_mailings, client_reminders.",
+    "20260629090000_client_workflow_engine.sql — re-versioned from unapplied 0012; additive, admin-only RLS (reusing existing pattern), sensitivity-labeled: client_profiles, client_workflow_stage_history, credit_score_history, business_setup_items, credit_letter_packets, client_mailings, client_reminders.",
 ]
 
 APPROVAL_PATTERNS = [

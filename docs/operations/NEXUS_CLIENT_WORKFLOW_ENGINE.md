@@ -15,7 +15,7 @@ client-facing recommendations are NEVER exposed until Ray approves. See
   `src/config/clientWorkflowAffiliate.ts`.
 - Engines: `src/lib/clientWorkflowEngine.ts` (status/scoring), `src/lib/clientWorkflowHermes.ts`
   (proactive recommendations).
-- Tables: `supabase/migrations/0012_client_workflow_engine.sql` (admin-only RLS, sensitivity-labeled).
+- Tables: `supabase/migrations/20260629090000_client_workflow_engine.sql` (re-versioned from unapplied `0012`; admin-only RLS, sensitivity-labeled).
 - Scripts: `scripts/client_workflow/*` (Python mirror `client_workflow_model.py` + 6 generators/verifier).
 - Command Center: `ClientWorkflowCard` in `src/components/command-center/MissionControl.tsx`.
 

@@ -43,7 +43,7 @@ def build() -> dict:
         "src/config/clientWorkflowAffiliate.ts",
         "src/lib/clientWorkflowEngine.ts",
         "src/lib/clientWorkflowHermes.ts",
-        "supabase/migrations/0012_client_workflow_engine.sql",
+        "supabase/migrations/20260629090000_client_workflow_engine.sql",
         "scripts/client_workflow/generate_client_workflow_report.py",
         "scripts/client_workflow/generate_affiliate_recommendation_report.py",
         "scripts/client_workflow/generate_stuck_client_report.py",
