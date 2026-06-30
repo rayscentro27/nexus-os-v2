@@ -1,6 +1,6 @@
 # Client Dashboard Live-Data Flag
 
-Generated: 2026-06-29T23:05:22.049327+00:00
+Generated: 2026-06-30T00:07:28.675132+00:00
 
 - ok: true
 - status: live_read_path_implemented_flag_off
@@ -23,4 +23,4 @@ Generated: 2026-06-29T23:05:22.049327+00:00
 
 ## Approval
 
-- `{"approval_required": true, "created_at": "2026-06-29T23:05:22.048245+00:00", "default_enabled": false, "external_action_performed": false, "feature_flag": "VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT", "id": "approve-client-dashboard-live-test-read", "status": "pending_Ray_review", "title": "Approve /client/dashboard live Supabase read for fake customer"}`
+- `{"approval_required": true, "created_at": "2026-06-30T00:07:28.674277+00:00", "default_enabled": false, "external_action_performed": false, "feature_flag": "VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT", "id": "approve-client-dashboard-live-test-read", "status": "pending_Ray_review", "title": "Approve /client/dashboard live Supabase read for fake customer"}`

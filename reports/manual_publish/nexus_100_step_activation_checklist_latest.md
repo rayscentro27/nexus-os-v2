@@ -1,0 +1,111 @@
+# Nexus 100-Step Activation Checklist
+
+Generated: 2026-06-30T00:08:14.883617+00:00
+
+- ok: true
+- status: exact_100_step_checklist_built
+- steps_count: 100
+- external_action_performed: false
+
+## Steps
+
+- 1. Create one Final Daily Activation Orchestrator.
+- 2. Make the orchestrator run all safe internal subsystems from one command.
+- 3. Make the orchestrator bounded, not infinite.
+- 4. Add --safe-internal, --no-external-actions, and --max-runtime-minutes flags.
+- 5. Make the orchestrator continue through nonfatal blockers.
+- 6. Create one Global Blocker Matrix.
+- 7. Track every blocker by status, cause, fix attempted, result, and next action.
+- 8. Create one Master End-of-Day Report.
+- 9. Create one Tomorrow Command output.
+- 10. Make every subsystem produce reports, Supabase-ready exports, Ray Review cards, and Hermes summaries.
+- 11. Audit every CLI/tool installed on the Mac Mini.
+- 12. Detect paths and versions for each CLI.
+- 13. Detect missing high-value CLIs.
+- 14. Create configs/cli_capability_registry.json.
+- 15. Create configs/cli_safety_policy.json.
+- 16. Create configs/nexus_tool_access_registry.json.
+- 17. Classify each CLI as internal-safe, read-only, approval-gated, blocked, or unavailable.
+- 18. Connect safe CLIs to the correct Nexus engines.
+- 19. Add CLI status to System Health.
+- 20. Add CLI daily audit to the automation schedule.
+- 21. Define safe commands for each CLI.
+- 22. Define blocked commands for each CLI.
+- 23. Block Stripe live mode.
+- 24. Block Oanda live/funded trades.
+- 25. Block YouTube video/audio downloads.
+- 26. Block destructive Supabase commands.
+- 27. Block secret-committing.
+- 28. Block service-role usage in frontend.
+- 29. Require approval for external actions.
+- 30. Require approval for permanent scheduler installation.
+- 31. Keep Stripe test mode active.
+- 32. Keep live mode blocked.
+- 33. Track Checkout status.
+- 34. Track PaymentIntent status.
+- 35. Track webhook endpoint status.
+- 36. Track listener and trigger status.
+- 37. Keep Checkout manual completion approval-gated.
+- 38. Keep PaymentIntent confirmation approval-gated.
+- 39. Map webhook test events to onboarding dry-run.
+- 40. Prepare production Stripe plan, but keep it blocked.
+- 41. Use Julius Erving / Doctor J LLC as the only fake test customer.
+- 42. Keep fake customer marked test_mode: true.
+- 43. Keep do_not_contact: true.
+- 44. Keep do_not_charge: true.
+- 45. Generate persistent insert packet.
+- 46. Generate cleanup packet.
+- 47. Require approval before persistent fake customer insert.
+- 48. After insert, verify records exist.
+- 49. After verification, enable frontend live-data flag.
+- 50. Keep real customers blocked until fake journey passes.
+- 51. Store the successful RLS verification result.
+- 52. Record 25 tables found.
+- 53. Record 25 tables with RLS enabled.
+- 54. Record 55 authenticated policies.
+- 55. Record zero unsafe public policies.
+- 56. Use RLS result to unblock fake customer gate.
+- 57. Keep cleanup script ready.
+- 58. Keep frontend fallback static/demo data.
+- 59. Enable /client/dashboard as first live-data test route.
+- 60. Do not switch all client routes at once.
+- 61. Keep emails draft-only.
+- 62. Diagnose Resend 403.
+- 63. Confirm the cause: key/account permission plus .cc / .com sender mismatch.
+- 64. Add fix instructions for goclearonline.com.
+- 65. Require updated/re-scoped API key.
+- 66. Require verified sender/domain.
+- 67. Create test email approval card.
+- 68. Do not send onboarding email until approved.
+- 69. Prepare onboarding email draft.
+- 70. Add Resend status to System Health.
+- 71. Create configs/research_source_registry.json.
+- 72. Create configs/research_discovery_topics.json.
+- 73. Create configs/research_safety_policy.json.
+- 74. Create configs/research_scoring_policy.json.
+- 75. Add YouTube as one source lane, not the whole research engine.
+- 76. Add GitHub repo/topic discovery.
+- 77. Add NotebookLM export/import.
+- 78. Add old Nexus research recovery.
+- 79. Add local transcript/source-file discovery.
+- 80. Add payment/monetization source discovery.
+- 81. Add credit/funding/grant research lanes.
+- 82. Add trading research lanes.
+- 83. Add marketing/content/SEO lanes.
+- 84. Score sources for revenue potential.
+- 85. Score sources for client value.
+- 86. Score sources for Nexus upgrade value.
+- 87. Score sources for credit/funding value.
+- 88. Score sources for content value.
+- 89. Score sources for affiliate/partner value.
+- 90. Create research memory exports and Supabase-ready records.
+- 91. Keep YouTube API metadata active.
+- 92. Keep yt-dlp as metadata/subtitle probe only.
+- 93. Create transcript dropzone.
+- 94. Use data/sources/youtube_transcripts/approved/zbAmmnMh5ew.txt.
+- 95. Import transcript only after approved .txt exists.
+- 96. Recover NotebookLM legacy adapter into v2.
+- 97. Create NotebookLM approved export dropzone.
+- 98. Import selected NotebookLM exports if present.
+- 99. Export Nexus research bundles for NotebookLM.
+- 100. Create Ray Review cards for every new source/import action.

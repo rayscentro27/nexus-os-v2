@@ -1,0 +1,794 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-30T00:05:18.896142+00:00",
+  "tools": [
+    {
+      "tool_name": "git",
+      "installed": true,
+      "path": "/usr/local/bin/git",
+      "version": "git version 2.53.0",
+      "detection_command": "git --version",
+      "safe_commands": [
+        "git --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "repo_research",
+        "deployment"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "gh",
+      "installed": true,
+      "path": "/usr/local/bin/gh",
+      "version": "gh version 2.89.0 (2026-03-26)",
+      "detection_command": "gh --version",
+      "safe_commands": [
+        "gh --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": true,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [
+        "repo_research",
+        "deployment"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "node",
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node",
+      "version": "v22.22.3",
+      "detection_command": "node --version",
+      "safe_commands": [
+        "node --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "npm",
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/npm",
+      "version": "10.9.8",
+      "detection_command": "npm --version",
+      "safe_commands": [
+        "npm --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "npx",
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/npx",
+      "version": "10.9.8",
+      "detection_command": "npx --version",
+      "safe_commands": [
+        "npx --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "python3",
+      "installed": true,
+      "path": "/usr/local/bin/python3",
+      "version": "Python 3.14.5",
+      "detection_command": "python3 --version",
+      "safe_commands": [
+        "python3 --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "pip3",
+      "installed": true,
+      "path": "/usr/local/bin/pip3",
+      "version": "pip 26.1.1 from /usr/local/lib/python3.14/site-packages/pip (python 3.14)",
+      "detection_command": "pip3 --version",
+      "safe_commands": [
+        "pip3 --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "pnpm",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "pnpm --version",
+      "safe_commands": [
+        "pnpm --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "yarn",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "yarn --version",
+      "safe_commands": [
+        "yarn --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "jq",
+      "installed": true,
+      "path": "/usr/local/bin/jq",
+      "version": "jq-1.8.1",
+      "detection_command": "jq --version",
+      "safe_commands": [
+        "jq --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "curl",
+      "installed": true,
+      "path": "/usr/bin/curl",
+      "version": "curl 8.7.1 (x86_64-apple-darwin21.0) libcurl/8.7.1 (SecureTransport) LibreSSL/3.3.6 zlib/1.2.11 nghttp2/1.45.1",
+      "detection_command": "curl --version",
+      "safe_commands": [
+        "curl --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "wget",
+      "installed": true,
+      "path": "/usr/local/bin/wget",
+      "version": "GNU Wget 1.25.0 built on darwin21.6.0.",
+      "detection_command": "wget --version",
+      "safe_commands": [
+        "wget --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "openssl",
+      "installed": true,
+      "path": "/usr/bin/openssl",
+      "version": "LibreSSL 2.8.3",
+      "detection_command": "openssl version",
+      "safe_commands": [
+        "openssl version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "sqlite3",
+      "installed": true,
+      "path": "/usr/bin/sqlite3",
+      "version": "3.37.0 2021-12-09 01:34:53 9ff244ce0739f8ee52a3e9671adb4ee54c83c640b02e3f9d185fd2f9a179aapl",
+      "detection_command": "sqlite3 --version",
+      "safe_commands": [
+        "sqlite3 --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "supabase",
+      "installed": true,
+      "path": "/usr/local/bin/supabase",
+      "version": "2.90.0",
+      "detection_command": "supabase --version",
+      "safe_commands": [
+        "supabase --version"
+      ],
+      "blocked_commands": [
+        "db reset --linked",
+        "db push --include-all",
+        "destructive SQL"
+      ],
+      "requires_approval": true,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [
+        "database",
+        "client_portal"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "netlify",
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/netlify",
+      "version": "installed_version_check_failed",
+      "detection_command": "netlify --version",
+      "safe_commands": [
+        "netlify --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": true,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [
+        "deployment"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "vercel",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "vercel --version",
+      "safe_commands": [
+        "vercel --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": true,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "deployment"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "docker",
+      "installed": true,
+      "path": "/usr/local/bin/docker",
+      "version": "Docker version 29.4.1, build 055a478",
+      "detection_command": "docker --version",
+      "safe_commands": [
+        "docker --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "colima",
+      "installed": true,
+      "path": "/usr/local/bin/colima",
+      "version": "colima version v0.10.1",
+      "detection_command": "colima version",
+      "safe_commands": [
+        "colima version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "orb",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "orb --version",
+      "safe_commands": [
+        "orb --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "psql",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "psql --version",
+      "safe_commands": [
+        "psql --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "database",
+        "client_portal"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "stripe",
+      "installed": true,
+      "path": "/usr/local/bin/stripe",
+      "version": "stripe version 1.40.8",
+      "detection_command": "stripe --version",
+      "safe_commands": [
+        "stripe --version"
+      ],
+      "blocked_commands": [
+        "stripe commands with --live",
+        "live charges",
+        "live payment links"
+      ],
+      "requires_approval": true,
+      "external_action_possible": true,
+      "default_access_level": "approval_gated",
+      "connected_nexus_engines": [
+        "payments",
+        "onboarding"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "yt-dlp",
+      "installed": true,
+      "path": "/usr/local/bin/yt-dlp",
+      "version": "2026.03.03",
+      "detection_command": "yt-dlp --version",
+      "safe_commands": [
+        "yt-dlp --version"
+      ],
+      "blocked_commands": [
+        "video download",
+        "audio download",
+        "cookies",
+        "unapproved targets"
+      ],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [
+        "research",
+        "youtube"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "ffmpeg",
+      "installed": true,
+      "path": "/usr/local/bin/ffmpeg",
+      "version": "ffmpeg version 8.1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "detection_command": "ffmpeg -version",
+      "safe_commands": [
+        "ffmpeg -version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "research",
+        "youtube"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "imagemagick",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "convert --version",
+      "safe_commands": [
+        "convert --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "magick",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "magick -version",
+      "safe_commands": [
+        "magick -version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "tesseract",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "tesseract --version",
+      "safe_commands": [
+        "tesseract --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "research",
+        "youtube"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "playwright",
+      "installed": true,
+      "path": "/usr/local/bin/playwright",
+      "version": "Version 1.60.0",
+      "detection_command": "playwright --version",
+      "safe_commands": [
+        "playwright --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "read_only",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "chromium",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "chromium --version",
+      "safe_commands": [
+        "chromium --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "chrome",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "google-chrome --version",
+      "safe_commands": [
+        "google-chrome --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "codex",
+      "installed": true,
+      "path": "/usr/local/bin/codex",
+      "version": "codex-cli 0.142.4",
+      "detection_command": "codex --version",
+      "safe_commands": [
+        "codex --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "claude",
+      "installed": true,
+      "path": "/Users/raymonddavis/.local/bin/claude",
+      "version": "installed_version_check_failed",
+      "detection_command": "claude --version",
+      "safe_commands": [
+        "claude --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "opencode",
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
+      "version": "installed_version_check_failed",
+      "detection_command": "opencode --version",
+      "safe_commands": [
+        "opencode --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "gemini",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "gemini --version",
+      "safe_commands": [
+        "gemini --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "ollama",
+      "installed": true,
+      "path": "/usr/local/bin/ollama",
+      "version": "ollama version is 0.20.5",
+      "detection_command": "ollama --version",
+      "safe_commands": [
+        "ollama --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "notebooklm",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "notebooklm --version",
+      "safe_commands": [
+        "notebooklm --version"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "research"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "vibe-trading",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "vibe-trading --version",
+      "safe_commands": [
+        "vibe-trading --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "resend",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "resend --version",
+      "safe_commands": [
+        "resend --version"
+      ],
+      "blocked_commands": [
+        "send or publish without Ray approval"
+      ],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "facebook",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "facebook --version",
+      "safe_commands": [
+        "facebook --version"
+      ],
+      "blocked_commands": [
+        "send or publish without Ray approval"
+      ],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "instagram",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "instagram --version",
+      "safe_commands": [
+        "instagram --version"
+      ],
+      "blocked_commands": [
+        "send or publish without Ray approval"
+      ],
+      "requires_approval": false,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "oanda",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "oanda --version",
+      "safe_commands": [
+        "oanda --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ],
+      "requires_approval": true,
+      "external_action_possible": true,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "vibe_trading_python",
+      "installed": false,
+      "path": null,
+      "version": null,
+      "detection_command": "python3 -m vibe_trading --version",
+      "safe_commands": [
+        "python3 -m vibe_trading --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "unavailable",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    }
+  ]
+}

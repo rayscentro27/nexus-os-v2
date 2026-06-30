@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "lanes": [
+    {
+      "lane_id": "youtube",
+      "approved": true,
+      "source_paths": [
+        "configs/youtube_source_targets.json",
+        "configs/youtube_research_channels.json",
+        "data/sources/youtube_transcripts/approved"
+      ],
+      "network_mode": "approved_metadata_only"
+    },
+    {
+      "lane_id": "github",
+      "approved": true,
+      "source_paths": [
+        "configs/repo_research_targets.json",
+        "configs/payment_repo_targets.json"
+      ],
+      "network_mode": "seed_records_only"
+    },
+    {
+      "lane_id": "notebooklm",
+      "approved": true,
+      "source_paths": [
+        "data/sources/notebooklm_exports/approved",
+        "data/sources/notebooklm_notes"
+      ],
+      "network_mode": "local_only"
+    },
+    {
+      "lane_id": "old_nexus",
+      "approved": true,
+      "source_paths": [
+        "/Users/raymonddavis/nexuslive"
+      ],
+      "network_mode": "local_only"
+    },
+    {
+      "lane_id": "local_sources",
+      "approved": true,
+      "source_paths": [
+        "data/sources"
+      ],
+      "network_mode": "local_only"
+    },
+    {
+      "lane_id": "payments",
+      "approved": true,
+      "source_paths": [
+        "configs/payment_repo_targets.json"
+      ],
+      "network_mode": "seed_records_only"
+    },
+    {
+      "lane_id": "credit_funding_grants",
+      "approved": true,
+      "source_paths": [
+        "reports/runtime/supabase_ready"
+      ],
+      "network_mode": "local_only"
+    },
+    {
+      "lane_id": "trading",
+      "approved": true,
+      "source_paths": [
+        "scripts/trading",
+        "/Users/raymonddavis/nexuslive/nexus-strategy-lab"
+      ],
+      "network_mode": "local_only"
+    },
+    {
+      "lane_id": "marketing_content_seo",
+      "approved": true,
+      "source_paths": [
+        "scripts/research",
+        "reports/runtime/supabase_ready"
+      ],
+      "network_mode": "local_only"
+    }
+  ]
+}

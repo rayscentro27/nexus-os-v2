@@ -1,6 +1,6 @@
 # Vibe Installation Audit
 
-Generated: 2026-06-29T23:07:54.820146+00:00
+Generated: 2026-06-30T00:07:49.891215+00:00
 
 - ok: true
 - status: vibe_cli_missing_legacy_backtest_available

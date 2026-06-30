@@ -1,6 +1,6 @@
 # Resend Fix Packet
 
-Generated: 2026-06-29T23:02:46.186136+00:00
+Generated: 2026-06-30T00:07:20.294239+00:00
 
 - ok: true
 - status: resend_fix_packet_ready
@@ -20,4 +20,4 @@ Generated: 2026-06-29T23:02:46.186136+00:00
 
 ## Approval
 
-- `{"approval_required": true, "created_at": "2026-06-29T23:02:46.184567+00:00", "email_sent": false, "external_action_performed": false, "id": "approve-resend-fix-test", "status": "blocked_until_403_resolved", "title": "Approve Resend fix and test email after 403 diagnosis"}`
+- `{"approval_required": true, "created_at": "2026-06-30T00:07:20.291993+00:00", "email_sent": false, "external_action_performed": false, "id": "approve-resend-fix-test", "status": "blocked_until_403_resolved", "title": "Approve Resend fix and test email after 403 diagnosis"}`

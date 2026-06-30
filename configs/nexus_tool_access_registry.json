@@ -1,0 +1,501 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-30T00:05:18.899241+00:00",
+  "default_deny_external": true,
+  "tools": [
+    {
+      "tool_name": "git",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "repo_research",
+        "deployment"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "git --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "gh",
+      "access_level": "read_only",
+      "connected_nexus_engines": [
+        "repo_research",
+        "deployment"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "gh --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "node",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "node --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "npm",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "npm --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "npx",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "npx --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "python3",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "python3 --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "pip3",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "pip3 --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "pnpm",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "pnpm --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "yarn",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "yarn --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "jq",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "jq --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "curl",
+      "access_level": "read_only",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "curl --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "wget",
+      "access_level": "read_only",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "wget --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "openssl",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "openssl version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "sqlite3",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "sqlite3 --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "supabase",
+      "access_level": "read_only",
+      "connected_nexus_engines": [
+        "database",
+        "client_portal"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "supabase --version"
+      ],
+      "blocked_commands": [
+        "db reset --linked",
+        "db push --include-all",
+        "destructive SQL"
+      ]
+    },
+    {
+      "tool_name": "netlify",
+      "access_level": "read_only",
+      "connected_nexus_engines": [
+        "deployment"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "netlify --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "vercel",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "deployment"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "vercel --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "docker",
+      "access_level": "read_only",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "docker --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "colima",
+      "access_level": "read_only",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "colima version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "orb",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "orb --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "psql",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "database",
+        "client_portal"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "psql --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "stripe",
+      "access_level": "approval_gated",
+      "connected_nexus_engines": [
+        "payments",
+        "onboarding"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "stripe --version"
+      ],
+      "blocked_commands": [
+        "stripe commands with --live",
+        "live charges",
+        "live payment links"
+      ]
+    },
+    {
+      "tool_name": "yt-dlp",
+      "access_level": "read_only",
+      "connected_nexus_engines": [
+        "research",
+        "youtube"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "yt-dlp --version"
+      ],
+      "blocked_commands": [
+        "video download",
+        "audio download",
+        "cookies",
+        "unapproved targets"
+      ]
+    },
+    {
+      "tool_name": "ffmpeg",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "research",
+        "youtube"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "ffmpeg -version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "imagemagick",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "convert --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "magick",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "magick -version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "tesseract",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "research",
+        "youtube"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "tesseract --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "playwright",
+      "access_level": "read_only",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "playwright --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "chromium",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "chromium --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "chrome",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "google-chrome --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "codex",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "codex --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "claude",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "claude --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "opencode",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "opencode --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "gemini",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "gemini --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "ollama",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "internal_ai_tools"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "ollama --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "notebooklm",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "research"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "notebooklm --version"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "vibe-trading",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "vibe-trading --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ]
+    },
+    {
+      "tool_name": "resend",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "resend --version"
+      ],
+      "blocked_commands": [
+        "send or publish without Ray approval"
+      ]
+    },
+    {
+      "tool_name": "facebook",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "facebook --version"
+      ],
+      "blocked_commands": [
+        "send or publish without Ray approval"
+      ]
+    },
+    {
+      "tool_name": "instagram",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [],
+      "requires_approval": false,
+      "safe_commands": [
+        "instagram --version"
+      ],
+      "blocked_commands": [
+        "send or publish without Ray approval"
+      ]
+    },
+    {
+      "tool_name": "oanda",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "oanda --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ]
+    },
+    {
+      "tool_name": "vibe_trading_python",
+      "access_level": "unavailable",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "python3 -m vibe_trading --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ]
+    }
+  ]
+}

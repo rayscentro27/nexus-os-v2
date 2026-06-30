@@ -1,6 +1,6 @@
 # Payment-to-Client Onboarding Flow
 
-Generated: 2026-06-29T23:08:35.273419+00:00
+Generated: 2026-06-30T00:08:02.317864+00:00
 
 - ok: true
 - status: dry_run_onboarding_ready
@@ -24,4 +24,4 @@ Generated: 2026-06-29T23:08:35.273419+00:00
 
 ## Approvals
 
-- `{"approval_required": true, "automation_level": "approval_required", "category": "payment_approval", "client_id": "client_test_julius_erving", "client_visible": false, "created_at": "2026-06-29T23:08:35.272237+00:00", "exact_decision_needed": "Approve test-tenant records only after webhook proof passes.", "external_action_performed": false, "id": "approve_fake_customer_persist", "options": ["approve", "reject", "defer"], "priority": "high", "risk_level": "high", "status": "pending_Ray_review", "tenant_id": "tenant_test_goclear", "test_mode_only": true, "title": "Approve fake customer persistent Supabase insertion"}`
+- `{"approval_required": true, "automation_level": "approval_required", "category": "payment_approval", "client_id": "client_test_julius_erving", "client_visible": false, "created_at": "2026-06-30T00:08:02.316967+00:00", "exact_decision_needed": "Approve test-tenant records only after webhook proof passes.", "external_action_performed": false, "id": "approve_fake_customer_persist", "options": ["approve", "reject", "defer"], "priority": "high", "risk_level": "high", "status": "pending_Ray_review", "tenant_id": "tenant_test_goclear", "test_mode_only": true, "title": "Approve fake customer persistent Supabase insertion"}`

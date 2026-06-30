@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "approved_only": true,
+  "allow_metadata": true,
+  "allow_local_text": true,
+  "blocked": [
+    "publish",
+    "contact",
+    "email_send",
+    "social_post",
+    "trade",
+    "funding_application",
+    "video_download",
+    "audio_download",
+    "cookies",
+    "automatic_repo_install"
+  ],
+  "approval_required_for": [
+    "new_network_lane",
+    "high_risk_ingest",
+    "client_visible_guidance",
+    "external_action"
+  ]
+}

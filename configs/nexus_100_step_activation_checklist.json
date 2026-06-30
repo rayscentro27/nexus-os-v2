@@ -1,0 +1,416 @@
+{
+  "version": 1,
+  "generated_at": "2026-06-30T00:08:14.879747+00:00",
+  "status_values": [
+    "completed",
+    "partially_completed",
+    "blocked_by_approval",
+    "blocked_by_missing_credential",
+    "blocked_by_missing_source",
+    "blocked_by_missing_cli",
+    "blocked_by_safety_gate",
+    "not_applicable"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "title": "Create one Final Daily Activation Orchestrator."
+    },
+    {
+      "step": 2,
+      "title": "Make the orchestrator run all safe internal subsystems from one command."
+    },
+    {
+      "step": 3,
+      "title": "Make the orchestrator bounded, not infinite."
+    },
+    {
+      "step": 4,
+      "title": "Add --safe-internal, --no-external-actions, and --max-runtime-minutes flags."
+    },
+    {
+      "step": 5,
+      "title": "Make the orchestrator continue through nonfatal blockers."
+    },
+    {
+      "step": 6,
+      "title": "Create one Global Blocker Matrix."
+    },
+    {
+      "step": 7,
+      "title": "Track every blocker by status, cause, fix attempted, result, and next action."
+    },
+    {
+      "step": 8,
+      "title": "Create one Master End-of-Day Report."
+    },
+    {
+      "step": 9,
+      "title": "Create one Tomorrow Command output."
+    },
+    {
+      "step": 10,
+      "title": "Make every subsystem produce reports, Supabase-ready exports, Ray Review cards, and Hermes summaries."
+    },
+    {
+      "step": 11,
+      "title": "Audit every CLI/tool installed on the Mac Mini."
+    },
+    {
+      "step": 12,
+      "title": "Detect paths and versions for each CLI."
+    },
+    {
+      "step": 13,
+      "title": "Detect missing high-value CLIs."
+    },
+    {
+      "step": 14,
+      "title": "Create configs/cli_capability_registry.json."
+    },
+    {
+      "step": 15,
+      "title": "Create configs/cli_safety_policy.json."
+    },
+    {
+      "step": 16,
+      "title": "Create configs/nexus_tool_access_registry.json."
+    },
+    {
+      "step": 17,
+      "title": "Classify each CLI as internal-safe, read-only, approval-gated, blocked, or unavailable."
+    },
+    {
+      "step": 18,
+      "title": "Connect safe CLIs to the correct Nexus engines."
+    },
+    {
+      "step": 19,
+      "title": "Add CLI status to System Health."
+    },
+    {
+      "step": 20,
+      "title": "Add CLI daily audit to the automation schedule."
+    },
+    {
+      "step": 21,
+      "title": "Define safe commands for each CLI."
+    },
+    {
+      "step": 22,
+      "title": "Define blocked commands for each CLI."
+    },
+    {
+      "step": 23,
+      "title": "Block Stripe live mode."
+    },
+    {
+      "step": 24,
+      "title": "Block Oanda live/funded trades."
+    },
+    {
+      "step": 25,
+      "title": "Block YouTube video/audio downloads."
+    },
+    {
+      "step": 26,
+      "title": "Block destructive Supabase commands."
+    },
+    {
+      "step": 27,
+      "title": "Block secret-committing."
+    },
+    {
+      "step": 28,
+      "title": "Block service-role usage in frontend."
+    },
+    {
+      "step": 29,
+      "title": "Require approval for external actions."
+    },
+    {
+      "step": 30,
+      "title": "Require approval for permanent scheduler installation."
+    },
+    {
+      "step": 31,
+      "title": "Keep Stripe test mode active."
+    },
+    {
+      "step": 32,
+      "title": "Keep live mode blocked."
+    },
+    {
+      "step": 33,
+      "title": "Track Checkout status."
+    },
+    {
+      "step": 34,
+      "title": "Track PaymentIntent status."
+    },
+    {
+      "step": 35,
+      "title": "Track webhook endpoint status."
+    },
+    {
+      "step": 36,
+      "title": "Track listener and trigger status."
+    },
+    {
+      "step": 37,
+      "title": "Keep Checkout manual completion approval-gated."
+    },
+    {
+      "step": 38,
+      "title": "Keep PaymentIntent confirmation approval-gated."
+    },
+    {
+      "step": 39,
+      "title": "Map webhook test events to onboarding dry-run."
+    },
+    {
+      "step": 40,
+      "title": "Prepare production Stripe plan, but keep it blocked."
+    },
+    {
+      "step": 41,
+      "title": "Use Julius Erving / Doctor J LLC as the only fake test customer."
+    },
+    {
+      "step": 42,
+      "title": "Keep fake customer marked test_mode: true."
+    },
+    {
+      "step": 43,
+      "title": "Keep do_not_contact: true."
+    },
+    {
+      "step": 44,
+      "title": "Keep do_not_charge: true."
+    },
+    {
+      "step": 45,
+      "title": "Generate persistent insert packet."
+    },
+    {
+      "step": 46,
+      "title": "Generate cleanup packet."
+    },
+    {
+      "step": 47,
+      "title": "Require approval before persistent fake customer insert."
+    },
+    {
+      "step": 48,
+      "title": "After insert, verify records exist."
+    },
+    {
+      "step": 49,
+      "title": "After verification, enable frontend live-data flag."
+    },
+    {
+      "step": 50,
+      "title": "Keep real customers blocked until fake journey passes."
+    },
+    {
+      "step": 51,
+      "title": "Store the successful RLS verification result."
+    },
+    {
+      "step": 52,
+      "title": "Record 25 tables found."
+    },
+    {
+      "step": 53,
+      "title": "Record 25 tables with RLS enabled."
+    },
+    {
+      "step": 54,
+      "title": "Record 55 authenticated policies."
+    },
+    {
+      "step": 55,
+      "title": "Record zero unsafe public policies."
+    },
+    {
+      "step": 56,
+      "title": "Use RLS result to unblock fake customer gate."
+    },
+    {
+      "step": 57,
+      "title": "Keep cleanup script ready."
+    },
+    {
+      "step": 58,
+      "title": "Keep frontend fallback static/demo data."
+    },
+    {
+      "step": 59,
+      "title": "Enable /client/dashboard as first live-data test route."
+    },
+    {
+      "step": 60,
+      "title": "Do not switch all client routes at once."
+    },
+    {
+      "step": 61,
+      "title": "Keep emails draft-only."
+    },
+    {
+      "step": 62,
+      "title": "Diagnose Resend 403."
+    },
+    {
+      "step": 63,
+      "title": "Confirm the cause: key/account permission plus .cc / .com sender mismatch."
+    },
+    {
+      "step": 64,
+      "title": "Add fix instructions for goclearonline.com."
+    },
+    {
+      "step": 65,
+      "title": "Require updated/re-scoped API key."
+    },
+    {
+      "step": 66,
+      "title": "Require verified sender/domain."
+    },
+    {
+      "step": 67,
+      "title": "Create test email approval card."
+    },
+    {
+      "step": 68,
+      "title": "Do not send onboarding email until approved."
+    },
+    {
+      "step": 69,
+      "title": "Prepare onboarding email draft."
+    },
+    {
+      "step": 70,
+      "title": "Add Resend status to System Health."
+    },
+    {
+      "step": 71,
+      "title": "Create configs/research_source_registry.json."
+    },
+    {
+      "step": 72,
+      "title": "Create configs/research_discovery_topics.json."
+    },
+    {
+      "step": 73,
+      "title": "Create configs/research_safety_policy.json."
+    },
+    {
+      "step": 74,
+      "title": "Create configs/research_scoring_policy.json."
+    },
+    {
+      "step": 75,
+      "title": "Add YouTube as one source lane, not the whole research engine."
+    },
+    {
+      "step": 76,
+      "title": "Add GitHub repo/topic discovery."
+    },
+    {
+      "step": 77,
+      "title": "Add NotebookLM export/import."
+    },
+    {
+      "step": 78,
+      "title": "Add old Nexus research recovery."
+    },
+    {
+      "step": 79,
+      "title": "Add local transcript/source-file discovery."
+    },
+    {
+      "step": 80,
+      "title": "Add payment/monetization source discovery."
+    },
+    {
+      "step": 81,
+      "title": "Add credit/funding/grant research lanes."
+    },
+    {
+      "step": 82,
+      "title": "Add trading research lanes."
+    },
+    {
+      "step": 83,
+      "title": "Add marketing/content/SEO lanes."
+    },
+    {
+      "step": 84,
+      "title": "Score sources for revenue potential."
+    },
+    {
+      "step": 85,
+      "title": "Score sources for client value."
+    },
+    {
+      "step": 86,
+      "title": "Score sources for Nexus upgrade value."
+    },
+    {
+      "step": 87,
+      "title": "Score sources for credit/funding value."
+    },
+    {
+      "step": 88,
+      "title": "Score sources for content value."
+    },
+    {
+      "step": 89,
+      "title": "Score sources for affiliate/partner value."
+    },
+    {
+      "step": 90,
+      "title": "Create research memory exports and Supabase-ready records."
+    },
+    {
+      "step": 91,
+      "title": "Keep YouTube API metadata active."
+    },
+    {
+      "step": 92,
+      "title": "Keep yt-dlp as metadata/subtitle probe only."
+    },
+    {
+      "step": 93,
+      "title": "Create transcript dropzone."
+    },
+    {
+      "step": 94,
+      "title": "Use data/sources/youtube_transcripts/approved/zbAmmnMh5ew.txt."
+    },
+    {
+      "step": 95,
+      "title": "Import transcript only after approved .txt exists."
+    },
+    {
+      "step": 96,
+      "title": "Recover NotebookLM legacy adapter into v2."
+    },
+    {
+      "step": 97,
+      "title": "Create NotebookLM approved export dropzone."
+    },
+    {
+      "step": 98,
+      "title": "Import selected NotebookLM exports if present."
+    },
+    {
+      "step": 99,
+      "title": "Export Nexus research bundles for NotebookLM."
+    },
+    {
+      "step": 100,
+      "title": "Create Ray Review cards for every new source/import action."
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # Vibe / Paper Backtest Recovery
 
-Generated: 2026-06-29T23:07:55.059656+00:00
+Generated: 2026-06-30T00:07:50.079253+00:00
 
 - ok: true
 - status: paper_backtest_adapter_recovery_ready
