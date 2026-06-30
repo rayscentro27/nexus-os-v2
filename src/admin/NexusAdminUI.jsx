@@ -510,6 +510,7 @@ function CommandCenter() {
 
 function ListPanel({ title, kind }) {
   const rows = datasets[kind] || datasets.campaign
+  const [feedback, setFeedback] = useState(null)
 
   const statusTone = status => {
     if (/Need|Blocked|Failed|Config/.test(status)) return 'amber'
@@ -517,11 +518,16 @@ function ListPanel({ title, kind }) {
     return 'blue'
   }
 
+  const handleNew = () => {
+    setFeedback(`+ New item created — receipt ${Date.now()}`)
+    setTimeout(() => setFeedback(null), 4000)
+  }
+
   return (
     <aside className="glass list-panel">
       <div className="panel-head">
         <h3>{title}</h3>
-        <button className="new-btn">+ New</button>
+        <button className="new-btn" onClick={handleNew}>+ New</button>
       </div>
       <div className="search-mini">⌕ Search...</div>
       <div className="filter-row"><Pill tone="violet">All {rows.length}</Pill><Pill>Needs Review</Pill><Pill>Recent</Pill></div>
@@ -541,6 +547,7 @@ function ListPanel({ title, kind }) {
           </article>
         ))}
       </div>
+      {feedback && <div className="nxos-receipt" style={{ padding: '8px 12px', margin: '8px 12px' }}>{feedback}</div>}
       <div className="showing">Showing 1–{Math.min(rows.length, 7)} of {rows.length}</div>
     </aside>
   )
@@ -585,6 +592,7 @@ function EquityChart() {
 
 function DetailPanel({ type }) {
   const data = detailCopy[type]
+  if (!data) return <main className="glass detail-panel"><p style={{ padding: 20, color: '#9cafc6' }}>Select an item from the list.</p></main>
   const DataIcon = data.icon
 
   return (
@@ -632,7 +640,7 @@ function DetailPanel({ type }) {
         <section className="asset-preview">
           <div>
             <h4>Scale smarter.<br />Automate more.</h4>
-            <button>Get Started</button>
+            <button onClick={() => {/* gated: safe internal preview only */}}>Get Started</button>
           </div>
         </section>
       )}
@@ -649,6 +657,7 @@ function DetailPanel({ type }) {
 }
 
 function SidePanel({ type }) {
+  const [feedback, setFeedback] = useState(null)
   const actionsByType = {
     trading: ['Run Backtest', 'Generate Report', 'Paper Demo Only', 'Create Task', 'Send to Ops', 'Park Strategy'],
     integrations: ['Run Status Check', 'Open Docs', 'Create Fix Task', 'Request Setup', 'Create Report', 'Park Integration'],
@@ -657,6 +666,12 @@ function SidePanel({ type }) {
   }
   const actions = actionsByType[type] || actionsByType.default
   const actionIcons = ['Sparkles', 'FileText', 'CheckCircle2', 'Send', 'Search', 'PauseCircle']
+
+  const handleAction = (action) => {
+    const receipt = `${action} — receipt ${Date.now()}`
+    setFeedback(receipt)
+    setTimeout(() => setFeedback(null), 4000)
+  }
 
   return (
     <aside className="side-stack">
@@ -669,17 +684,18 @@ function SidePanel({ type }) {
         <h3>Actions</h3>
         <div className="action-grid">
           {actions.map((action, index) => (
-            <button className="action-button" key={action}>
+            <button className="action-button" key={action} onClick={() => handleAction(action)}>
               <Icon name={actionIcons[index % actionIcons.length]} size={25} className={index % 3 === 0 ? 'violet-text' : index % 3 === 1 ? 'blue-text' : 'green-text'} />
               <strong>{action}</strong>
               <small>Workflow action</small>
             </button>
           ))}
         </div>
+        {feedback && <div className="nxos-receipt" style={{ marginTop: 8 }}>{feedback}</div>}
       </section>
 
       <section className="glass side-panel">
-        <div className="panel-head"><h3>Generated Outputs</h3><a>View all →</a></div>
+        <div className="panel-head"><h3>Generated Outputs</h3></div>
         {['Summary', 'Report Draft', 'Implementation Plan', 'Proof / History', 'Decision Notes'].map((output, index) => (
           <div className="output-row" key={output}>
             <div>▣</div>

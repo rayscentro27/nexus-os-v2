@@ -50,7 +50,7 @@ function ScoreGauge({ label, score, max = 100 }) {
 }
 
 export default function CreditFundingPanel({ onAskHermes }) {
-  const [activeSection, setActiveSection] = useState(null)
+  const [activeSection, setActiveSection] = useState('credit')
   const [selectedItem, setSelectedItem] = useState(null)
   const [draftStatuses, setDraftStatuses] = useState({})
 

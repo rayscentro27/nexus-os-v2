@@ -48,6 +48,7 @@ export function clearChat(): void {
  *  NEXUS_HERMES_CHAT_PERSISTENCE.md. */
 export const hermesStore = {
   getMessages: (): StoredMsg[] => loadMessages() ?? [],
+  saveMessages: (msgs: StoredMsg[]): void => { saveMessages(msgs); },
   addMessage: (m: StoredMsg): StoredMsg[] => { const next = [...(loadMessages() ?? []), m]; saveMessages(next); return next.slice(-MAX); },
   clearHistory: clearChat,
   setMode: saveMode,
