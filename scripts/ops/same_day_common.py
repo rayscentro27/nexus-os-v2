@@ -33,6 +33,8 @@ def write_json(path: Path, data: Any) -> None:
 
 def write_report(stem: str, title: str, data: dict[str, Any], sections: dict[str, Any] | None = None) -> None:
     write_json(RUNTIME / f"{stem}_latest.json", data)
+    if os.environ.get("NEXUS_RUNTIME_ONLY", "").lower() in {"1", "true", "yes"}:
+        return
     lines = [f"# {title}", "", f"Generated: {data.get('generated_at', now())}", ""]
     for key, value in data.items():
         if key in {"generated_at", "records", "items", "inventory", "files", "keys"} or isinstance(value, (dict, list)):

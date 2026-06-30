@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.nexus.evening-closeout</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/activation/run_evening_closeout_cycle.py</string>
+    <string>--json</string><string>--scheduled</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>KeepAlive</key><false/>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/evening_closeout_launchd.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/evening_closeout_launchd_error.log</string>
+</dict>
+</plist>

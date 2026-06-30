@@ -1,6 +1,6 @@
 # CLI Capability Audit
 
-Generated: 2026-06-30T01:31:47.167817+00:00
+Generated: 2026-06-30T02:24:00.194258+00:00
 
 - ok: true
 - status: cli_audit_complete

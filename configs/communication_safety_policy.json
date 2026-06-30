@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "drafts_only": true,
+  "email_send_allowed": false,
+  "sms_send_allowed": false,
+  "social_publish_allowed": false,
+  "client_contact_allowed": false,
+  "risky_execution_allowed": false,
+  "approval_receipt_required": true,
+  "hermes_can_create_jobs": true,
+  "hermes_can_execute_external_actions": false
+}

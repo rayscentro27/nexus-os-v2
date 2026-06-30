@@ -1,0 +1,17 @@
+# Short Video Script Queue
+
+Generated: 2026-06-30T02:22:53.178853+00:00
+
+- ok: true
+- status: short_video_scripts_ready
+- script_count: 5
+- published: 0
+- external_action_performed: false
+
+## Scripts
+
+- `{"CTA": "Request a $97 readiness review after Ray approves this draft.", "approval_required": true, "audience": "business owners improving credit/funding readiness", "beats": ["Hook", "One readiness insight", "Safe next step", "Approved CTA"], "compliance_notes": "Educational only; no credit, removal, score, or funding guarantees.", "created_at": "2026-06-30T02:22:53.176330+00:00", "format": "short_video_script", "id": "marketing-short_video_script-1", "offer_tie_in": "readiness_review_97", "source": "Nexus approved research and readiness workflows", "status": "draft_only_not_published", "title": "Five signs you are not funding-ready yet"}`
+- `{"CTA": "Request a $97 readiness review after Ray approves this draft.", "approval_required": true, "audience": "business owners improving credit/funding readiness", "beats": ["Hook", "One readiness insight", "Safe next step", "Approved CTA"], "compliance_notes": "Educational only; no credit, removal, score, or funding guarantees.", "created_at": "2026-06-30T02:22:53.176716+00:00", "format": "short_video_script", "id": "marketing-short_video_script-2", "offer_tie_in": "readiness_review_97", "source": "Nexus approved research and readiness workflows", "status": "draft_only_not_published", "title": "Business profile items lenders may review"}`
+- `{"CTA": "Request a $97 readiness review after Ray approves this draft.", "approval_required": true, "audience": "business owners improving credit/funding readiness", "beats": ["Hook", "One readiness insight", "Safe next step", "Approved CTA"], "compliance_notes": "Educational only; no credit, removal, score, or funding guarantees.", "created_at": "2026-06-30T02:22:53.176732+00:00", "format": "short_video_script", "id": "marketing-short_video_script-3", "offer_tie_in": "readiness_review_97", "source": "Nexus approved research and readiness workflows", "status": "draft_only_not_published", "title": "How utilization affects readiness"}`
+- `{"CTA": "Request a $97 readiness review after Ray approves this draft.", "approval_required": true, "audience": "business owners improving credit/funding readiness", "beats": ["Hook", "One readiness insight", "Safe next step", "Approved CTA"], "compliance_notes": "Educational only; no credit, removal, score, or funding guarantees.", "created_at": "2026-06-30T02:22:53.176742+00:00", "format": "short_video_script", "id": "marketing-short_video_script-4", "offer_tie_in": "readiness_review_97", "source": "Nexus approved research and readiness workflows", "status": "draft_only_not_published", "title": "Documents to organize before a readiness review"}`
+- `{"CTA": "Request a $97 readiness review after Ray approves this draft.", "approval_required": true, "audience": "business owners improving credit/funding readiness", "beats": ["Hook", "One readiness insight", "Safe next step", "Approved CTA"], "compliance_notes": "Educational only; no credit, removal, score, or funding guarantees.", "created_at": "2026-06-30T02:22:53.176750+00:00", "format": "short_video_script", "id": "marketing-short_video_script-5", "offer_tie_in": "readiness_review_97", "source": "Nexus approved research and readiness workflows", "status": "draft_only_not_published", "title": "Why applying too early can hurt"}`

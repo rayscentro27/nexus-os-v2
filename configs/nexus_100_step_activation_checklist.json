@@ -412,5 +412,13 @@
       "step": 100,
       "title": "Create Ray Review cards for every new source/import action."
     }
-  ]
+  ],
+  "current_operating_focus": {
+    "phase": "automation_communication_monetization",
+    "automation": "daily and evening bounded launchd cycles",
+    "communication": "Hermes inbox, Ray Review, drafts, receipts",
+    "monetization": "$97 readiness-review synthetic journey and research-to-offer pipeline",
+    "external_actions_default": "approval_gated",
+    "updated_at": "2026-06-30T02:21:32.073015+00:00"
+  }
 }

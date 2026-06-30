@@ -1,6 +1,6 @@
 # NotebookLM CLI Discovery
 
-Generated: 2026-06-30T01:32:14.541915+00:00
+Generated: 2026-06-30T02:25:05.265755+00:00
 
 - ok: true
 - status: cli_missing_legacy_adapter_found

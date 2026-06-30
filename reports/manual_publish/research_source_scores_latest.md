@@ -1,6 +1,6 @@
 # Research Source Scores
 
-Generated: 2026-06-30T01:31:55.854261+00:00
+Generated: 2026-06-30T02:24:02.429048+00:00
 
 - ok: true
 - status: research_sources_scored

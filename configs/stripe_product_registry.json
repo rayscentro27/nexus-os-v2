@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "mode": "test_only",
+  "products": [
+    {"offer_id":"readiness_review_97","amount_cents":9700,"currency":"usd","status":"test_session_open_unpaid"},
+    {"offer_id":"readiness_plus_297","amount_cents":29700,"currency":"usd","status":"draft_not_created"},
+    {"offer_id":"funding_prep_497","amount_cents":49700,"currency":"usd","status":"draft_not_created"},
+    {"offer_id":"monthly_readiness_membership","amount_cents":14900,"currency":"usd","interval":"month","status":"draft_not_created"}
+  ],
+  "live_mode_allowed": false
+}

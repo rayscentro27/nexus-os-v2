@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "drafts_only": true,
+  "publish_allowed": false,
+  "email_send_allowed": false,
+  "required_fields": ["source", "audience", "offer_tie_in", "CTA", "compliance_notes", "approval_required"],
+  "blocked_claims": ["guaranteed approval", "guaranteed removal", "guaranteed funding", "guaranteed score increase"]
+}

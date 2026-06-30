@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "allowed": ["recommend", "create_internal_job", "draft_message", "create_approval_card", "summarize_status"],
+  "approval_gated": ["email_send", "sms_send", "social_publish", "database_write", "payment_confirmation", "trading_order"],
+  "blocked": ["live_trading", "Stripe_live_mode", "real_client_insert_without_approval", "dispute_send"],
+  "default_external_action_allowed": false
+}
