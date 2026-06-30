@@ -14,7 +14,7 @@ const nexusTopics = {
   'synthetic customer': {
     topic: 'Synthetic Customer Insert',
     explain: `The synthetic customer insert is how we prove the full $97 readiness journey end-to-end without touching a real person's data. Right now we have a test package ready—Stripe test Checkout session created, test PaymentIntent on file, onboarding records staged—but nothing has been written to Supabase yet.`,
-    why: `It matters because it unlocks the live dashboard test. Once the fake customer is in the database, we can flip the frontend live-data flag and confirm that `/client/dashboard` actually reads real rows instead of static fallback content. That's the difference between "the backend says it works" and "you can see it working."`,
+    why: `It matters because it unlocks the live dashboard test. Once the fake customer is in the database, we can flip the frontend live-data flag and confirm that /client/dashboard actually reads real rows instead of static fallback content. That's the difference between "the backend says it works" and "you can see it working."`,
     approval: `Approving the insert means: (1) the synthetic record goes into Supabase with RLS intact, (2) the dashboard flag flips on, (3) we verify the read path, and (4) the rollback packet is ready if we need to undo it. No real client PII is involved. No real charges happen.`,
     cleanup: `There's a rollback transaction script ready. If anything looks wrong after insert, we can revert the database state cleanly.`,
     next: `To move forward, you'd approve the insert via Ray Review. The card is already queued.`
