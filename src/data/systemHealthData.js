@@ -1,0 +1,17 @@
+export const systemHealthItems = [
+  ['scheduler','Scheduler','2 launchd agents loaded','healthy','reports/manual_publish/safe_internal_scheduler_verification_latest.md','Open Automation Scheduler','08:00 / 18:00'],
+  ['daily','Daily cycle','25/25 jobs passed','healthy','reports/manual_publish/daily_operating_cycle_latest.md','Review latest cycle','Today'],
+  ['closeout','Evening closeout','6/6 jobs passed','healthy','reports/manual_publish/evening_closeout_cycle_latest.md','Review closeout','18:00 daily'],
+  ['cli','CLI registry','Validated; zero policy violations','healthy','reports/manual_publish/cli_capability_registry_latest.md','Open Tool Registry','Daily audit'],
+  ['research','Research engine','50 candidates; 26 actionable','healthy','reports/manual_publish/research_to_money_pipeline_latest.md','Open Research Engine','Latest cycle'],
+  ['oanda','Oanda demo','Practice endpoint verified','healthy','reports/manual_publish/oanda_vibe_notebooklm_master_latest.md','Open Trading Demo','Read-only daily'],
+  ['vibe','Vibe bridge','Paper bridge proven','healthy','reports/manual_publish/oanda_vibe_notebooklm_master_latest.md','Open Trading Demo','Latest dry-run'],
+  ['notebooklm','NotebookLM','Watched folder waiting for export','blocked','reports/manual_publish/notebooklm_watched_export_status_latest.md','Add approved export','Daily sync'],
+  ['stripe','Stripe test','Checkout open; PaymentIntent unconfirmed','gated','reports/manual_publish/stripe_test_payment_execution_latest.md','Open Ray Review','Test mode only'],
+  ['resend','Resend','Domain/key mismatch','blocked','reports/manual_publish/resend_final_diagnosis_latest.md','Review fix packet','Latest audit'],
+  ['rls','RLS / customer gate','25/25 RLS; insert approval-gated','gated','reports/manual_publish/persistent_fake_customer_insert_gate_latest.md','Open Ray Review','Verified'],
+  ['frontend','Frontend live data','Ready; test-client flag off','gated','reports/manual_publish/frontend_live_data_final_readiness_latest.md','Review client gate','Static fallback'],
+  ['reports','Reports','13 reports available in app','healthy','reports/manual_publish/report_registry_latest.md','Open Reports','Current build'],
+  ['review','Ray Review','64 cards visible','healthy','reports/manual_publish/ray_review_queue_latest.md','Open Ray Review','Current queue'],
+  ['hermes','Hermes','Conversational local advisor active','healthy','reports/manual_publish/hermes_advisor_response_examples_latest.md','Ask Hermes','Context active'],
+].map(([id,label,status,tone,report,nextAction,lastRun])=>({id,label,status,tone,report,nextAction,lastRun,copyCommand:`open ${report}`}));

@@ -15,7 +15,7 @@ export default function RayReviewCard({ card, decision, onDecision }) {
         <button type="button" onClick={() => onDecision(card, 'rejected', feedback)}>Reject</button>
         <button type="button" onClick={() => onDecision(card, 'held', feedback)}>Hold</button>
       </div>
-      {decision && <div className="nxos-receipt">Receipt created {decision.createdAt}. Decision queued for execution; no underlying action ran.</div>}
+      {decision && <div className="nxos-receipt"><strong>{decision.status}</strong> · Receipt {decision.receiptId}<br />{decision.nextStep}<br />Underlying action executed: no.</div>}
     </article>
   );
 }

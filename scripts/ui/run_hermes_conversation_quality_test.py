@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+import argparse,json,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'activation'));from activation_common import write_report
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'hermes'));from hermes_context_common import advisor_response
+def main():
+ a=argparse.ArgumentParser();a.add_argument('--json',action='store_true');x=a.parse_args();messages=['did you have your coffee this morning','what needs my approval','I am frustrated because the UI was fake','talk to me like a partner, not a command bot','give me a plan for today'];responses={m:advisor_response(m)['response'] for m in messages};checks={'casual':'Not coffee' in responses[messages[0]],'approval':'synthetic customer insert' in responses[messages[1]],'empathy':'I get why' in responses[messages[2]],'partner':'think with you' in responses[messages[3]],'today_plan':'keep it tight' in responses[messages[4]],'not_command_only':all('python3 ' not in r for r in responses.values())};ok=all(checks.values());payload={'ok':ok,'status':'hermes_conversation_quality_passed' if ok else 'hermes_conversation_quality_failed','mode':'contextual_conversational_local_advisor','checks':checks,'responses':responses,'external_action_performed':False};write_report('hermes_conversation_quality_test','Hermes Conversation Quality Test',payload,{'Sample responses':responses});write_report('hermes_conversation_repair','Hermes Conversation Repair',payload,{'Sample responses':responses});print(json.dumps(payload)) if x.json else None;raise SystemExit(0 if ok else 1)
+if __name__=='__main__':main()

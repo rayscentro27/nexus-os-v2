@@ -13,6 +13,8 @@ import CommunicationDashboard from '../components/CommunicationDashboard'
 import MarketingDraftCenter from '../components/MarketingDraftCenter'
 import ResearchMoneyPipeline from '../components/ResearchMoneyPipeline'
 import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
+import HermesInlineDrawer from '../components/HermesInlineDrawer'
+import SystemHealthPanel from '../components/SystemHealthPanel'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
@@ -1388,6 +1390,9 @@ export default function NexusAdminUI({ email }) {
     return validPages.has(value) ? value : 'command'
   }
   const [activePage, setActivePage] = useState(readHash)
+  const [hermesDrawerOpen, setHermesDrawerOpen] = useState(false)
+  const [hermesPrompt, setHermesPrompt] = useState('')
+  const askHermes = (prompt = '') => { setHermesPrompt(prompt); setHermesDrawerOpen(true) }
   const navigate = (id) => {
     if (!validPages.has(id)) return
     setActivePage(id)
@@ -1401,7 +1406,7 @@ export default function NexusAdminUI({ email }) {
   }, [])
 
   const page = {
-    command: <RestoredCommandCenter onNavigate={navigate} />,
+    command: <RestoredCommandCenter onNavigate={navigate} onAskHermes={askHermes} />,
     subscription: <SubscriptionCommandCenterPage />,
     creative: <Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" />,
     design: <Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" />,
@@ -1412,7 +1417,7 @@ export default function NexusAdminUI({ email }) {
     jobs: <Workspace id="jobs" title="Agent Jobs" sub="Automation Workforce Room" kind="jobs" type="jobs" />,
     source: <Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" />,
     opportunity: <Workspace id="opportunity" title="Opportunity Lab" sub="Revenue / Opportunity Room" kind="opportunity" type="opportunity" layoutClass="opportunity-layout" />,
-    health: <SystemHealthPage />,
+    health: <SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage>,
     hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom /></SimplePage>,
     rayreview: <SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage>,
     reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter /></SimplePage>,
@@ -1442,7 +1447,8 @@ export default function NexusAdminUI({ email }) {
           <div className="page-content">{page}</div>
         </main>
       </div>
-      {activePage !== 'hermes' && <HermesGlobalLauncher onOpen={() => navigate('hermes')} />}
+      {activePage !== 'hermes' && <HermesGlobalLauncher onOpen={() => askHermes()} />}
+      <HermesInlineDrawer open={hermesDrawerOpen} initialPrompt={hermesPrompt} onClose={() => setHermesDrawerOpen(false)} onOpenWorkroom={() => { setHermesDrawerOpen(false); navigate('hermes') }} />
       <Footer activePage={activePage} />
     </div>
   )

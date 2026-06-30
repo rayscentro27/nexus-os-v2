@@ -12,10 +12,20 @@ export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor') 
   let intent = 'strategic_conversation';
   let response;
   let queued = false;
-  if (/good morning|morning|hello|^hi\b|^hey\b/.test(lower)) {
+  if (/coffee/.test(lower)) {
+    intent = 'casual'; response = `Not coffee, but I’m awake. I’ve got the operating picture in front of me: the scheduler is running, the money path is still the $97 readiness journey, and the main blockers are approvals, Resend, and the fake customer insert. But we can talk through it like normal—what are you trying to move first?`;
+  } else if (/good morning|hello|^hi\b|^hey\b/.test(lower)) {
     intent = 'greeting'; response = `Good morning, Ray. Nexus is awake and the operating cycle is in place. The big thing today is not more setup—it is getting the approval path and money path moving. I’d start with the fake customer/payment journey, then Resend, then the top research-to-money candidates. I can turn that into a work plan or delegate it to the specialists.`;
   } else if (/did you sleep|sleep well|how are you/.test(lower)) {
-    intent = 'casual'; response = `I don’t sleep, but I did keep the operating picture ready. I’m watching the scheduler, Ray Review, money actions, and the remaining blockers. The system is close; now we need to move from reports to execution without loosening the safety gates.`;
+    intent = 'casual'; response = `I don’t sleep, but I did keep the operating picture ready. I’m watching the scheduler, Ray Review, money actions, and the remaining blockers. The system is close; now we need to move from reports to execution without loosening the safety gates. How are you feeling about it today?`;
+  } else if (/what needs my approval|what.*approv/.test(lower)) {
+    intent = 'approval'; response = `You’ve got a few decisions that actually matter. The big one is the synthetic customer insert, because that unlocks the live dashboard test. Then Stripe test completion, the Resend fix, and selected content or communication drafts. I’d handle them in that order unless you want communication moving first.`;
+  } else if (/frustrated|fake ui|ui was fake/.test(lower)) {
+    intent = 'empathy'; response = `I get why. The backend kept reporting wins, but the app experience lagged behind. That is exactly the wrong feeling for an operating system. I’d treat today as a UI trust-repair day first: every visible control should do something, approvals should explain themselves, and I should talk with you instead of acting like a terminal wrapper.`;
+  } else if (/talk to me like a partner|command bot|talk.*partner/.test(lower)) {
+    intent = 'partner'; response = `Fair. You don’t need another interface telling you to run commands. You need me to think with you, challenge weak priorities, keep the operating context straight, and take structure off your plate. We can talk first. When you want action, I’ll help turn the conversation into work without pretending the conversation itself is a command.`;
+  } else if (/plan for today|today.*plan/.test(lower)) {
+    intent = 'today_plan'; response = `For today, I’d keep it tight: first finish the visible UI trust repair; second decide the synthetic customer and Stripe test path; third clear the Resend configuration blocker. I can organize the specialist work behind those three while you focus on the decisions.`;
   } else if (/what should i do next|next move|next priority/.test(lower)) {
     intent = 'next_steps'; response = nextSteps();
   } else if (/100 steps|delegate this|delegate a large|here are the next|turn this into/.test(lower)) {
