@@ -1,8 +1,18 @@
 // Nexus OS v2 — report-backed continuous operating dashboard.
 // Generated runtime data is bundled read-only; no external actions execute from this UI.
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import runtime from '../data/continuousDashboardData.json'
 import nexusEngineStatusData from '../data/nexusEngineStatusData'
+import RestoredCommandCenter from '../components/CommandCenter'
+import RayReviewCenter from '../components/RayReviewCenter'
+import ReportCenter from '../components/ReportCenter'
+import HermesWorkroom from '../components/HermesWorkroom'
+import AutomationSchedulerPanel from '../components/AutomationSchedulerPanel'
+import RevenueDashboard from '../components/RevenueDashboard'
+import CommunicationDashboard from '../components/CommunicationDashboard'
+import MarketingDraftCenter from '../components/MarketingDraftCenter'
+import ResearchMoneyPipeline from '../components/ResearchMoneyPipeline'
+import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
@@ -35,50 +45,27 @@ const kindThumbIcon = {
 }
 
 const navGroups = [
-  {
-    label: 'Executive',
-    items: [
-      { id: 'command', label: 'Command Center', icon: 'LayoutDashboard' },
-      { id: 'subscription', label: 'Subscription Command Center', icon: 'BadgeDollarSign', status: 'Priority 1', statusTone: 'green' },
-      { id: 'source', label: 'Source Intake & Review', icon: 'ScanSearch', status: 'Live', statusTone: 'green' },
-      { id: 'opportunity', label: 'Opportunity Lab', icon: 'Target', status: 'Active', statusTone: 'blue' },
-      { id: 'rayreview', label: 'Ray Review', icon: 'CheckCircle2', status: 'Ready', statusTone: 'green' }
-    ]
-  },
-  {
-    label: 'GoClear / Apex',
-    items: [
-      { id: 'goclear', label: 'GoClear / Apex', icon: 'Building2', status: 'Draft', statusTone: 'amber' },
-      { id: 'clientworkflow', label: 'Client Workflow', icon: 'FileText', status: 'Internal', statusTone: 'blue' },
-      { id: 'credit', label: 'Credit Specialist', icon: 'SearchCheck', status: 'Active', statusTone: 'green' },
-      { id: 'business', label: 'Business Profile Builder', icon: 'Orbit', status: 'Active', statusTone: 'green' },
-      { id: 'funding', label: 'Funding Readiness', icon: 'BadgeDollarSign', status: '$97', statusTone: 'green' }
-    ]
-  },
-  {
-    label: 'Growth',
-    items: [
-      { id: 'monetization', label: 'Monetization', icon: 'TrendingUp', status: 'Draft', statusTone: 'amber' },
-      { id: 'partners', label: 'Partner Offers', icon: 'Plug', status: 'Active', statusTone: 'green' },
-      { id: 'creative', label: 'Creative Studio', icon: 'WandSparkles', status: 'Live', statusTone: 'green' },
-      { id: 'design', label: 'Design Library', icon: 'Layers3', status: 'Live', statusTone: 'green' },
-      { id: 'seo', label: 'SEO / Marketing', icon: 'Search', status: 'Seed', statusTone: 'blue' }
-    ]
-  },
-  {
-    label: 'System',
-    items: [
-      { id: 'jobs', label: 'Agent Jobs', icon: 'Bot', status: 'Live', statusTone: 'green' },
-      { id: 'cli', label: 'CLI Control', icon: 'Database', status: 'Visible', statusTone: 'blue' },
-      { id: 'integrations', label: 'Integrations', icon: 'DatabaseZap', status: 'Partial', statusTone: 'blue' },
-      { id: 'ops', label: 'Ops & Improvements', icon: 'Star', status: 'Live', statusTone: 'green' },
-      { id: 'health', label: 'System Health', icon: 'Activity', status: 'Live', statusTone: 'green' },
-      { id: 'proof', label: 'Events / Proof', icon: 'FileWarning', status: 'Live', statusTone: 'green' },
-      { id: 'trading', label: 'Trading Lab (Demo)', icon: 'TrendingUp', status: 'Paper', statusTone: 'amber' },
-      { id: 'feedback', label: 'Hermes Feedback', icon: 'Sparkles', status: 'File', statusTone: 'blue' },
-      { id: 'settings', label: 'Settings', icon: 'Settings', status: 'Safe', statusTone: 'green' }
-    ]
-  }
+  { label: 'Executive', items: [
+    { id: 'command', label: 'Command Center', icon: 'LayoutDashboard', status: 'Live', statusTone: 'green' },
+    { id: 'health', label: 'System Health', icon: 'Activity', status: 'Healthy', statusTone: 'green' },
+    { id: 'rayreview', label: 'Ray Review', icon: 'CheckCircle2', status: '64', statusTone: 'green' },
+    { id: 'hermes', label: 'Hermes Workroom', icon: 'Sparkles', status: 'Advisor', statusTone: 'blue' },
+    { id: 'reports', label: 'Reports', icon: 'FileText', status: '13', statusTone: 'blue' }
+  ]},
+  { label: 'Business', items: [
+    { id: 'clients', label: 'Clients', icon: 'Building2', status: 'Gated', statusTone: 'amber' },
+    { id: 'credit', label: 'Credit & Funding', icon: 'SearchCheck', status: 'Active', statusTone: 'green' },
+    { id: 'opportunity', label: 'Business Opportunities', icon: 'Target', status: '26 ready', statusTone: 'green' },
+    { id: 'research', label: 'Research Engine', icon: 'ScanSearch', status: '50', statusTone: 'blue' },
+    { id: 'monetization', label: 'Monetization', icon: 'BadgeDollarSign', status: '9 offers', statusTone: 'green' },
+    { id: 'marketing', label: 'Marketing Drafts', icon: 'Megaphone', status: 'Draft', statusTone: 'amber' }
+  ]},
+  { label: 'System', items: [
+    { id: 'trading', label: 'Trading Demo', icon: 'TrendingUp', status: 'Paper', statusTone: 'amber' },
+    { id: 'automation', label: 'Automation Scheduler', icon: 'Bot', status: '2 loaded', statusTone: 'green' },
+    { id: 'cli', label: 'CLI / Tool Registry', icon: 'Database', status: 'Valid', statusTone: 'blue' },
+    { id: 'settings', label: 'Settings', icon: 'Settings', status: 'Safe', statusTone: 'green' }
+  ]}
 ]
 
 const modeLabels = {
@@ -1395,10 +1382,26 @@ function Footer({ activePage }) {
 }
 
 export default function NexusAdminUI({ email }) {
-  const [activePage, setActivePage] = useState('command')
+  const validPages = new Set(navGroups.flatMap(group => group.items.map(item => item.id)))
+  const readHash = () => {
+    const value = window.location.hash.replace(/^#\/?/, '')
+    return validPages.has(value) ? value : 'command'
+  }
+  const [activePage, setActivePage] = useState(readHash)
+  const navigate = (id) => {
+    if (!validPages.has(id)) return
+    setActivePage(id)
+    window.location.hash = id
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  useEffect(() => {
+    const sync = () => setActivePage(readHash())
+    window.addEventListener('hashchange', sync)
+    return () => window.removeEventListener('hashchange', sync)
+  }, [])
 
   const page = {
-    command: <CommandCenter />,
+    command: <RestoredCommandCenter onNavigate={navigate} />,
     subscription: <SubscriptionCommandCenterPage />,
     creative: <Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" />,
     design: <Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" />,
@@ -1410,14 +1413,19 @@ export default function NexusAdminUI({ email }) {
     source: <Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" />,
     opportunity: <Workspace id="opportunity" title="Opportunity Lab" sub="Revenue / Opportunity Room" kind="opportunity" type="opportunity" layoutClass="opportunity-layout" />,
     health: <SystemHealthPage />,
-    hermes: <HermesAdvisorPage />,
-    rayreview: <RayReviewPage />,
+    hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom /></SimplePage>,
+    rayreview: <SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage>,
+    reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter /></SimplePage>,
+    clients: <ClientWorkflowPage />,
+    research: <SimplePage title="Research Engine" sub="Sources · Scores · Research-to-Money"><ResearchMoneyPipeline /></SimplePage>,
+    marketing: <SimplePage title="Marketing Drafts" sub="Communication · Content · Approval-Gated Publishing"><MarketingDraftCenter /><div style={{ marginTop: 16 }}><CommunicationDashboard /></div></SimplePage>,
+    automation: <SimplePage title="Automation Scheduler" sub="Safe Internal Cycles · Schedule Visibility"><AutomationSchedulerPanel onOpenReport={() => navigate('reports')} onReview={() => navigate('rayreview')} /></SimplePage>,
     goclear: <GoClearPage />,
     clientworkflow: <ClientWorkflowPage />,
     credit: <CreditSpecialistPage />,
     business: <BusinessSetupPage />,
     funding: <FundingReadinessPage />,
-    monetization: <MonetizationPage />,
+    monetization: <SimplePage title="Monetization" sub="Offers · Revenue Path · Approval Gates"><RevenueDashboard /></SimplePage>,
     partners: <PartnerOffersPage />,
     cli: <CLIControlPage />,
     proof: <ProofLedgerPage />,
@@ -1428,12 +1436,13 @@ export default function NexusAdminUI({ email }) {
   return (
     <div className="os-root">
       <div className="app-shell">
-        <Sidebar activePage={activePage} onNavigate={setActivePage} />
+        <Sidebar activePage={activePage} onNavigate={navigate} />
         <main className="content">
           <Topbar email={email} />
           <div className="page-content">{page}</div>
         </main>
       </div>
+      {activePage !== 'hermes' && <HermesGlobalLauncher onOpen={() => navigate('hermes')} />}
       <Footer activePage={activePage} />
     </div>
   )

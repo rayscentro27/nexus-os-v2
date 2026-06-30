@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-import argparse,json
+import argparse,json,sys
 from pathlib import Path
-import sys
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'activation'))
-from activation_common import write_report
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'activation'));from activation_common import RUNTIME,write_json,write_report
+from hermes_context_common import advisor_response
 def main():
- ap=argparse.ArgumentParser(); ap.add_argument('--message',required=True); ap.add_argument('--json',action='store_true'); a=ap.parse_args(); payload={'ok':True,'status':'local_safe_response_ready','message_received':True,'response':'Hermes created a safe delegation plan. Risky actions remain approval-gated.','external_action_performed':False}; write_report('hermes_chat_messages','Hermes Chat Messages',payload,{'Message':[a.message]}); print(json.dumps(payload)) if a.json else None
-if __name__=='__main__': main()
+ a=argparse.ArgumentParser();a.add_argument('--message',required=True);a.add_argument('--json',action='store_true');x=a.parse_args();r=advisor_response(x.message);p={'ok':True,'status':'hermes_advisor_response_ready','message':x.message,**r};
+ path=RUNTIME/'hermes_advisor_response_examples_store.json'
+ try: examples=json.loads(path.read_text())
+ except: examples=[]
+ examples=[e for e in examples if e.get('message')!=x.message]+[p];write_json(path,examples[-20:]);write_report('hermes_advisor_response_examples','Hermes Advisor Response Examples',{'ok':True,'status':'advisor_examples_ready','examples_count':len(examples[-20:]),'response_engine_mode':'local_contextual_advisor','external_action_performed':False},{'Examples':examples[-20:]});write_report('hermes_chat_messages','Hermes Chat Messages',p,{'Advisor response':[r['response']]});print(json.dumps(p)) if x.json else None
+if __name__=='__main__':main()

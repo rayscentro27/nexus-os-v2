@@ -1,0 +1,2 @@
+import React from 'react';
+export default function HermesDelegationPanel({ plans, onReview }) { if (!plans.length) return null; return <section className="nxos-plan-list glass"><h3>Active delegation plans</h3>{plans.map(plan=><article key={plan.id}><strong>{plan.specialist}</strong><p>{plan.prompt}</p><span>{plan.status}</span><button type="button" onClick={()=>onReview(plan)}>Create Ray Review card</button></article>)}</section>; }

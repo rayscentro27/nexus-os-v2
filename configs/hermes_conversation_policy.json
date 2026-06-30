@@ -1,0 +1,1 @@
+{"advisor_mode":true,"use_current_context":true,"natural_conversation":true,"greetings_are_contextual":true,"casual_messages_are_welcome":true,"response_shape":{"short_answer_first":true,"priorities_max":3,"state_what_can_be_delegated":true,"state_what_needs_Ray":true},"fallback":"contextual_local_advisor_planner"}

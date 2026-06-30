@@ -1368,3 +1368,29 @@ body { min-width: 0; }
   }
   .footer { position: static; height: auto; grid-template-columns: 1fr; gap: 4px; padding: 10px; }
 }
+.nexus-command-center { gap: 18px; }
+.nexus-command-center .page-title { margin-top: -40px; }
+.nexus-home-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.nexus-home-metric { padding: 18px; min-height: 118px; position: relative; overflow: hidden; }
+.nexus-home-metric::after { content: ''; position: absolute; width: 100px; height: 100px; border-radius: 50%; right: -38px; top: -42px; background: rgba(47,140,255,.10); }
+.nexus-home-metric > span,.nexus-home-metric > small { display: block; color: var(--muted); }
+.nexus-home-metric > strong { display: block; font-size: 30px; margin: 10px 0 5px; }
+.nexus-command-grid { display: grid; grid-template-columns: minmax(0,1fr) 350px; gap: 16px; }
+.nexus-command-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.nexus-money-actions button { width: 100%; display: grid; grid-template-columns: 34px minmax(0,1fr) auto; gap: 12px; align-items: center; text-align: left; padding: 13px 0; border: 0; border-top: 1px solid var(--softline); color: var(--text); background: transparent; }
+.nexus-money-actions button:hover { color: var(--cyan); transform: translateX(3px); }
+.nexus-money-actions button b { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 10px; color: #fff; background: linear-gradient(135deg,var(--blue),var(--violet)); }
+.nexus-money-actions button strong,.nexus-money-actions button small { display: block; }.nexus-money-actions button small { color: var(--muted); margin-top: 4px; }.nexus-money-actions button i { color: var(--blue); font-style: normal; font-size: 12px; }
+.hermes-quick-panel { padding: 16px; background: radial-gradient(circle at 85% 0,rgba(124,85,255,.24),transparent 38%),linear-gradient(155deg,rgba(15,31,54,.98),rgba(8,18,32,.98)); }
+.hermes-quick-panel header { display: flex; align-items: center; gap: 11px; }.hermes-quick-panel header h3,.hermes-quick-panel header p { margin: 0; }.hermes-quick-panel header p { color: var(--muted); font-size: 11px; }.hermes-quick-panel header .pill { margin-left: auto; }
+.hermes-orb { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; font-size: 20px; background: linear-gradient(135deg,var(--cyan),var(--violet)); box-shadow: 0 0 30px rgba(124,85,255,.45); }
+.hermes-quick-answer { color: #dbe8f8; line-height: 1.55; padding: 16px 0; font-size: 13px; }
+.hermes-quick-input { display: grid; grid-template-columns: 1fr auto; gap: 7px; }.hermes-quick-input input { min-width: 0; border: 1px solid var(--line); color: #fff; background: #071322; border-radius: 10px; padding: 10px; }.hermes-quick-input button,.open-workroom { border: 1px solid rgba(80,160,255,.45); color: white; background: rgba(47,140,255,.18); border-radius: 10px; padding: 9px 11px; }.open-workroom { width: 100%; margin-top: 9px; }
+.nexus-next-approvals p { padding: 8px 0; margin: 0; border-bottom: 1px solid var(--softline); color: #cbd7e8; }
+.os-root .nxos-stack,.os-root .nxos-report-layout,.os-root .hermes-workroom-grid { color: var(--text); }
+.os-root .nxos-metric-grid article,.os-root .nxos-callout,.os-root .nxos-table-card,.os-root .nxos-chat-panel,.os-root .nxos-plan-list,.os-root .nxos-review-card,.os-root .nxos-report-layout > aside,.os-root .nxos-report-viewer,.os-root .nxos-specialist-list,.os-root .hermes-context-panel { background: linear-gradient(155deg,rgba(15,31,54,.97),rgba(8,18,32,.97)); border-color: rgba(117,151,204,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.04),0 16px 45px rgba(0,0,0,.12); }
+.hermes-workroom-grid { display: grid; grid-template-columns: 230px minmax(0,1fr) 285px; gap: 14px; }
+.hermes-context-panel { padding: 14px; border-radius: 14px; border: 1px solid var(--softline); }.hermes-context-panel section { padding: 11px 0; border-top: 1px solid var(--softline); }.hermes-context-panel section strong,.hermes-context-panel section span { display: block; }.hermes-context-panel section span { color: var(--muted); font-size: 11px; margin-top: 6px; }
+.hermes-message-actions { display: flex; gap: 6px; margin-top: 9px; }.hermes-message-actions button,.nxos-plan-list button { border: 0; background: transparent; color: #72b7ff; font-size: 10px; padding: 0; }.nxos-quick-prompts > span { color: var(--muted); font-size: 10px; align-self: center; }
+.hermes-global-launcher { position: fixed; right: 24px; bottom: 72px; z-index: 60; display: flex; gap: 10px; align-items: center; border: 1px solid rgba(124,85,255,.55); border-radius: 16px; padding: 10px 14px; color: white; background: rgba(11,23,40,.96); box-shadow: 0 14px 40px rgba(0,0,0,.35); }.hermes-global-launcher strong,.hermes-global-launcher small { display: block; }.hermes-global-launcher small { color: var(--muted); }
+@media(max-width:1250px){.hermes-workroom-grid{grid-template-columns:210px minmax(0,1fr)}.hermes-context-panel{grid-column:1/-1}.nexus-command-grid{grid-template-columns:1fr}.nexus-home-metrics{grid-template-columns:repeat(2,1fr)}}

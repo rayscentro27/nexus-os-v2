@@ -1,0 +1,3 @@
+import React from 'react';
+const cards=[['Operating cycles','2 loaded','08:00 daily · 18:00 closeout','green'],['Ray Review','64 cards','12 priority decisions','amber'],['Research to money','50 candidates','26 immediately actionable','blue'],['Confirmed revenue','$0','$97 test journey is next','violet']];
+export default function OperatingStatusCards(){return <div className="metrics-grid nexus-home-metrics">{cards.map(([label,value,detail,tone])=><article className={`glass nexus-home-metric tone-${tone}`} key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</div>}

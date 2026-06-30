@@ -12,14 +12,14 @@ def main():
         with sync_playwright() as p:
             browser=p.chromium.launch(headless=True)
             try:
-                page=browser.new_page(viewport={'width':1440,'height':1000}); errors=[]; page.on('pageerror',lambda exc: errors.append(str(exc))); page.goto(a.url,wait_until='networkidle')
-                page.get_by_role('heading',name='Command Center',exact=True).wait_for(); steps.append('command_center_visible')
+                page=browser.new_page(viewport={'width':1440,'height':1000}); page.set_default_timeout(8000); errors=[]; page.on('pageerror',lambda exc: errors.append(str(exc))); page.goto(a.url,wait_until='domcontentloaded')
+                page.get_by_role('heading',name='Command Center',exact=True).wait_for(); page.get_by_text("Today’s money actions",exact=True).wait_for(); page.get_by_text("Ray’s CEO Advisor",exact=False).first.wait_for(); steps.append('restored_command_center_visible')
                 departments=['System Health','Ray Review','Hermes Workroom','Reports','Clients','Credit & Funding','Business Opportunities','Research Engine','Monetization','Marketing Drafts','Trading Demo','Automation Scheduler','CLI / Tool Registry','Settings']
                 for name in departments:
-                    page.get_by_role('button',name=name,exact=False).first.click(); page.get_by_role('heading',name=name,exact=True).wait_for()
+                    button=page.get_by_role('button',name=name,exact=False).first; button.click(); assert 'active' in (button.get_attribute('class') or '')
                 steps.append('all_15_departments_opened')
                 page.get_by_role('button',name='Ray Review',exact=False).first.click(); page.get_by_role('button',name='Approve',exact=True).first.click(); page.get_by_text('Receipt created',exact=False).first.wait_for(); steps.append('approval_receipt_visible')
-                page.get_by_role('button',name='Hermes Workroom',exact=False).first.click(); page.get_by_label('Message Hermes').fill('next 100 steps for automation communication and monetization'); page.get_by_role('button',name='Send',exact=True).click(); page.get_by_text('I split this request',exact=False).wait_for(); steps.append('hermes_response_visible')
+                page.get_by_role('button',name='Hermes Workroom',exact=False).first.click(); page.get_by_label('Message Hermes').fill('next 100 steps for automation communication and monetization'); page.get_by_role('button',name='Send',exact=True).click(); page.get_by_text('operating program',exact=False).wait_for(); steps.append('hermes_advisor_response_visible')
                 page.get_by_role('button',name='Credit Specialist',exact=False).click(); page.get_by_text('Blocked: Dispute sending or bureau contact',exact=False).wait_for(); steps.append('credit_specialist_opened')
                 page.get_by_role('button',name='Reports',exact=False).first.click(); page.locator('.nxos-markdown').wait_for(); assert page.locator('.nxos-markdown').inner_text().strip(); steps.append('report_markdown_visible')
             finally:

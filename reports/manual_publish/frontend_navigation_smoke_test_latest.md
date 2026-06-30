@@ -1,6 +1,6 @@
 # Frontend Navigation Smoke Test
 
-- generated_at: 2026-06-30T13:41:29.999490+00:00
+- generated_at: 2026-06-30T15:02:59.580439+00:00
 - ok: true
 - status: navigation_smoke_passed
 - external_action_performed: false
@@ -8,7 +8,7 @@
 ## Checks
 
 - departments_15: true
-- all_enabled: true
+- original_shell_restored: true
 - hash_navigation: true
-- fallback_panel: true
+- original_visual_components: true
 - real_buttons: true

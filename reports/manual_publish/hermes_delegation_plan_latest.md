@@ -1,6 +1,6 @@
 # Hermes Delegation Plan
 
-- generated_at: 2026-06-30T13:41:29.453874+00:00
+- generated_at: 2026-06-30T15:02:57.842632+00:00
 - ok: true
 - status: delegation_plan_ready
 - external_action_performed: false

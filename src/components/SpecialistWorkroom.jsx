@@ -1,6 +1,8 @@
 import React from 'react';
 import HermesChatPanel from './HermesChatPanel';
 import SpecialistChatPanel from './SpecialistChatPanel';
+import HermesContextPanel from './HermesContextPanel';
+import HermesDelegationPanel from './HermesDelegationPanel';
 
 export const specialistRegistry = [
   { id: 'hermes', name: 'Hermes CEO Advisor', role: 'Executive triage and delegation', safe: 'Summaries, plans, task requests', blocked: 'Risky execution' },
@@ -18,5 +20,6 @@ export default function SpecialistWorkroom() {
   const [active, setActive] = React.useState(specialistRegistry[0].name);
   const [plans, setPlans] = React.useState([]);
   const selected = specialistRegistry.find((item) => item.name === active);
-  return <div className="nxos-workroom"><SpecialistChatPanel specialists={specialistRegistry} active={active} onSelect={setActive} /><div className="nxos-workroom-main"><div className="nxos-specialist-policy"><strong>{selected.name}</strong><span>Safe: {selected.safe}</span><span>Blocked: {selected.blocked}</span></div><HermesChatPanel activeSpecialist={active} onPlanCreated={(plan) => setPlans((current) => [plan, ...current])} />{plans.length > 0 && <section className="nxos-plan-list"><h3>Delegation plans queued</h3>{plans.map((plan) => <article key={plan.id}><strong>{plan.specialist}</strong><p>{plan.prompt}</p><span>{plan.status}</span></article>)}</section>}</div></div>;
+  const addPlan=(plan)=>setPlans(current=>[{...plan,id:plan.id||`plan-${Date.now()}`},...current]);
+  return <div className="hermes-workroom-grid"><SpecialistChatPanel specialists={specialistRegistry} active={active} onSelect={setActive} /><div className="nxos-workroom-main"><div className="nxos-specialist-policy"><strong>{selected.name}</strong><span>Voice: strategic, direct, conversational</span><span>Safe: {selected.safe}</span><span>Blocked: {selected.blocked}</span></div><HermesChatPanel activeSpecialist={active} onPlanCreated={addPlan} onReviewCreated={(message)=>addPlan({prompt:message.text,specialist:'Ray Review',status:'approval_card_draft'})} onSpecialistRequested={(message)=>addPlan({prompt:message.text,specialist:'Specialist routing',status:'routing_ready'})} /><HermesDelegationPanel plans={plans} onReview={(plan)=>addPlan({prompt:plan.prompt,specialist:'Ray Review',status:'approval_card_draft'})} /></div><HermesContextPanel /></div>;
 }
