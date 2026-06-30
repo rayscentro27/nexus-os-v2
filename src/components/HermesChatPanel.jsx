@@ -5,7 +5,7 @@ import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m here, Ray. I have the operating picture: the scheduler is running, the approval queue is waiting, and the closest money path is the $97 readiness journey. Talk to me normally—give me a goal, a problem, or a question—and I\'ll help shape it, answer it, or route it to the right specialist.' };
 
-export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor', onPlanCreated, onReviewCreated, onSpecialistRequested }) {
+export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor', activePage = null, onPlanCreated, onReviewCreated, onSpecialistRequested }) {
   const [messages, setMessages] = useState(() => {
     const stored = hermesStore.getMessages();
     if (stored.length > 0) return stored.map((m, i) => ({ id: `stored-${i}`, role: m.role === 'user' ? 'ray' : 'hermes', text: m.text }));
@@ -19,7 +19,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
   const send = useCallback((text = input) => {
     const clean = (text || '').trim();
     if (!clean) return;
-    const result = buildHermesResponse(clean, activeSpecialist);
+    const result = buildHermesResponse(clean, activeSpecialist, activePage);
     const now = Date.now();
     const userMsg = { id: `${now}-ray`, role: 'ray', text: clean };
     const hermesMsg = { id: `${now}-hermes`, role: 'hermes', text: result.text };
@@ -30,7 +30,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     });
     setInput('');
     if (result.queued) onPlanCreated?.({ id: `plan-${now}`, prompt: clean, specialist: result.specialist, status: 'queued_local_safe', createdAt: new Date().toISOString() });
-  }, [input, activeSpecialist, onPlanCreated]);
+  }, [input, activeSpecialist, activePage, onPlanCreated]);
 
   const clearHistory = useCallback(() => {
     hermesStore.clearHistory();

@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { buildHermesResponse } from '../data/hermesWorkroomData';
 import { hermesStore } from '../lib/hermesChatStore';
 
-export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, initialPrompt = '' }) {
+export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, initialPrompt = '', activePage = null }) {
   const [messages, setMessages] = useState(() => {
     const stored = hermesStore.getMessages();
     if (stored.length > 0) return stored.map((m, i) => ({ id: `stored-${i}`, role: m.role === 'user' ? 'ray' : 'hermes', text: m.text }));
@@ -16,7 +16,7 @@ export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, init
 
   const send = useCallback(() => {
     const clean = input.trim(); if (!clean) return;
-    const result = buildHermesResponse(clean);
+    const result = buildHermesResponse(clean, undefined, activePage);
     const userMsg = { role: 'ray', text: clean };
     const hermesMsg = { role: 'hermes', text: result.text };
     setMessages(current => {
@@ -25,7 +25,7 @@ export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, init
       return next;
     });
     setInput('');
-  }, [input]);
+  }, [input, activePage]);
 
   const clearHistory = useCallback(() => {
     hermesStore.clearHistory();

@@ -1440,7 +1440,7 @@ export default function NexusAdminUI({ email }) {
     source: <Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" />,
     opportunity: <SimplePage title="Business Opportunities" sub="26 Scored Opportunities · Revenue Potential · Approval-Gated Conversion"><BusinessOpportunitiesPanel onAskHermes={askHermes} /></SimplePage>,
     health: <SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage>,
-    hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom /></SimplePage>,
+    hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom activePage={activePage} /></SimplePage>,
     rayreview: <SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage>,
     reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter /></SimplePage>,
     clients: <SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage>,
@@ -1470,7 +1470,7 @@ export default function NexusAdminUI({ email }) {
         </main>
       </div>
       {activePage !== 'hermes' && <HermesGlobalLauncher onOpen={() => askHermes()} />}
-      <HermesInlineDrawer open={hermesDrawerOpen} initialPrompt={hermesPrompt} onClose={() => setHermesDrawerOpen(false)} onOpenWorkroom={() => { setHermesDrawerOpen(false); navigate('hermes') }} />
+      <HermesInlineDrawer open={hermesDrawerOpen} initialPrompt={hermesPrompt} activePage={activePage} onClose={() => setHermesDrawerOpen(false)} onOpenWorkroom={() => { setHermesDrawerOpen(false); navigate('hermes') }} />
       <Footer activePage={activePage} />
     </div>
   )
