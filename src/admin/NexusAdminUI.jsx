@@ -21,6 +21,7 @@ import MarketingDraftsPanel from '../components/MarketingDraftsPanel'
 import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
+import { hermesResponseRouter } from '../lib/hermesResponseRouter'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
@@ -363,17 +364,8 @@ function Departments() {
 }
 
 function hermesAnswer(question) {
-  const q = question.toLowerCase()
-  if (/what is next|what should run next|next action/.test(q)) return runtime.nextMoneyAction
-  if (/last cycle|what happened/.test(q)) return runtime.lastCycleSummary
-  if (/money fastest|make money|sell/.test(q)) return `Fastest path: ${runtime.nextMoneyAction}`
-  if (/subscription|blocking/.test(q)) return `Subscription status: ${runtime.subscriptionStatus}. ${runtime.nextMoneyAction}`
-  if (/approve|review/.test(q)) return `${runtime.approvalCount} approval cards are ready. Start with the subscription offer and first $97 landing page.`
-  if (/feedback/.test(q)) return `Latest priorities: ${runtime.feedbackProcessed.join(' · ') || 'No new feedback this cycle.'}`
-  if (/trading|oanda/.test(q)) return `Trading is ${runtime.tradingStatus}. Live and funded execution are blocked.`
-  if (/repo|github/.test(q)) return `${runtime.repoTargetCount} GitHub targets are queued for concept-only review. No untrusted code was cloned or run.`
-  if (/pushback|not built|manual/.test(q)) return runtime.hermesPushback
-  return `${runtime.hermesRecommendation} Latest report: ${runtime.reportPath}`
+  const result = hermesResponseRouter({ message: question });
+  return result.text;
 }
 
 // Report-backed Hermes advisor. It answers from the latest generated cycle snapshot.

@@ -341,12 +341,8 @@ function respondConversation(text, pageCtx) {
 /* ── Main response builder ── */
 export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', pageId = null, extraContext = {}) {
   const text = message.trim();
-  const intent = detectIntent(text);
-  const pageCtx = pageId ? getPageContext(pageId) : null;
-  let response;
-  let queued = false;
 
-  // Try the shared router for question types it handles better
+  // Always use the shared router for all response generation
   const routerResult = hermesResponseRouter({
     message: text,
     pageId: pageId || undefined,
@@ -357,91 +353,6 @@ export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', 
     availableActions: extraContext.availableActions,
   });
 
-  // Use router response for types it handles well (date/time, entity, memory, scheduling, learning)
-  const routerHandledTypes = ['date_time', 'scheduling', 'entity_question', 'comparison', 'memory_history', 'learning_instruction'];
-  if (routerHandledTypes.includes(routerResult.questionType)) {
-    // Record activity
-    recordActivity({
-      source: 'hermes_chat',
-      pageId: pageId || 'unknown',
-      route: extraContext.route || `/#${pageId || 'unknown'}`,
-      eventType: 'hermes_message',
-      title: `Hermes response to: ${text.slice(0, 80)}`,
-      summary: `Router handled: ${routerResult.questionType}`,
-      entities: [routerResult.questionType],
-      status: 'completed',
-      importance: 'low',
-      dataSource: routerResult.source,
-      safetyLevel: 'safe',
-    });
-    return {
-      intent: routerResult.questionType,
-      specialist,
-      text: routerResult.text,
-      queued: false,
-      context: hermesContext,
-      pageContext: pageCtx,
-      source: routerResult.source,
-      confidence: routerResult.confidence,
-      needsClarification: routerResult.needsClarification,
-      clarificationQuestion: routerResult.clarificationQuestion,
-    };
-  }
-
-  // Fall back to existing canned response system for other types
-  switch (intent.type) {
-    case 'greeting':
-      response = respondGreeting(pageCtx);
-      break;
-    case 'casual':
-      response = respondCasual(pageCtx);
-      break;
-    case 'casual_personal':
-      response = respondCasualPersonal(pageCtx);
-      break;
-    case 'emotional':
-      response = respondEmotional(pageCtx);
-      break;
-    case 'partner_mode':
-      response = respondPartnerMode(pageCtx);
-      break;
-    case 'nexus_topic':
-      response = respondNexusTopic(intent.topic, pageCtx);
-      break;
-    case 'opinion':
-      response = respondOpinion(pageCtx);
-      break;
-    case 'approval':
-      response = respondApproval(pageCtx);
-      break;
-    case 'money':
-      response = respondMoney(pageCtx);
-      break;
-    case 'blockers':
-      response = respondBlockers(pageCtx);
-      break;
-    case 'strategy':
-      response = respondStrategy(pageCtx);
-      break;
-    case 'delegation':
-      queued = true;
-      response = respondDelegation(pageCtx);
-      break;
-    case 'summary':
-      response = respondSummary(pageCtx);
-      break;
-    case 'trading':
-      response = respondTrading(pageCtx);
-      break;
-    case 'question':
-      response = respondQuestion(text, pageCtx);
-      break;
-    case 'conversation':
-    default:
-      response = respondConversation(text, pageCtx);
-      break;
-  }
-
   // Record activity
   recordActivity({
     source: 'hermes_chat',
@@ -449,13 +360,26 @@ export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', 
     route: extraContext.route || `/#${pageId || 'unknown'}`,
     eventType: 'hermes_message',
     title: `Hermes response to: ${text.slice(0, 80)}`,
-    summary: `Intent: ${intent.type}`,
-    entities: [intent.type],
+    summary: `Router: ${routerResult.questionType} (${routerResult.source})`,
+    entities: [routerResult.questionType],
     status: 'completed',
     importance: 'low',
-    dataSource: 'local_static',
+    dataSource: routerResult.source,
     safetyLevel: 'safe',
   });
 
-  return { intent: intent.type, specialist, text: response, queued, context: hermesContext, pageContext: pageCtx, source: 'local_static', confidence: 'medium' };
+  return {
+    intent: routerResult.questionType,
+    specialist,
+    text: routerResult.text,
+    queued: false,
+    context: hermesContext,
+    pageContext: pageId ? getPageContext(pageId) : null,
+    source: routerResult.source,
+    confidence: routerResult.confidence,
+    needsClarification: routerResult.needsClarification,
+    clarificationQuestion: routerResult.clarificationQuestion,
+    _routerSource: routerResult.source,
+    _routerConfidence: routerResult.confidence,
+  };
 }

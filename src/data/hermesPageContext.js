@@ -18,7 +18,7 @@ const PAGE_CONTEXT = {
     return `You are on the Command Center. Systems: ${runtime.systemsActivated.length} active. Approvals: ${runtime.approvalCount}. Blockers: ${runtime.blockerCount}. Opportunities: ${runtime.opportunityCount}. Top action: ${runtime.nextMoneyAction}.`;
   },
   hermes: () => {
-    return `You are in the Hermes Workroom. This is your private advisory space. I have the full operating picture loaded: ${hermesContext.proof.rayReviewCards} approval cards, ${hermesContext.proof.researchCandidates} research candidates, ${hermesContext.proof.offers} offers, $${hermesContext.proof.confirmedRevenue} confirmed revenue.`;
+    return `You are in the Hermes Workroom. I have local context loaded: ${hermesContext.proof.rayReviewCards} approval cards, ${hermesContext.proof.researchCandidates} research candidates, ${hermesContext.proof.offers} offers, $${hermesContext.proof.confirmedRevenue} confirmed revenue. Data source: local bundled context (static).`;
   },
   credit: () => {
     const missing = documentChecklist.filter(d => d.status === 'missing').length;

@@ -4,7 +4,7 @@ import { hermesStore } from '../lib/hermesChatStore';
 import { recordActivity } from '../lib/hermesActivityJournal';
 import HermesMessageBubble from './HermesMessageBubble';
 
-const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m here, Ray. I have the operating picture: the scheduler is running, the approval queue is waiting, and the closest money path is the $97 readiness journey. Talk to me normally—give me a goal, a problem, or a question—and I\'ll help shape it, answer it, or route it to the right specialist.' };
+const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your local CEO advisor. I use local bundled context, browser time, and localStorage memory. I don\'t have live Supabase, web search, or real AI model access. Ask me about page context, time/date, scheduling, entity references, or what we\'ve worked on. You can also say "remember that..." to teach me preferences.' };
 
 export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor', activePage = null, visibleItems = [], selectedItem = null, availableActions = [], onPlanCreated, onReviewCreated, onSpecialistRequested }) {
   const [messages, setMessages] = useState(() => {
