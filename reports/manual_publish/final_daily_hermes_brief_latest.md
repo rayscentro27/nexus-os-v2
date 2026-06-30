@@ -1,6 +1,6 @@
 # Final Daily Hermes Brief
 
-Generated: 2026-06-30T00:08:15.219067+00:00
+Generated: 2026-06-30T00:10:54.673005+00:00
 
 - ok: true
 - status: admin_brief_ready
