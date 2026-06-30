@@ -1,12 +1,12 @@
 # Research Source Scores
 
-Generated: 2026-06-30T00:07:30.845881+00:00
+Generated: 2026-06-30T01:31:55.854261+00:00
 
 - ok: true
 - status: research_sources_scored
-- sources_scored: 152
+- sources_scored: 161
 - high_value_sources: 4
-- approval_required: 14
+- approval_required: 16
 - external_action_performed: false
 
 ## Top sources

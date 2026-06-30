@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "account_type": "demo_practice_only",
+  "preferred_allowed_endpoint": "https://api-fxpractice.oanda.com",
+  "blocked_endpoint": "https://api-fxtrade.oanda.com",
+  "allowed_actions": [
+    "account_summary_read",
+    "pricing_read",
+    "instruments_read",
+    "demo_order_create",
+    "demo_order_cancel_close",
+    "demo_trade_closeout"
+  ],
+  "blocked_actions": [
+    "live_order",
+    "funded_order",
+    "live_endpoint_request",
+    "real_money_execution",
+    "withdrawal",
+    "deposit"
+  ],
+  "live_trading_allowed": false,
+  "approval_scope": "Ray approved practice API reads and one-unit smoke tests on 2026-06-29"
+}

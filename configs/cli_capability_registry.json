@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-30T00:05:18.896142+00:00",
+  "generated_at": "2026-06-30T01:31:47.387882+00:00",
   "tools": [
     {
       "tool_name": "git",
@@ -788,6 +788,69 @@
         "trading"
       ],
       "recommended_next_action": "Install only if a current Nexus engine requires it.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "notebooklm_legacy_adapter",
+      "installed": true,
+      "path": "/Users/raymonddavis/nexuslive/lib/notebooklm_ingest_adapter.py",
+      "version": "local_python_adapter",
+      "detection_command": "test -f ~/nexuslive/lib/notebooklm_ingest_adapter.py",
+      "safe_commands": [
+        "test -f ~/nexuslive/lib/notebooklm_ingest_adapter.py"
+      ],
+      "blocked_commands": [],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "research"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "vibe_recovered_adapter",
+      "installed": true,
+      "path": "/Users/raymonddavis/nexus-os-v2/scripts/trading/vibe_trading_adapter.py",
+      "version": "local_paper_adapter",
+      "detection_command": "test -f scripts/trading/vibe_trading_adapter.py",
+      "safe_commands": [
+        "test -f scripts/trading/vibe_trading_adapter.py"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ],
+      "requires_approval": false,
+      "external_action_possible": false,
+      "default_access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
+      "notes": "Detection and version only; credentials were not read or printed."
+    },
+    {
+      "tool_name": "oanda_demo_api_connector",
+      "installed": true,
+      "path": "/Users/raymonddavis/nexus-os-v2/scripts/trading/oanda_demo_common.py",
+      "version": "v20_practice_only",
+      "detection_command": "test -f scripts/trading/oanda_demo_common.py",
+      "safe_commands": [
+        "test -f scripts/trading/oanda_demo_common.py"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ],
+      "requires_approval": true,
+      "external_action_possible": false,
+      "default_access_level": "approval_gated",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "recommended_next_action": "Use only listed safe commands.",
       "notes": "Detection and version only; credentials were not read or printed."
     }
   ]

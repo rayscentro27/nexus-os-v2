@@ -1,11 +1,11 @@
 # CLI Capability Audit
 
-Generated: 2026-06-30T00:05:18.433902+00:00
+Generated: 2026-06-30T01:31:47.167817+00:00
 
 - ok: true
 - status: cli_audit_complete
-- tools_audited: 42
-- installed_count: 24
+- tools_audited: 45
+- installed_count: 27
 - missing_count: 18
 - legacy_capability_files_found: 115
 - raw_secrets_reported: false
@@ -37,6 +37,9 @@ Generated: 2026-06-30T00:05:18.433902+00:00
 - claude
 - opencode
 - ollama
+- notebooklm_legacy_adapter
+- vibe_recovered_adapter
+- oanda_demo_api_connector
 
 ## Missing
 

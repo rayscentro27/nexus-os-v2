@@ -30,6 +30,46 @@
       "network_mode": "local_only"
     },
     {
+      "lane_id": "notebooklm_official_api",
+      "approved": false,
+      "source_paths": [
+        "configs/notebooklm_automation_registry.json"
+      ],
+      "network_mode": "blocked_missing_official_connector"
+    },
+    {
+      "lane_id": "notebooklm_local_cli",
+      "approved": false,
+      "source_paths": [
+        "configs/notebooklm_automation_registry.json"
+      ],
+      "network_mode": "unavailable"
+    },
+    {
+      "lane_id": "notebooklm_selected_notebooks",
+      "approved": true,
+      "source_paths": [
+        "configs/notebooklm_selected_notebooks.json"
+      ],
+      "network_mode": "registry_only"
+    },
+    {
+      "lane_id": "notebooklm_legacy_adapter",
+      "approved": true,
+      "source_paths": [
+        "/Users/raymonddavis/nexuslive/lib/notebooklm_ingest_adapter.py"
+      ],
+      "network_mode": "local_only"
+    },
+    {
+      "lane_id": "notebooklm_watched_exports",
+      "approved": true,
+      "source_paths": [
+        "data/sources/notebooklm_exports/approved"
+      ],
+      "network_mode": "local_only"
+    },
+    {
       "lane_id": "old_nexus",
       "approved": true,
       "source_paths": [
@@ -69,6 +109,38 @@
         "/Users/raymonddavis/nexuslive/nexus-strategy-lab"
       ],
       "network_mode": "local_only"
+    },
+    {
+      "lane_id": "oanda_demo_market_data",
+      "approved": true,
+      "source_paths": [
+        "reports/runtime/oanda_demo_pricing_check_latest.json"
+      ],
+      "network_mode": "practice_read_only"
+    },
+    {
+      "lane_id": "oanda_demo_strategy_results",
+      "approved": true,
+      "source_paths": [
+        "reports/runtime/oanda_demo_trade_smoke_test_latest.json"
+      ],
+      "network_mode": "practice_test_results"
+    },
+    {
+      "lane_id": "vibe_oanda_demo_bridge",
+      "approved": true,
+      "source_paths": [
+        "reports/runtime/vibe_oanda_demo_bridge_latest.json"
+      ],
+      "network_mode": "local_and_practice_test"
+    },
+    {
+      "lane_id": "trading_demo_outcomes",
+      "approved": true,
+      "source_paths": [
+        "reports/runtime/vibe_oanda_demo_strategy_smoke_test_latest.json"
+      ],
+      "network_mode": "practice_test_results"
     },
     {
       "lane_id": "marketing_content_seo",

@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "access_modes": [
+    "official_api",
+    "local_cli",
+    "legacy_adapter",
+    "watched_folder",
+    "unavailable"
+  ],
+  "selected_access_mode": "legacy_adapter",
+  "consumer_browser_automation_allowed": false,
+  "unofficial_cookie_automation_allowed": false,
+  "legacy_adapter": "/Users/raymonddavis/nexuslive/lib/notebooklm_ingest_adapter.py",
+  "watched_folders": [
+    "data/sources/notebooklm_exports/approved",
+    "data/sources/notebooklm_notes/approved"
+  ],
+  "generated_at": "2026-06-30T01:28:07.589943+00:00"
+}

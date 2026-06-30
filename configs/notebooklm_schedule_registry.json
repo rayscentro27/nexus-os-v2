@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "schedules": [
+    {"automation_id": "notebooklm_cli_discovery_daily", "enabled": true, "cadence": "daily", "mode": "read_only_detection"},
+    {"automation_id": "notebooklm_selected_notebook_sync_daily", "enabled": true, "cadence": "daily", "mode": "approved_local_sources_only"},
+    {"automation_id": "notebooklm_research_memory_build_daily", "enabled": true, "cadence": "daily", "mode": "internal"},
+    {"automation_id": "notebooklm_ray_review_cards_daily", "enabled": true, "cadence": "daily", "mode": "internal"},
+    {"automation_id": "notebooklm_hermes_brief_daily", "enabled": true, "cadence": "daily", "mode": "internal"}
+  ],
+  "browser_automation": {"enabled": false, "approval_required": true}
+}

@@ -2,7 +2,7 @@
 from __future__ import annotations
 import argparse,json,shlex,subprocess
 from youtube_engine_common import ROOT,SUPABASE_READY,now,read_json,record,write_json,write_report
-SAFE_LOOP={"youtube_api_metadata_refresh","youtube_transcript_import","youtube_research_scoring","youtube_research_outputs","notebooklm_source_import","oanda_vibe_trading_audit","stripe_test_payment_status_check","payment_to_client_onboarding_dry_run"}
+SAFE_LOOP={"youtube_api_metadata_refresh","youtube_transcript_import","youtube_research_scoring","youtube_research_outputs","notebooklm_source_import","notebooklm_cli_discovery_daily","notebooklm_selected_notebook_sync_daily","notebooklm_research_memory_build_daily","notebooklm_ray_review_cards_daily","notebooklm_hermes_brief_daily","oanda_vibe_trading_audit","oanda_demo_account_check_daily","oanda_demo_pricing_check_daily","oanda_demo_instruments_check_daily","vibe_paper_backtest_dry_run_daily","vibe_oanda_demo_bridge_dry_run_daily","stripe_test_payment_status_check","payment_to_client_onboarding_dry_run"}
 def build(run_loop_safe=False):
  entries=read_json(ROOT/"configs/automation_schedule_registry.json",{}).get("automations",[]);results=[];executed=[];violations=[]
  for x in entries:

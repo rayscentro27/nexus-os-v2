@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-06-30T00:07:31.148487+00:00",
-  "source_count": 152,
+  "generated_at": "2026-06-30T01:31:56.217261+00:00",
+  "source_count": 161,
   "opportunity_count": 60,
   "lane_summary": {
     "github": 8,
@@ -9,9 +9,18 @@
     "old_nexus": 121,
     "payments": 7,
     "notebooklm": 4,
+    "notebooklm_selected_notebooks": 1,
+    "notebooklm_legacy_adapter": 1,
+    "notebooklm_watched_exports": 1,
     "marketing_content_seo": 1,
+    "notebooklm_official_api": 1,
+    "notebooklm_local_cli": 1,
     "local_sources": 3,
-    "trading": 1
+    "trading": 1,
+    "oanda_demo_market_data": 1,
+    "oanda_demo_strategy_results": 1,
+    "vibe_oanda_demo_bridge": 1,
+    "trading_demo_outcomes": 1
   },
   "top_opportunities": [
     {
@@ -31,7 +40,7 @@
       "source": "github-loan-management-system",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.998834+00:00"
+      "created_at": "2026-06-30T01:31:56.035512+00:00"
     },
     {
       "id": "opportunity_cc013a94137fa7c4",
@@ -50,7 +59,7 @@
       "source": "github-topic-credit-scoring",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999117+00:00"
+      "created_at": "2026-06-30T01:31:56.035803+00:00"
     },
     {
       "id": "opportunity_9aa9121b536c2f04",
@@ -69,7 +78,7 @@
       "source": "github-moov-awesome-fintech",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999128+00:00"
+      "created_at": "2026-06-30T01:31:56.035814+00:00"
     },
     {
       "id": "opportunity_69b183e9ab196c6c",
@@ -88,7 +97,7 @@
       "source": "github-topic-credit-management",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999135+00:00"
+      "created_at": "2026-06-30T01:31:56.035821+00:00"
     },
     {
       "id": "opportunity_8955ebd60324f305",
@@ -107,7 +116,7 @@
       "source": "credit_plug",
       "source_concept": "youtube",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999142+00:00"
+      "created_at": "2026-06-30T01:31:56.035829+00:00"
     },
     {
       "id": "opportunity_e8ab86d1c2780731",
@@ -126,7 +135,7 @@
       "source": "lane_2180eb913f040397",
       "source_concept": "credit_funding_grants",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999153+00:00"
+      "created_at": "2026-06-30T01:31:56.035840+00:00"
     },
     {
       "id": "opportunity_e80f1ea94c85f4a4",
@@ -145,7 +154,7 @@
       "source": "github-topic-credit-repair-tools",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999160+00:00"
+      "created_at": "2026-06-30T01:31:56.035846+00:00"
     },
     {
       "id": "opportunity_3e92fe617cba2da4",
@@ -164,7 +173,7 @@
       "source": "github-wadprog-repaircredit",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999166+00:00"
+      "created_at": "2026-06-30T01:31:56.035853+00:00"
     },
     {
       "id": "opportunity_16e8f5b4f60cf642",
@@ -183,7 +192,7 @@
       "source": "legacy_16c7589a71552ac8",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999172+00:00"
+      "created_at": "2026-06-30T01:31:56.035859+00:00"
     },
     {
       "id": "opportunity_38cf3b8e4de4f1ba",
@@ -202,7 +211,7 @@
       "source": "legacy_54e0d588fd42750d",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999178+00:00"
+      "created_at": "2026-06-30T01:31:56.035865+00:00"
     },
     {
       "id": "opportunity_435e1cb034fdd33e",
@@ -221,7 +230,7 @@
       "source": "legacy_cdf8b0572aa82a59",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999183+00:00"
+      "created_at": "2026-06-30T01:31:56.035871+00:00"
     },
     {
       "id": "opportunity_f100c78031bb2c89",
@@ -240,7 +249,7 @@
       "source": "legacy_201b89c793c5bfcd",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999189+00:00"
+      "created_at": "2026-06-30T01:31:56.035878+00:00"
     },
     {
       "id": "opportunity_b0876ce11c99b814",
@@ -259,7 +268,7 @@
       "source": "legacy_5dd835f87e4ead50",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999195+00:00"
+      "created_at": "2026-06-30T01:31:56.035884+00:00"
     },
     {
       "id": "opportunity_99a71cfff86f0a45",
@@ -278,7 +287,7 @@
       "source": "legacy_007ab64164492fd7",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999201+00:00"
+      "created_at": "2026-06-30T01:31:56.035889+00:00"
     },
     {
       "id": "opportunity_6c2e202f1d91cf1f",
@@ -297,7 +306,7 @@
       "source": "legacy_1c06cf5feb86462a",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999207+00:00"
+      "created_at": "2026-06-30T01:31:56.035895+00:00"
     },
     {
       "id": "opportunity_e9442d026b7bd865",
@@ -316,7 +325,7 @@
       "source": "legacy_79682d5564308294",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999214+00:00"
+      "created_at": "2026-06-30T01:31:56.035903+00:00"
     },
     {
       "id": "opportunity_edc4b5ff97eeb232",
@@ -335,7 +344,7 @@
       "source": "legacy_d7482fdc7e8ebef9",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999221+00:00"
+      "created_at": "2026-06-30T01:31:56.035910+00:00"
     },
     {
       "id": "opportunity_173a10e7a7d1d3f0",
@@ -354,7 +363,7 @@
       "source": "legacy_ea4045062d9755ea",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999227+00:00"
+      "created_at": "2026-06-30T01:31:56.035916+00:00"
     },
     {
       "id": "opportunity_cd424815f5754b8f",
@@ -373,7 +382,7 @@
       "source": "lane_df384ae97c77ad30",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999233+00:00"
+      "created_at": "2026-06-30T01:31:56.035922+00:00"
     },
     {
       "id": "opportunity_f2bb6839372b9069",
@@ -392,7 +401,7 @@
       "source": "hyperswitch",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999239+00:00"
+      "created_at": "2026-06-30T01:31:56.035928+00:00"
     },
     {
       "id": "opportunity_0af4fee42663fc07",
@@ -411,7 +420,7 @@
       "source": "btcpayserver",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999245+00:00"
+      "created_at": "2026-06-30T01:31:56.035934+00:00"
     },
     {
       "id": "opportunity_fd24a54ef40193e4",
@@ -430,7 +439,7 @@
       "source": "globalpayments-samples",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999250+00:00"
+      "created_at": "2026-06-30T01:31:56.035941+00:00"
     },
     {
       "id": "opportunity_fcf8335656aef6e5",
@@ -449,7 +458,7 @@
       "source": "payment-gateway-topic",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999256+00:00"
+      "created_at": "2026-06-30T01:31:56.035947+00:00"
     },
     {
       "id": "opportunity_f8e2a289ca239d25",
@@ -468,7 +477,7 @@
       "source": "payment-links-topic",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999262+00:00"
+      "created_at": "2026-06-30T01:31:56.035952+00:00"
     },
     {
       "id": "opportunity_f4187c82e871bf50",
@@ -487,7 +496,7 @@
       "source": "point-of-sale-topic",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T00:07:30.999268+00:00"
+      "created_at": "2026-06-30T01:31:56.035958+00:00"
     }
   ],
   "safety": "Internal research memory only; no publish, contact, trade, charge, or client guidance."

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_at": "2026-06-30T00:05:18.899241+00:00",
+  "generated_at": "2026-06-30T01:31:47.389508+00:00",
   "default_deny_external": true,
   "tools": [
     {
@@ -491,6 +491,48 @@
       "requires_approval": false,
       "safe_commands": [
         "python3 -m vibe_trading --version"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ]
+    },
+    {
+      "tool_name": "notebooklm_legacy_adapter",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "research"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "test -f ~/nexuslive/lib/notebooklm_ingest_adapter.py"
+      ],
+      "blocked_commands": []
+    },
+    {
+      "tool_name": "vibe_recovered_adapter",
+      "access_level": "internal_safe",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "requires_approval": false,
+      "safe_commands": [
+        "test -f scripts/trading/vibe_trading_adapter.py"
+      ],
+      "blocked_commands": [
+        "live/funded orders",
+        "live account use"
+      ]
+    },
+    {
+      "tool_name": "oanda_demo_api_connector",
+      "access_level": "approval_gated",
+      "connected_nexus_engines": [
+        "trading"
+      ],
+      "requires_approval": true,
+      "safe_commands": [
+        "test -f scripts/trading/oanda_demo_common.py"
       ],
       "blocked_commands": [
         "live/funded orders",

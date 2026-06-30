@@ -16,6 +16,7 @@ receipts/
 secrets/
 *.key
 .stripe_test_runtime/
+.oanda_demo_runtime/
 
 # python / misc
 __pycache__/

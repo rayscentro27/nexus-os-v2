@@ -1,10 +1,10 @@
 # Oanda Demo and Vibe Trading Audit
 
-Generated: 2026-06-30T00:08:00.930029+00:00
+Generated: 2026-06-30T01:34:02.123044+00:00
 
 - ok: true
-- status: oanda_config_unverified_or_incomplete
-- oanda_mode: unverified
+- status: oanda_demo_credentials_ready_for_practice_probe
+- oanda_mode: practice_candidate
 - vibe_cli_installed: false
 - vibe_cli_path: None
 - vibe_version:

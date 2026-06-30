@@ -1,6 +1,6 @@
 # Safe Schedule Install Plan
 
-Generated: 2026-06-30T00:08:02.558851+00:00
+Generated: 2026-06-30T01:32:18.777633+00:00
 
 - ok: true
 - status: launchd_plan_ready_not_installed

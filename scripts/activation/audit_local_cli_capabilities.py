@@ -49,6 +49,12 @@ def build() -> dict:
     records = [detect(name, command) for name, command in TOOLS.items()]
     module = importlib.util.find_spec("vibe_trading")
     records.append({"tool_name": "vibe_trading_python", "installed": module is not None, "path": module.origin if module else None, "version": None, "detection_command": "python3 -m vibe_trading --version"})
+    legacy_adapter = Path.home() / "nexuslive/lib/notebooklm_ingest_adapter.py"
+    records.append({"tool_name": "notebooklm_legacy_adapter", "installed": legacy_adapter.exists(), "path": str(legacy_adapter) if legacy_adapter.exists() else None, "version": "local_python_adapter" if legacy_adapter.exists() else None, "detection_command": "test -f ~/nexuslive/lib/notebooklm_ingest_adapter.py"})
+    vibe_adapter = ROOT / "scripts/trading/vibe_trading_adapter.py"
+    records.append({"tool_name": "vibe_recovered_adapter", "installed": vibe_adapter.exists(), "path": str(vibe_adapter) if vibe_adapter.exists() else None, "version": "local_paper_adapter" if vibe_adapter.exists() else None, "detection_command": "test -f scripts/trading/vibe_trading_adapter.py"})
+    oanda_connector = ROOT / "scripts/trading/oanda_demo_common.py"
+    records.append({"tool_name": "oanda_demo_api_connector", "installed": oanda_connector.exists(), "path": str(oanda_connector) if oanda_connector.exists() else None, "version": "v20_practice_only" if oanda_connector.exists() else None, "detection_command": "test -f scripts/trading/oanda_demo_common.py"})
     legacy = []
     for base in (Path.home() / "nexuslive", Path.home() / "nexus-ai-council-sandbox"):
         if not base.exists():

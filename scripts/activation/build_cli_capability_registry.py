@@ -5,9 +5,9 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/"scripts"/"ops"))
 from same_day_common import RUNTIME,SUPABASE_READY,now,read_json,write_json,write_report  # noqa:E402
 
-INTERNAL={"git","node","npm","npx","python3","pip3","pnpm","yarn","jq","openssl","sqlite3","ffmpeg","imagemagick","magick","tesseract","codex","claude","opencode","gemini","ollama"}
+INTERNAL={"git","node","npm","npx","python3","pip3","pnpm","yarn","jq","openssl","sqlite3","ffmpeg","imagemagick","magick","tesseract","codex","claude","opencode","gemini","ollama","notebooklm_legacy_adapter","vibe_recovered_adapter"}
 READ_ONLY={"gh","curl","wget","supabase","netlify","vercel","docker","colima","orb","psql","yt-dlp","playwright","chromium","chrome","notebooklm","oanda"}
-APPROVAL={"stripe","resend","facebook","instagram","vibe-trading","vibe_trading_python"}
+APPROVAL={"stripe","resend","facebook","instagram","vibe-trading","vibe_trading_python","oanda_demo_api_connector"}
 
 def classify(item):
  name=item["tool_name"]
@@ -19,17 +19,17 @@ def classify(item):
  if name in {"yt-dlp","ffmpeg","tesseract"}:engines=["research","youtube"]
  elif name in {"supabase","psql"}:engines=["database","client_portal"]
  elif name in {"stripe"}:engines=["payments","onboarding"]
- elif name in {"oanda","vibe-trading","vibe_trading_python"}:engines=["trading"]
+ elif name in {"oanda","oanda_demo_api_connector","vibe-trading","vibe_trading_python","vibe_recovered_adapter"}:engines=["trading"]
  elif name in {"git","gh"}:engines=["repo_research","deployment"]
  elif name in {"netlify","vercel"}:engines=["deployment"]
- elif name in {"notebooklm"}:engines=["research"]
+ elif name in {"notebooklm","notebooklm_legacy_adapter"}:engines=["research"]
  elif name in {"codex","claude","opencode","gemini","ollama"}:engines=["internal_ai_tools"]
  safe=[item["detection_command"]] if item.get("detection_command") else []
  blocked=[]
  if name=="stripe":blocked=["stripe commands with --live","live charges","live payment links"]
  elif name=="supabase":blocked=["db reset --linked","db push --include-all","destructive SQL"]
  elif name=="yt-dlp":blocked=["video download","audio download","cookies","unapproved targets"]
- elif name in {"oanda","vibe-trading","vibe_trading_python"}:blocked=["live/funded orders","live account use"]
+ elif name in {"oanda","oanda_demo_api_connector","vibe-trading","vibe_trading_python","vibe_recovered_adapter"}:blocked=["live/funded orders","live account use"]
  elif name in {"resend","facebook","instagram"}:blocked=["send or publish without Ray approval"]
  return {**item,"safe_commands":safe,"blocked_commands":blocked,"requires_approval":level=="approval_gated" or name in {"supabase","netlify","vercel","gh","oanda"},"external_action_possible":name in {"gh","curl","wget","supabase","netlify","vercel","stripe","yt-dlp","playwright","chrome","chromium","oanda","resend","facebook","instagram"},"default_access_level":level,"connected_nexus_engines":engines,"recommended_next_action":"Use only listed safe commands." if item["installed"] else "Install only if a current Nexus engine requires it.","notes":"Detection and version only; credentials were not read or printed."}
 

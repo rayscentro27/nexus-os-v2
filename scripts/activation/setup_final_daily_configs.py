@@ -156,11 +156,20 @@ def build() -> dict:
             {"lane_id": "youtube", "approved": True, "source_paths": ["configs/youtube_source_targets.json", "configs/youtube_research_channels.json", "data/sources/youtube_transcripts/approved"], "network_mode": "approved_metadata_only"},
             {"lane_id": "github", "approved": True, "source_paths": ["configs/repo_research_targets.json", "configs/payment_repo_targets.json"], "network_mode": "seed_records_only"},
             {"lane_id": "notebooklm", "approved": True, "source_paths": ["data/sources/notebooklm_exports/approved", "data/sources/notebooklm_notes"], "network_mode": "local_only"},
+            {"lane_id": "notebooklm_official_api", "approved": False, "source_paths": ["configs/notebooklm_automation_registry.json"], "network_mode": "blocked_missing_official_connector"},
+            {"lane_id": "notebooklm_local_cli", "approved": False, "source_paths": ["configs/notebooklm_automation_registry.json"], "network_mode": "unavailable"},
+            {"lane_id": "notebooklm_selected_notebooks", "approved": True, "source_paths": ["configs/notebooklm_selected_notebooks.json"], "network_mode": "registry_only"},
+            {"lane_id": "notebooklm_legacy_adapter", "approved": True, "source_paths": [str(Path.home() / "nexuslive/lib/notebooklm_ingest_adapter.py")], "network_mode": "local_only"},
+            {"lane_id": "notebooklm_watched_exports", "approved": True, "source_paths": ["data/sources/notebooklm_exports/approved"], "network_mode": "local_only"},
             {"lane_id": "old_nexus", "approved": True, "source_paths": [str(Path.home() / "nexuslive")], "network_mode": "local_only"},
             {"lane_id": "local_sources", "approved": True, "source_paths": ["data/sources"], "network_mode": "local_only"},
             {"lane_id": "payments", "approved": True, "source_paths": ["configs/payment_repo_targets.json"], "network_mode": "seed_records_only"},
             {"lane_id": "credit_funding_grants", "approved": True, "source_paths": ["reports/runtime/supabase_ready"], "network_mode": "local_only"},
             {"lane_id": "trading", "approved": True, "source_paths": ["scripts/trading", str(Path.home() / "nexuslive" / "nexus-strategy-lab")], "network_mode": "local_only"},
+            {"lane_id": "oanda_demo_market_data", "approved": True, "source_paths": ["reports/runtime/oanda_demo_pricing_check_latest.json"], "network_mode": "practice_read_only"},
+            {"lane_id": "oanda_demo_strategy_results", "approved": True, "source_paths": ["reports/runtime/oanda_demo_trade_smoke_test_latest.json"], "network_mode": "practice_test_results"},
+            {"lane_id": "vibe_oanda_demo_bridge", "approved": True, "source_paths": ["reports/runtime/vibe_oanda_demo_bridge_latest.json"], "network_mode": "local_and_practice_test"},
+            {"lane_id": "trading_demo_outcomes", "approved": True, "source_paths": ["reports/runtime/vibe_oanda_demo_strategy_smoke_test_latest.json"], "network_mode": "practice_test_results"},
             {"lane_id": "marketing_content_seo", "approved": True, "source_paths": ["scripts/research", "reports/runtime/supabase_ready"], "network_mode": "local_only"},
         ],
     }
@@ -197,7 +206,23 @@ def build() -> dict:
         schedule("frontend_live_data_readiness", "python3 scripts/client_flow/prepare_frontend_live_data_readiness.py --json", "client_flow"),
         schedule("oanda_demo_readonly_check", "python3 scripts/trading/run_oanda_demo_readonly_check.py --json", "trading"),
         schedule("vibe_paper_backtest_dry_run", "python3 scripts/trading/run_vibe_paper_backtest_dry_run.py --json", "trading"),
+        schedule("notebooklm_cli_discovery_daily", "python3 scripts/activation/find_notebooklm_cli_connectors.py --json", "research"),
+        schedule("notebooklm_selected_notebook_sync_daily", "python3 scripts/activation/sync_selected_notebooklm_notebooks.py --json", "research"),
+        schedule("notebooklm_research_memory_build_daily", "python3 scripts/activation/build_notebooklm_research_memory.py --json", "research"),
+        schedule("notebooklm_ray_review_cards_daily", "python3 scripts/activation/build_notebooklm_ray_review_cards.py --json", "research"),
+        schedule("notebooklm_hermes_brief_daily", "python3 scripts/activation/build_notebooklm_hermes_brief.py --json", "research"),
+        schedule("oanda_demo_account_check_daily", "python3 scripts/trading/run_oanda_demo_account_check.py --json", "trading"),
+        schedule("oanda_demo_pricing_check_daily", "python3 scripts/trading/run_oanda_demo_pricing_check.py --json", "trading"),
+        schedule("oanda_demo_instruments_check_daily", "python3 scripts/trading/run_oanda_demo_instruments_check.py --json", "trading"),
+        schedule("vibe_paper_backtest_dry_run_daily", "python3 scripts/trading/run_vibe_paper_backtest_dry_run.py --json", "trading"),
+        schedule("vibe_oanda_demo_bridge_dry_run_daily", "python3 scripts/trading/run_vibe_oanda_demo_bridge_dry_run.py --json", "trading"),
+        schedule("trading_demo_outcomes_report_daily", "python3 scripts/activation/build_oanda_vibe_notebooklm_activation_reports.py --json", "trading"),
     ]
+    additions.extend([
+        {**schedule("oanda_recurring_demo_order_execution", "", "trading"), "enabled": False, "schedule_type": "manual", "mode": "approval_gated_demo_execution", "approval_required": True, "external_action_allowed": True, "safety_notes": "Recurring demo orders require a separate Ray approval."},
+        {**schedule("vibe_oanda_demo_strategy_execution", "", "trading"), "enabled": False, "schedule_type": "manual", "mode": "approval_gated_demo_execution", "approval_required": True, "external_action_allowed": True, "safety_notes": "Strategy execution beyond the approved smoke test is blocked."},
+        {**schedule("notebooklm_unofficial_browser_automation", "", "research"), "enabled": False, "schedule_type": "manual", "mode": "approval_gated_external", "approval_required": True, "external_action_allowed": False, "safety_notes": "Consumer browser/cookie automation remains blocked."}
+    ])
     by_id = {item["automation_id"]: item for item in current.get("automations", [])}
     for item in additions:
         by_id[item["automation_id"]] = item

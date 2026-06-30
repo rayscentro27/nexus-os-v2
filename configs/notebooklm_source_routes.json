@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "routes": [
+    {"name_pattern": "credit", "research_lane": "credit_funding"},
+    {"name_pattern": "funding", "research_lane": "business_credit"},
+    {"name_pattern": "grant", "research_lane": "grants"},
+    {"name_pattern": "payment", "research_lane": "payment_monetization"},
+    {"name_pattern": "trading", "research_lane": "trading"},
+    {"name_pattern": "marketing", "research_lane": "marketing_content"},
+    {"name_pattern": "operations", "research_lane": "nexus_upgrade"},
+    {"name_pattern": "automation", "research_lane": "ai_automation"},
+    {"name_pattern": "*", "research_lane": "general_research"}
+  ]
+}

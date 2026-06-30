@@ -1,11 +1,11 @@
 # Research Hermes Brief
 
-Generated: 2026-06-30T00:07:31.455963+00:00
+Generated: 2026-06-30T01:31:56.603078+00:00
 
 - ok: true
 - status: research_hermes_brief_ready
 - admin_only: true
-- sources_considered: 152
+- sources_considered: 161
 - opportunities_considered: 60
 - recommendations_count: 10
 - next_money_action: Review the top research opportunity that directly improves the $97 readiness-review intake and fulfillment path.
