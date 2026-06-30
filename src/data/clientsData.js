@@ -1,5 +1,3 @@
-import { clientDataMode } from './clientDataMode'
-
 const DEMO_TENANT_ID = 'tenant_demo_goclear'
 
 export const clientStages = [
