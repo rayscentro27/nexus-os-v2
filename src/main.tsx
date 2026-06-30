@@ -6,6 +6,7 @@ import './components/nexusUI.css';
 import './admin/nexusAdminUI.css';
 import './styles/dashboard-layout-lock.css';
 import './styles/client-portal.css';
+import './styles/nexus-operating-ui.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

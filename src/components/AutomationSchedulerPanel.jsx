@@ -1,0 +1,8 @@
+import React, { useState } from 'react';
+import { schedulerSummary } from '../data/automationScheduleData';
+
+export default function AutomationSchedulerPanel({ onOpenReport, onReview }) {
+  const [status, setStatus] = useState('Status loaded');
+  async function copy() { try { await navigator.clipboard.writeText(schedulerSummary.manualRun); setStatus('Manual run command copied'); } catch { setStatus(schedulerSummary.manualRun); } }
+  return <div className="nxos-stack"><div className="nxos-metric-grid"><article><small>Agents loaded</small><strong>{schedulerSummary.agents.length}</strong></article><article><small>Schedules registered</small><strong>{schedulerSummary.schedulesRegistered}</strong></article><article><small>Safe jobs passed</small><strong>{schedulerSummary.safeJobsPassed}</strong></article><article><small>Approval-gated</small><strong>{schedulerSummary.approvalGatedJobs}</strong></article></div><section className="nxos-table-card"><h2>Installed internal schedules</h2>{schedulerSummary.agents.map((agent) => <div className="nxos-table-row" key={agent.name}><strong>{agent.name}</strong><span>{agent.time}</span><span>{agent.lastStatus}</span></div>)}</section><div className="nxos-actions"><button type="button" onClick={() => setStatus(`Refreshed ${new Date().toLocaleTimeString()}`)}>Refresh status</button><button type="button" onClick={copy}>Copy manual run command</button><button type="button" onClick={onOpenReport}>Open latest report</button><button type="button" onClick={onReview}>Request schedule change</button></div><p className="nxos-notice">{status}. Safe to leave running: yes. Install/remove actions require a Ray Review decision.</p></div>;
+}

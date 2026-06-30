@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "specialists": [
+    {"id":"hermes_ceo","name":"Hermes CEO Advisor","role":"Executive triage and delegation","safe_actions":["summarize","plan","create task requests"],"blocked_actions":["risky external execution"],"reports":["operating_activation_master_latest.md"],"approval_required":false},
+    {"id":"credit","name":"Credit Specialist","role":"Credit readiness and dispute draft review","safe_actions":["review profiles","draft checklists","draft answers"],"blocked_actions":["send disputes","contact bureaus"],"reports":["client workflow reports"],"approval_required":true},
+    {"id":"funding","name":"Funding Specialist","role":"Funding, grants, and bankability","safe_actions":["readiness review","lender prep"],"blocked_actions":["submit applications"],"reports":["funding research"],"approval_required":true},
+    {"id":"research","name":"Research Specialist","role":"Approved source scoring","safe_actions":["discover","score","summarize"],"blocked_actions":["restricted ingestion"],"reports":["research_to_money_pipeline_latest.md"],"approval_required":false},
+    {"id":"monetization","name":"Monetization Specialist","role":"Offer and revenue design","safe_actions":["offer drafts","funnel plans"],"blocked_actions":["charges"],"reports":["revenue_dashboard_latest.md"],"approval_required":true},
+    {"id":"marketing","name":"Marketing Specialist","role":"Content and outreach drafts","safe_actions":["draft content"],"blocked_actions":["publish","send"],"reports":["content calendar"],"approval_required":true},
+    {"id":"trading","name":"Trading Specialist","role":"Demo and paper research","safe_actions":["practice reads","paper analysis"],"blocked_actions":["live trading"],"reports":["trading demo reports"],"approval_required":true},
+    {"id":"automation","name":"Automation Engineer","role":"Safe internal jobs","safe_actions":["bounded internal schedules"],"blocked_actions":["external automation"],"reports":["safe_internal_scheduler_verification_latest.md"],"approval_required":true},
+    {"id":"client_success","name":"Client Success Specialist","role":"Synthetic onboarding review","safe_actions":["draft journey guidance"],"blocked_actions":["client contact"],"reports":["payment onboarding reports"],"approval_required":true}
+  ]
+}
