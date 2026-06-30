@@ -1,6 +1,6 @@
 # Oanda Demo Instruments Check
 
-Generated: 2026-06-30T02:25:07.110660+00:00
+Generated: 2026-06-30T13:12:33.302065+00:00
 
 - ok: true
 - status: demo_instruments_check_passed

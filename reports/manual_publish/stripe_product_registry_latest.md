@@ -1,6 +1,6 @@
 # Stripe Product Registry
 
-Generated: 2026-06-30T02:21:55.853840+00:00
+Generated: 2026-06-30T13:13:03.116291+00:00
 
 - ok: true
 - status: stripe_test_product_registry_ready

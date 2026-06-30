@@ -1,6 +1,6 @@
 # Newsletter Draft
 
-Generated: 2026-06-30T02:22:53.028563+00:00
+Generated: 2026-06-30T13:13:09.847344+00:00
 
 - ok: true
 - status: newsletter_draft_ready_not_sent
@@ -19,5 +19,5 @@ Generated: 2026-06-30T02:22:53.028563+00:00
 - **compliance_notes:** Educational only; no credit, removal, score, or funding guarantees.
 - **approval_required:** True
 - **status:** draft_only_not_published
-- **created_at:** 2026-06-30T02:22:53.028244+00:00
+- **created_at:** 2026-06-30T13:13:09.847040+00:00
 - **sections:** ["Readiness signal of the week", "One safe action", "Document checklist", "$97 review CTA"]

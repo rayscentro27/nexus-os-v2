@@ -1,13 +1,13 @@
 # Oanda Demo Pricing Check
 
-Generated: 2026-06-30T02:25:06.677419+00:00
+Generated: 2026-06-30T13:12:32.778583+00:00
 
 - ok: true
 - status: demo_pricing_check_passed
 - http_status: 200
 - instrument: AUD_USD
-- bid: 0.68680
-- ask: 0.68694
+- bid: 0.68892
+- ask: 0.68905
 - tradeable: true
 - error_sanitized: None
 - live_endpoint_used: false

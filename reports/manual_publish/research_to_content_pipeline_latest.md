@@ -1,6 +1,6 @@
 # Research to Content Pipeline
 
-Generated: 2026-06-30T02:22:52.235098+00:00
+Generated: 2026-06-30T13:13:08.998135+00:00
 
 - ok: true
 - status: research_to_content_pipeline_ready

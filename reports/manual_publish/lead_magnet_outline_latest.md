@@ -1,6 +1,6 @@
 # Lead Magnet Outline
 
-Generated: 2026-06-30T02:22:53.498046+00:00
+Generated: 2026-06-30T13:13:10.394083+00:00
 
 - ok: true
 - status: lead_magnet_outline_ready
@@ -19,5 +19,5 @@ Generated: 2026-06-30T02:22:53.498046+00:00
 - **compliance_notes:** Educational only; no credit, removal, score, or funding guarantees.
 - **approval_required:** True
 - **status:** draft_only_not_published
-- **created_at:** 2026-06-30T02:22:53.497661+00:00
+- **created_at:** 2026-06-30T13:13:10.393609+00:00
 - **sections:** ["Personal credit readiness", "Business identity", "Banking", "Documents", "Application timing", "Next-step scorecard"]

@@ -1,6 +1,6 @@
 # Offer Registry
 
-Generated: 2026-06-30T02:21:55.552409+00:00
+Generated: 2026-06-30T13:13:02.727461+00:00
 
 - ok: true
 - status: offer_registry_active

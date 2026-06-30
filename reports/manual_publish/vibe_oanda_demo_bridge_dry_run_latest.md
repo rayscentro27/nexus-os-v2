@@ -1,6 +1,6 @@
 # Vibe / Oanda Demo Bridge Dry Run
 
-Generated: 2026-06-30T02:25:07.461663+00:00
+Generated: 2026-06-30T13:12:33.718165+00:00
 
 - ok: true
 - status: vibe_oanda_demo_bridge_dry_run_passed

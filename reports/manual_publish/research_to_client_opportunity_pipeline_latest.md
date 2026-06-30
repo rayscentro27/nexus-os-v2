@@ -1,6 +1,6 @@
 # Research to Client Opportunity Pipeline
 
-Generated: 2026-06-30T02:22:51.941083+00:00
+Generated: 2026-06-30T13:13:08.839383+00:00
 
 - ok: true
 - status: research_to_client_pipeline_ready

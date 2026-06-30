@@ -1,6 +1,6 @@
 # Content to Offer Pipeline
 
-Generated: 2026-06-30T02:21:56.338902+00:00
+Generated: 2026-06-30T13:13:03.760204+00:00
 
 - ok: true
 - status: content_to_offer_pipeline_ready

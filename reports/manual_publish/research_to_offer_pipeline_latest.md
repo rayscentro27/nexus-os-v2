@@ -1,6 +1,6 @@
 # Research to Offer Pipeline
 
-Generated: 2026-06-30T02:21:56.172590+00:00
+Generated: 2026-06-30T13:13:03.619227+00:00
 
 - ok: true
 - status: research_to_offer_pipeline_ready

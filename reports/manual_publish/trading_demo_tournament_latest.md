@@ -1,6 +1,6 @@
 # Trading Demo Tournament
 
-Generated: 2026-06-30T02:23:07.610479+00:00
+Generated: 2026-06-30T13:13:10.561054+00:00
 
 - ok: true
 - status: synthetic_demo_tournament_complete

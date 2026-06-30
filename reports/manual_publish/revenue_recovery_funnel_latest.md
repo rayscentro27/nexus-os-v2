@@ -1,6 +1,6 @@
 # Revenue Recovery Funnel
 
-Generated: 2026-06-30T02:21:55.714150+00:00
+Generated: 2026-06-30T13:13:02.929246+00:00
 
 - ok: true
 - status: revenue_recovery_funnel_ready

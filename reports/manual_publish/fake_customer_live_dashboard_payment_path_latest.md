@@ -1,6 +1,6 @@
 # Fake Customer Live Dashboard Payment Path
 
-Generated: 2026-06-30T02:22:03.341499+00:00
+Generated: 2026-06-30T13:13:08.511329+00:00
 
 - ok: true
 - status: test_payment_onboarding_path_ready_external_steps_gated
