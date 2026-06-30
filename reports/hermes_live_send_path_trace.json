@@ -1,0 +1,77 @@
+{
+  "traceDate": "2025-07-01",
+  "entryPoints": [
+    {
+      "id": "hermes_chat_panel",
+      "component": "src/components/HermesChatPanel.jsx",
+      "textareaLine": 48,
+      "sendButtonLine": 48,
+      "sendFunctionLine": 20,
+      "responseGenerator": "buildHermesResponse",
+      "routerCall": "hermesResponseRouter",
+      "fallback": "none",
+      "storage": "localStorage via hermesStore",
+      "passesPageContext": true,
+      "passesVisibleItems": true,
+      "passesSelectedItem": true
+    },
+    {
+      "id": "hermes_inline_drawer",
+      "component": "src/components/HermesInlineDrawer.jsx",
+      "textareaLine": 41,
+      "sendButtonLine": 41,
+      "sendFunctionLine": 18,
+      "responseGenerator": "buildHermesResponse",
+      "routerCall": "hermesResponseRouter",
+      "fallback": "none",
+      "storage": "localStorage via hermesStore",
+      "passesPageContext": true,
+      "passesVisibleItems": true,
+      "passesSelectedItem": true
+    },
+    {
+      "id": "nexus_admin_hermes_card",
+      "component": "src/admin/NexusAdminUI.jsx",
+      "inputLine": 402,
+      "sendButtonLine": 405,
+      "sendFunctionLine": 396,
+      "responseGenerator": "hermesAnswer",
+      "routerCall": "hermesResponseRouter (direct)",
+      "fallback": "none",
+      "storage": "component state only",
+      "passesPageContext": false,
+      "passesVisibleItems": false,
+      "passesSelectedItem": false
+    },
+    {
+      "id": "panel_ask_hermes_buttons",
+      "components": ["BusinessOpportunitiesPanel", "ResearchEnginePanel", "MonetizationPanel", "MarketingDraftsPanel", "ClientsPanel", "CreditFundingPanel", "SystemHealthDetailDrawer"],
+      "mechanism": "onAskHermes prop → NexusAdminUI.askHermes() → HermesInlineDrawer",
+      "responseGenerator": "buildHermesResponse (via HermesInlineDrawer)",
+      "routerCall": "hermesResponseRouter",
+      "fallback": "none"
+    },
+    {
+      "id": "sections_hermes_chat",
+      "component": "src/components/sections.tsx",
+      "status": "UNUSED by active UI",
+      "responseGenerator": "hermesChat (Supabase Edge Function)",
+      "routerCall": "none (real LLM path, not wired)"
+    }
+  ],
+  "oldPhrasesRemoved": {
+    "I hear you": { "count": 0, "status": "removed" },
+    "I'm tracking": { "count": 0, "status": "removed" },
+    "does this help prove": { "count": 0, "status": "removed" },
+    "I can shape it": { "count": 0, "status": "removed" },
+    "private advisory space": { "count": 0, "status": "removed" },
+    "operating picture": { "count": 0, "status": "removed from responses" },
+    "money path": { "count": 5, "status": "contextually appropriate in router responses only" }
+  },
+  "routerCoverage": {
+    "totalQuestionTypes": 24,
+    "handledByRouter": 24,
+    "fallbackToCanned": 0,
+    "percentage": "100%"
+  }
+}
