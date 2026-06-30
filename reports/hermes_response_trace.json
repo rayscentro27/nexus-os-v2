@@ -1,0 +1,74 @@
+{
+  "generated": "2025-07-01",
+  "entryPoints": [
+    {
+      "id": "buildHermesResponse",
+      "file": "src/data/hermesWorkroomData.js",
+      "status": "active",
+      "usedBy": ["HermesChatPanel", "HermesInlineDrawer", "NexusAdminUI.askHermes()"],
+      "capabilities": ["regex_intent_matching", "canned_responses", "page_context_parameter"],
+      "missing": ["date_time_context", "entity_resolution", "memory", "clarification", "learning"]
+    },
+    {
+      "id": "hermesAnswer",
+      "file": "src/admin/NexusAdminUI.jsx",
+      "status": "active",
+      "usedBy": ["HermesCard", "HermesQuickPanel_inline"],
+      "capabilities": ["regex_intent_matching", "json_snapshot"],
+      "missing": ["date_time_context", "entity_resolution", "memory", "clarification", "learning", "page_context"]
+    },
+    {
+      "id": "hermesChat",
+      "file": "src/components/sections.tsx",
+      "status": "unused",
+      "usedBy": [],
+      "capabilities": ["real_llm_via_supabase_edge_function"],
+      "missing": ["wired_to_active_ui"]
+    }
+  ],
+  "routerArchitecture": {
+    "entryPoint": "src/lib/hermesResponseRouter.ts",
+    "questionTypes": [
+      "greeting",
+      "date_time",
+      "scheduling",
+      "page_question",
+      "entity_question",
+      "comparison",
+      "memory_history",
+      "supabase_query",
+      "backend_query",
+      "strategy_analysis",
+      "execution",
+      "learning_instruction",
+      "unclear"
+    ],
+    "components": [
+      "hermesTimeContext.ts",
+      "hermesContextBridge.ts",
+      "hermesEntityResolver.ts",
+      "hermesActivityJournal.ts",
+      "hermesMemoryQuery.ts",
+      "hermesSourceHints.ts",
+      "hermesSupabaseContextAdapter.ts",
+      "hermesBackendContextAdapter.ts"
+    ]
+  },
+  "sourceTransparency": {
+    "time_context": "Response from browser time/date",
+    "page_context": "Response from loaded page data",
+    "entity_resolution": "Response from entity resolver",
+    "memory": "Response from activity journal",
+    "supabase_stub": "Honest stub for Supabase",
+    "backend_stub": "Honest stub for backend/model",
+    "learning": "Response from stored instructions",
+    "honest_fallback": "Honest 'I don't know' with capabilities list"
+  },
+  "missingItems": [
+    "supabase_adapter_wired",
+    "backend_adapter_wired",
+    "web_search_integration",
+    "automatic_activity_recording",
+    "complex_entity_resolution"
+  ]
+}

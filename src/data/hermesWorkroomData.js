@@ -1,5 +1,7 @@
 import { hermesContext } from './hermesContextData';
 import { getPageContext } from './hermesPageContext';
+import { hermesResponseRouter } from '../lib/hermesResponseRouter';
+import { recordActivity } from '../lib/hermesActivityJournal';
 
 export const hermesQuickPrompts = [
   'What should I do next?',
@@ -337,13 +339,56 @@ function respondConversation(text, pageCtx) {
 }
 
 /* ── Main response builder ── */
-export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', pageId = null) {
+export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', pageId = null, extraContext = {}) {
   const text = message.trim();
   const intent = detectIntent(text);
   const pageCtx = pageId ? getPageContext(pageId) : null;
   let response;
   let queued = false;
 
+  // Try the shared router for question types it handles better
+  const routerResult = hermesResponseRouter({
+    message: text,
+    pageId: pageId || undefined,
+    route: extraContext.route,
+    activeTab: extraContext.activeTab,
+    selectedItem: extraContext.selectedItem,
+    visibleItems: extraContext.visibleItems,
+    availableActions: extraContext.availableActions,
+  });
+
+  // Use router response for types it handles well (date/time, entity, memory, scheduling, learning)
+  const routerHandledTypes = ['date_time', 'scheduling', 'entity_question', 'comparison', 'memory_history', 'learning_instruction'];
+  if (routerHandledTypes.includes(routerResult.questionType)) {
+    // Record activity
+    recordActivity({
+      source: 'hermes_chat',
+      pageId: pageId || 'unknown',
+      route: extraContext.route || `/#${pageId || 'unknown'}`,
+      eventType: 'hermes_message',
+      title: `Hermes response to: ${text.slice(0, 80)}`,
+      summary: `Router handled: ${routerResult.questionType}`,
+      entities: [routerResult.questionType],
+      status: 'completed',
+      importance: 'low',
+      dataSource: routerResult.source,
+      safetyLevel: 'safe',
+    });
+    return {
+      intent: routerResult.questionType,
+      specialist,
+      text: routerResult.text,
+      queued: false,
+      context: hermesContext,
+      pageContext: pageCtx,
+      source: routerResult.source,
+      confidence: routerResult.confidence,
+      needsClarification: routerResult.needsClarification,
+      clarificationQuestion: routerResult.clarificationQuestion,
+    };
+  }
+
+  // Fall back to existing canned response system for other types
   switch (intent.type) {
     case 'greeting':
       response = respondGreeting(pageCtx);
@@ -397,5 +442,20 @@ export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', 
       break;
   }
 
-  return { intent: intent.type, specialist, text: response, queued, context: hermesContext, pageContext: pageCtx };
+  // Record activity
+  recordActivity({
+    source: 'hermes_chat',
+    pageId: pageId || 'unknown',
+    route: extraContext.route || `/#${pageId || 'unknown'}`,
+    eventType: 'hermes_message',
+    title: `Hermes response to: ${text.slice(0, 80)}`,
+    summary: `Intent: ${intent.type}`,
+    entities: [intent.type],
+    status: 'completed',
+    importance: 'low',
+    dataSource: 'local_static',
+    safetyLevel: 'safe',
+  });
+
+  return { intent: intent.type, specialist, text: response, queued, context: hermesContext, pageContext: pageCtx, source: 'local_static', confidence: 'medium' };
 }
