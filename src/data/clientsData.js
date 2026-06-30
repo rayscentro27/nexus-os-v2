@@ -1,0 +1,120 @@
+import { clientDataMode } from './clientDataMode'
+
+const DEMO_TENANT_ID = 'tenant_demo_goclear'
+
+export const clientStages = [
+  { id: 'signup', label: 'Signup', order: 1, description: 'Client registered and profile created' },
+  { id: 'credit_report', label: 'Credit Report', order: 2, description: 'Credit report uploaded or connected' },
+  { id: 'business_setup', label: 'Business Setup', order: 3, description: 'Business profile and entity verified' },
+  { id: 'document_prep', label: 'Document Prep', order: 4, description: 'Required documents collected and reviewed' },
+  { id: 'funding_ready', label: 'Funding Ready', order: 5, description: 'Readiness verified, cleared for funding path' },
+]
+
+export const clientsList = [
+  {
+    id: 'client_demo_julius',
+    name: 'Julius Erving',
+    email: 'julius.demo@goclear.test',
+    status: 'active',
+    stage: 'document_prep',
+    onboardingReadiness: 72,
+    paymentStatus: 'test_charge_pending',
+    dashboardLiveFlag: false,
+    createdAt: '2026-06-28T14:30:00Z',
+    updatedAt: '2026-06-30T08:15:00Z',
+    membershipTier: 'GoClear Readiness Membership',
+    subscriptionStatus: 'Active Demo',
+    advisorName: 'GoClear Review Team',
+    overallStatus: 'Building Readiness',
+    readinessScores: {
+      creditRepairProgress: 48,
+      creditProfileReadiness: 65,
+      businessProfileReadiness: 58,
+      fundingReadiness: 62,
+      businessOpportunityScore: 74,
+    },
+    documents: {
+      requiredDocuments: [
+        'Government ID (redacted)',
+        'Address proof',
+        'Formation documents',
+        'EIN confirmation',
+        'Three months bank statements',
+        'Revenue summary',
+      ],
+      uploadedDocuments: ['Formation documents', 'EIN confirmation'],
+      missingDocuments: ['Government ID (redacted)', 'Address proof', 'Three months bank statements', 'Revenue summary'],
+      underReviewDocuments: [],
+      reviewStatuses: ['missing', 'uploaded', 'under_review', 'approved', 'needs_replacement'],
+    },
+    tasks: [
+      {
+        id: 'client-task-1',
+        category: 'documents',
+        title: 'Upload current address proof',
+        dueDate: '2026-07-05',
+        priority: 'high',
+        status: 'open',
+        createdAt: '2026-06-29T00:00:00Z',
+      },
+      {
+        id: 'client-task-2',
+        category: 'documents',
+        title: 'Upload redacted government ID',
+        dueDate: '2026-07-07',
+        priority: 'high',
+        status: 'open',
+        createdAt: '2026-06-29T00:00:00Z',
+      },
+      {
+        id: 'client-task-3',
+        category: 'credit_profile_readiness',
+        title: 'Review utilization action plan',
+        dueDate: '2026-07-10',
+        priority: 'medium',
+        status: 'in_progress',
+        createdAt: '2026-06-28T00:00:00Z',
+      },
+      {
+        id: 'client-task-4',
+        category: 'business_profile_readiness',
+        title: 'Complete professional domain email',
+        dueDate: '2026-07-12',
+        priority: 'medium',
+        status: 'open',
+        createdAt: '2026-06-28T00:00:00Z',
+      },
+    ],
+    messages: [
+      {
+        id: 'client-msg-1',
+        title: 'Welcome to GoClear',
+        body: 'Your readiness membership is active. Start by uploading your address proof and government ID.',
+        date: '2026-06-28T14:30:00Z',
+        type: 'system',
+        read: true,
+      },
+      {
+        id: 'client-msg-2',
+        title: 'Document checklist updated',
+        body: 'We need your current address proof and revenue summary before advancing to the next stage.',
+        date: '2026-06-29T10:00:00Z',
+        type: 'advisor',
+        read: false,
+      },
+    ],
+    reports: [
+      {
+        id: 'client-report-1',
+        title: 'Initial Readiness Assessment',
+        type: 'readiness_summary',
+        generatedAt: '2026-06-28T15:00:00Z',
+        scores: {
+          creditProfileReadiness: 65,
+          businessProfileReadiness: 58,
+          fundingReadiness: 62,
+        },
+      },
+    ],
+  },
+]

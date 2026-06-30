@@ -12,6 +12,12 @@ import RevenueDashboard from '../components/RevenueDashboard'
 import CommunicationDashboard from '../components/CommunicationDashboard'
 import MarketingDraftCenter from '../components/MarketingDraftCenter'
 import ResearchMoneyPipeline from '../components/ResearchMoneyPipeline'
+import ClientsPanel from '../components/ClientsPanel'
+import CreditFundingPanel from '../components/CreditFundingPanel'
+import BusinessOpportunitiesPanel from '../components/BusinessOpportunitiesPanel'
+import ResearchEnginePanel from '../components/ResearchEnginePanel'
+import MonetizationPanel from '../components/MonetizationPanel'
+import MarketingDraftsPanel from '../components/MarketingDraftsPanel'
 import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
@@ -1416,21 +1422,21 @@ export default function NexusAdminUI({ email }) {
     ops: <Workspace id="ops" title="Ops & Improvements" sub="System Improvement Room" kind="ops" type="ops" layoutClass="wide-left" />,
     jobs: <Workspace id="jobs" title="Agent Jobs" sub="Automation Workforce Room" kind="jobs" type="jobs" />,
     source: <Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" />,
-    opportunity: <Workspace id="opportunity" title="Opportunity Lab" sub="Revenue / Opportunity Room" kind="opportunity" type="opportunity" layoutClass="opportunity-layout" />,
+    opportunity: <SimplePage title="Business Opportunities" sub="26 Scored Opportunities · Revenue Potential · Approval-Gated Conversion"><BusinessOpportunitiesPanel onAskHermes={askHermes} /></SimplePage>,
     health: <SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage>,
     hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom /></SimplePage>,
     rayreview: <SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage>,
     reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter /></SimplePage>,
-    clients: <ClientWorkflowPage />,
-    research: <SimplePage title="Research Engine" sub="Sources · Scores · Research-to-Money"><ResearchMoneyPipeline /></SimplePage>,
-    marketing: <SimplePage title="Marketing Drafts" sub="Communication · Content · Approval-Gated Publishing"><MarketingDraftCenter /><div style={{ marginTop: 16 }}><CommunicationDashboard /></div></SimplePage>,
+    clients: <SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage>,
+    research: <SimplePage title="Research Engine" sub="50 Candidates · Scores · Lanes · Approval-Gated Conversion"><ResearchEnginePanel onAskHermes={askHermes} /></SimplePage>,
+    marketing: <SimplePage title="Marketing Drafts" sub="Social · Video · Newsletter · Landing · Lead Magnet · Approval-Gated"><MarketingDraftsPanel onAskHermes={askHermes} /></SimplePage>,
     automation: <SimplePage title="Automation Scheduler" sub="Safe Internal Cycles · Schedule Visibility"><AutomationSchedulerPanel onOpenReport={() => navigate('reports')} onReview={() => navigate('rayreview')} /></SimplePage>,
     goclear: <GoClearPage />,
     clientworkflow: <ClientWorkflowPage />,
-    credit: <CreditSpecialistPage />,
+    credit: <SimplePage title="Credit & Funding" sub="Readiness Scores · Documents · Disputes · Bankability · Approval-Gated"><CreditFundingPanel onAskHermes={askHermes} /></SimplePage>,
     business: <BusinessSetupPage />,
     funding: <FundingReadinessPage />,
-    monetization: <SimplePage title="Monetization" sub="Offers · Revenue Path · Approval Gates"><RevenueDashboard /></SimplePage>,
+    monetization: <SimplePage title="Monetization" sub="9 Offers · Revenue Streams · Stripe Status · Approval-Gated"><MonetizationPanel onAskHermes={askHermes} /></SimplePage>,
     partners: <PartnerOffersPage />,
     cli: <CLIControlPage />,
     proof: <ProofLedgerPage />,
