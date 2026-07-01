@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-07-01T14:07:32.533155+00:00",
+  "verification_type": "post_seed_row_count",
+  "tables": {
+    "task_requests": {
+      "count": 62,
+      "status": "ok"
+    },
+    "business_opportunities": {
+      "count": 26,
+      "status": "ok"
+    },
+    "monetization_opportunities": {
+      "count": 11,
+      "status": "ok"
+    },
+    "client_profiles": {
+      "count": 1,
+      "status": "ok"
+    },
+    "research_sources": {
+      "count": 52,
+      "status": "ok"
+    },
+    "nexus_events": {
+      "count": 580,
+      "status": "ok"
+    }
+  },
+  "total_rows": 732
+}

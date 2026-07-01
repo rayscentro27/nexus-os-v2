@@ -34,6 +34,23 @@ STATIC_DIR = ROOT / "src" / "data"
 DEFAULT_TENANT = "tenant_demo_goclear"
 
 
+def normalize_timestamp(ts: Any) -> str:
+    """Normalize a JS ISO timestamp to PostgreSQL-compatible timestamptz.
+    PostgreSQL accepts: '2026-06-28 10:00:00+00' or '2026-06-28T10:00:00Z'
+    Avoids double-colon issues from Python datetime re-serialization.
+    """
+    if not ts:
+        return now()
+    ts = str(ts).strip()
+    # If already has timezone offset, keep as-is
+    if re.match(r'.+[+-]\d{2}(:\d{2})?$', ts):
+        return ts
+    # Replace trailing Z with standard offset
+    if ts.endswith("Z"):
+        return ts[:-1] + "+0000"
+    return ts
+
+
 # ─── JS File Parser (via Node.js) ───
 
 def parse_js_export(file_path: Path, export_name: str) -> Any:
@@ -95,7 +112,7 @@ def map_business_opportunity(opp: dict) -> dict:
     """Map businessOpportunitiesData.js to business_opportunities row."""
     return {
         "id": str(uuid.uuid4()),
-        "created_at": opp.get("createdAt", now()),
+        # created_at uses PostgreSQL default now()
         "title": opp.get("title", ""),
         "summary": (opp.get("reason", "") or "")[:500],
         "score": opp.get("score"),
@@ -452,10 +469,72 @@ def build_seed_data(execute: bool = False) -> dict:
             return results
 
         results["execution"] = {"status": "executing", "tables_seeded": []}
+
+        def get_existing_titles(client, table: str) -> set:
+            """Fetch existing titles/labels from a table for deduplication."""
+            try:
+                if table == "task_requests":
+                    resp = client.table(table).select("payload").eq("task_type", "ray_review_item").execute()
+                    titles = set()
+                    for row in (resp.data or []):
+                        try:
+                            p = json.loads(row.get("payload", "{}"))
+                            t = p.get("title", "").lower().strip()
+                            if t:
+                                titles.add(t)
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+                    return titles
+                elif table == "business_opportunities":
+                    resp = client.table(table).select("title").execute()
+                    return {(r.get("title", "") or "").lower().strip() for r in (resp.data or [])}
+                elif table == "monetization_opportunities":
+                    resp = client.table(table).select("title").execute()
+                    return {(r.get("title", "") or "").lower().strip() for r in (resp.data or [])}
+                elif table == "client_profiles":
+                    resp = client.table(table).select("client_label").execute()
+                    return {(r.get("client_label", "") or "").lower().strip() for r in (resp.data or [])}
+                elif table == "research_sources":
+                    resp = client.table(table).select("title").execute()
+                    return {(r.get("title", "") or "").lower().strip() for r in (resp.data or [])}
+                return set()
+            except Exception as e:
+                print(f"  WARN: Could not fetch existing titles from {table}: {e}")
+                return set()
+
+        def filter_existing(rows: list, existing: set, title_key_fn) -> list:
+            """Remove rows whose title already exists in the target table."""
+            filtered = []
+            skipped = 0
+            for row in rows:
+                title = title_key_fn(row)
+                if title.lower().strip() in existing:
+                    skipped += 1
+                else:
+                    filtered.append(row)
+            if skipped:
+                print(f"  Skipped {skipped} rows already in {table}")
+            return filtered
+
         for table_info in results["tables"]:
             table = table_info["table"]
             rows = table_info.get("_rows", [])
             if not rows:
+                continue
+
+            # Deduplicate against existing rows
+            existing = get_existing_titles(client, table)
+            if existing:
+                if table == "task_requests":
+                    rows = filter_existing(rows, existing, lambda r: json.loads(r.get("payload", "{}")).get("title", ""))
+                elif table == "client_profiles":
+                    rows = filter_existing(rows, existing, lambda r: r.get("client_label", ""))
+                else:
+                    rows = filter_existing(rows, existing, lambda r: r.get("title", ""))
+
+            if not rows:
+                print(f"  All rows already exist in {table}, skipping")
+                results["execution"]["tables_seeded"].append({"table": table, "inserted": 0, "attempted": 0, "skipped_existing": len(table_info.get("_rows", []))})
                 continue
 
             # Batch insert (50 at a time)

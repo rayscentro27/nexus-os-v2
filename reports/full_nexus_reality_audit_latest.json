@@ -1,0 +1,232 @@
+{
+  "generated_at": "2026-07-01T07:15:00.000Z",
+  "audit_version": "1.0",
+  "supabase_live_data": {
+    "task_requests": {
+      "table": "task_requests",
+      "view_filter": "ray_review_item",
+      "row_count": 62,
+      "live_read": true,
+      "live_write": true,
+      "rls_enabled": true,
+      "rls_function": "nexus_is_active_admin()"
+    },
+    "business_opportunities": {
+      "table": "business_opportunities",
+      "row_count": 26,
+      "live_read": true,
+      "live_write": true,
+      "rls_enabled": true,
+      "rls_function": "nexus_is_active_admin()"
+    },
+    "monetization_opportunities": {
+      "table": "monetization_opportunities",
+      "row_count": 11,
+      "live_read": true,
+      "live_write": true,
+      "rls_enabled": true,
+      "rls_function": "nexus_is_active_admin()"
+    },
+    "client_profiles": {
+      "table": "client_profiles",
+      "row_count": 1,
+      "live_read": true,
+      "live_write": true,
+      "rls_enabled": true,
+      "rls_function": "nexus_is_active_admin()"
+    },
+    "research_sources": {
+      "table": "research_sources",
+      "row_count": 52,
+      "live_read": true,
+      "live_write": true,
+      "access_method": "service_role",
+      "rls_enabled": true,
+      "rls_condition": "admin_users.active=true"
+    },
+    "nexus_events": {
+      "table": "nexus_events",
+      "row_count": 580,
+      "live_read": true,
+      "live_write": true
+    }
+  },
+  "ui_sections": {
+    "ray_review": {
+      "status": "LIVE",
+      "data_source": "task_requests",
+      "source_label": "Live Supabase",
+      "row_count": 62
+    },
+    "business_opportunities": {
+      "status": "LIVE",
+      "data_source": "business_opportunities",
+      "row_count": 26
+    },
+    "monetization": {
+      "status": "LIVE",
+      "data_source": "monetization_opportunities",
+      "row_count": 11
+    },
+    "clients": {
+      "status": "LIVE",
+      "data_source": "client_profiles",
+      "row_count": 1
+    },
+    "research_engine": {
+      "status": "LIVE",
+      "data_source": "research_sources",
+      "row_count": 52
+    },
+    "trading_lab": {
+      "status": "STATIC",
+      "data_source": "inline in NexusAdminUI",
+      "supabase_table": null
+    },
+    "system_health": {
+      "status": "STATIC",
+      "data_source": "systemHealthData.js"
+    },
+    "automation": {
+      "status": "STATIC",
+      "data_source": "inline data"
+    },
+    "reports": {
+      "status": "STATIC",
+      "data_source": "reportRegistryData.js"
+    },
+    "settings": {
+      "status": "STATIC",
+      "data_source": null,
+      "note": "no data file"
+    },
+    "cli": {
+      "status": "STATIC",
+      "data_source": null,
+      "note": "no data file"
+    },
+    "credit_funding": {
+      "status": "STATIC",
+      "data_source": "creditFundingData.js"
+    }
+  },
+  "background_processes": {
+    "launchd_daily": {
+      "schedule": "8AM daily",
+      "status": "installed_and_loaded",
+      "writes": "local JSON",
+      "proven_recent_execution": true
+    },
+    "launchd_evening": {
+      "schedule": "6PM daily",
+      "status": "installed_and_loaded",
+      "writes": "local JSON",
+      "proven_recent_execution": true
+    },
+    "launchd_continuous": {
+      "schedule": "every 30 minutes",
+      "status": "installed_and_loaded",
+      "writes": "local JSON",
+      "proven_recent_execution": true
+    },
+    "research_scoring": {
+      "runs_via": "launchd continuous loop",
+      "status": "active",
+      "proven_recent_execution": true
+    }
+  },
+  "youtube_research": {
+    "scheduler_exists": true,
+    "proven_live": false,
+    "note": "No recent fetch proof. Scheduler exists but not confirmed running."
+  },
+  "hermes_capabilities": {
+    "live_supabase_read": {
+      "status": true,
+      "condition": "when authenticated"
+    },
+    "live_web_search": {
+      "status": false,
+      "reason": "VITE_HERMES_SEARCH_ENABLED not set"
+    },
+    "live_model": {
+      "status": false,
+      "reason": "LLM provider not configured in Edge Function"
+    },
+    "report_snapshot_access": {
+      "status": true,
+      "method": "reads local report JSON"
+    },
+    "page_context": {
+      "status": true,
+      "method": "reads from loaded components"
+    },
+    "source_reasoning": {
+      "status": true,
+      "module": "hermesSourceReasoner.ts"
+    },
+    "activity_memory": {
+      "status": "limited",
+      "method": "localStorage only"
+    },
+    "background_process_visibility": {
+      "status": false,
+      "reason": "no process monitoring"
+    }
+  },
+  "fake_static_claims": [
+    {
+      "claim": "Running safely in Command Center",
+      "truth": "Partially true — launchd jobs run, but some UI claims 'running' without process proof"
+    },
+    {
+      "claim": "Oanda practice read checks",
+      "truth": "launchd loads script, no proof of recent execution"
+    },
+    {
+      "claim": "Vibe paper dry-run",
+      "truth": "No proof of recent execution"
+    },
+    {
+      "claim": "NotebookLM watched folder",
+      "truth": "No proof of active monitoring"
+    }
+  ],
+  "summary": {
+    "total_live_sections": 5,
+    "total_static_sections": 7,
+    "total_supabase_rows": 732,
+    "total_background_jobs": 4,
+    "jobs_running": 4,
+    "jobs_not_running": 0,
+    "youtube_research_status": "not_proven",
+    "hermes_can_report_on": [
+      "Supabase table row counts",
+      "UI section statuses",
+      "Local report file contents",
+      "Launchd job schedules",
+      "Static data file contents"
+    ],
+    "hermes_cannot_see": [
+      "Live web search results",
+      "LLM-powered analysis",
+      "Background process runtime logs",
+      "YouTube research fetch activity",
+      "Oanda execution results",
+      "NotebookLM folder activity"
+    ],
+    "blockers": [
+      "VITE_HERMES_SEARCH_ENABLED not set — no live web search",
+      "LLM provider not configured — no live model in Edge Function",
+      "YouTube research scheduler unproven — no fetch evidence",
+      "Oanda and NotebookLM claims lack execution proof"
+    ],
+    "next_actions": [
+      "Enable VITE_HERMES_SEARCH_ENABLED for live web search",
+      "Configure LLM provider in Edge Function for live model",
+      "Add execution logging to YouTube research scheduler",
+      "Add proof-of-execution tracking to Oanda and NotebookLM scripts",
+      "Migrate remaining STATIC sections to Supabase-backed live data"
+    ]
+  }
+}

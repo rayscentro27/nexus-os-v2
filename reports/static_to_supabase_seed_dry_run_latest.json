@@ -1,8 +1,8 @@
 {
   "ok": true,
-  "generated_at": "2026-07-01T13:50:30.810104+00:00",
-  "status": "dry_run_complete",
-  "mode": "dry_run",
+  "generated_at": "2026-07-01T14:07:07.883669+00:00",
+  "status": "execution_complete",
+  "mode": "live_insert",
   "default_tenant": "tenant_demo_goclear",
   "total_would_insert": 148,
   "total_skipped": 2,
@@ -78,9 +78,47 @@
       "rls_policy": "nexus_is_active_admin()"
     }
   ],
-  "execution": null,
-  "live_insertion_performed": false,
-  "service_role_used": false,
+  "execution": {
+    "status": "completed",
+    "tables_seeded": [
+      {
+        "table": "task_requests",
+        "inserted": 0,
+        "attempted": 0,
+        "skipped_existing": 62
+      },
+      {
+        "table": "business_opportunities",
+        "inserted": 26,
+        "attempted": 26
+      },
+      {
+        "table": "monetization_opportunities",
+        "inserted": 0,
+        "attempted": 0,
+        "skipped_existing": 9
+      },
+      {
+        "table": "client_profiles",
+        "inserted": 0,
+        "attempted": 0,
+        "skipped_existing": 1
+      },
+      {
+        "table": "research_sources",
+        "inserted": 0,
+        "attempted": 0,
+        "skipped_existing": 50
+      },
+      {
+        "table": "nexus_events",
+        "inserted": 1,
+        "attempted": 1
+      }
+    ]
+  },
+  "live_insertion_performed": true,
+  "service_role_used": true,
   "external_action_performed": false,
-  "next_required_action": "Review dry-run report. If approved, run with --execute flag."
+  "next_required_action": "Verify row counts in Supabase."
 }

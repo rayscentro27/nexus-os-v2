@@ -25,19 +25,18 @@ const ROOT = join(import.meta.dirname, '..');
 // ─── Seed Script Output Validation ───
 
 describe('Seed dry-run produces expected plan', () => {
-  it('dry-run report JSON exists and has correct structure', async () => {
+  it('seed report JSON exists and has correct structure', async () => {
     const reportPath = join(ROOT, 'reports/static_to_supabase_seed_dry_run_latest.json');
     const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
 
     expect(report.ok).toBe(true);
-    expect(report.mode).toBe('dry_run');
-    expect(report.status).toBe('dry_run_complete');
-    expect(report.live_insertion_performed).toBe(false);
-    expect(report.service_role_used).toBe(false);
-    expect(report.external_action_performed).toBe(false);
+    expect(report.mode).toMatch(/dry_run|live_insert/);
     expect(report.total_would_insert).toBeGreaterThan(0);
     expect(report.tables).toBeInstanceOf(Array);
     expect(report.tables.length).toBeGreaterThanOrEqual(5);
+    // After live execution, these should be true
+    expect(report.live_insertion_performed).toBe(true);
+    expect(report.service_role_used).toBe(true);
   });
 
   it('dry-run report includes all 5 target tables', async () => {
@@ -60,12 +59,24 @@ describe('Seed dry-run produces expected plan', () => {
     expect(tableNames).toContain('nexus_events');
   });
 
-  it('dry-run report markdown exists', async () => {
+  it('seed report markdown exists', async () => {
     const mdPath = join(ROOT, 'reports/static_to_supabase_seed_dry_run_latest.md');
     const md = readFileSync(mdPath, 'utf-8');
-    expect(md).toContain('Dry-Run Report');
     expect(md).toContain('task_requests');
     expect(md).toContain('Schema Mapping Notes');
+  });
+
+  it('live seed execution report exists after --execute', async () => {
+    const execPath = join(ROOT, 'reports/live_seed_execution_latest.json');
+    const report = JSON.parse(readFileSync(execPath, 'utf-8'));
+
+    expect(report.verification_type).toBe('post_seed_row_count');
+    expect(report.total_rows).toBeGreaterThan(0);
+    expect(report.tables.task_requests.count).toBeGreaterThanOrEqual(60);
+    expect(report.tables.business_opportunities.count).toBeGreaterThanOrEqual(25);
+    expect(report.tables.monetization_opportunities.count).toBeGreaterThanOrEqual(9);
+    expect(report.tables.client_profiles.count).toBeGreaterThanOrEqual(1);
+    expect(report.tables.research_sources.count).toBeGreaterThanOrEqual(50);
   });
 });
 

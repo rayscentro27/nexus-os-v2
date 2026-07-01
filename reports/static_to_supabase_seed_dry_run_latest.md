@@ -1,7 +1,7 @@
-# Static-to-Supabase Seed Dry-Run Report
+# Static-to-Supabase Seed Live Insert
 
-**Date:** 2026-07-01T13:50:30.811241+00:00
-**Mode:** DRY RUN
+**Date:** 2026-07-01T14:07:07.884526+00:00
+**Mode:** LIVE INSERT
 
 ---
 
@@ -72,3 +72,14 @@ the specific columns the original seed plan assumed. This script correctly maps:
 - Would insert: 50
 - Skipped: 0
 - RLS policy: admin_users.active = true (no anon INSERT)
+
+---
+
+## Execution Result
+
+- `task_requests`: inserted 0/0
+- `business_opportunities`: inserted 26/26
+- `monetization_opportunities`: inserted 0/0
+- `client_profiles`: inserted 0/0
+- `research_sources`: inserted 0/0
+- `nexus_events`: inserted 1/1

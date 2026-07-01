@@ -1,0 +1,81 @@
+{
+  "generated_at": "2026-07-01T14:10:00+00:00",
+  "version": "1.0",
+  "live_sections": {
+    "ray_review": { "table": "task_requests", "row_count": 62, "source": "live_supabase", "hermes_readable": true },
+    "business_opportunities": { "table": "business_opportunities", "row_count": 26, "source": "live_supabase", "hermes_readable": true },
+    "monetization": { "table": "monetization_opportunities", "row_count": 11, "source": "live_supabase", "hermes_readable": true },
+    "clients": { "table": "client_profiles", "row_count": 1, "source": "live_supabase", "hermes_readable": true },
+    "research_engine": { "table": "research_sources", "row_count": 52, "source": "live_supabase", "hermes_readable": true }
+  },
+  "static_sections": {
+    "trading_lab": { "source": "inline_static", "hermes_readable": false },
+    "system_health": { "source": "static_data_js", "hermes_readable": false },
+    "automation": { "source": "inline_static", "hermes_readable": false },
+    "reports": { "source": "static_data_js", "hermes_readable": false },
+    "settings": { "source": "none", "hermes_readable": false },
+    "cli": { "source": "none", "hermes_readable": false },
+    "credit_funding": { "source": "static_data_js", "hermes_readable": false }
+  },
+  "background_jobs": {
+    "launchd_daily": { "installed": true, "loaded": true, "running": true, "cadence": "daily_8am", "writes_supabase": false, "status": "real_running" },
+    "launchd_evening": { "installed": true, "loaded": true, "running": true, "cadence": "daily_6pm", "writes_supabase": false, "status": "real_running" },
+    "launchd_continuous": { "installed": true, "loaded": true, "running": true, "cadence": "every_30min", "writes_supabase": false, "status": "real_running" },
+    "youtube_research": { "installed": true, "loaded": false, "running": false, "cadence": "unknown", "writes_supabase": false, "status": "not_proven" }
+  },
+  "youtube_research": {
+    "status": "not_proven",
+    "installed": true,
+    "scheduler_loaded": false,
+    "last_fetch": null,
+    "channels_watched": [],
+    "transcripts_available": false,
+    "supabase_writes": 0,
+    "errors": ["No proof of recent YouTube metadata fetch", "No transcript extraction proof"]
+  },
+  "research_engine": {
+    "frontend_source": "live_supabase",
+    "server_scripts": true,
+    "launchd_status": "running",
+    "last_local_report": "2026-07-01",
+    "last_supabase_write": "2026-07-01",
+    "row_count": 52,
+    "dedupe_logic": "title-based",
+    "hermes_visible": true
+  },
+  "supabase_writes": {
+    "last_24h": 27,
+    "last_7d": 149,
+    "tables_written": ["task_requests", "business_opportunities", "monetization_opportunities", "client_profiles", "research_sources", "nexus_events"]
+  },
+  "ray_review": {
+    "pending_count": 62,
+    "live_source": true,
+    "persistence_verified": true,
+    "approval_flow": "Supabase update + localStorage fallback"
+  },
+  "hermes_capabilities": {
+    "live_supabase_read": true,
+    "live_web_search": false,
+    "live_model": false,
+    "report_snapshot_access": true,
+    "page_context": true,
+    "source_reasoning": true,
+    "activity_memory": "localStorage_only",
+    "background_process_visibility": false
+  },
+  "blockers": [
+    "YouTube research not proven live — no recent fetch proof",
+    "Hermes live model not configured — requires LLM provider in Edge Function secrets",
+    "Hermes web search not configured — requires VITE_HERMES_SEARCH_ENABLED=true",
+    "Background processes write local JSON only — Supabase writes conditional on sb.configured()",
+    "Trading Lab, System Health, Automation, Reports, Settings, CLI still use static data"
+  ],
+  "next_actions": [
+    "Verify YouTube research scheduler loads and runs",
+    "Configure Hermes live model (LLM provider)",
+    "Enable Hermes web search (VITE_HERMES_SEARCH_ENABLED)",
+    "Seed System Health and Reports tables if desired",
+    "Wire remaining static sections to Supabase"
+  ]
+}
