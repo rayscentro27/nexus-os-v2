@@ -1,0 +1,86 @@
+{
+  "ok": true,
+  "generated_at": "2026-07-01T13:50:30.810104+00:00",
+  "status": "dry_run_complete",
+  "mode": "dry_run",
+  "default_tenant": "tenant_demo_goclear",
+  "total_would_insert": 148,
+  "total_skipped": 2,
+  "tables": [
+    {
+      "table": "task_requests",
+      "static_source": "rayReviewCards",
+      "static_file": "src/data/rayReviewData.js",
+      "parsed_count": 64,
+      "would_insert": 62,
+      "skipped": 2,
+      "skip_reasons": [
+        "duplicate_title",
+        "duplicate_title"
+      ],
+      "filter": "task_type = 'ray_review_item'",
+      "requires_service_role": false,
+      "rls_policy": "nexus_is_active_admin()"
+    },
+    {
+      "table": "business_opportunities",
+      "static_source": "businessOpportunities",
+      "static_file": "src/data/businessOpportunitiesData.js",
+      "parsed_count": 26,
+      "would_insert": 26,
+      "skipped": 0,
+      "skip_reasons": [],
+      "requires_service_role": false,
+      "rls_policy": "nexus_is_active_admin()"
+    },
+    {
+      "table": "monetization_opportunities",
+      "static_source": "offers",
+      "static_file": "src/data/monetizationData.js",
+      "parsed_count": 9,
+      "would_insert": 9,
+      "skipped": 0,
+      "skip_reasons": [],
+      "requires_service_role": false,
+      "rls_policy": "nexus_is_active_admin()"
+    },
+    {
+      "table": "client_profiles",
+      "static_source": "clientsList",
+      "static_file": "src/data/clientsData.js",
+      "parsed_count": 1,
+      "would_insert": 1,
+      "skipped": 0,
+      "skip_reasons": [],
+      "requires_service_role": false,
+      "rls_policy": "nexus_is_active_admin()"
+    },
+    {
+      "table": "research_sources",
+      "static_source": "researchCandidates",
+      "static_file": "src/data/researchEngineData.js",
+      "parsed_count": 50,
+      "would_insert": 50,
+      "skipped": 0,
+      "skip_reasons": [],
+      "requires_service_role": true,
+      "rls_policy": "admin_users.active = true (no anon INSERT)"
+    },
+    {
+      "table": "nexus_events",
+      "static_source": "seed_receipt",
+      "static_file": "generated",
+      "parsed_count": 1,
+      "would_insert": 1,
+      "skipped": 0,
+      "skip_reasons": [],
+      "requires_service_role": false,
+      "rls_policy": "nexus_is_active_admin()"
+    }
+  ],
+  "execution": null,
+  "live_insertion_performed": false,
+  "service_role_used": false,
+  "external_action_performed": false,
+  "next_required_action": "Review dry-run report. If approved, run with --execute flag."
+}
