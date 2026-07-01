@@ -7,7 +7,7 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { orchestrateHermes } from '../lib/hermesOrchestrator';
 import { hermesModelChat } from '../lib/hermesProviders';
 import { getModelAvailability } from '../lib/hermesModelRoutingPolicy';
-import { getRecentUsageSummary, getModelActivityAnswer } from '../lib/hermesModelUsageLedger';
+import { getRecentUsageSummary, getModelActivityAnswer, getUsageEntries } from '../lib/hermesModelUsageLedger';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -43,19 +43,33 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
 
     // Check for model status questions — answer directly from local data
     const lower = clean.toLowerCase();
-    if (/\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model)\b/i.test(lower)) {
+    if (/\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model|what did that model call cost)\b/i.test(lower)) {
       const avail = getModelAvailability();
+      const recentEntries = getUsageEntries().slice(-5);
+      const lastModelCall = recentEntries.filter(e => e.wasModelCalled).pop();
       if (/\b(are you using a live model|did you use a model)\b/i.test(lower)) {
-        responseText = avail.configured
-          ? `Hermes model is available via ${avail.provider}, but I answer most questions from local context without spending tokens. For this message, I used local context (no model call).`
-          : `No, the Hermes model is not configured yet. All my answers come from local context and Supabase data.`;
+        if (!avail.configured) {
+          responseText = `No, the Hermes model is not configured yet. All my answers come from local context and Supabase data.`;
+        } else if (lastModelCall) {
+          responseText = `Yes, I used the model for the last relevant question. Provider: ${lastModelCall.modelProvider}. Model: ${lastModelCall.modelName}. For simple status questions like this, I use local context to save tokens.`;
+        } else {
+          responseText = `The model gateway is configured (${avail.provider}), but no model call has been made yet in this session. I answer most questions from local context without spending tokens.`;
+        }
       } else if (/\bwhat model did you use\b/i.test(lower)) {
-        responseText = avail.configured
-          ? `Provider: ${avail.provider}. Model: ${avail.model}. For this message, no model was called — local context was sufficient.`
-          : `No model is configured. All answers are from local context.`;
+        if (lastModelCall) {
+          responseText = `Last model call: Provider: ${lastModelCall.modelProvider}. Model: ${lastModelCall.modelName}. Route: ${lastModelCall.route}. Tokens: ~${lastModelCall.estimatedInputTokens} in, ~${lastModelCall.estimatedOutputTokens} out.`;
+        } else {
+          responseText = `No model has been called yet in this session. All answers are from local context.`;
+        }
       } else if (/\bhow are you controlling token|what is using tokens\b/i.test(lower)) {
         const usage = getRecentUsageSummary(3);
         responseText = `Token cost controls:\n• Routing policy decides if a question needs a model (most don't)\n• Context is packed within budget (max 6000 tokens for primary model)\n• Output is capped at 1200 tokens\n• Background jobs default to no model\n• Usage is logged locally\n\nRecent usage:\n${usage}`;
+      } else if (/\bwhat did that model call cost\b/i.test(lower)) {
+        if (lastModelCall) {
+          responseText = `Last model call cost estimate:\n• Provider: ${lastModelCall.modelProvider}\n• Model: ${lastModelCall.modelName}\n• Input tokens: ~${lastModelCall.estimatedInputTokens}\n• Output tokens: ~${lastModelCall.estimatedOutputTokens}\n• Duration: ${lastModelCall.durationMs}ms\n• Route: ${lastModelCall.route}\n\nExact pricing depends on the provider. OpenRouter charges per-token.`;
+        } else {
+          responseText = `No model call has been made yet in this session, so no tokens have been spent.`;
+        }
       } else if (/\bcan you use ollama\b/i.test(lower)) {
         responseText = avail.configured
           ? `Yes, Ollama is available as a fallback provider. The Mac Mini has qwen2.5:0.5b and gemma3:1b installed. Ollama is used as a fallback when OpenRouter is unavailable, not as the primary model.`
@@ -134,11 +148,16 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     setMessages([welcome]);
   }, []);
 
-  const statusLabel = isSupabaseConfigured ? 'Live Supabase + local context' : 'Local context';
+  const statusLabel = isSupabaseConfigured ? 'Live Supabase' : 'Local context';
   const modelAvail = getModelAvailability();
-  const modelStatus = modelAvail.configured ? 'Model available' : 'No model';
+  const modelStatus = modelAvail.configured ? 'Model Ready' : 'No model';
+  const badgeLabel = isSupabaseConfigured && modelAvail.configured
+    ? 'Live Supabase + Model Ready'
+    : isSupabaseConfigured
+    ? 'Live Supabase + Local Context'
+    : 'Local Context';
   return <section className="nxos-chat-panel">
-    <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · {statusLabel} · {modelStatus}</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : statusLabel}</span></header>
+    <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · {badgeLabel}</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : statusLabel}</span></header>
     <div className="nxos-chat-log" aria-live="polite">{messages.map((message) => <HermesMessageBubble key={message.id} message={message} onDelegate={(item) => onPlanCreated?.({ id:`plan-${Date.now()}`,prompt:item.text,specialist:activeSpecialist,status:'queued_local_safe' })} onReview={onReviewCreated} onSpecialist={onSpecialistRequested} />)}<div ref={end} /></div>
     <div className="nxos-chat-compose"><textarea aria-label="Message Hermes" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } }} placeholder="Ask Hermes about Supabase, research, approvals, or anything…" /><button type="button" className="primary" disabled={loading} onClick={() => send()}>{loading ? 'Loading...' : 'Send'}</button></div>
     <div className="nxos-quick-prompts"><span>Try asking</span>{['can you check Supabase', 'what approvals are pending', 'can you search the internet', 'how do we make money today'].map((prompt) => <button type="button" key={prompt} onClick={() => send(prompt)}>{prompt}</button>)}</div>

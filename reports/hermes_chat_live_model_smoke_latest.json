@@ -1,0 +1,81 @@
+{
+  "test": "hermes_chat_live_model_smoke",
+  "timestamp": "2026-07-01T19:18:45Z",
+  "project_ref": "iqjwgpnujbeoyaeuwehj",
+  "test_prompt": "Reply with exactly: HERMES_MODEL_OK",
+  "steps": [
+    {
+      "step": "diagnostic",
+      "result": {
+        "ok": true,
+        "data": {
+          "configured": true,
+          "diagnostic": {
+            "providerConfigured": true,
+            "modelConfigured": true,
+            "fallbackConfigured": true,
+            "apiKeyConfigured": true,
+            "selectedProvider": "openrouter",
+            "selectedModel": "openai/gpt-4o-mini",
+            "selectedFallbackModel": "google/gemini-2.0-flash-001",
+            "allowedProviders": [
+              "openrouter",
+              "gemini",
+              "ollama"
+            ]
+          },
+          "metadata": {
+            "provider": "diagnostic",
+            "model": "diagnostic",
+            "fallbackUsed": false,
+            "source": "hermes-chat",
+            "durationMs": 1
+          }
+        }
+      }
+    },
+    {
+      "step": "model_call",
+      "duration_ms": 1056,
+      "result": {
+        "ok": true,
+        "data": {
+          "configured": true,
+          "reply": "HERMES_MODEL_OK",
+          "metadata": {
+            "provider": "openrouter",
+            "model": "openai/gpt-4o-mini",
+            "fallbackUsed": false,
+            "estimatedInputTokens": 9,
+            "estimatedOutputTokens": 4,
+            "maxOutputTokens": 1200,
+            "source": "hermes-chat",
+            "durationMs": 867
+          }
+        }
+      }
+    }
+  ],
+  "success": true,
+  "diagnostic": {
+    "providerConfigured": true,
+    "modelConfigured": true,
+    "fallbackConfigured": true,
+    "apiKeyConfigured": true,
+    "selectedProvider": "openrouter",
+    "selectedModel": "openai/gpt-4o-mini",
+    "selectedFallbackModel": "google/gemini-2.0-flash-001"
+  },
+  "model_call_duration_ms": 1056,
+  "model_call": {
+    "configured": true,
+    "reply_preview": "HERMES_MODEL_OK",
+    "provider": "openrouter",
+    "model": "openai/gpt-4o-mini",
+    "fallbackUsed": false,
+    "errorCode": null,
+    "source": "hermes-chat",
+    "durationMs": 867
+  },
+  "verification": "PASS \u2014 model responded with expected token"
+}

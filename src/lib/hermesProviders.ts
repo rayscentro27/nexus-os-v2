@@ -32,6 +32,7 @@ export interface ProviderResult {
   modelProvider?: string;
   modelName?: string;
   usageId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 const NOT_CONFIGURED: ProviderResult = { configured: false, text: '' };
@@ -113,7 +114,11 @@ export async function hermesChat(message: string, mode: string, context?: Hermes
       body: { message, mode, context: sanitizeContext(context) },
     });
     if (error || !data || data.configured === false) return NOT_CONFIGURED;
-    return { configured: true, text: String(data.reply ?? '') };
+    return {
+      configured: true,
+      text: String(data.reply ?? ''),
+      metadata: data.metadata,
+    };
   } catch {
     return NOT_CONFIGURED;
   }
@@ -225,10 +230,11 @@ export async function hermesModelChat(
 
     if (!result.configured || !result.text) {
       // Model unavailable — fallback to local
+      const errCode = result.metadata?.errorCode || 'Model returned empty or not configured';
       logModelAttempt({
         route: decision.route,
-        modelProvider: 'unknown',
-        modelName: 'unavailable',
+        modelProvider: String(result.metadata?.provider || 'unknown'),
+        modelName: String(result.metadata?.model || 'unavailable'),
         promptType: decision.route,
         estimatedInputTokens: packet.estimatedInputTokens,
         estimatedOutputTokens: 0,
@@ -237,22 +243,25 @@ export async function hermesModelChat(
         skippedReason: 'Model unavailable',
         fallbackUsed: 'local',
         costEstimateAvailable: false,
-        error: 'Model returned empty or not configured',
+        error: String(errCode).slice(0, 200),
         durationMs,
       });
       return {
         configured: true,
-        text: 'Model unavailable, used local reasoning.',
+        text: `I tried to use hermes-chat through ${result.metadata?.provider || 'the model gateway'}, but the call failed. Safe error: ${errCode}. I used local reasoning instead.`,
         source: 'model_fallback_local',
         route: decision.route,
+        metadata: result.metadata,
       };
     }
 
-    // Success
+    // Success — extract actual model info from metadata
+    const actualProvider = String(result.metadata?.provider || 'supabase_edge_function');
+    const actualModel = String(result.metadata?.model || 'hermes-chat');
     logModelAttempt({
       route: decision.route,
-      modelProvider: 'supabase_edge_function',
-      modelName: 'hermes-chat',
+      modelProvider: actualProvider,
+      modelName: actualModel,
       promptType: decision.route,
       estimatedInputTokens: packet.estimatedInputTokens,
       estimatedOutputTokens: Math.ceil(result.text.length / 4),
@@ -270,8 +279,9 @@ export async function hermesModelChat(
       text: result.text,
       source: 'model',
       route: decision.route,
-      modelProvider: 'supabase_edge_function',
-      modelName: 'hermes-chat',
+      modelProvider: actualProvider,
+      modelName: actualModel,
+      metadata: result.metadata,
     };
   } catch (e) {
     const durationMs = Date.now() - startTime;

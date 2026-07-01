@@ -1,0 +1,128 @@
+{
+  "report": "hermes_chat_live_model_trace",
+  "generated_utc": "2026-07-01T18:50:00Z",
+  "call_path": [
+    {
+      "step": 1,
+      "component": "HermesChatPanel.jsx",
+      "function": "send()",
+      "file": "src/components/HermesChatPanel.jsx:27",
+      "action": "User types message, calls send()"
+    },
+    {
+      "step": 2,
+      "component": "hermesResponseRouter.ts",
+      "function": "buildHermesResponse()",
+      "file": "src/data/hermesWorkroomData.js",
+      "action": "Get synchronous local response first"
+    },
+    {
+      "step": 3,
+      "component": "HermesChatPanel.jsx",
+      "function": "send() — model status check",
+      "file": "src/components/HermesChatPanel.jsx:46",
+      "action": "Check if message is a model status question (answered locally)"
+    },
+    {
+      "step": 4,
+      "component": "hermesOrchestrator.ts",
+      "function": "orchestrateHermes()",
+      "file": "src/lib/hermesOrchestrator.ts:5",
+      "action": "Route intent, decide shouldQuerySupabase/shouldQueryWeb"
+    },
+    {
+      "step": 5,
+      "component": "hermesProviders.ts",
+      "function": "hermesModelChat()",
+      "file": "src/lib/hermesProviders.ts:126",
+      "action": "Main entry for routed model chat"
+    },
+    {
+      "step": 6,
+      "component": "hermesModelRoutingPolicy.ts",
+      "function": "routeModel()",
+      "file": "src/lib/hermesModelRoutingPolicy.ts:140",
+      "action": "Decide route: no_model/cheap_model/primary_model/blocked_or_gated"
+    },
+    {
+      "step": 7,
+      "component": "hermesContextPacker.ts",
+      "function": "packContext()",
+      "file": "src/lib/hermesContextPacker.ts:97",
+      "action": "Build small context packet within token budget"
+    },
+    {
+      "step": 8,
+      "component": "hermesProviders.ts",
+      "function": "hermesChat()",
+      "file": "src/lib/hermesProviders.ts:107",
+      "action": "Call supabase.functions.invoke('hermes-chat')"
+    },
+    {
+      "step": 9,
+      "component": "supabase/functions/hermes-chat/index.ts",
+      "function": "Deno.serve handler",
+      "file": "supabase/functions/hermes-chat/index.ts:155",
+      "action": "Edge Function receives request, checks guards, builds messages"
+    },
+    {
+      "step": 10,
+      "component": "supabase/functions/hermes-chat/index.ts",
+      "function": "OpenRouter provider call",
+      "file": "supabase/functions/hermes-chat/index.ts:208",
+      "action": "Fetch openrouter.ai/api/v1/chat/completions with model + messages"
+    },
+    {
+      "step": 11,
+      "component": "OpenRouter API",
+      "function": "External API",
+      "file": "https://openrouter.ai/api/v1/chat/completions",
+      "action": "Returns chat completion with reply content"
+    },
+    {
+      "step": 12,
+      "component": "supabase/functions/hermes-chat/index.ts",
+      "function": "Response formatting",
+      "file": "supabase/functions/hermes-chat/index.ts:230",
+      "action": "Return { configured: true, reply, metadata } with model info"
+    },
+    {
+      "step": 13,
+      "component": "hermesProviders.ts",
+      "function": "hermesChat() — response",
+      "file": "src/lib/hermesProviders.ts:112",
+      "action": "Parse response, return ProviderResult with metadata"
+    },
+    {
+      "step": 14,
+      "component": "hermesProviders.ts",
+      "function": "hermesModelChat() — success",
+      "file": "src/lib/hermesProviders.ts:251",
+      "action": "Log to usage ledger, return with actual provider/model from metadata"
+    },
+    {
+      "step": 15,
+      "component": "hermesModelUsageLedger.ts",
+      "function": "logModelAttempt()",
+      "file": "src/lib/hermesModelUsageLedger.ts:60",
+      "action": "Log entry to localStorage with route, provider, model, tokens, duration"
+    },
+    {
+      "step": 16,
+      "component": "HermesChatPanel.jsx",
+      "function": "send() — display",
+      "file": "src/components/HermesChatPanel.jsx:117",
+      "action": "Set hermesMsg with response text and source label"
+    }
+  ],
+  "files_involved": [
+    "src/components/HermesChatPanel.jsx",
+    "src/lib/hermesProviders.ts",
+    "src/lib/hermesModelRoutingPolicy.ts",
+    "src/lib/hermesContextPacker.ts",
+    "src/lib/hermesModelUsageLedger.ts",
+    "src/lib/hermesOrchestrator.ts",
+    "supabase/functions/hermes-chat/index.ts",
+    "supabase/functions/_shared/firewall.ts"
+  ]
+}

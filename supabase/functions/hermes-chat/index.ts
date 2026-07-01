@@ -106,8 +106,6 @@ const blocked = (text: string): boolean => isSensitive(text) || PLURAL_SSN.test(
 
 const MAX_CONTEXT_FIELD = 600;   // cap each dynamic field
 const MAX_CONTEXT_TOTAL = 2000;  // cap the whole dynamic block
-const MAX_HISTORY_TURNS = 10;
-const MAX_HISTORY_CHARS = 4000;
 
 // Build the small dynamic context block from safe frontend-supplied fields. Any field that trips
 // the firewall is dropped (never sent to the model). Returns '' when there's nothing safe to add.
@@ -161,6 +159,31 @@ Deno.serve(async (req: Request) => {
   const mode: string = body?.mode ?? 'conversation';
   const context: Record<string, unknown> | undefined = body?.context;
 
+  // ── Diagnostic mode: report env status without exposing secrets ──
+  if (message === '__diagnostic__') {
+    const provider = (Deno.env.get('HERMES_CHAT_PROVIDER') ?? 'none').toLowerCase();
+    const model = Deno.env.get('HERMES_MODEL') || Deno.env.get('HERMES_CHAT_MODEL');
+    const fallback = Deno.env.get('HERMES_FALLBACK_MODEL') || Deno.env.get('HERMES_CHAT_FALLBACK_MODEL');
+    const hasApiKey = provider === 'openrouter' ? !!Deno.env.get('OPENROUTER_API_KEY')
+      : provider === 'gemini' ? !!Deno.env.get('GEMINI_API_KEY')
+      : provider === 'ollama' ? !!Deno.env.get('OLLAMA_URL')
+      : false;
+    return json({
+      configured: true,
+      diagnostic: {
+        providerConfigured: provider !== 'none',
+        modelConfigured: !!model,
+        fallbackConfigured: !!fallback,
+        apiKeyConfigured: hasApiKey,
+        selectedProvider: provider,
+        selectedModel: model ?? 'not set',
+        selectedFallbackModel: fallback ?? 'not set',
+        allowedProviders: [...ALLOWED_PROVIDERS],
+      },
+      metadata: { provider: 'diagnostic', model: 'diagnostic', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+    });
+  }
+
   // ── Guard: input size ──
   if (message.length > MAX_INPUT_CHARS) {
     return json({
@@ -211,11 +234,15 @@ Deno.serve(async (req: Request) => {
         configured: false,
         metadata: { provider: 'openrouter', model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
       });
-      // Primary model first, then optional fallback. A non-2xx, a provider error in the body, or
-      // an empty reply each count as a miss → try the next model. Provider error details are never
-      // returned to the client. The message + context were firewall-checked above.
-      const models = [model ?? 'openai/gpt-4o-mini', Deno.env.get('HERMES_FALLBACK_MODEL') || Deno.env.get('HERMES_CHAT_FALLBACK_MODEL')]
+
+      // Build model list: filter to only valid OpenRouter model IDs
+      // Ollama models (ollama/*) cannot be used through OpenRouter
+      const rawModels = [model ?? 'openai/gpt-4o-mini', Deno.env.get('HERMES_FALLBACK_MODEL') || Deno.env.get('HERMES_CHAT_FALLBACK_MODEL')]
         .filter((m): m is string => Boolean(m && m.trim()));
+      const models = rawModels.filter(m => !m.startsWith('ollama/'));
+      if (models.length === 0) models.push('openai/gpt-4o-mini');
+
+      let lastError = '';
       for (const m of models) {
         try {
           const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -223,9 +250,15 @@ Deno.serve(async (req: Request) => {
             headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
             body: JSON.stringify({ model: m, messages, max_tokens: MAX_OUTPUT_TOKENS }),
           });
-          if (!r.ok) continue;
+          if (!r.ok) {
+            lastError = `HTTP ${r.status}`;
+            continue;
+          }
           const d = await r.json();
-          if (d?.error) continue;
+          if (d?.error) {
+            lastError = String(d.error?.message || d.error || 'provider error').slice(0, 100);
+            continue;
+          }
           const reply = d?.choices?.[0]?.message?.content;
           if (reply && String(reply).trim()) {
             const estInput = Math.ceil(message.length / 4);
@@ -235,13 +268,15 @@ Deno.serve(async (req: Request) => {
               metadata: { provider: 'openrouter', model: m, fallbackUsed: models.length > 1 && m !== models[0], estimatedInputTokens: estInput, estimatedOutputTokens: estOutput, maxOutputTokens: MAX_OUTPUT_TOKENS, source: 'hermes-chat', durationMs: Date.now() - startTime },
             });
           }
-        } catch {
+          lastError = 'Empty reply from model';
+        } catch (e) {
+          lastError = String(e).slice(0, 100);
           continue;
         }
       }
       return json({
-        configured: true, reply: "I'm configured, but the chat model is unavailable right now. Please try again shortly.",
-        metadata: { provider: 'openrouter', model: 'none', fallbackUsed: true, source: 'hermes-chat', durationMs: Date.now() - startTime },
+        configured: true, reply: `I'm configured for OpenRouter but the model call failed. Safe error: ${lastError}. I used local reasoning instead.`,
+        metadata: { provider: 'openrouter', model: models[0] ?? 'none', fallbackUsed: true, errorCode: lastError, source: 'hermes-chat', durationMs: Date.now() - startTime },
       });
     }
 

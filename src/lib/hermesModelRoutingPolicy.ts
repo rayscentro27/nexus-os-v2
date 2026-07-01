@@ -171,7 +171,7 @@ export function getModelAvailability(): { configured: boolean; provider: string;
   const chatEnabled = (import.meta.env?.VITE_HERMES_CHAT_ENABLED as string) === 'true';
   return {
     configured: chatEnabled,
-    provider: chatEnabled ? 'openrouter (via Supabase Edge Function)' : 'not configured',
-    model: chatEnabled ? 'HERMES_MODEL env (set in Supabase secrets)' : 'not configured',
+    provider: chatEnabled ? 'OpenRouter (via Supabase Edge Function)' : 'not configured',
+    model: chatEnabled ? 'openai/gpt-4o-mini (cheapest OpenRouter model)' : 'not configured',
   };
 }
