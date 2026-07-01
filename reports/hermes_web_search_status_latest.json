@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-07-01",
+  "hermes_search": {
+    "edge_function_exists": true,
+    "edge_function_path": "supabase/functions/hermes-search/index.ts",
+    "deployed": false,
+    "env_configured": false,
+    "VITE_HERMES_SEARCH_ENABLED": false,
+    "OPENROUTER_API_KEY": true,
+    "status": "not_configured",
+    "reason": "VITE_HERMES_SEARCH_ENABLED not set; function exists but not deployed per instructions"
+  },
+  "capabilities": {
+    "web_search": "not_configured",
+    "hermes_can_search": false,
+    "hermes_can_fallback_to_static": true
+  },
+  "blockers": [
+    "VITE_HERMES_SEARCH_ENABLED not set in .env",
+    "hermes-search Edge Function exists but not deployed",
+    "No search API key configured in frontend"
+  ],
+  "next_actions": [
+    "Set VITE_HERMES_SEARCH_ENABLED=true in .env if search is desired",
+    "Deploy hermes-search Edge Function if safe and keys are present",
+    "Label as 'not configured' in UI until deployed"
+  ],
+  "notes": "Web search is not configured. Hermes falls back to local context for research questions. Do not deploy hermes-search without verifying env keys are safe."
+}

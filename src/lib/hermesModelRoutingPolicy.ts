@@ -65,6 +65,16 @@ function decide(lower: string): { route: ModelRoute; reason: string } {
     return { route: 'blocked_or_gated', reason: 'Execution request — must go through Ray Review approval gate, never direct model.' };
   }
 
+  // ── NO_MODEL: section status questions — always answer from registry ──
+  if (/\b(is\s+.+\s+(live|working|running|blocked|static|connected|up|down|active|verified)|what\s+(is|are)\s+(the\s+)?status|show\s+proof|what\s+sections|which\s+sections|what\s+is\s+scheduled|what\s+is\s+blocked|what\s+is\s+live|what\s+is\s+static|is\s+this\s+section|what\s+sections\s+are)\b/i.test(lower)) {
+    return { route: 'no_model', reason: 'Section status question — answerable from section status registry.' };
+  }
+
+  // ── NO_MODEL: cost/meta/model/token questions — never spend tokens explaining token cost ──
+  if (/\b(cost|token|model\s+call|what\s+did.*cost|how\s+can\s+we\s+reduce|was\s+that\s+necessary|what\s+route|are\s+you\s+using\s+a\s+live\s+model|what\s+model|how\s+are\s+you\s+controlling|can\s+you\s+use\s+ollama|can\s+you\s+use\s+openrouter)\b/i.test(lower)) {
+    return { route: 'no_model', reason: 'Cost/meta/model question — must never trigger a model call to explain cost.' };
+  }
+
   // ── NO_MODEL: casual / personality ──
   if (/\b(favorite|joke|funny|how are you|are you real|what are you|who are you|thank|hello|hi |hey)\b/i.test(lower)) {
     return { route: 'no_model', reason: 'Casual/personality question — local conversation brain handles this.' };
@@ -73,7 +83,6 @@ function decide(lower: string): { route: ModelRoute; reason: string } {
   // ── NO_MODEL: simple status already known from local data ──
   if (/\b(how many|how much|count|row count|number of|total|status|is it|are we|do we have)\b/i.test(lower)) {
     if (/\b(model|ollama|oracle|openrouter|edge function|supabase|approval|pending|review)\b/i.test(lower)) {
-      // Status questions about infrastructure — local answer is sufficient
       return { route: 'no_model', reason: 'Infrastructure status question — answerable from local reports/context.' };
     }
   }

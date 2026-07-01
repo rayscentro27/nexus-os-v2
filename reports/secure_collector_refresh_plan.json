@@ -1,0 +1,52 @@
+{
+  "generated_at": "2026-07-01",
+  "plan": "Secure Collector Refresh Plan",
+  "version": "1.0",
+  "principle": "Do not add arbitrary shell execution to the frontend. If secure refresh is not already safely available, create the plan and/or copy-command card only.",
+  "current_collectors": {
+    "collect_nexus_operations_status": {
+      "path": "scripts/ops/collect_nexus_operations_status.py",
+      "status": "available",
+      "safe": true,
+      "execution": "python3 scripts/ops/collect_nexus_operations_status.py"
+    },
+    "build_hermes_second_brain_index": {
+      "path": "scripts/ops/build_hermes_second_brain_index.py",
+      "status": "available",
+      "safe": true,
+      "execution": "python3 scripts/ops/build_hermes_second_brain_index.py"
+    },
+    "collect_hermes_model_infrastructure": {
+      "path": "scripts/ops/collect_hermes_model_infrastructure.py",
+      "status": "available",
+      "safe": true,
+      "execution": "python3 scripts/ops/collect_hermes_model_infrastructure.py"
+    }
+  },
+  "frontend_refresh": {
+    "available": false,
+    "reason": "No secure shell execution endpoint exists in frontend. Collectors must be run manually or via background job.",
+    "recommendation": "Create a copy-command card that shows the command to run, but do not execute from frontend."
+  },
+  "background_job_refresh": {
+    "available": true,
+    "launchd_schedulers": [
+      "com.nexus.daily-operating",
+      "com.nexus.evening-closeout",
+      "com.nexus.continuous-ops-daily"
+    ],
+    "note": "Background jobs can run collectors safely via launchd. No frontend shell execution needed."
+  },
+  "copy_commands": {
+    "operations_status": "python3 scripts/ops/collect_nexus_operations_status.py",
+    "second_brain_index": "python3 scripts/ops/build_hermes_second_brain_index.py",
+    "model_infrastructure": "python3 scripts/ops/collect_hermes_model_infrastructure.py",
+    "all": "python3 scripts/ops/collect_nexus_operations_status.py && python3 scripts/ops/build_hermes_second_brain_index.py && python3 scripts/ops/collect_hermes_model_infrastructure.py"
+  },
+  "security_notes": [
+    "No arbitrary shell execution from frontend",
+    "Collectors are read-only scripts",
+    "All output goes to reports/ directory",
+    "No secrets exposed in commands"
+  ]
+}

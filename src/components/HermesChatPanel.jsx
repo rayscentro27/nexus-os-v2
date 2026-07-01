@@ -10,6 +10,7 @@ import { getModelAvailability } from '../lib/hermesModelRoutingPolicy';
 import { getRecentUsageSummary, getModelActivityAnswer, getUsageEntries, getTotalTokensUsed } from '../lib/hermesModelUsageLedger';
 import { getCostAdvice, getCostReductionAnswer } from '../lib/hermesModelCostAdvisor';
 import { estimateModelCallCost } from '../lib/hermesModelCostEstimator';
+import { isSectionStatusQuestion, buildSectionStatusAnswer } from '../lib/nexusSectionStatusRegistry';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -43,9 +44,15 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     let liveSource = null;
     let modelSource = null;
 
-    // Check for model status questions — answer directly from local data
+    // Check for section status questions — answer directly from registry (no model, no tokens)
     const lower = clean.toLowerCase();
-    if (/\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model|what did that model call cost|how can we reduce token cost|was that model call necessary|what route did you use|what did that answer cost)\b/i.test(lower)) {
+    if (isSectionStatusQuestion(lower)) {
+      responseText = buildSectionStatusAnswer(lower);
+      modelSource = 'section_status_registry';
+    }
+
+    // Check for model status questions — answer directly from local data
+    if (!modelSource && /\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model|what did that model call cost|how can we reduce token cost|was that model call necessary|what route did you use|what did that answer cost)\b/i.test(lower)) {
       const avail = getModelAvailability();
       const recentEntries = getUsageEntries().slice(-5);
       const lastModelCall = recentEntries.filter(e => e.wasModelCalled).pop();

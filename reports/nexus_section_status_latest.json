@@ -1,0 +1,40 @@
+{
+  "generated_at": "2026-07-01",
+  "version": "1.0",
+  "summary": {
+    "live": 5,
+    "static": 7,
+    "mismatch": 0,
+    "blocked": 0,
+    "unknown": 0,
+    "total": 14
+  },
+  "sections": {
+    "hermes_workroom": { "name": "Hermes Workroom", "status": "live", "source": "supabase", "proofLevel": "verified", "rows": 0 },
+    "ray_review": { "name": "Ray Review", "status": "live", "source": "supabase", "proofLevel": "verified", "rows": 62, "table": "task_requests" },
+    "business_opportunities": { "name": "Business Opportunities", "status": "live", "source": "supabase", "proofLevel": "verified", "rows": 26, "table": "business_opportunities" },
+    "research_engine": { "name": "Research Engine", "status": "live", "source": "supabase", "proofLevel": "verified", "rows": 52, "table": "research_sources", "youtube_proof": "not_proven_live" },
+    "monetization": { "name": "Monetization", "status": "live", "source": "supabase", "proofLevel": "verified", "rows": 9, "table": "monetization_opportunities" },
+    "clients": { "name": "Clients", "status": "live", "source": "supabase", "proofLevel": "verified", "rows": 1, "table": "client_profiles" },
+    "credit_funding": { "name": "Credit & Funding", "status": "static", "source": "local_static", "proofLevel": "no_proof" },
+    "trading_lab": { "name": "Trading Lab", "status": "static", "source": "local_static", "proofLevel": "no_proof" },
+    "system_health": { "name": "System Health", "status": "static", "source": "local_static", "proofLevel": "no_proof" },
+    "automation": { "name": "Automation Scheduler", "status": "static", "source": "local_static", "proofLevel": "unproven" },
+    "reports": { "name": "Reports", "status": "static", "source": "local_static", "proofLevel": "no_proof" },
+    "settings": { "name": "Settings", "status": "static", "source": "local_static", "proofLevel": "no_proof" },
+    "cli_registry": { "name": "CLI / Tool Registry", "status": "static", "source": "local_static", "proofLevel": "unproven" },
+    "marketing_drafts": { "name": "Marketing Drafts", "status": "static", "source": "local_static", "proofLevel": "no_proof" }
+  },
+  "blockers": [
+    "YouTube research not proven live — no process/log/write proof",
+    "Credit & Funding not wired to Supabase",
+    "Trading Lab scheduler loaded but not confirmed running",
+    "System Health not wired to Supabase",
+    "Automation schedulers loaded but no active PID proof for all",
+    "Reports center reads local files only",
+    "Settings no dynamic Supabase table",
+    "CLI registry no live Supabase table",
+    "Marketing Drafts no Supabase table"
+  ],
+  "critical_note": "Do not claim a section is live unless verified by Supabase read, process evidence, or log proof."
+}

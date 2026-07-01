@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-07-01",
+  "plan": "Hermes Durable Memory Plan",
+  "version": "1.0",
+  "current_state": {
+    "memory_storage": "localStorage (browser)",
+    "conversation_history": "localStorage via hermesStore",
+    "usage_ledger": "localStorage via hermesModelUsageLedger",
+    "activity_journal": "localStorage via hermesActivityJournal",
+    "second_brain_index": "JSON files in reports/",
+    "supabase_data": "Supabase tables (live)",
+    "limitations": [
+      "localStorage is browser-local only",
+      "No cross-device sync",
+      "No cross-browser sync",
+      "Data lost on browser clear",
+      "No backup mechanism"
+    ]
+  },
+  "durable_memory_options": {
+    "supabase_tables": {
+      "available": true,
+      "tables": ["task_requests", "business_opportunities", "research_sources", "monetization_opportunities", "client_profiles", "nexus_events"],
+      "note": "Live data already persists in Supabase. Hermes can read from these tables."
+    },
+    "supabase_user_preferences": {
+      "available": false,
+      "note": "No user_preferences table exists. Would need migration."
+    },
+    "supabase_chat_history": {
+      "available": false,
+      "note": "No chat_history table exists. Would need migration. Privacy concerns."
+    },
+    "file_backed_memory": {
+      "available": true,
+      "path": "data/memory/",
+      "note": "JSON files can store durable memory. Already used for second-brain index."
+    }
+  },
+  "recommendation": {
+    "short_term": "Keep localStorage for conversation history and usage ledger. It is simple, private, and sufficient.",
+    "medium_term": "If cross-device sync is needed, create a supabase table for chat_history with RLS.",
+    "long_term": "Consider a dedicated memory service for large-scale durable memory.",
+    "critical": "Do not store sensitive data in localStorage. Do not sync PII without encryption."
+  },
+  "implementation": {
+    "conversation_history": "localStorage (current) — sufficient for single-device use",
+    "usage_ledger": "localStorage (current) — sufficient for cost tracking",
+    "activity_journal": "localStorage (current) — sufficient for session memory",
+    "second_brain_index": "JSON files (current) — sufficient for research memory",
+    "live_data": "Supabase (current) — already durable"
+  },
+  "export_plan": {
+    "available": false,
+    "note": "No export mechanism exists. Could add JSON export button for usage ledger and chat history.",
+    "recommendation": "Add export button for usage ledger to CSV/JSON for cost reporting."
+  }
+}

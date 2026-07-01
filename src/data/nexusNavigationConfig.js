@@ -1,5 +1,6 @@
 export const nexusNavigationConfig = [
   { id: 'command', label: 'Command Center', description: 'Today, approvals, blockers, and money actions', status: 'Live', role: 'admin', enabled: true },
+  { id: 'activation', label: 'Activation Status', description: 'Visual proof of which sections are live, static, or blocked', status: 'Proof', role: 'admin', enabled: true },
   { id: 'health', label: 'System Health', description: 'Engines, connectors, and safety gates', status: 'Healthy', role: 'admin', enabled: true },
   { id: 'review', label: 'Ray Review', description: 'Approve, reject, or hold queued decisions', status: '64 cards', role: 'admin', enabled: true },
   { id: 'hermes', label: 'Hermes Workroom', description: 'Chat, delegate, and create safe work plans', status: 'Ready', role: 'admin', enabled: true },

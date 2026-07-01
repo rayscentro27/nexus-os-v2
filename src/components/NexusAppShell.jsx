@@ -9,6 +9,7 @@ import RevenueDashboard from './RevenueDashboard';
 import CommunicationDashboard from './CommunicationDashboard';
 import MarketingDraftCenter from './MarketingDraftCenter';
 import ResearchMoneyPipeline from './ResearchMoneyPipeline';
+import NexusActivationStatus from './NexusActivationStatus';
 import { navigationById } from '../data/nexusNavigationConfig';
 import { supabase } from '../lib/supabaseClient';
 
@@ -38,6 +39,7 @@ export default function NexusAppShell({ email }) {
   const meta = navigationById[active] || navigationById.command;
   const panel = useMemo(() => {
     if (active === 'command') return <CommandCenter navigate={navigate} />;
+    if (active === 'activation') return <NexusActivationStatus onNavigate={navigate} />;
     if (active === 'review') return <RayReviewCenter />;
     if (active === 'reports') return <ReportCenter />;
     if (active === 'hermes') return <HermesWorkroom />;

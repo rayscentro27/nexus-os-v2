@@ -1,0 +1,35 @@
+{
+  "generated_at": "2026-07-01",
+  "model_status": {
+    "configured": true,
+    "provider": "OpenRouter (via Supabase Edge Function)",
+    "model": "openai/gpt-4o-mini",
+    "fallback_model": "google/gemini-2.0-flash-001",
+    "smoke_test": "PASS",
+    "smoke_test_duration_ms": 1056,
+    "smoke_test_timestamp": "2026-07-01"
+  },
+  "cost_controls": {
+    "routing_policy": "no_model/cheap_model/primary_model/blocked_or_gated",
+    "section_status_questions": "always no_model",
+    "cost_meta_questions": "always no_model",
+    "context_packer": "6000 token max input",
+    "output_cap": "1200 tokens",
+    "usage_ledger": "localStorage logging with cost estimates",
+    "edge_function_cost_guards": "enabled"
+  },
+  "supabase_secrets": {
+    "HERMES_MODEL": "present",
+    "HERMES_FALLBACK_MODEL": "present",
+    "HERMES_CHAT_PROVIDER": "present",
+    "OPENROUTER_API_KEY": "present"
+  },
+  "verification": {
+    "smoke_test_result": "HERMES_MODEL_OK",
+    "response_time_ms": 1056,
+    "model_called": true,
+    "cost_estimate": "$0.0001"
+  },
+  "blockers": [],
+  "notes": "Model is live and working via OpenRouter. Cost controls active. Section status and cost questions routed to no_model to avoid token spend."
+}
