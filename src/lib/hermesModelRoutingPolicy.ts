@@ -109,8 +109,8 @@ function decide(lower: string): { route: ModelRoute; reason: string } {
   }
 
   // ── NO_MODEL: memory/recall ──
-  if (/\b(what did we|what have we|remember|recall|history|recent|today|yesterday)\b/i.test(lower)) {
-    return { route: 'no_model', reason: 'Memory/recall — answerable from local context and chat history.' };
+  if (/\b(what\s+did\s+(you|we|nexus)\s+(do|work\s+on|accomplish)|what\s+changed|what\s+got\s+done|what\s+happened\s+(since|today|yesterday)|what\s+should\s+i\s+know\s+from|summarize\s+(today|yesterday|the\s+day)|daily\s+summary|ceo\s+summary|ceo\s+version|plain\s+english|what\s+should\s+i\s+care\s+about|what\s+matters|what\s+is\s+the\s+takeaway|simplify\s+this|translate\s+this\s+report|what\s+did\s+we\s+do\s+today|what\s+did\s+you\s+do\s+today|remember|recall|history|recent|today|yesterday)\b/i.test(lower)) {
+    return { route: 'no_model', reason: 'Memory/recall/CEO summary — answerable from local context, activity journal, and chat history.' };
   }
 
   // ── NO_MODEL: scheduling questions ──

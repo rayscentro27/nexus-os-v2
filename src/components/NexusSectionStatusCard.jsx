@@ -6,6 +6,7 @@ const STATUS_COLORS = {
   mismatch: { bg: '#ef444418', border: '#ef444444', text: '#dc2626', icon: '\u274C' },
   blocked: { bg: '#ef444418', border: '#ef444444', text: '#dc2626', icon: '\uD83D\uDEAB' },
   unknown: { bg: '#9ca3af18', border: '#9ca3af44', text: '#6b7280', icon: '\u2753' },
+  report_snapshot: { bg: '#3b82f618', border: '#3b82f644', text: '#2563eb', icon: '\uD83D\uDCCA' },
 };
 
 const PROOF_LABELS = {
@@ -14,17 +15,39 @@ const PROOF_LABELS = {
   no_proof: 'No proof',
 };
 
+const STATUS_HELPER_TEXT = {
+  live: 'Live Supabase data',
+  static: 'Bundled/static data',
+  report_snapshot: 'Report-backed, not live workflow',
+  mismatch: 'Data mismatch detected',
+  blocked: 'Blocked by issues',
+  unknown: 'Status unclear',
+};
+
+const PROOF_HELPER_TEXT = {
+  verified: 'Verified with real data',
+  unproven: 'Set up, but not proven running',
+  no_proof: 'No evidence yet',
+  active_process: 'Current process proof',
+  loaded_only: 'Loaded scheduler, no run proof',
+  recent_output: 'Recent output proof',
+  installed_only: 'Installed, not authenticated',
+};
+
 /**
  * NexusSectionStatusCard — visual proof card for a single section.
  *
  * Compact mode: inline badge for embedding in panels.
  * Full mode: card with details, blockers, next action.
+ * Shows plain English helper text alongside technical labels.
  */
 export default function NexusSectionStatusCard({ section, compact = false, onNavigate }) {
   if (!section) return null;
 
   const style = STATUS_COLORS[section.status] || STATUS_COLORS.unknown;
   const verifiedDate = section.verifiedAt ? new Date(section.verifiedAt).toLocaleDateString() : 'never';
+  const statusHelper = STATUS_HELPER_TEXT[section.status] || '';
+  const proofHelper = PROOF_HELPER_TEXT[section.proofLevel] || '';
 
   if (compact) {
     return (
@@ -37,10 +60,11 @@ export default function NexusSectionStatusCard({ section, compact = false, onNav
           cursor: onNavigate ? 'pointer' : 'default',
         }}
         onClick={() => onNavigate?.(section.id)}
-        title={`${section.name}: ${section.status} — ${section.notes}`}
+        title={`${section.name}: ${statusHelper || section.status} — ${section.notes}`}
       >
         <span>{style.icon}</span>
         <span style={{ fontWeight: 600 }}>{section.status}</span>
+        {statusHelper && <span style={{ opacity: 0.7, fontSize: '0.9em' }}>({statusHelper})</span>}
       </span>
     );
   }
@@ -62,17 +86,24 @@ export default function NexusSectionStatusCard({ section, compact = false, onNav
             <small style={{ color: '#666', marginLeft: 8 }}>{section.description}</small>
           </div>
         </div>
-        <span style={{
-          padding: '2px 8px', borderRadius: 4, fontSize: '0.78em',
-          background: style.bg, border: `1px solid ${style.border}`, color: style.text, fontWeight: 600,
-        }}>
-          {section.status.toUpperCase()}
-        </span>
+        <div style={{ textAlign: 'right' }}>
+          <span style={{
+            padding: '2px 8px', borderRadius: 4, fontSize: '0.78em',
+            background: style.bg, border: `1px solid ${style.border}`, color: style.text, fontWeight: 600,
+          }}>
+            {section.status.toUpperCase()}
+          </span>
+          {statusHelper && (
+            <div style={{ fontSize: '0.72em', color: '#888', marginTop: 2 }}>{statusHelper}</div>
+          )}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, fontSize: '0.82em', color: '#555' }}>
         <div>Source: <strong>{section.source}</strong></div>
-        <div>Proof: <strong>{PROOF_LABELS[section.proofLevel]}</strong></div>
+        <div>Proof: <strong>{PROOF_LABELS[section.proofLevel] || section.proofLevel}</strong>
+          {proofHelper && <span style={{ color: '#888', fontSize: '0.9em' }}> ({proofHelper})</span>}
+        </div>
         {section.tableNames.length > 0 && <div>Table: <strong>{section.tableNames.join(', ')}</strong></div>}
         {section.rowCount > 0 && <div>Rows: <strong>{section.rowCount}</strong></div>}
         {section.schedulerInstalled && <div>Scheduler: <strong>{section.schedulerRunning ? 'running' : 'installed'}</strong></div>}

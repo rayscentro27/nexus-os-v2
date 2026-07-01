@@ -11,6 +11,8 @@ import { getRecentUsageSummary, getModelActivityAnswer, getUsageEntries, getTota
 import { getCostAdvice, getCostReductionAnswer } from '../lib/hermesModelCostAdvisor';
 import { estimateModelCallCost } from '../lib/hermesModelCostEstimator';
 import { isSectionStatusQuestion, buildSectionStatusAnswer } from '../lib/nexusSectionStatusRegistry';
+import { isCeoSummaryRequest, isDailyActivityQuestion } from '../lib/hermesPlainEnglishTranslator';
+import { buildDailySummary, buildCeoDailySummary } from '../lib/hermesDailyActivityTranslator';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -43,6 +45,19 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     let responseText = result.text;
     let liveSource = null;
     let modelSource = null;
+
+    // Check for daily activity questions — answer from activity journal (no model)
+    if (isDailyActivityQuestion(lower)) {
+      const dateMatch = /\b(yesterday|last\s+day)\b/i.test(lower);
+      responseText = buildDailySummary(dateMatch ? 'yesterday' : 'today');
+      modelSource = 'daily_activity_translator';
+    }
+
+    // Check for CEO summary requests — answer from registry + journal (no model)
+    if (!modelSource && isCeoSummaryRequest(lower)) {
+      responseText = buildCeoDailySummary('today');
+      modelSource = 'ceo_summary_translator';
+    }
 
     // Check for section status questions — answer directly from registry (no model, no tokens)
     const lower = clean.toLowerCase();

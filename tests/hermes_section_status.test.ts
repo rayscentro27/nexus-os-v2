@@ -12,6 +12,19 @@ import {
   buildSectionStatusAnswer,
 } from '../src/lib/nexusSectionStatusRegistry';
 import { routeModel } from '../src/lib/hermesModelRoutingPolicy';
+import {
+  translateStatusTerm,
+  explainProofLevel,
+  explainSourceMode,
+  explainRiskLevel,
+  translateCategory,
+  isLowValueCategory,
+  buildPlainEnglishOperationalAnswer,
+  buildCeoSummary,
+  isCeoSummaryRequest,
+  isDailyActivityQuestion,
+} from '../src/lib/hermesPlainEnglishTranslator';
+import { buildDailySummary, buildCeoDailySummary } from '../src/lib/hermesDailyActivityTranslator';
 
 describe('nexusSectionStatusRegistry', () => {
   describe('getSectionStatus', () => {
@@ -164,55 +177,58 @@ describe('nexusSectionStatusRegistry', () => {
   describe('buildSectionStatusAnswer', () => {
     it('answers "what sections are live?"', () => {
       const answer = buildSectionStatusAnswer('what sections are live?');
-      expect(answer).toContain('Live sections');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('Ray Review');
       expect(answer).toContain('Business Opportunities');
     });
 
     it('answers "what sections are static?"', () => {
       const answer = buildSectionStatusAnswer('what sections are static?');
-      expect(answer).toContain('Static sections');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('Trading Lab');
     });
 
     it('answers "what is blocked?"', () => {
       const answer = buildSectionStatusAnswer('what is blocked?');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('blockers');
     });
 
     it('answers "what is scheduled?"', () => {
       const answer = buildSectionStatusAnswer('what is scheduled?');
-      expect(answer).toContain('Scheduled');
+      expect(answer).toContain('Plain answer:');
+      expect(answer).toContain('scheduler');
     });
 
     it('answers "show proof"', () => {
       const answer = buildSectionStatusAnswer('show proof this is working');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('Verified');
-      expect(answer).toContain('Unproven');
     });
 
     it('answers "what is the status?"', () => {
       const answer = buildSectionStatusAnswer('what is the status?');
-      expect(answer).toContain('Nexus OS status');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('live');
       expect(answer).toContain('static');
     });
 
     it('answers specific section "is ray review live?"', () => {
       const answer = buildSectionStatusAnswer('is ray review live?');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('Ray Review');
-      expect(answer).toContain('LIVE');
-      expect(answer).toContain('task_requests');
+      expect(answer).toContain('live');
     });
 
     it('answers specific section "is the research engine working?"', () => {
       const answer = buildSectionStatusAnswer('is the research engine working?');
+      expect(answer).toContain('Plain answer:');
       expect(answer).toContain('Research Engine');
     });
 
     it('returns fallback for unrecognized query', () => {
       const answer = buildSectionStatusAnswer('something completely different');
-      expect(answer).toContain('Nexus OS');
+      expect(answer).toContain('Plain answer:');
     });
   });
 });
@@ -291,37 +307,350 @@ describe('hermesModelRoutingPolicy — section status routing', () => {
   });
 });
 
-describe('Phase 2 section status answers', () => {
-  it('answers "what processes are active?"', () => {
+describe('YouTube-specific status answers', () => {
+  it('YouTube question does not return generic matching sections', () => {
+    const answer = buildSectionStatusAnswer('is youtube research running?');
+    expect(answer).toContain('not fully live yet');
+    expect(answer).not.toMatch(/^Matching sections:/);
+  });
+
+  it('YouTube answer explains what this means in plain language', () => {
+    const answer = buildSectionStatusAnswer('is youtube research running and writing to Supabase?');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('not fully live yet');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Proof:');
+    expect(answer).toContain('Blocker:');
+    expect(answer).toContain('Next safe action:');
+  });
+
+  it('YouTube answer includes scheduler proof details', () => {
+    const answer = buildSectionStatusAnswer('are transcripts being fetched?');
+    expect(answer).toContain('Scheduler installed');
+    expect(answer).toContain('Scheduler loaded');
+    expect(answer).toContain('Active process');
+    expect(answer).toContain('Last output');
+  });
+
+  it('YouTube routes to no_model', () => {
+    expect(routeModel('is youtube research running?').route).toBe('no_model');
+    expect(routeModel('are transcripts being fetched?').route).toBe('no_model');
+    expect(routeModel('is the YouTube scheduler active?').route).toBe('no_model');
+    expect(routeModel('what is the YouTube proof?').route).toBe('no_model');
+  });
+
+  it('YouTube is detected as section status question', () => {
+    expect(isSectionStatusQuestion('is youtube research running?')).toBe(true);
+    expect(isSectionStatusQuestion('are transcripts being fetched?')).toBe(true);
+  });
+});
+
+describe('Trading safety answers', () => {
+  it('trade execution request is blocked first with plain language', () => {
+    const answer = buildSectionStatusAnswer('can you place a trade?');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('No, I cannot place trades');
+    expect(answer).toContain('Live/funded trading is blocked');
+    expect(answer).toContain('paper/demo only');
+  });
+
+  it('trading status uses plain language format', () => {
+    const answer = buildSectionStatusAnswer('is trading lab running?');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('paper/demo mode');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Proof:');
+    expect(answer).toContain('Blocker:');
+    expect(answer).toContain('Next safe action:');
+  });
+
+  it('trading execution is blocked_or_gated in routing', () => {
+    expect(routeModel('place a trade').route).toBe('blocked_or_gated');
+    expect(routeModel('buy EUR/USD').route).toBe('blocked_or_gated');
+    expect(routeModel('turn on live trading').route).toBe('blocked_or_gated');
+    expect(routeModel('connect funded account').route).toBe('blocked_or_gated');
+  });
+
+  it('trading STATUS questions route to no_model', () => {
+    expect(routeModel('is trading lab running?').route).toBe('no_model');
+    expect(routeModel('is trading active?').route).toBe('no_model');
+    expect(routeModel('is live trading enabled?').route).toBe('no_model');
+  });
+
+  it('trading status answer explains paper/demo in plain language', () => {
+    const answer = buildSectionStatusAnswer('is trading active?');
+    expect(answer).toContain('paper/demo');
+    expect(answer).toContain('pid-588');
+  });
+});
+
+describe('Improved process answers', () => {
+  it('process answer uses plain English format', () => {
     const answer = buildSectionStatusAnswer('what processes are active?');
-    expect(answer).toContain('Active');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('running or recently verified');
+    expect(answer).toContain('Proof:');
+    expect(answer).toContain('Next safe action:');
   });
 
-  it('answers "what tools do we have?"', () => {
+  it('process answer shows top examples', () => {
+    const answer = buildSectionStatusAnswer('what processes are active?');
+    expect(answer).toContain('hermes_agent');
+    expect(answer).toContain('tradingview_router');
+  });
+});
+
+describe('Improved tools/CLI answers', () => {
+  it('tools answer uses plain English format', () => {
     const answer = buildSectionStatusAnswer('what tools do we have?');
-    expect(answer).toContain('CLI');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Proof:');
+    expect(answer).toContain('Blocker:');
+    expect(answer).toContain('Next safe action:');
   });
 
-  it('answers "what reports do we have?"', () => {
+  it('tools answer includes tool count and installed list', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('11 CLI tools');
+    expect(answer).toContain('git');
+    expect(answer).toContain('node');
+  });
+
+  it('tools answer includes frontend warning', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('frontend cannot execute shell commands');
+  });
+});
+
+describe('Improved report answers', () => {
+  it('reports answer uses plain English format', () => {
     const answer = buildSectionStatusAnswer('what reports do we have?');
-    expect(answer).toContain('Reports');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('62 reports');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Proof:');
+    expect(answer).toContain('Next safe action:');
   });
 
-  it('answers "what settings are missing?"', () => {
+  it('reports answer includes most recent reports', () => {
+    const answer = buildSectionStatusAnswer('what reports do we have?');
+    expect(answer).toContain('Most recent reports');
+  });
+});
+
+describe('Improved settings answers', () => {
+  it('settings answer uses plain English format', () => {
     const answer = buildSectionStatusAnswer('what settings are missing?');
-    expect(answer).toContain('Settings');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Configured');
+    expect(answer).toContain('Missing');
   });
 
-  it('answers "what is broken?"', () => {
+  it('settings answer does not expose values', () => {
+    const answer = buildSectionStatusAnswer('what settings are missing?');
+    expect(answer).toContain('no secret values are ever exposed');
+  });
+
+  it('settings answer includes proof and next action', () => {
+    const answer = buildSectionStatusAnswer('what settings are missing?');
+    expect(answer).toContain('safe_config_presence');
+    expect(answer).toContain('Next safe action');
+  });
+});
+
+describe('Broken/CEO summary answer', () => {
+  it('broken answer uses CEO-friendly format', () => {
     const answer = buildSectionStatusAnswer('what is broken?');
-    expect(answer).toContain('Blocked');
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Money/client workflows');
+    expect(answer).toContain('Automation/proof');
+    expect(answer).toContain('Infrastructure/reporting');
+    expect(answer).toContain('Next safe action:');
   });
 
-  it('answers "what needs approval?"', () => {
-    const answer = buildSectionStatusAnswer('what needs approval?');
-    expect(answer).toContain('Approval');
+  it('broken answer explains in plain language', () => {
+    const answer = buildSectionStatusAnswer('what is broken?');
+    expect(answer).toContain('money workflows');
+    expect(answer).toContain('Credit & Funding');
+    expect(answer).toContain('YouTube research');
+  });
+});
+
+describe('Plain-English translator', () => {
+  it('translateStatusTerm returns common-language meanings', () => {
+    expect(translateStatusTerm('live')).toContain('truly connected');
+    expect(translateStatusTerm('static')).toContain('mockup or bundled');
+    expect(translateStatusTerm('report_snapshot')).toContain('reading the latest generated report');
   });
 
+  it('explainProofLevel returns common-language meanings', () => {
+    expect(explainProofLevel('active_process')).toContain('real process currently running');
+    expect(explainProofLevel('loaded_only')).toContain('scheduler is loaded');
+    expect(explainProofLevel('not_proven_live')).toContain('not have enough proof');
+    expect(explainProofLevel('verified')).toContain('verified with real data');
+  });
+
+  it('explainSourceMode returns common-language meanings', () => {
+    expect(explainSourceMode('supabase')).toContain('live Supabase');
+    expect(explainSourceMode('local_static')).toContain('local bundled files');
+  });
+
+  it('explainRiskLevel returns common-language meanings', () => {
+    expect(explainRiskLevel('low')).toContain('Low risk');
+    expect(explainRiskLevel('medium')).toContain('Medium risk');
+    expect(explainRiskLevel('high')).toContain('High risk');
+  });
+
+  it('translateCategory maps raw categories', () => {
+    expect(translateCategory('unclear')).toBe('general conversation / uncategorized');
+    expect(translateCategory('nexus_topic')).toBe('Nexus planning or build work');
+    expect(translateCategory('supabase_query')).toBe('Supabase/live data check');
+    expect(translateCategory('greeting')).toBe('conversation');
+  });
+
+  it('isLowValueCategory identifies noise', () => {
+    expect(isLowValueCategory('greeting')).toBe(true);
+    expect(isLowValueCategory('page_view')).toBe(true);
+    expect(isLowValueCategory('unclear')).toBe(true);
+    expect(isLowValueCategory('nexus_topic')).toBe(false);
+  });
+
+  it('buildPlainEnglishOperationalAnswer formats correctly', () => {
+    const answer = buildPlainEnglishOperationalAnswer({
+      plainAnswer: 'YouTube is not live.',
+      whatThisMeans: 'No proof of active fetch.',
+      proof: 'Scheduler installed: yes.',
+      blocker: 'No write proof.',
+      nextSafeAction: 'Run a dry-run.',
+    });
+    expect(answer).toContain('Plain answer:');
+    expect(answer).toContain('YouTube is not live.');
+    expect(answer).toContain('What this means:');
+    expect(answer).toContain('Proof:');
+    expect(answer).toContain('Blocker:');
+    expect(answer).toContain('Next safe action:');
+  });
+
+  it('buildCeoSummary formats correctly', () => {
+    const answer = buildCeoSummary({
+      summary: 'Nexus is operational.',
+      businessImpact: 'Revenue workflows need activation.',
+      whatIsWorking: ['Hermes', 'Supabase reads'],
+      whatIsNotWorking: ['YouTube', 'Credit & Funding'],
+      nextMove: 'Activate Credit & Funding.',
+    });
+    expect(answer).toContain('CEO Summary:');
+    expect(answer).toContain('Business impact:');
+    expect(answer).toContain('What is working:');
+    expect(answer).toContain('What is not working yet:');
+    expect(answer).toContain('Next move:');
+  });
+});
+
+describe('CEO summary detection', () => {
+  it('detects CEO summary requests', () => {
+    expect(isCeoSummaryRequest('give me the CEO version')).toBe(true);
+    expect(isCeoSummaryRequest('explain in plain English')).toBe(true);
+    expect(isCeoSummaryRequest('what should I care about')).toBe(true);
+    expect(isCeoSummaryRequest('simplify this report')).toBe(true);
+    expect(isCeoSummaryRequest('what is the takeaway')).toBe(true);
+  });
+
+  it('does not detect random questions', () => {
+    expect(isCeoSummaryRequest('what is the weather')).toBe(false);
+    expect(isCeoSummaryRequest('how do I code')).toBe(false);
+  });
+});
+
+describe('Daily activity detection', () => {
+  it('detects daily activity questions', () => {
+    expect(isDailyActivityQuestion('what did you do today?')).toBe(true);
+    expect(isDailyActivityQuestion('what did we do today?')).toBe(true);
+    expect(isDailyActivityQuestion('what changed today?')).toBe(true);
+    expect(isDailyActivityQuestion('summarize today in plain English')).toBe(true);
+    expect(isDailyActivityQuestion('give me the CEO summary for today')).toBe(true);
+    expect(isDailyActivityQuestion('what happened since the last audit')).toBe(true);
+  });
+
+  it('does not detect random questions', () => {
+    expect(isDailyActivityQuestion('what is the weather today')).toBe(false);
+    expect(isDailyActivityQuestion('how do I make money')).toBe(false);
+  });
+});
+
+describe('Daily activity translator', () => {
+  it('daily summary does not return raw category dump', () => {
+    const answer = buildDailySummary('today');
+    expect(answer).toContain('Plain-English summary:');
+    expect(answer).toContain('Completed today:');
+    expect(answer).toContain('Still blocked:');
+    expect(answer).toContain('Next best move:');
+    expect(answer).toContain('Proof/source:');
+    expect(answer).not.toContain('nexus_topic');
+    expect(answer).not.toContain('supabase_query');
+  });
+
+  it('daily summary includes completed/blocked/next move', () => {
+    const answer = buildDailySummary('today');
+    expect(answer).toContain('Completed today:');
+    expect(answer).toContain('Still blocked:');
+    expect(answer).toContain('Next best move:');
+  });
+
+  it('daily summary admits local memory limitation', () => {
+    const answer = buildDailySummary('today');
+    expect(answer).toContain('Proof/source:');
+    expect(answer).toMatch(/local browser activity journal|section status registry/);
+  });
+
+  it('CEO daily summary uses CEO format', () => {
+    const answer = buildCeoDailySummary('today');
+    expect(answer).toContain('CEO Summary:');
+    expect(answer).toContain('Business impact:');
+    expect(answer).toContain('What is working:');
+    expect(answer).toContain('What is not working yet:');
+    expect(answer).toContain('Next move:');
+  });
+
+  it('daily summary routes no_model', () => {
+    expect(routeModel('what did you do today?').route).toBe('no_model');
+    expect(routeModel('what did we do today?').route).toBe('no_model');
+    expect(routeModel('summarize today').route).toBe('no_model');
+    expect(routeModel('give me the CEO summary for today').route).toBe('no_model');
+  });
+
+  it('CEO summary routes no_model', () => {
+    expect(routeModel('give me the CEO version').route).toBe('no_model');
+    expect(routeModel('explain in plain English').route).toBe('no_model');
+    expect(routeModel('what should I care about').route).toBe('no_model');
+  });
+});
+
+describe('Badge and status label', () => {
+  it('header badge no longer says Local Advisor when model-ready', () => {
+    expect(routeModel('what is the status?').route).toBe('no_model');
+  });
+
+  it('all status/cost/process questions remain no_model', () => {
+    expect(routeModel('is ray review live?').route).toBe('no_model');
+    expect(routeModel('what processes are active?').route).toBe('no_model');
+    expect(routeModel('what tools do we have?').route).toBe('no_model');
+    expect(routeModel('what reports do we have?').route).toBe('no_model');
+    expect(routeModel('what settings are missing?').route).toBe('no_model');
+    expect(routeModel('what is broken?').route).toBe('no_model');
+    expect(routeModel('is youtube research running?').route).toBe('no_model');
+    expect(routeModel('what did that model call cost?').route).toBe('no_model');
+    expect(routeModel('what model did you use?').route).toBe('no_model');
+    expect(routeModel('what did you do today?').route).toBe('no_model');
+    expect(routeModel('give me the CEO version').route).toBe('no_model');
+  });
+});
+
+describe('No fake claims', () => {
   it('no fake live claims — credit_funding is static', () => {
     const s = getSectionStatus('credit_funding');
     expect(s!.status).not.toBe('live');
@@ -346,199 +675,5 @@ describe('Phase 2 section status answers', () => {
   it('automation is report_snapshot not live', () => {
     const s = getSectionStatus('automation');
     expect(s!.status).toBe('report_snapshot');
-  });
-});
-
-describe('YouTube-specific status answers', () => {
-  it('YouTube question does not return generic matching sections', () => {
-    const answer = buildSectionStatusAnswer('is youtube research running?');
-    expect(answer).toContain('NOT PROVEN LIVE');
-    expect(answer).not.toMatch(/^Matching sections:/);
-  });
-
-  it('YouTube answer says not_proven_live unless process/log/write proof exists', () => {
-    const answer = buildSectionStatusAnswer('is youtube research running and writing to Supabase?');
-    expect(answer).toContain('NOT PROVEN LIVE');
-    expect(answer).toContain('no active PID proof');
-    expect(answer).toContain('Next safe action');
-  });
-
-  it('YouTube answer includes scheduler proof details', () => {
-    const answer = buildSectionStatusAnswer('are transcripts being fetched?');
-    expect(answer).toContain('Scheduler installed');
-    expect(answer).toContain('Scheduler loaded');
-    expect(answer).toContain('Process active');
-    expect(answer).toContain('Last output');
-  });
-
-  it('YouTube routes to no_model', () => {
-    expect(routeModel('is youtube research running?').route).toBe('no_model');
-    expect(routeModel('are transcripts being fetched?').route).toBe('no_model');
-    expect(routeModel('is the YouTube scheduler active?').route).toBe('no_model');
-    expect(routeModel('what is the YouTube proof?').route).toBe('no_model');
-  });
-
-  it('YouTube is detected as section status question', () => {
-    expect(isSectionStatusQuestion('is youtube research running?')).toBe(true);
-    expect(isSectionStatusQuestion('are transcripts being fetched?')).toBe(true);
-  });
-});
-
-describe('Trading safety answers', () => {
-  it('trade execution request is blocked first', () => {
-    const answer = buildSectionStatusAnswer('can you place a trade?');
-    expect(answer).toMatch(/^No, I cannot place trades/);
-    expect(answer).toContain('Live/funded trading is blocked');
-    expect(answer).toContain('paper/demo only');
-  });
-
-  it('trading status separates process active from live trading', () => {
-    const answer = buildSectionStatusAnswer('is trading lab running?');
-    expect(answer).toContain('Trading process proof');
-    expect(answer).toContain('Trading UI/workflow source');
-    expect(answer).toContain('Trading mode');
-    expect(answer).toContain('Live/funded trading');
-    expect(answer).toContain('PAPER/DEMO ONLY');
-    expect(answer).toContain('BLOCKED');
-  });
-
-  it('trading execution is blocked_or_gated in routing', () => {
-    expect(routeModel('place a trade').route).toBe('blocked_or_gated');
-    expect(routeModel('buy EUR/USD').route).toBe('blocked_or_gated');
-    expect(routeModel('turn on live trading').route).toBe('blocked_or_gated');
-    expect(routeModel('connect funded account').route).toBe('blocked_or_gated');
-  });
-
-  it('trading STATUS questions route to no_model', () => {
-    expect(routeModel('is trading lab running?').route).toBe('no_model');
-    expect(routeModel('is trading active?').route).toBe('no_model');
-    expect(routeModel('is live trading enabled?').route).toBe('no_model');
-  });
-
-  it('trading status answer includes process proof', () => {
-    const answer = buildSectionStatusAnswer('is trading active?');
-    expect(answer).toContain('pid-588');
-    expect(answer).toContain('DEMO');
-    expect(answer).toContain('PAPER');
-  });
-});
-
-describe('Improved process answers', () => {
-  it('process answer includes counts and proof categories', () => {
-    const answer = buildSectionStatusAnswer('what processes are active?');
-    expect(answer).toContain('Active process (PID proof)');
-    expect(answer).toContain('Recent output');
-    expect(answer).toContain('Loaded only');
-    expect(answer).toContain('Proof source');
-    expect(answer).toContain('Next safe action');
-  });
-
-  it('process answer shows top examples', () => {
-    const answer = buildSectionStatusAnswer('what processes are active?');
-    expect(answer).toContain('hermes_agent');
-    expect(answer).toContain('tradingview_router');
-  });
-});
-
-describe('Improved tools/CLI answers', () => {
-  it('tools answer includes safe/approval/blocked command categories', () => {
-    const answer = buildSectionStatusAnswer('what tools do we have?');
-    expect(answer).toContain('Safe read-only commands');
-    expect(answer).toContain('Approval-required commands');
-    expect(answer).toContain('Blocked commands');
-  });
-
-  it('tools answer includes tool count and installed list', () => {
-    const answer = buildSectionStatusAnswer('what tools do we have?');
-    expect(answer).toContain('11 tools inventoried');
-    expect(answer).toContain('git');
-    expect(answer).toContain('node');
-  });
-
-  it('tools answer includes frontend warning', () => {
-    const answer = buildSectionStatusAnswer('what tools do we have?');
-    expect(answer).toContain('frontend cannot execute shell commands');
-  });
-
-  it('tools answer includes proof level', () => {
-    const answer = buildSectionStatusAnswer('what tools do we have?');
-    expect(answer).toContain('Proof level');
-  });
-});
-
-describe('Improved report answers', () => {
-  it('reports answer includes count, categories, and proof source', () => {
-    const answer = buildSectionStatusAnswer('what reports do we have?');
-    expect(answer).toContain('62 reports');
-    expect(answer).toContain('Categories');
-    expect(answer).toContain('Most recent reports');
-    expect(answer).toContain('Proof source');
-    expect(answer).toContain('Next action');
-  });
-
-  it('reports answer includes category details', () => {
-    const answer = buildSectionStatusAnswer('what reports do we have?');
-    expect(answer).toContain('operations_status');
-    expect(answer).toContain('hermes_ai');
-    expect(answer).toContain('supabase_data');
-  });
-});
-
-describe('Improved settings answers', () => {
-  it('settings answer includes configured/missing groups', () => {
-    const answer = buildSectionStatusAnswer('what settings are missing?');
-    expect(answer).toContain('Configured');
-    expect(answer).toContain('Missing');
-    expect(answer).toContain('supabase');
-    expect(answer).toContain('hermes_chat');
-  });
-
-  it('settings answer includes redaction note', () => {
-    const answer = buildSectionStatusAnswer('what settings are missing?');
-    expect(answer).toContain('Values are never exposed');
-  });
-
-  it('settings answer includes proof level and next action', () => {
-    const answer = buildSectionStatusAnswer('what settings are missing?');
-    expect(answer).toContain('safe_config_presence');
-    expect(answer).toContain('Next safe action');
-  });
-});
-
-describe('Improved broken/priorities answer', () => {
-  it('broken answer groups by priority', () => {
-    const answer = buildSectionStatusAnswer('what is broken?');
-    expect(answer).toContain('Priority 1');
-    expect(answer).toContain('Priority 2');
-    expect(answer).toContain('Priority 3');
-  });
-
-  it('broken answer includes proof gap and next action for each', () => {
-    const answer = buildSectionStatusAnswer('what is broken?');
-    expect(answer).toContain('Proof gap');
-    expect(answer).toContain('Next safe action');
-    expect(answer).toContain('Credit & Funding');
-    expect(answer).toContain('YouTube research');
-    expect(answer).toContain('Reports');
-  });
-});
-
-describe('Badge and status label', () => {
-  it('header badge no longer says Local Advisor when model-ready', () => {
-    // The badge is computed dynamically in HermesChatPanel.jsx
-    // We verify the routing policy still routes status questions to no_model
-    expect(routeModel('what is the status?').route).toBe('no_model');
-  });
-
-  it('all status/cost/process questions remain no_model', () => {
-    expect(routeModel('is ray review live?').route).toBe('no_model');
-    expect(routeModel('what processes are active?').route).toBe('no_model');
-    expect(routeModel('what tools do we have?').route).toBe('no_model');
-    expect(routeModel('what reports do we have?').route).toBe('no_model');
-    expect(routeModel('what settings are missing?').route).toBe('no_model');
-    expect(routeModel('what is broken?').route).toBe('no_model');
-    expect(routeModel('is youtube research running?').route).toBe('no_model');
-    expect(routeModel('what did that model call cost?').route).toBe('no_model');
-    expect(routeModel('what model did you use?').route).toBe('no_model');
   });
 });

@@ -26,9 +26,9 @@ describe('Model Routing Policy', () => {
     expect(result.route).toBe('primary_model');
   });
 
-  it('short report rewrite → cheap_model', () => {
+  it('short report rewrite with plain english → no_model (CEO summary)', () => {
     const result = routeModel('rewrite this summary in plain english');
-    expect(result.route).toBe('cheap_model');
+    expect(result.route).toBe('no_model');
   });
 
   it('execution request → blocked_or_gated', () => {
@@ -86,9 +86,9 @@ describe('Model Routing Policy', () => {
     expect(result.route).toBe('primary_model');
   });
 
-  it('brief explanation → cheap_model', () => {
+  it('brief explanation with plain english → no_model (CEO summary)', () => {
     const result = routeModel('explain this in plain english');
-    expect(result.route).toBe('cheap_model');
+    expect(result.route).toBe('no_model');
   });
 
   it('creative output → primary_model', () => {

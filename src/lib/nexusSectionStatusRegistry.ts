@@ -480,283 +480,409 @@ export function isSectionStatusQuestion(query: string): boolean {
 
 /**
  * Build a plain-language answer to a section status question.
+ * Format: Plain answer → What this means → Proof → Blocker → Next safe action
  */
 export function buildSectionStatusAnswer(query: string): string {
   const lower = (query || '').toLowerCase();
 
   // ── TRADING SAFETY: execution requests blocked FIRST ──
   if (/\b(can you\s+)?(place\s+a\s+trade|execute\s+(this\s+)?trade|buy\s+\w+|sell\s+\w+|turn\s+on\s+live\s+trading|connect\s+funded|start\s+trading|open\s+a\s+position|make\s+a\s+trade)\b/i.test(lower)) {
-    return 'No, I cannot place trades from this chat. Live/funded trading is blocked. Trading Lab is paper/demo only. I can help review a paper/demo strategy, summarize the latest trading report, or create an approval-gated task for a safe paper test.';
+    return [
+      `Plain answer:`,
+      `No, I cannot place trades from this chat. Live/funded trading is blocked.`,
+      ``,
+      `What this means:`,
+      `Trading Lab is set up for paper/demo testing only. There is no approved live broker connection, and placing real trades from this chat is intentionally blocked.`,
+      ``,
+      `Proof:`,
+      `Trading mode: paper/demo only. Live trading enabled: false. Funded broker connected: false.`,
+      ``,
+      `Blocker:`,
+      `Live/funded trading is blocked. No approved broker path.`,
+      ``,
+      `Next safe action:`,
+      `I can help review a paper/demo strategy, summarize the latest trading report, or create an approval-gated task for a safe paper test.`,
+    ].join('\n');
   }
 
   // ── YOUTUBE-SPECIFIC: before generic section matching ──
   if (/\b(youtube|transcripts?|video\s+fetch|channel\s+poll|metadata\s+fetch)\b/i.test(lower)) {
     const ytProcess = YOUTUBE_PROOF;
-    const research = getResearchEngineStatus();
-    const lines = [
-      `YouTube research status: NOT PROVEN LIVE`,
+    return [
+      `Plain answer:`,
+      `YouTube research is not fully live yet.`,
       ``,
-      `Scheduler installed: ${ytProcess.schedulerInstalled}`,
-      `Scheduler loaded: ${ytProcess.schedulerLoaded}`,
-      `Scheduler running: ${ytProcess.schedulerRunning} (no active PID proof)`,
-      `Process active: ${ytProcess.processActive}`,
-      `Last output: ${ytProcess.lastOutputAt || 'none'}`,
-      `Last Supabase write: ${ytProcess.lastSupabaseWriteAt || 'none'}`,
-      `Proof level: ${ytProcess.proofLevel}`,
+      `What this means:`,
+      `Nexus has YouTube research pieces installed and Research Engine rows exist in Supabase, but I do not see proof that the YouTube scheduler is actively fetching new videos/transcripts and writing fresh Supabase rows.`,
       ``,
-      `Research Engine rows in Supabase: ${research.rowCount} (from seed, not live fetch)`,
-      `YouTube proof status: ${research.youtubeProofStatus}`,
+      `Proof:`,
+      `Scheduler installed: ${ytProcess.schedulerInstalled ? 'yes' : 'no'}. Scheduler loaded: ${ytProcess.schedulerLoaded ? 'yes' : 'no'}. Active process: ${ytProcess.processActive ? 'yes' : 'no'}. Last output: ${ytProcess.lastOutputAt || 'none'}. Last Supabase write: ${ytProcess.lastSupabaseWriteAt || 'none'}.`,
       ``,
-      `What I do NOT have:`,
-      `  - No process/log/write proof that a YouTube scheduler is actively fetching metadata/transcripts`,
-      `  - No proof of new Supabase rows from live YouTube fetch`,
-      `  - Scheduler is loaded but not confirmed running`,
+      `Blocker:`,
+      `No process/log/write proof from a live YouTube fetch. Scheduler is loaded but not confirmed running.`,
       ``,
       `Next safe action:`,
-      `  1. Inspect youtube-channel-poller.log for recent fetch entries`,
-      `  2. Check if YouTube API key is valid`,
-      `  3. Verify that new research_sources rows appear after a scheduler run`,
-      `  4. Do NOT claim YouTube research is live until write proof exists`,
-    ];
-    return lines.join('\n');
+      `Run a safe YouTube dry-run, then verify that a new research_sources row appears in Supabase.`,
+    ].join('\n');
   }
 
   // ── TRADING STATUS: separate process/UI/mode/live ──
   if (/\b(is\s+)?(trading\s+lab\s+)?(running|active|live|trading\s+status|trading\s+lab\s+status)\b/i.test(lower) && /\btrading\b/i.test(lower)) {
     const tradingSection = SECTIONS.find((s) => s.id === 'trading_lab')!;
     const tradingProcess = PROCESS_ITEMS.find((p) => p.name === 'nexus_trading_engine')!;
-    const lines = [
-      `Trading Lab Status — 4 layers:`,
+    return [
+      `Plain answer:`,
+      `Trading Lab is running only in paper/demo mode. It cannot place live trades.`,
       ``,
-      `1. Trading process proof: ${tradingProcess.proofLevel}`,
-      `   - Process active: ${tradingProcess.processActive} (pid-588)`,
-      `   - Scheduler loaded: ${tradingProcess.schedulerLoaded}`,
-      `   - Last output: ${tradingProcess.lastOutputAt || 'none'}`,
+      `What this means:`,
+      `A trading process appears active (pid-588), but live/funded trading is blocked. The UI is still mostly static/report-backed. This is safe — no real money is at risk.`,
       ``,
-      `2. Trading UI/workflow source: ${tradingSection.status.toUpperCase()}`,
-      `   - Source: ${tradingSection.source}`,
-      `   - Proof level: ${tradingSection.proofLevel}`,
+      `Proof:`,
+      `Process active: ${tradingProcess.processActive ? 'yes' : 'no'} (pid-588). Mode: paper/demo. Live trading enabled: false. Funded broker connected: false. UI source: ${tradingSection.status}.`,
       ``,
-      `3. Trading mode: PAPER/DEMO ONLY`,
-      `   - liveTradingEnabled: false`,
-      `   - fundedBrokerConnected: false`,
+      `Blocker:`,
+      `No approved live broker path, and live trading remains intentionally blocked.`,
       ``,
-      `4. Live/funded trading: BLOCKED`,
-      `   - No live broker connection proven`,
-      `   - No funded account wired`,
-      ``,
-      `Bottom line: The trading engine process is active in demo/paper mode. Live trading is disabled and blocked. Do not call the process "live trading."`,
-    ];
-    return lines.join('\n');
+      `Next safe action:`,
+      `Review the latest paper/demo report or prepare a safe paper-test task.`,
+    ].join('\n');
   }
 
   // ── "what sections are live?" ──
   if (/what\s+sections\s+are\s+live|which\s+sections\s+are\s+live|what\s+is\s+live/i.test(lower)) {
     const live = getLiveSections();
     if (live.length === 0) return 'No sections are confirmed live yet.';
-    const lines = live.map((s) => `✅ ${s.name} — ${s.rowCount} rows from ${s.tableNames.join(', ') || 'local context'}`);
-    return `Live sections (${live.length}/${SECTIONS.length}):\n${lines.join('\n')}`;
+    const lines = live.map((s) => `  - ${s.name}: ${s.rowCount} rows from ${s.tableNames.join(', ') || 'local context'}`);
+    return [
+      `Plain answer:`,
+      `${live.length} out of ${SECTIONS.length} sections are live and connected to real Supabase data.`,
+      ``,
+      `What this means:`,
+      `These sections pull real data from the database. When something changes in Supabase, these sections reflect it.`,
+      ``,
+      `Live sections:`,
+      ...lines,
+      ``,
+      `Next safe action:`,
+      `Review the live data in each section to confirm it matches expectations.`,
+    ].join('\n');
   }
 
   // ── "what sections are static?" ──
   if (/what\s+sections\s+are\s+static|which\s+sections\s+are\s+static|what\s+is\s+static/i.test(lower)) {
     const stat = getStaticSections();
     if (stat.length === 0) return 'No sections are labeled as static.';
-    const lines = stat.map((s) => `⚠️ ${s.name} — ${s.notes}`);
-    return `Static sections (${stat.length}/${SECTIONS.length}):\n${lines.join('\n')}`;
+    const lines = stat.map((s) => `  - ${s.name}: ${s.description}`);
+    return [
+      `Plain answer:`,
+      `${stat.length} sections are still using bundled/static data — they look real but are not connected to a live backend.`,
+      ``,
+      `What this means:`,
+      `These sections show pre-loaded or mockup data. Changes in the database will not appear here until they are wired up.`,
+      ``,
+      `Static sections:`,
+      ...lines,
+      ``,
+      `Blocker:`,
+      `No live Supabase table wired for these sections.`,
+      ``,
+      `Next safe action:`,
+      `Decide which static section to activate next, then wire it to Supabase.`,
+    ].join('\n');
   }
 
   // ── "what is blocked?" ──
   if (/what\s+is\s+blocked|which\s+sections\s+are\s+blocked|what\s+sections\s+are\s+blocked/i.test(lower)) {
     const allWithBlockers = SECTIONS.filter((s) => s.blockers.length > 0);
-    if (allWithBlockers.length === 0) return 'No sections have blockers.';
-    const lines = allWithBlockers.map((s) => `🚫 ${s.name}:\n${s.blockers.map((b) => `  - ${b}`).join('\n')}`);
-    return `Sections with blockers (${allWithBlockers.length}):\n${lines.join('\n')}`;
+    if (allWithBlockers.length === 0) return 'No sections have blockers — everything is running clean.';
+    const lines = allWithBlockers.map((s) => `  - ${s.name}: ${s.blockers.join('; ')}`);
+    return [
+      `Plain answer:`,
+      `${allWithBlockers.length} sections have blockers that prevent them from working fully.`,
+      ``,
+      `What this means:`,
+      `These sections need specific issues resolved before they can operate as intended.`,
+      ``,
+      `Sections with blockers:`,
+      ...lines,
+      ``,
+      `Next safe action:`,
+      `Pick the highest-priority blocker and resolve it. Credit & Funding and Marketing Drafts are the most revenue-relevant.`,
+    ].join('\n');
   }
 
   // ── "what is scheduled?" ──
   if (/what\s+is\s+scheduled|what\s+schedules|which.*scheduled/i.test(lower)) {
     const scheduled = SECTIONS.filter((s) => s.schedulerInstalled);
     if (scheduled.length === 0) return 'No schedulers are installed.';
-    const lines = scheduled.map((s) => `📅 ${s.name}: installed=${s.schedulerInstalled}, running=${s.schedulerRunning}`);
-    return `Scheduled sections:\n${lines.join('\n')}`;
+    const lines = scheduled.map((s) => `  - ${s.name}: installed=${s.schedulerInstalled ? 'yes' : 'no'}, running=${s.schedulerRunning ? 'yes' : 'no'}`);
+    return [
+      `Plain answer:`,
+      `${scheduled.length} sections have schedulers installed.`,
+      ``,
+      `What this means:`,
+      `These sections are set up to run on a schedule. However, installed does not mean running — some may only be loaded, not proven active.`,
+      ``,
+      `Scheduled sections:`,
+      ...lines,
+      ``,
+      `Next safe action:`,
+      `Check individual scheduler logs to confirm they are actually running and producing output.`,
+    ].join('\n');
   }
 
   // ── "show proof this is working" ──
   if (/show\s+proof|proof\s+this\s+is\s+working|how\s+do\s+you\s+know/i.test(lower)) {
-    const proofLines = SECTIONS.filter((s) => s.proofLevel === 'verified').map(
-      (s) => `✅ ${s.name}: verified at ${s.verifiedAt?.split('T')[0] || 'unknown'}, source=${s.source}, rows=${s.rowCount}, table=${s.tableNames.join(',')}`
-    );
-    const unproven = SECTIONS.filter((s) => s.proofLevel !== 'verified').map(
-      (s) => `⚠️ ${s.name}: ${s.proofLevel} — ${s.notes}`
-    );
-    return `Verified sections:\n${proofLines.join('\n')}\n\nUnproven sections:\n${unproven.join('\n')}`;
+    const verified = SECTIONS.filter((s) => s.proofLevel === 'verified');
+    const unproven = SECTIONS.filter((s) => s.proofLevel !== 'verified');
+    const vLines = verified.map((s) => `  - ${s.name}: verified ${s.verifiedAt?.split('T')[0] || ''}, ${s.rowCount} rows from ${s.tableNames.join(',')}`);
+    const uLines = unproven.map((s) => `  - ${s.name}: ${s.proofLevel} — ${s.description}`);
+    return [
+      `Plain answer:`,
+      `${verified.length} sections are verified with real data. ${unproven.length} sections still need proof.`,
+      ``,
+      `What this means:`,
+      `Verified sections have confirmed Supabase reads/writes. Unproven sections may use local data or have unconfirmed schedulers.`,
+      ``,
+      `Verified sections:`,
+      ...vLines,
+      ``,
+      `Unproven sections:`,
+      ...uLines,
+      ``,
+      `Next safe action:`,
+      `Focus on proving the unproven sections, starting with YouTube research and the automation scheduler.`,
+    ].join('\n');
   }
 
   // ── "what is the status?" — summary ──
   if (/what\s+(is|are)\s+(the\s+)?status|status\s+(of\s+)?all|overall\s+status/i.test(lower)) {
     const summary = getSectionSummary();
-    return `Nexus OS status: ${summary.live} live, ${summary.static} static, ${summary.mismatch} mismatch, ${summary.blocked} blocked, ${summary.unknown} unknown, ${summary.report_snapshot} report snapshots (${summary.total} total)`;
+    return [
+      `Plain answer:`,
+      `Nexus has ${summary.live} live sections, ${summary.static} static sections, and ${summary.report_snapshot} report-backed sections out of ${summary.total} total.`,
+      ``,
+      `What this means:`,
+      `The core system is working — Supabase reads, Hermes advisor, and section proof are active. The money workflows (Credit & Funding, Marketing Drafts) and automation proof still need activation.`,
+      ``,
+      `Proof:`,
+      `${summary.live} verified live, ${summary.static} static/local, ${summary.report_snapshot} report snapshots, ${summary.blocked} blocked.`,
+      ``,
+      `Next safe action:`,
+      `Activate Credit & Funding and Marketing Drafts to connect revenue workflows.`,
+    ].join('\n');
   }
 
-  // ── "what processes are available/active?" — IMPROVED ──
+  // ── "what processes are available/active?" ──
   if (/what\s+processes\s+(are\s+)?(available|active|running)/i.test(lower)) {
     const active = PROCESS_ITEMS.filter((p) => p.proofLevel === 'active_process');
     const recent = PROCESS_ITEMS.filter((p) => p.proofLevel === 'recent_output');
-    const loaded = PROCESS_ITEMS.filter((p) => p.proofLevel === 'loaded_only');
-    const scripts = PROCESS_ITEMS.filter((p) => p.proofLevel === 'available_script_only');
     const topActive = active.slice(0, 5);
-    const lines = [
-      `Process inventory (${PROCESS_ITEMS.length} tracked):`,
-      `  ✅ Active process (PID proof): ${active.length}`,
-      `  📋 Recent output (no active PID): ${recent.length}`,
-      `  ⏳ Loaded only (no proof): ${loaded.length}`,
-      `  📜 Available script only: ${scripts.length}`,
+    const activeLines = topActive.map((p) => `  - ${p.name}: running since ${p.lastSeenAt?.split('T')[1]?.slice(0, 5) || 'unknown'}`);
+    return [
+      `Plain answer:`,
+      `${active.length} processes are currently running or recently verified. ${recent.length} produced output recently but have no active PID.`,
       ``,
-      `Top active processes:`,
-      ...topActive.map((p) => `  • ${p.name} — pid proof, last seen ${p.lastSeenAt?.split('T')[1]?.slice(0, 5) || 'unknown'}`),
+      `What this means:`,
+      `These are real background services — Hermes agent, TradingView router, research workers, and the trading engine. They are the operational backbone of Nexus.`,
       ``,
-      `Proof source: process inventory (${PROCESS_SUMMARY.total_tracked} tracked, ${PROCESS_SUMMARY.active_process} active)`,
-      `Next safe action: Inspect individual process logs for recent entries`,
-    ];
-    return lines.join('\n');
+      `Top running processes:`,
+      ...activeLines,
+      ``,
+      `Proof:`,
+      `Process inventory: ${PROCESS_SUMMARY.total_tracked} tracked, ${PROCESS_SUMMARY.active_process} with active PID proof.`,
+      ``,
+      `Next safe action:`,
+      `Inspect individual process logs for recent entries, or check if any processes need restarting.`,
+    ].join('\n');
   }
 
-  // ── "what tools do we have?" — IMPROVED ──
+  // ── "what tools do we have?" ──
   if (/what\s+tools\s+(do\s+we\s+)?have|what\s+cli\s+tools|what\s+tools\s+(are|is)\s+(safe|available)|is\s+(supabase|netlify|git|gh|ollama)\s+(cli\s+)?(available|connected|installed)/i.test(lower)) {
     const installed = TOOL_REGISTRY.filter((t) => t.installed);
-    const safeCmds = installed.flatMap((t) => t.safeReadOnlyCommands.slice(0, 2).map((c) => `  • ${t.name}: ${c}`));
-    const approvalCmds = installed.flatMap((t) => t.approvalRequiredCommands.slice(0, 1).map((c) => `  • ${t.name}: ${c}`));
-    const blockedCmds = installed.flatMap((t) => t.blockedCommands.slice(0, 1).map((c) => `  • ${t.name}: ${c}`));
-    const lines = [
-      `CLI / Tool Registry — ${TOOL_SUMMARY.totalTools} tools inventoried, ${TOOL_SUMMARY.installed} installed, ${TOOL_SUMMARY.authenticated} authenticated`,
+    const toolNames = installed.map((t) => t.name).join(', ');
+    return [
+      `Plain answer:`,
+      `${TOOL_SUMMARY.totalTools} CLI tools are installed and available. None are authenticated yet.`,
       ``,
-      `Installed tools: ${installed.map((t) => t.name).join(', ')}`,
-      `Proof level: ${TOOL_SUMMARY.proofLevel}`,
+      `What this means:`,
+      `These tools (git, node, npm, python3, supabase, netlify, gh, ollama, etc.) are on the system and ready to use, but none have confirmed authentication. Safe read-only commands work; anything that changes things needs approval.`,
       ``,
-      `Safe read-only commands (examples):`,
-      ...safeCmds.slice(0, 6),
+      `Installed tools:`,
+      `  ${toolNames}`,
       ``,
-      `Approval-required commands (examples):`,
-      ...approvalCmds.slice(0, 4),
+      `Proof:`,
+      `Tool inventory: ${TOOL_SUMMARY.installed} installed, ${TOOL_SUMMARY.authenticated} authenticated. Proof level: installed_only.`,
       ``,
-      `Blocked commands (examples):`,
-      ...blockedCmds.slice(0, 3),
+      `Blocker:`,
+      `The frontend cannot execute shell commands. Tool availability does not imply authentication.`,
       ``,
-      `Note: The frontend cannot execute shell commands. Tool availability does not imply authentication.`,
-      `Next safe action: Use safe read-only commands manually; approval-gated commands need Ray Review.`,
-    ];
-    return lines.join('\n');
+      `Next safe action:`,
+      `Use safe read-only commands manually; approval-gated commands need Ray Review.`,
+    ].join('\n');
   }
 
-  // ── "what reports do we have?" — IMPROVED ──
+  // ── "what reports do we have?" ──
   if (/what\s+reports\s+(do\s+we\s+)?have|what\s+reports|show\s+report|what\s+is\s+the\s+latest\s+report|explain\s+(system\s+health|this)\s+report/i.test(lower)) {
-    const cats = REPORT_CENTER.categories.map((c) => `  • ${c.name}: ${c.description} (${c.reports.length} reports)`);
     const latest = REPORT_CENTER.latestReports.mostRecentByTimestamp.slice(0, 3);
-    const lines = [
-      `Reports Center — ${REPORT_CENTER.reportCount} reports indexed across ${REPORT_CENTER.categories.length} categories`,
+    const latestLines = latest.map((r) => `  - ${r.file} (${r.timestamp})`);
+    return [
+      `Plain answer:`,
+      `${REPORT_CENTER.reportCount} reports are indexed across ${REPORT_CENTER.categories.length} categories. These are local files, not a live database-backed report system.`,
       ``,
-      `Categories:`,
-      ...cats,
+      `What this means:`,
+      `Reports exist as files on disk. They are useful for reviewing what happened, but they are not the same as a live dashboard that updates automatically.`,
       ``,
       `Most recent reports:`,
-      ...latest.map((r) => `  • ${r.file} (${r.timestamp})`),
+      ...latestLines,
       ``,
-      `Proof source: reports/ directory listing`,
-      `Blockers: ${REPORT_CENTER.blockers.join('; ')}`,
-      `Next action: ${REPORT_CENTER.nextSafeAction}`,
-    ];
-    return lines.join('\n');
+      `Proof:`,
+      `Report center reads local files only. No Supabase table for report registry.`,
+      ``,
+      `Next safe action:`,
+      `Seed a report registry to Supabase to make reports queryable from the live system.`,
+    ].join('\n');
   }
 
-  // ── "what settings are missing?" — IMPROVED ──
+  // ── "what settings are missing?" ──
   if (/what\s+settings\s+(are\s+)?missing|what\s+settings|missing\s+config|is\s+(web\s+search|hermes\s+model|supabase)\s+configured/i.test(lower)) {
     const present = SETTINGS_STATUS.items.filter((c) => c.configPresent);
     const missing = SETTINGS_STATUS.items.filter((c) => !c.configPresent);
-    const lines = [
-      `Settings — ${SETTINGS_STATUS.summary.present}/${SETTINGS_STATUS.summary.total_configs} configured`,
+    const presentNames = present.map((c) => c.name).join(', ');
+    const missingNames = missing.map((c) => c.name).join(', ');
+    return [
+      `Plain answer:`,
+      `${SETTINGS_STATUS.summary.present} of ${SETTINGS_STATUS.summary.total_configs} config groups are present. ${SETTINGS_STATUS.summary.missing} are missing.`,
       ``,
-      `✅ Configured (${present.length}):`,
-      ...present.map((c) => `  • ${c.name} — proof: ${c.proofLevel}`),
+      `What this means:`,
+      `Config presence is checked by name only — no secret values are ever exposed. Some tools (web search, Hermes model) are not yet configured.`,
       ``,
-      `❌ Missing (${missing.length}):`,
-      ...missing.map((c) => `  • ${c.name} — blockers: ${c.blockers.join('; ')}`),
+      `Configured:`,
+      `  ${presentNames || 'none'}`,
       ``,
-      `Values are never exposed. Only presence by name is shown.`,
-      `Proof source: ${SETTINGS_STATUS.mode}`,
-      `Next safe action: Configure missing groups by setting the required env vars`,
-    ];
-    return lines.join('\n');
+      `Missing:`,
+      `  ${missingNames || 'none'}`,
+      ``,
+      `Proof:`,
+      `Config check mode: safe_config_presence. Only presence by name is shown.`,
+      ``,
+      `Next safe action:`,
+      `Configure missing groups by setting the required environment variables.`,
+    ].join('\n');
   }
 
-  // ── "what is broken?" — IMPROVED with priority grouping ──
+  // ── "what is broken?" — CEO-friendly grouped summary ──
   if (/what\s+is\s+broken|what.*broken|what.*failing|what.*not\s+working/i.test(lower)) {
     const broken = SECTIONS.filter((s) => s.blockers.length > 0);
     if (broken.length === 0) return 'No sections have blockers — everything is running clean.';
 
-    // Priority grouping
     const p1 = broken.filter((s) => ['credit_funding', 'marketing_drafts'].includes(s.id));
     const p2 = broken.filter((s) => ['research_engine', 'automation', 'system_health'].includes(s.id));
     const p3 = broken.filter((s) => ['reports', 'cli_registry', 'settings', 'trading_lab'].includes(s.id));
 
-    const formatSection = (s: SectionEntry) => {
-      const processInfo = PROCESS_ITEMS.find((p) => s.id === 'trading_lab' && p.name === 'nexus_trading_engine');
-      const processNote = processInfo ? `\n    Process: ${processInfo.proofLevel} (${processInfo.processActive ? 'active' : 'inactive'})` : '';
-      return [
-        `  ${s.name} — ${s.status.toUpperCase()}`,
-        `    Proof gap: ${s.blockers.join('; ')}`,
-        `    Next safe action: ${s.nextAction}${processNote}`,
-      ].join('\n');
-    };
+    const formatP = (items: SectionEntry[]) => items.length > 0
+      ? items.map((s) => `  - ${s.name}: ${s.blockers[0] || 'blocked'}`).join('\n')
+      : `  - (none)`;
 
-    const lines = [
-      `Blocked/broken sections (${broken.length}):`,
+    return [
+      `Plain answer:`,
+      `Nexus is working in the core areas, but the money workflows and automation proof still need activation.`,
       ``,
-      `Priority 1 — Money/client workflow:`,
-      ...p1.flatMap(formatSection),
+      `What this means:`,
+      `The base system is real now — Hermes, Supabase reads, section proof, process proof, and safety blocks are working. The unfinished parts are the workflows that make Nexus operational for clients and revenue.`,
       ``,
-      `Priority 2 — Proof/automation:`,
-      ...p2.flatMap(formatSection),
+      `1. Money/client workflows:`,
+      formatP(p1),
       ``,
-      `Priority 3 — Infrastructure/reporting:`,
-      ...p3.flatMap(formatSection),
-    ];
-    return lines.join('\n');
+      `2. Automation/proof:`,
+      formatP(p2),
+      ``,
+      `3. Infrastructure/reporting:`,
+      formatP(p3),
+      ``,
+      `Next safe action:`,
+      `Activate Credit & Funding and Marketing Drafts first because those connect directly to revenue.`,
+    ].join('\n');
   }
 
   // ── "what needs approval?" ──
   if (/what\s+needs\s+approval|what.*approv|what.*pending|approval\s+queue/i.test(lower)) {
     const gated = SECTIONS.filter((s) => s.notes.toLowerCase().includes('approval') || s.nextAction.toLowerCase().includes('approval'));
     if (gated.length === 0) return 'No approval-gated items found.';
-    const lines = gated.map((s) => `📋 ${s.name}: ${s.nextAction}\n  Notes: ${s.notes}`);
-    return `Approval-gated items (${gated.length}):\n${lines.join('\n')}`;
+    const lines = gated.map((s) => `  - ${s.name}: ${s.nextAction}`);
+    return [
+      `Plain answer:`,
+      `${gated.length} items require Ray's approval before they can proceed.`,
+      ``,
+      `What this means:`,
+      `These workflows can prepare the action, but Ray must approve before anything external happens.`,
+      ``,
+      `Items awaiting approval:`,
+      ...lines,
+      ``,
+      `Next safe action:`,
+      `Review each item and approve or reject as appropriate.`,
+    ].join('\n');
   }
 
-  // ── Specific section: "is ray review live?" / "is the research engine working?" ──
+  // ── Specific section: "is ray review live?" ──
   const sections = findSectionsByQuery(lower);
   if (sections.length === 1) {
     const s = sections[0];
-    const statusIcon = s.status === 'live' ? '✅' : s.status === 'static' ? '⚠️' : s.status === 'blocked' ? '🚫' : s.status === 'report_snapshot' ? '📊' : '❓';
-    let answer = `${statusIcon} ${s.name} is ${s.status.toUpperCase()}`;
-    if (s.source === 'supabase') answer += ` — data from Supabase (${s.tableNames.join(', ') || 'no table'})`;
-    else if (s.source === 'local_static') answer += ` — local static data only`;
-    else if (s.source === 'mixed') answer += ` — mixed live + static`;
-    if (s.rowCount > 0) answer += `, ${s.rowCount} rows`;
-    if (s.verifiedAt) answer += `, verified ${s.verifiedAt.split('T')[0]}`;
-    if (s.blockers.length > 0) answer += `\nBlockers: ${s.blockers.join('; ')}`;
-    if (s.nextAction) answer += `\nNext: ${s.nextAction}`;
-    return answer;
+    const plainAnswer = s.status === 'live'
+      ? `${s.name} is live and connected to real Supabase data.`
+      : s.status === 'static'
+      ? `${s.name} is still using bundled/static data — not connected to a live backend.`
+      : s.status === 'report_snapshot'
+      ? `${s.name} is reading from local report files, not a live database.`
+      : `${s.name} status: ${s.status}.`;
+
+    const whatThisMeans = s.status === 'live'
+      ? `This section pulls real data from ${s.tableNames.join(', ') || 'Supabase'}. When the database changes, this section reflects it.`
+      : s.status === 'static'
+      ? `This section shows pre-loaded data. Changes in the database will not appear here until it is wired up.`
+      : `This section reads generated report files. That is useful for reviewing history, but it is not the same as a live workflow.`;
+
+    return [
+      `Plain answer:`,
+      plainAnswer,
+      ``,
+      `What this means:`,
+      whatThisMeans,
+      ``,
+      `Proof:`,
+      `Status: ${s.status}. Source: ${s.source}. Proof level: ${s.proofLevel}.${s.rowCount > 0 ? ` Rows: ${s.rowCount}.` : ''}`,
+      s.blockers.length > 0 ? `\nBlocker: ${s.blockers.join('; ')}` : '',
+      ``,
+      `Next safe action:`,
+      s.nextAction,
+    ].filter(Boolean).join('\n');
   }
 
   if (sections.length > 1) {
     const lines = sections.map((s) => {
       const icon = s.status === 'live' ? '✅' : s.status === 'static' ? '⚠️' : s.status === 'report_snapshot' ? '📊' : '❓';
-      return `${icon} ${s.name}: ${s.status}`;
+      return `  ${icon} ${s.name}: ${s.status}`;
     });
-    return `Matching sections:\n${lines.join('\n')}`;
+    return [
+      `Plain answer:`,
+      `${sections.length} sections match your question.`,
+      ``,
+      `Matching sections:`,
+      ...lines,
+      ``,
+      `Next safe action:`,
+      `Ask about a specific section for details.`,
+    ].join('\n');
   }
 
-  // Fallback: return overall summary
+  // Fallback
   const summary = getSectionSummary();
-  return `Nexus OS: ${summary.live} live, ${summary.static} static, ${summary.report_snapshot} report snapshot sections out of ${summary.total} total. Ask about a specific section for details.`;
+  return [
+    `Plain answer:`,
+    `Nexus has ${summary.live} live, ${summary.static} static, and ${summary.report_snapshot} report-backed sections out of ${summary.total} total.`,
+    ``,
+    `Next safe action:`,
+    `Ask about a specific section for details.`,
+  ].join('\n');
 }
