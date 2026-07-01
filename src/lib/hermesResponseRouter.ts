@@ -892,7 +892,7 @@ function handleBackendQuery(message: string): HermesResponse {
 
   if (isInternetQuestion) {
     return {
-      text: 'I do not have live web search configured yet. To enable it, set VITE_HERMES_SEARCH_ENABLED=true and configure a search API key in the Edge Function. I can read local bundled context, report snapshots, and live Supabase data when connected.',
+      text: 'Web search is not configured yet. To enable it, deploy the hermes-search Edge Function and set VITE_HERMES_SEARCH_ENABLED=true. I can read local bundled context, report snapshots, and live Supabase data when connected.',
       confidence: 'high',
       source: 'honest_fallback',
       questionType: 'backend_query',
@@ -901,6 +901,16 @@ function handleBackendQuery(message: string): HermesResponse {
   }
 
   if (isModelQuestion) {
+    const chatEnabled = (import.meta.env?.VITE_HERMES_CHAT_ENABLED as string) === 'true';
+    if (chatEnabled) {
+      return {
+        text: 'I have a live model configured through OpenRouter (via Supabase Edge Function). The model is openai/gpt-4o-mini. I answer most questions from local context to save tokens, but the model is available for complex reasoning, strategy, and creative tasks.',
+        confidence: 'high',
+        source: 'backend_context',
+        questionType: 'backend_query',
+        needsClarification: false,
+      };
+    }
     return {
       text: 'I do not have a live AI model configured in this chat layer. I use local router-based reasoning (intent classification, entity resolution, page context) for all responses. To enable a live model, configure an LLM provider in the Edge Function secrets.',
       confidence: 'high',

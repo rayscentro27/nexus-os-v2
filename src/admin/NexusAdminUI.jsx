@@ -22,6 +22,7 @@ import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
 import { hermesResponseRouter } from '../lib/hermesResponseRouter'
+import ErrorBoundary from '../components/ErrorBoundary'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
@@ -1432,36 +1433,36 @@ export default function NexusAdminUI({ email }) {
   }, [])
 
   const page = {
-    command: <RestoredCommandCenter onNavigate={navigate} onAskHermes={askHermes} />,
-    subscription: <SubscriptionCommandCenterPage />,
-    creative: <Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" />,
-    design: <Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" />,
-    trading: <Workspace id="trading" title="Trading Lab" sub="Paper Trading Research Room" kind="trading" type="trading" />,
-    seo: <Workspace id="seo" title="SEO / Marketing" sub="Growth Room" kind="seo" type="seo" />,
-    integrations: <Workspace id="integrations" title="Integrations" sub="Connector Status Room" kind="integrations" type="integrations" layoutClass="narrow-left" />,
-    ops: <Workspace id="ops" title="Ops & Improvements" sub="System Improvement Room" kind="ops" type="ops" layoutClass="wide-left" />,
-    jobs: <Workspace id="jobs" title="Agent Jobs" sub="Automation Workforce Room" kind="jobs" type="jobs" />,
-    source: <Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" />,
-    opportunity: <SimplePage title="Business Opportunities" sub="26 Scored Opportunities · Revenue Potential · Approval-Gated Conversion"><BusinessOpportunitiesPanel onAskHermes={askHermes} /></SimplePage>,
-    health: <SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage>,
-    hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom activePage={activePage} /></SimplePage>,
-    rayreview: <SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage>,
-    reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter onAskHermes={askHermes} /></SimplePage>,
-    clients: <SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage>,
-    research: <SimplePage title="Research Engine" sub="50 Candidates · Scores · Lanes · Approval-Gated Conversion"><ResearchEnginePanel onAskHermes={askHermes} /></SimplePage>,
-    marketing: <SimplePage title="Marketing Drafts" sub="Social · Video · Newsletter · Landing · Lead Magnet · Approval-Gated"><MarketingDraftsPanel onAskHermes={askHermes} /></SimplePage>,
-    automation: <SimplePage title="Automation Scheduler" sub="Safe Internal Cycles · Schedule Visibility"><AutomationSchedulerPanel onOpenReport={() => navigate('reports')} onReview={() => navigate('rayreview')} /></SimplePage>,
-    goclear: <GoClearPage />,
-    clientworkflow: <ClientWorkflowPage />,
-    credit: <SimplePage title="Credit & Funding" sub="Readiness Scores · Documents · Disputes · Bankability · Approval-Gated"><CreditFundingPanel onAskHermes={askHermes} /></SimplePage>,
-    business: <BusinessSetupPage />,
-    funding: <FundingReadinessPage />,
-    monetization: <SimplePage title="Monetization" sub="9 Offers · Revenue Streams · Stripe Status · Approval-Gated"><MonetizationPanel onAskHermes={askHermes} /></SimplePage>,
-    partners: <PartnerOffersPage />,
-    cli: <CLIControlPage />,
-    proof: <ProofLedgerPage />,
-    feedback: <HermesFeedbackPage />,
-    settings: <SettingsPage />
+    command: <ErrorBoundary panelName="Command Center"><RestoredCommandCenter onNavigate={navigate} onAskHermes={askHermes} /></ErrorBoundary>,
+    subscription: <ErrorBoundary panelName="Subscription Command Center"><SubscriptionCommandCenterPage /></ErrorBoundary>,
+    creative: <ErrorBoundary panelName="Creative Studio"><Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" /></ErrorBoundary>,
+    design: <ErrorBoundary panelName="Design Library"><Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" /></ErrorBoundary>,
+    trading: <ErrorBoundary panelName="Trading Lab"><Workspace id="trading" title="Trading Lab" sub="Paper Trading Research Room" kind="trading" type="trading" /></ErrorBoundary>,
+    seo: <ErrorBoundary panelName="SEO / Marketing"><Workspace id="seo" title="SEO / Marketing" sub="Growth Room" kind="seo" type="seo" /></ErrorBoundary>,
+    integrations: <ErrorBoundary panelName="Integrations"><Workspace id="integrations" title="Integrations" sub="Connector Status Room" kind="integrations" type="integrations" layoutClass="narrow-left" /></ErrorBoundary>,
+    ops: <ErrorBoundary panelName="Ops & Improvements"><Workspace id="ops" title="Ops & Improvements" sub="System Improvement Room" kind="ops" type="ops" layoutClass="wide-left" /></ErrorBoundary>,
+    jobs: <ErrorBoundary panelName="Agent Jobs"><Workspace id="jobs" title="Agent Jobs" sub="Automation Workforce Room" kind="jobs" type="jobs" /></ErrorBoundary>,
+    source: <ErrorBoundary panelName="Source Intake"><Workspace id="source" title="Source Intake & Review" sub="Research / Source Room" kind="source" type="source" layoutClass="source-layout" /></ErrorBoundary>,
+    opportunity: <ErrorBoundary panelName="Business Opportunities"><SimplePage title="Business Opportunities" sub="26 Scored Opportunities · Revenue Potential · Approval-Gated Conversion"><BusinessOpportunitiesPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    health: <ErrorBoundary panelName="System Health"><SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    hermes: <ErrorBoundary panelName="Hermes Workroom"><SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom activePage={activePage} /></SimplePage></ErrorBoundary>,
+    rayreview: <ErrorBoundary panelName="Ray Review"><SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage></ErrorBoundary>,
+    reports: <ErrorBoundary panelName="Reports"><SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    clients: <ErrorBoundary panelName="Clients"><SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    research: <ErrorBoundary panelName="Research Engine"><SimplePage title="Research Engine" sub="50 Candidates · Scores · Lanes · Approval-Gated Conversion"><ResearchEnginePanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    marketing: <ErrorBoundary panelName="Marketing Drafts"><SimplePage title="Marketing Drafts" sub="Social · Video · Newsletter · Landing · Lead Magnet · Approval-Gated"><MarketingDraftsPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    automation: <ErrorBoundary panelName="Automation Scheduler"><SimplePage title="Automation Scheduler" sub="Safe Internal Cycles · Schedule Visibility"><AutomationSchedulerPanel onOpenReport={() => navigate('reports')} onReview={() => navigate('rayreview')} /></SimplePage></ErrorBoundary>,
+    goclear: <ErrorBoundary panelName="GoClear / Apex"><GoClearPage /></ErrorBoundary>,
+    clientworkflow: <ErrorBoundary panelName="Client Workflow"><ClientWorkflowPage /></ErrorBoundary>,
+    credit: <ErrorBoundary panelName="Credit & Funding"><SimplePage title="Credit & Funding" sub="Readiness Scores · Documents · Disputes · Bankability · Approval-Gated"><CreditFundingPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    business: <ErrorBoundary panelName="Business Setup"><BusinessSetupPage /></ErrorBoundary>,
+    funding: <ErrorBoundary panelName="Funding Readiness"><FundingReadinessPage /></ErrorBoundary>,
+    monetization: <ErrorBoundary panelName="Monetization"><SimplePage title="Monetization" sub="9 Offers · Revenue Streams · Stripe Status · Approval-Gated"><MonetizationPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    partners: <ErrorBoundary panelName="Partner Offers"><PartnerOffersPage /></ErrorBoundary>,
+    cli: <ErrorBoundary panelName="CLI Control"><CLIControlPage /></ErrorBoundary>,
+    proof: <ErrorBoundary panelName="Proof Ledger"><ProofLedgerPage /></ErrorBoundary>,
+    feedback: <ErrorBoundary panelName="Hermes Feedback"><HermesFeedbackPage /></ErrorBoundary>,
+    settings: <ErrorBoundary panelName="Settings"><SettingsPage /></ErrorBoundary>
   }[activePage] || <CommandCenter />
 
   return (

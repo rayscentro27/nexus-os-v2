@@ -35,7 +35,7 @@ function OfferDetailDrawer({ offer, onClose, onAskHermes, sourceType }) {
           <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Price</dt><dd style={{ margin: 3, fontSize: 14, fontWeight: 700 }}>${offer.price}</dd></div>
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Status</dt><dd style={{ margin: 3, fontSize: 12 }}><span className={`pill pill-${effectiveStatus === 'approved' ? 'green' : effectiveStatus === 'draft' ? 'blue' : effectiveStatus === 'held' ? 'amber' : 'red'}`}>{effectiveStatus}</span></dd></div>
-            <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Stripe</dt><dd style={{ margin: 3, fontSize: 12 }}><span className={`pill pill-${offer.stripeStatus === 'test_checkout_created' ? 'green' : 'amber'}`}>{offer.stripeStatus.replace(/_/g, ' ')}</span></dd></div>
+            <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Stripe</dt><dd style={{ margin: 3, fontSize: 12 }}><span className={`pill pill-${offer.stripeStatus === 'test_checkout_created' ? 'green' : 'amber'}`}>{(offer.stripeStatus || 'unknown').replace(/_/g, ' ')}</span></dd></div>
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Audience</dt><dd style={{ margin: 3, fontSize: 12 }}>{offer.audience}</dd></div>
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Data source</dt><dd style={{ margin: 3, fontSize: 12 }}>{sourceType === 'live_supabase' ? 'Live Supabase' : 'Static snapshot'}</dd></div>
           </dl>
@@ -174,7 +174,7 @@ export default function MonetizationPanel({ onAskHermes }) {
               <strong style={{ fontSize: 12 }}>{r.name}</strong>
               <span style={{ display: 'block', color: '#8fa3be', fontSize: 11 }}>{r.description}</span>
             </div>
-            <span className={`pill pill-${r.status === 'awaiting_first_sale' ? 'amber' : r.status === 'concept_phase' ? 'red' : 'blue'}`}>{r.status.replace(/_/g, ' ')}</span>
+            <span className={`pill pill-${r.status === 'awaiting_first_sale' ? 'amber' : r.status === 'concept_phase' ? 'red' : 'blue'}`}>{(r.status || 'unknown').replace(/_/g, ' ')}</span>
             <span style={{ fontSize: 12, color: '#67D47A' }}>${r.projectedMonthlyRevenue}/mo</span>
           </div>
         ))}

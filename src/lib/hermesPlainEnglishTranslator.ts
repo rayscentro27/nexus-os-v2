@@ -5,6 +5,13 @@
  * No I/O. No model calls. All deterministic.
  */
 
+/** Safely convert any value to a string. */
+function safeStr(val: unknown, fallback = ''): string {
+  if (val == null) return fallback;
+  if (typeof val === 'string') return val;
+  return String(val);
+}
+
 // ── Term Translations ──
 
 const STATUS_TRANSLATIONS: Record<string, string> = {
@@ -81,7 +88,7 @@ const CATEGORY_TRANSLATIONS: Record<string, string> = {
  * Translate a technical status term to plain English.
  */
 export function translateStatusTerm(term: string): string {
-  const key = (term || '').toLowerCase().replace(/[\s-]+/g, '_');
+  const key = safeStr(term).toLowerCase().replace(/[\s-]+/g, '_');
   return STATUS_TRANSLATIONS[key] || `"${term}" — status is unclear.`;
 }
 
@@ -89,7 +96,7 @@ export function translateStatusTerm(term: string): string {
  * Explain a proof level in plain English.
  */
 export function explainProofLevel(proofLevel: string): string {
-  const key = (proofLevel || '').toLowerCase().replace(/[\s-]+/g, '_');
+  const key = safeStr(proofLevel).toLowerCase().replace(/[\s-]+/g, '_');
   return PROOF_TRANSLATIONS[key] || `Proof level "${proofLevel}" — interpretation unknown.`;
 }
 
@@ -97,7 +104,7 @@ export function explainProofLevel(proofLevel: string): string {
  * Explain a source mode in plain English.
  */
 export function explainSourceMode(sourceMode: string): string {
-  const key = (sourceMode || '').toLowerCase().replace(/[\s-]+/g, '_');
+  const key = safeStr(sourceMode).toLowerCase().replace(/[\s-]+/g, '_');
   return SOURCE_TRANSLATIONS[key] || `Source "${sourceMode}" — interpretation unknown.`;
 }
 
@@ -105,7 +112,7 @@ export function explainSourceMode(sourceMode: string): string {
  * Explain a risk level in plain English.
  */
 export function explainRiskLevel(riskLevel: string): string {
-  const key = (riskLevel || '').toLowerCase();
+  const key = safeStr(riskLevel).toLowerCase();
   return RISK_TRANSLATIONS[key] || `Risk level "${riskLevel}" — interpretation unknown.`;
 }
 
@@ -113,7 +120,7 @@ export function explainRiskLevel(riskLevel: string): string {
  * Translate an activity category to plain English.
  */
 export function translateCategory(category: string): string {
-  const key = (category || '').toLowerCase().replace(/[\s-]+/g, '_');
+  const key = safeStr(category).toLowerCase().replace(/[\s-]+/g, '_');
   return CATEGORY_TRANSLATIONS[key] || category;
 }
 
@@ -121,7 +128,7 @@ export function translateCategory(category: string): string {
  * Is this a low-value category that should be filtered from summaries?
  */
 export function isLowValueCategory(category: string): boolean {
-  const key = (category || '').toLowerCase();
+  const key = safeStr(category).toLowerCase();
   return ['greeting', 'page_view', 'unclear'].includes(key);
 }
 
@@ -185,7 +192,7 @@ export function buildCeoSummary(input: {
  * Detect CEO summary / plain English request.
  */
 export function isCeoSummaryRequest(query: string): boolean {
-  const lower = (query || '').toLowerCase();
+  const lower = safeStr(query).toLowerCase();
   return /\b(ceo\s+version|plain\s+english|what\s+should\s+i\s+care\s+about|what\s+matters|what\s+is\s+the\s+takeaway|simplify\s+this|translate\s+this\s+report|give\s+me\s+the\s+ceo|plain[- ]?language)\b/i.test(lower);
 }
 
@@ -193,6 +200,6 @@ export function isCeoSummaryRequest(query: string): boolean {
  * Detect daily activity / "what did you do today" questions.
  */
 export function isDailyActivityQuestion(query: string): boolean {
-  const lower = (query || '').toLowerCase();
+  const lower = safeStr(query).toLowerCase();
   return /\b(what\s+did\s+(you|we|nexus)\s+(do|work\s+on|accomplish)|what\s+changed|what\s+got\s+done|what\s+happened\s+(since|today|yesterday)|what\s+should\s+i\s+know\s+from|summarize\s+(today|yesterday|this\s+day|the\s+day)|ceo\s+summary\s+for|what\s+did\s+you\s+do\s+today|what\s+did\s+we\s+do\s+today|daily\s+summary|today\s+in\s+plain|give\s+me\s+the\s+ceo\s+summary)\b/i.test(lower);
 }

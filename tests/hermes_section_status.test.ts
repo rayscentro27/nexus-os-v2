@@ -11,7 +11,7 @@ import {
   isSectionStatusQuestion,
   buildSectionStatusAnswer,
 } from '../src/lib/nexusSectionStatusRegistry';
-import { routeModel } from '../src/lib/hermesModelRoutingPolicy';
+import { routeModel, getModelAvailability } from '../src/lib/hermesModelRoutingPolicy';
 import {
   translateStatusTerm,
   explainProofLevel,
@@ -25,6 +25,7 @@ import {
   isDailyActivityQuestion,
 } from '../src/lib/hermesPlainEnglishTranslator';
 import { buildDailySummary, buildCeoDailySummary } from '../src/lib/hermesDailyActivityTranslator';
+import { normalizeMonetizationRow } from '../src/lib/liveDataLoader';
 
 describe('nexusSectionStatusRegistry', () => {
   describe('getSectionStatus', () => {
@@ -675,5 +676,144 @@ describe('No fake claims', () => {
   it('automation is report_snapshot not live', () => {
     const s = getSectionStatus('automation');
     expect(s!.status).toBe('report_snapshot');
+  });
+});
+
+// ── Runtime Safety Tests ──
+
+describe('Runtime safety — translator handles undefined/null', () => {
+  it('translateStatusTerm handles null', () => {
+    expect(translateStatusTerm(null as unknown as string)).toContain('status is unclear');
+  });
+
+  it('translateStatusTerm handles undefined', () => {
+    expect(translateStatusTerm(undefined as unknown as string)).toContain('status is unclear');
+  });
+
+  it('translateStatusTerm handles empty string', () => {
+    expect(translateStatusTerm('')).toContain('status is unclear');
+  });
+
+  it('explainProofLevel handles null', () => {
+    expect(explainProofLevel(null as unknown as string)).toContain('interpretation unknown');
+  });
+
+  it('explainProofLevel handles undefined', () => {
+    expect(explainProofLevel(undefined as unknown as string)).toContain('interpretation unknown');
+  });
+
+  it('explainSourceMode handles null', () => {
+    expect(explainSourceMode(null as unknown as string)).toContain('interpretation unknown');
+  });
+
+  it('explainRiskLevel handles null', () => {
+    expect(explainRiskLevel(null as unknown as string)).toContain('interpretation unknown');
+  });
+
+  it('translateCategory handles null', () => {
+    expect(translateCategory(null as unknown as string)).toBe(null);
+  });
+
+  it('translateCategory handles undefined', () => {
+    expect(translateCategory(undefined as unknown as string)).toBe(undefined);
+  });
+
+  it('isLowValueCategory handles null', () => {
+    expect(isLowValueCategory(null as unknown as string)).toBe(false);
+  });
+
+  it('isCeoSummaryRequest handles null', () => {
+    expect(isCeoSummaryRequest(null as unknown as string)).toBe(false);
+  });
+
+  it('isDailyActivityQuestion handles null', () => {
+    expect(isDailyActivityQuestion(null as unknown as string)).toBe(false);
+  });
+
+  it('isDailyActivityQuestion handles empty string', () => {
+    expect(isDailyActivityQuestion('')).toBe(false);
+  });
+});
+
+describe('Runtime safety — section status answer handles edge cases', () => {
+  it('buildSectionStatusAnswer handles empty query', () => {
+    const answer = buildSectionStatusAnswer('');
+    expect(typeof answer).toBe('string');
+    expect(answer.length).toBeGreaterThan(0);
+  });
+
+  it('buildSectionStatusAnswer handles null query', () => {
+    const answer = buildSectionStatusAnswer(null as unknown as string);
+    expect(typeof answer).toBe('string');
+    expect(answer.length).toBeGreaterThan(0);
+  });
+
+  it('buildSectionStatusAnswer handles undefined query', () => {
+    const answer = buildSectionStatusAnswer(undefined as unknown as string);
+    expect(typeof answer).toBe('string');
+    expect(answer.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Runtime safety — capability messaging consistency', () => {
+  it('badge and answer agree on model status when configured', () => {
+    const avail = getModelAvailability();
+    if (avail.configured) {
+      expect(avail.provider).toContain('OpenRouter');
+      expect(avail.model).toContain('gpt-4o-mini');
+    } else {
+      expect(avail.provider).toBe('not configured');
+    }
+  });
+
+  it('section status answers never claim fake model', () => {
+    const queries = [
+      'what model are you using',
+      'are you using a live model',
+      'how are you controlling token cost',
+    ];
+    for (const q of queries) {
+      if (isSectionStatusQuestion(q)) {
+        const answer = buildSectionStatusAnswer(q);
+        expect(answer).not.toContain('I do not have a live AI model');
+      }
+    }
+  });
+
+  it('daily activity question detection works for common phrases', () => {
+    expect(isDailyActivityQuestion('what did you do today')).toBe(true);
+    expect(isDailyActivityQuestion('what did we do today')).toBe(true);
+    expect(isDailyActivityQuestion('give me the CEO summary')).toBe(true);
+    expect(isDailyActivityQuestion('summarize today in plain english')).toBe(true);
+    expect(isDailyActivityQuestion('hello')).toBe(false);
+    expect(isDailyActivityQuestion('what is the weather')).toBe(false);
+  });
+
+  it('CEO summary detection works for common phrases', () => {
+    expect(isCeoSummaryRequest('give me the CEO version')).toBe(true);
+    expect(isCeoSummaryRequest('plain english version')).toBe(true);
+    expect(isCeoSummaryRequest('what should I care about')).toBe(true);
+    expect(isCeoSummaryRequest('what matters most')).toBe(true);
+    expect(isCeoSummaryRequest('hello')).toBe(false);
+  });
+});
+
+describe('Runtime safety — monetization normalizeMonetizationRow handles missing fields', () => {
+  it('normalizer handles row with all fields missing', () => {
+    const row = {};
+    const result = normalizeMonetizationRow(row, 0);
+    expect(result.id).toBe('');
+    expect(result.title).toBe('Untitled Offer');
+    expect(typeof result.score).toBe('number');
+    expect(typeof result.status).toBe('string');
+    expect(typeof result.category).toBe('string');
+  });
+
+  it('normalizer handles row with partial fields', () => {
+    const row = { id: 'test-1', title: 'Test Offer' };
+    const result = normalizeMonetizationRow(row, 0);
+    expect(result.id).toBe('test-1');
+    expect(result.title).toBe('Test Offer');
+    expect(result.status).toBe('open');
   });
 });
