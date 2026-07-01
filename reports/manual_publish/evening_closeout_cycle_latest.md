@@ -1,10 +1,10 @@
 # Evening Closeout Cycle
 
-Generated: 2026-06-30T13:13:13.417375+00:00
+Generated: 2026-07-01T01:00:34.642626+00:00
 
 - ok: true
 - status: evening_closeout_complete
-- scheduled_invocation: false
+- scheduled_invocation: true
 - jobs_planned: 6
 - jobs_passed: 6
 - today: Internal operating evidence, approvals, research, and revenue readiness were refreshed.

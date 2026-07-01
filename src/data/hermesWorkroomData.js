@@ -12,7 +12,19 @@ export const hermesQuickPrompts = [
   'What CLI tools do I have?',
   'What wrote to Supabase?',
   'What needs Ray approval?',
-  'What did we work on today?'
+  'What did we work on today?',
+  'What sections are incomplete?',
+  'What processes are active?',
+  'Is YouTube research running?',
+  'Show me Credit & Funding readiness',
+  'Is Trading paper-only?',
+  'What is scheduled vs running?',
+  'Show latest System Health',
+  'What reports changed?',
+  'What settings are missing?',
+  'What tools are safe to use?',
+  'What marketing drafts need approval?',
+  'What should I activate next?'
 ];
 
 /* ── Nexus topic knowledge base ── */

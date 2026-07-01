@@ -1,11 +1,11 @@
 # Nexus Operations Status
 
-Checked: 2026-07-01T16:13:31.742419+00:00
+Checked: 2026-07-01T19:39:27.760300+00:00
 
 ## What is real
 
-- Repo `main` at `f2d6d0977b3b`.
-- 17 Nexus-related processes had direct `ps` proof.
+- Repo `main` at `ac65e27e5a54`.
+- 29 Nexus-related processes had direct `ps` proof.
 - 31 Nexus launchd plists were inspected.
 - CLI availability was checked without reading credentials.
 
@@ -27,7 +27,19 @@ Checked: 2026-07-01T16:13:31.742419+00:00
 - pid-1176
 - pid-1192
 - pid-6514
-- pid-86623
+- pid-8840
+- pid-8845
+- pid-8846
+- pid-8852
+- pid-8855
+- pid-8856
+- pid-8903
+- pid-8904
+- pid-8905
+- pid-8963
+- pid-8967
+- pid-87534
+- pid-87546
 
 ## Installed but not proven running
 

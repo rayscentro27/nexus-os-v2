@@ -1,0 +1,127 @@
+{
+  "report": "cli_tool_registry_latest",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "nexus_cli_inventory_latest.json",
+    "nexus_operations_status_latest.json"
+  ],
+  "items": [
+    {
+      "name": "git",
+      "installed": true,
+      "version": "git version 2.53.0",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["git status", "git log", "git diff", "git show", "git branch", "git remote -v"],
+      "approvalRequiredCommands": ["git push", "git commit", "git add", "git merge", "git rebase"],
+      "blockedCommands": ["git push --force"],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "node",
+      "installed": true,
+      "version": "v22.22.3",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["node --version", "node -e \"console.log(process.version)\""],
+      "approvalRequiredCommands": ["node script.js"],
+      "blockedCommands": [],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "npm",
+      "installed": true,
+      "version": "10.9.8",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["npm --version", "npm list", "npm outdated", "npm ls"],
+      "approvalRequiredCommands": ["npm install", "npm publish", "npm run"],
+      "blockedCommands": ["npm publish --access public"],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "python3",
+      "installed": true,
+      "version": "Python 3.14.5",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["python3 --version", "python3 -c \"import sys; print(sys.version)\""],
+      "approvalRequiredCommands": ["python3 script.py"],
+      "blockedCommands": [],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "supabase",
+      "installed": true,
+      "version": "unavailable: TimeoutExpired",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["supabase --version", "supabase projects list"],
+      "approvalRequiredCommands": ["supabase db push", "supabase functions deploy"],
+      "blockedCommands": ["supabase db push --force"],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "netlify",
+      "installed": true,
+      "version": "unavailable: TimeoutExpired",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["netlify --version", "netlify status", "netlify sites:list"],
+      "approvalRequiredCommands": ["netlify deploy", "netlify build"],
+      "blockedCommands": ["netlify deploy --prod"],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "gh",
+      "installed": true,
+      "version": "unavailable: TimeoutExpired",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["gh --version", "gh auth status", "gh repo list"],
+      "approvalRequiredCommands": ["gh pr create", "gh issue create"],
+      "blockedCommands": ["gh repo delete"],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "ollama",
+      "installed": true,
+      "version": "ollama version is 0.20.5",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["ollama --version", "ollama list", "ollama ps"],
+      "approvalRequiredCommands": ["ollama pull", "ollama run"],
+      "blockedCommands": ["ollama rm"],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "opencode",
+      "installed": true,
+      "version": "unavailable: TimeoutExpired",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["opencode --version"],
+      "approvalRequiredCommands": ["opencode run"],
+      "blockedCommands": [],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "codex",
+      "installed": true,
+      "version": "codex-cli 0.142.4",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["codex --version"],
+      "approvalRequiredCommands": ["codex run"],
+      "blockedCommands": [],
+      "proofLevel": "installed_only"
+    },
+    {
+      "name": "playwright",
+      "installed": true,
+      "version": "package_present",
+      "authenticated": "not_proven",
+      "safeReadOnlyCommands": ["npx playwright --version"],
+      "approvalRequiredCommands": ["npx playwright test"],
+      "blockedCommands": ["npx playwright install --with-deps"],
+      "proofLevel": "installed_only"
+    }
+  ],
+  "summary": {
+    "totalTools": 11,
+    "installed": 11,
+    "authenticated": 0,
+    "proofLevel": "installed_only",
+    "critical_note": "Tool availability does not imply authentication or authorization. Use only safe read-only commands unless explicitly approved."
+  }
+}

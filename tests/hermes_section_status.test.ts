@@ -39,7 +39,7 @@ describe('nexusSectionStatusRegistry', () => {
       for (const s of all) {
         expect(s.id).toBeTruthy();
         expect(s.name).toBeTruthy();
-        expect(['live', 'static', 'mismatch', 'blocked', 'unknown']).toContain(s.status);
+        expect(['live', 'static', 'mismatch', 'blocked', 'unknown', 'report_snapshot']).toContain(s.status);
         expect(['supabase', 'local_static', 'mixed', 'none']).toContain(s.source);
         expect(['verified', 'unproven', 'no_proof']).toContain(s.proofLevel);
         expect(Array.isArray(s.tableNames)).toBe(true);
@@ -55,10 +55,10 @@ describe('nexusSectionStatusRegistry', () => {
   describe('getSectionSummary', () => {
     it('returns correct counts', () => {
       const summary = getSectionSummary();
-      expect(summary.live + summary.static + summary.mismatch + summary.blocked + summary.unknown).toBe(summary.total);
+      expect(summary.live + summary.static + summary.mismatch + summary.blocked + summary.unknown + summary.report_snapshot).toBe(summary.total);
       expect(summary.total).toBe(14);
       expect(summary.live).toBe(6);
-      expect(summary.static).toBe(8);
+      expect(summary.report_snapshot).toBe(4);
     });
   });
 
@@ -112,7 +112,7 @@ describe('nexusSectionStatusRegistry', () => {
   describe('getStaticSections', () => {
     it('returns only static sections', () => {
       const stat = getStaticSections();
-      expect(stat.length).toBe(8);
+      expect(stat.length).toBe(4);
       for (const s of stat) {
         expect(s.status).toBe('static');
       }
@@ -264,5 +264,87 @@ describe('hermesModelRoutingPolicy — section status routing', () => {
   it('still routes execution to blocked_or_gated', () => {
     const decision = routeModel('send email to client');
     expect(decision.route).toBe('blocked_or_gated');
+  });
+
+  it('routes process status questions to no_model', () => {
+    expect(routeModel('what processes are active?').route).toBe('no_model');
+    expect(routeModel('what processes are available?').route).toBe('no_model');
+    expect(routeModel('what tools do we have?').route).toBe('no_model');
+    expect(routeModel('what reports do we have?').route).toBe('no_model');
+    expect(routeModel('what settings are missing?').route).toBe('no_model');
+    expect(routeModel('what automations are running?').route).toBe('no_model');
+    expect(routeModel('what schedulers are loaded?').route).toBe('no_model');
+    expect(routeModel('what is broken?').route).toBe('no_model');
+    expect(routeModel('what needs approval?').route).toBe('no_model');
+  });
+
+  it('routes YouTube/trading/credit questions to no_model', () => {
+    expect(routeModel('is youtube research running?').route).toBe('no_model');
+    expect(routeModel('is trading lab running?').route).toBe('no_model');
+    expect(routeModel('is credit and funding live?').route).toBe('no_model');
+    expect(routeModel('can you place a trade?').route).toBe('blocked_or_gated');
+    expect(routeModel('can you publish this post?').route).toBe('blocked_or_gated');
+  });
+
+  it('routes "what should i work on next" to no_model', () => {
+    expect(routeModel('what should i work on next?').route).toBe('no_model');
+  });
+});
+
+describe('Phase 2 section status answers', () => {
+  it('answers "what processes are active?"', () => {
+    const answer = buildSectionStatusAnswer('what processes are active?');
+    expect(answer).toContain('Active');
+  });
+
+  it('answers "what tools do we have?"', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('CLI');
+  });
+
+  it('answers "what reports do we have?"', () => {
+    const answer = buildSectionStatusAnswer('what reports do we have?');
+    expect(answer).toContain('Reports');
+  });
+
+  it('answers "what settings are missing?"', () => {
+    const answer = buildSectionStatusAnswer('what settings are missing?');
+    expect(answer).toContain('Settings');
+  });
+
+  it('answers "what is broken?"', () => {
+    const answer = buildSectionStatusAnswer('what is broken?');
+    expect(answer).toContain('Blocked');
+  });
+
+  it('answers "what needs approval?"', () => {
+    const answer = buildSectionStatusAnswer('what needs approval?');
+    expect(answer).toContain('Approval');
+  });
+
+  it('no fake live claims — credit_funding is static', () => {
+    const s = getSectionStatus('credit_funding');
+    expect(s!.status).not.toBe('live');
+    expect(s!.proofLevel).toBe('no_proof');
+  });
+
+  it('no fake live claims — trading_lab is static', () => {
+    const s = getSectionStatus('trading_lab');
+    expect(s!.status).not.toBe('live');
+  });
+
+  it('no fake live claims — youtube not proven', () => {
+    const s = getResearchEngineStatus();
+    expect(s.youtubeProofStatus).toBe('not_proven_live');
+  });
+
+  it('system_health is report_snapshot not live', () => {
+    const s = getSectionStatus('system_health');
+    expect(s!.status).toBe('report_snapshot');
+  });
+
+  it('automation is report_snapshot not live', () => {
+    const s = getSectionStatus('automation');
+    expect(s!.status).toBe('report_snapshot');
   });
 });

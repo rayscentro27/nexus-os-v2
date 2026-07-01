@@ -1,0 +1,271 @@
+{
+  "report": "nexus_phase2_activation_baseline",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "nexus_operations_status_latest.json",
+    "nexus_process_inventory_latest.json",
+    "nexus_scheduler_inventory_latest.json",
+    "hermes_operations_status_latest.json"
+  ],
+  "total_incomplete_sections": 10,
+  "sections": [
+    {
+      "sectionId": "trading_lab",
+      "title": "Trading Lab",
+      "currentSourceMode": "static",
+      "currentProofLevel": "no_proof",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [
+        {
+          "name": "pid-588",
+          "command": "nexus_trading_engine.py",
+          "status": "live_running",
+          "proof": "PID 588 uptime 20:17:39"
+        }
+      ],
+      "currentUIComponents": ["NexusAdminUI Trading Lab section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "No Supabase table for trading data",
+        "Scheduler loaded but no active PID proof for demo-trading-loop",
+        "UI uses inline static data"
+      ],
+      "safeActivationPlan": "Wire trading_lab section to Supabase table; verify demo-trading-loop scheduler execution via log proof",
+      "riskyActionsBlocked": ["Enable live trading", "Connect funded broker account"]
+    },
+    {
+      "sectionId": "system_health",
+      "title": "System Health",
+      "currentSourceMode": "static",
+      "currentProofLevel": "no_proof",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI System Health section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "No Supabase table for system health data",
+        "Uses systemHealthData.js static file",
+        "No live process monitoring integration"
+      ],
+      "safeActivationPlan": "Seed System Health table in Supabase from operations status reports; wire UI to live reads",
+      "riskyActionsBlocked": ["Auto-restart processes from UI"]
+    },
+    {
+      "sectionId": "automation",
+      "title": "Automation Scheduler",
+      "currentSourceMode": "static",
+      "currentProofLevel": "unproven",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [
+        "All 30+ launchd schedulers from inventory"
+      ],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI Automation section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "Schedulers loaded but no active PID proof for most",
+        "UI uses inline static data",
+        "No Supabase table for scheduler status"
+      ],
+      "safeActivationPlan": "Wire scheduler status to Supabase; add process proof collection per scheduler",
+      "riskyActionsBlocked": ["Auto-load/unload schedulers from UI"]
+    },
+    {
+      "sectionId": "reports",
+      "title": "Reports",
+      "currentSourceMode": "static",
+      "currentProofLevel": "no_proof",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI Reports section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "Reads local files only",
+        "No Supabase table for report registry",
+        "Uses reportRegistryData.js"
+      ],
+      "safeActivationPlan": "Seed report registry to Supabase; wire UI to live reads; keep local files as backup",
+      "riskyActionsBlocked": ["Auto-delete old reports"]
+    },
+    {
+      "sectionId": "settings",
+      "title": "Settings",
+      "currentSourceMode": "static",
+      "currentProofLevel": "no_proof",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI Settings section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "No Supabase table",
+        "No data file for settings",
+        "Static only"
+      ],
+      "safeActivationPlan": "Create config status table in Supabase; show presence by name only, never values",
+      "riskyActionsBlocked": ["Write secret values from UI"]
+    },
+    {
+      "sectionId": "cli_registry",
+      "title": "CLI / Tool Registry",
+      "currentSourceMode": "static",
+      "currentProofLevel": "unproven",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI CLI section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "No Supabase table",
+        "CLI inventory exists locally but not wired to UI",
+        "No dynamic data source"
+      ],
+      "safeActivationPlan": "Seed CLI inventory to Supabase; wire UI to live reads; never expose auth tokens",
+      "riskyActionsBlocked": ["Execute CLI commands from UI"]
+    },
+    {
+      "sectionId": "credit_funding",
+      "title": "Credit & Funding",
+      "currentSourceMode": "static",
+      "currentProofLevel": "no_proof",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI Credit & Funding section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "Uses creditFundingData.js static file",
+        "No Supabase table",
+        "No live broker connection"
+      ],
+      "safeActivationPlan": "Create credit_funding_readiness table; seed workflow checklist items; wire UI to live reads",
+      "riskyActionsBlocked": ["Submit credit applications", "Connect live broker"]
+    },
+    {
+      "sectionId": "marketing_drafts",
+      "title": "Marketing Drafts",
+      "currentSourceMode": "static",
+      "currentProofLevel": "no_proof",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [],
+      "currentUIComponents": ["NexusAdminUI Marketing Drafts section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "No Supabase table",
+        "No draft workflow data",
+        "Static only"
+      ],
+      "safeActivationPlan": "Create marketing_drafts table; wire approval-gated workflow; seed with existing content",
+      "riskyActionsBlocked": ["Auto-publish drafts", "Send marketing emails"]
+    },
+    {
+      "sectionId": "youtube_research",
+      "title": "YouTube Research",
+      "currentSourceMode": "static",
+      "currentProofLevel": "not_proven_live",
+      "currentTables": ["research_sources (52 rows)"],
+      "currentReports": [],
+      "currentScripts": ["run_monetization_research_cycle.py"],
+      "currentSchedulers": ["com.nexus.youtube-channel-poller"],
+      "currentProcesses": [],
+      "currentUIComponents": ["Research Engine section"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "No proof of recent YouTube metadata fetch",
+        "No transcript extraction proof",
+        "Scheduler loaded but no active PID proof"
+      ],
+      "safeActivationPlan": "Add execution logging to YouTube research scheduler; verify fetch proof via log timestamps",
+      "riskyActionsBlocked": ["Auto-download transcripts", "Auto-post content"]
+    },
+    {
+      "sectionId": "hermes_live_model",
+      "title": "Hermes Live Model",
+      "currentSourceMode": "static",
+      "currentProofLevel": "not_proven_live",
+      "currentTables": [],
+      "currentReports": [],
+      "currentScripts": [],
+      "currentSchedulers": [],
+      "currentProcesses": [
+        {
+          "name": "pid-618",
+          "command": "hermes_cli.main gateway run",
+          "status": "live_running",
+          "proof": "PID 618 uptime 20:17:39"
+        }
+      ],
+      "currentUIComponents": ["HermesChatPanel"],
+      "currentHermesSupport": {
+        "live_model": "not_configured",
+        "web_search": "not_configured"
+      },
+      "blockers": [
+        "LLM provider not configured in Edge Function",
+        "VITE_HERMES_SEARCH_ENABLED not set",
+        "OPENROUTER_API_KEY present but model endpoint not configured"
+      ],
+      "safeActivationPlan": "Configure LLM provider in Supabase Edge Function secrets; enable web search env var",
+      "riskyActionsBlocked": ["Send unfiltered prompts to external API"]
+    }
+  ],
+  "summary": {
+    "total_sections": 14,
+    "live_sections": 5,
+    "incomplete_sections": 10,
+    "proof_levels": {
+      "verified": 5,
+      "no_proof": 6,
+      "unproven": 2,
+      "not_proven_live": 2
+    },
+    "critical_note": "Do not claim a section is live unless verified by Supabase read, process evidence, or log proof."
+  }
+}

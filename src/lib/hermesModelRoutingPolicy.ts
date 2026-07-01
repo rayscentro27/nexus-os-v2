@@ -70,6 +70,11 @@ function decide(lower: string): { route: ModelRoute; reason: string } {
     return { route: 'no_model', reason: 'Section status question — answerable from section status registry.' };
   }
 
+  // ── NO_MODEL: process/tool/report/settings questions — answerable from reports ──
+  if (/\b(what\s+processes|what\s+tools|what\s+reports|what\s+settings|what\s+automations|what\s+schedulers|what\s+drafts|what\s+is\s+broken|what\s+needs\s+approval|what\s+should\s+i\s+work\s+on\s+next|when\s+was\s+the\s+last|is\s+youtube\s+research|is\s+trading|is\s+credit|what\s+did\s+we|what\s+wrote|can\s+you\s+run|can\s+you\s+place|can\s+you\s+publish)\b/i.test(lower)) {
+    return { route: 'no_model', reason: 'Process/tool/report/status question — answerable from local reports and registry.' };
+  }
+
   // ── NO_MODEL: cost/meta/model/token questions — never spend tokens explaining token cost ──
   if (/\b(cost|token|model\s+call|what\s+did.*cost|how\s+can\s+we\s+reduce|was\s+that\s+necessary|what\s+route|are\s+you\s+using\s+a\s+live\s+model|what\s+model|how\s+are\s+you\s+controlling|can\s+you\s+use\s+ollama|can\s+you\s+use\s+openrouter)\b/i.test(lower)) {
     return { route: 'no_model', reason: 'Cost/meta/model question — must never trigger a model call to explain cost.' };

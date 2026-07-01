@@ -7,7 +7,7 @@
  * All data is deterministic. No I/O. No model calls.
  */
 
-export type SectionStatus = 'live' | 'static' | 'mismatch' | 'blocked' | 'unknown';
+export type SectionStatus = 'live' | 'static' | 'mismatch' | 'blocked' | 'unknown' | 'report_snapshot';
 export type SectionSource = 'supabase' | 'local_static' | 'mixed' | 'none';
 export type ProofLevel = 'verified' | 'unproven' | 'no_proof';
 
@@ -143,15 +143,15 @@ const SECTIONS: SectionEntry[] = [
     status: 'static',
     source: 'local_static',
     proofLevel: 'no_proof',
-    verifiedAt: NOW,
-    tableNames: ['business_opportunities'],
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: false,
     schedulerRunning: false,
     supabaseWrites: false,
     blockers: ['No live Supabase table wired', 'Static data only'],
     nextAction: 'Wire to Supabase or label as static-only',
-    notes: 'Uses business_opportunities with category=credit_offer filter but no live proof of dedicated data.',
+    notes: 'Static concept — no live Supabase table yet. Approval-gated workflow proposed.',
     description: 'Credit, funding, grants, and readiness',
   },
   {
@@ -159,67 +159,67 @@ const SECTIONS: SectionEntry[] = [
     name: 'Trading Lab',
     status: 'static',
     source: 'local_static',
-    proofLevel: 'no_proof',
-    verifiedAt: NOW,
-    tableNames: ['trading_strategy_candidates'],
+    proofLevel: 'unproven',
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: true,
     schedulerRunning: false,
     supabaseWrites: false,
-    blockers: ['Demo trading loop scheduler loaded but not confirmed running', 'No live Supabase writes proven'],
+    blockers: ['Trading engine process active (pid-588) but demo loop only', 'No live funded trading proven'],
     nextAction: 'Verify demo trading loop scheduler writes',
-    notes: 'Oanda practice endpoint. Demo loop scheduler exists but no write proof.',
+    notes: 'Trading engine process active (pid-588), demo loop scheduler loaded, but paper/demo only. No live funded trading.',
     description: 'Oanda practice and paper results',
   },
   {
     id: 'system_health',
     name: 'System Health',
-    status: 'static',
+    status: 'report_snapshot',
     source: 'local_static',
-    proofLevel: 'no_proof',
-    verifiedAt: NOW,
-    tableNames: ['system_health'],
+    proofLevel: 'unproven',
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: false,
     schedulerRunning: false,
     supabaseWrites: false,
-    blockers: ['No live Supabase table wired', 'Static data only'],
+    blockers: ['No dedicated Supabase table', 'Data from operations status reports only'],
     nextAction: 'Seed system_health table or label as report-only',
-    notes: 'System health data from local reports/processes only.',
+    notes: 'Data from operations status reports. No dedicated Supabase table.',
     description: 'Engines, connectors, and safety gates',
   },
   {
     id: 'automation',
     name: 'Automation Scheduler',
-    status: 'static',
+    status: 'report_snapshot',
     source: 'local_static',
     proofLevel: 'unproven',
-    verifiedAt: NOW,
-    tableNames: ['agent_jobs'],
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: true,
-    schedulerRunning: true,
+    schedulerRunning: false,
     supabaseWrites: false,
     blockers: ['launchd schedulers loaded but no active PID proof for all', 'No Supabase writes proven'],
     nextAction: 'Verify scheduler process logs and write receipts',
-    notes: 'Multiple launchd schedulers installed and loaded. Daily/evening cycles confirmed by log timestamps.',
+    notes: '26+ launchd schedulers installed and loaded. Process proof varies per scheduler.',
     description: 'Safe schedules and recent runs',
   },
   {
     id: 'reports',
     name: 'Reports',
-    status: 'static',
+    status: 'report_snapshot',
     source: 'local_static',
-    proofLevel: 'no_proof',
-    verifiedAt: NOW,
-    tableNames: ['nexus_events'],
+    proofLevel: 'unproven',
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: false,
     schedulerRunning: false,
     supabaseWrites: false,
     blockers: ['No live Supabase reads in UI', 'Report files exist locally only'],
     nextAction: 'Wire report center to Supabase or label as local-only',
-    notes: 'Reports from local JSON files and runtime logs.',
+    notes: 'Report files exist locally. Indexed in reports/ directory.',
     description: 'Read the latest operating evidence',
   },
   {
@@ -228,32 +228,32 @@ const SECTIONS: SectionEntry[] = [
     status: 'static',
     source: 'local_static',
     proofLevel: 'no_proof',
-    verifiedAt: NOW,
-    tableNames: ['settings'],
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: false,
     schedulerRunning: false,
     supabaseWrites: false,
     blockers: ['No live Supabase table wired', 'Static configuration only'],
     nextAction: 'Label as local configuration',
-    notes: 'Safety policies and feature gates. No dynamic settings in Supabase.',
+    notes: 'Config presence checked by env name only. No secrets exposed.',
     description: 'Safety policies and feature gates',
   },
   {
     id: 'cli_registry',
     name: 'CLI / Tool Registry',
-    status: 'static',
+    status: 'report_snapshot',
     source: 'local_static',
     proofLevel: 'unproven',
-    verifiedAt: NOW,
-    tableNames: ['agent_jobs'],
+    verifiedAt: null,
+    tableNames: [],
     rowCount: 0,
     schedulerInstalled: false,
     schedulerRunning: false,
     supabaseWrites: false,
     blockers: ['CLI tools available but no live registry in Supabase'],
     nextAction: 'Label as local tool inventory',
-    notes: 'CLI tools inventoried: git, node, npm, python3, supabase, netlify, gh, ollama, opencode, codex, playwright.',
+    notes: '11 CLI tools inventoried. Safe/approval/blocked commands documented.',
     description: 'Tool access and command safety',
   },
   {
@@ -262,7 +262,7 @@ const SECTIONS: SectionEntry[] = [
     status: 'static',
     source: 'local_static',
     proofLevel: 'no_proof',
-    verifiedAt: NOW,
+    verifiedAt: null,
     tableNames: [],
     rowCount: 0,
     schedulerInstalled: false,
@@ -270,7 +270,7 @@ const SECTIONS: SectionEntry[] = [
     supabaseWrites: false,
     blockers: ['No live Supabase table wired', 'Draft-only content'],
     nextAction: 'Label as draft-only',
-    notes: 'Marketing content drafts. No publishing capability.',
+    notes: 'Draft-only content. Approval-gated workflow proposed.',
     description: 'Draft-only content and outreach',
   },
 ];
@@ -292,10 +292,10 @@ export function getAllSectionStatuses(): SectionEntry[] {
 /**
  * Get summary counts.
  */
-export function getSectionSummary(): { live: number; static: number; mismatch: number; blocked: number; unknown: number; total: number } {
-  const counts = { live: 0, static: 0, mismatch: 0, blocked: 0, unknown: 0, total: SECTIONS.length };
+export function getSectionSummary(): { live: number; static: number; mismatch: number; blocked: number; unknown: number; report_snapshot: number; total: number } {
+  const counts = { live: 0, static: 0, mismatch: 0, blocked: 0, unknown: 0, report_snapshot: 0, total: SECTIONS.length };
   for (const s of SECTIONS) {
-    counts[s.status]++;
+    if (s.status in counts) counts[s.status as keyof typeof counts]++;
   }
   return counts;
 }
@@ -362,7 +362,7 @@ export function getBlockedSections(): SectionEntry[] {
  */
 export function isSectionStatusQuestion(query: string): boolean {
   const lower = (query || '').toLowerCase();
-  return /\b(is\s+.+\s+(live|working|running|blocked|static|connected|up|down|active|verified)|what\s+(is|are)\s+(the\s+)?status|show\s+proof|what\s+sections|which\s+sections|what\s+is\s+scheduled|what\s+is\s+blocked|what\s+is\s+live|what\s+is\s+static|is\s+this\s+section|what\s+sections\s+are)\b/i.test(lower);
+  return /\b(is\s+.+\s+(live|working|running|blocked|static|connected|up|down|active|verified)|what\s+(is|are)\s+(the\s+)?status|show\s+proof|what\s+sections|which\s+sections|what\s+is\s+scheduled|what\s+is\s+blocked|what\s+is\s+live|what\s+is\s+static|is\s+this\s+section|what\s+sections\s+are|what\s+processes|what\s+tools|what\s+schedulers|what\s+automations|what\s+reports|what\s+settings|what\s+drafts|what\s+is\s+the\s+latest|when\s+was\s+the\s+last|what\s+should\s+i\s+work\s+on|what\s+is\s+broken|what\s+needs\s+approval)\b/i.test(lower);
 }
 
 /**
@@ -418,6 +418,54 @@ export function buildSectionStatusAnswer(query: string): string {
   if (/what\s+(is|are)\s+(the\s+)?status|status\s+(of\s+)?all|overall\s+status/i.test(lower)) {
     const summary = getSectionSummary();
     return `Nexus OS status: ${summary.live} live, ${summary.static} static, ${summary.mismatch} mismatch, ${summary.blocked} blocked, ${summary.unknown} unknown (${summary.total} total)`;
+  }
+
+  // "what processes are available/active?"
+  if (/what\s+processes\s+(are\s+)?(available|active|running)/i.test(lower)) {
+    const processSections = SECTIONS.filter((s) => s.schedulerInstalled || s.status === 'live');
+    if (processSections.length === 0) return 'No active processes found.';
+    const lines = processSections.map((s) => {
+      const state = s.schedulerInstalled ? (s.schedulerRunning ? 'running' : 'installed') : 'active';
+      return `⚙️ ${s.name}: ${state} — ${s.notes}`;
+    });
+    return `Active/installed processes (${processSections.length}):\n${lines.join('\n')}`;
+  }
+
+  // "what tools do we have?"
+  if (/what\s+tools\s+(do\s+we\s+)?have|what\s+cli\s+tools|what\s+tools\s+(are|is)\s+(safe|available)/i.test(lower)) {
+    const cli = SECTIONS.find((s) => s.id === 'cli_registry');
+    if (!cli) return 'No CLI tool registry found.';
+    return `CLI / Tool Registry:\n${cli.notes}\n\nStatus: ${cli.status.toUpperCase()} — ${cli.proofLevel}`;
+  }
+
+  // "what reports do we have?"
+  if (/what\s+reports\s+(do\s+we\s+)?have|what\s+reports|show\s+report/i.test(lower)) {
+    const reports = SECTIONS.find((s) => s.id === 'reports');
+    if (!reports) return 'No reports section found.';
+    return `Reports:\n${reports.notes}\n\nStatus: ${reports.status.toUpperCase()} — ${reports.proofLevel}`;
+  }
+
+  // "what settings are missing?"
+  if (/what\s+settings\s+(are\s+)?missing|what\s+settings|missing\s+config/i.test(lower)) {
+    const settings = SECTIONS.find((s) => s.id === 'settings');
+    if (!settings) return 'No settings section found.';
+    return `Settings:\n${settings.notes}\n\nBlockers: ${settings.blockers.join('; ') || 'None'}\n\nStatus: ${settings.status.toUpperCase()} — ${settings.proofLevel}`;
+  }
+
+  // "what is broken?"
+  if (/what\s+is\s+broken|what.*broken|what.*failing|what.*not\s+working/i.test(lower)) {
+    const broken = SECTIONS.filter((s) => s.blockers.length > 0);
+    if (broken.length === 0) return 'No sections have blockers — everything is running clean.';
+    const lines = broken.map((s) => `🚫 ${s.name}:\n${s.blockers.map((b) => `  - ${b}`).join('\n')}`);
+    return `Blocked/broken sections (${broken.length}):\n${lines.join('\n')}`;
+  }
+
+  // "what needs approval?"
+  if (/what\s+needs\s+approval|what.*approv|what.*pending|approval\s+queue/i.test(lower)) {
+    const gated = SECTIONS.filter((s) => s.notes.toLowerCase().includes('approval') || s.nextAction.toLowerCase().includes('approval'));
+    if (gated.length === 0) return 'No approval-gated items found.';
+    const lines = gated.map((s) => `📋 ${s.name}: ${s.nextAction}\n  Notes: ${s.notes}`);
+    return `Approval-gated items (${gated.length}):\n${lines.join('\n')}`;
   }
 
   // Specific section: "is ray review live?" / "is the research engine working?"

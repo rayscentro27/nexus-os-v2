@@ -1,0 +1,107 @@
+{
+  "report": "marketing_drafts_activation_latest",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "nexus_operations_status_latest.json",
+    "nexus_section_status_latest.json"
+  ],
+  "mode": "static_workflow",
+  "liveTable": null,
+  "supabaseTable": null,
+  "approvalGatedWorkflow": {
+    "concept": "Marketing drafts follow an approval-gated workflow where all drafts must be reviewed and approved before publishing. No automated publishing without manual review.",
+    "stages": [
+      {
+        "stage": 1,
+        "name": "Draft Creation",
+        "description": "Create marketing content draft",
+        "status": "static",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 2,
+        "name": "Review Queue",
+        "description": "Add draft to review queue for Ray approval",
+        "status": "static",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 3,
+        "name": "Approval Gate",
+        "description": "Ray reviews and approves the draft",
+        "status": "gated",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 4,
+        "name": "Publishing",
+        "description": "Publish approved draft to target channel",
+        "status": "static",
+        "proofLevel": "no_proof"
+      }
+    ]
+  },
+  "draftCategories": [
+    {
+      "category": "social_media",
+      "description": "Social media posts and content",
+      "count": 0,
+      "proofLevel": "no_proof"
+    },
+    {
+      "category": "email_campaigns",
+      "description": "Email marketing campaigns",
+      "count": 0,
+      "proofLevel": "no_proof"
+    },
+    {
+      "category": "blog_posts",
+      "description": "Blog articles and long-form content",
+      "count": 0,
+      "proofLevel": "no_proof"
+    },
+    {
+      "category": "landing_pages",
+      "description": "Landing page copy and content",
+      "count": 0,
+      "proofLevel": "no_proof"
+    },
+    {
+      "category": "ad_copy",
+      "description": "Advertising copy and creatives",
+      "count": 0,
+      "proofLevel": "no_proof"
+    }
+  ],
+  "approvalGates": [
+    {
+      "gate": "Draft Publishing",
+      "requires": "Explicit Ray approval",
+      "reason": "Public-facing content with brand implications"
+    },
+    {
+      "gate": "Email Sending",
+      "requires": "Explicit Ray approval",
+      "reason": "Direct communication with potential clients"
+    },
+    {
+      "gate": "Social Media Posting",
+      "requires": "Explicit Ray approval",
+      "reason": "Public brand representation"
+    }
+  ],
+  "blockers": [
+    "No live Supabase table for marketing_drafts data",
+    "No draft workflow data proven live",
+    "UI uses static data source",
+    "No content creation pipeline proven live"
+  ],
+  "nextSafeAction": "Create marketing_drafts table in Supabase; wire approval-gated workflow; seed with existing content",
+  "riskyActionsBlocked": [
+    "Auto-publish drafts without review",
+    "Send marketing emails without approval",
+    "Post to social media without manual check",
+    "Modify brand messaging without oversight"
+  ],
+  "critical_note": "All marketing content requires explicit Ray approval before publishing. No automated publishing workflows."
+}

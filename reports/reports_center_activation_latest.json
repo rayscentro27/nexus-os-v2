@@ -1,0 +1,150 @@
+{
+  "report": "reports_center_activation_latest",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "reports/ directory listing"
+  ],
+  "reportCount": 62,
+  "categories": [
+    {
+      "name": "operations_status",
+      "description": "System operations and process status reports",
+      "reports": [
+        "nexus_operations_status_latest.json",
+        "nexus_process_inventory_latest.json",
+        "nexus_scheduler_inventory_latest.json",
+        "hermes_operations_status_latest.json",
+        "full_nexus_reality_audit_latest.json"
+      ]
+    },
+    {
+      "name": "hermes_ai",
+      "description": "Hermes AI agent configuration and status reports",
+      "reports": [
+        "hermes_chat_live_model_smoke_latest.json",
+        "hermes_chat_live_model_trace.json",
+        "hermes_durable_memory_plan.json",
+        "hermes_live_model_activation_plan.json",
+        "hermes_live_model_browser_verification_latest.json",
+        "hermes_live_send_path_trace.json",
+        "hermes_model_cost_policy.json",
+        "hermes_model_infrastructure_inventory_latest.json",
+        "hermes_response_trace.json",
+        "hermes_restriction_audit.json",
+        "hermes_second_brain_index_latest.json",
+        "hermes_web_search_status_latest.json"
+      ]
+    },
+    {
+      "name": "supabase_data",
+      "description": "Supabase database status and seed reports",
+      "reports": [
+        "supabase_truth_audit.json",
+        "static_to_supabase_seed_dry_run_latest.json",
+        "static_to_supabase_seed_plan.json",
+        "research_live_row_shape_audit.json"
+      ]
+    },
+    {
+      "name": "trading",
+      "description": "Trading engine and strategy reports",
+      "reports": [
+        "trading_lab_proof_latest.json",
+        "trading/imports/"
+      ]
+    },
+    {
+      "name": "youtube_research",
+      "description": "YouTube research engine status reports",
+      "reports": [
+        "nexus_youtube_research_status_latest.json",
+        "youtube_research_live_proof_latest.json"
+      ]
+    },
+    {
+      "name": "live_connection",
+      "description": "Live data connection implementation and proof reports",
+      "reports": [
+        "live_connection_implementation_plan.json",
+        "live_seed_execution_latest.json",
+        "manual_live_connection_verification.md",
+        "nexus_live_connection_proof.json"
+      ]
+    },
+    {
+      "name": "activation_baselines",
+      "description": "Phase 2 activation baseline and process activity reports",
+      "reports": [
+        "nexus_phase2_activation_baseline.json",
+        "nexus_process_activity_latest.json",
+        "automation_scheduler_proof_latest.json",
+        "credit_funding_activation_latest.json",
+        "system_health_activation_latest.json",
+        "reports_center_activation_latest.json",
+        "settings_config_status_latest.json",
+        "cli_tool_registry_latest.json",
+        "marketing_drafts_activation_latest.json"
+      ]
+    },
+    {
+      "name": "content",
+      "description": "Content and marketing related reports",
+      "reports": [
+        "content/"
+      ]
+    },
+    {
+      "name": "seo",
+      "description": "SEO optimization reports",
+      "reports": [
+        "seo/"
+      ]
+    },
+    {
+      "name": "runtime",
+      "description": "Runtime operations and automation reports",
+      "reports": [
+        "runtime/ (576 files)"
+      ]
+    }
+  ],
+  "latestReports": {
+    "mostRecentByTimestamp": [
+      {
+        "file": "hermes_operations_status_latest.json",
+        "timestamp": "2026-07-01T14:10:00Z"
+      },
+      {
+        "file": "nexus_operations_status_latest.json",
+        "timestamp": "2026-07-01T19:39:27Z"
+      },
+      {
+        "file": "nexus_process_inventory_latest.json",
+        "timestamp": "2026-07-01T19:39:27Z"
+      },
+      {
+        "file": "nexus_scheduler_inventory_latest.json",
+        "timestamp": "2026-07-01T19:39:27Z"
+      },
+      {
+        "file": "hermes_model_infrastructure_inventory_latest.json",
+        "timestamp": "2026-07-01T19:39:28Z"
+      }
+    ]
+  },
+  "directoryStructure": {
+    "reports/": "Root reports directory",
+    "reports/content/": "Content-related reports",
+    "reports/seo/": "SEO-related reports",
+    "reports/runtime/": "Runtime operations (576 files)",
+    "reports/trading/": "Trading-specific reports",
+    "reports/manual_publish/": "Manual publish cycle reports",
+    "reports/research/": "Research reports"
+  },
+  "blockers": [
+    "Reports center reads local files only",
+    "No Supabase table for report registry",
+    "Uses reportRegistryData.js for UI"
+  ],
+  "nextSafeAction": "Seed report registry to Supabase; wire UI to live reads; keep local files as backup"
+}

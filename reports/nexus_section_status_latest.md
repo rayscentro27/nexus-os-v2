@@ -6,36 +6,41 @@
 
 | Status | Count |
 |--------|-------|
-| Live | 5 |
-| Static | 7 |
+| Live | 6 |
+| Static | 5 |
+| Report Snapshot | 3 |
 | Mismatch | 0 |
 | Blocked | 0 |
-| Unknown | 0 |
 | **Total** | **14** |
 
-## Live Sections (5)
+## Live Sections (6)
 
-| Section | Source | Rows | Table | Proof |
-|---------|--------|------|-------|-------|
-| Hermes Workroom | supabase | 0 | — | verified |
-| Ray Review | supabase | 62 | task_requests | verified |
-| Business Opportunities | supabase | 26 | business_opportunities | verified |
-| Research Engine | supabase | 52 | research_sources | verified |
-| Monetization | supabase | 9 | monetization_opportunities | verified |
-| Clients | supabase | 1 | client_profiles | verified |
+| Section | Source | Rows | Table | Proof | Process | Scheduler |
+|---------|--------|------|-------|-------|---------|-----------|
+| Hermes Workroom | supabase | 0 | — | verified | active | — |
+| Ray Review | supabase | 62 | task_requests | verified | active | — |
+| Business Opportunities | supabase | 26 | business_opportunities | verified | active | — |
+| Research Engine | supabase | 52 | research_sources | verified | active | installed |
+| Monetization | supabase | 9 | monetization_opportunities | verified | active | — |
+| Clients | supabase | 1 | client_profiles | verified | active | — |
 
-## Static Sections (7)
+## Static Sections (5)
 
-| Section | Source | Proof | Notes |
-|---------|--------|-------|-------|
-| Credit & Funding | local_static | no_proof | Not wired to Supabase |
-| Trading Lab | local_static | no_proof | Scheduler loaded, not confirmed running |
-| System Health | local_static | no_proof | Not wired to Supabase |
-| Automation Scheduler | local_static | unproven | launchd loaded, no PID proof for all |
-| Reports | local_static | no_proof | Local files only |
-| Settings | local_static | no_proof | No dynamic Supabase table |
-| CLI / Tool Registry | local_static | unproven | Local tool inventory only |
-| Marketing Drafts | local_static | no_proof | Draft-only content |
+| Section | Source | Proof | Process | Scheduler | Notes |
+|---------|--------|-------|---------|-----------|-------|
+| Credit & Funding | local_static | no_proof | — | — | Static concept — no live Supabase table yet. Approval-gated workflow proposed. |
+| Trading Lab | local_static | unproven | active | installed | Trading engine process active (pid-588), demo loop scheduler loaded, but paper/demo only. No live funded trading. |
+| Settings | local_static | no_proof | — | — | Config presence checked by env name only. No secrets exposed. |
+| Marketing Drafts | local_static | no_proof | — | — | Draft-only content. Approval-gated workflow proposed. |
+
+## Report Snapshot Sections (3)
+
+| Section | Source | Proof | Process | Scheduler | Notes |
+|---------|--------|-------|---------|-----------|-------|
+| System Health | local_static | unproven | — | — | Data from operations status reports. No dedicated Supabase table. |
+| Automation Scheduler | local_static | unproven | active | installed | 26+ launchd schedulers installed and loaded. Process proof varies per scheduler. |
+| Reports | local_static | unproven | — | — | Report files exist locally. Indexed in reports/ directory. |
+| CLI / Tool Registry | local_static | unproven | — | — | 11 CLI tools inventoried. Safe/approval/blocked commands documented. |
 
 ## Research Engine — Detailed Status
 
@@ -51,13 +56,13 @@
 ## Blockers
 
 1. YouTube research not proven live — no process/log/write proof
-2. Credit & Funding not wired to Supabase
-3. Trading Lab scheduler loaded but not confirmed running
-4. System Health not wired to Supabase
-5. Automation schedulers loaded but no active PID proof for all
-6. Reports center reads local files only
-7. Settings no dynamic Supabase table
-8. CLI registry no live Supabase table
+2. Trading engine active but demo-only, no live funded trading
+3. System Health — no dedicated Supabase table, report snapshot only
+4. Automation schedulers loaded but no active PID proof for all
+5. Reports center reads local files only
+6. CLI registry no live Supabase table
+7. Credit & Funding not wired to Supabase
+8. Settings no dynamic Supabase table
 9. Marketing Drafts no Supabase table
 
 ## Critical Note

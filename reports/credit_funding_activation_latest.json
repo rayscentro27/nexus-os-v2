@@ -1,0 +1,125 @@
+{
+  "report": "credit_funding_activation_latest",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "nexus_operations_status_latest.json",
+    "hermes_operations_status_latest.json",
+    "nexus_section_status_latest.json"
+  ],
+  "mode": "static_workflow",
+  "liveTable": null,
+  "supabaseTable": null,
+  "readinessPipeline": {
+    "concept": "Credit & Funding readiness follows a checklist-based pipeline from research to application submission. Each gate requires approval before advancing.",
+    "stages": [
+      {
+        "stage": 1,
+        "name": "Research Discovery",
+        "description": "Identify funding opportunities, credit products, and eligibility criteria",
+        "status": "static",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 2,
+        "name": "Readiness Assessment",
+        "description": "Evaluate business credit profile, Paydex score, and documentation",
+        "status": "static",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 3,
+        "name": "Application Preparation",
+        "description": "Prepare required documents, business plans, and financial statements",
+        "status": "static",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 4,
+        "name": "Application Submission",
+        "description": "Submit credit applications to selected lenders",
+        "status": "gated",
+        "proofLevel": "no_proof"
+      },
+      {
+        "stage": 5,
+        "name": "Follow-up & Tracking",
+        "description": "Monitor application status and respond to requests",
+        "status": "static",
+        "proofLevel": "no_proof"
+      }
+    ]
+  },
+  "checklistItems": [
+    {
+      "item": "Business credit profile assessment",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Paydex vendor credit setup",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Business registration documents",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Financial statements preparation",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Business plan documentation",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Banking relationship establishment",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Credit card application strategy",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    },
+    {
+      "item": "Line of credit eligibility review",
+      "status": "not_started",
+      "proofLevel": "no_proof"
+    }
+  ],
+  "approvalGates": [
+    {
+      "gate": "Application Submission",
+      "requires": "Explicit Ray approval",
+      "reason": "Financial commitment with legal implications"
+    },
+    {
+      "gate": "Document Sharing",
+      "requires": "Explicit Ray approval",
+      "reason": "Sensitive business information"
+    },
+    {
+      "gate": "Credit Monitoring Access",
+      "requires": "Explicit Ray approval",
+      "reason": "Third-party access to credit data"
+    }
+  ],
+  "blockers": [
+    "No live Supabase table for credit_funding data",
+    "UI uses creditFundingData.js static file",
+    "No live broker connection",
+    "No credit profile data proven live"
+  ],
+  "nextSafeAction": "Seed credit_funding_readiness table in Supabase; wire UI to live reads; populate checklist items from research",
+  "riskyActionsBlocked": [
+    "Submit credit applications",
+    "Connect live broker",
+    "Share sensitive documents with third parties",
+    "Enable auto-submission workflows"
+  ],
+  "critical_note": "All credit and funding activities require explicit Ray approval. No automated submission without manual review."
+}

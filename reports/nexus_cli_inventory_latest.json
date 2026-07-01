@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-07-01T16:13:31.742419+00:00",
+  "checked_at": "2026-07-01T19:39:27.760300+00:00",
   "items": [
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -21,7 +21,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -38,7 +38,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -55,7 +55,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -72,7 +72,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -80,16 +80,16 @@
       "limitations": [],
       "name": "supabase",
       "path": "/usr/local/bin/supabase",
-      "proof": "available=True version=2.90.0",
+      "proof": "available=True version=unavailable: TimeoutExpired",
       "safe_next_action": "Use only allow-listed read-only commands.",
       "source": "/usr/local/bin/supabase",
       "status": "installed_not_running",
-      "version": "2.90.0"
+      "version": "unavailable: TimeoutExpired"
     },
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -106,7 +106,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -114,16 +114,16 @@
       "limitations": [],
       "name": "gh",
       "path": "/usr/local/bin/gh",
-      "proof": "available=True version=gh version 2.89.0 (2026-03-26)",
+      "proof": "available=True version=unavailable: TimeoutExpired",
       "safe_next_action": "Use only allow-listed read-only commands.",
       "source": "/usr/local/bin/gh",
       "status": "installed_not_running",
-      "version": "gh version 2.89.0 (2026-03-26)"
+      "version": "unavailable: TimeoutExpired"
     },
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -140,7 +140,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -148,16 +148,16 @@
       "limitations": [],
       "name": "opencode",
       "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
-      "proof": "available=True version=1.17.12",
+      "proof": "available=True version=unavailable: TimeoutExpired",
       "safe_next_action": "Use only allow-listed read-only commands.",
       "source": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
       "status": "installed_not_running",
-      "version": "1.17.12"
+      "version": "unavailable: TimeoutExpired"
     },
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -174,7 +174,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "checked_at": "2026-07-01T19:39:27.760300+00:00",
       "gated_actions": [],
       "hermes_readable_summary": "Playwright package is present.",
       "limitations": [],

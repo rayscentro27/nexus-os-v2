@@ -1,0 +1,120 @@
+{
+  "report": "settings_config_status_latest",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "nexus_operations_status_latest.json",
+    "hermes_operations_status_latest.json",
+    "hermes_model_infrastructure_inventory_latest.json"
+  ],
+  "mode": "safe_config_presence",
+  "policy": "Show presence by name only. Never print values.",
+  "items": [
+    {
+      "name": "supabase",
+      "configPresent": true,
+      "proofLevel": "verified",
+      "proofSources": ["env_presence: SUPABASE_URL=true", "env_presence: SUPABASE_SERVICE_ROLE_KEY=true"],
+      "details": {
+        "url": "present",
+        "serviceRoleKey": "present",
+        "anonKey": "present"
+      },
+      "blockers": [],
+      "nextSafeAction": "Verify Supabase connection health"
+    },
+    {
+      "name": "hermes_chat",
+      "configPresent": false,
+      "proofLevel": "verified",
+      "proofSources": ["env_presence: HERMES_LLM_PROVIDER=false"],
+      "details": {
+        "llmProvider": "missing"
+      },
+      "blockers": ["LLM provider not configured"],
+      "nextSafeAction": "Configure LLM provider in Supabase Edge Function secrets"
+    },
+    {
+      "name": "hermes_model",
+      "configPresent": false,
+      "proofLevel": "verified",
+      "proofSources": ["env_presence: HERMES_MODEL_PROVIDER=false", "env_presence: OPENROUTER_API_KEY=true"],
+      "details": {
+        "modelProvider": "missing",
+        "openrouterApiKey": "present"
+      },
+      "blockers": ["HERMES_MODEL_PROVIDER env var missing"],
+      "nextSafeAction": "Set HERMES_MODEL_PROVIDER environment variable"
+    },
+    {
+      "name": "hermes_search",
+      "configPresent": false,
+      "proofLevel": "verified",
+      "proofSources": ["env_presence: VITE_HERMES_SEARCH_ENABLED=false"],
+      "details": {
+        "searchEnabled": "missing"
+      },
+      "blockers": ["VITE_HERMES_SEARCH_ENABLED not set"],
+      "nextSafeAction": "Set VITE_HERMES_SEARCH_ENABLED=true"
+    },
+    {
+      "name": "netlify",
+      "configPresent": true,
+      "proofLevel": "installed_only",
+      "proofSources": ["cli: netlify available at /Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/netlify"],
+      "details": {
+        "cliAvailable": true,
+        "authenticated": "not_proven"
+      },
+      "blockers": [],
+      "nextSafeAction": "Verify Netlify authentication status"
+    },
+    {
+      "name": "oanda",
+      "configPresent": false,
+      "proofLevel": "not_proven_live",
+      "proofSources": [],
+      "details": {
+        "demoAccount": "not_proven",
+        "apiCredentials": "not_proven"
+      },
+      "blockers": ["No proof of Oanda configuration"],
+      "nextSafeAction": "Verify Oanda demo account credentials if needed"
+    },
+    {
+      "name": "youtube",
+      "configPresent": true,
+      "proofLevel": "verified",
+      "proofSources": ["scheduler: com.nexus.youtube-channel-poller installed"],
+      "details": {
+        "schedulerInstalled": true,
+        "schedulerLoaded": true,
+        "recentFetch": "not_proven_live"
+      },
+      "blockers": ["No proof of recent YouTube metadata fetch"],
+      "nextSafeAction": "Verify YouTube API key and scheduler execution"
+    },
+    {
+      "name": "openrouter",
+      "configPresent": true,
+      "proofLevel": "verified",
+      "proofSources": ["env_presence: OPENROUTER_API_KEY=true"],
+      "details": {
+        "apiKey": "present"
+      },
+      "blockers": [],
+      "nextSafeAction": "Configure model endpoint to use OpenRouter"
+    }
+  ],
+  "summary": {
+    "total_configs": 8,
+    "present": 4,
+    "missing": 4,
+    "proof_levels": {
+      "verified": 5,
+      "installed_only": 1,
+      "not_proven_live": 1,
+      "not_proven": 1
+    }
+  },
+  "critical_note": "Config values are never printed. Only presence by name is shown."
+}

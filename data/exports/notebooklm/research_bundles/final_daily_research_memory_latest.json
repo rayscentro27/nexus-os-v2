@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-30T15:02:03.030841+00:00",
+  "generated_at": "2026-07-01T15:01:50.402997+00:00",
   "source_count": 161,
   "opportunity_count": 60,
   "lane_summary": {
@@ -40,7 +40,7 @@
       "source": "github-loan-management-system",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.885606+00:00"
+      "created_at": "2026-07-01T15:01:50.042332+00:00"
     },
     {
       "id": "opportunity_cc013a94137fa7c4",
@@ -59,7 +59,7 @@
       "source": "github-topic-credit-scoring",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886104+00:00"
+      "created_at": "2026-07-01T15:01:50.042648+00:00"
     },
     {
       "id": "opportunity_9aa9121b536c2f04",
@@ -78,7 +78,7 @@
       "source": "github-moov-awesome-fintech",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886126+00:00"
+      "created_at": "2026-07-01T15:01:50.042666+00:00"
     },
     {
       "id": "opportunity_69b183e9ab196c6c",
@@ -97,7 +97,7 @@
       "source": "github-topic-credit-management",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886142+00:00"
+      "created_at": "2026-07-01T15:01:50.042681+00:00"
     },
     {
       "id": "opportunity_8955ebd60324f305",
@@ -116,7 +116,7 @@
       "source": "credit_plug",
       "source_concept": "youtube",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886159+00:00"
+      "created_at": "2026-07-01T15:01:50.042695+00:00"
     },
     {
       "id": "opportunity_e8ab86d1c2780731",
@@ -135,7 +135,7 @@
       "source": "lane_2180eb913f040397",
       "source_concept": "credit_funding_grants",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886176+00:00"
+      "created_at": "2026-07-01T15:01:50.042718+00:00"
     },
     {
       "id": "opportunity_e80f1ea94c85f4a4",
@@ -154,7 +154,7 @@
       "source": "github-topic-credit-repair-tools",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886192+00:00"
+      "created_at": "2026-07-01T15:01:50.042732+00:00"
     },
     {
       "id": "opportunity_3e92fe617cba2da4",
@@ -173,7 +173,7 @@
       "source": "github-wadprog-repaircredit",
       "source_concept": "github",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886206+00:00"
+      "created_at": "2026-07-01T15:01:50.042746+00:00"
     },
     {
       "id": "opportunity_16e8f5b4f60cf642",
@@ -192,7 +192,7 @@
       "source": "legacy_16c7589a71552ac8",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886227+00:00"
+      "created_at": "2026-07-01T15:01:50.042760+00:00"
     },
     {
       "id": "opportunity_38cf3b8e4de4f1ba",
@@ -211,7 +211,7 @@
       "source": "legacy_54e0d588fd42750d",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886242+00:00"
+      "created_at": "2026-07-01T15:01:50.042774+00:00"
     },
     {
       "id": "opportunity_435e1cb034fdd33e",
@@ -230,7 +230,7 @@
       "source": "legacy_cdf8b0572aa82a59",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886285+00:00"
+      "created_at": "2026-07-01T15:01:50.042788+00:00"
     },
     {
       "id": "opportunity_f100c78031bb2c89",
@@ -249,7 +249,7 @@
       "source": "legacy_201b89c793c5bfcd",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886315+00:00"
+      "created_at": "2026-07-01T15:01:50.042801+00:00"
     },
     {
       "id": "opportunity_b0876ce11c99b814",
@@ -268,7 +268,7 @@
       "source": "legacy_5dd835f87e4ead50",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886356+00:00"
+      "created_at": "2026-07-01T15:01:50.042814+00:00"
     },
     {
       "id": "opportunity_99a71cfff86f0a45",
@@ -287,7 +287,7 @@
       "source": "legacy_007ab64164492fd7",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886375+00:00"
+      "created_at": "2026-07-01T15:01:50.042832+00:00"
     },
     {
       "id": "opportunity_6c2e202f1d91cf1f",
@@ -306,7 +306,7 @@
       "source": "legacy_1c06cf5feb86462a",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886389+00:00"
+      "created_at": "2026-07-01T15:01:50.042967+00:00"
     },
     {
       "id": "opportunity_e9442d026b7bd865",
@@ -325,7 +325,7 @@
       "source": "legacy_79682d5564308294",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886405+00:00"
+      "created_at": "2026-07-01T15:01:50.042983+00:00"
     },
     {
       "id": "opportunity_edc4b5ff97eeb232",
@@ -344,7 +344,7 @@
       "source": "legacy_d7482fdc7e8ebef9",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886419+00:00"
+      "created_at": "2026-07-01T15:01:50.042996+00:00"
     },
     {
       "id": "opportunity_173a10e7a7d1d3f0",
@@ -363,7 +363,7 @@
       "source": "legacy_ea4045062d9755ea",
       "source_concept": "old_nexus",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886435+00:00"
+      "created_at": "2026-07-01T15:01:50.043010+00:00"
     },
     {
       "id": "opportunity_cd424815f5754b8f",
@@ -382,7 +382,7 @@
       "source": "lane_df384ae97c77ad30",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886481+00:00"
+      "created_at": "2026-07-01T15:01:50.043023+00:00"
     },
     {
       "id": "opportunity_f2bb6839372b9069",
@@ -401,7 +401,7 @@
       "source": "hyperswitch",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886499+00:00"
+      "created_at": "2026-07-01T15:01:50.043037+00:00"
     },
     {
       "id": "opportunity_0af4fee42663fc07",
@@ -420,7 +420,7 @@
       "source": "btcpayserver",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886508+00:00"
+      "created_at": "2026-07-01T15:01:50.043056+00:00"
     },
     {
       "id": "opportunity_fd24a54ef40193e4",
@@ -439,7 +439,7 @@
       "source": "globalpayments-samples",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886516+00:00"
+      "created_at": "2026-07-01T15:01:50.043069+00:00"
     },
     {
       "id": "opportunity_fcf8335656aef6e5",
@@ -458,7 +458,7 @@
       "source": "payment-gateway-topic",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886523+00:00"
+      "created_at": "2026-07-01T15:01:50.043081+00:00"
     },
     {
       "id": "opportunity_f8e2a289ca239d25",
@@ -477,7 +477,7 @@
       "source": "payment-links-topic",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886530+00:00"
+      "created_at": "2026-07-01T15:01:50.043093+00:00"
     },
     {
       "id": "opportunity_f4187c82e871bf50",
@@ -496,7 +496,7 @@
       "source": "point-of-sale-topic",
       "source_concept": "payments",
       "recommended_next_action": "Review the source record and approve ingestion/adaptation before any external or client-facing use.",
-      "created_at": "2026-06-30T15:02:01.886543+00:00"
+      "created_at": "2026-07-01T15:01:50.043100+00:00"
     }
   ],
   "safety": "Internal research memory only; no publish, contact, trade, charge, or client guidance."

@@ -1,0 +1,122 @@
+{
+  "report": "system_health_activation_latest",
+  "generated_at": "2026-07-01T19:45:00Z",
+  "data_sources": [
+    "nexus_operations_status_latest.json",
+    "nexus_process_inventory_latest.json",
+    "nexus_scheduler_inventory_latest.json",
+    "hermes_operations_status_latest.json",
+    "hermes_model_infrastructure_inventory_latest.json"
+  ],
+  "lastAudit": {
+    "auditId": "ops-20260701T193927Z",
+    "checkedAt": "2026-07-01T19:39:27Z",
+    "auditVersion": "1.0"
+  },
+  "buildStatus": {
+    "lastKnownBuildReport": "2026-06-29T15:52:19Z",
+    "buildCommand": "tsc --noEmit && vite build",
+    "typecheckCommand": "tsc --noEmit",
+    "status": "last_known_passing",
+    "proofLevel": "no_proof"
+  },
+  "testStatus": {
+    "hermesLiveTest": {
+      "command": "npm run test:hermes-live",
+      "processActive": true,
+      "pid": 87534,
+      "uptime": "03:25:09",
+      "proofLevel": "active_process"
+    },
+    "status": "test_process_active",
+    "proofLevel": "active_process"
+  },
+  "supabaseStatus": {
+    "lastKnownWrite": "2026-07-01",
+    "last24hWrites": 27,
+    "last7dWrites": 149,
+    "tablesWritten": [
+      "task_requests",
+      "business_opportunities",
+      "monetization_opportunities",
+      "client_profiles",
+      "research_sources",
+      "nexus_events"
+    ],
+    "totalRows": 732,
+    "rlsEnabled": true,
+    "serviceRolePresent": true,
+    "urlPresent": true,
+    "proofLevel": "verified"
+  },
+  "modelStatus": {
+    "ollama": {
+      "installed": true,
+      "running": true,
+      "endpoint": "http://127.0.0.1:11434",
+      "models": ["qwen2.5:0.5b", "gemma4:31b-cloud", "gemma3:1b"],
+      "endpointResponding": true
+    },
+    "oracle": {
+      "cliInstalled": false,
+      "configExists": true,
+      "vmReachable": true,
+      "hostname": "nexus-llm-worker"
+    },
+    "openrouter": {
+      "apiKeyPresent": true,
+      "modelEndpointConfigured": false
+    },
+    "hermesLiveModel": "not_configured",
+    "hermesWebSearch": "not_configured",
+    "proofLevel": "verified"
+  },
+  "schedulerSummary": {
+    "totalSchedulers": 31,
+    "installedAndLoaded": 28,
+    "installedNotLoaded": 3,
+    "activeNowWithPidProof": 0,
+    "proofNote": "launchd loaded state is NOT proof of active execution"
+  },
+  "processSummary": {
+    "totalProcesses": 16,
+    "activeProcessProof": 14,
+    "recentOutput": 1,
+    "notFound": 0,
+    "unknown": 1,
+    "proofSource": "ps -axo"
+  },
+  "cliSummary": {
+    "totalTools": 11,
+    "installed": 11,
+    "authenticated": "not_proven",
+    "proofLevel": "installed_only"
+  },
+  "envPresence": {
+    "SUPABASE_URL": true,
+    "SUPABASE_SERVICE_ROLE_KEY": true,
+    "VITE_SUPABASE_URL": true,
+    "VITE_SUPABASE_ANON_KEY": true,
+    "OPENROUTER_API_KEY": true,
+    "ANTHROPIC_API_KEY": false,
+    "OPENAI_API_KEY": false,
+    "HERMES_LLM_PROVIDER": false,
+    "VITE_HERMES_SEARCH_ENABLED": false,
+    "OLLAMA_HOST": false
+  },
+  "blockers": [
+    "YouTube research not proven live — no process/log/write proof",
+    "Hermes live model not configured — requires LLM provider in Edge Function",
+    "Hermes web search not configured — requires VITE_HERMES_SEARCH_ENABLED=true",
+    "Background processes write local JSON only — Supabase writes conditional on sb.configured()",
+    "Trading Lab, System Health, Automation, Reports, Settings, CLI still use static data",
+    "System Health not wired to Supabase"
+  ],
+  "nextActions": [
+    "Verify YouTube research scheduler loads and runs",
+    "Configure Hermes live model (LLM provider)",
+    "Enable Hermes web search (VITE_HERMES_SEARCH_ENABLED)",
+    "Seed System Health and Reports tables if desired",
+    "Wire remaining static sections to Supabase"
+  ]
+}
