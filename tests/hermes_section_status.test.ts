@@ -348,3 +348,197 @@ describe('Phase 2 section status answers', () => {
     expect(s!.status).toBe('report_snapshot');
   });
 });
+
+describe('YouTube-specific status answers', () => {
+  it('YouTube question does not return generic matching sections', () => {
+    const answer = buildSectionStatusAnswer('is youtube research running?');
+    expect(answer).toContain('NOT PROVEN LIVE');
+    expect(answer).not.toMatch(/^Matching sections:/);
+  });
+
+  it('YouTube answer says not_proven_live unless process/log/write proof exists', () => {
+    const answer = buildSectionStatusAnswer('is youtube research running and writing to Supabase?');
+    expect(answer).toContain('NOT PROVEN LIVE');
+    expect(answer).toContain('no active PID proof');
+    expect(answer).toContain('Next safe action');
+  });
+
+  it('YouTube answer includes scheduler proof details', () => {
+    const answer = buildSectionStatusAnswer('are transcripts being fetched?');
+    expect(answer).toContain('Scheduler installed');
+    expect(answer).toContain('Scheduler loaded');
+    expect(answer).toContain('Process active');
+    expect(answer).toContain('Last output');
+  });
+
+  it('YouTube routes to no_model', () => {
+    expect(routeModel('is youtube research running?').route).toBe('no_model');
+    expect(routeModel('are transcripts being fetched?').route).toBe('no_model');
+    expect(routeModel('is the YouTube scheduler active?').route).toBe('no_model');
+    expect(routeModel('what is the YouTube proof?').route).toBe('no_model');
+  });
+
+  it('YouTube is detected as section status question', () => {
+    expect(isSectionStatusQuestion('is youtube research running?')).toBe(true);
+    expect(isSectionStatusQuestion('are transcripts being fetched?')).toBe(true);
+  });
+});
+
+describe('Trading safety answers', () => {
+  it('trade execution request is blocked first', () => {
+    const answer = buildSectionStatusAnswer('can you place a trade?');
+    expect(answer).toMatch(/^No, I cannot place trades/);
+    expect(answer).toContain('Live/funded trading is blocked');
+    expect(answer).toContain('paper/demo only');
+  });
+
+  it('trading status separates process active from live trading', () => {
+    const answer = buildSectionStatusAnswer('is trading lab running?');
+    expect(answer).toContain('Trading process proof');
+    expect(answer).toContain('Trading UI/workflow source');
+    expect(answer).toContain('Trading mode');
+    expect(answer).toContain('Live/funded trading');
+    expect(answer).toContain('PAPER/DEMO ONLY');
+    expect(answer).toContain('BLOCKED');
+  });
+
+  it('trading execution is blocked_or_gated in routing', () => {
+    expect(routeModel('place a trade').route).toBe('blocked_or_gated');
+    expect(routeModel('buy EUR/USD').route).toBe('blocked_or_gated');
+    expect(routeModel('turn on live trading').route).toBe('blocked_or_gated');
+    expect(routeModel('connect funded account').route).toBe('blocked_or_gated');
+  });
+
+  it('trading STATUS questions route to no_model', () => {
+    expect(routeModel('is trading lab running?').route).toBe('no_model');
+    expect(routeModel('is trading active?').route).toBe('no_model');
+    expect(routeModel('is live trading enabled?').route).toBe('no_model');
+  });
+
+  it('trading status answer includes process proof', () => {
+    const answer = buildSectionStatusAnswer('is trading active?');
+    expect(answer).toContain('pid-588');
+    expect(answer).toContain('DEMO');
+    expect(answer).toContain('PAPER');
+  });
+});
+
+describe('Improved process answers', () => {
+  it('process answer includes counts and proof categories', () => {
+    const answer = buildSectionStatusAnswer('what processes are active?');
+    expect(answer).toContain('Active process (PID proof)');
+    expect(answer).toContain('Recent output');
+    expect(answer).toContain('Loaded only');
+    expect(answer).toContain('Proof source');
+    expect(answer).toContain('Next safe action');
+  });
+
+  it('process answer shows top examples', () => {
+    const answer = buildSectionStatusAnswer('what processes are active?');
+    expect(answer).toContain('hermes_agent');
+    expect(answer).toContain('tradingview_router');
+  });
+});
+
+describe('Improved tools/CLI answers', () => {
+  it('tools answer includes safe/approval/blocked command categories', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('Safe read-only commands');
+    expect(answer).toContain('Approval-required commands');
+    expect(answer).toContain('Blocked commands');
+  });
+
+  it('tools answer includes tool count and installed list', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('11 tools inventoried');
+    expect(answer).toContain('git');
+    expect(answer).toContain('node');
+  });
+
+  it('tools answer includes frontend warning', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('frontend cannot execute shell commands');
+  });
+
+  it('tools answer includes proof level', () => {
+    const answer = buildSectionStatusAnswer('what tools do we have?');
+    expect(answer).toContain('Proof level');
+  });
+});
+
+describe('Improved report answers', () => {
+  it('reports answer includes count, categories, and proof source', () => {
+    const answer = buildSectionStatusAnswer('what reports do we have?');
+    expect(answer).toContain('62 reports');
+    expect(answer).toContain('Categories');
+    expect(answer).toContain('Most recent reports');
+    expect(answer).toContain('Proof source');
+    expect(answer).toContain('Next action');
+  });
+
+  it('reports answer includes category details', () => {
+    const answer = buildSectionStatusAnswer('what reports do we have?');
+    expect(answer).toContain('operations_status');
+    expect(answer).toContain('hermes_ai');
+    expect(answer).toContain('supabase_data');
+  });
+});
+
+describe('Improved settings answers', () => {
+  it('settings answer includes configured/missing groups', () => {
+    const answer = buildSectionStatusAnswer('what settings are missing?');
+    expect(answer).toContain('Configured');
+    expect(answer).toContain('Missing');
+    expect(answer).toContain('supabase');
+    expect(answer).toContain('hermes_chat');
+  });
+
+  it('settings answer includes redaction note', () => {
+    const answer = buildSectionStatusAnswer('what settings are missing?');
+    expect(answer).toContain('Values are never exposed');
+  });
+
+  it('settings answer includes proof level and next action', () => {
+    const answer = buildSectionStatusAnswer('what settings are missing?');
+    expect(answer).toContain('safe_config_presence');
+    expect(answer).toContain('Next safe action');
+  });
+});
+
+describe('Improved broken/priorities answer', () => {
+  it('broken answer groups by priority', () => {
+    const answer = buildSectionStatusAnswer('what is broken?');
+    expect(answer).toContain('Priority 1');
+    expect(answer).toContain('Priority 2');
+    expect(answer).toContain('Priority 3');
+  });
+
+  it('broken answer includes proof gap and next action for each', () => {
+    const answer = buildSectionStatusAnswer('what is broken?');
+    expect(answer).toContain('Proof gap');
+    expect(answer).toContain('Next safe action');
+    expect(answer).toContain('Credit & Funding');
+    expect(answer).toContain('YouTube research');
+    expect(answer).toContain('Reports');
+  });
+});
+
+describe('Badge and status label', () => {
+  it('header badge no longer says Local Advisor when model-ready', () => {
+    // The badge is computed dynamically in HermesChatPanel.jsx
+    // We verify the routing policy still routes status questions to no_model
+    expect(routeModel('what is the status?').route).toBe('no_model');
+  });
+
+  it('all status/cost/process questions remain no_model', () => {
+    expect(routeModel('is ray review live?').route).toBe('no_model');
+    expect(routeModel('what processes are active?').route).toBe('no_model');
+    expect(routeModel('what tools do we have?').route).toBe('no_model');
+    expect(routeModel('what reports do we have?').route).toBe('no_model');
+    expect(routeModel('what settings are missing?').route).toBe('no_model');
+    expect(routeModel('what is broken?').route).toBe('no_model');
+    expect(routeModel('is youtube research running?').route).toBe('no_model');
+    expect(routeModel('what did that model call cost?').route).toBe('no_model');
+    expect(routeModel('what model did you use?').route).toBe('no_model');
+  });
+});

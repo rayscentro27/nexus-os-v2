@@ -31,6 +31,119 @@ export interface SectionEntry {
 
 const NOW = new Date().toISOString();
 
+// ── Embedded report data for specific handlers (no I/O, no model calls) ──
+
+interface ProcessItem {
+  name: string;
+  category: string;
+  processAvailable: boolean;
+  processActive: boolean;
+  schedulerInstalled: boolean;
+  schedulerLoaded: boolean;
+  schedulerRunning: boolean;
+  lastSeenAt: string | null;
+  lastRunAt: string | null;
+  lastOutputAt: string | null;
+  lastSupabaseWriteAt: string | null;
+  proofLevel: string;
+  blockers: string[];
+}
+
+const PROCESS_ITEMS: ProcessItem[] = [
+  { name: 'hermes_agent', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: false, schedulerLoaded: false, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: null, lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'tradingview_router', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:00:03Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'nexus-orchestrator', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:37:40Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'nexus-research-worker', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-06-30T23:37:40Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'cloudflared_tunnel', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-06-30T23:39:15Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'nexus_trading_engine', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:01:00Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'dashboard', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-06-30T23:40:37Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'research_signal_bridge', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:39:30Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'auto_executor', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:39:10Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'operations_center_scheduler', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: null, lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'hermes_cli_gateway', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: false, schedulerLoaded: false, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: null, lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'tournament_service', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:38:00Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'hermes-gateway-adapter', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: false, schedulerLoaded: false, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: null, lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'control_center_server', category: 'nexus_process', processAvailable: true, processActive: true, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T19:39:26Z', lastSupabaseWriteAt: null, proofLevel: 'active_process', blockers: [] },
+  { name: 'youtube-channel-poller', category: 'scheduler_only', processAvailable: false, processActive: false, schedulerInstalled: true, schedulerLoaded: true, schedulerRunning: false, lastSeenAt: '2026-07-01T19:39:27Z', lastRunAt: null, lastOutputAt: '2026-07-01T15:40:23Z', lastSupabaseWriteAt: null, proofLevel: 'recent_output', blockers: ['No active PID proof', 'No proof of recent metadata fetch'] },
+];
+
+const PROCESS_SUMMARY = {
+  total_tracked: 16,
+  active_process: 14,
+  recent_output: 1,
+  loaded_only: 0,
+  installed_only: 0,
+  available_script_only: 0,
+  not_found: 0,
+  unknown: 1,
+};
+
+const YOUTUBE_PROOF = PROCESS_ITEMS.find((p) => p.name === 'youtube-channel-poller')!;
+
+interface ToolItem {
+  name: string;
+  installed: boolean;
+  version: string;
+  authenticated: string;
+  safeReadOnlyCommands: string[];
+  approvalRequiredCommands: string[];
+  blockedCommands: string[];
+  proofLevel: string;
+}
+
+const TOOL_REGISTRY: ToolItem[] = [
+  { name: 'git', installed: true, version: 'git version 2.53.0', authenticated: 'not_proven', safeReadOnlyCommands: ['git status', 'git log', 'git diff'], approvalRequiredCommands: ['git push'], blockedCommands: ['git push --force'], proofLevel: 'installed_only' },
+  { name: 'node', installed: true, version: 'v22.22.3', authenticated: 'not_proven', safeReadOnlyCommands: ['node --version'], approvalRequiredCommands: ['node script.js'], blockedCommands: [], proofLevel: 'installed_only' },
+  { name: 'npm', installed: true, version: '10.9.8', authenticated: 'not_proven', safeReadOnlyCommands: ['npm --version', 'npm list'], approvalRequiredCommands: ['npm install'], blockedCommands: ['npm publish --access public'], proofLevel: 'installed_only' },
+  { name: 'python3', installed: true, version: 'Python 3.14.5', authenticated: 'not_proven', safeReadOnlyCommands: ['python3 --version'], approvalRequiredCommands: ['python3 script.py'], blockedCommands: [], proofLevel: 'installed_only' },
+  { name: 'supabase', installed: true, version: 'installed', authenticated: 'not_proven', safeReadOnlyCommands: ['supabase --version'], approvalRequiredCommands: ['supabase db push'], blockedCommands: ['supabase db push --force'], proofLevel: 'installed_only' },
+  { name: 'netlify', installed: true, version: 'installed', authenticated: 'not_proven', safeReadOnlyCommands: ['netlify --version', 'netlify status'], approvalRequiredCommands: ['netlify deploy'], blockedCommands: ['netlify deploy --prod'], proofLevel: 'installed_only' },
+  { name: 'gh', installed: true, version: 'installed', authenticated: 'not_proven', safeReadOnlyCommands: ['gh --version', 'gh auth status'], approvalRequiredCommands: ['gh pr create'], blockedCommands: ['gh repo delete'], proofLevel: 'installed_only' },
+  { name: 'ollama', installed: true, version: 'ollama version is 0.20.5', authenticated: 'not_proven', safeReadOnlyCommands: ['ollama --version', 'ollama list'], approvalRequiredCommands: ['ollama pull'], blockedCommands: ['ollama rm'], proofLevel: 'installed_only' },
+  { name: 'opencode', installed: true, version: 'installed', authenticated: 'not_proven', safeReadOnlyCommands: ['opencode --version'], approvalRequiredCommands: ['opencode run'], blockedCommands: [], proofLevel: 'installed_only' },
+  { name: 'codex', installed: true, version: 'codex-cli 0.142.4', authenticated: 'not_proven', safeReadOnlyCommands: ['codex --version'], approvalRequiredCommands: ['codex run'], blockedCommands: [], proofLevel: 'installed_only' },
+  { name: 'playwright', installed: true, version: 'package_present', authenticated: 'not_proven', safeReadOnlyCommands: ['npx playwright --version'], approvalRequiredCommands: ['npx playwright test'], blockedCommands: ['npx playwright install --with-deps'], proofLevel: 'installed_only' },
+];
+
+const TOOL_SUMMARY = { totalTools: 11, installed: 11, authenticated: 0, proofLevel: 'installed_only' };
+
+const REPORT_CENTER = {
+  reportCount: 62,
+  categories: [
+    { name: 'operations_status', description: 'System operations and process status reports', reports: ['nexus_operations_status_latest.json', 'nexus_process_inventory_latest.json', 'nexus_scheduler_inventory_latest.json'] },
+    { name: 'hermes_ai', description: 'Hermes AI agent configuration and status reports', reports: ['hermes_chat_live_model_smoke_latest.json', 'hermes_durable_memory_plan.json'] },
+    { name: 'supabase_data', description: 'Supabase database status and seed reports', reports: ['supabase_truth_audit.json', 'static_to_supabase_seed_dry_run_latest.json'] },
+    { name: 'trading', description: 'Trading engine and strategy reports', reports: ['trading_lab_proof_latest.json'] },
+    { name: 'youtube_research', description: 'YouTube research engine status reports', reports: ['nexus_youtube_research_status_latest.json', 'youtube_research_live_proof_latest.json'] },
+    { name: 'live_connection', description: 'Live data connection implementation and proof reports', reports: ['live_connection_implementation_plan.json', 'live_seed_execution_latest.json'] },
+    { name: 'activation_baselines', description: 'Phase 2 activation baseline and process activity reports', reports: ['nexus_phase2_activation_baseline.json', 'nexus_process_activity_latest.json'] },
+  ],
+  latestReports: {
+    mostRecentByTimestamp: [
+      { file: 'hermes_operations_status_latest.json', timestamp: '2026-07-01T14:10:00Z' },
+      { file: 'nexus_operations_status_latest.json', timestamp: '2026-07-01T19:39:27Z' },
+      { file: 'nexus_process_inventory_latest.json', timestamp: '2026-07-01T19:39:27Z' },
+    ],
+  },
+  blockers: ['Reports center reads local files only', 'No Supabase table for report registry'],
+  nextSafeAction: 'Seed report registry to Supabase; wire UI to live reads; keep local files as backup',
+};
+
+const SETTINGS_STATUS = {
+  mode: 'safe_config_presence',
+  summary: { total_configs: 8, present: 4, missing: 4 },
+  items: [
+    { name: 'supabase', configPresent: true, proofLevel: 'verified', blockers: [] as string[], nextSafeAction: 'Verify Supabase connection health' },
+    { name: 'hermes_chat', configPresent: false, proofLevel: 'verified', blockers: ['LLM provider not configured'], nextSafeAction: 'Configure LLM provider in Supabase Edge Function secrets' },
+    { name: 'hermes_model', configPresent: false, proofLevel: 'verified', blockers: ['HERMES_MODEL_PROVIDER env var missing'], nextSafeAction: 'Set HERMES_MODEL_PROVIDER environment variable' },
+    { name: 'hermes_search', configPresent: false, proofLevel: 'verified', blockers: ['VITE_HERMES_SEARCH_ENABLED not set'], nextSafeAction: 'Set VITE_HERMES_SEARCH_ENABLED=true' },
+    { name: 'netlify', configPresent: true, proofLevel: 'installed_only', blockers: [] as string[], nextSafeAction: 'Verify Netlify authentication status' },
+    { name: 'oanda', configPresent: false, proofLevel: 'not_proven_live', blockers: ['No proof of Oanda configuration'], nextSafeAction: 'Verify Oanda demo account credentials if needed' },
+    { name: 'youtube', configPresent: true, proofLevel: 'verified', blockers: ['No proof of recent YouTube metadata fetch'], nextSafeAction: 'Verify YouTube API key and scheduler execution' },
+    { name: 'openrouter', configPresent: true, proofLevel: 'verified', blockers: [] as string[], nextSafeAction: 'Configure model endpoint to use OpenRouter' },
+  ],
+};
+
 const SECTIONS: SectionEntry[] = [
   {
     id: 'hermes_workroom',
@@ -362,7 +475,7 @@ export function getBlockedSections(): SectionEntry[] {
  */
 export function isSectionStatusQuestion(query: string): boolean {
   const lower = (query || '').toLowerCase();
-  return /\b(is\s+.+\s+(live|working|running|blocked|static|connected|up|down|active|verified)|what\s+(is|are)\s+(the\s+)?status|show\s+proof|what\s+sections|which\s+sections|what\s+is\s+scheduled|what\s+is\s+blocked|what\s+is\s+live|what\s+is\s+static|is\s+this\s+section|what\s+sections\s+are|what\s+processes|what\s+tools|what\s+schedulers|what\s+automations|what\s+reports|what\s+settings|what\s+drafts|what\s+is\s+the\s+latest|when\s+was\s+the\s+last|what\s+should\s+i\s+work\s+on|what\s+is\s+broken|what\s+needs\s+approval)\b/i.test(lower);
+  return /\b(is\s+.+\s+(live|working|running|blocked|static|connected|up|down|active|verified)|what\s+(is|are)\s+(the\s+)?status|show\s+proof|what\s+sections|which\s+sections|what\s+is\s+scheduled|what\s+is\s+blocked|what\s+is\s+live|what\s+is\s+static|is\s+this\s+section|what\s+sections\s+are|what\s+processes|what\s+tools|what\s+schedulers|what\s+automations|what\s+reports|what\s+settings|what\s+drafts|what\s+is\s+the\s+latest|when\s+was\s+the\s+last|what\s+should\s+i\s+work\s+on|what\s+is\s+broken|what\s+needs\s+approval|youtube|transcripts?|can\s+you\s+place|execute.*trade|buy\s+\w+|sell\s+\w+|turn\s+on\s+live|connect\s+funded|is\s+supabase\s+cli|is\s+netlify\s+cli|is\s+git\s+installed)\b/i.test(lower);
 }
 
 /**
@@ -371,7 +484,73 @@ export function isSectionStatusQuestion(query: string): boolean {
 export function buildSectionStatusAnswer(query: string): string {
   const lower = (query || '').toLowerCase();
 
-  // "what sections are live?"
+  // ── TRADING SAFETY: execution requests blocked FIRST ──
+  if (/\b(can you\s+)?(place\s+a\s+trade|execute\s+(this\s+)?trade|buy\s+\w+|sell\s+\w+|turn\s+on\s+live\s+trading|connect\s+funded|start\s+trading|open\s+a\s+position|make\s+a\s+trade)\b/i.test(lower)) {
+    return 'No, I cannot place trades from this chat. Live/funded trading is blocked. Trading Lab is paper/demo only. I can help review a paper/demo strategy, summarize the latest trading report, or create an approval-gated task for a safe paper test.';
+  }
+
+  // ── YOUTUBE-SPECIFIC: before generic section matching ──
+  if (/\b(youtube|transcripts?|video\s+fetch|channel\s+poll|metadata\s+fetch)\b/i.test(lower)) {
+    const ytProcess = YOUTUBE_PROOF;
+    const research = getResearchEngineStatus();
+    const lines = [
+      `YouTube research status: NOT PROVEN LIVE`,
+      ``,
+      `Scheduler installed: ${ytProcess.schedulerInstalled}`,
+      `Scheduler loaded: ${ytProcess.schedulerLoaded}`,
+      `Scheduler running: ${ytProcess.schedulerRunning} (no active PID proof)`,
+      `Process active: ${ytProcess.processActive}`,
+      `Last output: ${ytProcess.lastOutputAt || 'none'}`,
+      `Last Supabase write: ${ytProcess.lastSupabaseWriteAt || 'none'}`,
+      `Proof level: ${ytProcess.proofLevel}`,
+      ``,
+      `Research Engine rows in Supabase: ${research.rowCount} (from seed, not live fetch)`,
+      `YouTube proof status: ${research.youtubeProofStatus}`,
+      ``,
+      `What I do NOT have:`,
+      `  - No process/log/write proof that a YouTube scheduler is actively fetching metadata/transcripts`,
+      `  - No proof of new Supabase rows from live YouTube fetch`,
+      `  - Scheduler is loaded but not confirmed running`,
+      ``,
+      `Next safe action:`,
+      `  1. Inspect youtube-channel-poller.log for recent fetch entries`,
+      `  2. Check if YouTube API key is valid`,
+      `  3. Verify that new research_sources rows appear after a scheduler run`,
+      `  4. Do NOT claim YouTube research is live until write proof exists`,
+    ];
+    return lines.join('\n');
+  }
+
+  // ── TRADING STATUS: separate process/UI/mode/live ──
+  if (/\b(is\s+)?(trading\s+lab\s+)?(running|active|live|trading\s+status|trading\s+lab\s+status)\b/i.test(lower) && /\btrading\b/i.test(lower)) {
+    const tradingSection = SECTIONS.find((s) => s.id === 'trading_lab')!;
+    const tradingProcess = PROCESS_ITEMS.find((p) => p.name === 'nexus_trading_engine')!;
+    const lines = [
+      `Trading Lab Status — 4 layers:`,
+      ``,
+      `1. Trading process proof: ${tradingProcess.proofLevel}`,
+      `   - Process active: ${tradingProcess.processActive} (pid-588)`,
+      `   - Scheduler loaded: ${tradingProcess.schedulerLoaded}`,
+      `   - Last output: ${tradingProcess.lastOutputAt || 'none'}`,
+      ``,
+      `2. Trading UI/workflow source: ${tradingSection.status.toUpperCase()}`,
+      `   - Source: ${tradingSection.source}`,
+      `   - Proof level: ${tradingSection.proofLevel}`,
+      ``,
+      `3. Trading mode: PAPER/DEMO ONLY`,
+      `   - liveTradingEnabled: false`,
+      `   - fundedBrokerConnected: false`,
+      ``,
+      `4. Live/funded trading: BLOCKED`,
+      `   - No live broker connection proven`,
+      `   - No funded account wired`,
+      ``,
+      `Bottom line: The trading engine process is active in demo/paper mode. Live trading is disabled and blocked. Do not call the process "live trading."`,
+    ];
+    return lines.join('\n');
+  }
+
+  // ── "what sections are live?" ──
   if (/what\s+sections\s+are\s+live|which\s+sections\s+are\s+live|what\s+is\s+live/i.test(lower)) {
     const live = getLiveSections();
     if (live.length === 0) return 'No sections are confirmed live yet.';
@@ -379,7 +558,7 @@ export function buildSectionStatusAnswer(query: string): string {
     return `Live sections (${live.length}/${SECTIONS.length}):\n${lines.join('\n')}`;
   }
 
-  // "what sections are static?"
+  // ── "what sections are static?" ──
   if (/what\s+sections\s+are\s+static|which\s+sections\s+are\s+static|what\s+is\s+static/i.test(lower)) {
     const stat = getStaticSections();
     if (stat.length === 0) return 'No sections are labeled as static.';
@@ -387,7 +566,7 @@ export function buildSectionStatusAnswer(query: string): string {
     return `Static sections (${stat.length}/${SECTIONS.length}):\n${lines.join('\n')}`;
   }
 
-  // "what is blocked?"
+  // ── "what is blocked?" ──
   if (/what\s+is\s+blocked|which\s+sections\s+are\s+blocked|what\s+sections\s+are\s+blocked/i.test(lower)) {
     const allWithBlockers = SECTIONS.filter((s) => s.blockers.length > 0);
     if (allWithBlockers.length === 0) return 'No sections have blockers.';
@@ -395,7 +574,7 @@ export function buildSectionStatusAnswer(query: string): string {
     return `Sections with blockers (${allWithBlockers.length}):\n${lines.join('\n')}`;
   }
 
-  // "what is scheduled?"
+  // ── "what is scheduled?" ──
   if (/what\s+is\s+scheduled|what\s+schedules|which.*scheduled/i.test(lower)) {
     const scheduled = SECTIONS.filter((s) => s.schedulerInstalled);
     if (scheduled.length === 0) return 'No schedulers are installed.';
@@ -403,7 +582,7 @@ export function buildSectionStatusAnswer(query: string): string {
     return `Scheduled sections:\n${lines.join('\n')}`;
   }
 
-  // "show proof this is working"
+  // ── "show proof this is working" ──
   if (/show\s+proof|proof\s+this\s+is\s+working|how\s+do\s+you\s+know/i.test(lower)) {
     const proofLines = SECTIONS.filter((s) => s.proofLevel === 'verified').map(
       (s) => `✅ ${s.name}: verified at ${s.verifiedAt?.split('T')[0] || 'unknown'}, source=${s.source}, rows=${s.rowCount}, table=${s.tableNames.join(',')}`
@@ -414,53 +593,138 @@ export function buildSectionStatusAnswer(query: string): string {
     return `Verified sections:\n${proofLines.join('\n')}\n\nUnproven sections:\n${unproven.join('\n')}`;
   }
 
-  // "what is the status?" — summary
+  // ── "what is the status?" — summary ──
   if (/what\s+(is|are)\s+(the\s+)?status|status\s+(of\s+)?all|overall\s+status/i.test(lower)) {
     const summary = getSectionSummary();
-    return `Nexus OS status: ${summary.live} live, ${summary.static} static, ${summary.mismatch} mismatch, ${summary.blocked} blocked, ${summary.unknown} unknown (${summary.total} total)`;
+    return `Nexus OS status: ${summary.live} live, ${summary.static} static, ${summary.mismatch} mismatch, ${summary.blocked} blocked, ${summary.unknown} unknown, ${summary.report_snapshot} report snapshots (${summary.total} total)`;
   }
 
-  // "what processes are available/active?"
+  // ── "what processes are available/active?" — IMPROVED ──
   if (/what\s+processes\s+(are\s+)?(available|active|running)/i.test(lower)) {
-    const processSections = SECTIONS.filter((s) => s.schedulerInstalled || s.status === 'live');
-    if (processSections.length === 0) return 'No active processes found.';
-    const lines = processSections.map((s) => {
-      const state = s.schedulerInstalled ? (s.schedulerRunning ? 'running' : 'installed') : 'active';
-      return `⚙️ ${s.name}: ${state} — ${s.notes}`;
-    });
-    return `Active/installed processes (${processSections.length}):\n${lines.join('\n')}`;
+    const active = PROCESS_ITEMS.filter((p) => p.proofLevel === 'active_process');
+    const recent = PROCESS_ITEMS.filter((p) => p.proofLevel === 'recent_output');
+    const loaded = PROCESS_ITEMS.filter((p) => p.proofLevel === 'loaded_only');
+    const scripts = PROCESS_ITEMS.filter((p) => p.proofLevel === 'available_script_only');
+    const topActive = active.slice(0, 5);
+    const lines = [
+      `Process inventory (${PROCESS_ITEMS.length} tracked):`,
+      `  ✅ Active process (PID proof): ${active.length}`,
+      `  📋 Recent output (no active PID): ${recent.length}`,
+      `  ⏳ Loaded only (no proof): ${loaded.length}`,
+      `  📜 Available script only: ${scripts.length}`,
+      ``,
+      `Top active processes:`,
+      ...topActive.map((p) => `  • ${p.name} — pid proof, last seen ${p.lastSeenAt?.split('T')[1]?.slice(0, 5) || 'unknown'}`),
+      ``,
+      `Proof source: process inventory (${PROCESS_SUMMARY.total_tracked} tracked, ${PROCESS_SUMMARY.active_process} active)`,
+      `Next safe action: Inspect individual process logs for recent entries`,
+    ];
+    return lines.join('\n');
   }
 
-  // "what tools do we have?"
-  if (/what\s+tools\s+(do\s+we\s+)?have|what\s+cli\s+tools|what\s+tools\s+(are|is)\s+(safe|available)/i.test(lower)) {
-    const cli = SECTIONS.find((s) => s.id === 'cli_registry');
-    if (!cli) return 'No CLI tool registry found.';
-    return `CLI / Tool Registry:\n${cli.notes}\n\nStatus: ${cli.status.toUpperCase()} — ${cli.proofLevel}`;
+  // ── "what tools do we have?" — IMPROVED ──
+  if (/what\s+tools\s+(do\s+we\s+)?have|what\s+cli\s+tools|what\s+tools\s+(are|is)\s+(safe|available)|is\s+(supabase|netlify|git|gh|ollama)\s+(cli\s+)?(available|connected|installed)/i.test(lower)) {
+    const installed = TOOL_REGISTRY.filter((t) => t.installed);
+    const safeCmds = installed.flatMap((t) => t.safeReadOnlyCommands.slice(0, 2).map((c) => `  • ${t.name}: ${c}`));
+    const approvalCmds = installed.flatMap((t) => t.approvalRequiredCommands.slice(0, 1).map((c) => `  • ${t.name}: ${c}`));
+    const blockedCmds = installed.flatMap((t) => t.blockedCommands.slice(0, 1).map((c) => `  • ${t.name}: ${c}`));
+    const lines = [
+      `CLI / Tool Registry — ${TOOL_SUMMARY.totalTools} tools inventoried, ${TOOL_SUMMARY.installed} installed, ${TOOL_SUMMARY.authenticated} authenticated`,
+      ``,
+      `Installed tools: ${installed.map((t) => t.name).join(', ')}`,
+      `Proof level: ${TOOL_SUMMARY.proofLevel}`,
+      ``,
+      `Safe read-only commands (examples):`,
+      ...safeCmds.slice(0, 6),
+      ``,
+      `Approval-required commands (examples):`,
+      ...approvalCmds.slice(0, 4),
+      ``,
+      `Blocked commands (examples):`,
+      ...blockedCmds.slice(0, 3),
+      ``,
+      `Note: The frontend cannot execute shell commands. Tool availability does not imply authentication.`,
+      `Next safe action: Use safe read-only commands manually; approval-gated commands need Ray Review.`,
+    ];
+    return lines.join('\n');
   }
 
-  // "what reports do we have?"
-  if (/what\s+reports\s+(do\s+we\s+)?have|what\s+reports|show\s+report/i.test(lower)) {
-    const reports = SECTIONS.find((s) => s.id === 'reports');
-    if (!reports) return 'No reports section found.';
-    return `Reports:\n${reports.notes}\n\nStatus: ${reports.status.toUpperCase()} — ${reports.proofLevel}`;
+  // ── "what reports do we have?" — IMPROVED ──
+  if (/what\s+reports\s+(do\s+we\s+)?have|what\s+reports|show\s+report|what\s+is\s+the\s+latest\s+report|explain\s+(system\s+health|this)\s+report/i.test(lower)) {
+    const cats = REPORT_CENTER.categories.map((c) => `  • ${c.name}: ${c.description} (${c.reports.length} reports)`);
+    const latest = REPORT_CENTER.latestReports.mostRecentByTimestamp.slice(0, 3);
+    const lines = [
+      `Reports Center — ${REPORT_CENTER.reportCount} reports indexed across ${REPORT_CENTER.categories.length} categories`,
+      ``,
+      `Categories:`,
+      ...cats,
+      ``,
+      `Most recent reports:`,
+      ...latest.map((r) => `  • ${r.file} (${r.timestamp})`),
+      ``,
+      `Proof source: reports/ directory listing`,
+      `Blockers: ${REPORT_CENTER.blockers.join('; ')}`,
+      `Next action: ${REPORT_CENTER.nextSafeAction}`,
+    ];
+    return lines.join('\n');
   }
 
-  // "what settings are missing?"
-  if (/what\s+settings\s+(are\s+)?missing|what\s+settings|missing\s+config/i.test(lower)) {
-    const settings = SECTIONS.find((s) => s.id === 'settings');
-    if (!settings) return 'No settings section found.';
-    return `Settings:\n${settings.notes}\n\nBlockers: ${settings.blockers.join('; ') || 'None'}\n\nStatus: ${settings.status.toUpperCase()} — ${settings.proofLevel}`;
+  // ── "what settings are missing?" — IMPROVED ──
+  if (/what\s+settings\s+(are\s+)?missing|what\s+settings|missing\s+config|is\s+(web\s+search|hermes\s+model|supabase)\s+configured/i.test(lower)) {
+    const present = SETTINGS_STATUS.items.filter((c) => c.configPresent);
+    const missing = SETTINGS_STATUS.items.filter((c) => !c.configPresent);
+    const lines = [
+      `Settings — ${SETTINGS_STATUS.summary.present}/${SETTINGS_STATUS.summary.total_configs} configured`,
+      ``,
+      `✅ Configured (${present.length}):`,
+      ...present.map((c) => `  • ${c.name} — proof: ${c.proofLevel}`),
+      ``,
+      `❌ Missing (${missing.length}):`,
+      ...missing.map((c) => `  • ${c.name} — blockers: ${c.blockers.join('; ')}`),
+      ``,
+      `Values are never exposed. Only presence by name is shown.`,
+      `Proof source: ${SETTINGS_STATUS.mode}`,
+      `Next safe action: Configure missing groups by setting the required env vars`,
+    ];
+    return lines.join('\n');
   }
 
-  // "what is broken?"
+  // ── "what is broken?" — IMPROVED with priority grouping ──
   if (/what\s+is\s+broken|what.*broken|what.*failing|what.*not\s+working/i.test(lower)) {
     const broken = SECTIONS.filter((s) => s.blockers.length > 0);
     if (broken.length === 0) return 'No sections have blockers — everything is running clean.';
-    const lines = broken.map((s) => `🚫 ${s.name}:\n${s.blockers.map((b) => `  - ${b}`).join('\n')}`);
-    return `Blocked/broken sections (${broken.length}):\n${lines.join('\n')}`;
+
+    // Priority grouping
+    const p1 = broken.filter((s) => ['credit_funding', 'marketing_drafts'].includes(s.id));
+    const p2 = broken.filter((s) => ['research_engine', 'automation', 'system_health'].includes(s.id));
+    const p3 = broken.filter((s) => ['reports', 'cli_registry', 'settings', 'trading_lab'].includes(s.id));
+
+    const formatSection = (s: SectionEntry) => {
+      const processInfo = PROCESS_ITEMS.find((p) => s.id === 'trading_lab' && p.name === 'nexus_trading_engine');
+      const processNote = processInfo ? `\n    Process: ${processInfo.proofLevel} (${processInfo.processActive ? 'active' : 'inactive'})` : '';
+      return [
+        `  ${s.name} — ${s.status.toUpperCase()}`,
+        `    Proof gap: ${s.blockers.join('; ')}`,
+        `    Next safe action: ${s.nextAction}${processNote}`,
+      ].join('\n');
+    };
+
+    const lines = [
+      `Blocked/broken sections (${broken.length}):`,
+      ``,
+      `Priority 1 — Money/client workflow:`,
+      ...p1.flatMap(formatSection),
+      ``,
+      `Priority 2 — Proof/automation:`,
+      ...p2.flatMap(formatSection),
+      ``,
+      `Priority 3 — Infrastructure/reporting:`,
+      ...p3.flatMap(formatSection),
+    ];
+    return lines.join('\n');
   }
 
-  // "what needs approval?"
+  // ── "what needs approval?" ──
   if (/what\s+needs\s+approval|what.*approv|what.*pending|approval\s+queue/i.test(lower)) {
     const gated = SECTIONS.filter((s) => s.notes.toLowerCase().includes('approval') || s.nextAction.toLowerCase().includes('approval'));
     if (gated.length === 0) return 'No approval-gated items found.';
@@ -468,11 +732,11 @@ export function buildSectionStatusAnswer(query: string): string {
     return `Approval-gated items (${gated.length}):\n${lines.join('\n')}`;
   }
 
-  // Specific section: "is ray review live?" / "is the research engine working?"
+  // ── Specific section: "is ray review live?" / "is the research engine working?" ──
   const sections = findSectionsByQuery(lower);
   if (sections.length === 1) {
     const s = sections[0];
-    const statusIcon = s.status === 'live' ? '✅' : s.status === 'static' ? '⚠️' : s.status === 'blocked' ? '🚫' : '❓';
+    const statusIcon = s.status === 'live' ? '✅' : s.status === 'static' ? '⚠️' : s.status === 'blocked' ? '🚫' : s.status === 'report_snapshot' ? '📊' : '❓';
     let answer = `${statusIcon} ${s.name} is ${s.status.toUpperCase()}`;
     if (s.source === 'supabase') answer += ` — data from Supabase (${s.tableNames.join(', ') || 'no table'})`;
     else if (s.source === 'local_static') answer += ` — local static data only`;
@@ -486,7 +750,7 @@ export function buildSectionStatusAnswer(query: string): string {
 
   if (sections.length > 1) {
     const lines = sections.map((s) => {
-      const icon = s.status === 'live' ? '✅' : s.status === 'static' ? '⚠️' : '❓';
+      const icon = s.status === 'live' ? '✅' : s.status === 'static' ? '⚠️' : s.status === 'report_snapshot' ? '📊' : '❓';
       return `${icon} ${s.name}: ${s.status}`;
     });
     return `Matching sections:\n${lines.join('\n')}`;
@@ -494,5 +758,5 @@ export function buildSectionStatusAnswer(query: string): string {
 
   // Fallback: return overall summary
   const summary = getSectionSummary();
-  return `Nexus OS: ${summary.live} live, ${summary.static} static sections out of ${summary.total} total. Ask about a specific section for details.`;
+  return `Nexus OS: ${summary.live} live, ${summary.static} static, ${summary.report_snapshot} report snapshot sections out of ${summary.total} total. Ask about a specific section for details.`;
 }

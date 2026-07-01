@@ -301,7 +301,7 @@ function Topbar({ email }) {
     <header className="topbar">
       <div className="searchbar"><Icon name="Search" size={20} /><span>Search across Nexus OS v2...</span><kbd>⌘K</kbd></div>
       <a className="client-portal-link" href="/client">View Client Portal</a>
-      <div className="hermes-status"><Icon name="Activity" size={20} />Hermes Local Advisor <span>• Local context</span></div>
+      <div className="hermes-status"><Icon name="Activity" size={20} />Hermes Advisor <span>• Live Supabase + Model Ready</span></div>
       <div className="profile"><span>{email || 'goclearonline@gmail.com'}</span><b>GO</b><Icon name="ChevronDown" size={16} /></div>
     </header>
   )

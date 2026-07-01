@@ -61,7 +61,11 @@ const DEFAULTS: Record<ModelRoute, Omit<RoutingDecision, 'route' | 'reason'>> = 
 
 function decide(lower: string): { route: ModelRoute; reason: string } {
   // ── BLOCKED: dangerous actions ──
-  if (/\b(send|email|publish|post|tweet|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete)\b/i.test(lower)) {
+  if (/\b(send|email|publish|post|tweet|deploy|charge|trade|buy|sell|turn\s+on\s+live|connect\s+funded|dispute|seed|sql|drop|truncate|delete)\b/i.test(lower)) {
+    // But allow trading STATUS questions (not execution)
+    if (/\b(trading|lab)\b/i.test(lower) && /\b(running|active|status|is\s+trading|trading\s+lab\s+status)\b/i.test(lower)) {
+      return { route: 'no_model', reason: 'Trading status question — answerable from section status registry.' };
+    }
     return { route: 'blocked_or_gated', reason: 'Execution request — must go through Ray Review approval gate, never direct model.' };
   }
 
@@ -71,7 +75,7 @@ function decide(lower: string): { route: ModelRoute; reason: string } {
   }
 
   // ── NO_MODEL: process/tool/report/settings questions — answerable from reports ──
-  if (/\b(what\s+processes|what\s+tools|what\s+reports|what\s+settings|what\s+automations|what\s+schedulers|what\s+drafts|what\s+is\s+broken|what\s+needs\s+approval|what\s+should\s+i\s+work\s+on\s+next|when\s+was\s+the\s+last|is\s+youtube\s+research|is\s+trading|is\s+credit|what\s+did\s+we|what\s+wrote|can\s+you\s+run|can\s+you\s+place|can\s+you\s+publish)\b/i.test(lower)) {
+  if (/\b(what\s+processes|what\s+tools|what\s+reports|what\s+settings|what\s+automations|what\s+schedulers|what\s+drafts|what\s+is\s+broken|what\s+needs\s+approval|what\s+should\s+i\s+work\s+on\s+next|when\s+was\s+the\s+last|is\s+youtube\s+research|is\s+trading|is\s+credit|what\s+did\s+we|what\s+wrote|can\s+you\s+run|can\s+you\s+place|can\s+you\s+publish|youtube|transcript|video\s+fetch|channel\s+poll)\b/i.test(lower)) {
     return { route: 'no_model', reason: 'Process/tool/report/status question — answerable from local reports and registry.' };
   }
 

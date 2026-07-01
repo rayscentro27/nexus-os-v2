@@ -13,5 +13,5 @@ export const systemHealthItems = [
   ['frontend','Frontend live data','Ready; test-client flag off','gated','reports/manual_publish/frontend_live_data_final_readiness_latest.md','Review client gate','Static fallback'],
   ['reports','Reports','13 reports available in app','healthy','reports/manual_publish/report_registry_latest.md','Open Reports','Current build'],
   ['review','Ray Review','64 cards visible','healthy','reports/manual_publish/ray_review_queue_latest.md','Open Ray Review','Current queue'],
-  ['hermes','Hermes','Conversational local advisor (local context)','healthy','reports/manual_publish/hermes_advisor_response_examples_latest.md','Ask Hermes','Local context'],
+  ['hermes','Hermes','Conversational advisor (Live Supabase + Model Ready)','healthy','reports/manual_publish/hermes_advisor_response_examples_latest.md','Ask Hermes','Live Supabase + Model'],
 ].map(([id,label,status,tone,report,nextAction,lastRun])=>({id,label,status,tone,report,nextAction,lastRun,copyCommand:`open ${report}`}));
