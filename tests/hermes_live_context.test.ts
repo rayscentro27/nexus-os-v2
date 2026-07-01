@@ -57,6 +57,21 @@ describe('Hermes live context builder', () => {
     expect(result.text).toBeTruthy();
   });
 
+  it('summarizes Ray Review approvals from live rows instead of stale local zero-card fallback', async () => {
+    const { summarizeApprovalRows } = await import('../src/lib/hermesLiveContext');
+    const text = summarizeApprovalRows([
+      { id: 'a', title: 'Approve YouTube proof check', status: 'pending' },
+      { id: 'b', title: 'Hold deploy', status: 'held' },
+      { id: 'c', title: 'Approved test', status: 'approved' },
+    ], [
+      { id: 'd', title: 'Reject unsafe send', decision: 'rejected' },
+    ]);
+    expect(text).toMatch(/Live Ray Review summary/i);
+    expect(text).toMatch(/pending\/waiting/i);
+    expect(text).toMatch(/not the old local zero-card fallback/i);
+    expect(text).toMatch(/Approve YouTube proof check/i);
+  });
+
   it('buildWebSearchResponse returns honest result', async () => {
     const { buildWebSearchResponse } = await import('../src/lib/hermesLiveContext');
     const result = await buildWebSearchResponse('what is the latest AI news');

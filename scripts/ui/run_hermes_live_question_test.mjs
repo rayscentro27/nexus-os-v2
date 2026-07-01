@@ -66,8 +66,13 @@ try {
     ['how do we make money today', /local bundled context.*\$97 Credit & Funding Readiness Review.*approval-gated/is],
     ['what is the best business opportunity we have right now', /local bundled context.*\$97 readiness review.*approval-gated/is],
     ['Run a full Nexus audit', /processes have direct running proof.*launchd jobs.*unproven.*No process was started/is],
-    ['Is YouTube research running?', /not_proven_live.*Cached files do not prove|not_proven_live.*live operation requires/is],
-    ['What CLI tools do I have?', /Available CLI tools:.*git.*node.*npm/is],
+    ['What is live, what is static, and what is unproven?', /Live.*Static.*unproven|live proof.*static\/report-only.*unproven/is],
+    ['Is YouTube research running?', /not_proven_live.*Supabase can have research rows.*process proof/is],
+    ['Is YouTube research running and writing to Supabase?', /not_proven_live.*Supabase can have research rows.*fresh Supabase row-count\/write proof/is],
+    ['What CLI tools do I have?', /CLI tools available.*git.*node.*npm.*does not prove authentication/is],
+    ['What needs my approval next?', /Ray Review needs attention|Live Ray Review summary/is],
+    ['Why are you holding back?', /separating proven access from unproven access.*cannot claim YouTube automation/is],
+    ['Explain the Nexus audit in plain language.', /In plain language: Nexus is partially live, not fully autonomous/is],
   ];
   const hermesAnswers = [];
   for (const [message, expected] of hermesCases) {
@@ -114,19 +119,26 @@ try {
   assert(/You asked: [“"]can you find out./i.test(unclear) && /I checked Reports page context/i.test(unclear) && /clarify|What would you like/i.test(unclear), `Fallback was not focused: ${unclear}`);
   results.generic_fallback = unclear;
 
-  await page.getByRole('dialog', { name: 'Ask Hermes inline chat' }).getByLabel('Close Hermes chat').click({ force: true });
+  console.log('Testing CLI route details');
+  const openDialog = page.getByRole('dialog', { name: 'Ask Hermes inline chat' });
+  if (await openDialog.isVisible({ timeout: 2_000 }).catch(() => false)) {
+    await openDialog.getByLabel('Close Hermes chat').click({ force: true, timeout: 5_000 });
+  }
   await page.goto(`${base}#cli`);
   await page.getByRole('heading', { name: 'CLI Control', exact: true }).waitFor();
   await page.locator('.main-stack button.nx-soft').first().click({ force: true });
   await page.getByLabel('CLI command details').waitFor();
+  console.log('Testing Settings route details');
   await page.goto(`${base}#settings`);
   await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
   await page.getByRole('button', { name: /Default interval/ }).click({ force: true });
   assert(/does not change server configuration/i.test(await page.locator('.nxos-notice').innerText()), 'Settings row did not explain persistence');
+  console.log('Testing Automation route details');
   await page.goto(`${base}#automation`);
   await page.getByRole('heading', { name: 'Automation Scheduler', exact: true }).waitFor();
   await page.locator('.nxos-table-row').first().click({ force: true });
   assert(await page.getByLabel('Schedule details').isVisible(), 'Automation row did not open details');
+  console.log('Testing Health route details');
   await page.goto(`${base}#health`);
   await page.getByRole('heading', { name: 'System Health', exact: true }).waitFor();
   await page.locator('.health-item').first().click({ force: true });

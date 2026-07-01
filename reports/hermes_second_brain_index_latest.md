@@ -1,6 +1,6 @@
 # Hermes Second Brain Index
 
-Generated: 2026-07-01T15:35:02.240355+00:00
+Generated: 2026-07-01T16:13:31.694168+00:00
 
 - Indexed: 400 bounded safe sources
 - Skipped: 1

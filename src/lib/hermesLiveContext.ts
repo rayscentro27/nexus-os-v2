@@ -52,6 +52,25 @@ function summarizeRows(rows: unknown[], label: string): string {
   return `${rows.length} ${label}: ${first3}${more}`;
 }
 
+function valueOf(row: any, keys: string[]): string {
+  for (const key of keys) if (row?.[key] !== undefined && row?.[key] !== null) return String(row[key]);
+  return '';
+}
+
+export function summarizeApprovalRows(taskRows: unknown[], approvalRows: unknown[]): string {
+  const allRows = [...taskRows, ...approvalRows] as any[];
+  const statusOf = (row: any) => valueOf(row, ['status', 'decision', 'approval_status', 'state']).toLowerCase() || 'unknown';
+  const pending = allRows.filter((row) => /pending|queued|review|needs|waiting|hold/.test(statusOf(row)));
+  const approved = allRows.filter((row) => /approved|done|completed/.test(statusOf(row)));
+  const rejected = allRows.filter((row) => /rejected|declined|blocked/.test(statusOf(row)));
+  const held = allRows.filter((row) => /held|hold|paused/.test(statusOf(row)));
+  const titles = pending.slice(0, 5).map((row) => valueOf(row, ['title', 'name', 'summary', 'task_title', 'id']) || 'untitled approval');
+  const next = titles.length
+    ? `The next cards to review are: ${titles.join('; ')}.`
+    : 'I do not see pending card titles in the returned rows.';
+  return `Live Ray Review summary: ${pending.length} pending/waiting, ${approved.length} approved/done, ${rejected.length} rejected/blocked, and ${held.length} held/paused across ${allRows.length} returned rows.\n\nPlain English: I used the live Supabase/Ray Review path, not the old local zero-card fallback. ${next}\n\nSafe next action: open Ray Review and handle the highest-impact pending card. Any send, charge, publish, trade, deploy, seed, or scheduler change still requires explicit Ray approval.`;
+}
+
 /** Build live context for Hermes Supabase queries. */
 export async function buildLiveSupabaseContext(message: string): Promise<LiveHermesResponse> {
   const now = new Date().toISOString();
@@ -141,8 +160,7 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
   let errorMsg = '';
 
   for (const q of queries) {
-    const { data, error } = await queryTable(q.filter ? `${q.table}?${q.filter.column}=eq.${q.filter.value}` : q.table);
-    // Actually, let's do proper filtered queries
+    const base = q.filter ? { data: [] as unknown[], error: null } : await queryTable(q.table);
     let rows: unknown[];
     if (q.filter && supabase) {
       const { data: filtered, error: filterErr } = await supabase
@@ -154,8 +172,8 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
       rows = filterErr ? [] : (filtered ?? []);
       if (filterErr) { hasError = true; errorMsg = filterErr.message; }
     } else {
-      rows = data;
-      if (error) { hasError = true; errorMsg = error; }
+      rows = base.data;
+      if (base.error) { hasError = true; errorMsg = base.error; }
     }
     results[q.table] = rows;
     tableNames.push(q.table);
@@ -171,7 +189,11 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
     parts.push(summarizeRows(rows, q.label));
   }
 
-  responseText = `Live Supabase context:\n\n${parts.join('\n\n')}`;
+  if (/\b(approv|ray review|pending|card)\b/.test(lower)) {
+    responseText = `${summarizeApprovalRows(results.task_requests || [], results.approvals || [])}\n\nLive Supabase context:\n\n${parts.join('\n\n')}`;
+  } else {
+    responseText = `Live Supabase context:\n\n${parts.join('\n\n')}`;
+  }
 
   if (hasError) {
     responseText += `\n\nNote: Some queries returned errors: ${errorMsg.slice(0, 100)}`;

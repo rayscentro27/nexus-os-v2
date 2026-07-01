@@ -1,5 +1,5 @@
 {
-  "audit_run_id": "ops-20260701T153438Z",
+  "audit_run_id": "ops-20260701T161331Z",
   "build_test": {
     "last_known_build_report": "2026-06-29T15:52:19.361241+00:00",
     "package_scripts": {
@@ -15,12 +15,12 @@
       "typecheck": "tsc --noEmit"
     }
   },
-  "checked_at": "2026-07-01T15:34:38.683589+00:00",
+  "checked_at": "2026-07-01T16:13:31.742419+00:00",
   "cli": [
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -37,7 +37,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -54,7 +54,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -71,7 +71,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -88,7 +88,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -105,7 +105,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -122,7 +122,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -139,7 +139,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -156,7 +156,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -164,16 +164,16 @@
       "limitations": [],
       "name": "opencode",
       "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
-      "proof": "available=True version=unavailable: TimeoutExpired",
+      "proof": "available=True version=1.17.12",
       "safe_next_action": "Use only allow-listed read-only commands.",
       "source": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
       "status": "installed_not_running",
-      "version": "unavailable: TimeoutExpired"
+      "version": "1.17.12"
     },
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "commands that deploy, write, send, or execute"
       ],
@@ -190,7 +190,7 @@
     {
       "available": true,
       "category": "cli",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [],
       "hermes_readable_summary": "Playwright package is present.",
       "limitations": [],
@@ -267,7 +267,7 @@
   "processes": [
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Applications/Hermes Agent.app/Contents/MacOS/Hermes Agent",
       "gated_actions": [
         "stop",
@@ -277,15 +277,15 @@
       "limitations": [],
       "name": "pid-538",
       "pid": 538,
-      "proof": "PID 538 uptime 16:13:51",
+      "proof": "PID 538 uptime 16:52:42",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:13:51"
+      "uptime": "16:52:42"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/signal-router/tradingview_router.py",
       "gated_actions": [
         "stop",
@@ -295,15 +295,15 @@
       "limitations": [],
       "name": "pid-580",
       "pid": 580,
-      "proof": "PID 580 uptime 16:12:49",
+      "proof": "PID 580 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Users/raymonddavis/.nvm/versions/node/v24.14.0/bin/node /Users/raymonddavis/nexus-ai/services/nexus-orchestrator/src/index.js",
       "gated_actions": [
         "stop",
@@ -313,15 +313,15 @@
       "limitations": [],
       "name": "pid-582",
       "pid": 582,
-      "proof": "PID 582 uptime 16:12:49",
+      "proof": "PID 582 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Users/raymonddavis/.nvm/versions/node/v24.14.0/bin/node /Users/raymonddavis/nexus-ai/services/nexus-research-worker/src/index.js",
       "gated_actions": [
         "stop",
@@ -331,15 +331,15 @@
       "limitations": [],
       "name": "pid-586",
       "pid": 586,
-      "proof": "PID 586 uptime 16:12:49",
+      "proof": "PID 586 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/bin/cloudflared tunnel --config /Users/raymonddavis/.cloudflared/hermes-gateway-config.yml run 040d51f5-bf05-4626-99af-2a769f1f06ef",
       "gated_actions": [
         "stop",
@@ -349,15 +349,15 @@
       "limitations": [],
       "name": "pid-587",
       "pid": 587,
-      "proof": "PID 587 uptime 16:12:49",
+      "proof": "PID 587 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/nexus_trading_engine.py",
       "gated_actions": [
         "stop",
@@ -367,15 +367,15 @@
       "limitations": [],
       "name": "pid-588",
       "pid": 588,
-      "proof": "PID 588 uptime 16:12:49",
+      "proof": "PID 588 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/dashboard.py",
       "gated_actions": [
         "stop",
@@ -385,15 +385,15 @@
       "limitations": [],
       "name": "pid-590",
       "pid": 590,
-      "proof": "PID 590 uptime 16:12:49",
+      "proof": "PID 590 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/research_intelligence/research_signal_bridge.py",
       "gated_actions": [
         "stop",
@@ -403,15 +403,15 @@
       "limitations": [],
       "name": "pid-598",
       "pid": 598,
-      "proof": "PID 598 uptime 16:12:49",
+      "proof": "PID 598 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/auto_executor.py",
       "gated_actions": [
         "stop",
@@ -421,15 +421,15 @@
       "limitations": [],
       "name": "pid-607",
       "pid": 607,
-      "proof": "PID 607 uptime 16:12:49",
+      "proof": "PID 607 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/operations_center/scheduler.py",
       "gated_actions": [
         "stop",
@@ -439,15 +439,15 @@
       "limitations": [],
       "name": "pid-613",
       "pid": 613,
-      "proof": "PID 613 uptime 16:12:49",
+      "proof": "PID 613 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Users/raymonddavis/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace --accept-hooks",
       "gated_actions": [
         "stop",
@@ -457,15 +457,15 @@
       "limitations": [],
       "name": "pid-618",
       "pid": 618,
-      "proof": "PID 618 uptime 16:12:49",
+      "proof": "PID 618 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/tournament_service.py",
       "gated_actions": [
         "stop",
@@ -475,15 +475,15 @@
       "limitations": [],
       "name": "pid-622",
       "pid": 622,
-      "proof": "PID 622 uptime 16:12:49",
+      "proof": "PID 622 uptime 16:51:40",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:12:49"
+      "uptime": "16:51:40"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper (GPU).app/Contents/MacOS/Hermes Agent Helper (GPU) --type=gpu-process --user-data-dir=/Users/raymonddavis/Library/Application Support/hermes-desktop --gpu-preferences=SA",
       "gated_actions": [
         "stop",
@@ -493,15 +493,15 @@
       "limitations": [],
       "name": "pid-1135",
       "pid": 1135,
-      "proof": "PID 1135 uptime 16:07:04",
+      "proof": "PID 1135 uptime 16:45:55",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:07:04"
+      "uptime": "16:45:55"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper (Renderer).app/Contents/MacOS/Hermes Agent Helper (Renderer) --type=renderer --user-data-dir=/Users/raymonddavis/Library/Application Support/hermes-desktop --app-path=/A",
       "gated_actions": [
         "stop",
@@ -511,15 +511,15 @@
       "limitations": [],
       "name": "pid-1176",
       "pid": 1176,
-      "proof": "PID 1176 uptime 16:05:29",
+      "proof": "PID 1176 uptime 16:44:20",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:05:29"
+      "uptime": "16:44:20"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper.app/Contents/MacOS/Hermes Agent Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/",
       "gated_actions": [
         "stop",
@@ -529,15 +529,15 @@
       "limitations": [],
       "name": "pid-1192",
       "pid": 1192,
-      "proof": "PID 1192 uptime 16:04:42",
+      "proof": "PID 1192 uptime 16:43:33",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "16:04:42"
+      "uptime": "16:43:33"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "command": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node server/hermes-gateway-adapter.js",
       "gated_actions": [
         "stop",
@@ -547,47 +547,29 @@
       "limitations": [],
       "name": "pid-6514",
       "pid": 6514,
-      "proof": "PID 6514 uptime 15:51:04",
+      "proof": "PID 6514 uptime 16:29:55",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "15:51:04"
+      "uptime": "16:29:55"
     },
     {
       "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
-      "command": "/bin/bash /Users/raymonddavis/nexus-ai/research-engine/run_research.sh",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python scripts/ops/build_hermes_second_brain_index.py",
       "gated_actions": [
         "stop",
         "restart"
       ],
-      "hermes_readable_summary": "/bin/bash /Users/raymonddavis/nexus-ai/research-engine/run_research.sh",
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python scripts/ops/build_hermes_second_brain_index.py",
       "limitations": [],
-      "name": "pid-43939",
-      "pid": 43939,
-      "proof": "PID 43939 uptime 02:13",
+      "name": "pid-86623",
+      "pid": 86623,
+      "proof": "PID 86623 uptime 00:01",
       "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
       "source": "ps -axo",
       "status": "live_running",
-      "uptime": "02:13"
-    },
-    {
-      "category": "nexus_process",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
-      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/research-env/bin/yt-dlp --write-auto-sub --sub-lang en --skip-download --playlist-end 9 -",
-      "gated_actions": [
-        "stop",
-        "restart"
-      ],
-      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/research-env/bin/yt-dlp --write-auto-sub --sub-lang en --skip-download --playlist-end 9 -",
-      "limitations": [],
-      "name": "pid-46345",
-      "pid": 46345,
-      "proof": "PID 46345 uptime 00:07",
-      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
-      "source": "ps -axo",
-      "status": "live_running",
-      "uptime": "00:07"
+      "uptime": "00:01"
     }
   ],
   "read_only": true,
@@ -595,13 +577,13 @@
     "ahead_behind": "0 0",
     "branch": "main",
     "dirty": true,
-    "latest_commit": "c290074b9d66cb822271768e816ca8c279853861",
+    "latest_commit": "f2d6d0977b3bbc38c10656dea42ca5d57bd1f39c",
     "latest_commits": [
+      "f2d6d09 add hermes second brain and operations connector",
       "c290074 fix research live rows and hermes reasoning router",
       "634a9c5 seed live nexus data and audit operational reality",
       "9e8ad25 add safe supabase seed dry run for live nexus data",
-      "3f02615 unify nexus live data sources and hermes source reasoning",
-      "3e19cf4 wire nexus live supabase context and persistence foundation"
+      "3f02615 unify nexus live data sources and hermes source reasoning"
     ],
     "repo_path": "/Users/raymonddavis/nexus-os-v2",
     "uncommitted_files": [
@@ -614,42 +596,21 @@
       "reports/manual_publish/daily_operating_cycle_latest.md",
       "reports/manual_publish/evening_closeout_cycle_latest.md",
       "reports/runtime/ray_review_queue_latest.json",
-      "scripts/ui/run_hermes_live_question_test.mjs",
-      "src/components/HermesChatPanel.jsx",
-      "src/components/HermesInlineDrawer.jsx",
-      "src/components/SystemHealthPanel.jsx",
-      "src/data/hermesWorkroomData.js",
-      "src/lib/hermesLiveContext.ts",
-      "src/lib/hermesResponseRouter.ts",
-      "reports/hermes_second_brain_index_latest.json",
-      "reports/hermes_second_brain_index_latest.md",
-      "reports/nexus_cli_command_registry_latest.json",
-      "reports/nexus_cli_inventory_latest.json",
-      "reports/nexus_operations_status_latest.json",
-      "reports/nexus_operations_status_latest.md",
-      "reports/nexus_process_inventory_latest.json",
-      "reports/nexus_scheduler_inventory_latest.json",
-      "reports/nexus_youtube_research_status_latest.json",
-      "scripts/ops/build_hermes_second_brain_index.py",
-      "scripts/ops/collect_nexus_operations_status.py",
-      "src/components/HermesOperationsAuditCard.jsx",
-      "src/data/nexusCliCommandRegistry.js",
       "src/lib/hermesBrain.ts",
-      "src/lib/hermesConversationBrain.ts",
       "src/lib/hermesIntentRouter.ts",
-      "src/lib/hermesMemoryContext.ts",
+      "src/lib/hermesLiveContext.ts",
       "src/lib/hermesOperationsContext.ts",
-      "src/lib/hermesOrchestrator.ts",
-      "src/lib/hermesToolRouter.ts",
-      "tests/hermes_operations_reports.test.ts",
-      "tests/hermes_orchestrator.test.ts"
+      "tests/hermes_live_context.test.ts",
+      "tests/hermes_orchestrator.test.ts",
+      "src/lib/hermesBlockerExplainer.ts",
+      "src/lib/hermesPlainLanguageAdvisor.ts"
     ]
   },
   "schedulers": [
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -675,7 +636,7 @@
     {
       "cadence": 300,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -688,7 +649,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/logs/email-pipeline.error.log": "2026-06-30T23:34:57.661708+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/email-pipeline.log": "2026-07-01T15:32:32.393631+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/email-pipeline.log": "2026-07-01T16:13:01.590239+00:00"
       },
       "name": "ai.nexus.email-pipeline",
       "proof": "plist exists; loaded=True",
@@ -701,7 +662,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -713,8 +674,8 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/logs/auto_executor.err.log": "2026-07-01T15:34:40.527042+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/auto_executor.log": "2026-07-01T15:34:40.527015+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/auto_executor.err.log": "2026-07-01T16:12:50.790981+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/auto_executor.log": "2026-07-01T16:12:50.790949+00:00"
       },
       "name": "com.nexus.auto-executor",
       "proof": "plist exists; loaded=True",
@@ -727,7 +688,7 @@
     {
       "cadence": 30,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -739,7 +700,7 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.error.log": "2026-07-01T15:34:26.587872+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.error.log": "2026-07-01T16:13:24.445825+00:00",
         "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.log": "2026-04-27T14:16:51.397691+00:00"
       },
       "name": "com.nexus.autonomy-worker",
@@ -753,7 +714,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -781,7 +742,7 @@
         "Minute": 0
       },
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -807,7 +768,7 @@
     {
       "cadence": 900,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -819,8 +780,8 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/logs/coordination_worker.error.log": "2026-07-01T15:31:58.624271+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/coordination_worker.log": "2026-07-01T15:30:18.368283+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/coordination_worker.error.log": "2026-07-01T16:02:01.267301+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/coordination_worker.log": "2026-07-01T16:00:02.337788+00:00"
       },
       "name": "com.nexus.coordination-worker",
       "proof": "plist exists; loaded=True",
@@ -836,7 +797,7 @@
         "Minute": 0
       },
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -862,7 +823,7 @@
     {
       "cadence": 2700,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -875,7 +836,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.err.log": "2026-06-16T18:58:39.409600+00:00",
-        "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.log": "2026-07-01T15:15:07.634405+00:00"
+        "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.log": "2026-07-01T16:00:21.161066+00:00"
       },
       "name": "com.nexus.demo-trading-loop",
       "proof": "plist exists; loaded=True",
@@ -891,7 +852,7 @@
         "Minute": 0
       },
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -917,7 +878,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -942,7 +903,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -954,7 +915,7 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.err.log": "2026-07-01T15:34:36.943027+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.err.log": "2026-07-01T16:13:27.723787+00:00",
         "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.log": "2026-06-30T23:37:36.897385+00:00"
       },
       "name": "com.nexus.mac-mini-worker",
@@ -968,7 +929,7 @@
     {
       "cadence": 21600,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -994,7 +955,7 @@
     {
       "cadence": 300,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1006,7 +967,7 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.error.log": "2026-07-01T15:30:22.251211+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.error.log": "2026-07-01T16:11:25.367013+00:00",
         "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.log": "2026-04-27T14:16:51.597606+00:00"
       },
       "name": "com.nexus.monitoring-worker",
@@ -1020,7 +981,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1033,7 +994,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/logs/ollama.err.log": "2026-06-30T23:31:43.722549+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/ollama.log": "2026-07-01T15:12:43.718046+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/ollama.log": "2026-07-01T15:34:54.546369+00:00"
       },
       "name": "com.nexus.ollama",
       "proof": "plist exists; loaded=True",
@@ -1046,7 +1007,7 @@
     {
       "cadence": 600,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1059,7 +1020,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.error.log": "2026-06-30T23:35:39.920377+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.log": "2026-07-01T15:34:10.864038+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.log": "2026-07-01T16:04:24.473100+00:00"
       },
       "name": "com.nexus.ops-control-worker",
       "proof": "plist exists; loaded=True",
@@ -1072,7 +1033,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1085,7 +1046,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.error.log": "2026-04-28T19:57:01.941568+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.log": "2026-07-01T15:32:40.693504+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.log": "2026-07-01T16:12:40.236120+00:00"
       },
       "name": "com.nexus.orchestrator",
       "proof": "plist exists; loaded=True",
@@ -1098,7 +1059,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1110,8 +1071,8 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.err.log": "2026-07-01T15:34:41.655151+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.log": "2026-07-01T15:34:41.655123+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.err.log": "2026-07-01T16:11:57.461389+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.log": "2026-07-01T16:11:57.461362+00:00"
       },
       "name": "com.nexus.research-signal-bridge",
       "proof": "plist exists; loaded=True",
@@ -1124,7 +1085,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1150,7 +1111,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1163,7 +1124,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.err.log": "2026-05-28T19:49:15.165266+00:00",
-        "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.log": "2026-07-01T15:34:29.795375+00:00"
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.log": "2026-07-01T16:13:06.395192+00:00"
       },
       "name": "com.nexus.signal-review",
       "proof": "plist exists; loaded=True",
@@ -1176,7 +1137,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1188,7 +1149,7 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/signal-router/signal-router.log": "2026-07-01T15:00:05.142848+00:00"
+        "/Users/raymonddavis/nexus-ai/signal-router/signal-router.log": "2026-07-01T16:00:04.053803+00:00"
       },
       "name": "com.nexus.signal-router",
       "proof": "plist exists; loaded=True",
@@ -1201,7 +1162,7 @@
     {
       "cadence": 21600,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1227,7 +1188,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1239,8 +1200,8 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/logs/tournament_service.err.log": "2026-07-01T15:34:42.006603+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/tournament_service.log": "2026-07-01T15:34:42.006574+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/tournament_service.err.log": "2026-07-01T16:13:30.945378+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/tournament_service.log": "2026-07-01T16:13:30.945345+00:00"
       },
       "name": "com.nexus.tournament",
       "proof": "plist exists; loaded=True",
@@ -1253,7 +1214,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1266,7 +1227,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/logs/trading_engine.err.log": "2026-06-30T23:37:19.462888+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/trading_engine.log": "2026-07-01T15:15:07.015039+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/trading_engine.log": "2026-07-01T16:00:20.594129+00:00"
       },
       "name": "com.nexus.trading-engine",
       "proof": "plist exists; loaded=True",
@@ -1279,7 +1240,7 @@
     {
       "cadence": 14400,
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1292,7 +1253,7 @@
       "loaded": true,
       "log_timestamps": {
         "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.error.log": "2026-05-30T16:33:45.237003+00:00",
-        "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.log": "2026-07-01T15:34:34.650591+00:00"
+        "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.log": "2026-07-01T15:40:23.972025+00:00"
       },
       "name": "com.nexus.youtube-channel-poller",
       "proof": "plist exists; loaded=True",
@@ -1305,7 +1266,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1317,8 +1278,8 @@
       ],
       "loaded": true,
       "log_timestamps": {
-        "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.err.log": "2026-07-01T15:34:33.613344+00:00",
-        "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.log": "2026-07-01T15:34:33.610693+00:00"
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.err.log": "2026-07-01T16:13:24.357772+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.log": "2026-07-01T16:13:24.355273+00:00"
       },
       "name": "com.raymonddavis.nexus.control-center",
       "proof": "plist exists; loaded=True",
@@ -1331,7 +1292,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1357,7 +1318,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1383,7 +1344,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1409,7 +1370,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1435,7 +1396,7 @@
     {
       "cadence": "unknown",
       "category": "launchd",
-      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "checked_at": "2026-07-01T16:13:31.742419+00:00",
       "gated_actions": [
         "load",
         "unload",
@@ -1505,7 +1466,7 @@
   },
   "youtube_research": {
     "category": "research_job",
-    "checked_at": "2026-07-01T15:34:38.683589+00:00",
+    "checked_at": "2026-07-01T16:13:31.742419+00:00",
     "gated_actions": [
       "start scheduler",
       "run paid API",
