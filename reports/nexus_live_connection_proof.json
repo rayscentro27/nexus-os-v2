@@ -1,0 +1,71 @@
+{
+  "auditDate": "2026-06-30",
+  "repoCommit": "e31a78d1af9da923c0595a8fc894820de14fe56c",
+  "liveApp": "https://nexusv20.netlify.app/",
+  "connectionStatus": {
+    "supabaseProjectConnected": true,
+    "frontendAuthConnected": true,
+    "liveTableReadsWorking": false,
+    "liveTableWritesWorking": false,
+    "rayReviewPersistenceWorking": false,
+    "researchLoopWritingToSupabase": false,
+    "hermesLiveSupabaseAccess": false,
+    "hermesLiveWebAccess": false,
+    "reportsLiveOrStatic": "static",
+    "cliLiveOrStatic": "static",
+    "settingsLiveOrStatic": "static"
+  },
+  "whatIsReal": [
+    "Supabase project exists with 88 tables across 14 migrations",
+    "RLS properly configured — all tables require authenticated admin role",
+    "Auth flow works — users must authenticate via Supabase Auth",
+    "Supabase client library correctly set up — anon key only",
+    "Edge functions exist — hermes-chat and hermes-search deployed",
+    "Python scripts can write to Supabase when env credentials present",
+    "Research engine runs on schedule via launchd agents"
+  ],
+  "whatIsNotReal": [
+    "All dashboard data is static — 15 sections read bundled JS/JSON files",
+    "Ray Review approvals are localStorage-only — not persisted to server",
+    "Hermes cannot query Supabase — returns honest not-available stub",
+    "Hermes cannot search the internet — returns honest not-configured message",
+    "Dashboard badges are hardcoded — 64 cards, 50 candidates, 9 offers are static",
+    "Reports are baked markdown — not generated from live data",
+    "System health items are static — fixed statuses, not live checks",
+    "Trading demo is fully inline — strategies are array literals in JSX"
+  },
+  "blockers": [
+    {
+      "id": 1,
+      "title": "No Active UI Component Queries Supabase",
+      "detail": "src/services/db.ts exists with full query capability but no active component imports it"
+    },
+    {
+      "id": 2,
+      "title": "Ray Review Approvals Not Persisted",
+      "detail": "RayReviewCenter.jsx saves decisions to localStorage only; no Supabase write"
+    },
+    {
+      "id": 3,
+      "title": "Hermes Has No Backend Context Endpoint",
+      "detail": "hermesSupabaseContextAdapter.ts is a stub; no Netlify function exists"
+    },
+    {
+      "id": 4,
+      "title": "Research Engine Does Not Write to Supabase from Frontend",
+      "detail": "Python scripts write local JSON; Supabase inserts are server-side conditional"
+    }
+  ],
+  "proofFiles": {
+    "supabaseClient": "src/lib/supabaseClient.ts",
+    "dbService": "src/services/db.ts",
+    "hermesSupabaseStub": "src/lib/hermesSupabaseContextAdapter.ts",
+    "hermesBackendStub": "src/lib/hermesBackendContextAdapter.ts",
+    "rayReviewLocalStorage": "src/components/RayReviewCenter.jsx",
+    "staticDataSource": "src/data/rayReviewData.js",
+    "parallelDeadUI": "src/components/sections.tsx",
+    "researchLocalWrites": "scripts/research/common.py",
+    "launchdScheduler": "ops/launchd/com.nexus.continuous-loop.plist",
+    "rlsPolicies": "supabase/migrations/"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "auditDate": "2026-06-30",
+  "repoCommit": "e31a78d1af9da923c0595a8fc894820de14fe56c",
+  "liveApp": "https://nexusv20.netlify.app/",
+  "supabaseClient": {
+    "file": "src/lib/supabaseClient.ts",
+    "urlEnvVar": "VITE_SUPABASE_URL",
+    "anonKeyEnvVar": "VITE_SUPABASE_ANON_KEY",
+    "serviceRoleKeyEnvVar": "SUPABASE_SERVICE_ROLE_KEY",
+    "frontendUsesAnonKeyOnly": true,
+    "serviceRoleInFrontend": false,
+    "authConfig": {
+      "persistSession": true,
+      "autoRefreshToken": true,
+      "detectSessionInUrl": true
+    }
+  },
+  "databaseService": {
+    "file": "src/services/db.ts",
+    "functions": ["listTable", "listTableDetailed", "countRows", "getAdminDiagnostic"],
+    "importedByActiveUI": false
+  },
+  "sectionMatrix": [
+    {"section": "Command Center", "route": "command", "component": "CommandCenter.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "System Health", "route": "health", "component": "SystemHealthPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Ray Review", "route": "rayreview", "component": "RayReviewCenter.jsx", "sourceType": "local_static + localStorage", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Hermes Workroom", "route": "hermes", "component": "HermesWorkroom.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Reports", "route": "reports", "component": "ReportCenter.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Clients", "route": "clients", "component": "ClientsPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Credit & Funding", "route": "credit", "component": "CreditFundingPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Business Opportunities", "route": "opportunity", "component": "BusinessOpportunitiesPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Research Engine", "route": "research", "component": "ResearchEnginePanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Monetization", "route": "monetization", "component": "MonetizationPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Marketing Drafts", "route": "marketing", "component": "MarketingDraftsPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Trading Demo", "route": "trading", "component": "Inline in NexusAdminUI", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Automation Scheduler", "route": "automation", "component": "AutomationSchedulerPanel.jsx", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "CLI / Tool Registry", "route": "cli", "component": "Inline in NexusAdminUI", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true},
+    {"section": "Settings", "route": "settings", "component": "Inline in NexusAdminUI", "sourceType": "local_static", "supabaseTables": [], "readLive": false, "writeLive": false, "staticFallback": true}
+  ],
+  "supabaseTablesNotReadByFrontend": [
+    "approvals", "task_requests", "nexus_events", "system_health", "admin_users",
+    "research_sources", "research_runs", "monetization_opportunities", "business_opportunities"
+  ],
+  "parallelSupabaseUI": {
+    "exists": true,
+    "rendered": false,
+    "files": ["src/components/sections.tsx", "src/components/Shell.tsx", "src/components/command-center/MissionControl.tsx"]
+  },
+  "backendSupabaseWrites": [
+    {"script": "scripts/research/common.py", "table": "task_requests", "condition": "sb.configured()"},
+    {"script": "scripts/research/capture_ray_feedback.py", "table": "task_requests", "condition": "--no-dry-run"}
+  ],
+  "rlsSecurityModel": {
+    "totalTables": 88,
+    "anonPolicies": 0,
+    "authenticatedPolicies": "all tables",
+    "helperFunction": "nexus_is_active_admin()"
+  },
+  "criticalFindings": [
+    "Frontend is 100% static — zero live Supabase queries from any active UI component",
+    "Supabase client is properly configured — anon key only, no service role in frontend",
+    "Backend has conditional Supabase writes — Python scripts can write when env is configured",
+    "Parallel Supabase UI exists but is dead code — sections.tsx and Shell.tsx are not rendered",
+    "Ray Review approvals are localStorage-only — no server persistence",
+    "Hermes has no live Supabase access — honest stub returns not available",
+    "Research engine writes local files, not Supabase — Supabase inserts are conditional/gated",
+    "Dashboard badges show static counts — 64 cards, 50 candidates, 9 offers are hardcoded"
+  ]
+}
