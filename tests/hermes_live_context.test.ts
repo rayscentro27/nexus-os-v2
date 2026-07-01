@@ -131,10 +131,12 @@ describe('Hermes backend adapter honesty', () => {
     expect(isWebSearchAvailable()).toBe(false);
   });
 
-  it('getBackendStatusMessage mentions local bundled', async () => {
+  it('getBackendStatusMessage mentions local bundled or Supabase', async () => {
     const { getBackendStatusMessage } = await import('../src/lib/hermesBackendContextAdapter');
     const msg = getBackendStatusMessage();
-    expect(msg).toMatch(/local bundled/);
+    // When Supabase is configured: mentions Supabase read access
+    // When not configured: mentions local bundled context
+    expect(msg).toMatch(/Supabase|local bundled/i);
   });
 });
 

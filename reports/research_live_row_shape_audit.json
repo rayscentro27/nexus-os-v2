@@ -1,0 +1,51 @@
+{
+  "generated_at": "2026-07-01T14:30:00+00:00",
+  "audit_version": "1.0",
+  "table": "research_sources",
+  "total_rows": 52,
+  "youtube_rows": 0,
+  "transcripts_available": false,
+  "notebooklm_status": "not_present",
+  "actual_columns": [
+    "id", "research_run_id", "source_type", "title", "url", "author",
+    "published_at", "accessed_at", "snippet", "why_it_matters",
+    "confidence", "metadata", "created_at"
+  ],
+  "fields_present": {
+    "id": "uuid — present on all rows",
+    "research_run_id": "uuid — present on all rows",
+    "source_type": "text — 'article' or 'youtube' or other source type labels",
+    "title": "text — present on all rows, used as display title",
+    "url": "text — source URL",
+    "author": "text — nullable, often null",
+    "published_at": "timestamp — nullable, often null",
+    "accessed_at": "timestamp — when the source was accessed",
+    "snippet": "text — brief description of the source",
+    "why_it_matters": "text — reasoning for why this source matters",
+    "confidence": "integer — 0-100 confidence score",
+    "metadata": "jsonb — contains additional fields like lane, type, score, etc.",
+    "created_at": "timestamp — row creation time"
+  },
+  "fields_missing_vs_ui_expectations": {
+    "lane": "NOT a top-level column — stored in metadata.lane",
+    "type": "NOT a top-level column — stored in metadata.type or derived from source_type",
+    "score": "NOT a top-level column — stored in metadata.score or use confidence",
+    "status": "NOT a top-level column — stored in metadata.status, defaults to 'scored'",
+    "reason": "NOT a top-level column — use why_it_matters or snippet",
+    "nextAction": "NOT a top-level column — stored in metadata.nextAction",
+    "convertOptions": "NOT a top-level column — stored in metadata.convertOptions",
+    "revenueRange": "NOT a top-level column — stored in metadata.revenueRange"
+  },
+  "mapping_notes": [
+    "UI expects 'lane' — must read from metadata.lane or default to 'research'",
+    "UI expects 'type' — must read from metadata.type or derive from source_type",
+    "UI expects 'score' — must use confidence or metadata.score",
+    "UI expects 'reason' — must use why_it_matters or snippet",
+    "UI expects 'status' — must read from metadata.status or default to 'scored'",
+    "UI expects 'nextAction' — must read from metadata.nextAction or default text",
+    "UI expects 'convertOptions' — must read from metadata.convertOptions or default array",
+    "All .replace() calls must be guarded with safeStr() or safeReplace()"
+  ],
+  "normalizer_applied": true,
+  "normalizer_location": "src/lib/liveDataLoader.ts → normalizeResearchRow()"
+}

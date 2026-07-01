@@ -1,4 +1,5 @@
 import { getReportContext, listReportContexts } from './hermesReportContextAdapter';
+import { isSupabaseConfigured } from './supabaseClient';
 
 export type HermesContextRequestType =
   | 'system_status' | 'reports_summary' | 'selected_report' | 'ray_review_summary'
@@ -53,5 +54,25 @@ export function getHermesContext(query: string, request: { type: HermesContextRe
 export function isBackendAvailable(): boolean { return false; }
 export function isWebSearchAvailable(): boolean { return false; }
 export function getBackendStatusMessage(): string {
-  return 'I use local bundled Nexus context, selected approved report snapshots, page context, browser time, and localStorage activity memory. The read-only context adapter is available for those sources. I do not have live Supabase, live web search, or real AI model access from this chat layer.';
+  if (isSupabaseConfigured) {
+    return 'I have live Supabase read access for selected tables (Ray Review, business opportunities, research sources, monetization, clients) when you are authenticated. I do not have live web search or a live AI model configured in this chat layer. Execution remains approval-gated.';
+  }
+  return 'I use local bundled Nexus context, selected approved report snapshots, page context, browser time, and localStorage activity memory. I do not have live Supabase, web, or model access from this chat layer.';
+}
+
+/** Get a detailed connection status for specific capabilities. */
+export function getConnectionStatusDetail(): {
+  supabaseRead: boolean;
+  webSearch: boolean;
+  liveModel: boolean;
+  socialMedia: 'not_verified' | 'no_integration';
+  externalExecution: 'approval_gated';
+} {
+  return {
+    supabaseRead: isSupabaseConfigured,
+    webSearch: false,
+    liveModel: false,
+    socialMedia: 'not_verified',
+    externalExecution: 'approval_gated',
+  };
 }

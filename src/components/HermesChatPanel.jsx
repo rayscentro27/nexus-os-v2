@@ -3,9 +3,10 @@ import { buildHermesResponse, hermesQuickPrompts } from '../data/hermesWorkroomD
 import { hermesStore } from '../lib/hermesChatStore';
 import { recordActivity } from '../lib/hermesActivityJournal';
 import { buildLiveSupabaseContext, buildWebSearchResponse } from '../lib/hermesLiveContext';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 import HermesMessageBubble from './HermesMessageBubble';
 
-const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, search the web when configured, and use local bundled context as fallback. Ask me about approvals, research, clients, opportunities, or any operating question.' };
+const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
 
 export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor', activePage = null, visibleItems = [], selectedItem = null, availableActions = [], onPlanCreated, onReviewCreated, onSpecialistRequested }) {
   const [messages, setMessages] = useState(() => {
@@ -82,8 +83,9 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     setMessages([welcome]);
   }, []);
 
+  const statusLabel = isSupabaseConfigured ? 'Live Supabase + local context' : 'Local context';
   return <section className="nxos-chat-panel">
-    <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · Live context when available</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : 'Context-aware'}</span></header>
+    <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · {statusLabel}</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : statusLabel}</span></header>
     <div className="nxos-chat-log" aria-live="polite">{messages.map((message) => <HermesMessageBubble key={message.id} message={message} onDelegate={(item) => onPlanCreated?.({ id:`plan-${Date.now()}`,prompt:item.text,specialist:activeSpecialist,status:'queued_local_safe' })} onReview={onReviewCreated} onSpecialist={onSpecialistRequested} />)}<div ref={end} /></div>
     <div className="nxos-chat-compose"><textarea aria-label="Message Hermes" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } }} placeholder="Ask Hermes about Supabase, research, approvals, or anything…" /><button type="button" className="primary" disabled={loading} onClick={() => send()}>{loading ? 'Loading...' : 'Send'}</button></div>
     <div className="nxos-quick-prompts"><span>Try asking</span>{['can you check Supabase', 'what approvals are pending', 'can you search the internet', 'how do we make money today'].map((prompt) => <button type="button" key={prompt} onClick={() => send(prompt)}>{prompt}</button>)}</div>

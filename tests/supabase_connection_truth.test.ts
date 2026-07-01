@@ -44,7 +44,8 @@ describe('Hermes Supabase access truth', () => {
 
     expect(result.questionType).toBe('supabase_query');
     expect(result.text).toMatch(/Supabase/i);
-    expect(result.source).toMatch(/supabase/);
+    // Source can be 'live_supabase' (when configured) or 'honest_fallback' (when not)
+    expect(result.source).toMatch(/supabase|honest_fallback/);
   });
 
   it('Hermes says what tables it CANNOT see', async () => {
@@ -63,7 +64,10 @@ describe('Hermes Supabase access truth', () => {
   it('Hermes honestly says backend is not available', async () => {
     const { isBackendAvailable, getBackendStatusMessage } = await import('../src/lib/hermesBackendContextAdapter');
     expect(isBackendAvailable()).toBe(false);
-    expect(getBackendStatusMessage()).toMatch(/local bundled/i);
+    const msg = getBackendStatusMessage();
+    // When Supabase is configured: mentions Supabase read access
+    // When not configured: mentions local bundled context
+    expect(msg).toMatch(/Supabase|local bundled/i);
   });
 
   it('live context builder returns honest result when Supabase not configured', async () => {

@@ -7,12 +7,13 @@
 
 import { getTimeContext, detectTimeIntent, normalizeTimeText } from './hermesTimeContext';
 import { buildPageContext, getHermesPageRuntimeContext, type PageContext } from './hermesContextBridge';
-import { getLastReferencedEntity, resolveEntity, setLastReferencedEntity } from './hermesEntityResolver';
+import { getLastReferencedEntity, resolveEntity, setLastReferencedEntity, setLastHermesListedRecords } from './hermesEntityResolver';
+import type { VisibleItem } from './hermesContextBridge';
 import { queryMemory } from './hermesMemoryQuery';
 import { detectLearningInstruction, storeHint, findMatchingHints } from './hermesSourceHints';
-import { querySupabaseContext } from './hermesSupabaseContextAdapter';
 import { getBackendStatusMessage, getHermesContext, type HermesBackendContextResult } from './hermesBackendContextAdapter';
 import { reasonAboutPage, getAllPageContexts, type PageDataSource } from './hermesSourceReasoner';
+import { isSupabaseConfigured } from './supabaseClient';
 
 /* ── Nexus topic knowledge base (moved from hermesWorkroomData.js) ── */
 const nexusTopics: Record<string, { topic: string; explain: string; why?: string; safety?: string; approval?: string; howToApprove?: string; specialist?: string; cleanup?: string; next: string; opinion?: string }> = {
@@ -287,8 +288,12 @@ export function classifyIntent(text: string): QuestionType {
   }
 
   // Entity references (this, that, first one, etc.) — check BEFORE nexus topics
-  if (/\b(this|that|first|second|third|another|other|next|those|these)\b/.test(lower) &&
+  if (/\b(this|that|first|second|third|last|next|another|other|those|these)\b/.test(lower) &&
     /\b(strategy|item|opportunity|offer|candidate|draft|report|client|rule|action|row|card|thing|one)\b/.test(lower)) {
+    return 'entity_question';
+  }
+  // "review the first", "analyze the second", "show the last" etc.
+  if (/\b(review|analyze|open|show|tell me about|look at|check)\s+(the\s+)?(first|second|third|last|next)/.test(lower)) {
     return 'entity_question';
   }
 
@@ -334,13 +339,23 @@ export function classifyIntent(text: string): QuestionType {
     return 'trading';
   }
 
+  // Casual / personal — check BEFORE supabase/backend to avoid false matches
+  if (/\b(favorite|how are you|how'?s it going|what'?s your day like|are you real|who are you|what are you|coffee|sleep|tired|bored|hungry|weekend|vacation|chill|relax|did you sleep)\b/.test(lower)) {
+    return 'casual';
+  }
+
+  // Connection status questions — route to backend_query for accurate answers
+  if (/\b(are you connected|connected to)\b/.test(lower)) {
+    return 'backend_query';
+  }
+
   // Supabase queries
   if (/\b(supabase|database|query|row|table|live data)\b/.test(lower)) {
     return 'supabase_query';
   }
 
   // Backend queries
-  if (/\b(model|ai|llm|gpt|claude|backend|endpoint|where are you getting your answers|what are your sources|explain your sources|search the internet|web access)\b/.test(lower)) {
+  if (/\b(model|ai|llm|gpt|claude|backend|endpoint|where are you getting your answers|what are your sources|explain your sources|search the internet|web access|internet|social media)\b/.test(lower)) {
     return 'backend_query';
   }
 
@@ -352,11 +367,6 @@ export function classifyIntent(text: string): QuestionType {
   // Execution
   if (/\b(execute|run|deploy|publish|send|submit|trade|charge|process)\b/.test(lower)) {
     return 'execution';
-  }
-
-  // Casual / personal
-  if (/\b(coffee|sleep|tired|bored|hungry|weekend|vacation|chill|relax|did you sleep|how are you|how'?s it going|what'?s your day like)\b/.test(lower)) {
-    return 'casual';
   }
 
   // Emotional
@@ -410,35 +420,44 @@ function handleDateTime(_message: string): HermesResponse {
 
 function handleScheduling(_message: string, pageContext: PageContext | null): HermesResponse {
   const timeIntent = detectTimeIntent(_message);
+  const now = new Date();
 
-  let responseText = `I understand you want to schedule something for ${timeIntent.timeOfDayMention || 'later'}. `;
+  let responseText = '';
 
   if (timeIntent.timeWindow) {
-    const startStr = timeIntent.timeWindow.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    const endStr = timeIntent.timeWindow.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    responseText += `That would be between ${startStr} and ${endStr} today. `;
+    const window = timeIntent.timeWindow;
+    const dateStr = window.start.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const startStr = window.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const endStr = window.end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const isToday = window.start.toDateString() === now.toDateString();
+
+    if (isToday) {
+      responseText = `I understand you want to schedule something for today. That would be between ${startStr} and ${endStr}. `;
+    } else {
+      responseText = `I understand you want to schedule something for ${dateStr}. That would be between ${startStr} and ${endStr}. `;
+    }
+
+    responseText += `What would you like to schedule? `;
 
     if (pageContext?.availableActions) {
       const schedulableActions = pageContext.availableActions.filter(a => !pageContext.blockedActions?.includes(a));
       if (schedulableActions.length > 0) {
-        responseText += `Available actions on this page: ${schedulableActions.join(', ')}. Which would you like me to schedule?`;
-      } else {
-        responseText += `I can help you plan this, but I don't have specific scheduling actions on this page. What would you like to do?`;
+        responseText += `Available actions on this page: ${schedulableActions.join(', ')}.`;
       }
-    } else {
-      responseText += `I can help you plan this. What would you like to schedule?`;
     }
+
+    responseText += `\n\nI can prepare a Ray Review task request for this, but I cannot directly schedule a live report from this chat yet. Would you like me to create a task request?`;
   } else {
-    responseText += `Could you be more specific about the time? For example: "this evening", "tomorrow morning", "in 2 hours", or "next Friday".`;
+    responseText = `Could you be more specific about when? For example: "this evening", "tomorrow morning", "in 2 hours", or "next Friday". I need a time to schedule the task.`;
   }
 
   return {
     text: responseText,
-    confidence: 'medium',
+    confidence: timeIntent.timeWindow ? 'high' : 'medium',
     source: 'time_context',
     questionType: 'scheduling',
     needsClarification: !timeIntent.timeWindow,
-    clarificationQuestion: !timeIntent.timeWindow ? 'Could you specify when you want to schedule this?' : undefined,
+    clarificationQuestion: !timeIntent.timeWindow ? 'What time should I schedule this for?' : undefined,
   };
 }
 
@@ -546,13 +565,21 @@ function handleEntityQuestion(message: string, pageContext: PageContext | null):
   setLastReferencedEntity(resolved.item);
   const item = resolved.item;
 
-  let responseText = `You're referring to ${item.title}. `;
+  let responseText = `**${item.title}**\n\n`;
   responseText += `Status: ${item.status}. `;
   if (item.score !== undefined) responseText += `Score: ${item.score}. `;
   if (item.confidence) responseText += `Confidence: ${item.confidence}. `;
   if (item.revenueRange) responseText += `Revenue potential: ${item.revenueRange}. `;
+  if (item.category) responseText += `Category: ${item.category}. `;
 
-  responseText += `\n\nData source: ${item.dataSource}. ${item.dataSource === 'local_static' ? 'This is bundled local context — not live data.' : ''}`;
+  responseText += `\n\nData source: ${item.dataSource === 'supabase' ? 'Live Supabase' : item.dataSource}. `;
+  if (item.dataSource === 'supabase') {
+    responseText += `This is live data from the database.\n\n`;
+    responseText += `Why it matters: This record was loaded from a live Supabase query and is part of the current live dataset.\n\n`;
+    responseText += `Suggested next action: Review, approve, hold, or convert to opportunity/content/automation. Any execution is approval-gated.`;
+  } else {
+    responseText += `This is bundled local context — not live data.`;
+  }
 
   return {
     text: responseText,
@@ -760,6 +787,21 @@ function handleSupabaseQuery(message: string): HermesResponse {
 
     if (matchedSection) {
       const reasoning = reasonAboutPage(matchedSection, message);
+      // Store listed records for entity resolution ("the first one" etc.)
+      if (matchedSection.liveData && matchedSection.records.length > 0) {
+        const items: VisibleItem[] = matchedSection.records.slice(0, 20).map((r: unknown) => {
+          const row = r as Record<string, unknown>;
+          return {
+            type: String(row.type || row.category || matchedSection.sectionId),
+            title: String(row.title || row.name || row.id || 'Untitled'),
+            status: String(row.status || 'active'),
+            score: typeof row.score === 'number' ? row.score : undefined,
+            category: String(row.category || ''),
+            dataSource: 'supabase' as const,
+          };
+        });
+        setLastHermesListedRecords(items);
+      }
       return {
         text: reasoning.answer + (reasoning.suggestions.length > 0 ? '\n\nSuggestions: ' + reasoning.suggestions.join('; ') : ''),
         confidence: reasoning.confidence,
@@ -771,26 +813,82 @@ function handleSupabaseQuery(message: string): HermesResponse {
     }
   }
 
-  // Fallback to original stub behavior
-  const result = querySupabaseContext('unknown');
+  // Fallback — no page context loaded but Supabase may still be available
+  const hasLiveSections = Object.values(allContexts).some(ctx => ctx.liveData);
+  if (hasLiveSections) {
+    const liveSections = Object.entries(allContexts)
+      .filter(([, ctx]) => ctx.liveData)
+      .map(([id, ctx]) => `${id.replace(/_/g, ' ')} (${ctx.rowCount} rows)`);
+    return {
+      text: `I can read live Supabase data. Currently loaded live sections: ${liveSections.join(', ')}. Navigate to a section and ask about its data, or ask me to check all sections.`,
+      confidence: 'high',
+      source: 'live_supabase',
+      questionType: 'supabase_query',
+      needsClarification: false,
+    };
+  }
   return {
-    text: `I do not have live Supabase access from this chat layer yet. ${result.reason}\n\nI can read approved bundled reports, loaded page context, and local activity memory, but I cannot query Supabase directly. A safe next step is a tenant-scoped server endpoint using existing RLS—not a frontend service-role key.`,
+    text: `I don't have any page data loaded yet. Navigate to a section (Business Opportunities, Research, Monetization, or Clients) and I can show you the live Supabase data from those tables.`,
     confidence: 'medium',
-    source: 'supabase_stub',
+    source: 'honest_fallback',
     questionType: 'supabase_query',
     needsClarification: false,
-    sourceHint: 'Supabase adapter stub — not wired yet',
   };
 }
 
-function handleBackendQuery(_message: string): HermesResponse {
+function handleBackendQuery(message: string): HermesResponse {
+  const lower = message.toLowerCase();
+  const isSocialMediaQuestion = /\b(social media|social|twitter|facebook|instagram|tiktok)\b/.test(lower);
+  const isInternetQuestion = /\b(internet|web|online|search)\b/.test(lower);
+  const isModelQuestion = /\b(model|ai|llm|gpt|claude|live model)\b/.test(lower);
+  const isSupabaseQuestion = /\b(supabase|database|connected to supabase|connection to supabase)\b/.test(lower);
+
+  if (isSocialMediaQuestion) {
+    return {
+      text: 'Social media accounts are not verified as live from this chat. To confirm a connected account, I would need proof: a connected account row in Supabase, a valid token status, publish_enabled flag, and a last verification timestamp. No social media publishing is active from this chat layer.',
+      confidence: 'high',
+      source: 'honest_fallback',
+      questionType: 'backend_query',
+      needsClarification: false,
+    };
+  }
+
+  if (isInternetQuestion) {
+    return {
+      text: 'I do not have live web search configured yet. To enable it, set VITE_HERMES_SEARCH_ENABLED=true and configure a search API key in the Edge Function. I can read local bundled context, report snapshots, and live Supabase data when connected.',
+      confidence: 'high',
+      source: 'honest_fallback',
+      questionType: 'backend_query',
+      needsClarification: false,
+    };
+  }
+
+  if (isModelQuestion) {
+    return {
+      text: 'I do not have a live AI model configured in this chat layer. I use local router-based reasoning (intent classification, entity resolution, page context) for all responses. To enable a live model, configure an LLM provider in the Edge Function secrets.',
+      confidence: 'high',
+      source: 'honest_fallback',
+      questionType: 'backend_query',
+      needsClarification: false,
+    };
+  }
+
+  if (isSupabaseQuestion) {
+    return {
+      text: getBackendStatusMessage(),
+      confidence: 'high',
+      source: 'live_supabase',
+      questionType: 'backend_query',
+      needsClarification: false,
+    };
+  }
+
   return {
     text: getBackendStatusMessage(),
     confidence: 'medium',
-    source: 'backend_stub',
+    source: 'honest_fallback',
     questionType: 'backend_query',
     needsClarification: false,
-    sourceHint: 'Backend adapter stub — not wired yet',
   };
 }
 
@@ -889,7 +987,7 @@ function handleUnclear(message: string, pageContext: PageContext | null): Hermes
 
   const quotedRequest = message.trim() || '(empty request)';
   const pageSource = pageContext ? `${pageContext.pageTitle} page context` : 'no current page context';
-  const responseText = `You asked: “${quotedRequest}.” I checked ${pageSource}, local bundled context, and local activity memory. I couldn't answer because the target or requested outcome is not specific enough. Do you want me to check the current page, loaded reports, local Nexus context, or create a research task?\n\nI do not have live Supabase, web, or model access in this chat. A safe next source is ${pageContext?.pageId === 'reports' ? 'the loaded report details' : 'the Reports page'}.`;
+  const responseText = `You asked: "${quotedRequest}." I checked ${pageSource}, local bundled context, and local activity memory. I could not determine a specific action or target. Could you clarify what you would like me to do?\n\nI can check live Supabase data (when connected), page context, reports, or local memory. What would you like me to focus on?`;
 
   return {
     text: responseText,
@@ -980,10 +1078,51 @@ function handleStrategy(_message: string, _pageContext: PageContext | null): Her
   };
 }
 
-function handleCasual(_message: string, _pageContext: PageContext | null): HermesResponse {
+function handleCasual(message: string, _pageContext: PageContext | null): HermesResponse {
+  const lower = message.toLowerCase();
   const time = getTimeContext();
-  const responseText = `I'm here and running on the same operating context as always. The system is healthy, the reports are current, and I've got the context loaded. It's ${time.formattedTime} on ${time.dayOfWeek}.\n\nWhat's on your mind?`;
 
+  // Favorite sport/food/etc — natural non-human answer
+  if (/\b(favorite\s+(sport|food|color|movie|song|book|hobby|game))\b/.test(lower)) {
+    const match = lower.match(/favorite\s+(\w+)/);
+    const topic = match ? match[1] : 'thing';
+    let responseText = '';
+    if (/\b(sport)\b/.test(topic)) {
+      responseText = `I don't have personal hobbies, but if I'm choosing from a Nexus angle, I'd pick basketball — it maps well to strategy, spacing, timing, and team roles. For you, I'd steer the conversation back to what helps Nexus make money or operate better. What are we working on?`;
+    } else if (/\b(food)\b/.test(topic)) {
+      responseText = `I don't eat, but I'd pick coffee — it's the universal "let's focus" signal. What's on your mind?`;
+    } else if (/\b(color)\b/.test(topic)) {
+      responseText = `I'd go with blue — it's what most dashboards use for a reason. Clean, trustworthy, gets out of the way. Speaking of dashboards, want me to check anything live?`;
+    } else {
+      responseText = `I don't have personal preferences, but I'm designed to be useful. What can I help you with right now?`;
+    }
+    return { text: responseText, confidence: 'high', source: 'honest_fallback', questionType: 'casual', needsClarification: false };
+  }
+
+  // How are you
+  if (/\b(how are you|how'?s it going|what'?s your day like)\b/.test(lower)) {
+    return {
+      text: `I'm running fine. It's ${time.formattedTime} on ${time.dayOfWeek}. All systems are operational — live Supabase read is ${isSupabaseConfigured ? 'connected' : 'not configured'}. What would you like to focus on?`,
+      confidence: 'high',
+      source: 'time_context',
+      questionType: 'casual',
+      needsClarification: false,
+    };
+  }
+
+  // Are you real / who are you
+  if (/\b(are you real|who are you|what are you)\b/.test(lower)) {
+    return {
+      text: `I'm Hermes, your CEO advisor. I'm a local reasoning engine — I classify your questions, resolve entities from page context, and use live Supabase data when connected. I don't have a live AI model or internet access, but I can reason about what's loaded. What can I help you with?`,
+      confidence: 'high',
+      source: 'honest_fallback',
+      questionType: 'casual',
+      needsClarification: false,
+    };
+  }
+
+  // Generic casual
+  const responseText = `I'm here and running. It's ${time.formattedTime} on ${time.dayOfWeek}. What's on your mind?`;
   return {
     text: responseText,
     confidence: 'high',

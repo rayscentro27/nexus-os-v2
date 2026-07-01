@@ -7,6 +7,133 @@
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
+// ─── Safe helpers for undefined/null fields ───
+
+/** Safely convert any value to a string. Returns fallback for null/undefined. */
+export function safeStr(val: unknown, fallback = ''): string {
+  if (val == null) return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (typeof val === 'object') {
+    try { return JSON.stringify(val); } catch { return fallback; }
+  }
+  return fallback;
+}
+
+/** Safely call .replace() on a value. Never crashes on undefined/null. */
+export function safeReplace(val: unknown, pattern: string | RegExp, replacement: string): string {
+  return safeStr(val).replace(pattern, replacement);
+}
+
+/** Safe number parse. Returns fallback for non-numeric values. */
+export function safeNum(val: unknown, fallback = 0): number {
+  if (val == null) return fallback;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+// ─── Section Normalizers ───
+// Maps raw Supabase rows into the shape each UI component expects.
+
+/** Normalize a research_sources row → research candidate shape. */
+export function normalizeResearchRow(row: Record<string, unknown>, index: number): Record<string, unknown> {
+  const metadata = (typeof row.metadata === 'object' && row.metadata !== null ? row.metadata : {}) as Record<string, unknown>;
+  return {
+    id: safeStr(row.id, `research-${index}`),
+    title: safeStr(row.title, 'Untitled Research'),
+    source: safeStr(row.source_type, 'unknown'),
+    type: safeStr(metadata.type, safeStr(row.source_type, 'research')),
+    lane: safeStr(metadata.lane, 'research'),
+    score: safeNum(row.confidence, safeNum(metadata.score, 50)),
+    status: safeStr(metadata.status, 'scored'),
+    reason: safeStr(row.why_it_matters, safeStr(row.snippet, 'No reasoning available.')),
+    nextAction: safeStr(metadata.nextAction, 'Review and score this candidate'),
+    convertOptions: Array.isArray(metadata.convertOptions) ? metadata.convertOptions : ['opportunity', 'content_draft'],
+    revenueRange: safeStr(metadata.revenueRange, ''),
+    confidence: safeStr(metadata.confidence, ''),
+    raw: row,
+  };
+}
+
+/** Normalize a business_opportunities row → opportunity shape. */
+export function normalizeBusinessRow(row: Record<string, unknown>, _index: number): Record<string, unknown> {
+  const payload = (typeof row.payload === 'object' && row.payload !== null ? row.payload : {}) as Record<string, unknown>;
+  return {
+    id: safeStr(row.id),
+    title: safeStr(row.title, 'Untitled Opportunity'),
+    summary: safeStr(row.summary, safeStr(payload.summary, '')),
+    score: safeNum(row.score, safeNum(payload.score, 0)),
+    status: safeStr(row.status, 'open'),
+    category: safeStr(row.category, safeStr(payload.category, 'uncategorized')),
+    type: safeStr(row.category, safeStr(payload.category, 'opportunity')),
+    revenueRange: safeStr(payload.revenueRange, ''),
+    confidence: safeStr(payload.confidence, ''),
+    source: safeStr(row.source, safeStr(row.source_concept, 'supabase')),
+    recommended_next_action: safeStr(row.recommended_next_action, ''),
+    raw: row,
+  };
+}
+
+/** Normalize a monetization_opportunities row → monetization shape. */
+export function normalizeMonetizationRow(row: Record<string, unknown>, _index: number): Record<string, unknown> {
+  return {
+    id: safeStr(row.id),
+    title: safeStr(row.title, 'Untitled Offer'),
+    summary: safeStr(row.source_summary, ''),
+    status: safeStr(row.status, 'open'),
+    category: safeStr(row.fit_with_goclear, 'general'),
+    type: 'monetization',
+    score: safeNum(row.overall_score, safeNum(row.confidence, 0)),
+    confidence: safeStr(row.confidence, ''),
+    revenueRange: safeStr(row.smallest_test, ''),
+    moneyAngle: safeStr(row.money_angle, ''),
+    raw: row,
+  };
+}
+
+/** Normalize a client_profiles row → client shape. */
+export function normalizeClientRow(row: Record<string, unknown>, _index: number): Record<string, unknown> {
+  return {
+    id: safeStr(row.id),
+    title: safeStr(row.client_label, safeStr(row.title, 'Untitled Client')),
+    summary: safeStr(row.next_required_action, safeStr(row.summary, '')),
+    status: safeStr(row.current_stage, safeStr(row.status, 'unknown')),
+    category: safeStr(row.category, 'client'),
+    type: 'client',
+    score: safeNum(row.score, safeNum(row.progress_percentage, 0)),
+    raw: row,
+  };
+}
+
+/** Normalize a task_requests (ray_review) row → review card shape. */
+export function normalizeRayReviewRow(row: Record<string, unknown>, _index: number): Record<string, unknown> {
+  const payload = (typeof row.payload === 'object' && row.payload !== null ? row.payload : {}) as Record<string, unknown>;
+  return {
+    id: safeStr(row.id),
+    title: safeStr(payload.title, safeStr(row.task_type, 'Ray Review Item')),
+    summary: safeStr(payload.summary, safeStr(payload.description, '')),
+    status: safeStr(row.status, 'requested'),
+    category: safeStr(payload.category, safeStr(row.task_type, 'review')),
+    type: safeStr(row.task_type, 'ray_review_item'),
+    score: safeNum(payload.score, 0),
+    raw: row,
+  };
+}
+
+/** Normalize any section's rows based on sectionId. */
+export function normalizeRows(sectionId: string, rows: Record<string, unknown>[]): Record<string, unknown>[] {
+  const normalizers: Record<string, (row: Record<string, unknown>, i: number) => Record<string, unknown>> = {
+    research_engine: normalizeResearchRow,
+    business_opportunities: normalizeBusinessRow,
+    monetization: normalizeMonetizationRow,
+    clients: normalizeClientRow,
+    ray_review: normalizeRayReviewRow,
+  };
+  const fn = normalizers[sectionId];
+  if (!fn) return rows;
+  return rows.map((row, i) => fn(row, i));
+}
+
 export type SourceType = 'live_supabase' | 'static_fallback' | 'report_snapshot' | 'localStorage_only' | 'unavailable';
 
 export interface SectionResult<T> {
@@ -116,7 +243,8 @@ export async function loadSectionData<T extends Record<string, unknown>>(
   }
 
   if (rows.length > 0) {
-    return buildResult(sectionId, 'live_supabase', true, rows, staticData, [tableConfig.table],
+    const normalized = normalizeRows(sectionId, rows as Record<string, unknown>[]) as T[];
+    return buildResult(sectionId, 'live_supabase', true, normalized, staticData, [tableConfig.table],
       [`Live data from ${tableConfig.table}`], null, null);
   }
 
