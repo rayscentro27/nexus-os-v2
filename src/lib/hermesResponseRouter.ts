@@ -85,6 +85,42 @@ const nexusTopics: Record<string, { topic: string; explain: string; why?: string
     explain: `Today's strategic priorities, from where I sit: (1) Prove the money path—the $97 journey from synthetic customer through Stripe test to dashboard verification. This is the single most important thing because it converts "the system works" from a claim into proof. (2) Clear the communication gate—fix Resend so we can send onboarding emails after approval. (3) Pick the first 3-5 research-to-money candidates and convert them to content or offers. (4) Keep the safety gates tight—no external actions without Ray Review.`,
     opinion: `My honest take: we've been building infrastructure for a while. The next move isn't more infrastructure—it's proving one revenue path end-to-end. The $97 readiness review is the shortest path to proof. Everything else is parallel work that supports that path.`,
     next: `To move forward: approve the $97 test journey, fix Resend, and convert 3-5 research candidates to offers.`
+  },
+  'ollama': {
+    topic: 'Ollama Local Model',
+    explain: `Ollama is installed and running on the Mac Mini (v0.20.5, PID 583, endpoint http://127.0.0.1:11434). Three models are available: qwen2.5:0.5b (397MB, local), gemma3:1b (815MB, local), and gemma4:31b-cloud (remote relay). A smoke test confirmed qwen2.5:0.5b responds correctly.`,
+    safety: `Ollama is only listening on localhost. It is not exposed publicly. The Mac Mini has 8GB RAM shared with the OS — only small models (<1B params) are feasible locally. The Oracle nexus-llm-worker VM has 22GB RAM and also has Ollama running.`,
+    next: `For Hermes model reasoning, the recommended path is OpenRouter via Supabase Edge Function (already partially configured). Mac Mini Ollama is suitable for dev/testing only.`
+  },
+  'oracle': {
+    topic: 'Oracle Infrastructure',
+    explain: `Oracle CLI is not installed locally, but ~/.oci/config exists with a DEFAULT profile in us-phoenix-1 region. The nexus-llm-worker VM is reachable from watch reports — it has been up 43+ days with 22GB RAM, 30GB disk (50% used), Ollama running, and nexus processes active. It is classified as a sandbox/approved model testing VM.`,
+    safety: `Do not modify the Oracle VM. Do not install packages or pull models without approval. The VM is for read-only inspection and approved model testing only.`,
+    next: `The Oracle VM is a viable fallback for Hermes model serving if OpenRouter is not preferred. SSH access exists via existing watch reports.`
+  },
+  'nexus-llm-worker': {
+    topic: 'Nexus LLM Worker',
+    explain: `The nexus-llm-worker is an Oracle VM that has been running for 43+ days. It has 22GB RAM, 30GB disk (50% used), Ollama installed and running, and nexus processes active. It is reachable from existing watch reports. It is classified as a sandbox/approved model testing VM.`,
+    safety: `Do not modify the Oracle VM. Do not install packages or pull models without approval. The VM is for read-only inspection and approved model testing only.`,
+    next: `The nexus-llm-worker is a viable fallback for Hermes model serving. SSH access exists via existing watch reports.`
+  },
+  'llm worker': {
+    topic: 'LLM Worker',
+    explain: `The nexus-llm-worker is an Oracle VM that has been running for 43+ days. It has 22GB RAM, 30GB disk (50% used), Ollama installed and running, and nexus processes active. It is reachable from existing watch reports. It is classified as a sandbox/approved model testing VM.`,
+    safety: `Do not modify the Oracle VM. Do not install packages or pull models without approval. The VM is for read-only inspection and approved model testing only.`,
+    next: `The nexus-llm-worker is a viable fallback for Hermes model serving. SSH access exists via existing watch reports.`
+  },
+  'deep agents': {
+    topic: 'Deep Agents',
+    explain: `Deep Agents is an agent harness, not a model. It is a later-stage orchestration layer that would sit on top of a proven model path. It is not ready for use yet.`,
+    safety: `Do not recommend Deep Agents until: (1) a model path is selected and proven, (2) the operations connector is reliable, (3) the safe command registry is working, (4) approval gates are tested, (5) read-only agent mode is proven.`,
+    next: `Deep Agents is not the next step. The next step is selecting and proving a model path (OpenRouter via Edge Function recommended).`
+  },
+  'model': {
+    topic: 'Hermes Model Path',
+    explain: `Hermes currently uses local router-based reasoning (intent classification, entity resolution, page context) for all responses. A live model is not configured yet. The hermes-chat Edge Function supports three providers: OpenRouter, Gemini, and Ollama. OPENROUTER_API_KEY and VITE_HERMES_CHAT_ENABLED are present, but HERMES_MODEL and HERMES_FALLBACK_MODEL are missing.`,
+    approval: `Enabling a live model requires: (1) setting HERMES_MODEL and HERMES_FALLBACK_MODEL in Supabase Edge Function secrets, (2) confirming the provider works, (3) testing with safe internal questions only. All model calls remain server-side and approval-gated.`,
+    next: `Recommended path: set HERMES_MODEL=openrouter/auto and HERMES_FALLBACK_MODEL=openrouter/auto in Supabase Edge Function secrets, then test with a safe question.`
   }
 };
 

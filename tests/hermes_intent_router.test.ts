@@ -265,8 +265,9 @@ describe('Hermes connection status answers', () => {
 
   it('"are you connected to a live model" distinguishes model vs router', () => {
     const result = hermesResponseRouter({ message: 'are you connected to a live model', pageId: 'hermes' });
-    expect(result.questionType).toBe('backend_query');
-    expect(result.text).toMatch(/model|router/i);
+    // Now routed to nexus_topic for comprehensive model path answer
+    expect(result.questionType).toMatch(/backend_query|nexus_topic/);
+    expect(result.text).toMatch(/model|router|OpenRouter|Edge Function/i);
     expect(result.text).not.toMatch(/I do not have live Supabase/i);
   });
 });

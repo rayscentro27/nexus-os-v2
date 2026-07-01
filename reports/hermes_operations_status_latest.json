@@ -56,13 +56,31 @@
   },
   "hermes_capabilities": {
     "live_supabase_read": true,
-    "live_web_search": false,
-    "live_model": false,
+    "live_web_search": "not_configured",
+    "live_model": "not_configured",
     "report_snapshot_access": true,
     "page_context": true,
     "source_reasoning": true,
     "activity_memory": "localStorage_only",
     "background_process_visibility": false
+  },
+  "model_infrastructure": {
+    "ollama_installed": true,
+    "ollama_running": true,
+    "ollama_endpoint": "http://127.0.0.1:11434",
+    "local_models": ["qwen2.5:0.5b", "gemma3:1b"],
+    "oracle_cli_installed": false,
+    "oracle_config_exists": true,
+    "oracle_region": "us-phoenix-1",
+    "oracle_vm_reachable": true,
+    "oracle_vm_hostname": "nexus-llm-worker",
+    "hermes_chat_edge_function": true,
+    "hermes_search_edge_function": true,
+    "model_provider_env": "OPENROUTER_API_KEY present, HERMES_MODEL missing",
+    "web_search_env": "VITE_HERMES_SEARCH_ENABLED missing",
+    "recommended_path": "OpenRouter via Supabase Edge Function",
+    "deep_agents_ready": false,
+    "deep_agents_classification": "agent harness, not a model"
   },
   "blockers": [
     "YouTube research not proven live — no recent fetch proof",
@@ -77,5 +95,6 @@
     "Enable Hermes web search (VITE_HERMES_SEARCH_ENABLED)",
     "Seed System Health and Reports tables if desired",
     "Wire remaining static sections to Supabase"
-  ]
+  ],
+  "critical_note": "Do not recommend Deep Agents until model path is selected and proven."
 }

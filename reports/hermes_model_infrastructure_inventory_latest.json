@@ -1,0 +1,57 @@
+{
+  "report": "hermes_model_infrastructure_inventory",
+  "generated_utc": "2026-07-01T17:24:06.404508+00:00",
+  "read_only": true,
+  "ollama": {
+    "installed": true,
+    "binary": "/usr/local/bin/ollama",
+    "running": true,
+    "models_raw": "NAME                ID              SIZE      MODIFIED     \nqwen2.5:0.5b        a8b0c5157701    397 MB    2 months ago    \ngemma4:31b-cloud    c382fbfbc73b    -         2 months ago    \ngemma3:1b           8648f39daa8f    815 MB    2 months ago",
+    "models": [
+      "qwen2.5:0.5b",
+      "gemma4:31b-cloud",
+      "gemma3:1b"
+    ],
+    "endpoint_responding": true,
+    "endpoint": "http://127.0.0.1:11434/api/tags",
+    "endpoint_model_count": 3
+  },
+  "mac_mini": {
+    "platform": "darwin",
+    "cpu": "Intel(R) Core(TM) i5-4278U CPU @ 2.60GHz",
+    "ram_bytes": 8589934592,
+    "ram_gb": 8.0,
+    "cpu_cores": 4,
+    "macos_version": "12.7.6",
+    "model_identifier": "Macmini7,1"
+  },
+  "hermes_gateway": {
+    "edge_function_dirs": [
+      "supabase/functions"
+    ],
+    "env_var_presence": {
+      "HERMES_API_KEY": false,
+      "HERMES_MODEL_ENDPOINT": false,
+      "OLLAMA_HOST": false,
+      "OPENAI_API_KEY": false,
+      "ANTHROPIC_API_KEY": false,
+      "SUPABASE_URL": false,
+      "SUPABASE_SERVICE_ROLE_KEY": false,
+      "GATEWAY_PORT": false
+    }
+  },
+  "oracle_cli": {
+    "installed": false,
+    "binary": null,
+    "config_exists": true,
+    "config_path": "/Users/raymonddavis/.oci/config",
+    "profiles": [
+      "DEFAULT"
+    ],
+    "oci_version": null
+  },
+  "oracle_vm": {
+    "watch_report_files": null,
+    "nexus_llm_worker_status": null
+  }
+}
