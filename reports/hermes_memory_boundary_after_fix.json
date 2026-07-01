@@ -1,0 +1,28 @@
+{
+  "reportType": "hermes_memory_boundary_after_fix",
+  "generatedAt": "2026-07-01T16:47:00-07:00",
+  "testResult": { "files": 14, "tests": 464, "passed": 464 },
+  "browserResult": {
+    "surface": "full_workroom",
+    "checks": {
+      "businessList": true,
+      "businessRecommendation": true,
+      "numberThreeResolution": true,
+      "casualMemoryRejected": true,
+      "identityMemoryRejected": true,
+      "tradingDomainOverride": true,
+      "memoryDiagnostic": true,
+      "memoryRejectionReason": true,
+      "domainDiagnostic": true,
+      "freshBusinessContext": true,
+      "favoriteFoodMemoryRejected": true,
+      "namedEntityMemoryAccepted": true,
+      "approvalDraftOnly": true
+    },
+    "supabase": "Local smoke browser had no authenticated session; fallback was explicitly labeled and no live claim was made."
+  },
+  "memoryUsedCorrectly": ["Which one do you recommend?", "So number 3 how do we implement?", "the third one", "that one", "the monthly readiness subscription", "how do we implement it", "create a Ray Review card for that"],
+  "memoryRejectedCorrectly": ["favorite car/food and identity variants", "trading/forex/paper-test variants", "settings, reports, tools, YouTube/research status", "fresh broad business strategy"],
+  "traceFields": ["detectedDomain", "previousTopic", "detectedTopic", "topicChanged", "memoryCandidateFound", "memoryUsed", "memoryRejected", "memoryRejectionReason", "domainOverrideApplied", "casualOverrideApplied", "invariantViolations"],
+  "externalActionsPerformed": false
+}

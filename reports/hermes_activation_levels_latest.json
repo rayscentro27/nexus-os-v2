@@ -68,10 +68,11 @@
   ],
   "routingRules": {
     "level0Overrides": "Level 0 is checked first and overrides all other levels",
-    "level3Before1and2": "Level 3 (follow-up) is checked before Level 1 and 2 to catch references that need memory",
+    "topicBoundaryBeforeLevel3": "Safety, casual/identity, status/meta, and explicit domain classification run before Level 3 memory eligibility",
     "level4Before5": "Level 4 (local reasoning) is tried before Level 5 (model) to minimize model usage",
     "modelNeverForStatus": "Level 1 questions never trigger a model call",
     "modelNeverForCost": "Cost/token questions never trigger a model call",
-    "supabaseFirst": "Level 2 always tries live Supabase before falling back to static"
+    "supabaseFirst": "Level 2 always tries live Supabase before falling back to static",
+    "memoryEligibility": "Level 3 requires an explicit reference, named entity match, or clear same-domain continuation"
   }
 }

@@ -1,3 +1,5 @@
+import { classifyHermesDomain, type HermesDomain } from './hermesDomainClassifier';
+
 /**
  * Hermes Activation Levels — 7-level system that determines how a message is processed.
  *
@@ -23,6 +25,12 @@ export interface ActivationDecision {
   modelRoute: 'no_model' | 'local_reasoning' | 'cheap_model' | 'primary_model' | 'blocked_or_gated';
   source: string;
   reason: string;
+}
+
+export interface ActivationDetectionContext {
+  detectedDomain?: HermesDomain;
+  shouldUseMemory?: boolean;
+  memoryRejectionReason?: string | null;
 }
 
 export const HERMES_ACTIVATION_LEVELS: ReadonlyArray<{ level: ActivationLevel; name: string; route: string }> = [
@@ -54,12 +62,14 @@ export function detectActivationLevel(
   message: string,
   hasConversationMemory = false,
   hasPageContext = false,
+  context: ActivationDetectionContext = {},
 ): ActivationDecision {
   const lower = message.toLowerCase().trim();
+  const domain = context.detectedDomain || classifyHermesDomain(message).domain;
 
   // ── Level 0: Safety gate ──
   // Execution verbs that are NOT status questions
-  const execVerbs = /\b(publish|send|charge|trade|buy|sell|deploy|seed|insert|delete|truncate|start\s+scheduler|run\s+shell|live\s+client\s+write|dispute|post\s+to\s+social|email\s+blast)\b/i;
+  const execVerbs = /\b(publish|send|charge|buy|sell|deploy|seed|insert|delete|truncate|start\s+scheduler|run\s+shell|live\s+client\s+write|dispute|post\s+to\s+social|email\s+blast)\b/i;
   const statusExemptions = /\b(status|running|active|proof|what|show|list|is|are|can|report|did you|have you)\b/i;
   if (execVerbs.test(lower) && !statusExemptions.test(lower)) {
     return {
@@ -85,27 +95,25 @@ export function detectActivationLevel(
     };
   }
 
-  // ── Level 3: Conversation memory / follow-up resolution ──
-  // Check this BEFORE Level 1/2 because follow-ups need memory context
+  // ── Casual/identity pre-check: new local topic, never memory/model/Supabase ──
+  if (domain === 'casual_identity') {
+    return {
+      level: 1, levelName: LEVEL_NAMES[1], trigger: 'Casual/identity topic override',
+      route: 'no_model', modelRoute: 'no_model', source: 'casual_local',
+      reason: 'Casual and identity questions start a new local topic and reject prior task memory.',
+    };
+  }
+
+  // Identify possible references now; eligibility is applied after status/domain pre-checks.
   const isFollowUp =
-    /^(?:number|#|option)\s*\d+/.test(lower) ||
+    /\b(?:number|#|option)\s*\d+/.test(lower) ||
     /^(?:that|this|it|the\s+one|another|other)\b/i.test(lower) ||
     /^(?:ok\s+)?pick\s+one/i.test(lower) ||
     /^(?:ok\s+)?choose\s+one/i.test(lower) ||
     /\b(which\s+one\s+do\s+you\s+recommend|which\s+one\s+should\s+(we|i)|recommend\s+one|pick\s+(one|that)|the\s+(monthly|readiness|subscription|credit|funding|trading|research|opportunity)\s+one)\b/i.test(lower) ||
     /\b(how\s+do\s+we\s+implement\s+(it|that|this)|how\s+do\s+(we|i)\s+(start|build|launch|execute)\s+(it|that|this))\b/i.test(lower) ||
     (/^(?:first|top|second|third|last|next)\b/i.test(lower) && lower.split(' ').length <= 5);
-  if (isFollowUp && hasConversationMemory) {
-    return {
-      level: 3,
-      levelName: LEVEL_NAMES[3],
-      trigger: 'Follow-up reference with conversation memory available',
-      route: 'conversation_memory',
-      modelRoute: 'local_reasoning',
-      source: 'conversation_memory',
-      reason: 'Follow-up reference resolved from previous ranked/listed/selected items.',
-    };
-  }
+  const isApprovalAction = /\b(create\s+(?:a\s+)?(?:ray\s+review\s+)?(?:review\s+)?card|prepare\s+task|send\s+to\s+specialist|run\s+dry-run|queue\s+for\s+review|add\s+to\s+ray\s+review)\b/i.test(lower);
 
   // ── Level 1: Meta/status/cost/process/local facts ──
   if (
@@ -127,9 +135,30 @@ export function detectActivationLevel(
     };
   }
 
+  // Domain-specific status families override stale memory even if pronouns are present.
+  if (['settings', 'reports', 'tools_cli', 'system_health', 'automation'].includes(domain) ||
+      (domain === 'research_youtube' && /\b(is|are|status|running|writing|last|proof|what)\b/i.test(lower))) {
+    return {
+      level: 1, levelName: LEVEL_NAMES[1], trigger: `Explicit ${domain} status domain`,
+      route: 'no_model', modelRoute: 'no_model', source: 'domain_local_status',
+      reason: `The explicit ${domain} domain starts a new local status topic and rejects stale memory.`,
+    };
+  }
+
+  // ── Level 3: eligible conversation continuation only ──
+  const memoryEligible = context.shouldUseMemory ?? (isFollowUp && hasConversationMemory);
+  if (!isApprovalAction && hasConversationMemory && memoryEligible) {
+    return {
+      level: 3, levelName: LEVEL_NAMES[3], trigger: 'Topic boundary approved prior memory',
+      route: 'conversation_memory', modelRoute: 'local_reasoning', source: 'conversation_memory',
+      reason: 'An explicit reference, named entity, or same-domain continuation made prior memory eligible.',
+    };
+  }
+
   // ── Level 2: Live Supabase retrieval ──
   if (
     /\b(approvals?|ray\s+review|pending|task\s+requests?|business\s+opportunit|opportunities|clients?|customer|profile|research\s+(sources?|runs?|candidates?|rows?)|monetization|offers?|live\s+records?|what.*in\s+supabase|show\s+me.*from\s+supabase)\b/i.test(lower) &&
+    !isApprovalAction &&
     !/\b(recommend|prioritize|what\s+should\s+i|what\s+business\s+(?:can|should)\s+i\s+start|fastest\s+money|implementation\s+plan|how\s+do\s+we|30\s*days|low[- ](?:startup\s+)?cost)\b/i.test(lower)
   ) {
     return {
@@ -145,6 +174,8 @@ export function detectActivationLevel(
 
   // ── Level 4: Local reasoning ──
   if (
+    (domain === 'trading' && /\b(recommend|strategy|setup|test|paper|backtest|compare|should)\b/i.test(lower)) ||
+    (['business_opportunity', 'monetization'].includes(domain) && /\b(recommend|start|launch|easiest|low[- ]cost|make money|fastest|monetize|first|should)\b/i.test(lower)) ||
     /\b(recommend|prioritize|what\s+should\s+i\s+do\s+next|fastest\s+money\s+move|implementation\s+plan|what\s+business\s+(can|should)\s+i\s+start|how\s+do\s+we\s+implement|30\s*days|low\s+startup\s+cost|which\s+one\s+do\s+you\s+recommend|pick\s+one|choose\s+one)\b/i.test(lower) ||
     (/\b(business|start|opportunity|strategy)\b/i.test(lower) && !/\b(status|live|running|blocked)\b/i.test(lower))
   ) {
@@ -176,9 +207,7 @@ export function detectActivationLevel(
   }
 
   // ── Level 6: Approval/action layer ──
-  if (
-    /\b(create\s+(a\s+)?review\s+card|prepare\s+task|send\s+to\s+specialist|run\s+dry-run|queue\s+for\s+review|add\s+to\s+ray\s+review)\b/i.test(lower)
-  ) {
+  if (isApprovalAction) {
     return {
       level: 6,
       levelName: LEVEL_NAMES[6],
@@ -190,16 +219,16 @@ export function detectActivationLevel(
     };
   }
 
-  // ── Default: Level 4 (local reasoning) if context exists, else Level 1 ──
-  if (hasPageContext || hasConversationMemory) {
+  // ── Default: page context may justify local reasoning; stale memory alone may not. ──
+  if (hasPageContext) {
     return {
       level: 4,
       levelName: LEVEL_NAMES[4],
-      trigger: 'Default with context available',
+      trigger: 'Default with current page context available',
       route: 'local_reasoning',
       modelRoute: 'local_reasoning',
       source: 'available_context',
-      reason: 'Context available — reasoning locally before considering model.',
+      reason: 'Current page context is available — reasoning locally without inheriting stale memory.',
     };
   }
 

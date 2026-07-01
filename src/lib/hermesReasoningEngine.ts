@@ -22,11 +22,17 @@ export interface ReasoningPlan {
   contextUsed?: string[];
   modelTask?: string;
   clarificationQuestion?: string;
+  memoryCandidateFound?: boolean;
+  memoryUsed?: boolean;
+  memoryRejected?: boolean;
+  memoryRejectionReason?: string | null;
+  selectedMemoryItem?: string | null;
 }
 
 /** Get what context is available. */
-function getAvailableContext(): string[] {
+function getAvailableContext(shouldUsePriorMemory = true): string[] {
   const ctx: string[] = [];
+  if (!shouldUsePriorMemory) return ctx;
   if (getLastListedItems().length > 0) ctx.push(`lastListedItems(${getLastListedItems().length})`);
   if (getLastRankedList().length > 0) ctx.push(`lastRankedList(${getLastRankedList().length})`);
   if (getLastReferencedItem()) ctx.push(`lastReferencedItem(${getLastReferencedItem()!.title})`);
@@ -42,10 +48,19 @@ export function reasonAboutMessage(
   pageContext: { route: string; pageId: string; visibleItems: unknown[] } | null,
   intentRoute: string,
   modelRoute: string,
+  memoryBoundary: { shouldUsePriorMemory: boolean; reason: string } = { shouldUsePriorMemory: true, reason: 'legacy caller did not provide a boundary' },
 ): ReasoningPlan {
   const lower = message.toLowerCase();
-  const context = getAvailableContext();
+  const memoryCandidateFound = getAvailableContext(true).length > 0;
+  const context = getAvailableContext(memoryBoundary.shouldUsePriorMemory);
   const hasCtx = context.length > 0;
+  const memoryDiagnostics = {
+    memoryCandidateFound,
+    memoryUsed: memoryBoundary.shouldUsePriorMemory && memoryCandidateFound,
+    memoryRejected: !memoryBoundary.shouldUsePriorMemory && memoryCandidateFound,
+    memoryRejectionReason: !memoryBoundary.shouldUsePriorMemory ? memoryBoundary.reason : null,
+    selectedMemoryItem: memoryBoundary.shouldUsePriorMemory ? getLastReferencedItem()?.title || null : null,
+  };
   const hasPage = Boolean(pageContext?.visibleItems?.length);
 
   // ── Follow-up references: always answer locally if we have context ──
@@ -55,14 +70,14 @@ export function reasonAboutMessage(
         decision: 'answer-locally',
         confidence: 'high',
         reasoning: 'Follow-up reference with conversation context available.',
-        contextUsed: context,
+        contextUsed: context, ...memoryDiagnostics,
       };
     }
     return {
       decision: 'ask-clarification',
       confidence: 'low',
       reasoning: 'Follow-up reference but no conversation context exists.',
-      clarificationQuestion: 'I don\'t have context from a previous listing. What item are you referring to?',
+      clarificationQuestion: 'I don\'t have context from a previous listing. What item are you referring to?', ...memoryDiagnostics,
     };
   }
 
@@ -71,7 +86,7 @@ export function reasonAboutMessage(
     return {
       decision: 'answer-with-context', confidence: 'high',
       reasoning: 'Page context is available. Can answer from visible items and page state.',
-      contextUsed: [...context, 'pageContext'],
+      contextUsed: [...context, 'pageContext'], ...memoryDiagnostics,
     };
   }
 

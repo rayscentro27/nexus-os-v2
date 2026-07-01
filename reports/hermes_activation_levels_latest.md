@@ -57,7 +57,7 @@
 ## Routing Rules
 
 1. **Level 0 overrides all:** Safety gate is checked first and overrides everything.
-2. **Level 3 before 1 and 2:** Follow-up references are checked before meta/status and Supabase retrieval to catch references that need memory context.
+2. **Topic boundary before Level 3:** Casual/identity, meta/status, and explicit domains are classified before memory eligibility. Level 3 requires an explicit reference, named entity match, or clear same-domain continuation.
 3. **Level 4 before 5:** Local reasoning is always tried before model reasoning to minimize model usage.
 4. **Model never for status:** Level 1 questions never trigger a model call.
 5. **Model never for cost:** Cost/token questions never trigger a model call.
@@ -67,11 +67,13 @@
 
 ```
 1. Level 0: Safety gate (execution verbs)
-2. Level 3: Follow-up reference (has conversation memory?)
+2. Level 1: Casual/identity local conversation
 3. Level 1: Meta/status/cost/process/capability
-4. Level 2: Live Supabase retrieval
-5. Level 4: Local reasoning (recommend/plan/strategy)
-6. Level 5: Model reasoning (deep synthesis)
-7. Level 6: Approval/action layer
-8. Default: Level 4 if context exists, else Level 1
+4. Explicit domain classification and topic-boundary evaluation
+5. Level 3: Eligible follow-up memory
+6. Level 2: Live Supabase retrieval when records are required
+7. Level 4: Domain/local reasoning
+8. Level 5: Model reasoning when genuinely required
+9. Level 6: Approval/action layer
+10. Default: Level 4 only for current page context, otherwise Level 1
 ```

@@ -1,0 +1,15 @@
+{
+  "reportType": "hermes_memory_boundary_bug",
+  "generatedAt": "2026-07-01T16:47:00-07:00",
+  "rootCause": {
+    "activation": "Any conversation memory made the detector default to Level 4, even without a reference marker.",
+    "topicBoundary": "No semantic domain or new-topic decision existed before activation.",
+    "answerBuilder": "The unmatched Level 4 branch always returned the business recommendation.",
+    "reasoning": "Previous selected/ranked context had no eligibility guard.",
+    "followUp": "Number references were start-anchored, so 'So number 3' reported the wrong activation level."
+  },
+  "failingPath": "memory exists -> unmatched message defaults Level 4 -> generic Level 4 branch -> readiness recommendation",
+  "patchTarget": ["domain classifier", "topic boundary", "activation pre-check order", "Level 4 domain answer builder", "reasoning memory guard", "routing trace"],
+  "invariantsEnforced": 7,
+  "result": "fixed"
+}

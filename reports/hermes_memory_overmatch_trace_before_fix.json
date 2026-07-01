@@ -1,0 +1,21 @@
+{
+  "reportType": "hermes_memory_overmatch_trace_before_fix",
+  "generatedAt": "2026-07-01T16:38:10-07:00",
+  "baselineCommit": "62241f20275de7ea11cf85fa86075a888d3e284c",
+  "simulation": [
+    { "message": "What business opportunities are available?", "actualLevel": 2, "actualRoute": "supabase_query", "result": "Business list stored; local fallback was honestly labeled because the diagnostic process had no browser auth session." },
+    { "message": "Which one do you recommend?", "actualLevel": 3, "actualRoute": "conversation_memory", "result": "Recommendation stored; legacy detector treated the phrase as follow-up." },
+    { "message": "So number 3 how do we implement?", "actualLevel": 4, "actualRoute": "local_reasoning", "result": "Number 3 still resolved indirectly, but activation was wrong because the number matcher was start-anchored." },
+    { "message": "What is your favorite car?", "actualLevel": 4, "actualRoute": "local_reasoning", "selectedItemLeaked": "$97 Credit & Funding Readiness Review", "topicChangedDetectedByAudit": true, "casualOverrideInPipeline": false },
+    { "message": "What is your name?", "actualLevel": 4, "actualRoute": "local_reasoning", "selectedItemLeaked": "$97 Credit & Funding Readiness Review", "topicChangedDetectedByAudit": true, "casualOverrideInPipeline": false },
+    { "message": "What trading strategy do you recommend?", "actualLevel": 4, "actualRoute": "local_reasoning", "selectedItemLeaked": "$97 Credit & Funding Readiness Review", "topicChangedDetectedByAudit": true, "domainOverrideInPipeline": false }
+  ],
+  "rootCause": [
+    "detectActivationLevel defaulted to Level 4 whenever any conversation memory existed, even without a reference marker.",
+    "Casual/identity and explicit domain classification did not run before memory/default activation.",
+    "The Level 4 answer builder defaulted to the business recommendation for every unmatched local-reasoning message.",
+    "Reasoning had no memory-eligibility guard or topic boundary.",
+    "The follow-up number matcher did not recognize a prefixed phrase such as 'So number 3'."
+  ],
+  "patchTarget": "Activation pre-check order, topic-boundary eligibility, domain-specific answer routing, and guarded reasoning context."
+}

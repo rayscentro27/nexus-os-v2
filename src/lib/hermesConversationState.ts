@@ -42,6 +42,7 @@ export interface ConversationState {
   } | null;
   lastReferencedItem: ConversationItem | null;
   lastIntent: string | null;
+  lastTopic: string | null;
   lastPage: string | null;
   lastActionPlan: string | null;
   lastQuestion: string | null;
@@ -57,7 +58,7 @@ let conversationState: ConversationState = {
   lastSelectedItem: null,
   lastSupabaseQueryResult: null,
   lastReferencedItem: null,
-  lastIntent: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
+  lastIntent: null, lastTopic: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
 };
 
 /** Reset conversation state (e.g., on page reload). */
@@ -70,7 +71,7 @@ export function resetConversationState(): void {
     lastSelectedItem: null,
     lastSupabaseQueryResult: null,
     lastReferencedItem: null,
-    lastIntent: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
+    lastIntent: null, lastTopic: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
   };
 }
 
@@ -85,7 +86,7 @@ export function addConversationMessage(role: 'user' | 'assistant', content: stri
   else conversationState.lastAnswerSummary = content.slice(0, 500);
 }
 
-export function updateConversationContext(update: Partial<Pick<ConversationState, 'lastIntent' | 'lastPage' | 'lastActionPlan'>>): void {
+export function updateConversationContext(update: Partial<Pick<ConversationState, 'lastIntent' | 'lastTopic' | 'lastPage' | 'lastActionPlan'>>): void {
   conversationState = { ...conversationState, ...update };
 }
 
@@ -158,6 +159,15 @@ export function getLastSupabaseQueryResult(): ConversationState['lastSupabaseQue
  */
 export function resolveFollowUp(message: string): ConversationItem | null {
   const lower = message.toLowerCase().trim();
+  const allItems = conversationState.lastRankedList.length ? conversationState.lastRankedList : conversationState.lastListedItems;
+
+  // Named entity references are semantic memory matches, not generic pronouns.
+  const normalized = lower.replace(/[$]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const named = allItems.find(item => {
+    const title = item.title.toLowerCase().replace(/[$]/g, '').replace(/[^a-z0-9]+/g, ' ').replace(/^\d+\s+/, '').trim();
+    return title.length >= 5 && normalized.includes(title);
+  });
+  if (named) { conversationState.lastReferencedItem = named; return named; }
 
   // "number 3" / "#3" / "option 2"
   const numberMatch = lower.match(/(?:^|\b)(?:number|#|option)\s*(\d+)\b/);

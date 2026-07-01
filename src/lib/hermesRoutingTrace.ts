@@ -28,6 +28,17 @@ export interface RoutingTraceEntry {
   answerBuilder: string;
   fallbackReason: string | null;
   correctnessHint: string;
+  detectedDomain: string;
+  previousTopic: string | null;
+  detectedTopic: string;
+  topicChanged: boolean;
+  memoryCandidateFound: boolean;
+  memoryUsed: boolean;
+  memoryRejected: boolean;
+  memoryRejectionReason: string | null;
+  domainOverrideApplied: boolean;
+  casualOverrideApplied: boolean;
+  invariantViolations: string[];
   confidence: 'high' | 'medium' | 'low';
 }
 
@@ -43,8 +54,15 @@ function safe(): Storage | null {
 }
 
 /** Record a routing trace entry. */
-export function logRoutingTrace(entry: Omit<RoutingTraceEntry, 'id' | 'timestamp'>): RoutingTraceEntry {
+type NewMemoryTraceFields = 'detectedDomain' | 'previousTopic' | 'detectedTopic' | 'topicChanged' | 'memoryCandidateFound' | 'memoryUsed' | 'memoryRejected' | 'memoryRejectionReason' | 'domainOverrideApplied' | 'casualOverrideApplied' | 'invariantViolations';
+type RoutingTraceInput = Omit<RoutingTraceEntry, 'id' | 'timestamp' | NewMemoryTraceFields> & Partial<Pick<RoutingTraceEntry, NewMemoryTraceFields>>;
+
+export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
   const full: RoutingTraceEntry = {
+    detectedDomain: 'unknown', previousTopic: null, detectedTopic: 'unknown', topicChanged: false,
+    memoryCandidateFound: false, memoryUsed: entry.usedMemory, memoryRejected: false,
+    memoryRejectionReason: null, domainOverrideApplied: false, casualOverrideApplied: false,
+    invariantViolations: [],
     ...entry,
     message: redactAndTruncate(entry.message),
     id: `trace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -87,7 +105,7 @@ export function getRoutingTraces(): RoutingTraceEntry[] {
 /** Get the most recent routing trace. */
 export function getLastRoutingTrace(): RoutingTraceEntry | null {
   const traces = getRoutingTraces();
-  return traces.length > 0 ? traces[traces.length - 1] : null;
+  return [...traces].reverse().find(trace => trace.answerBuilder !== 'routing_trace') || (traces.length > 0 ? traces[traces.length - 1] : null);
 }
 
 /** Clear all routing traces. */
@@ -155,6 +173,26 @@ export function answerDidYouUseModel(): string {
     : `No, I did not use the model for my last answer. Route: ${trace.modelRoute}. The question was answerable from ${trace.sourceDecision}.`;
 }
 
+export function answerMemoryFromTrace(message: string): string {
+  const trace = getLastRoutingTrace();
+  if (!trace) return 'I do not have a routing trace for my last answer.';
+  if (/why did you not use|why didn'?t you use|previous recommendation/i.test(message)) {
+    return trace.memoryRejected
+      ? `I did not use the previous recommendation because ${trace.memoryRejectionReason} I detected the ${trace.detectedDomain} domain${trace.topicChanged ? ' and treated it as a new topic' : ''}.`
+      : `I did not reject eligible memory for that answer. Memory used: ${trace.memoryUsed ? 'yes' : 'no'}.`;
+  }
+  if (/why did you use memory/i.test(message)) {
+    return trace.memoryUsed
+      ? `I used memory because the topic boundary approved it. Detected topic: ${trace.detectedTopic}. Resolved entity: ${trace.selectedEntity || 'conversation context'}.`
+      : `I did not use memory. ${trace.memoryRejectionReason || 'No eligible memory reference was found.'}`;
+  }
+  if (/new topic/i.test(message)) return trace.topicChanged ? `Yes. I treated it as a new ${trace.detectedTopic} topic.` : `No. I treated it as a continuation of ${trace.detectedTopic}.`;
+  if (/what domain/i.test(message)) return `I detected the **${trace.detectedDomain}** domain. Domain override applied: ${trace.domainOverrideApplied ? 'yes' : 'no'}.`;
+  return trace.memoryUsed
+    ? `Yes, I used eligible conversation memory${trace.selectedEntity ? ` for ${trace.selectedEntity}` : ''}.`
+    : `No, I did not use prior memory. ${trace.memoryRejectionReason || 'No memory candidate was needed.'}`;
+}
+
 /** Build a full trace answer for "Why did you answer that way?" */
 function buildTraceAnswer(trace: RoutingTraceEntry): string {
   let answer = `Here is exactly how I processed your last message:\n\n`;
@@ -167,6 +205,9 @@ function buildTraceAnswer(trace: RoutingTraceEntry): string {
   answer += `**Used Supabase:** ${trace.usedSupabase ? 'Yes' : 'No'}\n`;
   answer += `**Used Model:** ${trace.usedModel ? 'Yes' : 'No'}\n`;
   answer += `**Used Memory:** ${trace.usedMemory ? 'Yes' : 'No'}\n`;
+  answer += `**Detected Domain:** ${trace.detectedDomain}\n`;
+  answer += `**Topic Changed:** ${trace.topicChanged ? 'Yes' : 'No'}\n`;
+  if (trace.memoryRejected) answer += `**Memory Rejected:** ${trace.memoryRejectionReason}\n`;
   answer += `**Safety Gate:** ${trace.safetyGate ? 'Active (blocked execution)' : 'Not triggered'}\n`;
   if (trace.selectedEntity) {
     answer += `**Resolved Entity:** ${trace.selectedEntity}\n`;
@@ -185,7 +226,7 @@ function buildTraceAnswer(trace: RoutingTraceEntry): string {
  */
 export function isRoutingTraceQuestion(message: string): boolean {
   const lower = message.toLowerCase();
-  return /\b(why\s+did\s+you\s+answer|where\s+did\s+(that|it)\s+route|what\s+source\s+did\s+you\s+use|did\s+you\s+use\s+supabase|did\s+you\s+use\s+the\s+model|what\s+activation\s+level|show\s+my\s+routing\s+trace|why\s+did\s+you\s+route)\b/i.test(lower);
+  return /\b(why\s+did\s+you\s+answer|where\s+did\s+(that|it)\s+route|what\s+route\s+did\s+that\s+take|what\s+source\s+did\s+you\s+use|did\s+you\s+use\s+supabase|did\s+you\s+use\s+(?:the\s+)?model|did\s+you\s+use\s+memory|why\s+did\s+you\s+(?:not\s+)?use\s+memory|why\s+did\s+you\s+not\s+use\s+the\s+previous\s+recommendation|did\s+you\s+treat\s+that\s+as\s+a\s+new\s+topic|what\s+domain\s+did\s+you\s+detect|what\s+activation\s+level|show\s+my\s+routing\s+trace|why\s+did\s+you\s+route)\b/i.test(lower);
 }
 
 /**
@@ -198,7 +239,7 @@ export function answerRoutingTraceQuestion(message: string): string | null {
   if (/\bwhy\s+did\s+you\s+answer\b/i.test(lower)) {
     return answerWhyFromTrace();
   }
-  if (/\bwhere\s+did\b/i.test(lower)) {
+  if (/\b(where\s+did|what\s+route)\b/i.test(lower)) {
     return answerWhereDidThatRoute();
   }
   if (/\bwhat\s+source\b/i.test(lower)) {
@@ -207,9 +248,10 @@ export function answerRoutingTraceQuestion(message: string): string | null {
   if (/\bdid\s+you\s+use\s+supabase\b/i.test(lower)) {
     return answerDidYouUseSupabase();
   }
-  if (/\bdid\s+you\s+use\s+the\s+model\b/i.test(lower)) {
+  if (/\bdid\s+you\s+use\s+(?:the\s+)?model\b/i.test(lower)) {
     return answerDidYouUseModel();
   }
+  if (/\b(memory|previous recommendation|new topic|what domain)\b/i.test(lower)) return answerMemoryFromTrace(message);
   if (/\bshow\s+my\s+routing\s+trace\b/i.test(lower)) return getRoutingTraces().slice(-10).map(buildTraceAnswer).join('\n\n---\n\n');
 
   return answerWhyFromTrace();

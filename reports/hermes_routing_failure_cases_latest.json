@@ -1,0 +1,12 @@
+{
+  "reportType": "hermes_routing_failure_cases",
+  "generatedAt": "2026-07-01T16:38:10-07:00",
+  "baselineCommit": "62241f20275de7ea11cf85fa86075a888d3e284c",
+  "cases": [
+    { "group": "business_thread", "messages": ["What business opportunities are available?", "Which one do you recommend?", "So number 3 how do we implement?"], "expected": "Business domain retrieval and eligible memory continuation." },
+    { "group": "casual_new_topic", "messages": ["what is your favorite car", "what is your name", "how are you doing", "favorite food"], "expected": "New casual topic; no_model, no Supabase, no prior business memory." },
+    { "group": "new_domain", "messages": ["what trading strategy do you recommend", "is YouTube research running", "what settings are missing", "what reports do we have"], "expected": "Explicit domain overrides prior business memory." },
+    { "group": "valid_memory", "messages": ["that one", "number 3", "the monthly readiness subscription", "create a Ray Review card for that", "how do we implement it"], "expected": "Memory only when an explicit reference or named entity matches the prior topic." }
+  ],
+  "antiOverfitRequirement": "The fix must operate on domain families, topic boundaries, and reference eligibility rather than exact command strings."
+}
