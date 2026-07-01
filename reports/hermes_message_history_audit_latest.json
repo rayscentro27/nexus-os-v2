@@ -1,0 +1,190 @@
+{
+  "reportType": "hermes_message_history_audit",
+  "generatedAt": "2026-07-01T00:00:00.000Z",
+  "summary": {
+    "totalMessages": 12,
+    "correctCount": 0,
+    "failureCount": 12,
+    "notLoggedCount": 12,
+    "failureBreakdown": {
+      "not_logged": 12
+    },
+    "note": "All messages scored as 'not_logged' because routing trace facility did not exist before this audit. The trace facility (hermesRoutingTrace.ts) has been added to capture this data going forward."
+  },
+  "messageStores": [
+    {
+      "store": "hermesChatStore (localStorage)",
+      "key": "nexus_hermes_chat_history",
+      "maxMessages": 50,
+      "usedBy": ["HermesChatPanel", "HermesInlineDrawer"],
+      "fieldsLogged": ["role", "text", "meta"],
+      "fieldsNotLogged": ["intent", "route", "source", "modelUsed", "supabaseUsed", "followupMemoryUsed", "safetyGateUsed"]
+    },
+    {
+      "store": "hermesActivityJournal (localStorage)",
+      "key": "nexus_hermes_activity_journal",
+      "maxEvents": 500,
+      "usedBy": ["HermesChatPanel", "HermesInlineDrawer", "recordActivity()"],
+      "fieldsLogged": ["source", "pageId", "route", "eventType", "title", "summary", "status", "dataSource", "safetyLevel"],
+      "fieldsNotLogged": ["intent", "selectedRoute", "modelUsed", "supabaseUsed", "followupMemoryUsed", "safetyGateUsed"]
+    },
+    {
+      "store": "hermesModelUsageLedger (localStorage)",
+      "key": "nexus-hermes-model-usage-v1",
+      "maxEntries": 200,
+      "usedBy": ["hermesModelChat", "logModelAttempt", "logModelSkipped"],
+      "fieldsLogged": ["route", "modelProvider", "modelName", "promptType", "estimatedInputTokens", "estimatedOutputTokens", "wasModelCalled", "skippedReason", "contextSources"],
+      "fieldsNotLogged": ["userMessage", "hermesAnswer", "intent", "supabaseUsed", "followupMemoryUsed"]
+    },
+    {
+      "store": "hermesConversationState (module-level session)",
+      "key": "none (in-memory only)",
+      "maxItems": 50,
+      "usedBy": ["hermesBrainPipeline", "hermesReasoningEngine", "hermesConversationState"],
+      "fieldsLogged": ["history (role, content, timestamp)", "lastListedItems", "lastRankedList", "lastRecommendedItem", "lastSelectedItem", "lastSupabaseQueryResult", "lastReferencedItem"],
+      "fieldsNotLogged": ["activationLevel", "intent", "route", "source", "safetyGateUsed"]
+    },
+    {
+      "store": "hermesRoutingTrace (localStorage) — NEW",
+      "key": "nexus-hermes-routing-trace-v1",
+      "maxEntries": 100,
+      "usedBy": ["hermesBrainPipeline (new)", "hermesRoutingTrace"],
+      "fieldsLogged": ["message", "surface", "page", "activationLevel", "activationLevelName", "intent", "sourceDecision", "route", "modelRoute", "usedSupabase", "usedModel", "usedMemory", "selectedEntity", "safetyGate", "answerBuilder", "fallbackReason", "confidence"],
+      "fieldsNotLogged": ["secrets", "full PII", "sensitive client details"]
+    }
+  ],
+  "canonicalMessages": [
+    {
+      "message": "What business opportunities are available?",
+      "expectedActivationLevel": 2,
+      "expectedIntent": "supabase_retrieval",
+      "expectedSource": "live_supabase",
+      "expectedRoute": "supabase_query",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should query live Supabase business_opportunities table and store results in conversation memory."
+    },
+    {
+      "message": "Which one do you recommend?",
+      "expectedActivationLevel": 3,
+      "expectedIntent": "followup_resolution",
+      "expectedSource": "conversation_memory",
+      "expectedRoute": "conversation_memory",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should use Level 3 + Level 4: resolve from last listed opportunities, rank them, store ranked list, and recommend top pick."
+    },
+    {
+      "message": "Ok pick one for us to review.",
+      "expectedActivationLevel": 3,
+      "expectedIntent": "followup_resolution",
+      "expectedSource": "conversation_memory",
+      "expectedRoute": "conversation_memory",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should select the recommended item from memory and present it for review."
+    },
+    {
+      "message": "So number 3 how do we implement?",
+      "expectedActivationLevel": 3,
+      "expectedIntent": "followup_resolution",
+      "expectedSource": "conversation_memory",
+      "expectedRoute": "conversation_memory",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should resolve 'number 3' from ranked list, then activate Level 4 to build implementation plan."
+    },
+    {
+      "message": "The monthly readiness subscription.",
+      "expectedActivationLevel": 3,
+      "expectedIntent": "followup_resolution",
+      "expectedSource": "conversation_memory",
+      "expectedRoute": "conversation_memory",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should resolve named entity 'monthly readiness subscription' against listed items by title/category match."
+    },
+    {
+      "message": "Are you connected to live Supabase data?",
+      "expectedActivationLevel": 1,
+      "expectedIntent": "meta_status",
+      "expectedSource": "local_reports_capability",
+      "expectedRoute": "no_model",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should use Level 1 capability state + Supabase access state (5-state machine)."
+    },
+    {
+      "message": "What did you do today?",
+      "expectedActivationLevel": 1,
+      "expectedIntent": "meta_status",
+      "expectedSource": "local_reports_activity_journal",
+      "expectedRoute": "no_model",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should use Level 1 daily translator, not raw activity dump."
+    },
+    {
+      "message": "Give me the CEO version.",
+      "expectedActivationLevel": 1,
+      "expectedIntent": "meta_status",
+      "expectedSource": "local_reports_ceo_translator",
+      "expectedRoute": "no_model",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should use Level 1 CEO summary translator."
+    },
+    {
+      "message": "What model are you using?",
+      "expectedActivationLevel": 1,
+      "expectedIntent": "meta_status",
+      "expectedSource": "local_usage_ledger",
+      "expectedRoute": "no_model",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should use Level 1 model usage ledger."
+    },
+    {
+      "message": "Can you place a trade?",
+      "expectedActivationLevel": 0,
+      "expectedIntent": "safety_gate",
+      "expectedSource": "safety_gate",
+      "expectedRoute": "blocked_or_gated",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should activate Level 0 safety gate and block."
+    },
+    {
+      "message": "Is YouTube research running and writing to Supabase?",
+      "expectedActivationLevel": 1,
+      "expectedIntent": "meta_status",
+      "expectedSource": "local_reports",
+      "expectedRoute": "no_model",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should use Level 1 operations status answer."
+    },
+    {
+      "message": "What business should I start in 30 days with low startup cost?",
+      "expectedActivationLevel": 4,
+      "expectedIntent": "local_reasoning",
+      "expectedSource": "supabase_page_reports_memory",
+      "expectedRoute": "local_reasoning",
+      "actualActivationLevel": "unknown",
+      "actualIntent": "not_logged",
+      "failureType": "not_logged",
+      "fixNeeded": "Should activate Level 4 strategy/recommendation, not section status."
+    }
+  ]
+}

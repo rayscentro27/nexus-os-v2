@@ -1,18 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { buildHermesResponse } from '../data/hermesWorkroomData';
 import { hermesStore } from '../lib/hermesChatStore';
 import { recordActivity } from '../lib/hermesActivityJournal';
-import { buildLiveSupabaseContext, buildWebSearchResponse } from '../lib/hermesLiveContext';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
-import { orchestrateHermes } from '../lib/hermesOrchestrator';
-import { hermesModelChat } from '../lib/hermesProviders';
-import { getModelAvailability } from '../lib/hermesModelRoutingPolicy';
-import { getRecentUsageSummary, getUsageEntries, getTotalTokensUsed } from '../lib/hermesModelUsageLedger';
-import { getCostAdvice, getCostReductionAnswer } from '../lib/hermesModelCostAdvisor';
-import { estimateModelCallCost } from '../lib/hermesModelCostEstimator';
-import { isSectionStatusQuestion, buildSectionStatusAnswer } from '../lib/nexusSectionStatusRegistry';
-import { isCeoSummaryRequest, isDailyActivityQuestion } from '../lib/hermesPlainEnglishTranslator';
-import { buildDailySummary, buildCeoDailySummary } from '../lib/hermesDailyActivityTranslator';
+import { handleHermesMessage, getCapabilityBadge } from '../lib/hermesBrainPipeline';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data and use a live model when the question warrants it. Web search is not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -33,188 +23,40 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     const clean = (text || '').trim();
     if (!clean) return;
 
-    const lower = clean.toLowerCase();
     const now = Date.now();
     const userMsg = { id: `${now}-ray`, role: 'ray', text: clean };
 
     let responseText = '';
-    let liveSource = null;
-    let modelSource = null;
+    let source = 'local';
 
     try {
-      // ── 1. Trading safety: execution requests blocked FIRST ──
-      if (/\b(can you\s+)?(place\s+a\s+trade|execute\s+(this\s+)?trade|buy\s+\w+|sell\s+\w+|turn\s+on\s+live\s+trading|connect\s+funded|start\s+trading|open\s+a\s+position|make\s+a\s+trade)\b/i.test(lower)) {
-        responseText = buildSectionStatusAnswer(lower);
-        modelSource = 'section_status_registry';
-      }
+      // ── Use unified brain pipeline — single entry point ──
+      const brainResult = await handleHermesMessage({
+        message: clean,
+        surface: 'full_workroom',
+        pageId: activePage || undefined,
+        route: window.location.hash,
+        currentPageContext: { pageId: activePage, visibleItems, selectedItem, availableActions },
+      });
+      responseText = brainResult.text;
+      source = brainResult.sourceMode;
 
-      // ── 2. Daily activity questions → activity journal (no model) ──
-      if (!modelSource && isDailyActivityQuestion(lower)) {
-        const dateMatch = /\b(yesterday|last\s+day)\b/i.test(lower);
-        responseText = buildDailySummary(dateMatch ? 'yesterday' : 'today');
-        modelSource = 'daily_activity_translator';
-      }
-
-      // ── 3. CEO summary requests → registry + journal (no model) ──
-      if (!modelSource && isCeoSummaryRequest(lower)) {
-        responseText = buildCeoDailySummary('today');
-        modelSource = 'ceo_summary_translator';
-      }
-
-      // ── 4. Section status questions → registry (no model) ──
-      if (!modelSource && isSectionStatusQuestion(lower)) {
-        responseText = buildSectionStatusAnswer(lower);
-        modelSource = 'section_status_registry';
-      }
-
-      // ── 5. Model status/cost questions → local data (no model) ──
-      if (!modelSource && /\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model|what did that model call cost|how can we reduce token cost|was that model call necessary|what route did you use|what did that answer cost)\b/i.test(lower)) {
-        const avail = getModelAvailability();
-        const recentEntries = getUsageEntries().slice(-5);
-        const lastModelCall = recentEntries.filter(e => e.wasModelCalled).pop();
-        if (/\b(are you using a live model|did you use a model)\b/i.test(lower)) {
-          if (!avail.configured) {
-            responseText = `No, the Hermes model is not configured yet. All my answers come from local context and Supabase data.`;
-          } else if (lastModelCall) {
-            responseText = `Yes, I used the model for the last relevant question. Provider: ${lastModelCall.modelProvider}. Model: ${lastModelCall.modelName}. For simple status questions like this, I use local context to save tokens.`;
-          } else {
-            responseText = `The model gateway is configured (${avail.provider}), but no model call has been made yet in this session. I answer most questions from local context without spending tokens.`;
-          }
-        } else if (/\bwhat model did you use\b/i.test(lower)) {
-          if (lastModelCall) {
-            const costInfo = lastModelCall.costKnown
-              ? `Estimated cost: $${(lastModelCall.estimatedTotalCostUsd || 0).toFixed(4)}.`
-              : `Cost: pricing not configured.`;
-            responseText = `Last model call: Provider: ${lastModelCall.modelProvider}. Model: ${lastModelCall.modelName}. Route: ${lastModelCall.route}. Tokens: ~${lastModelCall.estimatedInputTokens} in, ~${lastModelCall.estimatedOutputTokens} out. ${costInfo}`;
-          } else {
-            responseText = `No model has been called yet in this session. All answers are from local context.`;
-          }
-        } else if (/\bhow are you controlling token|what is using tokens\b/i.test(lower)) {
-          const { input, output, calls, totalCostUsd } = getTotalTokensUsed();
-          const usage = getRecentUsageSummary(3);
-          const costStr = totalCostUsd > 0 ? `\n• Total estimated cost: $${totalCostUsd.toFixed(4)}` : '';
-          responseText = `Token cost controls:\n• Routing policy decides if a question needs a model (most don't)\n• Context is packed within budget (max 6000 tokens for primary model)\n• Output is capped at 1200 tokens\n• Background jobs default to no model\n• Usage is logged locally with cost estimates${costStr}\n\nTotal this session: ${calls} calls, ~${input} input tokens, ~${output} output tokens.\n\nRecent usage:\n${usage}`;
-        } else if (/\bwhat did that model call cost\b/i.test(lower) || /\bwhat did that answer cost\b/i.test(lower)) {
-          if (lastModelCall) {
-            const cost = estimateModelCallCost({
-              provider: lastModelCall.modelProvider,
-              model: lastModelCall.modelName,
-              estimatedInputTokens: lastModelCall.estimatedInputTokens,
-              estimatedOutputTokens: lastModelCall.estimatedOutputTokens,
-              route: lastModelCall.route,
-            });
-            const advice = getCostAdvice({
-              route: lastModelCall.route,
-              reason: lastModelCall.skippedReason || lastModelCall.promptType,
-              provider: lastModelCall.modelProvider,
-              model: lastModelCall.modelName,
-              estimatedInputTokens: lastModelCall.estimatedInputTokens,
-              estimatedOutputTokens: lastModelCall.estimatedOutputTokens,
-              wasModelCalled: lastModelCall.wasModelCalled,
-            });
-            responseText = `Last model call:\n• Provider: ${lastModelCall.modelProvider}\n• Model: ${lastModelCall.modelName}\n• Route: ${lastModelCall.route}\n• Tokens: ~${lastModelCall.estimatedInputTokens} in, ~${lastModelCall.estimatedOutputTokens} out\n• Estimated cost: ${cost.displayCost}\n• Duration: ${lastModelCall.durationMs}ms\n\n${advice.summary}`;
-          } else {
-            responseText = `No model call has been made yet in this session, so no tokens have been spent. Cost: $0.00.`;
-          }
-        } else if (/\bhow can we reduce token cost\b/i.test(lower)) {
-          responseText = getCostReductionAnswer();
-        } else if (/\bwas that model call necessary\b/i.test(lower)) {
-          if (lastModelCall) {
-            const advice = getCostAdvice({
-              route: lastModelCall.route,
-              reason: lastModelCall.skippedReason || lastModelCall.promptType,
-              provider: lastModelCall.modelProvider,
-              model: lastModelCall.modelName,
-              estimatedInputTokens: lastModelCall.estimatedInputTokens,
-              estimatedOutputTokens: lastModelCall.estimatedOutputTokens,
-              wasModelCalled: lastModelCall.wasModelCalled,
-            });
-            responseText = `Last model call necessity:\n• Route: ${lastModelCall.route}\n• Was necessary: ${advice.wasNecessary ? 'Yes' : 'No'}\n• Cheaper alternative: ${advice.cheaperAlternative}\n\n${advice.summary}`;
-          } else {
-            responseText = `No model call has been made yet in this session.`;
-          }
-        } else if (/\bwhat route did you use\b/i.test(lower)) {
-          if (lastModelCall) {
-            responseText = `Last route: ${lastModelCall.route}\n• Reason: ${lastModelCall.whyRouteChosen || lastModelCall.skippedReason || lastModelCall.promptType}\n• Cheaper alternative: ${lastModelCall.cheaperAlternativeRoute || 'none'}\n• Model called: ${lastModelCall.wasModelCalled ? 'yes' : 'no'}`;
-          } else {
-            responseText = `No route has been used yet in this session.`;
-          }
-        } else if (/\bcan you use ollama\b/i.test(lower)) {
-          responseText = avail.configured
-            ? `Yes, Ollama is available as a fallback provider. The Mac Mini has qwen2.5:0.5b and gemma3:1b installed. Ollama is used as a fallback when OpenRouter is unavailable, not as the primary model.`
-            : `Ollama is installed on the Mac Mini and the Edge Function supports it as a fallback provider, but the Hermes model is not configured yet.`;
-        } else if (/\bcan you use openrouter\b/i.test(lower)) {
-          responseText = avail.configured
-            ? `Yes, OpenRouter is the primary model path. The OPENROUTER_API_KEY is present in Supabase Edge Function secrets.`
-            : `OpenRouter is the recommended primary model path, but HERMES_MODEL is not set yet. The OPENROUTER_API_KEY is present.`;
-        }
-        modelSource = 'local_status';
-      }
-
-      // ── 6. Enrich with live Supabase/web data (if no sync answer yet) ──
-      if (!modelSource) {
-        const orchestration = orchestrateHermes(clean, Boolean(activePage));
-        const isSupabaseQuery = orchestration.shouldQuerySupabase;
-        const isWebQuery = orchestration.shouldQueryWeb;
-
-        if (isSupabaseQuery) {
-          setLoading(true);
-          try {
-            const liveCtx = await buildLiveSupabaseContext(clean);
-            if (liveCtx.liveData) {
-              responseText = orchestration.routing.intent === 'run_nexus_audit' ? `${responseText}\n\n${liveCtx.text}` : liveCtx.text;
-              liveSource = liveCtx.source;
-            }
-          } catch (e) { /* Keep sync response on error */ }
-          setLoading(false);
-        }
-
-        if (isWebQuery) {
-          setLoading(true);
-          try {
-            const webResult = await buildWebSearchResponse(clean);
-            responseText = webResult.text;
-            liveSource = webResult.source;
-          } catch (e) { /* Keep sync response on error */ }
-          setLoading(false);
-        }
-
-        // Try routed model chat for higher-value questions (only if no sync answer yet)
-        if (!responseText) {
-          const result = buildHermesResponse(clean, activeSpecialist, activePage, {
-            visibleItems,
-            selectedItem,
-            availableActions,
-          });
-          responseText = result.text;
-
-          if (!modelSource) {
-            const modelResult = await hermesModelChat(clean, {
-              visibleItems,
-              selectedItem,
-              pageSummary: activePage || undefined,
-            });
-            if (modelResult.source === 'model' && modelResult.text) {
-              responseText = modelResult.text;
-              modelSource = 'model';
-            } else if (modelResult.source === 'model_fallback_local' && modelResult.text) {
-              responseText = modelResult.text;
-              modelSource = 'model_fallback_local';
-            }
-          }
-        }
+      // Ensure we always have an answer
+      if (!responseText) {
+        responseText = 'I am not sure how to answer that. Can you tell me which page or section you are asking about?';
+        source = 'local';
       }
     } catch (err) {
       console.error('[HermesChatPanel] send error:', err);
       responseText = 'I hit a local routing error while answering that. I did not execute anything. Try again or open the full Hermes Workroom.';
-      modelSource = 'error_fallback';
+      source = 'error_fallback';
     }
 
     const hermesMsg = {
       id: `${now}-hermes`,
       role: 'hermes',
       text: responseText,
-      source: modelSource || liveSource || 'local',
+      source,
     };
     setMessages(current => {
       const next = [...current, userMsg, hermesMsg];
@@ -228,7 +70,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
       route: window.location.hash,
       eventType: 'hermes_message',
       title: `Hermes chat: ${clean.slice(0, 80)}`,
-      summary: `User asked: ${clean.slice(0, 120)}. Source: ${modelSource || liveSource || 'local'}.`,
+      summary: `User asked: ${clean.slice(0, 120)}. Source: ${source}.`,
       entities: [],
       status: 'completed',
       importance: 'low',
@@ -243,13 +85,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
   }, []);
 
   const statusLabel = isSupabaseConfigured ? 'Live Supabase' : 'Local context';
-  const modelAvail = getModelAvailability();
-  const modelStatus = modelAvail.configured ? 'Model Ready' : 'No model';
-  const badgeLabel = isSupabaseConfigured && modelAvail.configured
-    ? 'Live Supabase + Model Ready'
-    : isSupabaseConfigured
-    ? 'Live Supabase + Local Context'
-    : 'Local Context';
+  const badgeLabel = getCapabilityBadge();
   return <section className="nxos-chat-panel">
     <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · {badgeLabel}</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : statusLabel}</span></header>
     <div className="nxos-chat-log" aria-live="polite">{messages.map((message) => <HermesMessageBubble key={message.id} message={message} onDelegate={(item) => onPlanCreated?.({ id:`plan-${Date.now()}`,prompt:item.text,specialist:activeSpecialist,status:'queued_local_safe' })} onReview={onReviewCreated} onSpecialist={onSpecialistRequested} />)}<div ref={end} /></div>

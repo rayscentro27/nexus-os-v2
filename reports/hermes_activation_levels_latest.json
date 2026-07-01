@@ -1,0 +1,77 @@
+{
+  "reportType": "hermes_activation_levels",
+  "generatedAt": "2026-07-01T00:00:00.000Z",
+  "levels": [
+    {
+      "level": 0,
+      "name": "Safety Gate",
+      "trigger": "publish/send/trade/charge/dispute/delete/run shell/start scheduler/live client write",
+      "route": "blocked_or_gated",
+      "modelRoute": "no_model",
+      "source": "safety_gate",
+      "description": "Execution verbs blocked. Requires Ray Review approval gate. Model not used unless drafting an approval summary."
+    },
+    {
+      "level": 1,
+      "name": "Meta/Status/Cost/Process/Local Facts",
+      "trigger": "model/cost/sections/processes/reports/settings/today/capability/routing trace questions",
+      "route": "no_model",
+      "modelRoute": "no_model",
+      "source": "local_reports_usage_ledger_activity_journal_capability_state",
+      "description": "Answerable from local reports, usage ledger, activity journal, capability state. Never triggers a model call."
+    },
+    {
+      "level": 2,
+      "name": "Live Supabase Retrieval",
+      "trigger": "approvals, business opportunities, clients, research rows, monetization, Ray Review, live records",
+      "route": "supabase_query",
+      "modelRoute": "no_model",
+      "source": "live_supabase_first",
+      "description": "Queries authenticated Supabase tables. Falls back to static with honest labeling. Stores results in conversation memory."
+    },
+    {
+      "level": 3,
+      "name": "Conversation Memory / Follow-up Resolution",
+      "trigger": "number 3, that one, pick one, do that, how do we implement it, monthly subscription, named entity",
+      "route": "conversation_memory",
+      "modelRoute": "local_reasoning",
+      "source": "previous_ranked_listed_selected_items",
+      "description": "Resolves follow-up references from previous ranked/listed/selected items. Never asks generic clarification when memory exists."
+    },
+    {
+      "level": 4,
+      "name": "Local Reasoning",
+      "trigger": "recommend, prioritize, what should I do next, fastest money move, implementation plan, business strategy",
+      "route": "local_reasoning",
+      "modelRoute": "local_reasoning",
+      "source": "supabase_page_context_reports_memory",
+      "description": "Local reasoning from Supabase + page context + reports + memory. Model is NOT used unless local reasoning is insufficient."
+    },
+    {
+      "level": 5,
+      "name": "Model Reasoning",
+      "trigger": "deep synthesis, polished writing, complex strategy, multi-source analysis",
+      "route": "model_reasoning",
+      "modelRoute": "cheap_model",
+      "source": "packed_context_cost_logged",
+      "description": "Model reasoning with packed context and cost logging. Only activates when Level 4 local reasoning is insufficient."
+    },
+    {
+      "level": 6,
+      "name": "Approval/Action Layer",
+      "trigger": "create review card, prepare task, send to specialist, run dry-run, external action",
+      "route": "approval_gated_workflow",
+      "modelRoute": "no_model",
+      "source": "task_requests_ray_review",
+      "description": "Action queued through Ray Review approval workflow. No direct execution."
+    }
+  ],
+  "routingRules": {
+    "level0Overrides": "Level 0 is checked first and overrides all other levels",
+    "level3Before1and2": "Level 3 (follow-up) is checked before Level 1 and 2 to catch references that need memory",
+    "level4Before5": "Level 4 (local reasoning) is tried before Level 5 (model) to minimize model usage",
+    "modelNeverForStatus": "Level 1 questions never trigger a model call",
+    "modelNeverForCost": "Cost/token questions never trigger a model call",
+    "supabaseFirst": "Level 2 always tries live Supabase before falling back to static"
+  }
+}

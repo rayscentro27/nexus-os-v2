@@ -1034,7 +1034,7 @@ function handleUnclear(message: string, pageContext: PageContext | null): Hermes
 
   const quotedRequest = message.trim() || '(empty request)';
   const pageSource = pageContext ? `${pageContext.pageTitle} page context` : 'no current page context';
-  const responseText = `You asked: "${quotedRequest}." I checked ${pageSource}, local bundled context, and local activity memory. I could not determine a specific action or target. Could you clarify what you would like me to do?\n\nI can check live Supabase data (when connected), page context, reports, or local memory. What would you like me to focus on?`;
+  const responseText = `You asked: "${quotedRequest}." I checked ${pageSource}, local bundled context, and local activity memory, but no matching entity or action exists. Name one page, offer, client, or intended action and I will continue from that target.`;
 
   return {
     text: responseText,

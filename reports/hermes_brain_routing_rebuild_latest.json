@@ -1,0 +1,43 @@
+{
+  "reportType": "hermes_brain_routing_rebuild",
+  "generatedAt": "2026-07-01T16:10:00-07:00",
+  "status": "implemented",
+  "oldPathsFound": [
+    "HermesChatPanel contained independent status, Supabase, model, and fallback routing",
+    "HermesInlineDrawer contained an independent model-call branch",
+    "HermesQuickPanel delegates into the inline drawer",
+    "hermesChatStore and hermesActivityJournal did not record activation decisions"
+  ],
+  "unifiedPipeline": {
+    "entryPoint": "src/lib/hermesBrainPipeline.ts#handleHermesMessage",
+    "surfaces": ["full_workroom", "inline_drawer"],
+    "modelCallsOwnedByPipeline": true,
+    "structuredResponse": true
+  },
+  "activationLevelEnforcement": "Seven levels are detected before answer construction; safety overrides all and status/cost routes never call the model.",
+  "incorrectRoutingFindings": [
+    "Business strategy could fall into section-status output",
+    "Follow-up references were inconsistently resolved between surfaces",
+    "Model calls occurred in surface components after routing",
+    "Pre-patch messages had no activation/source trace"
+  ],
+  "supabaseAccessState": "Distinct available, blocked-by-auth, blocked-by-RLS, table-empty, not-used, and not-configured states. Runtime live claims require a successful query.",
+  "conversationMemory": "Tracks listed, ranked, recommended, selected, referenced, query, intent, page, plan, question, and answer summary context.",
+  "businessOpportunityReasoning": "Lists and stores opportunities, ranks the $97 Readiness Review first, resolves number 3 and named subscription references, and produces approval-gated implementation plans.",
+  "routingTrace": {
+    "storageKey": "nexus-hermes-routing-trace-v1",
+    "boundedEntries": 100,
+    "messageLimit": 500,
+    "redaction": ["email addresses", "token-like values"]
+  },
+  "manualBrowserVerification": {
+    "inlineDrawer": "passed opportunity list, recommendation, number-3 resolution, and approval-draft checks",
+    "fullWorkroom": "passed low-cost 30-day recommendation and routing-trace/model/Supabase diagnostic checks",
+    "liveSupabase": "auth-blocked in the local smoke browser; no live-data claim was made"
+  },
+  "remainingBlockers": [
+    "Live Supabase state depends on an authenticated admin browser session and RLS-permitted queries",
+    "Netlify production verification requires the pushed commit to deploy",
+    "No external actions were executed; Ray Review creation remains a draft-only response"
+  ]
+}

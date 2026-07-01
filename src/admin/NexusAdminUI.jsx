@@ -21,7 +21,7 @@ import MarketingDraftsPanel from '../components/MarketingDraftsPanel'
 import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
-import { hermesResponseRouter } from '../lib/hermesResponseRouter'
+import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
 import ErrorBoundary from '../components/ErrorBoundary'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
@@ -298,11 +298,12 @@ function Sidebar({ activePage, onNavigate }) {
 }
 
 function Topbar({ email }) {
+  const badge = getCapabilityBadge();
   return (
     <header className="topbar">
       <div className="searchbar"><Icon name="Search" size={20} /><span>Search across Nexus OS v2...</span><kbd>⌘K</kbd></div>
       <a className="client-portal-link" href="/client">View Client Portal</a>
-      <div className="hermes-status"><Icon name="Activity" size={20} />Hermes Advisor <span>• Live Supabase + Model Ready</span></div>
+      <div className="hermes-status"><Icon name="Activity" size={20} />Hermes Advisor <span>• {badge}</span></div>
       <div className="profile"><span>{email || 'goclearonline@gmail.com'}</span><b>GO</b><Icon name="ChevronDown" size={16} /></div>
     </header>
   )
@@ -364,9 +365,9 @@ function Departments() {
   )
 }
 
-function hermesAnswer(question) {
-  const result = hermesResponseRouter({ message: question });
-  return result.text;
+async function hermesAnswer(question) {
+  const result = await handleHermesMessage({ message: question, surface: 'specialist', currentRoute: window.location.hash })
+  return result.text
 }
 
 // Report-backed Hermes advisor. It answers from the latest generated cycle snapshot.
@@ -386,7 +387,7 @@ function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', c
       )}
       <form
         className="ask-row"
-        onSubmit={(e) => { e.preventDefault(); if (text.trim()) setAnswer(hermesAnswer(text)); setText('') }}
+        onSubmit={async (e) => { e.preventDefault(); if (text.trim()) setAnswer(await hermesAnswer(text)); setText('') }}
       >
         <input
           type="text"
