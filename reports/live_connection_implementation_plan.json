@@ -1,0 +1,30 @@
+{
+  "auditDate": "2026-06-30",
+  "repoCommit": "5a0ea35",
+  "tables": [
+    {"name": "task_requests", "useCase": "Ray Review items", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "approvals", "useCase": "Approval decisions", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "nexus_events", "useCase": "Activity events", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "system_health", "useCase": "System health", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": false, "rlsUpdate": false, "frontendRead": true, "frontendWrite": false},
+    {"name": "admin_users", "useCase": "Admin users", "pk": "uuid->auth.users", "tenantId": false, "statusField": "active", "rlsInsert": false, "rlsUpdate": false, "frontendRead": "self-only", "frontendWrite": false},
+    {"name": "research_sources", "useCase": "Research sources", "pk": "uuid", "tenantId": false, "statusField": null, "rlsInsert": false, "rlsUpdate": false, "frontendRead": true, "frontendWrite": false},
+    {"name": "research_runs", "useCase": "Research runs", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "business_opportunities", "useCase": "Business opportunities", "pk": "uuid", "tenantId": true, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "monetization_opportunities", "useCase": "Monetization offers", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "client_profiles", "useCase": "Client profiles", "pk": "uuid", "tenantId": true, "statusField": null, "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "agent_jobs", "useCase": "Scheduler jobs", "pk": "uuid", "tenantId": false, "statusField": "status", "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true},
+    {"name": "ops_incidents", "useCase": "Ops incidents", "pk": "uuid", "tenantId": false, "statusField": null, "rlsInsert": true, "rlsUpdate": true, "frontendRead": true, "frontendWrite": true}
+  ],
+  "implementationChanges": [
+    {"file": "src/lib/liveDataLoader.ts", "action": "create", "description": "Shared live data loading utility with Supabase-first + static fallback"},
+    {"file": "src/components/RayReviewCenter.jsx", "action": "rewrite", "description": "Load from task_requests, persist decisions to Supabase, show source labels"},
+    {"file": "src/components/RayReviewCard.jsx", "action": "update", "description": "Add persisting state, data source tags, Supabase receipt details"},
+    {"file": "src/lib/hermesSupabaseContextAdapter.ts", "action": "rewrite", "description": "Async live Supabase queries with honest results"},
+    {"file": "src/lib/hermesLiveContext.ts", "action": "create", "description": "Live context builder for Hermes Supabase + web queries"},
+    {"file": "src/components/HermesChatPanel.jsx", "action": "update", "description": "Async send with live context enrichment"},
+    {"file": "src/components/HermesInlineDrawer.jsx", "action": "update", "description": "Async send with live context enrichment"},
+    {"file": "tests/supabase_connection_truth.test.ts", "action": "update", "description": "Update tests for live adapter behavior"},
+    {"file": "tests/ray_review_persistence.test.ts", "action": "create", "description": "Ray Review persistence proof tests"},
+    {"file": "tests/hermes_live_context.test.ts", "action": "create", "description": "Hermes live context tests"}
+  ]
+}

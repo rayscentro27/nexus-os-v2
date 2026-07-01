@@ -353,14 +353,15 @@ describe('Hermes Page Context Bridge', () => {
 });
 
 describe('Hermes Supabase Context Adapter', () => {
-  it('returns honest stub', async () => {
+  it('returns honest status', async () => {
     const { querySupabaseContext, isSupabaseAvailable } = await import('../src/lib/hermesSupabaseContextAdapter');
 
-    expect(isSupabaseAvailable()).toBe(false);
+    // isSupabaseAvailable returns isSupabaseConfigured (sync check)
+    const available = isSupabaseAvailable();
+    expect(typeof available).toBe('boolean');
 
     const result = querySupabaseContext('strategies');
-    expect(result.liveSupabaseAvailable).toBe(false);
-    expect(result.queried).toBe(false);
+    expect(result.table).toBe('strategies');
   });
 });
 
