@@ -7,9 +7,15 @@
  * - "What is using tokens?"
  * - "Did any background job use a model?"
  * - "What was skipped to save cost?"
+ * - "What did that model call cost?"
+ * - "Was that model call necessary?"
+ * - "How can we reduce token cost?"
  *
  * Never logs: secrets, raw prompts, full .env, private keys, PII.
  */
+
+import { estimateModelCallCost } from './hermesModelCostEstimator';
+import { getCostAdvice } from './hermesModelCostAdvisor';
 
 export interface UsageEntry {
   id: string;
@@ -20,6 +26,16 @@ export interface UsageEntry {
   promptType: string;
   estimatedInputTokens: number;
   estimatedOutputTokens: number;
+  estimatedTotalTokens: number;
+  estimatedInputCostUsd: number;
+  estimatedOutputCostUsd: number;
+  estimatedTotalCostUsd: number;
+  costKnown: boolean;
+  costConfidence: string;
+  costReductionAdvice: string;
+  wasModelNecessary: boolean;
+  cheaperAlternativeRoute: string;
+  whyRouteChosen: string;
   contextSources: string[];
   wasModelCalled: boolean;
   skippedReason: string;
@@ -56,13 +72,43 @@ function persistEntries(entries: UsageEntry[]): void {
 }
 
 /**
- * Log a model call attempt.
+ * Log a model call attempt with cost estimates.
  */
-export function logModelAttempt(entry: Omit<UsageEntry, 'id' | 'timestamp'>): UsageEntry {
+export function logModelAttempt(entry: Omit<UsageEntry, 'id' | 'timestamp' | 'estimatedTotalTokens' | 'estimatedInputCostUsd' | 'estimatedOutputCostUsd' | 'estimatedTotalCostUsd' | 'costKnown' | 'costConfidence' | 'costReductionAdvice' | 'wasModelNecessary' | 'cheaperAlternativeRoute' | 'whyRouteChosen'>): UsageEntry {
+  // Calculate cost estimates
+  const cost = estimateModelCallCost({
+    provider: entry.modelProvider,
+    model: entry.modelName,
+    estimatedInputTokens: entry.estimatedInputTokens,
+    estimatedOutputTokens: entry.estimatedOutputTokens,
+    route: entry.route,
+  });
+
+  // Get cost advice
+  const advice = getCostAdvice({
+    route: entry.route,
+    reason: entry.skippedReason || entry.promptType,
+    provider: entry.modelProvider,
+    model: entry.modelName,
+    estimatedInputTokens: entry.estimatedInputTokens,
+    estimatedOutputTokens: entry.estimatedOutputTokens,
+    wasModelCalled: entry.wasModelCalled,
+  });
+
   const full: UsageEntry = {
     ...entry,
     id: generateId(),
     timestamp: new Date().toISOString(),
+    estimatedTotalTokens: entry.estimatedInputTokens + entry.estimatedOutputTokens,
+    estimatedInputCostUsd: cost.estimatedInputCostUsd,
+    estimatedOutputCostUsd: cost.estimatedOutputCostUsd,
+    estimatedTotalCostUsd: cost.estimatedTotalCostUsd,
+    costKnown: cost.costKnown,
+    costConfidence: cost.confidence,
+    costReductionAdvice: advice.summary,
+    wasModelNecessary: advice.wasNecessary,
+    cheaperAlternativeRoute: advice.cheaperAlternative,
+    whyRouteChosen: entry.skippedReason || entry.promptType,
   };
   const entries = getStoredEntries();
   entries.push(full);
@@ -99,25 +145,27 @@ export function getUsageEntries(): UsageEntry[] {
 }
 
 /**
- * Get total estimated tokens used across all logged calls.
+ * Get total estimated tokens and cost used across all logged calls.
  */
-export function getTotalTokensUsed(): { input: number; output: number; calls: number } {
+export function getTotalTokensUsed(): { input: number; output: number; calls: number; totalCostUsd: number } {
   const entries = getUsageEntries();
   let input = 0;
   let output = 0;
   let calls = 0;
+  let totalCostUsd = 0;
   for (const e of entries) {
     if (e.wasModelCalled) {
       input += e.estimatedInputTokens;
       output += e.estimatedOutputTokens;
       calls++;
+      totalCostUsd += e.estimatedTotalCostUsd || 0;
     }
   }
-  return { input, output, calls };
+  return { input, output, calls, totalCostUsd };
 }
 
 /**
- * Get recent usage summary for status answers.
+ * Get recent usage summary with cost for status answers.
  */
 export function getRecentUsageSummary(lastN = 5): string {
   const entries = getStoredEntries().slice(-lastN);
@@ -126,24 +174,36 @@ export function getRecentUsageSummary(lastN = 5): string {
   return entries.map((e) => {
     const time = new Date(e.timestamp).toLocaleTimeString();
     if (e.wasModelCalled) {
-      return `${time}: ${e.route} via ${e.modelProvider}/${e.modelName} (~${e.estimatedInputTokens} tokens in, ~${e.estimatedOutputTokens} out)`;
+      const costStr = e.costKnown
+        ? ` est. $${(e.estimatedTotalCostUsd || 0).toFixed(4)}`
+        : ' pricing unknown';
+      return `${time}: ${e.route} via ${e.modelProvider}/${e.modelName} (~${e.estimatedInputTokens} in, ~${e.estimatedOutputTokens} out)${costStr}`;
     }
     return `${time}: ${e.route} — skipped: ${e.skippedReason}`;
   }).join('\n');
 }
 
 /**
- * Get answer to "What did the model do recently?"
+ * Get answer to "What did the model do recently?" with cost info.
  */
 export function getModelActivityAnswer(): string {
-  const { input, output, calls } = getTotalTokensUsed();
+  const { input, output, calls, totalCostUsd } = getTotalTokensUsed();
   if (calls === 0) return 'No model calls have been made yet. All answers have been from local context and Supabase data.';
 
   const entries = getStoredEntries();
   const recent = entries.filter((e) => e.wasModelCalled).slice(-3);
-  const breakdown = recent.map((e) => `• ${e.promptType}: ${e.modelProvider}/${e.modelName} (~${e.estimatedInputTokens} tokens)`).join('\n');
+  const breakdown = recent.map((e) => {
+    const costStr = e.costKnown
+      ? ` est. $${(e.estimatedTotalCostUsd || 0).toFixed(4)}`
+      : ' pricing unknown';
+    return `• ${e.promptType}: ${e.modelProvider}/${e.modelName} (~${e.estimatedInputTokens} in, ~${e.estimatedOutputTokens} out)${costStr}`;
+  }).join('\n');
 
-  return `Model usage summary:\n• Total calls: ${calls}\n• Total estimated input tokens: ~${input}\n• Total estimated output tokens: ~${output}\n\nRecent calls:\n${breakdown}`;
+  const costStr = totalCostUsd > 0
+    ? `\n• Total estimated cost: $${totalCostUsd.toFixed(4)}`
+    : '';
+
+  return `Model usage summary:\n• Total calls: ${calls}\n• Total estimated input tokens: ~${input}\n• Total estimated output tokens: ~${output}${costStr}\n\nRecent calls:\n${breakdown}`;
 }
 
 /**

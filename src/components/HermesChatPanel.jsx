@@ -7,7 +7,9 @@ import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { orchestrateHermes } from '../lib/hermesOrchestrator';
 import { hermesModelChat } from '../lib/hermesProviders';
 import { getModelAvailability } from '../lib/hermesModelRoutingPolicy';
-import { getRecentUsageSummary, getModelActivityAnswer, getUsageEntries } from '../lib/hermesModelUsageLedger';
+import { getRecentUsageSummary, getModelActivityAnswer, getUsageEntries, getTotalTokensUsed } from '../lib/hermesModelUsageLedger';
+import { getCostAdvice, getCostReductionAnswer } from '../lib/hermesModelCostAdvisor';
+import { estimateModelCallCost } from '../lib/hermesModelCostEstimator';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -43,7 +45,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
 
     // Check for model status questions — answer directly from local data
     const lower = clean.toLowerCase();
-    if (/\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model|what did that model call cost)\b/i.test(lower)) {
+    if (/\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model|what did that model call cost|how can we reduce token cost|was that model call necessary|what route did you use|what did that answer cost)\b/i.test(lower)) {
       const avail = getModelAvailability();
       const recentEntries = getUsageEntries().slice(-5);
       const lastModelCall = recentEntries.filter(e => e.wasModelCalled).pop();
@@ -57,18 +59,62 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
         }
       } else if (/\bwhat model did you use\b/i.test(lower)) {
         if (lastModelCall) {
-          responseText = `Last model call: Provider: ${lastModelCall.modelProvider}. Model: ${lastModelCall.modelName}. Route: ${lastModelCall.route}. Tokens: ~${lastModelCall.estimatedInputTokens} in, ~${lastModelCall.estimatedOutputTokens} out.`;
+          const costInfo = lastModelCall.costKnown
+            ? `Estimated cost: $${(lastModelCall.estimatedTotalCostUsd || 0).toFixed(4)}.`
+            : `Cost: pricing not configured.`;
+          responseText = `Last model call: Provider: ${lastModelCall.modelProvider}. Model: ${lastModelCall.modelName}. Route: ${lastModelCall.route}. Tokens: ~${lastModelCall.estimatedInputTokens} in, ~${lastModelCall.estimatedOutputTokens} out. ${costInfo}`;
         } else {
           responseText = `No model has been called yet in this session. All answers are from local context.`;
         }
       } else if (/\bhow are you controlling token|what is using tokens\b/i.test(lower)) {
+        const { input, output, calls, totalCostUsd } = getTotalTokensUsed();
         const usage = getRecentUsageSummary(3);
-        responseText = `Token cost controls:\n• Routing policy decides if a question needs a model (most don't)\n• Context is packed within budget (max 6000 tokens for primary model)\n• Output is capped at 1200 tokens\n• Background jobs default to no model\n• Usage is logged locally\n\nRecent usage:\n${usage}`;
-      } else if (/\bwhat did that model call cost\b/i.test(lower)) {
+        const costStr = totalCostUsd > 0 ? `\n• Total estimated cost: $${totalCostUsd.toFixed(4)}` : '';
+        responseText = `Token cost controls:\n• Routing policy decides if a question needs a model (most don't)\n• Context is packed within budget (max 6000 tokens for primary model)\n• Output is capped at 1200 tokens\n• Background jobs default to no model\n• Usage is logged locally with cost estimates${costStr}\n\nTotal this session: ${calls} calls, ~${input} input tokens, ~${output} output tokens.\n\nRecent usage:\n${usage}`;
+      } else if (/\bwhat did that model call cost\b/i.test(lower) || /\bwhat did that answer cost\b/i.test(lower)) {
         if (lastModelCall) {
-          responseText = `Last model call cost estimate:\n• Provider: ${lastModelCall.modelProvider}\n• Model: ${lastModelCall.modelName}\n• Input tokens: ~${lastModelCall.estimatedInputTokens}\n• Output tokens: ~${lastModelCall.estimatedOutputTokens}\n• Duration: ${lastModelCall.durationMs}ms\n• Route: ${lastModelCall.route}\n\nExact pricing depends on the provider. OpenRouter charges per-token.`;
+          const cost = estimateModelCallCost({
+            provider: lastModelCall.modelProvider,
+            model: lastModelCall.modelName,
+            estimatedInputTokens: lastModelCall.estimatedInputTokens,
+            estimatedOutputTokens: lastModelCall.estimatedOutputTokens,
+            route: lastModelCall.route,
+          });
+          const advice = getCostAdvice({
+            route: lastModelCall.route,
+            reason: lastModelCall.skippedReason || lastModelCall.promptType,
+            provider: lastModelCall.modelProvider,
+            model: lastModelCall.modelName,
+            estimatedInputTokens: lastModelCall.estimatedInputTokens,
+            estimatedOutputTokens: lastModelCall.estimatedOutputTokens,
+            wasModelCalled: lastModelCall.wasModelCalled,
+          });
+          responseText = `Last model call:\n• Provider: ${lastModelCall.modelProvider}\n• Model: ${lastModelCall.modelName}\n• Route: ${lastModelCall.route}\n• Tokens: ~${lastModelCall.estimatedInputTokens} in, ~${lastModelCall.estimatedOutputTokens} out\n• Estimated cost: ${cost.displayCost}\n• Duration: ${lastModelCall.durationMs}ms\n\n${advice.summary}`;
         } else {
-          responseText = `No model call has been made yet in this session, so no tokens have been spent.`;
+          responseText = `No model call has been made yet in this session, so no tokens have been spent. Cost: $0.00.`;
+        }
+      } else if (/\bhow can we reduce token cost\b/i.test(lower)) {
+        responseText = getCostReductionAnswer();
+      } else if (/\bwas that model call necessary\b/i.test(lower)) {
+        if (lastModelCall) {
+          const advice = getCostAdvice({
+            route: lastModelCall.route,
+            reason: lastModelCall.skippedReason || lastModelCall.promptType,
+            provider: lastModelCall.modelProvider,
+            model: lastModelCall.modelName,
+            estimatedInputTokens: lastModelCall.estimatedInputTokens,
+            estimatedOutputTokens: lastModelCall.estimatedOutputTokens,
+            wasModelCalled: lastModelCall.wasModelCalled,
+          });
+          responseText = `Last model call necessity:\n• Route: ${lastModelCall.route}\n• Was necessary: ${advice.wasNecessary ? 'Yes' : 'No'}\n• Cheaper alternative: ${advice.cheaperAlternative}\n\n${advice.summary}`;
+        } else {
+          responseText = `No model call has been made yet in this session.`;
+        }
+      } else if (/\bwhat route did you use\b/i.test(lower)) {
+        if (lastModelCall) {
+          responseText = `Last route: ${lastModelCall.route}\n• Reason: ${lastModelCall.whyRouteChosen || lastModelCall.skippedReason || lastModelCall.promptType}\n• Cheaper alternative: ${lastModelCall.cheaperAlternativeRoute || 'none'}\n• Model called: ${lastModelCall.wasModelCalled ? 'yes' : 'no'}`;
+        } else {
+          responseText = `No route has been used yet in this session.`;
         }
       } else if (/\bcan you use ollama\b/i.test(lower)) {
         responseText = avail.configured
