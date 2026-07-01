@@ -5,9 +5,9 @@
  * and generates a proper response. No more canned fallbacks.
  */
 
-import { getTimeContext, detectTimeIntent } from './hermesTimeContext';
-import { buildPageContext, type PageContext } from './hermesContextBridge';
-import { resolveEntity, setLastReferencedEntity } from './hermesEntityResolver';
+import { getTimeContext, detectTimeIntent, normalizeTimeText } from './hermesTimeContext';
+import { buildPageContext, getHermesPageRuntimeContext, type PageContext } from './hermesContextBridge';
+import { getLastReferencedEntity, resolveEntity, setLastReferencedEntity } from './hermesEntityResolver';
 import { queryMemory } from './hermesMemoryQuery';
 import { detectLearningInstruction, storeHint, findMatchingHints } from './hermesSourceHints';
 import { querySupabaseContext } from './hermesSupabaseContextAdapter';
@@ -120,6 +120,7 @@ export interface ResponseContext {
   selectedItem?: PageContext['selectedItem'];
   visibleItems?: PageContext['visibleItems'];
   availableActions?: string[];
+  gatedActions?: string[];
 }
 
 export interface HermesResponse {
@@ -134,7 +135,7 @@ export interface HermesResponse {
 
 /** Main entry point — classify, resolve, respond. */
 export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
-  const { message, pageId, route, activeTab, selectedItem, visibleItems, availableActions } = ctx;
+  const { message, pageId, route, activeTab, selectedItem, visibleItems, availableActions, gatedActions } = ctx;
 
   // 1. Check for learning instructions
   const learning = detectLearningInstruction(message);
@@ -151,12 +152,13 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
   }
 
   // 2. Build page context
+  const runtimeContext = pageId ? getHermesPageRuntimeContext(pageId) : null;
   const pageContext: PageContext | null = pageId
-    ? { ...buildPageContext(pageId, route), activeTab: activeTab || null, selectedItem: selectedItem || null, visibleItems: visibleItems || [], availableActions: availableActions || [] }
+    ? { ...buildPageContext(pageId, route), activeTab: activeTab || null, selectedItem: selectedItem || null, visibleItems: visibleItems?.length ? visibleItems : runtimeContext!.visibleItems, availableActions: availableActions?.length ? availableActions : runtimeContext!.availableActions, gatedActions: gatedActions || buildPageContext(pageId, route).gatedActions }
     : null;
 
   // 3. Classify question type
-  const questionType = classifyQuestion(message);
+  const questionType = classifyIntent(message);
 
   // 4. Route to appropriate handler
   switch (questionType) {
@@ -231,11 +233,15 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
   }
 }
 
-function classifyQuestion(text: string): QuestionType {
-  const lower = text.toLowerCase().trim();
+export function normalizeHermesText(text: string): string {
+  return normalizeTimeText(text);
+}
+
+export function classifyIntent(text: string): QuestionType {
+  const lower = normalizeHermesText(text);
 
   // Greetings
-  if (/^(hi|hello|hey|yo|sup|good morning|good afternoon|good evening|good night|howdy|hola|hey there|what's up|whats up)\b/.test(lower)) {
+  if (/^(hi|hello|hey|yo|sup|good morning|good afternoon|good evening|good night|morning|afternoon|evening|howdy|hola|hey there|what's up|whats up)\b/.test(lower)) {
     return 'greeting';
   }
 
@@ -247,6 +253,20 @@ function classifyQuestion(text: string): QuestionType {
   // Scheduling phrases
   if (detectTimeIntent(text).isSchedulingPhrase) {
     return 'scheduling';
+  }
+
+  // Questions about the current page and its controls.
+  if (/\b(what can i click here|what am i looking at|on this page)\b/.test(lower) && !/\b(first|strategy)\b/.test(lower)) {
+    return 'page_question';
+  }
+
+  if (/\b(revenue dashboard)\b/.test(lower)) {
+    return 'page_question';
+  }
+
+  // Comparison must win over generic entity references such as "that strategy".
+  if (/\b(compare|versus|vs|difference between|how does .+ compare|which is better)\b/.test(lower)) {
+    return 'comparison';
   }
 
   // Learning/memory instructions
@@ -265,11 +285,6 @@ function classifyQuestion(text: string): QuestionType {
     if (lower.includes(pattern)) {
       return 'nexus_topic';
     }
-  }
-
-  // Comparison
-  if (/\b(compare|versus|vs\.?|difference between|how does .+ compare|which is better)\b/.test(lower)) {
-    return 'comparison';
   }
 
   // Memory/history
@@ -303,7 +318,7 @@ function classifyQuestion(text: string): QuestionType {
   }
 
   // Trading
-  if (/\b(trad|oanda|vibe|forex|market|position)\b/.test(lower)) {
+  if (/\b(trade|trading|oanda|vibe|forex|market|position|paper only|paper trading)\b/.test(lower)) {
     return 'trading';
   }
 
@@ -313,7 +328,7 @@ function classifyQuestion(text: string): QuestionType {
   }
 
   // Backend queries
-  if (/\b(model|ai|llm|gpt|claude|backend|endpoint)\b/.test(lower)) {
+  if (/\b(model|ai|llm|gpt|claude|backend|endpoint|where are you getting your answers|what are your sources|explain your sources)\b/.test(lower)) {
     return 'backend_query';
   }
 
@@ -455,7 +470,14 @@ function handlePageQuestion(_message: string, pageContext: PageContext | null): 
     responseText += `There are no items currently loaded on this page. `;
   }
 
-  responseText += `What would you like to know about these?`;
+  if (pageContext.availableActions.length > 0) {
+    responseText += `Available here: ${pageContext.availableActions.join(', ')}. `;
+  }
+  if (/revenue dashboard/i.test(_message)) {
+    responseText += `The revenue dashboard is a report-backed local snapshot, not a live payment feed. Use it to identify the next evidence gap, then open the supporting report before making a revenue decision.`;
+  } else {
+    responseText += `What would you like to know about these?`;
+  }
 
   return {
     text: responseText,
@@ -467,6 +489,13 @@ function handlePageQuestion(_message: string, pageContext: PageContext | null): 
 }
 
 function handleEntityQuestion(message: string, pageContext: PageContext | null): HermesResponse {
+  if (/\b(first|top)\s+strategy\b/i.test(message) && pageContext?.pageId === 'hermes' && !pageContext.visibleItems.some(item => item.type === 'strategy')) {
+    return {
+      text: `There is no strategy visible on the Hermes Workroom page. Do you want to switch to Trading Demo and check the first paper/demo strategy there?`,
+      confidence: 'high', source: 'page_context', questionType: 'entity_question', needsClarification: true,
+      clarificationQuestion: 'Do you want to check the first strategy on Trading Demo?',
+    };
+  }
   const resolved = resolveEntity(message, pageContext);
 
   if (resolved.clarificationNeeded) {
@@ -481,6 +510,16 @@ function handleEntityQuestion(message: string, pageContext: PageContext | null):
   }
 
   if (!resolved.item) {
+    if (/\bstrategy\b/i.test(message) && pageContext?.pageId === 'hermes') {
+      return {
+        text: `There is no strategy visible on the Hermes Workroom page. Do you want to switch to Trading Demo and check the first paper/demo strategy there?`,
+        confidence: 'high',
+        source: 'page_context',
+        questionType: 'entity_question',
+        needsClarification: true,
+        clarificationQuestion: 'Do you want to check the first strategy on Trading Demo?',
+      };
+    }
     return {
       text: `I couldn't find a matching item. Could you describe what you're looking for?`,
       confidence: 'low',
@@ -513,18 +552,39 @@ function handleEntityQuestion(message: string, pageContext: PageContext | null):
 }
 
 function handleComparison(_message: string, pageContext: PageContext | null): HermesResponse {
-  if (!pageContext || pageContext.visibleItems.length < 2) {
+  const referenced = getLastReferencedEntity();
+  const asksByReference = /\b(this|that)\s+strategy\b/i.test(_message);
+  if (asksByReference && !referenced) {
     return {
-      text: `I need at least two items to compare. Could you tell me which items you'd like me to compare?`,
+      text: `I don't have a previously referenced strategy. Which strategy do you want to compare?`,
       confidence: 'low',
-      source: 'page_context',
+      source: 'entity_resolution',
       questionType: 'comparison',
       needsClarification: true,
-      clarificationQuestion: 'Which two items would you like me to compare?',
+      clarificationQuestion: 'Which strategy do you want to compare?',
     };
   }
 
-  const items = pageContext.visibleItems.slice(0, 2);
+  if (!pageContext || pageContext.visibleItems.length < 2) {
+    return {
+      text: `I need two visible items to compare. Which two strategies would you like me to compare?`,
+      confidence: 'low', source: 'page_context', questionType: 'comparison', needsClarification: true,
+      clarificationQuestion: 'Which two strategies would you like me to compare?',
+    };
+  }
+
+  const candidates = referenced
+    ? pageContext.visibleItems.filter(item => item.type === referenced.type && item.title !== referenced.title)
+    : pageContext.visibleItems;
+  if (referenced && candidates.length > 1 && /\b(another|other|different)\b/i.test(_message)) {
+    return {
+      text: `I have ${referenced.title} as the referenced strategy. Which comparison target do you want: ${candidates.slice(0, 3).map(item => item.title).join(', ')}?`,
+      confidence: 'low', source: 'entity_resolution', questionType: 'comparison', needsClarification: true,
+      clarificationQuestion: `Which strategy should I compare with ${referenced.title}?`,
+    };
+  }
+
+  const items = referenced && candidates.length > 0 ? [referenced, candidates[0]] : pageContext.visibleItems.slice(0, 2);
   let responseText = `Comparing:\n\n`;
   for (const item of items) {
     responseText += `**${item.title}**\n`;
@@ -688,7 +748,7 @@ function handleExecution(message: string, _pageContext: PageContext | null): Her
   };
 }
 
-function handleUnclear(message: string, _pageContext: PageContext | null): HermesResponse {
+function handleUnclear(message: string, pageContext: PageContext | null): HermesResponse {
   // Check for matching source hints
   const hints = findMatchingHints(message);
   if (hints.length > 0) {
@@ -703,16 +763,9 @@ function handleUnclear(message: string, _pageContext: PageContext | null): Herme
     };
   }
 
-  // Provide honest context about what we can do
-  let responseText = `I'm not sure what you're asking for. Here's what I can help with right now:\n\n`;
-  responseText += `• **Page context**: I can review what's on your current page\n`;
-  responseText += `• **Entity references**: I can resolve "this", "that", "first one", etc.\n`;
-  responseText += `• **Time/date**: I can tell you the current time and help with scheduling\n`;
-  responseText += `• **Memory**: I can recall what we've worked on (local activity journal)\n`;
-  responseText += `• **Strategy analysis**: I can help review strategies on the current page\n`;
-  responseText += `• **Learning**: You can say "remember that..." to teach me preferences\n\n`;
-  responseText += `I don't have live Supabase, web search, or real AI model access from this chat layer. I use local bundled context, browser time, and localStorage memory.\n\n`;
-  responseText += `What would you like to focus on?`;
+  const quotedRequest = message.trim() || '(empty request)';
+  const pageSource = pageContext ? `${pageContext.pageTitle} page context` : 'no current page context';
+  const responseText = `You asked: “${quotedRequest}.” I checked ${pageSource}, loaded local Nexus context, and local activity memory. I couldn't answer because the target or requested outcome is not specific enough. Do you want me to check the current page, loaded reports, local Nexus context, or create a research task?\n\nI do not have live Supabase, web, or model access in this chat. A safe next source is ${pageContext?.pageId === 'reports' ? 'the loaded report details' : 'the Reports page'}.`;
 
   return {
     text: responseText,
@@ -720,7 +773,7 @@ function handleUnclear(message: string, _pageContext: PageContext | null): Herme
     source: 'honest_fallback',
     questionType: 'unclear',
     needsClarification: true,
-    clarificationQuestion: 'What would you like help with?',
+    clarificationQuestion: 'Which source should I check: the current page, loaded reports, local Nexus context, or a research task?',
   };
 }
 

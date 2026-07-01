@@ -351,6 +351,7 @@ export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', 
     selectedItem: extraContext.selectedItem,
     visibleItems: extraContext.visibleItems,
     availableActions: extraContext.availableActions,
+    gatedActions: extraContext.gatedActions,
   });
 
   // Record activity

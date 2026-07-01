@@ -30,7 +30,19 @@ export function getLastReferencedEntity(): VisibleItem | null {
 export function resolveEntity(text: string, pageContext: PageContext | null): ResolvedEntity {
   const lower = text.toLowerCase().trim();
 
-  // "this" or "that" or "current card" — use selected or last referenced
+  // "the first one" or "first strategy" or "first item" etc.
+  const firstMatch = lower.match(/\b(first|top)\s+(strategy|item|opportunity|offer|candidate|draft|report|client|rule|action|row|card|thing)/);
+  if (firstMatch && pageContext && pageContext.visibleItems && pageContext.visibleItems.length > 0) {
+    const targetType = firstMatch[2];
+    const match = pageContext.visibleItems.find(i =>
+      i.type.toLowerCase().includes(targetType) || targetType.includes(i.type.toLowerCase())
+    ) || pageContext.visibleItems[0];
+    setLastReferencedEntity(match);
+    return { item: match, confidence: 'high', clarificationNeeded: false, source: 'visibleItem' };
+  }
+
+  // "this" or "that" or "current card" — use selected or last referenced.
+  // Run after ordinal resolution so "first strategy on this page" resolves the first strategy.
   if (/\b(this|that|current|selected)\b/.test(lower)) {
     if (pageContext?.selectedItem) {
       setLastReferencedEntity(pageContext.selectedItem);
@@ -43,17 +55,6 @@ export function resolveEntity(text: string, pageContext: PageContext | null): Re
       item: null, confidence: 'low', clarificationNeeded: true, source: 'ambiguous',
       clarificationQuestion: 'Which item are you referring to? I don\'t have a selected item on the current page.'
     };
-  }
-
-  // "the first one" or "first strategy" or "first item" etc.
-  const firstMatch = lower.match(/\b(first|top)\s+(strategy|item|opportunity|offer|candidate|draft|report|client|rule|action|row|card|thing)/);
-  if (firstMatch && pageContext && pageContext.visibleItems && pageContext.visibleItems.length > 0) {
-    const targetType = firstMatch[2];
-    const match = pageContext.visibleItems.find(i =>
-      i.type.toLowerCase().includes(targetType) || targetType.includes(i.type.toLowerCase())
-    ) || pageContext.visibleItems[0];
-    setLastReferencedEntity(match);
-    return { item: match, confidence: 'high', clarificationNeeded: false, source: 'visibleItem' };
   }
 
   // "the second one" etc.

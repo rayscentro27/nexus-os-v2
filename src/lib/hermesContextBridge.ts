@@ -86,3 +86,25 @@ export function buildFullPageContext(pageId: string, items: VisibleItem[], actio
   ctx.availableActions = actions || [];
   return ctx;
 }
+
+/** Context mirrored from the currently rendered static admin workspaces. */
+export function getHermesPageRuntimeContext(pageId: string): Pick<PageContext, 'visibleItems' | 'availableActions'> {
+  if (pageId === 'trading') {
+    return {
+      visibleItems: [
+        { type: 'strategy', title: 'Half Trend Forex Strategy', status: 'Backtested · paper/demo only', dataSource: 'local_static' },
+        { type: 'strategy', title: 'Options Income Idea', status: 'Needs Review · paper/demo only', dataSource: 'local_static' },
+        { type: 'strategy', title: 'Crypto Breakout Model', status: 'Paper Demo', dataSource: 'local_static' },
+        { type: 'strategy', title: 'AI Market Watcher', status: 'Backtested · paper/demo only', dataSource: 'local_static' },
+      ],
+      availableActions: ['Open a strategy row', 'Review paper backtest details', 'Ask Hermes about a visible strategy'],
+    };
+  }
+  if (pageId === 'reports') {
+    return {
+      visibleItems: [{ type: 'report', title: 'Revenue dashboard', status: 'Report-backed local snapshot', dataSource: 'report' }],
+      availableActions: ['Open a report', 'Review supporting evidence', 'Ask Hermes for next steps'],
+    };
+  }
+  return { visibleItems: [], availableActions: [] };
+}

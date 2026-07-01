@@ -24,6 +24,17 @@ export interface TimeWindow {
   label: string;
 }
 
+/** Matching-only normalization. Callers retain the original input for display. */
+export function normalizeTimeText(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\btodays\b/g, "today's")
+    .replace(/[^a-z0-9'\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Get the current time context from the browser. */
 export function getTimeContext(): TimeContext {
   const now = new Date();
@@ -50,7 +61,7 @@ export function getTimeContext(): TimeContext {
 /** Resolve a relative time phrase to a concrete time window. */
 export function resolveRelativeTime(phrase: string, now?: Date): TimeWindow | null {
   const base = now || new Date();
-  const lower = phrase.toLowerCase().trim();
+  const lower = normalizeTimeText(phrase);
 
   // Today/tonight/evening/this evening
   if (/^(today|tonight|this evening|this afternoon|this morning)$/.test(lower)) {
@@ -118,11 +129,11 @@ export function detectTimeIntent(text: string): {
   timeWindow: TimeWindow | null;
   timeOfDayMention: string | null;
 } {
-  const lower = text.toLowerCase().trim();
+  const lower = normalizeTimeText(text);
 
-  const isTimeQuestion = /\b(what day|what time|what date|what is today|what is the date|current time|current date|day is it|time is it)\b/.test(lower);
-  const isSchedulingPhrase = /\b(schedule|set up|plan|remind|create.*for|do.*for|handle.*for)\b/.test(lower) &&
-    /\b(this evening|tonight|tomorrow|later today|next week|in \d+ hours?|next (monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/.test(lower);
+  const isTimeQuestion = /\b(what is today's date|what date is it|what day is it|what day are we on|what is the date|today's date|today date|what time is it|current time|time now|current date)\b/.test(lower);
+  const relativeTimePattern = /\b(this evening|tonight|tomorrow(?: morning| afternoon| evening| night)?|later today|in \d+ hours?|next (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/;
+  const isSchedulingPhrase = relativeTimePattern.test(lower);
 
   let timeWindow: TimeWindow | null = null;
   let timeOfDayMention: string | null = null;

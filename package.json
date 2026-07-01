@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "test:hermes-live": "node scripts/ui/run_hermes_live_question_test.mjs",
     "seed:day1": "python3 scripts/seed_day1_event.py",
     "nexus:watch": "python3 scripts/run_nexus_continuous_operations.py --mode manual",
     "nexus:overnight": "python3 scripts/run_nexus_overnight_safe_ops.py",
