@@ -108,11 +108,11 @@ describe('Ray Review Supabase persistence path', () => {
     expect(typeof ledger.createApproval).toBe('function');
   });
 
-  it('liveDataLoader has persistDecision function', async () => {
+  it('liveDataLoader has loadSectionData and loadSection functions', async () => {
     const loader = await import('../src/lib/liveDataLoader');
-    expect(typeof loader.persistDecision).toBe('function');
-    expect(typeof loader.insertRow).toBe('function');
-    expect(typeof loader.loadLive).toBe('function');
+    expect(typeof loader.loadSectionData).toBe('function');
+    expect(typeof loader.loadSection).toBe('function');
+    expect(typeof loader.countLive).toBe('function');
   });
 
   it('RayReviewCenter component exists and can be imported', async () => {
@@ -124,14 +124,16 @@ describe('Ray Review Supabase persistence path', () => {
 
 describe('Ray Review source labeling', () => {
   it('liveDataLoader returns source label for static fallback', async () => {
-    const { loadLive } = await import('../src/lib/liveDataLoader');
-    const result = await loadLive('task_requests', [{ id: '1', title: 'test' }], {
+    const { loadSectionData } = await import('../src/lib/liveDataLoader');
+    const result = await loadSectionData('ray_review', [{ id: '1', title: 'test' }], {
+      table: 'task_requests',
       fallbackLabel: 'Ray Review cards',
     });
     // Without Supabase configured, falls back to static
-    expect(result.source).toMatch(/static_fallback|unavailable/);
-    expect(result.sourceLabel).toContain('Ray Review cards');
-    expect(result.data.length).toBe(1);
+    expect(result.sourceType).toMatch(/static_fallback|unavailable/);
+    expect(result.sectionId).toBe('ray_review');
+    expect(result.records.length).toBe(1);
+    expect(result.fallbackRecords.length).toBe(1);
   });
 
   it('countLive returns honest result when no auth session', async () => {
@@ -140,5 +142,6 @@ describe('Ray Review source labeling', () => {
     expect(result.source).toBe('unavailable');
     // May say "not configured" or "No auth session" depending on env
     expect(result.sourceLabel).toBeTruthy();
+    expect(result.count).toBe(0);
   });
 });

@@ -1,199 +1,178 @@
 /**
- * Live Data Loader — shared utility for loading data from Supabase with static fallback.
+ * Live Data Loader — shared live-first data loading for all Nexus OS sections.
  *
- * Every section uses this pattern:
- * 1. Try Supabase query (authenticated admin session, RLS-gated)
- * 2. If Supabase unavailable or returns empty, fall back to static data
- * 3. Return data + source label so UI can show "Live Supabase" or "Static fallback"
+ * Pattern: Supabase first → static fallback → honest mismatch report.
+ * Every section returns a unified result with source labels and mismatch info.
  */
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 
-export type DataSource = 'live_supabase' | 'static_fallback' | 'local_only' | 'unavailable';
+export type SourceType = 'live_supabase' | 'static_fallback' | 'report_snapshot' | 'localStorage_only' | 'unavailable';
 
-export interface LiveResult<T> {
-  data: T[];
-  source: DataSource;
-  sourceLabel: string;
+export interface SectionResult<T> {
+  ok: boolean;
+  sectionId: string;
+  sourceType: SourceType;
+  liveData: boolean;
+  tableNamesUsed: string[];
   rowCount: number;
+  staticCount: number;
+  generatedAt: string;
+  lastLoadedAt: string;
+  records: T[];
+  fallbackRecords: T[];
+  limitations: string[];
+  mismatch: string | null;
   error: string | null;
-  timestamp: string;
 }
 
-export interface LiveCount {
-  count: number;
-  source: DataSource;
-  sourceLabel: string;
-  error: string | null;
-}
-
-/** Check if Supabase is connected and we have an auth session. */
-export async function isLiveConnected(): Promise<boolean> {
+async function hasSession(): Promise<boolean> {
   if (!supabase || !isSupabaseConfigured) return false;
   try {
     const { data: { session } } = await supabase.auth.getSession();
     return Boolean(session);
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
-/** Load rows from a Supabase table with fallback to static data. */
-export async function loadLive<T extends Record<string, unknown>>(
+async function queryTable(
   table: string,
+  opts: { limit?: number; order?: string; ascending?: boolean; filters?: Array<{ column: string; value: string }> } = {},
+): Promise<{ data: unknown[]; error: string | null; count: number }> {
+  if (!supabase) return { data: [], error: 'Supabase not configured', count: 0 };
+  try {
+    let q = supabase.from(table).select('*');
+    if (opts.filters) for (const f of opts.filters) q = q.eq(f.column, f.value);
+    q = q.order(opts.order ?? 'created_at', { ascending: opts.ascending ?? false });
+    if (opts.limit) q = q.limit(opts.limit);
+    const { data, error } = await q;
+    if (error) return { data: [], error: error.message, count: 0 };
+    return { data: data ?? [], error: null, count: (data ?? []).length };
+  } catch (e) { return { data: [], error: String(e), count: 0 }; }
+}
+
+function buildResult<T>(
+  sectionId: string, sourceType: SourceType, liveData: boolean,
+  records: T[], fallbackRecords: T[], tableNamesUsed: string[],
+  limitations: string[], mismatch: string | null, error: string | null,
+): SectionResult<T> {
+  return {
+    ok: sourceType === 'live_supabase',
+    sectionId, sourceType, liveData, tableNamesUsed,
+    rowCount: records.length, staticCount: fallbackRecords.length,
+    generatedAt: new Date().toISOString(),
+    lastLoadedAt: new Date().toISOString(),
+    records, fallbackRecords, limitations, mismatch, error,
+  };
+}
+
+// ─── Section Loaders ───
+
+export async function loadSectionData<T extends Record<string, unknown>>(
+  sectionId: string,
   staticData: T[],
-  opts: {
-    limit?: number;
-    order?: string;
-    ascending?: boolean;
-    filters?: Array<{ column: string; value: string | number | boolean }>;
+  tableConfig: {
+    table: string;
     fallbackLabel?: string;
-  } = {},
-): Promise<LiveResult<T>> {
-  const timestamp = new Date().toISOString();
-  const fallbackLabel = opts.fallbackLabel ?? 'static snapshot';
+    limit?: number;
+    filters?: Array<{ column: string; value: string }>;
+    idField?: string;
+    titleField?: string;
+  },
+): Promise<SectionResult<T>> {
+  const fallbackLabel = tableConfig.fallbackLabel ?? 'static snapshot';
+  const limits = { limit: tableConfig.limit ?? 100 };
 
   if (!supabase || !isSupabaseConfigured) {
-    return {
-      data: staticData,
-      source: 'static_fallback',
-      sourceLabel: `${fallbackLabel} · Supabase not configured`,
-      rowCount: staticData.length,
-      error: null,
-      timestamp,
-    };
+    return buildResult(sectionId, 'static_fallback', false, staticData, staticData, [],
+      ['Supabase not configured'], null, null);
   }
 
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return {
-        data: staticData,
-        source: 'static_fallback',
-        sourceLabel: `${fallbackLabel} · No auth session`,
-        rowCount: staticData.length,
-        error: null,
-        timestamp,
-      };
-    }
-
-    let query = supabase.from(table).select('*');
-    if (opts.filters) {
-      for (const f of opts.filters) {
-        query = query.eq(f.column, f.value);
-      }
-    }
-    query = query.order(opts.order ?? 'created_at', { ascending: opts.ascending ?? false });
-    if (opts.limit) query = query.limit(opts.limit);
-
-    const { data, error } = await query;
-
-    if (error) {
-      return {
-        data: staticData,
-        source: 'static_fallback',
-        sourceLabel: `${fallbackLabel} · Query error: ${error.message.slice(0, 60)}`,
-        rowCount: staticData.length,
-        error: error.message,
-        timestamp,
-      };
-    }
-
-    const rows = (data ?? []) as T[];
-    if (rows.length === 0) {
-      return {
-        data: staticData,
-        source: 'static_fallback',
-        sourceLabel: `${fallbackLabel} · 0 rows in Supabase (using fallback)`,
-        rowCount: staticData.length,
-        error: null,
-        timestamp,
-      };
-    }
-
-    return {
-      data: rows,
-      source: 'live_supabase',
-      sourceLabel: `Live Supabase · ${rows.length} rows from ${table}`,
-      rowCount: rows.length,
-      error: null,
-      timestamp,
-    };
-  } catch (e) {
-    return {
-      data: staticData,
-      source: 'static_fallback',
-      sourceLabel: `${fallbackLabel} · Connection error`,
-      rowCount: staticData.length,
-      error: String(e),
-      timestamp,
-    };
+  const session = await hasSession();
+  if (!session) {
+    return buildResult(sectionId, 'static_fallback', false, staticData, staticData, [],
+      ['No auth session'], null, null);
   }
+
+  const { data: liveRows, error } = await queryTable(tableConfig.table, {
+    limit: limits.limit, filters: tableConfig.filters,
+  });
+
+  if (error) {
+    return buildResult(sectionId, 'static_fallback', false, staticData, staticData, [tableConfig.table],
+      [`Query error: ${error.slice(0, 80)}`], null, error);
+  }
+
+  const rows = liveRows as T[];
+
+  if (rows.length === 0 && staticData.length > 0) {
+    const mismatch = `Page has ${staticData.length} static items, Supabase has 0 live rows in ${tableConfig.table}.`;
+    return buildResult(sectionId, 'static_fallback', false, staticData, staticData, [tableConfig.table],
+      [`0 rows in Supabase; using ${fallbackLabel} fallback`], mismatch, null);
+  }
+
+  if (rows.length === 0 && staticData.length === 0) {
+    return buildResult(sectionId, 'unavailable', false, [], [], [tableConfig.table],
+      ['No data available'], null, null);
+  }
+
+  if (rows.length > 0) {
+    return buildResult(sectionId, 'live_supabase', true, rows, staticData, [tableConfig.table],
+      [`Live data from ${tableConfig.table}`], null, null);
+  }
+
+  return buildResult(sectionId, 'static_fallback', false, staticData, staticData, [tableConfig.table],
+    ['Unexpected state'], null, null);
 }
 
-/** Count rows in a Supabase table. */
-export async function countLive(table: string): Promise<LiveCount> {
+// ─── Section Configs ───
+
+export const SECTION_CONFIGS: Record<string, {
+  table: string;
+  fallbackLabel: string;
+  limit?: number;
+  filters?: Array<{ column: string; value: string }>;
+}> = {
+  ray_review: { table: 'task_requests', fallbackLabel: 'Ray Review cards', limit: 100, filters: [{ column: 'task_type', value: 'ray_review_item' }] },
+  business_opportunities: { table: 'business_opportunities', fallbackLabel: 'Business Opportunities', limit: 100 },
+  research_engine: { table: 'research_sources', fallbackLabel: 'Research Candidates', limit: 100 },
+  monetization: { table: 'monetization_opportunities', fallbackLabel: 'Monetization Offers', limit: 100 },
+  clients: { table: 'client_profiles', fallbackLabel: 'Client Profiles', limit: 100 },
+  credit_funding: { table: 'business_opportunities', fallbackLabel: 'Credit & Funding Data', limit: 50, filters: [{ column: 'category', value: 'credit_offer' }] },
+  trading_demo: { table: 'trading_strategy_candidates', fallbackLabel: 'Trading Strategies', limit: 50 },
+  reports: { table: 'nexus_events', fallbackLabel: 'Report Registry', limit: 50, filters: [{ column: 'lane', value: 'system' }] },
+  system_health: { table: 'system_health', fallbackLabel: 'System Health', limit: 50 },
+  automation: { table: 'agent_jobs', fallbackLabel: 'Automation Schedule', limit: 50 },
+  cli_registry: { table: 'agent_jobs', fallbackLabel: 'CLI Registry', limit: 50 },
+  settings: { table: 'settings', fallbackLabel: 'Settings', limit: 50 },
+};
+
+/** Load data for any section by ID. */
+export async function loadSection<T extends Record<string, unknown>>(
+  sectionId: string,
+  staticData: T[],
+): Promise<SectionResult<T>> {
+  const config = SECTION_CONFIGS[sectionId];
+  if (!config) {
+    return buildResult(sectionId, 'static_fallback', false, staticData, staticData, [],
+      ['No section config found'], null, null);
+  }
+  return loadSectionData(sectionId, staticData, config);
+}
+
+/** Count live rows in a table without loading full data. */
+export async function countLive(table: string): Promise<{ count: number; source: string; sourceLabel: string }> {
   if (!supabase || !isSupabaseConfigured) {
-    return { count: 0, source: 'unavailable', sourceLabel: 'Supabase not configured', error: null };
+    return { count: 0, source: 'unavailable', sourceLabel: 'Supabase not configured' };
+  }
+  const session = await hasSession();
+  if (!session) {
+    return { count: 0, source: 'unavailable', sourceLabel: 'No auth session' };
   }
   try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return { count: 0, source: 'unavailable', sourceLabel: 'No auth session', error: null };
-    }
     const { count, error } = await supabase.from(table).select('*', { count: 'exact', head: true });
-    if (error) {
-      return { count: 0, source: 'unavailable', sourceLabel: `Query error: ${error.message.slice(0, 40)}`, error: error.message };
-    }
-    return { count: count ?? 0, source: 'live_supabase', sourceLabel: `Live · ${count ?? 0} rows`, error: null };
+    if (error) return { count: 0, source: 'unavailable', sourceLabel: `Query error: ${error.message}` };
+    return { count: count ?? 0, source: 'live_supabase', sourceLabel: `Live count from ${table}` };
   } catch (e) {
-    return { count: 0, source: 'unavailable', sourceLabel: 'Connection error', error: String(e) };
-  }
-}
-
-/** Write a decision to Supabase (update existing row). */
-export async function persistDecision(
-  table: string,
-  id: string,
-  updates: Record<string, unknown>,
-): Promise<{ ok: boolean; error: string | null; source: DataSource }> {
-  if (!supabase || !isSupabaseConfigured) {
-    return { ok: false, error: 'Supabase not configured', source: 'unavailable' };
-  }
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return { ok: false, error: 'No auth session', source: 'unavailable' };
-    }
-    const { error } = await supabase.from(table).update(updates).eq('id', id);
-    if (error) {
-      return { ok: false, error: error.message, source: 'live_supabase' };
-    }
-    return { ok: true, error: null, source: 'live_supabase' };
-  } catch (e) {
-    return { ok: false, error: String(e), source: 'unavailable' };
-  }
-}
-
-/** Insert a row into Supabase. */
-export async function insertRow(
-  table: string,
-  row: Record<string, unknown>,
-): Promise<{ ok: boolean; id: string | null; error: string | null; source: DataSource }> {
-  if (!supabase || !isSupabaseConfigured) {
-    return { ok: false, id: null, error: 'Supabase not configured', source: 'unavailable' };
-  }
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return { ok: false, id: null, error: 'No auth session', source: 'unavailable' };
-    }
-    const { data, error } = await supabase.from(table).insert(row).select('id').single();
-    if (error) {
-      return { ok: false, id: null, error: error.message, source: 'live_supabase' };
-    }
-    return { ok: true, id: data?.id ?? null, error: null, source: 'live_supabase' };
-  } catch (e) {
-    return { ok: false, id: null, error: String(e), source: 'unavailable' };
+    return { count: 0, source: 'unavailable', sourceLabel: `Error: ${String(e)}` };
   }
 }

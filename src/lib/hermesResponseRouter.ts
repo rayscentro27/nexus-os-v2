@@ -12,6 +12,7 @@ import { queryMemory } from './hermesMemoryQuery';
 import { detectLearningInstruction, storeHint, findMatchingHints } from './hermesSourceHints';
 import { querySupabaseContext } from './hermesSupabaseContextAdapter';
 import { getBackendStatusMessage, getHermesContext, type HermesBackendContextResult } from './hermesBackendContextAdapter';
+import { reasonAboutPage, getAllPageContexts, type PageDataSource } from './hermesSourceReasoner';
 
 /* ── Nexus topic knowledge base (moved from hermesWorkroomData.js) ── */
 const nexusTopics: Record<string, { topic: string; explain: string; why?: string; safety?: string; approval?: string; howToApprove?: string; specialist?: string; cleanup?: string; next: string; opinion?: string }> = {
@@ -110,6 +111,7 @@ export type QuestionType =
   | 'partner_mode'
   | 'summary'
   | 'trading'
+  | 'source_reasoning'
   | 'unclear';
 
 export interface ResponseContext {
@@ -126,7 +128,7 @@ export interface ResponseContext {
 export interface HermesResponse {
   text: string;
   confidence: 'high' | 'medium' | 'low' | 'none';
-  source: 'time_context' | 'page_context' | 'entity_resolution' | 'memory' | 'supabase_stub' | 'backend_stub' | 'backend_context' | 'report_context' | 'canned' | 'honest_fallback' | 'learning';
+  source: 'time_context' | 'page_context' | 'entity_resolution' | 'memory' | 'supabase_stub' | 'backend_stub' | 'backend_context' | 'report_context' | 'canned' | 'honest_fallback' | 'learning' | 'source_reasoning' | 'live_supabase' | 'static_fallback';
   questionType: QuestionType;
   needsClarification: boolean;
   clarificationQuestion?: string;
@@ -225,6 +227,9 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
     case 'summary':
       return handleSummary(message, pageContext);
 
+    case 'source_reasoning':
+      return handleSourceReasoning(message);
+
     case 'trading':
       return handleTrading(message, pageContext);
 
@@ -266,6 +271,7 @@ export function classifyIntent(text: string): QuestionType {
 
   if (/\b(what reports are available|what does this report mean|from this report)\b/.test(lower)) return 'page_question';
   if (/\b(is there anything we can improve|what can we improve|best (business )?opportunity)\b/.test(lower)) return 'opinion';
+  if (/\b(is this live|is this static|what.*source|live or static|why.*show.*data.*supabase|why.*disagree|mismatch|split.?brain|compare.*supabase|page.*vs.*supabase|which sections.*live|what.*sync|need.*sync)\b/.test(lower)) return 'source_reasoning';
   if (/\b(make money|monetize|revenue|income|pricing)\b/.test(lower)) return 'money';
   if (/\b(julius erving|fake customer inserted|synthetic customer status)\b/.test(lower)) return 'nexus_topic';
   if (/\b(send the email|charge the customer|publish this post|place a live trade|insert this real client)\b/.test(lower)) return 'execution';
@@ -662,9 +668,111 @@ function handleMemoryHistory(message: string): HermesResponse {
   };
 }
 
-function handleSupabaseQuery(_message: string): HermesResponse {
-  const result = querySupabaseContext('unknown');
+function handleSourceReasoning(message: string): HermesResponse {
+  const allContexts = getAllPageContexts();
+  const contextKeys = Object.keys(allContexts);
 
+  if (contextKeys.length === 0) {
+    return {
+      text: 'I don\'t have any page data loaded yet. Navigate to a section (Business Opportunities, Research, Monetization, or Clients) and ask again.',
+      confidence: 'low',
+      source: 'source_reasoning',
+      questionType: 'source_reasoning',
+      needsClarification: false,
+    };
+  }
+
+  const lower = message.toLowerCase();
+  let matchedSection: PageDataSource | null = null;
+
+  // Try to match a specific section from the question
+  for (const [sectionId, ctx] of Object.entries(allContexts)) {
+    const sectionLabel = sectionId.replace(/_/g, ' ');
+    if (lower.includes(sectionLabel) || lower.includes(sectionId)) {
+      matchedSection = ctx;
+      break;
+    }
+  }
+
+  // If asking about all sections, summarize each
+  if (/which sections|all sections|what.*live|what.*static|overall|across/i.test(lower)) {
+    const summaries = Object.entries(allContexts).map(([sectionId, ctx]) => {
+      const label = sectionId.replace(/_/g, ' ');
+      const status = ctx.liveData ? 'LIVE' : 'STATIC';
+      return `${label}: ${status} (${ctx.liveData ? ctx.rowCount + ' live rows' : ctx.staticCount + ' static items, ' + ctx.rowCount + ' Supabase rows'})`;
+    });
+    return {
+      text: 'Here\'s the live/static status across all loaded sections:\n\n' + summaries.join('\n') + '\n\nAll sections attempt Supabase first and fall back to static data when Supabase has 0 rows.',
+      confidence: 'high',
+      source: 'source_reasoning',
+      questionType: 'source_reasoning',
+      needsClarification: false,
+    };
+  }
+
+  // Match specific section
+  if (matchedSection) {
+    const reasoning = reasonAboutPage(matchedSection, message);
+    return {
+      text: reasoning.answer + (reasoning.suggestions.length > 0 ? '\n\nSuggestions: ' + reasoning.suggestions.join('; ') : ''),
+      confidence: reasoning.confidence,
+      source: reasoning.sourceType === 'live_supabase' ? 'live_supabase' : 'static_fallback',
+      questionType: 'source_reasoning',
+      needsClarification: false,
+      sourceHint: `Source reasoner: ${reasoning.sourceType} (live=${reasoning.liveData})`,
+    };
+  }
+
+  // Default: report on the first available section
+  const firstKey = contextKeys[0];
+  const firstCtx = allContexts[firstKey];
+  const reasoning = reasonAboutPage(firstCtx, message);
+  return {
+    text: `For the ${firstKey.replace(/_/g, ' ')} section: ${reasoning.answer}` + (reasoning.suggestions.length > 0 ? '\n\nSuggestions: ' + reasoning.suggestions.join('; ') : ''),
+    confidence: reasoning.confidence,
+    source: reasoning.sourceType === 'live_supabase' ? 'live_supabase' : 'static_fallback',
+    questionType: 'source_reasoning',
+    needsClarification: false,
+  };
+}
+
+function handleSupabaseQuery(message: string): HermesResponse {
+  const allContexts = getAllPageContexts();
+  const contextKeys = Object.keys(allContexts);
+
+  // If there's page context available, use the source reasoner
+  if (contextKeys.length > 0) {
+    // Try to find a relevant section from the message
+    const lower = message.toLowerCase();
+    let matchedSection: PageDataSource | null = null;
+
+    for (const [sectionId, ctx] of Object.entries(allContexts)) {
+      if (lower.includes(sectionId.replace(/_/g, ' ')) || lower.includes(sectionId)) {
+        matchedSection = ctx;
+        break;
+      }
+    }
+
+    // Fall back to the first available context if no specific match
+    if (!matchedSection && contextKeys.length > 0) {
+      matchedSection = allContexts[contextKeys[0]];
+    }
+
+    if (matchedSection) {
+      const reasoning = reasonAboutPage(matchedSection, message);
+      return {
+        text: reasoning.answer + (reasoning.suggestions.length > 0 ? '\n\nSuggestions: ' + reasoning.suggestions.join('; ') : ''),
+        confidence: reasoning.confidence,
+        source: reasoning.sourceType === 'live_supabase' ? 'live_supabase' : 'static_fallback',
+        questionType: 'supabase_query',
+        needsClarification: false,
+        sourceHint: `Source reasoner: ${reasoning.sourceType} (live=${reasoning.liveData})`,
+      };
+    }
+  }
+
+  // Fallback to original stub behavior
+  const result = querySupabaseContext('unknown');
   return {
     text: `I do not have live Supabase access from this chat layer yet. ${result.reason}\n\nI can read approved bundled reports, loaded page context, and local activity memory, but I cannot query Supabase directly. A safe next step is a tenant-scoped server endpoint using existing RLS—not a frontend service-role key.`,
     confidence: 'medium',

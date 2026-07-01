@@ -1,6 +1,6 @@
 # Manual Live Connection Verification
 
-**Date:** 2026-06-30
+**Date:** 2026-07-01
 **How to verify each live connection path**
 
 ---
@@ -9,7 +9,7 @@
 
 ### Steps:
 1. Open `/#rayreview` in the live app
-2. Look at the toolbar: you should see a source label
+2. Look at the SourceBanner at the top — you should see a source label
    - If "Live Supabase" — cards are loaded from `task_requests` table
    - If "Static snapshot" — Supabase has 0 ray_review_item rows (using fallback)
 3. Note the card count and source label
@@ -37,20 +37,118 @@
 
 ---
 
-## 2. Hermes — Live Supabase Context
+## 2. Business Opportunities — Live-First Loading
+
+### Steps:
+1. Open `/#opportunity` in the sidebar
+2. Look at the SourceBanner at the top — should show:
+   - "Live Supabase" — data loaded from `business_opportunities` table
+   - "Static snapshot" — Supabase has 0 rows, using bundled `businessOpportunitiesData.js`
+   - "Mismatch" — UI has static items but Supabase is empty (expected until seeded)
+3. Note the opportunity count
+4. Click any opportunity row — detail drawer should open
+5. Check the "Data source" field in the drawer — should match the banner
+6. Click "Ask Hermes" — Hermes should reference the same data source
+7. Type in Hermes: "Is the Business Opportunities page live or static?"
+8. Hermes should explain the source (via `hermesSourceReasoner`)
+
+### What to report:
+- SourceBanner label: ___________
+- Opportunity count: ___________
+- Detail drawer data source: ___________
+- Hermes response on source: ___________
+
+---
+
+## 3. Research Engine — Live-First Loading
+
+### Steps:
+1. Open `/#research` in the sidebar
+2. Look at the SourceBanner at the top
+3. Note the candidate count and source label
+4. Click any candidate row — detail drawer should show data source
+5. In Hermes, type: "Compare the Research Engine page data to Supabase"
+6. Hermes should explain any mismatch
+
+### What to report:
+- SourceBanner label: ___________
+- Candidate count: ___________
+- Detail drawer data source: ___________
+- Hermes comparison response: ___________
+
+---
+
+## 4. Monetization — Live-First Loading
+
+### Steps:
+1. Open `/#monetization` in the sidebar
+2. Look at the SourceBanner at the top
+3. Note the offer count and source label
+4. Click any offer row — detail drawer should show data source
+5. In Hermes, type: "Is the Monetization page live or static?"
+6. Hermes should explain the source
+
+### What to report:
+- SourceBanner label: ___________
+- Offer count: ___________
+- Detail drawer data source: ___________
+- Hermes response: ___________
+
+---
+
+## 5. Clients — Live-First Loading
+
+### Steps:
+1. Open `/#clients` in the sidebar
+2. Look at the SourceBanner at the top
+3. Note the client count and source label
+4. Click the client row (Julius Erving) — detail drawer should show data source
+5. In Hermes, type: "Is the Clients page live or static?"
+6. Hermes should explain the source
+
+### What to report:
+- SourceBanner label: ___________
+- Client count: ___________
+- Detail drawer data source: ___________
+- Hermes response: ___________
+
+---
+
+## 6. Hermes — Source Reasoning
 
 ### Steps:
 1. Open the Hermes chat panel (Workroom or inline drawer)
-2. Type: `can you check Supabase`
-3. Look at the response — it should either:
+2. Type: "Is this live or static?"
+   - Should explain current page source
+3. Type: "Why does this page show data but Supabase says none?"
+   - Should explain split-brain if applicable
+4. Type: "Compare page data to Supabase"
+   - Should compare current section's page data vs Supabase
+5. Type: "Which sections are live?"
+   - Should list all loaded sections and their status
+6. Type: "What do we need to sync?"
+   - Should explain seed requirements
+
+### What to report:
+- "Is this live or static?" response: ___________
+- "Why does this page show data?" response: ___________
+- "Compare page to Supabase" response: ___________
+- "Which sections are live?" response: ___________
+- "What do we need to sync?" response: ___________
+
+---
+
+## 7. Hermes — Live Supabase Context
+
+### Steps:
+1. In Hermes chat, type: "can you check Supabase"
+2. Look at the response — it should either:
    - Show live data from Supabase tables (if connected + authenticated)
    - Show honest "Supabase not configured" or "No auth session" message
-4. Type: `what approvals are pending`
-5. Look for live data or honest fallback
-6. Type: `what tables can you see`
-7. Should list accessible tables or say Supabase not available
-8. Type: `did my approval persist`
-9. Should reference Supabase or localStorage source
+3. Type: "what approvals are pending"
+4. Look for live data or honest fallback
+5. Type: "did my approval persist"
+6. Should reference Supabase or localStorage source
 
 ### What to report:
 - Response for "can you check Supabase": ___________
@@ -60,14 +158,14 @@
 
 ---
 
-## 3. Hermes — Web Search
+## 8. Hermes — Web Search
 
 ### Steps:
-1. In Hermes chat, type: `can you search the internet`
+1. In Hermes chat, type: "can you search the internet"
 2. Look at the response:
    - If `VITE_HERMES_SEARCH_ENABLED=true`: should say search is available
    - If not enabled: should say "cannot search the internet" and offer to create research task
-3. Type: `search the internet for AI news`
+3. Type: "search the internet for AI news"
 4. If enabled: should return search results with citations
 5. If not enabled: should say endpoint not configured
 
@@ -78,84 +176,47 @@
 
 ---
 
-## 4. Research Engine — Supabase Write Proof
-
-### Steps:
-1. Open `/#research` in the sidebar
-2. Look at the source label at the top
-   - "Live Supabase" means data loaded from `research_sources` or `task_requests`
-   - "Static snapshot" means data from `researchEngineData.js`
-3. Check the candidate count
-4. In terminal, check if launchd is running:
-   ```bash
-   launchctl list | grep nexus
-   ```
-5. Check last run timestamp in `reports/runtime/continuous_loop_history.jsonl`
-6. Check if Supabase has research rows:
-   ```bash
-   # In Supabase SQL editor (safe read-only):
-   SELECT count(*) FROM research_sources;
-   SELECT count(*) FROM task_requests WHERE task_type = 'research_candidate';
-   ```
-
-### What to report:
-- Source label on research page: ___________
-- Candidate count: ___________
-- launchd running: yes/no
-- Last continuous loop run: ___________
-- research_sources row count: ___________
-- research_candidate task_requests count: ___________
-
----
-
-## 5. Reports / CLI / Settings — Actionability
-
-### Steps:
-1. Open `/#reports`
-2. Click any report row — should open details with summary, source, timestamp
-3. Look for source labels: "static snapshot" or "live Supabase"
-4. Open `/#cli`
-5. Click any command row — should show details, copy button, safety explanation
-6. Open `/#settings`
-7. Click any setting — should show connection state, not silently toggle
-
-### What to report:
-- Reports show details on click: yes/no
-- Reports have source labels: yes/no
-- CLI commands show details: yes/no
-- Settings show connection state: yes/no
-
----
-
-## 6. System Health
-
-### Steps:
-1. Open `/#health`
-2. Look at health items — each should show:
-   - Component name
-   - Status (ok/partial/failed)
-   - Source label (static or live)
-3. Click any item for details
-
-### What to report:
-- Health items have source labels: yes/no
-- Items show details on click: yes/no
-
----
-
-## 7. Quick Verification Checklist
+## 9. Quick Verification Checklist
 
 | Check | Expected | Actual |
 |-------|----------|--------|
-| `/#rayreview` source label visible | Yes | |
+| `/#rayreview` SourceBanner visible | Yes | |
 | Ray Review receipt shows Supabase table | If live | |
 | Approved card persists after reload | If Supabase live | |
 | Approved card persists after localStorage clear | If Supabase live | |
+| `/#opportunity` SourceBanner visible | Yes | |
+| Business Opportunities detail shows data source | Yes | |
+| `/#research` SourceBanner visible | Yes | |
+| Research Engine detail shows data source | Yes | |
+| `/#monetization` SourceBanner visible | Yes | |
+| Monetization detail shows data source | Yes | |
+| `/#clients` SourceBanner visible | Yes | |
+| Clients detail shows data source | Yes | |
+| Hermes "Is this live or static?" honest | Yes | |
+| Hermes "Compare page to Supabase" explains mismatch | Yes | |
+| Hermes "Which sections are live?" lists status | Yes | |
 | Hermes "can you check Supabase" answer | Honest | |
 | Hermes "can you search the internet" answer | Honest | |
-| Research page source label visible | Yes | |
-| `launchctl list \| grep nexus` shows agents | Yes | |
-| Reports page has source labels | Yes | |
-| CLI page has source labels | Yes | |
-| Settings page shows connection state | Yes | |
-| Health page has source labels | Yes | |
+
+---
+
+## 10. Split-Brain Detection
+
+### Steps:
+1. Open any section (e.g., `/#opportunity`)
+2. If SourceBanner shows "Static snapshot" or "Mismatch":
+   - The UI has bundled static data
+   - Supabase has 0 rows for that table
+   - This is expected until the seed plan is executed
+3. Ask Hermes: "Why does this page show data but Supabase says none?"
+4. Hermes should explain:
+   - The page reads from a bundled data file
+   - Supabase has no live rows
+   - The fix is to seed the table or wire the page
+5. Ask Hermes: "What do we need to sync?"
+6. Hermes should reference `reports/static_to_supabase_seed_plan.md`
+
+### What to report:
+- SourceBanner shows mismatch: yes/no
+- Hermes explains split-brain: yes/no
+- Hermes references seed plan: yes/no

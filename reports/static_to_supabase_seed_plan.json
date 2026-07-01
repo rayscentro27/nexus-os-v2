@@ -1,0 +1,126 @@
+{
+  "planName": "static-to-supabase-seed",
+  "version": "1.0.0",
+  "date": "2026-07-01",
+  "status": "dry-run",
+  "description": "Machine-readable mapping of static data to Supabase tables. Do not execute without Ray Review approval.",
+  "safety": {
+    "noLiveInserts": true,
+    "requiresApproval": true,
+    "rollbackPlan": "DELETE WHERE legacy_id LIKE '<prefix>-%'"
+  },
+  "tables": [
+    {
+      "staticSource": "businessOpportunities",
+      "staticFile": "src/data/businessOpportunitiesData.js",
+      "staticCount": 26,
+      "supabaseTable": "business_opportunities",
+      "rlsPolicy": "INSERT via nexus_is_active_admin()",
+      "legacyIdPrefix": "biz",
+      "columnMap": {
+        "id": { "supabaseColumn": "id", "type": "uuid", "transform": "gen_random_uuid()" },
+        "legacy_id": { "supabaseColumn": "legacy_id", "type": "text", "transform": "original static id" },
+        "title": { "supabaseColumn": "title", "type": "text", "transform": "direct" },
+        "category": { "supabaseColumn": "category", "type": "text", "transform": "direct" },
+        "score": { "supabaseColumn": "score", "type": "integer", "transform": "direct" },
+        "revenueRange": { "supabaseColumn": "revenue_range", "type": "text", "transform": "snake_case" },
+        "confidence": { "supabaseColumn": "confidence", "type": "text", "transform": "direct" },
+        "status": { "supabaseColumn": "status", "type": "text", "transform": "direct" },
+        "reason": { "supabaseColumn": "reason", "type": "text", "transform": "direct" },
+        "lane": { "supabaseColumn": "lane", "type": "text", "transform": "direct" },
+        "nextAction": { "supabaseColumn": "next_action", "type": "text", "transform": "snake_case" },
+        "convertOptions": { "supabaseColumn": "convert_options", "type": "jsonb", "transform": "array_to_json" },
+        "createdAt": { "supabaseColumn": "created_at", "type": "timestamptz", "transform": "direct" }
+      }
+    },
+    {
+      "staticSource": "researchCandidates",
+      "staticFile": "src/data/researchEngineData.js",
+      "staticCount": 50,
+      "supabaseTable": "research_sources",
+      "rlsPolicy": "Service role only (no anon INSERT policy)",
+      "legacyIdPrefix": "res",
+      "requiresServiceRole": true,
+      "columnMap": {
+        "id": { "supabaseColumn": "id", "type": "uuid", "transform": "gen_random_uuid()" },
+        "legacy_id": { "supabaseColumn": "legacy_id", "type": "text", "transform": "original static id" },
+        "title": { "supabaseColumn": "title", "type": "text", "transform": "direct" },
+        "source": { "supabaseColumn": "source", "type": "text", "transform": "direct" },
+        "score": { "supabaseColumn": "score", "type": "integer", "transform": "direct" },
+        "lane": { "supabaseColumn": "lane", "type": "text", "transform": "direct" },
+        "status": { "supabaseColumn": "status", "type": "text", "transform": "direct" },
+        "type": { "supabaseColumn": "type", "type": "text", "transform": "direct" },
+        "reason": { "supabaseColumn": "reason", "type": "text", "transform": "direct" },
+        "nextAction": { "supabaseColumn": "next_action", "type": "text", "transform": "snake_case" },
+        "convertOptions": { "supabaseColumn": "convert_options", "type": "jsonb", "transform": "array_to_json" },
+        "createdAt": { "supabaseColumn": "created_at", "type": "timestamptz", "transform": "direct" }
+      }
+    },
+    {
+      "staticSource": "offers",
+      "staticFile": "src/data/monetizationData.js",
+      "staticCount": 9,
+      "supabaseTable": "monetization_opportunities",
+      "rlsPolicy": "INSERT via nexus_is_active_admin()",
+      "legacyIdPrefix": "offer",
+      "columnMap": {
+        "id": { "supabaseColumn": "id", "type": "uuid", "transform": "gen_random_uuid()" },
+        "legacy_id": { "supabaseColumn": "legacy_id", "type": "text", "transform": "original static id" },
+        "name": { "supabaseColumn": "name", "type": "text", "transform": "direct" },
+        "price": { "supabaseColumn": "price", "type": "numeric", "transform": "direct" },
+        "audience": { "supabaseColumn": "audience", "type": "text", "transform": "direct" },
+        "deliverables": { "supabaseColumn": "deliverables", "type": "jsonb", "transform": "array_to_json" },
+        "stripeStatus": { "supabaseColumn": "stripe_status", "type": "text", "transform": "snake_case" },
+        "status": { "supabaseColumn": "status", "type": "text", "transform": "direct" },
+        "nextAction": { "supabaseColumn": "next_action", "type": "text", "transform": "snake_case" },
+        "createdAt": { "supabaseColumn": "created_at", "type": "timestamptz", "transform": "direct" }
+      }
+    },
+    {
+      "staticSource": "clientsList",
+      "staticFile": "src/data/clientsData.js",
+      "staticCount": 1,
+      "supabaseTable": "client_profiles",
+      "rlsPolicy": "INSERT via nexus_is_active_admin()",
+      "legacyIdPrefix": "client",
+      "columnMap": {
+        "id": { "supabaseColumn": "id", "type": "uuid", "transform": "gen_random_uuid()" },
+        "legacy_id": { "supabaseColumn": "legacy_id", "type": "text", "transform": "original static id" },
+        "name": { "supabaseColumn": "name", "type": "text", "transform": "direct" },
+        "email": { "supabaseColumn": "email", "type": "text", "transform": "direct" },
+        "status": { "supabaseColumn": "status", "type": "text", "transform": "direct" },
+        "stage": { "supabaseColumn": "stage", "type": "text", "transform": "direct" },
+        "onboardingReadiness": { "supabaseColumn": "onboarding_readiness", "type": "integer", "transform": "snake_case" },
+        "paymentStatus": { "supabaseColumn": "payment_status", "type": "text", "transform": "snake_case" },
+        "dashboardLiveFlag": { "supabaseColumn": "dashboard_live_flag", "type": "boolean", "transform": "snake_case" },
+        "createdAt": { "supabaseColumn": "created_at", "type": "timestamptz", "transform": "direct" },
+        "membershipTier": { "supabaseColumn": "membership_tier", "type": "text", "transform": "snake_case" },
+        "advisorName": { "supabaseColumn": "advisor_name", "type": "text", "transform": "snake_case" },
+        "readinessScores": { "supabaseColumn": "readiness_scores", "type": "jsonb", "transform": "object_to_json" },
+        "documents": { "supabaseColumn": "documents", "type": "jsonb", "transform": "object_to_json" },
+        "tasks": { "supabaseColumn": "tasks", "type": "jsonb", "transform": "array_to_json" },
+        "messages": { "supabaseColumn": "messages", "type": "jsonb", "transform": "array_to_json" }
+      }
+    }
+  ],
+  "executionOrder": [
+    "1. business_opportunities (26 rows, anon INSERT available)",
+    "2. monetization_opportunities (9 rows, anon INSERT available)",
+    "3. client_profiles (1 row, anon INSERT available)",
+    "4. research_sources (50 rows, requires service role or new anon policy)"
+  ],
+  "postSeedVerification": [
+    "Open each section — SourceBanner shows 'Live Supabase'",
+    "Hermes source reasoning confirms live data",
+    "Reload page — data persists from Supabase",
+    "countLive() returns > 0 for each table"
+  ],
+  "sectionsStillStatic": [
+    "Trading Lab — inline data in NexusAdminUI, no separate component",
+    "System Health — system_health table exists but no anon INSERT policy",
+    "Automation — inline data, no separate data file",
+    "Reports — nexus_events table exists, reads from reportRegistryData.js",
+    "Settings — no settings data file",
+    "CLI — no CLI registry data file"
+  ]
+}

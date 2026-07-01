@@ -1,7 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { offers, revenueStreams } from '../data/monetizationData'
+import { loadSection } from '../lib/liveDataLoader'
+import { setPageContext } from '../lib/hermesSourceReasoner'
+import SourceBanner from './SourceBanner'
 
-function OfferDetailDrawer({ offer, onClose, onAskHermes }) {
+function OfferDetailDrawer({ offer, onClose, onAskHermes, sourceType }) {
   const [status, setStatus] = useState(null)
   const [receipt, setReceipt] = useState(null)
   if (!offer) return null
@@ -26,7 +29,7 @@ function OfferDetailDrawer({ offer, onClose, onAskHermes }) {
             <small style={{ color: '#8196af' }}>Offer detail</small>
             <h2 style={{ margin: 0 }}>{offer.name}</h2>
           </div>
-          <button type="button" onClick={onClose} style={{ background: 'transparent', border: '1px solid #315176', color: '#dbe9fa', borderRadius: 8, padding: '6px 10px', cursor: 'pointer' }}>×</button>
+          <button type="button" onClick={onClose} style={{ background: 'transparent', border: '1px solid #315176', color: '#dbe9fa', borderRadius: 8, padding: '6px 10px', cursor: 'pointer' }}>x</button>
         </header>
         <div style={{ padding: 20 }}>
           <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
@@ -34,12 +37,13 @@ function OfferDetailDrawer({ offer, onClose, onAskHermes }) {
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Status</dt><dd style={{ margin: 3, fontSize: 12 }}><span className={`pill pill-${effectiveStatus === 'approved' ? 'green' : effectiveStatus === 'draft' ? 'blue' : effectiveStatus === 'held' ? 'amber' : 'red'}`}>{effectiveStatus}</span></dd></div>
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Stripe</dt><dd style={{ margin: 3, fontSize: 12 }}><span className={`pill pill-${offer.stripeStatus === 'test_checkout_created' ? 'green' : 'amber'}`}>{offer.stripeStatus.replace(/_/g, ' ')}</span></dd></div>
             <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Audience</dt><dd style={{ margin: 3, fontSize: 12 }}>{offer.audience}</dd></div>
+            <div><dt style={{ color: '#7f94ae', fontSize: 10 }}>Data source</dt><dd style={{ margin: 3, fontSize: 12 }}>{sourceType === 'live_supabase' ? 'Live Supabase' : 'Static snapshot'}</dd></div>
           </dl>
 
           <div style={{ marginBottom: 16 }}>
             <h3 style={{ fontSize: 13, margin: '0 0 6px', color: '#8fa3be' }}>Deliverables</h3>
-            {offer.deliverables.map((d, i) => (
-              <div key={i} style={{ padding: '4px 0', fontSize: 12, color: '#c8d5e7', borderBottom: '1px solid #1d3049' }}>✓ {d}</div>
+            {(offer.deliverables || []).map((d, i) => (
+              <div key={i} style={{ padding: '4px 0', fontSize: 12, color: '#c8d5e7', borderBottom: '1px solid #1d3049' }}>v {d}</div>
             ))}
           </div>
 
@@ -56,11 +60,11 @@ function OfferDetailDrawer({ offer, onClose, onAskHermes }) {
             <button type="button" className={status === 'rejected' ? 'primary' : ''} onClick={() => handleAction('rejected')}>Reject</button>
           </div>
           <div className="nxos-actions" style={{ marginBottom: 8 }}>
-            <button type="button" onClick={() => onAskHermes && onAskHermes(`Create Stripe test product task for "${offer.name}"`)}>Create Stripe test product task</button>
-            <button type="button" onClick={() => onAskHermes && onAskHermes(`Create content or landing page draft task for "${offer.name}"`)}>Create content/landing draft task</button>
-            <button type="button" onClick={() => onAskHermes && onAskHermes(`Ask Monetization Specialist about offer: ${offer.name}`)}>Ask Monetization Specialist</button>
+            <button type="button" onClick={() => onAskHermes && onAskHermes('Create Stripe test product task for "' + offer.name + '"')}>Create Stripe test product task</button>
+            <button type="button" onClick={() => onAskHermes && onAskHermes('Create content or landing page draft task for "' + offer.name + '"')}>Create content/landing draft task</button>
+            <button type="button" onClick={() => onAskHermes && onAskHermes('Ask Monetization Specialist about offer: ' + offer.name)}>Ask Monetization Specialist</button>
           </div>
-          {receipt && <div className="nxos-receipt">{receipt.action} recorded — {receipt.next}</div>}
+          {receipt && <div className="nxos-receipt">{receipt.action} recorded -- {receipt.next}</div>}
         </div>
       </aside>
     </>
@@ -70,6 +74,34 @@ function OfferDetailDrawer({ offer, onClose, onAskHermes }) {
 export default function MonetizationPanel({ onAskHermes }) {
   const [selected, setSelected] = useState(null)
   const [statusOverrides, setStatusOverrides] = useState({})
+  const [sectionResult, setSectionResult] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      const result = await loadSection('monetization', offers)
+      if (!cancelled) {
+        setSectionResult(result)
+        setPageContext('monetization', {
+          sectionId: 'monetization',
+          sourceType: result.sourceType,
+          liveData: result.liveData,
+          rowCount: result.rowCount,
+          staticCount: result.staticCount,
+          mismatch: result.mismatch,
+          tableNamesUsed: result.tableNamesUsed,
+          records: result.records,
+        })
+        setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  const items = sectionResult ? sectionResult.records : offers
 
   function getEffectiveStatus(offer) {
     return statusOverrides[offer.id] || offer.status
@@ -77,18 +109,31 @@ export default function MonetizationPanel({ onAskHermes }) {
 
   return (
     <div className="nxos-stack">
+      {sectionResult && (
+        <SourceBanner
+          sourceType={sectionResult.sourceType}
+          liveData={sectionResult.liveData}
+          rowCount={sectionResult.rowCount}
+          staticCount={sectionResult.staticCount}
+          mismatch={sectionResult.mismatch}
+          limitations={sectionResult.limitations}
+          tableNamesUsed={sectionResult.tableNamesUsed}
+          error={sectionResult.error}
+        />
+      )}
+      {loading && <div style={{ color: '#8fa3be', fontSize: 12, padding: 8 }}>Loading live data...</div>}
       <div className="nxos-metric-grid">
         <article style={{ padding: 18, borderRadius: 14, background: '#0e1c2f', border: '1px solid #223751' }}>
           <small style={{ color: '#8fa3be' }}>Total offers</small>
-          <strong style={{ fontSize: 26 }}>{offers.length}</strong>
+          <strong style={{ fontSize: 26 }}>{items.length}</strong>
         </article>
         <article style={{ padding: 18, borderRadius: 14, background: '#0e1c2f', border: '1px solid #223751' }}>
           <small style={{ color: '#8fa3be' }}>Approved</small>
-          <strong style={{ fontSize: 26, color: '#67D47A' }}>{offers.filter(o => getEffectiveStatus(o) === 'approved').length}</strong>
+          <strong style={{ fontSize: 26, color: '#67D47A' }}>{items.filter(o => getEffectiveStatus(o) === 'approved').length}</strong>
         </article>
         <article style={{ padding: 18, borderRadius: 14, background: '#0e1c2f', border: '1px solid #223751' }}>
           <small style={{ color: '#8fa3be' }}>Drafts</small>
-          <strong style={{ fontSize: 26, color: '#3BA3FF' }}>{offers.filter(o => getEffectiveStatus(o) === 'draft').length}</strong>
+          <strong style={{ fontSize: 26, color: '#3BA3FF' }}>{items.filter(o => getEffectiveStatus(o) === 'draft').length}</strong>
         </article>
         <article style={{ padding: 18, borderRadius: 14, background: '#0e1c2f', border: '1px solid #223751' }}>
           <small style={{ color: '#8fa3be' }}>Projected monthly</small>
@@ -98,7 +143,7 @@ export default function MonetizationPanel({ onAskHermes }) {
 
       <section style={{ display: 'grid', gap: 8 }}>
         <h2 style={{ fontSize: 17, margin: '0 0 8px' }}>Offers</h2>
-        {offers.map(offer => {
+        {items.map(offer => {
           const effective = getEffectiveStatus(offer)
           return (
             <button
@@ -139,7 +184,7 @@ export default function MonetizationPanel({ onAskHermes }) {
         <button type="button" onClick={() => onAskHermes && onAskHermes('Review monetization offers and revenue projections, recommend priority actions')}>Ask Monetization Specialist</button>
       </div>
 
-      <OfferDetailDrawer offer={selected} onClose={() => setSelected(null)} onAskHermes={onAskHermes} />
+      <OfferDetailDrawer offer={selected} onClose={() => setSelected(null)} onAskHermes={onAskHermes} sourceType={sectionResult ? sectionResult.sourceType : 'static_fallback'} />
     </div>
   )
 }
