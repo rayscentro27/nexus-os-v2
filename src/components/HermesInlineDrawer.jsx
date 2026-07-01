@@ -3,6 +3,7 @@ import { buildHermesResponse } from '../data/hermesWorkroomData';
 import { hermesStore } from '../lib/hermesChatStore';
 import { recordActivity } from '../lib/hermesActivityJournal';
 import { buildLiveSupabaseContext, buildWebSearchResponse } from '../lib/hermesLiveContext';
+import { orchestrateHermes } from '../lib/hermesOrchestrator';
 
 export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, initialPrompt = '', activePage = null, visibleItems = [], selectedItem = null, availableActions = [] }) {
   const [messages, setMessages] = useState(() => {
@@ -28,16 +29,16 @@ export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, init
     let responseText = result.text;
     let liveSource = null;
 
-    const lower = clean.toLowerCase();
-    const isSupabaseQuery = /\b(supabase|database|table|row|live data|can you see|check supabase|approval|research|client|opportunity|offer|health|event|blocker|scheduler)\b/.test(lower);
-    const isWebQuery = /\b(search the internet|look this up|research current|web search|what is the latest|what's happening|online|google|find online)\b/.test(lower);
+    const orchestration = orchestrateHermes(clean, Boolean(activePage));
+    const isSupabaseQuery = orchestration.shouldQuerySupabase;
+    const isWebQuery = orchestration.shouldQueryWeb;
 
     if (isSupabaseQuery) {
       setLoading(true);
       try {
         const liveCtx = await buildLiveSupabaseContext(clean);
         if (liveCtx.liveData) {
-          responseText = liveCtx.text;
+          responseText = orchestration.routing.intent === 'run_nexus_audit' ? `${responseText}\n\n${liveCtx.text}` : liveCtx.text;
           liveSource = liveCtx.source;
         }
       } catch (e) { /* keep sync response */ }

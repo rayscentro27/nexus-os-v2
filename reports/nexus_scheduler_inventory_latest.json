@@ -1,0 +1,853 @@
+{
+  "checked_at": "2026-07-01T15:34:38.683589+00:00",
+  "items": [
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "ai.nexus.control-center is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/control-center.err.log": "2026-06-30T23:37:27.051128+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/control-center.out.log": "2026-06-30T23:37:22.309286+00:00"
+      },
+      "name": "ai.nexus.control-center",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/ai.nexus.control-center.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/control-center.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/control-center.out.log"
+    },
+    {
+      "cadence": 300,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "ai.nexus.email-pipeline is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/email-pipeline.error.log": "2026-06-30T23:34:57.661708+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/email-pipeline.log": "2026-07-01T15:32:32.393631+00:00"
+      },
+      "name": "ai.nexus.email-pipeline",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/ai.nexus.email-pipeline.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/email-pipeline.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/email-pipeline.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.auto-executor is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/auto_executor.err.log": "2026-07-01T15:34:40.527042+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/auto_executor.log": "2026-07-01T15:34:40.527015+00:00"
+      },
+      "name": "com.nexus.auto-executor",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.auto-executor.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/auto_executor.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/auto_executor.log"
+    },
+    {
+      "cadence": 30,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.autonomy-worker is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.error.log": "2026-07-01T15:34:26.587872+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.log": "2026-04-27T14:16:51.397691+00:00"
+      },
+      "name": "com.nexus.autonomy-worker",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.autonomy-worker.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/autonomy-worker.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.cloudflare-tunnel is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/cloudflare-tunnel.log": "2026-06-30T23:39:15.968441+00:00"
+      },
+      "name": "com.nexus.cloudflare-tunnel",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.cloudflare-tunnel.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/cloudflare-tunnel.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/cloudflare-tunnel.log"
+    },
+    {
+      "cadence": {
+        "Hour": 7,
+        "Minute": 0
+      },
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.continuous-ops-daily is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/proof_automation/continuous_ops_daily.err.log": "2026-07-01T14:00:07.991782+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/proof_automation/continuous_ops_daily.log": "2026-06-15T14:00:11.015072+00:00"
+      },
+      "name": "com.nexus.continuous-ops-daily",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.continuous-ops-daily.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/proof_automation/continuous_ops_daily.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/proof_automation/continuous_ops_daily.log"
+    },
+    {
+      "cadence": 900,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.coordination-worker is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/coordination_worker.error.log": "2026-07-01T15:31:58.624271+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/coordination_worker.log": "2026-07-01T15:30:18.368283+00:00"
+      },
+      "name": "com.nexus.coordination-worker",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.coordination-worker.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/coordination_worker.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/coordination_worker.log"
+    },
+    {
+      "cadence": {
+        "Hour": 8,
+        "Minute": 0
+      },
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.daily-operating is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-os-v2/reports/runtime/daily_operating_launchd.log": "2026-07-01T15:01:59.743904+00:00",
+        "/Users/raymonddavis/nexus-os-v2/reports/runtime/daily_operating_launchd_error.log": "2026-06-30T15:00:00.041794+00:00"
+      },
+      "name": "com.nexus.daily-operating",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.daily-operating.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-os-v2/reports/runtime/daily_operating_launchd_error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-os-v2/reports/runtime/daily_operating_launchd.log"
+    },
+    {
+      "cadence": 2700,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.demo-trading-loop is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.err.log": "2026-06-16T18:58:39.409600+00:00",
+        "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.log": "2026-07-01T15:15:07.634405+00:00"
+      },
+      "name": "com.nexus.demo-trading-loop",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.demo-trading-loop.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai-worker/logs/demo_trading_loop.log"
+    },
+    {
+      "cadence": {
+        "Hour": 18,
+        "Minute": 0
+      },
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.evening-closeout is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-os-v2/reports/runtime/evening_closeout_launchd.log": "2026-07-01T01:00:35.165998+00:00",
+        "/Users/raymonddavis/nexus-os-v2/reports/runtime/evening_closeout_launchd_error.log": "2026-07-01T01:00:00.004349+00:00"
+      },
+      "name": "com.nexus.evening-closeout",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.evening-closeout.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-os-v2/reports/runtime/evening_closeout_launchd_error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-os-v2/reports/runtime/evening_closeout_launchd.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.hermes-status is installed but not loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": false,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/hermes-status.log": "2026-04-22T17:11:59.180259+00:00"
+      },
+      "name": "com.nexus.hermes-status",
+      "proof": "plist exists; loaded=False",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.hermes-status.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/hermes-status.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/hermes-status.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.mac-mini-worker is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.err.log": "2026-07-01T15:34:36.943027+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.log": "2026-06-30T23:37:36.897385+00:00"
+      },
+      "name": "com.nexus.mac-mini-worker",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.mac-mini-worker.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/mac-mini-worker.log"
+    },
+    {
+      "cadence": 21600,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.monetization-research is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/monetization_research.launchd.err.log": "2026-06-08T12:03:05.552609+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/monetization_research.launchd.log": "2026-06-08T12:03:05.552490+00:00"
+      },
+      "name": "com.nexus.monetization-research",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.monetization-research.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/monetization_research.launchd.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/monetization_research.launchd.log"
+    },
+    {
+      "cadence": 300,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.monitoring-worker is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.error.log": "2026-07-01T15:30:22.251211+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.log": "2026-04-27T14:16:51.597606+00:00"
+      },
+      "name": "com.nexus.monitoring-worker",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.monitoring-worker.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/monitoring-worker.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.ollama is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/ollama.err.log": "2026-06-30T23:31:43.722549+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/ollama.log": "2026-07-01T15:12:43.718046+00:00"
+      },
+      "name": "com.nexus.ollama",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.ollama.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/ollama.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/ollama.log"
+    },
+    {
+      "cadence": 600,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.ops-control-worker is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.error.log": "2026-06-30T23:35:39.920377+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.log": "2026-07-01T15:34:10.864038+00:00"
+      },
+      "name": "com.nexus.ops-control-worker",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.ops-control-worker.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/ops-control-worker.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.orchestrator is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.error.log": "2026-04-28T19:57:01.941568+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.log": "2026-07-01T15:32:40.693504+00:00"
+      },
+      "name": "com.nexus.orchestrator",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.orchestrator.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/nexus-orchestrator.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.research-signal-bridge is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.err.log": "2026-07-01T15:34:41.655151+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.log": "2026-07-01T15:34:41.655123+00:00"
+      },
+      "name": "com.nexus.research-signal-bridge",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-signal-bridge.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/research_signal_bridge.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.research-worker is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/nexus-research-worker.error.log": "2026-04-11T20:49:36.547358+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/nexus-research-worker.log": "2026-06-30T23:37:40.802132+00:00"
+      },
+      "name": "com.nexus.research-worker",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.research-worker.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/nexus-research-worker.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/nexus-research-worker.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.signal-review is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.err.log": "2026-05-28T19:49:15.165266+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.log": "2026-07-01T15:34:29.795375+00:00"
+      },
+      "name": "com.nexus.signal-review",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.signal-review.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/signal-review.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.signal-router is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/signal-router/signal-router.log": "2026-07-01T15:00:05.142848+00:00"
+      },
+      "name": "com.nexus.signal-router",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.signal-router.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/signal-router/signal-router.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/signal-router/signal-router.log"
+    },
+    {
+      "cadence": 21600,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.strategy-lab is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/strategy_lab.err.log": "2026-07-01T11:21:03.676331+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/strategy_lab.log": "2026-04-03T08:37:50.794408+00:00"
+      },
+      "name": "com.nexus.strategy-lab",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.strategy-lab.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/strategy_lab.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/strategy_lab.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.tournament is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/tournament_service.err.log": "2026-07-01T15:34:42.006603+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/tournament_service.log": "2026-07-01T15:34:42.006574+00:00"
+      },
+      "name": "com.nexus.tournament",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.tournament.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/tournament_service.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/tournament_service.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.trading-engine is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/trading_engine.err.log": "2026-06-30T23:37:19.462888+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/trading_engine.log": "2026-07-01T15:15:07.015039+00:00"
+      },
+      "name": "com.nexus.trading-engine",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.trading-engine.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/trading_engine.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/trading_engine.log"
+    },
+    {
+      "cadence": 14400,
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.nexus.youtube-channel-poller is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.error.log": "2026-05-30T16:33:45.237003+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.log": "2026-07-01T15:34:34.650591+00:00"
+      },
+      "name": "com.nexus.youtube-channel-poller",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.nexus.youtube-channel-poller.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.error.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/youtube-channel-poller.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.raymonddavis.nexus.control-center is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.err.log": "2026-07-01T15:34:33.613344+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.log": "2026-07-01T15:34:33.610693+00:00"
+      },
+      "name": "com.raymonddavis.nexus.control-center",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.control-center.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/control-center.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.raymonddavis.nexus.dashboard is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/dashboard.err.log": "2026-06-30T23:40:37.408287+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/dashboard.log": "2026-06-30T23:40:37.402313+00:00"
+      },
+      "name": "com.raymonddavis.nexus.dashboard",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.dashboard.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/dashboard.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/dashboard.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.raymonddavis.nexus.hermes-mobile is installed but not loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": false,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/logs/hermes_mobile_service.err.log": "2026-06-16T13:37:02.968313+00:00",
+        "/Users/raymonddavis/nexus-ai/logs/hermes_mobile_service.out.log": "2026-06-18T05:55:43.001749+00:00"
+      },
+      "name": "com.raymonddavis.nexus.hermes-mobile",
+      "proof": "plist exists; loaded=False",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.hermes-mobile.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/logs/hermes_mobile_service.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/logs/hermes_mobile_service.out.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.raymonddavis.nexus is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/launchd.err.log": "2026-05-28T19:49:15.167684+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/launchd.out.log": "2026-06-30T23:22:55.098228+00:00"
+      },
+      "name": "com.raymonddavis.nexus",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/launchd.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/launchd.out.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.raymonddavis.nexus.scheduler is installed and loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": true,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/scheduler.err.log": "2026-06-30T23:33:35.677989+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/scheduler.log": "2026-06-30T22:28:42.193539+00:00"
+      },
+      "name": "com.raymonddavis.nexus.scheduler",
+      "proof": "plist exists; loaded=True",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.scheduler.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/scheduler.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/scheduler.log"
+    },
+    {
+      "cadence": "unknown",
+      "category": "launchd",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "load",
+        "unload",
+        "restart"
+      ],
+      "hermes_readable_summary": "com.raymonddavis.nexus.telegram is installed but not loaded; no active PID is inferred from load state.",
+      "limitations": [
+        "launchd loaded state is not proof of active execution"
+      ],
+      "loaded": false,
+      "log_timestamps": {
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/telegram.err.log": "2026-06-18T05:59:08.999994+00:00",
+        "/Users/raymonddavis/nexus-ai/openclaw/logs/telegram.log": "2026-05-15T00:10:24.490939+00:00"
+      },
+      "name": "com.raymonddavis.nexus.telegram",
+      "proof": "plist exists; loaded=False",
+      "safe_next_action": "Check the configured log and process inventory before claiming it is running.",
+      "source": "/Users/raymonddavis/Library/LaunchAgents/com.raymonddavis.nexus.telegram.plist",
+      "status": "installed_not_running",
+      "stderr_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/telegram.err.log",
+      "stdout_log": "/Users/raymonddavis/nexus-ai/openclaw/logs/telegram.log"
+    }
+  ],
+  "sessions": [
+    {
+      "accessible": true,
+      "nexus_entries": [
+        "0 */2 * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 -m memory_engine.memory_worker >> logs/memory_worker.log 2>&1",
+        "0 */6 * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 -m optimization_engine.optimization_worker >> logs/optimization_worker.log 2>&1",
+        "*/15 * * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 -m coordination.coordination_worker >> logs/coordination_worker.log 2>&1",
+        "*/5 * * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 -m source_scheduling.scheduler_worker >> logs/scheduler_worker.log 2>&1",
+        "# \u2500\u2500 Nexus One \u2014 AI Chief of Staff \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500",
+        "# DISABLED telegram-summary-spam-removal: 0 6 * * * python3 -m nexus_one.nexus_one_worker brief >> logs/nexus_one.log 2>&1",
+        "# DISABLED telegram-summary-spam-removal: */30 * * * * cd /Users/raymonddavis/nexus-ai && python3 -m nexus_one.nexus_one_worker alert >> logs/nexus_one.log 2>&1",
+        "0 * * * * cd /Users/raymonddavis/nexus-ai && python3 -m readiness.readiness_worker --silent >> logs/readiness.log 2>&1",
+        "0 3 * * * cd /Users/raymonddavis/nexus-ai && python3 -m improvement_engine.improvement_worker >> logs/improvement.log 2>&1",
+        "0 10 * * 1 cd /Users/raymonddavis/nexus-ai && python3 -m empire.empire_worker >> logs/empire.log 2>&1",
+        "*/30 * * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 -m lib.anomaly_detector >> logs/anomaly_detector.log 2>&1",
+        "*/15 * * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 -m lib.provider_health_worker >> logs/provider_health.log 2>&1",
+        "0 */4 * * * cd ~/nexus-ai && source .env && python3 -m lib.research_processing_worker >> logs/research_processing.log 2>&1",
+        "0 */6 * * * cd ~/nexus-ai && source .env && python3 -m lib.opportunity_research_worker >> logs/opportunity_research.log 2>&1",
+        "# Nexus monetization research \u2014 free YouTube discovery every 6h",
+        "0 */6 * * * source .env && python3 scripts/run_monetization_research_cycle.py --key=[REDACTED] \"business credit funding,Chase small business funding,business funding readiness,Paydex vendor credit,Nav business credit,business credit cards n",
+        "0 */6 * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 scripts/run_safe_learning_loops.py --scope all --dry-run >> logs/safe_learning_loop_cron.log 2>&1",
+        "0 9 * * * cd /Users/raymonddavis/nexus-ai && source .env && python3 scripts/run_content_engine_loop.py --limit 1 --dry-run --repurpose --no-telegram >> logs/content_engine_loop_cron.log 2>&1"
+      ],
+      "type": "cron"
+    },
+    {
+      "accessible": false,
+      "nexus_entries": [],
+      "type": "tmux"
+    },
+    {
+      "accessible": false,
+      "nexus_entries": [],
+      "type": "screen"
+    }
+  ]
+}

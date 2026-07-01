@@ -80,6 +80,13 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
   // Determine what to query based on the question
   const queries: Array<{ table: string; label: string; filter?: { column: string; value: string } }> = [];
 
+  if (/\b(full nexus audit|audit nexus|reality audit|check everything)\b/.test(lower)) {
+    queries.push({ table: 'system_health', label: 'system health entries' });
+    queries.push({ table: 'nexus_events', label: 'recent Nexus events' });
+    queries.push({ table: 'agent_jobs', label: 'agent jobs' });
+    queries.push({ table: 'ops_incidents', label: 'operations incidents' });
+  }
+
   if (/\b(approv|ray review|pending|card)\b/.test(lower)) {
     queries.push({ table: 'task_requests', label: 'Ray Review task requests', filter: { column: 'task_type', value: 'ray_review_item' } });
     queries.push({ table: 'approvals', label: 'approvals' });
@@ -102,6 +109,10 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
   }
   if (/\b(event|activity|journal|log)\b/.test(lower)) {
     queries.push({ table: 'nexus_events', label: 'activity events' });
+  }
+  if (/\b(what wrote|write proof|written to supabase|seeded|seed execution)\b/.test(lower)) {
+    queries.push({ table: 'nexus_events', label: 'Supabase write/activity events' });
+    queries.push({ table: 'task_requests', label: 'task requests with persisted receipts' });
   }
   if (/\b(blocker|incident|issue)\b/.test(lower)) {
     queries.push({ table: 'ops_incidents', label: 'ops incidents' });

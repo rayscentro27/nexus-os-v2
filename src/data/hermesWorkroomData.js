@@ -1,15 +1,18 @@
 import { hermesContext } from './hermesContextData';
 import { getPageContext } from './hermesPageContext';
 import { hermesResponseRouter } from '../lib/hermesResponseRouter';
+import { thinkWithHermes } from '../lib/hermesBrain';
 import { recordActivity } from '../lib/hermesActivityJournal';
 
 export const hermesQuickPrompts = [
-  'What should I do next?',
-  'What strategy do you have today?',
-  'Tell me about the synthetic customer insert',
-  'How do I approve anything in the research engine?',
-  'Give me your opinion on what we should monetize first',
-  'Show me the blockers'
+  'Run full Nexus audit',
+  'What is live and what is static?',
+  'What processes are running?',
+  'Is YouTube research running?',
+  'What CLI tools do I have?',
+  'What wrote to Supabase?',
+  'What needs Ray approval?',
+  'What did we work on today?'
 ];
 
 /* ── Nexus topic knowledge base ── */
@@ -341,6 +344,16 @@ function respondConversation(text, pageCtx) {
 /* ── Main response builder ── */
 export function buildHermesResponse(message, specialist = 'Hermes CEO Advisor', pageId = null, extraContext = {}) {
   const text = message.trim();
+
+  const brainResult = thinkWithHermes(text, Boolean(pageId));
+  if (brainResult.handled) {
+    return {
+      intent: brainResult.intent, specialist, text: brainResult.text, queued: false, context: hermesContext,
+      pageContext: pageId ? getPageContext(pageId) : null, source: brainResult.source, confidence: brainResult.intent === 'ambiguous' ? 'low' : 'high',
+      needsClarification: brainResult.intent === 'ambiguous', clarificationQuestion: brainResult.intent === 'ambiguous' ? 'Which source should I check?' : undefined,
+      _routerSource: brainResult.source, _routerConfidence: brainResult.intent === 'ambiguous' ? 'low' : 'high',
+    };
+  }
 
   // Always use the shared router for all response generation
   const routerResult = hermesResponseRouter({

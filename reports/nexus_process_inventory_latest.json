@@ -1,0 +1,329 @@
+{
+  "checked_at": "2026-07-01T15:34:38.683589+00:00",
+  "items": [
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Applications/Hermes Agent.app/Contents/MacOS/Hermes Agent",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Applications/Hermes Agent.app/Contents/MacOS/Hermes Agent",
+      "limitations": [],
+      "name": "pid-538",
+      "pid": 538,
+      "proof": "PID 538 uptime 16:13:51",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:13:51"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/signal-router/tradingview_router.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/signal-router/tradingview_router.py",
+      "limitations": [],
+      "name": "pid-580",
+      "pid": 580,
+      "proof": "PID 580 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Users/raymonddavis/.nvm/versions/node/v24.14.0/bin/node /Users/raymonddavis/nexus-ai/services/nexus-orchestrator/src/index.js",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Users/raymonddavis/.nvm/versions/node/v24.14.0/bin/node /Users/raymonddavis/nexus-ai/services/nexus-orchestrator/src/index.js",
+      "limitations": [],
+      "name": "pid-582",
+      "pid": 582,
+      "proof": "PID 582 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Users/raymonddavis/.nvm/versions/node/v24.14.0/bin/node /Users/raymonddavis/nexus-ai/services/nexus-research-worker/src/index.js",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Users/raymonddavis/.nvm/versions/node/v24.14.0/bin/node /Users/raymonddavis/nexus-ai/services/nexus-research-worker/src/index.js",
+      "limitations": [],
+      "name": "pid-586",
+      "pid": 586,
+      "proof": "PID 586 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/bin/cloudflared tunnel --config /Users/raymonddavis/.cloudflared/hermes-gateway-config.yml run 040d51f5-bf05-4626-99af-2a769f1f06ef",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/bin/cloudflared tunnel --config /Users/raymonddavis/.cloudflared/hermes-gateway-config.yml run 040d51f5-bf05-4626-99af-2a769f1f06ef",
+      "limitations": [],
+      "name": "pid-587",
+      "pid": 587,
+      "proof": "PID 587 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/nexus_trading_engine.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/nexus_trading_engine.py",
+      "limitations": [],
+      "name": "pid-588",
+      "pid": 588,
+      "proof": "PID 588 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/dashboard.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/dashboard.py",
+      "limitations": [],
+      "name": "pid-590",
+      "pid": 590,
+      "proof": "PID 590 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/research_intelligence/research_signal_bridge.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/research_intelligence/research_signal_bridge.py",
+      "limitations": [],
+      "name": "pid-598",
+      "pid": 598,
+      "proof": "PID 598 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/auto_executor.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/auto_executor.py",
+      "limitations": [],
+      "name": "pid-607",
+      "pid": 607,
+      "proof": "PID 607 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/operations_center/scheduler.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/operations_center/scheduler.py",
+      "limitations": [],
+      "name": "pid-613",
+      "pid": 613,
+      "proof": "PID 613 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Users/raymonddavis/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace --accept-hooks",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Users/raymonddavis/.hermes/hermes-agent/venv/bin/python -m hermes_cli.main gateway run --replace --accept-hooks",
+      "limitations": [],
+      "name": "pid-618",
+      "pid": 618,
+      "proof": "PID 618 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/tournament_service.py",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python -u /Users/raymonddavis/nexus-ai/trading-engine/tournament_service.py",
+      "limitations": [],
+      "name": "pid-622",
+      "pid": 622,
+      "proof": "PID 622 uptime 16:12:49",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:12:49"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper (GPU).app/Contents/MacOS/Hermes Agent Helper (GPU) --type=gpu-process --user-data-dir=/Users/raymonddavis/Library/Application Support/hermes-desktop --gpu-preferences=SA",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper (GPU).app/Contents/MacOS/Hermes Agent Helper (GPU) --type=gpu-process --user-data-dir=/Users/raymonddavis/Library/Application Support/hermes-desktop --gpu-preferences=SA",
+      "limitations": [],
+      "name": "pid-1135",
+      "pid": 1135,
+      "proof": "PID 1135 uptime 16:07:04",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:07:04"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper (Renderer).app/Contents/MacOS/Hermes Agent Helper (Renderer) --type=renderer --user-data-dir=/Users/raymonddavis/Library/Application Support/hermes-desktop --app-path=/A",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper (Renderer).app/Contents/MacOS/Hermes Agent Helper (Renderer) --type=renderer --user-data-dir=/Users/raymonddavis/Library/Application Support/hermes-desktop --app-path=/A",
+      "limitations": [],
+      "name": "pid-1176",
+      "pid": 1176,
+      "proof": "PID 1176 uptime 16:05:29",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:05:29"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper.app/Contents/MacOS/Hermes Agent Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Applications/Hermes Agent.app/Contents/Frameworks/Hermes Agent Helper.app/Contents/MacOS/Hermes Agent Helper --type=utility --utility-sub-type=network.mojom.NetworkService --lang=en-US --service-sandbox-type=network --user-data-dir=/Users/",
+      "limitations": [],
+      "name": "pid-1192",
+      "pid": 1192,
+      "proof": "PID 1192 uptime 16:04:42",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "16:04:42"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node server/hermes-gateway-adapter.js",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node server/hermes-gateway-adapter.js",
+      "limitations": [],
+      "name": "pid-6514",
+      "pid": 6514,
+      "proof": "PID 6514 uptime 15:51:04",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "15:51:04"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/bin/bash /Users/raymonddavis/nexus-ai/research-engine/run_research.sh",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/bin/bash /Users/raymonddavis/nexus-ai/research-engine/run_research.sh",
+      "limitations": [],
+      "name": "pid-43939",
+      "pid": 43939,
+      "proof": "PID 43939 uptime 02:13",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "02:13"
+    },
+    {
+      "category": "nexus_process",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "command": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/research-env/bin/yt-dlp --write-auto-sub --sub-lang en --skip-download --playlist-end 9 -",
+      "gated_actions": [
+        "stop",
+        "restart"
+      ],
+      "hermes_readable_summary": "/usr/local/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python /Users/raymonddavis/nexus-ai/research-env/bin/yt-dlp --write-auto-sub --sub-lang en --skip-download --playlist-end 9 -",
+      "limitations": [],
+      "name": "pid-46345",
+      "pid": 46345,
+      "proof": "PID 46345 uptime 00:07",
+      "safe_next_action": "Inspect its latest safe log/report; do not stop it from Hermes.",
+      "source": "ps -axo",
+      "status": "live_running",
+      "uptime": "00:07"
+    }
+  ]
+}

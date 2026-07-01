@@ -1,0 +1,188 @@
+{
+  "checked_at": "2026-07-01T15:34:38.683589+00:00",
+  "items": [
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "git is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "git",
+      "path": "/usr/local/bin/git",
+      "proof": "available=True version=git version 2.53.0",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/usr/local/bin/git",
+      "status": "installed_not_running",
+      "version": "git version 2.53.0"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "node is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "node",
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node",
+      "proof": "available=True version=v22.22.3",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node",
+      "status": "installed_not_running",
+      "version": "v22.22.3"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "npm is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "npm",
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/npm",
+      "proof": "available=True version=10.9.8",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/npm",
+      "status": "installed_not_running",
+      "version": "10.9.8"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "python3 is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "python3",
+      "path": "/usr/local/bin/python3",
+      "proof": "available=True version=Python 3.14.5",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/usr/local/bin/python3",
+      "status": "installed_not_running",
+      "version": "Python 3.14.5"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "supabase is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "supabase",
+      "path": "/usr/local/bin/supabase",
+      "proof": "available=True version=2.90.0",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/usr/local/bin/supabase",
+      "status": "installed_not_running",
+      "version": "2.90.0"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "netlify is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "netlify",
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/netlify",
+      "proof": "available=True version=unavailable: TimeoutExpired",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/netlify",
+      "status": "installed_not_running",
+      "version": "unavailable: TimeoutExpired"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "gh is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "gh",
+      "path": "/usr/local/bin/gh",
+      "proof": "available=True version=gh version 2.89.0 (2026-03-26)",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/usr/local/bin/gh",
+      "status": "installed_not_running",
+      "version": "gh version 2.89.0 (2026-03-26)"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "ollama is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "ollama",
+      "path": "/usr/local/bin/ollama",
+      "proof": "available=True version=ollama version is 0.20.5",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/usr/local/bin/ollama",
+      "status": "installed_not_running",
+      "version": "ollama version is 0.20.5"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "opencode is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "opencode",
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
+      "proof": "available=True version=unavailable: TimeoutExpired",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/opencode",
+      "status": "installed_not_running",
+      "version": "unavailable: TimeoutExpired"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "commands that deploy, write, send, or execute"
+      ],
+      "hermes_readable_summary": "codex is available; availability does not imply connection or authorization.",
+      "limitations": [],
+      "name": "codex",
+      "path": "/usr/local/bin/codex",
+      "proof": "available=True version=codex-cli 0.142.4",
+      "safe_next_action": "Use only allow-listed read-only commands.",
+      "source": "/usr/local/bin/codex",
+      "status": "installed_not_running",
+      "version": "codex-cli 0.142.4"
+    },
+    {
+      "available": true,
+      "category": "cli",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [],
+      "hermes_readable_summary": "Playwright package is present.",
+      "limitations": [],
+      "name": "playwright",
+      "proof": "package_present=True",
+      "safe_next_action": "Run existing UI tests only.",
+      "source": "/Users/raymonddavis/nexus-os-v2/node_modules/playwright",
+      "status": "installed_not_running"
+    }
+  ]
+}

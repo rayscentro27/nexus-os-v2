@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-07-01T15:34:38.683589+00:00",
+  "items": [
+    {
+      "category": "research_job",
+      "checked_at": "2026-07-01T15:34:38.683589+00:00",
+      "gated_actions": [
+        "start scheduler",
+        "run paid API",
+        "write to Supabase"
+      ],
+      "hermes_readable_summary": "YouTube tooling and cached metadata exist, but live operation requires concurrent process/log/write proof.",
+      "installed": true,
+      "last_metadata_fetch": "2026-07-01T15:01:54.509854+00:00",
+      "last_transcript_fetch": null,
+      "limitations": [
+        "Cached files do not prove a currently running scheduler",
+        "Supabase row counts were not queried by this local collector"
+      ],
+      "loaded": true,
+      "name": "youtube_research",
+      "notebooklm_export_status": "report_only",
+      "proof": "scripts=27 scheduler_exists=True loaded=True process=False metadata_files=5 write_proof=True",
+      "rows_written_last_24h": "unknown",
+      "rows_written_last_7d": "unknown",
+      "running_now": false,
+      "safe_next_action": "Inspect the scheduler log and a recent safe Supabase write receipt; rerun this collector.",
+      "scheduler_exists": true,
+      "source": "scripts/config/cache/launchd inventory",
+      "status": "not_proven_live",
+      "supabase_ready_files": 20,
+      "supabase_write_proof": true,
+      "watched_channels_count": 4
+    }
+  ]
+}

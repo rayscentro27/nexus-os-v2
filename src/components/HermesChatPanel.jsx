@@ -4,6 +4,7 @@ import { hermesStore } from '../lib/hermesChatStore';
 import { recordActivity } from '../lib/hermesActivityJournal';
 import { buildLiveSupabaseContext, buildWebSearchResponse } from '../lib/hermesLiveContext';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { orchestrateHermes } from '../lib/hermesOrchestrator';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -37,16 +38,16 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     let liveSource = null;
 
     // Enrich with live data for Supabase/web queries
-    const lower = clean.toLowerCase();
-    const isSupabaseQuery = /\b(supabase|database|table|row|live data|can you see|check supabase|approval|research|client|opportunity|offer|health|event|blocker|scheduler)\b/.test(lower);
-    const isWebQuery = /\b(search the internet|look this up|research current|web search|what is the latest|what's happening|online|google|find online)\b/.test(lower);
+    const orchestration = orchestrateHermes(clean, Boolean(activePage));
+    const isSupabaseQuery = orchestration.shouldQuerySupabase;
+    const isWebQuery = orchestration.shouldQueryWeb;
 
     if (isSupabaseQuery) {
       setLoading(true);
       try {
         const liveCtx = await buildLiveSupabaseContext(clean);
         if (liveCtx.liveData) {
-          responseText = liveCtx.text;
+          responseText = orchestration.routing.intent === 'run_nexus_audit' ? `${responseText}\n\n${liveCtx.text}` : liveCtx.text;
           liveSource = liveCtx.source;
         }
         // If not live, keep the sync response (which already has honest fallback)

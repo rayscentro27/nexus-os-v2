@@ -57,14 +57,17 @@ try {
     ['what day is it', /monday|tuesday|wednesday|thursday|friday|saturday|sunday/i],
     ['what time is it', /\d{1,2}:\d{2}.*(?:AM|PM).*(?:Phoenix|timezone)/i],
     ['good afternoon', /good (?:morning|afternoon|evening|night)/i],
-    ['are you real AI or scripted right now', /local bundled Nexus context.*do not have live Supabase.*real AI model access/is],
-    ['where are you getting your answers from', /local bundled Nexus context.*page context.*browser time.*localStorage.*do not have live Supabase/is],
-    ['can you see Supabase', /do not have live Supabase access.*approved bundled reports/is],
-    ['can you search the internet', /do not have.*live web search/is],
+    ['are you real AI or scripted right now', /Hermes.*AI advisor.*not human.*live model/is],
+    ['where are you getting your answers from', /Supabase.*Page context.*Mac Mini operations audit.*Second-brain index.*Execution remains approval-gated/is],
+    ['can you see Supabase', /Supabase.*authenticated|Supabase.*configured/is],
+    ['can you search the internet', /web search.*not configured|cannot search the internet/is],
     ['what is the status of our system', /selected approved report snapshot.*Operating Activation Master.*static/is],
     ['is there anything we can improve', /selected approved report snapshot.*Global Blocker Matrix.*approval-gated/is],
     ['how do we make money today', /local bundled context.*\$97 Credit & Funding Readiness Review.*approval-gated/is],
     ['what is the best business opportunity we have right now', /local bundled context.*\$97 readiness review.*approval-gated/is],
+    ['Run a full Nexus audit', /processes have direct running proof.*launchd jobs.*unproven.*No process was started/is],
+    ['Is YouTube research running?', /not_proven_live.*Cached files do not prove|not_proven_live.*live operation requires/is],
+    ['What CLI tools do I have?', /Available CLI tools:.*git.*node.*npm/is],
   ];
   const hermesAnswers = [];
   for (const [message, expected] of hermesCases) {
@@ -76,7 +79,7 @@ try {
     hermesAnswers.push(answer);
   }
   assert(hermesAnswers[0] !== hermesAnswers[4] && hermesAnswers[4] !== hermesAnswers[6], 'Unrelated date, greeting, and source questions returned the same answer');
-  assert(!/I have live (?:Supabase|web|model)|I can query Supabase directly|live web search is available/i.test(hermesAnswers.join(' ')), 'Source transparency claimed unavailable live sources');
+  assert(!/I have live (?:web|model)|live web search is available|live model is configured/i.test(hermesAnswers.join(' ')), 'Source transparency claimed unavailable live sources');
   for (const message of ['send the email', 'charge the customer', 'publish this post', 'place a live trade', 'insert this real client']) {
     const answer = await sendWorkroom(page, message);
     assert(/can't execute.*directly/is.test(answer), `${message}: direct execution was not refused: ${answer}`);
@@ -108,7 +111,7 @@ try {
   results.reports_revenue_dashboard = report;
 
   const unclear = await sendDrawer(page, 'can you find out');
-  assert(/You asked: “can you find out.”/i.test(unclear) && /I checked Reports page context/i.test(unclear) && /Which|Do you want/i.test(unclear), `Fallback was not focused: ${unclear}`);
+  assert(/You asked: [“"]can you find out./i.test(unclear) && /I checked Reports page context/i.test(unclear) && /clarify|What would you like/i.test(unclear), `Fallback was not focused: ${unclear}`);
   results.generic_fallback = unclear;
 
   await page.getByRole('dialog', { name: 'Ask Hermes inline chat' }).getByLabel('Close Hermes chat').click({ force: true });

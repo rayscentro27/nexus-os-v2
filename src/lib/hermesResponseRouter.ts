@@ -272,6 +272,7 @@ export function classifyIntent(text: string): QuestionType {
 
   if (/\b(what reports are available|what does this report mean|from this report)\b/.test(lower)) return 'page_question';
   if (/\b(is there anything we can improve|what can we improve|best (business )?opportunity)\b/.test(lower)) return 'opinion';
+  if (/\b(live trading|paper trading|paper only|trading data)\b/.test(lower)) return 'trading';
   if (/\b(is this live|is this static|what.*source|live or static|why.*show.*data.*supabase|why.*disagree|mismatch|split.?brain|compare.*supabase|page.*vs.*supabase|which sections.*live|what.*sync|need.*sync)\b/.test(lower)) return 'source_reasoning';
   if (/\b(make money|monetize|revenue|income|pricing)\b/.test(lower)) return 'money';
   if (/\b(julius erving|fake customer inserted|synthetic customer status)\b/.test(lower)) return 'nexus_topic';
