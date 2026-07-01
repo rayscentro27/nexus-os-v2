@@ -18,6 +18,19 @@
 
 import { isSensitive, json, cors } from '../_shared/firewall.ts';
 
+// ── Cost / safety guards ──
+const MAX_INPUT_CHARS = 24000;      // ~6000 tokens
+const MAX_OUTPUT_TOKENS = 1200;     // hard cap on response length
+const MAX_HISTORY_TURNS = 10;
+const MAX_HISTORY_CHARS = 4000;
+const ALLOWED_PROVIDERS = new Set(['openrouter', 'gemini', 'ollama']);
+const MODEL_ALLOWLIST: Record<string, string[]> = {
+  openrouter: ['openai/gpt-4o-mini', 'openai/gpt-4o', 'anthropic/claude-3.5-sonnet', 'google/gemini-2.0-flash-001', 'auto'],
+  gemini: ['gemini-1.5-flash', 'gemini-1.5-pro'],
+  ollama: ['llama3.1', 'qwen2.5:0.5b', 'gemma3:1b'],
+};
+const REJECT_ACTIONS = /\b(send|email|publish|post|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete|create.*task|start|stop)\b/i;
+
 // Stable, cached identity + business context. Keep this byte-stable to maximize prompt-cache hits;
 // bump HERMES_CONTEXT_VERSION to intentionally bust the cache after edits. Contains only
 // internal_summary-level business context — never secrets or customer data.
@@ -141,11 +154,28 @@ function buildSafeHistory(ctx: Record<string, unknown> | undefined): ChatMessage
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors() });
+  const startTime = Date.now();
 
   const body = await req.json().catch(() => ({}));
   const message: string = body?.message ?? '';
   const mode: string = body?.mode ?? 'conversation';
   const context: Record<string, unknown> | undefined = body?.context;
+
+  // ── Guard: input size ──
+  if (message.length > MAX_INPUT_CHARS) {
+    return json({
+      configured: true, reply: `Input too long (${message.length} chars, max ${MAX_INPUT_CHARS}). Please shorten your message.`,
+      metadata: { provider: 'none', model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+    });
+  }
+
+  // ── Guard: dangerous actions ──
+  if (REJECT_ACTIONS.test(message)) {
+    return json({
+      configured: true, reply: 'This action is approval-gated. I will not send execution requests to a model.',
+      metadata: { provider: 'none', model: 'blocked', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+    });
+  }
 
   // Firewall: the user message is refused outright if it references private data.
   if (blocked(String(message)))
@@ -164,64 +194,105 @@ Deno.serve(async (req: Request) => {
   const flat = messages.map((m) => (m.role === 'user' ? `Ray: ${m.content}` : m.content)).join('\n\n');
 
   const provider = (Deno.env.get('HERMES_CHAT_PROVIDER') ?? 'none').toLowerCase();
-  const model = Deno.env.get('HERMES_CHAT_MODEL');
+  const model = Deno.env.get('HERMES_MODEL') || Deno.env.get('HERMES_CHAT_MODEL');
+
+  // ── Guard: provider allowlist ──
+  if (provider !== 'none' && !ALLOWED_PROVIDERS.has(provider)) {
+    return json({
+      configured: false,
+      metadata: { provider, model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+    });
+  }
 
   try {
     if (provider === 'openrouter') {
       const key = Deno.env.get('OPENROUTER_API_KEY');
-      if (!key) return json({ configured: false });
+      if (!key) return json({
+        configured: false,
+        metadata: { provider: 'openrouter', model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+      });
       // Primary model first, then optional fallback. A non-2xx, a provider error in the body, or
       // an empty reply each count as a miss → try the next model. Provider error details are never
       // returned to the client. The message + context were firewall-checked above.
-      const models = [model ?? 'openai/gpt-4o-mini', Deno.env.get('HERMES_CHAT_FALLBACK_MODEL')]
+      const models = [model ?? 'openai/gpt-4o-mini', Deno.env.get('HERMES_FALLBACK_MODEL') || Deno.env.get('HERMES_CHAT_FALLBACK_MODEL')]
         .filter((m): m is string => Boolean(m && m.trim()));
       for (const m of models) {
         try {
           const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-            body: JSON.stringify({ model: m, messages }),
+            body: JSON.stringify({ model: m, messages, max_tokens: MAX_OUTPUT_TOKENS }),
           });
           if (!r.ok) continue;
           const d = await r.json();
           if (d?.error) continue;
           const reply = d?.choices?.[0]?.message?.content;
-          if (reply && String(reply).trim())
-            return json({ configured: true, reply: String(reply), model: m });
+          if (reply && String(reply).trim()) {
+            const estInput = Math.ceil(message.length / 4);
+            const estOutput = Math.ceil(String(reply).length / 4);
+            return json({
+              configured: true, reply: String(reply),
+              metadata: { provider: 'openrouter', model: m, fallbackUsed: models.length > 1 && m !== models[0], estimatedInputTokens: estInput, estimatedOutputTokens: estOutput, maxOutputTokens: MAX_OUTPUT_TOKENS, source: 'hermes-chat', durationMs: Date.now() - startTime },
+            });
+          }
         } catch {
           continue;
         }
       }
-      return json({ configured: true, reply: "I'm configured, but the chat model is unavailable right now. Please try again shortly." });
+      return json({
+        configured: true, reply: "I'm configured, but the chat model is unavailable right now. Please try again shortly.",
+        metadata: { provider: 'openrouter', model: 'none', fallbackUsed: true, source: 'hermes-chat', durationMs: Date.now() - startTime },
+      });
     }
 
     if (provider === 'gemini') {
       const key = Deno.env.get('GEMINI_API_KEY');
-      if (!key) return json({ configured: false });
+      if (!key) return json({
+        configured: false,
+        metadata: { provider: 'gemini', model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+      });
       const m = model ?? 'gemini-1.5-flash';
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${key}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: flat }] }] }),
+        body: JSON.stringify({ contents: [{ parts: [{ text: flat }] }], generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS } }),
       });
       const d = await r.json();
-      return json({ configured: true, reply: d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '' });
+      const reply = d?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      return json({
+        configured: true, reply,
+        metadata: { provider: 'gemini', model: m, fallbackUsed: false, estimatedInputTokens: Math.ceil(flat.length / 4), estimatedOutputTokens: Math.ceil(reply.length / 4), maxOutputTokens: MAX_OUTPUT_TOKENS, source: 'hermes-chat', durationMs: Date.now() - startTime },
+      });
     }
 
     if (provider === 'ollama') {
       const base = Deno.env.get('OLLAMA_URL');
-      if (!base) return json({ configured: false });
+      if (!base) return json({
+        configured: false,
+        metadata: { provider: 'ollama', model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+      });
+      const m = model ?? 'qwen2.5:0.5b';
       const r = await fetch(`${base.replace(/\/$/, '')}/api/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: model ?? 'llama3.1', stream: false, messages }),
+        body: JSON.stringify({ model: m, stream: false, messages, options: { num_predict: MAX_OUTPUT_TOKENS } }),
       });
       const d = await r.json();
-      return json({ configured: true, reply: d?.message?.content ?? '' });
+      const reply = d?.message?.content ?? '';
+      return json({
+        configured: true, reply,
+        metadata: { provider: 'ollama', model: m, fallbackUsed: false, estimatedInputTokens: Math.ceil(message.length / 4), estimatedOutputTokens: Math.ceil(reply.length / 4), maxOutputTokens: MAX_OUTPUT_TOKENS, source: 'hermes-chat', durationMs: Date.now() - startTime },
+      });
     }
 
-    return json({ configured: false });
+    return json({
+      configured: false,
+      metadata: { provider: 'none', model: 'none', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+    });
   } catch (e) {
-    return json({ configured: false, error: String(e) });
+    return json({
+      configured: false, error: String(e),
+      metadata: { provider, model: 'error', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
+    });
   }
 });

@@ -1,0 +1,29 @@
+{
+  "report": "hermes_live_model_activation_next_steps",
+  "generated_utc": "2026-07-01T17:30:00Z",
+  "status": "ready_to_activate",
+  "required_secrets": {
+    "HERMES_MODEL": { "status": "missing", "suggested_value": "openrouter/auto", "notes": "Primary model identifier" },
+    "HERMES_FALLBACK_MODEL": { "status": "missing", "suggested_value": "ollama/qwen2.5:0.5b", "notes": "Fallback when primary unavailable" },
+    "HERMES_CHAT_PROVIDER": { "status": "needs_setting", "suggested_value": "openrouter", "notes": "Provider selection" },
+    "OPENROUTER_API_KEY": { "status": "present", "notes": "From inventory — value not printed" },
+    "VITE_HERMES_CHAT_ENABLED": { "status": "present", "notes": "Frontend flag — already true" }
+  },
+  "activation_command": "supabase secrets set HERMES_MODEL=openrouter/auto HERMES_FALLBACK_MODEL=ollama/qwen2.5:0.5b HERMES_CHAT_PROVIDER=openrouter",
+  "deploy_command": "supabase functions deploy hermes-chat",
+  "rollback_command": "supabase secrets unset HERMES_MODEL",
+  "verification_questions": [
+    "Are you using a live model right now?",
+    "What is your favorite food?",
+    "What model did you use?",
+    "How are you controlling token cost?",
+    "Explain the Nexus audit in plain language",
+    "Publish this post"
+  ],
+  "cost_estimate": {
+    "openrouter_auto": "$0.001-0.005 per complex call, most answers $0.00",
+    "openai_gpt4o_mini": "$0.00015/1K input, $0.0006/1K output, <$1/month typical"
+  },
+  "live_model_enabled": false,
+  "hermes_chat_deployed": false
+}

@@ -8,10 +8,17 @@
  *
  * If no provider is configured, the caller renders a clear "not configured" message — Hermes must
  * never fake current facts. Private data is never sent to a public provider/search.
+ *
+ * Model routing: the `hermesModelChat` function integrates routing policy, context packing,
+ * usage logging, and fallback. The model is ONE tool — most answers use no_model.
  */
 
 import { supabase } from './supabaseClient';
 import { containsSensitive } from './dataScopes';
+import { routeModel } from './hermesModelRoutingPolicy';
+import { packContext } from './hermesContextPacker';
+import { logModelAttempt, logModelSkipped } from './hermesModelUsageLedger';
+import type { VisibleItem } from './hermesContextBridge';
 
 const CHAT_ENABLED = (import.meta.env.VITE_HERMES_CHAT_ENABLED as string | undefined) === 'true';
 const SEARCH_ENABLED = (import.meta.env.VITE_HERMES_SEARCH_ENABLED as string | undefined) === 'true';
@@ -20,6 +27,11 @@ export interface ProviderResult {
   configured: boolean;   // false → caller shows the canonical "not configured" line
   blocked?: boolean;     // true → request was refused by the firewall (do not show not-configured)
   text: string;
+  source?: string;       // "local", "model", "model_fallback_local", "not_configured", "no_model_route"
+  route?: string;        // routing decision route
+  modelProvider?: string;
+  modelName?: string;
+  usageId?: string;
 }
 
 const NOT_CONFIGURED: ProviderResult = { configured: false, text: '' };
@@ -104,6 +116,186 @@ export async function hermesChat(message: string, mode: string, context?: Hermes
     return { configured: true, text: String(data.reply ?? '') };
   } catch {
     return NOT_CONFIGURED;
+  }
+}
+
+/**
+ * Routed model chat — the main entry point for Hermes model calls.
+ * Goes through: routing policy → context packing → model call → usage logging → fallback.
+ */
+export async function hermesModelChat(
+  message: string,
+  options: {
+    mode?: string;
+    context?: HermesContext;
+    visibleItems?: VisibleItem[];
+    selectedItem?: VisibleItem | null;
+    pageSummary?: string;
+    isBackgroundJob?: boolean;
+  } = {}
+): Promise<ProviderResult> {
+  // Step 1: Route through policy
+  const decision = routeModel(message, options.isBackgroundJob);
+
+  // NO_MODEL: answer locally, no model call
+  if (decision.route === 'no_model') {
+    logModelSkipped(decision.reason, 'local_answer');
+    return {
+      configured: false,
+      text: '',
+      source: 'no_model_route',
+      route: 'no_model',
+    };
+  }
+
+  // BLOCKED_OR_GATED: never call model
+  if (decision.route === 'blocked_or_gated') {
+    logModelSkipped(decision.reason, 'blocked_execution');
+    return {
+      configured: true,
+      blocked: true,
+      text: `This action is approval-gated and will not be sent to a model. ${decision.reason}`,
+      source: 'blocked_or_gated',
+      route: 'blocked_or_gated',
+    };
+  }
+
+  // Step 2: Pack context within budget
+  const packet = packContext(message, decision.route, {
+    visibleItems: options.visibleItems as any,
+    selectedItem: options.selectedItem as any,
+    pageSummary: options.pageSummary,
+    isBackgroundJob: options.isBackgroundJob,
+  });
+
+  // Step 3: Check if provider is available
+  if (!CHAT_ENABLED || !supabase) {
+    logModelAttempt({
+      route: decision.route,
+      modelProvider: 'none',
+      modelName: 'none',
+      promptType: decision.route,
+      estimatedInputTokens: packet.estimatedInputTokens,
+      estimatedOutputTokens: 0,
+      contextSources: packet.sourcesIncluded,
+      wasModelCalled: false,
+      skippedReason: 'Provider not configured',
+      fallbackUsed: '',
+      costEstimateAvailable: false,
+      error: '',
+      durationMs: 0,
+    });
+    return {
+      configured: false,
+      text: '',
+      source: 'not_configured',
+      route: decision.route,
+    };
+  }
+
+  // Step 4: Call model via server-side Edge Function
+  const startTime = Date.now();
+  const contextPayload: HermesContext = {
+    ...options.context,
+    facts: packet.compactContext || options.context?.facts,
+  };
+
+  try {
+    const result = await hermesChat(message, options.mode || 'conversation', contextPayload);
+    const durationMs = Date.now() - startTime;
+
+    if (result.blocked) {
+      logModelAttempt({
+        route: decision.route,
+        modelProvider: 'firewall',
+        modelName: 'blocked',
+        promptType: decision.route,
+        estimatedInputTokens: packet.estimatedInputTokens,
+        estimatedOutputTokens: 0,
+        contextSources: packet.sourcesIncluded,
+        wasModelCalled: false,
+        skippedReason: 'Blocked by firewall',
+        fallbackUsed: '',
+        costEstimateAvailable: false,
+        error: '',
+        durationMs,
+      });
+      return result;
+    }
+
+    if (!result.configured || !result.text) {
+      // Model unavailable — fallback to local
+      logModelAttempt({
+        route: decision.route,
+        modelProvider: 'unknown',
+        modelName: 'unavailable',
+        promptType: decision.route,
+        estimatedInputTokens: packet.estimatedInputTokens,
+        estimatedOutputTokens: 0,
+        contextSources: packet.sourcesIncluded,
+        wasModelCalled: false,
+        skippedReason: 'Model unavailable',
+        fallbackUsed: 'local',
+        costEstimateAvailable: false,
+        error: 'Model returned empty or not configured',
+        durationMs,
+      });
+      return {
+        configured: true,
+        text: 'Model unavailable, used local reasoning.',
+        source: 'model_fallback_local',
+        route: decision.route,
+      };
+    }
+
+    // Success
+    logModelAttempt({
+      route: decision.route,
+      modelProvider: 'supabase_edge_function',
+      modelName: 'hermes-chat',
+      promptType: decision.route,
+      estimatedInputTokens: packet.estimatedInputTokens,
+      estimatedOutputTokens: Math.ceil(result.text.length / 4),
+      contextSources: packet.sourcesIncluded,
+      wasModelCalled: true,
+      skippedReason: '',
+      fallbackUsed: '',
+      costEstimateAvailable: false,
+      error: '',
+      durationMs,
+    });
+
+    return {
+      configured: true,
+      text: result.text,
+      source: 'model',
+      route: decision.route,
+      modelProvider: 'supabase_edge_function',
+      modelName: 'hermes-chat',
+    };
+  } catch (e) {
+    const durationMs = Date.now() - startTime;
+    logModelAttempt({
+      route: decision.route,
+      modelProvider: 'error',
+      modelName: 'error',
+      promptType: decision.route,
+      estimatedInputTokens: packet.estimatedInputTokens,
+      estimatedOutputTokens: 0,
+      contextSources: packet.sourcesIncluded,
+      wasModelCalled: false,
+      skippedReason: 'Error',
+      fallbackUsed: 'local',
+      costEstimateAvailable: false,
+      error: String(e).slice(0, 200),
+      durationMs,
+    });
+    return {
+      configured: true,
+      text: 'Model call failed, used local reasoning.',
+      source: 'model_fallback_local',
+      route: decision.route,
+    };
   }
 }
 

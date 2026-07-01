@@ -1,0 +1,92 @@
+{
+  "policy": "hermes_model_cost_policy",
+  "version": "1.0",
+  "generated_utc": "2026-07-01T17:30:00Z",
+  "summary": "Hermes model usage must be routed, capped, logged, and context-limited. The model is ONE tool in Hermes orchestration — not the only brain.",
+
+  "routing": {
+    "no_model": {
+      "description": "Use local/router answer only. Most answers should be here.",
+      "examples": ["favorite food/sport", "jokes", "simple capability answers", "Supabase row counts", "source labels", "basic process summaries", "yes/no status from reports", "memory/recall", "scheduling"]
+    },
+    "cheap_model": {
+      "description": "Use cheap/local/fallback model only if enabled.",
+      "examples": ["short plain-language rewrite", "short report explanation", "formatting a summary", "small non-critical reasoning"],
+      "max_input_tokens": 1500,
+      "max_output_tokens": 500,
+      "max_turns": 2
+    },
+    "primary_model": {
+      "description": "Use OpenRouter/main model only for higher-value reasoning.",
+      "examples": ["strategic reasoning", "complex multi-source synthesis", "business recommendation", "detailed audit explanation", "implementation plan"],
+      "max_input_tokens": 6000,
+      "max_output_tokens": 1200,
+      "max_turns": 4
+    },
+    "blocked_or_gated": {
+      "description": "Never direct model execution.",
+      "examples": ["send email", "publish post", "charge customer", "place live trade", "submit dispute", "destructive SQL", "start/stop workers", "deploy", "run seed"]
+    }
+  },
+
+  "background_jobs": {
+    "default_route": "no_model",
+    "allowed_route": "cheap_model",
+    "requires_ray_approval_for": "primary_model",
+    "hard_limits": {
+      "max_turns": 1,
+      "max_input_tokens": 1000,
+      "max_output_tokens": 300
+    },
+    "forbidden": [
+      "recursive model-triggered jobs",
+      "model calls inside tight loops",
+      "automatic web+model chains",
+      "uncontrolled loops"
+    ],
+    "policy": "Background jobs that need model must use cheap_model unless Ray approves. Stop after repeated failure. Log every model call."
+  },
+
+  "context_budgets": {
+    "default_max_input_estimate": 3000,
+    "cheap_model_max_input": 1500,
+    "primary_model_max_input": 6000,
+    "background_job_max_input": 1000,
+    "default_max_output": 700,
+    "primary_model_max_output": 1200,
+    "default_max_turns": 4,
+    "background_max_turns": 1
+  },
+
+  "usage_logging": {
+    "enabled": true,
+    "storage": "localStorage (nexus-hermes-model-usage-v1)",
+    "max_entries": 200,
+    "logged_fields": ["route", "provider", "model", "tokens", "context_sources", "duration", "error"],
+    "never_logged": ["secrets", "raw prompts", "PII", "full .env", "private keys"]
+  },
+
+  "safety_rules": [
+    "No frontend API keys — all provider keys in Supabase Edge Function secrets only",
+    "No service role in frontend",
+    "No RLS weakening",
+    "No destructive SQL",
+    "No external sends/trades/charges/disputes/publishing",
+    "No arbitrary shell from frontend",
+    "No uncontrolled loops",
+    "No heavy benchmarks",
+    "No fake model/web/Supabase claims",
+    "No model calls for dangerous execution",
+    "Firewall scans message and context before any external model call"
+  ],
+
+  "edge_function_guards": {
+    "max_input_chars": 24000,
+    "max_output_tokens": 1200,
+    "provider_allowlist": ["openrouter", "gemini", "ollama"],
+    "model_allowlist_enforced": true,
+    "firewall_active": true,
+    "reject_actions": true,
+    "structured_metadata_returned": true
+  }
+}

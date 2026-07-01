@@ -5,6 +5,9 @@ import { recordActivity } from '../lib/hermesActivityJournal';
 import { buildLiveSupabaseContext, buildWebSearchResponse } from '../lib/hermesLiveContext';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { orchestrateHermes } from '../lib/hermesOrchestrator';
+import { hermesModelChat } from '../lib/hermesProviders';
+import { getModelAvailability } from '../lib/hermesModelRoutingPolicy';
+import { getRecentUsageSummary, getModelActivityAnswer } from '../lib/hermesModelUsageLedger';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data when connected, and I use local bundled context as fallback. Web search and live model are not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -36,40 +39,87 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
     const userMsg = { id: `${now}-ray`, role: 'ray', text: clean };
     let responseText = result.text;
     let liveSource = null;
+    let modelSource = null;
 
-    // Enrich with live data for Supabase/web queries
-    const orchestration = orchestrateHermes(clean, Boolean(activePage));
-    const isSupabaseQuery = orchestration.shouldQuerySupabase;
-    const isWebQuery = orchestration.shouldQueryWeb;
+    // Check for model status questions — answer directly from local data
+    const lower = clean.toLowerCase();
+    if (/\b(are you using a live model|what model did you use|how are you controlling token|what is using tokens|can you use ollama|can you use openrouter|did you use a model)\b/i.test(lower)) {
+      const avail = getModelAvailability();
+      if (/\b(are you using a live model|did you use a model)\b/i.test(lower)) {
+        responseText = avail.configured
+          ? `Hermes model is available via ${avail.provider}, but I answer most questions from local context without spending tokens. For this message, I used local context (no model call).`
+          : `No, the Hermes model is not configured yet. All my answers come from local context and Supabase data.`;
+      } else if (/\bwhat model did you use\b/i.test(lower)) {
+        responseText = avail.configured
+          ? `Provider: ${avail.provider}. Model: ${avail.model}. For this message, no model was called — local context was sufficient.`
+          : `No model is configured. All answers are from local context.`;
+      } else if (/\bhow are you controlling token|what is using tokens\b/i.test(lower)) {
+        const usage = getRecentUsageSummary(3);
+        responseText = `Token cost controls:\n• Routing policy decides if a question needs a model (most don't)\n• Context is packed within budget (max 6000 tokens for primary model)\n• Output is capped at 1200 tokens\n• Background jobs default to no model\n• Usage is logged locally\n\nRecent usage:\n${usage}`;
+      } else if (/\bcan you use ollama\b/i.test(lower)) {
+        responseText = avail.configured
+          ? `Yes, Ollama is available as a fallback provider. The Mac Mini has qwen2.5:0.5b and gemma3:1b installed. Ollama is used as a fallback when OpenRouter is unavailable, not as the primary model.`
+          : `Ollama is installed on the Mac Mini and the Edge Function supports it as a fallback provider, but the Hermes model is not configured yet.`;
+      } else if (/\bcan you use openrouter\b/i.test(lower)) {
+        responseText = avail.configured
+          ? `Yes, OpenRouter is the primary model path. The OPENROUTER_API_KEY is present in Supabase Edge Function secrets.`
+          : `OpenRouter is the recommended primary model path, but HERMES_MODEL is not set yet. The OPENROUTER_API_KEY is present.`;
+      }
+      modelSource = 'local_status';
+    }
 
-    if (isSupabaseQuery) {
-      setLoading(true);
-      try {
-        const liveCtx = await buildLiveSupabaseContext(clean);
-        if (liveCtx.liveData) {
-          responseText = orchestration.routing.intent === 'run_nexus_audit' ? `${responseText}\n\n${liveCtx.text}` : liveCtx.text;
-          liveSource = liveCtx.source;
+    // Enrich with live data for Supabase/web queries (only if no model status answer)
+    if (!modelSource) {
+      const orchestration = orchestrateHermes(clean, Boolean(activePage));
+      const isSupabaseQuery = orchestration.shouldQuerySupabase;
+      const isWebQuery = orchestration.shouldQueryWeb;
+
+      if (isSupabaseQuery) {
+        setLoading(true);
+        try {
+          const liveCtx = await buildLiveSupabaseContext(clean);
+          if (liveCtx.liveData) {
+            responseText = orchestration.routing.intent === 'run_nexus_audit' ? `${responseText}\n\n${liveCtx.text}` : liveCtx.text;
+            liveSource = liveCtx.source;
+          }
+        } catch (e) { /* Keep sync response on error */ }
+        setLoading(false);
+      }
+
+      if (isWebQuery) {
+        setLoading(true);
+        try {
+          const webResult = await buildWebSearchResponse(clean);
+          responseText = webResult.text;
+          liveSource = webResult.source;
+        } catch (e) { /* Keep sync response on error */ }
+        setLoading(false);
+      }
+
+      // Try routed model chat for higher-value questions (only if no sync answer yet)
+      if (!responseText || responseText === result.text) {
+        const modelResult = await hermesModelChat(clean, {
+          visibleItems,
+          selectedItem,
+          pageSummary: activePage || undefined,
+        });
+        if (modelResult.source === 'model' && modelResult.text) {
+          responseText = modelResult.text;
+          modelSource = 'model';
+        } else if (modelResult.source === 'model_fallback_local' && modelResult.text) {
+          responseText = modelResult.text;
+          modelSource = 'model_fallback_local';
         }
-        // If not live, keep the sync response (which already has honest fallback)
-      } catch (e) {
-        // Keep sync response on error
+        // no_model_route and blocked_or_gated: keep local answer
       }
-      setLoading(false);
     }
 
-    if (isWebQuery) {
-      setLoading(true);
-      try {
-        const webResult = await buildWebSearchResponse(clean);
-        responseText = webResult.text;
-        liveSource = webResult.source;
-      } catch (e) {
-        // Keep sync response on error
-      }
-      setLoading(false);
-    }
-
-    const hermesMsg = { id: `${now}-hermes`, role: 'hermes', text: responseText, source: liveSource || result.source };
+    const hermesMsg = {
+      id: `${now}-hermes`,
+      role: 'hermes',
+      text: responseText,
+      source: modelSource || liveSource || result.source,
+    };
     setMessages(current => {
       const next = [...current, userMsg, hermesMsg];
       hermesStore.saveMessages(next.map(m => ({ role: m.role === 'ray' ? 'user' : 'hermes', text: m.text })));
@@ -85,8 +135,10 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
   }, []);
 
   const statusLabel = isSupabaseConfigured ? 'Live Supabase + local context' : 'Local context';
+  const modelAvail = getModelAvailability();
+  const modelStatus = modelAvail.configured ? 'Model available' : 'No model';
   return <section className="nxos-chat-panel">
-    <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · {statusLabel}</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : statusLabel}</span></header>
+    <header><div><strong>{activeSpecialist}</strong><small>Ray's private CEO Advisor · {statusLabel} · {modelStatus}</small></div><span className="nxos-live"><i /> {loading ? 'Querying...' : statusLabel}</span></header>
     <div className="nxos-chat-log" aria-live="polite">{messages.map((message) => <HermesMessageBubble key={message.id} message={message} onDelegate={(item) => onPlanCreated?.({ id:`plan-${Date.now()}`,prompt:item.text,specialist:activeSpecialist,status:'queued_local_safe' })} onReview={onReviewCreated} onSpecialist={onSpecialistRequested} />)}<div ref={end} /></div>
     <div className="nxos-chat-compose"><textarea aria-label="Message Hermes" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } }} placeholder="Ask Hermes about Supabase, research, approvals, or anything…" /><button type="button" className="primary" disabled={loading} onClick={() => send()}>{loading ? 'Loading...' : 'Send'}</button></div>
     <div className="nxos-quick-prompts"><span>Try asking</span>{['can you check Supabase', 'what approvals are pending', 'can you search the internet', 'how do we make money today'].map((prompt) => <button type="button" key={prompt} onClick={() => send(prompt)}>{prompt}</button>)}</div>
