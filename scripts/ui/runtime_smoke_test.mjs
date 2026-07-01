@@ -155,7 +155,7 @@ try {
   console.log('\n  [4a] Route rendering checks...');
   for (const route of ROUTES) {
     await checkAsync(`Route ${route.name} renders non-blank content`, async () => {
-      await page.goto(routeUrl(route.hash), { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await page.goto(routeUrl(route.hash), { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(2000);
 
       const bodyText = await page.evaluate(() => {

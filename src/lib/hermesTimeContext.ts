@@ -131,7 +131,7 @@ export function detectTimeIntent(text: string): {
 } {
   const lower = normalizeTimeText(text);
 
-  const isTimeQuestion = /\b(what is today's date|what date is it|what day is it|what day are we on|what is the date|today's date|today date|what time is it|current time|time now|current date)\b/.test(lower);
+  const isTimeQuestion = /\b(what is today's date|what is today|what date is it|what day is it|what day are we on|what is the date|today's date|today date|what time is it|current time|time now|current date)\b/.test(lower);
   const relativeTimePattern = /\b(this evening|tonight|tomorrow(?: morning| afternoon| evening| night)?|later today|in \d+ hours?|next (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/;
   const isSchedulingPhrase = relativeTimePattern.test(lower);
 

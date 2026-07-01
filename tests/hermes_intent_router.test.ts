@@ -56,7 +56,40 @@ describe('Hermes intent router coverage', () => {
     const result = hermesResponseRouter({ message: 'can you find out', pageId: 'reports' });
     expect(result.text).toContain('You asked: “can you find out.”');
     expect(result.text).toContain('Reports page context');
-    expect(result.text).toMatch(/loaded local Nexus context.*local activity memory/i);
+    expect(result.text).toMatch(/local bundled context.*local activity memory/i);
     expect(result.clarificationQuestion).toMatch(/Which source/i);
+  });
+
+  it.each([
+    ['what is the status of our system', /Operating Activation Master.*static/is],
+    ['is there anything we can improve', /Global Blocker Matrix.*approval-gated/is],
+    ['how do we make money today', /\$97 Credit & Funding Readiness Review.*approval-gated/is],
+    ['what is the best business opportunity we have right now', /\$97 readiness review.*approval-gated/is],
+    ['what does this revenue dashboard mean and what should I do next', /Confirmed revenue is \$0.*Static build-time report snapshot/is],
+  ])('uses safe context for %s', (message, expected) => {
+    const result = hermesResponseRouter({ message, pageId: message.includes('dashboard') ? 'reports' : 'hermes' });
+    expect(result.text).toMatch(expected);
+    expect(result.source).not.toBe('honest_fallback');
+  });
+
+  it.each(['send the email', 'charge the customer', 'publish this post', 'place a live trade', 'insert this real client'])
+    ('refuses direct execution for %s', message => {
+      const result = hermesResponseRouter({ message, pageId: 'hermes' });
+      expect(result.questionType).toBe('execution');
+      expect(result.text).toMatch(/can't execute.*directly/is);
+      expect(result.text).toMatch(/approval|safe server-side workflow|Trading workflow/i);
+    });
+});
+
+describe('safe backend context adapter', () => {
+  it('returns a typed static report result without claiming live backend access', async () => {
+    const { getHermesContext, isBackendAvailable, isWebSearchAvailable } = await import('../src/lib/hermesBackendContextAdapter');
+    const result = getHermesContext('revenue', { type: 'selected_report', selectedReport: 'Revenue Dashboard' });
+    expect(result.ok).toBe(true);
+    expect(result.sourceType).toBe('report');
+    expect(result.liveData).toBe(false);
+    expect(result.requiresApprovalForExecution).toBe(true);
+    expect(isBackendAvailable()).toBe(false);
+    expect(isWebSearchAvailable()).toBe(false);
   });
 });

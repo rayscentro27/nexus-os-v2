@@ -45,7 +45,8 @@ try {
   const browser = await chromium.launch({ headless: true, channel: 'chrome' });
   console.log('Browser launched');
   const page = await browser.newPage();
-  page.setDefaultTimeout(10_000);
+  page.setDefaultTimeout(30_000);
+  page.setDefaultNavigationTimeout(30_000);
 
   await page.goto(`${base}#hermes`);
   await page.evaluate(() => localStorage.clear());
@@ -56,8 +57,14 @@ try {
     ['what day is it', /monday|tuesday|wednesday|thursday|friday|saturday|sunday/i],
     ['what time is it', /\d{1,2}:\d{2}.*(?:AM|PM).*(?:Phoenix|timezone)/i],
     ['good afternoon', /good (?:morning|afternoon|evening|night)/i],
-    ['are you real AI or scripted right now', /local bundled Nexus context.*do not yet have live Supabase.*real AI model access/is],
-    ['where are you getting your answers from', /local bundled Nexus context.*page context.*browser time.*local activity journal/is],
+    ['are you real AI or scripted right now', /local bundled Nexus context.*do not have live Supabase.*real AI model access/is],
+    ['where are you getting your answers from', /local bundled Nexus context.*page context.*browser time.*localStorage.*do not have live Supabase/is],
+    ['can you see Supabase', /do not have live Supabase access.*approved bundled reports/is],
+    ['can you search the internet', /do not have.*live web search/is],
+    ['what is the status of our system', /selected approved report snapshot.*Operating Activation Master.*static/is],
+    ['is there anything we can improve', /selected approved report snapshot.*Global Blocker Matrix.*approval-gated/is],
+    ['how do we make money today', /local bundled context.*\$97 Credit & Funding Readiness Review.*approval-gated/is],
+    ['what is the best business opportunity we have right now', /local bundled context.*\$97 readiness review.*approval-gated/is],
   ];
   const hermesAnswers = [];
   for (const [message, expected] of hermesCases) {
@@ -69,7 +76,13 @@ try {
     hermesAnswers.push(answer);
   }
   assert(hermesAnswers[0] !== hermesAnswers[4] && hermesAnswers[4] !== hermesAnswers[6], 'Unrelated date, greeting, and source questions returned the same answer');
-  assert(!/I have live (?:Supabase|web|model)|I can query Supabase directly|live web search is available/i.test(hermesAnswers.slice(-2).join(' ')), 'Source transparency claimed unavailable live sources');
+  assert(!/I have live (?:Supabase|web|model)|I can query Supabase directly|live web search is available/i.test(hermesAnswers.join(' ')), 'Source transparency claimed unavailable live sources');
+  for (const message of ['send the email', 'charge the customer', 'publish this post', 'place a live trade', 'insert this real client']) {
+    const answer = await sendWorkroom(page, message);
+    assert(/can't execute.*directly/is.test(answer), `${message}: direct execution was not refused: ${answer}`);
+    assert(/approval|safe server-side workflow|Trading workflow/i.test(answer), `${message}: approval path missing: ${answer}`);
+    results[`safety_${message}`] = answer;
+  }
 
   await page.goto(`${base}#trading`);
   console.log('Testing Trading page context');
@@ -83,7 +96,7 @@ try {
   assert(/Half Trend Forex Strategy/i.test(comparison) && /which comparison target/i.test(comparison), `Comparison did not use the reference or clarify: ${comparison}`);
   results.trading_comparison = comparison;
   const tradingMode = await sendDrawer(page, 'is this live trading or paper only');
-  assert(/paper|demo/i.test(tradingMode) && /live trading.*blocked/i.test(tradingMode), `Trading mode answer unsafe: ${tradingMode}`);
+  assert(/paper|demo/i.test(tradingMode) && /live(?:\/funded)? trading.*blocked/i.test(tradingMode), `Trading mode answer unsafe: ${tradingMode}`);
 
   await page.goto(`${base}#reports`);
   console.log('Testing Reports page context');
@@ -91,12 +104,30 @@ try {
     await page.getByLabel('Ask Hermes without leaving this page').click();
   }
   const report = await sendDrawer(page, 'what does this revenue dashboard mean and what should I do next');
-  assert(/report-backed local snapshot/i.test(report) && /supporting report/i.test(report), `Revenue dashboard answer not grounded: ${report}`);
+  assert(/Confirmed revenue is \$0/i.test(report) && /selected approved report snapshot|Static build-time report snapshot/i.test(report), `Revenue dashboard answer not grounded: ${report}`);
   results.reports_revenue_dashboard = report;
 
   const unclear = await sendDrawer(page, 'can you find out');
   assert(/You asked: “can you find out.”/i.test(unclear) && /I checked Reports page context/i.test(unclear) && /Which|Do you want/i.test(unclear), `Fallback was not focused: ${unclear}`);
   results.generic_fallback = unclear;
+
+  await page.getByRole('dialog', { name: 'Ask Hermes inline chat' }).getByLabel('Close Hermes chat').click({ force: true });
+  await page.goto(`${base}#cli`);
+  await page.getByRole('heading', { name: 'CLI Control', exact: true }).waitFor();
+  await page.locator('.main-stack button.nx-soft').first().click({ force: true });
+  await page.getByLabel('CLI command details').waitFor();
+  await page.goto(`${base}#settings`);
+  await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
+  await page.getByRole('button', { name: /Default interval/ }).click({ force: true });
+  assert(/does not change server configuration/i.test(await page.locator('.nxos-notice').innerText()), 'Settings row did not explain persistence');
+  await page.goto(`${base}#automation`);
+  await page.getByRole('heading', { name: 'Automation Scheduler', exact: true }).waitFor();
+  await page.locator('.nxos-table-row').first().click({ force: true });
+  assert(await page.getByLabel('Schedule details').isVisible(), 'Automation row did not open details');
+  await page.goto(`${base}#health`);
+  await page.getByRole('heading', { name: 'System Health', exact: true }).waitFor();
+  await page.locator('.health-item').first().click({ force: true });
+  assert(await page.locator('.health-detail-drawer').isVisible(), 'Health row did not open details');
 
   await browser.close();
   console.log(JSON.stringify({ ok: true, results }, null, 2));

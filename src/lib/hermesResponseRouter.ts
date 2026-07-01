@@ -11,7 +11,7 @@ import { getLastReferencedEntity, resolveEntity, setLastReferencedEntity } from 
 import { queryMemory } from './hermesMemoryQuery';
 import { detectLearningInstruction, storeHint, findMatchingHints } from './hermesSourceHints';
 import { querySupabaseContext } from './hermesSupabaseContextAdapter';
-import { getBackendStatusMessage } from './hermesBackendContextAdapter';
+import { getBackendStatusMessage, getHermesContext, type HermesBackendContextResult } from './hermesBackendContextAdapter';
 
 /* ── Nexus topic knowledge base (moved from hermesWorkroomData.js) ── */
 const nexusTopics: Record<string, { topic: string; explain: string; why?: string; safety?: string; approval?: string; howToApprove?: string; specialist?: string; cleanup?: string; next: string; opinion?: string }> = {
@@ -126,7 +126,7 @@ export interface ResponseContext {
 export interface HermesResponse {
   text: string;
   confidence: 'high' | 'medium' | 'low' | 'none';
-  source: 'time_context' | 'page_context' | 'entity_resolution' | 'memory' | 'supabase_stub' | 'backend_stub' | 'canned' | 'honest_fallback' | 'learning';
+  source: 'time_context' | 'page_context' | 'entity_resolution' | 'memory' | 'supabase_stub' | 'backend_stub' | 'backend_context' | 'report_context' | 'canned' | 'honest_fallback' | 'learning';
   questionType: QuestionType;
   needsClarification: boolean;
   clarificationQuestion?: string;
@@ -264,6 +264,12 @@ export function classifyIntent(text: string): QuestionType {
     return 'page_question';
   }
 
+  if (/\b(what reports are available|what does this report mean|from this report)\b/.test(lower)) return 'page_question';
+  if (/\b(is there anything we can improve|what can we improve|best (business )?opportunity)\b/.test(lower)) return 'opinion';
+  if (/\b(make money|monetize|revenue|income|pricing)\b/.test(lower)) return 'money';
+  if (/\b(julius erving|fake customer inserted|synthetic customer status)\b/.test(lower)) return 'nexus_topic';
+  if (/\b(send the email|charge the customer|publish this post|place a live trade|insert this real client)\b/.test(lower)) return 'execution';
+
   // Comparison must win over generic entity references such as "that strategy".
   if (/\b(compare|versus|vs|difference between|how does .+ compare|which is better)\b/.test(lower)) {
     return 'comparison';
@@ -328,7 +334,7 @@ export function classifyIntent(text: string): QuestionType {
   }
 
   // Backend queries
-  if (/\b(model|ai|llm|gpt|claude|backend|endpoint|where are you getting your answers|what are your sources|explain your sources)\b/.test(lower)) {
+  if (/\b(model|ai|llm|gpt|claude|backend|endpoint|where are you getting your answers|what are your sources|explain your sources|search the internet|web access)\b/.test(lower)) {
     return 'backend_query';
   }
 
@@ -473,8 +479,9 @@ function handlePageQuestion(_message: string, pageContext: PageContext | null): 
   if (pageContext.availableActions.length > 0) {
     responseText += `Available here: ${pageContext.availableActions.join(', ')}. `;
   }
-  if (/revenue dashboard/i.test(_message)) {
-    responseText += `The revenue dashboard is a report-backed local snapshot, not a live payment feed. Use it to identify the next evidence gap, then open the supporting report before making a revenue decision.`;
+  if (/report|dashboard/i.test(_message)) {
+    const report = getHermesContext(_message, { type: /what reports are available/i.test(_message) ? 'reports_summary' : 'selected_report', selectedReport: _message });
+    responseText += `${report.summary}\n\nSource: ${report.sourceType === 'report' ? 'selected approved report snapshot' : report.source} (${report.liveData ? 'live' : 'static'}). Limitations: ${report.limitations.join('; ')}.`;
   } else {
     responseText += `What would you like to know about these?`;
   }
@@ -659,7 +666,7 @@ function handleSupabaseQuery(_message: string): HermesResponse {
   const result = querySupabaseContext('unknown');
 
   return {
-    text: `I don't have live Supabase access from this chat layer. ${result.reason}\n\nI can see loaded page context and local bundled data, but I cannot query Supabase directly. If you need live data, I can create a task to query it through a safe internal process.`,
+    text: `I do not have live Supabase access from this chat layer yet. ${result.reason}\n\nI can read approved bundled reports, loaded page context, and local activity memory, but I cannot query Supabase directly. A safe next step is a tenant-scoped server endpoint using existing RLS—not a frontend service-role key.`,
     confidence: 'medium',
     source: 'supabase_stub',
     questionType: 'supabase_query',
@@ -676,6 +683,15 @@ function handleBackendQuery(_message: string): HermesResponse {
     questionType: 'backend_query',
     needsClarification: false,
     sourceHint: 'Backend adapter stub — not wired yet',
+  };
+}
+
+function contextResponse(result: HermesBackendContextResult, questionType: QuestionType): HermesResponse {
+  const label = result.sourceType === 'report' ? 'Based on the selected approved report snapshot' : 'Based on local bundled context';
+  return {
+    text: `${label}: ${result.summary}\n\nSource: ${result.source} (${result.sourceType}; ${result.liveData ? 'live' : 'static'}). Limitations: ${result.limitations.join('; ')}. ${result.requiresApprovalForExecution ? 'Any resulting execution remains approval-gated.' : ''}`,
+    confidence: result.ok ? 'medium' : 'low', source: result.sourceType === 'report' ? 'report_context' : 'backend_context',
+    questionType, needsClarification: false,
   };
 }
 
@@ -717,7 +733,7 @@ function handleExecution(message: string, _pageContext: PageContext | null): Her
 
   // Check for gated/blocked actions
   const isLiveTrade = /\b(live trade|real trade|execute trade|place order)\b/.test(lower);
-  const isPublish = /\b(publish|send email|submit|charge|payment)\b/.test(lower);
+  const isPublish = /\b(publish|send(?: the)? email|submit|charge|payment|insert(?: this)? real client)\b/.test(lower);
 
   if (isLiveTrade || isPublish) {
     let responseText = `⚠️ I can't execute that directly from this chat. `;
@@ -725,7 +741,7 @@ function handleExecution(message: string, _pageContext: PageContext | null): Her
       responseText += `Live trading requires going through the Trading workflow with proper risk checks. I can help you set up the trade parameters and guide you through the approval process.`;
     }
     if (isPublish) {
-      responseText += `External actions like publishing, sending emails, or processing payments require explicit approval and are routed through safe internal processes.`;
+      responseText += `External actions and persistent writes—publishing, sending, charging, or inserting a real client—require explicit approval and a safe server-side workflow. Chat creates no external action.`;
     }
     responseText += `\n\nI can help you prepare the action and route it safely. Would you like me to do that?`;
 
@@ -765,7 +781,7 @@ function handleUnclear(message: string, pageContext: PageContext | null): Hermes
 
   const quotedRequest = message.trim() || '(empty request)';
   const pageSource = pageContext ? `${pageContext.pageTitle} page context` : 'no current page context';
-  const responseText = `You asked: “${quotedRequest}.” I checked ${pageSource}, loaded local Nexus context, and local activity memory. I couldn't answer because the target or requested outcome is not specific enough. Do you want me to check the current page, loaded reports, local Nexus context, or create a research task?\n\nI do not have live Supabase, web, or model access in this chat. A safe next source is ${pageContext?.pageId === 'reports' ? 'the loaded report details' : 'the Reports page'}.`;
+  const responseText = `You asked: “${quotedRequest}.” I checked ${pageSource}, local bundled context, and local activity memory. I couldn't answer because the target or requested outcome is not specific enough. Do you want me to check the current page, loaded reports, local Nexus context, or create a research task?\n\nI do not have live Supabase, web, or model access in this chat. A safe next source is ${pageContext?.pageId === 'reports' ? 'the loaded report details' : 'the Reports page'}.`;
 
   return {
     text: responseText,
@@ -779,6 +795,11 @@ function handleUnclear(message: string, pageContext: PageContext | null): Hermes
 
 function handleNexusTopic(message: string, pageContext: PageContext | null): HermesResponse {
   const lower = message.toLowerCase();
+  if (/julius erving|fake customer inserted|synthetic customer status/.test(lower)) {
+    return contextResponse(getHermesContext(message, { type: 'synthetic_client_status' }), 'nexus_topic');
+  }
+  if (/best.*opportunity|opportunit/.test(lower)) return contextResponse(getHermesContext(message, { type: 'opportunities_summary' }), 'nexus_topic');
+  if (/research.*candidate|research engine/.test(lower)) return contextResponse(getHermesContext(message, { type: 'research_summary' }), 'nexus_topic');
   let topicKey = '';
   for (const key of Object.keys(nexusTopics)) {
     if (lower.includes(key)) {
@@ -814,6 +835,8 @@ function handleNexusTopic(message: string, pageContext: PageContext | null): Her
 }
 
 function handleOpinion(_message: string, _pageContext: PageContext | null): HermesResponse {
+  if (/improve/i.test(_message)) return contextResponse(getHermesContext(_message, { type: 'blockers_summary' }), 'opinion');
+  if (/opportunity/i.test(_message)) return contextResponse(getHermesContext(_message, { type: 'opportunities_summary' }), 'opinion');
   const responseText = `Here's my honest ranking of what to monetize first:\n\n1. **$97 Credit & Funding Readiness Review** — most complete, lowest risk, proves the entire payment journey\n2. **$297 Assisted Plan** — recycles the same framework with more hands-on work, natural upsell\n3. **Monthly readiness subscription** — recurring revenue, but needs the one-time journey proven first\n4. **Affiliate pathways** (SmartCredit, banks) — passive income, but depends on having clients\n5. **$497 Higher Touch Sprint** — premium tier, but only makes sense after the lower tiers work\n\nMy recommendation: prove the $97 first. Everything else builds on that proof.\n\nData source: local bundled context (static). Not live revenue data.`;
 
   return {
@@ -826,39 +849,15 @@ function handleOpinion(_message: string, _pageContext: PageContext | null): Herm
 }
 
 function handleApproval(_message: string, _pageContext: PageContext | null): HermesResponse {
-  const responseText = `Here's what's waiting for your decision, ranked by impact:\n\n1. **Synthetic customer insert** — unlocks the live dashboard test. This is the highest-impact decision.\n2. **Stripe test completion** — proves the payment journey works. Needs the customer insert first.\n3. **Resend configuration fix** — unblocks email sending. Requires a new API key and domain verification.\n4. **Content and communication drafts** — lower priority but ready to go.\n\nI'd handle them in that order. The first two are about proving the money path. The third is about communication. The fourth is about content.\n\nData source: local bundled context (static). Not live approval queue data.`;
-
-  return {
-    text: responseText,
-    confidence: 'medium',
-    source: 'page_context',
-    questionType: 'approval',
-    needsClarification: false,
-  };
+  return contextResponse(getHermesContext(_message, { type: 'approvals_summary' }), 'approval');
 }
 
 function handleMoney(_message: string, _pageContext: PageContext | null): HermesResponse {
-  const responseText = `The closest money path is the $97 readiness review. We have the offer priced, the Stripe test session created, and the synthetic customer package staged. What's missing is your approval to insert the customer and complete the test charge. Once that's done, we can flip the dashboard flag and prove the journey end-to-end.\n\nAfter $97, the $297 and $497 tiers are natural extensions. The affiliate pathways and subscriptions come after we have proof that the core offer works.\n\nData source: local bundled context (static). Not live revenue data.`;
-
-  return {
-    text: responseText,
-    confidence: 'medium',
-    source: 'page_context',
-    questionType: 'money',
-    needsClarification: false,
-  };
+  return contextResponse(getHermesContext(_message, { type: 'offers_summary' }), 'money');
 }
 
 function handleBlockers(_message: string, _pageContext: PageContext | null): HermesResponse {
-  const responseText = `The real blockers, in order of impact:\n\n1. **Synthetic customer not inserted** — this blocks the entire dashboard verification and money path proof\n2. **Resend domain/key mismatch** — blocks all email sending, including onboarding\n3. **Client live-data flag off** — the dashboard shows static fallback instead of real data\n4. **YouTube transcript missing** — blocks content pipeline for an approved video\n5. **NotebookLM export missing** — blocks knowledge sync\n\nThe first two are the ones that matter most. The customer insert unlocks revenue proof. Resend unlocks communication. Everything else is parallel work.\n\nData source: local bundled context (static). Not live system status.`;
-
-  return {
-    text: responseText,
-    confidence: 'medium',
-    source: 'page_context',
-    questionType: 'blockers',
-    needsClarification: false,
-  };
+  return contextResponse(getHermesContext(_message, { type: 'blockers_summary' }), 'blockers');
 }
 
 function handleStrategy(_message: string, _pageContext: PageContext | null): HermesResponse {
@@ -911,25 +910,9 @@ function handlePartnerMode(_message: string, _pageContext: PageContext | null): 
 }
 
 function handleSummary(_message: string, _pageContext: PageContext | null): HermesResponse {
-  const responseText = `Here's the local status summary:\n\n- **Engines:** 9 of 9 passed\n- **Schedules:** 2 safe cycles loaded (08:00 and 18:00)\n- **Ray Review:** 0 decisions waiting\n- **Offers:** 9 registered\n- **Research:** 50 candidates scored, 26 immediately actionable\n- **Revenue:** $0 confirmed, $97 test path pending\n- **Blockers:** 5 active (customer insert, Resend, live-data flag, YouTube transcript, NotebookLM export)\n\nThe system is operational. The next value comes from clearing approvals, not generating more status files.\n\nData source: local bundled context (static). Not live system status.`;
-
-  return {
-    text: responseText,
-    confidence: 'medium',
-    source: 'page_context',
-    questionType: 'summary',
-    needsClarification: false,
-  };
+  return contextResponse(getHermesContext(_message, { type: 'system_status' }), 'summary');
 }
 
 function handleTrading(_message: string, _pageContext: PageContext | null): HermesResponse {
-  const responseText = `Trading status: Oanda demo endpoint is verified, one unit was placed and closed as a smoke test, zero open positions. Vibe paper backtest passed with 50 synthetic trades. Live trading is completely blocked—no real money, no funded accounts, no recurring orders.\n\nMy recommendation: keep daily market reads and paper analysis running behind the scheduler. Keep demo execution behind a decision card. Live trading stays off until you explicitly decide otherwise.\n\nData source: local bundled context (static). Not live trading data.`;
-
-  return {
-    text: responseText,
-    confidence: 'medium',
-    source: 'page_context',
-    questionType: 'trading',
-    needsClarification: false,
-  };
+  return contextResponse(getHermesContext(_message, { type: 'trading_paper_summary' }), 'trading');
 }

@@ -1,0 +1,27 @@
+{
+  "generatedAt": "2026-06-30",
+  "principle": "context-capable, execution-restricted",
+  "mustKeep": [
+    {"restriction":"no frontend service-role/API/model secrets","location":"src/lib/hermesSupabaseContextAdapter.ts","blocks":"security/execution","decision":"remain","next":"authenticated server route only"},
+    {"restriction":"no RLS weakening or tenant bypass","location":"Supabase policies (untouched)","blocks":"security/execution","decision":"remain","next":"tenant-scoped read tests"},
+    {"restriction":"no direct sends, publishing, charges, disputes, persistent client inserts, deploys, or live trades","location":"src/lib/hermesResponseRouter.ts","blocks":"execution","decision":"approval-gated","next":"Ray Review proposals only"},
+    {"restriction":"no destructive SQL/filesystem operations","location":"CLI and safety policy","blocks":"execution","decision":"remain","next":"read-only inspection"}
+  ],
+  "safeToLoosen": [
+    {"restriction":"approved report and metadata reads","location":"src/lib/hermesReportContextAdapter.ts","blocks":"context","decision":"loosened","next":"refresh approved registry"},
+    {"restriction":"safe bundled operational summaries","location":"src/lib/hermesBackendContextAdapter.ts","blocks":"conversation/context","decision":"loosened","next":"authenticated aggregate endpoint"},
+    {"restriction":"safe Supabase/RLS summaries","location":"src/lib/hermesSupabaseContextAdapter.ts","blocks":"context","decision":"not yet wired","next":"allow-listed tenant-scoped endpoint"},
+    {"restriction":"activity memory summaries","location":"src/lib/hermesMemoryQuery.ts","blocks":"context","decision":"browser-local read allowed","next":"durable tenant-scoped memory"}
+  ],
+  "futureAdapters": ["server-side model gateway","approval-gated web research","Deep Agents/Ollama worker","durable cross-device memory","authenticated Supabase summary endpoint"],
+  "sources": [
+    {"source":"browser Date()","used":true,"mode":"live client","safe":true,"location":"src/lib/hermesTimeContext.ts","limitation":"client clock"},
+    {"source":"page context and visible items","used":true,"mode":"current/static","safe":true,"location":"src/lib/hermesContextBridge.ts","limitation":"known UI items only"},
+    {"source":"local bundled context","used":true,"mode":"static","safe":true,"location":"src/lib/hermesBackendContextAdapter.ts","limitation":"may become stale"},
+    {"source":"localStorage activity memory","used":true,"mode":"browser-local","safe":true,"location":"src/lib/hermesActivityJournal.ts","limitation":"not cross-device"},
+    {"source":"approved reports","used":true,"mode":"static generated","safe":true,"location":"src/lib/hermesReportContextAdapter.ts","limitation":"build-time snapshot"},
+    {"source":"Supabase","used":false,"mode":"unavailable","safe":false,"location":"src/lib/hermesSupabaseContextAdapter.ts","limitation":"no scoped endpoint"},
+    {"source":"model/LLM","used":false,"mode":"unavailable","safe":false,"location":"src/lib/hermesBackendContextAdapter.ts","limitation":"future server gateway"},
+    {"source":"web","used":false,"mode":"unavailable","safe":false,"location":"src/lib/hermesBackendContextAdapter.ts","limitation":"future approval-gated adapter"}
+  ]
+}

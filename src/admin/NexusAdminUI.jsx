@@ -875,17 +875,20 @@ function HermesFeedbackPage() {
 }
 
 function SettingsPage() {
+  const [notice, setNotice] = useState('Select a setting to see its connection status.')
+  const explain = (label, detail) => setNotice(`${label}: ${detail}. This screen does not change server configuration.`)
   return (
     <SimplePage title="Settings" sub="Continuous Loop · Safety Boundaries · Report Paths">
       <div className="command-layout" style={{ flex: 1 }}>
         <div className="main-stack">
           <section className="glass panel">
             <h3>Continuous Safe-Internal Mode</h3>
-            <div className="nx-soft feedback-row"><strong>Status</strong><span>{runtime.loopStatus}</span></div>
-            <div className="nx-soft feedback-row"><strong>Default interval</strong><span>30 minutes</span></div>
-            <div className="nx-soft feedback-row"><strong>Launchd</strong><span>Draft only · not installed</span></div>
-            <div className="nx-soft feedback-row"><strong>Latest report</strong><code>{runtime.reportPath}</code></div>
+            <button type="button" className="nx-soft feedback-row" onClick={()=>explain('Status',runtime.loopStatus)}><strong>Status</strong><span>{runtime.loopStatus}</span></button>
+            <button type="button" className="nx-soft feedback-row" onClick={()=>explain('Default interval','30 minutes; changing it requires a reviewed scheduler update')}><strong>Default interval</strong><span>30 minutes</span></button>
+            <button type="button" className="nx-soft feedback-row" onClick={()=>explain('Launchd','configuration status is report-backed; install/remove remains approval-gated')}><strong>Launchd</strong><span>Report-backed status</span></button>
+            <button type="button" className="nx-soft feedback-row" onClick={async()=>{try{await navigator.clipboard.writeText(runtime.reportPath);setNotice('Latest report path copied.')}catch{setNotice(`Copy: ${runtime.reportPath}`)}}}><strong>Latest report</strong><code>{runtime.reportPath}</code></button>
           </section>
+          <p className="nxos-notice" aria-live="polite">{notice}</p>
           <section className="glass panel compact-operating-panel">
             <h3>Hard Safety State</h3>
             <p className="green-text">No money spent · no public content · no client contact · no real-money trades.</p>
@@ -1268,6 +1271,14 @@ function PartnerOffersPage() {
 
 // ── CLI Control ──
 function CLIControlPage() {
+  const [selectedCommand, setSelectedCommand] = useState(null)
+  const selectCommand = (cmd, desc, gate) => {
+    if (gate === 'Safe') {
+      setSelectedCommand({cmd,desc,gate,receipt:'Safe command selected; it was not executed.'})
+      if (!navigator.clipboard) setSelectedCommand({cmd,desc,gate,receipt:`Copy manually: ${cmd}`})
+      else navigator.clipboard.writeText(cmd).then(()=>setSelectedCommand({cmd,desc,gate,receipt:'Command copied; it was not executed.'})).catch(()=>setSelectedCommand({cmd,desc,gate,receipt:`Copy manually: ${cmd}`}))
+    } else setSelectedCommand({cmd,desc,gate,receipt:`${gate} command was not executed. Review the stated gate.`})
+  }
   return (
     <SimplePage title="CLI Control" sub="Command Visibility · No Execution from UI">
       <div className="command-layout" style={{ flex: 1 }}>
@@ -1281,10 +1292,10 @@ function CLIControlPage() {
                 ['python3 scripts/automation/verify_automation_policy.py', 'Safety verifier', 'green'],
                 ['python3 scripts/night_run/generate_*.py', 'Report generation', 'green']
               ].map(([cmd, desc, tone]) => (
-                <div key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={()=>setSelectedCommand({cmd,desc,gate:'Safe',receipt:'Safe command selected for copying; it was not executed.'})} key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', width:'100%', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div><code style={{ fontSize: 11 }}>{cmd}</code><div className="nx-muted" style={{ fontSize: 10 }}>{desc}</div></div>
                   <Pill tone={tone}>Safe</Pill>
-                </div>
+                </button>
               ))}
             </div>
           </section>
@@ -1297,10 +1308,10 @@ function CLIControlPage() {
                 ['Scheduler activation', 'Enable cron jobs', 'red'],
                 ['Publishing / sending tasks', 'External actions', 'red']
               ].map(([cmd, desc, tone]) => (
-                <div key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={()=>selectCommand(cmd,desc,tone === 'amber' ? 'Approval required' : 'Blocked')} key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', width:'100%', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div><code style={{ fontSize: 11 }}>{cmd}</code><div className="nx-muted" style={{ fontSize: 10 }}>{desc}</div></div>
                   <Pill tone={tone}>{tone === 'amber' ? 'Approval' : 'Blocked'}</Pill>
-                </div>
+                </button>
               ))}
             </div>
           </section>
@@ -1315,13 +1326,14 @@ function CLIControlPage() {
                 ['Live client vault connection', 'Data sensitivity'],
                 ['Destructive DB actions', 'Safety gate']
               ].map(([cmd, reason]) => (
-                <div key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button type="button" onClick={()=>selectCommand(cmd,reason,'Blocked')} key={cmd} className="nx-soft" style={{ padding: '6px 10px', display: 'flex', width:'100%', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div><code style={{ fontSize: 11 }}>{cmd}</code><div className="nx-muted" style={{ fontSize: 10 }}>{reason}</div></div>
                   <Pill tone="red">Blocked</Pill>
-                </div>
+                </button>
               ))}
             </div>
           </section>
+          {selectedCommand&&<section className="glass panel" aria-label="CLI command details"><h3>Command details</h3><p><code>{selectedCommand.cmd}</code></p><p>{selectedCommand.desc}</p><p><strong>Gate:</strong> {selectedCommand.gate}</p><p className="nxos-receipt">{selectedCommand.receipt}</p></section>}
         </div>
         <aside className="side-stack">
           <Hermes label="Hermes · CLI" chips={['What should run next?', 'What should stay manual?']} />
@@ -1434,7 +1446,7 @@ export default function NexusAdminUI({ email }) {
     health: <SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage>,
     hermes: <SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom activePage={activePage} /></SimplePage>,
     rayreview: <SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage>,
-    reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter /></SimplePage>,
+    reports: <SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter onAskHermes={askHermes} /></SimplePage>,
     clients: <SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage>,
     research: <SimplePage title="Research Engine" sub="50 Candidates · Scores · Lanes · Approval-Gated Conversion"><ResearchEnginePanel onAskHermes={askHermes} /></SimplePage>,
     marketing: <SimplePage title="Marketing Drafts" sub="Social · Video · Newsletter · Landing · Lead Magnet · Approval-Gated"><MarketingDraftsPanel onAskHermes={askHermes} /></SimplePage>,
