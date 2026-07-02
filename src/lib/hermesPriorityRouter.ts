@@ -8,6 +8,7 @@ import { classifyActivityStatusQuestion } from './hermesActivityStatus';
 import { getAdvisoryContinuity, isAdvisoryFollowUpQuestion } from './hermesAdvisoryContinuity';
 import { getFallbackContinuity, isFallbackOptionReply } from './hermesFallbackContinuity';
 import { normalizeHermesRoutingInput } from './hermesInputNormalization';
+import { isOpportunityAwareRecommendationQuestion, isPhysicalWorldAdvisoryQuestion } from './hermesOpportunityAdvisor';
 
 export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; }
 
@@ -55,6 +56,8 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
 
   if (isGeneralAdvisorQuestion(message) && !(input.selectionMemory.lastList.length && /\bwhich one\b/i.test(lower))) return decision({ routeId: 'general_advisor', activationLevel: 4, domain: 'general_advice', intent: 'general_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'General advice uses plain reasoning without stale selection memory or Nexus retrieval.' });
 
+  if (isOpportunityAwareRecommendationQuestion(message) && !(advisory && isAdvisoryFollowUpQuestion(message))) return decision({ routeId: 'opportunity_aware_recommendation', activationLevel: 4, domain: 'opportunity_advisor', intent: isPhysicalWorldAdvisoryQuestion(message) ? 'physical_world_advisory' : 'value_added_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A local-first recommendation can combine the direct decision, opportunity angle, low-cost validation, and risk checks without live data or a required model call.' });
+
   if (domain === 'casual_identity') return decision({ routeId: 'casual_identity', activationLevel: 1, domain, intent: 'conversation', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Casual and identity questions require no operational context.' });
 
   if (/\b(what can you do|capabilit|web search|connected to|database status|model status)\b/i.test(lower)) return decision({ routeId: 'capability_status', activationLevel: 1, domain: 'model_cost_status', intent: 'capability_status', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Capability answers come from the local capability registry.' });
@@ -76,7 +79,7 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
 
   if (isRevenueStrategyQuestion(message)) return decision({ routeId: 'revenue_reasoning', activationLevel: 4, domain: 'monetization', intent: 'revenue_strategy', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Revenue strategy uses long-term business context and opportunity retrieval, never stale selected items.' });
 
-  if (advisory && isAdvisoryFollowUpQuestion(message) && !domainResult.explicit) return decision({ routeId: 'advisory_followup', activationLevel: 4, domain: advisory.lastAdvisoryDomain, intent: 'evaluate_prior_advice', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A short-lived plan-level follow-up refers to the prior advisory answer, not a selected list item.' });
+  if (advisory && isAdvisoryFollowUpQuestion(message) && (!domainResult.explicit || (['business_opportunity', 'monetization'].includes(domain) && /\b(?:this|that|it)\b/i.test(message)))) return decision({ routeId: 'advisory_followup', activationLevel: 4, domain: advisory.lastAdvisoryDomain, intent: 'evaluate_prior_advice', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A short-lived plan-level follow-up refers to the prior advisory answer, not a selected list item.' });
 
   if (domain !== 'unknown' || /\b(recommend|prioritize|plan|implement|strategy|what should)\b/i.test(lower)) return decision({ routeId: 'local_reasoning', activationLevel: 4, domain, intent: 'domain_reasoning', memoryPolicy: domain === 'business_opportunity' || domain === 'monetization' ? 'long_term_allowed' : 'none', retrievalPolicy: ['trading', 'reports', 'research_youtube'].includes(domain) ? 'local_reports' : 'static_fallback_allowed', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'The explicit domain can be answered locally without unrestricted memory.' });
 

@@ -23,6 +23,7 @@ import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion, answerGeneral
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
 import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity } from './hermesAdvisoryContinuity';
 import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity } from './hermesFallbackContinuity';
+import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } from './hermesOpportunityAdvisor';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -62,6 +63,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
   let supabaseTables: string[] = [];
   let source: BrainPipelineResponse['source'] = 'local';
   let handler: HermesHandlerResult;
+  let opportunityAdvisory: OpportunityAdvisorResult | null = null;
 
   switch (decision.routeId) {
     case 'safety_gate':
@@ -75,6 +77,9 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerCasualCommonQuestion({ message, routeDecision: decision, contextPacket: packet }), 'common_conversation', ['common_knowledge']); break;
     case 'general_advisor':
       handler = result(answerGeneralAdvisorQuestion({ message, routeDecision: decision, contextPacket: packet }), 'general_advisor', ['plain_reasoning']); source = 'reasoning'; break;
+    case 'opportunity_aware_recommendation':
+      opportunityAdvisory = answerOpportunityAwareRecommendation({ message, routeDecision: decision, contextPacket: packet });
+      handler = result(opportunityAdvisory.text, 'opportunity_aware_advisor', ['local_reasoning_framework']); source = 'reasoning'; break;
     case 'nexus_build_planning':
       handler = result('Yes — we can build toward a Nexus CRM, and parts of the foundation already exist: client profiles, opportunities, approvals, task requests, research sources, monetization, and Hermes routing. The CRM should cover client pipeline, credit/funding workflow, documents and uploads, notes and tasks, approvals, messaging, funding readiness, business setup, and reports. I can design the modules and prepare a build plan. I have not created code, files, tasks, or a deployment, and I will not execute anything unless you explicitly request a reviewed draft task or implementation step.', 'nexus_build_planner', ['local_product_context', 'local_reports']); source = 'reasoning'; break;
     case 'general_project_planning':
@@ -168,7 +173,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       setFallbackContinuity(message);
       handler = result('I can help, but I need one more detail: do you want a general recommendation, a Nexus build plan, a business/credit/funding angle, or a Ray Review draft?', 'fallback_clarification', ['none']);
   }
-  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source };
+  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory };
 }
 
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
@@ -179,7 +184,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
   const state = getConversationState();
   const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory() });
-  const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
+  const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning', 'opportunity_aware_recommendation'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
   const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
   if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
   if (!['trace_source_meta', 'cost_model_usage_status', 'fallback_continuation', 'fallback_clarification'].includes(routeDecision.routeId)) clearFallbackContinuity();
@@ -197,13 +202,14 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   addConversationMessage('user', message); addConversationMessage('assistant', text);
   if (advisoryProducingRoute) {
     const revenue = routeDecision.domain === 'monetization';
+    const opportunity = executed.opportunityAdvisory;
     setAdvisoryContinuity({
       lastAdvisoryTopic: routeDecision.intent,
       lastAdvisoryDomain: routeDecision.domain,
-      lastAdvisorySummary: revenue ? 'The 30-day path can work if we keep the offer simple, close $97 readiness reviews quickly, and upsell only when the review establishes a clear next step.' : text.slice(0, 500),
-      lastAdvisoryAssumptions: revenue ? ['manual outreach', 'fast readiness-review fulfillment', 'consistent follow-up', 'disciplined upsells'] : ['a defined scope', 'clear priorities', 'reviewed implementation steps'],
-      lastAdvisoryRecommendation: revenue ? 'launch the $97 readiness review and validate the first ten sales before scaling.' : 'define the smallest useful first phase and prepare it for review.',
-      lastAdvisoryRisks: revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity'],
+      lastAdvisorySummary: opportunity ? `The ${opportunity.topic} is best tested as a low-cost information, comparison, referral, or affiliate workflow before hands-on fulfillment.` : revenue ? 'The 30-day path can work if we keep the offer simple, close $97 readiness reviews quickly, and upsell only when the review establishes a clear next step.' : text.slice(0, 500),
+      lastAdvisoryAssumptions: opportunity?.assumptions || (revenue ? ['manual outreach', 'fast readiness-review fulfillment', 'consistent follow-up', 'disciplined upsells'] : ['a defined scope', 'clear priorities', 'reviewed implementation steps']),
+      lastAdvisoryRecommendation: opportunity?.recommendation || (revenue ? 'launch the $97 readiness review and validate the first ten sales before scaling.' : 'define the smallest useful first phase and prepare it for review.'),
+      lastAdvisoryRisks: opportunity?.risks || (revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity']),
     });
   }
   if (routeDecision.routeId === 'fallback_continuation') clearFallbackContinuity();

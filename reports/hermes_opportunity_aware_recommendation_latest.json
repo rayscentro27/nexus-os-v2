@@ -1,0 +1,16 @@
+{
+  "reportType": "hermes_opportunity_aware_recommendation",
+  "generatedAt": "2026-07-01T20:02:00-07:00",
+  "route": { "routeId": "opportunity_aware_recommendation", "activationLevel": 4, "domain": "opportunity_advisor", "memoryPolicy": "long_term_allowed", "retrievalPolicy": "none", "modelPolicy": "allowed_if_needed", "actualDefaultModelUse": false, "actionPolicy": "none" },
+  "framework": ["direct answer", "option A conditions", "option B conditions", "business opportunity angle", "free or low-cost test", "risk/licensing/fulfillment check", "recommended next move"],
+  "answerModes": ["personal", "business", "both"],
+  "physicalWorldBoundary": "Hermes can diagnose, plan, compare, create checklists, prepare technician questions, and evaluate referrals; it never claims physical execution.",
+  "lowCostDefaults": ["one-page landing page", "no-code intake", "provider interviews", "manual referrals", "affiliate content", "local SEO", "spreadsheet validation", "organic demand before ads"],
+  "riskChecks": ["licensing/permitting", "insurance/liability", "physical safety", "regulated trades", "fulfillment", "margin", "lead quality", "competition", "partner dependency", "trust", "refunds", "timeline"],
+  "advisoryContinuity": { "integrated": true, "ttl": 6, "selectionMemorySeparate": true, "explicitTopicOverride": true },
+  "priorityProtection": "Safety, trace/model status, casual, activity, action, Nexus/project planning, product/entity, explicit inventory, selection, and advisory continuity remain protected.",
+  "tests": { "files": 21, "passed": 577, "failed": 0 },
+  "build": "passed",
+  "browser": { "status": "blocked_by_authentication", "detail": "Authenticated admin sign-in is required; no credentials were used or exposed." },
+  "safety": { "externalActions": false, "unsafeRepairInstructions": false, "unverifiedPricesOrLicensingClaims": false, "approvalGatesIntact": true }
+}

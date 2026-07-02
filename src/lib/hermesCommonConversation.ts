@@ -14,7 +14,7 @@ export function isCasualCommonQuestion(message: string): boolean {
 }
 
 export function isProductEntityAdvisorQuestion(message: string): boolean {
-  return /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b|\b(?:car|vehicle|phone|laptop|product) model\b/i.test(message) || /\bwhat do you th(?:ink|ing) about\b/i.test(message) && !/\b(?:ai|gpt|llm|openrouter|reasoning) model\b/i.test(message);
+  return /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b|\b(?:car|vehicle|phone|laptop|product) model\b/i.test(message) || /\bwhat do you th(?:ink|ing) about\b/i.test(message) && !/\b(?:ai|gpt|llm|openrouter|reasoning) model\b/i.test(message) || /\bshould i buy (?:the )?tesla\b/i.test(message);
 }
 
 export function isNexusBuildPlanningQuestion(message: string): boolean {

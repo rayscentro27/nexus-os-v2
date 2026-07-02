@@ -12,7 +12,7 @@ export interface AdvisoryContinuityState {
 
 let state: AdvisoryContinuityState | null = null;
 
-const ADVISORY_FOLLOW_UP = /\b(do you think (?:it|that|this) is possible|is (?:that|this|it) (?:possible|realistic|worth it)|can (?:we|this) (?:do it|work)|how hard would that be|what would it take|what (?:is|are) the risks?|what should we do first|how likely is that|what would stop us|what makes that work|should we try it|what is the upside|what is the downside)\b/i;
+const ADVISORY_FOLLOW_UP = /\b(do you think (?:it|that|this) is possible|is (?:that|this|it) (?:possible|realistic|worth it)|is that a good business|can (?:we|this) (?:do it|work)|can this be a business|how hard would that be|what would it take|what (?:is|are) the risks?|what should we do first|how likely is that|what would stop us|what makes that work|should we try it|what is the upside|what is the downside|how (?:would|can) we test it|how can i test this for free|what is the cheapest way to test|should we make a ray review card|is it worth pursuing)\b/i;
 
 export function isAdvisoryFollowUpQuestion(message: string): boolean { return ADVISORY_FOLLOW_UP.test(message); }
 export function getAdvisoryContinuity(): AdvisoryContinuityState | null {
@@ -31,6 +31,7 @@ export function resetAdvisoryContinuity(): void { state = null; }
 
 export function answerAdvisoryFollowUp(message: string, advisory: AdvisoryContinuityState): string {
   if (/what would stop us|what (?:is|are) the risks?|downside/i.test(message)) return `The main blockers are ${advisory.lastAdvisoryRisks.join(', ')}. The plan is still viable, but those are the constraints to manage first.`;
-  if (/what would it take|what should we do first|what makes that work/i.test(message)) return `It would take disciplined execution around ${advisory.lastAdvisoryAssumptions.join(', ')}. The first move is ${advisory.lastAdvisoryRecommendation}`;
+  if (/how (?:would|can) we test|test this for free|cheapest way to test|what would it take|what should we do first|what makes that work/i.test(message)) return `Use a free or low-cost validation first: ${advisory.lastAdvisoryRecommendation} Keep it manual, use a one-page explanation and no-code intake form, interview 5–10 potential customers or providers, and validate organic demand before ads, inventory, staff, or equipment.`;
+  if (/good business|can this be a business|worth pursuing/i.test(message)) return `It can be a business if the demand and partner fulfillment validate. ${advisory.lastAdvisorySummary} Start with ${advisory.lastAdvisoryRecommendation} The main risks are ${advisory.lastAdvisoryRisks.join(', ')}.`;
   return `Yes, I think it is possible, but the realistic path is the conservative-to-realistic case first, not the stretch case. ${advisory.lastAdvisorySummary} The biggest blockers are ${advisory.lastAdvisoryRisks.join(', ')}.`;
 }

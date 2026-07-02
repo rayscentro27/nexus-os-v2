@@ -265,6 +265,7 @@ function buildClarificationQuestion(message: string): string {
 /** RouteDecision policy adapter used by the shared brain pipeline. */
 export function reasonFromRouteDecision(decision: RouteDecision, contextSummary: Record<string, unknown>): ReasoningPlan {
   if (decision.modelPolicy === 'required') return { decision: 'route-to-model', confidence: 'high', reasoning: decision.reason, contextUsed: Object.keys(contextSummary).filter(key => Boolean(contextSummary[key])) };
+  if (decision.routeId === 'opportunity_aware_recommendation') return { decision: 'answer-locally', confidence: 'high', reasoning: 'The opportunity framework is deterministic and local-first; no retrieval or model call is required.', contextUsed: Object.keys(contextSummary).filter(key => Boolean(contextSummary[key])) };
   if (decision.activationLevel >= 2) return {
     decision: 'answer-with-context', confidence: decision.confidence >= .8 ? 'high' : 'medium', reasoning: decision.reason,
     contextUsed: Object.keys(contextSummary).filter(key => Boolean(contextSummary[key])),
