@@ -20,6 +20,7 @@ import { logRoutingTrace } from './hermesRoutingTrace';
 import { reportRegistry } from '../data/reportRegistry.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
 import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion } from './hermesCommonConversation';
+import { answerActivityStatusQuestion } from './hermesActivityStatus';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -72,6 +73,8 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerCasualCommonQuestion({ message, routeDecision: decision, contextPacket: packet }), 'common_conversation', ['common_knowledge']); break;
     case 'general_advisor':
       handler = result(answerGeneralAdvisorQuestion({ message, routeDecision: decision, contextPacket: packet }), 'general_advisor', ['plain_reasoning']); source = 'reasoning'; break;
+    case 'process_activity_status':
+      handler = result(answerActivityStatusQuestion({ message, routeDecision: decision, contextPacket: packet }), 'activity_status_summary', ['local_activity_journal', 'confirmed_checkpoint']); break;
     case 'capability_status':
       handler = result(answerCapabilityQuestion(message) || getCapabilityReport().capabilities.map(item => `${item.name}: ${item.userFacing}`).join('\n'), 'capability_status', ['capability_registry']); source = 'capability'; break;
     case 'process_settings_reports_status':
@@ -86,7 +89,9 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       if (item) touchSelectionMemory();
       handler = item
         ? actionResult(`Draft Ray Review request prepared in this conversation only for **${item.title}**. It has not been saved or submitted yet; it was not submitted or executed. No external action was executed.`, 'approval_local_draft', ['selection_memory', 'approval_policy'], { outcome: 'local_draft_only', title: item.title, status: 'not_saved' }, [item])
-        : actionResult('I did not create a Ray Review card because no eligible target was resolved. Nothing was saved or submitted. Name the target and I can prepare a conversation-only draft.', 'approval_blocked_missing_target', ['approval_policy'], { outcome: 'blocked', reason: 'missing_target' });
+        : actionResult(decision.intent === 'unresolved_action_reference'
+          ? 'I don’t have an eligible target for that reference yet. Name the record, opportunity, task, report, or page you want me to prepare, and I’ll create a draft-only handoff or Ray Review request. Nothing was executed.'
+          : 'I did not create a Ray Review card because no eligible target was resolved. Nothing was saved or submitted. Name the target and I can prepare a conversation-only draft.', 'approval_blocked_missing_target', ['approval_policy'], { outcome: 'blocked', reason: 'missing_target' });
       break;
     }
     case 'schedule_action_prepare': {
@@ -129,6 +134,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     case 'local_reasoning':
       if (decision.domain === 'trading') { const trading = answerTradingQuestion(message, { routeDecision: decision }); handler = result(trading.text, trading.handler, [trading.source]); }
       else if (decision.domain === 'business_opportunity' || decision.domain === 'monetization') { handler = result(recommendation(), 'business_local_reasoning', ['long_term_business_context']); setLastRankedList(OPPORTUNITIES); setLastRecommendedItem(OPPORTUNITIES[0]); }
+      else if (decision.domain === 'clients') handler = result('I do not have enough verified Nexus data loaded to answer that specific record question. Tell me the client, report, table, or item, or open the relevant section.', 'record_specific_missing_context', ['none']);
       else handler = result(`I can reason from the allowed ${decision.domain.replace(/_/g, ' ')} context, but I need a concrete decision or entity to produce a useful plan.`, 'domain_local_reasoning', packet.longTermBusinessContext ? ['long_term_business_context'] : ['local_context']);
       source = 'reasoning'; break;
     case 'model_reasoning': {
@@ -137,7 +143,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(model.text || 'The required model route did not return a verified answer.', usedModel ? 'model_reasoning' : 'model_unavailable', [model.source || 'model_unknown']); source = usedModel ? 'model' : 'local'; break;
     }
     default:
-      handler = result('I do not have enough current page, domain, record, or eligible selection context to answer that safely. Name the target once and I will continue.', 'fallback_clarification', ['none']);
+      handler = result('I can answer generally, but I’m not sure which Nexus area you mean. Do you want a status summary, a Supabase record lookup, a business recommendation, or a Ray Review draft?', 'fallback_clarification', ['none']);
   }
   return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source };
 }
@@ -160,8 +166,11 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const reasoningPlan = reasonFromRouteDecision(routeDecision, packet.summary);
 
   addConversationMessage('user', message); addConversationMessage('assistant', text);
-  if (routeDecision.routeId !== 'trace_source_meta' && routeDecision.routeId !== 'cost_model_usage_status') {
+  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status'];
+  if (!topicNeutralRoutes.includes(routeDecision.routeId)) {
     updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
+  }
+  if (routeDecision.routeId !== 'trace_source_meta' && routeDecision.routeId !== 'cost_model_usage_status') {
     setLastTurnTraceMemory({ routeLevel: routeDecision.activationLevel, routeName: routeDecision.routeId, domain: routeDecision.domain, usedSupabase: executed.usedSupabase, usedStaticFallback: routeDecision.allowedContext.staticFallback && !executed.usedSupabase, usedModel: executed.usedModel, modelName: null, usedMemory: anyMemoryUsed, sources: executed.handler.sources, costEstimate: null, decisionReason: routeDecision.reason, blockedBySafety: routeDecision.actionPolicy === 'blocked' });
   }
   if (executed.usedSupabase && executed.supabaseTables[0]) setLastSupabaseQueryResult(executed.supabaseTables[0], [], message);

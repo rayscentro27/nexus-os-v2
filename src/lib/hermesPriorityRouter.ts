@@ -4,6 +4,7 @@ import { isRevenueStrategyQuestion } from './hermesRevenueReasoner';
 import { createRouteDecision, type RouteDecision } from './hermesRouteDecision';
 import type { SelectionMemory } from './hermesMemoryStores';
 import { isCasualCommonQuestion, isGeneralAdvisorQuestion } from './hermesCommonConversation';
+import { classifyActivityStatusQuestion } from './hermesActivityStatus';
 
 export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; }
 
@@ -23,13 +24,17 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
 
-  if (classifyTraceQuestion(message)) return decision({ routeId: 'trace_source_meta', activationLevel: 1, domain: 'routing_trace', intent: 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source questions inspect only the last non-trace route.' });
+  const traceQuestion = classifyTraceQuestion(message);
+  if (traceQuestion) return decision({ routeId: 'trace_source_meta', activationLevel: 1, domain: 'routing_trace', intent: traceQuestion.kind === 'source_reason' ? 'source_reason_followup' : 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source questions inspect only the last non-trace route.' });
 
   if (/\b(tokens?|usage ledger|what model did|model call|answer cost|what did .* cost|cost of (?:that|the) answer)\b/i.test(lower)) return decision({ routeId: 'cost_model_usage_status', activationLevel: 1, domain: 'model_cost_status', intent: 'usage_status', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Cost and model-use status are deterministic trace/ledger questions.' });
 
   if (scheduling) return decision({ routeId: 'schedule_action_prepare', activationLevel: 6, domain: 'automation', intent: 'prepare_scheduled_report', memoryPolicy: /\b(that|this) report\b/i.test(lower) ? 'selection_only' : 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Scheduling is approval-gated; only a draft request may be prepared and no scheduler may be activated.' });
 
-  if (isCasualCommonQuestion(message)) return decision({ routeId: 'casual_common', activationLevel: 1, domain: 'general_conversation', intent: 'casual_or_common_question', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Common conversation needs no Nexus records, selection memory, or model call.' });
+  const activityIntent = classifyActivityStatusQuestion(message);
+  if (activityIntent) return decision({ routeId: 'process_activity_status', activationLevel: 1, domain: 'activity_summary', intent: activityIntent, memoryPolicy: 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Work continuation and completed-work summaries use local activity/report evidence without selection memory or model calls.' });
+
+  if (isCasualCommonQuestion(message)) return decision({ routeId: 'casual_common', activationLevel: 1, domain: 'general_conversation', intent: /\b(favou?rite|joke|sky|pizza|movie|music|ice cream)\b/i.test(lower) ? 'casual_or_common_question' : 'greeting_or_light_check_in', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Common conversation needs no Nexus records, selection memory, or model call.' });
 
   if (isGeneralAdvisorQuestion(message) && !(input.selectionMemory.lastList.length && /\bwhich one\b/i.test(lower))) return decision({ routeId: 'general_advisor', activationLevel: 4, domain: 'general_advice', intent: 'general_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'General advice uses plain reasoning without stale selection memory or Nexus retrieval.' });
 
@@ -41,6 +46,8 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   if (domain === 'trading' && /\b(is|status|running|active|live|last test|last prove)\b/i.test(lower)) return decision({ routeId: 'process_settings_reports_status', activationLevel: 1, domain, intent: 'status_question', memoryPolicy: 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Trading status is answered from local proof reports without model or selection memory.' });
 
   if (/\b(create|prepare|queue|add)\b.*\b(ray review|review card|task|dry[- ]?run)\b/i.test(lower)) return decision({ routeId: 'approval_action_prepare', activationLevel: 6, domain: domain === 'unknown' ? input.selectionMemory.activeDomain || 'unknown' : domain, intent: 'prepare_approval_task', memoryPolicy: 'selection_only', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Only a non-executed approval draft may be prepared; selection memory can resolve its target.' });
+
+  if (/\b(delegate|handoff|send|schedule|create|approve|move|assign|prepare|draft|start)\b.*\b(this|that|it|that one|this one)\b/i.test(lower)) return decision({ routeId: 'approval_action_prepare', activationLevel: 6, domain: input.selectionMemory.activeDomain || domain, intent: 'unresolved_action_reference', memoryPolicy: 'selection_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'A vague action reference may prepare a draft only when selection memory resolves an eligible target.' });
 
   const inventory = /\b(what|which|list|show)\b.*\b(strategies|opportunities|approvals|clients|reports|offers|rows|drafts|records)\b|\bwhat\b.*\b(?:do we have|are available|exist)\b/i.test(lower);
   if (domain !== 'unknown' && inventory) {

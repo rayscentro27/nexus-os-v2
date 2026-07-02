@@ -1,9 +1,14 @@
 import type { RouteDecision } from './hermesRouteDecision';
 
 const DOMAIN_TERMS = /\b(business opportunit(?:y|ies)|approval|client|offer|revenue|trading|supabase|model|cost|source|ray review|report|automation|funding|credit|marketing)\b/i;
+const GREETING_OR_CHECK_IN = /^(?:(?:good\s+)?(?:morning|afternoon|evening|night)|hi|hello|hey|yo|sup|wassup|gm)(?:\s+hermes)?[!.?]*$|^(?:what['’]?s up|how are you(?: doing)?|how['’]?s it going|how are things|(?:are )?you (?:there|online|ready)|ready to work|checking in|i['’]?m back|im back|we back|back at it|let['’]?s (?:get started|work|continue))[!.?]*$/i;
+
+export function isGreetingOrCheckIn(message: string): boolean {
+  return !DOMAIN_TERMS.test(message) && GREETING_OR_CHECK_IN.test(message.trim());
+}
 
 export function isCasualCommonQuestion(message: string): boolean {
-  return !DOMAIN_TERMS.test(message) && /\b(favou?rite|do you like|what do you like|tell me (?:a )?joke|are you (?:bored|happy)|what colou?r is the sky|how did you sleep|what kind of music|ice cream|movie|pizza)\b/i.test(message);
+  return isGreetingOrCheckIn(message) || (!DOMAIN_TERMS.test(message) && /\b(favou?rite|do you like|what do you like|tell me (?:a )?joke|are you (?:bored|happy)|what colou?r is the sky|how did you sleep|what kind of music|ice cream|movie|pizza)\b/i.test(message));
 }
 
 export function isGeneralAdvisorQuestion(message: string): boolean {
@@ -12,6 +17,13 @@ export function isGeneralAdvisorQuestion(message: string): boolean {
 
 export function answerCasualCommonQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {
   const lower = message.toLowerCase();
+  if (/good evening|^evening/.test(lower)) return 'Good evening, Ray. I’m here and ready. We can review what changed today, check Supabase/live status, or keep moving on Hermes/Nexus.';
+  if (/good morning|^morning|\bgm\b/.test(lower)) return 'Good morning, Ray. I’m here and ready.';
+  if (/good afternoon|^afternoon/.test(lower)) return 'Good afternoon, Ray. I’m here and ready.';
+  if (/\b(?:are )?you there\b|\bare you online\b/.test(lower)) return 'Yes, I’m here and ready.';
+  if (/ready to work|are you ready|let['’]?s (?:get started|work|continue)|back at it|i['’]?m back|im back|we back/.test(lower)) return 'Yes — I’m ready. We can review the latest Nexus status, continue Hermes testing, or move into the next implementation step.';
+  if (/^(?:hi|hello|hey|yo|sup|wassup)(?:\s+hermes)?[!.?]*$/.test(lower.trim())) return 'Hey, Ray. I’m here and ready.';
+  if (/how are you|how['’]?s it going|how are things|what['’]?s up/.test(lower)) return 'I do not have human moods, but I’m online, operational, and ready to work.';
   if (/sleep/.test(lower)) return "I do not sleep, but I’m online and ready to work. Operator mode is active.";
   if (/sky/.test(lower)) return 'Usually blue during the day because sunlight scatters through the atmosphere. At sunrise or sunset it can look orange, pink, or red.';
   if (/joke/.test(lower)) return 'Why did the developer go broke? Because they used up all their cache.';

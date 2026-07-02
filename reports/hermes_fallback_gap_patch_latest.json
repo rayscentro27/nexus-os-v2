@@ -1,0 +1,15 @@
+{
+  "reportType": "hermes_fallback_gap_patch",
+  "generatedAt": "2026-07-01T18:48:00-07:00",
+  "previousFailure": "Selection-specific 'Name the target' wording was the default for every unclassified safe message.",
+  "fallbacks": {
+    "unresolvedActionReference": "Requests an eligible record/opportunity/task/report/page and states draft-only behavior.",
+    "generalSafeUnknown": "Offers status, Supabase lookup, business recommendation, or Ray Review draft choices.",
+    "recordSpecificMissingContext": "States that verified Nexus record data is not loaded and requests a client/report/table/item.",
+    "traceMissing": "States that no previous routing trace is available."
+  },
+  "harshFallbackScope": "Only vague action/delegation references without an eligible target.",
+  "externalExecution": false,
+  "approvalGatesIntact": true,
+  "tests": { "passed": 523, "failed": 0 }
+}

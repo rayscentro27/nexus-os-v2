@@ -2,7 +2,7 @@ import { getLastRoutingTrace, type RoutingTraceEntry } from './hermesRoutingTrac
 import { getCapabilityReport } from './hermesCapabilityStatus';
 import type { RouteDecision } from './hermesRouteDecision';
 
-export type TraceQuestionKind = 'source' | 'supabase' | 'model' | 'strategic_reasoning' | 'domain' | 'route' | 'memory' | 'why' | 'action_proof' | 'unknown';
+export type TraceQuestionKind = 'source' | 'source_reason' | 'supabase' | 'model' | 'strategic_reasoning' | 'domain' | 'route' | 'memory' | 'why' | 'action_proof' | 'unknown';
 export type TraceTarget = 'last_answer' | 'current_question' | 'general_capability';
 
 export interface TraceQuestionClassification { kind: TraceQuestionKind; target: TraceTarget; }
@@ -11,6 +11,7 @@ export function classifyTraceQuestion(message: string): TraceQuestionClassificat
   const lower = message.toLowerCase();
   if (/\b(full trace|full routing trace|technical route|debug route|exact routedecision)\b/.test(lower)) return { kind: 'route', target: 'last_answer' };
   if (/\b(?:did that|was that|did you).*(?:saved record|actual(?:ly)? (?:saved|created)|only a draft|task request)\b/.test(lower)) return { kind: 'action_proof', target: 'last_answer' };
+  if (/\bwhy\b.*\b(?:using|use|used|from|was|wasn['’]?t|not use)\b.*\b(?:local|source|live data|static fallback|fallback|supabase|model|memory)\b|\b(?:why local|so why local|why that source|why no live data)\b/i.test(lower)) return { kind: 'source_reason', target: 'last_answer' };
   if (/\b(where\s+(?:did|does|are).*?(?:answer|response|that|this|source)|what\s+source|where\s+did\s+that\s+come\s+from)\b/.test(lower)) return { kind: 'source', target: /your questions|answers generally|in general/.test(lower) ? 'general_capability' : 'last_answer' };
   if (/\b(?:did|are)\s+(?:that|you).*?(?:supabase|database)|\busing\s+(?:supabase|the database)\b|why.*not use.*(?:supabase|database)/.test(lower)) return { kind: 'supabase', target: /did that|last answer|that answer|why/.test(lower) ? 'last_answer' : 'general_capability' };
   if (/\bstrategic reasoning|reasoning route|local reasoning|model reasoning\b/.test(lower)) return { kind: 'strategic_reasoning', target: 'last_answer' };
@@ -55,6 +56,9 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
   switch (classification.kind) {
     case 'source':
       return `${formatTraceForUser(trace)}\n\n${formatTraceForUser(trace, 'compact_technical')}${classification.target === 'general_capability' ? `\n\nIn general, I answer from eligible conversation context, local reports/page data, authenticated Supabase reads when records are required, and the model only when the route permits it.` : ''}`;
+    case 'source_reason':
+      if (trace.usedSupabase) return `For the last answer, I used Supabase because the question required supported live records from ${trace.supabaseTables.join(', ') || 'the authenticated data source'}. ${trace.usedModel ? 'The model was also used where the route allowed it.' : 'No model was needed.'}`;
+      return `For the last answer, I used ${sourceName(trace)} because ${trace.routeDecision?.reason || trace.correctnessHint} Supabase is reserved for supported live-record questions, and ${trace.usedModel ? 'the model was used by that route.' : 'no model was needed.'}`;
     case 'supabase':
       return `For my last answer: ${trace.usedSupabase ? `yes — I used ${trace.supabaseTables.join(', ') || 'a recorded Supabase source'}.` : `no — it came from ${trace.sourceDecision}, not Supabase.`}\n\nIn general: ${capability.supabase.userFacing} Supported read paths include business_opportunities, monetization_opportunities, approvals, task_requests, research_sources, and client_profiles when authentication and RLS permit them.`;
     case 'model':

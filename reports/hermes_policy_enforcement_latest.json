@@ -1,7 +1,7 @@
 {
   "reportType": "hermes_policy_enforcement",
-  "generatedAt": "2026-07-01T18:26:00-07:00",
-  "tests": { "files": 17, "passed": 503, "failed": 0 },
+  "generatedAt": "2026-07-01T18:48:00-07:00",
+  "tests": { "files": 18, "passed": 523, "failed": 0 },
   "policyCases": {
     "traceSelectionIsolation": "passed",
     "supabaseStatusModelForbidden": "passed",
@@ -16,7 +16,12 @@
     "casualCommonIsolation": "passed",
     "generalAdvisorIsolation": "passed",
     "scheduleActionApprovalGate": "passed",
-    "actionProofPrecision": "passed"
+    "actionProofPrecision": "passed",
+    "greetingCoverage": "passed",
+    "activityStatusCoverage": "passed",
+    "sourceReasonFollowup": "passed",
+    "fallbackScope": "passed",
+    "topicSelectionPreservation": "passed"
   },
   "browser": {
     "messages": 11,

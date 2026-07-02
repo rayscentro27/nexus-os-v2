@@ -1,0 +1,17 @@
+{
+  "reportType": "hermes_conversational_routing_gap",
+  "generatedAt": "2026-07-01T18:48:00-07:00",
+  "rootCause": "Route coverage omitted generalized greetings, operational work-openers, completed-work wording, and source-reason follow-ups; the default clarification used selection-specific language for all unknown messages.",
+  "coverage": {
+    "greetingCheckIn": "casual_common / Level 1 / no memory, retrieval, or model",
+    "workOpener": "process_activity_status / Level 1 / local reports / no model",
+    "todayCompleted": "process_activity_status / Level 1 / local activity evidence / no model",
+    "sourceReasonFollowup": "trace_source_meta / last_trace_only / no retrieval or model"
+  },
+  "priority": ["safety", "trace/source", "cost/model status", "schedule action", "activity status", "pure casual", "general advisor", "explicit domain", "approval action", "memory"],
+  "topicPreservation": "Greetings, activity/status, capability, and trace turns do not overwrite the active topic or selected item.",
+  "tests": { "files": 18, "passed": 523, "failed": 0 },
+  "build": "passed",
+  "browser": { "status": "blocked_by_authentication", "detail": "The local application requires authenticated admin sign-in; no credentials were used or exposed." },
+  "safety": "No external action, scheduler activation, live trade, Supabase claim, or model call was added."
+}
