@@ -9,6 +9,7 @@ export interface TraceQuestionClassification { kind: TraceQuestionKind; target: 
 
 export function classifyTraceQuestion(message: string): TraceQuestionClassification | null {
   const lower = message.toLowerCase();
+  if (/\bwhat did you get (?:that|this|the) (?:last )?(?:answer|response) from\b|\bwhat part of your decision[- ]making process did you use\b|\bhow did you decide (?:that|this)\b/.test(lower)) return { kind: /decision[- ]making|how did you decide/.test(lower) ? 'why' : 'source', target: 'last_answer' };
   if (/\b(full trace|full routing trace|technical route|debug route|exact routedecision)\b/.test(lower)) return { kind: 'route', target: 'last_answer' };
   if (/\b(?:did that|was that|did you).*(?:saved record|actual(?:ly)? (?:saved|created)|only a draft|task request)\b/.test(lower)) return { kind: 'action_proof', target: 'last_answer' };
   if (/\bwhy\b.*\b(?:using|use|used|from|was|wasn['’]?t|not use)\b.*\b(?:local|source|live data|static fallback|fallback|supabase|model|memory)\b|\b(?:why local|so why local|why that source|why no live data)\b/i.test(lower)) return { kind: 'source_reason', target: 'last_answer' };
@@ -38,6 +39,13 @@ function sourceName(trace: RoutingTraceEntry): string {
   return trace.sourceDecision;
 }
 
+function assumptionsFrom(trace: RoutingTraceEntry): string {
+  if (trace.usedSupabase) return 'No static-record assumption replaced the live read; authentication and RLS still limit completeness.';
+  if (trace.sourceDecision === 'reasoning') return 'The answer used local reasoning and the assumptions stated or implied by that renderer.';
+  if (trace.sourceDecision === 'local') return 'The answer relied on local or report-backed context and did not verify current production state.';
+  return 'No additional assumptions were recorded.';
+}
+
 export function formatTraceForUser(trace: RoutingTraceEntry, mode: 'plain_summary' | 'compact_technical' | 'full_trace' = 'plain_summary'): string {
   if (mode === 'full_trace') return `Full routing trace:\n\n${traceSummary(trace)}\n- Decision reason: ${trace.routeDecision?.reason || trace.correctnessHint}\n- Allowed context: ${Object.entries(trace.allowedContext || {}).filter(([, value]) => value).map(([key]) => key).join(', ') || 'none'}\n- Blocked context: ${(trace.blockedContext || []).join(', ') || 'none'}`;
   if (mode === 'compact_technical') return `Route: ${trace.route.replace(/_/g, ' ')} · Level ${trace.activationLevel} · Domain: ${trace.detectedDomain} · Source: ${sourceName(trace)}.`;
@@ -58,7 +66,7 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
   if (fullTraceRequested) return formatTraceForUser(trace, 'full_trace');
   switch (classification.kind) {
     case 'source':
-      return `${formatTraceForUser(trace)}\n\n${formatTraceForUser(trace, 'compact_technical')}${classification.target === 'general_capability' ? `\n\nIn general, I answer from eligible conversation context, local reports/page data, authenticated Supabase reads when records are required, and the model only when the route permits it.` : ''}`;
+      return `${formatTraceForUser(trace)}\n\n- Intent/route: ${trace.intent} / ${trace.route}\n- Sources/context: ${(trace.handlerResultSummary?.sources as string[] | undefined)?.join(', ') || trace.sourceDecision}\n- Live Supabase read: ${trace.usedSupabase ? `yes (${trace.supabaseTables.join(', ') || 'table not recorded'})` : 'no'}\n- Assumptions: ${assumptionsFrom(trace)}\n- Confidence: ${trace.confidence}\n- To improve certainty: ${trace.usedSupabase ? 'verify source freshness and any partial table errors' : 'run the approved current source read if the question depends on live operational state'}.\n\n${formatTraceForUser(trace, 'compact_technical')}${classification.target === 'general_capability' ? `\n\nIn general, I answer from eligible conversation context, local reports/page data, authenticated Supabase reads when records are required, and the model only when the route permits it.` : ''}`;
     case 'source_reason':
       if (trace.usedSupabase) return `For the last answer, I used Supabase because the question required supported live records from ${trace.supabaseTables.join(', ') || 'the authenticated data source'}. ${trace.usedModel ? 'The model was also used where the route allowed it.' : 'No model was needed.'}`;
       return `For the last answer, I used ${sourceName(trace)} because ${trace.routeDecision?.reason || trace.correctnessHint} Supabase is reserved for supported live-record questions, and ${trace.usedModel ? 'the model was used by that route.' : 'no model was needed.'}`;
@@ -79,7 +87,7 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
       if (trace.memoryUsed) return `Yes. Memory was eligible and used${trace.selectedEntity ? ` for ${trace.selectedEntity}` : ''}.`;
       return `No. Prior memory was not used.${trace.memoryRejected ? ` Reason: ${trace.memoryRejectionReason}` : ''}`;
     case 'why':
-      return `${formatTraceForUser(trace)} I chose that source because the question was classified as ${trace.detectedDomain.replace(/_/g, ' ')}.\n\n${formatTraceForUser(trace, 'compact_technical')}`;
+      return `I used the ${trace.route} route for the ${trace.intent} intent. Sources/context: ${(trace.handlerResultSummary?.sources as string[] | undefined)?.join(', ') || trace.sourceDecision}. Live Supabase read: ${trace.usedSupabase ? 'yes' : 'no'}. Assumptions: ${assumptionsFrom(trace)} Confidence: ${trace.confidence}. This is a decision summary, not hidden chain-of-thought. To improve certainty, ${trace.usedSupabase ? 'check record freshness and partial failures.' : 'verify any time-sensitive claim against its approved live source.'}`;
     case 'action_proof': {
       const proof = trace.handlerResultSummary?.actionProof as { outcome?: string; id?: string; status?: string; title?: string; reason?: string } | null | undefined;
       if (!proof) return 'The last answer does not contain proof of a saved record or task request, so I cannot claim that anything was created.';

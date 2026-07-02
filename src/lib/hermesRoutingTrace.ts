@@ -62,7 +62,10 @@ export interface RoutingTraceEntry {
 
 const STORAGE_KEY = 'nexus-hermes-routing-trace-v1';
 const MAX_ENTRIES = 100;
-let memoryEntries: RoutingTraceEntry[] = [];
+let activeScope = 'default:default';
+const entriesByScope = new Map<string, RoutingTraceEntry[]>();
+const storageKey = () => `${STORAGE_KEY}:${activeScope}`;
+export function setRoutingTraceScope(scopeKey: string): void { activeScope = scopeKey || 'default:default'; }
 
 function safe(): Storage | null {
   try {
@@ -93,13 +96,13 @@ export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
     timestamp: new Date().toISOString(),
   };
   const ls = safe();
-  memoryEntries = [...memoryEntries, full].slice(-MAX_ENTRIES);
+  entriesByScope.set(activeScope, [...(entriesByScope.get(activeScope) || []), full].slice(-MAX_ENTRIES));
   if (!ls) return full;
   try {
-    const raw = ls.getItem(STORAGE_KEY);
+    const raw = ls.getItem(storageKey());
     const entries: RoutingTraceEntry[] = raw ? JSON.parse(raw) : [];
     entries.push(full);
-    ls.setItem(STORAGE_KEY, JSON.stringify(entries.slice(-MAX_ENTRIES)));
+    ls.setItem(storageKey(), JSON.stringify(entries.slice(-MAX_ENTRIES)));
   } catch {
     // quota exceeded — ignore
   }
@@ -116,9 +119,9 @@ function redactAndTruncate(message: string): string {
 /** Get all routing trace entries. */
 export function getRoutingTraces(): RoutingTraceEntry[] {
   const ls = safe();
-  if (!ls) return memoryEntries;
+  if (!ls) return entriesByScope.get(activeScope) || [];
   try {
-    const raw = ls.getItem(STORAGE_KEY);
+    const raw = ls.getItem(storageKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -135,8 +138,9 @@ export function getLastRoutingTrace(): RoutingTraceEntry | null {
 
 /** Clear all routing traces. */
 export function clearRoutingTraces(): void {
+  entriesByScope.delete(activeScope);
   const ls = safe();
-  if (ls) try { ls.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  if (ls) try { ls.removeItem(storageKey()); } catch { /* ignore */ }
 }
 
 /**

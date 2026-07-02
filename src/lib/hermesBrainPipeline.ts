@@ -14,24 +14,26 @@ import {
   addConversationMessage, getConversationState, resolveFollowUp, setLastListedItems,
   setLastRankedList, setLastRecommendedItem, setLastSelectedItem,
   setLastSupabaseQueryResult, updateConversationContext, type ConversationItem,
+  setConversationScope,
 } from './hermesConversationState';
-import { getSelectionMemory, setLastTurnTraceMemory, touchSelectionMemory } from './hermesMemoryStores';
-import { logRoutingTrace } from './hermesRoutingTrace';
+import { advanceSelectionMemoryTurn, getSelectionMemory, setHermesMemoryScope, setLastTurnTraceMemory, touchSelectionMemory } from './hermesMemoryStores';
+import { logRoutingTrace, setRoutingTraceScope } from './hermesRoutingTrace';
 import { reportRegistry } from '../data/reportRegistry.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
 import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion, answerGeneralProjectPlanningQuestion } from './hermesCommonConversation';
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
-import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity } from './hermesAdvisoryContinuity';
-import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity } from './hermesFallbackContinuity';
+import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity, setAdvisoryMemoryScope } from './hermesAdvisoryContinuity';
+import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity, setFallbackMemoryScope } from './hermesFallbackContinuity';
 import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } from './hermesOpportunityAdvisor';
 import { answerSystemHealthQuestion } from './hermesSystemHealthStatus';
 import { answerPageContextQuestion } from './hermesPageContextStatus';
+import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSystemHealthContract } from './hermesOperationalContracts';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
   currentRoute?: string; currentPageContext?: Record<string, unknown> | null;
   conversationHistory?: unknown[]; userSession?: unknown; tenantId?: string;
-  pageId?: string; route?: string; isBackgroundJob?: boolean;
+  pageId?: string; route?: string; isBackgroundJob?: boolean; sessionId?: string;
 }
 export interface BrainPipelineResponse {
   text: string; answer: string; activationLevel: number; route: string; routeDecision: RouteDecision;
@@ -47,17 +49,17 @@ export interface BrainPipelineResponse {
 }
 
 const OPPORTUNITIES: ConversationItem[] = [
-  { id: 'readiness-review', title: '$97 Credit & Funding Readiness Review', type: 'opportunity', category: 'GoClear/Apex', revenueRange: '$97 entry offer', status: 'low-cost launch' },
-  { id: 'assistant-plan', title: '$297 Credit Assistant Plan', type: 'opportunity', category: 'GoClear/Apex', revenueRange: '$297', status: 'upsell' },
-  { id: 'monthly-readiness', title: 'Monthly Readiness Subscription', type: 'opportunity', category: 'GoClear/Apex', revenueRange: 'recurring', status: 'retention offer' },
-  { id: 'funding-prep', title: 'Funding Application Prep Sprint', type: 'opportunity', category: 'Apex', revenueRange: '$500–$1,500', status: 'service offer' },
+  { id: 'readiness-review', title: '$97 Credit & Funding Readiness Review', type: 'opportunity', category: 'GoClear/Apex', revenueRange: '$97 entry offer', status: 'low-cost launch', source: 'static_offer_context', dataSource: 'static' },
+  { id: 'assistant-plan', title: '$297 Credit Assistant Plan', type: 'opportunity', category: 'GoClear/Apex', revenueRange: '$297', status: 'upsell', source: 'static_offer_context', dataSource: 'static' },
+  { id: 'monthly-readiness', title: 'Monthly Readiness Subscription', type: 'opportunity', category: 'GoClear/Apex', revenueRange: 'recurring', status: 'retention offer', source: 'static_offer_context', dataSource: 'static' },
+  { id: 'funding-prep', title: 'Funding Application Prep Sprint', type: 'opportunity', category: 'Apex', revenueRange: '$500–$1,500', status: 'service offer', source: 'static_offer_context', dataSource: 'static' },
 ];
 
 const result = (userAnswer: string, handler: string, sources: string[], selectedEntities: ConversationItem[] = [], nextActions: string[] = []): HermesHandlerResult => ({ userAnswer, internalTrace: handler, selectedEntities, sources, nextActions, safeFallbackAnswer: userAnswer });
 const actionResult = (userAnswer: string, handler: string, sources: string[], actionProof: NonNullable<HermesHandlerResult['actionProof']>, selectedEntities: ConversationItem[] = []): HermesHandlerResult => ({ ...result(userAnswer, handler, sources, selectedEntities), actionProof });
-const recommendation = () => `For a business you can start within 30 days, I recommend **$97 Credit & Funding Readiness Review** first. It is inexpensive to launch, matches GoClear/Apex, and creates a path to the $297 assistant plan and Monthly Readiness Subscription.\n\n**Next safe action:** prepare the intake, scorecard, and a draft Ray Review card. Any checkout activation, customer contact, or charge remains approval-gated.`;
+const recommendation = () => `**Recommendation:** start with the **$97 Credit & Funding Readiness Review**. It is the current Nexus entry-offer path and can lead to the $297 assistant plan and Monthly Readiness Subscription.\n\n**Source:** static Nexus business context; this answer did not verify current demand, live opportunity rows, or sales.\n**Assumptions:** Ray can fulfill the review manually, reach qualified prospects, and keep delivery scoped.\n**Confidence:** medium until live pipeline and conversion evidence are checked.\n**Next safe action:** prepare the intake and scorecard as a draft, then validate with five manual prospects. Checkout activation, customer contact, and charging remain approval-gated.`;
 const implementation = (item: ConversationItem) => `Here is the implementation plan for **${item.title}**:\n\n1. Define the promise, eligibility rules, deliverables, and exclusions.\n2. Build the intake and readiness scorecard.\n3. Create checkout and fulfillment in test mode.\n4. Run five manual pilots and capture conversion evidence.\n5. Prepare the refined plan for Ray Review.\n\nNo email, charge, publishing, or live execution occurs without explicit approval.`;
-const listOpportunities = (label: string) => `Business opportunities (${label}):\n\n${OPPORTUNITIES.map((item, index) => `${index + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}.`).join('\n')}`;
+const listOpportunities = (live: boolean, freshness: string) => `Business opportunities:\n\n${OPPORTUNITIES.map((item, index) => `${index + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}. Source: static normalized Nexus offer context; freshness: build-time; confidence: medium.${live ? ' A separate live Supabase inventory read also succeeded, but these static items were not merged with or claimed to be those returned rows.' : ''}`).join('\n')}\n\n**Next safe action:** verify the chosen item against the live record before creating any approval draft. Source check: ${live ? 'live Supabase plus separately labeled static context' : 'static context only'}; checked ${freshness}.`;
 
 async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof buildContextPacket>, message: string) {
   const lower = message.toLowerCase();
@@ -98,10 +100,24 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
         ? result(answerAdvisoryFollowUp(message, packet.advisoryContinuity), 'advisory_continuity_reasoner', ['advisory_continuity'])
         : result('I can answer generally, but I need to know what plan or idea you mean.', 'advisory_context_expired', ['none']);
       source = 'reasoning'; break;
+    case 'client_records': {
+      const live = await buildLiveSupabaseContext(message);
+      usedSupabase = live.liveData; supabaseStatus = live.sourceType; supabaseTables = live.tablesQueried || [];
+      handler = result(renderRecordContract('clients', live), `${decision.routeId}_contract`, live.liveData ? supabaseTables : ['supabase_access_state']);
+      source = live.liveData ? 'supabase' : 'local';
+      break;
+    }
+    case 'research_engine_status':
+      handler = result(renderResearchStatusContract(), 'research_engine_status_contract', ['system_health_registry', 'report_registry']); break;
+    case 'specialist_handoff': {
+      const item = packet.selectionMemory ? resolveFollowUp(message) : null;
+      handler = actionResult(renderSpecialistHandoffContract(item?.title), 'specialist_handoff_contract', item ? ['selection_memory', 'delegation_policy'] : ['delegation_policy'], { outcome: item ? 'local_draft_only' : 'blocked', title: item?.title, status: item ? 'not_saved' : undefined, reason: item ? undefined : 'missing_target' }, item ? [item] : []);
+      break;
+    }
     case 'process_activity_status':
       handler = result(answerActivityStatusQuestion({ message, routeDecision: decision, contextPacket: packet }), 'activity_status_summary', ['local_activity_journal', 'confirmed_checkpoint']); break;
     case 'system_health_report':
-      handler = result(answerSystemHealthQuestion(message), 'system_health_summary', ['local_reports', 'confirmed_checkpoint']); break;
+      handler = result(/where is the problem|what is the issue|what is not working/i.test(message) ? answerSystemHealthQuestion(message) : renderSystemHealthContract(), 'system_health_contract', ['system_health_registry', 'local_reports']); break;
     case 'page_connection_status':
     case 'page_context_status':
       handler = result(answerPageContextQuestion({ message, routeDecision: decision, contextPacket: packet }), 'page_context_status', ['page_context_contract']); break;
@@ -112,7 +128,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       else if (decision.domain === 'reports' && decision.intent === 'inventory_question') { const reports = reportRegistry.filter(item => item.available).slice(0, 10); handler = result(`Available local reports:\n\n${reports.map((item, index) => `${index + 1}. **${item.title}** — ${item.category}; ${item.path}`).join('\n')}`, 'report_inventory', ['report_registry']); }
       else if (/ceo version|ceo summary/.test(lower)) handler = result(buildCeoDailySummary('today'), 'ceo_summary', ['activity_journal']);
       else if (/what did (?:you|we) do today|daily summary/.test(lower)) handler = result(buildDailySummary('today'), 'daily_summary', ['activity_journal']);
-      else handler = result(`Local ${decision.domain.replace(/_/g, ' ')} evidence is allowed for this status question. No model or selection memory was used.`, 'local_status', ['local_reports']);
+      else handler = result(`**Status:** no specialized live status adapter is registered for ${decision.domain.replace(/_/g, ' ')}.\n**Source checked:** local report registry.\n**Freshness:** current build snapshot; production state was not verified.\n**Blocker:** a route-specific report adapter or authenticated read is required for a definitive answer.\n**Next safe action:** open the latest matching report and perform a read-only verification.`, 'status_contract_fallback', ['report_registry']);
       break;
     case 'approval_action_prepare': {
       if (decision.intent === 'prepare_implementation_task') {
@@ -144,8 +160,10 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
         handler = result('Available local report groups include activation/operations, Ray Review, trading proof, Hermes routing, research, revenue, and safety audits. Open Reports for the indexed files and timestamps.', 'report_inventory', ['report_registry']);
       } else if (isSupabaseAllowed(decision)) {
         const live = await buildLiveSupabaseContext(message); usedSupabase = live.liveData; supabaseStatus = live.sourceType; supabaseTables = live.tablesQueried || [];
-        if (decision.domain === 'business_opportunity') {
-          handler = result(`${listOpportunities(live.liveData ? 'live query plus normalized offer context' : 'clearly labeled static fallback')}\n\n${live.text}`, live.liveData ? 'business_opportunity_inventory_live' : 'business_opportunity_inventory_fallback', live.liveData ? supabaseTables : ['static_offer_context']);
+        if (decision.domain === 'approvals') {
+          handler = result(renderRecordContract('approvals', live), 'approvals_pending_contract', live.liveData ? supabaseTables : ['supabase_access_state']);
+        } else if (decision.domain === 'business_opportunity') {
+          handler = result(`${listOpportunities(live.liveData, live.timestamp)}\n\n${live.text}`, live.liveData ? 'business_opportunity_inventory_live' : 'business_opportunity_inventory_fallback', live.liveData ? [...supabaseTables, 'static_offer_context'] : ['static_offer_context']);
           setLastListedItems(OPPORTUNITIES);
         } else handler = result(live.text, live.liveData ? 'supabase_inventory' : 'inventory_unavailable', live.liveData ? supabaseTables : ['supabase_access_state']);
         source = live.liveData ? 'supabase' : 'local';
@@ -179,7 +197,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     }
     default:
       setFallbackContinuity(message);
-      handler = result('I can help, but I need one more detail: do you want a general recommendation, a Nexus build plan, a business/credit/funding angle, or a Ray Review draft?', 'fallback_clarification', ['none']);
+      handler = result('I need one more detail: what specific outcome or record do you want help with? If you want a general recommendation, name the decision you want me to evaluate.', 'fallback_clarification', ['none']);
       source = 'fallback';
   }
   return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory };
@@ -187,6 +205,14 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
 
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
   const message = input.message.trim();
+  const sessionFromObject = input.userSession && typeof input.userSession === 'object' && 'id' in input.userSession ? String((input.userSession as { id?: unknown }).id || '') : '';
+  const scopeKey = `${input.tenantId || 'default'}:${input.sessionId || sessionFromObject || 'default'}`;
+  setHermesMemoryScope(scopeKey);
+  setAdvisoryMemoryScope(scopeKey);
+  setFallbackMemoryScope(scopeKey);
+  setConversationScope(scopeKey);
+  setRoutingTraceScope(scopeKey);
+  advanceSelectionMemoryTurn();
   advanceAdvisoryContinuityTurn();
   advanceFallbackContinuityTurn();
   const surface = input.surface || 'unknown';
@@ -222,6 +248,8 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
       lastAdvisoryAssumptions: selectedPlan ? ['a clear recurring promise', 'manual pilot delivery', 'visible customer progress', 'measured conversion and retention'] : opportunity?.assumptions || (revenue ? ['manual outreach', 'fast readiness-review fulfillment', 'consistent follow-up', 'disciplined upsells'] : ['a defined scope', 'clear priorities', 'reviewed implementation steps']),
       lastAdvisoryRecommendation: selectedPlan ? `test ${selectedTitle} with five manual pilot clients before automating.` : opportunity?.recommendation || (revenue ? 'launch the $97 readiness review and validate the first ten sales before scaling.' : 'define the smallest useful first phase and prepare it for review.'),
       lastAdvisoryRisks: selectedPlan ? ['weak retention', 'unclear deliverables', 'clients not seeing progress', 'lead flow', 'pricing and fulfillment complexity'] : opportunity?.risks || (revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity']),
+      sourceProvenance: executed.handler.sources,
+      confidence: routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low',
     });
   }
   if (routeDecision.routeId === 'fallback_continuation') clearFallbackContinuity();

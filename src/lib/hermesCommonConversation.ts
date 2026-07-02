@@ -1,7 +1,7 @@
 import type { RouteDecision } from './hermesRouteDecision';
 
 const DOMAIN_TERMS = /\b(business opportunit(?:y|ies)|approval|client|offer|revenue|trading|supabase|model|cost|source|ray review|report|automation|funding|credit|marketing)\b/i;
-const GREETING_OR_CHECK_IN = /^(?:(?:good\s+)?(?:morning|afternoon|evening|night)|hi|hello|hey|yo|sup|wassup|gm)(?:\s+hermes)?[!.?]*$|^(?:what['’]?s up|how are you(?: doing)?|how['’]?s it going|how are things|(?:are )?you (?:there|online|ready)|ready to work|checking in|i['’]?m back|im back|we back|back at it|let['’]?s (?:get started|work|continue))[!.?]*$/i;
+const GREETING_OR_CHECK_IN = /^(?:(?:good\s+)?(?:morning|afternoon|evening|night)|hi|hello|hey|yo|sup|wassup|gm)(?:\s+hermes)?[!.?]*$|^(?:what['’]?s up|how are you(?: doing)?(?: today)?|how['’]?s it going|how are things|(?:are )?you (?:there|online|ready)|ready to work|checking in|i['’]?m back|im back|we back|back at it|let['’]?s (?:get started|work|continue))[!.?]*$/i;
 const HUMAN_EXPERIENCE = /\b(do you (?:eat|sleep|drive|dream|get tired|have feelings|have a body|have taste buds|like food|have emotions|get mad|get excited)|are you (?:hungry|awake|real|tired|sleepy)|can you (?:taste|smell))\b/i;
 
 export function isGreetingOrCheckIn(message: string): boolean {
@@ -39,20 +39,20 @@ export function isGeneralAdvisorQuestion(message: string): boolean {
 
 export function answerCasualCommonQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {
   const lower = message.toLowerCase().replace(/\bgo;od\b/g, 'good');
-  if (/\bgood night\b|^night[!.?]*$/.test(lower.trim())) return 'Good night, Ray. Rest up — we made strong progress on Hermes today.';
+  if (/\bgood night\b|^night[!.?]*$/.test(lower.trim())) return 'Good night, Ray. Rest well.';
   if (/\bdo you eat\b|\bare you hungry\b|\bdo you have a body\b/.test(lower)) return 'I do not eat or have a body, but I can still help with food ideas, nutrition tradeoffs, restaurants, or meal planning.';
   if (/\bdo you sleep\b|\bare you (?:tired|sleepy|awake)\b|\bdo you dream\b/.test(lower)) return 'I do not sleep, but I’m here and ready when you are.';
   if (/\b(?:feelings|emotions|get mad|get excited)\b/.test(lower)) return 'I do not have feelings the way a person does, but I can still respond with judgment, tone, and priorities based on what you are trying to accomplish.';
   if (/\b(?:taste buds|can you taste|can you smell|do you like food)\b/.test(lower)) return 'I do not have senses or a body, but I can still reason about flavor, food choices, and meal planning.';
   if (/\bdo you drive\b/.test(lower)) return 'I do not drive or have a body, but I can help compare vehicles, ownership costs, and practical tradeoffs.';
   if (/\bare you real\b/.test(lower)) return 'I’m real as software, not as a person with a body or lived experiences.';
-  if (/good evening|^evening/.test(lower)) return 'Good evening, Ray. I’m here and ready. We can review what changed today, check Supabase/live status, or keep moving on Hermes/Nexus.';
+  if (/good evening|^evening/.test(lower)) return 'Good evening, Ray. I’m here.';
   if (/good morning|^morning|\bgm\b/.test(lower)) return 'Good morning, Ray. I’m here and ready.';
   if (/good afternoon|^afternoon/.test(lower)) return 'Good afternoon, Ray. I’m here and ready.';
   if (/\b(?:are )?you there\b|\bare you online\b/.test(lower)) return 'Yes, I’m here and ready.';
   if (/ready to work|are you ready|let['’]?s (?:get started|work|continue)|back at it|i['’]?m back|im back|we back/.test(lower)) return 'Yes — I’m ready. We can review the latest Nexus status, continue Hermes testing, or move into the next implementation step.';
   if (/^(?:hi|hello|hey|yo|sup|wassup)(?:\s+hermes)?[!.?]*$/.test(lower.trim())) return 'Hey, Ray. I’m here and ready.';
-  if (/how are you|how['’]?s it going|how are things|what['’]?s up/.test(lower)) return 'I do not have human moods, but I’m online, operational, and ready to work.';
+  if (/how are you|how['’]?s it going|how are things|what['’]?s up/.test(lower)) return 'I do not have human moods, but I’m here and ready to help.';
   if (/sleep/.test(lower)) return "I do not sleep, but I’m online and ready to work. Operator mode is active.";
   if (/sky/.test(lower)) return 'Usually blue during the day because sunlight scatters through the atmosphere. At sunrise or sunset it can look orange, pink, or red.';
   if (/joke/.test(lower)) return 'Why did the developer go broke? Because they used up all their cache.';

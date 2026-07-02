@@ -1,9 +1,11 @@
 /** Hermes chat persistence — keeps conversation across tab/screen navigation and reloads.
  *  localStorage only; bounded; sensitive-looking messages are NOT persisted (firewall belt). */
 import { containsSensitive } from './dataScopes';
+import { resetConversationState } from './hermesConversationState';
 
 const MSG_KEY = 'nexus_hermes_chat_history';
 const MODE_KEY = 'nexus_hermes_mode';
+const SESSION_KEY = 'nexus_hermes_session_id';
 const MAX = 50;
 
 export interface StoredMsg { role: 'user' | 'hermes'; text: string; meta?: string }
@@ -41,6 +43,17 @@ export function saveMode(mode: string): void {
 
 export function clearChat(): void {
   const ls = safe(); if (ls) try { ls.removeItem(MSG_KEY); } catch { /* ignore */ }
+  resetConversationState();
+}
+
+export function getChatSessionId(): string {
+  const ls = safe();
+  if (!ls) return 'default';
+  const existing = ls.getItem(SESSION_KEY);
+  if (existing) return existing;
+  const created = `hermes-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  try { ls.setItem(SESSION_KEY, created); } catch { return 'default'; }
+  return created;
 }
 
 /** Reusable universal Hermes-state API (used by Command Center + any tab). Persistence is
@@ -53,4 +66,5 @@ export const hermesStore = {
   clearHistory: clearChat,
   setMode: saveMode,
   getMode: loadMode,
+  getSessionId: getChatSessionId,
 };

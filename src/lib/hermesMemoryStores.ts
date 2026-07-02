@@ -10,14 +10,16 @@ export interface SelectionMemory {
   lastList: ConversationItem[]; lastRankedList: ConversationItem[];
   lastRecommendation: ConversationItem | null; lastSelectedItem: ConversationItem | null;
   activeDomain: string | null; expiresAfterTurns: number; createdAt: string; lastUsedAt: string | null;
+  scopeKey: string; provenance: string[]; turnCount: number;
 }
 export interface LongTermBusinessContext {
   goals: string[]; constraints: string[]; currentOffers: string[];
   activeProjects: string[]; knownBusinessModel: string; latestSectionSummary: string;
 }
 
-let lastTurnTraceMemory: LastTurnTraceMemory | null = null;
-let selectionMemory: SelectionMemory = emptySelection();
+let activeScope = 'default:default';
+const traceByScope = new Map<string, LastTurnTraceMemory | null>();
+const selectionByScope = new Map<string, SelectionMemory>();
 let longTermBusinessContext: LongTermBusinessContext = {
   goals: ['Generate near-term revenue', 'Grow GoClear/Apex safely'],
   constraints: ['No external sends, charges, publishing, disputes, or live trades without approval'],
@@ -27,13 +29,20 @@ let longTermBusinessContext: LongTermBusinessContext = {
 };
 
 function emptySelection(): SelectionMemory {
-  return { lastList: [], lastRankedList: [], lastRecommendation: null, lastSelectedItem: null, activeDomain: null, expiresAfterTurns: 8, createdAt: new Date().toISOString(), lastUsedAt: null };
+  return { lastList: [], lastRankedList: [], lastRecommendation: null, lastSelectedItem: null, activeDomain: null, expiresAfterTurns: 8, createdAt: new Date().toISOString(), lastUsedAt: null, scopeKey: activeScope, provenance: [], turnCount: 0 };
 }
-export function getLastTurnTraceMemory(): LastTurnTraceMemory | null { return lastTurnTraceMemory; }
-export function setLastTurnTraceMemory(value: LastTurnTraceMemory): void { lastTurnTraceMemory = value; }
-export function getSelectionMemory(): SelectionMemory { return selectionMemory; }
-export function updateSelectionMemory(update: Partial<SelectionMemory>): void { selectionMemory = { ...selectionMemory, ...update }; }
-export function touchSelectionMemory(): void { selectionMemory.lastUsedAt = new Date().toISOString(); }
+export function setHermesMemoryScope(scopeKey: string): void { activeScope = scopeKey || 'default:default'; }
+export function getHermesMemoryScope(): string { return activeScope; }
+export function getLastTurnTraceMemory(): LastTurnTraceMemory | null { return traceByScope.get(activeScope) || null; }
+export function setLastTurnTraceMemory(value: LastTurnTraceMemory): void { traceByScope.set(activeScope, value); }
+export function getSelectionMemory(): SelectionMemory {
+  const value = selectionByScope.get(activeScope) || emptySelection();
+  if (value.turnCount > value.expiresAfterTurns) { const expired = emptySelection(); selectionByScope.set(activeScope, expired); return expired; }
+  return value;
+}
+export function updateSelectionMemory(update: Partial<SelectionMemory>): void { selectionByScope.set(activeScope, { ...getSelectionMemory(), ...update, scopeKey: activeScope }); }
+export function touchSelectionMemory(): void { updateSelectionMemory({ lastUsedAt: new Date().toISOString(), turnCount: 0 }); }
+export function advanceSelectionMemoryTurn(): void { const value = getSelectionMemory(); if (value.lastList.length || value.lastSelectedItem) updateSelectionMemory({ turnCount: value.turnCount + 1 }); }
 export function getLongTermBusinessContext(): LongTermBusinessContext { return longTermBusinessContext; }
 export function updateLongTermBusinessContext(update: Partial<LongTermBusinessContext>): void { longTermBusinessContext = { ...longTermBusinessContext, ...update }; }
-export function resetHermesMemoryStores(): void { lastTurnTraceMemory = null; selectionMemory = emptySelection(); }
+export function resetHermesMemoryStores(): void { traceByScope.delete(activeScope); selectionByScope.delete(activeScope); }

@@ -64,6 +64,18 @@ let conversationState: ConversationState = {
   lastReferencedItem: null,
   lastIntent: null, lastTopic: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
 };
+let activeConversationScope = 'default:default';
+const conversationStates = new Map<string, ConversationState>();
+
+export function setConversationScope(scopeKey: string): void {
+  conversationStates.set(activeConversationScope, conversationState);
+  activeConversationScope = scopeKey || 'default:default';
+  conversationState = conversationStates.get(activeConversationScope) || {
+    history: [], lastListedItems: [], lastRankedList: [], lastRecommendedItem: null,
+    lastSelectedItem: null, lastSupabaseQueryResult: null, lastReferencedItem: null,
+    lastIntent: null, lastTopic: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
+  };
+}
 
 /** Reset conversation state (e.g., on page reload). */
 export function resetConversationState(): void {
@@ -107,7 +119,7 @@ export function setLastListedItems(items: ConversationItem[]): void {
   conversationState.lastListedItems = items;
   // Also clear stale rank/recommend when new list arrives
   conversationState.lastRankedList = items;
-  updateSelectionMemory({ lastList: items, lastRankedList: items, activeDomain: items[0]?.type === 'opportunity' ? 'business_opportunity' : conversationState.lastTopic });
+  updateSelectionMemory({ lastList: items, lastRankedList: items, activeDomain: items[0]?.type === 'opportunity' ? 'business_opportunity' : conversationState.lastTopic, provenance: [...new Set(items.map((item) => item.source || item.dataSource || 'unknown'))], turnCount: 0 });
 }
 
 /** Get the last listed items. */
@@ -142,6 +154,7 @@ export function setLastSelectedItem(item: ConversationItem): void {
 /** Set the last referenced item (resolved from "this", "that", "number 3"). */
 export function setLastReferencedItem(item: ConversationItem): void {
   conversationState.lastReferencedItem = item;
+  updateSelectionMemory({ lastSelectedItem: item, activeDomain: item.type === 'opportunity' ? 'business_opportunity' : conversationState.lastTopic, provenance: [item.source || item.dataSource || 'conversation_reference'], turnCount: 0 });
 }
 
 /** Get the last referenced item. */

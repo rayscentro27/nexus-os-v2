@@ -18,6 +18,9 @@ export interface LiveHermesResponse {
   timestamp: string;
   tablesQueried?: string[];
   rowCounts?: Record<string, number>;
+  tableResults?: Record<string, { status: 'success' | 'error'; rowCount: number; error?: string }>;
+  verificationStatus?: 'verified' | 'partial' | 'unverified';
+  blocker?: string;
 }
 
 async function hasSession(): Promise<boolean> {
@@ -83,6 +86,8 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
       sourceType: 'unavailable',
       liveData: false,
       timestamp: now,
+      verificationStatus: 'unverified',
+      blocker: 'Supabase is not configured.',
     };
   }
 
@@ -93,6 +98,8 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
       sourceType: 'unavailable',
       liveData: false,
       timestamp: now,
+      verificationStatus: 'unverified',
+      blocker: 'No authenticated admin session is available.',
     };
   }
 
@@ -159,6 +166,7 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
   let hasError = false;
   let errorMsg = '';
   let successfulQueries = 0;
+  const tableResults: NonNullable<LiveHermesResponse['tableResults']> = {};
 
   for (const q of queries) {
     const base = q.filter ? { data: [] as unknown[], error: null } : await queryTable(q.table);
@@ -171,12 +179,12 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
         .order('created_at', { ascending: false })
         .limit(15);
       rows = filterErr ? [] : (filtered ?? []);
-      if (filterErr) { hasError = true; errorMsg = filterErr.message; }
-      else successfulQueries += 1;
+      if (filterErr) { hasError = true; errorMsg = filterErr.message; tableResults[q.table] = { status: 'error', rowCount: 0, error: filterErr.message }; }
+      else { successfulQueries += 1; tableResults[q.table] = { status: 'success', rowCount: rows.length }; }
     } else {
       rows = base.data;
-      if (base.error) { hasError = true; errorMsg = base.error; }
-      else successfulQueries += 1;
+      if (base.error) { hasError = true; errorMsg = base.error; tableResults[q.table] = { status: 'error', rowCount: 0, error: base.error }; }
+      else { successfulQueries += 1; tableResults[q.table] = { status: 'success', rowCount: rows.length }; }
     }
     results[q.table] = rows;
     tableNames.push(q.table);
@@ -202,8 +210,9 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
     responseText += `\n\nNote: Some queries returned errors: ${errorMsg.slice(0, 100)}`;
   }
 
+  const verificationStatus = successfulQueries === queries.length ? 'verified' : successfulQueries > 0 ? 'partial' : 'unverified';
   responseText += successfulQueries > 0
-    ? `\n\nSource: Live Supabase (authenticated session, RLS-applied). Data is read-only. Any resulting execution remains approval-gated.`
+    ? `\n\nSource: Live Supabase (authenticated session, RLS-applied). Verification: ${verificationStatus}. Data is read-only. Any resulting execution remains approval-gated.`
     : `\n\nNo Supabase query succeeded, so this response does not claim live data access.`;
 
   return {
@@ -214,6 +223,9 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
     timestamp: now,
     tablesQueried: tableNames,
     rowCounts,
+    tableResults,
+    verificationStatus,
+    blocker: hasError ? `One or more required table reads failed: ${errorMsg.slice(0, 160)}` : undefined,
   };
 }
 

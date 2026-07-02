@@ -19,7 +19,7 @@ export function evaluateMemoryEligibility(input: MemoryEligibilityInput): Memory
   const marker = FOLLOW_UP.test(input.message);
   const selectionAllowed = decision.memoryPolicy === 'selection_only' || decision.memoryPolicy === 'selection_and_long_term';
   const longTermAllowed = decision.memoryPolicy === 'long_term_allowed' || decision.memoryPolicy === 'selection_and_long_term';
-  if (selectionAllowed && (marker || named)) return { eligible: true, traceAllowed: false, selectionAllowed: true, longTermAllowed, reason: named ? 'Named selection item matched.' : 'Explicit selection follow-up marker matched.', matchedItem: named?.title };
+  if (selectionAllowed && (named || (marker && items.length > 0))) return { eligible: true, traceAllowed: false, selectionAllowed: true, longTermAllowed, reason: named ? 'Named selection item matched.' : 'Explicit selection follow-up marker matched an available list.', matchedItem: named?.title };
   if (longTermAllowed) return { eligible: true, traceAllowed: false, selectionAllowed: false, longTermAllowed: true, reason: 'Long-term business context is allowed; stale selection is excluded.' };
   return { eligible: false, traceAllowed: false, selectionAllowed: false, longTermAllowed: false, reason: 'Selection policy requires a follow-up marker or named item.' };
 }
