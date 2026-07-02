@@ -1,6 +1,6 @@
 import type { IntentDomain } from './hermesIntentFrame';
 
-export type SourceLevel = 'live_supabase' | 'latest_report' | 'local_registry' | 'static_context' | 'unknown';
+export type SourceLevel = 'live_supabase' | 'latest_report' | 'local_registry' | 'static_context' | 'page_context' | 'local_trace' | 'general_reasoning' | 'unknown';
 
 export interface SourceAuthorityEntry {
   domain: IntentDomain;

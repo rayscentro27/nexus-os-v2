@@ -28,10 +28,11 @@ import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } f
 import { answerSystemHealthQuestion } from './hermesSystemHealthStatus';
 import { answerPageContextQuestion } from './hermesPageContextStatus';
 import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSpecialistAgentInventoryContract, renderSystemHealthContract } from './hermesOperationalContracts';
-import { buildIntentFrame, type HermesIntentFrame } from './hermesIntentClassifier';
-import { getActiveSession, advanceSessionTurn, startReviewSession, updateSessionSource, updateSessionList, setSessionFocus, resolveTargetFromSession, type NexusSessionContext } from './hermesAdvisorSession';
+import { buildIntentFrame } from './hermesIntentClassifier';
+import type { HermesIntentFrame } from './hermesIntentFrame';
+import { getActiveSession, advanceSessionTurn, type NexusSessionContext } from './hermesAdvisorSession';
 import { startBusinessOpportunityReview, explainScore, improveOpportunity, draftRayReviewForOpportunity } from './hermesBusinessOpportunityReview';
-import { renderVoiceReady, formatForVoice, formatForScreen, type VoiceReadyResponse } from './hermesVoiceReadyRenderer';
+import { renderVoiceReady, type VoiceReadyResponse } from './hermesVoiceReadyRenderer';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';

@@ -1,6 +1,6 @@
 import type { HermesIntentFrame } from './hermesIntentFrame';
-import type { NexusSessionContext, SessionItem } from './hermesAdvisorSession';
-import { startReviewSession, updateSessionSource, updateSessionList, setSessionFocus, setSessionRecommendation, getActiveSession, resolveTargetFromSession, setSessionPendingDraft } from './hermesAdvisorSession';
+import type { SessionItem } from './hermesAdvisorSession';
+import { startReviewSession, updateSessionSource, updateSessionList, setSessionFocus, getActiveSession, resolveTargetFromSession, setSessionPendingDraft } from './hermesAdvisorSession';
 import { getSourceAuthorityLabel, type SourceLevel } from './hermesSourceAuthority';
 
 export interface BusinessOpportunityReviewResult {
@@ -45,7 +45,7 @@ export function startBusinessOpportunityReview(scopeKey: string, frame: HermesIn
   const sourceLevel: SourceLevel = hasLiveSupabase ? 'live_supabase' : 'static_context';
   const sourceLabel = getSourceAuthorityLabel(sourceLevel);
 
-  const session = startReviewSession(scopeKey, 'business_opportunities', 'business_opportunity_review');
+  startReviewSession(scopeKey, 'business_opportunities', 'business_opportunity_review');
   updateSessionSource(scopeKey, {
     type: hasLiveSupabase ? 'supabase' : 'static',
     name: hasLiveSupabase ? 'Supabase business_opportunities' : 'static Nexus offer context',

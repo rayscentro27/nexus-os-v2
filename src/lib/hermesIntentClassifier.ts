@@ -11,7 +11,7 @@ function detectSafety(raw: string): SafetyDisposition {
   return 'safe';
 }
 
-function detectIntentType(raw: string, lower: string): IntentType {
+function detectIntentType(_raw: string, lower: string): IntentType {
   if (/\b(?:where did|what source|what part of|how did you decide|why did you answer|show (?:the )?(?:full )?(?:route|trace)|was that (?:live|local))\b/i.test(lower)) return 'trace_question';
   if (/\b(?:how|what) (?:is|does) (?:the |our )?(?:system health|nexus health)\b|\bsystem health\b|\b(?:is|how) (?:nexus|system) (?:healthy|working)\b|\b(?:what is broken|what is not working|what is working)\b/i.test(lower)) return 'status_question';
   if (/\b(?:do i have|are there|show|list|what|which|any|how many)\b.*\b(?:approval|approvals|ray review|review cards?)\b/i.test(lower)) return 'record_lookup';
@@ -32,7 +32,7 @@ function detectIntentType(raw: string, lower: string): IntentType {
   return 'unknown';
 }
 
-function detectDomain(raw: string, lower: string, intent: IntentType): IntentDomain {
+function detectDomain(_raw: string, lower: string, intent: IntentType): IntentDomain {
   if (intent === 'trace_question') return 'trace';
   if (intent === 'status_question') {
     if (/\bsystem health\b|\bnexus health\b|\b(?:is|how) (?:nexus|system) (?:healthy|working)\b/i.test(lower)) return 'system_health';
@@ -89,7 +89,7 @@ function detectTarget(raw: string, lower: string, domain: IntentDomain): IntentT
   return { type: 'none', confidence: 0.3 };
 }
 
-function detectAction(raw: string, lower: string, intent: IntentType): IntentAction {
+function detectAction(_raw: string, lower: string, intent: IntentType): IntentAction {
   if (intent === 'approval_action_draft') return 'draft_ray_review';
   if (intent === 'specialist_handoff') return 'prepare_handoff';
   if (intent === 'trace_question') return 'explain_source';
@@ -117,7 +117,7 @@ function detectSourceNeed(domain: IntentDomain, action: IntentAction, intent: In
   return 'general_reasoning';
 }
 
-function detectFollowup(raw: string, lower: string, intent: IntentType, domain: IntentDomain): { isFollowup: boolean; followupType?: FollowupType } {
+function detectFollowup(_raw: string, lower: string, _intent: IntentType, domain: IntentDomain): { isFollowup: boolean; followupType?: FollowupType } {
   if (/\b(?:next one|start with|compare number|number \d+|that one|this one|the (?:first|second|third))\b/i.test(lower)) {
     return { isFollowup: true, followupType: 'selection' };
   }

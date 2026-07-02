@@ -9,11 +9,6 @@ export interface VoiceReadyResponse {
   details?: string;
 }
 
-function isVoiceReadyShort(text: string): boolean {
-  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-  return sentences.length <= 4 && text.length < 500;
-}
-
 function extractPlainAnswer(text: string): string {
   const lines = text.split('\n').filter(l => l.trim().length > 0);
   const firstParagraph: string[] = [];

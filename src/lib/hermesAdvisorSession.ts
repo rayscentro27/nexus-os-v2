@@ -1,5 +1,3 @@
-import type { IntentDomain } from './hermesIntentFrame';
-
 export type ReviewMode =
   | 'business_opportunity_review'
   | 'approval_review'
@@ -34,6 +32,7 @@ export interface SessionFocus {
   score?: number;
   summary?: string;
   source?: string;
+  evidence?: string[];
 }
 
 export interface SessionRecommendation {
