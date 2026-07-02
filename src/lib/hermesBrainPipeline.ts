@@ -28,6 +28,10 @@ import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } f
 import { answerSystemHealthQuestion } from './hermesSystemHealthStatus';
 import { answerPageContextQuestion } from './hermesPageContextStatus';
 import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSpecialistAgentInventoryContract, renderSystemHealthContract } from './hermesOperationalContracts';
+import { buildIntentFrame, type HermesIntentFrame } from './hermesIntentClassifier';
+import { getActiveSession, advanceSessionTurn, startReviewSession, updateSessionSource, updateSessionList, setSessionFocus, resolveTargetFromSession, type NexusSessionContext } from './hermesAdvisorSession';
+import { startBusinessOpportunityReview, explainScore, improveOpportunity, draftRayReviewForOpportunity } from './hermesBusinessOpportunityReview';
+import { renderVoiceReady, formatForVoice, formatForScreen, type VoiceReadyResponse } from './hermesVoiceReadyRenderer';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -46,6 +50,9 @@ export interface BrainPipelineResponse {
   reasoning: { decision: 'answer-locally' | 'answer-with-context' | 'route-to-model'; confidence: 'high' | 'medium' | 'low'; reasoning: string };
   capabilityBadge: string; confidence: 'high' | 'medium' | 'low';
   source: 'local' | 'fallback' | 'supabase' | 'model' | 'conversation-followup' | 'capability' | 'reasoning'; timestamp: string;
+  intentFrame?: HermesIntentFrame;
+  activeSession?: NexusSessionContext | null;
+  voiceReady?: VoiceReadyResponse;
 }
 
 const OPPORTUNITIES: ConversationItem[] = [
@@ -61,7 +68,7 @@ const recommendation = () => `**Recommendation:** start with the **$97 Credit & 
 const implementation = (item: ConversationItem) => `Here is the implementation plan for **${item.title}**:\n\n1. Define the promise, eligibility rules, deliverables, and exclusions.\n2. Build the intake and readiness scorecard.\n3. Create checkout and fulfillment in test mode.\n4. Run five manual pilots and capture conversion evidence.\n5. Prepare the refined plan for Ray Review.\n\nNo email, charge, publishing, or live execution occurs without explicit approval.`;
 const listOpportunities = (live: boolean, freshness: string) => `Business opportunities:\n\n${OPPORTUNITIES.map((item, index) => `${index + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}. Source: static normalized Nexus offer context; freshness: build-time; confidence: medium.${live ? ' A separate live Supabase inventory read also succeeded, but these static items were not merged with or claimed to be those returned rows.' : ''}`).join('\n')}\n\n**Next safe action:** verify the chosen item against the live record before creating any approval draft. Source check: ${live ? 'live Supabase plus separately labeled static context' : 'static context only'}; checked ${freshness}.`;
 
-async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof buildContextPacket>, message: string) {
+async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof buildContextPacket>, message: string, intentFrame?: HermesIntentFrame) {
   const lower = message.toLowerCase();
   let usedSupabase = false, usedModel = false, supabaseStatus = 'not_used';
   let supabaseTables: string[] = [];
@@ -137,6 +144,12 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     case 'approval_action_prepare': {
       if (decision.intent === 'prepare_implementation_task') {
         handler = actionResult('I did not start building or create code/files. I can prepare a draft implementation task for Ray Review, but implementation and deployment require explicit approval and a defined scope.', 'implementation_action_gated', ['approval_policy'], { outcome: 'blocked', reason: 'implementation_requires_reviewed_scope' });
+        break;
+      }
+      // Try to resolve target from intent frame first
+      const intentTarget = intentFrame?.target.type === 'named_offer' ? intentFrame.target.label : null;
+      if (intentTarget) {
+        handler = actionResult(`Draft Ray Review request prepared in this conversation only for **${intentTarget}**. It has not been saved or submitted yet; it was not submitted or executed. No external action was executed.`, 'approval_local_draft', ['intent_frame', 'approval_policy'], { outcome: 'local_draft_only', title: intentTarget, status: 'not_saved' });
         break;
       }
       const item = packet.selectionMemory ? resolveFollowUp(message) : null;
@@ -219,16 +232,18 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   advanceSelectionMemoryTurn();
   advanceAdvisoryContinuityTurn();
   advanceFallbackContinuityTurn();
+  advanceSessionTurn(scopeKey);
   const surface = input.surface || 'unknown';
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
   const state = getConversationState();
-  const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory() });
+  const intentFrame = buildIntentFrame(message);
+  const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory(), intentFrame });
   const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning', 'opportunity_aware_recommendation', 'memory_followup'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
   const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
   if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
   if (!['trace_source_meta', 'cost_model_usage_status', 'fallback_continuation', 'fallback_clarification'].includes(routeDecision.routeId)) clearFallbackContinuity();
   const packet = buildContextPacket({ routeDecision, message, session: input.userSession, pageContext: input.currentPageContext || null, conversationState: state });
-  const executed = await executeRoute(routeDecision, packet, message);
+  const executed = await executeRoute(routeDecision, packet, message, intentFrame);
   const rendered = renderHermesAnswer(executed.handler, routeDecision);
   const text = rendered.text;
   const resolvedEntities = executed.handler.selectedEntities;
@@ -257,6 +272,79 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     });
   }
   if (routeDecision.routeId === 'fallback_continuation') clearFallbackContinuity();
+
+  // Session integration for domain reviews
+  if (intentFrame.intent === 'domain_review' && intentFrame.domain === 'business_opportunities') {
+    const reviewResult = startBusinessOpportunityReview(scopeKey, intentFrame, executed.usedSupabase);
+    if (reviewResult.sessionCreated) {
+      const session = getActiveSession(scopeKey);
+      return {
+        text: reviewResult.text, answer: reviewResult.text, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
+        sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
+        usedSupabase: executed.usedSupabase, supabaseStatus: executed.supabaseStatus, resolvedEntities,
+        rememberedContext: anyMemoryUsed, actionIntent: routeDecision.actionPolicy !== 'none' ? message : null,
+        approvalRequired: routeDecision.actionPolicy === 'approval_required', safeNextActions: [],
+        diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: 'business_opportunity_review', domain: { domain: routeDecision.domain }, memoryUsed: false, longTermMemoryUsed: false, advisoryContinuityUsed: false, memoryRejected: false, diagnosticSuppressedForUser: false },
+        intent: { route: routeDecision.routeId, intent: 'domain_review', confidence: 'high', reason: 'Business opportunity review session started' },
+        modelRoute: { route: 'no_model', reason: 'review session' }, reasoning: { decision: 'answer-locally', confidence: 'high', reasoning: 'Business opportunity review from source authority' },
+        capabilityBadge: getCapabilityReport().badgeText, confidence: 'high', source: executed.source, timestamp: new Date().toISOString(),
+        intentFrame, activeSession: session, voiceReady: renderVoiceReady(reviewResult.text, 'voice_ready'),
+      };
+    }
+  }
+
+  if ((intentFrame.intent === 'domain_review' || intentFrame.intent === 'advisory_followup') && intentFrame.action === 'explain_score') {
+    const scoreExplanation = explainScore(scopeKey, intentFrame);
+    if (scoreExplanation) {
+      const session = getActiveSession(scopeKey);
+      return {
+        text: scoreExplanation, answer: scoreExplanation, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
+        sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
+        usedSupabase: executed.usedSupabase, supabaseStatus: executed.supabaseStatus, resolvedEntities,
+        rememberedContext: anyMemoryUsed, actionIntent: null, approvalRequired: false, safeNextActions: [],
+        diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: 'score_explanation', domain: { domain: routeDecision.domain }, memoryUsed: false, longTermMemoryUsed: false, advisoryContinuityUsed: false, memoryRejected: false, diagnosticSuppressedForUser: false },
+        intent: { route: routeDecision.routeId, intent: 'explain_score', confidence: 'high', reason: 'Score explanation from active session' },
+        modelRoute: { route: 'no_model', reason: 'score explanation' }, reasoning: { decision: 'answer-locally', confidence: 'high', reasoning: 'Score explanation from session context' },
+        capabilityBadge: getCapabilityReport().badgeText, confidence: 'high', source: executed.source, timestamp: new Date().toISOString(),
+        intentFrame, activeSession: session, voiceReady: renderVoiceReady(scoreExplanation, 'voice_ready'),
+      };
+    }
+  }
+
+  if ((intentFrame.intent === 'domain_review' || intentFrame.intent === 'advisory_followup') && intentFrame.action === 'improve') {
+    const improvement = improveOpportunity(scopeKey, intentFrame);
+    if (improvement) {
+      const session = getActiveSession(scopeKey);
+      return {
+        text: improvement, answer: improvement, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
+        sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
+        usedSupabase: executed.usedSupabase, supabaseStatus: executed.supabaseStatus, resolvedEntities,
+        rememberedContext: anyMemoryUsed, actionIntent: null, approvalRequired: false, safeNextActions: [],
+        diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: 'improvement_suggestion', domain: { domain: routeDecision.domain }, memoryUsed: false, longTermMemoryUsed: false, advisoryContinuityUsed: false, memoryRejected: false, diagnosticSuppressedForUser: false },
+        intent: { route: routeDecision.routeId, intent: 'improve', confidence: 'high', reason: 'Improvement suggestion from active session' },
+        modelRoute: { route: 'no_model', reason: 'improvement' }, reasoning: { decision: 'answer-locally', confidence: 'high', reasoning: 'Improvement suggestion from session context' },
+        capabilityBadge: getCapabilityReport().badgeText, confidence: 'high', source: executed.source, timestamp: new Date().toISOString(),
+        intentFrame, activeSession: session, voiceReady: renderVoiceReady(improvement, 'voice_ready'),
+      };
+    }
+  }
+
+  if (intentFrame.intent === 'approval_action_draft' && intentFrame.domain === 'business_opportunities') {
+    const draftResult = draftRayReviewForOpportunity(scopeKey, intentFrame);
+    const session = getActiveSession(scopeKey);
+    return {
+      text: draftResult, answer: draftResult, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
+      sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
+      usedSupabase: executed.usedSupabase, supabaseStatus: executed.supabaseStatus, resolvedEntities,
+      rememberedContext: anyMemoryUsed, actionIntent: message, approvalRequired: true, safeNextActions: ['confirm draft details', 'prepare formal Ray Review request'],
+      diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: 'ray_review_draft', domain: { domain: routeDecision.domain }, memoryUsed: false, longTermMemoryUsed: false, advisoryContinuityUsed: false, memoryRejected: false, diagnosticSuppressedForUser: false },
+      intent: { route: routeDecision.routeId, intent: 'draft_ray_review', confidence: 'high', reason: 'Ray Review draft from session target' },
+      modelRoute: { route: 'no_model', reason: 'draft preparation' }, reasoning: { decision: 'answer-locally', confidence: 'high', reasoning: 'Ray Review draft preparation' },
+      capabilityBadge: getCapabilityReport().badgeText, confidence: 'high', source: executed.source, timestamp: new Date().toISOString(),
+      intentFrame, activeSession: session, voiceReady: renderVoiceReady(draftResult, 'voice_ready'),
+    };
+  }
+
   const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'system_health_report', 'page_connection_status', 'page_context_status', 'capability_status', 'fallback_clarification'];
   if (!topicNeutralRoutes.includes(routeDecision.routeId)) {
     updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
@@ -289,6 +377,8 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   });
 
   const confidence = routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low';
+  const activeSession = getActiveSession(scopeKey);
+  const voiceReadyResponse = renderVoiceReady(text, 'voice_ready');
   return {
     text, answer: text, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
     sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
@@ -299,6 +389,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     intent: { route: routeDecision.routeId, intent: routeDecision.intent, confidence, reason: routeDecision.reason },
     modelRoute: { route: modelRoute, reason: routeDecision.reason }, reasoning: { decision: reasoningPlan.decision === 'route-to-model' ? 'route-to-model' : reasoningPlan.decision === 'answer-with-context' ? 'answer-with-context' : 'answer-locally', confidence, reasoning: reasoningPlan.reasoning },
     capabilityBadge: getCapabilityReport().badgeText, confidence, source: executed.source, timestamp: new Date().toISOString(),
+    intentFrame, activeSession, voiceReady: voiceReadyResponse,
   };
 }
 

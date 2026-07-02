@@ -10,8 +10,9 @@ import { getFallbackContinuity, isFallbackOptionReply } from './hermesFallbackCo
 import { normalizeHermesRoutingInput } from './hermesInputNormalization';
 import { isOpportunityAwareRecommendationQuestion, isPhysicalWorldAdvisoryQuestion } from './hermesOpportunityAdvisor';
 import { detectPromptKind } from './hermesPromptKind';
+import { type HermesIntentFrame } from './hermesIntentFrame';
 
-export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; }
+export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; intentFrame?: HermesIntentFrame; }
 
 const decision = (input: Parameters<typeof createRouteDecision>[0]) => createRouteDecision(input);
 
@@ -34,6 +35,7 @@ function hasSelectionReference(message: string, memory: SelectionMemory): boolea
 export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const message = normalizeHermesRoutingInput(input.message.trim());
   const lower = message.toLowerCase();
+  const intentFrame = input.intentFrame;
   const domainResult = classifyHermesDomain(message, input.currentPage, input.previousDomain);
   const domain = domainResult.domain;
   const advisory = getAdvisoryContinuity();
@@ -42,6 +44,19 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const scheduling = /\b(schedule|set up|create)\b.*\b(report|summary|reminder|audit)|\b(?:weekly|daily|recurring)\b.*\b(report|summary|audit)|\b(?:remind me|automate this (?:report|audit)|run this (?:report|audit) every|send me .* every)\b/i.test(lower);
   const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
+
+  // Intent frame enhanced routing
+  if (intentFrame) {
+    if (intentFrame.intent === 'domain_review' && intentFrame.domain === 'business_opportunities') {
+      return decision({ routeId: 'explicit_domain_retrieval', activationLevel: 2, domain: 'business_opportunity', intent: 'inventory_question', memoryPolicy: 'none', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Business opportunity review from intent frame.' });
+    }
+    if (intentFrame.intent === 'approval_action_draft' && intentFrame.target.type === 'named_offer') {
+      return decision({ routeId: 'approval_action_prepare', activationLevel: 6, domain: intentFrame.domain === 'business_opportunities' ? 'business_opportunity' : domain, intent: 'prepare_approval_task', memoryPolicy: 'selection_only', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Ray Review draft with named target from intent frame.' });
+    }
+    if (intentFrame.intent === 'advisory_followup' && advisory) {
+      return decision({ routeId: 'advisory_followup', activationLevel: 4, domain: advisory?.lastAdvisoryDomain || domain, intent: 'evaluate_prior_advice', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Advisory follow-up from intent frame.' });
+    }
+  }
 
   const traceQuestion = classifyTraceQuestion(message);
   if (promptKind === 'provenance' || traceQuestion) return decision({ routeId: traceQuestion?.kind === 'model' ? 'cost_model_usage_status' : 'trace_source_meta', activationLevel: 1, domain: traceQuestion?.kind === 'model' ? 'model_cost_status' : 'routing_trace', intent: traceQuestion?.kind === 'source_reason' ? 'source_reason_followup' : traceQuestion?.kind === 'model' ? 'usage_status' : 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Provenance questions inspect only the last non-trace answer evidence.' });
