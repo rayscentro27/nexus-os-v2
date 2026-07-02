@@ -21,8 +21,19 @@ export function isNexusBuildPlanningQuestion(message: string): boolean {
   return /\b(?:can (?:you|we)|could (?:you|we)|what would it take to|how should we)\b.*\b(?:build|make|design|add)\b.*\b(?:crm|client portal|dashboard|workflow|feature|nexus)\b|\b(?:build|design) (?:a |the )?(?:crm|client portal|dashboard|workflow) for nexus\b/i.test(message);
 }
 
+export function isGeneralProjectPlanningQuestion(message: string): boolean {
+  return /\b(?:can (?:you|we)|could (?:you|we)|what would it take to)\b.*\b(?:build|plan|start|write|create)\b.*\b(?:house|home|app|website|book|trip|course|brand|business|project)\b/i.test(message);
+}
+
+export function answerGeneralProjectPlanningQuestion(message: string): string {
+  const lower = message.toLowerCase();
+  if (/\b(?:house|home)\b/.test(lower)) return 'I cannot physically build a house, but I can help you plan one. The major pieces are budget, land/location, financing, permits, design, builder/contractor, timeline, inspections, and a contingency fund. If you mean whether building is smarter than buying, compare total cost, financing, timeline, and risk first. Current local prices, laws, and permit requirements would require current local research.';
+  if (/\bapp\b/.test(lower)) return 'I can help plan an app: define the user, core problem, smallest useful workflow, data model, interface, security boundaries, delivery phases, and validation plan. I have not created code or files. Start with the single workflow the first version must prove.';
+  return 'I cannot perform the physical or external work, but I can help plan the project. Start with the outcome, budget, constraints, required people or tools, milestones, risks, and the smallest first step. Current prices, laws, or local requirements would need current research.';
+}
+
 export function isGeneralAdvisorQuestion(message: string): boolean {
-  return !DOMAIN_TERMS.test(message) && /\b(what (?:would|do) you recommend for me|what (?:car|laptop|phone) would you recommend for me|what should i (?:buy|get|choose|eat)|which is best for me|help me pick|what (?:car|laptop|phone) should i (?:get|buy))\b/i.test(message);
+  return !DOMAIN_TERMS.test(message) && /\b(what (?:would|do) you recommend for me|what (?:car|laptop|phone) (?:would you|do you) recommend(?: for me)?|what should i (?:buy|get|choose|eat)|which is best for me|help me pick|what (?:car|laptop|phone) should i (?:get|buy))\b/i.test(message);
 }
 
 export function answerCasualCommonQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {

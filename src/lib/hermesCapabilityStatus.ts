@@ -214,3 +214,9 @@ export function answerCapabilityQuestion(message: string): string | null {
 
   return null;
 }
+
+export function answerModelCapabilityWithoutTrace(): string {
+  const model = getModelAvailability();
+  if (model.configured) return `I do not have a previous routing record available for the last answer. In general, Hermes is configured to use ${model.model.replace(/ \(.*\)$/, '')} through OpenRouter when model reasoning is allowed. Simple casual, status, trace, and source questions usually do not use the model.`;
+  return 'I do not have a previous routing record available for the last answer, and this browser does not currently prove that the strategic model is configured. Simple casual, status, trace, and source questions do not use the model.';
+}

@@ -1,5 +1,5 @@
 import { getLastRoutingTrace, type RoutingTraceEntry } from './hermesRoutingTrace';
-import { getCapabilityReport } from './hermesCapabilityStatus';
+import { answerModelCapabilityWithoutTrace, getCapabilityReport } from './hermesCapabilityStatus';
 import type { RouteDecision } from './hermesRouteDecision';
 
 export type TraceQuestionKind = 'source' | 'source_reason' | 'supabase' | 'model' | 'strategic_reasoning' | 'domain' | 'route' | 'memory' | 'why' | 'action_proof' | 'unknown';
@@ -15,6 +15,7 @@ export function classifyTraceQuestion(message: string): TraceQuestionClassificat
   if (/\b(where\s+(?:did|does|are).*?(?:answer|response|that|this|source)|what\s+source|where\s+did\s+that\s+come\s+from)\b/.test(lower)) return { kind: 'source', target: /your questions|answers generally|in general/.test(lower) ? 'general_capability' : 'last_answer' };
   if (/\b(?:did|are)\s+(?:that|you).*?(?:supabase|database)|\busing\s+(?:supabase|the database)\b|why.*not use.*(?:supabase|database)/.test(lower)) return { kind: 'supabase', target: /did that|last answer|that answer|why/.test(lower) ? 'last_answer' : 'general_capability' };
   if (/\bstrategic reasoning|reasoning route|local reasoning|model reasoning\b/.test(lower)) return { kind: 'strategic_reasoning', target: 'last_answer' };
+  if (/\bwhat (?:model|ai) (?:did|does|do|are|is|was)|what model did that answer use\b/.test(lower)) return { kind: 'model', target: 'last_answer' };
   if (/\b(?:did|are)\s+(?:that|you).*?(?:model|ai)|\busing\s+(?:a model|ai)\b|why.*not use.*(?:model|ai)/.test(lower)) return { kind: 'model', target: 'last_answer' };
   if (/\bwhat\s+domain\s+did\b/.test(lower)) return { kind: 'domain', target: /this question/.test(lower) ? 'current_question' : 'last_answer' };
   if (/\bwhat\s+route\s+did|where\s+did\s+(?:that|it)\s+route|what was allowed|what context was allowed\b/.test(lower)) return { kind: 'route', target: 'last_answer' };
@@ -49,6 +50,7 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
   const capability = getCapabilityReport();
   if (!trace) {
     if (classification.kind === 'supabase') return `For my last answer: no routing trace is available. In general: ${capability.supabase.userFacing}`;
+    if (classification.kind === 'model' || classification.kind === 'strategic_reasoning') return answerModelCapabilityWithoutTrace();
     return 'I do not have a routing trace for the previous Hermes answer yet.';
   }
   const fullTraceRequested = /\b(full trace|full routing trace|technical route|debug route|exact routedecision)\b/i.test(message);
@@ -62,7 +64,7 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
     case 'supabase':
       return `For my last answer: ${trace.usedSupabase ? `yes — I used ${trace.supabaseTables.join(', ') || 'a recorded Supabase source'}.` : `no — it came from ${trace.sourceDecision}, not Supabase.`}\n\nIn general: ${capability.supabase.userFacing} Supported read paths include business_opportunities, monetization_opportunities, approvals, task_requests, research_sources, and client_profiles when authentication and RLS permit them.`;
     case 'model':
-      return trace.usedModel ? `Yes. The last answer used model route ${trace.modelRoute}.` : `No. The last answer used ${trace.modelRoute} from ${trace.sourceDecision}; no model call was made.`;
+      return trace.usedModel ? `Yes. The last answer used model route ${trace.modelRoute}. ${capability.liveModel.userFacing}` : `No. The last answer used ${trace.modelRoute} from ${trace.sourceDecision}; no model call was made. ${capability.liveModel.userFacing}`;
     case 'strategic_reasoning':
       {
         const reasoningRoute = trace.route === 'local_reasoning' || trace.questionType === 'domain_reasoning' || trace.finalAnswerHandler?.includes('reason') || trace.finalAnswerHandler?.startsWith('trading_') ? 'local_reasoning' : trace.modelRoute;

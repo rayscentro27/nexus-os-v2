@@ -3,9 +3,11 @@ import { classifyTraceQuestion } from './hermesTraceQuestionHandler';
 import { isRevenueStrategyQuestion } from './hermesRevenueReasoner';
 import { createRouteDecision, type RouteDecision } from './hermesRouteDecision';
 import type { SelectionMemory } from './hermesMemoryStores';
-import { isCasualCommonQuestion, isGeneralAdvisorQuestion, isHumanExperienceQuestion, isNexusBuildPlanningQuestion, isProductEntityAdvisorQuestion } from './hermesCommonConversation';
+import { isCasualCommonQuestion, isGeneralAdvisorQuestion, isGeneralProjectPlanningQuestion, isHumanExperienceQuestion, isNexusBuildPlanningQuestion, isProductEntityAdvisorQuestion } from './hermesCommonConversation';
 import { classifyActivityStatusQuestion } from './hermesActivityStatus';
 import { getAdvisoryContinuity, isAdvisoryFollowUpQuestion } from './hermesAdvisoryContinuity';
+import { getFallbackContinuity, isFallbackOptionReply } from './hermesFallbackContinuity';
+import { normalizeHermesRoutingInput } from './hermesInputNormalization';
 
 export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; }
 
@@ -19,17 +21,18 @@ function hasSelectionReference(message: string, memory: SelectionMemory): boolea
 }
 
 export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
-  const message = input.message.trim();
+  const message = normalizeHermesRoutingInput(input.message.trim());
   const lower = message.toLowerCase();
   const domainResult = classifyHermesDomain(message, input.currentPage, input.previousDomain);
   const domain = domainResult.domain;
   const advisory = getAdvisoryContinuity();
+  const fallback = getFallbackContinuity();
   const scheduling = /\b(schedule|set up|create)\b.*\b(report|summary|reminder)|\b(?:weekly|daily|recurring)\b.*\b(report|summary)|\b(?:remind me|automate this report|run this report every|send me .* every)\b/i.test(lower);
   const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
 
   const traceQuestion = classifyTraceQuestion(message);
-  if (traceQuestion) return decision({ routeId: 'trace_source_meta', activationLevel: 1, domain: 'routing_trace', intent: traceQuestion.kind === 'source_reason' ? 'source_reason_followup' : 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source questions inspect only the last non-trace route.' });
+  if (traceQuestion) return decision({ routeId: traceQuestion.kind === 'model' ? 'cost_model_usage_status' : 'trace_source_meta', activationLevel: 1, domain: traceQuestion.kind === 'model' ? 'model_cost_status' : 'routing_trace', intent: traceQuestion.kind === 'source_reason' ? 'source_reason_followup' : traceQuestion.kind === 'model' ? 'usage_status' : 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source/model-usage questions inspect only the last non-trace route.' });
 
   if (/\b(tokens?|usage ledger|what model (?:did|do|are|is|was)|model call|answer cost|what did .* cost|cost of (?:that|the) answer|(?:openrouter|cheapest|primary|fallback|gpt|ai|llm|reasoning) model)\b/i.test(lower)) return decision({ routeId: 'cost_model_usage_status', activationLevel: 1, domain: 'model_cost_status', intent: 'usage_status', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Cost and model-use status are deterministic trace/ledger questions.' });
 
@@ -40,9 +43,13 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const activityIntent = classifyActivityStatusQuestion(message);
   if (activityIntent && !(advisory && isAdvisoryFollowUpQuestion(message))) return decision({ routeId: 'process_activity_status', activationLevel: 1, domain: 'activity_summary', intent: activityIntent, memoryPolicy: 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Work continuation and completed-work summaries use local activity/report evidence without selection memory or model calls.' });
 
+  if (fallback && isFallbackOptionReply(message)) return decision({ routeId: 'fallback_continuation', activationLevel: 4, domain: /nexus/i.test(message) ? 'nexus_product_build' : /trading/i.test(message) ? 'trading' : /credit|funding|goclear|apex/i.test(message) ? 'credit_funding' : 'general_project', intent: 'resume_fallback_clarification', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'The user selected an offered clarification option, so Hermes resumes the stored unresolved question instead of repeating fallback.' });
+
   if (isCasualCommonQuestion(message)) return decision({ routeId: 'casual_common', activationLevel: 1, domain: 'general_conversation', intent: isHumanExperienceQuestion(message) ? 'human_experience_question' : /\b(favou?rite|joke|sky|pizza|movie|music|ice cream)\b/i.test(lower) ? 'casual_or_common_question' : 'greeting_or_light_check_in', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Common conversation needs no Nexus records, selection memory, or model call.' });
 
   if (isNexusBuildPlanningQuestion(message)) return decision({ routeId: 'nexus_build_planning', activationLevel: 4, domain: 'nexus_product_build', intent: 'build_planning', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'local_reports', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A Nexus product request is planning only until an explicit reviewed implementation task is requested.' });
+
+  if (isGeneralProjectPlanningQuestion(message)) return decision({ routeId: 'general_project_planning', activationLevel: 4, domain: 'general_project', intent: 'project_planning_or_feasibility', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A general project question can be planned without claiming physical work, current research, or execution.' });
 
   if (isProductEntityAdvisorQuestion(message) && (!domainResult.explicit || domain === 'casual_identity')) return decision({ routeId: 'general_advisor', activationLevel: 4, domain: /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b/i.test(message) ? 'vehicle_recommendation' : 'general_advice', intent: 'product_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A product/entity opinion uses general advisory reasoning, not AI model status or stale selection memory.' });
 

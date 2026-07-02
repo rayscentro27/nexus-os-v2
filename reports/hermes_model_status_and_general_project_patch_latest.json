@@ -1,0 +1,15 @@
+{
+  "reportType": "hermes_model_status_and_general_project_patch",
+  "generatedAt": "2026-07-01T19:46:00-07:00",
+  "modelStatusNoTrace": "Returns honest capability/configuration status without claiming the last answer used a model.",
+  "modelStatusWithTrace": "Reports recorded model usage for the last non-trace answer.",
+  "generalProjectPlanning": { "route": "general_project_planning", "domain": "general_project", "actionPolicy": "none", "physicalExecutionClaimed": false },
+  "typoNormalization": ["tyou -> you", "thing -> think", "fatest -> fastest", "recomend -> recommend", "recomendation -> recommendation"],
+  "fallbackContinuity": { "route": "fallback_continuation", "expiresAfterTurns": 4, "optionsResumeOriginalQuestion": true, "traceQuestionsPreserve": true },
+  "fallbackWording": "Offers general recommendation, Nexus build plan, business/credit/funding angle, or Ray Review draft.",
+  "priority": "Safety and trace/model status remain first; Nexus/general project planning precede fallback; explicit execution remains gated.",
+  "tests": { "files": 20, "passed": 559, "failed": 0 },
+  "build": "passed",
+  "browser": { "status": "blocked_by_authentication", "detail": "The application requires authenticated admin sign-in; no credentials were used or exposed." },
+  "safety": { "externalActions": false, "physicalWorkClaimed": false, "codeOrTaskCreationClaimed": false, "approvalGatesIntact": true }
+}

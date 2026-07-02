@@ -19,9 +19,10 @@ import { getSelectionMemory, setLastTurnTraceMemory, touchSelectionMemory } from
 import { logRoutingTrace } from './hermesRoutingTrace';
 import { reportRegistry } from '../data/reportRegistry.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
-import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion } from './hermesCommonConversation';
+import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion, answerGeneralProjectPlanningQuestion } from './hermesCommonConversation';
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
 import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity } from './hermesAdvisoryContinuity';
+import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity } from './hermesFallbackContinuity';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -76,6 +77,15 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerGeneralAdvisorQuestion({ message, routeDecision: decision, contextPacket: packet }), 'general_advisor', ['plain_reasoning']); source = 'reasoning'; break;
     case 'nexus_build_planning':
       handler = result('Yes — we can build toward a Nexus CRM, and parts of the foundation already exist: client profiles, opportunities, approvals, task requests, research sources, monetization, and Hermes routing. The CRM should cover client pipeline, credit/funding workflow, documents and uploads, notes and tasks, approvals, messaging, funding readiness, business setup, and reports. I can design the modules and prepare a build plan. I have not created code, files, tasks, or a deployment, and I will not execute anything unless you explicitly request a reviewed draft task or implementation step.', 'nexus_build_planner', ['local_product_context', 'local_reports']); source = 'reasoning'; break;
+    case 'general_project_planning':
+      handler = result(answerGeneralProjectPlanningQuestion(message), 'general_project_planner', ['plain_reasoning']); source = 'reasoning'; break;
+    case 'fallback_continuation': {
+      const original = packet.fallbackContinuity?.originalMessage || '';
+      if (decision.domain === 'nexus_product_build') handler = result(`Under Nexus planning: I can help turn “${original}” into a scoped product plan. Define the target feature, users, current foundation, smallest useful workflow, data and security boundaries, milestones, and review gate. I have not created code, files, or a task.`, 'fallback_continuation_nexus', ['fallback_continuity']);
+      else if (/\b(?:house|home|app|website|book|trip|course|brand|business|project)\b/i.test(original)) handler = result(`Under a general recommendation: ${answerGeneralProjectPlanningQuestion(original)}`, 'fallback_continuation_general_project', ['fallback_continuity']);
+      else handler = result(`Under a general recommendation, I can help evaluate “${original},” but I still need the specific project, decision, or outcome you want to plan.`, 'fallback_continuation_general', ['fallback_continuity']);
+      source = 'reasoning'; break;
+    }
     case 'advisory_followup':
       handler = packet.advisoryContinuity
         ? result(answerAdvisoryFollowUp(message, packet.advisoryContinuity), 'advisory_continuity_reasoner', ['advisory_continuity'])
@@ -155,7 +165,8 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(model.text || 'The required model route did not return a verified answer.', usedModel ? 'model_reasoning' : 'model_unavailable', [model.source || 'model_unknown']); source = usedModel ? 'model' : 'local'; break;
     }
     default:
-      handler = result('I can help, but I need one more detail: are we talking about Nexus, GoClear/Apex, trading, credit/funding, or a general recommendation?', 'fallback_clarification', ['none']);
+      setFallbackContinuity(message);
+      handler = result('I can help, but I need one more detail: do you want a general recommendation, a Nexus build plan, a business/credit/funding angle, or a Ray Review draft?', 'fallback_clarification', ['none']);
   }
   return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source };
 }
@@ -163,6 +174,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
   const message = input.message.trim();
   advanceAdvisoryContinuityTurn();
+  advanceFallbackContinuityTurn();
   const surface = input.surface || 'unknown';
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
   const state = getConversationState();
@@ -170,13 +182,14 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
   const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
   if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
+  if (!['trace_source_meta', 'cost_model_usage_status', 'fallback_continuation', 'fallback_clarification'].includes(routeDecision.routeId)) clearFallbackContinuity();
   const packet = buildContextPacket({ routeDecision, message, session: input.userSession, pageContext: input.currentPageContext || null, conversationState: state });
   const executed = await executeRoute(routeDecision, packet, message);
   const rendered = renderHermesAnswer(executed.handler, routeDecision);
   const text = rendered.text;
   const resolvedEntities = executed.handler.selectedEntities;
   const selectionOrTraceMemoryUsed = Boolean(packet.lastTrace || packet.selectionMemory);
-  const anyMemoryUsed = selectionOrTraceMemoryUsed || Boolean(packet.longTermBusinessContext) || Boolean(packet.advisoryContinuity);
+  const anyMemoryUsed = selectionOrTraceMemoryUsed || Boolean(packet.longTermBusinessContext) || Boolean(packet.advisoryContinuity) || Boolean(packet.fallbackContinuity);
   const memoryRejected = Boolean(getSelectionMemory().lastList.length) && !packet.selectionMemory && !packet.lastTrace;
   const modelRoute = executed.usedModel ? 'primary_model' : routeDecision.modelPolicy === 'forbidden' ? 'no_model' : 'local_reasoning';
   const reasoningPlan = reasonFromRouteDecision(routeDecision, packet.summary);
@@ -193,7 +206,8 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
       lastAdvisoryRisks: revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity'],
     });
   }
-  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status'];
+  if (routeDecision.routeId === 'fallback_continuation') clearFallbackContinuity();
+  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'fallback_clarification'];
   if (!topicNeutralRoutes.includes(routeDecision.routeId)) {
     updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
   }
