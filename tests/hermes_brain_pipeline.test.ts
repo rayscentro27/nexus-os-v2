@@ -24,7 +24,7 @@ describe('Hermes Brain Pipeline', () => {
     it('answers casual questions locally', async () => {
       const result = await handleHermesMessage({ message: 'Hello' });
       expect(result.answer).toBeTruthy();
-      expect(result.source).toBe('local');
+      expect(result.source).toBe('conversation-followup');
       expect(result.modelRoute.route).toBe('no_model');
     });
 

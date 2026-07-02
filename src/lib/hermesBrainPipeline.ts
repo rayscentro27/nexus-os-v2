@@ -20,14 +20,14 @@ import { advanceSelectionMemoryTurn, getSelectionMemory, setHermesMemoryScope, s
 import { logRoutingTrace, setRoutingTraceScope } from './hermesRoutingTrace';
 import { reportRegistry } from '../data/reportRegistry.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
-import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion, answerGeneralProjectPlanningQuestion } from './hermesCommonConversation';
+import { answerCasualCommonQuestion, answerExternalCurrentInfoQuestion, answerGeneralAdvisorQuestion, answerGeneralProjectPlanningQuestion } from './hermesCommonConversation';
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
 import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity, setAdvisoryMemoryScope } from './hermesAdvisoryContinuity';
 import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity, setFallbackMemoryScope } from './hermesFallbackContinuity';
 import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } from './hermesOpportunityAdvisor';
 import { answerSystemHealthQuestion } from './hermesSystemHealthStatus';
 import { answerPageContextQuestion } from './hermesPageContextStatus';
-import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSystemHealthContract } from './hermesOperationalContracts';
+import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSpecialistAgentInventoryContract, renderSystemHealthContract } from './hermesOperationalContracts';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -78,7 +78,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     case 'casual_identity':
       handler = result(answerConversation(message, classifyConversationIntent(message)) || "I'm Hermes, the Nexus operating advisor.", 'casual_conversation', ['local_conversation']); break;
     case 'casual_common':
-      handler = result(answerCasualCommonQuestion({ message, routeDecision: decision, contextPacket: packet }), 'common_conversation', ['common_knowledge']); break;
+      handler = result(answerCasualCommonQuestion({ message, routeDecision: decision, contextPacket: packet }), 'common_conversation', ['common_knowledge']); source = 'conversation-followup'; break;
     case 'general_advisor':
       handler = result(answerGeneralAdvisorQuestion({ message, routeDecision: decision, contextPacket: packet }), 'general_advisor', ['plain_reasoning']); source = 'reasoning'; break;
     case 'opportunity_aware_recommendation':
@@ -114,6 +114,10 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = actionResult(renderSpecialistHandoffContract(item?.title), 'specialist_handoff_contract', item ? ['selection_memory', 'delegation_policy'] : ['delegation_policy'], { outcome: item ? 'local_draft_only' : 'blocked', title: item?.title, status: item ? 'not_saved' : undefined, reason: item ? undefined : 'missing_target' }, item ? [item] : []);
       break;
     }
+    case 'specialist_agent_inventory':
+      handler = result(renderSpecialistAgentInventoryContract(message), 'specialist_agent_inventory_contract', ['local_reports', 'module_inventory']); break;
+    case 'external_current_info':
+      handler = result(answerExternalCurrentInfoQuestion(message), 'external_current_info_fallback', ['common_knowledge']); break;
     case 'process_activity_status':
       handler = result(answerActivityStatusQuestion({ message, routeDecision: decision, contextPacket: packet }), 'activity_status_summary', ['local_activity_journal', 'confirmed_checkpoint']); break;
     case 'system_health_report':

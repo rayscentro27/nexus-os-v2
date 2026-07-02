@@ -35,6 +35,9 @@ function sourceName(trace: RoutingTraceEntry): string {
   if (trace.usedSupabase) return `live Supabase data${trace.supabaseTables.length ? ` from ${trace.supabaseTables.join(', ')}` : ''}`;
   if (trace.usedModel) return `the model through ${trace.modelRoute}`;
   if (trace.sourceDecision === 'reasoning') return 'local reasoning and the allowed domain context';
+  if (trace.sourceDecision === 'conversation-followup') return 'common knowledge and local reasoning';
+  if (trace.sourceDecision === 'common_knowledge') return 'common knowledge and local reasoning';
+  if (trace.sourceDecision === 'external_info') return 'external information request — no live external lookup available';
   if (trace.sourceDecision === 'local') return 'local Nexus context';
   return trace.sourceDecision;
 }
@@ -42,6 +45,8 @@ function sourceName(trace: RoutingTraceEntry): string {
 function assumptionsFrom(trace: RoutingTraceEntry): string {
   if (trace.usedSupabase) return 'No static-record assumption replaced the live read; authentication and RLS still limit completeness.';
   if (trace.sourceDecision === 'reasoning') return 'The answer used local reasoning and the assumptions stated or implied by that renderer.';
+  if (trace.sourceDecision === 'conversation-followup') return 'The answer used common knowledge and local reasoning; no Nexus records, live data, or model calls were used.';
+  if (trace.sourceDecision === 'common_knowledge') return 'The answer used common knowledge and local reasoning; no Nexus records, live data, or model calls were used.';
   if (trace.sourceDecision === 'local') return 'The answer relied on local or report-backed context and did not verify current production state.';
   return 'No additional assumptions were recorded.';
 }
