@@ -30,7 +30,7 @@ import { answerPageContextQuestion } from './hermesPageContextStatus';
 import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSpecialistAgentInventoryContract, renderSystemHealthContract } from './hermesOperationalContracts';
 import { buildIntentFrame } from './hermesIntentClassifier';
 import type { HermesIntentFrame } from './hermesIntentFrame';
-import { getActiveSession, advanceSessionTurn, type NexusSessionContext } from './hermesAdvisorSession';
+import { getActiveSession, advanceSessionTurn, startReviewSession, updateSessionSource, updateSessionList, setSessionFocus, type NexusSessionContext, setLastSuccessfulTrace, getLastSuccessfulTrace, getSessionFocusForContinuation, getSessionListForContinuation } from './hermesAdvisorSession';
 import { startBusinessOpportunityReview, explainScore, improveOpportunity, draftRayReviewForOpportunity } from './hermesBusinessOpportunityReview';
 import { renderVoiceReady, type VoiceReadyResponse } from './hermesVoiceReadyRenderer';
 
@@ -69,7 +69,7 @@ const recommendation = () => `**Recommendation:** start with the **$97 Credit & 
 const implementation = (item: ConversationItem) => `Here is the implementation plan for **${item.title}**:\n\n1. Define the promise, eligibility rules, deliverables, and exclusions.\n2. Build the intake and readiness scorecard.\n3. Create checkout and fulfillment in test mode.\n4. Run five manual pilots and capture conversion evidence.\n5. Prepare the refined plan for Ray Review.\n\nNo email, charge, publishing, or live execution occurs without explicit approval.`;
 const listOpportunities = (live: boolean, freshness: string) => `Business opportunities:\n\n${OPPORTUNITIES.map((item, index) => `${index + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}. Source: static normalized Nexus offer context; freshness: build-time; confidence: medium.${live ? ' A separate live Supabase inventory read also succeeded, but these static items were not merged with or claimed to be those returned rows.' : ''}`).join('\n')}\n\n**Next safe action:** verify the chosen item against the live record before creating any approval draft. Source check: ${live ? 'live Supabase plus separately labeled static context' : 'static context only'}; checked ${freshness}.`;
 
-async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof buildContextPacket>, message: string, intentFrame?: HermesIntentFrame) {
+async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof buildContextPacket>, message: string, scopeKey: string, intentFrame?: HermesIntentFrame) {
   const lower = message.toLowerCase();
   let usedSupabase = false, usedModel = false, supabaseStatus = 'not_used';
   let supabaseTables: string[] = [];
@@ -81,8 +81,17 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     case 'safety_gate':
       handler = result('I cannot execute that. Sending, publishing, charging, disputes, destructive data changes, schedulers, and live/funded trading are blocked or require explicit Ray approval through Ray Review. I can prepare a non-executed review draft.', 'safety_gate', ['safety_policy']); break;
     case 'trace_source_meta':
-    case 'cost_model_usage_status':
-      handler = result(answerHermesTraceQuestion(message, packet.routingTrace, { routeDecision: decision }) || 'No prior routing record is available.', 'trace_question_handler', ['last_non_trace_route']); break;
+    case 'cost_model_usage_status': {
+      const lastSuccess = getLastSuccessfulTrace(scopeKey);
+      const traceAnswer = answerHermesTraceQuestion(message, packet.routingTrace, { routeDecision: decision });
+      let finalTraceAnswer = traceAnswer || 'No prior routing record is available.';
+      if (lastSuccess && !traceAnswer) {
+        const sessionNote = lastSuccess.sessionState ? ` I had an active ${lastSuccess.sessionState.activeMode || 'review'} session with ${lastSuccess.sessionState.itemCount || 0} items. The focus was ${lastSuccess.sessionState.focusLabel || 'not set'}.` : '';
+        finalTraceAnswer = `The last successful answer used the **${lastSuccess.route}** route for the **${lastSuccess.domain}** domain. Source: ${lastSuccess.source}. Supabase: ${lastSuccess.usedSupabase ? 'yes' : 'no'}. Model: ${lastSuccess.usedModel ? 'yes' : 'no'}. Sources: ${lastSuccess.sources.join(', ') || 'local context'}.${sessionNote} I did not execute any action.`;
+      }
+      handler = result(finalTraceAnswer, 'trace_question_handler', ['last_non_trace_route']);
+      break;
+    }
     case 'casual_identity':
       handler = result(answerConversation(message, classifyConversationIntent(message)) || "I'm Hermes, the Nexus operating advisor.", 'casual_conversation', ['local_conversation']); break;
     case 'casual_common':
@@ -137,7 +146,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerCapabilityQuestion(message) || getCapabilityReport().capabilities.map(item => `${item.name}: ${item.userFacing}`).join('\n'), 'capability_status', ['capability_registry']); source = 'capability'; break;
     case 'process_settings_reports_status':
       if (decision.domain === 'trading') { const trading = answerTradingQuestion(message, { routeDecision: decision }); handler = result(trading.text, trading.handler, [trading.source]); }
-      else if (decision.domain === 'reports' && decision.intent === 'inventory_question') { const reports = reportRegistry.filter(item => item.available).slice(0, 10); handler = result(`Available local reports:\n\n${reports.map((item, index) => `${index + 1}. **${item.title}** — ${item.category}; ${item.path}`).join('\n')}`, 'report_inventory', ['report_registry']); }
+      else if (decision.domain === 'reports' && decision.intent === 'inventory_question') { const reports = reportRegistry.filter(item => item.available).slice(0, 10); const reportListText = reports.map((item, index) => `${index + 1}. **${item.title}** — ${item.category}; ${item.path}`).join('\n'); handler = result(`Available local reports:\n\n${reportListText}`, 'report_inventory', ['report_registry']); const reportSessionItems = reports.map((item, index) => ({ rank: index + 1, id: item.path, label: item.title, domain: item.category, source: 'report_registry', summary: item.path })); startReviewSession(scopeKey, 'reports', 'report_inventory_review'); updateSessionSource(scopeKey, { type: 'report', name: 'local report registry', timestamp: new Date().toISOString(), verification: 'verified' }); updateSessionList(scopeKey, reportSessionItems); if (reportSessionItems.length > 0) setSessionFocus(scopeKey, { id: reportSessionItems[0].id, label: reportSessionItems[0].label, domain: reportSessionItems[0].domain, summary: reportSessionItems[0].summary, source: reportSessionItems[0].source }); }
       else if (/ceo version|ceo summary/.test(lower)) handler = result(buildCeoDailySummary('today'), 'ceo_summary', ['activity_journal']);
       else if (/what did (?:you|we) do today|daily summary/.test(lower)) handler = result(buildDailySummary('today'), 'daily_summary', ['activity_journal']);
       else handler = result(`**Status:** no specialized live status adapter is registered for ${decision.domain.replace(/_/g, ' ')}.\n**Source checked:** local report registry.\n**Freshness:** current build snapshot; production state was not verified.\n**Blocker:** a route-specific report adapter or authenticated read is required for a definitive answer.\n**Next safe action:** open the latest matching report and perform a read-only verification.`, 'status_contract_fallback', ['report_registry']);
@@ -208,6 +217,51 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       else if (decision.domain === 'clients') handler = result('I do not have enough verified Nexus data loaded to answer that specific record question. Tell me the client, report, table, or item, or open the relevant section.', 'record_specific_missing_context', ['none']);
       else handler = result(`I can reason from the allowed ${decision.domain.replace(/_/g, ' ')} context, but I need a concrete decision or entity to produce a useful plan.`, 'domain_local_reasoning', packet.longTermBusinessContext ? ['long_term_business_context'] : ['local_context']);
       source = 'reasoning'; break;
+    case 'active_session_continue': {
+      const focus = getSessionFocusForContinuation(scopeKey);
+      const list = getSessionListForContinuation(scopeKey);
+      const activeSession = getActiveSession(scopeKey);
+      const mode = activeSession?.activeMode || 'business_opportunity_review';
+      if (mode === 'report_inventory_review') {
+        if (/\b(?:review them|can we review|walkthrough|one by one|walk through)\b/i.test(lower)) {
+          const reportList = list.length > 0 ? list.map((r, i) => `${i + 1}. **${r.label}** — ${r.summary || r.domain}`).join('\n') : 'the available reports';
+          handler = result(`Yes. I have the report list open. We can review them one by one. I would start with ${list[0]?.label || 'the first report'}, depending on whether you want ${list[0]?.domain || 'operational status'} first.\n\n${reportList}\n\nSay "next" or "number 2" to continue through the list.`, 'report_inventory_review_continue', ['active_session', 'report_registry']);
+        } else if (focus) {
+          handler = result(`Let us look at **${focus.label}**. ${focus.summary || 'This report covers ' + focus.domain + ' status.'}.\n\nSay "next" to continue to the next report, or name a specific report number.`, 'report_inventory_item_review', ['active_session', 'report_registry']);
+        } else {
+          handler = result('I have the report list open. Say "review them one by one" to walk through, or name a specific report.', 'report_inventory_no_focus', ['active_session']);
+        }
+      } else {
+        if (/\b(?:start there|we can start there|let'?s start there)\b/i.test(lower)) {
+          const target = focus || (list.length > 0 ? list[0] : null);
+          if (target) {
+            handler = result(`Let us start with **${target.label}**. ${target.summary || 'This is our entry-level offer.'} The score explanation is based on barrier to entry, value proposition clarity, and upsell potential. We can review the scoring factors, look at improvement steps, or prepare a Ray Review draft.\n\nSay "why did it get that score" for scoring details, "how can we improve it" for improvement suggestions, or "create a Ray Review draft for that" to prepare a review card.`, 'session_continue_start', ['active_session', 'business_opportunity_context']);
+          } else {
+            handler = result('I have an active session but no specific item is loaded. Say "pull up the business opportunity report" to refresh the list.', 'session_continue_no_focus', ['active_session']);
+          }
+        } else if (/\b(?:walk(?:\s+me)?(?:\s+through)?(?:\s+the)?(?:\s+full)?(?:\s+list)?|let'?s walkthrough|one by one|review them)\b/i.test(lower)) {
+          if (list.length > 0) {
+            const first = list[0];
+            handler = result(`Let us walk through the full list one by one. Starting with item 1:\n\n**${first.label}** — ${first.summary || 'Entry-level offer.'}\n\n${first.evidence ? `Supporting evidence: ${first.evidence.join('; ')}.` : ''}\n\nThis is ranked #${first.rank || 1} based on barrier to entry, value proposition clarity, and upsell potential. Say "next" to continue to item 2, or ask "why did it get that score" for details on this item.`, 'session_walkthrough_start', ['active_session', 'business_opportunity_context']);
+          } else {
+            handler = result('I have an active session but the list is empty. Say "pull up the business opportunity report" to refresh.', 'session_walkthrough_empty', ['active_session']);
+          }
+        } else if (/\bnext\b/i.test(lower) && focus) {
+          const currentIndex = list.findIndex(i => i.label === focus.label);
+          const nextItem = list[currentIndex + 1];
+          if (nextItem) {
+            handler = result(`Item ${nextItem.rank || currentIndex + 2}: **${nextItem.label}** — ${nextItem.summary || 'Opportunity.'}\n\n${nextItem.evidence ? `Supporting evidence: ${nextItem.evidence.join('; ')}.` : ''}\n\nSay "next" to continue, or ask about scoring/improvement for this item.`, 'session_walkthrough_next', ['active_session', 'business_opportunity_context']);
+          } else {
+            handler = result('That is the end of the list. We have reviewed all items. You can say "create a Ray Review draft" for any item, or ask "how can we improve it" for next steps.', 'session_walkthrough_complete', ['active_session']);
+          }
+        } else if (focus) {
+          handler = result(`We are looking at **${focus.label}**. ${focus.summary || ''}\n\nYou can say "why did it get that score" for scoring details, "how can we improve it" for improvement suggestions, "create a Ray Review draft for that" to prepare a review card, or "next" to continue through the list.`, 'session_continue_focus', ['active_session', 'business_opportunity_context']);
+        } else {
+          handler = result('I have an active business opportunity review session. Say "start with the highest scored one" to begin, "walk through the full list one by one" to review all, or name a specific opportunity.', 'session_continue_no_focus', ['active_session']);
+        }
+      }
+      source = 'local'; break;
+    }
     case 'model_reasoning': {
       if (!isModelAllowed(decision)) throw new Error('RouteDecision forbids model execution');
       const model = await hermesModelChat(message, { pageSummary: String(packet.pageContext?.pageId || '') || undefined }); usedModel = model.source === 'model';
@@ -238,13 +292,13 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
   const state = getConversationState();
   const intentFrame = buildIntentFrame(message);
-  const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory(), intentFrame });
+  const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory(), intentFrame, scopeKey });
   const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning', 'opportunity_aware_recommendation', 'memory_followup'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
   const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
   if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
   if (!['trace_source_meta', 'cost_model_usage_status', 'fallback_continuation', 'fallback_clarification'].includes(routeDecision.routeId)) clearFallbackContinuity();
   const packet = buildContextPacket({ routeDecision, message, session: input.userSession, pageContext: input.currentPageContext || null, conversationState: state });
-  const executed = await executeRoute(routeDecision, packet, message, intentFrame);
+  const executed = await executeRoute(routeDecision, packet, message, scopeKey, intentFrame);
   const rendered = renderHermesAnswer(executed.handler, routeDecision);
   const text = rendered.text;
   const resolvedEntities = executed.handler.selectedEntities;
@@ -279,6 +333,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     const reviewResult = startBusinessOpportunityReview(scopeKey, intentFrame, executed.usedSupabase);
     if (reviewResult.sessionCreated) {
       const session = getActiveSession(scopeKey);
+      setLastSuccessfulTrace(scopeKey, { route: routeDecision.routeId, domain: routeDecision.domain, source: executed.source, usedSupabase: executed.usedSupabase, usedModel: executed.usedModel, sources: executed.handler.sources, intentFrame: { intent: intentFrame.intent, domain: intentFrame.domain, action: intentFrame.action }, sessionState: { activeMode: session?.activeMode, activeDomain: session?.activeDomain, itemCount: reviewResult.itemCount, focusLabel: reviewResult.topItem?.label }, timestamp: new Date().toISOString() });
       return {
         text: reviewResult.text, answer: reviewResult.text, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
         sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
@@ -298,6 +353,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     const scoreExplanation = explainScore(scopeKey, intentFrame);
     if (scoreExplanation) {
       const session = getActiveSession(scopeKey);
+      setLastSuccessfulTrace(scopeKey, { route: routeDecision.routeId, domain: routeDecision.domain, source: executed.source, usedSupabase: executed.usedSupabase, usedModel: executed.usedModel, sources: executed.handler.sources, sessionState: { activeMode: session?.activeMode, activeDomain: session?.activeDomain, focusLabel: session?.currentFocus?.label }, timestamp: new Date().toISOString() });
       return {
         text: scoreExplanation, answer: scoreExplanation, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
         sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
@@ -316,6 +372,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     const improvement = improveOpportunity(scopeKey, intentFrame);
     if (improvement) {
       const session = getActiveSession(scopeKey);
+      setLastSuccessfulTrace(scopeKey, { route: routeDecision.routeId, domain: routeDecision.domain, source: executed.source, usedSupabase: executed.usedSupabase, usedModel: executed.usedModel, sources: executed.handler.sources, sessionState: { activeMode: session?.activeMode, activeDomain: session?.activeDomain, focusLabel: session?.currentFocus?.label }, timestamp: new Date().toISOString() });
       return {
         text: improvement, answer: improvement, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
         sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
@@ -333,6 +390,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   if (intentFrame.intent === 'approval_action_draft' && intentFrame.domain === 'business_opportunities') {
     const draftResult = draftRayReviewForOpportunity(scopeKey, intentFrame);
     const session = getActiveSession(scopeKey);
+    setLastSuccessfulTrace(scopeKey, { route: routeDecision.routeId, domain: routeDecision.domain, source: executed.source, usedSupabase: executed.usedSupabase, usedModel: executed.usedModel, sources: executed.handler.sources, sessionState: { activeMode: session?.activeMode, activeDomain: session?.activeDomain, focusLabel: session?.currentFocus?.label }, timestamp: new Date().toISOString() });
     return {
       text: draftResult, answer: draftResult, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
       sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
@@ -380,6 +438,12 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const confidence = routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low';
   const activeSession = getActiveSession(scopeKey);
   const voiceReadyResponse = renderVoiceReady(text, 'voice_ready');
+
+  // Persist lastSuccessfulTrace for non-fallback, non-trace answers
+  if (routeDecision.routeId !== 'fallback_clarification' && routeDecision.routeId !== 'trace_source_meta' && routeDecision.routeId !== 'cost_model_usage_status' && routeDecision.routeId !== 'safety_gate') {
+    setLastSuccessfulTrace(scopeKey, { route: routeDecision.routeId, domain: routeDecision.domain, source: executed.source, usedSupabase: executed.usedSupabase, usedModel: executed.usedModel, sources: executed.handler.sources, sessionState: activeSession ? { activeMode: activeSession.activeMode, activeDomain: activeSession.activeDomain, itemCount: activeSession.activeList?.length, focusLabel: activeSession.currentFocus?.label } : undefined, timestamp: new Date().toISOString() });
+  }
+
   return {
     text, answer: text, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
     sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },

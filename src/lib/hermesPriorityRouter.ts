@@ -11,8 +11,9 @@ import { normalizeHermesRoutingInput } from './hermesInputNormalization';
 import { isOpportunityAwareRecommendationQuestion, isPhysicalWorldAdvisoryQuestion } from './hermesOpportunityAdvisor';
 import { detectPromptKind } from './hermesPromptKind';
 import { type HermesIntentFrame } from './hermesIntentFrame';
+import { isSessionActive } from './hermesAdvisorSession';
 
-export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; intentFrame?: HermesIntentFrame; }
+export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; intentFrame?: HermesIntentFrame; scopeKey?: string; }
 
 const decision = (input: Parameters<typeof createRouteDecision>[0]) => createRouteDecision(input);
 
@@ -44,6 +45,16 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const scheduling = /\b(schedule|set up|create)\b.*\b(report|summary|reminder|audit)|\b(?:weekly|daily|recurring)\b.*\b(report|summary|audit)|\b(?:remind me|automate this (?:report|audit)|run this (?:report|audit) every|send me .* every)\b/i.test(lower);
   const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
+
+  // Active session continuation — check before intent frame and keyword chains
+  const scopeKey = input.scopeKey;
+  if (scopeKey && isSessionActive(scopeKey)) {
+    const isContinuation = /\b(?:start there|we can start there|let'?s start there|walk(?:\s+me)?(?:\s+through)?(?:\s+the)?(?:\s+full)?(?:\s+list)?|let'?s walkthrough|review them|can we review|walkthrough the full list|one by one|continue|go deeper|next|open number|what is number|start with|how can we improve|why did it get|create.*(?:ray review|review card).*for (?:that|it)|that one|this one|number\s*\d+|the (?:first|second|third)|we can start there)\b/i.test(lower);
+    const isTraceQuestion = /\b(?:where did|what source|what part of|how did you decide|why did you answer|was that (?:live|local))\b/i.test(lower);
+    if (isContinuation && !isTraceQuestion) {
+      return decision({ routeId: 'active_session_continue', activationLevel: 4, domain: domain !== 'unknown' ? domain : 'business_opportunity', intent: 'session_continuation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Active review session exists; short continuation resolves from session state.' });
+    }
+  }
 
   // Intent frame enhanced routing
   if (intentFrame) {

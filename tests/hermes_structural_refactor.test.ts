@@ -4,7 +4,7 @@ import { resetConversationState } from '../src/lib/hermesConversationState';
 import { routeHermesPriority } from '../src/lib/hermesPriorityRouter';
 import { getSelectionMemory, setHermesMemoryScope } from '../src/lib/hermesMemoryStores';
 import { buildIntentFrame } from '../src/lib/hermesIntentClassifier';
-import { getActiveSession, clearSession } from '../src/lib/hermesAdvisorSession';
+import { getActiveSession, clearSession, getLastSuccessfulTrace } from '../src/lib/hermesAdvisorSession';
 import { getSourceAuthorityForDomain, getSourceAuthorityLabel } from '../src/lib/hermesSourceAuthority';
 
 const bannedPhrases = /I need one more detail: what specific outcome|I can reason from the allowed|I need a concrete decision|no eligible target was resolved|client_profiles: not verified/i;
@@ -258,5 +258,74 @@ describe('Hermes Preserved Behaviors — no regressions', () => {
   it('preserves Tesla Model 3 as new-topic boundary', async () => {
     const response = await handleHermesMessage({ message: 'what do you think about the Tesla Model 3' });
     expect(response.route).toBe('general_advisor');
+  });
+});
+
+describe('Hermes Session Persistence & Continuation', () => {
+  beforeEach(() => {
+    setHermesMemoryScope('persist-test:default');
+    resetConversationState();
+    clearSession('persist-test:default');
+  });
+
+  it('session persists across turns with same scopeKey', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    const session = getActiveSession('persist-test:default');
+    expect(session).toBeTruthy();
+    expect(session?.activeMode).toBe('business_opportunity_review');
+  });
+
+  it('"start there" routes to active_session_continue', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'start there', tenantId: 'persist-test', sessionId: 'default' });
+    expect(response.route).toBe('active_session_continue');
+    expect(response.text).toContain('start with');
+  });
+
+  it('"walk through the list" routes to active_session_continue', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'walk through the list', tenantId: 'persist-test', sessionId: 'default' });
+    expect(response.route).toBe('active_session_continue');
+    expect(response.text).toMatch(/walk through|one by one/i);
+  });
+
+  it('"next" advances focus through list', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    await handleHermesMessage({ message: 'start there', tenantId: 'persist-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'next', tenantId: 'persist-test', sessionId: 'default' });
+    expect(response.route).toBe('active_session_continue');
+    expect(response.text).toContain('Item');
+  });
+
+  it('lastSuccessfulTrace persists after business opportunity review', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    const trace = getLastSuccessfulTrace('persist-test:default');
+    expect(trace).toBeTruthy();
+    expect(trace?.domain).toMatch(/business_opportunit/i);
+    expect(trace?.route).toBeTruthy();
+  });
+
+  it('report inventory creates review session', async () => {
+    const response = await handleHermesMessage({ message: 'what reports do we have', tenantId: 'persist-test', sessionId: 'default' });
+    expect(response.route).toBe('process_settings_reports_status');
+    const session = getActiveSession('persist-test:default');
+    expect(session).toBeTruthy();
+    expect(session?.activeMode).toBe('report_inventory_review');
+  });
+
+  it('trace question returns routing information', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'where did you get that from', tenantId: 'persist-test', sessionId: 'default' });
+    expect(response.route).toBe('trace_source_meta');
+    expect(response.text).toMatch(/routing record|rout/i);
+  });
+
+  it('fallback does not overwrite lastSuccessfulTrace', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'persist-test', sessionId: 'default' });
+    const traceBefore = getLastSuccessfulTrace('persist-test:default');
+    await handleHermesMessage({ message: 'xyzzy random nonsense that triggers fallback', tenantId: 'persist-test', sessionId: 'default' });
+    const traceAfter = getLastSuccessfulTrace('persist-test:default');
+    expect(traceAfter?.route).toBe(traceBefore?.route);
+    expect(traceAfter?.domain).toBe(traceBefore?.domain);
   });
 });

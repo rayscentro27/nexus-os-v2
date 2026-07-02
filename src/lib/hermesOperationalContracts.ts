@@ -38,16 +38,26 @@ export function renderRecordContract(kind: 'approvals' | 'clients', live: LiveHe
 
   let blocker: string;
   if (!live.liveData) {
-    blocker = live.blocker || failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'not verified'}`).join('; ') || 'authentication or RLS denied access';
+    blocker = live.blocker || failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'access denied'}`).join('; ') || 'authentication or RLS denied access';
   } else if (failed.length === 0) {
-    blocker = kind === 'clients' ? `none for the ${sourceName} read` : 'none reported by the source adapter';
+    if (count === 0) {
+      blocker = kind === 'clients' ? `none — the ${sourceName} read succeeded but returned 0 ${label.replace(' returned', '')}` : 'none reported by the source adapter';
+    } else {
+      blocker = kind === 'clients' ? `none for the ${sourceName} read` : 'none reported by the source adapter';
+    }
   } else {
-    blocker = failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'not verified'}`).join('; ');
+    blocker = failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'read failed'}`).join('; ');
   }
 
   const adjacentNote = kind === 'clients' && live.liveData ? '\n**Adjacent context:** approvals/task_requests were not used to count clients. Adjacent operational context is labeled separately from client records.' : '';
 
-  return `**Source checked:** ${sourceName}.\n**Verification:** ${state}; read-only, authenticated/RLS-applied when a session was available.\n**Result:** ${live.liveData ? `${count} ${label}.` : `No verified count is available.`}\n${live.text}\n**Blocker:** ${blocker}\n**Freshness:** request-time check ${live.timestamp}; record-level updated timestamps were not normalized.${adjacentNote}\n**Next safe action:** ${live.liveData ? (kind === 'approvals' ? 'open Ray Review and inspect the highest-impact pending item' : 'open the client list and verify active status per record') : 'sign in with the approved admin session and retry the same read-only query'}.`;
+  const nextAction = live.liveData
+    ? (count > 0
+      ? (kind === 'approvals' ? 'open Ray Review and inspect the highest-impact pending item' : 'open the client list and verify active status per record')
+      : (kind === 'clients' ? 'verify the client_profiles table exists and contains records, or confirm this is the expected state' : 'open Ray Review and inspect the highest-impact pending item'))
+    : 'sign in with the approved admin session and retry the same read-only query';
+
+  return `**Source checked:** ${sourceName}.\n**Verification:** ${state}; read-only, authenticated/RLS-applied when a session was available.\n**Result:** ${live.liveData ? `${count} ${label}.` : `No verified count is available.`}\n${live.text}\n**Blocker:** ${blocker}\n**Freshness:** request-time check ${live.timestamp}; record-level updated timestamps were not normalized.${adjacentNote}\n**Next safe action:** ${nextAction}.`;
 }
 
 export function renderSpecialistHandoffContract(target?: string | null): string {

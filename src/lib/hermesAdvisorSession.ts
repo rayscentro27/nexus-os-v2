@@ -1,5 +1,6 @@
 export type ReviewMode =
   | 'business_opportunity_review'
+  | 'report_inventory_review'
   | 'approval_review'
   | 'client_review'
   | 'monetization_review'
@@ -202,4 +203,41 @@ export function clearExpiredSessions(): void {
       sessionStore.delete(key);
     }
   }
+}
+
+export interface SuccessfulTraceEntry {
+  route: string;
+  domain: string;
+  source: string;
+  usedSupabase: boolean;
+  usedModel: boolean;
+  sources: string[];
+  intentFrame?: unknown;
+  sessionState?: { activeMode?: string; activeDomain?: string; itemCount?: number; focusLabel?: string };
+  timestamp: string;
+}
+
+const lastSuccessfulTraceByScope = new Map<string, SuccessfulTraceEntry>();
+
+export function setLastSuccessfulTrace(scopeKey: string, entry: SuccessfulTraceEntry): void {
+  lastSuccessfulTraceByScope.set(scopeKey, entry);
+}
+
+export function getLastSuccessfulTrace(scopeKey: string): SuccessfulTraceEntry | null {
+  return lastSuccessfulTraceByScope.get(scopeKey) || null;
+}
+
+export function isSessionActive(scopeKey: string): boolean {
+  return getActiveSession(scopeKey) !== null;
+}
+
+export function getSessionListForContinuation(scopeKey: string): SessionItem[] {
+  const session = getActiveSession(scopeKey);
+  return session?.activeList || [];
+}
+
+export function getSessionFocusForContinuation(scopeKey: string): SessionFocus | null {
+  const session = getActiveSession(scopeKey);
+  if (!session) return null;
+  return resolveTargetFromSession(scopeKey) || session.currentFocus || null;
 }

@@ -134,6 +134,10 @@ function detectFollowup(_raw: string, lower: string, _intent: IntentType, domain
     return { isFollowup: true, followupType: 'domain_review' };
   }
 
+  if (/\b(?:start there|we can start there|let'?s start there|walk(?:\s+me)?(?:\s+through)?(?:\s+the)?(?:\s+full)?(?:\s+list)?|let'?s walkthrough|review them|can we review|walkthrough the full list|one by one|continue|go deeper|next|open number|what is number|how can we improve|why did it get|create.*(?:ray review|review card).*for (?:that|it))\b/i.test(lower)) {
+    return { isFollowup: true, followupType: 'active_session' };
+  }
+
   return { isFollowup: false };
 }
 
