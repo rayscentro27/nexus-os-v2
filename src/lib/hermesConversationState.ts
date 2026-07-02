@@ -1,4 +1,5 @@
 import { resetHermesMemoryStores, updateSelectionMemory } from './hermesMemoryStores';
+import { resetAdvisoryContinuity } from './hermesAdvisoryContinuity';
 
 /**
  * Hermes Conversation State — session-scoped memory for follow-up resolution.
@@ -76,6 +77,7 @@ export function resetConversationState(): void {
     lastIntent: null, lastTopic: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
   };
   resetHermesMemoryStores();
+  resetAdvisoryContinuity();
 }
 
 /** Add a user message to history. */

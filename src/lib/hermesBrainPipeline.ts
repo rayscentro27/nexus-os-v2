@@ -21,6 +21,7 @@ import { reportRegistry } from '../data/reportRegistry.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
 import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion } from './hermesCommonConversation';
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
+import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity } from './hermesAdvisoryContinuity';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -73,6 +74,13 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerCasualCommonQuestion({ message, routeDecision: decision, contextPacket: packet }), 'common_conversation', ['common_knowledge']); break;
     case 'general_advisor':
       handler = result(answerGeneralAdvisorQuestion({ message, routeDecision: decision, contextPacket: packet }), 'general_advisor', ['plain_reasoning']); source = 'reasoning'; break;
+    case 'nexus_build_planning':
+      handler = result('Yes — we can build toward a Nexus CRM, and parts of the foundation already exist: client profiles, opportunities, approvals, task requests, research sources, monetization, and Hermes routing. The CRM should cover client pipeline, credit/funding workflow, documents and uploads, notes and tasks, approvals, messaging, funding readiness, business setup, and reports. I can design the modules and prepare a build plan. I have not created code, files, tasks, or a deployment, and I will not execute anything unless you explicitly request a reviewed draft task or implementation step.', 'nexus_build_planner', ['local_product_context', 'local_reports']); source = 'reasoning'; break;
+    case 'advisory_followup':
+      handler = packet.advisoryContinuity
+        ? result(answerAdvisoryFollowUp(message, packet.advisoryContinuity), 'advisory_continuity_reasoner', ['advisory_continuity'])
+        : result('I can answer generally, but I need to know what plan or idea you mean.', 'advisory_context_expired', ['none']);
+      source = 'reasoning'; break;
     case 'process_activity_status':
       handler = result(answerActivityStatusQuestion({ message, routeDecision: decision, contextPacket: packet }), 'activity_status_summary', ['local_activity_journal', 'confirmed_checkpoint']); break;
     case 'capability_status':
@@ -85,6 +93,10 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       else handler = result(`Local ${decision.domain.replace(/_/g, ' ')} evidence is allowed for this status question. No model or selection memory was used.`, 'local_status', ['local_reports']);
       break;
     case 'approval_action_prepare': {
+      if (decision.intent === 'prepare_implementation_task') {
+        handler = actionResult('I did not start building or create code/files. I can prepare a draft implementation task for Ray Review, but implementation and deployment require explicit approval and a defined scope.', 'implementation_action_gated', ['approval_policy'], { outcome: 'blocked', reason: 'implementation_requires_reviewed_scope' });
+        break;
+      }
       const item = packet.selectionMemory ? resolveFollowUp(message) : null;
       if (item) touchSelectionMemory();
       handler = item
@@ -143,29 +155,44 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(model.text || 'The required model route did not return a verified answer.', usedModel ? 'model_reasoning' : 'model_unavailable', [model.source || 'model_unknown']); source = usedModel ? 'model' : 'local'; break;
     }
     default:
-      handler = result('I can answer generally, but I’m not sure which Nexus area you mean. Do you want a status summary, a Supabase record lookup, a business recommendation, or a Ray Review draft?', 'fallback_clarification', ['none']);
+      handler = result('I can help, but I need one more detail: are we talking about Nexus, GoClear/Apex, trading, credit/funding, or a general recommendation?', 'fallback_clarification', ['none']);
   }
   return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source };
 }
 
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
   const message = input.message.trim();
+  advanceAdvisoryContinuityTurn();
   const surface = input.surface || 'unknown';
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
   const state = getConversationState();
   const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory() });
+  const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
+  const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
+  if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
   const packet = buildContextPacket({ routeDecision, message, session: input.userSession, pageContext: input.currentPageContext || null, conversationState: state });
   const executed = await executeRoute(routeDecision, packet, message);
   const rendered = renderHermesAnswer(executed.handler, routeDecision);
   const text = rendered.text;
   const resolvedEntities = executed.handler.selectedEntities;
   const selectionOrTraceMemoryUsed = Boolean(packet.lastTrace || packet.selectionMemory);
-  const anyMemoryUsed = selectionOrTraceMemoryUsed || Boolean(packet.longTermBusinessContext);
+  const anyMemoryUsed = selectionOrTraceMemoryUsed || Boolean(packet.longTermBusinessContext) || Boolean(packet.advisoryContinuity);
   const memoryRejected = Boolean(getSelectionMemory().lastList.length) && !packet.selectionMemory && !packet.lastTrace;
   const modelRoute = executed.usedModel ? 'primary_model' : routeDecision.modelPolicy === 'forbidden' ? 'no_model' : 'local_reasoning';
   const reasoningPlan = reasonFromRouteDecision(routeDecision, packet.summary);
 
   addConversationMessage('user', message); addConversationMessage('assistant', text);
+  if (advisoryProducingRoute) {
+    const revenue = routeDecision.domain === 'monetization';
+    setAdvisoryContinuity({
+      lastAdvisoryTopic: routeDecision.intent,
+      lastAdvisoryDomain: routeDecision.domain,
+      lastAdvisorySummary: revenue ? 'The 30-day path can work if we keep the offer simple, close $97 readiness reviews quickly, and upsell only when the review establishes a clear next step.' : text.slice(0, 500),
+      lastAdvisoryAssumptions: revenue ? ['manual outreach', 'fast readiness-review fulfillment', 'consistent follow-up', 'disciplined upsells'] : ['a defined scope', 'clear priorities', 'reviewed implementation steps'],
+      lastAdvisoryRecommendation: revenue ? 'launch the $97 readiness review and validate the first ten sales before scaling.' : 'define the smallest useful first phase and prepare it for review.',
+      lastAdvisoryRisks: revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity'],
+    });
+  }
   const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status'];
   if (!topicNeutralRoutes.includes(routeDecision.routeId)) {
     updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
@@ -204,7 +231,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     usedSupabase: executed.usedSupabase, supabaseStatus: executed.supabaseStatus, resolvedEntities,
     rememberedContext: anyMemoryUsed, actionIntent: routeDecision.actionPolicy !== 'none' ? message : null,
     approvalRequired: routeDecision.actionPolicy === 'approval_required', safeNextActions: executed.handler.nextActions,
-    diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: executed.handler.internalTrace, domain: { domain: routeDecision.domain }, memoryUsed: selectionOrTraceMemoryUsed, longTermMemoryUsed: Boolean(packet.longTermBusinessContext), memoryRejected, diagnosticSuppressedForUser: rendered.diagnosticSuppressed },
+    diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: executed.handler.internalTrace, domain: { domain: routeDecision.domain }, memoryUsed: selectionOrTraceMemoryUsed || Boolean(packet.advisoryContinuity), longTermMemoryUsed: Boolean(packet.longTermBusinessContext), advisoryContinuityUsed: Boolean(packet.advisoryContinuity), memoryRejected, diagnosticSuppressedForUser: rendered.diagnosticSuppressed },
     intent: { route: routeDecision.routeId, intent: routeDecision.intent, confidence, reason: routeDecision.reason },
     modelRoute: { route: modelRoute, reason: routeDecision.reason }, reasoning: { decision: reasoningPlan.decision === 'route-to-model' ? 'route-to-model' : reasoningPlan.decision === 'answer-with-context' ? 'answer-with-context' : 'answer-locally', confidence, reasoning: reasoningPlan.reasoning },
     capabilityBadge: getCapabilityReport().badgeText, confidence, source: executed.source, timestamp: new Date().toISOString(),

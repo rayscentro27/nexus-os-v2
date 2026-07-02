@@ -2,13 +2,23 @@ import type { RouteDecision } from './hermesRouteDecision';
 
 const DOMAIN_TERMS = /\b(business opportunit(?:y|ies)|approval|client|offer|revenue|trading|supabase|model|cost|source|ray review|report|automation|funding|credit|marketing)\b/i;
 const GREETING_OR_CHECK_IN = /^(?:(?:good\s+)?(?:morning|afternoon|evening|night)|hi|hello|hey|yo|sup|wassup|gm)(?:\s+hermes)?[!.?]*$|^(?:what['’]?s up|how are you(?: doing)?|how['’]?s it going|how are things|(?:are )?you (?:there|online|ready)|ready to work|checking in|i['’]?m back|im back|we back|back at it|let['’]?s (?:get started|work|continue))[!.?]*$/i;
+const HUMAN_EXPERIENCE = /\b(do you (?:eat|sleep|drive|dream|get tired|have feelings|have a body|have taste buds|like food|have emotions|get mad|get excited)|are you (?:hungry|awake|real|tired|sleepy)|can you (?:taste|smell))\b/i;
 
 export function isGreetingOrCheckIn(message: string): boolean {
   return !DOMAIN_TERMS.test(message) && GREETING_OR_CHECK_IN.test(message.trim());
 }
+export function isHumanExperienceQuestion(message: string): boolean { return HUMAN_EXPERIENCE.test(message); }
 
 export function isCasualCommonQuestion(message: string): boolean {
-  return isGreetingOrCheckIn(message) || (!DOMAIN_TERMS.test(message) && /\b(favou?rite|do you like|what do you like|tell me (?:a )?joke|are you (?:bored|happy)|what colou?r is the sky|how did you sleep|what kind of music|ice cream|movie|pizza)\b/i.test(message));
+  return isHumanExperienceQuestion(message) || isGreetingOrCheckIn(message) || (!DOMAIN_TERMS.test(message) && /\b(favou?rite|do you like|what do you like|tell me (?:a )?joke|are you (?:bored|happy)|what colou?r is the sky|how did you sleep|what kind of music|ice cream|movie|pizza)\b/i.test(message));
+}
+
+export function isProductEntityAdvisorQuestion(message: string): boolean {
+  return /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b|\b(?:car|vehicle|phone|laptop|product) model\b/i.test(message) || /\bwhat do you th(?:ink|ing) about\b/i.test(message) && !/\b(?:ai|gpt|llm|openrouter|reasoning) model\b/i.test(message);
+}
+
+export function isNexusBuildPlanningQuestion(message: string): boolean {
+  return /\b(?:can (?:you|we)|could (?:you|we)|what would it take to|how should we)\b.*\b(?:build|make|design|add)\b.*\b(?:crm|client portal|dashboard|workflow|feature|nexus)\b|\b(?:build|design) (?:a |the )?(?:crm|client portal|dashboard|workflow) for nexus\b/i.test(message);
 }
 
 export function isGeneralAdvisorQuestion(message: string): boolean {
@@ -17,6 +27,12 @@ export function isGeneralAdvisorQuestion(message: string): boolean {
 
 export function answerCasualCommonQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {
   const lower = message.toLowerCase();
+  if (/\bdo you eat\b|\bare you hungry\b|\bdo you have a body\b/.test(lower)) return 'I do not eat or have a body, but I can still help with food ideas, nutrition tradeoffs, restaurants, or meal planning.';
+  if (/\bdo you sleep\b|\bare you (?:tired|sleepy|awake)\b|\bdo you dream\b/.test(lower)) return 'I do not sleep, but I’m here and ready when you are.';
+  if (/\b(?:feelings|emotions|get mad|get excited)\b/.test(lower)) return 'I do not have feelings the way a person does, but I can still respond with judgment, tone, and priorities based on what you are trying to accomplish.';
+  if (/\b(?:taste buds|can you taste|can you smell|do you like food)\b/.test(lower)) return 'I do not have senses or a body, but I can still reason about flavor, food choices, and meal planning.';
+  if (/\bdo you drive\b/.test(lower)) return 'I do not drive or have a body, but I can help compare vehicles, ownership costs, and practical tradeoffs.';
+  if (/\bare you real\b/.test(lower)) return 'I’m real as software, not as a person with a body or lived experiences.';
   if (/good evening|^evening/.test(lower)) return 'Good evening, Ray. I’m here and ready. We can review what changed today, check Supabase/live status, or keep moving on Hermes/Nexus.';
   if (/good morning|^morning|\bgm\b/.test(lower)) return 'Good morning, Ray. I’m here and ready.';
   if (/good afternoon|^afternoon/.test(lower)) return 'Good afternoon, Ray. I’m here and ready.';
@@ -39,6 +55,7 @@ export function answerCasualCommonQuestion({ message }: { message: string; route
 
 export function answerGeneralAdvisorQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {
   const lower = message.toLowerCase();
+  if (/\b(?:tesla\s+)?model\s+(?:3|y)\b/.test(lower)) return `The Tesla ${/model y/.test(lower) ? 'Model Y' : 'Model 3'} can be a strong option if you have reliable charging, want lower fuel costs, and like the EV/tech image. Compare insurance, payment, charging access, battery warranty, and total monthly cost. If your priority is lowest-risk reliability, compare it with a Camry, Accord, RAV4, or Lexus ES.`;
   if (/\bcar\b/.test(lower)) return 'My default recommendation is something reliable, low-maintenance, and professional-looking. Start with a Toyota Camry, Honda Accord, Toyota RAV4, or Lexus ES. Best all-around value: Camry. Comfort and business image: Lexus ES. Utility: RAV4. What is your budget, new/used preference, and primary use?';
   if (/\blaptop\b/.test(lower)) return 'My safe default is a MacBook Air for battery life and low maintenance, or a business-class ThinkPad if you need Windows. For heavier development or video work, step up to a MacBook Pro or a higher-spec ThinkPad. What is your budget and your heaviest workload?';
   if (/\bphone\b/.test(lower)) return 'My default shortlist is an iPhone for the simplest long-term ownership, a Pixel for clean Android, or a Samsung Galaxy if you value display and multitasking. Which ecosystem are you already using, and what is your budget?';

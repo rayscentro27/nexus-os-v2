@@ -3,12 +3,14 @@ import type { ConversationState } from './hermesConversationState';
 import { evaluateMemoryEligibility } from './hermesMemoryEligibility';
 import { getLastTurnTraceMemory, getLongTermBusinessContext, getSelectionMemory } from './hermesMemoryStores';
 import { getLastRoutingTrace } from './hermesRoutingTrace';
+import { getAdvisoryContinuity } from './hermesAdvisoryContinuity';
 
 export interface HermesContextPacket {
   message: string; routeDecision: RouteDecision; pageContext: Record<string, unknown> | null;
   lastTrace: ReturnType<typeof getLastTurnTraceMemory>; selectionMemory: ReturnType<typeof getSelectionMemory> | null;
   routingTrace: ReturnType<typeof getLastRoutingTrace>;
   longTermBusinessContext: ReturnType<typeof getLongTermBusinessContext> | null;
+  advisoryContinuity: ReturnType<typeof getAdvisoryContinuity>;
   retrieval: { supabaseAllowed: boolean; localReportsAllowed: boolean; staticFallbackAllowed: boolean };
   modelAllowed: boolean; memoryEligibility: ReturnType<typeof evaluateMemoryEligibility>;
   summary: Record<string, unknown>;
@@ -25,6 +27,7 @@ export function buildContextPacket(input: { routeDecision: RouteDecision; messag
     routingTrace: input.routeDecision.allowedContext.lastTrace ? getLastRoutingTrace() : null,
     selectionMemory: input.routeDecision.allowedContext.selectionMemory && eligibility.selectionAllowed ? selection : null,
     longTermBusinessContext: input.routeDecision.allowedContext.longTermMemory ? getLongTermBusinessContext() : null,
+    advisoryContinuity: input.routeDecision.allowedContext.longTermMemory ? getAdvisoryContinuity() : null,
     retrieval: { supabaseAllowed: input.routeDecision.allowedContext.supabase, localReportsAllowed: input.routeDecision.allowedContext.localReports, staticFallbackAllowed: input.routeDecision.allowedContext.staticFallback },
     modelAllowed: input.routeDecision.allowedContext.model,
     memoryEligibility: eligibility,
@@ -32,7 +35,7 @@ export function buildContextPacket(input: { routeDecision: RouteDecision; messag
   };
   packet.summary = {
     lastTraceAttached: Boolean(packet.lastTrace || packet.routingTrace), selectionMemoryAttached: Boolean(packet.selectionMemory),
-    longTermMemoryAttached: Boolean(packet.longTermBusinessContext), pageContextAttached: Boolean(packet.pageContext),
+    longTermMemoryAttached: Boolean(packet.longTermBusinessContext), advisoryContinuityAttached: Boolean(packet.advisoryContinuity), pageContextAttached: Boolean(packet.pageContext),
     supabaseAllowed: packet.retrieval.supabaseAllowed, localReportsAllowed: packet.retrieval.localReportsAllowed,
     staticFallbackAllowed: packet.retrieval.staticFallbackAllowed, modelAllowed: packet.modelAllowed,
     blockedContext: input.routeDecision.blockedContext,

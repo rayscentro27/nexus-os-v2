@@ -3,15 +3,17 @@ import { classifyTraceQuestion } from './hermesTraceQuestionHandler';
 import { isRevenueStrategyQuestion } from './hermesRevenueReasoner';
 import { createRouteDecision, type RouteDecision } from './hermesRouteDecision';
 import type { SelectionMemory } from './hermesMemoryStores';
-import { isCasualCommonQuestion, isGeneralAdvisorQuestion } from './hermesCommonConversation';
+import { isCasualCommonQuestion, isGeneralAdvisorQuestion, isHumanExperienceQuestion, isNexusBuildPlanningQuestion, isProductEntityAdvisorQuestion } from './hermesCommonConversation';
 import { classifyActivityStatusQuestion } from './hermesActivityStatus';
+import { getAdvisoryContinuity, isAdvisoryFollowUpQuestion } from './hermesAdvisoryContinuity';
 
 export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; }
 
 const decision = (input: Parameters<typeof createRouteDecision>[0]) => createRouteDecision(input);
 
 function hasSelectionReference(message: string, memory: SelectionMemory): boolean {
-  if (/\b(that(?: one)?|this(?: one)?|it|those|number\s*\d+|option\s*\d+|the\s+(?:first|second|third)|pick one|which one|how do (?:we|i) implement it|continue|go deeper)\b/i.test(message)) return true;
+  if (isAdvisoryFollowUpQuestion(message) && !/\b(number\s*\d+|option\s*\d+|the\s+(?:first|second|third)|that one|this one|how do (?:we|i) implement|create .*card)\b/i.test(message)) return false;
+  if (/\b(that one|this one|those|number\s*\d+|option\s*\d+|the\s+(?:first|second|third)|pick one|which one|how do (?:we|i) implement (?:it|that)|create (?:a )?(?:ray review )?card for (?:that|it)|continue|go deeper)\b/i.test(message)) return true;
   const normalized = message.toLowerCase().replace(/[$]/g, '').replace(/[^a-z0-9]+/g, ' ');
   return [memory.lastSelectedItem, memory.lastRecommendation, ...memory.lastRankedList, ...memory.lastList].filter(Boolean).some(item => normalized.includes(item!.title.toLowerCase().replace(/[$]/g, '').replace(/[^a-z0-9]+/g, ' ').replace(/^\d+\s+/, '')));
 }
@@ -19,7 +21,9 @@ function hasSelectionReference(message: string, memory: SelectionMemory): boolea
 export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const message = input.message.trim();
   const lower = message.toLowerCase();
-  const domain = classifyHermesDomain(message, input.currentPage, input.previousDomain).domain;
+  const domainResult = classifyHermesDomain(message, input.currentPage, input.previousDomain);
+  const domain = domainResult.domain;
+  const advisory = getAdvisoryContinuity();
   const scheduling = /\b(schedule|set up|create)\b.*\b(report|summary|reminder)|\b(?:weekly|daily|recurring)\b.*\b(report|summary)|\b(?:remind me|automate this report|run this report every|send me .* every)\b/i.test(lower);
   const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
@@ -27,14 +31,20 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const traceQuestion = classifyTraceQuestion(message);
   if (traceQuestion) return decision({ routeId: 'trace_source_meta', activationLevel: 1, domain: 'routing_trace', intent: traceQuestion.kind === 'source_reason' ? 'source_reason_followup' : 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source questions inspect only the last non-trace route.' });
 
-  if (/\b(tokens?|usage ledger|what model did|model call|answer cost|what did .* cost|cost of (?:that|the) answer)\b/i.test(lower)) return decision({ routeId: 'cost_model_usage_status', activationLevel: 1, domain: 'model_cost_status', intent: 'usage_status', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Cost and model-use status are deterministic trace/ledger questions.' });
+  if (/\b(tokens?|usage ledger|what model (?:did|do|are|is|was)|model call|answer cost|what did .* cost|cost of (?:that|the) answer|(?:openrouter|cheapest|primary|fallback|gpt|ai|llm|reasoning) model)\b/i.test(lower)) return decision({ routeId: 'cost_model_usage_status', activationLevel: 1, domain: 'model_cost_status', intent: 'usage_status', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Cost and model-use status are deterministic trace/ledger questions.' });
 
   if (scheduling) return decision({ routeId: 'schedule_action_prepare', activationLevel: 6, domain: 'automation', intent: 'prepare_scheduled_report', memoryPolicy: /\b(that|this) report\b/i.test(lower) ? 'selection_only' : 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Scheduling is approval-gated; only a draft request may be prepared and no scheduler may be activated.' });
 
-  const activityIntent = classifyActivityStatusQuestion(message);
-  if (activityIntent) return decision({ routeId: 'process_activity_status', activationLevel: 1, domain: 'activity_summary', intent: activityIntent, memoryPolicy: 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Work continuation and completed-work summaries use local activity/report evidence without selection memory or model calls.' });
+  if (/\b(?:start|begin)\b.*\b(?:build|building|implement|implementation)\b|\bcreate (?:the )?(?:crm|feature) (?:files|task)\b|\bcreate files for (?:the )?(?:crm|feature)\b/i.test(lower)) return decision({ routeId: 'approval_action_prepare', activationLevel: 6, domain: 'nexus_product_build', intent: 'prepare_implementation_task', memoryPolicy: 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Starting implementation requires an explicit reviewed task; this route performs no code, file, or deployment action.' });
 
-  if (isCasualCommonQuestion(message)) return decision({ routeId: 'casual_common', activationLevel: 1, domain: 'general_conversation', intent: /\b(favou?rite|joke|sky|pizza|movie|music|ice cream)\b/i.test(lower) ? 'casual_or_common_question' : 'greeting_or_light_check_in', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Common conversation needs no Nexus records, selection memory, or model call.' });
+  const activityIntent = classifyActivityStatusQuestion(message);
+  if (activityIntent && !(advisory && isAdvisoryFollowUpQuestion(message))) return decision({ routeId: 'process_activity_status', activationLevel: 1, domain: 'activity_summary', intent: activityIntent, memoryPolicy: 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Work continuation and completed-work summaries use local activity/report evidence without selection memory or model calls.' });
+
+  if (isCasualCommonQuestion(message)) return decision({ routeId: 'casual_common', activationLevel: 1, domain: 'general_conversation', intent: isHumanExperienceQuestion(message) ? 'human_experience_question' : /\b(favou?rite|joke|sky|pizza|movie|music|ice cream)\b/i.test(lower) ? 'casual_or_common_question' : 'greeting_or_light_check_in', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Common conversation needs no Nexus records, selection memory, or model call.' });
+
+  if (isNexusBuildPlanningQuestion(message)) return decision({ routeId: 'nexus_build_planning', activationLevel: 4, domain: 'nexus_product_build', intent: 'build_planning', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'local_reports', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A Nexus product request is planning only until an explicit reviewed implementation task is requested.' });
+
+  if (isProductEntityAdvisorQuestion(message) && (!domainResult.explicit || domain === 'casual_identity')) return decision({ routeId: 'general_advisor', activationLevel: 4, domain: /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b/i.test(message) ? 'vehicle_recommendation' : 'general_advice', intent: 'product_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A product/entity opinion uses general advisory reasoning, not AI model status or stale selection memory.' });
 
   if (isGeneralAdvisorQuestion(message) && !(input.selectionMemory.lastList.length && /\bwhich one\b/i.test(lower))) return decision({ routeId: 'general_advisor', activationLevel: 4, domain: 'general_advice', intent: 'general_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'General advice uses plain reasoning without stale selection memory or Nexus retrieval.' });
 
@@ -58,6 +68,8 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   if (hasSelectionReference(message, input.selectionMemory)) return decision({ routeId: 'memory_followup', activationLevel: 3, domain: input.selectionMemory.activeDomain || domain, intent: 'resolve_previous_selection', memoryPolicy: 'selection_only', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'An explicit follow-up marker or named selection item permits selection memory.' });
 
   if (isRevenueStrategyQuestion(message)) return decision({ routeId: 'revenue_reasoning', activationLevel: 4, domain: 'monetization', intent: 'revenue_strategy', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Revenue strategy uses long-term business context and opportunity retrieval, never stale selected items.' });
+
+  if (advisory && isAdvisoryFollowUpQuestion(message) && !domainResult.explicit) return decision({ routeId: 'advisory_followup', activationLevel: 4, domain: advisory.lastAdvisoryDomain, intent: 'evaluate_prior_advice', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'A short-lived plan-level follow-up refers to the prior advisory answer, not a selected list item.' });
 
   if (domain !== 'unknown' || /\b(recommend|prioritize|plan|implement|strategy|what should)\b/i.test(lower)) return decision({ routeId: 'local_reasoning', activationLevel: 4, domain, intent: 'domain_reasoning', memoryPolicy: domain === 'business_opportunity' || domain === 'monetization' ? 'long_term_allowed' : 'none', retrievalPolicy: ['trading', 'reports', 'research_youtube'].includes(domain) ? 'local_reports' : 'static_fallback_allowed', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'The explicit domain can be answered locally without unrestricted memory.' });
 

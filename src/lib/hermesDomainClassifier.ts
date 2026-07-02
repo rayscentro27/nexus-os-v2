@@ -13,7 +13,7 @@ export interface DomainClassification {
 
 const DOMAIN_FAMILIES: Array<{ domain: HermesDomain; pattern: RegExp; signal: string }> = [
   { domain: 'source_trace', pattern: /\b(where\s+(?:did|does|are).*?(?:answer|response|that|this|source)|what\s+source|where\s+did\s+that\s+come\s+from|did\s+(?:that|you).*?(?:supabase|database|model|ai|memory)|are\s+you\s+using\s+(?:supabase|the\s+database|strategic reasoning|a model|ai)|what\s+domain\s+did|why\s+did\s+you\s+answer|what\s+route\s+did|what\s+(?:was|context was)\s+allowed|why.*not use.*(?:memory|supabase|database|model|ai)|why\s+did\s+you.*previous recommendation)\b/i, signal: 'routing/source/trace terms' },
-  { domain: 'model_cost_status', pattern: /\b(model|tokens?|supabase|database|route|routing|activation level|source used|cost of (?:that|the) answer)\b/i, signal: 'model/database/routing status terms' },
+  { domain: 'model_cost_status', pattern: /\b(tokens?|supabase|database|route|routing|activation level|source used|cost of (?:that|the) answer)\b|\b(?:what|which) model (?:did|do|are|is|was)|\b(?:using|use|used|running|run) (?:the |a |which )?model\b|\b(?:ai|gpt|llm|openrouter|primary|fallback|reasoning|cheapest) model\b|\bmodel cost\b/i, signal: 'AI model/database/routing status terms' },
   { domain: 'trading', pattern: /\b(trad(?:e|ing)|forex|stock|crypto|broker|paper[- ]?trad|backtest|market setup|position|strategy lab)\b/i, signal: 'trading and market terms' },
   { domain: 'research_youtube', pattern: /\b(youtube|video|transcript|channel|research|sources?|candidate scoring)\b/i, signal: 'research or YouTube terms' },
   { domain: 'settings', pattern: /\b(settings?|configuration|configured|environment variable|feature flag|missing setup)\b/i, signal: 'settings/configuration terms' },
