@@ -10,6 +10,8 @@ export interface LastAnswerState {
   assumptions: string[];
   blockers: string[];
   confidence: 'high' | 'medium' | 'low';
+  sourceStatus?: 'success' | 'partial_success' | 'empty_success' | 'failed' | 'fallback_used';
+  sourceRowCount?: number;
   target?: { id?: string; label: string; type: 'record' | 'recommendation' | 'report' | 'session_item' | 'page' | 'unknown' };
   timestamp: string;
 }

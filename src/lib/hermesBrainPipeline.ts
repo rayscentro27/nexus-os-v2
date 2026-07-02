@@ -27,7 +27,7 @@ import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackCont
 import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } from './hermesOpportunityAdvisor';
 import { answerSystemHealthQuestion } from './hermesSystemHealthStatus';
 import { answerPageContextQuestion } from './hermesPageContextStatus';
-import { renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSpecialistAgentInventoryContract, renderSystemHealthContract } from './hermesOperationalContracts';
+import { cleanRecordSourceSummary, renderRecordContract, renderResearchStatusContract, renderSpecialistHandoffContract, renderSpecialistAgentInventoryContract, renderSystemHealthContract, type CleanSourceSummary } from './hermesOperationalContracts';
 import { buildIntentFrame } from './hermesIntentClassifier';
 import type { HermesIntentFrame } from './hermesIntentFrame';
 import { getActiveSession, advanceSessionTurn, startReviewSession, updateSessionSource, updateSessionList, setSessionFocus, type NexusSessionContext, setLastSuccessfulTrace, getLastSuccessfulTrace, getSessionFocusForContinuation, getSessionListForContinuation } from './hermesAdvisorSession';
@@ -36,7 +36,7 @@ import { renderVoiceReady, type VoiceReadyResponse } from './hermesVoiceReadyRen
 import { resolveHermesConversationState } from './hermesConversationArbiter';
 import { getHermesDecisionState, updateHermesDecisionState } from './hermesDecisionState';
 import { resolveHermesActionTarget } from './hermesActionResolver';
-import { renderResponseMode } from './hermesResponseModeRenderer';
+import { renderLastAnswerProvenance, renderResponseMode } from './hermesResponseModeRenderer';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -80,6 +80,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
   let source: BrainPipelineResponse['source'] = 'local';
   let handler: HermesHandlerResult;
   let opportunityAdvisory: OpportunityAdvisorResult | null = null;
+  let sourceSummary: CleanSourceSummary | null = null;
 
   switch (decision.routeId) {
     case 'safety_gate':
@@ -106,6 +107,11 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     }
     case 'trace_source_meta':
     case 'cost_model_usage_status': {
+      const lastAnswer = getHermesDecisionState(scopeKey).lastAnswer;
+      if (decision.routeId === 'trace_source_meta' && lastAnswer?.domain === 'clients' && lastAnswer.sources.includes('client_profiles')) {
+        handler = result(renderLastAnswerProvenance(lastAnswer), 'trace_question_handler', ['last_answer_provenance']);
+        break;
+      }
       const lastSuccess = getLastSuccessfulTrace(scopeKey);
       const traceAnswer = answerHermesTraceQuestion(message, packet.routingTrace, { routeDecision: decision });
       let finalTraceAnswer = traceAnswer || 'No prior routing record is available.';
@@ -144,7 +150,8 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     case 'client_records': {
       const live = await buildLiveSupabaseContext(message);
       usedSupabase = live.liveData; supabaseStatus = live.sourceType; supabaseTables = live.tablesQueried || [];
-      handler = result(renderRecordContract('clients', live), `${decision.routeId}_contract`, live.liveData ? ['client_profiles'] : ['supabase_access_state']);
+      sourceSummary = cleanRecordSourceSummary('clients', live);
+      handler = result(renderRecordContract('clients', live), `${decision.routeId}_contract`, ['client_profiles']);
       source = live.liveData ? 'supabase' : 'local';
       break;
     }
@@ -331,7 +338,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result('I need one more detail: what specific outcome or record do you want help with? If you want a general recommendation, name the decision you want me to evaluate.', 'fallback_clarification', ['none']);
       source = 'fallback';
   }
-  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory };
+  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory, sourceSummary };
 }
 
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
@@ -558,7 +565,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   if (recommendationTarget) updateHermesDecisionState(scopeKey, { lastRecommendation: { label: recommendationTarget, domain: routeDecision.domain, reason: 'it has the lowest launch barrier, a clear entry offer, and a defined upsell path.', source: executed.handler.sources[0] || 'local reasoning', timestamp: new Date().toISOString() } });
 
   if (!['trace_source_meta', 'cost_model_usage_status', 'response_mode_change'].includes(routeDecision.routeId)) {
-    updateHermesDecisionState(scopeKey, { responseMode: responseMode === 'casual' ? 'ceo' : responseMode, lastAnswer: { text, route: routeDecision.routeId, intent: routeDecision.intent, domain: routeDecision.domain, sources: executed.handler.sources, usedSupabase: executed.usedSupabase, assumptions: executed.source === 'reasoning' ? ['local reasoning was used'] : [], blockers: executed.handler.actionProof?.outcome === 'blocked' ? [executed.handler.actionProof.reason || 'action blocked'] : [], confidence, target: recommendationTarget ? { label: recommendationTarget, type: 'recommendation' } : activeSession?.currentFocus ? { id: activeSession.currentFocus.id, label: activeSession.currentFocus.label, type: activeSession.activeMode === 'report_inventory_review' ? 'report' : 'session_item' } : undefined, timestamp: new Date().toISOString() } });
+    updateHermesDecisionState(scopeKey, { responseMode: responseMode === 'casual' ? 'ceo' : responseMode, lastAnswer: { text, route: routeDecision.routeId, intent: routeDecision.intent, domain: routeDecision.domain, sources: executed.handler.sources, usedSupabase: executed.usedSupabase, assumptions: executed.source === 'reasoning' ? ['local reasoning was used'] : [], blockers: executed.sourceSummary?.blocker ? [executed.sourceSummary.blocker] : executed.handler.actionProof?.outcome === 'blocked' ? [executed.handler.actionProof.reason || 'action blocked'] : [], confidence, sourceStatus: executed.sourceSummary?.status, sourceRowCount: executed.sourceSummary?.rowCount, target: recommendationTarget ? { label: recommendationTarget, type: 'recommendation' } : activeSession?.currentFocus ? { id: activeSession.currentFocus.id, label: activeSession.currentFocus.label, type: activeSession.activeMode === 'report_inventory_review' ? 'report' : 'session_item' } : undefined, timestamp: new Date().toISOString() } });
   }
 
   // Persist lastSuccessfulTrace for non-fallback, non-trace answers
