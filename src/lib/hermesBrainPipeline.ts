@@ -24,6 +24,8 @@ import { answerActivityStatusQuestion } from './hermesActivityStatus';
 import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity } from './hermesAdvisoryContinuity';
 import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity } from './hermesFallbackContinuity';
 import { answerOpportunityAwareRecommendation, type OpportunityAdvisorResult } from './hermesOpportunityAdvisor';
+import { answerSystemHealthQuestion } from './hermesSystemHealthStatus';
+import { answerPageContextQuestion } from './hermesPageContextStatus';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -41,7 +43,7 @@ export interface BrainPipelineResponse {
   modelRoute: { route: string; reason: string; [key: string]: unknown };
   reasoning: { decision: 'answer-locally' | 'answer-with-context' | 'route-to-model'; confidence: 'high' | 'medium' | 'low'; reasoning: string };
   capabilityBadge: string; confidence: 'high' | 'medium' | 'low';
-  source: 'local' | 'supabase' | 'model' | 'conversation-followup' | 'capability' | 'reasoning'; timestamp: string;
+  source: 'local' | 'fallback' | 'supabase' | 'model' | 'conversation-followup' | 'capability' | 'reasoning'; timestamp: string;
 }
 
 const OPPORTUNITIES: ConversationItem[] = [
@@ -98,6 +100,11 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       source = 'reasoning'; break;
     case 'process_activity_status':
       handler = result(answerActivityStatusQuestion({ message, routeDecision: decision, contextPacket: packet }), 'activity_status_summary', ['local_activity_journal', 'confirmed_checkpoint']); break;
+    case 'system_health_report':
+      handler = result(answerSystemHealthQuestion(message), 'system_health_summary', ['local_reports', 'confirmed_checkpoint']); break;
+    case 'page_connection_status':
+    case 'page_context_status':
+      handler = result(answerPageContextQuestion({ message, routeDecision: decision, contextPacket: packet }), 'page_context_status', ['page_context_contract']); break;
     case 'capability_status':
       handler = result(answerCapabilityQuestion(message) || getCapabilityReport().capabilities.map(item => `${item.name}: ${item.userFacing}`).join('\n'), 'capability_status', ['capability_registry']); source = 'capability'; break;
     case 'process_settings_reports_status':
@@ -122,11 +129,12 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       break;
     }
     case 'schedule_action_prepare': {
-      const hasReport = /\b(?:weekly|daily|monthly|monetization|revenue|trading|business|client|research)\b.*\b(?:report|summary)\b/i.test(message);
+      const isAudit = /\baudit\b/i.test(message);
+      const hasReport = isAudit ? /\b(?:system health|routing|security|supabase|performance|compliance)\s+audit\b/i.test(message) : /\b(?:weekly|daily|monthly|monetization|revenue|trading|business|client|research)\b.*\b(?:report|summary)\b/i.test(message);
       const hasTime = /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|at\s+\d|\d{1,2}(?::\d{2})?\s*(?:am|pm)|next week)\b/i.test(message);
       handler = hasReport && hasTime
-        ? actionResult(`Draft scheduled-report request prepared in this conversation only: **${message.replace(/[.!?]+$/, '')}**. It has not been saved, submitted, or activated. No scheduler was started.`, 'schedule_local_draft', ['approval_policy'], { outcome: 'local_draft_only', title: message.replace(/[.!?]+$/, ''), status: 'not_saved' })
-        : actionResult('I can prepare a scheduled-report request for Ray Review, but I will not activate a scheduler without approval. Which report should be scheduled, and what day/time next week should it run? This is a conversation-only draft; nothing has been saved or activated.', 'schedule_missing_details', ['approval_policy'], { outcome: 'blocked', reason: 'missing_report_or_time' });
+        ? actionResult(`Draft scheduled-${isAudit ? 'audit' : 'report'} request prepared in this conversation only: **${message.replace(/[.!?]+$/, '')}**. It has not been saved, submitted, or activated. No scheduler was started.`, 'schedule_local_draft', ['approval_policy'], { outcome: 'local_draft_only', title: message.replace(/[.!?]+$/, ''), status: 'not_saved' })
+        : actionResult(`I can prepare a draft scheduled-${isAudit ? 'audit' : 'report'} request for Ray Review, but I will not activate a scheduler. Which ${isAudit ? 'audit' : 'report'} should run, and what day/time next week? Nothing has been saved or activated.`, 'schedule_missing_details', ['approval_policy'], { outcome: 'blocked', reason: 'missing_target_or_time' });
       break;
     }
     case 'explicit_domain_retrieval':
@@ -172,6 +180,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     default:
       setFallbackContinuity(message);
       handler = result('I can help, but I need one more detail: do you want a general recommendation, a Nexus build plan, a business/credit/funding angle, or a Ray Review draft?', 'fallback_clarification', ['none']);
+      source = 'fallback';
   }
   return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory };
 }
@@ -216,7 +225,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     });
   }
   if (routeDecision.routeId === 'fallback_continuation') clearFallbackContinuity();
-  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'fallback_clarification'];
+  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'system_health_report', 'page_connection_status', 'page_context_status', 'capability_status', 'fallback_clarification'];
   if (!topicNeutralRoutes.includes(routeDecision.routeId)) {
     updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
   }

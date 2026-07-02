@@ -1,0 +1,12 @@
+{
+  "reportType": "hermes_system_health_route",
+  "generatedAt": "2026-07-02T05:48:00-07:00",
+  "routeId": "system_health_report",
+  "domains": ["system_health", "system_diagnostics"],
+  "intents": ["report_request", "identify_problem"],
+  "retrievalPolicy": "local_reports",
+  "modelPolicy": "forbidden",
+  "output": ["last confirmed build/tests", "checkpoint commit", "Supabase capability/auth boundary", "deployment verification", "section counts", "Hermes brain status", "blockers", "next action"],
+  "freshnessDisclosure": true,
+  "status": "implemented"
+}

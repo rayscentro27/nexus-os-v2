@@ -1,0 +1,14 @@
+{
+  "reportType": "hermes_route_dominance_repair",
+  "generatedAt": "2026-07-02T05:48:00-07:00",
+  "dominantLayer": "fallback_clarification reached through missing intent families; generic local_status was the secondary policy-text leak",
+  "rootCause": "Fallback was already last. Missing page/system-health/audit-scheduling classifiers and handlers allowed valid messages to fall through; source=local then overstated fallback as grounded Nexus context.",
+  "routeRepairs": ["system_health_report", "page_connection_status", "page_context_status", "schedule_action_prepare for audits", "farewell_or_light_check_in", "contextual vehicle typo normalization"],
+  "fallbackRepair": "Fallback trace source is labeled unresolved routing fallback, not verified Nexus data.",
+  "uiContext": "Full Workroom and inline drawer now pass page id, section name, route, visible items, selected item, and available actions.",
+  "protectedRegressions": ["approvals retrieval", "business opportunity retrieval", "selection-to-advisory continuity", "opportunity advisor", "safety gate", "unresolved action gate"],
+  "tests": { "files": 23, "passed": 608, "failed": 0 },
+  "build": "passed",
+  "browser": { "status": "blocked_by_authentication", "detail": "The app requires authenticated admin sign-in; no credentials were used or exposed." },
+  "safety": { "externalActions": false, "fakePageVisibility": false, "fakeSupabaseRows": false, "schedulerActivated": false, "approvalGatesIntact": true }
+}

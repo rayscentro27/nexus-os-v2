@@ -1,0 +1,12 @@
+{
+  "reportType": "hermes_page_context_route",
+  "generatedAt": "2026-07-02T05:48:00-07:00",
+  "routes": ["page_connection_status", "page_context_status"],
+  "domain": "current_page",
+  "modelPolicy": "forbidden",
+  "supabaseSeparated": true,
+  "passedMetadata": ["pageId", "sectionName", "route", "visibleItems", "selectedItem", "availableActions"],
+  "missingMetadataBehavior": "States that page visibility is unavailable and lists required frontend metadata.",
+  "fakeVisibilityClaims": false,
+  "status": "implemented"
+}

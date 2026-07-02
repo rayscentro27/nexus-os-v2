@@ -10,11 +10,12 @@ export function isGreetingOrCheckIn(message: string): boolean {
 export function isHumanExperienceQuestion(message: string): boolean { return HUMAN_EXPERIENCE.test(message); }
 
 export function isCasualCommonQuestion(message: string): boolean {
+  if (/\bfavou?rite vehicle car\b/i.test(message)) return false;
   return isHumanExperienceQuestion(message) || isGreetingOrCheckIn(message) || (!DOMAIN_TERMS.test(message) && /\b(favou?rite|do you like|what do you like|tell me (?:a )?joke|are you (?:bored|happy)|what colou?r is the sky|how did you sleep|what kind of music|ice cream|movie|pizza)\b/i.test(message));
 }
 
 export function isProductEntityAdvisorQuestion(message: string): boolean {
-  return /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b|\b(?:car|vehicle|phone|laptop|product) model\b/i.test(message) || /\bwhat do you th(?:ink|ing) about\b/i.test(message) && !/\b(?:ai|gpt|llm|openrouter|reasoning) model\b/i.test(message) || /\bshould i buy (?:the )?tesla\b/i.test(message);
+  return /\b(?:tesla\s+)?model\s+(?:3|s|x|y)\b|\b(?:car|vehicle|phone|laptop|product) model\b|\bfavou?rite vehicle car\b/i.test(message) || /\bwhat do you th(?:ink|ing) about\b/i.test(message) && !/\b(?:ai|gpt|llm|openrouter|reasoning) model\b/i.test(message) || /\bshould i buy (?:the )?tesla\b/i.test(message);
 }
 
 export function isNexusBuildPlanningQuestion(message: string): boolean {
@@ -37,7 +38,8 @@ export function isGeneralAdvisorQuestion(message: string): boolean {
 }
 
 export function answerCasualCommonQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {
-  const lower = message.toLowerCase();
+  const lower = message.toLowerCase().replace(/\bgo;od\b/g, 'good');
+  if (/\bgood night\b|^night[!.?]*$/.test(lower.trim())) return 'Good night, Ray. Rest up — we made strong progress on Hermes today.';
   if (/\bdo you eat\b|\bare you hungry\b|\bdo you have a body\b/.test(lower)) return 'I do not eat or have a body, but I can still help with food ideas, nutrition tradeoffs, restaurants, or meal planning.';
   if (/\bdo you sleep\b|\bare you (?:tired|sleepy|awake)\b|\bdo you dream\b/.test(lower)) return 'I do not sleep, but I’m here and ready when you are.';
   if (/\b(?:feelings|emotions|get mad|get excited)\b/.test(lower)) return 'I do not have feelings the way a person does, but I can still respond with judgment, tone, and priorities based on what you are trying to accomplish.';
@@ -65,7 +67,7 @@ export function answerCasualCommonQuestion({ message }: { message: string; route
 }
 
 export function answerGeneralAdvisorQuestion({ message }: { message: string; routeDecision: RouteDecision; contextPacket: unknown }): string {
-  const lower = message.toLowerCase();
+  const lower = message.toLowerCase().replace(/\b(favou?rite|recommend(?:ed|ation)?)\s+care\b/i, '$1 car');
   if (/\b(?:tesla\s+)?model\s+(?:3|y)\b/.test(lower)) return `The Tesla ${/model y/.test(lower) ? 'Model Y' : 'Model 3'} can be a strong option if you have reliable charging, want lower fuel costs, and like the EV/tech image. Compare insurance, payment, charging access, battery warranty, and total monthly cost. If your priority is lowest-risk reliability, compare it with a Camry, Accord, RAV4, or Lexus ES.`;
   if (/\bcar\b/.test(lower)) return 'My default recommendation is something reliable, low-maintenance, and professional-looking. Start with a Toyota Camry, Honda Accord, Toyota RAV4, or Lexus ES. Best all-around value: Camry. Comfort and business image: Lexus ES. Utility: RAV4. What is your budget, new/used preference, and primary use?';
   if (/\blaptop\b/.test(lower)) return 'My safe default is a MacBook Air for battery life and low maintenance, or a business-class ThinkPad if you need Windows. For heavier development or video work, step up to a MacBook Pro or a higher-spec ThinkPad. What is your budget and your heaviest workload?';

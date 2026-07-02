@@ -29,7 +29,7 @@ export default function HermesInlineDrawer({ open, onClose, onOpenWorkroom, init
         surface: 'inline_drawer',
         pageId: activePage || undefined,
         route: window.location.hash,
-        currentPageContext: { pageId: activePage, visibleItems, selectedItem, availableActions },
+        currentPageContext: { pageId: activePage, sectionName: activePage, route: window.location.hash, visibleItems, selectedItem, availableActions },
       });
       responseText = brainResult.text;
       source = brainResult.sourceMode;

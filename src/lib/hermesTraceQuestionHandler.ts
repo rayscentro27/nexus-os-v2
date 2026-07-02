@@ -29,6 +29,7 @@ function traceSummary(trace: RoutingTraceEntry): string {
 }
 
 function sourceName(trace: RoutingTraceEntry): string {
+  if (trace.route === 'fallback_clarification' || trace.finalAnswerHandler === 'fallback_clarification') return 'an unresolved routing fallback, not verified Nexus data';
   if (trace.memoryUsed && trace.selectedEntity) return `our conversation follow-up memory for ${trace.selectedEntity}`;
   if (trace.usedSupabase) return `live Supabase data${trace.supabaseTables.length ? ` from ${trace.supabaseTables.join(', ')}` : ''}`;
   if (trace.usedModel) return `the model through ${trace.modelRoute}`;

@@ -36,7 +36,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
         surface: 'full_workroom',
         pageId: activePage || undefined,
         route: window.location.hash,
-        currentPageContext: { pageId: activePage, visibleItems, selectedItem, availableActions },
+        currentPageContext: { pageId: activePage, sectionName: activePage, route: window.location.hash, visibleItems, selectedItem, availableActions },
       });
       responseText = brainResult.text;
       source = brainResult.sourceMode;
