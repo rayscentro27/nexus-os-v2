@@ -30,7 +30,8 @@
     "supabase": "attempted for relevant opportunity tables; success claimed only when a query succeeds"
   },
   "traceFieldsAdded": ["questionType", "traceTarget", "finalAnswerHandler", "diagnosticOnly", "diagnosticSuppressedForUser", "domainOverrideReason"],
-  "tests": { "files": 15, "passed": 474, "failed": 0 },
+  "tests": { "files": 16, "passed": 488, "failed": 0 },
+  "routeDecisionContract": "All transcript routes now execute through hermesPriorityRouter and a deny-by-default context packet.",
   "browserVerification": { "messages": 10, "checksPassed": 12, "checksFailed": 0, "authenticatedSupabase": false },
   "externalActionsPerformed": false,
   "remainingBlockers": ["Authenticated live Supabase opportunity-row verification", "Production/Netlify deployment verification", "Fresh comparable paper backtest evidence before selecting a trading strategy"]

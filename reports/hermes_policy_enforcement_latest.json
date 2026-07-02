@@ -1,0 +1,27 @@
+{
+  "reportType": "hermes_policy_enforcement",
+  "generatedAt": "2026-07-01T17:39:00-07:00",
+  "tests": { "files": 16, "passed": 488, "failed": 0 },
+  "policyCases": {
+    "traceSelectionIsolation": "passed",
+    "supabaseStatusModelForbidden": "passed",
+    "modelUsageFromTrace": "passed",
+    "tradingInventoryRetrieveFirst": "passed",
+    "revenueLongTermOnly": "passed",
+    "numberedSelectionFollowup": "passed",
+    "sourceThatNotSelection": "passed",
+    "approvalDraftNoExecution": "passed",
+    "tradeExecutionBlocked": "passed",
+    "diagnosticLeakSuppression": "passed"
+  },
+  "browser": {
+    "messages": 11,
+    "checks": 14,
+    "passed": 14,
+    "routes": ["explicit_domain_retrieval", "memory_followup", "memory_followup", "trace_source_meta", "trace_source_meta", "trace_source_meta", "explicit_domain_retrieval", "local_reasoning", "revenue_reasoning", "approval_action_prepare", "safety_gate"],
+    "forbiddenModelCalls": 0,
+    "diagnosticLeaks": 0,
+    "externalActions": 0
+  },
+  "remainingBlockers": ["authenticated Supabase browser verification", "production deployment verification", "fresh comparable trading backtests"]
+}

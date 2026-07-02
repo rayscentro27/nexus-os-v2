@@ -1,60 +1,42 @@
-import { detectActivationLevel, type ActivationDecision } from './hermesActivationLevels';
+import { routeHermesPriority } from './hermesPriorityRouter';
+import { buildContextPacket } from './hermesContextPacketBuilder';
+import { renderHermesAnswer, type HermesHandlerResult } from './hermesAnswerRenderer';
+import { isModelAllowed, isSupabaseAllowed, type RouteDecision } from './hermesRouteDecision';
 import { answerCapabilityQuestion, getCapabilityReport } from './hermesCapabilityStatus';
 import { buildLiveSupabaseContext } from './hermesLiveContext';
 import { hermesModelChat } from './hermesProviders';
 import { buildDailySummary, buildCeoDailySummary } from './hermesDailyActivityTranslator';
-import {
-  addConversationMessage, getConversationState, hasConversationMemory,
-  isFollowUpReference, resolveFollowUp, setLastListedItems, setLastRankedList,
-  setLastRecommendedItem, setLastSelectedItem, setLastSupabaseQueryResult, updateConversationContext, type ConversationItem,
-} from './hermesConversationState';
-import { answerRoutingTraceQuestion, isRoutingTraceQuestion, logRoutingTrace } from './hermesRoutingTrace';
-import { classifyHermesDomain } from './hermesDomainClassifier';
-import { evaluateTopicBoundary } from './hermesTopicBoundary';
-import { findRoutingInvariantViolations } from './hermesRoutingInvariants';
 import { answerConversation, classifyConversationIntent } from './hermesConversationBrain';
-import { answerHermesTraceQuestion, classifyTraceQuestion } from './hermesTraceQuestionHandler';
+import { answerHermesTraceQuestion } from './hermesTraceQuestionHandler';
 import { answerTradingQuestion } from './hermesTradingReasoner';
-import { answerRevenueStrategy, isRevenueStrategyQuestion } from './hermesRevenueReasoner';
+import { answerRevenueStrategy } from './hermesRevenueReasoner';
+import {
+  addConversationMessage, getConversationState, resolveFollowUp, setLastListedItems,
+  setLastRankedList, setLastRecommendedItem, setLastSelectedItem,
+  setLastSupabaseQueryResult, updateConversationContext, type ConversationItem,
+} from './hermesConversationState';
+import { getSelectionMemory, setLastTurnTraceMemory, touchSelectionMemory } from './hermesMemoryStores';
+import { logRoutingTrace } from './hermesRoutingTrace';
+import { reportRegistry } from '../data/reportRegistry.js';
+import { reasonFromRouteDecision } from './hermesReasoningEngine';
 
 export interface BrainPipelineInput {
-  message: string;
-  surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
-  currentRoute?: string;
-  currentPageContext?: Record<string, unknown> | null;
-  conversationHistory?: unknown[];
-  userSession?: unknown;
-  tenantId?: string;
-  // Legacy thin-wrapper aliases.
-  pageId?: string;
-  route?: string;
-  isBackgroundJob?: boolean;
+  message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
+  currentRoute?: string; currentPageContext?: Record<string, unknown> | null;
+  conversationHistory?: unknown[]; userSession?: unknown; tenantId?: string;
+  pageId?: string; route?: string; isBackgroundJob?: boolean;
 }
-
 export interface BrainPipelineResponse {
-  text: string;
-  answer: string;
-  activationLevel: number;
-  route: string;
-  sourceMode: string;
-  usedModel: boolean;
-  modelMetadata: Record<string, unknown>;
-  usedSupabase: boolean;
-  supabaseStatus: string;
-  resolvedEntities: ConversationItem[];
-  rememberedContext: boolean;
-  actionIntent: string | null;
-  approvalRequired: boolean;
-  safeNextActions: string[];
-  diagnostics: Record<string, unknown>;
-  // Compatibility fields used by existing surfaces/tests.
+  text: string; answer: string; activationLevel: number; route: string; routeDecision: RouteDecision;
+  sourceMode: string; usedModel: boolean; modelMetadata: Record<string, unknown>;
+  usedSupabase: boolean; supabaseStatus: string; resolvedEntities: ConversationItem[];
+  rememberedContext: boolean; actionIntent: string | null; approvalRequired: boolean;
+  safeNextActions: string[]; diagnostics: Record<string, any>;
   intent: { route: string; intent: string; confidence: 'high' | 'medium' | 'low'; reason: string };
   modelRoute: { route: string; reason: string; [key: string]: unknown };
-  reasoning: { decision: 'answer-locally' | 'answer-with-context' | 'route-to-model'; confidence: 'high' | 'medium' | 'low'; reasoning: string; clarificationQuestion?: string };
-  capabilityBadge: string;
-  confidence: 'high' | 'medium' | 'low';
-  source: 'local' | 'supabase' | 'model' | 'conversation-followup' | 'capability' | 'reasoning';
-  timestamp: string;
+  reasoning: { decision: 'answer-locally' | 'answer-with-context' | 'route-to-model'; confidence: 'high' | 'medium' | 'low'; reasoning: string };
+  capabilityBadge: string; confidence: 'high' | 'medium' | 'low';
+  source: 'local' | 'supabase' | 'model' | 'conversation-followup' | 'capability' | 'reasoning'; timestamp: string;
 }
 
 const OPPORTUNITIES: ConversationItem[] = [
@@ -64,199 +46,142 @@ const OPPORTUNITIES: ConversationItem[] = [
   { id: 'funding-prep', title: 'Funding Application Prep Sprint', type: 'opportunity', category: 'Apex', revenueRange: '$500–$1,500', status: 'service offer' },
 ];
 
-function implementationPlan(item: ConversationItem, assumed = false): string {
-  return `${assumed ? `I think you mean **${item.title}**. ` : ''}Here is the implementation plan for **${item.title}**:\n\n1. Define the promise, eligibility rules, deliverables, and exclusions.\n2. Build the intake and readiness scorecard using the existing GoClear/Apex workflow.\n3. Create the checkout and fulfillment checklist in test mode.\n4. Run five manual pilot reviews and capture objections and conversion data.\n5. Refine the offer, then prepare launch assets for Ray Review.\n\n**Next safe action:** create a draft Ray Review card containing this plan. No email, charge, publishing, or live execution occurs without explicit approval.${assumed ? ' If that is not the one, tell me.' : ''}`;
-}
+const result = (userAnswer: string, handler: string, sources: string[], selectedEntities: ConversationItem[] = [], nextActions: string[] = []): HermesHandlerResult => ({ userAnswer, internalTrace: handler, selectedEntities, sources, nextActions, safeFallbackAnswer: userAnswer });
+const recommendation = () => `For a business you can start within 30 days, I recommend **$97 Credit & Funding Readiness Review** first. It is inexpensive to launch, matches GoClear/Apex, and creates a path to the $297 assistant plan and Monthly Readiness Subscription.\n\n**Next safe action:** prepare the intake, scorecard, and a draft Ray Review card. Any checkout activation, customer contact, or charge remains approval-gated.`;
+const implementation = (item: ConversationItem) => `Here is the implementation plan for **${item.title}**:\n\n1. Define the promise, eligibility rules, deliverables, and exclusions.\n2. Build the intake and readiness scorecard.\n3. Create checkout and fulfillment in test mode.\n4. Run five manual pilots and capture conversion evidence.\n5. Prepare the refined plan for Ray Review.\n\nNo email, charge, publishing, or live execution occurs without explicit approval.`;
+const listOpportunities = (label: string) => `Business opportunities (${label}):\n\n${OPPORTUNITIES.map((item, index) => `${index + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}.`).join('\n')}`;
 
-function listAnswer(sourceLabel: string): string {
-  return `Business opportunities (${sourceLabel}):\n\n${OPPORTUNITIES.map((item, i) => `${i + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}.`).join('\n')}\n\nI stored this list for follow-up questions such as “which one,” “number 3,” or “pick one.”`;
-}
+async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof buildContextPacket>, message: string) {
+  const lower = message.toLowerCase();
+  let usedSupabase = false, usedModel = false, supabaseStatus = 'not_used';
+  let supabaseTables: string[] = [];
+  let source: BrainPipelineResponse['source'] = 'local';
+  let handler: HermesHandlerResult;
 
-function recommendationAnswer(): string {
-  return `For a business you can start within 30 days, I recommend **$97 Credit & Funding Readiness Review** first. It is inexpensive to launch, matches GoClear/Apex, and creates a natural path to the $297 assistant plan and Monthly Readiness Subscription.\n\n**Why:** the entry offer has the shortest fulfillment path and gives us real demand data before building recurring operations.\n\n**Next safe action:** prepare the intake, scorecard, and a draft Ray Review card. Any checkout activation, customer contact, or charge remains approval-gated.`;
-}
-
-function traceIntent(level: ActivationDecision): string {
-  return ['safety_gate', 'meta_status', 'supabase_retrieval', 'followup_resolution', 'local_reasoning', 'model_reasoning', 'approval_action'][level.level];
+  switch (decision.routeId) {
+    case 'safety_gate':
+      handler = result('I cannot execute that. Sending, publishing, charging, disputes, destructive data changes, schedulers, and live/funded trading are blocked or require explicit Ray approval through Ray Review. I can prepare a non-executed review draft.', 'safety_gate', ['safety_policy']); break;
+    case 'trace_source_meta':
+    case 'cost_model_usage_status':
+      handler = result(answerHermesTraceQuestion(message, packet.routingTrace, { routeDecision: decision }) || 'No prior routing record is available.', 'trace_question_handler', ['last_non_trace_route']); break;
+    case 'casual_identity':
+      handler = result(answerConversation(message, classifyConversationIntent(message)) || "I'm Hermes, the Nexus operating advisor.", 'casual_conversation', ['local_conversation']); break;
+    case 'capability_status':
+      handler = result(answerCapabilityQuestion(message) || getCapabilityReport().capabilities.map(item => `${item.name}: ${item.userFacing}`).join('\n'), 'capability_status', ['capability_registry']); source = 'capability'; break;
+    case 'process_settings_reports_status':
+      if (decision.domain === 'trading') { const trading = answerTradingQuestion(message, { routeDecision: decision }); handler = result(trading.text, trading.handler, [trading.source]); }
+      else if (decision.domain === 'reports' && decision.intent === 'inventory_question') { const reports = reportRegistry.filter(item => item.available).slice(0, 10); handler = result(`Available local reports:\n\n${reports.map((item, index) => `${index + 1}. **${item.title}** — ${item.category}; ${item.path}`).join('\n')}`, 'report_inventory', ['report_registry']); }
+      else if (/ceo version|ceo summary/.test(lower)) handler = result(buildCeoDailySummary('today'), 'ceo_summary', ['activity_journal']);
+      else if (/what did (?:you|we) do today|daily summary/.test(lower)) handler = result(buildDailySummary('today'), 'daily_summary', ['activity_journal']);
+      else handler = result(`Local ${decision.domain.replace(/_/g, ' ')} evidence is allowed for this status question. No model or selection memory was used.`, 'local_status', ['local_reports']);
+      break;
+    case 'approval_action_prepare': {
+      const item = packet.selectionMemory ? resolveFollowUp(message) : null;
+      if (item) touchSelectionMemory();
+      handler = result(`I prepared a draft Ray Review request${item ? ` for **${item.title}**` : ''}. It is not submitted or executed. Review the target, scope, and expected result before approving any state-changing action.`, 'approval_draft', ['selection_memory', 'approval_policy'], item ? [item] : []); break;
+    }
+    case 'explicit_domain_retrieval':
+      if (decision.domain === 'trading') {
+        const trading = answerTradingQuestion(message, { routeDecision: decision }); handler = result(trading.text, trading.handler, [trading.source]); source = 'reasoning';
+      } else if (decision.domain === 'reports') {
+        handler = result('Available local report groups include activation/operations, Ray Review, trading proof, Hermes routing, research, revenue, and safety audits. Open Reports for the indexed files and timestamps.', 'report_inventory', ['report_registry']);
+      } else if (isSupabaseAllowed(decision)) {
+        const live = await buildLiveSupabaseContext(message); usedSupabase = live.liveData; supabaseStatus = live.sourceType; supabaseTables = live.tablesQueried || [];
+        if (decision.domain === 'business_opportunity') {
+          handler = result(`${listOpportunities(live.liveData ? 'live query plus normalized offer context' : 'clearly labeled static fallback')}\n\n${live.text}`, live.liveData ? 'business_opportunity_inventory_live' : 'business_opportunity_inventory_fallback', live.liveData ? supabaseTables : ['static_offer_context']);
+          setLastListedItems(OPPORTUNITIES);
+        } else handler = result(live.text, live.liveData ? 'supabase_inventory' : 'inventory_unavailable', live.liveData ? supabaseTables : ['supabase_access_state']);
+        source = live.liveData ? 'supabase' : 'local';
+      } else handler = result(`I do not have verified ${decision.domain.replace(/_/g, ' ')} records in the allowed local source, so I cannot honestly list them.`, 'empty_inventory', ['local_reports']);
+      break;
+    case 'memory_followup': {
+      const item = packet.selectionMemory ? resolveFollowUp(message) : null;
+      if (/which one.*recommend|recommend one|pick one/.test(lower)) {
+        const ranked = getConversationState().lastListedItems.length ? getConversationState().lastListedItems : OPPORTUNITIES;
+        setLastRankedList(ranked); setLastRecommendedItem(ranked[0]); setLastSelectedItem(ranked[0]);
+        handler = result(recommendation(), 'selection_recommendation', ['selection_memory'], [ranked[0]]);
+      } else if (item) { setLastSelectedItem(item); touchSelectionMemory(); handler = result(implementation(item), 'selection_implementation', ['selection_memory'], [item]); }
+      else handler = result('The selection policy allowed a follow-up, but no stored context item matched. Name the item once and I will continue.', 'selection_not_resolved', ['selection_memory']);
+      source = 'conversation-followup'; break;
+    }
+    case 'revenue_reasoning': {
+      let liveNote: string | undefined;
+      if (isSupabaseAllowed(decision)) { const live = await buildLiveSupabaseContext(message); usedSupabase = live.liveData; supabaseStatus = live.sourceType; supabaseTables = live.tablesQueried || []; liveNote = live.liveData ? undefined : live.text.split('\n')[0]; }
+      const revenue = answerRevenueStrategy({ usedSupabase, supabaseTables, supabaseNote: liveNote, routeDecision: decision }); handler = result(revenue.text, revenue.handler, [revenue.source]); source = usedSupabase ? 'supabase' : 'reasoning'; break;
+    }
+    case 'local_reasoning':
+      if (decision.domain === 'trading') { const trading = answerTradingQuestion(message, { routeDecision: decision }); handler = result(trading.text, trading.handler, [trading.source]); }
+      else if (decision.domain === 'business_opportunity' || decision.domain === 'monetization') { handler = result(recommendation(), 'business_local_reasoning', ['long_term_business_context']); setLastRankedList(OPPORTUNITIES); setLastRecommendedItem(OPPORTUNITIES[0]); }
+      else handler = result(`I can reason from the allowed ${decision.domain.replace(/_/g, ' ')} context, but I need a concrete decision or entity to produce a useful plan.`, 'domain_local_reasoning', packet.longTermBusinessContext ? ['long_term_business_context'] : ['local_context']);
+      source = 'reasoning'; break;
+    case 'model_reasoning': {
+      if (!isModelAllowed(decision)) throw new Error('RouteDecision forbids model execution');
+      const model = await hermesModelChat(message, { pageSummary: String(packet.pageContext?.pageId || '') || undefined }); usedModel = model.source === 'model';
+      handler = result(model.text || 'The required model route did not return a verified answer.', usedModel ? 'model_reasoning' : 'model_unavailable', [model.source || 'model_unknown']); source = usedModel ? 'model' : 'local'; break;
+    }
+    default:
+      handler = result('I do not have enough current page, domain, record, or eligible selection context to answer that safely. Name the target once and I will continue.', 'fallback_clarification', ['none']);
+  }
+  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source };
 }
 
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
   const message = input.message.trim();
-  const lower = message.toLowerCase();
   const surface = input.surface || 'unknown';
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
-  const priorState = getConversationState();
-  const memoryAvailable = hasConversationMemory() || Boolean(input.conversationHistory?.length);
-  const pageAvailable = Boolean(page || input.currentPageContext);
-  const traceQuestion = classifyTraceQuestion(message);
-  const domain = classifyHermesDomain(message, page || null, priorState.lastTopic);
-  const boundary = evaluateTopicBoundary({
-    message, detectedDomain: domain.domain, previousTopic: priorState.lastTopic,
-    previousIntent: priorState.lastIntent, previousSelectedItem: priorState.lastSelectedItem,
-    previousRankedItems: priorState.lastRankedList, previousListedItems: priorState.lastListedItems,
-    currentPage: page || null, previousPage: priorState.lastPage,
-  });
-  const activation = detectActivationLevel(message, memoryAvailable, pageAvailable, {
-    detectedDomain: domain.domain, shouldUseMemory: boundary.shouldUsePriorMemory,
-    memoryRejectionReason: boundary.shouldUsePriorMemory ? null : boundary.reason,
-  });
-  const resolvedEntities: ConversationItem[] = [];
-  let text = '';
-  let source: BrainPipelineResponse['source'] = 'local';
-  let usedSupabase = false;
-  let usedModel = false;
-  let supabaseStatus = 'not_used';
-  let supabaseTables: string[] = [];
-  let answerBuilder = 'local';
-  let fallbackReason: string | null = null;
-  let confidence: BrainPipelineResponse['confidence'] = 'high';
-  const memoryCandidateFound = Boolean(priorState.lastSelectedItem || priorState.lastRecommendedItem || priorState.lastRankedList.length || priorState.lastListedItems.length);
-  let memoryUsed = false;
-  let diagnosticSuppressedForUser = false;
-  let traceTarget: 'last_answer' | 'current_question' | 'general_capability' = traceQuestion?.target || 'current_question';
+  const state = getConversationState();
+  const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory() });
+  const packet = buildContextPacket({ routeDecision, message, session: input.userSession, pageContext: input.currentPageContext || null, conversationState: state });
+  const executed = await executeRoute(routeDecision, packet, message);
+  const rendered = renderHermesAnswer(executed.handler, routeDecision);
+  const text = rendered.text;
+  const resolvedEntities = executed.handler.selectedEntities;
+  const selectionOrTraceMemoryUsed = Boolean(packet.lastTrace || packet.selectionMemory);
+  const anyMemoryUsed = selectionOrTraceMemoryUsed || Boolean(packet.longTermBusinessContext);
+  const memoryRejected = Boolean(getSelectionMemory().lastList.length) && !packet.selectionMemory && !packet.lastTrace;
+  const modelRoute = executed.usedModel ? 'primary_model' : routeDecision.modelPolicy === 'forbidden' ? 'no_model' : 'local_reasoning';
+  const reasoningPlan = reasonFromRouteDecision(routeDecision, packet.summary);
 
-  // Priority is safety, then trace/meta, before any memory candidate is examined.
-  if (activation.level === 0) {
-    text = `I cannot execute that directly. Sending, publishing, trading, charging, disputes, destructive data changes, and scheduler changes require explicit approval through Ray Review.\n\nI can prepare a draft plan or review card without performing the action.`;
-    answerBuilder = 'safety_gate';
-  } else if (traceQuestion) {
-    text = answerHermesTraceQuestion(message) || 'I do not have a relevant routing trace for that question.';
-    source = 'local'; answerBuilder = 'trace_question_handler';
-  } else if (isFollowUpReference(message) && !memoryAvailable) {
-    text = 'I do not have conversation context for that reference yet. Name the item or list the options once, and I will continue without asking again.';
-    source = 'local'; answerBuilder = 'missing_followup_context'; confidence = 'low';
-  } else if (isRoutingTraceQuestion(message)) {
-    text = answerRoutingTraceQuestion(message) || 'No routing trace is available.';
-    source = 'local'; answerBuilder = 'routing_trace';
-  } else if (domain.domain === 'trading') {
-    const trading = answerTradingQuestion(message);
-    text = trading.text; source = activation.level === 1 ? 'local' : 'reasoning'; answerBuilder = trading.handler; confidence = trading.confidence;
-  } else if (isRevenueStrategyQuestion(message)) {
-    const live = await buildLiveSupabaseContext(message);
-    usedSupabase = live.liveData;
-    supabaseStatus = live.sourceType;
-    supabaseTables = live.tablesQueried || [];
-    const revenue = answerRevenueStrategy({ usedSupabase, supabaseTables, supabaseNote: live.liveData ? undefined : live.text.split('\n')[0] });
-    text = revenue.text; source = usedSupabase ? 'supabase' : 'reasoning'; answerBuilder = revenue.handler;
-  } else if (activation.level === 1) {
-    const capability = answerCapabilityQuestion(message);
-    if (capability) { text = capability; source = 'capability'; answerBuilder = 'capability_status'; }
-    else if (domain.domain === 'casual_identity') {
-      text = answerConversation(message, classifyConversationIntent(message)) || "I'm Hermes, the Nexus operating advisor. I don't have personal experiences, but I can answer conversational questions directly without pulling business memory into them.";
-      answerBuilder = 'casual_conversation';
-    }
-    else if (/ceo version|ceo summary/.test(lower)) { text = buildCeoDailySummary('today'); answerBuilder = 'ceo_daily_summary'; }
-    else if (/what did (you|we) do today|daily summary/.test(lower)) { text = buildDailySummary('today'); answerBuilder = 'daily_summary'; }
-    else if (/trading/.test(lower)) { text = 'Trading is paper/demo only. No live broker execution is enabled, and any real trade remains blocked pending explicit approval.'; answerBuilder = 'section_status'; }
-    else if (domain.domain === 'research_youtube') { text = 'YouTube research is not proven running in this session. Scripts may exist, but I have no current process or Supabase-write receipt to claim active execution.'; answerBuilder = 'research_status'; }
-    else if (domain.domain === 'settings') { text = 'Settings are answered from configured capability state. Web search remains unconfigured unless its runtime flag and deployed function are verified; risky execution remains approval-controlled.'; answerBuilder = 'settings_status'; }
-    else if (domain.domain === 'reports') { text = 'Hermes can use the repository reports as local evidence. Ask for a report category or date and I will summarize the matching local report without calling a model.'; answerBuilder = 'reports_status'; }
-    else if (domain.domain === 'tools_cli') { text = 'I can explain available repository tools and safe commands, but I do not expose arbitrary shell execution through chat.'; answerBuilder = 'tools_status'; }
-    else if (domain.domain === 'system_health') { text = 'I can summarize recorded system-health context, but I will not claim a live process state without a current runtime check.'; answerBuilder = 'system_health_status'; }
-    else { text = `This is a local status/process answer. Activation Level 1 uses no model and no database unless the question explicitly requires live records. Current capability: ${getCapabilityReport().badgeText}.`; answerBuilder = 'local_status'; }
-  } else if (activation.level === 2) {
-    const live = await buildLiveSupabaseContext(message);
-    usedSupabase = live.liveData;
-    supabaseStatus = live.sourceType;
-    supabaseTables = live.tablesQueried || [];
-    if (live.liveData) {
-      text = /business opportunit/.test(lower) ? `${listAnswer('live Supabase retrieval')}\n\n${live.text}` : live.text;
-      source = 'supabase'; answerBuilder = 'live_supabase';
-      setLastSupabaseQueryResult(supabaseTables[0] || 'unknown', [], message);
-    } else {
-      text = /business opportunit/.test(lower) ? `${listAnswer('clearly labeled local fallback')}\n\n${live.text}` : live.text;
-      source = 'local'; answerBuilder = 'supabase_safe_fallback'; fallbackReason = live.source;
-    }
-    if (/business opportunit/.test(lower)) setLastListedItems(OPPORTUNITIES);
-  } else if (activation.level === 3) {
-    memoryUsed = boundary.shouldUsePriorMemory;
-    let item = resolveFollowUp(message);
-    const state = getConversationState();
-    if (/which one.*recommend|recommend one/.test(lower)) {
-      const ranked = state.lastListedItems.length ? [...state.lastListedItems] : [...OPPORTUNITIES];
-      setLastRankedList(ranked); setLastRecommendedItem(ranked[0]); item = ranked[0];
-      text = recommendationAnswer();
-    } else if (/pick one|choose one/.test(lower)) {
-      item = state.lastRecommendedItem || state.lastRankedList[0] || state.lastListedItems[0] || OPPORTUNITIES[0];
-      setLastSelectedItem(item);
-      text = `I picked **${item.title}** for review because it has the best near-term revenue-to-effort ratio.\n\n${implementationPlan(item)}`;
-    } else if (/how do (we|i) implement|monthly readiness subscription|^the monthly/.test(lower)) {
-      item = item || state.lastReferencedItem || OPPORTUNITIES.find(value => lower.includes('monthly') && value.id === 'monthly-readiness') || state.lastSelectedItem || state.lastRecommendedItem;
-      text = item ? implementationPlan(item, !resolveFollowUp(message)) : 'I do not have a prior item to resolve. Name the offer once and I will build its implementation plan.';
-    } else if (item) {
-      text = `You are referring to **${item.title}**. ${implementationPlan(item)}`;
-    } else {
-      text = 'I do not have a prior item to resolve. Name the offer or list the options once, and I will continue from there.';
-      confidence = 'low';
-    }
-    if (item) { resolvedEntities.push(item); setLastSelectedItem(item); }
-    source = 'conversation-followup'; answerBuilder = 'conversation_memory';
-  } else if (activation.level === 4) {
-    if (domain.domain === 'research_youtube') {
-      text = 'For research, first verify a current source or run receipt, then score relevance, evidence quality, and monetization value. I will not claim YouTube polling or Supabase writes without runtime proof.';
-      answerBuilder = 'research_reasoning';
-    } else if (domain.domain === 'credit_funding') {
-      text = 'For credit/funding, use the readiness review as the entry assessment, then route qualified cases toward the assistant plan or a funding-prep sprint. Any dispute submission or client outreach remains approval-controlled.';
-      answerBuilder = 'credit_funding_reasoning';
-    } else if (domain.domain === 'business_opportunity' || domain.domain === 'monetization') {
-      text = recommendationAnswer();
-      setLastRankedList(OPPORTUNITIES); setLastRecommendedItem(OPPORTUNITIES[0]);
-    } else if (/implement/.test(lower) && boundary.shouldUsePriorMemory) {
-      const item = resolveFollowUp(message);
-      if (item) { memoryUsed = true; resolvedEntities.push(item); text = implementationPlan(item); }
-      else { text = 'I have an implementation request but no eligible matching item. Name the target once and I will build the plan.'; confidence = 'low'; }
-    } else {
-      text = 'I can answer this locally, but the current message does not identify a domain, entity, or decision target. Name the target once and I will answer without pulling in an unrelated recommendation.';
-      answerBuilder = 'safe_unknown_domain_fallback';
-      diagnosticSuppressedForUser = true;
-    }
-    source = 'reasoning';
-  } else if (activation.level === 5) {
-    const model = await hermesModelChat(message, { pageSummary: page || undefined });
-    if (model.source === 'model' && model.text) { text = model.text; usedModel = true; source = 'model'; answerBuilder = 'model'; }
-    else { text = `I could not verify a live model response, so I did not claim one. ${recommendationAnswer()}`; fallbackReason = model.source || 'model_unavailable'; source = 'reasoning'; answerBuilder = 'model_safe_fallback'; }
-  } else {
-    const item = boundary.shouldUsePriorMemory ? resolveFollowUp(message) : null;
-    memoryUsed = Boolean(item);
-    text = `I prepared a draft Ray Review request${item ? ` for **${item.title}**` : ''}. It is not submitted or executed. Review the target, scope, and expected result before approving any state-changing action.`;
-    if (item) resolvedEntities.push(item);
-    source = 'local'; answerBuilder = 'approval_draft';
+  addConversationMessage('user', message); addConversationMessage('assistant', text);
+  if (routeDecision.routeId !== 'trace_source_meta' && routeDecision.routeId !== 'cost_model_usage_status') {
+    updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
+    setLastTurnTraceMemory({ routeLevel: routeDecision.activationLevel, routeName: routeDecision.routeId, domain: routeDecision.domain, usedSupabase: executed.usedSupabase, usedStaticFallback: routeDecision.allowedContext.staticFallback && !executed.usedSupabase, usedModel: executed.usedModel, modelName: null, usedMemory: anyMemoryUsed, sources: executed.handler.sources, costEstimate: null, decisionReason: routeDecision.reason, blockedBySafety: routeDecision.actionPolicy === 'blocked' });
   }
+  if (executed.usedSupabase && executed.supabaseTables[0]) setLastSupabaseQueryResult(executed.supabaseTables[0], [], message);
 
-  addConversationMessage('user', message);
-  addConversationMessage('assistant', text);
-  if (!traceQuestion) updateConversationContext({ lastIntent: traceIntent(activation), lastTopic: boundary.detectedTopic, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
-  const modelRoute = usedModel ? activation.modelRoute : (activation.level === 5 ? 'no_model' : activation.modelRoute);
-  const memoryRejected = memoryCandidateFound && !memoryUsed && !boundary.shouldUsePriorMemory;
-  const invariantViolations = findRoutingInvariantViolations({ domain: domain.domain, boundary, usedMemory: memoryUsed, usedSupabase, usedModel });
   logRoutingTrace({
-    message, surface, page: page || null, route: activation.route, activationLevel: activation.level,
-    activationLevelName: activation.levelName, intent: traceIntent(activation), sourceDecision: source,
-    usedSupabase, supabaseTables, usedModel, modelRoute, usedMemory: memoryUsed,
-    selectedEntity: resolvedEntities[0]?.title || null, safetyGate: activation.level === 0,
-    answerBuilder, fallbackReason, correctnessHint: usedModel || usedSupabase ? 'verified by runtime result' : 'deterministic local route', confidence,
-    detectedDomain: domain.domain, previousTopic: priorState.lastTopic, detectedTopic: boundary.detectedTopic,
-    topicChanged: boundary.isNewTopic, memoryCandidateFound, memoryUsed,
-    memoryRejected, memoryRejectionReason: memoryRejected ? boundary.reason : null,
-    domainOverrideApplied: boundary.domainOverrideApplied, casualOverrideApplied: boundary.casualOverrideApplied,
-    invariantViolations,
-    questionType: traceQuestion ? 'trace_meta' : activation.level === 0 || activation.level === 6 ? 'action' : domain.domain === 'casual_identity' ? 'casual' : activation.level === 1 ? 'status' : 'domain_reasoning',
-    traceTarget, finalAnswerHandler: answerBuilder, diagnosticOnly: Boolean(traceQuestion),
-    diagnosticSuppressedForUser, domainOverrideReason: boundary.domainOverrideApplied ? boundary.reason : null,
+    message, surface, page: page || null, route: routeDecision.routeId, activationLevel: routeDecision.activationLevel,
+    activationLevelName: `Level ${routeDecision.activationLevel}`, intent: routeDecision.intent, sourceDecision: executed.source,
+    usedSupabase: executed.usedSupabase, supabaseTables: executed.supabaseTables, usedModel: executed.usedModel, modelRoute,
+    usedMemory: anyMemoryUsed, selectedEntity: resolvedEntities[0]?.title || null, safetyGate: routeDecision.actionPolicy === 'blocked',
+    answerBuilder: executed.handler.internalTrace, fallbackReason: null, correctnessHint: routeDecision.reason,
+    confidence: routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low',
+    detectedDomain: routeDecision.domain, previousTopic: state.lastTopic, detectedTopic: routeDecision.domain,
+    topicChanged: routeDecision.domain !== state.lastTopic, memoryCandidateFound: Boolean(getSelectionMemory().lastList.length), memoryUsed: anyMemoryUsed,
+    memoryRejected, memoryRejectionReason: packet.memoryEligibility.reason,
+    domainOverrideApplied: routeDecision.routeId === 'explicit_domain_retrieval', casualOverrideApplied: routeDecision.routeId === 'casual_identity', invariantViolations: [],
+    questionType: routeDecision.routeId === 'trace_source_meta' || routeDecision.routeId === 'cost_model_usage_status' ? 'trace_meta' : routeDecision.actionPolicy !== 'none' ? 'action' : routeDecision.routeId === 'casual_identity' ? 'casual' : routeDecision.activationLevel === 1 ? 'status' : 'domain_reasoning',
+    traceTarget: routeDecision.memoryPolicy === 'last_trace_only' ? 'last_answer' : 'current_question', finalAnswerHandler: executed.handler.internalTrace,
+    diagnosticOnly: routeDecision.diagnosticsPolicy !== 'hidden', diagnosticSuppressedForUser: rendered.diagnosticSuppressed,
+    domainOverrideReason: routeDecision.reason,
+    routeDecision, contextPacketSummary: packet.summary, memoryPolicyApplied: routeDecision.memoryPolicy,
+    retrievalPolicyApplied: routeDecision.retrievalPolicy, modelPolicyApplied: routeDecision.modelPolicy,
+    diagnosticsPolicyApplied: routeDecision.diagnosticsPolicy, actionPolicyApplied: routeDecision.actionPolicy,
+    blockedContext: routeDecision.blockedContext, allowedContext: routeDecision.allowedContext,
+    handlerResultSummary: { handler: executed.handler.internalTrace, sources: executed.handler.sources, selectedCount: resolvedEntities.length },
   });
 
-  const decision = usedModel ? 'route-to-model' : (usedSupabase || activation.level === 3 || activation.level === 4 ? 'answer-with-context' : 'answer-locally');
+  const confidence = routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low';
   return {
-    text, answer: text, activationLevel: activation.level, route: activation.route, sourceMode: source,
-    usedModel, modelMetadata: { route: modelRoute }, usedSupabase, supabaseStatus, resolvedEntities,
-    rememberedContext: memoryAvailable || activation.level === 3, actionIntent: activation.level === 0 || activation.level === 6 ? message : null,
-    approvalRequired: activation.level === 0 || activation.level === 6,
-    safeNextActions: ['Prepare a draft', 'Review in Ray Review', 'Execute only after explicit approval'],
-    diagnostics: { activation, answerBuilder, fallbackReason, supabaseTables, domain, boundary, memoryCandidateFound, memoryUsed, memoryRejected, invariantViolations, traceQuestion, diagnosticSuppressedForUser },
-    intent: { route: activation.route, intent: traceIntent(activation), confidence, reason: activation.reason },
-    modelRoute: { route: modelRoute, reason: activation.reason },
-    reasoning: { decision, confidence, reasoning: activation.reason }, capabilityBadge: getCapabilityReport().badgeText,
-    confidence, source, timestamp: new Date().toISOString(),
+    text, answer: text, activationLevel: routeDecision.activationLevel, route: routeDecision.routeId, routeDecision,
+    sourceMode: executed.source, usedModel: executed.usedModel, modelMetadata: { route: modelRoute },
+    usedSupabase: executed.usedSupabase, supabaseStatus: executed.supabaseStatus, resolvedEntities,
+    rememberedContext: anyMemoryUsed, actionIntent: routeDecision.actionPolicy !== 'none' ? message : null,
+    approvalRequired: routeDecision.actionPolicy === 'approval_required', safeNextActions: executed.handler.nextActions,
+    diagnostics: { routeDecision, contextPacketSummary: packet.summary, answerBuilder: executed.handler.internalTrace, domain: { domain: routeDecision.domain }, memoryUsed: selectionOrTraceMemoryUsed, longTermMemoryUsed: Boolean(packet.longTermBusinessContext), memoryRejected, diagnosticSuppressedForUser: rendered.diagnosticSuppressed },
+    intent: { route: routeDecision.routeId, intent: routeDecision.intent, confidence, reason: routeDecision.reason },
+    modelRoute: { route: modelRoute, reason: routeDecision.reason }, reasoning: { decision: reasoningPlan.decision === 'route-to-model' ? 'route-to-model' : reasoningPlan.decision === 'answer-with-context' ? 'answer-with-context' : 'answer-locally', confidence, reasoning: reasoningPlan.reasoning },
+    capabilityBadge: getCapabilityReport().badgeText, confidence, source: executed.source, timestamp: new Date().toISOString(),
   };
 }
 

@@ -1,0 +1,17 @@
+{
+  "reportType": "hermes_route_decision_contract",
+  "generatedAt": "2026-07-01T17:39:00-07:00",
+  "schema": {
+    "activationLevel": "0|1|2|3|4|5|6",
+    "memoryPolicy": ["none", "last_trace_only", "selection_only", "long_term_allowed", "selection_and_long_term"],
+    "retrievalPolicy": ["none", "supabase_first", "local_reports", "local_reports_then_supabase", "supabase_then_static_fallback", "static_fallback_allowed"],
+    "modelPolicy": ["forbidden", "allowed_if_needed", "required"],
+    "diagnosticsPolicy": ["hidden", "show_summary", "show_full_trace"],
+    "actionPolicy": ["none", "approval_required", "blocked"]
+  },
+  "priorityRouter": ["safety_gate", "trace_source_meta", "cost_model_usage_status", "casual_identity", "capability_status", "process_settings_reports_status", "approval_action_prepare", "explicit_domain_retrieval", "memory_followup", "revenue_reasoning", "local_reasoning", "model_reasoning", "fallback_clarification"],
+  "contextEnforcement": "Context packets attach only RouteDecision.allowedContext. Supabase/model calls occur only inside routes whose policy permits them.",
+  "memoryStores": ["lastTurnTraceMemory", "selectionMemory", "longTermBusinessContext"],
+  "integrityChecks": ["forbidden model cannot be allowed", "retrieval none cannot retrieve", "memory none cannot attach memory", "last_trace_only cannot attach selection/long-term memory", "blocked actions require Level 0", "hidden diagnostics cannot be attached"],
+  "status": "implemented"
+}

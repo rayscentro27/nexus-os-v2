@@ -1,4 +1,5 @@
 import { classifyHermesDomain, type HermesDomain } from './hermesDomainClassifier';
+import type { RouteDecision } from './hermesRouteDecision';
 
 /**
  * Hermes Activation Levels — 7-level system that determines how a message is processed.
@@ -274,3 +275,16 @@ export function shouldUseSupabaseForLevel(level: ActivationLevel): boolean { ret
 export function isStatusLevel(level: ActivationLevel): boolean { return level === 1; }
 export function isFollowUpLevel(level: ActivationLevel): boolean { return level === 3; }
 export function isSafetyLevel(level: ActivationLevel): boolean { return level === 0; }
+
+/** Compatibility adapter: the priority router's RouteDecision is now authoritative. */
+export function activationFromRouteDecision(decision: RouteDecision): ActivationDecision {
+  return {
+    level: decision.activationLevel,
+    levelName: HERMES_ACTIVATION_LEVELS.find(item => item.level === decision.activationLevel)?.name || `Level ${decision.activationLevel}`,
+    trigger: decision.routeId,
+    route: decision.routeId,
+    modelRoute: decision.modelPolicy === 'required' ? 'primary_model' : decision.modelPolicy === 'allowed_if_needed' ? 'local_reasoning' : decision.actionPolicy === 'blocked' ? 'blocked_or_gated' : 'no_model',
+    source: decision.retrievalPolicy,
+    reason: decision.reason,
+  };
+}

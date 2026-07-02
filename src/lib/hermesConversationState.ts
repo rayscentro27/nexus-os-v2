@@ -1,3 +1,5 @@
+import { resetHermesMemoryStores, updateSelectionMemory } from './hermesMemoryStores';
+
 /**
  * Hermes Conversation State — session-scoped memory for follow-up resolution.
  *
@@ -73,6 +75,7 @@ export function resetConversationState(): void {
     lastReferencedItem: null,
     lastIntent: null, lastTopic: null, lastPage: null, lastActionPlan: null, lastQuestion: null, lastAnswerSummary: null,
   };
+  resetHermesMemoryStores();
 }
 
 /** Add a user message to history. */
@@ -100,6 +103,7 @@ export function setLastListedItems(items: ConversationItem[]): void {
   conversationState.lastListedItems = items;
   // Also clear stale rank/recommend when new list arrives
   conversationState.lastRankedList = items;
+  updateSelectionMemory({ lastList: items, lastRankedList: items, activeDomain: items[0]?.type === 'opportunity' ? 'business_opportunity' : conversationState.lastTopic });
 }
 
 /** Get the last listed items. */
@@ -110,6 +114,7 @@ export function getLastListedItems(): ConversationItem[] {
 /** Store a ranked list (when Hermes sorted/recommended). */
 export function setLastRankedList(items: ConversationItem[]): void {
   conversationState.lastRankedList = items;
+  updateSelectionMemory({ lastRankedList: items });
 }
 
 /** Get the ranked list. */
@@ -120,12 +125,14 @@ export function getLastRankedList(): ConversationItem[] {
 /** Set the last recommended item. */
 export function setLastRecommendedItem(item: ConversationItem): void {
   conversationState.lastRecommendedItem = item;
+  updateSelectionMemory({ lastRecommendation: item, activeDomain: item.type === 'opportunity' ? 'business_opportunity' : conversationState.lastTopic });
 }
 
 /** Set the last selected item (user clicked something). */
 export function setLastSelectedItem(item: ConversationItem): void {
   conversationState.lastSelectedItem = item;
   conversationState.lastReferencedItem = item;
+  updateSelectionMemory({ lastSelectedItem: item, activeDomain: item.type === 'opportunity' ? 'business_opportunity' : conversationState.lastTopic, lastUsedAt: new Date().toISOString() });
 }
 
 /** Set the last referenced item (resolved from "this", "that", "number 3"). */

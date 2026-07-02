@@ -1,7 +1,10 @@
+import type { RouteDecision } from './hermesRouteDecision';
+
 export interface RevenueReasoningContext {
   usedSupabase: boolean;
   supabaseTables?: string[];
   supabaseNote?: string;
+  routeDecision?: RouteDecision;
 }
 
 export function isRevenueStrategyQuestion(message: string): boolean {
@@ -10,6 +13,7 @@ export function isRevenueStrategyQuestion(message: string): boolean {
 }
 
 export function answerRevenueStrategy(context: RevenueReasoningContext): { text: string; handler: string; source: string } {
+  if (context.usedSupabase && context.routeDecision && !context.routeDecision.allowedContext.supabase) throw new Error('Revenue reasoner received forbidden Supabase context');
   const sourceNote = context.usedSupabase
     ? `Authenticated reads succeeded for ${context.supabaseTables?.join(', ') || 'the opportunity tables'}, but the revenue math below still uses explicit offer-ladder assumptions because normalized unit economics were not returned to this reasoner.`
     : `No authenticated live opportunity rows were available for this answer, so these are explicit planning assumptions based on the known GoClear/Apex offer ladder.${context.supabaseNote ? ` ${context.supabaseNote}` : ''}`;

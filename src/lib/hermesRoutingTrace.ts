@@ -1,3 +1,5 @@
+import type { RouteDecision } from './hermesRouteDecision';
+
 /**
  * Hermes Routing Trace — logs every routing decision for debugging.
  *
@@ -45,6 +47,16 @@ export interface RoutingTraceEntry {
   diagnosticOnly: boolean;
   diagnosticSuppressedForUser: boolean;
   domainOverrideReason: string | null;
+  routeDecision: RouteDecision | null;
+  contextPacketSummary: Record<string, unknown>;
+  memoryPolicyApplied: string;
+  retrievalPolicyApplied: string;
+  modelPolicyApplied: string;
+  diagnosticsPolicyApplied: string;
+  actionPolicyApplied: string;
+  blockedContext: string[];
+  allowedContext: Record<string, boolean>;
+  handlerResultSummary: Record<string, unknown>;
   confidence: 'high' | 'medium' | 'low';
 }
 
@@ -60,7 +72,7 @@ function safe(): Storage | null {
 }
 
 /** Record a routing trace entry. */
-type NewMemoryTraceFields = 'detectedDomain' | 'previousTopic' | 'detectedTopic' | 'topicChanged' | 'memoryCandidateFound' | 'memoryUsed' | 'memoryRejected' | 'memoryRejectionReason' | 'domainOverrideApplied' | 'casualOverrideApplied' | 'invariantViolations' | 'questionType' | 'traceTarget' | 'finalAnswerHandler' | 'diagnosticOnly' | 'diagnosticSuppressedForUser' | 'domainOverrideReason';
+type NewMemoryTraceFields = 'detectedDomain' | 'previousTopic' | 'detectedTopic' | 'topicChanged' | 'memoryCandidateFound' | 'memoryUsed' | 'memoryRejected' | 'memoryRejectionReason' | 'domainOverrideApplied' | 'casualOverrideApplied' | 'invariantViolations' | 'questionType' | 'traceTarget' | 'finalAnswerHandler' | 'diagnosticOnly' | 'diagnosticSuppressedForUser' | 'domainOverrideReason' | 'routeDecision' | 'contextPacketSummary' | 'memoryPolicyApplied' | 'retrievalPolicyApplied' | 'modelPolicyApplied' | 'diagnosticsPolicyApplied' | 'actionPolicyApplied' | 'blockedContext' | 'allowedContext' | 'handlerResultSummary';
 type RoutingTraceInput = Omit<RoutingTraceEntry, 'id' | 'timestamp' | NewMemoryTraceFields> & Partial<Pick<RoutingTraceEntry, NewMemoryTraceFields>>;
 
 export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
@@ -71,6 +83,9 @@ export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
     invariantViolations: [],
     questionType: 'normal', traceTarget: 'current_question', finalAnswerHandler: entry.answerBuilder,
     diagnosticOnly: false, diagnosticSuppressedForUser: false, domainOverrideReason: null,
+    routeDecision: null, contextPacketSummary: {}, memoryPolicyApplied: 'unknown', retrievalPolicyApplied: 'unknown',
+    modelPolicyApplied: 'unknown', diagnosticsPolicyApplied: 'unknown', actionPolicyApplied: 'unknown',
+    blockedContext: [], allowedContext: {}, handlerResultSummary: {},
     ...entry,
     message: redactAndTruncate(entry.message),
     id: `trace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

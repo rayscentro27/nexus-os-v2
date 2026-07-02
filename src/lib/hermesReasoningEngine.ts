@@ -11,6 +11,7 @@
  */
 
 import { getLastListedItems, getLastRankedList, getLastReferencedItem, getLastSupabaseQueryResult } from './hermesConversationState';
+import type { RouteDecision } from './hermesRouteDecision';
 
 export type ReasoningDecision = 'answer-locally' | 'answer-with-context' | 'ask-clarification' | 'route-to-model';
 
@@ -259,4 +260,17 @@ function buildClarificationQuestion(message: string): string {
   }
 
   return 'I want to give you a useful answer, not a generic one. Can you tell me which specific page, section, or data set you are asking about?';
+}
+
+/** RouteDecision policy adapter used by the shared brain pipeline. */
+export function reasonFromRouteDecision(decision: RouteDecision, contextSummary: Record<string, unknown>): ReasoningPlan {
+  if (decision.modelPolicy === 'required') return { decision: 'route-to-model', confidence: 'high', reasoning: decision.reason, contextUsed: Object.keys(contextSummary).filter(key => Boolean(contextSummary[key])) };
+  if (decision.activationLevel >= 2) return {
+    decision: 'answer-with-context', confidence: decision.confidence >= .8 ? 'high' : 'medium', reasoning: decision.reason,
+    contextUsed: Object.keys(contextSummary).filter(key => Boolean(contextSummary[key])),
+    memoryUsed: Boolean(contextSummary.selectionMemoryAttached || contextSummary.longTermMemoryAttached || contextSummary.lastTraceAttached),
+    memoryRejected: !contextSummary.selectionMemoryAttached && decision.memoryPolicy === 'none',
+    memoryRejectionReason: decision.memoryPolicy === 'none' ? 'RouteDecision forbids selection memory.' : null,
+  };
+  return { decision: 'answer-locally', confidence: decision.confidence >= .8 ? 'high' : 'medium', reasoning: decision.reason, contextUsed: Object.keys(contextSummary).filter(key => Boolean(contextSummary[key])) };
 }

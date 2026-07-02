@@ -1,5 +1,6 @@
 import { getHermesPageRuntimeContext } from './hermesContextBridge';
 import tradingProof from '../../reports/trading_lab_proof_latest.json';
+import type { RouteDecision } from './hermesRouteDecision';
 
 export type TradingQuestionType = 'list' | 'recommend' | 'last_test' | 'status' | 'execution' | 'general';
 
@@ -17,8 +18,9 @@ function strategies() {
   return getHermesPageRuntimeContext('trading').visibleItems.filter(item => item.type === 'strategy');
 }
 
-export function answerTradingQuestion(message: string): { text: string; handler: string; source: string; confidence: 'high' | 'medium' } {
+export function answerTradingQuestion(message: string, policy?: { routeDecision: RouteDecision }): { text: string; handler: string; source: string; confidence: 'high' | 'medium' } {
   const type = classifyTradingQuestion(message);
+  if (policy && type === 'list' && !policy.routeDecision.allowedContext.localReports) return { text: 'I do not have verified Trading Lab strategy records in the allowed source, so I cannot honestly list or recommend a specific strategy yet.', handler: 'trading_inventory_policy_block', source: 'route_decision', confidence: 'high' };
   const known = strategies();
   if (type === 'execution') return { text: 'I cannot place or execute a trade. Trading remains paper/demo only, and live or funded broker execution is blocked.', handler: 'trading_safety_block', source: 'safety_policy', confidence: 'high' };
   if (type === 'list') {
