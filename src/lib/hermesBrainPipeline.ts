@@ -184,7 +184,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const page = String(input.pageId || input.currentPageContext?.pageId || '');
   const state = getConversationState();
   const routeDecision = routeHermesPriority({ message, currentPage: page || null, previousDomain: state.lastTopic, selectionMemory: getSelectionMemory() });
-  const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning', 'opportunity_aware_recommendation'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
+  const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning', 'opportunity_aware_recommendation', 'memory_followup'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
   const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
   if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
   if (!['trace_source_meta', 'cost_model_usage_status', 'fallback_continuation', 'fallback_clarification'].includes(routeDecision.routeId)) clearFallbackContinuity();
@@ -200,16 +200,19 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const reasoningPlan = reasonFromRouteDecision(routeDecision, packet.summary);
 
   addConversationMessage('user', message); addConversationMessage('assistant', text);
-  if (advisoryProducingRoute) {
+  if (advisoryProducingRoute && executed.handler.internalTrace !== 'selection_not_resolved') {
     const revenue = routeDecision.domain === 'monetization';
     const opportunity = executed.opportunityAdvisory;
+    const selectedPlan = ['selection_implementation', 'selection_recommendation'].includes(executed.handler.internalTrace) ? executed.handler.selectedEntities[0] : null;
+    const selectedTitle = selectedPlan?.title || '';
+    const monthlyReadiness = /monthly readiness subscription/i.test(selectedTitle);
     setAdvisoryContinuity({
-      lastAdvisoryTopic: routeDecision.intent,
-      lastAdvisoryDomain: routeDecision.domain,
-      lastAdvisorySummary: opportunity ? `The ${opportunity.topic} is best tested as a low-cost information, comparison, referral, or affiliate workflow before hands-on fulfillment.` : revenue ? 'The 30-day path can work if we keep the offer simple, close $97 readiness reviews quickly, and upsell only when the review establishes a clear next step.' : text.slice(0, 500),
-      lastAdvisoryAssumptions: opportunity?.assumptions || (revenue ? ['manual outreach', 'fast readiness-review fulfillment', 'consistent follow-up', 'disciplined upsells'] : ['a defined scope', 'clear priorities', 'reviewed implementation steps']),
-      lastAdvisoryRecommendation: opportunity?.recommendation || (revenue ? 'launch the $97 readiness review and validate the first ten sales before scaling.' : 'define the smallest useful first phase and prepare it for review.'),
-      lastAdvisoryRisks: opportunity?.risks || (revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity']),
+      lastAdvisoryTopic: selectedTitle || routeDecision.intent,
+      lastAdvisoryDomain: monthlyReadiness ? 'monetization' : routeDecision.domain,
+      lastAdvisorySummary: selectedPlan ? `The implementation plan for ${selectedTitle} defines the offer, intake, fulfillment, manual pilots, and review gate.` : opportunity ? `The ${opportunity.topic} is best tested as a low-cost information, comparison, referral, or affiliate workflow before hands-on fulfillment.` : revenue ? 'The 30-day path can work if we keep the offer simple, close $97 readiness reviews quickly, and upsell only when the review establishes a clear next step.' : text.slice(0, 500),
+      lastAdvisoryAssumptions: selectedPlan ? ['a clear recurring promise', 'manual pilot delivery', 'visible customer progress', 'measured conversion and retention'] : opportunity?.assumptions || (revenue ? ['manual outreach', 'fast readiness-review fulfillment', 'consistent follow-up', 'disciplined upsells'] : ['a defined scope', 'clear priorities', 'reviewed implementation steps']),
+      lastAdvisoryRecommendation: selectedPlan ? `test ${selectedTitle} with five manual pilot clients before automating.` : opportunity?.recommendation || (revenue ? 'launch the $97 readiness review and validate the first ten sales before scaling.' : 'define the smallest useful first phase and prepare it for review.'),
+      lastAdvisoryRisks: selectedPlan ? ['weak retention', 'unclear deliverables', 'clients not seeing progress', 'lead flow', 'pricing and fulfillment complexity'] : opportunity?.risks || (revenue ? ['lead flow', 'weak follow-up', 'unclear offer packaging', 'slow fulfillment', 'poor conversion into the $297 assistant plan'] : ['unclear scope', 'missing proof', 'implementation complexity']),
     });
   }
   if (routeDecision.routeId === 'fallback_continuation') clearFallbackContinuity();

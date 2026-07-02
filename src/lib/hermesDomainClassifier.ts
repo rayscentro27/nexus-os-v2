@@ -19,7 +19,7 @@ const DOMAIN_FAMILIES: Array<{ domain: HermesDomain; pattern: RegExp; signal: st
   { domain: 'settings', pattern: /\b(settings?|configuration|configured|environment variable|feature flag|missing setup)\b/i, signal: 'settings/configuration terms' },
   { domain: 'reports', pattern: /\b(reports?|briefs?|audit files?|what changed|latest findings)\b/i, signal: 'report/audit terms' },
   { domain: 'tools_cli', pattern: /\b(cli|command line|terminal|tools?|scripts?|shell)\b/i, signal: 'tool/CLI terms' },
-  { domain: 'approvals', pattern: /\b(approv(?:al|e)|ray review|review cards?|pending review)\b/i, signal: 'approval/Ray Review terms' },
+  { domain: 'approvals', pattern: /\b(approvals?|approve|ray review|review cards?|pending review|task requests?)\b/i, signal: 'approval/Ray Review terms' },
   { domain: 'clients', pattern: /\b(clients?|customers?|profiles?|onboarding)\b/i, signal: 'client/customer terms' },
   { domain: 'credit_funding', pattern: /\b(credit|funding|readiness|dispute|tradeline|fundability)\b/i, signal: 'credit/funding terms' },
   { domain: 'marketing', pattern: /\b(marketing|campaign|landing page|seo|social post|content plan)\b/i, signal: 'marketing terms' },

@@ -14,6 +14,15 @@ export interface PriorityRouterInput { message: string; currentPage?: string | n
 
 const decision = (input: Parameters<typeof createRouteDecision>[0]) => createRouteDecision(input);
 
+function classifyLiveRecordInventory(message: string): { domain: string; intent: string } | null {
+  const lower = message.toLowerCase();
+  if (/\b(what|which|show|list|pending|anything|waiting)\b.*\b(approvals?|task requests?|ray review|approval cards?|review cards?)\b|\bwhat needs my approval\b|\bwhat is waiting for review\b/.test(lower)) return { domain: 'approvals', intent: 'approval_inventory' };
+  if (/\b(what|which|show|list)\b.*\b(business opportunities|monetization opportunities|monetization offers)\b|\bwhat business opportunities are available\b/.test(lower)) return { domain: /monetization/.test(lower) ? 'monetization' : 'business_opportunity', intent: 'inventory_question' };
+  if (/\b(?:show|list) (?:my |the |all )?(?:clients?|client profiles?|customers?)\b|\bwhat (?:clients?|client profiles?|customers?) (?:do we have|are available|exist)\b/.test(lower)) return { domain: 'clients', intent: 'inventory_question' };
+  if (/\b(what|which|show|list)\b.*\b(research sources?|research rows?)\b|\bwhat research (?:rows|sources) do we have\b/.test(lower)) return { domain: 'research_youtube', intent: 'inventory_question' };
+  return null;
+}
+
 function hasSelectionReference(message: string, memory: SelectionMemory): boolean {
   if (isAdvisoryFollowUpQuestion(message) && !/\b(number\s*\d+|option\s*\d+|the\s+(?:first|second|third)|that one|this one|how do (?:we|i) implement|create .*card)\b/i.test(message)) return false;
   if (/\b(that one|this one|those|number\s*\d+|option\s*\d+|the\s+(?:first|second|third)|pick one|which one|how do (?:we|i) implement (?:it|that)|create (?:a )?(?:ray review )?card for (?:that|it)|continue|go deeper)\b/i.test(message)) return true;
@@ -36,6 +45,9 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   if (traceQuestion) return decision({ routeId: traceQuestion.kind === 'model' ? 'cost_model_usage_status' : 'trace_source_meta', activationLevel: 1, domain: traceQuestion.kind === 'model' ? 'model_cost_status' : 'routing_trace', intent: traceQuestion.kind === 'source_reason' ? 'source_reason_followup' : traceQuestion.kind === 'model' ? 'usage_status' : 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source/model-usage questions inspect only the last non-trace route.' });
 
   if (/\b(tokens?|usage ledger|what model (?:did|do|are|is|was)|model call|answer cost|what did .* cost|cost of (?:that|the) answer|(?:openrouter|cheapest|primary|fallback|gpt|ai|llm|reasoning) model)\b/i.test(lower)) return decision({ routeId: 'cost_model_usage_status', activationLevel: 1, domain: 'model_cost_status', intent: 'usage_status', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Cost and model-use status are deterministic trace/ledger questions.' });
+
+  const liveInventory = classifyLiveRecordInventory(message);
+  if (liveInventory) return decision({ routeId: 'explicit_domain_retrieval', activationLevel: 2, domain: liveInventory.domain, intent: liveInventory.intent, memoryPolicy: 'none', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Explicit live-record inventory is retrieved before casual, advisor, opportunity, memory, and fallback routes.' });
 
   if (scheduling) return decision({ routeId: 'schedule_action_prepare', activationLevel: 6, domain: 'automation', intent: 'prepare_scheduled_report', memoryPolicy: /\b(that|this) report\b/i.test(lower) ? 'selection_only' : 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Scheduling is approval-gated; only a draft request may be prepared and no scheduler may be activated.' });
 

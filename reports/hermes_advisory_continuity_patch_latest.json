@@ -1,6 +1,6 @@
 {
   "reportType": "hermes_advisory_continuity_patch",
-  "generatedAt": "2026-07-01T20:02:00-07:00",
+  "generatedAt": "2026-07-01T22:18:00-07:00",
   "humanExperienceCasual": { "route": "casual_common", "intent": "human_experience_question", "memory": "none", "retrieval": "none", "model": "forbidden" },
   "productModelDisambiguation": { "vehicleModels": "general_advisor/vehicle_recommendation", "aiModelUsage": "cost_model_usage_status", "businessModels": "explicit business/revenue domain" },
   "advisoryContinuity": { "route": "advisory_followup", "memoryType": "plan-level advisory state", "expiresAfterTurns": 6, "selectionMemorySeparated": true },
@@ -9,7 +9,8 @@
   "fallback": "Soft clarification only after casual, product, domain, build-planning, selection, and advisory continuity checks fail.",
   "fallbackContinuity": { "separateFromAdvisory": true, "expiresAfterTurns": 4 },
   "opportunityAdvisorIntegration": { "enabled": true, "storesAssumptionsRecommendationAndRisks": true },
-  "tests": { "files": 21, "passed": 577, "failed": 0 },
+  "selectionImplementationWrite": { "enabled": true, "includesSelectedTitle": true, "includesRisksAndNextMove": true },
+  "tests": { "files": 22, "passed": 590, "failed": 0 },
   "build": "passed",
   "browser": { "status": "blocked_by_authentication", "detail": "The application requires authenticated admin sign-in; no credentials were used or exposed." },
   "safety": { "externalActions": false, "codeOrCrmCreationClaimed": false, "approvalGatesIntact": true }

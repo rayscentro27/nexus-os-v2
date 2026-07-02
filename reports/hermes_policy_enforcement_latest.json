@@ -1,7 +1,7 @@
 {
   "reportType": "hermes_policy_enforcement",
-  "generatedAt": "2026-07-01T20:02:00-07:00",
-  "tests": { "files": 21, "passed": 577, "failed": 0 },
+  "generatedAt": "2026-07-01T22:18:00-07:00",
+  "tests": { "files": 22, "passed": 590, "failed": 0 },
   "policyCases": {
     "traceSelectionIsolation": "passed",
     "supabaseStatusModelForbidden": "passed",
@@ -35,7 +35,12 @@
     "physicalWorldBoundary": "passed",
     "lowCostValidationDefaults": "passed",
     "riskLicensingFulfillmentChecks": "passed",
-    "opportunityPriorityProtection": "passed"
+    "opportunityPriorityProtection": "passed",
+    "approvalInventoryPriority": "passed",
+    "businessInventoryRegression": "passed",
+    "selectionImplementationAdvisoryWrite": "passed",
+    "crossRouteConversationFlows": "passed",
+    "fallbackAfterContinuityOnly": "passed"
   },
   "browser": {
     "messages": 11,

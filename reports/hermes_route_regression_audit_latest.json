@@ -1,0 +1,107 @@
+{
+  "reportType": "hermes_route_regression_audit",
+  "generatedAt": "2026-07-01T20:18:00-07:00",
+  "baselineCommit": "ec73bf5654d8748616966354e604f3ae3a3760ca",
+  "cases": [
+    {
+      "userMessage": "what approvals do i have",
+      "expectedRouteId": "explicit_domain_retrieval", "actualRouteId": "fallback_clarification",
+      "expectedDomain": "approvals", "actualDomain": "unknown",
+      "expectedActivationLevel": 2, "actualActivationLevel": 1,
+      "expectedMemoryPolicy": "none", "actualMemoryPolicy": "none",
+      "expectedRetrievalPolicy": "supabase_then_static_fallback", "actualRetrievalPolicy": "none",
+      "expectedHandler": "supabase_inventory", "actualHandler": "fallback_clarification",
+      "expectedContextPacket": "Supabase allowed; no selection/advisory memory", "actualContextPacket": "No retrieval or memory context attached",
+      "expectedMemoryWrite": "none", "actualMemoryWrite": "fallback continuity only",
+      "fallbackUsed": true, "wasFallbackCorrect": false,
+      "rootCause": "Approvals domain regex matched approval/approve but not plural approvals; no early live-record intent table existed.",
+      "patchTarget": "hermesDomainClassifier + hermesPriorityRouter explicit record inventory precheck"
+    },
+    {
+      "userMessage": "do you recommend a trading strategy",
+      "expectedRouteId": "local_reasoning", "actualRouteId": "local_reasoning",
+      "expectedDomain": "trading", "actualDomain": "trading",
+      "expectedActivationLevel": 4, "actualActivationLevel": 4,
+      "expectedMemoryPolicy": "none", "actualMemoryPolicy": "none",
+      "expectedRetrievalPolicy": "local_reports", "actualRetrievalPolicy": "local_reports",
+      "expectedHandler": "trading_reasoner", "actualHandler": "trading_reasoner",
+      "expectedContextPacket": "Local reports only", "actualContextPacket": "Local reports only",
+      "expectedMemoryWrite": "none", "actualMemoryWrite": "none",
+      "fallbackUsed": false, "wasFallbackCorrect": true,
+      "rootCause": "No regression observed.", "patchTarget": "cross-route regression coverage"
+    },
+    {
+      "userMessage": "what is the top trading strategy",
+      "expectedRouteId": "process_settings_reports_status", "actualRouteId": "process_settings_reports_status",
+      "expectedDomain": "trading", "actualDomain": "trading",
+      "expectedActivationLevel": 1, "actualActivationLevel": 1,
+      "expectedMemoryPolicy": "none", "actualMemoryPolicy": "none",
+      "expectedRetrievalPolicy": "local_reports", "actualRetrievalPolicy": "local_reports",
+      "expectedHandler": "trading_reasoner", "actualHandler": "trading_reasoner",
+      "expectedContextPacket": "Local paper/demo reports", "actualContextPacket": "Local paper/demo reports",
+      "expectedMemoryWrite": "none", "actualMemoryWrite": "none",
+      "fallbackUsed": false, "wasFallbackCorrect": true,
+      "rootCause": "No regression observed.", "patchTarget": "cross-route regression coverage"
+    },
+    {
+      "userMessage": "are you connected to supabase",
+      "expectedRouteId": "trace_source_meta", "actualRouteId": "trace_source_meta",
+      "expectedDomain": "routing_trace", "actualDomain": "routing_trace",
+      "expectedActivationLevel": 1, "actualActivationLevel": 1,
+      "expectedMemoryPolicy": "last_trace_only", "actualMemoryPolicy": "last_trace_only",
+      "expectedRetrievalPolicy": "none", "actualRetrievalPolicy": "none",
+      "expectedHandler": "trace_question_handler", "actualHandler": "trace_question_handler",
+      "expectedContextPacket": "Last non-trace routing record only", "actualContextPacket": "Last non-trace routing record only",
+      "expectedMemoryWrite": "none", "actualMemoryWrite": "none",
+      "fallbackUsed": false, "wasFallbackCorrect": true,
+      "rootCause": "No regression observed.", "patchTarget": "cross-route regression coverage"
+    },
+    {
+      "userMessage": "what business opportunities are available",
+      "expectedRouteId": "explicit_domain_retrieval", "actualRouteId": "explicit_domain_retrieval",
+      "expectedDomain": "business_opportunity", "actualDomain": "business_opportunity",
+      "expectedActivationLevel": 2, "actualActivationLevel": 2,
+      "expectedMemoryPolicy": "none", "actualMemoryPolicy": "none",
+      "expectedRetrievalPolicy": "supabase_then_static_fallback", "actualRetrievalPolicy": "supabase_then_static_fallback",
+      "expectedHandler": "business_opportunity_inventory", "actualHandler": "business_opportunity_inventory",
+      "expectedContextPacket": "Supabase allowed; selection memory blocked", "actualContextPacket": "Supabase allowed; selection memory blocked",
+      "expectedMemoryWrite": "listed/ranked selection items", "actualMemoryWrite": "listed/ranked selection items",
+      "fallbackUsed": false, "wasFallbackCorrect": true,
+      "rootCause": "No regression observed.", "patchTarget": "protect explicit live-record priority"
+    },
+    {
+      "userMessage": "lets review number 3",
+      "expectedRouteId": "memory_followup", "actualRouteId": "memory_followup",
+      "expectedDomain": "business_opportunity", "actualDomain": "business_opportunity",
+      "expectedActivationLevel": 3, "actualActivationLevel": 3,
+      "expectedMemoryPolicy": "selection_only", "actualMemoryPolicy": "selection_only",
+      "expectedRetrievalPolicy": "supabase_then_static_fallback", "actualRetrievalPolicy": "supabase_then_static_fallback",
+      "expectedHandler": "selection_implementation", "actualHandler": "selection_implementation",
+      "expectedContextPacket": "Eligible selection memory with item 3", "actualContextPacket": "Eligible selection memory with item 3",
+      "expectedMemoryWrite": "selected item plus advisory implementation context", "actualMemoryWrite": "selected item only",
+      "fallbackUsed": false, "wasFallbackCorrect": true,
+      "rootCause": "memory_followup selection implementation was omitted from advisory-producing routes.",
+      "patchTarget": "hermesBrainPipeline advisory continuity write"
+    },
+    {
+      "userMessage": "do you think it will work",
+      "expectedRouteId": "advisory_followup", "actualRouteId": "fallback_clarification",
+      "expectedDomain": "business_opportunity", "actualDomain": "unknown",
+      "expectedActivationLevel": 4, "actualActivationLevel": 1,
+      "expectedMemoryPolicy": "long_term_allowed", "actualMemoryPolicy": "none",
+      "expectedRetrievalPolicy": "none", "actualRetrievalPolicy": "none",
+      "expectedHandler": "advisory_continuity_reasoner", "actualHandler": "fallback_clarification",
+      "expectedContextPacket": "Selected-plan advisory summary, assumptions, recommendation, and risks", "actualContextPacket": "No advisory context",
+      "expectedMemoryWrite": "advisory state turn update", "actualMemoryWrite": "fallback continuity",
+      "fallbackUsed": true, "wasFallbackCorrect": false,
+      "rootCause": "Selection implementation did not write advisory context and feasibility wording was outside the advisory marker family.",
+      "patchTarget": "hermesBrainPipeline + hermesAdvisoryContinuity"
+    }
+  ],
+  "rootCauses": [
+    "Plural approvals and task-request inventory lacked an early deterministic live-record classifier.",
+    "Live-record inventory priority was implemented after several advisor layers instead of as a protected precheck.",
+    "Selection implementation answers were not registered as advisory-producing answers.",
+    "Plan feasibility markers omitted 'do you think it will work', 'how do we start', and 'what is step one'."
+  ]
+}

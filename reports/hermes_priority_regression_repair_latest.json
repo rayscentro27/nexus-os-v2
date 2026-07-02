@@ -1,0 +1,15 @@
+{
+  "reportType": "hermes_priority_regression_repair",
+  "generatedAt": "2026-07-01T22:18:00-07:00",
+  "baselineCommit": "ec73bf5654d8748616966354e604f3ae3a3760ca",
+  "approvalsRouteFix": { "routeId": "explicit_domain_retrieval", "activationLevel": 2, "domain": "approvals", "memoryPolicy": "none", "retrievalPolicy": "supabase_then_static_fallback", "modelPolicy": "forbidden" },
+  "protectedLiveInventories": ["approvals", "task_requests", "business_opportunities", "monetization_opportunities", "clients", "research_sources"],
+  "advisoryWriteFix": "memory_followup selection implementation/recommendation now writes advisory topic, summary, assumptions, recommendation, and risks.",
+  "monthlyReadinessContinuity": ["do you think it will work", "what would stop us", "how do we start", "what is step one", "should we do it"],
+  "priorityRepair": "Safety and trace/model status remain first; explicit live-record inventory now precedes casual/advisor/opportunity/memory/fallback routes.",
+  "fallbackNarrowing": "Live inventories and eligible plan follow-ups cannot reach generic fallback; vague action fallback remains approval-gated.",
+  "crossRouteTests": { "files": 22, "passed": 590, "failed": 0 },
+  "build": "passed",
+  "browser": { "status": "blocked_by_authentication", "detail": "The application requires authenticated admin sign-in; no credentials were used or exposed." },
+  "safety": { "externalActions": false, "fakeRows": false, "modelCallsForRetrieval": false, "approvalGatesIntact": true }
+}
