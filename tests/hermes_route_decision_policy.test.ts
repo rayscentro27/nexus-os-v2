@@ -66,7 +66,7 @@ describe('RouteDecision policy contract', () => {
     expect(decision).toMatchObject({ routeId: 'approval_action_prepare', actionPolicy: 'approval_required', memoryPolicy: 'selection_only', modelPolicy: 'forbidden' });
     const response = await handleHermesMessage({ message: 'Create a Ray Review card for that.' });
     expect(response.approvalRequired).toBe(true);
-    expect(response.text).toContain('not submitted or executed');
+    expect(response.text).toContain('not been saved or submitted');
   });
 
   it('hard-blocks trade execution before all context', () => {

@@ -2,13 +2,15 @@ import { getLastRoutingTrace, type RoutingTraceEntry } from './hermesRoutingTrac
 import { getCapabilityReport } from './hermesCapabilityStatus';
 import type { RouteDecision } from './hermesRouteDecision';
 
-export type TraceQuestionKind = 'source' | 'supabase' | 'model' | 'strategic_reasoning' | 'domain' | 'route' | 'memory' | 'why' | 'unknown';
+export type TraceQuestionKind = 'source' | 'supabase' | 'model' | 'strategic_reasoning' | 'domain' | 'route' | 'memory' | 'why' | 'action_proof' | 'unknown';
 export type TraceTarget = 'last_answer' | 'current_question' | 'general_capability';
 
 export interface TraceQuestionClassification { kind: TraceQuestionKind; target: TraceTarget; }
 
 export function classifyTraceQuestion(message: string): TraceQuestionClassification | null {
   const lower = message.toLowerCase();
+  if (/\b(full trace|full routing trace|technical route|debug route|exact routedecision)\b/.test(lower)) return { kind: 'route', target: 'last_answer' };
+  if (/\b(?:did that|was that|did you).*(?:saved record|actual(?:ly)? (?:saved|created)|only a draft|task request)\b/.test(lower)) return { kind: 'action_proof', target: 'last_answer' };
   if (/\b(where\s+(?:did|does|are).*?(?:answer|response|that|this|source)|what\s+source|where\s+did\s+that\s+come\s+from)\b/.test(lower)) return { kind: 'source', target: /your questions|answers generally|in general/.test(lower) ? 'general_capability' : 'last_answer' };
   if (/\b(?:did|are)\s+(?:that|you).*?(?:supabase|database)|\busing\s+(?:supabase|the database)\b|why.*not use.*(?:supabase|database)/.test(lower)) return { kind: 'supabase', target: /did that|last answer|that answer|why/.test(lower) ? 'last_answer' : 'general_capability' };
   if (/\bstrategic reasoning|reasoning route|local reasoning|model reasoning\b/.test(lower)) return { kind: 'strategic_reasoning', target: 'last_answer' };
@@ -24,6 +26,21 @@ function traceSummary(trace: RoutingTraceEntry): string {
   return `- Source: ${trace.sourceDecision}\n- Route: ${trace.routeDecision?.routeId || trace.route}\n- Activation level: ${trace.activationLevel} (${trace.activationLevelName})\n- Domain: ${trace.detectedDomain}\n- Memory policy: ${trace.memoryPolicyApplied || 'not recorded'}; ${trace.memoryUsed ? 'used' : trace.memoryRejected ? `rejected — ${trace.memoryRejectionReason}` : 'not used'}\n- Retrieval policy: ${trace.retrievalPolicyApplied || 'not recorded'}\n- Supabase: ${trace.usedSupabase ? `used (${trace.supabaseTables.join(', ') || 'table not recorded'})` : 'not used'}\n- Model policy: ${trace.modelPolicyApplied || 'not recorded'}; ${trace.usedModel ? `used (${trace.modelRoute})` : 'not used'}\n- Answer builder: ${trace.finalAnswerHandler || trace.answerBuilder}`;
 }
 
+function sourceName(trace: RoutingTraceEntry): string {
+  if (trace.memoryUsed && trace.selectedEntity) return `our conversation follow-up memory for ${trace.selectedEntity}`;
+  if (trace.usedSupabase) return `live Supabase data${trace.supabaseTables.length ? ` from ${trace.supabaseTables.join(', ')}` : ''}`;
+  if (trace.usedModel) return `the model through ${trace.modelRoute}`;
+  if (trace.sourceDecision === 'reasoning') return 'local reasoning and the allowed domain context';
+  if (trace.sourceDecision === 'local') return 'local Nexus context';
+  return trace.sourceDecision;
+}
+
+export function formatTraceForUser(trace: RoutingTraceEntry, mode: 'plain_summary' | 'compact_technical' | 'full_trace' = 'plain_summary'): string {
+  if (mode === 'full_trace') return `Full routing trace:\n\n${traceSummary(trace)}\n- Decision reason: ${trace.routeDecision?.reason || trace.correctnessHint}\n- Allowed context: ${Object.entries(trace.allowedContext || {}).filter(([, value]) => value).map(([key]) => key).join(', ') || 'none'}\n- Blocked context: ${(trace.blockedContext || []).join(', ') || 'none'}`;
+  if (mode === 'compact_technical') return `Route: ${trace.route.replace(/_/g, ' ')} · Level ${trace.activationLevel} · Domain: ${trace.detectedDomain} · Source: ${sourceName(trace)}.`;
+  return `The routing record shows that answer came from ${sourceName(trace)}. I ${trace.memoryUsed ? 'used eligible conversation memory' : 'did not use selection memory'}, ${trace.usedSupabase ? 'used Supabase' : 'did not use Supabase'}, and ${trace.usedModel ? 'used the model' : 'did not use the model'}.`;
+}
+
 export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEntry | null = getLastRoutingTrace(), policy?: { routeDecision: RouteDecision }): string | null {
   if (policy && policy.routeDecision.memoryPolicy !== 'last_trace_only') throw new Error('Trace handler requires last_trace_only policy');
   const classification = classifyTraceQuestion(message);
@@ -33,9 +50,11 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
     if (classification.kind === 'supabase') return `For my last answer: no routing trace is available. In general: ${capability.supabase.userFacing}`;
     return 'I do not have a routing trace for the previous Hermes answer yet.';
   }
+  const fullTraceRequested = /\b(full trace|full routing trace|technical route|debug route|exact routedecision)\b/i.test(message);
+  if (fullTraceRequested) return formatTraceForUser(trace, 'full_trace');
   switch (classification.kind) {
     case 'source':
-      return `For my last non-trace answer, the routing record says:\n\n${traceSummary(trace)}${classification.target === 'general_capability' ? `\n\nIn general, I answer from eligible conversation context, local reports/page data, authenticated Supabase reads when a question requires records, and the model only when the selected route actually calls it.` : ''}`;
+      return `${formatTraceForUser(trace)}\n\n${formatTraceForUser(trace, 'compact_technical')}${classification.target === 'general_capability' ? `\n\nIn general, I answer from eligible conversation context, local reports/page data, authenticated Supabase reads when records are required, and the model only when the route permits it.` : ''}`;
     case 'supabase':
       return `For my last answer: ${trace.usedSupabase ? `yes — I used ${trace.supabaseTables.join(', ') || 'a recorded Supabase source'}.` : `no — it came from ${trace.sourceDecision}, not Supabase.`}\n\nIn general: ${capability.supabase.userFacing} Supported read paths include business_opportunities, monetization_opportunities, approvals, task_requests, research_sources, and client_profiles when authentication and RLS permit them.`;
     case 'model':
@@ -53,7 +72,15 @@ export function answerHermesTraceQuestion(message: string, trace: RoutingTraceEn
       if (trace.memoryUsed) return `Yes. Memory was eligible and used${trace.selectedEntity ? ` for ${trace.selectedEntity}` : ''}.`;
       return `No. Prior memory was not used.${trace.memoryRejected ? ` Reason: ${trace.memoryRejectionReason}` : ''}`;
     case 'why':
-      return `I used ${trace.finalAnswerHandler || trace.answerBuilder} because the router detected ${trace.detectedDomain} and selected activation level ${trace.activationLevel}.\n\n${traceSummary(trace)}`;
+      return `${formatTraceForUser(trace)} I chose that source because the question was classified as ${trace.detectedDomain.replace(/_/g, ' ')}.\n\n${formatTraceForUser(trace, 'compact_technical')}`;
+    case 'action_proof': {
+      const proof = trace.handlerResultSummary?.actionProof as { outcome?: string; id?: string; status?: string; title?: string; reason?: string } | null | undefined;
+      if (!proof) return 'The last answer does not contain proof of a saved record or task request, so I cannot claim that anything was created.';
+      if (proof.outcome === 'actual_record_created') return `Yes. A Ray Review record was created${proof.title ? ` for ${proof.title}` : ''} · status: ${proof.status || 'created'} · id: ${proof.id || 'not recorded'}. No external action was executed.`;
+      if (proof.outcome === 'approval_task_created') return `An approval-gated task request was created${proof.title ? ` for ${proof.title}` : ''} · status: ${proof.status || 'pending'} · id: ${proof.id || 'not recorded'}. No external action was executed.`;
+      if (proof.outcome === 'blocked') return `No record was created. The action was blocked because ${proof.reason || 'the required target or approval was missing'}.`;
+      return 'It was a draft prepared in this conversation only. It was not saved, submitted, or activated.';
+    }
     default:
       return null;
   }

@@ -3,6 +3,7 @@ import { classifyTraceQuestion } from './hermesTraceQuestionHandler';
 import { isRevenueStrategyQuestion } from './hermesRevenueReasoner';
 import { createRouteDecision, type RouteDecision } from './hermesRouteDecision';
 import type { SelectionMemory } from './hermesMemoryStores';
+import { isCasualCommonQuestion, isGeneralAdvisorQuestion } from './hermesCommonConversation';
 
 export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; }
 
@@ -18,12 +19,19 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const message = input.message.trim();
   const lower = message.toLowerCase();
   const domain = classifyHermesDomain(message, input.currentPage, input.previousDomain).domain;
-  const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|send|charge|buy|sell|deploy|delete|truncate|run shell|start scheduler|submit (?:a )?dispute)\b/i.test(lower);
+  const scheduling = /\b(schedule|set up|create)\b.*\b(report|summary|reminder)|\b(?:weekly|daily|recurring)\b.*\b(report|summary)|\b(?:remind me|automate this report|run this report every|send me .* every)\b/i.test(lower);
+  const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
 
   if (classifyTraceQuestion(message)) return decision({ routeId: 'trace_source_meta', activationLevel: 1, domain: 'routing_trace', intent: 'source_question', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Trace/source questions inspect only the last non-trace route.' });
 
   if (/\b(tokens?|usage ledger|what model did|model call|answer cost|what did .* cost|cost of (?:that|the) answer)\b/i.test(lower)) return decision({ routeId: 'cost_model_usage_status', activationLevel: 1, domain: 'model_cost_status', intent: 'usage_status', memoryPolicy: 'last_trace_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'show_summary', actionPolicy: 'none', reason: 'Cost and model-use status are deterministic trace/ledger questions.' });
+
+  if (scheduling) return decision({ routeId: 'schedule_action_prepare', activationLevel: 6, domain: 'automation', intent: 'prepare_scheduled_report', memoryPolicy: /\b(that|this) report\b/i.test(lower) ? 'selection_only' : 'none', retrievalPolicy: 'local_reports', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'Scheduling is approval-gated; only a draft request may be prepared and no scheduler may be activated.' });
+
+  if (isCasualCommonQuestion(message)) return decision({ routeId: 'casual_common', activationLevel: 1, domain: 'general_conversation', intent: 'casual_or_common_question', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Common conversation needs no Nexus records, selection memory, or model call.' });
+
+  if (isGeneralAdvisorQuestion(message) && !(input.selectionMemory.lastList.length && /\bwhich one\b/i.test(lower))) return decision({ routeId: 'general_advisor', activationLevel: 4, domain: 'general_advice', intent: 'general_recommendation', memoryPolicy: 'long_term_allowed', retrievalPolicy: 'none', modelPolicy: 'allowed_if_needed', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'General advice uses plain reasoning without stale selection memory or Nexus retrieval.' });
 
   if (domain === 'casual_identity') return decision({ routeId: 'casual_identity', activationLevel: 1, domain, intent: 'conversation', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Casual and identity questions require no operational context.' });
 

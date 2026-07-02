@@ -1,0 +1,11 @@
+{
+  "reportType": "hermes_common_advisor_layer",
+  "generatedAt": "2026-07-01T18:26:00-07:00",
+  "casualCommon": { "routeId": "casual_common", "level": 1, "memory": "none", "retrieval": "none", "model": "forbidden", "status": "implemented" },
+  "generalAdvisor": { "routeId": "general_advisor", "level": 4, "selectionMemory": "blocked", "retrieval": "none", "model": "allowed_if_needed", "status": "implemented" },
+  "priority": "safety and trace first; schedule action before report status; casual/common and general advice before stale memory",
+  "topicBoundary": "strong Nexus domain terms exclude casual/general routing; explicit prior-list references remain memory follow-ups",
+  "tests": { "total": 503, "passed": 503, "failed": 0 },
+  "browser": { "status": "blocked_by_authentication", "detail": "Local browser reached the authenticated admin sign-in; no credentials were used or exposed." },
+  "safety": "No database writes, model calls, external sends, scheduler activation, or live trading added."
+}

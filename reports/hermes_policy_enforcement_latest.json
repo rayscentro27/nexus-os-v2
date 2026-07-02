@@ -1,7 +1,7 @@
 {
   "reportType": "hermes_policy_enforcement",
-  "generatedAt": "2026-07-01T17:39:00-07:00",
-  "tests": { "files": 16, "passed": 488, "failed": 0 },
+  "generatedAt": "2026-07-01T18:26:00-07:00",
+  "tests": { "files": 17, "passed": 503, "failed": 0 },
   "policyCases": {
     "traceSelectionIsolation": "passed",
     "supabaseStatusModelForbidden": "passed",
@@ -12,7 +12,11 @@
     "sourceThatNotSelection": "passed",
     "approvalDraftNoExecution": "passed",
     "tradeExecutionBlocked": "passed",
-    "diagnosticLeakSuppression": "passed"
+    "diagnosticLeakSuppression": "passed",
+    "casualCommonIsolation": "passed",
+    "generalAdvisorIsolation": "passed",
+    "scheduleActionApprovalGate": "passed",
+    "actionProofPrecision": "passed"
   },
   "browser": {
     "messages": 11,
@@ -23,5 +27,5 @@
     "diagnosticLeaks": 0,
     "externalActions": 0
   },
-  "remainingBlockers": ["authenticated Supabase browser verification", "production deployment verification", "fresh comparable trading backtests"]
+  "remainingBlockers": ["authenticated browser verification", "production deployment verification", "authenticated Supabase verification", "fresh comparable trading backtests"]
 }

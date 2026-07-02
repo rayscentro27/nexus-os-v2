@@ -62,6 +62,7 @@ export interface RoutingTraceEntry {
 
 const STORAGE_KEY = 'nexus-hermes-routing-trace-v1';
 const MAX_ENTRIES = 100;
+let memoryEntries: RoutingTraceEntry[] = [];
 
 function safe(): Storage | null {
   try {
@@ -92,6 +93,7 @@ export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
     timestamp: new Date().toISOString(),
   };
   const ls = safe();
+  memoryEntries = [...memoryEntries, full].slice(-MAX_ENTRIES);
   if (!ls) return full;
   try {
     const raw = ls.getItem(STORAGE_KEY);
@@ -114,7 +116,7 @@ function redactAndTruncate(message: string): string {
 /** Get all routing trace entries. */
 export function getRoutingTraces(): RoutingTraceEntry[] {
   const ls = safe();
-  if (!ls) return [];
+  if (!ls) return memoryEntries;
   try {
     const raw = ls.getItem(STORAGE_KEY);
     if (!raw) return [];

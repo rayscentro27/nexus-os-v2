@@ -4,6 +4,7 @@ import type { ConversationItem } from './hermesConversationState';
 export interface HermesHandlerResult {
   userAnswer: string; internalTrace: string; selectedEntities: ConversationItem[];
   sources: string[]; nextActions: string[]; safeFallbackAnswer?: string;
+  actionProof?: { outcome: 'actual_record_created' | 'approval_task_created' | 'local_draft_only' | 'blocked'; id?: string; status?: string; title?: string; reason?: string };
 }
 
 const DIAGNOSTIC_LEAK = /I detected the general domain|Domain override applied|memory eligibility|\binvariant\b|routing trace/i;

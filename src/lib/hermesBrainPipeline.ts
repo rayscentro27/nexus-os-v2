@@ -19,6 +19,7 @@ import { getSelectionMemory, setLastTurnTraceMemory, touchSelectionMemory } from
 import { logRoutingTrace } from './hermesRoutingTrace';
 import { reportRegistry } from '../data/reportRegistry.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
+import { answerCasualCommonQuestion, answerGeneralAdvisorQuestion } from './hermesCommonConversation';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -47,6 +48,7 @@ const OPPORTUNITIES: ConversationItem[] = [
 ];
 
 const result = (userAnswer: string, handler: string, sources: string[], selectedEntities: ConversationItem[] = [], nextActions: string[] = []): HermesHandlerResult => ({ userAnswer, internalTrace: handler, selectedEntities, sources, nextActions, safeFallbackAnswer: userAnswer });
+const actionResult = (userAnswer: string, handler: string, sources: string[], actionProof: NonNullable<HermesHandlerResult['actionProof']>, selectedEntities: ConversationItem[] = []): HermesHandlerResult => ({ ...result(userAnswer, handler, sources, selectedEntities), actionProof });
 const recommendation = () => `For a business you can start within 30 days, I recommend **$97 Credit & Funding Readiness Review** first. It is inexpensive to launch, matches GoClear/Apex, and creates a path to the $297 assistant plan and Monthly Readiness Subscription.\n\n**Next safe action:** prepare the intake, scorecard, and a draft Ray Review card. Any checkout activation, customer contact, or charge remains approval-gated.`;
 const implementation = (item: ConversationItem) => `Here is the implementation plan for **${item.title}**:\n\n1. Define the promise, eligibility rules, deliverables, and exclusions.\n2. Build the intake and readiness scorecard.\n3. Create checkout and fulfillment in test mode.\n4. Run five manual pilots and capture conversion evidence.\n5. Prepare the refined plan for Ray Review.\n\nNo email, charge, publishing, or live execution occurs without explicit approval.`;
 const listOpportunities = (label: string) => `Business opportunities (${label}):\n\n${OPPORTUNITIES.map((item, index) => `${index + 1}. **${item.title}** — ${item.status}; ${item.revenueRange}.`).join('\n')}`;
@@ -66,6 +68,10 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerHermesTraceQuestion(message, packet.routingTrace, { routeDecision: decision }) || 'No prior routing record is available.', 'trace_question_handler', ['last_non_trace_route']); break;
     case 'casual_identity':
       handler = result(answerConversation(message, classifyConversationIntent(message)) || "I'm Hermes, the Nexus operating advisor.", 'casual_conversation', ['local_conversation']); break;
+    case 'casual_common':
+      handler = result(answerCasualCommonQuestion({ message, routeDecision: decision, contextPacket: packet }), 'common_conversation', ['common_knowledge']); break;
+    case 'general_advisor':
+      handler = result(answerGeneralAdvisorQuestion({ message, routeDecision: decision, contextPacket: packet }), 'general_advisor', ['plain_reasoning']); source = 'reasoning'; break;
     case 'capability_status':
       handler = result(answerCapabilityQuestion(message) || getCapabilityReport().capabilities.map(item => `${item.name}: ${item.userFacing}`).join('\n'), 'capability_status', ['capability_registry']); source = 'capability'; break;
     case 'process_settings_reports_status':
@@ -78,7 +84,18 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
     case 'approval_action_prepare': {
       const item = packet.selectionMemory ? resolveFollowUp(message) : null;
       if (item) touchSelectionMemory();
-      handler = result(`I prepared a draft Ray Review request${item ? ` for **${item.title}**` : ''}. It is not submitted or executed. Review the target, scope, and expected result before approving any state-changing action.`, 'approval_draft', ['selection_memory', 'approval_policy'], item ? [item] : []); break;
+      handler = item
+        ? actionResult(`Draft Ray Review request prepared in this conversation only for **${item.title}**. It has not been saved or submitted yet; it was not submitted or executed. No external action was executed.`, 'approval_local_draft', ['selection_memory', 'approval_policy'], { outcome: 'local_draft_only', title: item.title, status: 'not_saved' }, [item])
+        : actionResult('I did not create a Ray Review card because no eligible target was resolved. Nothing was saved or submitted. Name the target and I can prepare a conversation-only draft.', 'approval_blocked_missing_target', ['approval_policy'], { outcome: 'blocked', reason: 'missing_target' });
+      break;
+    }
+    case 'schedule_action_prepare': {
+      const hasReport = /\b(?:weekly|daily|monthly|monetization|revenue|trading|business|client|research)\b.*\b(?:report|summary)\b/i.test(message);
+      const hasTime = /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|at\s+\d|\d{1,2}(?::\d{2})?\s*(?:am|pm)|next week)\b/i.test(message);
+      handler = hasReport && hasTime
+        ? actionResult(`Draft scheduled-report request prepared in this conversation only: **${message.replace(/[.!?]+$/, '')}**. It has not been saved, submitted, or activated. No scheduler was started.`, 'schedule_local_draft', ['approval_policy'], { outcome: 'local_draft_only', title: message.replace(/[.!?]+$/, ''), status: 'not_saved' })
+        : actionResult('I can prepare a scheduled-report request for Ray Review, but I will not activate a scheduler without approval. Which report should be scheduled, and what day/time next week should it run? This is a conversation-only draft; nothing has been saved or activated.', 'schedule_missing_details', ['approval_policy'], { outcome: 'blocked', reason: 'missing_report_or_time' });
+      break;
     }
     case 'explicit_domain_retrieval':
       if (decision.domain === 'trading') {
@@ -159,8 +176,8 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     detectedDomain: routeDecision.domain, previousTopic: state.lastTopic, detectedTopic: routeDecision.domain,
     topicChanged: routeDecision.domain !== state.lastTopic, memoryCandidateFound: Boolean(getSelectionMemory().lastList.length), memoryUsed: anyMemoryUsed,
     memoryRejected, memoryRejectionReason: packet.memoryEligibility.reason,
-    domainOverrideApplied: routeDecision.routeId === 'explicit_domain_retrieval', casualOverrideApplied: routeDecision.routeId === 'casual_identity', invariantViolations: [],
-    questionType: routeDecision.routeId === 'trace_source_meta' || routeDecision.routeId === 'cost_model_usage_status' ? 'trace_meta' : routeDecision.actionPolicy !== 'none' ? 'action' : routeDecision.routeId === 'casual_identity' ? 'casual' : routeDecision.activationLevel === 1 ? 'status' : 'domain_reasoning',
+    domainOverrideApplied: routeDecision.routeId === 'explicit_domain_retrieval', casualOverrideApplied: ['casual_identity', 'casual_common'].includes(routeDecision.routeId), invariantViolations: [],
+    questionType: routeDecision.routeId === 'trace_source_meta' || routeDecision.routeId === 'cost_model_usage_status' ? 'trace_meta' : routeDecision.actionPolicy !== 'none' ? 'action' : ['casual_identity', 'casual_common'].includes(routeDecision.routeId) ? 'casual' : routeDecision.activationLevel === 1 ? 'status' : 'domain_reasoning',
     traceTarget: routeDecision.memoryPolicy === 'last_trace_only' ? 'last_answer' : 'current_question', finalAnswerHandler: executed.handler.internalTrace,
     diagnosticOnly: routeDecision.diagnosticsPolicy !== 'hidden', diagnosticSuppressedForUser: rendered.diagnosticSuppressed,
     domainOverrideReason: routeDecision.reason,
@@ -168,7 +185,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     retrievalPolicyApplied: routeDecision.retrievalPolicy, modelPolicyApplied: routeDecision.modelPolicy,
     diagnosticsPolicyApplied: routeDecision.diagnosticsPolicy, actionPolicyApplied: routeDecision.actionPolicy,
     blockedContext: routeDecision.blockedContext, allowedContext: routeDecision.allowedContext,
-    handlerResultSummary: { handler: executed.handler.internalTrace, sources: executed.handler.sources, selectedCount: resolvedEntities.length },
+    handlerResultSummary: { handler: executed.handler.internalTrace, sources: executed.handler.sources, selectedCount: resolvedEntities.length, actionProof: executed.handler.actionProof || null },
   });
 
   const confidence = routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low';
