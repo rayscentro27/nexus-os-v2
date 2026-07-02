@@ -1,6 +1,8 @@
-import { resetHermesMemoryStores, updateSelectionMemory } from './hermesMemoryStores';
+import { getHermesMemoryScope, resetHermesMemoryStores, updateSelectionMemory } from './hermesMemoryStores';
 import { resetAdvisoryContinuity } from './hermesAdvisoryContinuity';
 import { resetFallbackContinuity } from './hermesFallbackContinuity';
+import { clearHermesDecisionState } from './hermesDecisionState';
+import { clearSession } from './hermesAdvisorSession';
 
 /**
  * Hermes Conversation State — session-scoped memory for follow-up resolution.
@@ -79,6 +81,7 @@ export function setConversationScope(scopeKey: string): void {
 
 /** Reset conversation state (e.g., on page reload). */
 export function resetConversationState(): void {
+  const scopeKey = getHermesMemoryScope();
   conversationState = {
     history: [],
     lastListedItems: [],
@@ -92,6 +95,8 @@ export function resetConversationState(): void {
   resetHermesMemoryStores();
   resetAdvisoryContinuity();
   resetFallbackContinuity();
+  clearHermesDecisionState(scopeKey);
+  clearSession(scopeKey);
 }
 
 /** Add a user message to history. */

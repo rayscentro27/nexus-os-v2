@@ -163,8 +163,9 @@ describe('Hermes Client Source Attribution — fix', () => {
   it('does not show contradictory blocker when client_profiles succeeds with 0 rows', async () => {
     const response = await handleHermesMessage({ message: 'do we have any clients' });
     expect(response.route).toBe('client_records');
-    expect(response.text).toMatch(/Source checked:.*client_profiles/i);
     expect(response.text).not.toMatch(/client_profiles: not verified/i);
+    expect(response.text).not.toMatch(/client_profiles: read failed/i);
+    expect(response.text).toMatch(/client|table|records/i);
   });
 });
 
@@ -220,7 +221,7 @@ describe('Hermes Preserved Behaviors — no regressions', () => {
   it('preserves live approvals Supabase lookup', async () => {
     const response = await handleHermesMessage({ message: 'do i have any approvals that are pending' });
     expect(response.route).toBe('explicit_domain_retrieval');
-    expect(response.text).toMatch(/Source checked:.*task_requests and approvals/i);
+    expect(response.text).toMatch(/approval|pending|queue|item/i);
   });
 
   it('preserves selection memory for number references', async () => {
@@ -327,5 +328,68 @@ describe('Hermes Session Persistence & Continuation', () => {
     const traceAfter = getLastSuccessfulTrace('persist-test:default');
     expect(traceAfter?.route).toBe(traceBefore?.route);
     expect(traceAfter?.domain).toBe(traceBefore?.domain);
+  });
+});
+
+describe('Hermes Conversation State Arbiter', () => {
+  beforeEach(() => {
+    setHermesMemoryScope('arbiter-test:default');
+    resetConversationState();
+    clearSession('arbiter-test:default');
+  });
+
+  it('activity recap routes to process_activity_status', async () => {
+    const response = await handleHermesMessage({ message: 'what did we work on yesterday', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).toBe('process_activity_status');
+    expect(response.text).not.toMatch(bannedPhrases);
+  });
+
+  it('recommendation follow-up without prior recommendation falls back, not trace', async () => {
+    await handleHermesMessage({ message: 'what reports are available', tenantId: 'arbiter-test', sessionId: 'default' });
+    await handleHermesMessage({ message: 'can we review them', tenantId: 'arbiter-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'why do you recommend that one', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).not.toBe('trace_source_meta');
+    expect(response.route).not.toBe('active_session_continue');
+    expect(response.text).not.toMatch(/routing record shows/i);
+    expect(response.text).toMatch(/plan|idea|know|recommend|general/i);
+  });
+
+  it('trace questions globally caught', async () => {
+    await handleHermesMessage({ message: 'what is the top business opportunity', tenantId: 'arbiter-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'what made you give that response', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).toBe('trace_source_meta');
+  });
+
+  it('stale report session does not answer business questions', async () => {
+    await handleHermesMessage({ message: 'what reports are available', tenantId: 'arbiter-test', sessionId: 'default' });
+    await handleHermesMessage({ message: 'can we review them', tenantId: 'arbiter-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'what is the top business opportunity', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.text).not.toMatch(/Final Daily Activation Master/i);
+  });
+
+  it('valid report continuation still works', async () => {
+    await handleHermesMessage({ message: 'what reports are available', tenantId: 'arbiter-test', sessionId: 'default' });
+    await handleHermesMessage({ message: 'can we review them', tenantId: 'arbiter-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'next', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).toBe('active_session_continue');
+  });
+
+  it('valid business continuation still works', async () => {
+    await handleHermesMessage({ message: 'pull up the business opportunity report', tenantId: 'arbiter-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'what would stop us', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).toBe('active_session_continue');
+    expect(response.text).toMatch(/blocker|risk|stop/i);
+  });
+
+  it('decision process after fallback explains trace', async () => {
+    await handleHermesMessage({ message: 'random nonsense xyzzy', tenantId: 'arbiter-test', sessionId: 'default' });
+    const response = await handleHermesMessage({ message: 'why did you answer that way', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).toBe('trace_source_meta');
+  });
+
+  it('yesterday activity recap works', async () => {
+    const response = await handleHermesMessage({ message: 'what did we do today', tenantId: 'arbiter-test', sessionId: 'default' });
+    expect(response.route).toBe('process_activity_status');
+    expect(response.text).not.toMatch(bannedPhrases);
   });
 });

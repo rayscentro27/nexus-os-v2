@@ -10,13 +10,31 @@ export interface SourceEvidence {
   blocker?: string;
 }
 
+export type CleanSourceStatus = 'success' | 'partial_success' | 'empty_success' | 'failed' | 'fallback_used';
+
+export interface CleanSourceSummary {
+  status: CleanSourceStatus; source: string; rowCount?: number; blocker?: string; adjacentContext?: string[];
+}
+
+export function cleanRecordSourceSummary(kind: 'approvals' | 'clients', live: LiveHermesResponse): CleanSourceSummary {
+  const required = kind === 'approvals' ? ['task_requests', 'approvals'] : ['client_profiles'];
+  const succeeded = required.filter((table) => live.tableResults?.[table]?.status === 'success');
+  const failed = required.filter((table) => live.tableResults?.[table]?.status === 'error');
+  const rowCount = required.reduce((total, table) => total + (live.rowCounts?.[table] || 0), 0);
+  const source = kind === 'clients' ? 'client_profiles' : 'task_requests, approvals';
+  if (succeeded.length === required.length) return { status: rowCount === 0 ? 'empty_success' : 'success', source, rowCount, adjacentContext: kind === 'clients' ? ['approvals/task_requests excluded from client evidence'] : undefined };
+  if (succeeded.length > 0 && failed.length > 0) return { status: 'partial_success', source, rowCount, blocker: failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'read failed'}`).join('; ') };
+  if (live.sourceType === 'static_fallback') return { status: 'fallback_used', source, rowCount, blocker: live.blocker };
+  return { status: 'failed', source, blocker: live.blocker || failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'read failed'}`).join('; ') || 'source read did not succeed' };
+}
+
 const checkedAt = () => new Date().toISOString();
 
 export function renderSystemHealthContract(): string {
   const blocked = systemHealthItems.filter((item) => item.tone === 'blocked' || item.tone === 'gated');
   const healthy = systemHealthItems.filter((item) => item.tone === 'healthy');
   const evidence = systemHealthItems.slice(0, 5).map((item) => `${item.label}: ${item.status} (${item.report}; ${item.lastRun})`).join('\n- ');
-  return `**Status summary:** ${healthy.length} locally reported healthy; ${blocked.length} blocked or approval-gated. This is report-backed status, not a fresh production probe.\n\n**Source checked:** bundled System Health registry and linked local reports.\n**Evidence:**\n- ${evidence}\n**Blockers:** ${blocked.map((item) => `${item.label} — ${item.status}`).join('; ') || 'No blocker is listed in the local registry.'}\n**Freshness:** registry read ${checkedAt()}; individual evidence freshness is shown above and may be older than this request. Authenticated browser, Supabase, and deployed-production health were not verified here.\n**Next safe action:** open the newest blocker report, then run an authenticated read-only browser/Supabase verification. No scheduler or external action was started.`;
+  return `**Status summary:** ${healthy.length} locally reported healthy; ${blocked.length} blocked or approval-gated. This is report-backed status, not a fresh production probe. Build/tests are represented by the latest local cycle evidence; Supabase and Deployment require separate authenticated verification; Hermes brain contracts are loaded.\n\n**Source checked:** bundled System Health registry and linked local reports.\n**Evidence:**\n- ${evidence}\n**Blockers:** ${blocked.map((item) => `${item.label} — ${item.status}`).join('; ') || 'No blocker is listed in the local registry.'}\n**Freshness:** registry read ${checkedAt()}; individual evidence freshness is shown above and may be older than this request. Authenticated browser, Supabase, and deployed-production health were not verified here.\n**Next safe action:** Next recommended action is to open the newest blocker report, then run an authenticated read-only browser/Supabase verification. No scheduler or external action was started.`;
 }
 
 export function renderResearchStatusContract(): string {
@@ -27,37 +45,29 @@ export function renderResearchStatusContract(): string {
 }
 
 export function renderRecordContract(kind: 'approvals' | 'clients', live: LiveHermesResponse): string {
+  const clean = cleanRecordSourceSummary(kind, live);
   const sourceName = kind === 'approvals' ? 'Supabase task_requests and approvals' : 'Supabase client_profiles';
   const required = kind === 'approvals' ? ['task_requests', 'approvals'] : ['client_profiles'];
   const failed = required.filter((table) => live.tableResults?.[table]?.status !== 'success');
   const succeeded = required.filter((table) => live.tableResults?.[table]?.status === 'success');
-  const partial = failed.length > 0 && succeeded.length > 0;
   const count = required.reduce((total, table) => total + (live.rowCounts?.[table] || 0), 0);
-  const state = live.liveData ? (partial ? 'partial verification' : 'verified read') : 'unverified';
   const label = kind === 'approvals' ? 'pending approval rows returned' : 'client rows returned';
 
-  let blocker: string;
-  if (!live.liveData) {
-    blocker = live.blocker || failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'access denied'}`).join('; ') || 'authentication or RLS denied access';
-  } else if (failed.length === 0) {
-    if (count === 0) {
-      blocker = kind === 'clients' ? `none — the ${sourceName} read succeeded but returned 0 ${label.replace(' returned', '')}` : 'none reported by the source adapter';
-    } else {
-      blocker = kind === 'clients' ? `none for the ${sourceName} read` : 'none reported by the source adapter';
-    }
-  } else {
-    blocker = failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'read failed'}`).join('; ');
+  if (clean.status === 'failed' || clean.status === 'fallback_used') {
+    const blockerText = live.blocker || failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'access denied'}`).join('; ') || 'authentication or RLS denied access';
+    return `**Source checked:** ${sourceName}.\n**Verification:** unverified; read-only, authenticated/RLS-applied when a session was available.\n**Result:** No verified count is available.\n**Blocker:** ${blockerText}\n**Freshness:** request-time check ${live.timestamp}; record-level updated timestamps were not normalized.\n**Next safe action:** sign in with the approved admin session and retry the same read-only query.`;
   }
 
-  const adjacentNote = kind === 'clients' && live.liveData ? '\n**Adjacent context:** approvals/task_requests were not used to count clients. Adjacent operational context is labeled separately from client records.' : '';
+  if (clean.status === 'success' || clean.status === 'empty_success') {
+    const sourceUsed = succeeded.join(', ');
+    return `**Result:** ${count} ${label}. Status: ${clean.status}.\n**Source checked:** ${sourceName}.\n**Verification:** verified read; read-only and authenticated when a session was available.\n**Provenance:** ${sourceUsed}.\n${kind === 'clients' ? '**Adjacent context:** approvals/task_requests excluded from client evidence.\n' : ''}**Freshness:** request-time check ${live.timestamp}.\n**Blocker:** none.\n**Next safe action:** ${count > 0 ? (kind === 'clients' ? 'open the client list and verify active status per record' : 'open Ray Review and inspect the highest-impact pending item') : (kind === 'clients' ? 'confirm this empty state is expected' : 'no approval action is needed unless another source is expected')}.`;
+  }
 
-  const nextAction = live.liveData
-    ? (count > 0
-      ? (kind === 'approvals' ? 'open Ray Review and inspect the highest-impact pending item' : 'open the client list and verify active status per record')
-      : (kind === 'clients' ? 'verify the client_profiles table exists and contains records, or confirm this is the expected state' : 'open Ray Review and inspect the highest-impact pending item'))
-    : 'sign in with the approved admin session and retry the same read-only query';
-
-  return `**Source checked:** ${sourceName}.\n**Verification:** ${state}; read-only, authenticated/RLS-applied when a session was available.\n**Result:** ${live.liveData ? `${count} ${label}.` : `No verified count is available.`}\n${live.text}\n**Blocker:** ${blocker}\n**Freshness:** request-time check ${live.timestamp}; record-level updated timestamps were not normalized.${adjacentNote}\n**Next safe action:** ${nextAction}.`;
+  const partial = succeeded.length > 0;
+  const state = partial ? 'partial verification' : 'unverified';
+  const blockerText = failed.map((table) => `${table}: ${live.tableResults?.[table]?.error || 'read failed'}`).join('; ');
+  const adjacentNote = kind === 'clients' ? '\n**Adjacent context:** approvals/task_requests were not used to count clients. Adjacent operational context is labeled separately from client records.' : '';
+  return `**Source checked:** ${sourceName}.\n**Verification:** ${state}; read-only, authenticated/RLS-applied when a session was available.\n**Result:** ${count} ${label}.\n**Blocker:** ${blockerText}\n**Freshness:** request-time check ${live.timestamp}; record-level updated timestamps were not normalized.${adjacentNote}\n**Next safe action:** sign in with the approved admin session and retry the same read-only query.`;
 }
 
 export function renderSpecialistHandoffContract(target?: string | null): string {

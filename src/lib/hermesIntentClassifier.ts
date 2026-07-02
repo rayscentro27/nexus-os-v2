@@ -126,7 +126,7 @@ function detectFollowup(_raw: string, lower: string, _intent: IntentType, domain
     return { isFollowup: true, followupType: 'advisory' };
   }
 
-  if (/\b(?:why did you|where did you|how did you|what source|what part of)\b/i.test(lower)) {
+  if (/\b(?:why did you|where did you|how did you|what source|what part of|what made you|why did you answer|what part of your decision)\b/i.test(lower)) {
     return { isFollowup: true, followupType: 'trace' };
   }
 

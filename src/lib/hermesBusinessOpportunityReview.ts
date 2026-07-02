@@ -124,7 +124,7 @@ export function draftRayReviewForOpportunity(scopeKey: string, frame: HermesInte
     source: target.source,
   });
 
-  return `Draft Ray Review request prepared for **${target.label}**. This is a conversation-only draft — it has not been saved, submitted, or assigned. The draft includes: target opportunity, review objective, and approval boundaries. To proceed, confirm the draft details and I can prepare the formal Ray Review request. No external action was taken.`;
+  return `Draft Ray Review request prepared for **${target.label}**. This is a conversation-only draft: not saved, not submitted, not assigned, and not executed. The draft includes the target opportunity, review objective, source, proposed decision, and approval boundaries. To proceed, confirm the draft details and I can prepare the formal Ray Review request. No external action was taken.`;
 }
 
 function extractGreeting(raw: string): string {
