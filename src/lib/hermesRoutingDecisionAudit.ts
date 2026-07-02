@@ -30,12 +30,13 @@ export function auditHermesRoutingDecision(input: RoutingDecisionAuditInput) {
   });
   const actualLevel = input.actualResult?.activationLevel ?? currentActual.level;
   const actualRoute = input.actualResult?.route ?? currentActual.route;
-  const isStatusOrMeta = classification.domain === 'model_cost_status' || ['settings', 'reports', 'tools_cli', 'system_health', 'automation'].includes(classification.domain);
+  const isStatusOrMeta = classification.domain === 'model_cost_status' || classification.domain === 'source_trace' || ['settings', 'reports', 'tools_cli', 'system_health', 'automation'].includes(classification.domain);
   const isRiskyExecution = /\b(send|publish|charge|execute|place\s+(?:a\s+)?trade|submit\s+(?:a\s+)?dispute|delete|truncate|start\s+scheduler)\b/i.test(normalizedMessage);
   let expectedActivationLevel = 4;
   let expectedRoute = 'local_reasoning';
   let expectedSource = 'domain_context';
   if (isRiskyExecution) { expectedActivationLevel = 0; expectedRoute = 'blocked_or_gated'; expectedSource = 'safety_gate'; }
+  else if (classification.domain === 'source_trace') { expectedActivationLevel = 1; expectedRoute = 'trace_status'; expectedSource = 'last_routing_trace'; }
   else if (classification.domain === 'casual_identity') { expectedActivationLevel = 1; expectedRoute = 'no_model'; expectedSource = 'casual_local'; }
   else if (isStatusOrMeta) { expectedActivationLevel = 1; expectedRoute = 'no_model'; expectedSource = 'local_status'; }
   else if (boundary.shouldUsePriorMemory) { expectedActivationLevel = 3; expectedRoute = 'conversation_memory'; expectedSource = 'conversation_memory'; }

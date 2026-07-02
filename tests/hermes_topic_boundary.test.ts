@@ -32,7 +32,7 @@ describe('Hermes semantic domain classification', () => {
     ['is channel research writing results', 'research_youtube'],
     ['which configuration is missing', 'settings'],
     ['what reports changed', 'reports'],
-    ['did you use Supabase', 'model_cost_status'],
+    ['did you use Supabase', 'source_trace'],
     ['what can make money fastest', 'monetization'],
   ])('classifies %s without an exact command route', (message, expected) => {
     expect(classifyHermesDomain(message).domain).toBe(expected);

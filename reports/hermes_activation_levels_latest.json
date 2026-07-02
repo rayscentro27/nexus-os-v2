@@ -68,6 +68,7 @@
   ],
   "routingRules": {
     "level0Overrides": "Level 0 is checked first and overrides all other levels",
+    "traceBeforeMemory": "Routing/source/debug questions are Level 1 trace_status and run before ordinal or selected-item memory",
     "topicBoundaryBeforeLevel3": "Safety, casual/identity, status/meta, and explicit domain classification run before Level 3 memory eligibility",
     "level4Before5": "Level 4 (local reasoning) is tried before Level 5 (model) to minimize model usage",
     "modelNeverForStatus": "Level 1 questions never trigger a model call",

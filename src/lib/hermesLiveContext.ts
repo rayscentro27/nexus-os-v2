@@ -158,6 +158,7 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
   const rowCounts: Record<string, number> = {};
   let hasError = false;
   let errorMsg = '';
+  let successfulQueries = 0;
 
   for (const q of queries) {
     const base = q.filter ? { data: [] as unknown[], error: null } : await queryTable(q.table);
@@ -171,9 +172,11 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
         .limit(15);
       rows = filterErr ? [] : (filtered ?? []);
       if (filterErr) { hasError = true; errorMsg = filterErr.message; }
+      else successfulQueries += 1;
     } else {
       rows = base.data;
       if (base.error) { hasError = true; errorMsg = base.error; }
+      else successfulQueries += 1;
     }
     results[q.table] = rows;
     tableNames.push(q.table);
@@ -199,13 +202,15 @@ export async function buildLiveSupabaseContext(message: string): Promise<LiveHer
     responseText += `\n\nNote: Some queries returned errors: ${errorMsg.slice(0, 100)}`;
   }
 
-  responseText += `\n\nSource: Live Supabase (authenticated admin session, RLS-gated). Data is read-only. Any resulting execution remains approval-gated.`;
+  responseText += successfulQueries > 0
+    ? `\n\nSource: Live Supabase (authenticated session, RLS-applied). Data is read-only. Any resulting execution remains approval-gated.`
+    : `\n\nNo Supabase query succeeded, so this response does not claim live data access.`;
 
   return {
     text: responseText,
-    source: 'live_supabase_context',
-    sourceType: 'live_supabase',
-    liveData: true,
+    source: successfulQueries > 0 ? 'live_supabase_context' : 'supabase_query_failed',
+    sourceType: successfulQueries > 0 ? 'live_supabase' : 'unavailable',
+    liveData: successfulQueries > 0,
     timestamp: now,
     tablesQueried: tableNames,
     rowCounts,

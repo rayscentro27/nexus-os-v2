@@ -57,23 +57,25 @@
 ## Routing Rules
 
 1. **Level 0 overrides all:** Safety gate is checked first and overrides everything.
-2. **Topic boundary before Level 3:** Casual/identity, meta/status, and explicit domains are classified before memory eligibility. Level 3 requires an explicit reference, named entity match, or clear same-domain continuation.
-3. **Level 4 before 5:** Local reasoning is always tried before model reasoning to minimize model usage.
-4. **Model never for status:** Level 1 questions never trigger a model call.
-5. **Model never for cost:** Cost/token questions never trigger a model call.
-6. **Supabase first:** Level 2 always tries live Supabase before falling back to static data.
+2. **Trace before memory:** Routing, source, Supabase/model-use, and domain-debug questions use the last non-trace routing record before any ordinal or selected-item memory check.
+3. **Topic boundary before Level 3:** Casual/identity, meta/status, and explicit domains are classified before memory eligibility. Level 3 requires an explicit reference, named entity match, or clear same-domain continuation.
+4. **Level 4 before 5:** Local reasoning is always tried before model reasoning to minimize model usage.
+5. **Model never for status:** Level 1 questions never trigger a model call.
+6. **Model never for cost:** Cost/token questions never trigger a model call.
+7. **Supabase first:** Level 2 always tries live Supabase before falling back to static data.
 
 ## Activation Level Detection Order
 
 ```
 1. Level 0: Safety gate (execution verbs)
-2. Level 1: Casual/identity local conversation
-3. Level 1: Meta/status/cost/process/capability
-4. Explicit domain classification and topic-boundary evaluation
-5. Level 3: Eligible follow-up memory
-6. Level 2: Live Supabase retrieval when records are required
-7. Level 4: Domain/local reasoning
-8. Level 5: Model reasoning when genuinely required
-9. Level 6: Approval/action layer
-10. Default: Level 4 only for current page context, otherwise Level 1
+2. Level 1: Routing/source/debug trace status
+3. Level 1: Casual/identity local conversation
+4. Level 1: Meta/status/cost/process/capability
+5. Explicit domain classification and topic-boundary evaluation
+6. Level 3: Eligible follow-up memory
+7. Level 2: Live Supabase retrieval when records are required
+8. Level 4: Domain/local reasoning
+9. Level 5: Model reasoning when genuinely required
+10. Level 6: Approval/action layer
+11. Default: Level 4 only for current page context, otherwise Level 1
 ```

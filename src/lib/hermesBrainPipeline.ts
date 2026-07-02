@@ -13,6 +13,9 @@ import { classifyHermesDomain } from './hermesDomainClassifier';
 import { evaluateTopicBoundary } from './hermesTopicBoundary';
 import { findRoutingInvariantViolations } from './hermesRoutingInvariants';
 import { answerConversation, classifyConversationIntent } from './hermesConversationBrain';
+import { answerHermesTraceQuestion, classifyTraceQuestion } from './hermesTraceQuestionHandler';
+import { answerTradingQuestion } from './hermesTradingReasoner';
+import { answerRevenueStrategy, isRevenueStrategyQuestion } from './hermesRevenueReasoner';
 
 export interface BrainPipelineInput {
   message: string;
@@ -85,7 +88,8 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const priorState = getConversationState();
   const memoryAvailable = hasConversationMemory() || Boolean(input.conversationHistory?.length);
   const pageAvailable = Boolean(page || input.currentPageContext);
-  const domain = classifyHermesDomain(message, page || null);
+  const traceQuestion = classifyTraceQuestion(message);
+  const domain = classifyHermesDomain(message, page || null, priorState.lastTopic);
   const boundary = evaluateTopicBoundary({
     message, detectedDomain: domain.domain, previousTopic: priorState.lastTopic,
     previousIntent: priorState.lastIntent, previousSelectedItem: priorState.lastSelectedItem,
@@ -108,17 +112,32 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   let confidence: BrainPipelineResponse['confidence'] = 'high';
   const memoryCandidateFound = Boolean(priorState.lastSelectedItem || priorState.lastRecommendedItem || priorState.lastRankedList.length || priorState.lastListedItems.length);
   let memoryUsed = false;
+  let diagnosticSuppressedForUser = false;
+  let traceTarget: 'last_answer' | 'current_question' | 'general_capability' = traceQuestion?.target || 'current_question';
 
-  // Trace questions inspect the prior entry and are always local/no-model.
-  if (isFollowUpReference(message) && !memoryAvailable) {
+  // Priority is safety, then trace/meta, before any memory candidate is examined.
+  if (activation.level === 0) {
+    text = `I cannot execute that directly. Sending, publishing, trading, charging, disputes, destructive data changes, and scheduler changes require explicit approval through Ray Review.\n\nI can prepare a draft plan or review card without performing the action.`;
+    answerBuilder = 'safety_gate';
+  } else if (traceQuestion) {
+    text = answerHermesTraceQuestion(message) || 'I do not have a relevant routing trace for that question.';
+    source = 'local'; answerBuilder = 'trace_question_handler';
+  } else if (isFollowUpReference(message) && !memoryAvailable) {
     text = 'I do not have conversation context for that reference yet. Name the item or list the options once, and I will continue without asking again.';
     source = 'local'; answerBuilder = 'missing_followup_context'; confidence = 'low';
   } else if (isRoutingTraceQuestion(message)) {
     text = answerRoutingTraceQuestion(message) || 'No routing trace is available.';
     source = 'local'; answerBuilder = 'routing_trace';
-  } else if (activation.level === 0) {
-    text = `I cannot execute that directly. Sending, publishing, trading, charging, disputes, destructive data changes, and scheduler changes require explicit approval through Ray Review.\n\nI can prepare a draft plan or review card without performing the action.`;
-    answerBuilder = 'safety_gate';
+  } else if (domain.domain === 'trading') {
+    const trading = answerTradingQuestion(message);
+    text = trading.text; source = activation.level === 1 ? 'local' : 'reasoning'; answerBuilder = trading.handler; confidence = trading.confidence;
+  } else if (isRevenueStrategyQuestion(message)) {
+    const live = await buildLiveSupabaseContext(message);
+    usedSupabase = live.liveData;
+    supabaseStatus = live.sourceType;
+    supabaseTables = live.tablesQueried || [];
+    const revenue = answerRevenueStrategy({ usedSupabase, supabaseTables, supabaseNote: live.liveData ? undefined : live.text.split('\n')[0] });
+    text = revenue.text; source = usedSupabase ? 'supabase' : 'reasoning'; answerBuilder = revenue.handler;
   } else if (activation.level === 1) {
     const capability = answerCapabilityQuestion(message);
     if (capability) { text = capability; source = 'capability'; answerBuilder = 'capability_status'; }
@@ -173,10 +192,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     if (item) { resolvedEntities.push(item); setLastSelectedItem(item); }
     source = 'conversation-followup'; answerBuilder = 'conversation_memory';
   } else if (activation.level === 4) {
-    if (domain.domain === 'trading') {
-      text = '**Trading Lab recommendation:** compare the existing paper/demo strategies by drawdown, sample size, and out-of-sample consistency before choosing one. Start with a paper-only test; no funded trade or broker execution is enabled.\n\n**Next safe action:** define the paper-test criteria and review the latest backtest evidence.';
-      answerBuilder = 'trading_reasoning';
-    } else if (domain.domain === 'research_youtube') {
+    if (domain.domain === 'research_youtube') {
       text = 'For research, first verify a current source or run receipt, then score relevance, evidence quality, and monetization value. I will not claim YouTube polling or Supabase writes without runtime proof.';
       answerBuilder = 'research_reasoning';
     } else if (domain.domain === 'credit_funding') {
@@ -190,8 +206,9 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
       if (item) { memoryUsed = true; resolvedEntities.push(item); text = implementationPlan(item); }
       else { text = 'I have an implementation request but no eligible matching item. Name the target once and I will build the plan.'; confidence = 'low'; }
     } else {
-      text = `I detected the ${domain.domain === 'unknown' ? 'general' : domain.domain.replace(/_/g, ' ')} domain and did not reuse the previous recommendation because this message did not reference it. I can reason from the current page or a named target without pulling in stale memory.`;
-      answerBuilder = 'domain_local_reasoning';
+      text = 'I can answer this locally, but the current message does not identify a domain, entity, or decision target. Name the target once and I will answer without pulling in an unrelated recommendation.';
+      answerBuilder = 'safe_unknown_domain_fallback';
+      diagnosticSuppressedForUser = true;
     }
     source = 'reasoning';
   } else if (activation.level === 5) {
@@ -208,7 +225,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
 
   addConversationMessage('user', message);
   addConversationMessage('assistant', text);
-  updateConversationContext({ lastIntent: traceIntent(activation), lastTopic: boundary.detectedTopic, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
+  if (!traceQuestion) updateConversationContext({ lastIntent: traceIntent(activation), lastTopic: boundary.detectedTopic, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
   const modelRoute = usedModel ? activation.modelRoute : (activation.level === 5 ? 'no_model' : activation.modelRoute);
   const memoryRejected = memoryCandidateFound && !memoryUsed && !boundary.shouldUsePriorMemory;
   const invariantViolations = findRoutingInvariantViolations({ domain: domain.domain, boundary, usedMemory: memoryUsed, usedSupabase, usedModel });
@@ -223,6 +240,9 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     memoryRejected, memoryRejectionReason: memoryRejected ? boundary.reason : null,
     domainOverrideApplied: boundary.domainOverrideApplied, casualOverrideApplied: boundary.casualOverrideApplied,
     invariantViolations,
+    questionType: traceQuestion ? 'trace_meta' : activation.level === 0 || activation.level === 6 ? 'action' : domain.domain === 'casual_identity' ? 'casual' : activation.level === 1 ? 'status' : 'domain_reasoning',
+    traceTarget, finalAnswerHandler: answerBuilder, diagnosticOnly: Boolean(traceQuestion),
+    diagnosticSuppressedForUser, domainOverrideReason: boundary.domainOverrideApplied ? boundary.reason : null,
   });
 
   const decision = usedModel ? 'route-to-model' : (usedSupabase || activation.level === 3 || activation.level === 4 ? 'answer-with-context' : 'answer-locally');
@@ -232,7 +252,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     rememberedContext: memoryAvailable || activation.level === 3, actionIntent: activation.level === 0 || activation.level === 6 ? message : null,
     approvalRequired: activation.level === 0 || activation.level === 6,
     safeNextActions: ['Prepare a draft', 'Review in Ray Review', 'Execute only after explicit approval'],
-    diagnostics: { activation, answerBuilder, fallbackReason, supabaseTables, domain, boundary, memoryCandidateFound, memoryUsed, memoryRejected, invariantViolations },
+    diagnostics: { activation, answerBuilder, fallbackReason, supabaseTables, domain, boundary, memoryCandidateFound, memoryUsed, memoryRejected, invariantViolations, traceQuestion, diagnosticSuppressedForUser },
     intent: { route: activation.route, intent: traceIntent(activation), confidence, reason: activation.reason },
     modelRoute: { route: modelRoute, reason: activation.reason },
     reasoning: { decision, confidence, reasoning: activation.reason }, capabilityBadge: getCapabilityReport().badgeText,

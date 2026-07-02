@@ -39,6 +39,12 @@ export interface RoutingTraceEntry {
   domainOverrideApplied: boolean;
   casualOverrideApplied: boolean;
   invariantViolations: string[];
+  questionType: 'normal' | 'trace_meta' | 'status' | 'casual' | 'domain_reasoning' | 'action';
+  traceTarget: 'last_answer' | 'current_question' | 'general_capability';
+  finalAnswerHandler: string;
+  diagnosticOnly: boolean;
+  diagnosticSuppressedForUser: boolean;
+  domainOverrideReason: string | null;
   confidence: 'high' | 'medium' | 'low';
 }
 
@@ -54,7 +60,7 @@ function safe(): Storage | null {
 }
 
 /** Record a routing trace entry. */
-type NewMemoryTraceFields = 'detectedDomain' | 'previousTopic' | 'detectedTopic' | 'topicChanged' | 'memoryCandidateFound' | 'memoryUsed' | 'memoryRejected' | 'memoryRejectionReason' | 'domainOverrideApplied' | 'casualOverrideApplied' | 'invariantViolations';
+type NewMemoryTraceFields = 'detectedDomain' | 'previousTopic' | 'detectedTopic' | 'topicChanged' | 'memoryCandidateFound' | 'memoryUsed' | 'memoryRejected' | 'memoryRejectionReason' | 'domainOverrideApplied' | 'casualOverrideApplied' | 'invariantViolations' | 'questionType' | 'traceTarget' | 'finalAnswerHandler' | 'diagnosticOnly' | 'diagnosticSuppressedForUser' | 'domainOverrideReason';
 type RoutingTraceInput = Omit<RoutingTraceEntry, 'id' | 'timestamp' | NewMemoryTraceFields> & Partial<Pick<RoutingTraceEntry, NewMemoryTraceFields>>;
 
 export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
@@ -63,6 +69,8 @@ export function logRoutingTrace(entry: RoutingTraceInput): RoutingTraceEntry {
     memoryCandidateFound: false, memoryUsed: entry.usedMemory, memoryRejected: false,
     memoryRejectionReason: null, domainOverrideApplied: false, casualOverrideApplied: false,
     invariantViolations: [],
+    questionType: 'normal', traceTarget: 'current_question', finalAnswerHandler: entry.answerBuilder,
+    diagnosticOnly: false, diagnosticSuppressedForUser: false, domainOverrideReason: null,
     ...entry,
     message: redactAndTruncate(entry.message),
     id: `trace-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -105,7 +113,7 @@ export function getRoutingTraces(): RoutingTraceEntry[] {
 /** Get the most recent routing trace. */
 export function getLastRoutingTrace(): RoutingTraceEntry | null {
   const traces = getRoutingTraces();
-  return [...traces].reverse().find(trace => trace.answerBuilder !== 'routing_trace') || (traces.length > 0 ? traces[traces.length - 1] : null);
+  return [...traces].reverse().find(trace => trace.questionType !== 'trace_meta' && trace.answerBuilder !== 'routing_trace' && trace.answerBuilder !== 'trace_question_handler') || (traces.length > 0 ? traces[traces.length - 1] : null);
 }
 
 /** Clear all routing traces. */

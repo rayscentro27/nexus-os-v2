@@ -1,0 +1,37 @@
+{
+  "reportType": "hermes_real_transcript_routing_fix",
+  "generatedAt": "2026-07-01T17:21:00-07:00",
+  "baselineCommit": "948ac6e79cd62fcb1128bf75840299c7f8825ec4",
+  "rootCauses": [
+    "Trace/source variants were classified after ordinal memory, so 'last response' selected the last ranked business item.",
+    "Trace questions were not consistently marked as meta and could hide the last normal trace.",
+    "The Supabase question missed its narrow capability pattern and matched the broad model phrase 'are you using'.",
+    "Trading had one generic answer with no list/recommend/status sub-intents or evidence check.",
+    "Natural revenue wording and a transcript typo missed narrow money intent patterns.",
+    "An internal general-domain diagnostic was allowed to become a normal final answer."
+  ],
+  "routingPriority": ["hard_safety", "trace_source_meta", "casual_identity", "status_cost_process", "explicit_domain", "memory_eligibility", "live_supabase", "local_reasoning", "model_reasoning", "approval_action"],
+  "traceHandler": {
+    "file": "src/lib/hermesTraceQuestionHandler.ts",
+    "target": "last non-trace answer",
+    "supabaseAmbiguity": "answers both last-answer use and general authenticated capability",
+    "strategicReasoning": "reports local_reasoning/model_reasoning, model use, Supabase use, and reason"
+  },
+  "tradingHandler": {
+    "file": "src/lib/hermesTradingReasoner.ts",
+    "knownStrategies": ["Half Trend Forex Strategy", "Options Income Idea", "Crypto Breakout Model", "AI Market Watcher"],
+    "recommendation": "withheld because the latest proof report has no recent backtest timestamp or latest strategy report",
+    "execution": "live/funded trading blocked"
+  },
+  "revenueHandler": {
+    "file": "src/lib/hermesRevenueReasoner.ts",
+    "ranges": { "conservative": 970, "realistic": 3425, "stretch": 6860 },
+    "assumptionsLabeled": true,
+    "supabase": "attempted for relevant opportunity tables; success claimed only when a query succeeds"
+  },
+  "traceFieldsAdded": ["questionType", "traceTarget", "finalAnswerHandler", "diagnosticOnly", "diagnosticSuppressedForUser", "domainOverrideReason"],
+  "tests": { "files": 15, "passed": 474, "failed": 0 },
+  "browserVerification": { "messages": 10, "checksPassed": 12, "checksFailed": 0, "authenticatedSupabase": false },
+  "externalActionsPerformed": false,
+  "remainingBlockers": ["Authenticated live Supabase opportunity-row verification", "Production/Netlify deployment verification", "Fresh comparable paper backtest evidence before selecting a trading strategy"]
+}

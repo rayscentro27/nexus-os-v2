@@ -96,6 +96,14 @@ export function detectActivationLevel(
   }
 
   // ── Casual/identity pre-check: new local topic, never memory/model/Supabase ──
+  if (domain === 'source_trace') {
+    return {
+      level: 1, levelName: LEVEL_NAMES[1], trigger: 'Routing/source/trace priority override',
+      route: 'trace_status', modelRoute: 'no_model', source: 'last_routing_trace',
+      reason: 'Routing and source questions are answered from the last relevant trace before memory or domain reasoning.',
+    };
+  }
+
   if (domain === 'casual_identity') {
     return {
       level: 1, levelName: LEVEL_NAMES[1], trigger: 'Casual/identity topic override',
@@ -175,7 +183,7 @@ export function detectActivationLevel(
   // ── Level 4: Local reasoning ──
   if (
     (domain === 'trading' && /\b(recommend|strategy|setup|test|paper|backtest|compare|should)\b/i.test(lower)) ||
-    (['business_opportunity', 'monetization'].includes(domain) && /\b(recommend|start|launch|easiest|low[- ]cost|make money|fastest|monetize|first|should)\b/i.test(lower)) ||
+    (['business_opportunity', 'monetization'].includes(domain) && /\b(recommend|start|launch|easiest|low[- ]cost|make|money|revenue|earn|most|highest|fastest|monetize|first|should|month|next|\d+\s+(?:days?|says?|weeks?))\b/i.test(lower)) ||
     /\b(recommend|prioritize|what\s+should\s+i\s+do\s+next|fastest\s+money\s+move|implementation\s+plan|what\s+business\s+(can|should)\s+i\s+start|how\s+do\s+we\s+implement|30\s*days|low\s+startup\s+cost|which\s+one\s+do\s+you\s+recommend|pick\s+one|choose\s+one)\b/i.test(lower) ||
     (/\b(business|start|opportunity|strategy)\b/i.test(lower) && !/\b(status|live|running|blocked)\b/i.test(lower))
   ) {

@@ -51,6 +51,9 @@ export function reasonAboutMessage(
   memoryBoundary: { shouldUsePriorMemory: boolean; reason: string } = { shouldUsePriorMemory: true, reason: 'legacy caller did not provide a boundary' },
 ): ReasoningPlan {
   const lower = message.toLowerCase();
+  if (/\b(where\s+did.*(?:answer|response)|what\s+source|did.*(?:supabase|database|model|ai)|what\s+domain\s+did|what\s+route\s+did|strategic reasoning)\b/i.test(lower)) {
+    return { decision: 'answer-locally', confidence: 'high', reasoning: 'Trace/source priority overrides memory and domain reasoning.', contextUsed: [] };
+  }
   const memoryCandidateFound = getAvailableContext(true).length > 0;
   const context = getAvailableContext(memoryBoundary.shouldUsePriorMemory);
   const hasCtx = context.length > 0;

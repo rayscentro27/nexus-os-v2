@@ -1,0 +1,80 @@
+{
+  "reportType": "hermes_live_transcript_routing_audit",
+  "generatedAt": "2026-07-01T17:05:00-07:00",
+  "baselineCommit": "948ac6e79cd62fcb1128bf75840299c7f8825ec4",
+  "messages": [
+    {
+      "userMessage": "but do you have a strategy you can recommend",
+      "hermesActualAnswer": "I detected the general domain and did not reuse the previous recommendation...",
+      "expectedDomain": "trading", "actualDomain": "unknown", "expectedActivationLevel": 4, "actualActivationLevel": 4,
+      "expectedHandler": "trading_reasoner", "actualHandler": "domain_local_reasoning", "expectedSource": "local_trading_context", "actualSource": "reasoning",
+      "expectedMemoryUse": "eligible same-topic continuation", "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "local_reasoning_fallback_wrong", "rootCauseHypothesis": "The omitted noun 'trading' was not inherited from the immediately preceding trading topic, and the internal domain diagnostic escaped as the answer.", "requiredMechanismFix": "Same-domain continuation inference plus a dedicated trading handler and diagnostic-output suppression."
+    },
+    {
+      "userMessage": "but do you have a trading strategy you recommend",
+      "hermesActualAnswer": "Trading Lab recommendation: compare the existing paper/demo strategies...",
+      "expectedDomain": "trading", "actualDomain": "trading", "expectedActivationLevel": 4, "actualActivationLevel": 4,
+      "expectedHandler": "trading_reasoner_recommendation", "actualHandler": "generic_trading_reasoning", "expectedSource": "verified_trading_context", "actualSource": "local_generic",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "trading_question_generic_answer", "rootCauseHypothesis": "Trading Level 4 had one generic compare-only answer and did not distinguish listing from recommendation or inspect evidence.", "requiredMechanismFix": "Dedicated trading reasoner with evidence-aware list/recommend/status modes."
+    },
+    {
+      "userMessage": "so what strategies are in the trading lab",
+      "hermesActualAnswer": "Trading Lab recommendation: compare the existing paper/demo strategies...",
+      "expectedDomain": "trading", "actualDomain": "trading", "expectedActivationLevel": 4, "actualActivationLevel": 4,
+      "expectedHandler": "trading_reasoner_list", "actualHandler": "generic_trading_reasoning", "expectedSource": "trading_page_reports_static", "actualSource": "local_generic",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "trading_question_generic_answer", "rootCauseHypothesis": "The pipeline did not classify the trading sub-intent and always emitted the same advice.", "requiredMechanismFix": "Retrieve known strategy names and separate list/recommend/status sub-intents."
+    },
+    {
+      "userMessage": "where did you get your last response from",
+      "hermesActualAnswer": "You are referring to Funding Application Prep Sprint. Here is the implementation plan...",
+      "expectedDomain": "source_trace", "actualDomain": "unknown/followup", "expectedActivationLevel": 1, "actualActivationLevel": 3,
+      "expectedHandler": "trace_question_handler", "actualHandler": "conversation_memory", "expectedSource": "last_non_trace_routing_trace", "actualSource": "ranked_business_memory",
+      "expectedMemoryUse": false, "actualMemoryUse": true, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "trace_question_misrouted_to_memory", "rootCauseHypothesis": "The ordinal matcher treated the word 'last' in 'last response' as the last ranked business item before trace intent was recognized.", "requiredMechanismFix": "Trace/source priority zero-after-safety and prohibit ordinal memory matching inside trace questions."
+    },
+    {
+      "userMessage": "what domain did you detect",
+      "hermesActualAnswer": "I detected the unknown domain. Domain override applied: no.",
+      "expectedDomain": "source_trace", "actualDomain": "source_trace pointing at polluted trace", "expectedActivationLevel": 1, "actualActivationLevel": 1,
+      "expectedHandler": "trace_question_handler", "actualHandler": "routing_trace", "expectedSource": "last_non_trace_trading_trace", "actualSource": "last polluted memory trace",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "domain_question_not_using_last_trace", "rootCauseHypothesis": "The preceding source question was not marked trace_meta, so it became the most recent relevant trace and hid the trading trace.", "requiredMechanismFix": "Dedicated trace question type and last normal/domain trace targeting."
+    },
+    {
+      "userMessage": "where are you getting the answer to your questions",
+      "hermesActualAnswer": "I detected the general domain and did not reuse the previous recommendation...",
+      "expectedDomain": "source_trace", "actualDomain": "unknown", "expectedActivationLevel": 1, "actualActivationLevel": 4,
+      "expectedHandler": "trace_question_handler", "actualHandler": "domain_local_reasoning", "expectedSource": "last_trace_and_capability", "actualSource": "internal_diagnostic",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "source_question_not_using_trace", "rootCauseHypothesis": "Source-question variants were absent from trace classification, allowing normal Level 4 fallback.", "requiredMechanismFix": "Semantic source/trace classifier and dedicated handler."
+    },
+    {
+      "userMessage": "are you using supabase",
+      "hermesActualAnswer": "I have a live AI model (openai/gpt-4o-mini...) for strategic reasoning.",
+      "expectedDomain": "source_trace", "actualDomain": "model_cost_status", "expectedActivationLevel": 1, "actualActivationLevel": 1,
+      "expectedHandler": "trace_question_handler_supabase", "actualHandler": "capability_model_status", "expectedSource": "last_trace_plus_supabase_capability", "actualSource": "model_capability",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "supabase_question_misrouted_to_model_status", "rootCauseHypothesis": "Capability matching used the broad phrase 'are you using' for model status after the narrower Supabase pattern failed.", "requiredMechanismFix": "Trace Supabase handler before capability matching and remove ambiguous model matcher."
+    },
+    {
+      "userMessage": "so are you using strategic reasoning",
+      "hermesActualAnswer": "I have a live AI model (openai/gpt-4o-mini...) for strategic reasoning.",
+      "expectedDomain": "source_trace", "actualDomain": "model_cost_status", "expectedActivationLevel": 1, "actualActivationLevel": 1,
+      "expectedHandler": "trace_question_handler_reasoning", "actualHandler": "capability_model_status", "expectedSource": "last_routing_trace", "actualSource": "model_capability",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": false, "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "source_question_not_using_trace", "rootCauseHypothesis": "Strategic-reasoning wording was treated as model availability rather than route diagnostics.", "requiredMechanismFix": "Explain local_reasoning/model_reasoning and actual model/Supabase use from trace."
+    },
+    {
+      "userMessage": "what is the most money we can make of the next 30 says",
+      "hermesActualAnswer": "I detected the general domain and did not reuse the previous recommendation...",
+      "expectedDomain": "monetization", "actualDomain": "unknown", "expectedActivationLevel": 4, "actualActivationLevel": 4,
+      "expectedHandler": "revenue_reasoner", "actualHandler": "domain_local_reasoning", "expectedSource": "opportunities_monetization_offer_ladder", "actualSource": "internal_diagnostic",
+      "expectedMemoryUse": false, "actualMemoryUse": false, "expectedSupabaseUse": "attempt when authenticated", "actualSupabaseUse": false, "expectedModelUse": false, "actualModelUse": false,
+      "correct": false, "failureType": "money_question_misrouted_to_debug", "rootCauseHypothesis": "Money intent required narrow phrases and failed on natural wording/typo; the general-domain diagnostic leaked to the user.", "requiredMechanismFix": "Broad monetization intent family, 30-day normalization, revenue reasoner, and final diagnostic guard."
+    }
+  ],
+  "summary": { "audited": 9, "correct": 0, "primaryRootCause": "Trace priority, sub-intent handlers, and internal diagnostic suppression were not centralized." }
+}

@@ -1,0 +1,13 @@
+# Hermes Real Transcript Routing Fix
+
+The supplied transcript exposed three priority defects rather than isolated answer defects: source questions ran after ordinal memory, trace questions could replace the trace they intended to inspect, and natural domain wording fell into the internal diagnostic fallback.
+
+The router now applies safety first, then a dedicated source/trace classifier and handler, followed by casual/status/domain classification, memory eligibility, retrieval, reasoning, and approval handling. Trace questions do not update the selected item or current topic and always target the last non-trace answer unless the user explicitly asks about the current question.
+
+Trading now has list, recommendation, last-test, status, and execution sub-intents. The strategy list comes from the rendered Trading Lab context. A specific recommendation is withheld because `trading_lab_proof_latest` has no recent backtest timestamp or latest strategy report. No profitability or running-strategy claim is inferred from static labels.
+
+Revenue questions use a dedicated 30-day reasoner with conservative, realistic, and stretch assumptions. The monthly price is explicitly identified as an assumption. Supabase is attempted for opportunity context, but live access is claimed only after a successful authenticated query.
+
+The exact transcript and generalized source, database, AI, trading-list, and revenue variants are covered. All 474 tests pass. The 10-message full Workroom browser flow passed all 12 assertions, including diagnostic suppression and absence of stale Funding Application Prep Sprint leakage.
+
+Remaining blockers are authenticated live opportunity-row verification, production deployment verification, and fresh comparable paper backtest evidence before Hermes can select a specific trading strategy.

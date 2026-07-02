@@ -56,6 +56,7 @@ export function evaluateTopicBoundary(input: TopicBoundaryInput): TopicBoundaryD
   const pageChanged = Boolean(input.currentPage && input.previousPage && input.currentPage !== input.previousPage);
   const broadFreshStrategy = isBusinessDomain(domain) && !followUpMarkers.length && !namedMemoryMatches.length;
 
+  if (domain === 'source_trace') return { detectedTopic: previousTopic, isNewTopic: false, shouldUsePriorMemory: false, reason: 'Trace/meta questions inspect routing state and never resolve ranked business memory.', confidence: 'high', followUpMarkers: [], namedMemoryMatches: [], domainOverrideApplied: true, casualOverrideApplied: false };
   if (casualOverrideApplied) return { detectedTopic: domain, isNewTopic: true, shouldUsePriorMemory: false, reason: 'Casual/identity questions always start a new topic.', confidence: 'high', followUpMarkers, namedMemoryMatches, domainOverrideApplied: true, casualOverrideApplied: true };
   if (namedMemoryMatches.length) {
     const namedTopic = namedMemoryMatches[0].type === 'opportunity' ? 'business_opportunity' : (domain === 'unknown' ? previousTopic : domain);

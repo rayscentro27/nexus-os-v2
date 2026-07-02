@@ -181,12 +181,12 @@ export function answerCapabilityQuestion(message: string): string | null {
   }
 
   // "are you connected" / "supabase status"
-  if (/are you connected|supabase status|database status|what is your supabase/.test(lower)) {
+  if (/are you connected|using supabase|use supabase|supabase status|database status|what is your supabase/.test(lower)) {
     return report.supabase.userFacing;
   }
 
   // "model" / "are you using a live model" / "openrouter"
-  if (/model|openrouter|live model|are you using|ai model/.test(lower)) {
+  if (/\b(model|openrouter|live model|ai model)\b/.test(lower)) {
     return report.liveModel.userFacing;
   }
 
