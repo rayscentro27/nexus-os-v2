@@ -12,6 +12,7 @@ import { isOpportunityAwareRecommendationQuestion, isPhysicalWorldAdvisoryQuesti
 import { detectPromptKind } from './hermesPromptKind';
 import { type HermesIntentFrame } from './hermesIntentFrame';
 import { isSessionActive } from './hermesAdvisorSession';
+import { classifyOperatingQuestion } from './hermesLocalOperatingCommands';
 
 export interface PriorityRouterInput { message: string; currentPage?: string | null; previousDomain?: string | null; selectionMemory: SelectionMemory; intentFrame?: HermesIntentFrame; scopeKey?: string; }
 
@@ -127,6 +128,8 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   if (promptKind !== 'advisory_followup' && /\b(delegate|handoff|send|schedule|create|approve|move|assign|prepare|draft|start)\b.*\b(this|that|it|that one|this one)\b/i.test(lower)) return decision({ routeId: 'approval_action_prepare', activationLevel: 6, domain: input.selectionMemory.activeDomain || domain, intent: 'unresolved_action_reference', memoryPolicy: 'selection_only', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'approval_required', reason: 'A vague action reference may prepare a draft only when selection memory resolves an eligible target.' });
 
   const inventory = /\b(what|which|list|show)\b.*\b(strategies|opportunities|approvals|clients|reports|offers|rows|drafts|records)\b|\bwhat\b.*\b(?:do we have|are available|exist)\b/i.test(lower);
+  if (classifyOperatingQuestion(message)) return decision({ routeId: 'readiness_operating_status', activationLevel: 2, domain: 'credit_funding', intent: 'readiness_question', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Readiness/operating questions answer from the readiness registry and capability status.' });
+
   if (domain !== 'unknown' && inventory) {
     const local = ['trading', 'reports', 'settings', 'marketing'].includes(domain);
     return decision({ routeId: 'explicit_domain_retrieval', activationLevel: 2, domain, intent: 'inventory_question', memoryPolicy: 'none', retrievalPolicy: local ? 'local_reports' : 'supabase_then_static_fallback', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: `Inventory questions retrieve ${local ? 'local records/reports' : 'Supabase records with an honest static fallback'} before reasoning.` });

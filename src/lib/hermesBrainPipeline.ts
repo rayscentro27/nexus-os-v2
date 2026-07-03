@@ -22,6 +22,8 @@ import { reportRegistry } from '../data/reportRegistry.js';
 import { rayReviewCards } from '../data/rayReviewData.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
 import { answerCasualCommonQuestion, answerExternalCurrentInfoQuestion, answerGeneralAdvisorQuestion, answerGeneralProjectPlanningQuestion } from './hermesCommonConversation';
+import { classifyOperatingQuestion, answerOperatingQuestion } from './hermesLocalOperatingCommands';
+import { getReadinessActionMetadata } from './nexusReadinessRegistry';
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
 import { advanceAdvisoryContinuityTurn, answerAdvisoryFollowUp, clearAdvisoryContinuity, setAdvisoryContinuity, setAdvisoryMemoryScope } from './hermesAdvisoryContinuity';
 import { advanceFallbackContinuityTurn, clearFallbackContinuity, setFallbackContinuity, setFallbackMemoryScope } from './hermesFallbackContinuity';
@@ -175,6 +177,13 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerExternalCurrentInfoQuestion(message), 'external_current_info_fallback', ['common_knowledge']); break;
     case 'process_activity_status':
       handler = result(answerActivityStatusQuestion({ message, routeDecision: decision, contextPacket: packet }), 'activity_status_summary', ['local_activity_journal', 'confirmed_checkpoint']); break;
+    case 'readiness_operating_status': {
+      const opQuestion = classifyOperatingQuestion(message);
+      const areaMap: Record<string, string> = { credit_repair_ready: 'credit_repair', business_funding_ready: 'business_funding', ready_to_onboard_client: 'client_onboarding', missing_credit_repair: 'credit_repair', missing_business_funding: 'business_funding', can_sell_97_review: 'readiness_review_offer', what_should_ray_do_first: 'readiness_review_offer', draft_ray_review_readiness: 'readiness_review_offer', specialist_handoff_credit: 'credit_repair', specialist_handoff_funding: 'business_funding', what_parts_manual: 'credit_repair', what_parts_automated: 'credit_repair', what_parts_approval_gated: 'credit_repair', what_can_client_see: 'client_portal', what_can_admin_see: 'admin_review' };
+      const actionMeta = opQuestion ? getReadinessActionMetadata(areaMap[opQuestion] || 'credit_repair') : null;
+      if (actionMeta) uiActions = [actionMeta];
+      handler = result(opQuestion ? answerOperatingQuestion(opQuestion) : 'I need more detail. Ask about credit repair readiness, business funding readiness, whether you can sell the $97 review, or what is missing.', 'readiness_operating_status', ['readiness_registry']); break;
+    }
     case 'system_health_report':
       handler = result(/where is the problem|what is the issue|what is not working/i.test(message) ? answerSystemHealthQuestion(message) : renderSystemHealthContract(), 'system_health_contract', ['system_health_registry', 'local_reports']); break;
     case 'page_connection_status':
@@ -427,7 +436,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     routeDecision.reason = arbiterResult.reasonForDecision;
   }
   const advisoryProducingRoute = ['revenue_reasoning', 'general_advisor', 'nexus_build_planning', 'opportunity_aware_recommendation', 'memory_followup'].includes(routeDecision.routeId) || (routeDecision.routeId === 'local_reasoning' && ['business_opportunity', 'monetization'].includes(routeDecision.domain));
-  const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
+  const topicNeutralRoute = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'readiness_operating_status', 'process_settings_reports_status', 'capability_status', 'advisory_followup'].includes(routeDecision.routeId);
   if (!advisoryProducingRoute && !topicNeutralRoute && routeDecision.domain !== 'unknown') clearAdvisoryContinuity();
   if (!['trace_source_meta', 'cost_model_usage_status', 'fallback_continuation', 'fallback_clarification'].includes(routeDecision.routeId)) clearFallbackContinuity();
   const packet = buildContextPacket({ routeDecision, message, session: input.userSession, pageContext: input.currentPageContext || null, conversationState: state });
@@ -538,7 +547,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     };
   }
 
-  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'process_settings_reports_status', 'system_health_report', 'page_connection_status', 'page_context_status', 'capability_status', 'fallback_clarification'];
+  const topicNeutralRoutes = ['trace_source_meta', 'cost_model_usage_status', 'casual_common', 'casual_identity', 'process_activity_status', 'readiness_operating_status', 'process_settings_reports_status', 'system_health_report', 'page_connection_status', 'page_context_status', 'capability_status', 'fallback_clarification'];
   if (!topicNeutralRoutes.includes(routeDecision.routeId)) {
     updateConversationContext({ lastIntent: routeDecision.intent, lastTopic: routeDecision.domain, lastPage: page || null, lastActionPlan: /implementation plan/i.test(text) ? text.slice(0, 2000) : null });
   }
