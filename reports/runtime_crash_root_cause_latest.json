@@ -1,0 +1,61 @@
+{
+  "title": "Runtime Crash Root Cause Analysis",
+  "commit": "f148527",
+  "previousCommit": "07d17fd",
+  "date": "2026-07-01",
+  "errors": [
+    {
+      "error": "ReferenceError: Cannot access 'J' before initialization",
+      "sourceFile": "src/components/HermesChatPanel.jsx",
+      "line": 50,
+      "rootCause": "Variable `lower` was used on line 50 (isDailyActivityQuestion(lower)) before its const declaration on line 63 (const lower = clean.toLowerCase()). This is a temporal dead zone — the minified bundle names it 'J', hence the error message.",
+      "affectedRoutes": ["#/hermes"],
+      "fix": "Moved `const lower = clean.toLowerCase()` to the top of the send function, before any usage. Also reordered all handler checks to use consistent `lower` variable."
+    },
+    {
+      "error": "TypeError: Cannot read properties of undefined (reading 'replace')",
+      "sourceFile": "src/components/MonetizationPanel.jsx",
+      "lines": [38, 177],
+      "rootCause": "Two .replace() calls on potentially undefined values: offer.stripeStatus.replace() and r.status.replace(). If a Supabase row is missing these fields, the normalizer returns safe defaults but the component still called .replace() directly without null check.",
+      "affectedRoutes": ["#/monetization"],
+      "fix": "Added fallback defaults: (offer.stripeStatus || 'unknown').replace() and (r.status || 'unknown').replace()"
+    },
+    {
+      "error": "Monetization page blank/crashing",
+      "sourceFile": "src/components/MonetizationPanel.jsx",
+      "rootCause": "The unsafe .replace calls above caused the entire MonetizationPanel to crash during render. Without an error boundary, this showed as a blank page.",
+      "affectedRoutes": ["#/monetization"],
+      "fix": "Fixed .replace calls + added ErrorBoundary component around all panel routes in NexusAdminUI.jsx"
+    },
+    {
+      "error": "Hermes capability messaging inconsistency",
+      "sourceFile": "src/lib/hermesResponseRouter.ts",
+      "line": 905,
+      "rootCause": "The backend_query handler always returned 'I do not have a live AI model configured' regardless of VITE_HERMES_CHAT_ENABLED state. This contradicted the badge showing 'Live Supabase + Model Ready'.",
+      "affectedRoutes": ["#/hermes"],
+      "fix": "Added VITE_HERMES_CHAT_ENABLED check — returns model-ready answer when configured, honest fallback when not."
+    },
+    {
+      "error": "Hermes inline drawer missing daily activity/CEO summary handlers",
+      "sourceFile": "src/components/HermesInlineDrawer.jsx",
+      "rootCause": "The inline drawer only had generic buildHermesResponse + Supabase/web enrichment. It never checked for daily activity questions, CEO summary requests, or section status questions. These were only wired in HermesChatPanel.",
+      "affectedRoutes": ["All routes with inline drawer"],
+      "fix": "Added isDailyActivityQuestion, isCeoSummaryRequest, isSectionStatusQuestion checks at the top of the send handler, matching HermesChatPanel behavior."
+    }
+  ],
+  "filesChanged": [
+    "src/components/HermesChatPanel.jsx",
+    "src/components/HermesInlineDrawer.jsx",
+    "src/components/MonetizationPanel.jsx",
+    "src/components/client/ClientPortalShell.jsx",
+    "src/components/ErrorBoundary.jsx (NEW)",
+    "src/admin/NexusAdminUI.jsx",
+    "src/lib/hermesPlainEnglishTranslator.ts",
+    "src/lib/hermesResponseRouter.ts",
+    "tests/hermes_section_status.test.ts"
+  ],
+  "testsAdded": 22,
+  "totalTests": 387,
+  "buildResult": "PASS",
+  "safetyResult": "PASS"
+}

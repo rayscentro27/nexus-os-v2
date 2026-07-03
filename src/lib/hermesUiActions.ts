@@ -1,4 +1,4 @@
-export type HermesUiActionType = 'open_report' | 'open_approval' | 'view_source' | 'open_access_map' | 'draft_ray_review' | 'prepare_specialist_handoff';
+export type HermesUiActionType = 'open_report' | 'open_approval' | 'view_source' | 'open_access_map' | 'draft_ray_review' | 'prepare_specialist_handoff' | 'open_intake' | 'open_scorecard' | 'open_report_template' | 'open_checklist' | 'draft_client_report' | 'draft_upgrade_recommendation';
 
 export interface HermesUiAction {
   title: string;
@@ -18,7 +18,7 @@ export interface HermesUiAction {
 }
 
 export const SAFE_HERMES_ACTION_TYPES: ReadonlySet<HermesUiActionType> = new Set([
-  'open_report', 'open_approval', 'view_source', 'open_access_map', 'draft_ray_review', 'prepare_specialist_handoff',
+  'open_report', 'open_approval', 'view_source', 'open_access_map', 'draft_ray_review', 'prepare_specialist_handoff', 'open_intake', 'open_scorecard', 'open_report_template', 'open_checklist', 'draft_client_report', 'draft_upgrade_recommendation',
 ]);
 
 export function isSafeHermesUiAction(action: HermesUiAction): boolean {
