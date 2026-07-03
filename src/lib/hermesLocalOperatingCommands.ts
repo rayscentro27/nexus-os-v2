@@ -33,7 +33,16 @@ export type OperatingQuestion =
   | 'upgrade_recommendation'
   | 'prepare_297_upsell'
   | 'prepare_monthly_subscription'
-  | 'specialist_handoff_from_review';
+  | 'specialist_handoff_from_review'
+  | 'start_client_intake'
+  | 'open_readiness_intake'
+  | 'open_admin_review'
+  | 'score_this_review'
+  | 'draft_client_report_flow'
+  | 'what_missing_from_review'
+  | 'what_tell_this_client'
+  | 'best_upgrade_path'
+  | 'prepare_specialist_handoff_flow';
 
 export function classifyOperatingQuestion(message: string): OperatingQuestion | null {
   const lower = message.toLowerCase();
@@ -64,6 +73,15 @@ export function classifyOperatingQuestion(message: string): OperatingQuestion | 
   if (/\bprepare (?:the )?monthly readiness subscription\b/i.test(lower)) return 'prepare_monthly_subscription';
   if (/\bprepare (?:a )?(?:specialist|handoff) (?:from |for )?this review\b/i.test(lower)) return 'specialist_handoff_from_review';
   if (/\bspecialist handoff (?:from |for )?review\b/i.test(lower)) return 'specialist_handoff_from_review';
+  if (/\bstart (?:a )?client intake\b/i.test(lower)) return 'start_client_intake';
+  if (/\bopen (?:the )?readiness intake\b/i.test(lower)) return 'open_readiness_intake';
+  if (/\bopen (?:the )?admin review\b/i.test(lower)) return 'open_admin_review';
+  if (/\bscore (?:this )?review\b/i.test(lower)) return 'score_this_review';
+  if (/\bdraft (?:the )?client report\b/i.test(lower)) return 'draft_client_report_flow';
+  if (/\bwhat (?:is )?(?:missing|needed) (?:from )?this review\b/i.test(lower)) return 'what_missing_from_review';
+  if (/\bwhat should (?:i|we) tell (?:this )?client\b/i.test(lower)) return 'what_tell_this_client';
+  if (/\bbest (?:upgrade )?path\b/i.test(lower)) return 'best_upgrade_path';
+  if (/\bprepare (?:a )?specialist handoff\b/i.test(lower)) return 'prepare_specialist_handoff_flow';
   return null;
 }
 
@@ -121,6 +139,24 @@ export function answerOperatingQuestion(question: OperatingQuestion): string {
       return answerPrepareMonthlySubscription();
     case 'specialist_handoff_from_review':
       return answerSpecialistHandoffFromReview();
+    case 'start_client_intake':
+      return answerStartClientIntake();
+    case 'open_readiness_intake':
+      return answerOpenReadinessIntake();
+    case 'open_admin_review':
+      return answerOpenAdminReview();
+    case 'score_this_review':
+      return answerScoreThisReview();
+    case 'draft_client_report_flow':
+      return answerDraftClientReportFlow();
+    case 'what_missing_from_review':
+      return answerWhatMissingFromReview();
+    case 'what_tell_this_client':
+      return answerWhatTellThisClient();
+    case 'best_upgrade_path':
+      return answerBestUpgradePath();
+    case 'prepare_specialist_handoff_flow':
+      return answerPrepareSpecialistHandoffFlow();
   }
 }
 
@@ -253,4 +289,40 @@ function answerPrepareMonthlySubscription(): string {
 
 function answerSpecialistHandoffFromReview(): string {
   return `**Specialist Handoff Draft — from $97 Readiness Review**\n\n**Specialist lane:** Credit Specialist or Funding Specialist (depending on client needs)\n**Objective:** Continue the client's credit repair or business funding workflow based on the readiness review findings\n**Context included:**\n- Client readiness tier and overall score\n- Top 3 blockers identified in the review\n- Recommended next steps from the report\n- Credit profile and business foundation status\n- Documents available and missing\n\n**Constraints:** Draft-only. No specialist agent is live. This is a conversation-only draft for Ray Review.\n\n**Approval required:** Yes — any specialist action must go through Ray Review.\n\n**Draft status:** Not created, not saved, not assigned, not sent`;
+}
+
+function answerStartClientIntake(): string {
+  return `**Starting a client intake:**\n\n1. Open the Readiness Review Intake component\n2. Walk the client through 15 sections\n3. Collect credit, business, and funding information\n4. Get consent/disclaimer checkbox\n5. Submit locally — nothing is sent externally\n\n**Component:** src/components/ReadinessReviewIntake.jsx\n**Time:** 15-30 minutes per client\n**Next step:** After intake, open admin review to score and prepare the report.`;
+}
+
+function answerOpenReadinessIntake(): string {
+  return `**Opening readiness intake:**\n\nThe intake form is a React component that collects:\n- Personal credit readiness (score, reports, negatives)\n- Credit utilization and inquiries\n- Collections and charge-offs\n- Business entity setup\n- EIN, DUNS, SOS, NAICS numbers\n- Business contact info\n- Bank account and credit monitoring\n- Funding goal and timeline\n- Document availability\n- Consent and disclaimer\n\n**Component:** src/components/ReadinessReviewIntake.jsx\n**Mode:** Local draft only — no external persistence or sends.`;
+}
+
+function answerOpenAdminReview(): string {
+  return `**Opening admin review:**\n\nThe admin review screen lets Ray:\n- View all intake responses\n- Score credit readiness manually\n- Score business funding readiness manually\n- Add admin notes\n- Select top blockers\n- Choose recommended next steps\n- Prepare report draft\n- Select upgrade path\n- Prepare specialist handoff\n\n**Component:** src/components/ReadinessReviewAdmin.jsx\n**Mode:** Draft-only — nothing is saved or delivered without Ray Review approval.`;
+}
+
+function answerScoreThisReview(): string {
+  return `**Scoring this review:**\n\n1. Open the admin review → Scoring tab\n2. Enter credit scores for each factor\n3. Enter funding scores for each factor\n4. Overall score calculates automatically\n5. Tier is matched automatically\n\n**Scorecard:** src/lib/readinessReviewScorecard.ts\n**8 sections:** Credit profile, utilization, negatives, inquiries, business foundation, bankability, docs, timing\n**5 tiers:** Not Ready, Needs Cleanup, Almost Ready, Starter, Advanced\n**No live bureau data** — scores are manual estimates.`;
+}
+
+function answerDraftClientReportFlow(): string {
+  return `**Drafting client report:**\n\n1. Complete intake and scoring\n2. Open admin review → Draft tab\n3. Click "Prepare Full Report Draft"\n4. Report includes:\n   - Executive summary\n   - Readiness score and tier\n   - Credit findings\n   - Business funding findings\n   - Top blockers\n   - Recommended next steps\n   - What to avoid\n   - Upgrade path\n   - Disclaimer\n\n**Generator:** src/lib/readinessReviewReportDraft.ts\n**Status:** Draft only — requires Ray Review before delivery.`;
+}
+
+function answerWhatMissingFromReview(): string {
+  return `**What is missing from this review:**\n\n- No live credit bureau data (scores are manual estimates)\n- No live bank or lender verification\n- No automated report delivery\n- No email or notification system\n- No payment processing integration\n- No client portal persistence\n\n**All of these are by design.** The $97 review is manual-first. Once the process is proven, these can be added.`;
+}
+
+function answerWhatTellThisClient(): string {
+  return `**What to tell this client:**\n\nAfter completing the review:\n\n1. "Here is your readiness score and tier"\n2. "Here is what is working for you"\n3. "Here are the blockers we identified"\n4. "Here is what to do first"\n5. "Here is what to avoid"\n6. "If you want help, here is the upgrade option"\n\n**Tone:** Clear, practical, no jargon. Include disclaimer. No guaranteed outcomes.`;
+}
+
+function answerBestUpgradePath(): string {
+  return `**Best upgrade path:**\n\nBased on the client's readiness tier:\n\n**Not Ready / Needs Cleanup:**\n$297 Credit Assistant Plan — hands-on support to complete credit repair and business setup.\n\n**Almost Ready:**\n$297 Assistant Plan to close remaining gaps, then transition to Monthly Subscription.\n\n**Ready (Starter or Advanced):**\nMonthly Readiness Subscription — ongoing monitoring and priority support.\n\n**No pressure.** The review itself has value. The upgrade is optional.`;
+}
+
+function answerPrepareSpecialistHandoffFlow(): string {
+  return `**Preparing specialist handoff:**\n\n1. Complete the readiness review\n2. Identify client's primary need (credit vs funding)\n3. Open admin review → Notes tab\n4. Select specialist lane (Credit or Funding)\n5. Prepare handoff draft with:\n   - Client readiness tier\n   - Top blockers\n   - Recommended next steps\n   - Documents available\n\n**Status:** Draft-only. No specialist agent is live. Handoff must go through Ray Review.`;
 }
