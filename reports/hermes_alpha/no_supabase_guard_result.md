@@ -17,4 +17,4 @@ Static guard scope: `src/hermes/alpha/*.ts`.
 
 Command: `npx vitest run tests/hermes_alpha_no_supabase_guard.test.ts tests/hermes_alpha_brain_v1.test.ts tests/hermes_alpha_marketing_assets.test.ts`
 
-Current focused result: 6 Alpha files passed, 36 tests passed. TypeScript typecheck passed. Production build passed. Full suite passed: 39 files, 837 tests. The scan also rejects Research Vault connectors and external network/model invocation patterns. This guard proves code shape and defaults; it is not permission to activate any future adapter.
+Current focused result: 7 Alpha files passed, 40 tests passed. TypeScript typecheck passed. Production build passed. Full suite passed: 40 files, 841 tests. The scan also rejects Research Vault connectors and external network/model invocation patterns. Inbox policy tests confirm empty approved folders are valid and README/placeholder files are not artifacts. This guard proves code shape and defaults; it is not permission to activate any future adapter.

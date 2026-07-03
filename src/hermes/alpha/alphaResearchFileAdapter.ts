@@ -2,6 +2,7 @@ import type { AlphaResearchArtifact } from "./alphaTypes";
 
 export const ALPHA_RESEARCH_FILE_POLICY = Object.freeze({
   allowedDirectories: [
+    "hermes_alpha/research_inbox/",
     "reports/hermes_alpha/",
     "reports/manual_publish/",
     "data/exports/notebooklm/",
@@ -40,6 +41,12 @@ function extension(path: string): string {
   return dot >= 0 ? path.slice(dot).toLowerCase() : "";
 }
 
+export function isAlphaResearchArtifactFilename(path: string): boolean {
+  const normalized = path.toLowerCase().replaceAll("\\", "/");
+  const name = normalized.slice(normalized.lastIndexOf("/") + 1);
+  return name !== "readme.md" && name !== ".gitkeep" && ALPHA_RESEARCH_FILE_POLICY.allowedExtensions.includes(extension(normalized));
+}
+
 function routeArtifact(candidate: AlphaFileCandidate): AlphaArtifactRoute {
   const text = `${candidate.title} ${(candidate.tags || []).join(" ")} ${candidate.category}`.toLowerCase();
   if (/execute|publish|send|charge|place trade|order/.test(text)) return "ray_review_draft";
@@ -62,6 +69,7 @@ export class AlphaResearchFileAdapter {
     if (ALPHA_RESEARCH_FILE_POLICY.rejectedExtensions.includes(ext)) reasons.push("rejected_file_type");
     if (candidate.sizeBytes < 0 || candidate.sizeBytes > ALPHA_RESEARCH_FILE_POLICY.maxFileSizeBytes) reasons.push("file_size_out_of_bounds");
     if (BLOCKED_SEGMENTS.some((segment) => normalized.includes(segment))) reasons.push("sensitive_path_segment");
+    if (!isAlphaResearchArtifactFilename(normalized)) reasons.push("policy_document_not_artifact");
     return {
       artifact: structuredClone(candidate), accepted: reasons.length === 0, route: routeArtifact(candidate),
       evidenceQuality: normalized.includes("fixtures/") ? "mock" : "unverified",
