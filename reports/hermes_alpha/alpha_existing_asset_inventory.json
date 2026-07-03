@@ -1,0 +1,131 @@
+{
+  "generated_at": "2026-07-03T00:00:00Z",
+  "repo": "nexus-os-v2",
+  "branch": "master",
+  "commit": "5999e1d",
+  "test_status": "794/794 passing",
+  "build_status": "clean",
+  "legacy_folders": [
+    {
+      "path": "~/nexus-ai",
+      "git": true,
+      "branch": "master",
+      "running": true,
+      "launchd_jobs": 15,
+      "status": "operational"
+    },
+    {
+      "path": "~/nexuslive",
+      "git": true,
+      "branch": "master",
+      "running": false,
+      "status": "dormant"
+    },
+    {
+      "path": "~/nexus",
+      "git": true,
+      "branch": "master",
+      "running": false,
+      "status": "dormant"
+    },
+    {
+      "path": "~/nexus-ai-council-sandbox",
+      "git": false,
+      "running": false,
+      "status": "dormant"
+    }
+  ],
+  "running_processes": [
+    {
+      "name": "opencode",
+      "pid": 26324,
+      "cpu": "100%",
+      "purpose": "Current session tool"
+    },
+    {
+      "name": "cloudflared",
+      "pid": 12035,
+      "cpu": "0.0%",
+      "purpose": "Hermes gateway tunnel"
+    },
+    {
+      "name": "control_center_server",
+      "pid": 23097,
+      "cpu": "0.0%",
+      "port": 4000,
+      "purpose": "Nexus AI control center"
+    }
+  ],
+  "launchd_jobs": {
+    "total": 25,
+    "active": ["ai.hermes.gateway", "cf.hermes.gateway", "com.raymonddavis.nexus.control-center"],
+    "installed_not_running": [
+      "com.nexus.trading-engine",
+      "com.nexus.research-worker",
+      "com.nexus.research-signal-bridge",
+      "com.nexus.signal-router",
+      "com.nexus.orchestrator",
+      "com.nexus.auto-executor",
+      "com.nexus.tournament",
+      "com.nexus.ollama",
+      "com.nexus.mac-mini-worker",
+      "com.nexus.signal-review",
+      "com.raymonddavis.nexus.scheduler",
+      "com.raymonddavis.nexus.dashboard",
+      "com.raymonddavis.nexus.autonomy-worker",
+      "com.raymonddavis.nexus.email-pipeline",
+      "com.raymonddavis.nexus.monitoring-worker",
+      "com.nexus.continuous-ops-daily",
+      "com.nexus.evening-closeout",
+      "com.raymonddavis.ollama"
+    ]
+  },
+  "clis": {
+    "node": {"version": "22.22.3", "path": "~/.nvm/versions/node/v22.22.3/bin/node"},
+    "npm": {"version": "10.9.3", "path": "nvm-managed"},
+    "python3": {"path": "/usr/local/bin/python3"},
+    "git": {"version": "2.43.0", "path": "/usr/local/bin/git"},
+    "gh": {"version": "2.76.2", "path": "nvm-managed"},
+    "ollama": {"version": "0.14.0", "path": "/usr/local/bin/ollama"},
+    "rg": {"version": "14.1.1", "path": "nix-profile"},
+    "cloudflared": {"version": "2026.2.1", "path": "/usr/local/bin/cloudflared"}
+  },
+  "integrations": {
+    "supabase": {"status": "configured", "url": "ygqglfbhxiumqdisauar.supabase.co"},
+    "stripe": {"status": "test_mode"},
+    "resend": {"status": "blocked_403"},
+    "cloudflare": {"status": "active", "tunnel": "hermes-gateway"},
+    "ollama": {"status": "installed", "port": 11434},
+    "youtube_api": {"status": "cached_data"},
+    "netlify": {"status": "config_exists"},
+    "oanda": {"status": "demo_verified", "account": "101-001-27557105-003"},
+    "groq": {"status": "configured", "model": "llama-3.3-70b-versatile"}
+  },
+  "hermes_alpha_assets": {
+    "reports_count": 50,
+    "research_inbox_subdirs": 8,
+    "research_inbox_status": "README_placeholders_only",
+    "eval_fixtures": 3,
+    "design_documents": [
+      "ollama_provider_plan",
+      "affiliate_offer_lab_plan",
+      "marketing_dept_design",
+      "business_opportunity_desk_design",
+      "vibe_trading_adapter_plan"
+    ]
+  },
+  "trading": {
+    "vibe_trading_dir": "~/.vibe-trading/",
+    "vibe_trading_status": "empty",
+    "oanda_demo_runtime": "~/nexus-os-v2/.oanda_demo_runtime/",
+    "oanda_demo_status": "verified_working",
+    "trading_engine": "~/nexus-ai/trading-engine/",
+    "trading_engine_status": "demo_only",
+    "safety_flags": {
+      "live_trading": false,
+      "auto_trading": false,
+      "dry_run": true,
+      "paper_only": true
+    }
+  }
+}
