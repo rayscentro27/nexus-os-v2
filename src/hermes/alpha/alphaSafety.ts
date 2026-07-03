@@ -59,3 +59,15 @@ export const ALPHA_BLOCKED_ACTIONS = Object.freeze([
   "trade_execution",
   "client_context_access",
 ]);
+
+const PROHIBITED_PATTERNS: Array<[RegExp, string]> = [
+  [/\b(?:send|email|message)\b.*\b(?:customer|lead|list|subscriber)\b/i, "external sending is disabled"],
+  [/\b(?:publish|post|schedule)\b.*\b(?:facebook|social|newsletter|content)\b/i, "publishing and scheduling are disabled"],
+  [/\b(?:place|execute|open)\b.*\b(?:trade|order|position)\b/i, "trade execution is disabled"],
+  [/\b(?:charge|bill|debit|confirm payment)\b/i, "payment actions are disabled"],
+  [/\b(?:write|update|delete|mutate)\b.*\b(?:production|database|customer|client)\b/i, "production mutation is disabled"],
+];
+
+export function getAlphaSafetyBlock(objective: string): string | null {
+  return PROHIBITED_PATTERNS.find(([pattern]) => pattern.test(objective))?.[1] || null;
+}

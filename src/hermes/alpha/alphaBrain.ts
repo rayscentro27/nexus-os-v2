@@ -7,6 +7,7 @@ import { analyzeTradingStrategy } from "./tradingResearchLab";
 import { createRayReviewProposal } from "./rayReviewProposal";
 import { runNoSupabaseGuard } from "./noSupabaseGuard";
 import { scoreAlphaObjective } from "./alphaScoring";
+import { getAlphaSafetyBlock } from "./alphaSafety";
 import type { AlphaLane, AlphaNode, AlphaRequest, AlphaResponse } from "./alphaTypes";
 
 const NODES: AlphaNode[] = [
@@ -34,6 +35,17 @@ export class HermesAlphaBrain {
     if (!objective) throw new Error("Alpha requires Ray's objective.");
     const lane = request.requestedLane || classifyAlphaLane(objective);
     const sourceMode = request.sourceMode || "brain_only";
+    const safetyBlock = getAlphaSafetyBlock(objective);
+    if (safetyBlock) {
+      return {
+        answer: `Blocked: ${safetyBlock}. Alpha can prepare a draft-only plan for Ray Review instead.`,
+        lane, confidence: 1, assumptions: [], nextExperiment: "Reframe the request as a local draft or evaluation fixture.",
+        risk: "high", recommendation: "Keep the requested external or production action disabled.",
+        rayReviewDraftOption: "Draft a proposal describing the requested outcome without executing it.",
+        sourceMode, noSupabaseUsed: true, provider: "mock", nodesVisited: ["classify_objective", "select_lane", "return_response"],
+        memoryWritten: false, externalActionPerformed: false, safetyStatus: "blocked", blockedReason: safetyBlock,
+      };
+    }
     const acceptedArtifacts = this.files.accept(request.artifacts || []);
     const provider = runAlphaProvider(objective);
 
@@ -75,7 +87,7 @@ export class HermesAlphaBrain {
       nextExperiment, risk, recommendation,
       rayReviewDraftOption: `${proposal.title} — ${proposal.status}`,
       sourceMode, noSupabaseUsed: true, provider: "mock", nodesVisited: NODES,
-      score, memoryWritten: true, externalActionPerformed: false,
+      score, memoryWritten: true, externalActionPerformed: false, safetyStatus: "passed",
     };
   }
 

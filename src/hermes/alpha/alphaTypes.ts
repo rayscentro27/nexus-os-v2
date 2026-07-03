@@ -67,6 +67,8 @@ export interface AlphaResponse {
   score?: AlphaScore;
   memoryWritten: boolean;
   externalActionPerformed: false;
+  safetyStatus: "passed" | "blocked";
+  blockedReason?: string;
 }
 
 export interface AlphaMemoryEntry {

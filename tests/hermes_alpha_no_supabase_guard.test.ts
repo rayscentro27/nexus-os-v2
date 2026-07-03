@@ -25,6 +25,13 @@ describe("Hermes Alpha Phase 1 connection guard", () => {
     }
   });
 
+  it("contains no Research Vault connector or external network/model call", () => {
+    for (const source of sources) {
+      expect(source.text, source.name).not.toMatch(/research.?vault.*(?:connect|query|read)|(?:fetch|axios)\s*\(/i);
+      expect(source.text, source.name).not.toMatch(/\.chat\s*\(|\.generate\s*\(|invokeModel|openai\s*\(/i);
+    }
+  });
+
   it("defaults every future connection and execution flag to false", () => {
     expect(ALPHA_ENV_DEFAULTS.HERMES_ALPHA_ENABLED).toBe(false);
     expect(ALPHA_ENV_DEFAULTS.HERMES_ALPHA_ALLOW_SUPABASE).toBe(false);

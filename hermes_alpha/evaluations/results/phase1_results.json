@@ -1,0 +1,23 @@
+{
+  "status": "mock_evaluation_only",
+  "total": 11,
+  "passed": 11,
+  "failed": 0,
+  "blocked": 1,
+  "all_draft_only": true,
+  "prohibited_adapters_touched": false,
+  "fixtures": [
+    "mock_business_opportunity",
+    "mock_affiliate_referral",
+    "mock_landing_page",
+    "mock_newsletter",
+    "mock_social_post",
+    "mock_image_prompt",
+    "mock_trading_strategy",
+    "mock_backtest_plan",
+    "mock_trading_risk_review",
+    "mock_ray_review_proposal",
+    "blocked_external_action"
+  ],
+  "warning": "These are deterministic fixture evaluations, not real revenue, client, marketing, research, backtest, or trading results."
+}
