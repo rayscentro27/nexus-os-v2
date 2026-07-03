@@ -28,6 +28,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
 
     let responseText = '';
     let source = 'local';
+    let uiActions = [];
 
     try {
       // ── Use unified brain pipeline — single entry point ──
@@ -41,6 +42,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
       });
       responseText = brainResult.text;
       source = brainResult.sourceMode;
+      uiActions = brainResult.uiActions || [];
 
       // Ensure we always have an answer
       if (!responseText) {
@@ -58,6 +60,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
       role: 'hermes',
       text: responseText,
       source,
+      uiActions,
     };
     setMessages(current => {
       const next = [...current, userMsg, hermesMsg];

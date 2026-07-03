@@ -19,6 +19,7 @@ import {
 import { advanceSelectionMemoryTurn, getSelectionMemory, setHermesMemoryScope, setLastTurnTraceMemory, touchSelectionMemory } from './hermesMemoryStores';
 import { logRoutingTrace, setRoutingTraceScope } from './hermesRoutingTrace';
 import { reportRegistry } from '../data/reportRegistry.js';
+import { rayReviewCards } from '../data/rayReviewData.js';
 import { reasonFromRouteDecision } from './hermesReasoningEngine';
 import { answerCasualCommonQuestion, answerExternalCurrentInfoQuestion, answerGeneralAdvisorQuestion, answerGeneralProjectPlanningQuestion } from './hermesCommonConversation';
 import { answerActivityStatusQuestion } from './hermesActivityStatus';
@@ -37,6 +38,8 @@ import { resolveHermesConversationState } from './hermesConversationArbiter';
 import { getHermesDecisionState, updateHermesDecisionState } from './hermesDecisionState';
 import { resolveHermesActionTarget } from './hermesActionResolver';
 import { renderLastAnswerProvenance, renderResponseMode } from './hermesResponseModeRenderer';
+import { hermesCapabilityRegistry, renderHermesAccessMapCeo } from './hermesCapabilityRegistry';
+import type { HermesUiAction } from './hermesUiActions';
 
 export interface BrainPipelineInput {
   message: string; surface?: 'full_workroom' | 'inline_drawer' | 'specialist' | 'unknown';
@@ -58,6 +61,8 @@ export interface BrainPipelineResponse {
   intentFrame?: HermesIntentFrame;
   activeSession?: NexusSessionContext | null;
   voiceReady?: VoiceReadyResponse;
+  uiActions?: HermesUiAction[];
+  accessMatrix?: typeof hermesCapabilityRegistry;
 }
 
 const OPPORTUNITIES: ConversationItem[] = [
@@ -81,6 +86,8 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
   let handler: HermesHandlerResult;
   let opportunityAdvisory: OpportunityAdvisorResult | null = null;
   let sourceSummary: CleanSourceSummary | null = null;
+  let uiActions: HermesUiAction[] = [];
+  let accessMatrix: typeof hermesCapabilityRegistry | undefined;
 
   switch (decision.routeId) {
     case 'safety_gate':
@@ -175,9 +182,20 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result(answerPageContextQuestion({ message, routeDecision: decision, contextPacket: packet }), 'page_context_status', ['page_context_contract']); break;
     case 'capability_status':
       handler = result(answerCapabilityQuestion(message) || getCapabilityReport().capabilities.map(item => `${item.name}: ${item.userFacing}`).join('\n'), 'capability_status', ['capability_registry']); source = 'capability'; break;
+    case 'access_map':
+      accessMatrix = hermesCapabilityRegistry;
+      uiActions = [{ title: 'Hermes access map', summary: 'Read-only capability and connection matrix.', actionLabel: 'Open access map', actionType: 'open_access_map', href: '#hermes', source: 'hermes_capability_registry' }];
+      handler = result(renderHermesAccessMapCeo(), 'access_map_contract', ['hermes_capability_registry']); source = 'capability'; break;
     case 'process_settings_reports_status':
       if (decision.domain === 'trading') { const trading = answerTradingQuestion(message, { routeDecision: decision }); handler = result(trading.text, trading.handler, [trading.source]); }
-      else if (decision.domain === 'reports' && decision.intent === 'inventory_question') { const reports = reportRegistry.filter(item => item.available).slice(0, 10); const reportNames = reports.map((item, index) => `${index + 1}. ${item.title} — ${item.category}`).join('\n'); handler = result(`I have the list of reports open and ready for us to review together. We can go through them one by one. I would suggest starting with ${reports[0]?.title || 'the first report'}, depending on whether you want ${reports[0]?.category || 'operations'} first.\n\n${reportNames}\n\nWhich one would you like to start with? You can say "number 1," "next," or name the report.`, 'report_inventory', ['report_registry']); const reportSessionItems = reports.map((item, index) => ({ rank: index + 1, id: item.path, label: item.title, domain: item.category, source: 'report_registry', summary: item.category })); startReviewSession(scopeKey, 'reports', 'report_inventory_review'); updateSessionSource(scopeKey, { type: 'report', name: 'local report registry', timestamp: new Date().toISOString(), verification: 'verified' }); updateSessionList(scopeKey, reportSessionItems); if (reportSessionItems.length > 0) setSessionFocus(scopeKey, { id: reportSessionItems[0].id, label: reportSessionItems[0].label, domain: reportSessionItems[0].domain, summary: reportSessionItems[0].summary, source: reportSessionItems[0].source }); }
+      else if (decision.domain === 'reports' && decision.intent === 'inventory_question') {
+        const reports = reportRegistry.filter(item => item.available).slice(0, 10);
+        const highlights = reports.slice(0, 3).map((item) => item.title).join(', ');
+        handler = result(`I found ${reports.length} reports. I’d start with ${highlights}. Which one do you want to open?`, 'report_inventory', ['report_registry']);
+        uiActions = reports.map((item) => ({ title: item.title, category: item.category, summary: `${item.category} report available in the Nexus report library.`, actionLabel: 'Open report', actionType: 'open_report', href: '#reports', reportPath: item.path, source: 'local_report_registry', freshness: item.modified }));
+        const reportSessionItems = reports.map((item, index) => ({ rank: index + 1, id: item.path, label: item.title, domain: item.category, source: 'report_registry', summary: item.category }));
+        startReviewSession(scopeKey, 'reports', 'report_inventory_review'); updateSessionSource(scopeKey, { type: 'report', name: 'local report registry', timestamp: new Date().toISOString(), verification: 'verified' }); updateSessionList(scopeKey, reportSessionItems); if (reportSessionItems.length > 0) setSessionFocus(scopeKey, { id: reportSessionItems[0].id, label: reportSessionItems[0].label, domain: reportSessionItems[0].domain, summary: reportSessionItems[0].summary, source: reportSessionItems[0].source });
+      }
       else if (/ceo version|ceo summary/.test(lower)) handler = result(buildCeoDailySummary('today'), 'ceo_summary', ['activity_journal']);
       else if (/what did (?:you|we) do today|daily summary/.test(lower)) handler = result(buildDailySummary('today'), 'daily_summary', ['activity_journal']);
       else handler = result(`**Status:** no specialized live status adapter is registered for ${decision.domain.replace(/_/g, ' ')}.\n**Source checked:** local report registry.\n**Freshness:** current build snapshot; production state was not verified.\n**Blocker:** a route-specific report adapter or authenticated read is required for a definitive answer.\n**Next safe action:** open the latest matching report and perform a read-only verification.`, 'status_contract_fallback', ['report_registry']);
@@ -222,6 +240,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
         const live = await buildLiveSupabaseContext(message); usedSupabase = live.liveData; supabaseStatus = live.sourceType; supabaseTables = live.tablesQueried || [];
         if (decision.domain === 'approvals') {
           handler = result(renderRecordContract('approvals', live), 'approvals_pending_contract', live.liveData ? supabaseTables : ['supabase_access_state']);
+          uiActions = rayReviewCards.filter((card) => card.status === 'pending').slice(0, 5).map((card) => ({ title: card.title, status: card.status, category: card.category, priority: card.riskLevel, actionLabel: 'Open approval', actionType: 'open_approval', approvalId: card.id, href: '#rayreview', source: 'local_ray_review_registry', approvalRequired: true }));
         } else if (decision.domain === 'business_opportunity') {
           handler = result(`${listOpportunities(live.liveData, live.timestamp)}\n\n${live.text}`, live.liveData ? 'business_opportunity_inventory_live' : 'business_opportunity_inventory_fallback', live.liveData ? [...supabaseTables, 'static_offer_context'] : ['static_offer_context']);
           setLastListedItems(OPPORTUNITIES);
@@ -338,7 +357,7 @@ async function executeRoute(decision: RouteDecision, packet: ReturnType<typeof b
       handler = result('I need one more detail: what specific outcome or record do you want help with? If you want a general recommendation, name the decision you want me to evaluate.', 'fallback_clarification', ['none']);
       source = 'fallback';
   }
-  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory, sourceSummary };
+  return { handler, usedSupabase, usedModel, supabaseStatus, supabaseTables, source, opportunityAdvisory, sourceSummary, uiActions, accessMatrix };
 }
 
 export async function handleHermesMessage(input: BrainPipelineInput): Promise<BrainPipelineResponse> {
@@ -553,7 +572,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
   const confidence = routeDecision.confidence >= .8 ? 'high' : routeDecision.confidence >= .5 ? 'medium' : 'low';
   const activeSession = getActiveSession(scopeKey);
   const responseMode = routeDecision.routeId === 'response_mode_change' ? getHermesDecisionState(scopeKey).responseMode : arbiterResult.responseMode;
-  const finalText = routeDecision.routeId === 'response_mode_change' || routeDecision.routeId === 'trace_source_meta' ? text : renderResponseMode({ text, mode: responseMode });
+  const finalText = routeDecision.routeId === 'response_mode_change' || routeDecision.routeId === 'trace_source_meta' ? text : renderResponseMode({ text, mode: responseMode, domain: routeDecision.domain });
   const voiceReadyResponse = renderVoiceReady(finalText, responseMode === 'audit' ? 'screen' : 'voice_ready');
 
   if (routeDecision.routeId === 'safety_gate') {
@@ -583,7 +602,7 @@ export async function handleHermesMessage(input: BrainPipelineInput): Promise<Br
     intent: { route: routeDecision.routeId, intent: routeDecision.intent, confidence, reason: routeDecision.reason },
     modelRoute: { route: modelRoute, reason: routeDecision.reason }, reasoning: { decision: reasoningPlan.decision === 'route-to-model' ? 'route-to-model' : reasoningPlan.decision === 'answer-with-context' ? 'answer-with-context' : 'answer-locally', confidence, reasoning: reasoningPlan.reasoning },
     capabilityBadge: getCapabilityReport().badgeText, confidence, source: executed.source, timestamp: new Date().toISOString(),
-    intentFrame, activeSession, voiceReady: voiceReadyResponse,
+    intentFrame, activeSession, voiceReady: voiceReadyResponse, uiActions: executed.uiActions, accessMatrix: executed.accessMatrix,
   };
 }
 

@@ -19,6 +19,14 @@ function renderSystemHealthCeo(text: string): string {
   return `The system is mostly healthy. ${healthy} areas look good, and ${blocked} still need review or approval. This is based on local reports, not a fresh production check. The next move is to verify Supabase and deployment live.`;
 }
 
+function renderApprovalsCeo(text: string): string {
+  if (/conversation-only draft|not saved|not submitted|not executed/i.test(text)) return cleanForCeo(text);
+  const count = text.match(/(?:Result:\*\*|Result:)?\s*(\d+) pending approval rows returned/i)?.[1];
+  if (count) return `You have ${count} pending approval-related items in the checked sources. I can open the Ray Review queue or show the top five. The next move is to review the highest-impact item first.`;
+  if (/No verified count is available/i.test(text)) return 'I could not verify the pending approval count from the current session. The Ray Review queue is still available, but its live count needs an authenticated read. The next move is to open Ray Review or retry the read-only check.';
+  return cleanForCeo(text, true);
+}
+
 export function renderLastAnswerProvenance(target: LastAnswerState | null): string {
   if (!target) return 'I do not have a successful prior answer trace in this session.';
   if (target.domain === 'clients' && target.sources.includes('client_profiles')) {
@@ -34,11 +42,13 @@ export function renderLastAnswerProvenance(target: LastAnswerState | null): stri
   return `That answer used route **${target.route}** for **${target.intent}**. Sources: ${target.sources.join(', ') || 'none recorded'}. Supabase: ${target.usedSupabase ? 'used' : 'not used'}. Assumptions: ${target.assumptions.join('; ') || 'none recorded'}. Confidence: ${target.confidence}.`;
 }
 
-export function renderResponseMode(input: { text: string; mode: HermesResponseMode; lastAnswer?: LastAnswerState | null }): string {
+export function renderResponseMode(input: { text: string; mode: HermesResponseMode; lastAnswer?: LastAnswerState | null; domain?: string }): string {
   const target = input.lastAnswer || null;
   if (input.mode === 'casual') return input.text;
   if (input.mode === 'ceo') {
-    if (target?.domain === 'system_health') return renderSystemHealthCeo(target.text);
+    const domain = target?.domain || input.domain;
+    if (domain === 'system_health') return renderSystemHealthCeo(target?.text || input.text);
+    if (domain === 'approvals') return renderApprovalsCeo(target?.text || input.text);
     return cleanForCeo(target?.text || input.text, Boolean(target));
   }
   if (input.mode === 'trace') {

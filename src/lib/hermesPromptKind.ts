@@ -4,6 +4,7 @@ import { isAdvisoryFollowUpQuestion } from './hermesAdvisoryContinuity';
 export type HermesPromptKind =
   | 'safety_execution' | 'provenance' | 'system_health' | 'approvals_pending'
   | 'research_engine_status' | 'client_records' | 'specialist_handoff'
+  | 'access_map'
   | 'specialist_agent_inventory' | 'external_current_info' | 'ray_review' | 'scheduling' | 'selection_reference' | 'casual_common'
   | 'advisory_followup' | 'explicit_new_topic' | 'unknown';
 
@@ -60,6 +61,7 @@ export function detectPromptKind(raw: string): HermesPromptKind {
   const message = normalizePrompt(raw);
   if (/\b(?:publish|charge|deploy|delete|truncate|execute|place)\b.*\b(?:now|live|customer|trade|database|production)?\b|\bstart\b.*\bscheduler\b/i.test(message)) return 'safety_execution';
   if (isProvenanceQuestion(message)) return 'provenance';
+  if (/\b(?:what can hermes access|what areas are connected to hermes|show hermes access map|what is hermes not connected to|where is hermes blocked|can hermes access all areas|what sections can hermes open|what sections can hermes only summarize)\b/i.test(message)) return 'access_map';
   if (isSystemHealthQuestion(message)) return 'system_health';
   if (isApprovalStatusQuestion(message)) return 'approvals_pending';
   if (isResearchStatusQuestion(message)) return 'research_engine_status';

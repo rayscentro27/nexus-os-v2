@@ -50,7 +50,8 @@ describe('Hermes master route and renderer contracts', () => {
   it('renders system health from evidence instead of policy prose', async () => {
     const response = await handleHermesMessage({ message: 'how is the system health' });
     expect(response.route).toBe('system_health_report');
-    expect(response.text).toMatch(/Status summary:|Source checked:|Blockers:|Next safe action:|Freshness:/i);
+    expect(response.text).toMatch(/system is mostly healthy|local reports|next move/i);
+    expect(response.text).not.toMatch(/Status summary:|Source checked:|Audit details|reports\//i);
     expect(response.text).not.toMatch(bannedStatus);
     expect(response.rememberedContext).toBe(false);
   });

@@ -46,7 +46,8 @@ describe('Hermes production polish — casual/common conversation expansion', ()
   ])('routes system health prompt "%s" to system_health_report', async (message) => {
     const response = await handleHermesMessage({ message });
     expect(response.route).toBe('system_health_report');
-    expect(response.text).toMatch(/Status summary:|Source checked:|Blockers:|Next safe action:|Freshness:/i);
+    expect(response.text).toMatch(/system is mostly healthy|local reports|next move/i);
+    expect(response.text).not.toMatch(/Status summary:|Source checked:|Audit details|reports\//i);
     expect(response.text).not.toMatch(bannedPhrases);
   });
 
