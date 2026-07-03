@@ -19,13 +19,15 @@ import ResearchEnginePanel from '../components/ResearchEnginePanel'
 import MonetizationPanel from '../components/MonetizationPanel'
 import MarketingDraftsPanel from '../components/MarketingDraftsPanel'
 import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
+import ReadinessReviewIntake from '../components/ReadinessReviewIntake'
+import ReadinessReviewAdmin from '../components/ReadinessReviewAdmin'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
 import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
 import ErrorBoundary from '../components/ErrorBoundary'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
-  ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
+  ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
   FileWarning, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
   Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
   TriangleAlert, WandSparkles, Youtube, Zap
@@ -42,7 +44,7 @@ const toneClass = {
 
 const IconMap = {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
-  ChevronRight, CircleHelp, CircleX, CopyPlus, Cross, Database, DatabaseZap, FileText,
+  ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
   FileWarning, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
   Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
   TriangleAlert, WandSparkles, Youtube, Zap
@@ -65,6 +67,8 @@ const navGroups = [
   { label: 'Business', items: [
     { id: 'clients', label: 'Clients', icon: 'Building2', status: 'Gated', statusTone: 'amber' },
     { id: 'credit', label: 'Credit & Funding', icon: 'SearchCheck', status: 'Active', statusTone: 'green' },
+    { id: 'readiness-intake', label: 'Readiness Intake', icon: 'ClipboardList', status: '$97', statusTone: 'blue' },
+    { id: 'readiness-admin', label: 'Readiness Review', icon: 'FileCheck2', status: 'Draft', statusTone: 'amber' },
     { id: 'opportunity', label: 'Business Opportunities', icon: 'Target', status: '26 ready', statusTone: 'green' },
     { id: 'research', label: 'Research Engine', icon: 'ScanSearch', status: '50', statusTone: 'blue' },
     { id: 'monetization', label: 'Monetization', icon: 'BadgeDollarSign', status: '9 offers', statusTone: 'green' },
@@ -87,6 +91,8 @@ const modeLabels = {
   goclear: 'GoClear / Apex',
   clientworkflow: 'Client Workflow',
   credit: 'Credit Specialist',
+  'readiness-intake': 'Readiness Review — Client Intake',
+  'readiness-admin': 'Readiness Review — Admin Review',
   business: 'Business Profile Builder',
   funding: 'Funding Readiness',
   monetization: 'Monetization',
@@ -1456,6 +1462,8 @@ export default function NexusAdminUI({ email }) {
     goclear: <ErrorBoundary panelName="GoClear / Apex"><GoClearPage /></ErrorBoundary>,
     clientworkflow: <ErrorBoundary panelName="Client Workflow"><ClientWorkflowPage /></ErrorBoundary>,
     credit: <ErrorBoundary panelName="Credit & Funding"><SimplePage title="Credit & Funding" sub="Readiness Scores · Documents · Disputes · Bankability · Approval-Gated"><CreditFundingPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    'readiness-intake': <ErrorBoundary panelName="Readiness Intake"><SimplePage title="$97 Readiness Review — Client Intake" sub="Collect credit and business funding readiness data · Local draft mode"><ReadinessReviewIntake onComplete={(data) => console.log('Intake complete (local draft):', data)} onCancel={() => navigate('credit')} /></SimplePage></ErrorBoundary>,
+    'readiness-admin': <ErrorBoundary panelName="Readiness Review Admin"><SimplePage title="$97 Readiness Review — Admin Review" sub="Score readiness · Add notes · Prepare report draft · Draft-only"><ReadinessReviewAdmin onComplete={(data) => console.log('Admin review complete (local draft):', data)} /></SimplePage></ErrorBoundary>,
     business: <ErrorBoundary panelName="Business Setup"><BusinessSetupPage /></ErrorBoundary>,
     funding: <ErrorBoundary panelName="Funding Readiness"><FundingReadinessPage /></ErrorBoundary>,
     monetization: <ErrorBoundary panelName="Monetization"><SimplePage title="Monetization" sub="9 Offers · Revenue Streams · Stripe Status · Approval-Gated"><MonetizationPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,

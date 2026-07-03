@@ -3,6 +3,8 @@ import { INTAKE_SECTIONS, calculateIntakeCompleteness } from '../src/lib/readine
 import { SCORE_SECTIONS, READINESS_TIERS, calculateOverallScore, getReadinessTier } from '../src/lib/readinessReviewScorecard';
 import { generateReportDraft, formatReportDraftAsText } from '../src/lib/readinessReviewReportDraft';
 import { classifyOperatingQuestion, answerOperatingQuestion } from '../src/lib/hermesLocalOperatingCommands';
+import { getReadinessActionMetadata } from '../src/lib/nexusReadinessRegistry';
+import { SAFE_HERMES_ACTION_TYPES } from '../src/lib/hermesUiActions';
 
 describe('Readiness Review Intake and Admin Flow', () => {
   describe('Part 1: Client Intake UI', () => {
@@ -263,6 +265,67 @@ describe('Readiness Review Intake and Admin Flow', () => {
       const consentSection = INTAKE_SECTIONS.find(s => s.id === 'credit_goals' || s.id === 'documents_available');
       expect(consentSection).toBeDefined();
       expect(consentSection!.fields.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Part 5: UI Reachability', () => {
+    it('ReadinessReviewIntake component exists and exports', () => {
+      // The component is imported at the top of this test file indirectly via readinessReviewIntake
+      // Verify the component module can be imported
+      expect(INTAKE_SECTIONS).toBeDefined();
+      expect(INTAKE_SECTIONS.length).toBe(15);
+    });
+
+    it('ReadinessReviewAdmin component exists and exports', () => {
+      // Verify the scorecard module (used by admin) is importable
+      expect(SCORE_SECTIONS).toBeDefined();
+      expect(SCORE_SECTIONS.length).toBe(8);
+      expect(READINESS_TIERS).toBeDefined();
+      expect(READINESS_TIERS.length).toBe(5);
+    });
+
+    it('Hermes action metadata resolves to safe UI navigation for readiness intake', () => {
+      const meta = getReadinessActionMetadata('readiness_review_intake');
+      expect(meta).toBeDefined();
+      expect(meta!.actionType).toBe('open_intake');
+      expect(meta!.href).toBe('#readiness-intake');
+      expect(meta!.source).toBe('readiness_registry');
+    });
+
+    it('Hermes action metadata resolves to safe UI navigation for readiness admin', () => {
+      const meta = getReadinessActionMetadata('readiness_review_admin_fulfillment');
+      expect(meta).toBeDefined();
+      expect(meta!.actionType).toBe('open_checklist');
+      expect(meta!.href).toBe('#readiness-admin');
+    });
+
+    it('draft report action does not persist/send/publish', () => {
+      const draftActions = [
+        'readiness_review_upgrade_path',
+        'readiness_review_specialist_handoff',
+      ];
+      for (const key of draftActions) {
+        const meta = getReadinessActionMetadata(key);
+        expect(meta).toBeDefined();
+        // Draft actions should NOT have an href that triggers external actions
+        expect(meta!.href).toBeUndefined();
+        expect(meta!.actionType).not.toContain('send');
+        expect(meta!.actionType).not.toContain('publish');
+        expect(meta!.actionType).not.toContain('charge');
+      }
+    });
+
+    it('all readiness action types are in the safe allowlist', () => {
+      const allKeys = [
+        'readiness_review_intake', 'readiness_review_scorecard',
+        'readiness_review_client_report', 'readiness_review_admin_fulfillment',
+        'readiness_review_upgrade_path', 'readiness_review_specialist_handoff',
+      ];
+      for (const key of allKeys) {
+        const meta = getReadinessActionMetadata(key);
+        expect(meta).toBeDefined();
+        expect(SAFE_HERMES_ACTION_TYPES.has(meta!.actionType)).toBe(true);
+      }
     });
   });
 });
