@@ -8,6 +8,7 @@
 import { READINESS_REGISTRY, getReadinessByArea, getReadinessCeoAnswer } from './nexusReadinessRegistry';
 
 export type OperatingQuestion =
+  | 'goclear_launch_ready'
   | 'credit_repair_ready'
   | 'business_funding_ready'
   | 'ready_to_onboard_client'
@@ -42,10 +43,21 @@ export type OperatingQuestion =
   | 'what_missing_from_review'
   | 'what_tell_this_client'
   | 'best_upgrade_path'
-  | 'prepare_specialist_handoff_flow';
+  | 'prepare_specialist_handoff_flow'
+  | 'processes_ran'
+  | 'open_goclear_launch_report'
+  | 'marketing_available'
+  | 'marketing_missing'
+  | 'audit_version';
 
 export function classifyOperatingQuestion(message: string): OperatingQuestion | null {
   const lower = message.toLowerCase();
+  if (/\b(?:is )?goclear (?:ready to launch|launch ready|ready)\b/i.test(lower)) return 'goclear_launch_ready';
+  if (/\bwhat processes (?:ran|have run|were run)\b/i.test(lower)) return 'processes_ran';
+  if (/\bopen (?:the )?goclear launch report\b/i.test(lower)) return 'open_goclear_launch_report';
+  if (/\bwhat marketing (?:do we have|is available|exists)\b/i.test(lower)) return 'marketing_available';
+  if (/\bwhat marketing (?:is |are )?missing\b/i.test(lower)) return 'marketing_missing';
+  if (/\b(?:give|show) me (?:the )?audit version\b/i.test(lower)) return 'audit_version';
   if (/\b(?:is )?credit repair (?:ready|set|good|complete|done)\b/i.test(lower)) return 'credit_repair_ready';
   if (/\b(?:is )?business funding (?:ready|set|good|complete|done)\b/i.test(lower)) return 'business_funding_ready';
   if (/\b(?:are we )?ready to (?:onboard|sign up|start with|take on) (?:a )?client\b/i.test(lower)) return 'ready_to_onboard_client';
@@ -74,7 +86,7 @@ export function classifyOperatingQuestion(message: string): OperatingQuestion | 
   if (/\bprepare (?:a )?(?:specialist|handoff) (?:from |for )?this review\b/i.test(lower)) return 'specialist_handoff_from_review';
   if (/\bspecialist handoff (?:from |for )?review\b/i.test(lower)) return 'specialist_handoff_from_review';
   if (/\bstart (?:a )?client intake\b/i.test(lower)) return 'start_client_intake';
-  if (/\bopen (?:the )?readiness intake\b/i.test(lower)) return 'open_readiness_intake';
+  if (/\bopen (?:the )?(?:readiness|client) intake\b/i.test(lower)) return 'open_readiness_intake';
   if (/\bopen (?:the )?admin review\b/i.test(lower)) return 'open_admin_review';
   if (/\bscore (?:this )?review\b/i.test(lower)) return 'score_this_review';
   if (/\bdraft (?:the )?client report\b/i.test(lower)) return 'draft_client_report_flow';
@@ -87,6 +99,8 @@ export function classifyOperatingQuestion(message: string): OperatingQuestion | 
 
 export function answerOperatingQuestion(question: OperatingQuestion): string {
   switch (question) {
+    case 'goclear_launch_ready':
+      return answerGoClearLaunchReady();
     case 'credit_repair_ready':
       return answerCreditRepairReady();
     case 'business_funding_ready':
@@ -157,7 +171,21 @@ export function answerOperatingQuestion(question: OperatingQuestion): string {
       return answerBestUpgradePath();
     case 'prepare_specialist_handoff_flow':
       return answerPrepareSpecialistHandoffFlow();
+    case 'processes_ran':
+      return answerProcessesRan();
+    case 'open_goclear_launch_report':
+      return answerOpenGoClearLaunchReport();
+    case 'marketing_available':
+      return answerMarketingAvailable();
+    case 'marketing_missing':
+      return answerMarketingMissing();
+    case 'audit_version':
+      return answerAuditVersion();
   }
+}
+
+function answerGoClearLaunchReady(): string {
+  return `**Manual-ready — not automated.** Ray can intake, score, review, and prepare a draft $97 readiness report now. Payment confirmation, documents, Ray Review, delivery, and follow-up stay manual; no live bureau, lender, email, or production payment automation is active.\n\n**Next step:** Run one no-charge synthetic rehearsal from Readiness Intake through Admin Review.`;
 }
 
 function answerCreditRepairReady(): string {
@@ -187,21 +215,21 @@ function answerMissingCreditRepair(): string {
   const item = getReadinessByArea('credit_repair');
   if (!item) return 'I do not have credit repair readiness data.';
   if (item.status === 'ready') return 'Credit repair is fully ready. Nothing is missing.';
-  return `Credit repair is missing: ${item.blocker || 'key components'}. The scoring engine works but needs real client data. Document upload, bureau connectors, and mailing are all blocked. Start by applying the Supabase migrations and creating a test client.`;
+  return `**Manual-ready, with gaps.** ${item.blocker || 'Live automation is not connected.'}\n\n**Next step:** Collect report details manually, score them in Admin Review, and keep any client-facing advice in Ray Review.`;
 }
 
 function answerMissingBusinessFunding(): string {
   const item = getReadinessByArea('business_funding');
   if (!item) return 'I do not have business funding readiness data.';
   if (item.status === 'ready') return 'Business funding is fully ready. Nothing is missing.';
-  return `Business funding is missing: ${item.blocker || 'key components'}. The scoring engine works but needs real client data. No bank, DUNS, or EIN integrations exist yet. All affiliate URLs are null. Start by applying the Supabase migrations and creating a test client with a business profile.`;
+  return `**Manual-ready, with gaps.** ${item.blocker || 'Live automation is not connected.'}\n\n**Next step:** Verify the business checklist manually and keep lender/referral recommendations in Ray Review.`;
 }
 
 function answerCanSell97(): string {
   const item = getReadinessByArea('readiness_review_offer');
   if (!item) return 'I do not have the $97 readiness review offer data.';
 
-  return `**Partial — manual only.**\n\nYou can sell the $97 readiness review right now if you do it by hand:\n\n1. Collect payment (manual or Stripe test)\n2. Gather credit and business info via conversation\n3. Run Hermes to score credit and funding readiness\n4. Produce a plain-English readiness summary\n5. Review and approve it yourself (Ray Review)\n6. Deliver via conversation\n7. Offer the $297 assistant plan as upsell\n\n**What is missing for automation:** No live client database, no report generation from real data, no production Stripe, no email delivery. The simplest first version is conversation-based. Once it works, wire the live pipeline.`;
+  return `**Manual-ready.** Ray can sell the service using a separately approved payment method, then use Nexus for local intake, manual scoring, report drafting, and Ray Review. Nexus does not process or confirm a live payment, send email, or deliver the report automatically.\n\n**Next step:** Rehearse one synthetic review, then have Ray approve the exact offer and fulfillment checklist before taking payment.`;
 }
 
 function answerWhatShouldRayDoFirst(): string {
@@ -212,11 +240,31 @@ function answerWhatShouldRayDoFirst(): string {
     }
   });
 
-  return `**First move: enable the manual $97 readiness review.**\n\nEverything else is secondary. The credit repair and business funding engines are built and working — they just need real client data. The fastest path to revenue is:\n\n1. Turn on Stripe production for $97\n2. Create an intake form (Google Form works)\n3. Process one real customer by hand\n4. Use Hermes to score and produce the readiness summary\n5. Deliver it and offer the $297 upsell\n\nOnce that works, apply the Supabase migrations, wire the portal, and automate.`;
+  return `**First move: rehearse the full manual $97 review.**\n\nUse a synthetic prospect to complete intake, scoring, report drafting, and Ray Review. Confirm the checklist takes under an hour and that no raw documents are stored in Nexus.\n\n**Next step:** Open Readiness Intake and run that rehearsal before accepting payment.`;
 }
 
 function answerDraftRayReviewReadiness(): string {
-  return `**Ray Review Draft — $97 Readiness Review Offer**\n\n**Target:** $97 Credit & Funding Readiness Review offer launch\n**Decision needed:** Approve manual-first launch of the readiness review\n**Evidence:** Offer defined in offer_registry.json, Stripe test checkout open, public landing page live, scoring engines functional, client guide responses ready\n**Recommended action:** Enable Stripe production, create intake form, process first customer manually\n**Risk:** Low — manual process, no automation, no external sends\n**Upsell path:** $297 assistant plan → Monthly Readiness Subscription\n\nThis is a conversation-only draft. It has not been saved, submitted, or executed.`;
+  return `**Ray Review Draft — $97 Readiness Review Offer**\n\n**Decision needed:** Approve the exact manual-first offer, intake, fulfillment checklist, disclaimer, and delivery method.\n**Verified:** Local intake, scorecard, admin review, report draft, and draft upsell/handoff support.\n**Still manual:** Payment verification, documents, report approval, delivery, and follow-up.\n**Not active:** Production Stripe, outbound email, bureau/lender integrations, or automated delivery.\n\n**Next step:** Review one synthetic report. This draft has not been saved, submitted, sent, or executed.`;
+}
+
+function answerProcessesRan(): string {
+  return `**Eight safe process groups were verified locally.** Credit repair, credit profile, business profile, funding readiness, client tasks/admin review, research-to-money, readiness score/report drafting, and focused Hermes/intake tests produced local demo or draft-only evidence. No external action or real-client data was used.\n\n**Next step:** Open the GoClear safe process results before repeating a builder.`;
+}
+
+function answerOpenGoClearLaunchReport(): string {
+  return `**The GoClear launch report is ready.** It marks the offer Manual-ready and separates current manual capability from blocked automation.\n\n**Next step:** Open the report and follow the synthetic rehearsal sequence.`;
+}
+
+function answerMarketingAvailable(): string {
+  return `**Draft marketing is available.** The repo has landing-page copy, social drafts, short-video scripts, a newsletter, follow-up concepts, and a lead magnet. Nothing was published or sent.\n\n**Next step:** Ray should approve one warm-lead script and one landing-page CTA for manual use.`;
+}
+
+function answerMarketingMissing(): string {
+  return `**The main gaps are approval and a manual conversion path.** The public landing/CTA state is not verified, the referral program is an inactive placeholder, follow-up sending is not configured, and no live payment path is confirmed.\n\n**Next step:** Use the zero-cost warm-lead script with Ray approval and track replies manually.`;
+}
+
+function answerAuditVersion(): string {
+  return `**Audit version**\n\n- Activation audit: reports/goclear_activation/goclear_credit_funding_activation_audit.md\n- Safe process evidence: reports/goclear_activation/goclear_safe_process_run_results.md\n- Launch readiness: reports/goclear_activation/goclear_launch_readiness_report.md\n- Marketing status: reports/goclear_activation/goclear_marketing_activation_status.md\n- Intake UI: src/components/ReadinessReviewIntake.jsx\n- Admin/report draft UI: src/components/ReadinessReviewAdmin.jsx\n- Scorecard: src/lib/readinessReviewScorecard.ts\n- Draft generator: src/lib/readinessReviewReportDraft.ts\n- Hermes source: src/lib/hermesLocalOperatingCommands.ts\n\nAll process results are local/demo or draft-only; no external action was verified.`;
 }
 
 function answerSpecialistHandoffCredit(): string {
@@ -296,7 +344,7 @@ function answerStartClientIntake(): string {
 }
 
 function answerOpenReadinessIntake(): string {
-  return `**Opening readiness intake:**\n\nThe intake form is a React component that collects:\n- Personal credit readiness (score, reports, negatives)\n- Credit utilization and inquiries\n- Collections and charge-offs\n- Business entity setup\n- EIN, DUNS, SOS, NAICS numbers\n- Business contact info\n- Bank account and credit monitoring\n- Funding goal and timeline\n- Document availability\n- Consent and disclaimer\n\n**Component:** src/components/ReadinessReviewIntake.jsx\n**Mode:** Local draft only — no external persistence or sends.`;
+  return `**Opening Readiness Intake — local draft only.** Nothing is sent externally or persisted to production.\n\nThe form collects credit readiness, utilization, inquiries, collections/charge-offs, business setup, EIN/DUNS/SOS/NAICS, business contact details, banking/monitoring, funding goals, documents, and consent.`;
 }
 
 function answerOpenAdminReview(): string {

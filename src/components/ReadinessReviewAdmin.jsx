@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { INTAKE_SECTIONS } from '../lib/readinessReviewIntake';
 import { SCORE_SECTIONS, READINESS_TIERS, calculateOverallScore, getReadinessTier, scoreSection } from '../lib/readinessReviewScorecard';
+import { formatReportDraftAsText, generateReportDraft } from '../lib/readinessReviewReportDraft';
 
 /**
  * Nexus OS v2 — Readiness Review Admin Review UI.
@@ -20,6 +21,7 @@ export function ReadinessReviewAdmin({ intakeAnswers = {}, onComplete }) {
   const [specialistLane, setSpecialistLane] = useState('');
   const [activeTab, setActiveTab] = useState('intake');
   const [draftPrepared, setDraftPrepared] = useState(false);
+  const [reportDraft, setReportDraft] = useState(null);
 
   const handleCreditScoreChange = useCallback((key, value) => {
     setCreditScores(prev => ({ ...prev, [key]: Number(value) || 0 }));
@@ -57,6 +59,18 @@ export function ReadinessReviewAdmin({ intakeAnswers = {}, onComplete }) {
   };
 
   const handlePrepareDraft = () => {
+    const draft = generateReportDraft({
+      intakeAnswers,
+      creditScores,
+      fundingScores,
+      adminNotes,
+      blockers,
+      nextSteps,
+      upgradePath,
+      specialistLane,
+      clientName: intakeAnswers.client_name || intakeAnswers.full_name,
+    });
+    setReportDraft(draft);
     setDraftPrepared(true);
     onComplete?.({
       intakeAnswers,
@@ -69,6 +83,7 @@ export function ReadinessReviewAdmin({ intakeAnswers = {}, onComplete }) {
       nextSteps,
       upgradePath,
       specialistLane,
+      reportDraft: draft,
       preparedAt: new Date().toISOString(),
     });
   };
@@ -282,6 +297,7 @@ export function ReadinessReviewAdmin({ intakeAnswers = {}, onComplete }) {
                 <li>Specialist: {specialistLane || 'None'}</li>
               </ul>
               <p className="draft-status">Status: <strong>Draft — Not delivered</strong></p>
+              {reportDraft && <pre className="draft-report-text" data-testid="full-report-draft">{formatReportDraftAsText(reportDraft)}</pre>}
             </div>
           )}
         </div>

@@ -55,5 +55,8 @@ export function renderResponseMode(input: { text: string; mode: HermesResponseMo
     return renderLastAnswerProvenance(target);
   }
   if (!target) return input.text;
-  return `${target.text}\n\n**Audit details**\n- Route: ${target.route}\n- Intent/domain: ${target.intent} / ${target.domain}\n- Sources: ${target.sources.join(', ') || 'none recorded'}\n- Supabase: ${target.usedSupabase ? 'used' : 'not used'}\n- Timestamp: ${target.timestamp}\n- Confidence: ${target.confidence}\n- Blockers: ${target.blockers.join('; ') || 'none recorded'}\n- Assumptions: ${target.assumptions.join('; ') || 'none recorded'}`;
+  const goclearSources = target.domain === 'credit_funding'
+    ? '\n- GoClear activation audit: reports/goclear_activation/goclear_credit_funding_activation_audit.md\n- Safe process results: reports/goclear_activation/goclear_safe_process_run_results.md\n- Launch readiness: reports/goclear_activation/goclear_launch_readiness_report.md\n- Hermes operating source: src/lib/hermesLocalOperatingCommands.ts'
+    : '';
+  return `${target.text}\n\n**Audit details**\n- Route: ${target.route}\n- Intent/domain: ${target.intent} / ${target.domain}\n- Sources: ${target.sources.join(', ') || 'none recorded'}\n- Supabase: ${target.usedSupabase ? 'used' : 'not used'}\n- Timestamp: ${target.timestamp}\n- Confidence: ${target.confidence}\n- Blockers: ${target.blockers.join('; ') || 'none recorded'}\n- Assumptions: ${target.assumptions.join('; ') || 'none recorded'}${goclearSources}`;
 }

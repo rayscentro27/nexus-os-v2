@@ -71,7 +71,7 @@ export function renderRecordContract(kind: 'approvals' | 'clients', live: LiveHe
 }
 
 export function renderSpecialistHandoffContract(target?: string | null): string {
-  if (!target) return '**Specialist lane:** not selected yet.\n**Context included:** the target, objective, constraints, relevant source evidence, and required approval boundary.\n**Missing:** name the task, record, report, or outcome to hand off; optionally name the specialist lane.\n**Draft status:** the handoff was not created, saved, assigned, or sent. Once the target is clear, I can prepare a conversation-only draft.';
+  if (!target) return '**Draft-only specialist handoff:** no lane or target is selected yet.\n**Context included:** the target, objective, constraints, relevant source evidence, and Ray Review boundary.\n**Missing:** name the task, record, report, or outcome to hand off; optionally name the specialist lane.\n**Draft status:** the handoff was not created, saved, assigned, or sent. Once the target is clear, I can prepare a conversation-only draft for Ray Review.';
   return `**Specialist lane:** choose the Nexus specialist whose scope matches ${target}.\n**Context included:** target, objective, current evidence, constraints, and approval boundaries.\n**Missing:** confirm the specialist lane and acceptance criteria.\n**Draft status:** a conversation-only handoff outline is prepared for ${target}; it was not saved, assigned, or sent.`;
 }
 
