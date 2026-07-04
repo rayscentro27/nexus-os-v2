@@ -247,8 +247,8 @@ describe("Nexus Research Adapter — No-Supabase and Isolation Guards", () => {
   });
 });
 
-describe("Nexus Research Adapter — Empty Inbox Handling", () => {
-  it("empty inbox is valid and honestly reported", () => {
+describe("Nexus Research Adapter — Inbox Handling", () => {
+  it("inbox has all README files and only valid artifact types", () => {
     const readmeFiles: string[] = [];
     const artifactFiles: string[] = [];
 
@@ -264,7 +264,9 @@ describe("Nexus Research Adapter — Empty Inbox Handling", () => {
     }
 
     expect(readmeFiles.length).toBeGreaterThanOrEqual(NEXUS_INBOX_CATEGORIES.length);
-    expect(artifactFiles.length).toBe(0);
+    for (const f of artifactFiles) {
+      expect(f.endsWith(".md")).toBe(true);
+    }
   });
 });
 

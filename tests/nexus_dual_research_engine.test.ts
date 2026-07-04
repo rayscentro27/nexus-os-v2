@@ -121,22 +121,26 @@ describe('Nexus Research Inbox Integrity', () => {
     }
   });
 
-  it('Nexus inbox README files do not create fake artifacts', () => {
+  it('Nexus inbox non-README files are valid .md artifacts', () => {
     for (const cat of NEXUS_INBOX_CATEGORIES) {
       const catDir = join(NEXUS_RESEARCH_INBOX, cat);
       if (existsSync(catDir)) {
         const files = readdirSync(catDir).filter(f => f !== 'README.md' && !f.startsWith('README_'));
-        expect(files).toEqual([]);
+        for (const f of files) {
+          expect(f.endsWith('.md')).toBe(true);
+        }
       }
     }
   });
 
-  it('Empty Nexus Research inbox is valid', () => {
+  it('Nexus Research inbox is valid', () => {
     for (const cat of NEXUS_INBOX_CATEGORIES) {
       const catDir = join(NEXUS_RESEARCH_INBOX, cat);
       if (existsSync(catDir)) {
         const files = readdirSync(catDir).filter(f => f !== 'README.md' && !f.startsWith('README_'));
-        expect(files.length).toBe(0);
+        for (const f of files) {
+          expect(f.endsWith('.md')).toBe(true);
+        }
       }
     }
   });

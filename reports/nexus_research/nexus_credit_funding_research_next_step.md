@@ -1,6 +1,6 @@
 # Nexus Credit & Funding Research Next Steps
 
-**Generated**: 2026-07-03
+**Generated**: 2026-07-04
 
 ---
 
@@ -24,19 +24,47 @@
 - `tests/nexus_research_adapter_v1.test.ts` — 51 tests covering all adapter functionality
 
 ### Reports (Complete)
-- `reports/nexus_research/adapter/` — 5 verification and report files
+- `reports/nexus_research/adapter/` — 8 verification and report files
 
 ### Template (Complete)
 - `nexus_research/research_inbox/manual_notes/README_ADD_FIRST_ARTIFACT.md` — How Ray can add the first real artifact
 
 ---
 
-## What Is Still Design/Fixture-Only
+## First Real Artifact Processed
+
+| Field | Value |
+|-------|-------|
+| artifact_id | nexus-res-20260704-001 |
+| source | nexus_research/research_inbox/credit_utilization/2026-07-03_credit_utilization_first_research.md |
+| category | credit_utilization |
+| routing_target | scorecard_recommendation |
+| evidence_quality | unverified |
+| safety_status | blocked |
+| client_safe | false |
+| admin_only | true |
+| parse_status | parsed |
+
+### What Was Proven
+
+1. ✅ Adapter discovers real artifacts in approved inbox folders
+2. ✅ Path validation works correctly
+3. ✅ Category detection works (credit_utilization)
+4. ✅ Routing works (scorecard_recommendation)
+5. ✅ Guarantee language detection works (even for prohibitive context)
+6. ✅ Compliance flag detection works (even for prohibitive context)
+7. ✅ Admin-only enforcement works
+8. ✅ Draft outputs are generated correctly
+9. ✅ No client-facing output is produced without approval
+10. ✅ No Supabase connection, no external providers, no production mutation
+
+---
+
+## What Is Still Pending
 
 | Item | Status |
 |------|--------|
-| Real research artifacts | None — inbox is empty by design |
-| Real ingestion | Requires Ray to add one approved `.md` file |
+| Ray Review of first artifact | Pending — admin note and Ray Review draft generated |
 | Client-facing output | Blocked until Ray Review approval |
 | Supabase connection | Designed for future, not connected now |
 | Client data access | Not connected, no secure workflow yet |
@@ -48,20 +76,19 @@
 
 ## Recommended Next Prompt
 
-**"Populate the Nexus Research inbox with one real credit utilization research artifact and run the adapter against it."**
+**"Add a second real artifact to a different Nexus Research inbox category (credit_repair, business_setup, or compliance) and run the adapter against it."**
 
 This would:
-1. Add a real `.md` file to `nexus_research/research_inbox/credit_utilization/`
-2. Run the adapter to discover and classify it
-3. Generate admin notes and Ray Review draft
-4. Verify the full pipeline works with real data
-5. Be the first step toward a live research collection system
+1. Test category detection across different inbox folders
+2. Verify routing works for multiple categories
+3. Build a small corpus of real research artifacts
+4. Prepare for the research dashboard UI
 
 ---
 
 ## Implementation Roadmap
 
-### Completed (This Session)
+### Completed (Previous Sessions)
 - ✅ Adapter v1 implemented
 - ✅ 51 tests written and passing
 - ✅ Safety checks implemented
@@ -72,16 +99,20 @@ This would:
 - ✅ All reports created
 - ✅ Verification passed
 
+### Completed (This Session)
+- ✅ First real artifact processed (credit_utilization)
+- ✅ Admin notes generated
+- ✅ Ray Review draft generated
+- ✅ Full pipeline verified end-to-end
+
 ### Short-Term (Next Session)
-- Add first real credit utilization research artifact
-- Run adapter against real artifact
-- Verify admin notes and Ray Review draft
-- Test the full pipeline end-to-end
+- Add second real artifact (different category)
+- Ray reviews first artifact admin note and Ray Review draft
+- Build research dashboard UI
+- Build detail page UI
 
 ### Medium-Term (Future)
 - Populate all 10 inbox categories with real research
-- Build research dashboard UI
-- Build detail page UI
 - Connect to $97 review workflow
 - Build client education portal
 - Add FCRA/FDCPA compliance notes
