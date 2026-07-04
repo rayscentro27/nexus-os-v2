@@ -1,9 +1,9 @@
 import type { AlphaProviderName } from './alphaProviderStatus';
 
-export type AlphaProviderSource='deterministic_local'|'ollama_local'|'groq_backend'|'openrouter_backend'|'web_search_backend'|'unavailable_fallback';
+export type AlphaProviderSource='deterministic_local'|'ollama_local'|'groq_backend'|'openrouter_backend'|'web_search_backend'|'url_review_backend'|'unavailable_fallback';
 export type AlphaMemorySource='none'|'session_memory'|'local_alpha_memory'|'local_storage'|'report_context';
-export type AlphaWebProvider='none'|'duckduckgo_keyless'|'searxng'|'firecrawl_keyless'|'brave'|'hermes_agent_skill';
-export type AlphaWebStatus='unavailable'|'disabled'|'connector_missing'|'available'|'searched'|'failed';
+export type AlphaWebProvider='none'|'duckduckgo_keyless'|'searxng'|'firecrawl'|'firecrawl_keyless'|'brave'|'hermes_agent_skill';
+export type AlphaWebStatus='unavailable'|'disabled'|'connector_missing'|'available'|'searched'|'extracted'|'failed';
 export type AlphaCostLabel='local_free'|'hosted_estimate'|'search_free_or_keyless'|'unknown_estimate';
 
 export type AlphaRouteTrace={

@@ -24,6 +24,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/alpha/url-review"
+  to = "/.netlify/functions/alpha-url-review"
+  status = 200
+
+[[redirects]]
   from = "/api/alpha/*"
   to = "/.netlify/functions/alpha-provider/:splat"
   status = 200
