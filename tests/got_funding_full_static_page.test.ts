@@ -12,7 +12,7 @@ describe('Got Funding full static page fix', () => {
     it('public/got-funding/index.html has full teaser content', () => {
       const s = srcIndex();
       expect(s).toContain('Got Funding?');
-      expect(s).toContain('goclear-early-interest');
+      expect(s).toContain('goclear-got-funding');
       expect(s).toContain('data-netlify="true"');
       expect(s).toContain('name="consent"');
       expect(s).toContain('does not guarantee');
@@ -27,7 +27,7 @@ describe('Got Funding full static page fix', () => {
     it('public/got-funding.html has full teaser content', () => {
       const s = srcBackup();
       expect(s).toContain('Got Funding?');
-      expect(s).toContain('goclear-early-interest');
+      expect(s).toContain('goclear-got-funding');
       expect(s).toContain('name="consent"');
       expect(s).toContain('does not guarantee');
     });
@@ -49,7 +49,7 @@ describe('Got Funding full static page fix', () => {
     });
 
     it('dist/got-funding/index.html contains the form', () => {
-      expect(distIndex()).toContain('goclear-early-interest');
+      expect(distIndex()).toContain('goclear-got-funding');
     });
 
     it('dist/got-funding/index.html contains consent', () => {
@@ -68,7 +68,7 @@ describe('Got Funding full static page fix', () => {
       it('dist/got-funding.html exists and has full teaser', () => {
         const s = distBackup();
         expect(s).toContain('Got Funding?');
-        expect(s).toContain('goclear-early-interest');
+        expect(s).toContain('goclear-got-funding');
         expect(s).not.toContain('Open the GoClear Got Funding teaser');
       });
     }
