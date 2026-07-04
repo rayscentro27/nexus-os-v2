@@ -1,7 +1,7 @@
 import Foundation
 import CoreImage
 import AppKit
-let value = ProcessInfo.processInfo.environment["GOCLEAR_QR_URL"] ?? "https://nexusv20.netlify.app/got-funding"
+let value = ProcessInfo.processInfo.environment["GOCLEAR_QR_URL"] ?? "https://goclearonline.cc/got-funding/"
 let output = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "public/got-funding/qr-got-funding.png"
 guard let filter=CIFilter(name:"CIQRCodeGenerator") else { fatalError("QR filter unavailable") }
 filter.setValue(Data(value.utf8),forKey:"inputMessage"); filter.setValue("M",forKey:"inputCorrectionLevel")

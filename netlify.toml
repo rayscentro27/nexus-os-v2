@@ -4,6 +4,24 @@
 [build]
   command = "npm run build"
   publish = "dist"
+  functions = "netlify/functions"
+
+# Explicit static rewrites must precede the SPA fallback. These rules preserve
+# all three supported Got Funding paths without affecting hash-based Nexus UI routes.
+[[redirects]]
+  from = "/got-funding"
+  to = "/got-funding/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/got-funding/"
+  to = "/got-funding/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/api/alpha/*"
+  to = "/.netlify/functions/alpha-provider/:splat"
+  status = 200
 
 # SPA fallback so the React app's client routes resolve. The static landing page
 # (public/goclear-apex-readiness.html → dist/goclear-apex-readiness.html) is a real file and is
