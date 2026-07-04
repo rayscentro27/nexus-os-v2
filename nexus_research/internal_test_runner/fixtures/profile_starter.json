@@ -1,0 +1,20 @@
+HYPOTHETICAL INTERNAL TEST PROFILE — NOT A REAL CLIENT.
+
+{
+  "profile_id": "TEST-001",
+  "profile_type": "hypothetical",
+  "profile_label": "Starter",
+  "credit_utilization_pct": 78,
+  "has_business_entity": false,
+  "entity_type": "none",
+  "time_in_business_months": 0,
+  "annual_revenue": 0,
+  "existing_debt": 18000,
+  "credit_score_range": "580-620",
+  "funding_goal": "10000",
+  "has_business_bank_account": false,
+  "has_business_website": false,
+  "has_business_email": false,
+  "has_business_phone": false,
+  "notes": "Hypothetical starter profile with high revolving utilization, no business entity, no business infrastructure. Needs readiness education."
+}

@@ -1,0 +1,20 @@
+HYPOTHETICAL INTERNAL TEST PROFILE — NOT A REAL CLIENT.
+
+{
+  "profile_id": "TEST-003",
+  "profile_type": "hypothetical",
+  "profile_label": "Stronger",
+  "credit_utilization_pct": 22,
+  "has_business_entity": true,
+  "entity_type": "LLC",
+  "time_in_business_months": 24,
+  "annual_revenue": 120000,
+  "existing_debt": 5000,
+  "credit_score_range": "700-730",
+  "funding_goal": "50000",
+  "has_business_bank_account": true,
+  "has_business_website": true,
+  "has_business_email": true,
+  "has_business_phone": true,
+  "notes": "Hypothetical stronger profile with lower utilization, business setup mostly complete. Needs admin review before any funding recommendations. Still no funding guarantees."
+}

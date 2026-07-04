@@ -1,0 +1,115 @@
+{
+  "generated_at": "2026-07-04T00:00:00.000Z",
+  "status": "DRY RUN ONLY — NOT WRITTEN TO SUPABASE — NOT REAL CLIENT DATA",
+  "description": "Example records that would be stored in Supabase after Ray approval and integration",
+  "tables": {
+    "nexus_research_artifacts": {
+      "example_records": [
+        {
+          "id": "00000000-0000-0000-0000-000000000001",
+          "tenant_id": "00000000-0000-0000-0000-000000000099",
+          "artifact_id": "nexus-res-20260704-001",
+          "category": "credit_repair",
+          "filename": "2026-07-03_credit_repair_seed_guardrails.md",
+          "source_path": "nexus_research/research_inbox/credit_repair/2026-07-03_credit_repair_seed_guardrails.md",
+          "sha256": "example_hash_001",
+          "title": "Credit Repair Seed Guardrails",
+          "short_summary": "Internal seed note for credit repair readiness guardrails",
+          "evidence_quality": "unverified",
+          "compliance_flags": ["FCRA", "FDCPA"],
+          "guarantee_flags": [],
+          "safety_status": "blocked",
+          "admin_only": true,
+          "ray_review_status": "pending",
+          "client_facing_allowed": false,
+          "source_sha256": "example_content_hash_001",
+          "adapter_version": "v1",
+          "ingested_at": "2026-07-04T00:00:00.000Z",
+          "created_at": "2026-07-04T00:00:00.000Z",
+          "updated_at": "2026-07-04T00:00:00.000Z"
+        }
+      ]
+    },
+    "nexus_research_reviews": {
+      "example_records": [
+        {
+          "id": "00000000-0000-0000-0000-000000000002",
+          "tenant_id": "00000000-0000-0000-0000-000000000099",
+          "artifact_id": "nexus-res-20260704-002",
+          "review_type": "admin_note",
+          "content": {
+            "summary": "Credit utilization research artifact classified as credit_utilization",
+            "category": "credit_utilization",
+            "evidence_quality": "unverified",
+            "risk_compliance_notes": ["Prohibitive context detected"],
+            "recommended_internal_action": "Keep admin-only",
+            "ray_review_items": ["Review artifact"]
+          },
+          "ray_review_status": "pending",
+          "client_facing_allowed": false,
+          "created_at": "2026-07-04T00:00:00.000Z",
+          "updated_at": "2026-07-04T00:00:00.000Z"
+        }
+      ]
+    },
+    "goclear_readiness_internal_tests": {
+      "example_records": [
+        {
+          "id": "00000000-0000-0000-0000-000000000003",
+          "tenant_id": "00000000-0000-0000-0000-000000000099",
+          "profile_id": "TEST-001",
+          "profile_label": "Starter",
+          "profile_data": {
+            "profile_type": "hypothetical",
+            "credit_utilization_pct": 78,
+            "has_business_entity": false,
+            "entity_type": "none",
+            "credit_score_range": "580-620"
+          },
+          "scorecard": {
+            "credit_utilization_readiness": "low",
+            "business_setup_readiness": "low",
+            "funding_readiness_preparation": "low",
+            "ray_review_priority": "high"
+          },
+          "categories_used": ["manual_notes", "credit_utilization", "business_setup"],
+          "generated_at": "2026-07-04T00:00:00.000Z",
+          "created_at": "2026-07-04T00:00:00.000Z"
+        }
+      ]
+    },
+    "goclear_readiness_report_drafts": {
+      "example_records": [
+        {
+          "id": "00000000-0000-0000-0000-000000000004",
+          "tenant_id": "00000000-0000-0000-0000-000000000099",
+          "test_id": "00000000-0000-0000-0000-000000000003",
+          "profile_id": "TEST-001",
+          "report_data": {
+            "cover_summary": "GoClear $97 Credit & Funding Readiness Review — Internal Draft for Starter profile",
+            "credit_utilization_readiness": "Utilization at 78% — significantly above recommended range",
+            "missing_information": ["Business entity formation", "Business bank account"]
+          },
+          "report_label": "INTERNAL DRAFT — NOT CLIENT-FACING — RAY REVIEW REQUIRED",
+          "ray_review_status": "pending",
+          "client_facing_allowed": false,
+          "created_at": "2026-07-04T00:00:00.000Z",
+          "updated_at": "2026-07-04T00:00:00.000Z"
+        }
+      ]
+    },
+    "ray_review_research_queue": {
+      "example_records": [
+        {
+          "id": "00000000-0000-0000-0000-000000000005",
+          "item_type": "artifact",
+          "item_id": "00000000-0000-0000-0000-000000000001",
+          "status": "pending",
+          "ray_notes": null,
+          "reviewed_at": null,
+          "created_at": "2026-07-04T00:00:00.000Z"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,20 @@
+HYPOTHETICAL INTERNAL TEST PROFILE — NOT A REAL CLIENT.
+
+{
+  "profile_id": "TEST-002",
+  "profile_type": "hypothetical",
+  "profile_label": "Improving",
+  "credit_utilization_pct": 42,
+  "has_business_entity": true,
+  "entity_type": "LLC",
+  "time_in_business_months": 6,
+  "annual_revenue": 45000,
+  "existing_debt": 8000,
+  "credit_score_range": "640-670",
+  "funding_goal": "25000",
+  "has_business_bank_account": false,
+  "has_business_website": false,
+  "has_business_email": true,
+  "has_business_phone": false,
+  "notes": "Hypothetical improving profile with LLC/EIN started, moderate utilization, business bank account planned. Needs business setup checklist and funding readiness roadmap."
+}
