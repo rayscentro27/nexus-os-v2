@@ -564,3 +564,165 @@ describe("Full Seed Batch — Safety Guards", () => {
     }
   });
 });
+
+describe("Internal Review Pack — Category Matrix Completeness", () => {
+  const REVIEW_DIR = join(ROOT, "reports", "nexus_research", "review");
+
+  const CATEGORY_REVIEW_MATRIX = join(REVIEW_DIR, "nexus_research_category_review_matrix.md");
+  const INTERNAL_USE_RECOMMENDATIONS = join(REVIEW_DIR, "nexus_research_internal_use_recommendations.md");
+  const EXTERNAL_VERIFICATION_BACKLOG = join(REVIEW_DIR, "nexus_research_external_verification_backlog.md");
+  const RAY_REVIEW_PACK = join(REVIEW_DIR, "ray_review_nexus_research_seed_pack.md");
+  const TESTING_PLAN = join(REVIEW_DIR, "goclear_readiness_internal_testing_plan.md");
+  const PREFLIGHT = join(REVIEW_DIR, "nexus_research_internal_review_preflight.md");
+  const VISIBILITY_REPORT = join(REVIEW_DIR, "nexus_research_internal_review_visibility_report.md");
+
+  it("category review matrix exists", () => {
+    expect(existsSync(CATEGORY_REVIEW_MATRIX)).toBe(true);
+  });
+
+  it("category review matrix covers all 10 categories", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    for (const cat of NEXUS_INBOX_CATEGORIES) {
+      expect(content).toContain(cat);
+    }
+  });
+
+  it("no category is marked client-facing approved", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8").toLowerCase();
+    expect(content).not.toContain("client-facing allowed now: yes");
+    expect(content).not.toContain("client-facing approved");
+  });
+
+  it("credit_repair requires compliance review", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const creditRepairSection = content.split("### 1. Credit Repair")[1]?.split("###")[0] || "";
+    expect(creditRepairSection.toLowerCase()).toContain("compliance review");
+    expect(creditRepairSection).toContain("FCRA");
+    expect(creditRepairSection).toContain("FDCPA");
+  });
+
+  it("business_funding requires external verification", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const fundingSection = content.split("### 4. Business Funding")[1]?.split("###")[0] || "";
+    expect(fundingSection).toContain("external verification");
+    expect(fundingSection).toContain("SBA");
+  });
+
+  it("grants requires external verification", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const grantsSection = content.split("### 5. Grants")[1]?.split("###")[0] || "";
+    expect(grantsSection).toContain("external verification");
+  });
+
+  it("lenders requires external verification", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const lendersSection = content.split("### 6. Lenders")[1]?.split("###")[0] || "";
+    expect(lendersSection).toContain("external verification");
+  });
+
+  it("affiliates require Ray Review", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const affiliatesSection = content.split("### 7. Affiliates")[1]?.split("###")[0] || "";
+    expect(affiliatesSection).toContain("Ray Review required");
+    expect(affiliatesSection).toContain("FTC disclosure");
+  });
+
+  it("compliance requires external verification", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const complianceSection = content.split("### 8. Compliance")[1]?.split("###")[0] || "";
+    expect(complianceSection).toContain("external verification");
+    expect(complianceSection).toContain("FCRA");
+  });
+
+  it("client_education is draft-only not client-facing", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const clientEdSection = content.split("### 9. Client Education")[1]?.split("###")[0] || "";
+    expect(clientEdSection).toContain("draft only");
+    expect(clientEdSection).toContain("not client-facing");
+  });
+
+  it("manual_notes is safe for internal testing", () => {
+    const content = readFileSync(CATEGORY_REVIEW_MATRIX, "utf-8");
+    const manualSection = content.split("### 10. Manual Notes")[1] || "";
+    expect(manualSection).toContain("Safe for internal admin testing");
+  });
+});
+
+describe("Internal Review Pack — Safety Guards", () => {
+  const REVIEW_DIR = join(ROOT, "reports", "nexus_research", "review");
+
+  it("no send/publish/charge/trade in review pack", () => {
+    const reviewFiles = readdirSync(REVIEW_DIR).filter(f => f.endsWith(".md"));
+    for (const f of reviewFiles) {
+      const content = readFileSync(join(REVIEW_DIR, f), "utf-8").toLowerCase();
+      expect(content).not.toContain("send_email");
+      expect(content).not.toContain("publish_post");
+      expect(content).not.toContain("charge_payment");
+      expect(content).not.toContain("execute_trade");
+      expect(content).not.toContain("place_order");
+    }
+  });
+
+  it("no Supabase connection in review pack", () => {
+    const reviewFiles = readdirSync(REVIEW_DIR).filter(f => f.endsWith(".md"));
+    for (const f of reviewFiles) {
+      const content = readFileSync(join(REVIEW_DIR, f), "utf-8").toLowerCase();
+      expect(content).not.toContain("createclient");
+      expect(content).not.toContain("from '@supabase");
+      expect(content).not.toContain("from \"@supabase");
+    }
+  });
+
+  it("no client data usage in review pack", () => {
+    const reviewFiles = readdirSync(REVIEW_DIR).filter(f => f.endsWith(".md"));
+    for (const f of reviewFiles) {
+      const content = readFileSync(join(REVIEW_DIR, f), "utf-8").toLowerCase();
+      expect(content).not.toContain("actual client");
+      expect(content).not.toContain("production client");
+    }
+  });
+
+  it("testing plan does not require real client data or Supabase", () => {
+    const content = readFileSync(join(REVIEW_DIR, "goclear_readiness_internal_testing_plan.md"), "utf-8").toLowerCase();
+    expect(content).toContain("no real clients");
+    expect(content).toContain("no real client data");
+    expect(content).toContain("no supabase");
+    expect(content).toContain("hypothetical");
+  });
+
+  it("external verification backlog does not claim completion", () => {
+    const content = readFileSync(join(REVIEW_DIR, "nexus_research_external_verification_backlog.md"), "utf-8").toLowerCase();
+    expect(content).not.toContain("completed");
+    expect(content).toContain("not verified");
+  });
+
+  it("Ray Review pack exists and requires approval", () => {
+    const content = readFileSync(join(REVIEW_DIR, "ray_review_nexus_research_seed_pack.md"), "utf-8").toLowerCase();
+    expect(content).toContain("ray review");
+    expect(content).toContain("require ray review");
+    expect(content).toContain("draft-only");
+  });
+
+  it("visibility report confirms no dashboard mounted", () => {
+    const content = readFileSync(join(REVIEW_DIR, "nexus_research_internal_review_visibility_report.md"), "utf-8").toLowerCase();
+    expect(content).toContain("no dashboard");
+    expect(content).toContain("report-based");
+  });
+
+  it("preflight confirms all artifacts unverified and draft-only", () => {
+    const content = readFileSync(join(REVIEW_DIR, "nexus_research_internal_review_preflight.md"), "utf-8").toLowerCase();
+    expect(content).toContain("unverified");
+    expect(content).toContain("draft-only");
+    expect(content).toContain("not client-facing");
+  });
+
+  it("no external provider calls in review pack", () => {
+    const reviewFiles = readdirSync(REVIEW_DIR).filter(f => f.endsWith(".md"));
+    for (const f of reviewFiles) {
+      const content = readFileSync(join(REVIEW_DIR, f), "utf-8").toLowerCase();
+      expect(content).not.toContain("fetch(");
+      expect(content).not.toContain("axios");
+      expect(content).not.toContain("http.request");
+    }
+  });
+});
