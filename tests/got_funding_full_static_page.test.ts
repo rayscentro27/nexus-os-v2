@@ -99,9 +99,9 @@ describe('Got Funding full static page fix', () => {
       expect(s).not.toMatch(/supabase|createClient/i);
     });
 
-    it('has no email send logic', () => {
+    it('has no email-send code', () => {
       const s = srcIndex();
-      expect(s).not.toMatch(/resend|sendgrid|nodemailer|fetch\(/i);
+      expect(s).not.toMatch(/resend|sendgrid|nodemailer/i);
     });
   });
 

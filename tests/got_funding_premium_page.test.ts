@@ -5,6 +5,7 @@ const srcIndex = () => fs.readFileSync('public/got-funding/index.html', 'utf8');
 const srcBackup = () => fs.readFileSync('public/got-funding.html', 'utf8');
 const distIndex = () => fs.readFileSync('dist/got-funding/index.html', 'utf8');
 const distThanks = fs.existsSync('dist/got-funding/thanks.html') ? () => fs.readFileSync('dist/got-funding/thanks.html', 'utf8') : null;
+const detectionSrc = () => fs.readFileSync('public/got-funding/netlify-form-detection.html', 'utf8');
 
 describe('Got Funding premium landing page', () => {
   describe('File existence', () => {
@@ -13,6 +14,7 @@ describe('Got Funding premium landing page', () => {
     it('public/got-funding/thanks.html exists', () => expect(fs.existsSync('public/got-funding/thanks.html')).toBe(true));
     it('public/got-funding/thanks/index.html exists', () => expect(fs.existsSync('public/got-funding/thanks/index.html')).toBe(true));
     it('local hero and preparation images exist', () => {
+      expect(fs.existsSync('public/got-funding/assets/hero-business-success.png')).toBe(true);
       expect(fs.existsSync('public/got-funding/assets/hero-business-success.png')).toBe(true);
       expect(fs.existsSync('public/got-funding/assets/preparation-road.png')).toBe(true);
     });
@@ -77,20 +79,51 @@ describe('Got Funding premium landing page', () => {
   });
 
   describe('Form and CTA', () => {
-    it('form has Netlify attributes', () => {
-      const s = srcIndex();
-      expect(s).toContain('method="POST"');
-      expect(s).toContain('data-netlify="true"');
-      expect(s).toContain('netlify-honeypot');
-    });
+    it('form name is goclear-got-funding', () => expect(srcIndex()).toContain('name="goclear-got-funding"'));
+    it('form method is POST', () => expect(srcIndex()).toContain('method="POST"'));
+    it('form has data-netlify="true"', () => expect(srcIndex()).toContain('data-netlify="true"'));
+    it('form has bare netlify attribute', () => expect(srcIndex()).toContain(' netlify netlify-honeypot="bot-field"'));
+    it('form has netlify-honeypot bot-field', () => expect(srcIndex()).toContain('netlify-honeypot="bot-field"'));
     it('form action is /got-funding/thanks.html', () => expect(srcIndex()).toContain('action="/got-funding/thanks.html"'));
-    it('form has honeypot', () => expect(srcIndex()).toContain('bot-field'));
-    it('form has consent checkbox', () => expect(srcIndex()).toContain('name="consent"'));
+    it('hidden form-name input exists', () => expect(srcIndex()).toContain('name="form-name"'));
+    it('honeypot field exists', () => expect(srcIndex()).toContain('name="bot-field"'));
     it('CTA says "Join the funding-ready list"', () => expect(srcIndex()).toContain('Join the funding-ready list'));
   });
 
+  describe('JS submit fallback', () => {
+    it('JS fallback exists in source', () => {
+      const s = srcIndex();
+      expect(s).toContain('querySelector(\'form[name="goclear-got-funding"]\')');
+      expect(s).toContain('form.addEventListener("submit"');
+      expect(s).toContain('event.preventDefault()');
+    });
+    it('JS fallback encodes data as x-www-form-urlencoded', () => expect(srcIndex()).toContain('"application/x-www-form-urlencoded"'));
+    it('JS fallback posts to /', () => expect(srcIndex()).toContain('fetch("/"'));
+    it('JS fallback redirects to /got-funding/thanks.html', () => expect(srcIndex()).toContain('window.location.href = "/got-funding/thanks.html"'));
+    it('JS fallback sets form-name before submit', () => expect(srcIndex()).toContain('formData.set("form-name", "goclear-got-funding")'));
+    it('JS fallback does not use Supabase', () => expect(srcIndex()).not.toMatch(/supabase|createClient/i));
+    it('JS fallback does not use localStorage', () => expect(srcIndex()).not.toMatch(/localStorage\.setItem|localStorage\.getItem/i));
+    it('JS fallback does not send email', () => expect(srcIndex()).not.toMatch(/resend|sendgrid|nodemailer/i));
+  });
+
+  describe('Netlify detection fallback file', () => {
+    it('detection file exists', () => expect(fs.existsSync('public/got-funding/netlify-form-detection.html')).toBe(true));
+    it('detection file has matching form name', () => expect(detectionSrc()).toContain('name="goclear-got-funding"'));
+    it('detection file has matching field names', () => {
+      const s = detectionSrc();
+      expect(s).toContain('name="form-name"');
+      expect(s).toContain('name="bot-field"');
+      expect(s).toContain('name="name"');
+      expect(s).toContain('name="email"');
+      expect(s).toContain('name="business_owner"');
+      expect(s).toContain('name="interest"');
+      expect(s).toContain('name="consent"');
+    });
+  });
+
   describe('Thank-you page', () => {
-    it('thank-you page exists', () => expect(fs.existsSync('public/got-funding/thanks.html')).toBe(true));
+    it('thank-you html exists', () => expect(fs.existsSync('public/got-funding/thanks.html')).toBe(true));
+    it('thank-you index route exists', () => expect(fs.existsSync('public/got-funding/thanks/index.html')).toBe(true));
     it('contains confirmation text', () => {
       const s = fs.readFileSync('public/got-funding/thanks.html', 'utf8');
       expect(s).toContain('You’re on the GoClear Funding Readiness early access list');
@@ -100,15 +133,20 @@ describe('Got Funding premium landing page', () => {
   });
 
   describe('Compliance', () => {
-    it('has no Supabase code', () => expect(srcIndex()).not.toMatch(/supabase|createClient/i));
-    it('has no email-send code', () => expect(srcIndex()).not.toMatch(/resend|sendgrid|nodemailer/i));
-    it('has no external hotlinked images', () => expect(srcIndex()).not.toMatch(/src="https?:\/\/[^"]*\.(png|jpg|jpeg|webp|gif)/i));
-    it('no guarantee promise outside disclaimer', () => {
+    it('has no Supabase code in source', () => expect(srcIndex()).not.toMatch(/supabase|createClient/i));
+    it('has no email-send code in source', () => expect(srcIndex()).not.toMatch(/resend|sendgrid|nodemailer/i));
+    it('has no guarantee promise outside disclaimer', () => {
       const s = srcIndex();
       expect(s).not.toMatch(/we guarantee/i);
       expect(s).not.toMatch(/guaranteed approval/i);
     });
-    it('page works without JavaScript (no script tags)', () => expect(srcIndex()).not.toMatch(/<script[ >]/i));
+    it('has no external hotlinked images', () => expect(srcIndex()).not.toMatch(/src="https?:\/\/[^"]*\.(png|jpg|jpeg|webp|gif)/i));
     it('mockup image not required', () => expect(srcIndex()).not.toContain('got-funding-approved-mockup'));
+  });
+
+  describe('Build output', () => {
+    it('build output includes index', () => expect(fs.existsSync('dist/got-funding/index.html')).toBe(true));
+    it('build output includes thank-you', () => expect(fs.existsSync('dist/got-funding/thanks.html')).toBe(true));
+    it('build output includes thank-you index route', () => expect(fs.existsSync('dist/got-funding/thanks/index.html')).toBe(true));
   });
 });

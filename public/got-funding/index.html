@@ -34,9 +34,55 @@
   </div></section>
   <section class="bottom"><div class="fit"><h2>This Is For <span class="gold">You If...</span></h2><ul class="checks"><li><span class="check-dot">✓</span>You want to improve your credit profile</li><li><span class="check-dot">✓</span>You’re not sure if you’re funding-ready</li><li><span class="check-dot">✓</span>You want to start a business</li><li><span class="check-dot">✓</span>You want a checklist before talking to lenders</li><li><span class="check-dot">✓</span>You have a business and want funding to grow</li><li><span class="check-dot">✓</span>You want better access to opportunities</li></ul></div>
     <div class="formwrap" id="early-access"><h2>Get on the Funding Readiness Early Access List</h2><p>Be first to know when the GoClear Funding Readiness Review opens — and get practical preparation steps.</p>
-      <form name="goclear-got-funding" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/got-funding/thanks.html"><input type="hidden" name="form-name" value="goclear-got-funding"/><p class="hidden"><label>Do not fill this out: <input name="bot-field"/></label></p><div><label for="name">Name</label><input id="name" name="name" type="text" placeholder="Your name" required/></div><div><label for="email">Email</label><input id="email" name="email" type="email" placeholder="Your email" required/></div><div><label for="business-owner">Are you a business owner?</label><select id="business-owner" name="business_owner" required><option value="">Select an option</option><option>Yes</option><option>Not yet</option><option>Planning to start</option></select></div><div><label for="interest">What are you trying to do?</label><select id="interest" name="interest" required><option value="">Select an option</option><option>Improve my credit</option><option>Start a business</option><option>Grow my business</option><option>Get funding-ready</option><option>Both credit and business funding</option><option>Not sure yet</option></select></div><label class="consent"><input type="checkbox" name="consent" required/><span>I agree to be contacted with information about GoClear. I understand GoClear does not guarantee funding approval, credit score increases, removals, or specific outcomes.</span></label><button type="submit">Join the funding-ready list</button><div class="spam">No spam. No pressure. Just updates and helpful information.</div></form>
+      <form name="goclear-got-funding" method="POST" data-netlify="true" netlify netlify-honeypot="bot-field" action="/got-funding/thanks.html"><input type="hidden" name="form-name" value="goclear-got-funding"/><p class="hidden"><label>Do not fill this out: <input name="bot-field"/></label></p><p data-form-error hidden role="alert" style="color:#ffd16a;font-weight:800;margin-top:8px;"></p><div><label for="name">Name</label><input id="name" name="name" type="text" placeholder="Your name" required/></div><div><label for="email">Email</label><input id="email" name="email" type="email" placeholder="Your email" required/></div><div><label for="business-owner">Are you a business owner?</label><select id="business-owner" name="business_owner" required><option value="">Select an option</option><option>Yes</option><option>Not yet</option><option>Planning to start</option></select></div><div><label for="interest">What are you trying to do?</label><select id="interest" name="interest" required><option value="">Select an option</option><option>Improve my credit</option><option>Start a business</option><option>Grow my business</option><option>Get funding-ready</option><option>Both credit and business funding</option><option>Not sure yet</option></select></div><label class="consent"><input type="checkbox" name="consent" required/><span>I agree to be contacted with information about GoClear. I understand GoClear does not guarantee funding approval, credit score increases, removals, or specific outcomes.</span></label><button type="submit">Join the funding-ready list</button><div class="spam">No spam. No pressure. Just updates and helpful information.</div></form>
     </div></section>
   <footer class="footer"><div><div class="footer-brand">🛡️ GOCLEAR</div><p>GoClear helps you prepare for credit and business funding readiness. We give you clarity before you apply.</p></div><div class="legal">GoClear is not a lender. This is not a loan application. This is not a credit repair service. No funding, loan, approval, credit score increase, deletion, or specific outcome is guaranteed. Information is for educational and review purposes only.</div><div class="trust"><span>🔒 Secure &amp; Private</span><span>🛡️ Your Data Stays Yours</span><span>👤 You’re in Control</span></div><div class="legal">© 2026 GoClear. All rights reserved.</div></footer>
-</main>
+  </main>
+  <script>
+    (function () {
+      var form = document.querySelector('form[name="goclear-got-funding"]');
+      if (!form) return;
+
+      function encode(data) {
+        return new URLSearchParams(data).toString();
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        var submitButton = form.querySelector('button[type="submit"]');
+        var originalText = submitButton ? submitButton.textContent : "";
+        var formData = new FormData(form);
+
+        formData.set("form-name", "goclear-got-funding");
+
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Submitting...";
+        }
+
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: encode(formData)
+        })
+          .then(function (response) {
+            if (!response.ok) throw new Error("Form submission failed");
+            window.location.href = "/got-funding/thanks.html";
+          })
+          .catch(function () {
+            var message = form.querySelector("[data-form-error]");
+            if (message) {
+              message.textContent = "Something went wrong. Please try again or contact GoClear directly.";
+              message.hidden = false;
+            }
+            if (submitButton) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalText || "Join the funding-ready list";
+            }
+          });
+      });
+    })();
+  </script>
 </body>
 </html>
