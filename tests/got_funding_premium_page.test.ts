@@ -11,18 +11,20 @@ describe('Got Funding premium landing page', () => {
     it('public/got-funding/index.html exists', () => expect(fs.existsSync('public/got-funding/index.html')).toBe(true));
     it('public/got-funding.html exists', () => expect(fs.existsSync('public/got-funding.html')).toBe(true));
     it('public/got-funding/thanks.html exists', () => expect(fs.existsSync('public/got-funding/thanks.html')).toBe(true));
+    it('public/got-funding/thanks/index.html exists', () => expect(fs.existsSync('public/got-funding/thanks/index.html')).toBe(true));
+    it('local hero and preparation images exist', () => {
+      expect(fs.existsSync('public/got-funding/assets/hero-business-success.png')).toBe(true);
+      expect(fs.existsSync('public/got-funding/assets/preparation-road.png')).toBe(true);
+    });
     it('dist/got-funding/index.html exists', () => expect(fs.existsSync('dist/got-funding/index.html')).toBe(true));
     it('dist/got-funding.html exists', () => expect(fs.existsSync('dist/got-funding.html')).toBe(true));
     it('dist/got-funding/thanks.html exists', () => expect(distThanks !== null).toBe(true));
   });
 
   describe('Both landing files aligned', () => {
-    it('index.html and got-funding.html have same core content', () => {
+    it('index.html and got-funding.html are identical', () => {
       const a = srcIndex(); const b = srcBackup();
-      expect(a).toContain('Got Funding?');
-      expect(b).toContain('Got Funding?');
-      expect(a).toContain('Get funding-ready before you apply');
-      expect(b).toContain('Get funding-ready before you apply');
+      expect(a).toBe(b);
     });
   });
 
@@ -31,7 +33,7 @@ describe('Got Funding premium landing page', () => {
     it('contains "Get funding-ready before you apply"', () => expect(srcIndex()).toContain('Get funding-ready before you apply'));
     it('contains "Most businesses do not fail because the idea was bad"', () => {
       const s = srcIndex();
-      expect(s).toContain("don't fail because the idea was bad");
+      expect(s).toContain('don’t fail because the idea was bad');
     });
     it('contains "run out of money"', () => expect(srcIndex()).toContain('run out of money'));
   });
@@ -39,8 +41,10 @@ describe('Got Funding premium landing page', () => {
   describe('What Could Funding Help section', () => {
     it('contains section title', () => expect(srcIndex()).toContain('What Could Funding Help'));
     it('contains "Start a New Business"', () => expect(srcIndex()).toContain('Start a New Business'));
-    it('contains "Improve Cash Flow"', () => expect(srcIndex()).toContain('Improve Cash Flow'));
-    it('contains "Build Business Credit"', () => expect(srcIndex()).toContain('Build Business Credit'));
+    it('contains cash flow and business credit options', () => {
+      expect(srcIndex()).toContain('Cash Flow');
+      expect(srcIndex()).toContain('Business Credit');
+    });
   });
 
   describe('How GoClear Helps section', () => {
@@ -51,12 +55,25 @@ describe('Got Funding premium landing page', () => {
     it('contains "Funding Readiness Gaps"', () => expect(srcIndex()).toContain('Funding Readiness Gaps'));
   });
 
-  describe('Why Preparation Matters', () => {
-    it('contains section title', () => expect(srcIndex()).toContain('Why Preparation Matters'));
+  describe('One-screen image-backed design', () => {
+    it('uses local hero and road assets', () => {
+      expect(srcIndex()).toContain('./assets/hero-business-success.png');
+      expect(srcIndex()).toContain('./assets/preparation-road.png');
+    });
+    it('uses Manrope and Inter', () => {
+      expect(srcIndex()).toContain('Manrope');
+      expect(srcIndex()).toContain('Inter');
+    });
+    it('uses 100dvh and desktop overflow hidden with mobile scrolling', () => {
+      const s = srcIndex();
+      expect(s).toContain('height:100dvh');
+      expect(s).toContain('overflow:hidden');
+      expect(s).toContain('html,body{overflow:auto}');
+    });
   });
 
   describe('This Is For You If', () => {
-    it('contains section title', () => expect(srcIndex()).toContain('This Is For You'));
+    it('contains section title', () => expect(srcIndex()).toContain('This Is For <span class="gold">You If...'));
   });
 
   describe('Form and CTA', () => {
@@ -76,7 +93,7 @@ describe('Got Funding premium landing page', () => {
     it('thank-you page exists', () => expect(fs.existsSync('public/got-funding/thanks.html')).toBe(true));
     it('contains confirmation text', () => {
       const s = fs.readFileSync('public/got-funding/thanks.html', 'utf8');
-      expect(s).toContain("you're on the GoClear Funding Readiness early access list");
+      expect(s).toContain('You’re on the GoClear Funding Readiness early access list');
     });
     it('contains no-guarantee disclaimer', () => expect(fs.readFileSync('public/got-funding/thanks.html', 'utf8')).toContain('does not guarantee'));
     it('has back link to /got-funding/', () => expect(fs.readFileSync('public/got-funding/thanks.html', 'utf8')).toContain('href="/got-funding/"'));

@@ -1,364 +1,42 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Got Funding? | GoClear Funding Readiness</title><meta name="description" content="Get funding-ready before you apply. Join the GoClear Funding Readiness early access list."><style>
-:root{--bg:#03111f;--bg2:#020b14;--card:#0b2037;--card-border:rgba(245,180,64,.35);--gold:#f5b544;--gold-dark:#c88a1d;--blue:#62b8ff;--ink:#f4f7fb;--muted:#b9c7d9;--white:#f6f8fb;--radius:16px}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font:17px/1.6 system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
-img{max-width:100%;display:block}
-a{color:var(--blue);text-decoration:none}
-a:hover{text-decoration:underline}
-.container{max-width:1100px;margin:0 auto;padding:0 24px}
-
-/* ── Announcement Bar ── */
-.announce{background:linear-gradient(90deg,var(--gold-dark),var(--gold));color:#0a0a0a;text-align:center;padding:12px 16px;font-weight:700;font-size:14px;letter-spacing:.02em}
-.announce svg{vertical-align:middle;margin-right:6px}
-
-/* ── Header ── */
-.header{padding:20px 0;display:flex;align-items:center;gap:10px}
-.header svg{flex-shrink:0}
-.header-name{font-size:22px;font-weight:800;letter-spacing:.06em;color:var(--ink)}
-
-/* ── Hero ── */
-.hero{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding:8vh 0 6vh}
-.hero-text .eyebrow{color:var(--gold);font-weight:800;letter-spacing:.12em;font-size:13px;margin-bottom:12px}
-.hero-text h1{font-size:clamp(3rem,8vw,5.5rem);line-height:.92;color:var(--gold);margin-bottom:8px}
-.hero-text .sub{font-size:clamp(1.4rem,3vw,2.2rem);color:var(--ink);font-weight:700;margin-bottom:20px}
-.hero-text p{color:var(--muted);font-size:16px;margin-bottom:12px;max-width:520px}
-.hero-text strong{color:var(--ink)}
-.hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
-.btn-gold{display:inline-block;background:var(--gold);color:#0a0a0a;font-weight:800;font-size:1rem;padding:14px 28px;border-radius:10px;border:none;cursor:pointer;text-decoration:none}
-.btn-gold:hover{background:#f7c462;text-decoration:none}
-.btn-outline{display:inline-block;border:2px solid var(--gold);color:var(--gold);font-weight:700;font-size:1rem;padding:12px 26px;border-radius:10px;background:transparent;cursor:pointer;text-decoration:none}
-.btn-outline:hover{background:rgba(245,180,64,.1);text-decoration:none}
-
-/* Hero visual panel */
-.hero-visual{position:relative;background:linear-gradient(135deg,#0a1e35,#0d2847);border-radius:20px;overflow:hidden;min-height:380px;display:flex;align-items:flex-end}
-.hero-visual .skyline{position:absolute;bottom:0;left:0;right:0;height:60%;opacity:.18}
-.hero-visual .glow{position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(circle,rgba(245,180,64,.25),transparent 70%);border-radius:50%}
-.hero-visual .arrow{position:absolute;top:30px;right:40px}
-.hero-visual .caption{position:relative;z-index:2;background:rgba(11,32,55,.92);border:1px solid var(--card-border);border-radius:14px;padding:20px 24px;margin:24px}
-.hero-visual .caption strong{display:block;font-size:22px;color:var(--ink);line-height:1.3}
-.hero-visual .caption span{color:var(--gold);font-weight:700}
-
-/* ── Benefit row ── */
-.benefits{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:40px 0}
-.benefit{display:flex;align-items:flex-start;gap:10px}
-.benefit svg{flex-shrink:0;margin-top:2px}
-.benefit span{font-size:14px;font-weight:600;color:var(--ink);line-height:1.4}
-
-/* ── Sections ── */
-.section{padding:64px 0}
-.section-title{text-align:center;font-size:clamp(1.5rem,3vw,2rem);font-weight:800;margin-bottom:40px}
-.section-title span{color:var(--gold)}
-
-/* ── What Could Funding Help ── */
-.funding-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px}
-.funding-card{background:var(--card);border:1px solid rgba(98,184,255,.15);border-radius:var(--radius);padding:28px 16px;text-align:center;transition:border-color .2s}
-.funding-card:hover{border-color:var(--gold)}
-.funding-card svg{margin:0 auto 12px}
-.funding-card p{font-size:14px;font-weight:700;color:var(--ink);line-height:1.35}
-
-/* ── How GoClear Helps ── */
-.help-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-.help-card{background:var(--white);color:#1a1a2e;border-radius:var(--radius);padding:24px;border:1px solid #e2e8f0}
-.help-card h4{font-size:15px;font-weight:800;margin-bottom:8px;color:#0a1e35}
-.help-card p{font-size:13px;color:#555;line-height:1.5}
-.help-card svg{margin-bottom:10px}
-
-/* ── Why Preparation Matters ── */
-.why-panel{display:grid;grid-template-columns:1fr 1fr;gap:0;border-radius:var(--radius);overflow:hidden;border:1px solid rgba(245,180,64,.2)}
-.why-visual{background:linear-gradient(135deg,#0d2847,#1a3a5c);position:relative;min-height:300px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.why-visual .road{position:absolute;bottom:0;left:0;right:0;height:50%}
-.why-visual .sun{position:absolute;top:20%;right:20%;width:80px;height:80px;background:radial-gradient(circle,var(--gold),transparent 70%);border-radius:50%}
-.why-copy{padding:40px;background:var(--card)}
-.why-copy h3{font-size:1.5rem;font-weight:800;margin-bottom:16px}
-.why-copy p{color:var(--muted);margin-bottom:12px;font-size:15px}
-.why-copy strong{color:var(--gold)}
-.process{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:24px}
-.process-step{text-align:center;font-size:12px;font-weight:700;color:var(--ink);padding:12px 4px;background:rgba(245,180,64,.08);border-radius:10px;border:1px solid rgba(245,180,64,.15)}
-.process-step svg{display:block;margin:0 auto 6px}
-
-/* ── This Is For You ── */
-.for-you{display:grid;grid-template-columns:1fr 1.3fr;gap:40px;align-items:start}
-.checklist{list-style:none;padding:0}
-.checklist li{display:flex;align-items:flex-start;gap:10px;padding:10px 0;font-size:15px;color:var(--ink);border-bottom:1px solid rgba(255,255,255,.06)}
-.checklist li:last-child{border:none}
-.checklist svg{flex-shrink:0;margin-top:2px}
-
-/* ── Form ── */
-.form-panel{background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);padding:36px}
-.form-panel h3{font-size:1.3rem;font-weight:800;margin-bottom:8px}
-.form-panel .desc{color:var(--muted);font-size:14px;margin-bottom:20px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.field{margin-bottom:16px}
-.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--ink)}
-.field input,.field select{width:100%;padding:13px;border:1px solid #2a4a6b;border-radius:8px;background:#071525;color:var(--ink);font-size:15px}
-.field input:focus,.field select:focus{outline:2px solid var(--gold);outline-offset:2px}
-.field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23b9c7d9' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
-.check{display:flex;gap:10px;align-items:flex-start;margin:16px 0}
-.check input{width:auto;margin-top:4px;accent-color:var(--gold)}
-.check span{font-size:13px;color:var(--muted);line-height:1.5}
-.form-note{font-size:12px;color:var(--muted);margin-top:8px}
-
-/* ── Footer ── */
-.footer{border-top:1px solid rgba(255,255,255,.08);padding:40px 0 32px;margin-top:40px}
-.footer-grid{display:grid;grid-template-columns:1fr 2fr 1fr;gap:32px;font-size:13px;color:var(--muted);line-height:1.6}
-.footer-brand{font-size:18px;font-weight:800;color:var(--ink);margin-bottom:8px;letter-spacing:.04em}
-.footer-disclaimer{font-size:12px;color:#7a8ba3;line-height:1.6}
-.trust{display:flex;gap:16px;flex-wrap:wrap}
-.trust-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-
-/* ── Responsive ── */
-@media(max-width:860px){
-.hero{grid-template-columns:1fr;text-align:center}
-.hero-text p{margin-left:auto;margin-right:auto}
-.hero-cta{justify-content:center}
-.hero-visual{min-height:280px}
-.benefits{grid-template-columns:repeat(2,1fr)}
-.why-panel{grid-template-columns:1fr}
-.for-you{grid-template-columns:1fr}
-.footer-grid{grid-template-columns:1fr}
-.process{grid-template-columns:repeat(2,1fr)}
-.form-row{grid-template-columns:1fr}
-}
-@media(max-width:500px){
-.hero-text h1{font-size:2.6rem}
-.benefits{grid-template-columns:1fr}
-.funding-cards{grid-template-columns:repeat(2,1fr)}
-.help-cards{grid-template-columns:1fr}
-}
-@media(prefers-reduced-motion:reduce){
-*{transition:none!important;animation:none!important}
-}
-</style></head><body>
-
-<!-- Announcement Bar -->
-<div class="announce">
-<svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="vertical-align:middle"><rect x="1" y="1" width="14" height="14" rx="3" stroke="#0a0a0a" stroke-width="2"/><path d="M4.5 8.5l2.5 2.5 4.5-5" stroke="#0a0a0a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-EARLY ACCESS: Join the GoClear Funding Readiness List — Be First to Know When We Launch
-</div>
-
-<div class="container">
-
-<!-- Header -->
-<header class="header">
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.73 5.12 14.96 12 16 6.88-1.04 12-8.27 12-16V8L16 2z" fill="#f5b544" opacity=".15"/><path d="M16 2L4 8v8c0 7.73 5.12 14.96 12 16 6.88-1.04 12-8.27 12-16V8L16 2z" stroke="#f5b544" stroke-width="2" fill="none"/><path d="M11 16.5l3.5 3.5 6.5-7" stroke="#f5b544" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<span class="header-name">GOCLEAR</span>
-</header>
-
-<!-- Hero -->
-<section class="hero">
-<div class="hero-text">
-<p class="eyebrow">GOCLEAR • COMING SOON</p>
-<h1>Got Funding?</h1>
-<p class="sub">Get funding-ready before you apply.</p>
-<p>Most businesses don't fail because the idea was bad. <strong>They fail because they run out of money before they are ready for the next move.</strong></p>
-<p>GoClear helps you prepare your credit, business setup, and funding profile so you can see what may be helping you, what may be hurting you, and what steps to take next before deciding whether or where to apply.</p>
-<div class="hero-cta">
-<a href="#form" class="btn-gold">Join the funding-ready list</a>
-<a href="#how" class="btn-outline">See what GoClear helps you prepare</a>
-</div>
-</div>
-<div class="hero-visual">
-<!-- Abstract success illustration: skyline + growth arrow + sunrise -->
-<svg class="skyline" viewBox="0 0 600 250" fill="none" preserveAspectRatio="xMidYMax slice">
-<rect x="40" y="100" width="40" height="150" fill="#f5b544" opacity=".3"/><rect x="90" y="60" width="35" height="190" fill="#f5b544" opacity=".25"/><rect x="135" y="130" width="45" height="120" fill="#f5b544" opacity=".2"/><rect x="190" y="40" width="30" height="210" fill="#f5b544" opacity=".35"/><rect x="230" y="90" width="50" height="160" fill="#f5b544" opacity=".2"/><rect x="290" y="70" width="35" height="180" fill="#f5b544" opacity=".3"/><rect x="335" y="110" width="40" height="140" fill="#f5b544" opacity=".25"/><rect x="385" y="50" width="30" height="200" fill="#f5b544" opacity=".3"/><rect x="425" y="120" width="45" height="130" fill="#f5b544" opacity=".2"/><rect x="480" y="80" width="35" height="170" fill="#f5b544" opacity=".28"/><rect x="525" y="140" width="40" height="110" fill="#f5b544" opacity=".22"/>
-</svg>
-<div class="glow"></div>
-<svg class="arrow" width="60" height="80" viewBox="0 0 60 80" fill="none"><path d="M30 75V15M30 15L15 30M30 15L45 30" stroke="#f5b544" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<div class="caption">
-<strong>Preparation today.<br><span>Opportunities tomorrow.</span></strong>
-</div>
-</div>
-</section>
-
-<!-- Benefit Row -->
-<div class="benefits">
-<div class="benefit">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="3" width="18" height="18" rx="4" stroke="#f5b544" stroke-width="2"/></svg>
-<span>Improve Credit Readiness</span>
-</div>
-<div class="benefit">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 21V7l9-4 9 4v14" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 21V13h6v8" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<span>Start or Grow Your Business</span>
-</div>
-<div class="benefit">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/><path d="M17 7l-5 5-3-3-4 4" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<span>Access Capital to Grow &amp; Scale</span>
-</div>
-<div class="benefit">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#f5b544" stroke-width="2"/><path d="M12 8v4l3 3" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<span>Know What to Fix Before You Apply</span>
-</div>
-</div>
-
-<!-- What Could Funding Help You Do? -->
-<section class="section">
-<h2 class="section-title">What Could Funding Help <span>You Do?</span></h2>
-<div class="funding-cards">
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M18 6L6 12v6c0 7 5.4 13.5 12 15 6.6-1.5 12-8 12-15v-6L18 6z" stroke="#f5b544" stroke-width="2" fill="none"/><path d="M13 18l3 3 6-6" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<p>Start a New Business</p>
-</div>
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><path d="M6 28L14 18l6 6 10-16" stroke="#f5b544" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 12h6v6" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<p>Grow Your Existing Business</p>
-</div>
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="6" y="14" width="24" height="16" rx="2" stroke="#f5b544" stroke-width="2"/><path d="M6 20h24M14 14V10a4 4 0 018 0v4" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/></svg>
-<p>Build Inventory &amp; Stock</p>
-</div>
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="8" y="6" width="20" height="24" rx="2" stroke="#f5b544" stroke-width="2"/><path d="M14 6V4h8v2M14 16h8M14 22h5" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/></svg>
-<p>Buy Equipment or Tools</p>
-</div>
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="14" r="6" stroke="#f5b544" stroke-width="2"/><path d="M8 30c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/><path d="M26 10l4-4M30 10l-4-4" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/></svg>
-<p>Marketing &amp; Visibility</p>
-</div>
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="12" stroke="#f5b544" stroke-width="2"/><path d="M18 10v8l5 5" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 28l-4 4M24 28l4 4" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/></svg>
-<p>Improve Cash Flow</p>
-</div>
-<div class="funding-card">
-<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><rect x="6" y="8" width="24" height="20" rx="2" stroke="#f5b544" stroke-width="2"/><path d="M6 14h24M12 8V6M24 8V6" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/><path d="M14 20h8M14 26h5" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/></svg>
-<p>Build Business Credit</p>
-</div>
-</div>
-</section>
-
-<!-- How GoClear Helps You Prepare -->
-<section class="section" id="how">
-<h2 class="section-title">How GoClear Helps <span>You Prepare</span></h2>
-<div class="help-cards">
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="10" r="5" stroke="#0b2037" stroke-width="2"/><path d="M4 26c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#0b2037" stroke-width="2" stroke-linecap="round"/></svg>
-<h4>Personal Credit Profile Review</h4>
-<p>Understand what may be helping or hurting your credit.</p>
-</div>
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="16" width="5" height="8" rx="1" stroke="#0b2037" stroke-width="2"/><rect x="11" y="10" width="5" height="14" rx="1" stroke="#0b2037" stroke-width="2"/><rect x="19" y="4" width="5" height="20" rx="1" stroke="#0b2037" stroke-width="2"/></svg>
-<h4>Credit Utilization Insights</h4>
-<p>See how usage may impact funding readiness.</p>
-</div>
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 4L4 9v5c0 7 4.5 12.5 10 14 5.5-1.5 10-7 10-14V9L14 4z" stroke="#0b2037" stroke-width="2" fill="none"/><path d="M10 14l3 3 5-5" stroke="#0b2037" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<h4>Business Setup Readiness</h4>
-<p>Make sure your business foundation is funding-ready.</p>
-</div>
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="4" y="8" width="20" height="14" rx="2" stroke="#0b2037" stroke-width="2"/><path d="M4 12h20M10 8V6M18 8V6" stroke="#0b2037" stroke-width="2" stroke-linecap="round"/></svg>
-<h4>Business Banking Readiness</h4>
-<p>Know what banks and funding sources may look for.</p>
-</div>
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="6" y="4" width="16" height="20" rx="2" stroke="#0b2037" stroke-width="2"/><path d="M10 10h8M10 14h8M10 18h4" stroke="#0b2037" stroke-width="2" stroke-linecap="round"/></svg>
-<h4>Documentation Checklist</h4>
-<p>Get clear on documents you may need before applying.</p>
-</div>
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="10" stroke="#0b2037" stroke-width="2"/><path d="M14 8v6M14 18v1" stroke="#0b2037" stroke-width="2.5" stroke-linecap="round"/></svg>
-<h4>Funding Readiness Gaps</h4>
-<p>Identify potential red flags before you apply.</p>
-</div>
-<div class="help-card">
-<svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M4 14h6l3-6 4 12 3-6h4" stroke="#0b2037" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-<h4>Practical Next Steps</h4>
-<p>Get action steps to improve before your next move.</p>
-</div>
-</div>
-</section>
-
-<!-- Why Preparation Matters -->
-<section class="section">
-<div class="why-panel">
-<div class="why-visual">
-<svg class="road" viewBox="0 0 500 200" fill="none" preserveAspectRatio="xMidYMax slice">
-<path d="M0 200 Q125 140 250 120 Q375 100 500 60" stroke="rgba(245,180,64,.3)" stroke-width="40" fill="none"/>
-<path d="M0 200 Q125 140 250 120 Q375 100 500 60" stroke="rgba(245,180,64,.6)" stroke-width="3" fill="none" stroke-dasharray="8 6"/>
-</svg>
-<div class="sun"></div>
-<svg width="40" height="40" viewBox="0 0 40 40" fill="none" style="position:absolute;top:35%;left:35%"><circle cx="20" cy="20" r="8" fill="#f5b544" opacity=".6"/><circle cx="20" cy="20" r="16" stroke="#f5b544" stroke-width="1" opacity=".3"/></svg>
-</div>
-<div class="why-copy">
-<h3>Why Preparation Matters</h3>
-<p>Applying too early can lead to denials, wasted inquiries, weak offers, and missed opportunities.</p>
-<p><strong>GoClear helps you understand where you stand before you apply — so you can apply smarter, not harder.</strong></p>
-<div class="process">
-<div class="process-step">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#f5b544" stroke-width="2"/><path d="M12 8v4M12 16v.5" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/></svg>
-Review<br>Where You Stand
-</div>
-<div class="process-step">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><rect x="3" y="3" width="18" height="18" rx="4" stroke="#f5b544" stroke-width="2"/></svg>
-Identify &amp; Fix<br>What Matters
-</div>
-<div class="process-step">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 6h6l-5 4 2 6-6-4-6 4 2-6-5-4h6z" stroke="#f5b544" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
-Build Your<br>Readiness
-</div>
-<div class="process-step">
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="#f5b544" stroke-width="2" stroke-linecap="round"/><path d="M17 7l-5 5-3-3-4 4" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-Access More<br>Opportunities
-</div>
-</div>
-</div>
-</div>
-</section>
-
-<!-- This Is For You If + Form -->
-<section class="section" id="form">
-<div class="for-you">
-<div>
-<h2 class="section-title" style="text-align:left;margin-bottom:24px">This Is For You <span>If...</span></h2>
-<ul class="checklist">
-<li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5b544" opacity=".15" stroke="#f5b544" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>You want to improve your credit profile</li>
-<li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5b544" opacity=".15" stroke="#f5b544" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>You want to start a business</li>
-<li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5b544" opacity=".15" stroke="#f5b544" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>You already have a business and want funding to grow</li>
-<li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5b544" opacity=".15" stroke="#f5b544" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>You're not sure if you're funding-ready</li>
-<li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5b544" opacity=".15" stroke="#f5b544" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>You want a checklist before talking to lenders</li>
-<li><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#f5b544" opacity=".15" stroke="#f5b544" stroke-width="1.5"/><path d="M6 10l2.5 2.5L14 7" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>You want better access to capital and opportunities</li>
-</ul>
-</div>
-
-<div class="form-panel">
-<h3>Get on the Funding Readiness Early Access List</h3>
-<p class="desc">Be first to know when the GoClear Funding Readiness Review opens — and get practical steps to prepare your credit and business profile before applying.</p>
-<form name="goclear-got-funding" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/got-funding/thanks.html">
-<input type="hidden" name="form-name" value="goclear-got-funding">
-<p hidden><label>Do not fill this out: <input name="bot-field"></label></p>
-<div class="form-row">
-<div class="field"><label for="name">Name</label><input id="name" name="name" autocomplete="name" required maxlength="100" placeholder="Your name"></div>
-<div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="254" placeholder="Your email"></div>
-</div>
-<div class="form-row">
-<div class="field"><label for="owner">Are you a business owner?</label><select id="owner" name="business_owner" required><option value="">Select an option</option><option>Yes</option><option>Not yet</option><option>Planning to start</option></select></div>
-<div class="field"><label for="interest">What are you trying to do?</label><select id="interest" name="interest" required><option value="">Select an option</option><option>Improve my credit</option><option>Start a business</option><option>Grow my business</option><option>Get funding-ready</option><option>Both credit and business funding</option><option>Not sure yet</option></select></div>
-</div>
-<div class="check"><input type="checkbox" name="consent" required value="agreed"><span>I agree to be contacted with information about GoClear. I understand GoClear does not guarantee funding approval, credit score increases, removals, or specific outcomes.</span></div>
-<button class="btn-gold" type="submit" style="width:100%;font-size:1.05rem">Join the funding-ready list</button>
-<p class="form-note">No spam. No pressure. Just updates and helpful information.</p>
-</form>
-</div>
-</div>
-</section>
-
-<!-- Footer -->
-<footer class="footer">
-<div class="footer-grid">
-<div>
-<div class="footer-brand">GOCLEAR</div>
-<p>GoClear helps you prepare for credit and business funding readiness.<br>We give you clarity before you apply.</p>
-</div>
-<div class="footer-disclaimer">
-<p>GoClear is not a lender. This is not a loan application. This is not a credit repair service. No funding, loan, approval, credit score increase, deletion, or specific outcome is guaranteed. Information is for educational and review purposes only.</p>
-<p style="margin-top:8px">&copy; 2026 GoClear. All rights reserved.</p>
-</div>
-<div class="trust">
-<div class="trust-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 4.4 2.6 8.5 6 9.5 3.4-1 6-5.1 6-9.5V4L8 1z" stroke="#f5b544" stroke-width="1.5" fill="none"/></svg>Secure &amp; Private</div>
-<div class="trust-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#f5b544" stroke-width="1.5"/><path d="M5 8l2 2 4-4" stroke="#f5b544" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Your Data Stays Yours</div>
-<div class="trust-item"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="#f5b544" stroke-width="1.5" stroke-linecap="round"/></svg>You're in Control</div>
-</div>
-</div>
-</footer>
-
-</div><!-- .container -->
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base href="/got-funding/" />
+  <title>Got Funding? | GoClear Funding Readiness</title>
+  <meta name="description" content="Get funding-ready before you apply. Join the GoClear Funding Readiness early access list." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--hero-image:url("./assets/hero-business-success.png");--road-image:url("./assets/preparation-road.png");--navy-950:#020a12;--navy-900:#041321;--navy-850:#061827;--navy-800:#08223c;--gold:#f5b23c;--gold-2:#ffca5f;--text:#f8fbff;--muted:#b9c7d7;--line:rgba(245,178,60,.28);--card:rgba(9,34,60,.82);--white-card:#f3f6fb;--font-head:"Manrope",system-ui,sans-serif;--font-body:"Inter",system-ui,sans-serif}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--navy-950);color:var(--text);font-family:var(--font-body)}a{color:inherit}.page{width:100vw;height:100dvh;overflow:hidden;background:radial-gradient(circle at 75% 8%,rgba(255,189,76,.18),transparent 24%),linear-gradient(135deg,#020a12 0%,#061827 42%,#09213a 100%);display:grid;grid-template-rows:30px 42vh 23vh 20vh 1fr}.topbar{height:30px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(90deg,#d98d1b,#f8bd45,#d68d1c);color:#06111f;font:900 clamp(11px,.75vw,14px) var(--font-head);white-space:nowrap}.hero{position:relative;isolation:isolate;overflow:hidden;border-bottom:1px solid var(--line)}.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,10,18,.99) 0%,rgba(2,10,18,.91) 35%,rgba(2,10,18,.24) 63%,rgba(2,10,18,.04) 100%),var(--hero-image) 82% 28%/cover no-repeat;z-index:-2}.hero::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 82% 42%,rgba(255,184,62,.2),transparent 24%),linear-gradient(180deg,transparent 0%,rgba(2,10,18,.13) 72%,rgba(2,10,18,.92) 100%);z-index:-1}.hero-copy{width:min(800px,55vw);height:100%;padding:clamp(16px,2vw,34px) clamp(38px,5.1vw,98px);display:flex;flex-direction:column;justify-content:center}.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;font:900 clamp(17px,1.2vw,24px) var(--font-head)}.shield{color:var(--gold);font-size:clamp(28px,2.4vw,44px)}.eyebrow{color:var(--gold);font:900 clamp(10px,.7vw,13px) var(--font-head);letter-spacing:.16em;margin-bottom:6px}h1{margin:0;font:900 clamp(52px,5vw,96px)/.88 var(--font-head);letter-spacing:-.075em}.gold{color:var(--gold)}.subhead{margin:8px 0 0;font:900 clamp(24px,2.1vw,42px)/1.02 var(--font-head);letter-spacing:-.055em}.hero-text{max-width:660px;margin:8px 0 0;font-size:clamp(11px,.78vw,15px);line-height:1.34;color:#dbe7f4}.hero-text strong{color:var(--gold);font-weight:900}.hero-actions{display:flex;gap:12px;align-items:center;margin-top:12px}.btn{display:inline-flex;align-items:center;justify-content:center;height:clamp(34px,3.9vh,46px);padding:0 clamp(16px,1.5vw,28px);border-radius:8px;font:900 clamp(11px,.74vw,14px) var(--font-head);text-decoration:none;white-space:nowrap}.btn-primary{background:linear-gradient(180deg,#ffd16a,var(--gold));color:#06111f;box-shadow:0 14px 28px rgba(245,178,60,.18)}.btn-secondary{border:2px solid var(--gold);color:var(--gold);background:rgba(3,17,31,.64)}.hero-badges{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.1vw,20px);margin-top:12px;max-width:760px}.badge{display:flex;align-items:center;gap:7px;color:#fff;font:800 clamp(9px,.62vw,12px)/1.12 var(--font-body)}.badge-mark{color:var(--gold);font-size:clamp(18px,1.5vw,28px)}.hero-card{position:absolute;right:clamp(50px,6vw,116px);bottom:clamp(18px,3vh,44px);width:clamp(300px,25vw,470px);padding:clamp(15px,1.6vw,26px);border:1px solid rgba(245,178,60,.66);background:rgba(4,18,32,.72);backdrop-filter:blur(10px);border-radius:16px;box-shadow:0 28px 70px rgba(0,0,0,.28);font:900 clamp(22px,1.9vw,36px)/1.05 var(--font-head);letter-spacing:-.045em}.hero-card span{display:block;color:var(--gold)}.section{padding:clamp(10px,1.25vh,17px) clamp(42px,4vw,76px);border-bottom:1px solid var(--line);overflow:hidden}.section h2,.fit h2,.formwrap h2{margin:0 0 9px;font:900 clamp(20px,1.55vw,31px)/1 var(--font-head);letter-spacing:-.05em}.section h2{text-align:center}.midgrid{display:grid;grid-template-columns:35% 65%;gap:clamp(16px,1.8vw,30px);height:100%}.funding-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:1fr;gap:clamp(6px,.65vw,11px);height:calc(100% - 34px)}.fund-card{border:1px solid rgba(98,184,255,.22);background:linear-gradient(180deg,rgba(12,42,73,.92),rgba(7,29,52,.92));border-radius:10px;display:grid;place-items:center;text-align:center;padding:6px;min-height:0}.fund-card b{font:900 clamp(9px,.67vw,12px)/1.12 var(--font-head)}.prepare-pane{position:relative;isolation:isolate}.prepare-pane::before{content:"";position:absolute;inset:24px 0 0;border-radius:12px;background:linear-gradient(90deg,rgba(3,16,29,.96),rgba(3,16,29,.74)),var(--road-image) center/cover no-repeat;opacity:.42;z-index:-1}.prepare-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:clamp(5px,.5vw,8px)}.prep-card{background:var(--white-card);color:#071527;border-radius:8px;padding:clamp(6px,.65vw,10px);min-height:clamp(82px,9.2vh,116px);display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;box-shadow:0 12px 28px rgba(0,0,0,.22)}.prep-card b{font:900 clamp(8px,.59vw,11px)/1.08 var(--font-head)}.prep-card p{margin:4px 0 0;color:#344153;font-size:clamp(7px,.48vw,9px);line-height:1.18}.process-row{margin-top:8px;display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr auto 1.1fr;align-items:center;gap:6px}.process{font:800 clamp(8px,.55vw,10px)/1.08 var(--font-body)}.arrow{color:var(--gold);font-weight:900}.micro-cta{height:clamp(28px,3vh,38px);border-radius:7px;background:linear-gradient(180deg,#ffd16a,var(--gold));display:flex;align-items:center;justify-content:center;color:#06111f;font:900 clamp(8px,.6vw,11px) var(--font-head);text-decoration:none;white-space:nowrap}.bottom{display:grid;grid-template-columns:38% 62%;padding:0 clamp(42px,4vw,76px);border-bottom:1px solid var(--line)}.fit{padding:clamp(10px,1.3vh,18px) clamp(18px,2vw,36px) clamp(10px,1.3vh,18px) 0;border-right:1px solid var(--line)}.checks{display:grid;grid-template-columns:1fr 1fr;gap:clamp(5px,.65vh,9px) clamp(14px,1.5vw,26px);margin:0;padding:0;list-style:none}.checks li{display:flex;gap:7px;align-items:flex-start;font-size:clamp(8px,.59vw,11px);line-height:1.2}.check-dot{width:16px;height:16px;border-radius:99px;background:rgba(245,178,60,.18);color:var(--gold);display:inline-grid;place-items:center;flex:0 0 auto;font-weight:900}.formwrap{padding:clamp(10px,1.3vh,18px) 0 clamp(10px,1.3vh,18px) clamp(18px,2vw,36px)}.formwrap p{margin:5px 0 7px;color:#c7d6e7;font-size:clamp(8px,.58vw,11px);line-height:1.2}form{display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:6px 9px;align-items:end}label{display:block;font:900 clamp(8px,.54vw,10px) var(--font-head);margin-bottom:3px}input,select{width:100%;height:clamp(28px,2.9vh,36px);border-radius:6px;border:1px solid rgba(185,199,217,.35);background:#f7f9fc;color:#071527;padding:0 9px;font:700 clamp(9px,.62vw,11px) var(--font-body)}.consent{grid-column:1/5;display:flex;align-items:flex-start;gap:7px;color:#d9e5f2;font-size:clamp(7px,.48vw,9px);line-height:1.18;margin-top:1px}.consent input{width:13px;height:13px;flex:0 0 auto;margin-top:1px}button{grid-column:5;grid-row:2/4;height:clamp(40px,4.2vh,52px);min-width:clamp(190px,16vw,290px);border:0;border-radius:8px;background:linear-gradient(180deg,#ffd16a,var(--gold));color:#06111f;font:900 clamp(11px,.78vw,15px) var(--font-head);cursor:pointer}.spam{grid-column:5;color:#b8c7d7;font-size:clamp(7px,.47vw,9px);text-align:center}.hidden{position:absolute;left:-9999px;opacity:0;height:1px;width:1px;overflow:hidden}.footer{display:grid;grid-template-columns:21% 37% 1fr 1fr;gap:clamp(14px,1.6vw,28px);align-items:center;padding:clamp(5px,.65vh,10px) clamp(42px,4vw,76px);background:rgba(1,8,15,.54);min-height:0}.footer-brand{font:900 clamp(14px,1vw,20px) var(--font-head)}.footer p{margin:3px 0 0;color:#c4d2e3;font-size:clamp(7px,.5vw,9px);line-height:1.18}.legal{color:#9fb0c4;font-size:clamp(7px,.47vw,9px);line-height:1.22;border-left:1px solid rgba(255,255,255,.11);padding-left:clamp(14px,1.5vw,26px)}.trust{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;font-size:clamp(7px,.5vw,9px);font-weight:800}.trust span{display:flex;align-items:center;gap:5px}
+    @media(max-width:1100px){html,body{overflow:auto}.page{height:auto;min-height:100dvh;overflow:visible;display:block}.topbar{white-space:normal;text-align:center;height:auto;min-height:34px;padding:6px 12px}.hero{min-height:760px}.hero::before{background:linear-gradient(180deg,rgba(2,10,18,.94) 0%,rgba(2,10,18,.7) 45%,rgba(2,10,18,.97) 100%),var(--hero-image) center/cover no-repeat}.hero-copy{width:100%;padding:34px 25px}.hero-card{position:static;margin:16px 25px 36px}.hero-badges,.midgrid,.bottom,.footer,form,.checks,.trust{grid-template-columns:1fr}.prepare-grid,.funding-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.section,.bottom,.footer{padding:28px 25px}.fund-card,.prep-card{min-height:100px}.process-row{grid-template-columns:1fr}.arrow{display:none}.fit{border-right:0;padding-right:0}.formwrap{padding-left:0}.consent,button,.spam{grid-column:auto;grid-row:auto}.footer{gap:18px}.legal{border-left:0;padding-left:0}}
+  </style>
+</head>
+<body>
+<main class="page">
+  <div class="topbar">🛡 EARLY ACCESS: Join the GoClear Funding Readiness List — Be First to Know When We Launch</div>
+  <section class="hero">
+    <div class="hero-copy">
+      <div class="brand"><span class="shield">⬡</span> GOCLEAR</div><div class="eyebrow">GOCLEAR • COMING SOON</div>
+      <h1>Got <span class="gold">Funding?</span></h1><div class="subhead">Get funding-ready <span class="gold">before you apply.</span></div>
+      <p class="hero-text">Most businesses don’t fail because the idea was bad. <strong>They fail because they run out of money before they are ready for the next move.</strong></p>
+      <p class="hero-text">GoClear helps you prepare your credit, business setup, and funding profile so you can see what may be helping you, what may be hurting you, and what steps to take next before deciding whether or where to apply.</p>
+      <div class="hero-actions"><a class="btn btn-primary" href="#early-access">Join the funding-ready list</a><a class="btn btn-secondary" href="#prepare">See what GoClear helps you prepare</a></div>
+      <div class="hero-badges"><div class="badge"><span class="badge-mark">✓</span>Improve Credit Readiness</div><div class="badge"><span class="badge-mark">⌂</span>Start or Grow Your Business</div><div class="badge"><span class="badge-mark">↗</span>Access Capital to Grow &amp; Scale</div><div class="badge"><span class="badge-mark">◎</span>Know What to Fix Before You Apply</div></div>
+    </div><div class="hero-card">Preparation today.<span>Opportunities tomorrow.</span></div>
+  </section>
+  <section class="section" id="prepare"><div class="midgrid">
+    <div><h2>What Could Funding Help <span class="gold">You Do?</span></h2><div class="funding-grid"><div class="fund-card"><b>🚀<br>Start a New Business</b></div><div class="fund-card"><b>📈<br>Grow Your Business</b></div><div class="fund-card"><b>📦<br>Build Inventory</b></div><div class="fund-card"><b>💻<br>Buy Equipment</b></div><div class="fund-card"><b>📣<br>Marketing</b></div><div class="fund-card"><b>💵<br>Cash Flow</b></div><div class="fund-card"><b>🏛️<br>Business Credit</b></div><div class="fund-card"><b>📋<br>Documentation</b></div></div></div>
+    <div class="prepare-pane"><h2>How GoClear Helps <span class="gold">You Prepare</span></h2><div class="prepare-grid"><div class="prep-card"><b>Personal Credit Profile Review</b><p>Understand what may be helping or hurting your credit.</p></div><div class="prep-card"><b>Credit Utilization Insights</b><p>See how usage may impact readiness.</p></div><div class="prep-card"><b>Business Setup Readiness</b><p>Prepare your business foundation.</p></div><div class="prep-card"><b>Business Banking Readiness</b><p>Know what sources may review.</p></div><div class="prep-card"><b>Documentation Checklist</b><p>Get clear on documents you may need.</p></div><div class="prep-card"><b>Funding Readiness Gaps</b><p>Identify potential red flags.</p></div><div class="prep-card"><b>Practical Next Steps</b><p>Prepare before your next move.</p></div></div><div class="process-row"><div class="process">🔎 Review Where You Stand</div><div class="arrow">→</div><div class="process">📋 Identify What Matters</div><div class="arrow">→</div><div class="process">🛡 Build Readiness</div><div class="arrow">→</div><div class="process">💰 See Opportunities</div><div class="arrow">→</div><a class="micro-cta" href="#early-access">Join the funding-ready list</a></div></div>
+  </div></section>
+  <section class="bottom"><div class="fit"><h2>This Is For <span class="gold">You If...</span></h2><ul class="checks"><li><span class="check-dot">✓</span>You want to improve your credit profile</li><li><span class="check-dot">✓</span>You’re not sure if you’re funding-ready</li><li><span class="check-dot">✓</span>You want to start a business</li><li><span class="check-dot">✓</span>You want a checklist before talking to lenders</li><li><span class="check-dot">✓</span>You have a business and want funding to grow</li><li><span class="check-dot">✓</span>You want better access to opportunities</li></ul></div>
+    <div class="formwrap" id="early-access"><h2>Get on the Funding Readiness Early Access List</h2><p>Be first to know when the GoClear Funding Readiness Review opens — and get practical preparation steps.</p>
+      <form name="goclear-got-funding" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/got-funding/thanks.html"><input type="hidden" name="form-name" value="goclear-got-funding"/><p class="hidden"><label>Do not fill this out: <input name="bot-field"/></label></p><div><label for="name">Name</label><input id="name" name="name" type="text" placeholder="Your name" required/></div><div><label for="email">Email</label><input id="email" name="email" type="email" placeholder="Your email" required/></div><div><label for="business-owner">Are you a business owner?</label><select id="business-owner" name="business_owner" required><option value="">Select an option</option><option>Yes</option><option>Not yet</option><option>Planning to start</option></select></div><div><label for="interest">What are you trying to do?</label><select id="interest" name="interest" required><option value="">Select an option</option><option>Improve my credit</option><option>Start a business</option><option>Grow my business</option><option>Get funding-ready</option><option>Both credit and business funding</option><option>Not sure yet</option></select></div><label class="consent"><input type="checkbox" name="consent" required/><span>I agree to be contacted with information about GoClear. I understand GoClear does not guarantee funding approval, credit score increases, removals, or specific outcomes.</span></label><button type="submit">Join the funding-ready list</button><div class="spam">No spam. No pressure. Just updates and helpful information.</div></form>
+    </div></section>
+  <footer class="footer"><div><div class="footer-brand">🛡️ GOCLEAR</div><p>GoClear helps you prepare for credit and business funding readiness. We give you clarity before you apply.</p></div><div class="legal">GoClear is not a lender. This is not a loan application. This is not a credit repair service. No funding, loan, approval, credit score increase, deletion, or specific outcome is guaranteed. Information is for educational and review purposes only.</div><div class="trust"><span>🔒 Secure &amp; Private</span><span>🛡️ Your Data Stays Yours</span><span>👤 You’re in Control</span></div><div class="legal">© 2026 GoClear. All rights reserved.</div></footer>
+</main>
+</body>
+</html>
