@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { getPasswordResetRedirectUrl, updateRecoveredPassword } from '../lib/authHelpers';
 
 interface SessionUser { email: string | null; id: string; }
 
@@ -43,7 +44,7 @@ export function SignInForm() {
     e.preventDefault();
     if (!supabase) return;
     setBusy(true); setErr(''); setNotice('');
-    const redirectTo = `${window.location.origin}/?password-recovery=1`;
+    const redirectTo = getPasswordResetRedirectUrl();
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) setErr(error.message);
     else setNotice('If this email belongs to an administrator, a secure password-reset link has been sent. Check spam if it does not arrive.');
@@ -88,7 +89,7 @@ export function SignInForm() {
 
 export function UpdatePasswordForm() {
   const [password,setPassword]=useState(''); const [confirm,setConfirm]=useState(''); const [err,setErr]=useState(''); const [busy,setBusy]=useState(false);
-  async function update(e:React.FormEvent){e.preventDefault();if(!supabase)return;if(password.length<12){setErr('Use at least 12 characters.');return}if(password!==confirm){setErr('Passwords do not match.');return}setBusy(true);setErr('');const {error}=await supabase.auth.updateUser({password});if(error){setErr(error.message);setBusy(false);return}await supabase.auth.signOut();window.location.assign('/?password-reset=success')}
+  async function update(e:React.FormEvent){e.preventDefault();if(!supabase)return;if(password.length<12){setErr('Use at least 12 characters.');return}if(password!==confirm){setErr('Passwords do not match.');return}setBusy(true);setErr('');const {error}=await updateRecoveredPassword(password);if(error){setErr(error);setBusy(false)}}
   return <div className="authwrap"><form className="authcard" onSubmit={update}><h1>Choose a new password</h1><p>Use a unique password with at least 12 characters. Nexus OS will not display or store it in a file.</p><div className="field"><label>New password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" required minLength={12}/></div><div className="field"><label>Confirm new password</label><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} autoComplete="new-password" required minLength={12}/></div>{err&&<div className="err">{err}</div>}<button className="btn" type="submit" disabled={busy} style={{width:'100%',marginTop:8}}>{busy?'Updating…':'Set new password'}</button></form></div>
 }
 

@@ -3,8 +3,12 @@ import { AuthGate } from '../components/auth';
 // The previous Shell remains in the repo (src/components/Shell.tsx) and can be restored if needed.
 import NexusAdminUI from '../admin/NexusAdminUI';
 import ClientPortalRoot from '../pages/client/ClientPortalRoot';
+import UpdatePasswordPage from '../pages/UpdatePasswordPage';
 
 export function App() {
+  if (window.location.pathname === '/update-password') {
+    return <UpdatePasswordPage />;
+  }
   if (window.location.pathname === '/client' || window.location.pathname.startsWith('/client/')) {
     return <ClientPortalRoot />;
   }

@@ -24,6 +24,7 @@ import ReadinessReviewAdmin from '../components/ReadinessReviewAdmin'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
 import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
+import AccountSecurityPanel from '../components/AccountSecurityPanel'
 import ErrorBoundary from '../components/ErrorBoundary'
 import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
@@ -890,13 +891,14 @@ function HermesFeedbackPage() {
   )
 }
 
-function SettingsPage() {
+function SettingsPage({ email }) {
   const [notice, setNotice] = useState('Select a setting to see its connection status.')
   const explain = (label, detail) => setNotice(`${label}: ${detail}. This screen does not change server configuration.`)
   return (
-    <SimplePage title="Settings" sub="Continuous Loop · Safety Boundaries · Report Paths">
+    <SimplePage title="Settings" sub="Continuous Loop · Safety Boundaries · Account Security · Report Paths">
       <div className="command-layout" style={{ flex: 1 }}>
         <div className="main-stack">
+          <AccountSecurityPanel email={email} />
           <section className="glass panel">
             <h3>Continuous Safe-Internal Mode</h3>
             <button type="button" className="nx-soft feedback-row" onClick={()=>explain('Status',runtime.loopStatus)}><strong>Status</strong><span>{runtime.loopStatus}</span></button>
@@ -1481,7 +1483,7 @@ export default function NexusAdminUI({ email }) {
     cli: <ErrorBoundary panelName="CLI Control"><CLIControlPage /></ErrorBoundary>,
     proof: <ErrorBoundary panelName="Proof Ledger"><ProofLedgerPage /></ErrorBoundary>,
     feedback: <ErrorBoundary panelName="Hermes Feedback"><HermesFeedbackPage /></ErrorBoundary>,
-    settings: <ErrorBoundary panelName="Settings"><SettingsPage /></ErrorBoundary>
+    settings: <ErrorBoundary panelName="Settings"><SettingsPage email={email} /></ErrorBoundary>
   }[activePage] || <CommandCenter />
 
   return (
