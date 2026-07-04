@@ -6,18 +6,20 @@ interface SessionUser { email: string | null; id: string; }
 export function useSession() {
   const [user, setUser] = useState<SessionUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [recoveryMode, setRecoveryMode] = useState(() => new URLSearchParams(window.location.search).get('password-recovery') === '1' || window.location.hash.includes('type=recovery'));
   useEffect(() => {
     if (!supabase) { setLoading(false); return; }
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session ? { email: data.session.user.email ?? null, id: data.session.user.id } : null);
       setLoading(false);
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session ? { email: session.user.email ?? null, id: session.user.id } : null);
+      if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
-  return { user, loading };
+  return { user, loading, recoveryMode };
 }
 
 export function SignInForm() {
@@ -25,6 +27,8 @@ export function SignInForm() {
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [resetMode, setResetMode] = useState(false);
+  const [notice, setNotice] = useState(() => new URLSearchParams(window.location.search).get('password-reset') === 'success' ? 'Password updated. Sign in with your new password.' : '');
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +38,26 @@ export function SignInForm() {
     if (error) setErr(error.message);
     setBusy(false);
   }
+
+  async function requestReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase) return;
+    setBusy(true); setErr(''); setNotice('');
+    const redirectTo = `${window.location.origin}/?password-recovery=1`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) setErr(error.message);
+    else setNotice('If this email belongs to an administrator, a secure password-reset link has been sent. Check spam if it does not arrive.');
+    setBusy(false);
+  }
+
+  if (resetMode) return <div className="authwrap"><form className="authcard" onSubmit={requestReset}>
+    <h1>Reset Nexus OS password</h1>
+    <p>Enter the administrator email. The new password will be chosen only after opening the secure Supabase recovery link.</p>
+    <div className="field"><label>Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required /></div>
+    {err && <div className="err">{err}</div>}{notice && <div role="status">{notice}</div>}
+    <button className="btn" type="submit" disabled={busy || !isSupabaseConfigured} style={{ width:'100%',marginTop:8 }}>{busy?'Requesting…':'Send secure reset link'}</button>
+    <button className="btn ghost" type="button" onClick={()=>{setResetMode(false);setErr('');setNotice('')}} style={{ width:'100%',marginTop:8 }}>Back to sign in</button>
+  </form></div>;
 
   return (
     <div className="authwrap">
@@ -52,12 +76,20 @@ export function SignInForm() {
           <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </div>
         {err && <div className="err">{err}</div>}
+        {notice && <div role="status">{notice}</div>}
         <button className="btn" type="submit" disabled={busy || !isSupabaseConfigured} style={{ width: '100%', marginTop: 8 }}>
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
+        <button className="btn ghost" type="button" onClick={() => { setResetMode(true); setErr(''); setNotice(''); }} style={{ width:'100%',marginTop:8 }}>Forgot password?</button>
       </form>
     </div>
   );
+}
+
+export function UpdatePasswordForm() {
+  const [password,setPassword]=useState(''); const [confirm,setConfirm]=useState(''); const [err,setErr]=useState(''); const [busy,setBusy]=useState(false);
+  async function update(e:React.FormEvent){e.preventDefault();if(!supabase)return;if(password.length<12){setErr('Use at least 12 characters.');return}if(password!==confirm){setErr('Passwords do not match.');return}setBusy(true);setErr('');const {error}=await supabase.auth.updateUser({password});if(error){setErr(error.message);setBusy(false);return}await supabase.auth.signOut();window.location.assign('/?password-reset=success')}
+  return <div className="authwrap"><form className="authcard" onSubmit={update}><h1>Choose a new password</h1><p>Use a unique password with at least 12 characters. Nexus OS will not display or store it in a file.</p><div className="field"><label>New password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" required minLength={12}/></div><div className="field"><label>Confirm new password</label><input type="password" value={confirm} onChange={e=>setConfirm(e.target.value)} autoComplete="new-password" required minLength={12}/></div>{err&&<div className="err">{err}</div>}<button className="btn" type="submit" disabled={busy} style={{width:'100%',marginTop:8}}>{busy?'Updating…':'Set new password'}</button></form></div>
 }
 
 export function UserMenu({ email }: { email: string | null }) {
@@ -71,8 +103,9 @@ export function UserMenu({ email }: { email: string | null }) {
 }
 
 export function AuthGate({ children }: { children: (user: SessionUser) => ReactNode }) {
-  const { user, loading } = useSession();
+  const { user, loading, recoveryMode } = useSession();
   if (loading) return <div className="authwrap"><div className="muted">Loading…</div></div>;
+  if (recoveryMode) return <UpdatePasswordForm />;
   if (!user) return <SignInForm />;
   return <>{children(user)}</>;
 }
