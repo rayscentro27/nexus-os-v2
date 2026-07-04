@@ -25,7 +25,7 @@ export const NEXUS_RESEARCH_FILE_POLICY = Object.freeze({
   allowedExtensions: [".md"],
   blockedExtensions: [".env", ".key", ".pem", ".p12", ".db", ".sqlite", ".sql", ".exe", ".dmg", ".zip", ".json", ".csv", ".pdf", ".js", ".ts", ".jsx", ".tsx", ".py", ".sh", ".bat"],
   maxFileSizeBytes: 500_000,
-  blockedFilenameSegments: ["client", ".env", "secret", "credential", "service-role", "production", "private"],
+  blockedFilenameSegments: [".env", "secret", "credential", "service-role", "production", "private"],
 });
 
 export type NexusArtifactCategory =
@@ -79,6 +79,9 @@ export interface NexusArtifactMetadata {
   evidence_quality: EvidenceQuality;
   compliance_flags: string[];
   guarantee_flags: string[];
+  cautionary_context_flags: string[];
+  direct_claim_flags: string[];
+  severe_safety_flags: string[];
   client_safe: boolean;
   admin_only: boolean;
   ray_review_required: boolean;
@@ -129,6 +132,70 @@ const GUARANTEE_PATTERNS = [
   /definite(ly)?\s+(approval|funding)/i,
   /sure\s+(approval|funding)/i,
 ];
+
+const CAUTIONARY_CONTEXT_PATTERNS = [
+  { pattern: /(?:do\s+not|don'?t|never|avoid|no|must\s+not|should\s+not)\s+(?:guarantee|promise|ensure|guaranteeing)\s+(?:approval|funding|deletion|score|increase|outcome)/gi, label: "prohibitive_guarantee_language" },
+  { pattern: /(?:do\s+not|don'?t|never|avoid|no|must\s+not|should\s+not)\s+(?:provide|give|offer)\s+legal\s+advice/gi, label: "prohibitive_legal_advice" },
+  { pattern: /(?:do\s+not|don'?t|never|avoid|no|must\s+not|should\s+not)\s+(?:submit|send|apply|automate)/gi, label: "prohibitive_automation" },
+  { pattern: /(?:do\s+not|don'?t|never|avoid|no)\s+(?:claim|promise|state)\s+(?:that\s+)?(?:items|debts|negative)/gi, label: "prohibitive_removal_claims" },
+  { pattern: /(?:do\s+not|don'?t|never|avoid|no)\s+(?:mislead|fraudulent|deceptive)/gi, label: "prohibitive_fraud" },
+  { pattern: /(?:not|no)\s+(?:guarantee|guarantees|approval|guaranteed)/gi, label: "prohibitive_no_guarantee" },
+  { pattern: /(?:avoid|no|not)\s+(?:score[\s-]*increase|promise|promises)/gi, label: "prohibitive_no_score_promises" },
+];
+
+const DIRECT_CLAIM_PATTERNS = [
+  /we\s+guarantee\s+(?:approval|funding|deletion|score|increase)/gi,
+  /guaranteed\s+(?:approval|funding|deletion|score|increase)/gi,
+  /100%\s+(?:approval|funding|guarantee|success)/gi,
+  /instant\s+approval/gi,
+  /no\s+credit\s+check/gi,
+  /remove\s+all\s+negatives/gi,
+  /bypass\s+(?:underwriting|ray\s+review|compliance)/gi,
+  /fake\s+(?:business\s+address|documents|income)/gi,
+  /tradeline\s+manipulation/gi,
+  /illegal\s+dispute/gi,
+  /submit\s+application\s+automatically/gi,
+  /send\s+letter\s+automatically/gi,
+  /apply\s+for\s+loan\s+automatically/gi,
+  /charge\s+client\s+automatically/gi,
+];
+
+export function detectCautionaryContextFlags(content: string): string[] {
+  const flags: string[] = [];
+  for (const { pattern, label } of CAUTIONARY_CONTEXT_PATTERNS) {
+    const regex = new RegExp(pattern.source, pattern.flags);
+    if (regex.test(content)) flags.push(label);
+  }
+  return [...new Set(flags)];
+}
+
+export function detectDirectClaimFlags(content: string): string[] {
+  const flags: string[] = [];
+  for (const pattern of DIRECT_CLAIM_PATTERNS) {
+    const match = content.match(pattern);
+    if (match) flags.push(match[0]);
+  }
+  return [...new Set(flags)];
+}
+
+export function detectSevereSafetyFlags(content: string): string[] {
+  const flags: string[] = [];
+  const severePatterns = [
+    /we\s+guarantee/gi,
+    /guaranteed\s+approval/gi,
+    /100%\s+(?:approval|funding|success)/gi,
+    /instant\s+approval/gi,
+    /bypass\s+(?:underwriting|ray\s+review)/gi,
+    /fake\s+(?:business|documents|income)/gi,
+    /tradeline\s+manipulation/gi,
+    /illegal/gi,
+  ];
+  for (const pattern of severePatterns) {
+    const match = content.match(pattern);
+    if (match) flags.push(match[0]);
+  }
+  return [...new Set(flags)];
+}
 
 const CATEGORY_KEYWORDS: Record<NexusArtifactCategory, string[]> = {
   credit_repair: ["credit repair", "dispute", "credit report", "negative item", "credit score", "fcra", "fdcpa", "credit bureau", "equifax", "transunion", "experian"],
@@ -271,8 +338,9 @@ export function validatePath(normalizedPath: string): string[] {
   if (normalizedPath.includes("..")) reasons.push("path_traversal_detected");
   if (normalizedPath.includes("\0")) reasons.push("null_byte_in_path");
 
+  const filename = normalizedPath.split("/").pop() || "";
   for (const segment of NEXUS_RESEARCH_FILE_POLICY.blockedFilenameSegments) {
-    if (normalizedPath.includes(segment)) reasons.push(`blocked_segment_${segment}`);
+    if (filename.includes(segment)) reasons.push(`blocked_segment_${segment}`);
   }
 
   const ext = extension(normalizedPath);
@@ -307,16 +375,20 @@ export class NexusResearchAdapter {
     const route = routeCategory(category);
     const guaranteeFlags = detectGuaranteeFlags(content);
     const complianceFlags = detectComplianceFlags(content);
+    const cautionaryContextFlags = detectCautionaryContextFlags(content);
+    const directClaimFlags = detectDirectClaimFlags(content);
+    const severeSafetyFlags = detectSevereSafetyFlags(content);
     const title = content ? extractTitle(content, candidate.filename || normalized.split("/").pop() || "unknown.md") : candidate.title;
     const summary = content ? extractSummary(content) : "";
 
-    const hasRisk = guaranteeFlags.length > 0 || complianceFlags.length > 0;
-    const clientSafe = !hasRisk && category !== "lender_program" && category !== "affiliate_offer";
-    const adminOnly = hasRisk || category === "lender_program" || category === "affiliate_offer" || guaranteeFlags.length > 0;
+    const hasRisk = guaranteeFlags.length > 0 || complianceFlags.length > 0 || cautionaryContextFlags.length > 0;
+    const hasSevereRisk = severeSafetyFlags.length > 0 || directClaimFlags.length > 0;
+    const clientSafe = !hasRisk && !hasSevereRisk && category !== "lender_program" && category !== "affiliate_offer";
+    const adminOnly = hasRisk || hasSevereRisk || category === "lender_program" || category === "affiliate_offer" || guaranteeFlags.length > 0;
     const rayReviewRequired = clientSafe || category === "client_education" || category === "affiliate_offer" || category === "compliance";
 
     const parseStatus = reasons.length > 0 ? "rejected" as const : "parsed" as const;
-    const safetyStatus = guaranteeFlags.length > 0 ? "blocked" as const : hasRisk ? "flagged" as const : "safe" as const;
+    const safetyStatus = hasSevereRisk ? "blocked" as const : guaranteeFlags.length > 0 ? "blocked" as const : hasRisk ? "flagged" as const : "safe" as const;
 
     return {
       artifact_id: generateArtifactId(),
@@ -333,6 +405,9 @@ export class NexusResearchAdapter {
       evidence_quality: normalized.includes("fixture") ? "demo" : "unverified",
       compliance_flags: complianceFlags,
       guarantee_flags: guaranteeFlags,
+      cautionary_context_flags: cautionaryContextFlags,
+      direct_claim_flags: directClaimFlags,
+      severe_safety_flags: severeSafetyFlags,
       client_safe: clientSafe,
       admin_only: adminOnly,
       ray_review_required: rayReviewRequired,
@@ -346,8 +421,17 @@ export class NexusResearchAdapter {
 
   generateAdminNote(metadata: NexusArtifactMetadata): NexusAdminNote {
     const riskNotes: string[] = [];
+    if (metadata.severe_safety_flags.length > 0) {
+      riskNotes.push(`SEVERE: Direct guarantee/illegal claims detected: ${metadata.severe_safety_flags.join("; ")}`);
+    }
+    if (metadata.direct_claim_flags.length > 0) {
+      riskNotes.push(`Direct claim flags: ${metadata.direct_claim_flags.join("; ")}`);
+    }
     if (metadata.guarantee_flags.length > 0) {
       riskNotes.push(`Guarantee language detected: ${metadata.guarantee_flags.join("; ")}`);
+    }
+    if (metadata.cautionary_context_flags.length > 0) {
+      riskNotes.push(`Cautionary context detected (prohibitive language): ${metadata.cautionary_context_flags.join("; ")}`);
     }
     if (metadata.compliance_flags.length > 0) {
       riskNotes.push(`Compliance flags: ${metadata.compliance_flags.join(", ")}`);

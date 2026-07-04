@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { existsSync, readdirSync } from "fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import {
   NexusResearchAdapter,
@@ -10,6 +10,9 @@ import {
   routeCategory,
   detectGuaranteeFlags,
   detectComplianceFlags,
+  detectCautionaryContextFlags,
+  detectDirectClaimFlags,
+  detectSevereSafetyFlags,
   generateArtifactId,
   resetArtifactCounter,
   computeAllowedOutputs,
@@ -351,5 +354,213 @@ describe("Nexus Research Adapter — Path Validation", () => {
     ["nexus_research/research_inbox/credit_repair/note.exe", false],
   ])("path %s approved=%s", (path, expectedApproved) => {
     expect(isApprovedInboxPath(path.toLowerCase())).toBe(expectedApproved);
+  });
+});
+
+describe("Full Seed Batch — Category Artifacts", () => {
+  const SEED_FILES: Record<string, string> = {
+    credit_repair: "2026-07-03_credit_repair_seed_guardrails.md",
+    credit_utilization: "2026-07-03_credit_utilization_first_research.md",
+    business_setup: "2026-07-03_business_setup_bankability_seed.md",
+    business_funding: "2026-07-03_business_funding_readiness_seed.md",
+    grants: "2026-07-03_grant_research_seed.md",
+    lenders: "2026-07-03_lender_program_review_seed.md",
+    affiliates: "2026-07-03_affiliate_offer_review_seed.md",
+    compliance: "2026-07-03_credit_funding_compliance_seed.md",
+    client_education: "2026-07-03_client_education_readiness_seed.md",
+    manual_notes: "2026-07-03_nexus_research_manual_note_seed.md",
+  };
+
+  it("all 10 category folders have one seed artifact", () => {
+    for (const [cat, filename] of Object.entries(SEED_FILES)) {
+      const filePath = join(NEXUS_RESEARCH_INBOX, cat, filename);
+      expect(existsSync(filePath)).toBe(true);
+    }
+  });
+
+  it("seed artifacts are clearly labeled unverified/draft-only/not client-facing", () => {
+    for (const [cat, filename] of Object.entries(SEED_FILES)) {
+      const filePath = join(NEXUS_RESEARCH_INBOX, cat, filename);
+      if (existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        const hasLabel = content.includes("UNVERIFIED") || content.includes("DRAFT ONLY") || content.includes("NOT CLIENT-FACING") || content.includes("pending");
+        expect(hasLabel).toBe(true);
+      }
+    }
+  });
+
+  it("adapter processes all category artifacts", () => {
+    for (const [cat, filename] of Object.entries(SEED_FILES)) {
+      const filePath = join(NEXUS_RESEARCH_INBOX, cat, filename);
+      const relativePath = `nexus_research/research_inbox/${cat}/${filename}`.toLowerCase();
+      if (existsSync(filePath)) {
+        const content = readFileSync(filePath, "utf-8");
+        const stats = statSync(filePath);
+        const result = adapter.processCandidate({ path: relativePath, title: filename, sizeBytes: stats.size, content });
+        expect(result.parse_status).toBe("parsed");
+        expect(result.category).toBeDefined();
+        expect(result.routing_target).toBeDefined();
+      }
+    }
+  });
+
+  it("batch manifest includes all categories", () => {
+    const manifestPath = join(ROOT, "nexus_research", "adapter", "results", "full_seed_batch_manifest.json");
+    if (existsSync(manifestPath)) {
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf-8"));
+      expect(manifest.total_artifacts).toBe(10);
+      for (const cat of NEXUS_INBOX_CATEGORIES) {
+        expect(manifest.categories[cat]).toBeDefined();
+      }
+    }
+  });
+
+  it("routing matrix covers all categories", () => {
+    const routingFile = join(ROOT, "reports", "nexus_research", "adapter", "full_seed_batch_routing_matrix.md");
+    if (existsSync(routingFile)) {
+      const content = readFileSync(routingFile, "utf-8");
+      for (const cat of NEXUS_INBOX_CATEGORIES) {
+        expect(content).toContain(cat);
+      }
+    }
+  });
+});
+
+describe("Full Seed Batch — Category Routing", () => {
+  const SEED_ROUTES: Record<string, string> = {
+    credit_repair: "credit_readiness_knowledge",
+    credit_utilization: "scorecard_recommendation",
+    business_setup: "business_setup_checklist",
+    business_funding: "funding_readiness_plan",
+    grants: "grant_opportunity_review",
+    lender_program: "lender_matching_notes",
+    affiliate_offer: "affiliate_offer_approval",
+    compliance: "compliance_guardrail",
+    client_education: "client_education_draft",
+    manual_note: "manual_review_queue",
+  };
+
+  it.each(Object.entries(SEED_ROUTES))("%s routes to %s", (cat, expectedRoute) => {
+    expect(routeCategory(cat as any)).toBe(expectedRoute);
+  });
+
+  it("affiliates require Ray Review", () => {
+    const filePath = join(NEXUS_RESEARCH_INBOX, "affiliates", "2026-07-03_affiliate_offer_review_seed.md");
+    const content = readFileSync(filePath, "utf-8");
+    const result = adapter.processCandidate({
+      path: "nexus_research/research_inbox/affiliates/2026-07-03_affiliate_offer_review_seed.md",
+      title: "affiliate", sizeBytes: 100, content,
+    });
+    expect(result.ray_review_required).toBe(true);
+    expect(result.admin_only).toBe(true);
+  });
+
+  it("compliance remains admin-only", () => {
+    const filePath = join(NEXUS_RESEARCH_INBOX, "compliance", "2026-07-03_credit_funding_compliance_seed.md");
+    const content = readFileSync(filePath, "utf-8");
+    const result = adapter.processCandidate({
+      path: "nexus_research/research_inbox/compliance/2026-07-03_credit_funding_compliance_seed.md",
+      title: "compliance", sizeBytes: 100, content,
+    });
+    expect(result.admin_only).toBe(true);
+    expect(result.routing_target).toBe("compliance_guardrail");
+  });
+
+  it("client education remains pending approval", () => {
+    const filePath = join(NEXUS_RESEARCH_INBOX, "client_education", "2026-07-03_client_education_readiness_seed.md");
+    const content = readFileSync(filePath, "utf-8");
+    const result = adapter.processCandidate({
+      path: "nexus_research/research_inbox/client_education/2026-07-03_client_education_readiness_seed.md",
+      title: "client_ed", sizeBytes: 100, content,
+    });
+    expect(result.ray_review_required).toBe(true);
+    expect(result.routing_target).toBe("client_education_draft");
+  });
+
+  it("manual notes route to manual review queue", () => {
+    const filePath = join(NEXUS_RESEARCH_INBOX, "manual_notes", "2026-07-03_nexus_research_manual_note_seed.md");
+    const content = readFileSync(filePath, "utf-8");
+    const result = adapter.processCandidate({
+      path: "nexus_research/research_inbox/manual_notes/2026-07-03_nexus_research_manual_note_seed.md",
+      title: "manual", sizeBytes: 100, content,
+    });
+    expect(result.routing_target).toBe("manual_review_queue");
+  });
+});
+
+describe("Full Seed Batch — Cautionary vs Direct Claims", () => {
+  it("cautionary language is not treated the same as direct guarantee claims", () => {
+    const cautionary = detectCautionaryContextFlags("Do not guarantee funding approval.");
+    const direct = detectDirectClaimFlags("Do not guarantee funding approval.");
+    expect(cautionary.length).toBeGreaterThan(0);
+    expect(direct.length).toBe(0);
+  });
+
+  it("direct guarantee claims remain severe/blocking", () => {
+    const severe = detectSevereSafetyFlags("We guarantee approval for funding.");
+    const direct = detectDirectClaimFlags("We guarantee approval for funding.");
+    expect(severe.length).toBeGreaterThan(0);
+    expect(direct.length).toBeGreaterThan(0);
+  });
+
+  it("no client-facing approved output is created", () => {
+    for (const cat of NEXUS_INBOX_CATEGORIES) {
+      const catDir = join(NEXUS_RESEARCH_INBOX, cat);
+      if (existsSync(catDir)) {
+        const files = readdirSync(catDir).filter(f => f.endsWith(".md") && !f.startsWith("README"));
+        for (const f of files) {
+          const content = readFileSync(join(catDir, f), "utf-8");
+          expect(content).not.toContain("APPROVED FOR CLIENT");
+          expect(content).not.toContain("CLIENT-FACING APPROVED");
+        }
+      }
+    }
+  });
+});
+
+describe("Full Seed Batch — Safety Guards", () => {
+  it("no Supabase connection exists", () => {
+    const adapterFile = join(ROOT, "src/hermes/nexus/nexusResearchAdapter.ts");
+    const content = readFileSync(adapterFile, "utf-8").toLowerCase();
+    expect(content).not.toContain("supabase");
+    expect(content).not.toContain("createclient");
+  });
+
+  it("no Oanda connection exists", () => {
+    const adapterFile = join(ROOT, "src/hermes/nexus/nexusResearchAdapter.ts");
+    const content = readFileSync(adapterFile, "utf-8").toLowerCase();
+    expect(content).not.toContain("oanda");
+  });
+
+  it("no external provider call exists", () => {
+    const adapterFile = join(ROOT, "src/hermes/nexus/nexusResearchAdapter.ts");
+    const content = readFileSync(adapterFile, "utf-8").toLowerCase();
+    expect(content).not.toContain("fetch(");
+    expect(content).not.toContain("axios");
+  });
+
+  it("no send/publish/charge/trade action exists", () => {
+    const adapterFile = join(ROOT, "src/hermes/nexus/nexusResearchAdapter.ts");
+    const content = readFileSync(adapterFile, "utf-8").toLowerCase();
+    expect(content).not.toContain("send_email");
+    expect(content).not.toContain("publish_post");
+    expect(content).not.toContain("charge_payment");
+    expect(content).not.toContain("execute_trade");
+  });
+
+  it("no fake external research/source claims exist", () => {
+    for (const cat of NEXUS_INBOX_CATEGORIES) {
+      const catDir = join(NEXUS_RESEARCH_INBOX, cat);
+      if (existsSync(catDir)) {
+        const files = readdirSync(catDir).filter(f => f.endsWith(".md") && !f.startsWith("README"));
+        for (const f of files) {
+          const content = readFileSync(join(catDir, f), "utf-8").toLowerCase();
+          expect(content).not.toContain("verified from");
+          expect(content).not.toContain("confirmed by");
+          expect(content).not.toContain("sourced from bureau");
+          expect(content).not.toContain("lender confirmed");
+        }
+      }
+    }
   });
 });

@@ -4,122 +4,76 @@
 
 ---
 
-## What Is Implemented
+## Answers to Required Questions
 
-### Adapter v1 (Complete)
-- `src/hermes/nexus/nexusResearchAdapter.ts` — Full adapter with:
-  - Approved folder enforcement
-  - Path traversal protection
-  - Blocked file type rejection
-  - SHA-256 hashing
-  - 11 category classifications
-  - 11 routing targets
-  - Guarantee language detection (20 patterns)
-  - Compliance flag detection (6 flags)
-  - Admin note generation
-  - Ray Review draft generation
-  - Draft-only output enforcement
+### 1. How many category artifacts exist?
+**10** — one per approved inbox category.
 
-### Tests (Complete)
-- `tests/nexus_research_adapter_v1.test.ts` — 51 tests covering all adapter functionality
+### 2. Which were newly created?
+**9** — credit_repair, business_setup, business_funding, grants, lenders, affiliates, compliance, client_education, manual_notes.
 
-### Reports (Complete)
-- `reports/nexus_research/adapter/` — 8 verification and report files
+### 3. Which were reused?
+**1** — credit_utilization (2026-07-03_credit_utilization_first_research.md, created in previous session).
 
-### Template (Complete)
-- `nexus_research/research_inbox/manual_notes/README_ADD_FIRST_ARTIFACT.md` — How Ray can add the first real artifact
+### 4. How many were processed?
+**10** — all category artifacts processed through the adapter.
 
----
+### 5. Which categories are admin-only?
+**9 of 10** — all except manual_notes (which is internal but not flagged as admin-only because it has no compliance/guarantee flags).
 
-## First Real Artifact Processed
+### 6. Which categories are eligible only for draft client education?
+**1** — client_education (DRAFT — NOT CLIENT-FACING UNTIL APPROVED).
 
-| Field | Value |
-|-------|-------|
-| artifact_id | nexus-res-20260704-001 |
-| source | nexus_research/research_inbox/credit_utilization/2026-07-03_credit_utilization_first_research.md |
-| category | credit_utilization |
-| routing_target | scorecard_recommendation |
-| evidence_quality | unverified |
-| safety_status | blocked |
-| client_safe | false |
-| admin_only | true |
-| parse_status | parsed |
+### 7. What remains unverified?
+- All 10 seed artifacts are labeled "unverified" — they are internal seed notes, not externally verified research.
+- No external sources have been cited.
+- No lender, bureau, government, or grant database has been consulted.
 
-### What Was Proven
+### 8. What needs external/public verification later?
+- Lender terms, rates, and requirements
+- Grant programs, eligibility, and deadlines
+- FCRA/FDCPA compliance specifics
+- State-specific regulations
+- Credit monitoring service comparisons
+- Business bank account terms
 
-1. ✅ Adapter discovers real artifacts in approved inbox folders
-2. ✅ Path validation works correctly
-3. ✅ Category detection works (credit_utilization)
-4. ✅ Routing works (scorecard_recommendation)
-5. ✅ Guarantee language detection works (even for prohibitive context)
-6. ✅ Compliance flag detection works (even for prohibitive context)
-7. ✅ Admin-only enforcement works
-8. ✅ Draft outputs are generated correctly
-9. ✅ No client-facing output is produced without approval
-10. ✅ No Supabase connection, no external providers, no production mutation
+### 9. What needs Ray Review before client-facing use?
+**All 10 categories** — every artifact requires Ray Review before any client-facing use.
 
----
+### 10. Should Supabase still wait?
+**Yes.** Current phase is local-only. Supabase connection should wait until:
+- Research foundation is stable
+- Ray Review workflow is tested
+- Client data security workflow is approved
+- Tenant isolation is verified
 
-## What Is Still Pending
-
-| Item | Status |
-|------|--------|
-| Ray Review of first artifact | Pending — admin note and Ray Review draft generated |
-| Client-facing output | Blocked until Ray Review approval |
-| Supabase connection | Designed for future, not connected now |
-| Client data access | Not connected, no secure workflow yet |
-| Lender matching | Admin-only notes designed, no live data |
-| Grant database | Designed, no real data collected |
-| Affiliate evaluation | Designed, no real programs activated |
-
----
-
-## Recommended Next Prompt
-
-**"Add a second real artifact to a different Nexus Research inbox category (credit_repair, business_setup, or compliance) and run the adapter against it."**
+### 11. Recommended next prompt
+**"Review the first batch of seed artifacts and approve one category for internal use testing."**
 
 This would:
-1. Test category detection across different inbox folders
-2. Verify routing works for multiple categories
-3. Build a small corpus of real research artifacts
-4. Prepare for the research dashboard UI
+1. Have Ray review the admin notes and Ray Review drafts
+2. Select one low-risk category (e.g., manual_notes or grants) for internal use
+3. Test the scorecard recommendation workflow with approved research
+4. Begin building the research-to-action pipeline
 
 ---
 
-## Implementation Roadmap
+## Implementation Status
 
-### Completed (Previous Sessions)
-- ✅ Adapter v1 implemented
-- ✅ 51 tests written and passing
-- ✅ Safety checks implemented
-- ✅ Classification and routing implemented
-- ✅ Draft output generation implemented
-- ✅ No-real-artifact case handled honestly
-- ✅ Template for Ray created
+### Completed
+- ✅ Adapter v1 with prohibitive context improvement
+- ✅ 10 seed artifacts across all categories
+- ✅ Batch processing and manifest generation
+- ✅ Admin notes and Ray Review drafts for all categories
+- ✅ Safety and compliance verification
+- ✅ Routing matrix documented
+- ✅ UI visibility report (report-based)
 - ✅ All reports created
-- ✅ Verification passed
 
-### Completed (This Session)
-- ✅ First real artifact processed (credit_utilization)
-- ✅ Admin notes generated
-- ✅ Ray Review draft generated
-- ✅ Full pipeline verified end-to-end
-
-### Short-Term (Next Session)
-- Add second real artifact (different category)
-- Ray reviews first artifact admin note and Ray Review draft
-- Build research dashboard UI
-- Build detail page UI
-
-### Medium-Term (Future)
-- Populate all 10 inbox categories with real research
-- Connect to $97 review workflow
-- Build client education portal
-- Add FCRA/FDCPA compliance notes
-
-### Long-Term (Future)
-- Connect to Supabase (approved pipeline)
-- Build lender matching notes
-- Build grant opportunity database
-- Build affiliate offer evaluation system
-- Build compliance audit system
+### Pending
+- Ray Review of seed artifacts
+- Selection of first category for internal use testing
+- Scorecard recommendation workflow testing
+- Client education content review and approval
+- Future: Supabase connection
+- Future: Dashboard UI

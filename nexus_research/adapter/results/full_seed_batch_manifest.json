@@ -1,0 +1,136 @@
+{
+  "generated_at": "2026-07-04T00:31:51.479Z",
+  "total_artifacts": 10,
+  "categories": {
+    "credit_repair": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-001",
+          "filename": "2026-07-03_credit_repair_seed_guardrails.md",
+          "category": "credit_repair",
+          "routing_target": "credit_readiness_knowledge",
+          "safety_status": "blocked",
+          "admin_only": true
+        }
+      ]
+    },
+    "credit_utilization": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-002",
+          "filename": "2026-07-03_credit_utilization_first_research.md",
+          "category": "credit_utilization",
+          "routing_target": "scorecard_recommendation",
+          "safety_status": "blocked",
+          "admin_only": true
+        }
+      ]
+    },
+    "business_setup": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-003",
+          "filename": "2026-07-03_business_setup_bankability_seed.md",
+          "category": "business_setup",
+          "routing_target": "business_setup_checklist",
+          "safety_status": "blocked",
+          "admin_only": true
+        }
+      ]
+    },
+    "business_funding": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-004",
+          "filename": "2026-07-03_business_funding_readiness_seed.md",
+          "category": "business_funding",
+          "routing_target": "funding_readiness_plan",
+          "safety_status": "blocked",
+          "admin_only": true
+        }
+      ]
+    },
+    "grants": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-005",
+          "filename": "2026-07-03_grant_research_seed.md",
+          "category": "grants",
+          "routing_target": "grant_opportunity_review",
+          "safety_status": "flagged",
+          "admin_only": true
+        }
+      ]
+    },
+    "lenders": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-006",
+          "filename": "2026-07-03_lender_program_review_seed.md",
+          "category": "lender_program",
+          "routing_target": "lender_matching_notes",
+          "safety_status": "flagged",
+          "admin_only": true
+        }
+      ]
+    },
+    "affiliates": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-007",
+          "filename": "2026-07-03_affiliate_offer_review_seed.md",
+          "category": "affiliate_offer",
+          "routing_target": "affiliate_offer_approval",
+          "safety_status": "flagged",
+          "admin_only": true
+        }
+      ]
+    },
+    "compliance": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-008",
+          "filename": "2026-07-03_credit_funding_compliance_seed.md",
+          "category": "compliance",
+          "routing_target": "compliance_guardrail",
+          "safety_status": "flagged",
+          "admin_only": true
+        }
+      ]
+    },
+    "client_education": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-009",
+          "filename": "2026-07-03_client_education_readiness_seed.md",
+          "category": "client_education",
+          "routing_target": "client_education_draft",
+          "safety_status": "flagged",
+          "admin_only": true
+        }
+      ]
+    },
+    "manual_notes": {
+      "artifact_count": 1,
+      "artifacts": [
+        {
+          "artifact_id": "nexus-res-20260704-010",
+          "filename": "2026-07-03_nexus_research_manual_note_seed.md",
+          "category": "manual_note",
+          "routing_target": "manual_review_queue",
+          "safety_status": "safe",
+          "admin_only": false
+        }
+      ]
+    }
+  }
+}
