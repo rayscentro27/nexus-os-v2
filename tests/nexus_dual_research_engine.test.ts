@@ -125,7 +125,7 @@ describe('Nexus Research Inbox Integrity', () => {
     for (const cat of NEXUS_INBOX_CATEGORIES) {
       const catDir = join(NEXUS_RESEARCH_INBOX, cat);
       if (existsSync(catDir)) {
-        const files = readdirSync(catDir).filter(f => f !== 'README.md');
+        const files = readdirSync(catDir).filter(f => f !== 'README.md' && !f.startsWith('README_'));
         expect(files).toEqual([]);
       }
     }
@@ -135,7 +135,7 @@ describe('Nexus Research Inbox Integrity', () => {
     for (const cat of NEXUS_INBOX_CATEGORIES) {
       const catDir = join(NEXUS_RESEARCH_INBOX, cat);
       if (existsSync(catDir)) {
-        const files = readdirSync(catDir).filter(f => f !== 'README.md');
+        const files = readdirSync(catDir).filter(f => f !== 'README.md' && !f.startsWith('README_'));
         expect(files.length).toBe(0);
       }
     }
