@@ -312,13 +312,15 @@ function Sidebar({ activePage, onNavigate }) {
   )
 }
 
-function Topbar({ email }) {
+function Topbar({ email, activePage }) {
   const badge = getCapabilityBadge();
+  const [alphaStatus, setAlphaStatus] = useState({ provider: 'deterministic_local', providerReady: false, searchEnabled: false })
+  useEffect(() => { const update = (event) => setAlphaStatus(event.detail); window.addEventListener('alpha-status-change', update); return () => window.removeEventListener('alpha-status-change', update) }, [])
   return (
     <header className="topbar">
       <div className="searchbar"><Icon name="Search" size={20} /><span>Search across Nexus OS v2...</span><kbd>⌘K</kbd></div>
       <a className="client-portal-link" href="/client">View Client Portal</a>
-      <div className="hermes-status"><Icon name="Activity" size={20} />Hermes Advisor <span>• {badge}</span></div>
+      <div className="hermes-status"><Icon name="Activity" size={20} />{activePage === 'alpha' ? <>Hermes Alpha <span>• Strategy Brain • {alphaStatus.providerReady ? 'Provider Ready' : 'Local Fallback'} • No Supabase • Web Search {alphaStatus.searchEnabled ? 'Available' : 'Off'}</span></> : <>Hermes Advisor <span>• {badge}</span></>}</div>
       <div className="profile"><span>{email || 'goclearonline@gmail.com'}</span><b>GO</b><Icon name="ChevronDown" size={16} /></div>
     </header>
   )
@@ -1491,7 +1493,7 @@ export default function NexusAdminUI({ email }) {
       <div className="app-shell">
         <Sidebar activePage={activePage} onNavigate={navigate} />
         <main className="content">
-          <Topbar email={email} />
+          <Topbar email={email} activePage={activePage} />
           <div className="page-content">{page}</div>
         </main>
       </div>

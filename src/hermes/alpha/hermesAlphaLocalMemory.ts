@@ -1,4 +1,5 @@
-export type AlphaMessage={id:string;role:"ray"|"alpha";text:string;createdAt:string;mode:string};
+import type {AlphaRouteTrace} from './alphaRouteTrace';
+export type AlphaMessage={id:string;role:"ray"|"alpha";text:string;createdAt:string;mode:string;trace?:AlphaRouteTrace};
 const KEY="nexus-alpha-conversation-v1";
 export function loadAlphaMemory():AlphaMessage[]{try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch{return []}}
 export function saveAlphaMemory(messages:AlphaMessage[]){localStorage.setItem(KEY,JSON.stringify(messages.slice(-100)))}

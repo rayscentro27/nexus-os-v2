@@ -9,11 +9,11 @@ const shell = readFileSync(join(process.cwd(), "src/admin/NexusAdminUI.jsx"), "u
 
 describe("Hermes Alpha Workroom separation and bridge", () => {
   it("labels Alpha local, direct, isolated, and external-action disabled", () => {
-    expect(ui).toMatch(/Direct Alpha conversation/);
-    expect(ui).toMatch(/No Nexus Hermes routing, Supabase, client data, or execution/);
+    expect(ui).toMatch(/Provider-aware strategy conversation/);
+    expect(ui).toMatch(/No Supabase, client data, or execution/);
     expect(ui).toMatch(/Active: \{provider\}/);
-    expect(ui).toMatch(/Live web unavailable/);
     expect(ui).toMatch(/External actions disabled/);
+    expect(ui).toMatch(/No Supabase/);
   });
 
   it("mounts Alpha separately and preserves Nexus Hermes", () => {

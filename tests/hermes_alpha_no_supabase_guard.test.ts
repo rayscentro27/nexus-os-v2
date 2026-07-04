@@ -28,7 +28,7 @@ describe("Hermes Alpha Phase 1 connection guard", () => {
   it("contains no Research Vault connector or direct browser provider call", () => {
     for (const source of sources) {
       expect(source.text, source.name).not.toMatch(/research.?vault.*(?:connect|query|read)/i);
-      if (source.name !== "alphaProviderBridge.ts") expect(source.text, source.name).not.toMatch(/(?:fetch|axios)\s*\(/i);
+      if (!["alphaProviderBridge.ts","alphaWebSearch.ts"].includes(source.name)) expect(source.text, source.name).not.toMatch(/(?:fetch|axios)\s*\(/i);
       expect(source.text, source.name).not.toMatch(/\.chat\s*\(|\.generate\s*\(|invokeModel|openai\s*\(/i);
     }
     const bridge = sources.find((source) => source.name === "alphaProviderBridge.ts")!.text;

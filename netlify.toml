@@ -19,6 +19,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/alpha/search"
+  to = "/.netlify/functions/alpha-search"
+  status = 200
+
+[[redirects]]
   from = "/api/alpha/*"
   to = "/.netlify/functions/alpha-provider/:splat"
   status = 200
