@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {getConnectorRegistry,connectorSafetyInvariants} from '../src/hermes/nexus/nexusConnectorRegistry';
+describe('connector registry',()=>{it('covers connectors without exposing values',()=>{const r=getConnectorRegistry();expect(r.length).toBeGreaterThan(15);expect(JSON.stringify(r)).not.toMatch(/api[_-]?key\s*[:=]\s*[A-Za-z0-9]{16}/i);expect(connectorSafetyInvariants()).toEqual({secretsExposed:false,alphaSupabase:false,externalActionsEnabled:false,liveTradingEnabled:false})})});

@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {generateMarketingSample,MARKETING_LABEL} from '../src/hermes/nexus/marketingAssetStudio';
+describe('marketing studio',()=>{it('creates viewable safe drafts',()=>{const x=generateMarketingSample('goclear-readiness-review');expect(x.label).toBe(MARKETING_LABEL);expect(x).toMatchObject({published:false,sent:false,clientFacingApproved:false,rayReviewRequired:true});expect(x.disclaimer).toMatch(/No credit.*guaranteed/)})});

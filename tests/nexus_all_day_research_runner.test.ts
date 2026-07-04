@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {runSafeOperationalCycle} from '../src/hermes/nexus/nexusAllDayResearchRunner'; import {schedulerJobs} from '../src/hermes/nexus/nexusSchedulerRegistry';
+describe('safe runner',()=>{it('runs only level one',()=>{const r=runSafeOperationalCycle(new Date('2026-07-04T08:00:00Z'));expect(r.safetyStatus).toBe('passed');expect(r.externalActions).toBe(0);expect(r.productionMutations).toBe(0);expect(schedulerJobs.filter(j=>j.level>1).every(j=>!j.enabled)).toBe(true)})});

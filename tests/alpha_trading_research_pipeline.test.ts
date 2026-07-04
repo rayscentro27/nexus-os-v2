@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {runTradingResearchPipeline} from '../src/hermes/alpha/alphaTradingResearchPipeline';
+describe('trading research',()=>{it('produces demo plan but no execution/results',()=>{const x=runTradingResearchPipeline('Simple trend-following forex strategy using moving average confirmation and strict stop-loss.');expect(x).toMatchObject({ray_review_required:true,no_live_funded_trading:true,ordersPlaced:0,performanceResults:null});expect(x.blocked_actions).toContain('live trade')})});

@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-07-04T14:30:09Z",
+  "status": "draft_only",
+  "items": [
+    {
+      "type": "marketing_samples",
+      "decision": "review",
+      "executes_external_action": false
+    },
+    {
+      "type": "connector_activation",
+      "decision": "review blockers",
+      "executes_external_action": false
+    },
+    {
+      "type": "trading_demo_plan",
+      "decision": "review",
+      "executes_external_action": false
+    },
+    {
+      "type": "goclear_hypothetical_readiness",
+      "decision": "review",
+      "executes_external_action": false
+    }
+  ]
+}

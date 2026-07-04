@@ -26,6 +26,7 @@ import SystemHealthPanel from '../components/SystemHealthPanel'
 import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
 import ErrorBoundary from '../components/ErrorBoundary'
 import HermesAlphaWorkroom from '../components/HermesAlphaWorkroom'
+import NexusOperationsPanel from '../components/NexusOperationsPanel'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
@@ -60,6 +61,7 @@ const kindThumbIcon = {
 const navGroups = [
   { label: 'Executive', items: [
     { id: 'command', label: 'Command Center', icon: 'LayoutDashboard', status: 'Live', statusTone: 'green' },
+    { id: 'operations', label: 'Nexus Operations', icon: 'Orbit', status: 'Internal', statusTone: 'green' },
     { id: 'health', label: 'System Health', icon: 'Activity', status: 'Healthy', statusTone: 'green' },
     { id: 'rayreview', label: 'Ray Review', icon: 'CheckCircle2', status: '64', statusTone: 'green' },
     { id: 'hermes', label: 'Hermes Workroom', icon: 'Sparkles', status: 'Advisor', statusTone: 'blue' },
@@ -88,6 +90,7 @@ const navGroups = [
 
 const modeLabels = {
   command: 'Executive Overview',
+  operations: 'Nexus Internal Operations',
   subscription: 'Subscription Command Center',
   source: 'Source Intake & Review',
   opportunity: 'Opportunity Lab',
@@ -1446,6 +1449,7 @@ export default function NexusAdminUI({ email }) {
 
   const page = {
     command: <ErrorBoundary panelName="Command Center"><RestoredCommandCenter onNavigate={navigate} onAskHermes={askHermes} /></ErrorBoundary>,
+    operations: <ErrorBoundary panelName="Nexus Operations"><NexusOperationsPanel onNavigate={navigate} /></ErrorBoundary>,
     subscription: <ErrorBoundary panelName="Subscription Command Center"><SubscriptionCommandCenterPage /></ErrorBoundary>,
     creative: <ErrorBoundary panelName="Creative Studio"><Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" /></ErrorBoundary>,
     design: <ErrorBoundary panelName="Design Library"><Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" /></ErrorBoundary>,

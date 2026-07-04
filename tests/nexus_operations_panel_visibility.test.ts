@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import fs from 'node:fs';
+describe('operations panel',()=>{it('renders all sections and disabled risks',()=>{const s=fs.readFileSync('src/components/NexusOperationsPanel.jsx','utf8');for(const x of ['Hermes Nexus Operator','Hermes Alpha Opportunity Brain','Research Engine Status','SEO / Money Opportunity Engine','GoClear Readiness','Trading Research','Marketing Asset Studio','Affiliate / API Setup Center','Ray Review Queue','Blockers to Full Automation'])expect(s).toContain(x);expect(s).toContain('disabled key={x}')})});

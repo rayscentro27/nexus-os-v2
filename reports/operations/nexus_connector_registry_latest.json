@@ -1,0 +1,192 @@
+{
+  "generated_at": "2026-07-04T14:30:09Z",
+  "connectors": [
+    {
+      "name": "NotebookLM export folder",
+      "status": "configured and safe",
+      "env_names": [],
+      "feature": "Local research imports",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Supabase",
+      "status": "configured but disabled",
+      "env_names": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "feature": "Approved auth/storage; writes gated",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Netlify",
+      "status": "missing env var",
+      "env_names": [
+        "NETLIFY_AUTH_TOKEN",
+        "NETLIFY_SITE_ID"
+      ],
+      "feature": "Hosted previews",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "GitHub",
+      "status": "unknown",
+      "env_names": [
+        "GITHUB_TOKEN or gh auth"
+      ],
+      "feature": "Remote automation",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Cloudflare tunnel",
+      "status": "missing env var",
+      "env_names": [
+        "CLOUDFLARE_TUNNEL_TOKEN"
+      ],
+      "feature": "Remote local access",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Resend",
+      "status": "configured but disabled",
+      "env_names": [
+        "RESEND_API_KEY"
+      ],
+      "feature": "Email; blocked this sprint",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Meta/Facebook/Instagram",
+      "status": "configured but disabled",
+      "env_names": [
+        "META_ACCESS_TOKEN",
+        "META_PAGE_ID"
+      ],
+      "feature": "Social; blocked",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Google Search Console",
+      "status": "missing key",
+      "env_names": [
+        "GOOGLE_SEARCH_CONSOLE_CREDENTIALS"
+      ],
+      "feature": "Measured SEO data",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Google Analytics",
+      "status": "missing key",
+      "env_names": [
+        "GOOGLE_ANALYTICS_PROPERTY_ID",
+        "GOOGLE_APPLICATION_CREDENTIALS"
+      ],
+      "feature": "Analytics evidence",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "YouTube API",
+      "status": "unknown",
+      "env_names": [
+        "YOUTUBE_API_KEY"
+      ],
+      "feature": "Fresh metadata",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Google Drive/manual export",
+      "status": "missing account",
+      "env_names": [
+        "GOOGLE_DRIVE_FOLDER_ID"
+      ],
+      "feature": "Drive intake",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Oanda practice",
+      "status": "configured but disabled",
+      "env_names": [
+        "OANDA_API_TOKEN",
+        "OANDA_ACCOUNT_ID",
+        "OANDA_ENVIRONMENT"
+      ],
+      "feature": "Read-only demo checks",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Ollama local",
+      "status": "unknown",
+      "env_names": [
+        "OLLAMA_BASE_URL"
+      ],
+      "feature": "Local inference",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Ollama cloud/Pro",
+      "status": "missing key",
+      "env_names": [
+        "OLLAMA_API_KEY"
+      ],
+      "feature": "Hosted inference",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "OpenRouter",
+      "status": "missing key",
+      "env_names": [
+        "OPENROUTER_API_KEY"
+      ],
+      "feature": "Hosted Alpha routing",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Groq",
+      "status": "missing key",
+      "env_names": [
+        "GROQ_API_KEY"
+      ],
+      "feature": "Fast inference",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Stripe test mode",
+      "status": "configured but disabled",
+      "env_names": [
+        "STRIPE_SECRET_KEY",
+        "VITE_STRIPE_PUBLISHABLE_KEY"
+      ],
+      "feature": "Test checkout; charges blocked",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Firecrawl",
+      "status": "future only",
+      "env_names": [
+        "FIRECRAWL_API_KEY"
+      ],
+      "feature": "Future extraction",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "n8n",
+      "status": "future only",
+      "env_names": [
+        "N8N_API_KEY",
+        "N8N_BASE_URL"
+      ],
+      "feature": "Future orchestration",
+      "secret_values_exposed": false
+    },
+    {
+      "name": "Postiz/Mixpost",
+      "status": "future only",
+      "env_names": [
+        "SOCIAL_SCHEDULER_API_KEY"
+      ],
+      "feature": "Future social scheduling",
+      "secret_values_exposed": false
+    }
+  ],
+  "external_checks": 0
+}

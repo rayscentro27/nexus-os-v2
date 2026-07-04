@@ -1,0 +1,2 @@
+import {describe,it,expect} from 'vitest'; import {findLocalMoneyOpportunities,seoFallbackMode} from '../src/hermes/alpha/alphaSeoMoneyOpportunityEngine';
+describe('SEO opportunities',()=>{it('uses local fallback and avoids fake value',()=>{const x=findLocalMoneyOpportunities();expect(x.length).toBeGreaterThanOrEqual(4);expect(x.every(o=>o.expectedValue==='unvalidated'&&o.rayReviewRequired)).toBe(true);expect(seoFallbackMode).toEqual({mode:'local_reports_only',externalWebUsed:false,trafficClaims:false,revenueClaims:false})})});
