@@ -1,5 +1,5 @@
 # Nexus Required Reports Inventory
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-Daily: operational cycle, Hermes briefs, connector/blocker status, scheduler receipt, opportunity scan, Ray Review queue. Weekly: safety/connector audit, GoClear readiness QA, SEO evidence, trading research review, affiliate status.
+Daily: two bot briefs, research/scheduler receipt, connector blockers, SEO candidates, trading draft, Ray Review drafts, metrics, closeout. Weekly: lead funnel, opportunity evidence, GoClear readiness QA, safety and connector audit.

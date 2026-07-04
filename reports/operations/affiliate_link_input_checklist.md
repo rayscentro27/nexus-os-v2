@@ -1,18 +1,17 @@
 # Affiliate Link Input Checklist
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-| Area | Value | Required now | Safety | Approval | Unlocks |
+| Affiliate area | Value | Required now | Input location | Risk | Unlocks |
 |---|---|---|---|---|---|
-| credit monitoring | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| online mailing | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| business bank account | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| business setup/LLC | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| funding marketplace | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| newsletter/email platform | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| SEO/content tools | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| AI tools | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| trading education/tools | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-| tax/bookkeeping (future) | `[ENTER APPROVED URL]` | No | approval-gated | Yes | approved referral draft |
-
-No fake links were created.
+| credit monitoring | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| online mailing | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| business bank account | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| business setup/LLC | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| funding marketplace | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| newsletter/email platform | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| SEO/content tools | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| AI tools | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| voice agent tools | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| trading education/tools | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |
+| bookkeeping/tax future | `[ENTER RAY-APPROVED URL]` | No | Nexus Operations setup center | approval-gated | disclosed referral draft |

@@ -1,21 +1,17 @@
 # Nexus Full Automation Blockers
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-1. Operational now: local operations UI, dual-brain logic, local runner, local opportunity engine, draft trading plans, previews, setup registry, metrics.
-2. Local-only: runner, reports, previews, local research fallback.
-3. Draft-only: all marketing, opportunities, strategies, GoClear hypothetical results, Ray Review cards.
-4–6. Missing: measured SEO/analytics, several provider credentials/accounts, and every approved affiliate URL.
-7. Daily: cycle, connector blockers, Hermes briefs, opportunity scan, scheduler receipt, closeout.
-8. Weekly: opportunity review, connector audit, safety audit, GoClear readiness evidence, strategy review.
-9. Ray Review: marketing, affiliate activation, connector activation, production write, demo plan.
-10. Manual: approvals, real-client onboarding, submissions, publishing, charges, trading.
-11. Safe all day: Level 1 local scans and report generation.
-12. Approval: every external action or production mutation.
-13. Supabase draft storage blocked by explicit write decision gate and verified RLS/session context.
-14. Client-facing GoClear blocked by approval, real-data workflow, compliance/content QA, and persistence proof.
-15. Publishing blocked by approved account, copy, compliance, connector, and final action approval.
-16. Trading demo execution blocked by strategy/data validation, practice proof, risk budget, and approval.
-17. Full automation blocked by governance boundaries plus missing accounts/credentials/evidence.
-18. Test first: `python3 scripts/run_nexus_operational_cycle.py`, then `/#operations`.
-19. Next command: `npm test && npm run build`.
+1. Operational: direct Alpha conversation, Nexus workhorse, local scheduler, SEO candidates, trading plan, previews, setup registry, teaser and QR.
+2. Test today: `/#alpha`, `/#operations`, `/got-funding/`, QR print page, and Python cycles.
+3. Scheduled: Level-1 local scans/briefs/drafts/metrics only; launchd disabled.
+4. Daily reports: Nexus brief, Alpha brief, research receipt, connector/blocker scan, SEO/trading draft, closeout.
+5–7. Missing: GSC/Analytics/web/provider verification, deployment credentials where needed, and all approved affiliate URLs.
+8. Full automation: governance, verified connectors, current-data evidence, approval/action receipts.
+9. Client-facing GoClear: final Ray approval, deployment/form proof, privacy/contact policy review, lead-handling procedure.
+10. Alpha live research: public search connector and provider bridge—not Supabase.
+11. Marketing publishing: final compliance/content approval and destination verification.
+12. Demo trading: strategy/data/backtest/risk evidence and explicit demo approval; no orders this sprint.
+13. Fastest leads: verify Netlify form and QR with synthetic data, then approve shirt/public use.
+14. Fastest revenue test: manually validate demand for readiness reviews from consented interest leads before payment activation.
+15. Today: run local preview, test Alpha, scan QR, submit synthetic deploy form, review Netlify capture, and approve/revise the teaser.

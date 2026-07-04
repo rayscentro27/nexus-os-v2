@@ -1,5 +1,5 @@
 # Trading Execution Blockers
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-No approved deterministic specification, data receipt, validated backtest, demo risk budget, connector proof, or Ray approval. Automatic, live, and funded orders are prohibited.
+Frozen rules, approved data, validated backtest, risk budget, practice proof, and explicit demo approval are missing. Automatic and funded/live orders are blocked.

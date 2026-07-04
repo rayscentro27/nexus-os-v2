@@ -1,5 +1,5 @@
 # Oanda Demo Connector Status
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-Practice connector code exists, but this sprint performed no credential or network check and placed no order. Demo execution remains disabled pending Ray-approved read-only verification. Funded/live endpoints remain blocked.
+Practice/read-only tooling exists but credentials and account access were not called in this sprint. Orders remain disabled. Funded/live trading is blocked.

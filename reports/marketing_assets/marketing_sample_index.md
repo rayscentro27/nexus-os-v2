@@ -1,8 +1,9 @@
 # Marketing Sample Index
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-- [Credit & Funding Readiness Review](/marketing-previews/goclear-readiness-review.html)
-- [Business Fundability Checklist](/marketing-previews/business-fundability-checklist.html)
-- [Credit Utilization Readiness Education](/marketing-previews/credit-utilization-readiness.html)
-- [Hermes Alpha Opportunity Research](/marketing-previews/hermes-alpha-opportunity-research.html)
+- [Got Funding teaser](/got-funding/)
+- [$97 readiness review](/marketing-previews/goclear-readiness-review.html)
+- [Business fundability checklist](/marketing-previews/business-fundability-checklist.html)
+- [Credit utilization education](/marketing-previews/credit-utilization-readiness.html)
+- [Hermes Alpha research concept](/marketing-previews/hermes-alpha-opportunity-research.html)

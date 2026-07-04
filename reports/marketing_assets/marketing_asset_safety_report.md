@@ -1,5 +1,5 @@
 # Marketing Asset Safety Report
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-All assets are draft-only, not sent, not published, not client-facing approved, contain no real client data, and make no guarantee.
+No guaranteed funding, approval, score increase, deletion, revenue, trading, or client result. No email automation, Supabase write, charge, social publish, application, dispute, or trade.

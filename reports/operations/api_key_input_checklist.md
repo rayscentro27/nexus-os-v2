@@ -1,28 +1,21 @@
 # API Key Input Checklist
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-| Connector | Status | Input later | Unlocks |
+| Connector | Required now | Input | Status / unlock |
 |---|---|---|---|
-| NotebookLM export folder | configured and safe | `none` | Local research imports |
-| Supabase | configured but disabled | `VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY` | Approved auth/storage; writes gated |
-| Netlify | missing env var | `NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID` | Hosted previews |
-| GitHub | unknown | `GITHUB_TOKEN or gh auth` | Remote automation |
-| Cloudflare tunnel | missing env var | `CLOUDFLARE_TUNNEL_TOKEN` | Remote local access |
-| Resend | configured but disabled | `RESEND_API_KEY` | Email; blocked this sprint |
-| Meta/Facebook/Instagram | configured but disabled | `META_ACCESS_TOKEN, META_PAGE_ID` | Social; blocked |
-| Google Search Console | missing key | `GOOGLE_SEARCH_CONSOLE_CREDENTIALS` | Measured SEO data |
-| Google Analytics | missing key | `GOOGLE_ANALYTICS_PROPERTY_ID, GOOGLE_APPLICATION_CREDENTIALS` | Analytics evidence |
-| YouTube API | unknown | `YOUTUBE_API_KEY` | Fresh metadata |
-| Google Drive/manual export | missing account | `GOOGLE_DRIVE_FOLDER_ID` | Drive intake |
-| Oanda practice | configured but disabled | `OANDA_API_TOKEN, OANDA_ACCOUNT_ID, OANDA_ENVIRONMENT` | Read-only demo checks |
-| Ollama local | unknown | `OLLAMA_BASE_URL` | Local inference |
-| Ollama cloud/Pro | missing key | `OLLAMA_API_KEY` | Hosted inference |
-| OpenRouter | missing key | `OPENROUTER_API_KEY` | Hosted Alpha routing |
-| Groq | missing key | `GROQ_API_KEY` | Fast inference |
-| Stripe test mode | configured but disabled | `STRIPE_SECRET_KEY, VITE_STRIPE_PUBLISHABLE_KEY` | Test checkout; charges blocked |
-| Firecrawl | future only | `FIRECRAWL_API_KEY` | Future extraction |
-| n8n | future only | `N8N_API_KEY, N8N_BASE_URL` | Future orchestration |
-| Postiz/Mixpost | future only | `SOCIAL_SCHEDULER_API_KEY` | Future social scheduling |
+| Supabase | No for Alpha/funnel | server/frontend env by approved pattern | writes gated |
+| Netlify | Yes for live form verification | Netlify site settings | deploy/form capture |
+| GitHub | existing push auth | gh credential store | source/CI |
+| Cloudflare | No | server env | future tunnel |
+| Resend/Meta/Stripe | No | server-only env | disabled external actions |
+| GSC/Analytics | Optional now | server credentials/property | measured SEO |
+| YouTube | Optional | `YOUTUBE_API_KEY` | current metadata |
+| NotebookLM folder | Yes/local | `data/exports/notebooklm` | configured local research |
+| Drive | Optional | server credentials/folder | manual exports |
+| Oanda demo | No | server-only practice credentials | read verification only |
+| Ollama local | Optional | dedicated local bridge | real local Alpha model |
+| OpenRouter/Groq | Optional | server-only Alpha gateway | hosted Alpha model |
+| Firecrawl/MarkItDown/n8n | Future | server/local config | research/automation evaluation |
 
-Never put server secrets in frontend variables. Values are intentionally absent.
+Secret values were not read or printed.

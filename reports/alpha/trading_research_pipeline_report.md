@@ -1,5 +1,5 @@
 # Trading Research Pipeline Report
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-Pipeline: idea → research brief → high-risk classification → backtest plan → demo plan → Oanda practice readiness → Ray Review. Orders placed: 0.
+Idea → research brief → score → risk → backtest plan → demo plan → Oanda readiness → Ray Review. No order capability is enabled.

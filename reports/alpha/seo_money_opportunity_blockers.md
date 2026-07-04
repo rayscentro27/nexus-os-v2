@@ -1,5 +1,5 @@
-# SEO Money Opportunity Blockers
+# SEO / Money Opportunity Blockers
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-GSC and Analytics are missing/unverified, so query volume, traffic, conversion, and expected value cannot be claimed. Approved affiliate accounts and URLs are also missing.
+GSC, Analytics, live web/search, and approved affiliate URLs are missing or unverified. No keyword volume, traffic, ranking, conversion, or revenue claim is available.

@@ -1,14 +1,12 @@
 # Nexus Operational Readiness Scorecard
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
-| Capability | State |
+| Capability | Status |
 |---|---|
-| Internal command center | operational local UI |
-| Dual Hermes | operational deterministic logic |
-| Safe scheduler | manual local runner; launchd disabled |
-| Opportunity engine | local fallback operational |
-| Trading | research/demo planning only |
-| Marketing | four local previews |
-| External automation | blocked/gated |
-| Client-facing GoClear | disabled |
+| Alpha conversation | operational local fallback |
+| Nexus workhorse | operational deterministic |
+| Research schedule | runner ready; launchd disabled |
+| GoClear teaser/QR | built; URL/deploy verification required |
+| Lead capture | Netlify-ready; deployment proof required |
+| External actions | gated/blocked |

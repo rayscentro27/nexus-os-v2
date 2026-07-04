@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-07-04T16:15:05.681865+00:00",
+  "cycle": "research",
+  "jobs": [
+    "local inbox scan",
+    "local artifact summary",
+    "Nexus brief",
+    "Alpha brief",
+    "connector detection",
+    "SEO drafts",
+    "marketing drafts",
+    "trading research draft",
+    "Ray Review drafts"
+  ],
+  "safety": "level_1_local_only",
+  "external_actions": 0,
+  "production_mutations": 0,
+  "real_client_records": 0
+}

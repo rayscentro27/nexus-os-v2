@@ -1,43 +1,50 @@
 # Sample Trading Strategy Pipeline Run
 
-> INTERNAL OPERATIONS — DRAFT ONLY — RAY REVIEW REQUIRED — NO REAL CLIENT DATA
+> INTERNAL ACTIVATION EVIDENCE — RAY REVIEW REQUIRED
 
 ```json
 {
   "strategy_id": "alpha-fx-trend-001",
   "market": "forex",
   "hypothesis": "Simple trend-following forex strategy using moving average confirmation and strict stop-loss.",
-  "timeframe": "4-hour draft",
+  "strategy_score": {
+    "total": 58,
+    "scale": 100,
+    "status": "research hypothesis only"
+  },
+  "risk_classification": "high-risk research; execution blocked",
+  "entry_logic": "moving-average alignment plus close confirmation; periods not yet frozen",
+  "exit_logic": "predefined volatility stop, opposite confirmation, or time exit",
   "risk_rules": [
     "demo only",
-    "strict predefined stop",
-    "include spread/slippage",
-    "risk budget required"
-  ],
-  "blocked_actions": [
-    "live/funded trade",
-    "automatic order",
-    "performance claim"
+    "stop required",
+    "cost/slippage model",
+    "risk budget before demo"
   ],
   "backtest_plan": [
-    "freeze deterministic rules",
+    "freeze rules",
     "approved historical data",
     "costs",
-    "out-of-sample validation",
-    "sensitivity tests"
+    "out-of-sample split",
+    "sensitivity checks"
   ],
   "demo_plan": [
-    "read-only practice verification",
+    "read-only practice check",
     "Ray approval",
     "paper simulation",
-    "receipt review"
+    "receipt comparison"
   ],
   "required_data": [
     "OHLC",
     "spread history",
     "instrument metadata"
   ],
-  "oanda_demo_status": "disabled pending safe read-only credential verification",
+  "oanda_demo_status": "disabled pending approved read-only verification",
+  "blocked_actions": [
+    "automatic order",
+    "live/funded trade",
+    "performance claim"
+  ],
   "ray_review_required": true,
   "no_live_funded_trading": true,
   "performance_results": null

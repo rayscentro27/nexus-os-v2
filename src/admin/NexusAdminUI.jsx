@@ -25,7 +25,7 @@ import HermesInlineDrawer from '../components/HermesInlineDrawer'
 import SystemHealthPanel from '../components/SystemHealthPanel'
 import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
 import ErrorBoundary from '../components/ErrorBoundary'
-import HermesAlphaWorkroom from '../components/HermesAlphaWorkroom'
+import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
@@ -68,7 +68,7 @@ const navGroups = [
     { id: 'reports', label: 'Reports', icon: 'FileText', status: '13', statusTone: 'blue' }
   ]},
   { label: 'Hermes Alpha — Separate', items: [
-    { id: 'alpha', label: 'Hermes Alpha', icon: 'Orbit', status: 'Offline', statusTone: 'amber' }
+    { id: 'alpha', label: 'Hermes Alpha', icon: 'Orbit', status: 'Local', statusTone: 'green' }
   ]},
   { label: 'Business', items: [
     { id: 'clients', label: 'Clients', icon: 'Building2', status: 'Gated', statusTone: 'amber' },
@@ -115,7 +115,7 @@ const modeLabels = {
   health: 'System Health',
   proof: 'Events / Proof Ledger',
   hermes: 'Hermes Advisor',
-  alpha: 'Hermes Alpha — Offline / Draft Only',
+  alpha: 'Hermes Alpha — Local Conversation',
   feedback: 'Hermes Feedback',
   settings: 'Settings'
 }
@@ -1462,7 +1462,7 @@ export default function NexusAdminUI({ email }) {
     opportunity: <ErrorBoundary panelName="Business Opportunities"><SimplePage title="Business Opportunities" sub="26 Scored Opportunities · Revenue Potential · Approval-Gated Conversion"><BusinessOpportunitiesPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     health: <ErrorBoundary panelName="System Health"><SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     hermes: <ErrorBoundary panelName="Hermes Workroom"><SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom activePage={activePage} /></SimplePage></ErrorBoundary>,
-    alpha: <ErrorBoundary panelName="Hermes Alpha Workroom"><SimplePage title="Hermes Alpha" sub="Separate Offline Evaluation Workroom · Mock Provider · Draft Only"><HermesAlphaWorkroom onOpenReports={() => navigate('reports')} /></SimplePage></ErrorBoundary>,
+    alpha: <ErrorBoundary panelName="Hermes Alpha Workspace"><SimplePage title="Hermes Alpha" sub="Direct Strategy Conversation · Local Memory · No Supabase"><HermesAlphaWorkspace onOpenReports={() => navigate('reports')} /></SimplePage></ErrorBoundary>,
     rayreview: <ErrorBoundary panelName="Ray Review"><SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage></ErrorBoundary>,
     reports: <ErrorBoundary panelName="Reports"><SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     clients: <ErrorBoundary panelName="Clients"><SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,

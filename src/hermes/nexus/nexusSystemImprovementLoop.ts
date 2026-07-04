@@ -1,0 +1,2 @@
+export type ImprovementSignal={kind:'missing_report'|'stale_connector'|'missing_api_key'|'blocked_automation';name:string;detail:string};
+export function inspectSystemImprovements(signals:ImprovementSignal[]){return signals.map((s,i)=>({proposalId:`improvement-${i+1}`,signal:s,proposal:`Investigate ${s.name}: ${s.detail}. Produce evidence and a bounded fix plan.`,status:'ray_review_draft' as const,mayModifyProduction:false,mayPushCode:false,externalAction:false,approvalRequired:true}));}
