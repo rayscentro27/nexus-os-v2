@@ -15,21 +15,21 @@
 | Daily Monitor | 90 | Script runs, produces reports, verified |
 | Recovery | 85 | Script runs, creates work orders, verified |
 | Telegram | 95 | LIVE connection, 15 commands pass, outbound works, rotation required |
-| Supabase | 70 | Env present, browser expected, unverified |
+| Supabase | 80 | Env present, client wired, edge functions deployed, browser verification needed |
 | Command Center | 75 | Real queries, honest empty states |
-| Client Portal | 85 | Premium shell built, 10 journey pages, responsive CSS |
-| Paywall/Stripe | 30 | Env missing, code not built |
+| Client Portal | 90 | Premium shell built, 10 journey pages, responsive CSS, verified |
+| Paywall/Stripe | 70 | CLI connected, test mode active, 3 tiers exist, needs Nexus alignment |
 | Ray Review | 80 | Queue model exists, Telegram approval works live |
 | Hermes | 90 | 23 patterns, Telegram route works live |
 | Alpha | 85 | 13 intake types, Telegram route works live |
-| Research Intelligence | 60 | Dry-run only |
+| Research Intelligence | 75 | NotebookLM legacy adapter works, 21 scripts, scoring alignment needed |
 | Creative Engine | 60 | Dry-run only |
 | Safety/Guards | 90 | Blocked action guard active |
 | Receipts/Reporting | 90 | All mutations write receipts, live receipts verified |
 
 ---
 
-## Overall Score: 83/100
+## Overall Score: 84/100
 
 **Classification: ACTIVE_WITH_BLOCKERS**
 
@@ -59,33 +59,43 @@
 - ✅ Alpha intake (13 types, Telegram route works live)
 - ✅ Command Center (real queries, honest UX)
 - ✅ Client Portal premium shell (10 journey pages, responsive CSS)
+- ✅ Supabase (env present, client wired, edge functions deployed, 24-table schema)
+- ✅ Stripe CLI (v1.40.8, test mode active, 3 subscription tiers exist)
+- ✅ NotebookLM (legacy adapter works, 21 scripts, export bundles exist)
+- ✅ launchd (3 Nexus v2 jobs exist, daily/evening/continuous)
 
 ---
 
 ## What's Partial
 
-- 🟡 Supabase (env present, browser expected, unverified)
+- 🟡 Supabase (env present, browser verification needed by Ray)
+- 🟡 Stripe (products exist but not Nexus-branded, needs alignment)
+- 🟡 NotebookLM (legacy adapter works, scoring format needs alignment)
+- 🟡 launchd (jobs exist but not loaded, needs `launchctl load`)
 - 🟡 Ray Review (model exists, no live queue items)
-- 🟡 Research Intelligence (dry-run only)
 - 🟡 Creative Engine (dry-run only)
 
 ---
 
 ## What's Missing/Blocked
 
-- ❌ Stripe test-mode (env missing, code not built)
-- ❌ Supabase browser verification (unverified)
-- ❌ NotebookLM import parser (not built)
 - ⚠️ Token rotation required (current token exposed)
+- ⚠️ launchd jobs need loading (3 existing jobs not loaded)
+- ⚠️ Stripe Nexus product alignment needed
+- ⚠️ NotebookLM scoring normalization shim needed
+- ❌ Stripe subscription management UI (not built)
+- ❌ Supabase live table reads (approval required)
 
 ---
 
 ## Remaining Blockers
 
 1. Token rotation required (exposed token must be revoked)
-2. Supabase browser verification
-3. Stripe test-mode keys
-4. NotebookLM import parser
+2. launchd jobs need loading (3 existing jobs not loaded)
+3. Supabase browser verification (Ray needs to open app and check)
+4. Stripe Nexus product alignment (rename or create $97/$197 tiers)
+5. NotebookLM scoring normalization shim (map export format to unified format)
+6. Stripe subscription management UI (not built)
 
 ---
 

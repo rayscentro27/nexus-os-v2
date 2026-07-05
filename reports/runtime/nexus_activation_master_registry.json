@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-07-05T22:25:00Z",
+  "generated_at": "2026-07-05T22:50:00Z",
   "active_operating_mode": "ACTIVE_WITH_BLOCKERS",
-  "active_score": 83,
+  "active_score": 84,
   "starting_commit": "3535590",
-  "latest_commit": "6fe1252",
+  "latest_commit": "ee70ae0",
   "branch": "main",
   "active_process_registry": {
     "total": 19,
@@ -87,8 +87,13 @@
   "supabase_verification": {
     "classification": "ENV_PRESENT_BROWSER_EXPECTED",
     "env_keys_present": true,
+    "client_code": "src/lib/supabaseClient.ts",
+    "edge_functions": "supabase/functions/hermes-chat/, hermes-search/, _shared/firewall.ts",
+    "migrations": "11+ SQL files, 24-table schema",
+    "frontend_service_layer": "src/services/db.ts",
+    "scripts": "6 scripts in scripts/supabase/",
     "browser_verification": "unverified",
-    "report": "reports/supabase/nexus_supabase_browser_verification_latest.md"
+    "report": "reports/supabase/nexus_supabase_existing_verification_latest.md"
   },
   "command_center_ux": {
     "status": "active",
@@ -106,10 +111,22 @@
     "report": "reports/client_portal/nexus_client_portal_premium_shell_completion_report.md"
   },
   "stripe_test_paywall": {
-    "classification": "STRIPE_TEST_MODE_ENV_MISSING_READY",
-    "env_present": false,
-    "code_exists": false,
-    "report": "reports/payments/nexus_stripe_test_mode_paywall_report.md"
+    "classification": "STRIPE_TEST_MODE_PRODUCTS_VERIFIED",
+    "cli_version": "1.40.8",
+    "cli_connected": true,
+    "test_mode_verified": true,
+    "env_stripe_secret_key": true,
+    "existing_products": 5,
+    "existing_subscription_tiers": {
+      "gold": {"product_id": "prod_Tn99pBvgTeJ9dx", "price_id": "price_1SpYrL2MIMiohBBFTqGJqb0b", "amount": 100, "interval": "month"},
+      "silver": {"product_id": "prod_Tn992DjsD7mx6h", "price_id": "price_1SpYrK2MIMiohBBFo1FmUxKE", "amount": 50, "interval": "month"},
+      "bronze": {"product_id": "prod_Tn99slXYkPQNHv", "price_id": "price_1SpYrJ2MIMiohBBF3geiTNZc", "amount": 10, "interval": "month"}
+    },
+    "proposed_tier_1": "Nexus Readiness Portal $97/month",
+    "proposed_tier_2": "Nexus Funding Builder Plus $197/month",
+    "test_scripts": 16,
+    "report": "reports/payments/nexus_stripe_existing_test_mode_audit_latest.md",
+    "pricing_research": "docs/payments/nexus_two_tier_pricing_research.md"
   },
   "blocked_action_guard": {
     "active": true,
@@ -119,10 +136,32 @@
     "report": "reports/runtime/nexus_blocked_action_guard_latest.md"
   },
   "active_operating_system_score": {
-    "score": 83,
+    "score": 84,
     "classification": "ACTIVE_WITH_BLOCKERS",
     "target_score": 90,
     "scorecard": "reports/runtime/nexus_active_operating_system_scorecard.md"
+  },
+  "launchd_audit": {
+    "classification": "LAUNCHD_EXISTS_NEEDS_LOAD",
+    "nexus_v2_jobs_found": 3,
+    "jobs": {
+      "daily_operating": {"label": "com.nexus.daily-operating", "schedule": "daily 08:00", "loaded": false, "last_run": "2026-07-04 08:03"},
+      "evening_closeout": {"label": "com.nexus.evening-closeout", "schedule": "daily 18:00", "loaded": false, "last_run": "2026-07-04 18:00"},
+      "continuous_ops_daily": {"label": "com.nexus.continuous-ops-daily", "schedule": "every 30min", "loaded": false}
+    },
+    "desired_new_jobs": ["active_operator (hourly)", "recovery_check (every 3h)"],
+    "report": "reports/runtime/nexus_launchd_existing_audit_latest.md",
+    "install_guide": "docs/operations/nexus_launchd_status_and_install.md"
+  },
+  "notebooklm_alignment": {
+    "classification": "NOTEBOOKLM_EXISTING_PARSER_ALIGNED",
+    "scripts_found": 21,
+    "access_mode": "legacy_adapter",
+    "legacy_adapter_callable": true,
+    "cli_callable": false,
+    "export_bundles_exist": true,
+    "scoring_alignment": "needs_normalization_shim",
+    "report": "reports/research/nexus_notebooklm_existing_parser_audit_latest.md"
   },
   "reports_created": [
     "reports/runtime/nexus_active_operator_sprint_preflight.md",
@@ -136,30 +175,50 @@
     "reports/runtime/nexus_command_center_active_ux_report.md",
     "reports/runtime/nexus_blocked_action_guard_latest.md",
     "reports/runtime/nexus_active_operating_system_scorecard.md",
-    "reports/runtime/nexus_not_good_enough_action_plan.md",
+    "reports/runtime/nexus_existing_tests_run_latest.md",
+    "reports/runtime/nexus_existing_systems_verification_preflight.md",
+    "reports/runtime/nexus_launchd_existing_audit_latest.md",
     "reports/supabase/nexus_supabase_browser_verification_latest.md",
+    "reports/supabase/nexus_supabase_existing_verification_latest.md",
     "reports/client_portal/nexus_client_portal_premium_shell_report.md",
+    "reports/client_portal/nexus_client_portal_premium_shell_completion_report.md",
     "reports/payments/nexus_stripe_test_mode_paywall_report.md",
+    "reports/payments/nexus_stripe_existing_test_mode_audit_latest.md",
+    "reports/research/nexus_notebooklm_existing_parser_audit_latest.md",
     "reports/telegram/nexus_telegram_mobile_operator_test_report.md",
     "reports/telegram/nexus_telegram_approval_operator_report.md",
+    "reports/telegram/nexus_telegram_live_bridge_verification.md",
+    "reports/telegram/nexus_telegram_token_rotation_required.md",
     "docs/operations/nexus_active_operating_modes.md",
     "docs/operations/nexus_active_operator_runner.md",
+    "docs/operations/nexus_launchd_status_and_install.md",
     "docs/telegram/nexus_telegram_env_contract.md",
     "docs/telegram/nexus_telegram_mobile_operator_contract.md",
     "docs/telegram/nexus_telegram_command_contract.md",
-    "docs/payments/nexus_stripe_test_mode_contract.md"
+    "docs/payments/nexus_stripe_test_mode_contract.md",
+    "docs/payments/nexus_two_tier_pricing_research.md"
   ],
   "receipts_dirs": [
     "reports/runtime/nexus_active_operator_receipts/",
     "reports/telegram/receipts/approvals/",
     "reports/telegram/receipts/internal_requests/",
     "reports/telegram/receipts/hermes/",
-    "reports/telegram/receipts/alpha/"
+    "reports/telegram/receipts/alpha/",
+    "reports/telegram/receipts/live_activation/"
   ],
   "remaining_blockers": [
     "Token rotation required (exposed token must be revoked)",
-    "Supabase browser verification",
-    "Stripe test-mode keys",
-    "NotebookLM import parser"
+    "launchd jobs need loading (3 existing jobs not loaded)",
+    "Supabase browser verification (Ray needs to open app and check)",
+    "Stripe Nexus product alignment (rename or create $97/$197 tiers)",
+    "NotebookLM scoring normalization shim (map export format to unified format)",
+    "Stripe subscription management UI (not built)"
+  ],
+  "manual_actions_required": [
+    "launchctl load ~/Library/LaunchAgents/com.nexus.daily-operating.plist",
+    "launchctl load ~/Library/LaunchAgents/com.nexus.evening-closeout.plist",
+    "Open app in browser and check Supabase Network requests",
+    "Decide on Stripe tier naming (use existing Gold or create new)",
+    "Create NotebookLM scoring normalization shim"
   ]
 }
