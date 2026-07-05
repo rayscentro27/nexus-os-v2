@@ -1,0 +1,104 @@
+{
+  "generated_at": "2026-07-05T18:38:09.825198+00:00",
+  "env_keys": {
+    "VITE_SUPABASE_URL": {
+      "present": true,
+      "length": 40
+    },
+    "VITE_SUPABASE_ANON_KEY": {
+      "present": true,
+      "length": 208
+    },
+    "SUPABASE_URL": {
+      "present": true,
+      "length": 40
+    },
+    "SUPABASE_SERVICE_ROLE_KEY": {
+      "present": true,
+      "length": 219
+    }
+  },
+  "all_keys_present": true,
+  "supabase_url_configured": true,
+  "tables_checked": 14,
+  "tables_found": 0,
+  "tables": {
+    "admin_users": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "approvals": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "task_requests": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "nexus_events": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "system_health": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "agent_jobs": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "research_sources": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "research_runs": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "business_opportunities": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "monetization_opportunities": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "client_profiles": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "client_tasks": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "readiness_scores": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    },
+    "client_documents": {
+      "exists": false,
+      "status": "connection_error",
+      "error": "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)"
+    }
+  },
+  "write_test": {
+    "success": false,
+    "status": "error",
+    "error": "<urlopen error [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1081)>"
+  },
+  "overall_status": "not_connected",
+  "recommendation": "Supabase not connected. Check env keys and migration status."
+}

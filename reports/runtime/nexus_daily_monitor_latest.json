@@ -1,0 +1,65 @@
+{
+  "generated_at": "2026-07-05T18:45:34.805585+00:00",
+  "report_stats": {
+    "total": 1688,
+    "categories": {
+      ".": 123,
+      "nexus_readiness": 17,
+      "research": 10,
+      "marketing_assets": 24,
+      "app_department": 2,
+      "hermes_brain": 28,
+      "goclear_activation": 4,
+      "auth": 3,
+      "client_portal": 11,
+      "runtime": 755,
+      "activation": 19,
+      "content": 1,
+      "hermes_alpha": 42,
+      "operations": 30,
+      "supabase": 4,
+      "social": 1,
+      "deployment": 2,
+      "telegram": 3,
+      "nexus_research": 58,
+      "manual_publish": 492,
+      "marketing": 4,
+      "creative": 3,
+      "hermes": 6,
+      "seo": 1,
+      "alpha": 40,
+      "trading": 3,
+      "email": 1,
+      "billing": 1
+    }
+  },
+  "process_summary": {
+    "total": 10,
+    "by_mode": {
+      "APPROVED_LIVE": 1,
+      "SANDBOX_TEST": 3,
+      "OBSERVE": 4,
+      "DRY_RUN": 2
+    },
+    "by_status": {}
+  },
+  "health_summary": {
+    "overall": "unknown",
+    "checks": 0
+  },
+  "recovery_summary": {
+    "count": 0,
+    "items": []
+  },
+  "supabase_status": {
+    "status": "not_connected",
+    "tables_found": 0,
+    "tables_checked": 14
+  },
+  "alpha_status": {
+    "score": 44
+  },
+  "hermes_status": {
+    "score": 48
+  }
+}

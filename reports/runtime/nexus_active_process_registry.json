@@ -1,0 +1,115 @@
+{
+  "generated_at": "2026-07-05T00:00:00Z",
+  "processes": [
+    {
+      "receipt_id": "receipt_prompt2_init_001",
+      "process_id": "got_funding_lead_capture",
+      "department": "marketing",
+      "activation_mode": "APPROVED_LIVE",
+      "status": "completed",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 85,
+      "recommendation": "Monitor form submissions",
+      "next_action": "Verify lead capture pipeline"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_002",
+      "process_id": "supabase_live_verification",
+      "department": "system_health",
+      "activation_mode": "SANDBOX_TEST",
+      "status": "completed",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 60,
+      "recommendation": "Keys present, SSL issue in Python (browser works)",
+      "next_action": "Test via browser/client-side"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_003",
+      "process_id": "system_health_check",
+      "department": "system_health",
+      "activation_mode": "OBSERVE",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 50,
+      "recommendation": "Connect to live data sources",
+      "next_action": "Replace mock data with live checks"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_004",
+      "process_id": "ray_review_queue",
+      "department": "ray_review",
+      "activation_mode": "OBSERVE",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 50,
+      "recommendation": "Connect to live approvals",
+      "next_action": "Replace mock data with live items"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_005",
+      "process_id": "command_center_dashboard",
+      "department": "command_center",
+      "activation_mode": "OBSERVE",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 50,
+      "recommendation": "Replace mock data with live sources",
+      "next_action": "Connect to process registry and health checks"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_006",
+      "process_id": "client_portal",
+      "department": "client_portal",
+      "activation_mode": "OBSERVE",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 25,
+      "recommendation": "Build premium shell with live data adapter",
+      "next_action": "Apply Got Funding design quality"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_007",
+      "process_id": "alpha_strategy_brain",
+      "department": "alpha_strategy",
+      "activation_mode": "SANDBOX_TEST",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 55,
+      "recommendation": "Connect to live research data",
+      "next_action": "Build decision packet generator"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_008",
+      "process_id": "hermes_work_router",
+      "department": "nexus_hermes",
+      "activation_mode": "SANDBOX_TEST",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 55,
+      "recommendation": "Build work order creator",
+      "next_action": "Test routing with real prompts"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_009",
+      "process_id": "youtube_researcher",
+      "department": "youtube_research",
+      "activation_mode": "DRY_RUN",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 55,
+      "recommendation": "Connect to live API",
+      "next_action": "Test with real channel query"
+    },
+    {
+      "receipt_id": "receipt_prompt2_init_010",
+      "process_id": "creative_engine",
+      "department": "creative_studio",
+      "activation_mode": "DRY_RUN",
+      "status": "ready",
+      "last_run_time": "2026-07-05T00:00:00Z",
+      "score": 45,
+      "recommendation": "Build quality score model",
+      "next_action": "Create Got Funding creative package"
+    }
+  ]
+}
