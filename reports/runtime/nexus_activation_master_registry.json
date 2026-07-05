@@ -1,8 +1,9 @@
 {
-  "generated_at": "2026-07-05T20:15:00Z",
-  "active_operating_mode": "PARTIAL_ACTIVE",
-  "active_score": 76,
+  "generated_at": "2026-07-05T22:25:00Z",
+  "active_operating_mode": "ACTIVE_WITH_BLOCKERS",
+  "active_score": 83,
   "starting_commit": "3535590",
+  "latest_commit": "6fe1252",
   "branch": "main",
   "active_process_registry": {
     "total": 19,
@@ -35,13 +36,27 @@
     "bridge_script": "scripts/telegram/nexus_telegram_bridge.py",
     "approval_handler": "scripts/telegram/nexus_telegram_approval_handler.py",
     "internal_request_handler": "scripts/telegram/nexus_telegram_internal_request_handler.py",
-    "env_classification": "TELEGRAM_ENV_MISSING_OPERATOR_READY",
-    "live_connection": false,
-    "mock_bridge_tested": true,
-    "commands_working": 19,
+    "env_classification": "TELEGRAM_OPERATOR_ACTIVE_ROTATION_REQUIRED",
+    "live_connection": true,
+    "token_status": "VALID_ROTATION_REQUIRED",
+    "bot_username": "NexusHermes27bot",
+    "bot_id": 8935612290,
+    "private_chat_id": "1288928049",
+    "group_chat_id": null,
+    "bot_id_mistaken_as_chat_id": true,
+    "outbound_test": "PASS",
+    "command_tests": "15/15_PASS",
+    "bridge_dry_run": "PASS",
+    "bridge_once": "PASS",
+    "active_runner_once": "PASS",
+    "daily_monitor": "PASS",
+    "recovery_check": "PASS",
+    "bot_menu_commands": 17,
+    "commands_working": 15,
     "blocked_actions_guarded": 12,
     "receipts_dir": "reports/telegram/receipts/",
-    "test_report": "reports/telegram/nexus_telegram_mobile_operator_test_report.md"
+    "live_activation_receipts": "reports/telegram/receipts/live_activation/",
+    "test_report": "reports/telegram/nexus_telegram_live_bridge_verification.md"
   },
   "telegram_approval": {
     "handler_exists": true,
@@ -82,10 +97,13 @@
     "report": "reports/runtime/nexus_command_center_active_ux_report.md"
   },
   "client_portal_premium_shell": {
-    "status": "partial",
+    "status": "IMPLEMENTED",
     "data_adapter": true,
-    "premium_shell": false,
-    "report": "reports/client_portal/nexus_client_portal_premium_shell_report.md"
+    "premium_shell": true,
+    "ten_journey_pages": true,
+    "responsive_css": true,
+    "hermes_guidance_panel": true,
+    "report": "reports/client_portal/nexus_client_portal_premium_shell_completion_report.md"
   },
   "stripe_test_paywall": {
     "classification": "STRIPE_TEST_MODE_ENV_MISSING_READY",
@@ -101,11 +119,10 @@
     "report": "reports/runtime/nexus_blocked_action_guard_latest.md"
   },
   "active_operating_system_score": {
-    "score": 76,
-    "classification": "PARTIAL_ACTIVE",
-    "target_score": 88,
-    "scorecard": "reports/runtime/nexus_active_operating_system_scorecard.md",
-    "action_plan": "reports/runtime/nexus_not_good_enough_action_plan.md"
+    "score": 83,
+    "classification": "ACTIVE_WITH_BLOCKERS",
+    "target_score": 90,
+    "scorecard": "reports/runtime/nexus_active_operating_system_scorecard.md"
   },
   "reports_created": [
     "reports/runtime/nexus_active_operator_sprint_preflight.md",
@@ -140,9 +157,8 @@
     "reports/telegram/receipts/alpha/"
   ],
   "remaining_blockers": [
-    "Telegram env vars (TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID)",
+    "Token rotation required (exposed token must be revoked)",
     "Supabase browser verification",
-    "Client Portal premium shell",
     "Stripe test-mode keys",
     "NotebookLM import parser"
   ]

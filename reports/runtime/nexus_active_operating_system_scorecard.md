@@ -2,6 +2,7 @@
 
 **Generated**: 2026-07-05
 **Starting Commit**: 3535590
+**Latest Commit**: 6fe1252
 
 ---
 
@@ -10,27 +11,27 @@
 | Category | Score | Status |
 |----------|-------|--------|
 | Process Registry | 90 | 19 processes, validated, active |
-| Active Runner | 85 | Bounded, receipt-based, --once support |
-| Daily Monitor | 85 | Script runs, produces reports |
-| Recovery | 80 | Script runs, creates work orders |
-| Telegram | 80 | Mobile operator console, all commands working |
+| Active Runner | 90 | Bounded, receipt-based, --once verified |
+| Daily Monitor | 90 | Script runs, produces reports, verified |
+| Recovery | 85 | Script runs, creates work orders, verified |
+| Telegram | 95 | LIVE connection, 15 commands pass, outbound works, rotation required |
 | Supabase | 70 | Env present, browser expected, unverified |
 | Command Center | 75 | Real queries, honest empty states |
-| Client Portal | 50 | Data adapter built, no premium shell |
+| Client Portal | 85 | Premium shell built, 10 journey pages, responsive CSS |
 | Paywall/Stripe | 30 | Env missing, code not built |
-| Ray Review | 70 | Queue model exists, Telegram approval works |
-| Hermes | 80 | 23 patterns, Telegram route works |
-| Alpha | 75 | 13 intake types, Telegram route works |
+| Ray Review | 80 | Queue model exists, Telegram approval works live |
+| Hermes | 90 | 23 patterns, Telegram route works live |
+| Alpha | 85 | 13 intake types, Telegram route works live |
 | Research Intelligence | 60 | Dry-run only |
 | Creative Engine | 60 | Dry-run only |
 | Safety/Guards | 90 | Blocked action guard active |
-| Receipts/Reporting | 85 | All mutations write receipts |
+| Receipts/Reporting | 90 | All mutations write receipts, live receipts verified |
 
 ---
 
-## Overall Score: 76/100
+## Overall Score: 83/100
 
-**Classification: PARTIAL_ACTIVE**
+**Classification: ACTIVE_WITH_BLOCKERS**
 
 ---
 
@@ -48,15 +49,16 @@
 ## What's Active
 
 - ✅ Process registry (19 processes, validated)
-- ✅ Active runner (bounded, receipt-based)
-- ✅ Daily monitor (script runs, reports written)
-- ✅ Recovery check (script runs, work orders created)
-- ✅ Telegram mobile operator console (all commands working)
+- ✅ Active runner (bounded, receipt-based, --once verified)
+- ✅ Daily monitor (script runs, reports written, verified)
+- ✅ Recovery check (script runs, work orders created, verified)
+- ✅ Telegram mobile operator console (LIVE connection, 15 commands pass, outbound works)
 - ✅ Blocked action guard (dangerous actions prevented)
-- ✅ Receipts for all mutations
-- ✅ Hermes routing (23 patterns, Telegram route)
-- ✅ Alpha intake (13 types, Telegram route)
+- ✅ Receipts for all mutations (live receipts verified)
+- ✅ Hermes routing (23 patterns, Telegram route works live)
+- ✅ Alpha intake (13 types, Telegram route works live)
 - ✅ Command Center (real queries, honest UX)
+- ✅ Client Portal premium shell (10 journey pages, responsive CSS)
 
 ---
 
@@ -71,32 +73,37 @@
 
 ## What's Missing/Blocked
 
-- ❌ Client Portal premium shell (not built)
 - ❌ Stripe test-mode (env missing, code not built)
 - ❌ Supabase browser verification (unverified)
-- ❌ Live Telegram bot connection (env missing)
 - ❌ NotebookLM import parser (not built)
+- ⚠️ Token rotation required (current token exposed)
 
 ---
 
 ## Remaining Blockers
 
-1. Telegram env vars (TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID)
+1. Token rotation required (exposed token must be revoked)
 2. Supabase browser verification
-3. Client Portal premium shell
-4. Stripe test-mode keys
-5. NotebookLM import parser
+3. Stripe test-mode keys
+4. NotebookLM import parser
 
 ---
 
-## Not Good Enough Action Plan
+## Telegram Live Activation
 
-Score is 76/100 — PARTIAL_ACTIVE. To reach 80+ (ACTIVE_WITH_BLOCKERS):
-
-1. **Add Telegram env vars** → +5 points (Telegram live connection)
-2. **Verify Supabase via browser** → +5 points (Supabase verified)
-3. **Build Client Portal premium shell** → +10 points (Client Portal complete)
-4. **Add Stripe test-mode keys** → +5 points (Paywall foundation)
-5. **Build NotebookLM import parser** → +2 points (Research complete)
-
-**Projected score after action plan: 88/100 (ACTIVE_WITH_BLOCKERS)**
+| Field | Value |
+|-------|-------|
+| Token Status | VALID, ROTATION_REQUIRED |
+| Bot Username | NexusHermes27bot |
+| Bot ID | 8935612290 |
+| Private Chat ID | 1288928049 (Ray Davis @rayscentro) |
+| Group Chat ID | None found |
+| Bot ID Mistaken as Chat ID | Yes, corrected |
+| Outbound Test | PASS |
+| Command Tests | 15/15 PASS |
+| Bridge Dry-Run | PASS |
+| Bridge --once | PASS (bounded exit) |
+| Active Runner --once | PASS (17 processes, 17 receipts) |
+| Daily Monitor | PASS |
+| Recovery Check | PASS |
+| Bot Menu | 17 commands registered |

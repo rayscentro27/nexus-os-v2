@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-07-05T00:00:00Z",
+  "phase": "B",
+  "operation": "telegram_getMe",
+  "status": "TELEGRAM_TOKEN_VALID_ROTATION_REQUIRED",
+  "token_preview": "893561...hXjw",
+  "token_length": 46,
+  "rotation_required": true,
+  "result": {
+    "ok": true,
+    "bot_id": 8935612290,
+    "bot_username": "NexusHermes27bot",
+    "bot_first_name": "Nexus Hermes",
+    "can_join_groups": true,
+    "is_bot": true
+  }
+}

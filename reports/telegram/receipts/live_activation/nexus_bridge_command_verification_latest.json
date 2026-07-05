@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-07-05T00:00:00Z",
+  "phase": "F",
+  "operation": "bridge_command_verification",
+  "status": "ALL_COMMANDS_PASS",
+  "dry_run": true,
+  "commands_tested": [
+    {"cmd": "/status", "status": "PASS"},
+    {"cmd": "/daily", "status": "PASS"},
+    {"cmd": "/health", "status": "PASS"},
+    {"cmd": "/review", "status": "PASS"},
+    {"cmd": "/approve TEST-001", "status": "PASS", "receipt": "tg_approval_20260705T222026Z"},
+    {"cmd": "/reject TEST-001 not creative enough", "status": "PASS", "receipt": "tg_approval_20260705T222027Z"},
+    {"cmd": "/revise TEST-001 needs avatar and stronger CTA", "status": "PASS", "receipt": "tg_approval_20260705T222027Z"},
+    {"cmd": "/request check which Nexus processes failed today", "status": "PASS", "route": "recovery", "work_order": "wo_20260705T222025"},
+    {"cmd": "/hermes what should Nexus prioritize today", "status": "PASS", "route": "hermes_general", "work_order": "wo_20260705T222025"},
+    {"cmd": "/alpha research open source client portal patterns", "status": "PASS", "route": "business_idea", "work_order": "wo_20260705T222025"},
+    {"cmd": "/orders", "status": "PASS"},
+    {"cmd": "/recover", "status": "PASS"},
+    {"cmd": "/processes", "status": "PASS"},
+    {"cmd": "/blocked", "status": "PASS"},
+    {"cmd": "/help", "status": "PASS"}
+  ],
+  "total_commands": 15,
+  "total_pass": 15,
+  "total_fail": 0
+}

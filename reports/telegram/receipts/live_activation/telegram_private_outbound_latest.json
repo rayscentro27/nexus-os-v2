@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-05T00:00:00Z",
+  "phase": "D",
+  "operation": "telegram_private_outbound",
+  "status": "SUCCESS",
+  "chat_id": "1288928049",
+  "message_preview": "Nexus Telegram Mobile Operator test is active...",
+  "result": {
+    "ok": true,
+    "message_id": 4,
+    "chat_type": "private",
+    "chat_username": "rayscentro"
+  }
+}

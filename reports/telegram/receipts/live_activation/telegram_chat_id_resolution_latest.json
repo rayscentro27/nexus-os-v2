@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-07-05T00:00:00Z",
+  "phase": "C",
+  "operation": "chat_id_resolution",
+  "status": "RESOLVED",
+  "method": "getUpdates via curl",
+  "resolved_private_chat_id": "1288928049",
+  "resolved_private_chat_user": {
+    "id": 1288928049,
+    "first_name": "Ray",
+    "last_name": "Davis",
+    "username": "rayscentro"
+  },
+  "resolved_group_chat_id": null,
+  "resolved_group_chat_title": null,
+  "rejected_invalid_ids": [
+    {
+      "value": "8935612290",
+      "reason": "BOT_ID_NOT_CHAT_ID",
+      "note": "This is the bot ID from token prefix, not a private chat ID"
+    }
+  ],
+  "bot_id_was_mistakenly_used": true,
+  "final_allowed_chat_ids": "1288928049",
+  "updates_found": 3,
+  "no_token_values": true
+}
