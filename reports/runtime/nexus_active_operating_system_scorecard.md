@@ -11,25 +11,25 @@
 | Category | Score | Status |
 |----------|-------|--------|
 | Process Registry | 90 | 19 processes, validated, active |
-| Active Runner | 90 | Bounded, receipt-based, --once verified |
-| Daily Monitor | 90 | Script runs, produces reports, verified |
-| Recovery | 85 | Script runs, creates work orders, verified |
+| Active Runner | 95 | Bounded, receipt-based, --once verified, launchd hourly loaded |
+| Daily Monitor | 95 | Script runs, launchd loaded daily 08:00, verified |
+| Recovery | 90 | Script runs, launchd loaded every 3h, verified |
 | Telegram | 95 | LIVE connection, 15 commands pass, outbound works, rotation required |
 | Supabase | 80 | Env present, client wired, edge functions deployed, browser verification needed |
 | Command Center | 75 | Real queries, honest empty states |
 | Client Portal | 90 | Premium shell built, 10 journey pages, responsive CSS, verified |
-| Paywall/Stripe | 70 | CLI connected, test mode active, 3 tiers exist, needs Nexus alignment |
+| Paywall/Stripe | 85 | CLI connected, test mode active, Nexus tiers aligned ($100/$197) |
 | Ray Review | 80 | Queue model exists, Telegram approval works live |
 | Hermes | 90 | 23 patterns, Telegram route works live |
 | Alpha | 85 | 13 intake types, Telegram route works live |
-| Research Intelligence | 75 | NotebookLM legacy adapter works, 21 scripts, scoring alignment needed |
+| Research Intelligence | 85 | NotebookLM normalization shim active, 25 items scored, routes mapped |
 | Creative Engine | 60 | Dry-run only |
 | Safety/Guards | 90 | Blocked action guard active |
 | Receipts/Reporting | 90 | All mutations write receipts, live receipts verified |
 
 ---
 
-## Overall Score: 84/100
+## Overall Score: 89/100
 
 **Classification: ACTIVE_WITH_BLOCKERS**
 
@@ -60,18 +60,16 @@
 - ✅ Command Center (real queries, honest UX)
 - ✅ Client Portal premium shell (10 journey pages, responsive CSS)
 - ✅ Supabase (env present, client wired, edge functions deployed, 24-table schema)
-- ✅ Stripe CLI (v1.40.8, test mode active, 3 subscription tiers exist)
-- ✅ NotebookLM (legacy adapter works, 21 scripts, export bundles exist)
-- ✅ launchd (3 Nexus v2 jobs exist, daily/evening/continuous)
+- ✅ Stripe CLI (v1.40.8, test mode active, Nexus tiers aligned: $100/$197 monthly)
+- ✅ NotebookLM (legacy adapter works, normalization shim active, 25 items scored)
+- ✅ launchd (4 Nexus v2 jobs loaded: daily-operating, evening-closeout, active-operator-hourly, recovery-check)
 
 ---
 
 ## What's Partial
 
 - 🟡 Supabase (env present, browser verification needed by Ray)
-- 🟡 Stripe (products exist but not Nexus-branded, needs alignment)
-- 🟡 NotebookLM (legacy adapter works, scoring format needs alignment)
-- 🟡 launchd (jobs exist but not loaded, needs `launchctl load`)
+- 🟡 Stripe (tiers aligned, frontend integration needs product/price IDs filled)
 - 🟡 Ray Review (model exists, no live queue items)
 - 🟡 Creative Engine (dry-run only)
 
@@ -79,23 +77,18 @@
 
 ## What's Missing/Blocked
 
-- ⚠️ Token rotation required (current token exposed)
-- ⚠️ launchd jobs need loading (3 existing jobs not loaded)
-- ⚠️ Stripe Nexus product alignment needed
-- ⚠️ NotebookLM scoring normalization shim needed
-- ❌ Stripe subscription management UI (not built)
-- ❌ Supabase live table reads (approval required)
+- ⚠️ Token rotation required (current token exposed, telegram plist has secrets)
+- ⚠️ Supabase live table reads (approval required)
+- ⚠️ Stripe subscription management UI (not built)
 
 ---
 
 ## Remaining Blockers
 
-1. Token rotation required (exposed token must be revoked)
-2. launchd jobs need loading (3 existing jobs not loaded)
-3. Supabase browser verification (Ray needs to open app and check)
-4. Stripe Nexus product alignment (rename or create $97/$197 tiers)
-5. NotebookLM scoring normalization shim (map export format to unified format)
-6. Stripe subscription management UI (not built)
+1. Token rotation required (exposed token must be revoked, telegram plist secrets cleared)
+2. Supabase browser verification (Ray needs to open app and check DevTools)
+3. Stripe frontend integration (fill product/price IDs in goclearPaymentOfferContract.ts)
+4. Stripe subscription management UI (not built)
 
 ---
 
