@@ -1,52 +1,154 @@
 # Nexus Daily Monitor Report
 
-**Generated**: 2026-07-05T18:45:34.805585+00:00
+**Generated**: 2026-07-05T19:30:00Z
+**Closeout**: Prompt 2 Completion Closeout completed
 
 ---
 
-## Report Summary
+## Build Status
 
-- **Total reports**: 1688
-- **Categories**: 28
+| Check | Result |
+|-------|--------|
+| TypeScript | PASS |
+| Vite Build | PASS |
+| Modules | 1,767 |
+| Build Time | 10.35s |
+| Warnings | Chunk size (non-blocking) |
+| Overall | **PASS** |
+
+---
+
+## Prompt 2 Commit
+
+| Field | Value |
+|-------|-------|
+| Hash | 0348176 |
+| Pushed | YES |
+| Message | activate Nexus operating engine dashboard client portal and work router |
+
+---
 
 ## Process Summary
 
-- **Total processes**: 10
-- **APPROVED_LIVE**: 1
-- **SANDBOX_TEST**: 3
-- **OBSERVE**: 4
-- **DRY_RUN**: 2
+| Metric | Value |
+|--------|-------|
+| Total Processes | 20 |
+| APPROVED_LIVE | 1 |
+| SANDBOX_TEST | 5 |
+| DRY_RUN | 9 |
+| OBSERVE | 5 |
+
+---
 
 ## System Health
 
-- **Overall**: unknown
-- **Checks**: 0
-- **Healthy**: 0
-- **Degraded**: 0
+| Status | Count |
+|--------|-------|
+| Overall | degraded |
+| Total Checks | 18 |
+| Healthy | 8 |
+| Degraded | 4 |
+| Not Configured | 6 |
+| Down | 0 |
+
+---
 
 ## Supabase Status
 
-- **Status**: not_connected
-- **Tables**: 0/14
+| Dimension | Classification |
+|-----------|---------------|
+| Status | **ENV_PRESENT_BROWSER_EXPECTED** |
+| Env Keys Present | YES (all 4) |
+| Python Verification | BLOCKED (SSL certificate issue) |
+| Browser Access | EXPECTED WORKING |
+| Live Tables | UNVERIFIED |
 
-## Alpha Brain
+**Note**: Previous monitor reported `not_connected` — this was misleading. All env keys are present. Python SSL blocks server-side verification. Browser frontend expected to work.
 
-- **Score**: 44/100
+---
 
-## Hermes Brain
+## Test Status
 
-- **Score**: 48/100
+| Metric | Value |
+|--------|-------|
+| Passing | 1,196 / 1,197 |
+| Pre-existing Failure | hermes_alpha_no_supabase_guard.test.ts |
+| Overall | degraded |
 
-## Recovery
+---
 
-- **Interrupted items**: 0
+## Command Center
+
+| Metric | Value |
+|--------|-------|
+| Total Cards | 13 |
+| Using Real Supabase Queries | 7 |
+| Using Local/Config Data | 6 |
+| Still Mock | 0 |
+
+**No cards show fake/mock data as live.** Supabase-dependent cards show empty states when unavailable.
+
+---
+
+## Client Portal
+
+| Metric | Value |
+|--------|-------|
+| Pages/Components | 3 |
+| Data Adapter Built | YES |
+| Using Synthetic | YES (all routes) |
+| Premium Shell | NO |
+| No-Scroll Desktop | NO |
+
+---
+
+## Hermes Work Router
+
+| Metric | Value |
+|--------|-------|
+| Intent Patterns | 23 |
+| Work Order Model | YES |
+| Testable | YES |
+| Score | 48/100 |
+
+---
+
+## Alpha Decision Packets
+
+| Metric | Value |
+|--------|-------|
+| Intake Types | 13 |
+| Scoring Engine | YES |
+| Testable | YES |
+| Score | 44/100 |
+
+---
+
+## Telegram
+
+| Metric | Value |
+|--------|-------|
+| Go/No-Go | **GO_CONTROLLED_NOTIFY** |
+| Starting Mode | CONTROLLED_NOTIFY |
+| Audit Complete | YES |
+| Next Prompt Ready | YES |
+| Live Connection | NO |
+
+---
+
+## Report Stats
+
+| Metric | Value |
+|--------|-------|
+| Total Reports | 1,697 |
+| Categories | 27 |
 
 ---
 
 ## Next Actions
 
-1. Verify Supabase live connectivity (run verification script)
-2. Replace Command Center mock data with live sources
-3. Connect System Health to live checks
-4. Build client portal premium shell
-5. Wire Hermes work router to real processes
+1. Verify Supabase live via browser DevTools Network tab
+2. Add graceful empty-state UX to Command Center cards
+3. Build client portal premium shell
+4. Connect Stripe test-mode checkout
+5. Connect Telegram (mock-first, then live)

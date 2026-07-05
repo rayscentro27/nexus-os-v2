@@ -1,8 +1,11 @@
 {
-  "generated_at": "2026-07-05T00:00:00Z",
+  "generated_at": "2026-07-05T19:30:00Z",
+  "closeout_completed_at": "2026-07-05T19:30:00Z",
   "starting_commit": "95b549b",
+  "prompt_2_commit": "0348176",
   "branch": "main",
-  "prompt_2_completion_score": 62,
+  "prompt_2_completion_score": 72,
+  "closeout_completion_score": 72,
   "current_supabase_project_status": {
     "env_vars_present": true,
     "url_set": true,
@@ -11,10 +14,11 @@
     "total_tables_defined": 77,
     "migrations_defined": 14,
     "rls_enabled": true,
-    "live_status": "keys_verified_ssl_issue_in_python",
+    "live_status": "ENV_PRESENT_BROWSER_EXPECTED",
     "browser_connectivity": "expected_working",
     "python_connectivity": "ssl_certificate_issue",
-    "needs_migration_push": true
+    "needs_migration_push": true,
+    "classification": "ENV_PRESENT_BROWSER_EXPECTED — Python SSL blocked, browser expected working, live table status unverified"
   },
   "activated_capabilities": [
     {"id": "got_funding_landing", "score": 85, "mode": "APPROVED_LIVE"},
@@ -58,11 +62,11 @@
     "pending": 10
   },
   "dashboard_cards": {
-    "total": 16,
-    "using_live_data": 0,
-    "using_report_data": 5,
-    "using_process_registry": 3,
-    "still_mock": 8
+    "total": 13,
+    "using_real_supabase_queries": 7,
+    "using_local_config_data": 6,
+    "still_mock": 0,
+    "note": "No cards show fake/mock data as live. Supabase-dependent cards show empty states when unavailable."
   },
   "client_portal_routes": {
     "total": 9,
@@ -121,20 +125,49 @@
     "audit_complete": true,
     "connection_plan": true,
     "next_prompt_ready": true,
-    "live_connection": false
+    "live_connection": false,
+    "go_no_go": "GO_CONTROLLED_NOTIFY",
+    "starting_mode": "CONTROLLED_NOTIFY — read-only status, notifications, Hermes routing, Alpha scoring"
   },
+  "build_status": {
+    "typescript": "PASS",
+    "vite": "PASS",
+    "modules_transformed": 1767,
+    "build_time_seconds": 10.35,
+    "warnings": "chunk size (non-blocking)",
+    "overall": "PASS"
+  },
+  "test_status": {
+    "passing": 1196,
+    "total": 1197,
+    "pre_existing_failure": "hermes_alpha_no_supabase_guard.test.ts",
+    "overall": "degraded"
+  },
+  "closeout_reports": [
+    "reports/runtime/nexus_prompt_2_completion_preflight.md",
+    "reports/runtime/nexus_prompt_2_test_and_build_report.md",
+    "reports/supabase/nexus_prompt_2_supabase_closeout_status.md",
+    "reports/runtime/nexus_prompt_2_daily_monitor_closeout.md",
+    "reports/runtime/nexus_prompt_2_dashboard_health_closeout.md",
+    "reports/client_portal/client_portal_prompt_2_closeout.md",
+    "reports/runtime/nexus_prompt_2_brain_router_closeout.md",
+    "reports/telegram/nexus_telegram_go_no_go.md",
+    "reports/runtime/nexus_prompt_2_completion_summary.md"
+  ],
   "remaining_tasks": [
-    "Verify Supabase live connectivity via browser",
-    "Replace Command Center mock data with live sources",
+    "Verify Supabase live connectivity via browser DevTools",
+    "Add graceful empty-state UX to Command Center cards",
     "Build client portal premium shell design",
     "Connect Stripe test-mode checkout",
     "Test Resend email sending",
     "Test Meta social posting",
     "Connect Alpha to live research data",
     "Build NotebookLM import parser",
-    "Enable Telegram connection in next prompt"
+    "Connect Telegram (CONTROLLED_NOTIFY mode)",
+    "Build Telegram bridge locally (mock-first)"
   ],
-  "prompt_2_reports_generated": 45,
+  "prompt_2_reports_generated": 55,
   "prompt_2_source_files_created": 8,
-  "prompt_2_milestone_commits": "pending"
+  "prompt_2_milestone_commits": "0348176 — pushed",
+  "closeout_reports_generated": 9
 }
