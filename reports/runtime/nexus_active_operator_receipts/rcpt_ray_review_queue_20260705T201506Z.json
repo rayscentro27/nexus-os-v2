@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_ray_review_queue_20260705T201506Z",
+  "process_id": "ray_review_queue",
+  "timestamp": "2026-07-05T20:15:06.118566+00:00",
+  "status": "completed",
+  "details": {
+    "process_id": "ray_review_queue",
+    "mode": "ACTIVE_INTERNAL",
+    "risk_level": "low",
+    "report_path": "reports/runtime/ray_review_queue_latest.json",
+    "simulated": true,
+    "note": "Active internal run \u2014 receipt written"
+  },
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

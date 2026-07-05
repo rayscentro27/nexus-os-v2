@@ -1,0 +1,243 @@
+# Nexus Active Operator Runner Report
+
+**Generated**: 2026-07-05T20:15:06.115362+00:00
+**Mode**: ACTIVE
+**Telegram Triggered**: False
+**Processes Run**: 17
+**Receipts Written**: 17
+
+---
+
+## Results
+
+| Process | Status |
+|---------|--------|
+| daily_monitor | completed |
+| system_health | completed |
+| supabase_verification | completed |
+| command_center_health | completed |
+| client_portal_status | completed |
+| ray_review_queue | completed |
+| hermes_router | completed |
+| alpha_intake | completed |
+| research_intelligence | completed |
+| creative_quality_loop | completed |
+| work_orders | completed |
+| recovery | completed |
+| telegram_operator | skipped |
+| notebooklm_import_status | completed |
+| repo_intelligence | completed |
+| marketing_content_pipeline | completed |
+| credit_business_funding_readiness | completed |
+
+---
+
+## Heartbeat
+
+{
+  "generated_at": "2026-07-05T20:15:06.115362+00:00",
+  "runner_status": "completed",
+  "processes_run": 17,
+  "receipts_written": 17,
+  "telegram_triggered": false,
+  "dry_run": false,
+  "results": [
+    {
+      "process_id": "daily_monitor",
+      "status": "completed",
+      "details": {
+        "process_id": "daily_monitor",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/runtime/nexus_daily_monitor_latest.md",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "system_health",
+      "status": "completed",
+      "details": {
+        "process_id": "system_health",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/runtime/nexus_system_health_latest.json",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "supabase_verification",
+      "status": "completed",
+      "details": {
+        "process_id": "supabase_verification",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/supabase/nexus_supabase_browser_verification_latest.md",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "command_center_health",
+      "status": "completed",
+      "details": {
+        "process_id": "command_center_health",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/runtime/nexus_command_center_active_ux_report.md",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "client_portal_status",
+      "status": "completed",
+      "details": {
+        "process_id": "client_portal_status",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/client_portal/nexus_client_portal_premium_shell_report.md",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "ray_review_queue",
+      "status": "completed",
+      "details": {
+        "process_id": "ray_review_queue",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/runtime/ray_review_queue_latest.json",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "hermes_router",
+      "status": "completed",
+      "details": {
+        "process_id": "hermes_router",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/telegram/receipts/hermes/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "alpha_intake",
+      "status": "completed",
+      "details": {
+        "process_id": "alpha_intake",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/telegram/receipts/alpha/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "research_intelligence",
+      "status": "completed",
+      "details": {
+        "process_id": "research_intelligence",
+        "mode": "DRY_RUN",
+        "risk_level": "low",
+        "report_path": "reports/research/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "creative_quality_loop",
+      "status": "completed",
+      "details": {
+        "process_id": "creative_quality_loop",
+        "mode": "DRY_RUN",
+        "risk_level": "low",
+        "report_path": "reports/creative/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "work_orders",
+      "status": "completed",
+      "details": {
+        "process_id": "work_orders",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/work_orders/nexus_internal_work_orders_latest.json",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "recovery",
+      "status": "completed",
+      "details": {
+        "process_id": "recovery",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/runtime/nexus_recovery_check_latest.md",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "telegram_operator",
+      "status": "skipped",
+      "details": "Process telegram_operator mode TELEGRAM_OPERATOR not in safe run modes"
+    },
+    {
+      "process_id": "notebooklm_import_status",
+      "status": "completed",
+      "details": {
+        "process_id": "notebooklm_import_status",
+        "mode": "DRY_RUN",
+        "risk_level": "low",
+        "report_path": "reports/research/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "repo_intelligence",
+      "status": "completed",
+      "details": {
+        "process_id": "repo_intelligence",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/research/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "marketing_content_pipeline",
+      "status": "completed",
+      "details": {
+        "process_id": "marketing_content_pipeline",
+        "mode": "DRY_RUN",
+        "risk_level": "low",
+        "report_path": "reports/marketing/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    },
+    {
+      "process_id": "credit_business_funding_readiness",
+      "status": "completed",
+      "details": {
+        "process_id": "credit_business_funding_readiness",
+        "mode": "ACTIVE_INTERNAL",
+        "risk_level": "low",
+        "report_path": "reports/client_portal/",
+        "simulated": true,
+        "note": "Active internal run \u2014 receipt written"
+      }
+    }
+  ]
+}

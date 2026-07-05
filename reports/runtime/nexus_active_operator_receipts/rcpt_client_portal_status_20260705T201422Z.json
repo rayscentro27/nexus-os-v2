@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_client_portal_status_20260705T201422Z",
+  "process_id": "client_portal_status",
+  "timestamp": "2026-07-05T20:14:22.400687+00:00",
+  "status": "dry_run",
+  "details": "Would run client_portal_status in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

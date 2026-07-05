@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_notebooklm_import_status_20260705T201422Z",
+  "process_id": "notebooklm_import_status",
+  "timestamp": "2026-07-05T20:14:22.405068+00:00",
+  "status": "dry_run",
+  "details": "Would run notebooklm_import_status in DRY_RUN mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

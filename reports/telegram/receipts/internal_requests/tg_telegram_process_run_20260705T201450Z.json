@@ -1,0 +1,9 @@
+{
+  "type": "telegram_process_run",
+  "process_id": "recovery",
+  "mode": "ACTIVE_INTERNAL",
+  "status": "triggered",
+  "receipt_id": "tg_telegram_process_run_20260705T201450Z",
+  "timestamp": "2026-07-05T20:14:50.625522+00:00",
+  "source": "telegram_bridge"
+}

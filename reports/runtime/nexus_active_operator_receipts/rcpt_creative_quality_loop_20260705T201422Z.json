@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_creative_quality_loop_20260705T201422Z",
+  "process_id": "creative_quality_loop",
+  "timestamp": "2026-07-05T20:14:22.403022+00:00",
+  "status": "dry_run",
+  "details": "Would run creative_quality_loop in DRY_RUN mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

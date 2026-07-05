@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_telegram_operator_20260705T201422Z",
+  "process_id": "telegram_operator",
+  "timestamp": "2026-07-05T20:14:22.404630+00:00",
+  "status": "skipped",
+  "details": "Process telegram_operator mode TELEGRAM_OPERATOR not in safe run modes",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

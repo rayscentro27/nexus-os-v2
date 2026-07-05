@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_command_center_health_20260705T201422Z",
+  "process_id": "command_center_health",
+  "timestamp": "2026-07-05T20:14:22.400151+00:00",
+  "status": "dry_run",
+  "details": "Would run command_center_health in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

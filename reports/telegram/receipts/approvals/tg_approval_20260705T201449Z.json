@@ -1,0 +1,11 @@
+{
+  "type": "approval",
+  "decision": "revision_requested",
+  "item_id": "TEST-003",
+  "feedback": "needs avatar and stronger CTA",
+  "allowed_next_step": "revision",
+  "blocked_next_step": null,
+  "receipt_id": "tg_approval_20260705T201449Z",
+  "timestamp": "2026-07-05T20:14:49.488338+00:00",
+  "source": "telegram_bridge"
+}

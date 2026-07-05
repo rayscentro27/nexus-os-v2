@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_credit_business_funding_readiness_20260705T201506Z",
+  "process_id": "credit_business_funding_readiness",
+  "timestamp": "2026-07-05T20:15:06.124288+00:00",
+  "status": "completed",
+  "details": {
+    "process_id": "credit_business_funding_readiness",
+    "mode": "ACTIVE_INTERNAL",
+    "risk_level": "low",
+    "report_path": "reports/client_portal/",
+    "simulated": true,
+    "note": "Active internal run \u2014 receipt written"
+  },
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

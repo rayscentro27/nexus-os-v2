@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_work_orders_20260705T201422Z",
+  "process_id": "work_orders",
+  "timestamp": "2026-07-05T20:14:22.403622+00:00",
+  "status": "dry_run",
+  "details": "Would run work_orders in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

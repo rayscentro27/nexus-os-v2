@@ -1,0 +1,26 @@
+{
+  "generated_at": "2026-07-05T00:00:00Z",
+  "blocked_actions": [
+    "send_customer_email",
+    "post_to_social_media",
+    "place_trade",
+    "charge_customer",
+    "submit_credit_dispute",
+    "submit_grant_application",
+    "export_sensitive_client_data",
+    "modify_production_database",
+    "restart_production_services",
+    "send_sms",
+    "make_phone_calls",
+    "submit_legal_documents"
+  ],
+  "guard_rules": {
+    "send_customer_email": {"required_runner": "approved_email_runner", "required_approval": "email_compliance_approval", "required_receipt": "email_send_receipt"},
+    "post_to_social_media": {"required_runner": "approved_publish_runner", "required_approval": "social_publish_approval", "required_receipt": "social_publish_receipt"},
+    "place_trade": {"required_runner": "approved_trading_runner", "required_approval": "trading_approval", "required_receipt": "trade_receipt"},
+    "charge_customer": {"required_runner": "stripe_live_runner", "required_approval": "billing_approval", "required_receipt": "charge_receipt"},
+    "submit_credit_dispute": {"required_runner": "compliance_runner", "required_approval": "legal_compliance_approval", "required_receipt": "dispute_receipt"},
+    "submit_grant_application": {"required_runner": "compliance_runner", "required_approval": "grant_compliance_approval", "required_receipt": "grant_receipt"},
+    "export_sensitive_client_data": {"required_runner": "data_export_runner", "required_approval": "data_privacy_approval", "required_receipt": "export_receipt"}
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_repo_intelligence_20260705T201422Z",
+  "process_id": "repo_intelligence",
+  "timestamp": "2026-07-05T20:14:22.405467+00:00",
+  "status": "dry_run",
+  "details": "Would run repo_intelligence in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

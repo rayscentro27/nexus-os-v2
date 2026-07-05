@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_system_health_20260705T201422Z",
+  "process_id": "system_health",
+  "timestamp": "2026-07-05T20:14:22.399001+00:00",
+  "status": "dry_run",
+  "details": "Would run system_health in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

@@ -1,124 +1,51 @@
 {
-  "generated_at": "2026-07-05T19:30:00Z",
-  "closeout_completed": true,
-  "report_stats": {
-    "total": 1697,
-    "categories": {
-      "runtime": 764,
-      "manual_publish": 492,
-      "nexus_research": 58,
-      "hermes_alpha": 42,
-      "alpha": 40,
-      "hermes_brain": 28,
-      "marketing_assets": 24,
-      "nexus_readiness": 17,
-      "client_portal": 12,
-      "operations": 30,
-      "activation": 19,
-      "research": 10,
-      "supabase": 6,
-      "hermes": 6,
-      "telegram": 4,
-      "creative": 3,
-      "trading": 3,
-      "auth": 3,
-      "app_department": 2,
-      "deployment": 2,
-      "goclear_activation": 4,
-      "marketing": 4,
-      "social": 1,
-      "seo": 1,
-      "content": 1,
-      "email": 1,
-      "billing": 1
-    }
+  "generated_at": "2026-07-05T20:14:39.994423+00:00",
+  "process_registry": {
+    "total": 19,
+    "enabled": 17,
+    "telegram_allowed": 17,
+    "blocked": 1
   },
-  "process_summary": {
-    "total": 20,
-    "by_mode": {
-      "APPROVED_LIVE": 1,
-      "SANDBOX_TEST": 5,
-      "DRY_RUN": 9,
-      "OBSERVE": 5
-    },
-    "by_status": {}
+  "runner_heartbeat": {
+    "exists": true,
+    "last_run": "2026-07-05T20:14:22.396769+00:00",
+    "processes_run": 17
   },
-  "health_summary": {
-    "overall": "degraded",
-    "checks": 18,
-    "healthy": 8,
-    "degraded": 4,
-    "not_configured": 6,
-    "down": 0,
-    "unknown": 0
+  "reports_freshness": {
+    "fresh_count": 5,
+    "stale_count": 0,
+    "stale": []
   },
-  "recovery_summary": {
-    "count": 0,
-    "items": []
+  "blocked_actions": {
+    "status": "active",
+    "blocked": [
+      "send_customer_email",
+      "post_to_social_media",
+      "place_trade",
+      "charge_customer",
+      "submit_credit_dispute",
+      "submit_grant_application",
+      "export_sensitive_client_data",
+      "modify_production_database",
+      "restart_production_services",
+      "send_sms",
+      "make_phone_calls",
+      "submit_legal_documents"
+    ]
   },
-  "supabase_status": {
-    "status": "ENV_PRESENT_BROWSER_EXPECTED",
-    "classification": "All 4 env keys present. Python SSL blocks verification. Browser expected working. Live table status unverified.",
-    "tables_found": 0,
-    "tables_checked": 14,
-    "env_keys_present": true,
-    "python_ssl_blocked": true,
-    "browser_expected_working": true
+  "supabase": {
+    "env_keys": "present_in_dotenv",
+    "browser_verification": "unverified",
+    "classification": "ENV_PRESENT_BROWSER_EXPECTED"
   },
-  "build_status": {
-    "typescript": "PASS",
-    "vite": "PASS",
-    "modules": 1767,
-    "overall": "PASS"
-  },
-  "test_status": {
-    "passing": 1196,
-    "total": 1197,
-    "overall": "degraded"
-  },
-  "prompt_2_commit": {
-    "hash": "0348176",
-    "pushed": true,
-    "message": "activate Nexus operating engine dashboard client portal and work router"
-  },
-  "command_center_status": {
-    "cards_total": 13,
-    "using_real_supabase_queries": 7,
-    "using_local_config_data": 6,
-    "still_mock": 0,
-    "note": "No cards show fake/mock data. Supabase-dependent cards show empty states when unavailable."
-  },
-  "client_portal_status": {
-    "pages_exist": 3,
-    "data_adapter_built": true,
-    "using_synthetic": true,
-    "premium_shell": false,
-    "no_scroll_desktop": false
-  },
-  "hermes_status": {
-    "intent_patterns": 23,
-    "work_order_model": true,
-    "testable": true,
-    "score": 48
-  },
-  "alpha_status": {
-    "intake_types": 13,
-    "scoring_engine": true,
-    "testable": true,
-    "score": 44
-  },
-  "telegram_status": {
-    "go_no_go": "GO_CONTROLLED_NOTIFY",
-    "starting_mode": "CONTROLLED_NOTIFY",
-    "audit_complete": true,
-    "next_prompt_ready": true,
-    "live_connection": false
+  "build": {
+    "status": "previously_passing"
   },
   "next_actions": [
-    "Verify Supabase live via browser DevTools Network tab",
-    "Add graceful empty-state UX to Command Center cards",
+    "Verify Supabase via browser DevTools",
+    "Start Telegram bridge",
+    "Run active operator runner",
     "Build client portal premium shell",
-    "Connect Stripe test-mode checkout",
-    "Connect Telegram (mock-first, then live)"
+    "Connect Stripe test-mode"
   ]
 }

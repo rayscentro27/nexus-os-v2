@@ -1,0 +1,9 @@
+{
+  "type": "internal_request",
+  "request": "send customer emails",
+  "route": "hermes",
+  "work_order_id": "wo_20260705T201449",
+  "receipt_id": "tg_internal_request_20260705T201449Z",
+  "timestamp": "2026-07-05T20:14:49.900768+00:00",
+  "source": "telegram_bridge"
+}

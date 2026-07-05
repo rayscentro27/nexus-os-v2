@@ -1,0 +1,47 @@
+[
+  {
+    "work_order_id": "wo_20260705T201449",
+    "title": "create a funding readiness checklist for testers",
+    "route": "client_portal",
+    "mode": "ACTIVE_INTERNAL",
+    "source": "telegram",
+    "created_at": "2026-07-05T20:14:49.623096+00:00",
+    "status": "created"
+  },
+  {
+    "work_order_id": "wo_20260705T201449",
+    "title": "Hermes: what should Nexus prioritize today",
+    "route": "hermes_general",
+    "mode": "ACTIVE_INTERNAL",
+    "source": "telegram_hermes",
+    "created_at": "2026-07-05T20:14:49.762818+00:00",
+    "status": "created"
+  },
+  {
+    "work_order_id": "wo_20260705T201449",
+    "title": "send customer emails",
+    "route": "hermes",
+    "mode": "ACTIVE_INTERNAL",
+    "source": "telegram",
+    "created_at": "2026-07-05T20:14:49.838581+00:00",
+    "status": "created"
+  },
+  {
+    "work_order_id": "wo_20260705T201449",
+    "title": "Alpha: research open source client portal patterns",
+    "route": "alpha_intake",
+    "mode": "ACTIVE_INTERNAL",
+    "source": "telegram_alpha",
+    "created_at": "2026-07-05T20:14:49.906355+00:00",
+    "status": "created"
+  },
+  {
+    "work_order_id": "wo_20260705T201450",
+    "title": "submit credit dispute",
+    "route": "client_portal",
+    "mode": "ACTIVE_INTERNAL",
+    "source": "telegram",
+    "created_at": "2026-07-05T20:14:50.458700+00:00",
+    "status": "created"
+  }
+]

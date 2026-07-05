@@ -1,0 +1,9 @@
+{
+  "type": "internal_request",
+  "request": "submit credit dispute",
+  "route": "client_portal",
+  "work_order_id": "wo_20260705T201450",
+  "receipt_id": "tg_internal_request_20260705T201450Z",
+  "timestamp": "2026-07-05T20:14:50.459468+00:00",
+  "source": "telegram_bridge"
+}

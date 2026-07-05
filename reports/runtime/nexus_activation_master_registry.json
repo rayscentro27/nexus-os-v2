@@ -1,173 +1,149 @@
 {
-  "generated_at": "2026-07-05T19:30:00Z",
-  "closeout_completed_at": "2026-07-05T19:30:00Z",
-  "starting_commit": "95b549b",
-  "prompt_2_commit": "0348176",
+  "generated_at": "2026-07-05T20:15:00Z",
+  "active_operating_mode": "PARTIAL_ACTIVE",
+  "active_score": 76,
+  "starting_commit": "3535590",
   "branch": "main",
-  "prompt_2_completion_score": 72,
-  "closeout_completion_score": 72,
-  "current_supabase_project_status": {
-    "env_vars_present": true,
-    "url_set": true,
-    "anon_key_set": true,
-    "service_role_key_set": true,
-    "total_tables_defined": 77,
-    "migrations_defined": 14,
-    "rls_enabled": true,
-    "live_status": "ENV_PRESENT_BROWSER_EXPECTED",
-    "browser_connectivity": "expected_working",
-    "python_connectivity": "ssl_certificate_issue",
-    "needs_migration_push": true,
-    "classification": "ENV_PRESENT_BROWSER_EXPECTED — Python SSL blocked, browser expected working, live table status unverified"
+  "active_process_registry": {
+    "total": 19,
+    "enabled": 17,
+    "validated": true,
+    "validation_report": "reports/runtime/nexus_process_registry_validation_latest.md"
   },
-  "activated_capabilities": [
-    {"id": "got_funding_landing", "score": 85, "mode": "APPROVED_LIVE"},
-    {"id": "supabase_verification", "score": 60, "mode": "SANDBOX_TEST"},
-    {"id": "system_health_adapter", "score": 50, "mode": "OBSERVE"},
-    {"id": "process_registry", "score": 70, "mode": "OBSERVE"},
-    {"id": "process_receipts", "score": 65, "mode": "OBSERVE"},
-    {"id": "ray_review_foundation", "score": 55, "mode": "OBSERVE"},
-    {"id": "command_center_live", "score": 50, "mode": "OBSERVE"},
-    {"id": "client_portal_data_adapter", "score": 40, "mode": "OBSERVE"},
-    {"id": "hermes_work_router", "score": 60, "mode": "SANDBOX_TEST"},
-    {"id": "alpha_decision_packets", "score": 55, "mode": "DRY_RUN"},
-    {"id": "alpha_research_intake", "score": 45, "mode": "DRY_RUN"},
-    {"id": "youtube_researcher", "score": 55, "mode": "DRY_RUN"},
-    {"id": "notebooklm_importer", "score": 40, "mode": "OBSERVE"},
-    {"id": "creative_engine", "score": 45, "mode": "DRY_RUN"},
-    {"id": "daily_monitor", "score": 60, "mode": "DRY_RUN"},
-    {"id": "email_sandbox", "score": 40, "mode": "DRY_RUN"},
-    {"id": "social_draft", "score": 35, "mode": "DRY_RUN"},
-    {"id": "billing_sandbox", "score": 30, "mode": "SANDBOX_TEST"},
-    {"id": "trading_lab", "score": 40, "mode": "SANDBOX_TEST"},
-    {"id": "app_department", "score": 30, "mode": "DRY_RUN"},
-    {"id": "telegram_readiness", "score": 45, "mode": "OBSERVE"}
-  ],
-  "blocked_capabilities": [
-    {"id": "credit_report_upload", "reason": "not_built"},
-    {"id": "credit_plan_generation", "reason": "not_built"},
-    {"id": "referral_tracking", "reason": "not_built"},
-    {"id": "tiktok_posting", "reason": "not_built"},
-    {"id": "github_repo_review", "reason": "not_built"}
-  ],
-  "activation_modes": {
-    "APPROVED_LIVE": 1,
-    "SANDBOX_TEST": 5,
-    "DRY_RUN": 9,
-    "OBSERVE": 7
+  "active_runner": {
+    "exists": true,
+    "script": "scripts/operations/nexus_active_operator_runner.py",
+    "last_run": "2026-07-05T20:15:06Z",
+    "processes_run": 17,
+    "receipts_written": 17,
+    "heartbeat": "reports/runtime/nexus_active_operator_heartbeat_latest.json"
   },
-  "process_receipts": {
-    "total_registered": 20,
-    "with_receipts": 10,
-    "pending": 10
+  "daily_monitor": {
+    "exists": true,
+    "script": "scripts/operations/nexus_daily_monitor.py",
+    "last_run": "2026-07-05T20:14:39Z",
+    "report": "reports/runtime/nexus_daily_monitor_latest.md"
   },
-  "dashboard_cards": {
-    "total": 13,
-    "using_real_supabase_queries": 7,
-    "using_local_config_data": 6,
-    "still_mock": 0,
-    "note": "No cards show fake/mock data as live. Supabase-dependent cards show empty states when unavailable."
+  "recovery": {
+    "exists": true,
+    "script": "scripts/operations/nexus_recovery_check.py",
+    "last_run": "2026-07-05T20:14:39Z",
+    "report": "reports/runtime/nexus_recovery_check_latest.md"
   },
-  "client_portal_routes": {
-    "total": 9,
-    "with_data_adapter": 9,
-    "using_live_supabase": 0,
-    "using_synthetic": 9
-  },
-  "paywall_access_model": {
-    "access_types_defined": 8,
-    "stripe_test_mode_ready": false,
-    "invite_bypass_designed": true,
-    "subscription_value_researched": true
-  },
-  "work_router": {
-    "intent_patterns": 23,
-    "departments": 23,
-    "work_order_model": true,
-    "testable": true
-  },
-  "recovery_system": {
-    "recovery_receipt_model": true,
-    "interrupted_work_detection": "designed",
-    "recovery_prompt_generator": "designed",
-    "next_best_tool_recommendation": "designed"
-  },
-  "alpha_decision_packets": {
-    "model_defined": true,
-    "intake_types": 13,
-    "scoring_engine": true,
-    "testable": true
-  },
-  "repo_intelligence": {
-    "categories": 15,
-    "repos_analyzed": 22,
-    "pattern_library": true,
-    "payment_conclusion": "Stripe MVP, Hyperswitch study, Kill Bill study"
-  },
-  "creative_engine": {
-    "workflow_defined": true,
-    "quality_score_model": true,
-    "got_funding_package": true,
-    "ray_review_feedback": true
-  },
-  "research_pipeline": {
-    "youtube_scoring_thresholds": true,
-    "notebooklm_import_parser": "designed",
-    "decision_packet_routing": true
-  },
-  "self_monitoring": {
-    "daily_monitor_script": true,
-    "output_format": "markdown_json",
-    "scheduler_proposal": "manual_command",
-    "safe_mode": true
-  },
-  "telegram_readiness": {
-    "audit_complete": true,
-    "connection_plan": true,
-    "next_prompt_ready": true,
+  "telegram_mobile_operator": {
+    "bridge_exists": true,
+    "bridge_script": "scripts/telegram/nexus_telegram_bridge.py",
+    "approval_handler": "scripts/telegram/nexus_telegram_approval_handler.py",
+    "internal_request_handler": "scripts/telegram/nexus_telegram_internal_request_handler.py",
+    "env_classification": "TELEGRAM_ENV_MISSING_OPERATOR_READY",
     "live_connection": false,
-    "go_no_go": "GO_CONTROLLED_NOTIFY",
-    "starting_mode": "CONTROLLED_NOTIFY — read-only status, notifications, Hermes routing, Alpha scoring"
+    "mock_bridge_tested": true,
+    "commands_working": 19,
+    "blocked_actions_guarded": 12,
+    "receipts_dir": "reports/telegram/receipts/",
+    "test_report": "reports/telegram/nexus_telegram_mobile_operator_test_report.md"
   },
-  "build_status": {
-    "typescript": "PASS",
-    "vite": "PASS",
-    "modules_transformed": 1767,
-    "build_time_seconds": 10.35,
-    "warnings": "chunk size (non-blocking)",
-    "overall": "PASS"
+  "telegram_approval": {
+    "handler_exists": true,
+    "receipts_dir": "reports/telegram/receipts/approvals/",
+    "tested": true
   },
-  "test_status": {
-    "passing": 1196,
-    "total": 1197,
-    "pre_existing_failure": "hermes_alpha_no_supabase_guard.test.ts",
-    "overall": "degraded"
+  "telegram_internal_requests": {
+    "handler_exists": true,
+    "receipts_dir": "reports/telegram/receipts/internal_requests/",
+    "work_orders_path": "reports/work_orders/nexus_internal_work_orders_latest.json",
+    "tested": true
   },
-  "closeout_reports": [
-    "reports/runtime/nexus_prompt_2_completion_preflight.md",
-    "reports/runtime/nexus_prompt_2_test_and_build_report.md",
-    "reports/supabase/nexus_prompt_2_supabase_closeout_status.md",
-    "reports/runtime/nexus_prompt_2_daily_monitor_closeout.md",
-    "reports/runtime/nexus_prompt_2_dashboard_health_closeout.md",
-    "reports/client_portal/client_portal_prompt_2_closeout.md",
-    "reports/runtime/nexus_prompt_2_brain_router_closeout.md",
-    "reports/telegram/nexus_telegram_go_no_go.md",
-    "reports/runtime/nexus_prompt_2_completion_summary.md"
+  "hermes_telegram_route": {
+    "exists": true,
+    "receipts_dir": "reports/telegram/receipts/hermes/",
+    "tested": true
+  },
+  "alpha_telegram_route": {
+    "exists": true,
+    "receipts_dir": "reports/telegram/receipts/alpha/",
+    "tested": true
+  },
+  "safe_run_command": {
+    "tested": true,
+    "safe_processes": 17,
+    "blocked_processes": 2
+  },
+  "supabase_verification": {
+    "classification": "ENV_PRESENT_BROWSER_EXPECTED",
+    "env_keys_present": true,
+    "browser_verification": "unverified",
+    "report": "reports/supabase/nexus_supabase_browser_verification_latest.md"
+  },
+  "command_center_ux": {
+    "status": "active",
+    "real_queries": true,
+    "honest_empty_states": true,
+    "report": "reports/runtime/nexus_command_center_active_ux_report.md"
+  },
+  "client_portal_premium_shell": {
+    "status": "partial",
+    "data_adapter": true,
+    "premium_shell": false,
+    "report": "reports/client_portal/nexus_client_portal_premium_shell_report.md"
+  },
+  "stripe_test_paywall": {
+    "classification": "STRIPE_TEST_MODE_ENV_MISSING_READY",
+    "env_present": false,
+    "code_exists": false,
+    "report": "reports/payments/nexus_stripe_test_mode_paywall_report.md"
+  },
+  "blocked_action_guard": {
+    "active": true,
+    "blocked_actions": 12,
+    "guard_script": "scripts/operations/nexus_blocked_action_guard.py",
+    "guard_data": "data/operations/nexus_blocked_action_guard.json",
+    "report": "reports/runtime/nexus_blocked_action_guard_latest.md"
+  },
+  "active_operating_system_score": {
+    "score": 76,
+    "classification": "PARTIAL_ACTIVE",
+    "target_score": 88,
+    "scorecard": "reports/runtime/nexus_active_operating_system_scorecard.md",
+    "action_plan": "reports/runtime/nexus_not_good_enough_action_plan.md"
+  },
+  "reports_created": [
+    "reports/runtime/nexus_active_operator_sprint_preflight.md",
+    "reports/runtime/nexus_process_registry_validation_latest.md",
+    "reports/runtime/nexus_active_operator_heartbeat_latest.json",
+    "reports/runtime/nexus_active_operator_runner_latest.md",
+    "reports/runtime/nexus_daily_monitor_latest.md",
+    "reports/runtime/nexus_daily_monitor_latest.json",
+    "reports/runtime/nexus_recovery_check_latest.md",
+    "reports/runtime/nexus_recovery_work_orders_latest.json",
+    "reports/runtime/nexus_command_center_active_ux_report.md",
+    "reports/runtime/nexus_blocked_action_guard_latest.md",
+    "reports/runtime/nexus_active_operating_system_scorecard.md",
+    "reports/runtime/nexus_not_good_enough_action_plan.md",
+    "reports/supabase/nexus_supabase_browser_verification_latest.md",
+    "reports/client_portal/nexus_client_portal_premium_shell_report.md",
+    "reports/payments/nexus_stripe_test_mode_paywall_report.md",
+    "reports/telegram/nexus_telegram_mobile_operator_test_report.md",
+    "reports/telegram/nexus_telegram_approval_operator_report.md",
+    "docs/operations/nexus_active_operating_modes.md",
+    "docs/operations/nexus_active_operator_runner.md",
+    "docs/telegram/nexus_telegram_env_contract.md",
+    "docs/telegram/nexus_telegram_mobile_operator_contract.md",
+    "docs/telegram/nexus_telegram_command_contract.md",
+    "docs/payments/nexus_stripe_test_mode_contract.md"
   ],
-  "remaining_tasks": [
-    "Verify Supabase live connectivity via browser DevTools",
-    "Add graceful empty-state UX to Command Center cards",
-    "Build client portal premium shell design",
-    "Connect Stripe test-mode checkout",
-    "Test Resend email sending",
-    "Test Meta social posting",
-    "Connect Alpha to live research data",
-    "Build NotebookLM import parser",
-    "Connect Telegram (CONTROLLED_NOTIFY mode)",
-    "Build Telegram bridge locally (mock-first)"
+  "receipts_dirs": [
+    "reports/runtime/nexus_active_operator_receipts/",
+    "reports/telegram/receipts/approvals/",
+    "reports/telegram/receipts/internal_requests/",
+    "reports/telegram/receipts/hermes/",
+    "reports/telegram/receipts/alpha/"
   ],
-  "prompt_2_reports_generated": 55,
-  "prompt_2_source_files_created": 8,
-  "prompt_2_milestone_commits": "0348176 — pushed",
-  "closeout_reports_generated": 9
+  "remaining_blockers": [
+    "Telegram env vars (TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID)",
+    "Supabase browser verification",
+    "Client Portal premium shell",
+    "Stripe test-mode keys",
+    "NotebookLM import parser"
+  ]
 }

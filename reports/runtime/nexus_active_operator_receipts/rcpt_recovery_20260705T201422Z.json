@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_recovery_20260705T201422Z",
+  "process_id": "recovery",
+  "timestamp": "2026-07-05T20:14:22.404142+00:00",
+  "status": "dry_run",
+  "details": "Would run recovery in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

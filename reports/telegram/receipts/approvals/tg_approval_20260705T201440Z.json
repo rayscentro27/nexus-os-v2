@@ -1,0 +1,10 @@
+{
+  "type": "approval",
+  "decision": "approved",
+  "item_id": "TEST-001",
+  "allowed_next_step": "internal_safe_work",
+  "blocked_next_step": "external_action",
+  "receipt_id": "tg_approval_20260705T201440Z",
+  "timestamp": "2026-07-05T20:14:40.199835+00:00",
+  "source": "telegram_bridge"
+}

@@ -1,0 +1,10 @@
+{
+  "type": "hermes_request",
+  "message": "what should Nexus prioritize today",
+  "routed_to": "hermes_general",
+  "work_order_id": "wo_20260705T201449",
+  "mode": "ACTIVE_INTERNAL",
+  "receipt_id": "tg_hermes_request_20260705T201449Z",
+  "timestamp": "2026-07-05T20:14:49.763850+00:00",
+  "source": "telegram_bridge"
+}

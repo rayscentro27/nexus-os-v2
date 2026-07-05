@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_work_orders_20260705T201506Z",
+  "process_id": "work_orders",
+  "timestamp": "2026-07-05T20:15:06.121342+00:00",
+  "status": "completed",
+  "details": {
+    "process_id": "work_orders",
+    "mode": "ACTIVE_INTERNAL",
+    "risk_level": "low",
+    "report_path": "reports/work_orders/nexus_internal_work_orders_latest.json",
+    "simulated": true,
+    "note": "Active internal run \u2014 receipt written"
+  },
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

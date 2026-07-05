@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_hermes_router_20260705T201506Z",
+  "process_id": "hermes_router",
+  "timestamp": "2026-07-05T20:15:06.119062+00:00",
+  "status": "completed",
+  "details": {
+    "process_id": "hermes_router",
+    "mode": "ACTIVE_INTERNAL",
+    "risk_level": "low",
+    "report_path": "reports/telegram/receipts/hermes/",
+    "simulated": true,
+    "note": "Active internal run \u2014 receipt written"
+  },
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

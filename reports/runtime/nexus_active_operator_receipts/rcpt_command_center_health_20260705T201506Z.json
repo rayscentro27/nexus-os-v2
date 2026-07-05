@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_command_center_health_20260705T201506Z",
+  "process_id": "command_center_health",
+  "timestamp": "2026-07-05T20:15:06.117521+00:00",
+  "status": "completed",
+  "details": {
+    "process_id": "command_center_health",
+    "mode": "ACTIVE_INTERNAL",
+    "risk_level": "low",
+    "report_path": "reports/runtime/nexus_command_center_active_ux_report.md",
+    "simulated": true,
+    "note": "Active internal run \u2014 receipt written"
+  },
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

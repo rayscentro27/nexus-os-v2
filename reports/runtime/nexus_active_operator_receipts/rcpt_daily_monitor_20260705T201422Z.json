@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_daily_monitor_20260705T201422Z",
+  "process_id": "daily_monitor",
+  "timestamp": "2026-07-05T20:14:22.397614+00:00",
+  "status": "dry_run",
+  "details": "Would run daily_monitor in ACTIVE_INTERNAL mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

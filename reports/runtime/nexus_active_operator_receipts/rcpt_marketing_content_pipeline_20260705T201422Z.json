@@ -1,0 +1,9 @@
+{
+  "receipt_id": "rcpt_marketing_content_pipeline_20260705T201422Z",
+  "process_id": "marketing_content_pipeline",
+  "timestamp": "2026-07-05T20:14:22.405885+00:00",
+  "status": "dry_run",
+  "details": "Would run marketing_content_pipeline in DRY_RUN mode",
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}

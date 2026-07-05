@@ -1,0 +1,16 @@
+{
+  "receipt_id": "rcpt_marketing_content_pipeline_20260705T201506Z",
+  "process_id": "marketing_content_pipeline",
+  "timestamp": "2026-07-05T20:15:06.123785+00:00",
+  "status": "completed",
+  "details": {
+    "process_id": "marketing_content_pipeline",
+    "mode": "DRY_RUN",
+    "risk_level": "low",
+    "report_path": "reports/marketing/",
+    "simulated": true,
+    "note": "Active internal run \u2014 receipt written"
+  },
+  "telegram_triggered": false,
+  "source": "active_operator_runner"
+}
