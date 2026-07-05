@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import {
   BadgeCheck, Building2, CheckCircle2, CircleAlert, FileCheck2, FileText, Gauge,
   Landmark, LockKeyhole, Mail, SearchCheck, Settings, TrendingUp, Upload,
+  Star, MessageSquare, Lightbulb, CreditCard, ArrowUpCircle, Send,
 } from 'lucide-react'
 import { ClientGuidePanel } from '../../components/client/ClientGuidePanel'
 import {
@@ -25,7 +26,7 @@ export function ClientDashboard() {
   return <div className="client-page client-dashboard-page">
     <ClientPageHeader title="Dashboard" subtitle="Your approved credit, business, and funding-readiness snapshot." badge={badge} />
     <div className="client-metric-grid dashboard">
-      <ClientScoreCard title="Overall Readiness" value={71} status="Building momentum" text="Complete this month’s highest-impact tasks before requesting funding review." />
+      <ClientScoreCard title="Overall Readiness" value={71} status="Building momentum" text="Complete this month's highest-impact tasks before requesting funding review." />
       <ClientMetricCard icon={Gauge} label="Credit Repair" value={`${score.creditRepairProgress}%`} note="In progress" />
       <ClientMetricCard icon={BadgeCheck} label="Credit Profile" value={score.creditProfileReadiness} note="Nexus Readiness Score" tone="green" />
       <ClientMetricCard icon={Building2} label="Business Profile" value={score.businessProfileReadiness} note="Four gaps remain" tone="purple" />
@@ -42,29 +43,10 @@ export function ClientDashboard() {
   </div>
 }
 
-export function CreditRepairPage() {
-  const repair = data.creditRepair
-  return <div className="client-page">
-    <ClientPageHeader title="Credit Repair" subtitle="Track reviewed items, draft status, and your safe next actions." badge="No automatic disputes" />
-    <div className="client-metric-grid">
-      <ClientScoreCard title="Repair Progress" value={repair.progressPercent} label="%" status="In progress" text="GoClear is reviewing demo records and draft materials. No external contact has occurred." />
-      <ClientMetricCard icon={SearchCheck} label="Items Under Review" value={repair.negativeItemsUnderReview} note="Demo records" tone="purple" />
-      <ClientMetricCard icon={FileText} label="Draft Letters" value={repair.draftLettersReady} note="Not sent" />
-      <ClientMetricCard icon={CheckCircle2} label="GoClear Reviews" value={repair.goclearReviewsPending} note="Pending" tone="orange" />
-    </div>
-    <div className="client-workflow-strip">{repair.workflowStages.map(([name, status], index) => <article key={name}><span className={status === 'complete' ? 'done' : ''}>{status === 'complete' ? '✓' : index + 1}</span><strong>{name}</strong><small>{status.replaceAll('_', ' ')}</small></article>)}</div>
-    <div className="client-two-col">
-      <ClientSection title="Negative items under review" action="Demo only"><div className="client-record-list">{repair.negativeItems.map(item => <article key={item.id}><div><strong>{item.title}</strong><small>{item.summary}</small></div><ClientStatusBadge tone={item.status === 'draft_ready' ? 'purple' : 'orange'}>{item.status.replaceAll('_', ' ')}</ClientStatusBadge></article>)}</div></ClientSection>
-      <ClientSection title="Your next actions"><ClientActionList rows={repair.nextActions} /></ClientSection>
-    </div>
-    <ClientGuidePanel suggestedKeys={['what_do_i_do_next', 'what_goclear_is_reviewing', 'how_to_improve_credit']} />
-  </div>
-}
-
-export function CreditProfileReadinessPage() {
+export function CreditProfilePage() {
   const profile = data.creditProfileReadiness
   return <div className="client-page">
-    <ClientPageHeader title="Credit Profile Readiness" subtitle="Understand your educational Nexus Readiness Score and what may improve readiness." badge="Not FICO" />
+    <ClientPageHeader title="Credit Profile" subtitle="Understand your educational Nexus Readiness Score and what may improve readiness." badge="Not FICO" />
     <div className="client-metric-grid compact"><ClientScoreCard title="Nexus Readiness Score" value={profile.overallScore} status="Good progress" text={profile.scoreDisclaimer} /><ClientMetricCard icon={TrendingUp} label="Progress" value="+14" note="Demo six-month trend" tone="green" /><ClientMetricCard icon={CircleAlert} label="Attention Factors" value={profile.negativeFactors.length} note="Review safely" tone="orange" /></div>
     <ClientSection title="Score factors" action="Educational only"><ClientFactorGrid rows={profile.scoreFactors} /></ClientSection>
     <div className="client-three-col">
@@ -76,10 +58,47 @@ export function CreditProfileReadinessPage() {
   </div>
 }
 
-export function BusinessProfileReadinessPage() {
+export function CreditUtilizationPage() {
+  const profile = data.creditProfileReadiness
+  const utilizationFactor = profile.scoreFactors.find(f => f[0] === 'Utilization')
+  const utilizationScore = utilizationFactor ? utilizationFactor[1] : 58
+  return <div className="client-page">
+    <ClientPageHeader title="Credit Utilization" subtitle="Review your revolving credit utilization and create a pay-down plan." badge="Balance management" />
+    <div className="client-metric-grid compact">
+      <ClientScoreCard title="Utilization Score" value={utilizationScore} status={utilizationScore >= 70 ? 'On track' : 'Needs attention'} text="Lower utilization may improve your funding readiness. Pay down revolving balances where practical." />
+      <ClientMetricCard icon={CreditCard} label="Revolving Accounts" value="3" note="Demo accounts" />
+      <ClientMetricCard icon={ArrowUpCircle} label="Target" value="30%" note="Recommended max" tone="green" />
+    </div>
+    <div className="client-two-col">
+      <ClientSection title="Utilization breakdown">
+        <div className="client-bar-row"><span>Card A — Demo</span><div><i style={{ width: '45%' }} /></div><strong>45%</strong></div>
+        <div className="client-bar-row"><span>Card B — Demo</span><div><i style={{ width: '62%' }} /></div><strong>62%</strong></div>
+        <div className="client-bar-row"><span>Card C — Demo</span><div><i style={{ width: '28%' }} /></div><strong>28%</strong></div>
+        <p className="client-safe-note">Demo values only. Connect live credit monitoring for real utilization data.</p>
+      </ClientSection>
+      <ClientSection title="Recommended actions">
+        <ClientActionList rows={[
+          { title: 'Pay down Card B first (highest utilization)', status: 'recommended' },
+          { title: 'Keep Card C below 30%', status: 'on_track' },
+          { title: 'Avoid new revolving accounts', status: 'important' },
+          { title: 'Request credit limit increase (optional)', status: 'optional' },
+        ]} />
+      </ClientSection>
+    </div>
+    <ClientGuidePanel suggestedKeys={['how_to_improve_credit', 'what_do_i_do_next', 'can_i_apply_for_funding_now']} />
+  </div>
+}
+
+export function ClientDocumentsPage() {
+  const docs = data.documents
+  const sections = [['Required documents', docs.requiredDocuments, 'blue'], ['Uploaded', docs.uploadedDocuments, 'green'], ['Missing', docs.missingDocuments, 'orange'], ['Under GoClear review', docs.underReviewDocuments, 'purple']]
+  return <div className="client-page"><ClientPageHeader title="Documents" subtitle="Track demo readiness documents and GoClear review status." badge="Demo files only" /><div className="client-four-col documents">{sections.map(([title, rows, tone]) => <ClientSection title={title} key={title}>{rows.map(row => <article className="client-document-row" key={row}><FileText size={19} /><strong>{row}</strong><ClientStatusBadge tone={tone}>{title}</ClientStatusBadge></article>)}</ClientSection>)}</div><div className="client-upload-placeholder"><Upload size={28} /><strong>Upload is disabled in this prototype</strong><p>Production document upload requires private storage, consent, tenant isolation, and GoClear approval.</p></div><ClientGuidePanel suggestedKeys={['documents_needed', 'what_goclear_is_reviewing', 'what_do_i_do_next']} /></div>
+}
+
+export function BusinessSetupPage() {
   const business = data.businessProfileReadiness
   return <div className="client-page">
-    <ClientPageHeader title="Business Profile Readiness" subtitle="Build a consistent, documented business profile before funding review." badge="Profile builder" />
+    <ClientPageHeader title="Business Setup" subtitle="Build a consistent, documented business profile before funding review." badge="Profile builder" />
     <div className="client-metric-grid"><ClientScoreCard title="Business Readiness" value={business.readinessScore} status="Good start" text={business.fundingImpactNotes} /><ClientMetricCard icon={CheckCircle2} label="Completed" value={`${business.completedItems}/10`} note="Checklist items" tone="green" /><ClientMetricCard icon={CircleAlert} label="Missing / Weak" value={business.missingItems} note="Needs attention" tone="orange" /><ClientMetricCard icon={LockKeyhole} label="Funding Blockers" value={business.fundingBlockers} note="Resolve before review" tone="red" /></div>
     <div className="client-two-col wide-left">
       <ClientSection title="Fundability checklist"><div className="client-check-grid">{business.fundabilityChecklist.map(([name, status]) => <article key={name}><span className={status === 'complete' ? 'done' : ''}>{status === 'complete' ? '✓' : '!'}</span><strong>{name}</strong><ClientStatusBadge tone={status === 'complete' ? 'green' : status === 'missing' ? 'red' : 'orange'}>{status.replaceAll('_', ' ')}</ClientStatusBadge></article>)}</div></ClientSection>
@@ -89,13 +108,37 @@ export function BusinessProfileReadinessPage() {
   </div>
 }
 
-export function BusinessOpportunitiesPage() {
-  const opportunities = data.businessOpportunities
+export function BusinessBankabilityPage() {
+  const business = data.businessProfileReadiness
   return <div className="client-page">
-    <ClientPageHeader title="Business Opportunities" subtitle="Explore educational paths matched to your current demo readiness—not guaranteed offers." badge="Fit review required" />
-    <div className="client-metric-grid compact"><ClientScoreCard title="Opportunity Score" value={opportunities.opportunityScore} status="Strong potential" text="Improve readiness gaps before selecting a funding or partner path." /><ClientMetricCard icon={BadgeCheck} label="Matched Paths" value={opportunities.matchedOpportunities.length} note="Educational matches" tone="purple" /><ClientMetricCard icon={Landmark} label="Funding Paths" value={opportunities.fundingPaths.length} note="GoClear review required" /></div>
-    <div className="client-three-col"><ClientSection title="Matched opportunities"><ClientActionList rows={opportunities.matchedOpportunities} /></ClientSection><ClientSection title="Funding paths"><ClientActionList rows={opportunities.fundingPaths} /></ClientSection><ClientSection title="Partner/tool options"><ClientActionList rows={opportunities.partnerOffers} /><p className="client-safe-note">Best client outcome first. Affiliate value second. Free/DIY options remain visible.</p></ClientSection></div>
-    <ClientGuidePanel suggestedKeys={['what_opportunity_should_i_focus_on', 'can_i_apply_for_funding_now', 'what_do_i_do_next']} />
+    <ClientPageHeader title="Business Bankability" subtitle="Review banking readiness and revenue documentation for funding paths." badge="Banking readiness" />
+    <div className="client-metric-grid compact">
+      <ClientScoreCard title="Bankability Score" value={business.readinessScore} status="Building" text="Open a business bank account and document the banking relationship to improve readiness." />
+      <ClientMetricCard icon={Landmark} label="Bank Account" value="In progress" note="Business account needed" tone="orange" />
+      <ClientMetricCard icon={FileCheck2} label="Revenue Docs" value="Missing" note="Upload required" tone="red" />
+    </div>
+    <div className="client-two-col">
+      <ClientSection title="Banking checklist">
+        <div className="client-check-grid">
+          {[
+            ['Business bank account', 'in_progress'],
+            ['Bank relationship documented', 'missing'],
+            ['3 months bank statements', 'complete'],
+            ['Revenue summary', 'missing'],
+            ['Online banking access', 'in_progress'],
+          ].map(([name, status]) => <article key={name}><span className={status === 'complete' ? 'done' : ''}>{status === 'complete' ? '✓' : '!'}</span><strong>{name}</strong><ClientStatusBadge tone={status === 'complete' ? 'green' : status === 'missing' ? 'red' : 'orange'}>{status.replaceAll('_', ' ')}</ClientStatusBadge></article>)}
+        </div>
+      </ClientSection>
+      <ClientSection title="Recommended banks">
+        <ClientActionList rows={[
+          { title: 'Online business bank (Bluevine, Mercury, Relay)', status: 'recommended' },
+          { title: 'Credit union business account', status: 'alternative' },
+          { title: 'Community bank relationship', status: 'alternative' },
+        ]} />
+        <p className="client-safe-note">Bank recommendations are educational. No account has been opened.</p>
+      </ClientSection>
+    </div>
+    <ClientGuidePanel suggestedKeys={['business_profile_next_step', 'documents_needed', 'what_do_i_do_next']} />
   </div>
 }
 
@@ -111,10 +154,90 @@ export function FundingReadinessPage() {
   </div>
 }
 
-export function ClientDocumentsPage() {
-  const docs = data.documents
-  const sections = [['Required documents', docs.requiredDocuments, 'blue'], ['Uploaded', docs.uploadedDocuments, 'green'], ['Missing', docs.missingDocuments, 'orange'], ['Under GoClear review', docs.underReviewDocuments, 'purple']]
-  return <div className="client-page"><ClientPageHeader title="Documents" subtitle="Track demo readiness documents and GoClear review status." badge="Demo files only" /><div className="client-four-col documents">{sections.map(([title, rows, tone]) => <ClientSection title={title} key={title}>{rows.map(row => <article className="client-document-row" key={row}><FileText size={19} /><strong>{row}</strong><ClientStatusBadge tone={tone}>{title}</ClientStatusBadge></article>)}</ClientSection>)}</div><div className="client-upload-placeholder"><Upload size={28} /><strong>Upload is disabled in this prototype</strong><p>Production document upload requires private storage, consent, tenant isolation, and GoClear approval.</p></div><ClientGuidePanel suggestedKeys={['documents_needed', 'what_goclear_is_reviewing', 'what_do_i_do_next']} /></div>
+export function RecommendationsPage() {
+  const opportunities = data.businessOpportunities
+  return <div className="client-page">
+    <ClientPageHeader title="Recommendations" subtitle="Explore educational paths matched to your current demo readiness — not guaranteed offers." badge="Fit review required" />
+    <div className="client-metric-grid compact"><ClientScoreCard title="Opportunity Score" value={opportunities.opportunityScore} status="Strong potential" text="Improve readiness gaps before selecting a funding or partner path." /><ClientMetricCard icon={BadgeCheck} label="Matched Paths" value={opportunities.matchedOpportunities.length} note="Educational matches" tone="purple" /><ClientMetricCard icon={Landmark} label="Funding Paths" value={opportunities.fundingPaths.length} note="GoClear review required" /></div>
+    <div className="client-three-col"><ClientSection title="Matched opportunities"><ClientActionList rows={opportunities.matchedOpportunities} /></ClientSection><ClientSection title="Funding paths"><ClientActionList rows={opportunities.fundingPaths} /></ClientSection><ClientSection title="Partner/tool options"><ClientActionList rows={opportunities.partnerOffers} /><p className="client-safe-note">Best client outcome first. Affiliate value second. Free/DIY options remain visible.</p></ClientSection></div>
+    <ClientGuidePanel suggestedKeys={['what_opportunity_should_i_focus_on', 'can_i_apply_for_funding_now', 'what_do_i_do_next']} />
+  </div>
+}
+
+export function ResourcesPage() {
+  return <div className="client-page">
+    <ClientPageHeader title="Resources & Affiliates" subtitle="Tools, services, and options to support your credit and business readiness." badge="Transparency" />
+    <div className="client-three-col">
+      <ClientSection title="Credit Monitoring">
+        <ClientActionList rows={[
+          { title: 'SmartCredit — credit monitoring', status: 'paid option' },
+          { title: 'AnnualCreditReport.com — free reports', status: 'free' },
+          { title: 'Credit Karma — free monitoring', status: 'free' },
+        ]} />
+        <p className="client-safe-note">Free options are listed. Affiliate relationships are disclosed.</p>
+      </ClientSection>
+      <ClientSection title="Mailing Options">
+        <ClientActionList rows={[
+          { title: 'Online mailing (dispute letters)', status: 'digital' },
+          { title: 'Print and physical mail', status: 'physical' },
+          { title: 'Certified mail (recommended for disputes)', status: 'recommended' },
+        ]} />
+        <p className="client-safe-note">Physical mailing requires GoClear approval and compliance review.</p>
+      </ClientSection>
+      <ClientSection title="Business Banking">
+        <ClientActionList rows={[
+          { title: 'Bluevine — online business checking', status: 'recommended' },
+          { title: 'Mercury — startup banking', status: 'option' },
+          { title: 'Relay — business banking', status: 'option' },
+          { title: 'Credit union business account', status: 'alternative' },
+        ]} />
+        <p className="client-safe-note">No account has been opened. These are educational recommendations.</p>
+      </ClientSection>
+    </div>
+    <div className="client-two-col">
+      <ClientSection title="Credit Report Upload">
+        <ClientActionList rows={[
+          { title: 'Upload your credit report (PDF)', status: 'disabled in prototype' },
+          { title: 'Connect SmartCredit for live data', status: 'not connected' },
+          { title: 'Request GoClear review of report', status: 'requires upload first' },
+        ]} />
+      </ClientSection>
+      <ClientSection title="Bank Relationship Reminder">
+        <div className="client-warning"><CircleAlert size={18} /><div><strong>Open a business bank account</strong><p>A business banking relationship supports funding readiness. Document the account after opening.</p></div></div>
+      </ClientSection>
+    </div>
+    <ClientGuidePanel suggestedKeys={['what_do_i_do_next', 'documents_needed', 'can_i_apply_for_funding_now']} />
+  </div>
+}
+
+export function RequestReviewPage() {
+  const funding = data.fundingReadiness
+  const tasks = data.clientTasks
+  const openTasks = tasks.filter(t => t.status !== 'complete')
+  return <div className="client-page">
+    <ClientPageHeader title="Request Review" subtitle="Submit your profile for GoClear readiness review when ready." badge="Review gate" />
+    <div className="client-metric-grid compact">
+      <ClientScoreCard title="Review Readiness" value={funding.readinessScore} status={funding.status} text={funding.recommendedPath} />
+      <ClientMetricCard icon={MessageSquare} label="Open Tasks" value={openTasks.length} note="Complete before review" tone="orange" />
+      <ClientMetricCard icon={Send} label="Review Status" value="Not submitted" note="Pending completion" tone="purple" />
+    </div>
+    <div className="client-warning"><CircleAlert size={22} /><div><strong>Complete open tasks first</strong><p>Request review only after completing all high-priority tasks. Incomplete submissions may delay processing.</p></div></div>
+    <div className="client-two-col">
+      <ClientSection title="Open tasks to complete">
+        <ClientActionList rows={openTasks.map(t => ({ title: t.title, status: t.status.replaceAll('_', ' ') }))} />
+      </ClientSection>
+      <ClientSection title="What happens after review">
+        <ul>
+          <li>GoClear reviews your readiness profile</li>
+          <li>You receive a status update in Messages</li>
+          <li>Next steps are recommended based on review</li>
+          <li>No application is submitted without your approval</li>
+        </ul>
+        <p className="client-safe-note">Review requests are processed in order. Response time varies.</p>
+      </ClientSection>
+    </div>
+    <ClientGuidePanel suggestedKeys={['what_goclear_is_reviewing', 'what_do_i_do_next', 'can_i_apply_for_funding_now']} />
+  </div>
 }
 
 export function ClientMessagesPage() {
@@ -129,12 +252,15 @@ export function ClientSettingsPage() {
 
 export const clientPageMap = {
   '/client/dashboard': <ClientDashboard />,
-  '/client/credit-repair': <CreditRepairPage />,
-  '/client/credit-profile-readiness': <CreditProfileReadinessPage />,
-  '/client/business-profile-readiness': <BusinessProfileReadinessPage />,
-  '/client/business-opportunities': <BusinessOpportunitiesPage />,
-  '/client/funding-readiness': <FundingReadinessPage />,
+  '/client/credit-profile': <CreditProfilePage />,
+  '/client/credit-utilization': <CreditUtilizationPage />,
   '/client/documents': <ClientDocumentsPage />,
+  '/client/business-setup': <BusinessSetupPage />,
+  '/client/business-bankability': <BusinessBankabilityPage />,
+  '/client/funding-readiness': <FundingReadinessPage />,
+  '/client/recommendations': <RecommendationsPage />,
+  '/client/resources': <ResourcesPage />,
+  '/client/request-review': <RequestReviewPage />,
   '/client/messages': <ClientMessagesPage />,
   '/client/settings': <ClientSettingsPage />,
 }
