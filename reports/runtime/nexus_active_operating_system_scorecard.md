@@ -24,7 +24,7 @@
 | Alpha | 85 | 13 intake types, Telegram route works live |
 | Research Intelligence | 85 | NotebookLM normalization shim active, 25 items scored, routes mapped |
 | Creative Engine | 60 | Dry-run only |
-| Safety/Guards | 90 | Blocked action guard active |
+| Safety/Guards | 95 | Approval-gated lanes defined, action guard updated, 12 approval-gated actions |
 | Receipts/Reporting | 90 | All mutations write receipts, live receipts verified |
 
 ---
@@ -53,7 +53,7 @@
 - ✅ Daily monitor (script runs, reports written, verified)
 - ✅ Recovery check (script runs, work orders created, verified)
 - ✅ Telegram mobile operator console (LIVE connection, 15 commands pass, outbound works)
-- ✅ Blocked action guard (dangerous actions prevented)
+- ✅ Blocked action guard (12 approval-gated actions, 2 infrastructure-blocked)
 - ✅ Receipts for all mutations (live receipts verified)
 - ✅ Hermes routing (23 patterns, Telegram route works live)
 - ✅ Alpha intake (13 types, Telegram route works live)

@@ -77,10 +77,16 @@
 - **Receipt**: Required
 - **Risk**: MEDIUM-HIGH
 
-### 8. BLOCKED
-- **Behavior**: Missing env, runner, guard, or unsafe action.
+### 8. APPROVAL_GATED_LIVE
+- **Behavior**: External actions execute only after Ray approval + guard + receipt + compliance.
 - **Examples**: Customer emails, social posting, trading, charges, disputes, grants
-- **Receipt**: Blocked receipt
+- **Receipt**: Required
+- **Risk**: MEDIUM (prevented without approval)
+
+### 9. BLOCKED_AUTONOMOUS_EXECUTION
+- **Behavior**: Requires direct Ray intervention, not just Telegram approval.
+- **Examples**: Modify production database, restart production services
+- **Receipt**: Required
 - **Risk**: HIGH (prevented)
 
 ---
@@ -96,12 +102,12 @@
 | Approve via Telegram | TELEGRAM_OPERATOR + APPROVAL_GATED_LIVE | Needs approval record |
 | Reject via Telegram | TELEGRAM_OPERATOR + APPROVAL_GATED_LIVE | Needs approval record |
 | Revise via Telegram | TELEGRAM_OPERATOR + APPROVAL_GATED_LIVE | Needs approval record |
-| Social posting | BLOCKED | Needs approved publish runner |
-| Customer email | BLOCKED | Needs approved email runner |
-| Trading | BLOCKED | No approved trading runner |
-| Stripe charge | BLOCKED except test mode | Test mode only |
-| Credit disputes | BLOCKED | Needs compliance runner |
-| Grant applications | BLOCKED | Needs compliance runner |
+| Social posting | APPROVAL_GATED_LIVE | Needs Ray approval + publish runner |
+| Customer email | APPROVAL_GATED_LIVE | Needs Ray approval + email runner |
+| Trading | APPROVAL_GATED_LIVE | Needs Ray approval + trading runner |
+| Stripe charge | APPROVAL_GATED_LIVE | Needs Ray approval + live billing enablement |
+| Credit disputes | APPROVAL_GATED_LIVE | Needs Ray approval + compliance runner |
+| Grant applications | APPROVAL_GATED_LIVE | Needs Ray approval + compliance runner |
 | Internal work order | ACTIVE_INTERNAL | Safe internal operation |
 | Hermes routing | ACTIVE_INTERNAL | Safe local classification |
 | Alpha scoring | ACTIVE_INTERNAL | Safe local computation |

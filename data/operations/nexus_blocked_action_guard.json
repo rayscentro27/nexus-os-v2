@@ -1,26 +1,220 @@
 {
-  "generated_at": "2026-07-05T00:00:00Z",
-  "blocked_actions": [
-    "send_customer_email",
-    "post_to_social_media",
-    "place_trade",
-    "charge_customer",
-    "submit_credit_dispute",
-    "submit_grant_application",
-    "export_sensitive_client_data",
-    "modify_production_database",
-    "restart_production_services",
-    "send_sms",
-    "make_phone_calls",
-    "submit_legal_documents"
+  "generated_at": "2026-07-05T23:30:00Z",
+  "model": "APPROVAL_GATED_LIVE",
+  "description": "External actions are not permanently blocked. They execute only when Ray approves, a runner exists, guard allows, compliance passes, and receipt path exists.",
+  "approval_gated_actions": [
+    {
+      "action": "send_customer_email",
+      "status": "APPROVAL_GATED_LIVE_READY",
+      "lane": "customer_email",
+      "required_runner": "approved_email_runner",
+      "required_approval": "email_compliance_approval",
+      "required_receipt": "email_send_receipt",
+      "workflow": [
+        "draft_customer_email",
+        "ray_review_approval",
+        "send_through_approved_provider",
+        "write_receipt",
+        "log_delivery_status"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve/reject/revise draft",
+      "sensitive_data_rule": "show safe summary only, link to secure dashboard for full content"
+    },
+    {
+      "action": "post_to_social_media",
+      "status": "APPROVAL_GATED_LIVE_READY",
+      "lane": "social_publishing",
+      "required_runner": "approved_publish_runner",
+      "required_approval": "social_publish_approval",
+      "required_receipt": "social_publish_receipt",
+      "workflow": [
+        "create_post_or_video",
+        "ray_review_approval_required",
+        "publish_only_to_approved_account",
+        "write_publish_receipt",
+        "support_reject_revise_loop"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve/reject/revise content",
+      "sensitive_data_rule": "show preview only, link to secure dashboard for full content"
+    },
+    {
+      "action": "charge_customer",
+      "status": "APPROVAL_GATED_LIVE_PENDING_ENV",
+      "lane": "stripe_billing",
+      "required_runner": "stripe_live_runner",
+      "required_approval": "billing_approval",
+      "required_receipt": "charge_receipt",
+      "workflow": [
+        "test_mode_first",
+        "verify_product_price",
+        "ray_approval_for_billing_config",
+        "live_billing_only_after_approved_live_status",
+        "write_charge_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve billing configuration, never charge from Telegram alone",
+      "sensitive_data_rule": "show amount/recipient only, link to Stripe dashboard for details"
+    },
+    {
+      "action": "submit_credit_dispute",
+      "status": "APPROVAL_GATED_LIVE_PENDING_RUNNER",
+      "lane": "credit_dispute",
+      "required_runner": "compliance_runner",
+      "required_approval": "legal_compliance_approval",
+      "required_receipt": "dispute_receipt",
+      "workflow": [
+        "prepare_dispute_packet",
+        "compliance_checklist",
+        "client_authorization_required",
+        "ray_approval_required",
+        "select_mailing_submission_method",
+        "write_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve/reject dispute packet",
+      "sensitive_data_rule": "show dispute summary only, link to secure dashboard for full packet"
+    },
+    {
+      "action": "submit_grant_application",
+      "status": "APPROVAL_GATED_LIVE_PENDING_RUNNER",
+      "lane": "grant_funding",
+      "required_runner": "compliance_runner",
+      "required_approval": "grant_compliance_approval",
+      "required_receipt": "grant_receipt",
+      "workflow": [
+        "prepare_application_packet",
+        "verify_client_data",
+        "ray_client_approval_required",
+        "submission_checklist",
+        "write_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve/reject application packet",
+      "sensitive_data_rule": "show application summary only, link to secure dashboard for full packet"
+    },
+    {
+      "action": "place_trade",
+      "status": "APPROVAL_GATED_LIVE_PENDING_GUARD",
+      "lane": "trading",
+      "required_runner": "approved_trading_runner",
+      "required_approval": "trading_approval",
+      "required_receipt": "trade_receipt",
+      "workflow": [
+        "paper_demo_only_by_default",
+        "strategy_proof_required",
+        "risk_guard_required",
+        "ray_approval_required",
+        "separate_live_trading_enablement_required"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve strategy and risk parameters",
+      "sensitive_data_rule": "show strategy summary only, link to secure dashboard for full details"
+    },
+    {
+      "action": "export_sensitive_client_data",
+      "status": "APPROVAL_GATED_LIVE_PENDING_GUARD",
+      "lane": "data_export",
+      "required_runner": "data_export_runner",
+      "required_approval": "data_privacy_approval",
+      "required_receipt": "export_receipt",
+      "workflow": [
+        "request_data_export",
+        "privacy_review",
+        "ray_approval_required",
+        "export_to_secure_location",
+        "write_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve export request, never show raw data in Telegram",
+      "sensitive_data_rule": "never expose through Telegram, show summary and link only"
+    },
+    {
+      "action": "send_sms",
+      "status": "APPROVAL_GATED_LIVE_PENDING_ENV",
+      "lane": "sms",
+      "required_runner": "approved_sms_runner",
+      "required_approval": "sms_compliance_approval",
+      "required_receipt": "sms_receipt",
+      "workflow": [
+        "draft_sms",
+        "ray_approval_required",
+        "send_through_provider",
+        "write_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve/reject SMS draft",
+      "sensitive_data_rule": "show message preview only"
+    },
+    {
+      "action": "make_phone_calls",
+      "status": "APPROVAL_GATED_LIVE_PENDING_ENV",
+      "lane": "phone",
+      "required_runner": "approved_phone_runner",
+      "required_approval": "phone_compliance_approval",
+      "required_receipt": "phone_receipt",
+      "workflow": [
+        "prepare_call_script",
+        "ray_approval_required",
+        "make_call_through_provider",
+        "write_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve call script",
+      "sensitive_data_rule": "show call summary only"
+    },
+    {
+      "action": "submit_legal_documents",
+      "status": "APPROVAL_GATED_LIVE_PENDING_RUNNER",
+      "lane": "legal",
+      "required_runner": "compliance_runner",
+      "required_approval": "legal_compliance_approval",
+      "required_receipt": "legal_receipt",
+      "workflow": [
+        "prepare_legal_packet",
+        "compliance_review",
+        "ray_approval_required",
+        "submit_through_channel",
+        "write_receipt"
+      ],
+      "never_without_approval": true,
+      "telegram_role": "approve/reject legal packet",
+      "sensitive_data_rule": "show summary only, link to secure dashboard"
+    },
+    {
+      "action": "modify_production_database",
+      "status": "BLOCKED_AUTONOMOUS_EXECUTION",
+      "lane": "infrastructure",
+      "note": "Requires direct Ray intervention, not just Telegram approval"
+    },
+    {
+      "action": "restart_production_services",
+      "status": "BLOCKED_AUTONOMOUS_EXECUTION",
+      "lane": "infrastructure",
+      "note": "Requires direct Ray intervention, not just Telegram approval"
+    }
   ],
-  "guard_rules": {
-    "send_customer_email": {"required_runner": "approved_email_runner", "required_approval": "email_compliance_approval", "required_receipt": "email_send_receipt"},
-    "post_to_social_media": {"required_runner": "approved_publish_runner", "required_approval": "social_publish_approval", "required_receipt": "social_publish_receipt"},
-    "place_trade": {"required_runner": "approved_trading_runner", "required_approval": "trading_approval", "required_receipt": "trade_receipt"},
-    "charge_customer": {"required_runner": "stripe_live_runner", "required_approval": "billing_approval", "required_receipt": "charge_receipt"},
-    "submit_credit_dispute": {"required_runner": "compliance_runner", "required_approval": "legal_compliance_approval", "required_receipt": "dispute_receipt"},
-    "submit_grant_application": {"required_runner": "compliance_runner", "required_approval": "grant_compliance_approval", "required_receipt": "grant_receipt"},
-    "export_sensitive_client_data": {"required_runner": "data_export_runner", "required_approval": "data_privacy_approval", "required_receipt": "export_receipt"}
-  }
+  "active_internal_capabilities": [
+    "monitor",
+    "research",
+    "score",
+    "draft",
+    "prepare",
+    "route",
+    "create_work_orders",
+    "generate_approval_packets",
+    "write_receipts",
+    "run_recovery_checks"
+  ],
+  "telegram_capabilities": [
+    "review_approval_packets",
+    "approve",
+    "reject",
+    "revise",
+    "send_internal_requests",
+    "request_hermes_alpha_work",
+    "trigger_safe_internal_processes",
+    "create_work_orders"
+  ]
 }

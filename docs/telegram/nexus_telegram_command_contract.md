@@ -24,17 +24,21 @@
 | `/recover` | Run recovery check | Yes |
 | `/processes` | Show process registry | No |
 | `/run <process-id>` | Trigger safe process | Yes |
-| `/blocked` | Show blocked actions | No |
+| `/lanes` | Show approval-gated lanes | No |
+| `/blocked` | Show approval-gated actions | No |
 
 ## Response Format
 
 All responses are plain text, suitable for Telegram messaging.
 
-## Blocked Commands
+## Approval-Gated Commands
 
-Commands that trigger blocked actions return:
+Commands that trigger approval-gated actions return:
 ```
-BLOCKED: This action requires an approved runner and compliance review. Cannot execute from Telegram.
+APPROVAL_GATED: This action requires Ray approval before execution.
+Lane: [lane name]
+Status: [status]
+Use /approve [id] to approve, /reject [id] to reject, /revise [id] for feedback.
 ```
 
 ## Unknown Commands

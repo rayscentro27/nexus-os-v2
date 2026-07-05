@@ -1,0 +1,136 @@
+{
+  "generated_at": "2026-07-05T23:30:00Z",
+  "model": "APPROVAL_GATED_LIVE",
+  "description": "Nexus prepares and routes real business execution. External actions pass through approval-gated lanes. Telegram can approve, reject, revise, request, and trigger safe internal next steps.",
+  "lanes": {
+    "customer_email": {
+      "name": "Customer Email Lane",
+      "status": "APPROVAL_GATED_LIVE_READY",
+      "workflow": [
+        {"step": 1, "action": "draft_customer_email", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "generate_approval_packet", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "ray_review_approval", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 4, "action": "send_through_approved_provider", "mode": "APPROVED_LIVE", "auto": false},
+        {"step": 5, "action": "write_receipt", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 6, "action": "log_delivery_status", "mode": "ACTIVE_INTERNAL", "auto": true}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "show safe summary in Telegram, link to secure dashboard for full content",
+      "required_runner": "approved_email_runner",
+      "required_approval": "email_compliance_approval",
+      "required_receipt": "email_send_receipt",
+      "telegram_commands": ["/approve EMAIL-001", "/reject EMAIL-001 reason", "/revise EMAIL-001 feedback"]
+    },
+    "social_publishing": {
+      "name": "Social Publishing Lane",
+      "status": "APPROVAL_GATED_LIVE_READY",
+      "workflow": [
+        {"step": 1, "action": "create_post_or_video", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "generate_approval_packet", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "ray_review_approval_required", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 4, "action": "publish_to_approved_account", "mode": "APPROVED_LIVE", "auto": false},
+        {"step": 5, "action": "write_publish_receipt", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 6, "action": "support_reject_revise_loop", "mode": "TELEGRAM_OPERATOR", "auto": false}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "show preview in Telegram, link to secure dashboard for full content",
+      "required_runner": "approved_publish_runner",
+      "required_approval": "social_publish_approval",
+      "required_receipt": "social_publish_receipt",
+      "telegram_commands": ["/approve POST-001", "/reject POST-001 reason", "/revise POST-001 feedback"]
+    },
+    "stripe_billing": {
+      "name": "Stripe Billing Lane",
+      "status": "APPROVAL_GATED_LIVE_PENDING_ENV",
+      "workflow": [
+        {"step": 1, "action": "test_mode_verification", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "verify_product_price", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "ray_approval_for_billing_config", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 4, "action": "live_billing_only_after_approved_live_status", "mode": "APPROVED_LIVE", "auto": false},
+        {"step": 5, "action": "write_charge_receipt", "mode": "ACTIVE_INTERNAL", "auto": true}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "show amount/recipient only, link to Stripe dashboard for details",
+      "required_runner": "stripe_live_runner",
+      "required_approval": "billing_approval",
+      "required_receipt": "charge_receipt",
+      "telegram_commands": ["/approve BILLING-001", "/reject BILLING-001 reason"]
+    },
+    "credit_dispute": {
+      "name": "Credit Dispute Lane",
+      "status": "APPROVAL_GATED_LIVE_PENDING_RUNNER",
+      "workflow": [
+        {"step": 1, "action": "prepare_dispute_packet", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "compliance_checklist", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "client_authorization_required", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 4, "action": "ray_approval_required", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 5, "action": "select_mailing_submission_method", "mode": "APPROVED_LIVE", "auto": false},
+        {"step": 6, "action": "write_receipt", "mode": "ACTIVE_INTERNAL", "auto": true}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "show dispute summary only, link to secure dashboard for full packet",
+      "required_runner": "compliance_runner",
+      "required_approval": "legal_compliance_approval",
+      "required_receipt": "dispute_receipt",
+      "telegram_commands": ["/approve DISPUTE-001", "/reject DISPUTE-001 reason"]
+    },
+    "grant_funding": {
+      "name": "Grant/Funding Submission Lane",
+      "status": "APPROVAL_GATED_LIVE_PENDING_RUNNER",
+      "workflow": [
+        {"step": 1, "action": "prepare_application_packet", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "verify_client_data", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "ray_client_approval_required", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 4, "action": "submission_checklist", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 5, "action": "write_receipt", "mode": "ACTIVE_INTERNAL", "auto": true}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "show application summary only, link to secure dashboard for full packet",
+      "required_runner": "compliance_runner",
+      "required_approval": "grant_compliance_approval",
+      "required_receipt": "grant_receipt",
+      "telegram_commands": ["/approve GRANT-001", "/reject GRANT-001 reason"]
+    },
+    "trading": {
+      "name": "Trading Lane",
+      "status": "APPROVAL_GATED_LIVE_PENDING_GUARD",
+      "workflow": [
+        {"step": 1, "action": "paper_demo_only_by_default", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "strategy_proof_required", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "risk_guard_required", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 4, "action": "ray_approval_required", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 5, "action": "separate_live_trading_enablement_required", "mode": "APPROVED_LIVE", "auto": false}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "show strategy summary only, link to secure dashboard for full details",
+      "required_runner": "approved_trading_runner",
+      "required_approval": "trading_approval",
+      "required_receipt": "trade_receipt",
+      "telegram_commands": ["/approve TRADE-001", "/reject TRADE-001 reason"]
+    },
+    "data_export": {
+      "name": "Data Export Lane",
+      "status": "APPROVAL_GATED_LIVE_PENDING_GUARD",
+      "workflow": [
+        {"step": 1, "action": "request_data_export", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 2, "action": "privacy_review", "mode": "ACTIVE_INTERNAL", "auto": true},
+        {"step": 3, "action": "ray_approval_required", "mode": "TELEGRAM_OPERATOR", "auto": false},
+        {"step": 4, "action": "export_to_secure_location", "mode": "APPROVED_LIVE", "auto": false},
+        {"step": 5, "action": "write_receipt", "mode": "ACTIVE_INTERNAL", "auto": true}
+      ],
+      "never_without_approval": true,
+      "sensitive_data_rule": "never expose through Telegram, show summary and link only",
+      "required_runner": "data_export_runner",
+      "required_approval": "data_privacy_approval",
+      "required_receipt": "export_receipt",
+      "telegram_commands": ["/approve EXPORT-001", "/reject EXPORT-001 reason"]
+    }
+  },
+  "operating_modes": {
+    "ACTIVE_INTERNAL": "Nexus automatically monitors, researches, scores, drafts, prepares, routes, creates work orders, generates approval packets, writes receipts, runs recovery checks",
+    "TELEGRAM_OPERATOR": "Ray uses Telegram to review approval packets, approve, reject, revise, send internal requests, request Hermes/Alpha work, trigger safe internal processes, create work orders",
+    "APPROVAL_GATED_LIVE": "Nexus may execute external actions only when Ray approved, approval record exists, workflow runner exists, action guard allows, compliance/safety check passes, receipt path exists, rollback/cancel/manual review path exists, no sensitive client data exposed through Telegram, final result logged",
+    "APPROVED_LIVE": "External action executed after full approval chain",
+    "BLOCKED_AUTONOMOUS_EXECUTION": "Requires direct Ray intervention, not just Telegram approval"
+  }
+}

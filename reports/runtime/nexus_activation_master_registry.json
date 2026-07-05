@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-05T23:10:00Z",
+  "generated_at": "2026-07-05T23:35:00Z",
   "active_operating_mode": "ACTIVE_WITH_BLOCKERS",
   "active_score": 89,
   "starting_commit": "3535590",
@@ -160,7 +160,12 @@
     "blocked_actions": 12,
     "guard_script": "scripts/operations/nexus_blocked_action_guard.py",
     "guard_data": "data/operations/nexus_blocked_action_guard.json",
-    "report": "reports/runtime/nexus_blocked_action_guard_latest.md"
+    "report": "reports/runtime/nexus_blocked_action_guard_latest.md",
+    "classification": "APPROVAL_GATED_LIVE_READY",
+    "model": "APPROVAL_GATED_LIVE",
+    "approval_gated_actions": 12,
+    "infrastructure_blocked": 2,
+    "lanes_definition": "data/operations/nexus_approval_gated_lanes.json"
   },
   "active_operating_system_score": {
     "score": 89,
