@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-07-05T00:00:00Z",
+  "total_reports": 1620,
+  "latest_useful_reports": [
+    {
+      "path": "reports/runtime/nexus_prompt_1_ray_summary.md",
+      "type": "summary",
+      "purpose": "Plain language summary for Ray"
+    },
+    {
+      "path": "reports/runtime/nexus_activation_master_registry.json",
+      "type": "registry",
+      "purpose": "Machine-readable master registry"
+    },
+    {
+      "path": "reports/runtime/nexus_capability_scorecard.md",
+      "type": "scorecard",
+      "purpose": "Capability scores by department"
+    },
+    {
+      "path": "reports/supabase/nexus_supabase_source_of_truth_audit.md",
+      "type": "audit",
+      "purpose": "Supabase source of truth"
+    },
+    {
+      "path": "reports/hermes/nexus_work_router_readiness_audit.md",
+      "type": "audit",
+      "purpose": "Hermes work router readiness"
+    }
+  ]
+}
