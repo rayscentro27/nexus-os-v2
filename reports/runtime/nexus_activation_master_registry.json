@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-07-06T00:15:00Z",
+  "generated_at": "2026-07-06T00:20:00Z",
   "active_operating_mode": "ACTIVE_OPERATING_SYSTEM",
-  "active_score": 90,
+  "active_score": 92,
   "starting_commit": "3535590",
   "latest_commit": "2bff447",
   "branch": "main",
@@ -168,7 +168,7 @@
     "lanes_definition": "data/operations/nexus_approval_gated_lanes.json"
   },
   "active_operating_system_score": {
-    "score": 90,
+    "score": 92,
     "classification": "ACTIVE_OPERATING_SYSTEM",
     "target_score": 90,
     "scorecard": "reports/runtime/nexus_active_operating_system_scorecard.md"
@@ -267,6 +267,8 @@
     "Token rotation required (exposed token must be revoked, telegram plist secrets cleared)",
     "Supabase browser verification (Ray needs to open app and check DevTools)",
     "Stripe frontend integration (fill product/price IDs in goclearPaymentOfferContract.ts)",
+    "RESEND_API_KEY needed for live email sending",
+    "Social platform access tokens needed for live publishing",
     "Stripe subscription management UI (not built)"
   ],
   "manual_actions_required": [
@@ -301,5 +303,43 @@
       "place_trades",
       "export_sensitive_data"
     ]
+  },
+  "approval_gated_lanes": {
+    "customer_email": {
+      "status": "APPROVAL_GATED_READY",
+      "script": "scripts/approval_lanes/nexus_customer_email_lane.py",
+      "doc": "docs/approval_lanes/customer_email_lane.md",
+      "required_env": "RESEND_API_KEY"
+    },
+    "social_publishing": {
+      "status": "APPROVAL_GATED_READY",
+      "script": "scripts/approval_lanes/nexus_social_publishing_lane.py",
+      "doc": "docs/approval_lanes/social_publishing_lane.md",
+      "supported_platforms": [
+        "facebook",
+        "instagram"
+      ],
+      "pending_platforms": [
+        "tiktok",
+        "youtube",
+        "x",
+        "linkedin"
+      ]
+    },
+    "stripe_test_checkout": {
+      "status": "APPROVAL_GATED_READY",
+      "script": "scripts/approval_lanes/nexus_stripe_test_checkout_lane.py",
+      "doc": "docs/approval_lanes/stripe_test_checkout_lane.md",
+      "tiers": {
+        "tier1": {
+          "name": "Nexus Readiness Portal",
+          "price": "$100/month"
+        },
+        "tier2": {
+          "name": "Nexus Funding Builder Plus",
+          "price": "$197/month"
+        }
+      }
+    }
   }
 }

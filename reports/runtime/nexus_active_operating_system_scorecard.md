@@ -29,7 +29,7 @@
 
 ---
 
-## Overall Score: 90/100
+## Overall Score: 92/100
 
 **Classification: ACTIVE_OPERATING_SYSTEM**
 
@@ -54,6 +54,9 @@
 - ✅ Recovery check (script runs, launchd loaded every 3h, verified)
 - ✅ Telegram mobile operator console (LIVE connection, 15 commands pass, outbound works)
 - ✅ Approval-gated action guard (12 approval-gated actions, 7 lanes defined)
+- ✅ Customer Email Lane (approval-gated, draft/approve/send workflow)
+- ✅ Social Publishing Lane (approval-gated, create/approve/publish workflow)
+- ✅ Stripe Test Checkout Lane (approval-gated, test mode only, $100/$197 tiers)
 - ✅ Receipts for all mutations (live receipts verified)
 - ✅ Hermes routing (23 patterns, Telegram route works live)
 - ✅ Alpha intake (13 types, Telegram route works live)
