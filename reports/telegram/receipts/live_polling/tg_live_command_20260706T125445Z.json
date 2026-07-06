@@ -1,0 +1,12 @@
+{
+  "type": "live_command",
+  "update_id": 197233126,
+  "chat_id": 1288928049,
+  "command": "hello",
+  "reply_ok": true,
+  "reply_length": 611,
+  "reply_preview": "Nexus Mobile Operator Console\n\nCommands:\n/report - Full anytime operator report\n/status - System status\n/daily - Daily monitor\n/research - Research/NotebookLM/Alpha status\n/content - Content drafts/so",
+  "receipt_id": "tg_live_command_20260706T125445Z",
+  "timestamp": "2026-07-06T12:54:45.934093+00:00",
+  "source": "telegram_bridge"
+}

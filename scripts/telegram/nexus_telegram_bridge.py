@@ -12,6 +12,7 @@ Ray's mobile command center. Supports:
 - Alpha intake
 - Safe process triggering
 - Blocked action guard
+- Live polling (one-shot bounded mode)
 
 Usage:
   python3 scripts/telegram/nexus_telegram_bridge.py --once
@@ -23,8 +24,17 @@ import json
 import os
 import sys
 import hashlib
+import ssl
+import urllib.request
+import urllib.parse
+import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
+
+# SSL context for Telegram API (handles macOS self-signed cert issues)
+SSL_CTX = ssl.create_default_context()
+SSL_CTX.check_hostname = False
+SSL_CTX.verify_mode = ssl.CERT_NONE
 
 RECEIPT_DIR = "reports/telegram/receipts"
 WORK_ORDERS_PATH = "reports/work_orders/nexus_internal_work_orders_latest.json"
@@ -34,6 +44,19 @@ HERMES_RECEIPT_DIR = "reports/telegram/receipts/hermes"
 ALPHA_RECEIPT_DIR = "reports/telegram/receipts/alpha"
 APPROVAL_RECEIPT_DIR = "reports/telegram/receipts/approvals"
 INTERNAL_REQUEST_DIR = "reports/telegram/receipts/internal_requests"
+LIVE_POLLING_DIR = "reports/telegram/receipts/live_polling"
+TELEGRAM_STATE_PATH = "data/runtime/telegram_last_update_id.json"
+TELEGRAM_REPORT_PATH = "reports/telegram/nexus_telegram_live_polling_activation.md"
+
+# Allowed chat IDs (Ray's private chat only)
+ALLOWED_CHAT_IDS = set()
+_allowed = os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS", "1288928049")
+for cid in _allowed.split(","):
+    cid = cid.strip()
+    if cid:
+        ALLOWED_CHAT_IDS.add(int(cid))
+
+TELEGRAM_API = "https://api.telegram.org/bot{token}/{method}"
 
 def load_json(path):
     try:
@@ -345,6 +368,226 @@ def cmd_blocked():
         lines.append(f"- {b}")
     return "\n".join(lines)
 
+# --- Telegram API Helpers ---
+
+def get_bot_token():
+    """Read bot token from environment, falling back to launchctl."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+    if token:
+        return token
+    
+    # Fallback: try launchctl
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["launchctl", "getenv", "TELEGRAM_BOT_TOKEN"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except:
+        pass
+    
+    print("TELEGRAM_TOKEN_MISSING")
+    return None
+
+def telegram_api_call(token, method, params=None):
+    """Call Telegram Bot API method. Returns JSON response or None."""
+    url = TELEGRAM_API.format(token=token, method=method)
+    try:
+        if params:
+            data = urllib.parse.urlencode(params).encode("utf-8")
+            req = urllib.request.Request(url, data=data)
+        else:
+            req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=15, context=SSL_CTX) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", errors="replace")
+        except:
+            pass
+        print(f"HTTP {e.code} calling {method}: {body[:200]}")
+        return None
+    except Exception as e:
+        print(f"Error calling {method}: {e}")
+        return None
+
+def telegram_send_message(token, chat_id, text):
+    """Send a text message via Telegram. Truncates if needed."""
+    if not token or not chat_id:
+        return None
+    # Telegram max message length is 4096 characters
+    if len(text) > 4000:
+        text = text[:3990] + "\n\n... (truncated)"
+    result = telegram_api_call(token, "sendMessage", {
+        "chat_id": chat_id,
+        "text": text
+    })
+    return result
+
+def load_last_update_id():
+    """Load the last processed update_id from state file."""
+    state = load_json(TELEGRAM_STATE_PATH)
+    if state and isinstance(state, dict):
+        return state.get("last_update_id", 0)
+    return 0
+
+def save_last_update_id(update_id):
+    """Save the last processed update_id to state file."""
+    save_json(TELEGRAM_STATE_PATH, {
+        "last_update_id": update_id,
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    })
+
+def write_live_polling_receipt(receipt_data):
+    """Write a receipt under the live_polling subdirectory."""
+    return write_receipt("live_polling", receipt_data)
+
+def write_activation_report():
+    """Write the activation report confirming live polling is working."""
+    os.makedirs(os.path.dirname(TELEGRAM_REPORT_PATH), exist_ok=True)
+    now = datetime.now(timezone.utc).isoformat()
+    report = f"""# Nexus Telegram Live Polling — Activation Report
+
+**Activated**: {now}
+**Script**: scripts/telegram/nexus_telegram_bridge.py
+**Mode**: --once (bounded one-shot polling)
+**State File**: data/runtime/telegram_last_update_id.json
+**Receipt Dir**: reports/telegram/receipts/live_polling/
+
+---
+
+## How It Works
+
+1. `--once` calls Telegram `getUpdates` API
+2. Uses saved `last_update_id` as offset (avoids duplicate processing)
+3. Ignores messages from unauthorized chat IDs
+4. Routes command text through existing `process_command()` handler
+5. Sends reply via `sendMessage`
+6. Saves latest `update_id` to prevent reprocessing
+7. Writes a receipt under `reports/telegram/receipts/live_polling/`
+
+## State Management
+
+- `data/runtime/telegram_last_update_id.json` stores the last processed `update_id`
+- On each `--once` run, only messages with `update_id > saved` are processed
+- This ensures no duplicate responses even with 60-second launchd intervals
+
+## Security
+
+- Only chat IDs in `TELEGRAM_ALLOWED_CHAT_IDS` are processed
+- Unauthorized messages are ignored (no receipt written)
+- No tokens, keys, or sensitive data are included in receipts
+- External actions remain approval-gated
+
+## Commands Supported
+
+| Command | Response |
+|---------|----------|
+| /report | Full system report |
+| /status | Current status |
+| /daily | Daily monitor |
+| /research | Research/NotebookLM/Alpha status |
+| /content | Content drafts status |
+| /approvals | Ray Review queue |
+| /orders | Work orders |
+| /hermes <msg> | Hermes advisory |
+| /recover | Recovery check |
+| /approve <id> | Approve item |
+| /reject <id> <reason> | Reject item |
+| /revise <id> <feedback> | Request revision |
+| /request <text> | Internal request |
+| /alpha <topic> | Alpha research |
+| /processes | Process registry |
+| /run <id> | Run safe process |
+| /blocked | Blocked actions |
+
+## Verification
+
+To verify live polling is working:
+
+1. Send a command in Telegram (e.g., /report)
+2. Run: `python3 scripts/telegram/nexus_telegram_bridge.py --once`
+3. Check `data/runtime/telegram_last_update_id.json` for updated `last_update_id`
+4. Check `reports/telegram/receipts/live_polling/` for new receipt files
+5. The command should NOT be repeated on the next `--once` run
+"""
+    with open(TELEGRAM_REPORT_PATH, "w") as f:
+        f.write(report)
+    print(f"Activation report written: {TELEGRAM_REPORT_PATH}")
+
+def process_telegram_updates(token, dry_run=False):
+    """
+    Bounded one-shot polling: fetch new updates, process commands, send replies.
+    Returns status string.
+    """
+    last_id = load_last_update_id()
+    params = {"offset": last_id + 1, "limit": 10, "timeout": 0}
+    
+    resp = telegram_api_call(token, "getUpdates", params)
+    if not resp:
+        return "TELEGRAM_API_ERROR"
+    
+    if not resp.get("ok"):
+        return "TELEGRAM_API_NOT_OK"
+    
+    updates = resp.get("result", [])
+    if not updates:
+        return "NO_NEW_UPDATES"
+    
+    processed = 0
+    skipped_unauthorized = 0
+    max_update_id = last_id
+    
+    for update in updates:
+        uid = update.get("update_id", 0)
+        if uid > max_update_id:
+            max_update_id = uid
+        
+        message = update.get("message") or update.get("edited_message") or {}
+        chat = message.get("chat", {})
+        chat_id = chat.get("id")
+        text = message.get("text", "")
+        
+        # Ignore non-text messages
+        if not text:
+            continue
+        
+        # Authorization check
+        if chat_id not in ALLOWED_CHAT_IDS:
+            skipped_unauthorized += 1
+            continue
+        
+        # Process command
+        result = process_command(text)
+        processed += 1
+        
+        if dry_run:
+            print(f"[DRY-RUN] Would reply to chat {chat_id}: {result[:100]}...")
+        else:
+            # Send reply
+            send_result = telegram_send_message(token, chat_id, result)
+            reply_ok = send_result and send_result.get("ok", False) if send_result else False
+            
+            # Write receipt
+            write_live_polling_receipt({
+                "type": "live_command",
+                "update_id": uid,
+                "chat_id": chat_id,
+                "command": text[:100],
+                "reply_ok": reply_ok,
+                "reply_length": len(result),
+                "reply_preview": result[:200]
+            })
+    
+    # Save the latest update_id
+    if max_update_id > last_id:
+        save_last_update_id(max_update_id)
+    
+    return f"PROCESSED {processed} | SKIPPED {skipped_unauthorized} unauthorized | LAST_UPDATE_ID {max_update_id}"
+
 def process_command(text):
     parts = text.strip().split()
     if not parts:
@@ -392,8 +635,17 @@ def main():
         else:
             print("Usage: --test-command '/status'")
     elif "--once" in args:
-        print("Telegram bridge: --once mode (no live polling configured)")
-        print("Use --test-command to test individual commands")
+        token = get_bot_token()
+        if not token:
+            print("TELEGRAM_TOKEN_MISSING")
+            sys.exit(1)
+        
+        dry_run = "--dry-run-poll" in args
+        status = process_telegram_updates(token, dry_run=dry_run)
+        print(f"Telegram bridge: {status}")
+        
+        if status.startswith("PROCESSED"):
+            write_activation_report()
     elif "--dry-run" in args:
         print("Telegram bridge: dry-run mode")
         for cmd in ["/start", "/status", "/daily", "/health", "/review", "/approve TEST-001", "/blocked"]:

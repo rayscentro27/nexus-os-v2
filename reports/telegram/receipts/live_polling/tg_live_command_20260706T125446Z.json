@@ -1,0 +1,12 @@
+{
+  "type": "live_command",
+  "update_id": 197233127,
+  "chat_id": 1288928049,
+  "command": "/report",
+  "reply_ok": true,
+  "reply_length": 439,
+  "reply_preview": "Nexus Anytime Report\nScore: 92/100 ACTIVE_OPERATING_SYSTEM\nRunning: YES \u2014 17 processes\nOutputs: 350 receipts, 3 packets\nApprovals: 3 pending\nResearch: 25 items scored\n\nTop 3 Priorities:\n  1. Rotate Te",
+  "receipt_id": "tg_live_command_20260706T125446Z",
+  "timestamp": "2026-07-06T12:54:46.779904+00:00",
+  "source": "telegram_bridge"
+}
