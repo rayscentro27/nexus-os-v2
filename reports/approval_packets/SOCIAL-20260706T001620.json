@@ -1,0 +1,61 @@
+{
+  "item_id": "SOCIAL-20260706T001620",
+  "lane": "social_publishing",
+  "title": "Social Post: facebook image",
+  "safe_summary": "Facebook image \u2014 Caption: Test post from Nexus Credit Readiness...",
+  "risk_level": "medium",
+  "required_approval": "social_publish_approval",
+  "required_runner": "facebook_publish_runner",
+  "required_env": "FACEBOOK_ACCESS_TOKEN",
+  "required_receipt": "social_publish_receipt",
+  "current_status": "REVISION_REQUESTED",
+  "next_action": "Revise content based on: not creative enough, needs stronger hook",
+  "receipt_path": "reports/approval_lanes/receipts/SOCIAL-20260706T001620_receipt.json",
+  "dashboard_link": "/admin/approvals/SOCIAL-20260706T001620",
+  "workflow": [
+    {
+      "step": 1,
+      "action": "content_created",
+      "status": "complete"
+    },
+    {
+      "step": 2,
+      "action": "ray_review",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "action": "approve_publish",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "action": "publish_to_facebook",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "action": "write_receipt",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "action": "log_performance",
+      "status": "pending"
+    }
+  ],
+  "revision_memory": [
+    {
+      "feedback": "not creative enough, needs stronger hook",
+      "timestamp": "2026-07-06T00:16:35.774930+00:00"
+    }
+  ],
+  "content_data": {
+    "platform": "facebook",
+    "content_type": "image",
+    "caption": "Test post from Nexus Credit Readiness",
+    "media_path": null,
+    "platform_status": "supported"
+  },
+  "created_at": "2026-07-06T00:16:20.501205+00:00"
+}

@@ -1,0 +1,54 @@
+{
+  "item_id": "EMAIL-20260706T001620",
+  "lane": "customer_email",
+  "title": "Customer Email: Nexus Welcome",
+  "safe_summary": "Email to tes*** \u2014 Subject: Nexus Welcome...",
+  "risk_level": "medium",
+  "required_approval": "email_compliance_approval",
+  "required_runner": "resend_api_runner",
+  "required_env": "RESEND_API_KEY",
+  "required_receipt": "email_send_receipt",
+  "current_status": "DRAFT",
+  "next_action": "Submit for Ray Review via /approve EMAIL-20260706T001620",
+  "receipt_path": "reports/approval_lanes/receipts/EMAIL-20260706T001620_receipt.json",
+  "dashboard_link": "/admin/approvals/EMAIL-20260706T001620",
+  "workflow": [
+    {
+      "step": 1,
+      "action": "draft_created",
+      "status": "complete"
+    },
+    {
+      "step": 2,
+      "action": "ray_review",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "action": "approve_send",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "action": "send_via_resend",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "action": "write_receipt",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "action": "log_delivery",
+      "status": "pending"
+    }
+  ],
+  "email_data": {
+    "to": "test@example.com",
+    "subject": "Nexus Welcome",
+    "body": "<p>Welcome to Nexus OS v2</p>",
+    "from_name": "Nexus"
+  },
+  "created_at": "2026-07-06T00:16:20.397020+00:00"
+}

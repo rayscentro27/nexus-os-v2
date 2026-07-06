@@ -1,6 +1,6 @@
 # Research to Money Pipeline
 
-Generated: 2026-06-30T13:13:08.666122+00:00
+Generated: 2026-07-03T15:56:01.729699+00:00
 
 - ok: true
 - status: research_to_money_pipeline_active

@@ -1,11 +1,11 @@
 # Supabase Production Readiness
 
-Generated: 2026-06-29T16:39:08.334840+00:00
+Generated: 2026-07-05T22:42:22.381779+00:00
 
 - ok: true
 - status: ready_for_migration_review
-- existing_migration_count: 14
-- supabase_ready_export_count: 74
+- existing_migration_count: 15
+- supabase_ready_export_count: 154
 - mapped_export_count: 24
 - raw_env_values_included: false
 - live_database_inspected: false

@@ -80,7 +80,72 @@ def create_work_order(title, route, mode, source="telegram"):
     return wo
 
 def cmd_start():
-    return "Nexus Mobile Operator Console\n\nCommands:\n/status - System status\n/daily - Daily monitor\n/health - Health checks\n/review - Ray Review queue\n/approve <id> - Approve item\n/reject <id> <reason> - Reject\n/revise <id> <feedback> - Request revision\n/request <text> - Internal request\n/hermes <message> - Hermes advisory\n/alpha <topic-or-url> - Alpha research\n/orders - Work orders\n/recover - Recovery check\n/processes - Process registry\n/run <process-id> - Run safe process\n/blocked - Blocked actions"
+    return "Nexus Mobile Operator Console\n\nCommands:\n/report - Full anytime operator report\n/status - System status\n/daily - Daily monitor\n/research - Research/NotebookLM/Alpha status\n/content - Content drafts/social/email status\n/approvals - Ray Review queue count and summaries\n/orders - Work orders summary\n/hermes <msg> - Hermes advisory\n/recover - Recovery check\n/approve <id> - Approve item\n/reject <id> <reason> - Reject\n/revise <id> <feedback> - Request revision\n/request <text> - Internal request\n/alpha <topic> - Alpha research\n/processes - Process registry\n/run <id> - Run safe process\n/blocked - Blocked actions"
+
+def cmd_report():
+    try:
+        with open("reports/runtime/nexus_anytime_operator_report_latest.json") as f:
+            r = json.load(f)
+        s = r.get("system_status", {})
+        b = r.get("business_output_status", {})
+        a = r.get("approval_queue", {})
+        h = r.get("hermes_recommendation", {})
+        lines = [
+            f"Nexus Anytime Report",
+            f"Score: {s.get('active_os_score', '?')}/100 {s.get('classification', '')}",
+            f"Running: YES — {s.get('active_operator', {}).get('processes', 0)} processes",
+            f"Outputs: {b.get('receipts', 0)} receipts, {b.get('approval_packets', 0)} packets",
+            f"Approvals: {a.get('count', 0)} pending",
+            f"Research: {b.get('notebooklm_scored_items', 0)} items scored",
+            "",
+            "Top 3 Priorities:"
+        ]
+        for i, p in enumerate(h.get("top_3_priorities", []), 1):
+            lines.append(f"  {i}. {p}")
+        lines.append(f"\nCommands: /report /status /daily /research /content /approvals /orders /hermes /recover")
+        return "\n".join(lines)
+    except:
+        return "Anytime report not yet generated. Use /status instead."
+
+def cmd_research():
+    try:
+        with open("data/research_memory/notebooklm_scored_items_latest.json") as f:
+            items = json.load(f)
+        routes = {}
+        for item in items:
+            r = item.get("recommended_route", "unknown")
+            routes[r] = routes.get(r, 0) + 1
+        lines = [f"Research Status\n\nNotebookLM: {len(items)} items scored\n"]
+        for route, count in sorted(routes.items(), key=lambda x: -x[1]):
+            lines.append(f"  {route}: {count}")
+        return "\n".join(lines)
+    except:
+        return "Research data not available."
+
+def cmd_content():
+    packets = []
+    for f in os.listdir("reports/approval_packets"):
+        if f.endswith(".json"):
+            with open(f"reports/approval_packets/{f}") as fh:
+                packets.append(json.load(fh))
+    email_count = sum(1 for p in packets if p.get("lane") == "customer_email")
+    social_count = sum(1 for p in packets if p.get("lane") == "social_publishing")
+    stripe_count = sum(1 for p in packets if p.get("lane") == "stripe_test_checkout")
+    return f"Content Drafts Status\n\nEmail drafts: {email_count}\nSocial drafts: {social_count}\nStripe checkout requests: {stripe_count}\n\nUse /approvals to see details"
+
+def cmd_approvals_list():
+    packets = []
+    for f in os.listdir("reports/approval_packets"):
+        if f.endswith(".json"):
+            with open(f"reports/approval_packets/{f}") as fh:
+                packets.append(json.load(fh))
+    if not packets:
+        return "Approval Queue\n\nNo pending items."
+    lines = [f"Approval Queue ({len(packets)} items)\n"]
+    for p in packets:
+        lines.append(f"- {p.get('item_id')}: {p.get('lane')} — {p.get('current_status')}")
+    lines.append("\nUse /approve <id>, /reject <id> <reason>, /revise <id> <feedback>")
+    return "\n".join(lines)
 
 def cmd_status():
     registry = load_json(REGISTRY_PATH) or []
@@ -291,9 +356,12 @@ def process_command(text):
     handlers = {
         "/start": lambda a: cmd_start(),
         "/help": lambda a: cmd_start(),
+        "/report": lambda a: cmd_report(),
         "/status": lambda a: cmd_status(),
         "/daily": lambda a: cmd_daily(),
-        "/health": lambda a: cmd_health(),
+        "/research": lambda a: cmd_research(),
+        "/content": lambda a: cmd_content(),
+        "/approvals": lambda a: cmd_approvals_list(),
         "/review": lambda a: cmd_review(),
         "/approve": cmd_approve,
         "/reject": cmd_reject,

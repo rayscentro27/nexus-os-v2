@@ -1,0 +1,60 @@
+{
+  "item_id": "STRIPE-20260706T001620",
+  "lane": "stripe_test_checkout",
+  "title": "Stripe Test Checkout: Nexus Readiness Portal",
+  "safe_summary": "Test checkout for Nexus Readiness Portal \u2014 $100/month",
+  "risk_level": "low",
+  "required_approval": "billing_approval",
+  "required_runner": "stripe_test_checkout_runner",
+  "required_env": "STRIPE_SECRET_KEY",
+  "required_receipt": "stripe_checkout_receipt",
+  "current_status": "APPROVED_BUT_ENV_MISSING",
+  "next_action": "Set STRIPE_SECRET_KEY env var, then re-run",
+  "receipt_path": "reports/approval_lanes/receipts/STRIPE-20260706T001620_receipt.json",
+  "dashboard_link": "/admin/approvals/STRIPE-20260706T001620",
+  "workflow": [
+    {
+      "step": 1,
+      "action": "checkout_requested",
+      "status": "complete"
+    },
+    {
+      "step": 2,
+      "action": "ray_review",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "action": "approve_checkout",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "action": "create_stripe_session",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "action": "write_receipt",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "action": "log_access_state",
+      "status": "pending"
+    }
+  ],
+  "checkout_data": {
+    "tier": "tier1",
+    "tier_name": "Nexus Readiness Portal",
+    "product_id": "prod_Tn99pBvgTeJ9dx",
+    "price_id": "price_1SpYrL2MIMiohBBFTqGJqb0b",
+    "amount": 10000,
+    "interval": "month",
+    "test_email": "test@example.com",
+    "success_url": "http://localhost:5173/success",
+    "cancel_url": "http://localhost:5173/cancel",
+    "mode": "test_only"
+  },
+  "created_at": "2026-07-06T00:16:20.602168+00:00"
+}

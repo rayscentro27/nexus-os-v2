@@ -1,6 +1,6 @@
 # Nexus Daily Monitor Report
 
-**Generated**: 2026-07-05T20:14:39.994423+00:00
+**Generated**: 2026-07-06T00:11:23.114156+00:00
 
 ---
 
@@ -20,7 +20,7 @@
 | Metric | Value |
 |--------|-------|
 | Exists | True |
-| Last Run | 2026-07-05T20:14:22.396769+00:00 |
+| Last Run | 2026-07-06T00:11:18.087509+00:00 |
 | Processes Run | 17 |
 
 ---
@@ -47,18 +47,7 @@
 
 ## Blocked Actions
 
-- send_customer_email
-- post_to_social_media
-- place_trade
-- charge_customer
-- submit_credit_dispute
-- submit_grant_application
-- export_sensitive_client_data
-- modify_production_database
-- restart_production_services
-- send_sms
-- make_phone_calls
-- submit_legal_documents
+Guard active
 
 ---
 

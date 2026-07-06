@@ -28,3 +28,6 @@ supabase/.temp/
 .nexus_ui_backup_*/
 .nexus_backups/
 _incoming/
+
+# Local Netlify folder
+.netlify

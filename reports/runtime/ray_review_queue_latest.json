@@ -1,8 +1,8 @@
 {
   "ok": true,
-  "generated_at": "2026-07-03T01:00:12.434244+00:00",
+  "generated_at": "2026-07-06T01:00:03.825261+00:00",
   "status": "ray_review_queue_refreshed",
-  "cards_total": 60,
+  "cards_total": 55,
   "approve_today_count": 12,
   "external_actions_executed": 0,
   "external_action_performed": false
