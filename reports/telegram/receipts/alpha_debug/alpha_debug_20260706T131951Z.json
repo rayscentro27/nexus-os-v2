@@ -1,0 +1,9 @@
+{
+  "source": "process_command",
+  "raw_text": "research this idea for Nexus",
+  "detected_intent": "research_keyword",
+  "routed_to": "cmd_alpha_fallback",
+  "topic": "this idea for Nexus",
+  "receipt_id": "alpha_debug_20260706T131951Z",
+  "timestamp": "2026-07-06T13:19:51.818041+00:00"
+}

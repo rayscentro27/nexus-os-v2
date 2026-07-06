@@ -1,0 +1,8 @@
+{
+  "source": "process_command",
+  "raw_text": "what did Alpha find?",
+  "detected_intent": "followup:what_did_alpha_find",
+  "routed_to": "cmd_followup",
+  "receipt_id": "alpha_debug_20260706T131921Z",
+  "timestamp": "2026-07-06T13:19:21.835708+00:00"
+}

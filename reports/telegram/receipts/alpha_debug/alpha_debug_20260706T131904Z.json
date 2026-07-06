@@ -1,0 +1,9 @@
+{
+  "source": "process_command",
+  "raw_text": "Alpha research 5 low-cost ways GoClear can get paid readiness review clients this week",
+  "detected_intent": "alpha_keyword",
+  "routed_to": "cmd_alpha_fallback",
+  "topic": "5 low-cost ways GoClear can get paid readiness review clients this week",
+  "receipt_id": "alpha_debug_20260706T131904Z",
+  "timestamp": "2026-07-06T13:19:04.962545+00:00"
+}

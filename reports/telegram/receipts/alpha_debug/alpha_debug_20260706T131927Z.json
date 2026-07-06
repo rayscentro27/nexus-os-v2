@@ -1,0 +1,8 @@
+{
+  "source": "process_command",
+  "raw_text": "turn number 2 into a work order",
+  "detected_intent": "followup:turn_into_work_order",
+  "routed_to": "cmd_followup",
+  "receipt_id": "alpha_debug_20260706T131927Z",
+  "timestamp": "2026-07-06T13:19:27.874931+00:00"
+}

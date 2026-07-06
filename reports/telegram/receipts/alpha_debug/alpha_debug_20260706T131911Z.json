@@ -1,0 +1,8 @@
+{
+  "source": "process_command",
+  "raw_text": "which one should we do first?",
+  "detected_intent": "followup:which_one_first",
+  "routed_to": "cmd_followup",
+  "receipt_id": "alpha_debug_20260706T131911Z",
+  "timestamp": "2026-07-06T13:19:11.213289+00:00"
+}

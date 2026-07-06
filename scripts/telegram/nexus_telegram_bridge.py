@@ -23,6 +23,7 @@ Usage:
 import json
 import os
 import sys
+import re
 import hashlib
 import ssl
 import urllib.request
@@ -45,6 +46,13 @@ ALPHA_RECEIPT_DIR = "reports/telegram/receipts/alpha"
 APPROVAL_RECEIPT_DIR = "reports/telegram/receipts/approvals"
 INTERNAL_REQUEST_DIR = "reports/telegram/receipts/internal_requests"
 LIVE_POLLING_DIR = "reports/telegram/receipts/live_polling"
+ALPHA_DEBUG_DIR = "reports/telegram/receipts/alpha_debug"
+ALPHA_CONVERSATION_DIR = "reports/telegram/receipts/alpha_conversation"
+ALPHA_INTAKE_DIR = "data/alpha/intake"
+ALPHA_BRIEFS_DIR = "reports/alpha/briefs"
+ALPHA_SCORES_DIR = "reports/alpha/scores"
+ALPHA_ADVISORY_PATH = "reports/hermes/alpha_advisory_feed_latest.md"
+CONVERSATION_CONTEXT_PATH = "data/runtime/telegram_conversation_context.json"
 TELEGRAM_STATE_PATH = "data/runtime/telegram_last_update_id.json"
 TELEGRAM_REPORT_PATH = "reports/telegram/nexus_telegram_live_polling_activation.md"
 
@@ -121,8 +129,28 @@ def cmd_report():
             f"Approvals: {a.get('count', 0)} pending",
             f"Research: {b.get('notebooklm_scored_items', 0)} items scored",
             "",
-            "Top 3 Priorities:"
         ]
+
+        # Alpha section
+        ctx = load_conversation_context()
+        chat_ctx = get_chat_context(ctx, 1288928049)
+        if chat_ctx.get("last_topic"):
+            recs = chat_ctx.get("last_alpha_recommendations", [])
+            top = recs[0]["title"] if recs else "none"
+            lines.append(f"Alpha: active — {chat_ctx['last_topic']}")
+            lines.append(f"  Top rec: {top}")
+            needs = []
+            if not chat_ctx.get("last_work_order_path"):
+                needs.append("approve Alpha recommendation")
+            if needs:
+                lines.append(f"  Needs Ray: {', '.join(needs)}")
+        else:
+            lines.append("Alpha: no recent activity")
+
+        lines.extend([
+            "",
+            "Top 3 Priorities:"
+        ])
         for i, p in enumerate(h.get("top_3_priorities", []), 1):
             lines.append(f"  {i}. {p}")
         lines.append(f"\nCommands: /report /status /daily /research /content /approvals /orders /hermes /recover")
@@ -131,6 +159,9 @@ def cmd_report():
         return "Anytime report not yet generated. Use /status instead."
 
 def cmd_research():
+    lines = ["Research Status\n"]
+
+    # NotebookLM section
     try:
         with open("data/research_memory/notebooklm_scored_items_latest.json") as f:
             items = json.load(f)
@@ -138,12 +169,30 @@ def cmd_research():
         for item in items:
             r = item.get("recommended_route", "unknown")
             routes[r] = routes.get(r, 0) + 1
-        lines = [f"Research Status\n\nNotebookLM: {len(items)} items scored\n"]
+        lines.append(f"NotebookLM: {len(items)} items scored")
         for route, count in sorted(routes.items(), key=lambda x: -x[1]):
             lines.append(f"  {route}: {count}")
-        return "\n".join(lines)
     except:
-        return "Research data not available."
+        lines.append("NotebookLM: data not available")
+
+    # Alpha section
+    lines.append("")
+    lines.append("Alpha Intelligence:")
+    ctx = load_conversation_context()
+    chat_ctx = get_chat_context(ctx, 1288928049)
+    if chat_ctx.get("last_topic"):
+        lines.append(f"  Latest topic: {chat_ctx['last_topic']}")
+        lines.append(f"  Brief: {chat_ctx.get('last_alpha_brief_path', 'none')}")
+        lines.append(f"  Score: {chat_ctx.get('last_alpha_score_path', 'none')}")
+        recs = chat_ctx.get("last_alpha_recommendations", [])
+        if recs:
+            lines.append(f"  Top recommendation: {recs[0]['title']} ({recs[0]['score']}/10)")
+        lines.append(f"  Work order: {chat_ctx.get('last_work_order_path', 'none yet')}")
+    else:
+        lines.append("  No recent Alpha activity")
+        lines.append("  Send 'Alpha research <topic>' to start")
+
+    return "\n".join(lines)
 
 def cmd_content():
     packets = []
@@ -264,7 +313,6 @@ def cmd_hermes(args):
         return "Usage: /hermes <message>"
     message = " ".join(args)
 
-    import re
     patterns = [
         (r"research|find|discover", "research"),
         (r"youtube|video|channel", "youtube_research"),
@@ -588,6 +636,361 @@ def process_telegram_updates(token, dry_run=False):
     
     return f"PROCESSED {processed} | SKIPPED {skipped_unauthorized} unauthorized | LAST_UPDATE_ID {max_update_id}"
 
+# --- Conversation Context ---
+
+def load_conversation_context():
+    return load_json(CONVERSATION_CONTEXT_PATH) or {}
+
+def save_conversation_context(ctx):
+    save_json(CONVERSATION_CONTEXT_PATH, ctx)
+
+def get_chat_context(ctx, chat_id):
+    return ctx.get(str(chat_id), {})
+
+def update_chat_context(ctx, chat_id, updates):
+    key = str(chat_id)
+    if key not in ctx:
+        ctx[key] = {}
+    ctx[key].update(updates)
+    ctx[key]["updated_at"] = datetime.now(timezone.utc).isoformat()
+    save_conversation_context(ctx)
+
+# --- Alpha Debug Receipts ---
+
+def write_alpha_debug_receipt(data):
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    rid = f"alpha_debug_{ts}"
+    data["receipt_id"] = rid
+    data["timestamp"] = datetime.now(timezone.utc).isoformat()
+    path = os.path.join(ALPHA_DEBUG_DIR, f"{rid}.json")
+    save_json(path, data)
+    return rid
+
+# --- Alpha Intent Detection ---
+
+ALPHA_INTENT_PATTERNS = [
+    (r"^/alpha\b", "slash_alpha"),
+    (r"\balpha\b", "alpha_keyword"),
+    (r"\bresearch\b", "research_keyword"),
+    (r"\blook into\b", "look_into"),
+    (r"\bis this worth\b", "is_worth"),
+    (r"\bscore this\b", "score_this"),
+    (r"\bcompare\b", "compare"),
+    (r"\bpros and cons\b", "pros_cons"),
+]
+
+FOLLOWUP_INTENT_PATTERNS = [
+    (r"what did alpha find", "what_did_alpha_find"),
+    (r"what did.*find", "what_did_alpha_find"),
+    (r"which one should we do first", "which_one_first"),
+    (r"which one", "which_one_first"),
+    (r"turn (?:number )?(\d+) into a work order", "turn_into_work_order"),
+    (r"turn (\d+)", "turn_into_work_order"),
+    (r"send that to hermes", "send_to_hermes"),
+    (r"send it to hermes", "send_to_hermes"),
+]
+
+def detect_alpha_intent(text):
+    text_lower = text.lower().strip()
+    for pattern, intent in ALPHA_INTENT_PATTERNS:
+        if re.search(pattern, text_lower):
+            return intent
+    return None
+
+def detect_followup_intent(text):
+    text_lower = text.lower().strip()
+    for pattern, intent in FOLLOWUP_INTENT_PATTERNS:
+        match = re.search(pattern, text_lower)
+        if match:
+            return intent, match
+    return None, None
+
+# --- Alpha Fallback Handler ---
+
+def classify_alpha_topic(topic):
+    topic_lower = topic.lower()
+    if any(kw in topic_lower for kw in ["grant", "fund", "sbir", "sttr"]):
+        return "grant_opportunity"
+    if any(kw in topic_lower for kw in ["client", "customer", "revenue", "paid", "get paid"]):
+        return "client_acquisition"
+    if any(kw in topic_lower for kw in ["social", "tiktok", "instagram", "facebook", "post"]):
+        return "social_media"
+    if any(kw in topic_lower for kw in ["trade", "trading", "backtest", "forex"]):
+        return "trading"
+    if any(kw in topic_lower for kw in ["youtube", "video", "channel"]):
+        return "content_creation"
+    if any(kw in topic_lower for kw in ["stripe", "payment", "billing", "subscription"]):
+        return "payment_infrastructure"
+    return "general_strategy"
+
+def score_alpha_idea(idea, topic):
+    topic_lower = topic.lower()
+    speed = 5
+    cost = 5
+    difficulty = 5
+    risk = 3
+    relevance = 7
+
+    if any(kw in idea.lower() for kw in ["free", "low-cost", "organic", "no cost"]):
+        cost = 8
+    if any(kw in idea.lower() for kw in ["quick", "fast", "today", "this week"]):
+        speed = 8
+    if any(kw in idea.lower() for kw in ["complex", "build", "develop", "engineer"]):
+        difficulty = 3
+    if any(kw in idea.lower() for kw in ["trade", "invest", "financial"]):
+        risk = 2
+    if any(kw in idea.lower() for kw in topic_lower.split()):
+        relevance = 9
+
+    total = (speed + cost + difficulty + risk + relevance) / 5
+    return {
+        "total": round(total, 1),
+        "dimensions": {
+            "speed_to_value": speed,
+            "cost": cost,
+            "difficulty": difficulty,
+            "risk": risk,
+            "relevance": relevance,
+        },
+        "rationale": [
+            f"Speed to value: {speed}/10",
+            f"Cost efficiency: {cost}/10",
+            f"Difficulty: {difficulty}/10 (lower=easier)",
+            f"Risk: {risk}/10 (lower=safer)",
+            f"Relevance: {relevance}/10",
+        ],
+    }
+
+def generate_alpha_ideas(topic, category):
+    ideas = []
+    topic_lower = topic.lower()
+
+    if category == "client_acquisition":
+        ideas = [
+            {"title": "Post readiness assessment offer in local business Facebook groups", "why": "Direct access to business owners who need credit readiness", "action": "Draft post for Ray Review"},
+            {"title": "Create a free 'Credit Readiness Checklist' lead magnet", "why": "Captures emails, builds trust before paid engagement", "action": "Draft checklist for Ray Review"},
+            {"title": "Partner with local accountants for referrals", "why": "Accountants see clients who need credit prep", "action": "Draft outreach template"},
+            {"title": "Run a $20 Facebook ad targeting business owners", "why": "Low-cost targeted reach", "action": "Draft ad copy for Ray Review"},
+            {"title": "Offer free 15-min readiness calls", "why": "Low barrier, high conversion potential", "action": "Draft call script"},
+        ]
+    elif category == "grant_opportunity":
+        ideas = [
+            {"title": "Search SBIR/STTR open topics matching Nexus capabilities", "why": "Federal grants for tech businesses", "action": "Draft search criteria"},
+            {"title": "Check state-level small business grants", "why": "Less competition than federal", "action": "Draft state grant list"},
+            {"title": "Apply to Stripe Atlas or similar startup programs", "why": "Non-dilutive funding", "action": "Draft application checklist"},
+        ]
+    elif category == "social_media":
+        ideas = [
+            {"title": "Post daily credit tip threads", "why": "Builds authority and audience", "action": "Draft 5 tips for Ray Review"},
+            {"title": "Create short-form video explainers", "why": "High engagement on TikTok/Reels", "action": "Draft 3 video scripts"},
+            {"title": "Share client success stories (anonymized)", "why": "Social proof drives conversions", "action": "Draft template"},
+        ]
+    else:
+        ideas = [
+            {"title": f"Research core options for: {topic}", "why": "Establishes baseline understanding", "action": "Draft research plan"},
+            {"title": f"Identify quick wins related to: {topic}", "why": "Fastest path to value", "action": "Draft quick-win list"},
+            {"title": f"Map competitive landscape for: {topic}", "why": "Informed decision-making", "action": "Draft competitor list"},
+            {"title": f"Create a 1-page brief on: {topic}", "why": "Synthesizes findings for Ray Review", "action": "Draft brief outline"},
+            {"title": f"Define success metrics for: {topic}", "why": "Measurable outcomes", "action": "Draft metric framework"},
+        ]
+
+    return ideas[:5]
+
+def cmd_alpha_fallback(topic, source="test-command"):
+    if not topic:
+        return "Alpha is ready. Send a topic for research."
+
+    category = classify_alpha_topic(topic)
+    ideas = generate_alpha_ideas(topic, category)
+    scores = []
+
+    for idea in ideas:
+        sc = score_alpha_idea(idea["title"], topic)
+        idea["score"] = sc
+        scores.append(sc)
+
+    avg_score = round(sum(s["total"] for s in scores) / len(scores), 1) if scores else 0
+    ranked = sorted(enumerate(ideas), key=lambda x: x[1]["score"]["total"], reverse=True)
+
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    intake_id = f"alpha_{ts}"
+
+    # Write intake record
+    intake = {
+        "id": intake_id,
+        "topic": topic,
+        "category": category,
+        "ideas_count": len(ideas),
+        "average_score": avg_score,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "source": source,
+    }
+    save_json(os.path.join(ALPHA_INTAKE_DIR, f"{intake_id}.json"), intake)
+
+    # Write brief
+    brief_lines = [
+        f"# Alpha Brief: {topic}",
+        f"**Category**: {category}",
+        f"**Average Score**: {avg_score}/10",
+        f"**Ideas Generated**: {len(ideas)}",
+        f"**Created**: {datetime.now(timezone.utc).isoformat()}",
+        "",
+        "## Ranked Recommendations",
+        "",
+    ]
+    for rank, (idx, idea) in enumerate(ranked, 1):
+        brief_lines.append(f"### {rank}. {idea['title']}")
+        brief_lines.append(f"- Why: {idea['why']}")
+        brief_lines.append(f"- Score: {idea['score']['total']}/10")
+        brief_lines.append(f"- Action: {idea['action']}")
+        brief_lines.append("")
+
+    brief_lines.extend([
+        "## Disclaimer",
+        "Alpha created an internal research brief from available Nexus context.",
+        "Live external research is not configured in this path yet.",
+        "",
+        "## Next Steps",
+        "- 'which one should we do first?' — Ray gets top recommendation",
+        "- 'turn number 2 into a work order' — creates a work order",
+        "- 'send that to Hermes' — routes latest brief to Hermes",
+    ])
+    brief_path = os.path.join(ALPHA_BRIEFS_DIR, f"{intake_id}.md")
+    save_json(brief_path.replace(".md", ".json"), {"brief": "\n".join(brief_lines), "id": intake_id})
+    with open(brief_path, "w") as f:
+        f.write("\n".join(brief_lines))
+
+    # Write score record
+    score_record = {
+        "id": intake_id,
+        "topic": topic,
+        "category": category,
+        "ideas": [{"title": i["title"], "score": i["score"]["total"], "dimensions": i["score"]["dimensions"]} for i in ideas],
+        "average_score": avg_score,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    save_json(os.path.join(ALPHA_SCORES_DIR, f"{intake_id}.json"), score_record)
+
+    # Update Hermes advisory feed
+    advisory_lines = [
+        f"# Alpha Advisory Feed",
+        f"**Latest**: {datetime.now(timezone.utc).isoformat()}",
+        f"**Topic**: {topic}",
+        f"**Category**: {category}",
+        f"**Top Recommendation**: {ranked[0][1]['title'] if ranked else 'N/A'}",
+        f"**Score**: {ranked[0][1]['score']['total'] if ranked else 0}/10",
+        f"**Brief**: {brief_path}",
+        f"**Work Orders**: None yet — use 'turn number N into a work order'",
+    ]
+    with open(ALPHA_ADVISORY_PATH, "w") as f:
+        f.write("\n".join(advisory_lines))
+
+    # Save conversation context
+    ctx = load_conversation_context()
+    update_chat_context(ctx, 1288928049, {
+        "last_agent": "alpha",
+        "last_topic": topic,
+        "last_alpha_brief_path": brief_path,
+        "last_alpha_score_path": os.path.join(ALPHA_SCORES_DIR, f"{intake_id}.json"),
+        "last_alpha_recommendations": [{"title": i["title"], "action": i["action"], "score": i["score"]["total"]} for i in ideas],
+        "last_selected_item": None,
+        "last_work_order_path": None,
+    })
+
+    # Build reply
+    reply_lines = [
+        f"Alpha Research: {topic}",
+        f"Category: {category}",
+        f"Score: {avg_score}/10",
+        "",
+        "Top Recommendations:",
+    ]
+    for rank, (idx, idea) in enumerate(ranked[:3], 1):
+        reply_lines.append(f"  {rank}. {idea['title']} ({idea['score']['total']}/10)")
+
+    reply_lines.extend([
+        "",
+        f"Brief: {brief_path}",
+        "",
+        "Commands: 'which one should we do first?', 'turn number N into a work order', 'send that to Hermes'",
+        "",
+        "Note: Live external research not configured. This is an internal Nexus context brief.",
+    ])
+
+    return "\n".join(reply_lines)
+
+# --- Follow-up Handler ---
+
+def cmd_followup(intent, match, chat_id):
+    ctx = load_conversation_context()
+    chat_ctx = get_chat_context(ctx, chat_id)
+
+    if not chat_ctx.get("last_alpha_brief_path"):
+        return "I do not have a recent Alpha topic yet. Send 'Alpha research <topic>' or describe what to research."
+
+    if intent == "what_did_alpha_find":
+        brief_path = chat_ctx.get("last_alpha_brief_path", "")
+        if os.path.exists(brief_path):
+            with open(brief_path) as f:
+                brief = f.read()
+            recs = chat_ctx.get("last_alpha_recommendations", [])
+            lines = [f"Alpha found {len(recs)} recommendations for: {chat_ctx.get('last_topic', 'unknown')}"]
+            for i, r in enumerate(recs[:5], 1):
+                lines.append(f"  {i}. {r['title']} ({r['score']}/10)")
+            lines.append(f"\nFull brief: {brief_path}")
+            return "\n".join(lines)
+        return "Alpha brief not found. Send a new topic with 'Alpha research <topic>'."
+
+    elif intent == "which_one_first":
+        recs = chat_ctx.get("last_alpha_recommendations", [])
+        if not recs:
+            return "No Alpha recommendations found. Send 'Alpha research <topic>' first."
+        top = recs[0]
+        lines = [
+            f"Top recommendation:",
+            f"  {top['title']}",
+            f"  Score: {top['score']}/10",
+            f"  Action: {top.get('action', 'Review and approve')}",
+            "",
+            "Say 'turn number 1 into a work order' to create it.",
+        ]
+        update_chat_context(ctx, chat_id, {"last_selected_item": 1})
+        return "\n".join(lines)
+
+    elif intent == "turn_into_work_order":
+        match_text = match.group(1) if match else "1"
+        try:
+            idx = int(match_text) - 1
+        except ValueError:
+            idx = 0
+        recs = chat_ctx.get("last_alpha_recommendations", [])
+        if not recs or idx < 0 or idx >= len(recs):
+            return f"Recommendation #{match_text} not found. You have {len(recs)} recommendations."
+        rec = recs[idx]
+        wo = create_work_order(f"Alpha: {rec['title']}", "alpha_intake", "ACTIVE_INTERNAL", source="telegram_alpha_followup")
+        write_receipt("alpha", {
+            "type": "alpha_work_order",
+            "recommendation_title": rec["title"],
+            "work_order_id": wo["work_order_id"],
+            "mode": "ACTIVE_INTERNAL",
+        })
+        update_chat_context(ctx, chat_id, {"last_work_order_path": wo.get("work_order_id")})
+        return f"Work Order Created: {wo['work_order_id']}\nTitle: {rec['title']}\nRoute: alpha_intake\nMode: ACTIVE_INTERNAL"
+
+    elif intent == "send_to_hermes":
+        brief_path = chat_ctx.get("last_alpha_brief_path", "")
+        topic = chat_ctx.get("last_topic", "Alpha research")
+        wo = create_work_order(f"Hermes: Alpha brief — {topic}", "hermes_alpha", "ACTIVE_INTERNAL", source="telegram_alpha_followup")
+        write_receipt("hermes", {
+            "type": "hermes_alpha_handoff",
+            "brief_path": brief_path,
+            "work_order_id": wo["work_order_id"],
+            "topic": topic,
+        })
+        return f"Routed to Hermes\nWork Order: {wo['work_order_id']}\nTopic: {topic}\nBrief: {brief_path}"
+
+    return "Unknown follow-up. Try 'which one should we do first?' or 'turn number N into a work order'."
+
 def process_command(text):
     parts = text.strip().split()
     if not parts:
@@ -596,6 +999,7 @@ def process_command(text):
     cmd = parts[0].lower()
     args = parts[1:]
 
+    # Check for slash commands first
     handlers = {
         "/start": lambda a: cmd_start(),
         "/help": lambda a: cmd_start(),
@@ -622,6 +1026,43 @@ def process_command(text):
     handler = handlers.get(cmd)
     if handler:
         return handler(args)
+
+    # Not a slash command — try natural language routing
+    full_text = text.strip()
+
+    # Try follow-up intent first
+    followup_intent, followup_match = detect_followup_intent(full_text)
+    if followup_intent:
+        write_alpha_debug_receipt({
+            "source": "process_command",
+            "raw_text": full_text[:100],
+            "detected_intent": f"followup:{followup_intent}",
+            "routed_to": "cmd_followup",
+        })
+        return cmd_followup(followup_intent, followup_match, 1288928049)
+
+    # Try Alpha intent
+    alpha_intent = detect_alpha_intent(full_text)
+    if alpha_intent:
+        # Extract topic from the message
+        topic = full_text
+        for prefix in ["alpha research ", "alpha ", "research ", "look into ", "score this ", "compare "]:
+            if full_text.lower().startswith(prefix):
+                topic = full_text[len(prefix):].strip()
+                break
+        if not topic:
+            topic = full_text
+
+        write_alpha_debug_receipt({
+            "source": "process_command",
+            "raw_text": full_text[:100],
+            "detected_intent": alpha_intent,
+            "routed_to": "cmd_alpha_fallback",
+            "topic": topic[:100],
+        })
+        return cmd_alpha_fallback(topic, source="live_polling")
+
+    # Default: show help
     return cmd_start()
 
 def main():
