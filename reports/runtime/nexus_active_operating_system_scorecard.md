@@ -29,9 +29,9 @@
 
 ---
 
-## Overall Score: 89/100
+## Overall Score: 90/100
 
-**Classification: ACTIVE_WITH_BLOCKERS**
+**Classification: ACTIVE_OPERATING_SYSTEM**
 
 ---
 
@@ -49,11 +49,11 @@
 ## What's Active
 
 - ✅ Process registry (19 processes, validated)
-- ✅ Active runner (bounded, receipt-based, --once verified)
-- ✅ Daily monitor (script runs, reports written, verified)
-- ✅ Recovery check (script runs, work orders created, verified)
+- ✅ Active runner (bounded, receipt-based, --once verified, launchd hourly loaded)
+- ✅ Daily monitor (script runs, launchd loaded daily 08:00, verified)
+- ✅ Recovery check (script runs, launchd loaded every 3h, verified)
 - ✅ Telegram mobile operator console (LIVE connection, 15 commands pass, outbound works)
-- ✅ Blocked action guard (12 approval-gated actions, 2 infrastructure-blocked)
+- ✅ Approval-gated action guard (12 approval-gated actions, 7 lanes defined)
 - ✅ Receipts for all mutations (live receipts verified)
 - ✅ Hermes routing (23 patterns, Telegram route works live)
 - ✅ Alpha intake (13 types, Telegram route works live)
@@ -63,6 +63,7 @@
 - ✅ Stripe CLI (v1.40.8, test mode active, Nexus tiers aligned: $100/$197 monthly)
 - ✅ NotebookLM (legacy adapter works, normalization shim active, 25 items scored)
 - ✅ launchd (4 Nexus v2 jobs loaded: daily-operating, evening-closeout, active-operator-hourly, recovery-check)
+- ✅ Away-mode safe (all internal systems running, all external actions approval-gated)
 
 ---
 
