@@ -32,6 +32,15 @@ import urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Hermes web search imports
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hermes"))
+try:
+    from hermes_web_search import web_search as hermes_web_search, url_review as hermes_url_review
+    from hermes_research_advisor import build_advisory_answer
+    HERMES_SEARCH_AVAILABLE = True
+except ImportError:
+    HERMES_SEARCH_AVAILABLE = False
+
 # SSL context for Telegram API (handles macOS self-signed cert issues)
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -55,6 +64,8 @@ ALPHA_ADVISORY_PATH = "reports/hermes/alpha_advisory_feed_latest.md"
 CONVERSATION_CONTEXT_PATH = "data/runtime/telegram_conversation_context.json"
 TELEGRAM_STATE_PATH = "data/runtime/telegram_last_update_id.json"
 TELEGRAM_REPORT_PATH = "reports/telegram/nexus_telegram_live_polling_activation.md"
+HERMES_WEB_SEARCH_DIR = "reports/hermes/web_search"
+HERMES_URL_REVIEW_DIR = "reports/telegram/receipts/hermes_web_search"
 
 # Allowed chat IDs (Ray's private chat only)
 ALLOWED_CHAT_IDS = set()
@@ -182,10 +193,21 @@ def cmd_report():
         priorities.append("Connect Stripe test checkout to landing page/client portal")
         priorities.append("Set RESEND_API_KEY if customer email lane should become live approval-gated")
 
+        # Web search status
+        web_search_status = "NOT_CONFIGURED"
+        if HERMES_SEARCH_AVAILABLE:
+            providers = []
+            for env_name, label in [("BRAVE_SEARCH_API_KEY", "Brave"), ("TAVILY_API_KEY", "Tavily"),
+                                     ("SERPAPI_API_KEY", "SerpAPI"), ("ALPHA_SEARXNG_URL", "SearXNG")]:
+                if os.environ.get(env_name, "").strip():
+                    providers.append(label)
+            web_search_status = f"ACTIVE ({', '.join(providers)})" if providers else "AVAILABLE (no provider key)"
+
         for i, p in enumerate(priorities[:5], 1):
             lines.append(f"  {i}. {p}")
 
-        lines.append(f"\nCommands: /report /status /daily /research /content /approvals /orders /hermes /recover")
+        lines.append(f"\nWeb Search: {web_search_status}")
+        lines.append(f"Commands: /report /status /daily /research /content /approvals /orders /hermes /recover")
         return "\n".join(lines)
     except:
         return "Anytime report not yet generated. Use /status instead."
@@ -351,6 +373,30 @@ def hermes_direct_answer(message):
     """Give a direct advisory answer, then optionally create a work order."""
     message_lower = message.lower()
 
+    # Check if this needs web search
+    needs_web_search = False
+    search_query = message
+    for pat in HERMES_WEB_SEARCH_PATTERNS:
+        if re.search(pat, message_lower):
+            needs_web_search = True
+            # Extract query
+            query = message_lower
+            for prefix in ["hermes search the web for ", "hermes search web for ",
+                           "hermes research ", "hermes look up ", "hermes find ",
+                           "hermes check latest ", "hermes what are the best ",
+                           "hermes are there ", "search the web for ",
+                           "research ", "look up ", "what are the best ", "find "]:
+                if query.startswith(prefix):
+                    query = query[len(prefix):].strip()
+                    break
+            search_query = query or message
+            break
+
+    # Check if this is a URL review
+    url_match = re.search(r"https?://\S+", message_lower)
+    if url_match:
+        return _hermes_url_review_answer(url_match.group(0), message)
+
     # Read current state for contextual answers
     ctx = load_conversation_context()
     chat_ctx = get_chat_context(ctx, 1288928049)
@@ -367,8 +413,42 @@ def hermes_direct_answer(message):
     except:
         pass
 
-    # Build direct answer based on question type
-    if any(kw in message_lower for kw in ["priority", "priorities", "top priority", "what should", "what matters", "where should we focus"]):
+    # If web search is needed and available, use research advisor
+    if needs_web_search and HERMES_SEARCH_AVAILABLE:
+        try:
+            advisory = build_advisory_answer(search_query)
+            answer_lines = [
+                f"Hermes Research — {search_query[:60]}",
+                "",
+                advisory.get("answer", "No results."),
+                "",
+                f"Source: {advisory.get('provider', 'none')}",
+                f"Checked: {advisory.get('checked_at', 'unknown')[:16]}",
+            ]
+            if advisory.get("opportunity_score", {}).get("overall", 0) > 0:
+                score = advisory["opportunity_score"]
+                answer_lines.append(f"Score: {score['overall']}/10")
+            if advisory.get("risks"):
+                answer_lines.append(f"Risks: {'; '.join(advisory['risks'][:2])}")
+            if advisory.get("next_step"):
+                answer_lines.append(f"\n{advisory['next_step']}")
+
+            answer = "\n".join(answer_lines)
+        except Exception as e:
+            answer = f"Hermes search error: {str(e)[:100]}\n\nFalling back to internal context."
+    elif needs_web_search and not HERMES_SEARCH_AVAILABLE:
+        answer_lines = [
+            "Hermes web search is not available.",
+            "",
+            "The search module could not be imported.",
+            "Check that scripts/hermes/hermes_web_search.py exists.",
+            "",
+            f"Your query was: {search_query[:80]}",
+            "",
+            "I can still help with internal context and Alpha research.",
+        ]
+        answer = "\n".join(answer_lines)
+    elif any(kw in message_lower for kw in ["priority", "priorities", "top priority", "what should", "what matters", "where should we focus"]):
         answer_lines = [
             "Hermes Advisory — Today's Priorities:",
             "",
@@ -387,6 +467,7 @@ def hermes_direct_answer(message):
             "",
             "Reason: Telegram and Alpha are now working. The next bottleneck is converting visitors into portal users and paid readiness reviews.",
         ])
+        answer = "\n".join(answer_lines)
 
     elif any(kw in message_lower for kw in ["recommend", "suggest", "next step", "do next", "what do you"]):
         answer_lines = [
@@ -401,6 +482,7 @@ def hermes_direct_answer(message):
             answer_lines.append(f"- Review the Alpha recommendation for: {alpha_topic[:40]}")
         answer_lines.append("- Then push the GoClear landing page live")
         answer_lines.append("- After that, run Supabase verification and Stripe checkout test")
+        answer = "\n".join(answer_lines)
 
     elif any(kw in message_lower for kw in ["realistic", "risk", "stop", "block", "fail"]):
         answer_lines = [
@@ -414,6 +496,7 @@ def hermes_direct_answer(message):
             "",
             "Overall: low execution risk, medium urgency on landing page and Stripe connection.",
         ]
+        answer = "\n".join(answer_lines)
 
     elif any(kw in message_lower for kw in ["approval", "approve", "pending", "review"]):
         answer_lines = [
@@ -426,6 +509,7 @@ def hermes_direct_answer(message):
             answer_lines.append("Use /approvals to see details, then /approve <id> or /reject <id>.")
         else:
             answer_lines.append("No pending approvals. Queue is clear.")
+        answer = "\n".join(answer_lines)
 
     elif any(kw in message_lower for kw in ["status", "how is", "how are", "doing"]):
         score = "?"
@@ -443,7 +527,9 @@ def hermes_direct_answer(message):
             f"Alpha: {'active — ' + alpha_topic[:30] if alpha_topic != 'none' else 'no recent topic'}",
             f"Approvals: {approval_count} pending",
             f"Top Alpha rec: {top_rec[:40] if top_rec != 'none' else 'none'}",
+            f"Web search: {'AVAILABLE' if HERMES_SEARCH_AVAILABLE else 'NOT_CONFIGURED'}",
         ]
+        answer = "\n".join(answer_lines)
 
     else:
         # General advisory
@@ -456,12 +542,13 @@ def hermes_direct_answer(message):
             answer_lines.append(f"Latest Alpha topic: {alpha_topic[:50]}")
         if top_rec != "none":
             answer_lines.append(f"Top recommendation: {top_rec[:50]}")
+        if HERMES_SEARCH_AVAILABLE:
+            answer_lines.append("\nI can also search the web for current info. Try: 'hermes search the web for ...'")
         answer_lines.extend([
             "",
             "I can advise on priorities, risk, approvals, or next steps. What specifically do you want to discuss?",
         ])
-
-    answer = "\n".join(answer_lines)
+        answer = "\n".join(answer_lines)
 
     # Create a work order in the background (non-blocking)
     route = "hermes_general"
@@ -485,10 +572,49 @@ def hermes_direct_answer(message):
         "message": message[:200],
         "routed_to": route,
         "work_order_id": wo["work_order_id"],
-        "mode": "ACTIVE_INTERNAL"
+        "mode": "ACTIVE_INTERNAL",
+        "web_search_used": needs_web_search,
     })
 
     return f"{answer}\n\nWork Order: {wo['work_order_id']}"
+
+
+def _hermes_url_review_answer(url, full_message):
+    """Handle Hermes URL review requests."""
+    if HERMES_SEARCH_AVAILABLE:
+        try:
+            review = hermes_url_review(url)
+            lines = [
+                f"Hermes URL Review — {url[:60]}",
+                "",
+            ]
+            if review.get("title"):
+                lines.append(f"Title: {review['title']}")
+            if review.get("summary"):
+                lines.append(f"Summary: {review['summary'][:300]}")
+            lines.append(f"Provider: {review.get('provider', 'none')}")
+            lines.append(f"Status: {review.get('status', 'unknown')}")
+            if review.get("notes"):
+                lines.append(f"Notes: {'; '.join(review['notes'][:2])}")
+            lines.append("\nSay 'turn this into a work order' to create an approval-gated plan.")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"URL review error: {str(e)[:100]}"
+    else:
+        # Parse domain for limited safe guidance
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            domain = parsed.netloc or parsed.path
+        except:
+            domain = url
+        return (
+            f"URL Review — {url[:60]}\n\n"
+            f"Domain: {domain}\n"
+            f"Web search is not configured, so I cannot fetch live page content.\n\n"
+            f"To enable URL review, add FIRECRAWL_API_KEY or BRAVE_SEARCH_API_KEY.\n"
+            f"See docs/hermes_internet_search_setup.md for details."
+        )
 
 def cmd_alpha(args):
     if not args:
@@ -894,6 +1020,28 @@ HERMES_ADVISORY_PATTERNS = [
     r"^what'?s\s+blocking\s+us",
 ]
 
+# Web search intent — triggers live web research via Hermes
+HERMES_WEB_SEARCH_PATTERNS = [
+    r"^hermes\s+search\s+(the\s+)?web",
+    r"^hermes\s+research\b",
+    r"^hermes\s+look\s+up",
+    r"^hermes\s+find\s+(current|latest|recent|new)",
+    r"^hermes\s+what\s+are\s+the\s+best",
+    r"^hermes\s+find\s+open\s*source",
+    r"^hermes\s+check\s+latest",
+    r"^hermes\s+are\s+there\s+(grants|funding|opportunities)",
+    r"^hermes\s+find\s+affiliate",
+    r"^hermes\s+research\s+competitors",
+    r"^hermes\s+find\s+better",
+    r"^hermes\s+review\s+https?://",
+    r"^hermes\s+what\s+(is|are)\s+the\s+(best|top|current|latest)",
+    r"^search\s+the\s+web\s+for",
+    r"^research\s+(this|that|current|latest)\b",
+    r"^look\s+up\s+(current|latest|best|top)",
+    r"^what\s+are\s+the\s+best\s+.*\s+(tools|platforms|services|options|programs)",
+    r"^find\s+(current|latest|best|top|low[\s-]cost)",
+]
+
 NEXUS_STATUS_PATTERNS = [
     r"^what\s+(is|are)\s+the\s+status",
     r"^give\s+me\s+a\s+report",
@@ -960,6 +1108,28 @@ def classify_message_intent(text):
             # Extract the actual question
             question = re.sub(r"^hermes\s+", "", text_lower).strip()
             return "HERMES_ADVISORY", None, question
+
+    # HERMES_WEB_SEARCH (triggers live web research)
+    for pat in HERMES_WEB_SEARCH_PATTERNS:
+        if re.search(pat, text_lower):
+            # Extract the search query
+            query = text_lower
+            for prefix in ["hermes search the web for ", "hermes search web for ",
+                           "hermes research ", "hermes look up ", "hermes find ",
+                           "hermes check latest ", "hermes what are the best ",
+                           "hermes are there ", "hermes review ",
+                           "search the web for ", "research ", "look up ",
+                           "what are the best ", "find "]:
+                if query.startswith(prefix):
+                    query = query[len(prefix):].strip()
+                    break
+            # Clean up URL review queries
+            url_match = re.search(r"https?://\S+", text_lower)
+            if url_match:
+                return "HERMES_URL_REVIEW", None, url_match.group(0)
+            if not query:
+                query = text_lower
+            return "HERMES_WEB_SEARCH", None, query
 
     # NEXUS_STATUS_OR_REPORT
     for pat in NEXUS_STATUS_PATTERNS:
@@ -1457,6 +1627,57 @@ def process_command(text):
 
     elif intent == "HERMES_ADVISORY":
         return hermes_direct_answer(extra or full_text)
+
+    elif intent == "HERMES_WEB_SEARCH":
+        if HERMES_SEARCH_AVAILABLE:
+            try:
+                advisory = build_advisory_answer(extra or full_text)
+                lines = [
+                    f"Hermes Web Search — {extra[:60] if extra else 'query'}",
+                    "",
+                    advisory.get("answer", "No results."),
+                    "",
+                    f"Provider: {advisory.get('provider', 'none')}",
+                ]
+                if advisory.get("opportunity_score", {}).get("overall", 0) > 0:
+                    score = advisory["opportunity_score"]
+                    lines.append(f"Score: {score['overall']}/10")
+                if advisory.get("next_step"):
+                    lines.append(f"\n{advisory['next_step']}")
+                return "\n".join(lines)
+            except Exception as e:
+                return f"Search error: {str(e)[:100]}"
+        else:
+            return (
+                "Hermes web search is not configured.\n\n"
+                "No search provider key found. Add one of:\n"
+                "  BRAVE_SEARCH_API_KEY (recommended)\n"
+                "  TAVILY_API_KEY\n"
+                "  SERPAPI_API_KEY\n"
+                "  ALPHA_SEARXNG_URL\n\n"
+                f"Your query: {extra or 'N/A'}\n\n"
+                "See docs/hermes_internet_search_setup.md for details."
+            )
+
+    elif intent == "HERMES_URL_REVIEW":
+        if HERMES_SEARCH_AVAILABLE:
+            try:
+                review = hermes_url_review(extra or "")
+                lines = [
+                    f"Hermes URL Review — {extra[:60] if extra else 'URL'}",
+                    "",
+                ]
+                if review.get("title"):
+                    lines.append(f"Title: {review['title']}")
+                if review.get("summary"):
+                    lines.append(f"Summary: {review['summary'][:300]}")
+                lines.append(f"Provider: {review.get('provider', 'none')}")
+                lines.append(f"Status: {review.get('status', 'unknown')}")
+                return "\n".join(lines)
+            except Exception as e:
+                return f"URL review error: {str(e)[:100]}"
+        else:
+            return _hermes_url_review_answer(extra or "", "")
 
     elif intent == "NEXUS_STATUS_OR_REPORT":
         return handle_status_report()
