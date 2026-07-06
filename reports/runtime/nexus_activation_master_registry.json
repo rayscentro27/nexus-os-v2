@@ -1,345 +1,94 @@
 {
-  "generated_at": "2026-07-06T00:20:00Z",
-  "active_operating_mode": "ACTIVE_OPERATING_SYSTEM",
-  "active_score": 92,
-  "starting_commit": "3535590",
-  "latest_commit": "2bff447",
-  "branch": "main",
-  "active_process_registry": {
-    "total": 19,
-    "enabled": 17,
-    "validated": true,
-    "validation_report": "reports/runtime/nexus_process_registry_validation_latest.md"
+  "activation_date": "2026-07-06T00:00:00Z",
+  "final_activation_date": "2026-07-06T12:20:14.043482+00:00",
+  "current_commit": "6e17ee6",
+  "previous_commit": "45fbc99",
+  "classification": "ACTIVE_OPERATING_SYSTEM",
+  "active_os_score": 92,
+  "max_score": 100,
+  "activation_modes": {
+    "OBSERVE": true,
+    "DRY_RUN": true,
+    "SANDBOX_TEST": true,
+    "ACTIVE_INTERNAL": true,
+    "TELEGRAM_OPERATOR": true,
+    "APPROVAL_GATED_LIVE": true,
+    "APPROVED_LIVE": false,
+    "BLOCKED_AUTONOMOUS_EXECUTION": false,
+    "UNVERIFIED": false
   },
-  "active_runner": {
-    "exists": true,
-    "script": "scripts/operations/nexus_active_operator_runner.py",
-    "last_run": "2026-07-05T20:15:06Z",
-    "processes_run": 17,
-    "receipts_written": 17,
-    "heartbeat": "reports/runtime/nexus_active_operator_heartbeat_latest.json"
-  },
-  "daily_monitor": {
-    "exists": true,
-    "script": "scripts/operations/nexus_daily_monitor.py",
-    "last_run": "2026-07-05T20:14:39Z",
-    "report": "reports/runtime/nexus_daily_monitor_latest.md"
-  },
-  "recovery": {
-    "exists": true,
-    "script": "scripts/operations/nexus_recovery_check.py",
-    "last_run": "2026-07-05T20:14:39Z",
-    "report": "reports/runtime/nexus_recovery_check_latest.md"
-  },
-  "telegram_mobile_operator": {
-    "bridge_exists": true,
-    "bridge_script": "scripts/telegram/nexus_telegram_bridge.py",
-    "approval_handler": "scripts/telegram/nexus_telegram_approval_handler.py",
-    "internal_request_handler": "scripts/telegram/nexus_telegram_internal_request_handler.py",
-    "env_classification": "TELEGRAM_OPERATOR_ACTIVE_ROTATION_REQUIRED",
-    "live_connection": true,
-    "token_status": "VALID_ROTATION_REQUIRED",
-    "bot_username": "NexusHermes27bot",
-    "bot_id": 8935612290,
-    "private_chat_id": "1288928049",
-    "group_chat_id": null,
-    "bot_id_mistaken_as_chat_id": true,
-    "outbound_test": "PASS",
-    "command_tests": "15/15_PASS",
-    "bridge_dry_run": "PASS",
-    "bridge_once": "PASS",
-    "active_runner_once": "PASS",
-    "daily_monitor": "PASS",
-    "recovery_check": "PASS",
-    "bot_menu_commands": 17,
-    "commands_working": 15,
-    "blocked_actions_guarded": 12,
-    "receipts_dir": "reports/telegram/receipts/",
-    "live_activation_receipts": "reports/telegram/receipts/live_activation/",
-    "test_report": "reports/telegram/nexus_telegram_live_bridge_verification.md"
-  },
-  "telegram_approval": {
-    "handler_exists": true,
-    "receipts_dir": "reports/telegram/receipts/approvals/",
-    "tested": true
-  },
-  "telegram_internal_requests": {
-    "handler_exists": true,
-    "receipts_dir": "reports/telegram/receipts/internal_requests/",
-    "work_orders_path": "reports/work_orders/nexus_internal_work_orders_latest.json",
-    "tested": true
-  },
-  "hermes_telegram_route": {
-    "exists": true,
-    "receipts_dir": "reports/telegram/receipts/hermes/",
-    "tested": true
-  },
-  "alpha_telegram_route": {
-    "exists": true,
-    "receipts_dir": "reports/telegram/receipts/alpha/",
-    "tested": true
-  },
-  "safe_run_command": {
-    "tested": true,
-    "safe_processes": 17,
-    "blocked_processes": 2
-  },
-  "supabase_verification": {
-    "classification": "ENV_PRESENT_BROWSER_EXPECTED",
-    "env_keys_present": true,
-    "client_code": "src/lib/supabaseClient.ts",
-    "edge_functions": "supabase/functions/hermes-chat/, hermes-search/, _shared/firewall.ts",
-    "migrations": "11+ SQL files, 24-table schema",
-    "frontend_service_layer": "src/services/db.ts",
-    "scripts": "6 scripts in scripts/supabase/",
-    "browser_verification": "unverified",
-    "report": "reports/supabase/nexus_supabase_existing_verification_latest.md"
-  },
-  "command_center_ux": {
-    "status": "active",
-    "real_queries": true,
-    "honest_empty_states": true,
-    "report": "reports/runtime/nexus_command_center_active_ux_report.md"
-  },
-  "client_portal_premium_shell": {
-    "status": "IMPLEMENTED",
-    "data_adapter": true,
-    "premium_shell": true,
-    "ten_journey_pages": true,
-    "responsive_css": true,
-    "hermes_guidance_panel": true,
-    "report": "reports/client_portal/nexus_client_portal_premium_shell_completion_report.md"
-  },
-  "stripe_test_paywall": {
-    "classification": "STRIPE_TIER_1_VERIFIED_TIER_2_CREATED",
-    "cli_version": "1.40.8",
-    "cli_connected": true,
-    "test_mode_verified": true,
-    "env_stripe_secret_key": true,
-    "existing_products": 5,
-    "existing_subscription_tiers": {
-      "gold": {
-        "product_id": "prod_Tn99pBvgTeJ9dx",
-        "price_id": "price_1SpYrL2MIMiohBBFTqGJqb0b",
-        "amount": 100,
-        "interval": "month"
-      },
-      "silver": {
-        "product_id": "prod_Tn992DjsD7mx6h",
-        "price_id": "price_1SpYrK2MIMiohBBFo1FmUxKE",
-        "amount": 50,
-        "interval": "month"
-      },
-      "bronze": {
-        "product_id": "prod_Tn99slXYkPQNHv",
-        "price_id": "price_1SpYrJ2MIMiohBBF3geiTNZc",
-        "amount": 10,
-        "interval": "month"
-      }
+  "components": {
+    "active_operator": {
+      "status": "loaded",
+      "schedule": "hourly"
     },
-    "proposed_tier_1": "Nexus Readiness Portal $97/month",
-    "proposed_tier_2": "Nexus Funding Builder Plus $197/month",
-    "test_scripts": 16,
-    "report": "reports/payments/nexus_stripe_existing_test_mode_audit_latest.md",
-    "pricing_research": "docs/payments/nexus_two_tier_pricing_research.md",
-    "nexus_tier_1": {
-      "product_id": "prod_Tn99pBvgTeJ9dx",
-      "price_id": "price_1SpYrL2MIMiohBBFTqGJqb0b",
-      "amount": 100,
-      "name": "Nexus Readiness Portal"
+    "daily_monitor": {
+      "status": "loaded",
+      "schedule": "daily 08:00"
     },
-    "nexus_tier_2": {
-      "product_id": "prod_UpeRRU4DGE1AvS",
-      "price_id": "price_1Tpz922MIMiohBBFuzM642Hu",
-      "amount": 197,
-      "name": "Nexus Funding Builder Plus"
-    }
-  },
-  "blocked_action_guard": {
-    "active": true,
-    "blocked_actions": 12,
-    "guard_script": "scripts/operations/nexus_blocked_action_guard.py",
-    "guard_data": "data/operations/nexus_blocked_action_guard.json",
-    "report": "reports/runtime/nexus_blocked_action_guard_latest.md",
-    "classification": "APPROVAL_GATED_LIVE_READY",
-    "model": "APPROVAL_GATED_LIVE",
-    "approval_gated_actions": 12,
-    "infrastructure_blocked": 2,
-    "lanes_definition": "data/operations/nexus_approval_gated_lanes.json"
-  },
-  "active_operating_system_score": {
-    "score": 92,
-    "classification": "ACTIVE_OPERATING_SYSTEM",
-    "target_score": 90,
-    "scorecard": "reports/runtime/nexus_active_operating_system_scorecard.md"
-  },
-  "launchd_audit": {
-    "classification": "LAUNCHD_INSTALLED_AND_VERIFIED",
-    "nexus_v2_jobs_found": 3,
-    "jobs": {
-      "daily_operating": {
-        "label": "com.nexus.daily-operating",
-        "schedule": "daily 08:00",
-        "loaded": false,
-        "last_run": "2026-07-04 08:03"
-      },
-      "evening_closeout": {
-        "label": "com.nexus.evening-closeout",
-        "schedule": "daily 18:00",
-        "loaded": false,
-        "last_run": "2026-07-04 18:00"
-      },
-      "continuous_ops_daily": {
-        "label": "com.nexus.continuous-ops-daily",
-        "schedule": "every 30min",
-        "loaded": false
-      }
+    "evening_closeout": {
+      "status": "loaded",
+      "schedule": "daily 18:00"
     },
-    "desired_new_jobs": [
-      "active_operator (hourly)",
-      "recovery_check (every 3h)"
-    ],
-    "report": "reports/runtime/nexus_launchd_existing_audit_latest.md",
-    "install_guide": "docs/operations/nexus_launchd_status_and_install.md",
-    "jobs_loaded": [
-      "com.nexus.daily-operating",
-      "com.nexus.evening-closeout",
-      "com.nexus.active-operator-hourly",
-      "com.nexus.recovery-check"
-    ]
-  },
-  "notebooklm_alignment": {
-    "classification": "NOTEBOOKLM_NORMALIZATION_SHIM_ACTIVE",
-    "scripts_found": 21,
-    "access_mode": "legacy_adapter",
-    "legacy_adapter_callable": true,
-    "cli_callable": false,
-    "export_bundles_exist": true,
-    "scoring_alignment": "needs_normalization_shim",
-    "report": "reports/research/nexus_notebooklm_existing_parser_audit_latest.md",
-    "items_normalized": 25,
-    "shim_script": "scripts/research/notebooklm_normalization_shim.py"
-  },
-  "reports_created": [
-    "reports/runtime/nexus_active_operator_sprint_preflight.md",
-    "reports/runtime/nexus_process_registry_validation_latest.md",
-    "reports/runtime/nexus_active_operator_heartbeat_latest.json",
-    "reports/runtime/nexus_active_operator_runner_latest.md",
-    "reports/runtime/nexus_daily_monitor_latest.md",
-    "reports/runtime/nexus_daily_monitor_latest.json",
-    "reports/runtime/nexus_recovery_check_latest.md",
-    "reports/runtime/nexus_recovery_work_orders_latest.json",
-    "reports/runtime/nexus_command_center_active_ux_report.md",
-    "reports/runtime/nexus_blocked_action_guard_latest.md",
-    "reports/runtime/nexus_active_operating_system_scorecard.md",
-    "reports/runtime/nexus_existing_tests_run_latest.md",
-    "reports/runtime/nexus_existing_systems_verification_preflight.md",
-    "reports/runtime/nexus_launchd_existing_audit_latest.md",
-    "reports/supabase/nexus_supabase_browser_verification_latest.md",
-    "reports/supabase/nexus_supabase_existing_verification_latest.md",
-    "reports/client_portal/nexus_client_portal_premium_shell_report.md",
-    "reports/client_portal/nexus_client_portal_premium_shell_completion_report.md",
-    "reports/payments/nexus_stripe_test_mode_paywall_report.md",
-    "reports/payments/nexus_stripe_existing_test_mode_audit_latest.md",
-    "reports/research/nexus_notebooklm_existing_parser_audit_latest.md",
-    "reports/telegram/nexus_telegram_mobile_operator_test_report.md",
-    "reports/telegram/nexus_telegram_approval_operator_report.md",
-    "reports/telegram/nexus_telegram_live_bridge_verification.md",
-    "reports/telegram/nexus_telegram_token_rotation_required.md",
-    "docs/operations/nexus_active_operating_modes.md",
-    "docs/operations/nexus_active_operator_runner.md",
-    "docs/operations/nexus_launchd_status_and_install.md",
-    "docs/telegram/nexus_telegram_env_contract.md",
-    "docs/telegram/nexus_telegram_mobile_operator_contract.md",
-    "docs/telegram/nexus_telegram_command_contract.md",
-    "docs/payments/nexus_stripe_test_mode_contract.md",
-    "docs/payments/nexus_two_tier_pricing_research.md"
-  ],
-  "receipts_dirs": [
-    "reports/runtime/nexus_active_operator_receipts/",
-    "reports/telegram/receipts/approvals/",
-    "reports/telegram/receipts/internal_requests/",
-    "reports/telegram/receipts/hermes/",
-    "reports/telegram/receipts/alpha/",
-    "reports/telegram/receipts/live_activation/"
-  ],
-  "remaining_blockers": [
-    "Token rotation required (exposed token must be revoked, telegram plist secrets cleared)",
-    "Supabase browser verification (Ray needs to open app and check DevTools)",
-    "Stripe frontend integration (fill product/price IDs in goclearPaymentOfferContract.ts)",
-    "RESEND_API_KEY needed for live email sending",
-    "Social platform access tokens needed for live publishing",
-    "Stripe subscription management UI (not built)"
-  ],
-  "manual_actions_required": [
-    "Open app in browser and check Supabase Network requests",
-    "Fill Stripe product/price IDs in goclearPaymentOfferContract.ts",
-    "Rotate Telegram token and update plist",
-    "Optional: Build Stripe subscription management UI"
-  ],
-  "away_mode": {
-    "safe_to_leave": true,
-    "launchd_jobs_running": 4,
-    "external_actions": "APPROVAL_GATED_LIVE",
-    "telegram": "READY_BUT_TOKEN_ROTATION_REQUIRED",
-    "what_nexus_does": [
-      "monitor",
-      "research",
-      "score",
-      "draft",
-      "prepare",
-      "route",
-      "create_work_orders",
-      "generate_approval_packets",
-      "write_receipts",
-      "run_recovery_checks"
-    ],
-    "what_nexus_does_not_do": [
-      "send_emails",
-      "post_social",
-      "charge_customers",
-      "submit_disputes",
-      "submit_grants",
-      "place_trades",
-      "export_sensitive_data"
-    ]
-  },
-  "approval_gated_lanes": {
-    "customer_email": {
-      "status": "APPROVAL_GATED_READY",
-      "script": "scripts/approval_lanes/nexus_customer_email_lane.py",
-      "doc": "docs/approval_lanes/customer_email_lane.md",
-      "required_env": "RESEND_API_KEY"
+    "recovery_check": {
+      "status": "loaded",
+      "schedule": "every 3h"
     },
-    "social_publishing": {
-      "status": "APPROVAL_GATED_READY",
-      "script": "scripts/approval_lanes/nexus_social_publishing_lane.py",
-      "doc": "docs/approval_lanes/social_publishing_lane.md",
-      "supported_platforms": [
-        "facebook",
-        "instagram"
-      ],
-      "pending_platforms": [
-        "tiktok",
-        "youtube",
-        "x",
-        "linkedin"
+    "telegram_bridge": {
+      "status": "ready",
+      "note": "token rotation needed"
+    },
+    "notebooklm_normalization": {
+      "status": "active",
+      "items_scored": 25
+    },
+    "approval_packets": {
+      "status": "active",
+      "count": 3
+    },
+    "business_lanes": {
+      "status": "active",
+      "lanes": [
+        "customer_email",
+        "social_publishing",
+        "stripe_test_checkout"
       ]
     },
-    "stripe_test_checkout": {
-      "status": "APPROVAL_GATED_READY",
-      "script": "scripts/approval_lanes/nexus_stripe_test_checkout_lane.py",
-      "doc": "docs/approval_lanes/stripe_test_checkout_lane.md",
-      "tiers": {
-        "tier1": {
-          "name": "Nexus Readiness Portal",
-          "price": "$100/month"
-        },
-        "tier2": {
-          "name": "Nexus Funding Builder Plus",
-          "price": "$197/month"
-        }
-      }
+    "client_portal": {
+      "status": "active",
+      "pages": 10
+    },
+    "alpha_intelligence": {
+      "status": "active",
+      "intake_types": 13
     }
+  },
+  "remaining_gaps": [
+    {
+      "gap": "telegram_token_rotation",
+      "fix": "Rotate via BotFather",
+      "impact": "full_operator_control"
+    },
+    {
+      "gap": "supabase_browser_verification",
+      "fix": "Open app, check Network tab",
+      "impact": "2_minutes"
+    },
+    {
+      "gap": "resend_api_key",
+      "fix": "Set in .env",
+      "impact": "customer_email_lane"
+    },
+    {
+      "gap": "social_platform_tokens",
+      "fix": "Set for live publishing",
+      "impact": "social_publishing_lane"
+    }
+  ],
+  "tests": {
+    "passing": 1196,
+    "failing": 1,
+    "total": 1197,
+    "note": "1 pre-existing failure (.chat method detection)"
   }
 }
