@@ -379,7 +379,14 @@ export function GoClearSignupPage() {
     });
 
     if (error) {
-      setErr(error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("already registered")) {
+        setErr("An account with this email already exists. Try logging in instead.");
+      } else if (msg.includes("password")) {
+        setErr("Password does not meet requirements. Please use at least 8 characters with a number, uppercase letter, and special character.");
+      } else {
+        setErr(error.message);
+      }
       setBusy(false);
     } else {
       setDone(true);
@@ -658,7 +665,14 @@ export function GoClearLoginPage() {
     setErr("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setErr(error.message);
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed")) {
+        setErr("Please check your email and click the confirmation link before signing in. Check your spam folder if you don't see it.");
+      } else if (msg.includes("invalid login credentials")) {
+        setErr("Incorrect email or password. Please try again.");
+      } else {
+        setErr(error.message);
+      }
       setBusy(false);
     } else {
       window.location.assign("/client");

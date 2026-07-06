@@ -1,4 +1,4 @@
-import { AuthGate } from '../components/auth';
+import { AuthGate, useSession } from '../components/auth';
 // Redesigned Nexus admin dashboard (mock data, no backend calls). Rendered after auth.
 // The previous Shell remains in the repo (src/components/Shell.tsx) and can be restored if needed.
 import NexusAdminUI from '../admin/NexusAdminUI';
@@ -10,6 +10,16 @@ import {
   GoClearPricingPage,
   GoClearLoginPage,
 } from '../pages/goclear/GoClearPublicPages';
+
+function ClientPortalGate() {
+  const { user, loading } = useSession();
+  if (loading) return <div className="authwrap"><div className="muted">Loading…</div></div>;
+  if (!user) {
+    window.location.assign('/goclear/login');
+    return <div className="authwrap"><div className="muted">Redirecting to login…</div></div>;
+  }
+  return <ClientPortalRoot />;
+}
 
 export function App() {
   const path = window.location.pathname;
@@ -25,7 +35,7 @@ export function App() {
     return <UpdatePasswordPage />;
   }
   if (path === '/client' || path.startsWith('/client/')) {
-    return <ClientPortalRoot />;
+    return <ClientPortalGate />;
   }
   // Local browser smoke tests need to exercise the operating shell without a real admin session.
   // Vite replaces DEV with false in production, so this route cannot bypass live authentication.

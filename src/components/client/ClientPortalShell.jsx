@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import {
   BadgeCheck, Bell, Building2, ChartNoAxesCombined, ChevronDown, FileText,
   Gauge, Home, Mail, Menu, Settings, Sparkles, UserRound, X, CircleCheck,
-  Landmark, Lightbulb, MessageSquare, Star, Wallet,
+  Landmark, Lightbulb, MessageSquare, Star, Wallet, LogOut,
 } from 'lucide-react'
 import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
+import { supabase } from '../../lib/supabaseClient'
 
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Home', icon: Home },
@@ -63,6 +64,7 @@ export function ClientHeader({ path, onNavigate, onMenu }) {
         <span className="client-access-badge">{profile.membershipTier}</span>
         <button className="client-request-review-btn" onClick={() => onNavigate('/client/request-review')}>Request Review</button>
         <button className="client-icon-button" aria-label="Notifications"><Bell size={18} /><em>2</em></button>
+        <button className="client-icon-button" aria-label="Sign out" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/goclear/login'); }}><LogOut size={18} /></button>
         <div className="client-avatar"><UserRound size={18} /></div>
       </div>
     </header>
