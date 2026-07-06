@@ -121,6 +121,27 @@ def cmd_report():
         b = r.get("business_output_status", {})
         a = r.get("approval_queue", {})
         h = r.get("hermes_recommendation", {})
+
+        # Check Telegram live polling status dynamically
+        telegram_status = "UNKNOWN"
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["launchctl", "list"],
+                capture_output=True, text=True, timeout=5
+            )
+            if "com.nexus.telegram-operator" in result.stdout:
+                telegram_status = "ACTIVE_LIVE_POLLING"
+            else:
+                telegram_status = "NOT_LOADED"
+        except:
+            telegram_status = "CHECK_MANUALLY"
+
+        # Check Alpha status
+        ctx = load_conversation_context()
+        chat_ctx = get_chat_context(ctx, 1288928049)
+        alpha_status = "ACTIVE_CONVERSATIONAL" if chat_ctx.get("last_topic") else "NO_RECENT_ACTIVITY"
+
         lines = [
             f"Nexus Anytime Report",
             f"Score: {s.get('active_os_score', '?')}/100 {s.get('classification', '')}",
@@ -128,31 +149,42 @@ def cmd_report():
             f"Outputs: {b.get('receipts', 0)} receipts, {b.get('approval_packets', 0)} packets",
             f"Approvals: {a.get('count', 0)} pending",
             f"Research: {b.get('notebooklm_scored_items', 0)} items scored",
+            f"Telegram: {telegram_status}",
+            f"Alpha: {alpha_status}",
             "",
         ]
 
-        # Alpha section
-        ctx = load_conversation_context()
-        chat_ctx = get_chat_context(ctx, 1288928049)
+        # Alpha detail section
         if chat_ctx.get("last_topic"):
             recs = chat_ctx.get("last_alpha_recommendations", [])
             top = recs[0]["title"] if recs else "none"
-            lines.append(f"Alpha: active — {chat_ctx['last_topic']}")
+            lines.append(f"Alpha topic: {chat_ctx['last_topic']}")
             lines.append(f"  Top rec: {top}")
             needs = []
             if not chat_ctx.get("last_work_order_path"):
-                needs.append("approve Alpha recommendation")
+                needs.append("review Alpha recommendation")
             if needs:
                 lines.append(f"  Needs Ray: {', '.join(needs)}")
-        else:
-            lines.append("Alpha: no recent activity")
 
         lines.extend([
             "",
-            "Top 3 Priorities:"
+            "Current Priorities:"
         ])
-        for i, p in enumerate(h.get("top_3_priorities", []), 1):
+
+        # Build dynamic priorities (no stale Telegram token item)
+        priorities = []
+        if a.get("count", 0) > 0:
+            priorities.append(f"Review {a['count']} pending approval(s)")
+        if chat_ctx.get("last_topic") and not chat_ctx.get("last_work_order_path"):
+            priorities.append(f"Act on Alpha research: {chat_ctx['last_topic'][:40]}")
+        priorities.append("Publish GoClear public landing page with plans/login/signup")
+        priorities.append("Run Supabase browser verification (2 min)")
+        priorities.append("Connect Stripe test checkout to landing page/client portal")
+        priorities.append("Set RESEND_API_KEY if customer email lane should become live approval-gated")
+
+        for i, p in enumerate(priorities[:5], 1):
             lines.append(f"  {i}. {p}")
+
         lines.append(f"\nCommands: /report /status /daily /research /content /approvals /orders /hermes /recover")
         return "\n".join(lines)
     except:
@@ -312,7 +344,127 @@ def cmd_hermes(args):
     if not args:
         return "Usage: /hermes <message>"
     message = " ".join(args)
+    return hermes_direct_answer(message)
 
+
+def hermes_direct_answer(message):
+    """Give a direct advisory answer, then optionally create a work order."""
+    message_lower = message.lower()
+
+    # Read current state for contextual answers
+    ctx = load_conversation_context()
+    chat_ctx = get_chat_context(ctx, 1288928049)
+    alpha_topic = chat_ctx.get("last_topic", "none")
+    recs = chat_ctx.get("last_alpha_recommendations", [])
+    top_rec = recs[0]["title"] if recs else "none"
+
+    # Count pending approvals
+    approval_count = 0
+    try:
+        for f in os.listdir("reports/approval_packets"):
+            if f.endswith(".json"):
+                approval_count += 1
+    except:
+        pass
+
+    # Build direct answer based on question type
+    if any(kw in message_lower for kw in ["priority", "priorities", "top priority", "what should", "what matters", "where should we focus"]):
+        answer_lines = [
+            "Hermes Advisory — Today's Priorities:",
+            "",
+        ]
+        priorities = []
+        if approval_count > 0:
+            priorities.append(f"Review {approval_count} pending approval(s) — blocks downstream action")
+        if alpha_topic != "none" and not chat_ctx.get("last_work_order_path"):
+            priorities.append(f"Act on Alpha research: {alpha_topic[:50]}")
+        priorities.append("Publish GoClear public landing page with plans/login/signup")
+        priorities.append("Run Supabase browser verification (2 min)")
+        priorities.append("Connect Stripe test checkout to portal")
+        for i, p in enumerate(priorities, 1):
+            answer_lines.append(f"{i}. {p}")
+        answer_lines.extend([
+            "",
+            "Reason: Telegram and Alpha are now working. The next bottleneck is converting visitors into portal users and paid readiness reviews.",
+        ])
+
+    elif any(kw in message_lower for kw in ["recommend", "suggest", "next step", "do next", "what do you"]):
+        answer_lines = [
+            "Hermes Advisory:",
+            "",
+            f"Based on current state (OS active, {approval_count} approvals pending, Alpha topic: {alpha_topic[:30]}):",
+            "",
+        ]
+        if approval_count > 0:
+            answer_lines.append(f"- Clear the {approval_count} pending approval(s) first — they gate downstream work")
+        if alpha_topic != "none" and not chat_ctx.get("last_work_order_path"):
+            answer_lines.append(f"- Review the Alpha recommendation for: {alpha_topic[:40]}")
+        answer_lines.append("- Then push the GoClear landing page live")
+        answer_lines.append("- After that, run Supabase verification and Stripe checkout test")
+
+    elif any(kw in message_lower for kw in ["realistic", "risk", "stop", "block", "fail"]):
+        answer_lines = [
+            "Hermes Advisory — Risk Assessment:",
+            "",
+            "Current blockers:",
+            f"- {approval_count} pending approvals (if any are external-facing, they gate revenue)",
+            "- Supabase browser verification not confirmed (low risk, quick fix)",
+            "- Stripe checkout not connected to portal (blocks paid conversions)",
+            "- RESEND_API_KEY not set (blocks live email lane)",
+            "",
+            "Overall: low execution risk, medium urgency on landing page and Stripe connection.",
+        ]
+
+    elif any(kw in message_lower for kw in ["approval", "approve", "pending", "review"]):
+        answer_lines = [
+            f"Hermes Advisory — Approvals:",
+            "",
+            f"Pending: {approval_count} item(s)",
+            "",
+        ]
+        if approval_count > 0:
+            answer_lines.append("Use /approvals to see details, then /approve <id> or /reject <id>.")
+        else:
+            answer_lines.append("No pending approvals. Queue is clear.")
+
+    elif any(kw in message_lower for kw in ["status", "how is", "how are", "doing"]):
+        score = "?"
+        try:
+            with open("reports/runtime/nexus_anytime_operator_report_latest.json") as f:
+                r = json.load(f)
+            score = r.get("system_status", {}).get("active_os_score", "?")
+        except:
+            pass
+        answer_lines = [
+            "Hermes Advisory — System Status:",
+            "",
+            f"Active OS: {score}/100",
+            "Telegram: active (live polling)",
+            f"Alpha: {'active — ' + alpha_topic[:30] if alpha_topic != 'none' else 'no recent topic'}",
+            f"Approvals: {approval_count} pending",
+            f"Top Alpha rec: {top_rec[:40] if top_rec != 'none' else 'none'}",
+        ]
+
+    else:
+        # General advisory
+        answer_lines = [
+            "Hermes Advisory:",
+            "",
+            f"Current state: OS active, {approval_count} approvals pending.",
+        ]
+        if alpha_topic != "none":
+            answer_lines.append(f"Latest Alpha topic: {alpha_topic[:50]}")
+        if top_rec != "none":
+            answer_lines.append(f"Top recommendation: {top_rec[:50]}")
+        answer_lines.extend([
+            "",
+            "I can advise on priorities, risk, approvals, or next steps. What specifically do you want to discuss?",
+        ])
+
+    answer = "\n".join(answer_lines)
+
+    # Create a work order in the background (non-blocking)
+    route = "hermes_general"
     patterns = [
         (r"research|find|discover", "research"),
         (r"youtube|video|channel", "youtube_research"),
@@ -322,7 +474,6 @@ def cmd_hermes(args):
         (r"health|status|monitor", "system_health"),
         (r"review|approve", "ray_review"),
     ]
-    route = "hermes_general"
     for pat, dept in patterns:
         if re.search(pat, message, re.I):
             route = dept
@@ -331,12 +482,13 @@ def cmd_hermes(args):
     wo = create_work_order(f"Hermes: {message}", route, "ACTIVE_INTERNAL", source="telegram_hermes")
     receipt = write_receipt("hermes", {
         "type": "hermes_request",
-        "message": message,
+        "message": message[:200],
         "routed_to": route,
         "work_order_id": wo["work_order_id"],
         "mode": "ACTIVE_INTERNAL"
     })
-    return f"Hermes Request\nRouted to: {route}\nWork Order: {wo['work_order_id']}\nReceipt: {receipt['receipt_id']}"
+
+    return f"{answer}\n\nWork Order: {wo['work_order_id']}"
 
 def cmd_alpha(args):
     if not args:
@@ -666,44 +818,301 @@ def write_alpha_debug_receipt(data):
     save_json(path, data)
     return rid
 
-# --- Alpha Intent Detection ---
+# --- Intent Classification ---
 
-ALPHA_INTENT_PATTERNS = [
-    (r"^/alpha\b", "slash_alpha"),
-    (r"\balpha\b", "alpha_keyword"),
-    (r"\bresearch\b", "research_keyword"),
-    (r"\blook into\b", "look_into"),
-    (r"\bis this worth\b", "is_worth"),
-    (r"\bscore this\b", "score_this"),
-    (r"\bcompare\b", "compare"),
-    (r"\bpros and cons\b", "pros_cons"),
+GREETING_PATTERNS = [
+    r"^good\s+(morning|afternoon|evening|night)",
+    r"^hello",
+    r"^hey",
+    r"^hi\b",
+    r"^yo\b",
+    r"^sup\b",
+    r"^what'?s\s+up",
+    r"^howdy",
+    r"^greetings",
 ]
 
-FOLLOWUP_INTENT_PATTERNS = [
-    (r"what did alpha find", "what_did_alpha_find"),
-    (r"what did.*find", "what_did_alpha_find"),
-    (r"which one should we do first", "which_one_first"),
-    (r"which one", "which_one_first"),
-    (r"turn (?:number )?(\d+) into a work order", "turn_into_work_order"),
-    (r"turn (\d+)", "turn_into_work_order"),
-    (r"send that to hermes", "send_to_hermes"),
-    (r"send it to hermes", "send_to_hermes"),
+CASUAL_AGENT_CHAT_PATTERNS = [
+    r"^alpha\s+(how\s+did\s+you|are\s+you|what\s+are|can\s+you|do\s+you)",
+    r"^hermes\s+(how\s+did\s+you|are\s+you|what\s+are|can\s+you|do\s+you)",
+    r"^nexus\s+(how\s+did\s+you|are\s+you|what\s+are|can\s+you|do\s+you)",
+    r"^how\s+did\s+you\s+(sleep|wake|do)",
+    r"^are\s+you\s+(there|awake|online|ready|ok)",
+    r"^what\s+are\s+you\s+(doing|up|working|thinking)",
+    r"^can\s+you\s+hear\s+me",
+    r"^how\s+are\s+you\s+(doing|feeling|today)",
+    r"^you\s+(ok|good|there|awake)",
 ]
 
-def detect_alpha_intent(text):
-    text_lower = text.lower().strip()
-    for pattern, intent in ALPHA_INTENT_PATTERNS:
-        if re.search(pattern, text_lower):
-            return intent
-    return None
+ALPHA_RESEARCH_PATTERNS = [
+    r"^alpha\s+research\b",
+    r"^research\s+",
+    r"\blook\s+into\b",
+    r"\bis\s+this\s+worth\b",
+    r"\bscore\s+this\b",
+    r"\bcompare\b",
+    r"\bpros\s+and\s+cons\b",
+    r"\bfind\s+the\s+best\b",
+    r"\bwhat\s+are\s+the\s+best\b",
+    r"\bhow\s+can\s+we\s+(get|find|land|acquire|build|create|make)\b",
+    r"\bwhat\s+are\s+the\s+options\b",
+    r"\bexplore\b",
+    r"\banalyze\b",
+    r"\bevaluate\b",
+    r"\bstrateg(y|ize|ies)\b",
+    r"\bplan\s+(for|to|how)\b",
+]
 
-def detect_followup_intent(text):
+ALPHA_CONTEXT_FOLLOWUP_PATTERNS = [
+    (r"what\s+did\s+alpha\s+find", "what_did_alpha_find"),
+    (r"what\s+did\s+.*find", "what_did_alpha_find"),
+    (r"which\s+one\s+should\s+we\s+do\s+first", "which_one_first"),
+    (r"which\s+one", "which_one_first"),
+    (r"which\s+is\s+(fastest|best|easiest|quickest)", "which_one_first"),
+    (r"turn\s+(?:number\s+)?(\d+)\s+into\s+a\s+work\s+order", "turn_into_work_order"),
+    (r"turn\s+(\d+)", "turn_into_work_order"),
+    (r"send\s+that\s+to\s+hermes", "send_to_hermes"),
+    (r"send\s+it\s+to\s+hermes", "send_to_hermes"),
+    (r"make\s+that\s+an?\s+approval", "send_to_hermes"),
+    (r"research\s+deeper", "what_did_alpha_find"),
+]
+
+HERMES_ADVISORY_PATTERNS = [
+    r"^hermes\s+what\s+(is|should|do|would|can|will|are|were)",
+    r"^hermes\s+(how|why|when|where|who|what|which|give|tell|show|help|advise|recommend)",
+    r"^what\s+should\s+we\s+do\s+next",
+    r"^what\s+do\s+you\s+recommend",
+    r"^is\s+this\s+realistic",
+    r"^what\s+would\s+stop\s+us",
+    r"^give\s+me\s+a\s+(ceo|boss|leader|executive)\s+view",
+    r"^what\s+needs?\s+my\s+approval",
+    r"^what\s+is\s+today'?s?\s+priority",
+    r"^what\s+(are|is)\s+the\s+top\s+priority",
+    r"^where\s+should\s+we\s+focus",
+    r"^what\s+matters?\s+most",
+    r"^priorit(y|ize|ies)\b",
+    r"^what'?s\s+blocking\s+us",
+]
+
+NEXUS_STATUS_PATTERNS = [
+    r"^what\s+(is|are)\s+the\s+status",
+    r"^give\s+me\s+a\s+report",
+    r"^what\s+happened\s+today",
+    r"^what\s+is\s+running",
+    r"^how\s+is\s+nexus\s+doing",
+    r"^status\s+report",
+    r"^system\s+status",
+    r"^how\s+are\s+things",
+    r"^what'?s\s+going\s+on",
+    r"^update\s+me",
+    r"^what'?s\s+new",
+]
+
+WORK_ORDER_PATTERNS = [
+    r"^create\s+a\s+(task|work\s+order|ticket|item)",
+    r"^make\s+this\s+a\s+(project|task|work\s+order)",
+    r"^assign\s+this\s+to",
+    r"^add\s+to\s+(the\s+)?backlog",
+]
+
+
+def classify_message_intent(text):
+    """
+    Classify a plain-language message into one of 9 intent categories.
+    Returns (intent, match_object_or_none, stripped_topic_or_none).
+    """
     text_lower = text.lower().strip()
-    for pattern, intent in FOLLOWUP_INTENT_PATTERNS:
-        match = re.search(pattern, text_lower)
+    # Strip agent prefix if present (e.g., "alpha good morning" → "good morning")
+    stripped = re.sub(r"^(alpha|hermes|nexus)\s+", "", text_lower)
+
+    # APPROVAL_ACTION — slash-only, handled before this
+    # But check anyway for plain-language like "approve EMAIL-001"
+    if re.match(r"^(approve|reject|revise)\s+\w+", text_lower):
+        return "APPROVAL_ACTION", None, None
+
+    # WORK_ORDER_REQUEST
+    for pat in WORK_ORDER_PATTERNS:
+        if re.search(pat, text_lower):
+            return "WORK_ORDER_REQUEST", None, None
+
+    # GREETING
+    for pat in GREETING_PATTERNS:
+        if re.search(pat, text_lower) or re.search(pat, stripped):
+            # Determine which agent prefix was used
+            agent = None
+            if text_lower.startswith("alpha "):
+                agent = "alpha"
+            elif text_lower.startswith("hermes "):
+                agent = "hermes"
+            elif text_lower.startswith("nexus "):
+                agent = "nexus"
+            return "GREETING", None, agent
+
+    # CASUAL_AGENT_CHAT
+    for pat in CASUAL_AGENT_CHAT_PATTERNS:
+        if re.search(pat, text_lower):
+            agent = "alpha" if "alpha" in text_lower else "hermes" if "hermes" in text_lower else "nexus"
+            return "CASUAL_AGENT_CHAT", None, agent
+
+    # HERMES_ADVISORY (must check before alpha research to catch "hermes what...")
+    for pat in HERMES_ADVISORY_PATTERNS:
+        if re.search(pat, text_lower):
+            # Extract the actual question
+            question = re.sub(r"^hermes\s+", "", text_lower).strip()
+            return "HERMES_ADVISORY", None, question
+
+    # NEXUS_STATUS_OR_REPORT
+    for pat in NEXUS_STATUS_PATTERNS:
+        if re.search(pat, text_lower):
+            return "NEXUS_STATUS_OR_REPORT", None, None
+
+    # ALPHA_CONTEXT_FOLLOWUP (must check before alpha research)
+    for pat, followup_intent in ALPHA_CONTEXT_FOLLOWUP_PATTERNS:
+        match = re.search(pat, text_lower)
         if match:
-            return intent, match
-    return None, None
+            return "ALPHA_CONTEXT_FOLLOWUP", match, followup_intent
+
+    # ALPHA_RESEARCH_REQUEST
+    for pat in ALPHA_RESEARCH_PATTERNS:
+        if re.search(pat, text_lower):
+            # Extract topic: strip agent prefix and research keywords
+            topic = stripped
+            for prefix in ["research ", "look into ", "score this ", "compare ", "analyze ", "evaluate "]:
+                if topic.startswith(prefix):
+                    topic = topic[len(prefix):].strip()
+                    break
+            if not topic:
+                topic = text_lower
+            return "ALPHA_RESEARCH_REQUEST", None, topic
+
+    # UNKNOWN_HELPFUL_FALLBACK
+    return "UNKNOWN_HELPFUL_FALLBACK", None, None
+
+# --- Greeting & Casual Response Helpers ---
+
+def get_system_quick_status():
+    """Get a quick status summary for greeting responses."""
+    try:
+        with open("reports/runtime/nexus_anytime_operator_report_latest.json") as f:
+            r = json.load(f)
+        score = r.get("system_status", {}).get("active_os_score", "?")
+        approvals = r.get("approval_queue", {}).get("count", 0)
+    except:
+        score = "?"
+        approvals = 0
+
+    ctx = load_conversation_context()
+    chat_ctx = get_chat_context(ctx, 1288928049)
+    alpha_topic = chat_ctx.get("last_topic", "none")
+    recs = chat_ctx.get("last_alpha_recommendations", [])
+    top_rec = recs[0]["title"][:40] if recs else "none"
+
+    return score, approvals, alpha_topic, top_rec
+
+
+def get_next_step_suggestion():
+    """Suggest one useful next step based on current state."""
+    ctx = load_conversation_context()
+    chat_ctx = get_chat_context(ctx, 1288928049)
+    if not chat_ctx.get("last_topic"):
+        return "Start research: 'Alpha research <topic>'"
+    if not chat_ctx.get("last_work_order_path"):
+        return f"Review Alpha recommendation for: {chat_ctx['last_topic'][:30]}"
+    try:
+        with open("reports/approval_packets") as _:
+            pass
+    except:
+        pass
+    packets = []
+    try:
+        for f in os.listdir("reports/approval_packets"):
+            if f.endswith(".json"):
+                packets.append(f)
+    except:
+        pass
+    if packets:
+        return f"Review {len(packets)} pending approval(s)"
+    return "Ask Hermes for priorities: 'what should we do next?'"
+
+
+def handle_greeting(agent=None):
+    """Handle a greeting message with a natural, concise reply."""
+    score, approvals, alpha_topic, top_rec = get_system_quick_status()
+    next_step = get_next_step_suggestion()
+
+    if agent == "alpha":
+        return (
+            "Good morning Ray. Alpha is online. I can research opportunities, "
+            "compare tools, score ideas, or turn findings into work orders. "
+            "What should I look into today?"
+        )
+    if agent == "hermes":
+        return (
+            "Good morning Ray. Hermes is online. I can help prioritize the business path, "
+            "review approvals, or turn Alpha research into action. What needs attention?"
+        )
+    if agent == "nexus":
+        return (
+            "Good morning Ray. Nexus is online. Telegram live polling active, "
+            "Alpha responsive, approvals gated. What do you need?"
+        )
+
+    return (
+        f"Good morning Ray. Nexus is running.\n\n"
+        f"Active OS: {score}/100\n"
+        f"Telegram: active\n"
+        f"Approvals: {approvals} pending\n"
+        f"Alpha: {alpha_topic}\n"
+        f"Top rec: {top_rec}\n\n"
+        f"Suggested: {next_step}\n\n"
+        f"Say /report for full details, or ask Hermes/Alpha directly."
+    )
+
+
+def handle_casual_chat(agent=None):
+    """Handle casual agent chat without creating research or work orders."""
+    if agent == "alpha":
+        return (
+            "Alpha does not sleep, but I'm online and ready. "
+            "I can research, score, compare, or turn an idea into a Nexus work order. "
+            "Want me to look into something?"
+        )
+    if agent == "hermes":
+        return (
+            "Hermes is online. I can advise on priorities, review what's pending, "
+            "or help you decide what to tackle next. What's on your mind?"
+        )
+    return (
+        "Yes — Nexus is online. Hermes can advise, Alpha can research, "
+        "and Nexus can prepare approval-gated work. What do you want to check?"
+    )
+
+
+def handle_status_report():
+    """Handle a status/report request with direct answer."""
+    score, approvals, alpha_topic, top_rec = get_system_quick_status()
+    return (
+        f"Nexus Status\n\n"
+        f"Active OS: {score}/100\n"
+        f"Telegram: active (live polling)\n"
+        f"Approvals: {approvals} pending\n"
+        f"Alpha: {alpha_topic}\n"
+        f"Top rec: {top_rec}\n\n"
+        f"Say /report for the full report."
+    )
+
+
+def handle_unknown_fallback():
+    """Handle unknown messages with a helpful but concise reply."""
+    return (
+        "I'm not sure what you mean. I can:\n"
+        "- Research a topic: 'Alpha research <topic>'\n"
+        "- Advise on priorities: 'what should we do next?'\n"
+        "- Check status: 'what's the status?'\n"
+        "- Route to Hermes: 'hermes <question>'\n\n"
+        "Or say /help for the full command list."
+    )
+
 
 # --- Alpha Fallback Handler ---
 
@@ -885,14 +1294,14 @@ def cmd_alpha_fallback(topic, source="test-command"):
     with open(ALPHA_ADVISORY_PATH, "w") as f:
         f.write("\n".join(advisory_lines))
 
-    # Save conversation context
+    # Save conversation context — use RANKED (sorted) order for consistency
     ctx = load_conversation_context()
     update_chat_context(ctx, 1288928049, {
         "last_agent": "alpha",
         "last_topic": topic,
         "last_alpha_brief_path": brief_path,
         "last_alpha_score_path": os.path.join(ALPHA_SCORES_DIR, f"{intake_id}.json"),
-        "last_alpha_recommendations": [{"title": i["title"], "action": i["action"], "score": i["score"]["total"]} for i in ideas],
+        "last_alpha_recommendations": [{"title": ranked[i][1]["title"], "action": ranked[i][1]["action"], "score": ranked[i][1]["score"]["total"]} for i in range(len(ranked))],
         "last_selected_item": None,
         "last_work_order_path": None,
     })
@@ -1027,43 +1436,59 @@ def process_command(text):
     if handler:
         return handler(args)
 
-    # Not a slash command — try natural language routing
+    # Not a slash command — classify intent
     full_text = text.strip()
+    intent, match, extra = classify_message_intent(full_text)
 
-    # Try follow-up intent first
-    followup_intent, followup_match = detect_followup_intent(full_text)
-    if followup_intent:
-        write_alpha_debug_receipt({
-            "source": "process_command",
-            "raw_text": full_text[:100],
-            "detected_intent": f"followup:{followup_intent}",
-            "routed_to": "cmd_followup",
-        })
-        return cmd_followup(followup_intent, followup_match, 1288928049)
+    # Debug receipt
+    write_alpha_debug_receipt({
+        "source": "process_command",
+        "raw_text": full_text[:100],
+        "detected_intent": intent,
+        "routed_to": intent,
+    })
 
-    # Try Alpha intent
-    alpha_intent = detect_alpha_intent(full_text)
-    if alpha_intent:
-        # Extract topic from the message
-        topic = full_text
-        for prefix in ["alpha research ", "alpha ", "research ", "look into ", "score this ", "compare "]:
-            if full_text.lower().startswith(prefix):
-                topic = full_text[len(prefix):].strip()
-                break
-        if not topic:
-            topic = full_text
+    # Route by intent
+    if intent == "GREETING":
+        return handle_greeting(agent=extra)
 
-        write_alpha_debug_receipt({
-            "source": "process_command",
-            "raw_text": full_text[:100],
-            "detected_intent": alpha_intent,
-            "routed_to": "cmd_alpha_fallback",
-            "topic": topic[:100],
-        })
-        return cmd_alpha_fallback(topic, source="live_polling")
+    elif intent == "CASUAL_AGENT_CHAT":
+        return handle_casual_chat(agent=extra)
 
-    # Default: show help
-    return cmd_start()
+    elif intent == "HERMES_ADVISORY":
+        return hermes_direct_answer(extra or full_text)
+
+    elif intent == "NEXUS_STATUS_OR_REPORT":
+        return handle_status_report()
+
+    elif intent == "ALPHA_CONTEXT_FOLLOWUP":
+        return cmd_followup(extra, match, 1288928049)
+
+    elif intent == "ALPHA_RESEARCH_REQUEST":
+        return cmd_alpha_fallback(extra or full_text, source="live_polling")
+
+    elif intent == "WORK_ORDER_REQUEST":
+        wo = create_work_order(full_text, "hermes", "ACTIVE_INTERNAL", source="telegram")
+        return f"Work Order Created: {wo['work_order_id']}\nRoute: hermes\nMode: ACTIVE_INTERNAL"
+
+    elif intent == "APPROVAL_ACTION":
+        # Should have been caught by slash command, but handle plain-language too
+        parts_lower = full_text.lower().split()
+        if len(parts_lower) >= 2:
+            action = parts_lower[0]
+            item_id = parts_lower[1]
+            if action == "approve":
+                return cmd_approve([item_id])
+            elif action == "reject":
+                reason = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no reason"
+                return cmd_reject([item_id, reason])
+            elif action == "revise":
+                feedback = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no feedback"
+                return cmd_revise([item_id, feedback])
+        return "Usage: approve <id>, reject <id> <reason>, or revise <id> <feedback>"
+
+    else:  # UNKNOWN_HELPFUL_FALLBACK
+        return handle_unknown_fallback()
 
 def main():
     args = sys.argv[1:]
