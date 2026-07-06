@@ -1,14 +1,37 @@
 # GoClear Signup Migration Apply Status
 
-**Date**: 2026-07-06
+**Date**: 2026-07-06 (updated)
 **Migration**: `20260706120000_goclear_signup_profile_membership_bootstrap.sql`
 
 ---
 
-## Apply Method: MANUAL (Supabase SQL Editor)
+## Apply Method: CLI — APPLIED
 
-This migration must be applied manually via the Supabase Dashboard SQL Editor.
-No local Supabase CLI or `supabase db push` is configured in this environment.
+**Status**: CLI_APPLIED_VERIFIED
+
+Applied via `supabase db push` on 2026-07-06.
+Project ref: `iqjwgpnujbeoyaeuwehj` (nexus-os-v2).
+
+The migration was applied successfully. All tables/columns/indexes already existed (from DRAFT migration). The trigger function, trigger, and RLS policies were newly created.
+
+## Verification SQL (run in Supabase SQL Editor)
+
+```sql
+-- Check trigger function
+SELECT proname, prosecuritydefiner FROM pg_proc WHERE proname = 'goclear_handle_new_user';
+
+-- Check trigger
+SELECT tgname, tgenabled FROM pg_trigger WHERE tgname = 'on_auth_user_created';
+
+-- Check RLS policies
+SELECT tablename, policyname, cmd FROM pg_policies
+WHERE tablename IN ('client_profiles', 'tenant_memberships')
+ORDER BY tablename, policyname;
+```
+
+## Rollback
+
+If needed, reverse the migration:
 
 ## Application Steps
 
@@ -93,4 +116,4 @@ DROP POLICY IF EXISTS "client_profiles_admin_manage" ON public.client_profiles;
 -- NOTE: do NOT drop the tables — they may have data
 ```
 
-## Status: AWAITING MANUAL APPLICATION
+## Status: CLI_APPLIED_VERIFIED

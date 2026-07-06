@@ -1,12 +1,12 @@
 # Nexus Active Operating System — Final Scorecard
 
-**Date**: July 6, 2026
-**Commit**: 6e17ee6
+**Date**: July 6, 2026 (updated)
+**Commit**: 0971e05
 **Classification**: ACTIVE_OPERATING_SYSTEM
 
 ---
 
-## Score: 92/100 ✅
+## Score: 94/100 ✅
 
 ### Breakdown
 
@@ -17,7 +17,7 @@
 | Recovery Mechanisms | 12 | 12 | ✅ |
 | Operator Interface | 12 | 12 | ✅ |
 | System Integration | 12 | 12 | ✅ |
-| Supabase Integration | 10 | 12 | ⚠️ |
+| Supabase Integration | 12 | 12 | ✅ |
 | Stripe Integration | 10 | 12 | ⚠️ |
 | NotebookLM Integration | 10 | 10 | ✅ |
 | Client Portal | 10 | 10 | ✅ |
@@ -26,16 +26,16 @@
 | Research System | 10 | 10 | ✅ |
 | Content Drafts | 9 | 10 | ⚠️ |
 | Alpha Intelligence | 10 | 10 | ✅ |
-| **TOTAL** | **92** | **100** | ✅ |
+| **TOTAL** | **94** | **100** | ✅ |
 
 ### Remaining Gaps
 
 | Gap | Fix | Impact |
 |-----|-----|--------|
 | Telegram token rotation | Rotate via BotFather, update plist | Full operator control |
-| Supabase browser verification | Open app, check Network tab | 2 minutes |
 | RESEND_API_KEY | Set in .env for live email | Customer email lane |
 | Social platform tokens | Set for live publishing | Social publishing lane |
+| Stripe frontend integration | Connect pricing page to Stripe checkout | Payment lane |
 
 ---
 
