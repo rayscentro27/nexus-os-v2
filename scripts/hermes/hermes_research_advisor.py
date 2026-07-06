@@ -25,6 +25,12 @@ from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from hermes_web_search import web_search, url_review
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "recommendations"))
+try:
+    from recommendation_engine import ingest_hermes
+    SHARED_LAYER_AVAILABLE = True
+except ImportError:
+    SHARED_LAYER_AVAILABLE = False
 
 
 def _score_opportunity(title, snippet, topic):
@@ -254,6 +260,18 @@ def main():
 
     try:
         result = build_advisory_answer(args.query)
+        # Ingest into shared recommendation layer
+        if SHARED_LAYER_AVAILABLE and result.get("search_status") != "error":
+            try:
+                ingest_hermes(
+                    query=args.query,
+                    search_result={"status": result.get("search_status", "unknown"),
+                                   "provider": result.get("provider", "none")},
+                    advisory_answer=result,
+                    topic=args.query,
+                )
+            except Exception:
+                pass  # non-critical
     except Exception as e:
         result = {
             "query": args.query,

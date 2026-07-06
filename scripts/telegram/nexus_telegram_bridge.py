@@ -38,6 +38,16 @@ try:
     from hermes_web_search import web_search as hermes_web_search, url_review as hermes_url_review
     from hermes_research_advisor import build_advisory_answer
     HERMES_SEARCH_AVAILABLE = True
+except Exception:
+    HERMES_SEARCH_AVAILABLE = False
+
+# Shared recommendation layer imports
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "recommendations"))
+try:
+    from recommendation_engine import ingest_alpha as shared_ingest_alpha, ingest_hermes as shared_ingest_hermes, ingest_nexus as shared_ingest_nexus, summary as rec_summary, get_top_recommendations, next_steps as rec_next_steps
+    SHARED_REC_AVAILABLE = True
+except Exception:
+    SHARED_REC_AVAILABLE = False
 except ImportError:
     HERMES_SEARCH_AVAILABLE = False
 
@@ -122,7 +132,7 @@ def create_work_order(title, route, mode, source="telegram"):
     return wo
 
 def cmd_start():
-    return "Nexus Mobile Operator Console\n\nCommands:\n/report - Full anytime operator report\n/status - System status\n/daily - Daily monitor\n/research - Research/NotebookLM/Alpha status\n/content - Content drafts/social/email status\n/approvals - Ray Review queue count and summaries\n/orders - Work orders summary\n/hermes <msg> - Hermes advisory\n/recover - Recovery check\n/approve <id> - Approve item\n/reject <id> <reason> - Reject\n/revise <id> <feedback> - Request revision\n/request <text> - Internal request\n/alpha <topic> - Alpha research\n/processes - Process registry\n/run <id> - Run safe process\n/blocked - Blocked actions"
+    return "Nexus Mobile Operator Console\n\nCommands:\n/report - Full anytime operator report\n/status - System status\n/daily - Daily monitor\n/research - Research/NotebookLM/Alpha status\n/content - Content drafts/social/email status\n/approvals - Ray Review queue count and summaries\n/orders - Work orders summary\n/hermes <msg> - Hermes advisory\n/recover - Recovery check\n/approve <id> - Approve item\n/reject <id> <reason> - Reject\n/revise <id> <feedback> - Request revision\n/request <text> - Internal request\n/alpha <topic> - Alpha research\n/recs - Shared recommendations\n/processes - Process registry\n/run <id> - Run safe process\n/blocked - Blocked actions"
 
 def cmd_report():
     try:
@@ -207,7 +217,18 @@ def cmd_report():
             lines.append(f"  {i}. {p}")
 
         lines.append(f"\nWeb Search: {web_search_status}")
-        lines.append(f"Commands: /report /status /daily /research /content /approvals /orders /hermes /recover")
+
+        # Shared recommendation layer summary
+        if SHARED_REC_AVAILABLE:
+            try:
+                recs = rec_summary()
+                lines.append(f"\nShared Recs: {recs['total']} total | {recs['by_status'].get('new', 0)} new | Avg: {recs['avg_composite_score']}/10")
+                if recs["top"]:
+                    lines.append(f"  Top: {recs['top'][0]['title'][:50]} ({recs['top'][0]['score']}/10)")
+            except Exception:
+                pass
+
+        lines.append(f"Commands: /report /status /daily /research /content /approvals /orders /hermes /recover /recs")
         return "\n".join(lines)
     except:
         return "Anytime report not yet generated. Use /status instead."
@@ -433,6 +454,12 @@ def hermes_direct_answer(message):
             if advisory.get("next_step"):
                 answer_lines.append(f"\n{advisory['next_step']}")
 
+            # Ingest into shared recommendation layer
+            if SHARED_REC_AVAILABLE:
+                try:
+                    shared_ingest_hermes(search_query, {"status": "ok", "provider": advisory.get("provider", "unknown")}, advisory, topic=search_query)
+                except Exception:
+                    pass
             answer = "\n".join(answer_lines)
         except Exception as e:
             answer = f"Hermes search error: {str(e)[:100]}\n\nFalling back to internal context."
@@ -1464,6 +1491,14 @@ def cmd_alpha_fallback(topic, source="test-command"):
     with open(ALPHA_ADVISORY_PATH, "w") as f:
         f.write("\n".join(advisory_lines))
 
+    # Ingest into shared recommendation layer
+    if SHARED_REC_AVAILABLE:
+        try:
+            ranked_ideas = [ideas[idx] for idx, _ in ranked]
+            shared_ingest_alpha(topic, ranked_ideas, avg_score, category=category)
+        except Exception:
+            pass  # non-critical
+
     # Save conversation context — use RANKED (sorted) order for consistency
     ctx = load_conversation_context()
     update_chat_context(ctx, 1288928049, {
@@ -1570,6 +1605,64 @@ def cmd_followup(intent, match, chat_id):
 
     return "Unknown follow-up. Try 'which one should we do first?' or 'turn number N into a work order'."
 
+def cmd_recs(args=None):
+    """Show shared recommendations across all sources."""
+    if not SHARED_REC_AVAILABLE:
+        return "Shared recommendation layer not available.\nCheck that scripts/recommendations/ exists."
+    try:
+        subcmd = (args[0] if args else "top").lower()
+        if subcmd == "top":
+            limit = int(args[1]) if len(args) > 1 else 5
+            recs = get_top_recommendations(n=limit)
+            if not recs:
+                return "No recommendations yet. Run Alpha research or Hermes search to generate some."
+            lines = [f"Top {len(recs)} Recommendations", ""]
+            for i, r in enumerate(recs, 1):
+                lines.append(f"{i}. {r['title'][:60]}")
+                lines.append(f"   Score: {r['composite_score']}/10 | {r['priority'].upper()} | {r['source']}")
+                if r.get("summary"):
+                    lines.append(f"   {r['summary'][:100]}")
+                lines.append(f"   ID: {r['id'][:24]}")
+                lines.append("")
+            return "\n".join(lines)
+        elif subcmd == "summary":
+            s = rec_summary()
+            lines = [
+                "Shared Recommendation Summary",
+                f"Total: {s['total']}",
+                f"By status: {s['by_status']}",
+                f"By source: {s['by_source']}",
+                f"Avg score: {s['avg_composite_score']}/10",
+            ]
+            return "\n".join(lines)
+        elif subcmd == "next":
+            return rec_next_steps()
+        elif subcmd == "approve" and len(args) > 1:
+            from recommendation_schema import get_recommendations, update_recommendation, add_follow_up_event
+            recs = get_recommendations(status="new")
+            idx = int(args[1]) - 1 if args[1].isdigit() else -1
+            if 0 <= idx < len(recs):
+                rec = recs[idx]
+                update_recommendation(rec["id"], {"status": "approved"})
+                add_follow_up_event(rec["id"], "approved", "Approved via Telegram /recs approve")
+                return f"Approved: {rec['title'][:50]}\nStatus set to approved."
+            return "Invalid recommendation number. Use /recs top to see options."
+        elif subcmd == "reject" and len(args) > 1:
+            from recommendation_schema import get_recommendations, update_recommendation, add_follow_up_event
+            recs = get_recommendations(status="new")
+            idx = int(args[1]) - 1 if args[1].isdigit() else -1
+            if 0 <= idx < len(recs):
+                rec = recs[idx]
+                reason = " ".join(args[2:]) if len(args) > 2 else "Rejected via Telegram"
+                update_recommendation(rec["id"], {"status": "rejected"})
+                add_follow_up_event(rec["id"], "rejected", reason)
+                return f"Rejected: {rec['title'][:50]}\nReason: {reason}"
+            return "Invalid recommendation number. Use /recs top to see options."
+        else:
+            return f"Usage:\n/recs top [n] - Top recommendations\n/recs summary - Overview\n/recs next - Next steps\n/recs approve <n> - Approve recommendation\n/recs reject <n> [reason] - Reject recommendation"
+    except Exception as e:
+        return f"Recommendation error: {str(e)[:100]}"
+
 def process_command(text):
     parts = text.strip().split()
     if not parts:
@@ -1595,6 +1688,7 @@ def process_command(text):
         "/request": cmd_request,
         "/hermes": cmd_hermes,
         "/alpha": cmd_alpha,
+        "/recs": cmd_recs,
         "/orders": lambda a: cmd_orders(),
         "/recover": lambda a: "Recovery check: use /run recovery",
         "/processes": lambda a: cmd_processes(),
@@ -1644,6 +1738,12 @@ def process_command(text):
                     lines.append(f"Score: {score['overall']}/10")
                 if advisory.get("next_step"):
                     lines.append(f"\n{advisory['next_step']}")
+                # Ingest into shared recommendation layer
+                if SHARED_REC_AVAILABLE:
+                    try:
+                        shared_ingest_hermes(extra or full_text, {"status": "ok", "provider": advisory.get("provider", "unknown")}, advisory, topic=extra or full_text)
+                    except Exception:
+                        pass
                 return "\n".join(lines)
             except Exception as e:
                 return f"Search error: {str(e)[:100]}"
