@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
+import { supabase, isSupabaseConfigured } from "../../lib/supabaseClient";
+import { getPasswordResetRedirectUrl } from "../../lib/authHelpers";
 import "./goclear-public.css";
 
 const features = [
@@ -324,6 +326,81 @@ export function GoClearLandingPage() {
 }
 
 export function GoClearSignupPage() {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [agreed, setAgreed] = useState(false);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  function validatePassword(p: string): string[] {
+    const issues: string[] = [];
+    if (p.length < 8) issues.push("At least 8 characters");
+    if (!/\d/.test(p)) issues.push("One number");
+    if (!/[A-Z]/.test(p)) issues.push("One uppercase letter");
+    if (!/[!@#$%^&*(),.?\":{}|<>]/.test(p)) issues.push("One special character");
+    return issues;
+  }
+
+  const passwordIssues = validatePassword(password);
+  const passwordValid = passwordIssues.length === 0;
+
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase) return;
+    setErr("");
+
+    if (!passwordValid) {
+      setErr("Please meet all password requirements.");
+      return;
+    }
+    if (password !== confirm) {
+      setErr("Passwords do not match.");
+      return;
+    }
+    if (!agreed) {
+      setErr("You must agree to the Terms of Service and Privacy Policy.");
+      return;
+    }
+
+    setBusy(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          business_name: businessName || undefined,
+        },
+      },
+    });
+
+    if (error) {
+      setErr(error.message);
+      setBusy(false);
+    } else {
+      setDone(true);
+      setBusy(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <main className="gc-page gc-auth-page">
+        <Header />
+        <section className="gc-container gc-login-card">
+          <GoClearLogo />
+          <h1>Check Your Email</h1>
+          <p>We sent a confirmation link to <strong>{email}</strong>. Click the link to activate your account, then come back to sign in.</p>
+          <a href="/goclear/login" className="gc-btn gc-btn-primary gc-full-btn">Go to Login</a>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="gc-page gc-auth-page">
       <Header />
@@ -333,49 +410,98 @@ export function GoClearSignupPage() {
           <h1>Welcome to GoClear! 👋</h1>
           <p>Create your account and take the first step toward a stronger, fundable business.</p>
 
-          <label>
-            Full Name
-            <input placeholder="Enter your full name" />
-          </label>
+          {!isSupabaseConfigured && (
+            <div className="gc-error">Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.</div>
+          )}
 
-          <label>
-            Email Address
-            <input placeholder="Enter your email address" type="email" />
-          </label>
+          <form onSubmit={handleSignup}>
+            <label>
+              Full Name
+              <input
+                placeholder="Enter your full name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                autoComplete="name"
+                required
+              />
+            </label>
 
-          <label>
-            Password
-            <input placeholder="Create a strong password" type="password" />
-          </label>
+            <label>
+              Email Address
+              <input
+                placeholder="Enter your email address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
 
-          <ul className="gc-check-list gc-password-list">
-            <li>At least 8 characters</li>
-            <li>One number</li>
-            <li>One uppercase letter</li>
-            <li>One special character</li>
-          </ul>
+            <label>
+              Password
+              <input
+                placeholder="Create a strong password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </label>
 
-          <label>
-            Confirm Password
-            <input placeholder="Confirm your password" type="password" />
-          </label>
+            <ul className="gc-check-list gc-password-list">
+              <li className={password.length >= 8 ? "gc-met" : ""}>At least 8 characters</li>
+              <li className={/\d/.test(password) ? "gc-met" : ""}>One number</li>
+              <li className={/[A-Z]/.test(password) ? "gc-met" : ""}>One uppercase letter</li>
+              <li className={/[!@#$%^&*(),.?\":{}|<>]/.test(password) ? "gc-met" : ""}>One special character</li>
+            </ul>
 
-          <label>
-            Business Name <em>(Optional)</em>
-            <input placeholder="Enter your business name" />
-          </label>
+            <label>
+              Confirm Password
+              <input
+                placeholder="Confirm your password"
+                type="password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </label>
 
-          <label className="gc-checkbox">
-            <input type="checkbox" />
-            <span>I agree to GoClear&apos;s <a href="/goclear">Terms of Service</a> and <a href="/goclear">Privacy Policy</a>.</span>
-          </label>
+            <label>
+              Business Name <em>(Optional)</em>
+              <input
+                placeholder="Enter your business name"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+              />
+            </label>
 
-          <button className="gc-btn gc-btn-primary gc-full-btn" type="button">Create My Account</button>
+            <label className="gc-checkbox">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+              />
+              <span>I agree to GoClear&apos;s <a href="/goclear">Terms of Service</a> and <a href="/goclear">Privacy Policy</a>.</span>
+            </label>
+
+            {err && <div className="gc-error">{err}</div>}
+
+            <button
+              className="gc-btn gc-btn-primary gc-full-btn"
+              type="submit"
+              disabled={busy || !isSupabaseConfigured}
+            >
+              {busy ? "Creating Account…" : "Create My Account"}
+            </button>
+          </form>
 
           <div className="gc-divider">or sign up with</div>
 
-          <button className="gc-social-btn" type="button">G Continue with Google</button>
-          <button className="gc-social-btn" type="button">Continue with Apple</button>
+          <button className="gc-social-btn" type="button" disabled>G Continue with Google</button>
+          <button className="gc-social-btn" type="button" disabled>Continue with Apple</button>
 
           <p className="gc-secure-line">🔒 Your information is secure and encrypted.</p>
         </div>
@@ -514,6 +640,44 @@ export function GoClearPricingPage() {
 }
 
 export function GoClearLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(() =>
+    new URLSearchParams(window.location.search).get("password-reset") === "success"
+      ? "Password updated. Sign in with your new password."
+      : ""
+  );
+  const [resetMode, setResetMode] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setErr("");
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setErr(error.message);
+      setBusy(false);
+    } else {
+      window.location.assign("/client");
+    }
+  }
+
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    if (!supabase) return;
+    setBusy(true);
+    setErr("");
+    setNotice("");
+    const redirectTo = getPasswordResetRedirectUrl();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) setErr(error.message);
+    else setNotice("If this email is registered, a secure password-reset link has been sent. Check spam if it does not arrive.");
+    setBusy(false);
+  }
+
   return (
     <main className="gc-page gc-auth-page">
       <Header />
@@ -522,20 +686,80 @@ export function GoClearLoginPage() {
         <h1>Client Login</h1>
         <p>Access your GoClear portal and continue your readiness journey.</p>
 
-        <label>
-          Email Address
-          <input placeholder="Enter your email address" type="email" />
-        </label>
+        {!isSupabaseConfigured && (
+          <div className="gc-error">Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.</div>
+        )}
 
-        <label>
-          Password
-          <input placeholder="Enter your password" type="password" />
-        </label>
+        {resetMode ? (
+          <form onSubmit={handleReset}>
+            <label>
+              Email Address
+              <input
+                placeholder="Enter your email address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
+            {err && <div className="gc-error">{err}</div>}
+            {notice && <div className="gc-notice">{notice}</div>}
+            <button className="gc-btn gc-btn-primary gc-full-btn" type="submit" disabled={busy || !isSupabaseConfigured}>
+              {busy ? "Sending…" : "Send Reset Link"}
+            </button>
+            <button
+              className="gc-btn gc-btn-ghost gc-full-btn"
+              type="button"
+              onClick={() => { setResetMode(false); setErr(""); setNotice(""); }}
+            >
+              Back to sign in
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin}>
+            <label>
+              Email Address
+              <input
+                placeholder="Enter your email address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
+              />
+            </label>
 
-        <button className="gc-btn gc-btn-primary gc-full-btn" type="button">Login</button>
+            <label>
+              Password
+              <input
+                placeholder="Enter your password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+
+            {err && <div className="gc-error">{err}</div>}
+            {notice && <div className="gc-notice">{notice}</div>}
+
+            <button className="gc-btn gc-btn-primary gc-full-btn" type="submit" disabled={busy || !isSupabaseConfigured}>
+              {busy ? "Signing in…" : "Login"}
+            </button>
+
+            <button
+              className="gc-btn gc-btn-ghost gc-full-btn"
+              type="button"
+              onClick={() => { setResetMode(true); setErr(""); setNotice(""); }}
+            >
+              Forgot password?
+            </button>
+          </form>
+        )}
+
         <a href="/client" className="gc-login-link">Continue to Client Portal</a>
-
-        <p className="gc-secure-line">Supabase frontend auth verification is still required before live login is final.</p>
       </section>
     </main>
   );
