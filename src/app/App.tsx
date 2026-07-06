@@ -22,7 +22,7 @@ function ClientPortalGate() {
 }
 
 export function App() {
-  const path = window.location.pathname;
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
 
   // GoClear public pages (no auth required)
   if (path === '/goclear') return <GoClearLandingPage />;
