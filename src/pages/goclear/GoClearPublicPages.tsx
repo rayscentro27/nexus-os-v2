@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { ShieldCheck, Building2, Landmark, TrendingUp, ClipboardCheck, BadgeCheck, Lock, Users, FileCheck, CreditCard, HelpCircle } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "../../lib/supabaseClient";
 import { getPasswordResetRedirectUrl } from "../../lib/authHelpers";
 import "./goclear-public.css";
@@ -183,17 +184,17 @@ function Footer() {
 }
 
 function FeatureCard({ feature }: { feature: typeof features[0] }) {
-  const iconMap: Record<string, string> = {
-    shield: "🛡",
-    users: "👥",
-    bank: "🏦",
-    chart: "📈",
-    checklist: "☑",
+  const iconMap: Record<string, React.ReactNode> = {
+    shield: <ShieldCheck size={28} strokeWidth={2} />,
+    users: <Users size={28} strokeWidth={2} />,
+    bank: <Landmark size={28} strokeWidth={2} />,
+    chart: <TrendingUp size={28} strokeWidth={2} />,
+    checklist: <ClipboardCheck size={28} strokeWidth={2} />,
   };
 
   return (
     <article className="gc-card gc-feature-card">
-      <IconBadge>{iconMap[feature.icon] || "✓"}</IconBadge>
+      <IconBadge>{iconMap[feature.icon] || <BadgeCheck size={28} strokeWidth={2} />}</IconBadge>
       <h3>{feature.title}</h3>
       <p>{feature.text}</p>
     </article>
@@ -251,10 +252,32 @@ export function GoClearLandingPage() {
           </div>
 
           <div className="gc-hero-visual" aria-label="GoClear readiness visual">
-            <div className="gc-portrait-card">
-              <div className="gc-person-placeholder">
+            <div className="gc-hero-illustration">
+              <div className="gc-readiness-badge">
                 <span>GoClear</span>
                 <strong>Readiness</strong>
+              </div>
+
+              <div className="gc-hero-score-card">
+                <span>Readiness Score</span>
+                <strong>82%</strong>
+                <div className="gc-score-bar"><i /></div>
+              </div>
+
+              <div className="gc-hero-main-card">
+                <div className="gc-hero-avatar">GC</div>
+                <strong>Business Readiness</strong>
+                <span>Credit · Funding · Growth</span>
+              </div>
+
+              <div className="gc-floating-card gc-floating-card-one">
+                <span><BadgeCheck size={16} strokeWidth={2.5} /></span>
+                <b>Credit Ready</b>
+              </div>
+
+              <div className="gc-floating-card gc-floating-card-two">
+                <span><FileCheck size={16} strokeWidth={2.5} /></span>
+                <b>Funding Prep</b>
               </div>
             </div>
           </div>
@@ -517,14 +540,14 @@ export function GoClearSignupPage() {
           <h2>What You&apos;ll Get with GoClear</h2>
 
           {[
-            ["Improve Readiness for Credit", "Understand and strengthen what lenders look for."],
-            ["Expert Business Setup Guidance", "Start your business the right way with confidence."],
-            ["Build Business Bankability", "Create strong financial foundations and credibility."],
-            ["Prepare for Funding", "Get your documents and profile funding-ready."],
-            ["Personalized Action Plans", "Step-by-step plans tailored to your business goals."],
-          ].map(([title, text]) => (
-            <div className="gc-benefit-mini" key={title}>
-              <IconBadge>✓</IconBadge>
+            ["Improve Readiness for Credit", "Understand and strengthen what lenders look for.", <ShieldCheck size={20} strokeWidth={2} />],
+            ["Expert Business Setup Guidance", "Start your business the right way with confidence.", <Building2 size={20} strokeWidth={2} />],
+            ["Build Business Bankability", "Create strong financial foundations and credibility.", <Landmark size={20} strokeWidth={2} />],
+            ["Prepare for Funding", "Get your documents and profile funding-ready.", <TrendingUp size={20} strokeWidth={2} />],
+            ["Personalized Action Plans", "Step-by-step plans tailored to your business goals.", <ClipboardCheck size={20} strokeWidth={2} />],
+          ].map(([title, text, icon]) => (
+            <div className="gc-benefit-mini" key={title as string}>
+              <IconBadge>{icon}</IconBadge>
               <div>
                 <h3>{title}</h3>
                 <p>{text}</p>
@@ -542,10 +565,10 @@ export function GoClearSignupPage() {
       </section>
 
       <section className="gc-container gc-auth-trust-row">
-        <div>🛡 <strong>Secure & Private</strong><span>Bank-level encryption</span></div>
-        <div>👥 <strong>Trusted Platform</strong><span>Built for businesses</span></div>
-        <div>🎧 <strong>Expert Support</strong><span>We&apos;re here to help</span></div>
-        <div>✅ <strong>Clear Guidance</strong><span>Actionable next steps</span></div>
+        <div><Lock size={20} strokeWidth={2} /> <strong>Secure & Private</strong><span>Bank-level encryption</span></div>
+        <div><Users size={20} strokeWidth={2} /> <strong>Trusted Platform</strong><span>Built for businesses</span></div>
+        <div><HelpCircle size={20} strokeWidth={2} /> <strong>Expert Support</strong><span>We&apos;re here to help</span></div>
+        <div><BadgeCheck size={20} strokeWidth={2} /> <strong>Clear Guidance</strong><span>Actionable next steps</span></div>
       </section>
     </main>
   );
@@ -629,9 +652,9 @@ export function GoClearPricingPage() {
       </section>
 
       <section className="gc-container gc-pricing-trust">
-        <div>🛡 <strong>Secure Payments</strong><span>Your payment information is encrypted and secure.</span></div>
-        <div>↻ <strong>Cancel Anytime</strong><span>No long-term contracts. Cancel anytime.</span></div>
-        <div>✅ <strong>Satisfaction Support</strong><span>We&apos;ll help you choose the right next step.</span></div>
+        <div><CreditCard size={20} strokeWidth={2} /> <strong>Secure Payments</strong><span>Your payment information is encrypted and secure.</span></div>
+        <div><FileCheck size={20} strokeWidth={2} /> <strong>Cancel Anytime</strong><span>No long-term contracts. Cancel anytime.</span></div>
+        <div><BadgeCheck size={20} strokeWidth={2} /> <strong>Satisfaction Support</strong><span>We&apos;ll help you choose the right next step.</span></div>
       </section>
 
       <section className="gc-container gc-compliance-note">
