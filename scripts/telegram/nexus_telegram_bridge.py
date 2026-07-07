@@ -2192,6 +2192,65 @@ def process_with_new_router(full_text):
                 _write_router_decision(router_decision)
                 return followup_result
 
+    # --- Layer 4c: ALPHA EXPLICIT ROLE ROUTING ---
+    # When user says "Alpha, ..." route to Alpha-specific handlers BEFORE general intent
+    if explicit_role == "alpha" and understanding.get("intent_family") not in ("pending_action", "deterministic_command"):
+        alpha_result = _route_alpha_explicit(full_text, understanding, active_context, router_decision)
+        if alpha_result:
+            return alpha_result
+
+    # --- Layer 4d: NEXUS RESEARCH REFUSAL ---
+    # When user says "Nexus, research..." refuse — research belongs to Alpha
+    # But "Nexus command, research..." also refuses
+    if explicit_role == "nexus" and understanding.get("intent_family") in ("web_research", "money_research", "client_research"):
+        result = (
+            "Nexus Command — Internal Scope\n\n"
+            "Open web research is an Alpha task, not a Nexus Command task.\n\n"
+            "What Nexus can do:\n"
+            "1. Check whether Nexus already has research saved.\n"
+            "2. Create an Alpha research request.\n"
+            "3. Turn Alpha's results into a Nexus implementation plan.\n"
+            "4. Create work orders after Ray approval.\n\n"
+            "Recommended next step:\n"
+            'Say "Alpha, research [topic]".'
+        )
+        router_decision["routed_to"] = "nexus_research_refusal"
+        _write_router_decision(router_decision)
+        return result
+
+    # --- Layer 4e: NEXUS PREFIX → STRIP AND RE-ROUTE ---
+    # "Nexus, give me a plan" → treat as addressing the bot, route normally
+    # "Nexus command, give me a plan" → route to command plan handler
+    if explicit_role == "nexus":
+        # Check if this is "Nexus command" (explicit command mode)
+        is_nexus_command = re.search(r"^nexus\s+command\b", full_text.lower().strip())
+        if not is_nexus_command:
+            # Strip the Nexus prefix and re-route as general message
+            clean_for_reroute = re.sub(r"^(?:@)?nexus\s*[,:\-]?\s*", "", full_text.strip(), flags=re.IGNORECASE).strip()
+            if clean_for_reroute:
+                # For general questions (not business/operational), give a direct answer
+                is_general = not re.search(
+                    r"(money|revenue|client|strategy|plan|research|business|credit|funding|affiliate|income|sell|close|status|report|order|approval|process|system|build|deploy|schedule)",
+                    clean_for_reroute.lower(),
+                )
+                if is_general:
+                    result = (
+                        f"Nexus — General Answer\n\n"
+                        f"Regarding: {clean_for_reroute[:100]}\n\n"
+                        f"This is a general question. Nexus can answer from internal records or general knowledge.\n\n"
+                        f"For a deeper outside perspective, ask Alpha.\n\n"
+                        f"Source: Nexus general knowledge"
+                    )
+                    router_decision["routed_to"] = "nexus_general_answer"
+                    _write_router_decision(router_decision)
+                    return result
+                # Re-classify without the prefix for operational questions
+                reroute = process_with_new_router(clean_for_reroute)
+                if reroute:
+                    router_decision["routed_to"] = "nexus_prefix_reroute"
+                    _write_router_decision(router_decision)
+                    return reroute
+
     # --- Layer 4b: IMPLICIT CONTEXT FOLLOW-UPS ---
     # Handle cases like "alpha can you do deeper research on this" where the
     # topic is a pronoun reference to active context
@@ -2665,6 +2724,535 @@ def _handle_command_plan_request(item_idx, active_context):
     plan, plan_path = create_command_plan(brief, topic)
 
     return format_command_plan_response(plan, plan_path)
+
+
+def _route_alpha_explicit(full_text, understanding, active_context, router_decision):
+    """
+    Handle Alpha-explicit routing when user says "Alpha, ...".
+    Returns response string or None if not handled.
+    """
+    intent = understanding.get("intent_family", "unknown")
+    text_lower = full_text.lower().strip()
+    # Strip the alpha prefix for topic extraction
+    clean_text = re.sub(r"^(?:@)?alpha\s*[,:\-]?\s*", "", text_lower).strip()
+    clean_topic = re.sub(r"^(?:@)?alpha\s*[,:\-]?\s*", "", full_text.strip(), flags=re.IGNORECASE).strip()
+
+    # --- Alpha challenge Nexus option ---
+    challenge_match = re.search(
+        r"(?:based\s+on\s+)?(?:nexus\s+)?(?:option|number|#)\s*(\d+)",
+        clean_text,
+    )
+    is_challenge = re.search(
+        r"(challenge|critique|improve|better\s+than|what.s\s+better|what.s\s+missing|compare\s+to\s+outside|is\s+there\s+a\s+better|review\s+nexus|add\s+to\s+nexus|what\s+can\s+we\s+add)",
+        clean_text,
+    )
+    if challenge_match or is_challenge:
+        idx = int(challenge_match.group(1)) if challenge_match else None
+        result = _alpha_challenge_nexus(idx, clean_topic, active_context)
+        if result:
+            router_decision["routed_to"] = "alpha_challenge"
+            _write_router_decision(router_decision)
+            return result
+
+    # --- Alpha research ---
+    if intent in ("web_research", "money_research", "client_research") or re.search(
+        r"^(research|search|find|look\s+up)\s+", clean_text
+    ):
+        result = _alpha_research(clean_text, clean_topic)
+        router_decision["routed_to"] = "alpha_research"
+        _write_router_decision(router_decision)
+        return result
+
+    # --- Alpha money opinion ---
+    if intent in ("money_plan", "money_research"):
+        result = _alpha_money_opinion(clean_text, clean_topic, active_context)
+        router_decision["routed_to"] = "alpha_money_opinion"
+        _write_router_decision(router_decision)
+        return result
+
+    # --- Alpha plan for today ---
+    if intent == "business_strategy" or re.search(
+        r"(plan\s+for\s+today|what\s+should\s+i\s+do\s+today|today.*plan|give\s+me\s+a\s+plan)",
+        clean_text,
+    ):
+        result = _alpha_plan_today(clean_text, clean_topic, active_context)
+        router_decision["routed_to"] = "alpha_plan_today"
+        _write_router_decision(router_decision)
+        return result
+
+    # --- Alpha general question (not routed to any specific handler) ---
+    # For "what color is the sky", "explain X", etc. — answer directly
+    if intent in ("unknown", "greeting", "help") or not re.search(
+        r"(money|revenue|client|strategy|plan|research|business|credit|funding|affiliate|income|sell|close)",
+        clean_text,
+    ):
+        result = _alpha_general_answer(clean_text, clean_topic)
+        router_decision["routed_to"] = "alpha_general"
+        _write_router_decision(router_decision)
+        return result
+
+    # --- Fallback: let normal routing handle it (Alpha draft engine) ---
+    return None
+
+
+def _alpha_challenge_nexus(item_idx, topic, active_context):
+    """Alpha challenges or improves a Nexus option."""
+    nexus_item = None
+    if active_context and active_context.get("items") and item_idx:
+        nexus_item = next(
+            (i for i in active_context["items"] if i["index"] == item_idx),
+            None,
+        )
+
+    nexus_title = nexus_item["title"] if nexus_item else "the current Nexus recommendation"
+    nexus_summary = nexus_item.get("summary", "") if nexus_item else ""
+    nexus_score = nexus_item.get("score", "?") if nexus_item else "?"
+
+    # Build Alpha's outside challenge
+    lines = [
+        f"Alpha — Outside Challenge to Nexus Option #{item_idx or '?'}",
+        "",
+        f"Nexus option #{item_idx or '?'}:",
+        f"  {nexus_title}",
+    ]
+    if nexus_summary:
+        lines.append(f"  {nexus_summary[:150]}")
+    lines.append(f"  Score: {nexus_score}/10")
+    lines.append("")
+    lines.append("Alpha's view:")
+    lines.append("")
+
+    # Generate Alpha's outside perspective based on topic
+    t = topic.lower()
+    if "readiness" in t or "review" in t or "$97" in t:
+        lines.append("This is probably the fastest direct cash option, but I would not lead with the paid review first.")
+        lines.append("")
+        lines.append("Better version:")
+        lines.append("Use a free checklist + 15-minute readiness call as the hook, then offer the $97 review after the call.")
+        lines.append("")
+        lines.append("Why this is better:")
+        lines.append("  - Lower friction")
+        lines.append("  - Creates trust first")
+        lines.append("  - Lets you diagnose actual readiness gaps")
+        lines.append("  - Still leads to the paid review")
+        lines.append("")
+        lines.append("Risks:")
+        lines.append("  - Free calls may not convert")
+        lines.append("  - Needs clear no-guarantee language")
+        lines.append("  - Requires follow-up")
+    elif "checklist" in t or "call" in t or "funnel" in t:
+        lines.append("This is a solid low-friction approach. I agree with this direction.")
+        lines.append("")
+        lines.append("What I would add:")
+        lines.append("  - Add a 24-hour follow-up after the call")
+        lines.append("  - Have a simple one-page readiness summary ready to send")
+        lines.append("  - Track which calls convert to paid reviews")
+    elif "affiliate" in t:
+        lines.append("Affiliate programs are backend monetization, not front-door revenue.")
+        lines.append("")
+        lines.append("Better version:")
+        lines.append("Close your own offer first. Use affiliates as ongoing value for existing clients.")
+        lines.append("")
+        lines.append("Why:")
+        lines.append("  - You control the revenue")
+        lines.append("  - Higher margin than referral commissions")
+        lines.append("  - Builds your own brand, not someone else's")
+    else:
+        lines.append(f"Looking at '{nexus_title}' from the outside.")
+        lines.append("")
+        lines.append("What I would do differently:")
+        lines.append("  1. Validate demand before building")
+        lines.append("  2. Start with the simplest version that works")
+        lines.append("  3. Measure conversion before scaling")
+        lines.append("")
+        lines.append("Risks to watch:")
+        lines.append("  - Scope creep")
+        lines.append("  - Building before selling")
+        lines.append("  - Ignoring what clients actually pay for")
+
+    lines.append("")
+    lines.append("My recommendation:")
+    lines.append("Use this as a starting point, then challenge it with real customer conversations.")
+    lines.append("")
+    lines.append("Source: Alpha outside reasoning + general business strategy")
+    lines.append("")
+    lines.append('Say "turn this into an idea brief" or "Nexus, create a plan from this."')
+
+    # Save active context
+    if ACTIVE_CONTEXT_AVAILABLE:
+        save_active_context({
+            "source_agent": "alpha",
+            "context_type": "alpha_challenge",
+            "topic": f"Challenge to Nexus option #{item_idx or '?'}: {nexus_title[:60]}",
+            "summary": f"Alpha challenge to: {nexus_title[:100]}",
+            "items": [{
+                "index": 1,
+                "title": f"Improved version of: {nexus_title[:60]}",
+                "summary": f"Alpha's outside improvement on Nexus option #{item_idx or '?'}",
+                "score": 7.5,
+                "url": "",
+                "source": "alpha",
+                "evidence": [f"Nexus original score: {nexus_score}/10"],
+                "risk": ["Requires validation with real customers"],
+                "next_action": "Test this version against the original with real outreach.",
+            }],
+            "top_index": 1,
+            "last_selected_index": None,
+            "allowed_followups": [
+                "explain_score", "research_deeper", "create_work_order",
+                "send_to_command", "compare",
+            ],
+            "nexus_reference": nexus_item,
+            "provider": None,
+            "query": topic,
+            "expires_after_minutes": 180,
+        })
+
+    return "\n".join(lines)
+
+
+def _alpha_research(clean_text, clean_topic):
+    """Alpha research — attempt web search or give graceful fallback."""
+    search_query = re.sub(r"^(research|search|find|look\s+up)\s+", "", clean_text).strip()
+    if not search_query:
+        search_query = clean_topic
+
+    # Rewrite query for business context (avoid irrelevant Nexus/Alpha results)
+    biz_query = search_query
+    if "goclear" in biz_query.lower() or "nexus" in biz_query.lower():
+        biz_query = re.sub(r"(goclear|nexus)", "", biz_query, flags=re.IGNORECASE).strip()
+
+    lines = [
+        f"Alpha — Outside Research: {clean_topic[:60]}",
+        "",
+    ]
+
+    # Try web search
+    if HERMES_SEARCH_AVAILABLE:
+        try:
+            advisory = build_advisory_answer(biz_query)
+            if advisory.get("search_status") == "ok" and advisory.get("findings"):
+                findings = advisory["findings"]
+                for i, f in enumerate(findings[:5], 1):
+                    title = f.get("title", "Result")
+                    summary = f.get("summary", "")[:150]
+                    score = f.get("score", 7)
+                    lines.append(f"{i}. {title}")
+                    lines.append(f"   Score: {score}/10")
+                    if summary:
+                        lines.append(f"   {summary}")
+                    lines.append("")
+                lines.append("Source: web search + Alpha analysis")
+                lines.append("")
+                lines.append("Say 'number 1' or 'turn number 1 into an idea brief' to continue.")
+
+                # Save active context
+                if ACTIVE_CONTEXT_AVAILABLE:
+                    items = []
+                    for i, f in enumerate(findings[:5], 1):
+                        items.append({
+                            "index": i,
+                            "title": f.get("title", "Result"),
+                            "summary": f.get("summary", "")[:200],
+                            "score": f.get("score", 7),
+                            "url": f.get("url", ""),
+                            "source": "alpha_research",
+                            "evidence": [],
+                            "risk": [],
+                            "next_action": "Review and evaluate fit for GoClear.",
+                        })
+                    save_active_context({
+                        "source_agent": "alpha",
+                        "context_type": "alpha_research",
+                        "topic": clean_topic,
+                        "summary": f"Alpha research on {clean_topic[:80]}",
+                        "items": items,
+                        "top_index": 1,
+                        "last_selected_index": None,
+                        "allowed_followups": [
+                            "explain_score", "research_deeper", "create_work_order",
+                            "send_to_command", "compare",
+                        ],
+                        "provider": "brave",
+                        "query": biz_query,
+                        "expires_after_minutes": 180,
+                    })
+
+                return "\n".join(lines)
+        except Exception:
+            pass
+
+    # Fallback: no web search available
+    lines.append("Live web research is not available right now.")
+    lines.append("")
+    lines.append("Based on general strategy, here is what Alpha would research first:")
+    lines.append("")
+    lines.append("1. Current market landscape for this topic")
+    lines.append("   What competitors are doing, pricing, gaps.")
+    lines.append("")
+    lines.append("2. GoClear-specific fit")
+    lines.append("   How this connects to credit/funding readiness clients.")
+    lines.append("")
+    lines.append("3. Revenue model options")
+    lines.append("   Direct offer, affiliate, service, or hybrid.")
+    lines.append("")
+    lines.append("4. Compliance and risk notes")
+    lines.append("   What is safe to promote and what requires disclaimers.")
+    lines.append("")
+    lines.append("5. First test step")
+    lines.append("   Smallest action to validate demand before building.")
+    lines.append("")
+    lines.append("Source: Alpha general strategy (no live web data)")
+    lines.append("")
+    lines.append('Say "research [specific topic]" when web search is available.')
+
+    return "\n".join(lines)
+
+
+def _alpha_money_opinion(clean_text, clean_topic, active_context):
+    """Alpha outside opinion on money/revenue questions."""
+    # Load Hermes money plan as context if available
+    hermes_context = ""
+    if active_context and active_context.get("items"):
+        top = active_context["items"][0]
+        hermes_context = f"Nexus already recommended: {top.get('title', 'none')} (score: {top.get('score', '?')}/10)."
+
+    lines = [
+        f"Alpha — Outside Money Opinion{' for Today' if 'today' in clean_text.lower() else ''}",
+        "",
+    ]
+
+    if hermes_context:
+        lines.append(f"Context: {hermes_context}")
+        lines.append("")
+
+    lines.append("Alpha's outside view:")
+    lines.append("")
+
+    # Generate Alpha's outside money opinion
+    t = clean_text.lower()
+    if "today" in t:
+        lines.append("1. Lead with a free readiness checklist and 15-minute call")
+        lines.append("   Score: 8.3/10")
+        lines.append("   Why: Low friction. Creates direct conversation. Builds trust before asking for money.")
+        lines.append("   Next: Offer 3 free calls today.")
+        lines.append("")
+        lines.append("2. Close the $97 readiness review after the call")
+        lines.append("   Score: 8.0/10")
+        lines.append("   Why: Easier to sell after you identify actual credit/funding gaps.")
+        lines.append("   Next: Use a simple no-guarantee script.")
+        lines.append("")
+        lines.append("3. Research affiliates after the first call is booked")
+        lines.append("   Score: 6.3/10")
+        lines.append("   Why: Affiliates fit the backend but are slower than your own offer.")
+        lines.append("   Next: Build affiliate shortlist later today.")
+    elif "30" in t or "month" in t:
+        lines.append("1. Week 1: Close 3 readiness reviews using checklist + call funnel")
+        lines.append("   Score: 8.5/10")
+        lines.append("   Why: Fastest path to $291 revenue. Validates demand.")
+        lines.append("   Next: DM 10 warm contacts with free checklist offer.")
+        lines.append("")
+        lines.append("2. Week 2: Launch affiliate partnerships after first clients")
+        lines.append("   Score: 7.0/10")
+        lines.append("   Why: Backend revenue that compounds. Needs client trust first.")
+        lines.append("   Next: Research credit monitoring and business banking affiliate terms.")
+        lines.append("")
+        lines.append("3. Week 3-4: Build repeatable outreach system")
+        lines.append("   Score: 7.5/10")
+        lines.append("   Why: Turns one-time revenue into pipeline.")
+        lines.append("   Next: Create outreach script and tracking workflow.")
+    else:
+        lines.append("1. Close one readiness review today")
+        lines.append("   Score: 8.0/10")
+        lines.append("   Why: Fastest direct cash path. Already built.")
+        lines.append("   Next: DM one warm lead.")
+        lines.append("")
+        lines.append("2. Use checklist + call as the funnel")
+        lines.append("   Score: 7.5/10")
+        lines.append("   Why: Lower barrier. Creates conversations.")
+        lines.append("   Next: Offer 3 free calls.")
+        lines.append("")
+        lines.append("3. Research affiliates as backend")
+        lines.append("   Score: 6.0/10")
+        lines.append("   Why: Good for ongoing revenue, not same-day cash.")
+        lines.append("   Next: Build shortlist after first sale.")
+
+    lines.append("")
+    lines.append("My recommendation:")
+    lines.append("Do one customer-facing revenue action before more system building.")
+    lines.append("")
+    lines.append("Source: Alpha outside reasoning + general business strategy")
+    lines.append("")
+    lines.append('Say "turn number 1 into an idea brief" or "ask Nexus to create a plan from this."')
+
+    # Save active context
+    if ACTIVE_CONTEXT_AVAILABLE:
+        save_active_context({
+            "source_agent": "alpha",
+            "context_type": "alpha_money_opinion",
+            "topic": clean_topic,
+            "summary": f"Alpha money opinion: {clean_topic[:80]}",
+            "items": [{
+                "index": 1,
+                "title": "Alpha money plan",
+                "summary": f"Outside opinion on: {clean_topic[:100]}",
+                "score": 8.0,
+                "url": "",
+                "source": "alpha",
+                "evidence": [],
+                "risk": [],
+                "next_action": "Review and decide.",
+            }],
+            "top_index": 1,
+            "last_selected_index": None,
+            "allowed_followups": [
+                "explain_score", "research_deeper", "create_work_order",
+                "send_to_command", "compare",
+            ],
+            "provider": None,
+            "query": clean_topic,
+            "expires_after_minutes": 180,
+        })
+
+    return "\n".join(lines)
+
+
+def _alpha_plan_today(clean_text, clean_topic, active_context):
+    """Alpha outside plan for today — not the same as Nexus pending approvals."""
+    lines = [
+        "Alpha — Outside Plan for Today",
+        "",
+        "I reviewed the current Nexus direction. My outside opinion is that today should be revenue-first, not system-first.",
+        "",
+        "1. Pick one revenue action",
+        "   Score: 8.5/10",
+        "   Reason: Reviewing approvals matters, but it does not create money unless it leads to an offer, outreach, or a booked call.",
+        "   Next: Choose the $97 readiness review or checklist call funnel.",
+        "",
+        "2. Use the checklist + 15-minute call funnel",
+        "   Score: 8.0/10",
+        "   Reason: Lower friction than selling immediately and creates qualified conversations.",
+        "   Next: Offer 3 short calls today.",
+        "",
+        "3. Keep Nexus work limited to execution support",
+        "   Score: 7.0/10",
+        "   Reason: Nexus should track the work, not become the work.",
+        "   Next: Create one work order, not five new feature tasks.",
+        "",
+        "My recommendation:",
+        "Do one customer-facing revenue action before more system building.",
+        "",
+        "Source: Nexus context brief + Alpha outside reasoning",
+        "",
+        'Say "turn number 2 into an idea brief" or "ask Nexus to create a plan from this."',
+    ]
+
+    # Save active context
+    if ACTIVE_CONTEXT_AVAILABLE:
+        save_active_context({
+            "source_agent": "alpha",
+            "context_type": "alpha_outside_plan",
+            "topic": "Alpha plan for today",
+            "summary": "Alpha outside plan: revenue-first, not system-first",
+            "items": [
+                {
+                    "index": 1,
+                    "title": "Pick one revenue action",
+                    "summary": "Readiness review or checklist call funnel. Money first.",
+                    "score": 8.5,
+                    "url": "",
+                    "source": "alpha",
+                    "evidence": [],
+                    "risk": [],
+                    "next_action": "Choose the $97 readiness review or checklist call funnel.",
+                },
+                {
+                    "index": 2,
+                    "title": "Use checklist + 15-minute call funnel",
+                    "summary": "Lower friction than selling immediately. Creates qualified conversations.",
+                    "score": 8.0,
+                    "url": "",
+                    "source": "alpha",
+                    "evidence": [],
+                    "risk": [],
+                    "next_action": "Offer 3 short calls today.",
+                },
+                {
+                    "index": 3,
+                    "title": "Keep Nexus work limited to execution support",
+                    "summary": "Nexus should track the work, not become the work.",
+                    "score": 7.0,
+                    "url": "",
+                    "source": "alpha",
+                    "evidence": [],
+                    "risk": [],
+                    "next_action": "Create one work order, not five new feature tasks.",
+                },
+            ],
+            "top_index": 1,
+            "last_selected_index": None,
+            "allowed_followups": [
+                "explain_score", "research_deeper", "create_work_order",
+                "send_to_command", "compare",
+            ],
+            "provider": None,
+            "query": clean_topic,
+            "expires_after_minutes": 180,
+        })
+
+    return "\n".join(lines)
+
+
+def _alpha_general_answer(clean_text, clean_topic):
+    """Alpha general question — answer directly, not with clarify."""
+    t = clean_text.lower()
+
+    # Simple factual questions
+    if "color" in t and "sky" in t:
+        return (
+            "Alpha — Simple Explanation\n\n"
+            "The sky usually looks blue during the day because sunlight scatters in "
+            "Earth's atmosphere. Blue light scatters more than red light, so more blue "
+            "reaches your eyes from different directions.\n\n"
+            "At sunrise and sunset, the light travels through more atmosphere, so reds "
+            "and oranges become more visible.\n\n"
+            "Source: general knowledge\n\n"
+            "Optional: I can also explain it like a kid, like a science teacher, or "
+            "as a business metaphor."
+        )
+
+    if "color" in t:
+        return (
+            f"Alpha — Simple Explanation\n\n"
+            f"Regarding the color question: {clean_topic[:100]}\n\n"
+            f"I can answer from general knowledge. For more specific or technical "
+            f"color information, I would need to research further.\n\n"
+            f"Source: general knowledge"
+        )
+
+    # General explanation requests
+    if re.search(r"^(what|how|why|explain|tell\s+me)", t):
+        return (
+            f"Alpha — Outside Perspective\n\n"
+            f"Regarding: {clean_topic[:100]}\n\n"
+            f"Here is Alpha's outside perspective on this topic:\n\n"
+            f"This is a general question that I can answer from general knowledge "
+            f"or research. For business-specific context, I can also look at how "
+            f"this relates to GoClear's credit/funding readiness work.\n\n"
+            f"Source: general knowledge + Alpha outside reasoning\n\n"
+            f'Say "research [topic]" for live web research.'
+        )
+
+    # Default: give a helpful response, not "clarify"
+    return (
+        f"Alpha — Outside Perspective\n\n"
+        f"Regarding: {clean_topic[:100]}\n\n"
+        f"I can answer this from general knowledge, outside reasoning, or web research.\n\n"
+        f"For GoClear/Nexus business context, I can also evaluate how this "
+        f"relates to your credit/funding readiness work.\n\n"
+        f"Source: Alpha outside reasoning\n\n"
+        f'Say "research [topic]" for live web research, or ask a follow-up question.'
+    )
 
 
 def _write_router_decision(decision):

@@ -19,9 +19,9 @@ def generate_alpha_draft(understanding, active_context=None):
     text = understanding.get("normalized_text", "")
     topic = understanding.get("raw_text", "")
 
-    # Strip alpha prefix if present
-    clean_topic = re.sub(r"^alpha\s+", "", topic).strip()
-    clean_text = re.sub(r"^alpha\s+", "", text).strip()
+    # Strip alpha/hermes/nexus prefix if present (handle comma, colon, dash, @)
+    clean_topic = re.sub(r"^(?:@)?(?:alpha|hermes|nexus)\s*[,:\-]?\s*", "", topic, flags=re.IGNORECASE).strip()
+    clean_text = re.sub(r"^(?:@)?(?:alpha|hermes|nexus)\s*[,:\-]?\s*", "", text, flags=re.IGNORECASE).strip()
 
     # --- Money opinion ---
     if intent in ("money_plan", "money_research"):

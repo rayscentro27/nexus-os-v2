@@ -21,7 +21,8 @@ def understand_message(text, active_context=None, pending_action=None):
     # --- Explicit role detection ---
     explicit_role = None
     stripped = normalized
-    role_match = re.match(r"^(alpha|hermes|nexus)\s+", normalized)
+    # Handle: "Alpha,", "Alpha:", "Alpha -", "@alpha", "ALPHA", with any trailing punctuation
+    role_match = re.match(r"^(?:@)?(alpha|hermes|nexus)\s*[,:\-]?\s*", normalized)
     if role_match:
         explicit_role = role_match.group(1)
         stripped = normalized[role_match.end():]
@@ -104,8 +105,9 @@ def understand_message(text, active_context=None, pending_action=None):
         }
 
     # --- Intent family classification ---
-    intent = _classify_intent_family(normalized, explicit_role)
-    needs_web = _needs_external_evidence(normalized, intent)
+    # Classify on stripped text (without role prefix) so "Alpha, make money" → money_plan
+    intent = _classify_intent_family(stripped, explicit_role)
+    needs_web = _needs_external_evidence(stripped, intent)
 
     return {
         "raw_text": raw,
@@ -151,10 +153,10 @@ def _is_temporal(text):
     # "today" used with time verbs ONLY — not with business verbs
     if "today" in t:
         # If it has business/money verbs, it's NOT temporal
-        if re.search(r"(make|get|earn|sell|close|revenue|income|cash|paid|client|customer|money|pricing|monetiz|fund|credit|review|call|dm|outreach|post)", t):
+        if re.search(r"(make|get|earn|sell|close|revenue|income|cash|paid|client|customer|money|pricing|monetiz|fund|credit|review|call|dm|outreach|post|plan|strategy|what\s+should|give\s+me|priorities|focus|action)", t):
             return False
         # If it has time verbs, it IS temporal
-        if re.search(r"(schedule|remind|what|plan|focus|priorities|agenda|recap|happen|time|day)", t):
+        if re.search(r"(schedule|remind|what|focus|priorities|agenda|recap|happen|time|day)", t):
             return True
     return False
 
@@ -193,7 +195,13 @@ def _detect_followup(text, active_context):
     if re.match(r"^(what\s+is\s+the\s+best|best\s+option|top\s+option|best\s+one|top\s+one)", t):
         return "explain_best"
 
-    # --- Explicit item selection ( AFTER work order, research deeper, explain) ---
+    # --- Challenge / compare to outside (check BEFORE number selection) ---
+    if re.search(r"(challenge|critique|improve|better\s+than|what.s\s+better|what.s\s+missing|compare\s+to\s+outside|is\s+there\s+a\s+better|review\s+nexus|add\s+to\s+nexus|what\s+can\s+we\s+add)", t):
+        return "challenge"
+    if re.search(r"(based\s+on\s+)?(?:nexus\s+)?(?:option|number|#)\s*\d+.*?(better|improve|challenge|compare|outside)", t):
+        return "challenge"
+
+    # --- Explicit item selection ( AFTER work order, research deeper, explain, challenge) ---
     num = re.search(r"(?:number|option|item|#)\s*(\d+)|^(\d+)$", t)
     if num:
         return "select_item"
@@ -250,6 +258,9 @@ def _classify_intent_family(text, explicit_role):
     if re.search(r"(search\s+the\s+web|search\s+web|look\s+up\s+current|find\s+current|what\s+are\s+the\s+best|research\s+current|latest\s+info)", t):
         return "web_research"
     if re.search(r"(hermes\s+)?(search|research|look\s+up|find)\s+(the\s+web\s+for|current|latest|best|top)", t):
+        return "web_research"
+    # Standalone "research [topic]" — not "research deeper" (which is a followup)
+    if re.match(r"^research\s+\w", t) and not re.search(r"research\s+(deeper|more|further)", t):
         return "web_research"
 
     # --- Opinion / advice ---

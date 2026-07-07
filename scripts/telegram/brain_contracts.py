@@ -83,11 +83,14 @@ IDEA_BRIEF_PATTERNS = [
 
 # Patterns for command consuming advisor idea briefs
 COMMAND_PLAN_PATTERNS = [
-    r"command\s+create\s+a?\s*nexus\s+plan\s+from\s+(?:this\s+idea|number\s+(\d+)|last\s+advisor)",
-    r"command\s+map\s+this\s+idea\s+into\s+nexus",
-    r"command\s+create\s+implementation\s+plan\s+from\s+last\s+advisor",
-    r"command\s+turn\s+last\s+advisor\s+idea\s+into\s+work\s+orders",
+    r"^command\s+create\s+a?\s*nexus\s+plan\s+from\s+(?:this\s+idea|number\s+(\d+)|last\s+advisor)",
+    r"^command\s+map\s+this\s+idea\s+into\s+nexus",
+    r"^command\s+create\s+implementation\s+plan\s+from\s+last\s+advisor",
+    r"^command\s+turn\s+last\s+advisor\s+idea\s+into\s+work\s+orders",
     r"create\s+a?\s*nexus\s+plan\s+from\s+(?:this|number\s+(\d+)|last)",
+    r"(?:nexus|command)[\s,:\-]+create\s+a?\s*(?:nexus\s+)?plan\s+from\s+(?:this|this\s+idea|number\s+(\d+)|last)",
+    r"(?:nexus|command)[\s,:\-]+map\s+(?:this|this\s+idea)\s+into\s+nexus",
+    r"(?:nexus|command)[\s,:\-]+turn\s+(?:this|last)\s+(?:advisor\s+)?idea\s+into\s+(?:a\s+)?(?:nexus\s+)?plan",
 ]
 
 
@@ -123,8 +126,8 @@ def detect_idea_brief_request(text):
         m = re.search(pat, t)
         if m:
             try:
-                idx = int(m.group(1))
-            except (IndexError, ValueError):
+                idx = int(m.group(1)) if m.group(1) else None
+            except (IndexError, ValueError, TypeError):
                 idx = None
             return True, idx
     return False, None
@@ -140,8 +143,8 @@ def detect_command_plan_request(text):
         m = re.search(pat, t)
         if m:
             try:
-                idx = int(m.group(1))
-            except (IndexError, ValueError):
+                idx = int(m.group(1)) if m.group(1) else None
+            except (IndexError, ValueError, TypeError):
                 idx = None
             return True, idx
     return False, None
