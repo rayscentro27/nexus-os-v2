@@ -72,10 +72,56 @@ try:
         format_score_explanation, format_best_option_explanation,
         format_deeper_research, format_work_order_draft,
         handle_confirm_pending, compute_top_index, clean_html,
+        save_pending_action, load_pending_action, clear_pending_action,
     )
     ACTIVE_CONTEXT_AVAILABLE = True
 except Exception:
     ACTIVE_CONTEXT_AVAILABLE = False
+
+# New router architecture imports
+try:
+    from message_understanding import understand_message
+    MESSAGE_UNDERSTANDING_AVAILABLE = True
+except Exception:
+    MESSAGE_UNDERSTANDING_AVAILABLE = False
+
+try:
+    from provider_status import get_web_provider_status, get_provider_display_name, is_web_available
+    PROVIDER_STATUS_AVAILABLE = True
+except Exception:
+    PROVIDER_STATUS_AVAILABLE = False
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hermes"))
+try:
+    from hermes_draft_engine import generate_hermes_draft
+    HERMES_DRAFT_AVAILABLE = True
+except Exception:
+    HERMES_DRAFT_AVAILABLE = False
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "alpha"))
+try:
+    from alpha_draft_engine import generate_alpha_draft
+    ALPHA_DRAFT_AVAILABLE = True
+except Exception:
+    ALPHA_DRAFT_AVAILABLE = False
+
+try:
+    from retrieval_gate import should_retrieve
+    RETRIEVAL_GATE_AVAILABLE = True
+except Exception:
+    RETRIEVAL_GATE_AVAILABLE = False
+
+try:
+    from query_rewriter import rewrite_for_retrieval
+    QUERY_REWRITER_AVAILABLE = True
+except Exception:
+    QUERY_REWRITER_AVAILABLE = False
+
+try:
+    from evidence_merge import merge_evidence_into_draft
+    EVIDENCE_MERGE_AVAILABLE = True
+except Exception:
+    EVIDENCE_MERGE_AVAILABLE = False
 
 # SSL context for Telegram API (handles macOS self-signed cert issues)
 SSL_CTX = ssl.create_default_context()
@@ -1381,6 +1427,234 @@ def handle_status_report():
     )
 
 
+def _handle_hermes_web_search(query):
+    """Handle Hermes web search intent."""
+    if HERMES_SEARCH_AVAILABLE:
+        try:
+            advisory = build_advisory_answer(query)
+            answer_text = clean_html(advisory.get("answer", "No results."))
+            lines = [
+                f"Hermes Web Search — {query[:60]}",
+                "",
+                answer_text,
+                "",
+                f"Provider: {advisory.get('provider', 'none')}",
+            ]
+            if advisory.get("opportunity_score", {}).get("overall", 0) > 0:
+                score = advisory["opportunity_score"]
+                lines.append(f"Score: {score['overall']}/10")
+            if advisory.get("next_step"):
+                lines.append(f"\n{advisory['next_step']}")
+            if SHARED_REC_AVAILABLE:
+                try:
+                    shared_ingest_hermes(query, {"status": "ok", "provider": advisory.get("provider", "unknown")}, advisory, topic=query)
+                except Exception:
+                    pass
+            if ACTIVE_CONTEXT_AVAILABLE:
+                try:
+                    items = []
+                    for i, finding in enumerate(advisory.get("findings", [])[:5], 1):
+                        items.append({
+                            "index": i,
+                            "title": finding.get("title", f"Result {i}")[:100],
+                            "summary": finding.get("snippet", "")[:300],
+                            "score": finding.get("score", 5),
+                            "url": finding.get("url", ""),
+                            "source": advisory.get("provider", "unknown"),
+                            "evidence": advisory.get("why_it_matters", [])[:2],
+                            "risk": advisory.get("risks", [])[:2],
+                            "next_action": advisory.get("next_step", ""),
+                        })
+                    if items:
+                        top_idx = compute_top_index(items)
+                        ctx = {
+                            "source_agent": "hermes",
+                            "context_type": "web_search",
+                            "topic": query,
+                            "summary": advisory.get("answer", "")[:200],
+                            "items": items,
+                            "top_index": top_idx,
+                            "last_selected_index": None,
+                            "allowed_followups": [
+                                "explain_score", "explain_best", "research_deeper",
+                                "create_work_order", "schedule", "compare",
+                                "send_to_hermes", "send_to_alpha",
+                            ],
+                            "receipt_path": advisory.get("receipt_path"),
+                            "brief_path": None,
+                            "provider": advisory.get("provider"),
+                            "query": query,
+                            "expires_after_minutes": 180,
+                        }
+                        save_active_context(ctx)
+                except Exception:
+                    pass
+            return "\n".join(lines)
+        except Exception as e:
+            return f"Search error: {str(e)[:100]}"
+    else:
+        provider = get_web_provider_status() if PROVIDER_STATUS_AVAILABLE else {"available": False}
+        if provider.get("available"):
+            return f"Web search provider is active but the search module encountered an error. Try again."
+        return (
+            "Web search is not configured.\n\n"
+            "Add BRAVE_SEARCH_API_KEY to enable live search.\n"
+            "See docs/hermes_internet_search_setup.md for details."
+        )
+
+
+def _handle_hermes_url_review(url):
+    """Handle Hermes URL review."""
+    if HERMES_SEARCH_AVAILABLE:
+        try:
+            review = hermes_url_review(url)
+            lines = [f"Hermes URL Review — {url[:60]}", ""]
+            if review.get("title"):
+                lines.append(f"Title: {review['title']}")
+            if review.get("summary"):
+                lines.append(f"Summary: {review['summary'][:300]}")
+            lines.append(f"Provider: {review.get('provider', 'none')}")
+            lines.append(f"Status: {review.get('status', 'unknown')}")
+            return "\n".join(lines)
+        except Exception as e:
+            return f"URL review error: {str(e)[:100]}"
+    return _hermes_url_review_answer(url, "")
+
+
+def _handle_alpha_opinion(text):
+    """Handle Alpha opinion intent."""
+    if ALPHA_OPINION_AVAILABLE:
+        try:
+            opinion = alpha_opinion(text)
+            return format_alpha_opinion(opinion)
+        except Exception as e:
+            return f"Alpha opinion error: {str(e)[:100]}"
+    return "Alpha opinion module not available. Check scripts/alpha/alpha_opinion_advisor.py."
+
+
+def _handle_alpha_research(text):
+    """Handle Alpha research intent with proper context save."""
+    response = cmd_alpha_fallback(text, source="live_polling")
+    if ACTIVE_CONTEXT_AVAILABLE and response and not response.startswith("Error"):
+        try:
+            score_files = sorted(Path(ALPHA_SCORES_DIR).glob("alpha_*.json")) if os.path.isdir(ALPHA_SCORES_DIR) else []
+            latest_score = None
+            if score_files:
+                with open(score_files[-1]) as f:
+                    latest_score = json.load(f)
+            items = []
+            if latest_score and latest_score.get("ideas"):
+                for i, idea in enumerate(latest_score["ideas"][:5], 1):
+                    items.append({
+                        "index": i,
+                        "title": idea.get("title", f"Recommendation {i}")[:100],
+                        "summary": idea.get("title", "")[:300],
+                        "score": idea.get("score", 5),
+                        "url": "",
+                        "source": "alpha",
+                        "evidence": [],
+                        "risk": [],
+                        "next_action": "Review and evaluate this recommendation.",
+                    })
+            else:
+                items = [{"index": 1, "title": text[:80], "summary": response[:300], "score": 6, "url": "", "source": "alpha", "evidence": [], "risk": [], "next_action": "review research"}]
+            top_idx = compute_top_index(items) if items else 1
+            ctx = {
+                "source_agent": "alpha",
+                "context_type": "alpha_research",
+                "topic": text,
+                "summary": response[:200],
+                "items": items,
+                "top_index": top_idx,
+                "last_selected_index": None,
+                "allowed_followups": [
+                    "explain_score", "explain_best", "research_deeper",
+                    "create_work_order", "schedule", "send_to_hermes", "send_to_alpha",
+                ],
+                "receipt_path": None,
+                "brief_path": None,
+                "provider": None,
+                "query": text,
+                "expires_after_minutes": 180,
+            }
+            save_active_context(ctx)
+        except Exception:
+            pass
+    return response
+
+
+def _handle_approval_action(full_text):
+    """Handle plain-language approval actions."""
+    parts_lower = full_text.lower().split()
+    if len(parts_lower) >= 2:
+        action = parts_lower[0]
+        item_id = parts_lower[1]
+        if action == "approve":
+            return cmd_approve([item_id])
+        elif action == "reject":
+            reason = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no reason"
+            return cmd_reject([item_id, reason])
+        elif action == "revise":
+            feedback = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no feedback"
+            return cmd_revise([item_id, feedback])
+    return "Usage: approve <id>, reject <id> <reason>, or revise <id> <feedback>"
+
+
+def _handle_active_context_followup_bridge(extra, full_text):
+    """Handle active context follow-up via old bridge interface."""
+    if ACTIVE_CONTEXT_AVAILABLE:
+        try:
+            followup_intent = extra
+            f_intent = followup_intent.get("intent")
+            if f_intent == "confirm_pending":
+                pending = followup_intent.get("pending_action")
+                if not pending:
+                    pending = load_pending_action()
+                if pending:
+                    return handle_confirm_pending(pending)
+                return "No pending action to confirm. Say 'research deeper' first to create one."
+            context = load_active_context()
+            if not context or not is_context_fresh(context):
+                return "No recent search context active. Run a search or research query first."
+            selected_idx = followup_intent.get("selected_index")
+            selected_item = None
+            if selected_idx:
+                selected_item = next((i for i in context.get("items", []) if i["index"] == selected_idx), None)
+            elif f_intent in ("explain_best", "explain_score"):
+                selected_item = select_context_item(context, "this")
+            if f_intent == "explain_score":
+                return format_score_explanation(context, selected_item)
+            elif f_intent == "explain_best":
+                return format_best_option_explanation(context, selected_item)
+            elif f_intent == "research_deeper":
+                return format_deeper_research(context)
+            elif f_intent == "create_work_order":
+                return format_work_order_draft(context, selected_item)
+            elif f_intent == "schedule":
+                title = clean_html(selected_item.get("title", context.get("topic", "unspecified"))) if selected_item else context.get("topic", "unspecified")
+                return f"Scheduling: {title}\n\nPlease specify when."
+            elif f_intent == "send_to_hermes":
+                return f"Hermes review requested for: {context.get('topic', 'last search')}"
+            elif f_intent == "send_to_alpha":
+                return f"Alpha review requested for: {context.get('topic', 'last search')}"
+            elif f_intent == "compare":
+                indices = followup_intent.get("selected_indices", [])
+                items = [next((i for i in context["items"] if i["index"] == idx), None) for idx in indices]
+                items = [i for i in items if i]
+                if len(items) >= 2:
+                    lines = [f"Compare: {clean_html(items[0]['title'])} vs {clean_html(items[1]['title'])}", ""]
+                    for item in items:
+                        lines.append(f"{clean_html(item['title'])}: {item.get('score', '?')}/10")
+                        lines.append("")
+                    diff = items[0].get("score", 5) - items[1].get("score", 5)
+                    lines.append(f"Difference: {abs(diff):.1f} points")
+                    return "\n".join(lines)
+                return "I need at least two items to compare."
+        except Exception as e:
+            return f"Context follow-up error: {str(e)[:100]}"
+    return "Active context module not available."
+
+
 def handle_unknown_fallback():
     """Handle unknown messages with a helpful but concise reply."""
     return (
@@ -1747,6 +2021,392 @@ def cmd_recs(args=None):
     except Exception as e:
         return f"Recommendation error: {str(e)[:100]}"
 
+def process_with_new_router(full_text):
+    """
+    New router implementing the draft-first, gated-research architecture.
+    Routing hierarchy:
+    1. AUTH/SAFETY (handled externally)
+    2. PENDING ACTIONS (confirm/yes)
+    3. TEMPORAL INTELLIGENCE
+    4. ACTIVE CONTEXT FOLLOW-UPS
+    5. EXPLICIT ROLE PREFIX
+    6. STRUCTURED INTENT → DRAFT → RETRIEVAL GATE → MERGE → RENDER
+    7. SAVE CONTEXT
+    """
+    # --- Load state ---
+    active_context = load_active_context() if ACTIVE_CONTEXT_AVAILABLE else None
+    pending_action = load_pending_action() if ACTIVE_CONTEXT_AVAILABLE else None
+
+    # --- Structured message understanding ---
+    if MESSAGE_UNDERSTANDING_AVAILABLE:
+        understanding = understand_message(full_text, active_context, pending_action)
+    else:
+        # Fallback to old classifier
+        intent, match, extra = classify_message_intent(full_text)
+        understanding = {
+            "raw_text": full_text,
+            "normalized_text": full_text.lower().strip(),
+            "explicit_role": None,
+            "intent_family": intent.lower() if intent else "unknown",
+            "is_followup": False,
+            "followup_type": "none",
+            "needs_external_evidence": False,
+            "time_sensitive": False,
+            "risk_level": "low",
+            "confidence": 0.5,
+        }
+
+    intent_family = understanding.get("intent_family", "unknown")
+    explicit_role = understanding.get("explicit_role")
+    followup_type = understanding.get("followup_type", "none")
+
+    # --- Router decision receipt ---
+    router_decision = {
+        "message": full_text[:100],
+        "intent_family": intent_family,
+        "explicit_role": explicit_role,
+        "followup_type": followup_type,
+        "needs_external_evidence": understanding.get("needs_external_evidence", False),
+    }
+
+    # --- Layer 2: PENDING ACTIONS ---
+    if intent_family == "pending_action" and pending_action:
+        result = handle_confirm_pending(pending_action)
+        router_decision["routed_to"] = "pending_action_confirm"
+        router_decision["pending_action_cleared"] = True
+        _write_router_decision(router_decision)
+        return result
+
+    # --- Layer 3: TEMPORAL INTELLIGENCE ---
+    if intent_family == "temporal":
+        if TEMPORAL_AVAILABLE:
+            result = format_time_response(understanding)
+            router_decision["routed_to"] = "temporal"
+            _write_router_decision(router_decision)
+            return result
+
+    # --- Layer 4: ACTIVE CONTEXT FOLLOW-UPS ---
+    if intent_family == "active_context_followup" and followup_type != "none":
+        if ACTIVE_CONTEXT_AVAILABLE:
+            followup_result = _handle_active_context_followup(followup_type, full_text, active_context)
+            if followup_result:
+                router_decision["routed_to"] = "active_context_followup"
+                router_decision["followup_type"] = followup_type
+                _write_router_decision(router_decision)
+                return followup_result
+
+    # --- Layer 5-6: INTENT → DRAFT → RETRIEVAL → MERGE ---
+    if intent_family in ("money_plan", "client_acquisition", "business_strategy",
+                          "implementation_plan", "opinion", "critique", "compare_options",
+                          "web_research", "money_research", "client_research",
+                          "greeting", "help", "unknown"):
+        return _route_to_draft_engine(understanding, full_text, active_context, router_decision)
+
+    # --- Layer: DETERMINISTIC COMMANDS ---
+    if intent_family == "deterministic_command":
+        # Already handled by slash command check in process_command
+        return None  # Signal to process_command to use old logic
+
+    # --- Layer: EXISTING INTENTS (backward compatibility) ---
+    return None  # Signal to process_command to use old logic
+
+
+def _route_to_draft_engine(understanding, full_text, active_context, router_decision):
+    """Route to draft engine, retrieval gate, merge, and render."""
+    intent_family = understanding.get("intent_family", "unknown")
+    explicit_role = understanding.get("explicit_role")
+
+    # --- Select role ---
+    role = _select_role(understanding)
+    router_decision["selected_role"] = role
+
+    # --- Generate draft ---
+    draft = None
+    if role == "alpha" and ALPHA_DRAFT_AVAILABLE:
+        draft = generate_alpha_draft(understanding, active_context)
+    elif role == "hermes" and HERMES_DRAFT_AVAILABLE:
+        draft = generate_hermes_draft(understanding, active_context)
+
+    if not draft:
+        # Fallback: try both engines
+        if HERMES_DRAFT_AVAILABLE:
+            draft = generate_hermes_draft(understanding, active_context)
+        elif ALPHA_DRAFT_AVAILABLE:
+            draft = generate_alpha_draft(understanding, active_context)
+        else:
+            return _render_fallback(full_text)
+
+    router_decision["draft_role"] = draft.get("role", "unknown")
+    router_decision["draft_confidence"] = draft.get("confidence", 0)
+    router_decision["draft_items"] = len(draft.get("items", []))
+
+    # --- Retrieval gate ---
+    provider_status = get_web_provider_status() if PROVIDER_STATUS_AVAILABLE else {"provider": None, "available": False}
+    retrieval = {"retrieve": False, "reason": "gate not available", "query": None, "provider": None, "merge_mode": "none"}
+    if RETRIEVAL_GATE_AVAILABLE:
+        retrieval = should_retrieve(understanding, draft, active_context, provider_status)
+
+    router_decision["retrieval_decision"] = retrieval.get("reason", "unknown")
+    router_decision["retrieval_will_search"] = retrieval.get("retrieve", False)
+
+    # --- Web enrichment if needed ---
+    if retrieval.get("retrieve") and retrieval.get("query"):
+        brave_results = _do_web_search(retrieval["query"], retrieval["provider"])
+        if brave_results and EVIDENCE_MERGE_AVAILABLE:
+            draft = merge_evidence_into_draft(draft, brave_results)
+            router_decision["web_enriched"] = True
+            router_decision["web_items_added"] = draft.get("web_items_added", 0)
+
+    # --- Render response ---
+    response = _render_draft(draft, full_text)
+
+    # --- Save active context ---
+    if ACTIVE_CONTEXT_AVAILABLE and draft.get("items"):
+        try:
+            items = []
+            for item in draft["items"][:5]:
+                items.append({
+                    "index": item.get("index", 0),
+                    "title": item.get("title", "")[:100],
+                    "summary": item.get("summary", "")[:300],
+                    "score": item.get("score", 5),
+                    "url": item.get("url", ""),
+                    "source": item.get("source", draft.get("role", "unknown")),
+                    "evidence": item.get("evidence", []),
+                    "risk": item.get("risk", []),
+                    "next_action": item.get("next_action", ""),
+                })
+            if items:
+                top_idx = compute_top_index(items)
+                ctx = {
+                    "source_agent": draft.get("role", "hermes"),
+                    "context_type": intent_family,
+                    "topic": understanding.get("raw_text", ""),
+                    "summary": draft.get("summary", "")[:200],
+                    "items": items,
+                    "top_index": top_idx,
+                    "last_selected_index": None,
+                    "allowed_followups": [
+                        "explain_score", "explain_best", "research_deeper",
+                        "create_work_order", "schedule", "compare",
+                        "send_to_hermes", "send_to_alpha",
+                    ],
+                    "receipt_path": None,
+                    "brief_path": None,
+                    "provider": provider_status.get("provider"),
+                    "query": understanding.get("raw_text", ""),
+                    "expires_after_minutes": 180,
+                }
+                save_active_context(ctx)
+                router_decision["active_context_saved"] = True
+        except Exception:
+            pass
+
+    # --- Save work order if applicable ---
+    if intent_family in ("work_order_request",) and draft.get("items"):
+        router_decision["work_order_created"] = True
+
+    _write_router_decision(router_decision)
+    return response
+
+
+def _select_role(understanding):
+    """Select which agent role to use."""
+    explicit = understanding.get("explicit_role")
+    if explicit:
+        return explicit
+
+    intent = understanding.get("intent_family", "unknown")
+
+    # Alpha gets: opinion, critique, compare, explicit alpha
+    if intent in ("opinion", "critique", "compare_options"):
+        return "alpha"
+
+    # Hermes gets: operational, business, money, strategy, implementation
+    if intent in ("money_plan", "money_research", "client_acquisition", "client_research",
+                   "business_strategy", "implementation_plan", "web_research"):
+        return "hermes"
+
+    # Default: Hermes for operational, Alpha for opinion
+    return "hermes"
+
+
+def _do_web_search(query, provider):
+    """Execute web search if available."""
+    if not HERMES_SEARCH_AVAILABLE:
+        return None
+    try:
+        advisory = build_advisory_answer(query)
+        if advisory.get("search_status") == "ok":
+            return {"results": advisory.get("findings", [])}
+    except Exception:
+        pass
+    return None
+
+
+def _render_draft(draft, original_text):
+    """Render a draft into a Telegram response."""
+    role = draft.get("role", "hermes")
+    summary = draft.get("summary", "")
+    items = draft.get("items", [])
+    answer_mode = draft.get("answer_mode", "operator_plan")
+
+    lines = []
+
+    # Header
+    if role == "alpha":
+        lines.append(f"Alpha — {summary}")
+    else:
+        lines.append(f"Hermes — {summary}")
+    lines.append("")
+
+    if not items:
+        lines.append(draft.get("summary", "No items generated."))
+        return "\n".join(lines)
+
+    # Items
+    for item in items[:5]:
+        idx = item.get("index", 0)
+        title = item.get("title", f"Item {idx}")
+        score = item.get("score", 0)
+        summary_text = item.get("summary", "")
+        next_action = item.get("next_action", "")
+
+        lines.append(f"{idx}. {title}")
+        if score > 0:
+            lines.append(f"   Score: {score}/10")
+        if summary_text:
+            lines.append(f"   {summary_text[:150]}")
+        if next_action:
+            lines.append(f"   Next: {next_action}")
+        lines.append("")
+
+    # Source indicator
+    if draft.get("web_enriched"):
+        provider = draft.get("provider", "web")
+        lines.append(f"Source: internal + {provider.title() if provider else 'web'} enrichment")
+    else:
+        lines.append("Source: internal Nexus context")
+
+    # Confidence
+    confidence = draft.get("confidence", 0)
+    if confidence < 0.6:
+        lines.append("\nSay 'research deeper' or 'search the web for...' to enrich with live data.")
+
+    # Recommended next prompt
+    next_prompt = draft.get("recommended_next_prompt")
+    if next_prompt:
+        lines.append(f'\nSay "{next_prompt}" to take action.')
+
+    return "\n".join(lines)
+
+
+def _render_fallback(full_text):
+    """Render a helpful fallback when no engines available."""
+    provider = get_web_provider_status() if PROVIDER_STATUS_AVAILABLE else {"available": False}
+    lines = [
+        "I can help with that.",
+        "",
+        "Try:",
+        "- 'hermes what should we do next?'",
+        "- 'alpha what do you think about...'",
+        "- 'search the web for...'",
+        "- 'how can I make money today'",
+        "",
+        f"Web search: {'active' if provider.get('available') else 'configure BRAVE_SEARCH_API_KEY'}",
+    ]
+    return "\n".join(lines)
+
+
+def _handle_active_context_followup(followup_type, full_text, active_context):
+    """Handle active context follow-up intents."""
+    if not ACTIVE_CONTEXT_AVAILABLE or not active_context:
+        return None
+
+    text_lower = full_text.lower().strip()
+
+    if followup_type == "select_item":
+        item = select_context_item(active_context, text_lower)
+        if item:
+            return format_score_explanation(active_context, item)
+
+    elif followup_type == "explain_score":
+        item = _find_item_from_text(text_lower, active_context)
+        if item:
+            return format_score_explanation(active_context, item)
+
+    elif followup_type == "explain_best":
+        top_idx = active_context.get("top_index", 1)
+        item = next((i for i in active_context.get("items", []) if i["index"] == top_idx), None)
+        return format_best_option_explanation(active_context, item)
+
+    elif followup_type == "research_deeper":
+        return format_deeper_research(active_context)
+
+    elif followup_type == "create_work_order":
+        item = _find_item_from_text(text_lower, active_context)
+        return format_work_order_draft(active_context, item)
+
+    elif followup_type == "compare":
+        nums = re.findall(r"\d+", text_lower)
+        if len(nums) >= 2:
+            items = [next((i for i in active_context.get("items", []) if i["index"] == int(n)), None) for n in nums[:2]]
+            items = [i for i in items if i]
+            if len(items) >= 2:
+                lines = [f"Compare: {clean_html(items[0]['title'])} vs {clean_html(items[1]['title'])}", ""]
+                for item in items:
+                    lines.append(f"{clean_html(item['title'])}: {item.get('score', '?')}/10")
+                    lines.append("")
+                diff = items[0].get("score", 5) - items[1].get("score", 5)
+                lines.append(f"Difference: {abs(diff):.1f} points")
+                return "\n".join(lines)
+        return "I need at least two item numbers to compare."
+
+    elif followup_type == "send_to_agent":
+        return f"Routing to agent for: {active_context.get('topic', 'last search')}"
+
+    elif followup_type == "schedule":
+        item = _find_item_from_text(text_lower, active_context)
+        title = clean_html(item.get("title", active_context.get("topic", "unspecified"))) if item else active_context.get("topic", "unspecified")
+        return f"Scheduling: {title}\n\nPlease specify when (e.g., 'tomorrow at 9am')."
+
+    return None
+
+
+def _find_item_from_text(text_lower, active_context):
+    """Find an item from text using selection detection."""
+    if not active_context or not active_context.get("items"):
+        return None
+
+    # Direct number reference
+    num = re.search(r"(?:number|option|item|#)\s*(\d+)|^(\d+)$", text_lower)
+    if num:
+        idx = int(num.group(1) or num.group(2))
+        return next((i for i in active_context["items"] if i["index"] == idx), None)
+
+    # Pronouns
+    if re.match(r"^(this|that|it|the\s+one)$", text_lower):
+        last = active_context.get("last_selected_index")
+        if last:
+            return next((i for i in active_context["items"] if i["index"] == last), None)
+        top = active_context.get("top_index", 1)
+        return next((i for i in active_context["items"] if i["index"] == top), None)
+
+    return None
+
+
+def _write_router_decision(decision):
+    """Write router decision receipt for debugging."""
+    try:
+        os.makedirs("reports/telegram", exist_ok=True)
+        with open("reports/telegram/router_decision_latest.md", "w") as f:
+            f.write("# Router Decision — Latest\n\n")
+            for k, v in decision.items():
+                f.write(f"- **{k}**: {v}\n")
+    except Exception:
+        pass
+
+
 def process_command(text):
     parts = text.strip().split()
     if not parts:
@@ -1784,295 +2444,63 @@ def process_command(text):
     if handler:
         return handler(args)
 
-    # Not a slash command — classify intent
+    # Not a slash command — use new router
     full_text = text.strip()
+
+    # Try new router first
+    new_result = process_with_new_router(full_text)
+    if new_result is not None:
+        return new_result
+
+    # Fallback to old classification for backward compatibility
     intent, match, extra = classify_message_intent(full_text)
 
-    # Debug receipt
     write_alpha_debug_receipt({
-        "source": "process_command",
+        "source": "process_command_fallback",
         "raw_text": full_text[:100],
         "detected_intent": intent,
-        "routed_to": intent,
     })
 
-    # Route by intent
+    # Route by old intent
     if intent == "GREETING":
         return handle_greeting(agent=extra)
-
     elif intent == "CASUAL_AGENT_CHAT":
         return handle_casual_chat(agent=extra)
-
     elif intent == "HERMES_ADVISORY":
         return hermes_direct_answer(extra or full_text)
-
     elif intent == "HERMES_WEB_SEARCH":
-        if HERMES_SEARCH_AVAILABLE:
-            try:
-                advisory = build_advisory_answer(extra or full_text)
-                answer_text = clean_html(advisory.get("answer", "No results."))
-                lines = [
-                    f"Hermes Web Search — {extra[:60] if extra else 'query'}",
-                    "",
-                    answer_text,
-                    "",
-                    f"Provider: {advisory.get('provider', 'none')}",
-                ]
-                if advisory.get("opportunity_score", {}).get("overall", 0) > 0:
-                    score = advisory["opportunity_score"]
-                    lines.append(f"Score: {score['overall']}/10")
-                if advisory.get("next_step"):
-                    lines.append(f"\n{advisory['next_step']}")
-                # Ingest into shared recommendation layer
-                if SHARED_REC_AVAILABLE:
-                    try:
-                        shared_ingest_hermes(extra or full_text, {"status": "ok", "provider": advisory.get("provider", "unknown")}, advisory, topic=extra or full_text)
-                    except Exception:
-                        pass
-                # Save active context for follow-ups
-                if ACTIVE_CONTEXT_AVAILABLE:
-                    try:
-                        items = []
-                        for i, finding in enumerate(advisory.get("findings", [])[:5], 1):
-                            items.append({
-                                "index": i,
-                                "title": finding.get("title", f"Result {i}")[:100],
-                                "summary": finding.get("snippet", "")[:300],
-                                "score": finding.get("score", 5),
-                                "url": finding.get("url", ""),
-                                "source": advisory.get("provider", "unknown"),
-                                "evidence": advisory.get("why_it_matters", [])[:2],
-                                "risk": advisory.get("risks", [])[:2],
-                                "next_action": advisory.get("next_step", ""),
-                            })
-                        if items:
-                            top_idx = compute_top_index(items)
-                            ctx = {
-                                "source_agent": "hermes",
-                                "context_type": "web_search",
-                                "topic": extra or full_text,
-                                "summary": advisory.get("answer", "")[:200],
-                                "items": items,
-                                "top_index": top_idx,
-                                "last_selected_index": None,
-                                "allowed_followups": [
-                                    "explain_score", "explain_best", "research_deeper",
-                                    "create_work_order", "schedule", "compare",
-                                    "send_to_hermes", "send_to_alpha",
-                                ],
-                                "receipt_path": advisory.get("receipt_path"),
-                                "brief_path": None,
-                                "provider": advisory.get("provider"),
-                                "query": extra or full_text,
-                                "expires_after_minutes": 180,
-                            }
-                            save_active_context(ctx)
-                    except Exception:
-                        pass
-                return "\n".join(lines)
-            except Exception as e:
-                return f"Search error: {str(e)[:100]}"
-        else:
-            return (
-                "Hermes web search is not configured.\n\n"
-                "No search provider key found. Add one of:\n"
-                "  BRAVE_SEARCH_API_KEY (recommended)\n"
-                "  TAVILY_API_KEY\n"
-                "  SERPAPI_API_KEY\n"
-                "  ALPHA_SEARXNG_URL\n\n"
-                f"Your query: {extra or 'N/A'}\n\n"
-                "See docs/hermes_internet_search_setup.md for details."
-            )
-
+        return _handle_hermes_web_search(extra or full_text)
     elif intent == "HERMES_URL_REVIEW":
-        if HERMES_SEARCH_AVAILABLE:
-            try:
-                review = hermes_url_review(extra or "")
-                lines = [
-                    f"Hermes URL Review — {extra[:60] if extra else 'URL'}",
-                    "",
-                ]
-                if review.get("title"):
-                    lines.append(f"Title: {review['title']}")
-                if review.get("summary"):
-                    lines.append(f"Summary: {review['summary'][:300]}")
-                lines.append(f"Provider: {review.get('provider', 'none')}")
-                lines.append(f"Status: {review.get('status', 'unknown')}")
-                return "\n".join(lines)
-            except Exception as e:
-                return f"URL review error: {str(e)[:100]}"
-        else:
-            return _hermes_url_review_answer(extra or "", "")
-
+        return _handle_hermes_url_review(extra or "")
     elif intent == "NEXUS_STATUS_OR_REPORT":
         return handle_status_report()
-
     elif intent == "ALPHA_OPINION":
-        if ALPHA_OPINION_AVAILABLE:
-            try:
-                opinion = alpha_opinion(extra or full_text)
-                return format_alpha_opinion(opinion)
-            except Exception as e:
-                return f"Alpha opinion error: {str(e)[:100]}"
-        else:
-            return (
-                "Alpha opinion module is not available.\n"
-                "Check that scripts/alpha/alpha_opinion_advisor.py exists.\n\n"
-                "I can still route you to Hermes for operational advice: 'hermes <question>'"
-            )
-
+        return _handle_alpha_opinion(extra or full_text)
     elif intent == "ALPHA_CONTEXT_FOLLOWUP":
         return cmd_followup(extra, match, 1288928049)
-
     elif intent == "ALPHA_RESEARCH_REQUEST":
-        response = cmd_alpha_fallback(extra or full_text, source="live_polling")
-        # Save active context for follow-ups using the score record
-        if ACTIVE_CONTEXT_AVAILABLE and response and not response.startswith("Error"):
-            try:
-                # Load the latest score record to get individual recommendations
-                score_files = sorted(Path(ALPHA_SCORES_DIR).glob("alpha_*.json")) if os.path.isdir(ALPHA_SCORES_DIR) else []
-                latest_score = None
-                if score_files:
-                    with open(score_files[-1]) as f:
-                        latest_score = json.load(f)
-
-                items = []
-                if latest_score and latest_score.get("ideas"):
-                    for i, idea in enumerate(latest_score["ideas"][:5], 1):
-                        items.append({
-                            "index": i,
-                            "title": idea.get("title", f"Recommendation {i}")[:100],
-                            "summary": idea.get("title", "")[:300],
-                            "score": idea.get("score", 5),
-                            "url": "",
-                            "source": "alpha",
-                            "evidence": [],
-                            "risk": [],
-                            "next_action": "Review and evaluate this recommendation.",
-                        })
-                else:
-                    # Fallback: create single item from topic
-                    items = [{"index": 1, "title": (extra or "research")[:80], "summary": response[:300], "score": 6, "url": "", "source": "alpha", "evidence": [], "risk": [], "next_action": "review research"}]
-
-                top_idx = compute_top_index(items) if items else 1
-                ctx = {
-                    "source_agent": "alpha",
-                    "context_type": "alpha_research",
-                    "topic": extra or full_text,
-                    "summary": response[:200],
-                    "items": items,
-                    "top_index": top_idx,
-                    "last_selected_index": None,
-                    "allowed_followups": [
-                        "explain_score", "explain_best", "research_deeper",
-                        "create_work_order", "schedule", "send_to_hermes", "send_to_alpha",
-                    ],
-                    "receipt_path": None,
-                    "brief_path": None,
-                    "provider": None,
-                    "query": extra or full_text,
-                    "expires_after_minutes": 180,
-                }
-                save_active_context(ctx)
-            except Exception:
-                pass
-        return response
-
+        return _handle_alpha_research(extra or full_text)
     elif intent == "WORK_ORDER_REQUEST":
         wo = create_work_order(full_text, "hermes", "ACTIVE_INTERNAL", source="telegram")
         return f"Work Order Created: {wo['work_order_id']}\nRoute: hermes\nMode: ACTIVE_INTERNAL"
-
     elif intent == "APPROVAL_ACTION":
-        # Should have been caught by slash command, but handle plain-language too
-        parts_lower = full_text.lower().split()
-        if len(parts_lower) >= 2:
-            action = parts_lower[0]
-            item_id = parts_lower[1]
-            if action == "approve":
-                return cmd_approve([item_id])
-            elif action == "reject":
-                reason = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no reason"
-                return cmd_reject([item_id, reason])
-            elif action == "revise":
-                feedback = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no feedback"
-                return cmd_revise([item_id, feedback])
-        return "Usage: approve <id>, reject <id> <reason>, or revise <id> <feedback>"
-
+        return _handle_approval_action(full_text)
     elif intent == "TEMPORAL_INTENT":
         if TEMPORAL_AVAILABLE:
-            try:
-                return format_time_response(extra)
-            except Exception as e:
-                return f"Time error: {str(e)[:100]}"
-        else:
-            return "Temporal module not available. Check scripts/telegram/temporal_intent.py."
-
+            return format_time_response(extra)
+        return "Temporal module not available."
     elif intent == "ACTIVE_CONTEXT_FOLLOWUP":
-        if ACTIVE_CONTEXT_AVAILABLE:
-            try:
-                followup_intent = extra  # extra contains the full followup dict
-                f_intent = followup_intent.get("intent")
-
-                # Handle confirm pending action
-                if f_intent == "confirm_pending":
-                    pending = followup_intent.get("pending_action")
-                    if not pending and ACTIVE_CONTEXT_AVAILABLE:
-                        from active_context import load_pending_action
-                        pending = load_pending_action()
-                    if pending:
-                        return handle_confirm_pending(pending)
-                    return "No pending action to confirm. Say 'research deeper' first to create one."
-
-                context = load_active_context()
-                if not context or not is_context_fresh(context):
-                    return "No recent search context active. Run a search or research query first, then ask about the results."
-
-                selected_idx = followup_intent.get("selected_index")
-                selected_item = None
-                if selected_idx:
-                    selected_item = next((i for i in context.get("items", []) if i["index"] == selected_idx), None)
-                elif f_intent in ("explain_best", "explain_score"):
-                    selected_item = select_context_item(context, "this")
-
-                if f_intent == "explain_score":
-                    return format_score_explanation(context, selected_item)
-                elif f_intent == "explain_best":
-                    return format_best_option_explanation(context, selected_item)
-                elif f_intent == "research_deeper":
-                    return format_deeper_research(context)
-                elif f_intent == "create_work_order":
-                    return format_work_order_draft(context, selected_item)
-                elif f_intent == "schedule":
-                    title = clean_html(selected_item.get("title", context.get("topic", "unspecified"))) if selected_item else context.get("topic", "unspecified")
-                    return f"Scheduling: {title}\n\nPlease specify when you'd like to schedule this (e.g., 'tomorrow at 9am', 'next week')."
-                elif f_intent == "send_to_hermes":
-                    return f"Hermes review requested for: {context.get('topic', 'last search')}\n\nRouting to Hermes for operational review. Hermes will evaluate feasibility and recommend next steps."
-                elif f_intent == "send_to_alpha":
-                    return f"Alpha review requested for: {context.get('topic', 'last search')}\n\nRouting to Alpha for opinion/advisory review."
-                elif f_intent == "compare":
-                    indices = followup_intent.get("selected_indices", [])
-                    items = [next((i for i in context["items"] if i["index"] == idx), None) for idx in indices]
-                    items = [i for i in items if i]
-                    if len(items) >= 2:
-                        lines = [f"Compare: {clean_html(items[0]['title'])} vs {clean_html(items[1]['title'])}", ""]
-                        for item in items:
-                            lines.append(f"{clean_html(item['title'])}: {item.get('score', '?')}/10")
-                            if item.get("summary"):
-                                lines.append(f"  {clean_html(item['summary'][:120])}")
-                            lines.append("")
-                        avg = sum(i.get("score", 5) for i in items) / len(items)
-                        diff = items[0].get("score", 5) - items[1].get("score", 5)
-                        lines.append(f"Difference: {abs(diff):.1f} points")
-                        return "\n".join(lines)
-                    return "I need at least two items to compare."
-                else:
-                    return f"Follow-up intent '{f_intent}' not implemented yet."
-            except Exception as e:
-                return f"Context follow-up error: {str(e)[:100]}"
-        else:
-            return "Active context module not available."
-
-    else:  # UNKNOWN_HELPFUL_FALLBACK
+        return _handle_active_context_followup_bridge(extra, full_text)
+    else:
+        # Last resort: try Hermes draft as intelligent fallback
+        if HERMES_DRAFT_AVAILABLE:
+            understanding = {"raw_text": full_text, "normalized_text": full_text.lower().strip(),
+                           "explicit_role": None, "intent_family": "unknown",
+                           "is_followup": False, "followup_type": "none",
+                           "needs_external_evidence": False, "time_sensitive": False,
+                           "risk_level": "low", "confidence": 0.4}
+            draft = generate_hermes_draft(understanding)
+            return _render_draft(draft, full_text)
         return handle_unknown_fallback()
 
 def main():
