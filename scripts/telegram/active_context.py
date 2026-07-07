@@ -290,6 +290,8 @@ def format_score_explanation(context, item):
     title = clean_html(item.get("title", "Item"))
     score = item.get("score", 5)
     summary = clean_html(item.get("summary", ""))
+    why = clean_html(item.get("why", ""))
+    source = item.get("source", "unknown")
 
     lines = [
         title,
@@ -302,27 +304,48 @@ def format_score_explanation(context, item):
         lines.append("What this is:")
         lines.append(f"  {summary[:300]}")
 
-    lines.append("")
-    lines.append("Why it scored this way:")
-
-    if score >= 7:
-        lines.append("  - Positive: strong fit with the query and good evidence.")
-    elif score >= 5:
-        lines.append("  - Positive: decent potential and relevance.")
-    else:
-        lines.append("  - Positive: some relevance but limited evidence.")
+    if why:
+        lines.append("")
+        lines.append("Why it scored this way:")
+        lines.append(f"  {clean_html(why)}")
 
     if item.get("evidence"):
+        lines.append("")
+        lines.append("Evidence:")
         for e in item["evidence"][:3]:
-            lines.append(f"  - Positive: {clean_html(e)}")
+            lines.append(f"  + {clean_html(e)}")
 
     if item.get("risk"):
+        lines.append("")
+        lines.append("Risks or limitations:")
         for r in item["risk"][:2]:
-            lines.append(f"  - Weakness: {clean_html(r)}")
+            lines.append(f"  - {clean_html(r)}")
+
+    # Context-specific score reasoning
+    lines.append("")
+    if score >= 8:
+        lines.append("Strong fit: fast path to money, low setup cost, already available or buildable today.")
+    elif score >= 7:
+        lines.append("Good fit: needs small preparation but has clear value and low risk.")
+    elif score >= 5:
+        lines.append("Decent potential: some setup or trust-building required before revenue.")
+    else:
+        lines.append("Limited: requires significant setup, unproven, or unclear how it turns into money.")
+
+    # Source attribution
+    if source == "hermes":
+        lines.append("Source: Hermes internal plan (no web claims).")
+    elif source == "alpha":
+        lines.append("Source: Alpha outside opinion (not confirmed).")
+    elif source == "web_search":
+        lines.append("Source: web search snippet (not verified).")
 
     if score < 8:
-        lines.append("  - Why not higher: search snippet alone is not enough evidence.")
-        lines.append("  - What would raise score: confirmed details, trusted source, compliance-friendly terms, clear value.")
+        lines.append("")
+        lines.append("What would raise this score:")
+        lines.append("  - Confirmed details, trusted source, compliance-friendly terms, clear value.")
+        lines.append("  - Verified pricing, lead flow, or real examples.")
+        lines.append("  - Specific to GoClear's actual clients and market.")
 
     if item.get("next_action"):
         lines.append(f"\nRecommended next step: {clean_html(item['next_action'])}")
@@ -437,16 +460,108 @@ def handle_confirm_pending(pending_action):
 
     if action_type == "confirm_deeper_research":
         if context_type == "web_search" and provider:
-            return (
-                f"Running deeper {provider.title()} search on: {topic}\n\n"
-                f"This will search for additional results beyond the initial set.\n"
-                f"Results will be saved as new active context for follow-ups."
-            )
+            # Import and run real deeper search
+            try:
+                from hermes_web_search import hermes_search
+                from hermes_draft_engine import generate_hermes_draft
+                import json as _json
+
+                results = hermes_search(topic, max_results=5)
+                if results:
+                    draft = generate_hermes_draft(topic, context_type="deeper_research", context={"results": results})
+                    # Save as active context
+                    items = []
+                    for i, r in enumerate(draft.get("items", [])[:5], 1):
+                        items.append({
+                            "index": i,
+                            "title": r.get("title", "Result"),
+                            "summary": r.get("summary", ""),
+                            "score": r.get("score", 7),
+                            "url": r.get("url", ""),
+                            "source": r.get("source", provider),
+                            "evidence": r.get("evidence", []),
+                            "risk": r.get("risk", []),
+                            "next_action": r.get("next_action", "Review"),
+                        })
+                    save_active_context({
+                        "source_agent": "hermes",
+                        "context_type": "deeper_research",
+                        "topic": topic,
+                        "summary": draft.get("summary", f"Deeper research on {topic}"),
+                        "items": items,
+                        "top_index": 1,
+                        "last_selected_index": None,
+                        "allowed_followups": ["explain_score", "research_deeper", "create_work_order", "compare"],
+                        "provider": provider,
+                        "query": topic,
+                        "expires_after_minutes": 180,
+                    })
+                    lines = [f"Deeper {provider.title()} Research — {topic}", ""]
+                    for item in items:
+                        lines.append(f"{item['index']}. {item['title']}")
+                        lines.append(f"   Score: {item['score']}/10")
+                        lines.append(f"   {item['summary'][:120]}")
+                        lines.append(f"   Next: {item['next_action']}")
+                        lines.append("")
+                    lines.append("Say 'number 1' or 'explain number 2' to continue.")
+                    return "\n".join(lines)
+                else:
+                    return f"No additional {provider.title()} results found for: {topic}"
+            except Exception as e:
+                return f"Deeper research failed: {e}"
+
         elif context_type == "alpha_research":
-            return (
-                f"Expanding Alpha research on: {topic}\n\n"
-                f"This will generate additional recommendations and deeper analysis."
-            )
+            # Import and run real Alpha research expansion
+            try:
+                from alpha_research_brief import alpha_research
+                from alpha_draft_engine import generate_alpha_draft
+                from alpha_opinion_advisor import alpha_opinion_advisory
+                import json as _json
+
+                # Try research first
+                research_result = alpha_research(topic)
+                if research_result.get("items"):
+                    items = []
+                    for i, r in enumerate(research_result["items"][:5], 1):
+                        items.append({
+                            "index": i,
+                            "title": r.get("title", "Research item"),
+                            "summary": r.get("summary", ""),
+                            "score": r.get("score", 7),
+                            "url": r.get("url", ""),
+                            "source": r.get("source", "alpha"),
+                            "evidence": r.get("evidence", []),
+                            "risk": r.get("risk", []),
+                            "next_action": r.get("next_action", "Review"),
+                        })
+                    save_active_context({
+                        "source_agent": "alpha",
+                        "context_type": "alpha_research",
+                        "topic": topic,
+                        "summary": f"Deeper Alpha research on {topic}",
+                        "items": items,
+                        "top_index": 1,
+                        "last_selected_index": None,
+                        "allowed_followups": ["explain_score", "research_deeper", "create_work_order", "compare"],
+                        "provider": None,
+                        "query": topic,
+                        "expires_after_minutes": 180,
+                    })
+                    lines = [f"Alpha — Deeper Research on {topic}", ""]
+                    for item in items:
+                        lines.append(f"{item['index']}. {item['title']}")
+                        lines.append(f"   Score: {item['score']}/10")
+                        lines.append(f"   {item['summary'][:120]}")
+                        lines.append(f"   Next: {item['next_action']}")
+                        lines.append("")
+                    lines.append("Say 'number 1' or 'explain number 2' to continue.")
+                    return "\n".join(lines)
+                else:
+                    # Fallback to opinion advisory
+                    opinion = alpha_opinion_advisory(topic)
+                    return opinion.get("text", f"No deeper Alpha research found for: {topic}")
+            except Exception as e:
+                return f"Alpha deeper research failed: {e}"
         else:
             return f"Investigating further: {topic}"
 

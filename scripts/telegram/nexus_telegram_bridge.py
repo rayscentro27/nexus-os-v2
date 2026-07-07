@@ -123,6 +123,19 @@ try:
 except Exception:
     EVIDENCE_MERGE_AVAILABLE = False
 
+# Brain contracts import
+try:
+    from brain_contracts import (
+        detect_brain_mode, detect_idea_brief_request, detect_command_plan_request,
+        create_idea_brief, create_command_plan,
+        format_idea_brief_response, format_command_plan_response,
+        format_command_refusal, format_advisor_general_answer,
+        ADVISOR, COMMAND,
+    )
+    BRAIN_CONTRACTS_AVAILABLE = True
+except Exception:
+    BRAIN_CONTRACTS_AVAILABLE = False
+
 # SSL context for Telegram API (handles macOS self-signed cert issues)
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -2136,6 +2149,39 @@ def process_with_new_router(full_text):
                 _write_router_decision(router_decision)
                 return result
 
+    # --- Layer 3b: BRAIN CONTRACTS (Advisor/Command) ---
+    if BRAIN_CONTRACTS_AVAILABLE:
+        # Check for Command plan creation from Advisor idea
+        is_plan, plan_idx = detect_command_plan_request(full_text)
+        if is_plan:
+            result = _handle_command_plan_request(plan_idx, active_context)
+            if result:
+                router_decision["routed_to"] = "command_plan"
+                _write_router_decision(router_decision)
+                return result
+
+        # Check for Idea Brief creation
+        is_brief, brief_idx = detect_idea_brief_request(full_text)
+        if is_brief:
+            result = _handle_idea_brief_request(brief_idx, active_context, full_text)
+            if result:
+                router_decision["routed_to"] = "idea_brief"
+                _write_router_decision(router_decision)
+                return result
+
+        # Detect brain mode for this message
+        brain_mode, explicit = detect_brain_mode(full_text)
+
+        # If Command mode and question is outside Nexus scope → refuse
+        if brain_mode == COMMAND and explicit:
+            # Check if this is actually a Nexus-internal question
+            is_nexus_internal = _is_nexus_internal_question(full_text)
+            if not is_nexus_internal:
+                result = format_command_refusal()
+                router_decision["routed_to"] = "command_refusal"
+                _write_router_decision(router_decision)
+                return result
+
     # --- Layer 4: ACTIVE CONTEXT FOLLOW-UPS ---
     if intent_family == "active_context_followup" and followup_type != "none":
         if ACTIVE_CONTEXT_AVAILABLE:
@@ -2502,6 +2548,123 @@ def _find_item_from_text(text_lower, active_context):
         return next((i for i in active_context["items"] if i["index"] == top), None)
 
     return None
+
+
+def _is_nexus_internal_question(text):
+    """Check if a question is about Nexus internal state (not outside knowledge)."""
+    t = text.lower().strip()
+    internal_keywords = [
+        "report", "status", "work order", "approval", "approval queue",
+        "process", "registry", "receipt", "launchd", "scheduler",
+        "database", "supabase", "stripe", "build", "deploy",
+        "telegram", "hermes", "alpha", "nexus", "goclear",
+        "score", "receipt", "brief", "plan", "schedule",
+        "what happened", "what is running", "how many",
+    ]
+    return any(kw in t for kw in internal_keywords)
+
+
+def _handle_idea_brief_request(item_idx, active_context, full_text):
+    """Handle request to create an Advisor Idea Brief."""
+    if not BRAIN_CONTRACTS_AVAILABLE or not active_context:
+        return None
+
+    items = active_context.get("items", [])
+    if not items:
+        return "No active context items to create an idea brief from."
+
+    # Find the item
+    item = None
+    if item_idx:
+        item = next((i for i in items if i["index"] == item_idx), None)
+    if not item:
+        # Use last selected or top
+        last_idx = active_context.get("last_selected_index")
+        if last_idx:
+            item = next((i for i in items if i["index"] == last_idx), None)
+        if not item:
+            top_idx = active_context.get("top_index", 1)
+            item = next((i for i in items if i["index"] == top_idx), items[0] if items else None)
+
+    if not item:
+        return "Could not find the item to create an idea brief from."
+
+    topic = active_context.get("topic", "Advisor recommendation")
+    source_context = active_context.get("context_type", "advisor_recommendation")
+
+    brief, brief_path = create_idea_brief(item, topic, source_context)
+
+    # Save as active context
+    if ACTIVE_CONTEXT_AVAILABLE:
+        save_active_context({
+            "source_agent": "advisor",
+            "context_type": "advisor_idea_brief",
+            "topic": brief["idea_title"],
+            "summary": brief["summary"],
+            "items": [{
+                "index": 1,
+                "title": brief["idea_title"],
+                "summary": brief["summary"],
+                "score": item.get("score", 7),
+                "url": "",
+                "source": "advisor",
+                "evidence": [],
+                "risk": brief.get("risks", []),
+                "next_action": brief["recommended_first_step"],
+            }],
+            "top_index": 1,
+            "last_selected_index": None,
+            "allowed_followups": [
+                "explain_score", "research_deeper", "create_work_order",
+                "send_to_command", "compare",
+            ],
+            "brief_path": brief_path,
+            "provider": None,
+            "query": topic,
+            "expires_after_minutes": 180,
+        })
+
+    return format_idea_brief_response(brief, brief_path)
+
+
+def _handle_command_plan_request(item_idx, active_context):
+    """Handle Command request to create a Nexus plan from an Advisor idea."""
+    if not BRAIN_CONTRACTS_AVAILABLE:
+        return None
+
+    # Try to find the last Advisor Idea Brief
+    brief = None
+    brief_path = None
+
+    # Check active context for brief path
+    if active_context and active_context.get("brief_path"):
+        bp = active_context["brief_path"]
+        if os.path.exists(bp):
+            brief_path = bp
+            with open(bp) as f:
+                brief = json.load(f)
+
+    # If no brief in context, check the latest idea brief file
+    if not brief:
+        brief_dir = "reports/advisor_idea_briefs"
+        if os.path.exists(brief_dir):
+            briefs = sorted(Path(brief_dir).glob("advisor_idea_brief_*.json"))
+            if briefs:
+                brief_path = str(briefs[-1])
+                with open(briefs[-1]) as f:
+                    brief = json.load(f)
+
+    if not brief:
+        return (
+            "No Advisor Idea Brief found.\n\n"
+            "First create one: 'turn number 1 into an idea brief'\n"
+            "Then ask Command to create a plan from it."
+        )
+
+    topic = brief.get("idea_title", "Advisor idea")
+    plan, plan_path = create_command_plan(brief, topic)
+
+    return format_command_plan_response(plan, plan_path)
 
 
 def _write_router_decision(decision):
