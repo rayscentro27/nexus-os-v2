@@ -57,6 +57,13 @@ try:
 except Exception:
     ALPHA_OPINION_AVAILABLE = False
 
+# Temporal intelligence import
+try:
+    from temporal_intent import detect_temporal_intent, format_time_response
+    TEMPORAL_AVAILABLE = True
+except Exception:
+    TEMPORAL_AVAILABLE = False
+
 # SSL context for Telegram API (handles macOS self-signed cert issues)
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -198,26 +205,50 @@ def cmd_report():
             "Current Priorities:"
         ])
 
-        # Build dynamic priorities (no stale Telegram token item)
+        # Build dynamic priorities based on actual state
         priorities = []
         if a.get("count", 0) > 0:
             priorities.append(f"Review {a['count']} pending approval(s)")
         if chat_ctx.get("last_topic") and not chat_ctx.get("last_work_order_path"):
             priorities.append(f"Act on Alpha research: {chat_ctx['last_topic'][:40]}")
-        priorities.append("Publish GoClear public landing page with plans/login/signup")
-        priorities.append("Run Supabase browser verification (2 min)")
-        priorities.append("Connect Stripe test checkout to landing page/client portal")
-        priorities.append("Set RESEND_API_KEY if customer email lane should become live approval-gated")
 
-        # Web search status
+        # Dynamic: check if GoClear pages are live (not stale)
+        goclear_live = os.path.exists("reports/public_site") or os.path.exists("dist/goclear")
+        if not goclear_live:
+            priorities.append("Verify GoClear public pages are live after Netlify deploy")
+        else:
+            priorities.append("Review/polish GoClear public pages and client funnel")
+
+        # Dynamic: check Stripe status
+        stripe_configured = bool(os.environ.get("STRIPE_SECRET_KEY", "").strip())
+        if not stripe_configured:
+            priorities.append("Connect Stripe test checkout to landing page")
+        else:
+            priorities.append("Test Stripe checkout end-to-end")
+
+        # Always relevant
+        priorities.append("Replace mock clientPortalData with real Supabase queries")
+        priorities.append("Create Credit Readiness Checklist lead magnet")
+
+        # Web search status — check actual provider, not just env vars
         web_search_status = "NOT_CONFIGURED"
         if HERMES_SEARCH_AVAILABLE:
-            providers = []
-            for env_name, label in [("BRAVE_SEARCH_API_KEY", "Brave"), ("TAVILY_API_KEY", "Tavily"),
-                                     ("SERPAPI_API_KEY", "SerpAPI"), ("ALPHA_SEARXNG_URL", "SearXNG")]:
-                if os.environ.get(env_name, "").strip():
-                    providers.append(label)
-            web_search_status = f"ACTIVE ({', '.join(providers)})" if providers else "AVAILABLE (no provider key)"
+            try:
+                from hermes_web_search import _provider_priority
+                providers = _provider_priority()
+                if providers:
+                    active = providers[0][0]  # first in priority order
+                    web_search_status = f"ACTIVE_{active.upper()}"
+                else:
+                    web_search_status = "LAYER_READY_PROVIDER_MISSING"
+            except Exception:
+                # Fallback: check env vars directly
+                providers = []
+                for env_name, label in [("BRAVE_SEARCH_API_KEY", "Brave"), ("TAVILY_API_KEY", "Tavily"),
+                                         ("SERPAPI_API_KEY", "SerpAPI"), ("ALPHA_SEARXNG_URL", "SearXNG")]:
+                    if os.environ.get(env_name, "").strip():
+                        providers.append(label)
+                web_search_status = f"ACTIVE ({', '.join(providers)})" if providers else "LAYER_READY_PROVIDER_MISSING"
 
         for i, p in enumerate(priorities[:5], 1):
             lines.append(f"  {i}. {p}")
@@ -491,9 +522,9 @@ def hermes_direct_answer(message):
             priorities.append(f"Review {approval_count} pending approval(s) — blocks downstream action")
         if alpha_topic != "none" and not chat_ctx.get("last_work_order_path"):
             priorities.append(f"Act on Alpha research: {alpha_topic[:50]}")
-        priorities.append("Publish GoClear public landing page with plans/login/signup")
-        priorities.append("Run Supabase browser verification (2 min)")
-        priorities.append("Connect Stripe test checkout to portal")
+        priorities.append("Review/polish GoClear public pages and client funnel")
+        priorities.append("Replace mock clientPortalData with real Supabase queries")
+        priorities.append("Create Credit Readiness Checklist lead magnet")
         for i, p in enumerate(priorities, 1):
             answer_lines.append(f"{i}. {p}")
         answer_lines.extend([
@@ -513,8 +544,9 @@ def hermes_direct_answer(message):
             answer_lines.append(f"- Clear the {approval_count} pending approval(s) first — they gate downstream work")
         if alpha_topic != "none" and not chat_ctx.get("last_work_order_path"):
             answer_lines.append(f"- Review the Alpha recommendation for: {alpha_topic[:40]}")
-        answer_lines.append("- Then push the GoClear landing page live")
-        answer_lines.append("- After that, run Supabase verification and Stripe checkout test")
+        answer_lines.append("- Review GoClear pages and client funnel")
+        answer_lines.append("- Replace mock client data with real Supabase queries")
+        answer_lines.append("- Create Credit Readiness Checklist lead magnet")
         answer = "\n".join(answer_lines)
 
     elif any(kw in message_lower for kw in ["realistic", "risk", "stop", "block", "fail"]):
@@ -523,7 +555,7 @@ def hermes_direct_answer(message):
             "",
             "Current blockers:",
             f"- {approval_count} pending approvals (if any are external-facing, they gate revenue)",
-            "- Supabase browser verification not confirmed (low risk, quick fix)",
+            "- Client portal uses mock data (not wired to Supabase)",
             "- Stripe checkout not connected to portal (blocks paid conversions)",
             "- RESEND_API_KEY not set (blocks live email lane)",
             "",
@@ -1204,6 +1236,12 @@ def classify_message_intent(text):
                 topic = text_lower
             return "ALPHA_RESEARCH_REQUEST", None, topic
 
+    # TEMPORAL_INTENT (time, date, schedule, recap — before fallback)
+    if TEMPORAL_AVAILABLE:
+        temporal = detect_temporal_intent(text_lower)
+        if temporal.get("matched"):
+            return "TEMPORAL_INTENT", None, temporal
+
     # UNKNOWN_HELPFUL_FALLBACK
     return "UNKNOWN_HELPFUL_FALLBACK", None, None
 
@@ -1325,6 +1363,8 @@ def handle_unknown_fallback():
     """Handle unknown messages with a helpful but concise reply."""
     return (
         "I can help with:\n"
+        "- Time/date: 'what time is it', 'what day is it'\n"
+        "- Schedule: 'schedule this for 8 AM', 'remind me tomorrow'\n"
         "- Outside opinion: 'alpha what do you think about...'\n"
         "- Operational advice: 'hermes what should we do next?'\n"
         "- System status: 'what's the status?'\n"
@@ -1843,6 +1883,15 @@ def process_command(text):
                 feedback = " ".join(parts_lower[2:]) if len(parts_lower) > 2 else "no feedback"
                 return cmd_revise([item_id, feedback])
         return "Usage: approve <id>, reject <id> <reason>, or revise <id> <feedback>"
+
+    elif intent == "TEMPORAL_INTENT":
+        if TEMPORAL_AVAILABLE:
+            try:
+                return format_time_response(extra)
+            except Exception as e:
+                return f"Time error: {str(e)[:100]}"
+        else:
+            return "Temporal module not available. Check scripts/telegram/temporal_intent.py."
 
     else:  # UNKNOWN_HELPFUL_FALLBACK
         return handle_unknown_fallback()
