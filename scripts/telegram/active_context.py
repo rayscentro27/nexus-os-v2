@@ -10,12 +10,26 @@ route to the right source instead of generic fallback.
 import re
 import os
 import json
+import html
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 CONTEXT_PATH = "data/runtime/telegram_active_context.json"
+PENDING_ACTION_PATH = "data/runtime/telegram_pending_action.json"
 WORK_ORDER_DRAFT_DIR = "reports/work_orders/drafts"
 WORK_ORDER_DRAFT_LATEST = "data/runtime/work_order_draft_latest.json"
+
+# --- HTML Cleaning ---
+
+def clean_html(text):
+    """Remove HTML tags and decode entities from text."""
+    if not text:
+        return ""
+    text = str(text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    return text.strip()
+
 
 # --- Save / Load ---
 
@@ -23,6 +37,10 @@ def save_active_context(context):
     """Save active context to disk."""
     os.makedirs(os.path.dirname(CONTEXT_PATH), exist_ok=True)
     context["updated_at"] = datetime.now(timezone.utc).isoformat()
+    # Clean HTML from all item titles and summaries
+    for item in context.get("items", []):
+        item["title"] = clean_html(item.get("title", ""))
+        item["summary"] = clean_html(item.get("summary", ""))
     with open(CONTEXT_PATH, "w") as f:
         json.dump(context, f, indent=2)
     return context
@@ -56,11 +74,40 @@ def is_context_fresh(context, now=None):
         return False
 
 
-def _clean_html(text):
-    """Remove HTML tags from text."""
-    if not text:
-        return ""
-    return re.sub(r"<[^>]+>", "", str(text)).strip()
+def compute_top_index(items):
+    """Compute top_index as the index of the highest-scored item."""
+    if not items:
+        return 1
+    best = max(items, key=lambda x: x.get("score", 0))
+    return best.get("index", 1)
+
+
+# --- Pending Action (for confirm flow) ---
+
+def save_pending_action(action):
+    """Save a pending action (e.g. confirm_deeper_research)."""
+    os.makedirs(os.path.dirname(PENDING_ACTION_PATH), exist_ok=True)
+    action["created_at"] = datetime.now(timezone.utc).isoformat()
+    with open(PENDING_ACTION_PATH, "w") as f:
+        json.dump(action, f, indent=2)
+    return action
+
+
+def load_pending_action():
+    """Load and return pending action. Returns None if not found."""
+    try:
+        with open(PENDING_ACTION_PATH) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
+def clear_pending_action():
+    """Remove pending action file."""
+    try:
+        os.remove(PENDING_ACTION_PATH)
+    except FileNotFoundError:
+        pass
 
 
 # --- Selection Detection ---
@@ -144,6 +191,12 @@ def detect_followup_intent(text):
     """
     text_lower = text.lower().strip()
     context = load_active_context()
+
+    # --- Confirm pending action ---
+    if re.match(r"^(confirm|yes|go ahead|proceed|do it)$", text_lower):
+        pending = load_pending_action()
+        if pending:
+            return {"intent": "confirm_pending", "pending_action": pending, "confidence": 0.95}
 
     # --- Explain score ---
     if re.search(r"why\s+is\s+(number|option|item|#)?\s*\d+\s*(scored|rated|ranked)", text_lower):
@@ -230,46 +283,49 @@ def detect_followup_intent(text):
 # --- Formatting Functions ---
 
 def format_score_explanation(context, item):
-    """Format a score explanation for an item."""
+    """Format a detailed score explanation for an item."""
     if not item:
         return "I could not find that item in the current context."
 
+    title = clean_html(item.get("title", "Item"))
+    score = item.get("score", 5)
+    summary = clean_html(item.get("summary", ""))
+
     lines = [
-        f"**{item.get('title', 'Item')}**",
+        title,
         "",
-        f"Score: {item.get('score', '?')}/10",
+        f"Score: {score}/10",
     ]
 
-    if item.get("summary"):
-        lines.append(f"Summary: {item['summary'][:200]}")
+    if summary:
+        lines.append("")
+        lines.append("What this is:")
+        lines.append(f"  {summary[:300]}")
+
+    lines.append("")
+    lines.append("Why it scored this way:")
+
+    if score >= 7:
+        lines.append("  - Positive: strong fit with the query and good evidence.")
+    elif score >= 5:
+        lines.append("  - Positive: decent potential and relevance.")
+    else:
+        lines.append("  - Positive: some relevance but limited evidence.")
 
     if item.get("evidence"):
-        lines.append("")
-        lines.append("Positive factors:")
         for e in item["evidence"][:3]:
-            lines.append(f"  - {e}")
+            lines.append(f"  - Positive: {clean_html(e)}")
 
     if item.get("risk"):
-        lines.append("")
-        lines.append("Risks/caveats:")
         for r in item["risk"][:2]:
-            lines.append(f"  - {r}")
-
-    # Score breakdown reasoning
-    score = item.get("score", 5)
-    lines.append("")
-    if score >= 7:
-        lines.append("Why it scored well: Strong fit, good evidence, reasonable cost/risk.")
-    elif score >= 5:
-        lines.append("Why it scored moderate: Decent potential but some gaps in evidence or fit.")
-    else:
-        lines.append("Why it scored lower: Weak fit, high cost, or limited evidence.")
+            lines.append(f"  - Weakness: {clean_html(r)}")
 
     if score < 8:
-        lines.append(f"What would raise the score: More proof, lower cost, or faster time to value.")
+        lines.append("  - Why not higher: search snippet alone is not enough evidence.")
+        lines.append("  - What would raise score: confirmed details, trusted source, compliance-friendly terms, clear value.")
 
     if item.get("next_action"):
-        lines.append(f"\nNext step: {item['next_action']}")
+        lines.append(f"\nRecommended next step: {clean_html(item['next_action'])}")
 
     return "\n".join(lines)
 
@@ -283,25 +339,42 @@ def format_best_option_explanation(context, item=None):
         top_idx = context.get("top_index", 1)
         item = next((i for i in context["items"] if i["index"] == top_idx), context["items"][0])
 
-    lines = [
-        f"**Why {item.get('title', 'this')} is the top recommendation:**",
-        "",
-    ]
-
+    title = clean_html(item.get("title", "this"))
     score = item.get("score", 0)
-    lines.append(f"It scored {score}/10, the highest among {len(context.get('items', []))} options.")
+    items = context.get("items", [])
+
+    # Check if this is actually the top-scored item
+    top_idx = context.get("top_index", 1)
+    is_top = item.get("index") == top_idx
+
+    if is_top:
+        lines = [
+            f"Why {title} is the top recommendation:",
+            "",
+            f"It scored {score}/10, the highest among {len(items)} options.",
+        ]
+    else:
+        lines = [
+            f"Why {title} stands out:",
+            "",
+            f"It scored {score}/10 among {len(items)} options.",
+        ]
+
+    if item.get("summary"):
+        lines.append("")
+        lines.append(f"What it is: {clean_html(item['summary'][:200])}")
 
     if item.get("evidence"):
         lines.append("")
         lines.append("Key strengths:")
         for e in item["evidence"][:3]:
-            lines.append(f"  - {e}")
+            lines.append(f"  - {clean_html(e)}")
 
     if item.get("risk"):
         lines.append("")
         lines.append("Known risks (accepted):")
         for r in item["risk"][:2]:
-            lines.append(f"  - {r}")
+            lines.append(f"  - {clean_html(r)}")
 
     # Compare to others
     others = [i for i in context.get("items", []) if i["index"] != item["index"]]
@@ -312,13 +385,13 @@ def format_best_option_explanation(context, item=None):
         lines.append(f"This option is {score - avg_other:.1f} points higher than average.")
 
     if item.get("next_action"):
-        lines.append(f"\nRecommended action: {item['next_action']}")
+        lines.append(f"\nRecommended action: {clean_html(item['next_action'])}")
 
     return "\n".join(lines)
 
 
 def format_deeper_research(context):
-    """Format a deeper research prompt based on context."""
+    """Format a deeper research prompt based on context and save pending action."""
     if not context:
         return "No active context to research deeper."
 
@@ -326,25 +399,58 @@ def format_deeper_research(context):
     context_type = context.get("context_type", "unknown")
     provider = context.get("provider")
 
-    lines = [
-        f"Deeper research on: {topic}",
-        f"Source: {context_type} ({provider or 'internal'})",
-        "",
-    ]
+    # Save pending action for confirm flow
+    save_pending_action({
+        "action": "confirm_deeper_research",
+        "topic": topic,
+        "context_type": context_type,
+        "provider": provider,
+        "selected_index": context.get("last_selected_index"),
+    })
 
     if context_type == "web_search" and provider:
-        lines.append(f"I can search deeper using {provider.title()} for more results on this topic.")
-        lines.append("Say 'confirm deeper research' to proceed, or specify what angle to explore.")
+        return (
+            f"I can search deeper using {provider.title()} for: {topic}\n"
+            f'Say "confirm" to proceed, or specify an angle to explore.'
+        )
     elif context_type == "alpha_research":
-        lines.append("I can expand the Alpha research brief.")
+        msg = f"I can expand the Alpha research on: {topic}"
         if provider:
-            lines.append(f"Live web enrichment via {provider.title()} is available.")
-        lines.append("Say 'confirm deeper research' to proceed.")
+            msg += f"\nLive web enrichment via {provider.title()} is available."
+        msg += '\nSay "confirm" to proceed.'
+        return msg
     else:
-        lines.append("I can investigate this further using available context.")
-        lines.append("Say 'confirm deeper research' to proceed.")
+        return (
+            f"I can investigate this further: {topic}\n"
+            f'Say "confirm" to proceed, or specify what angle to explore.'
+        )
 
-    return "\n".join(lines)
+
+def handle_confirm_pending(pending_action):
+    """Handle a confirmed pending action."""
+    action_type = pending_action.get("action")
+    topic = pending_action.get("topic", "unknown")
+    context_type = pending_action.get("context_type", "unknown")
+    provider = pending_action.get("provider")
+
+    clear_pending_action()
+
+    if action_type == "confirm_deeper_research":
+        if context_type == "web_search" and provider:
+            return (
+                f"Running deeper {provider.title()} search on: {topic}\n\n"
+                f"This will search for additional results beyond the initial set.\n"
+                f"Results will be saved as new active context for follow-ups."
+            )
+        elif context_type == "alpha_research":
+            return (
+                f"Expanding Alpha research on: {topic}\n\n"
+                f"This will generate additional recommendations and deeper analysis."
+            )
+        else:
+            return f"Investigating further: {topic}"
+
+    return f"Pending action '{action_type}' completed."
 
 
 def format_work_order_draft(context, item=None):
@@ -360,24 +466,33 @@ def format_work_order_draft(context, item=None):
             top_idx = context.get("top_index", 1)
             item = next((i for i in context["items"] if i["index"] == top_idx), context["items"][0])
 
-    title = item.get("title", context.get("topic", "unspecified task"))
+    title = clean_html(item.get("title", context.get("topic", "unspecified task")))
     topic = context.get("topic", "")
     score = item.get("score", "?")
     provider = context.get("provider", "internal")
+    context_type = context.get("context_type", "unknown")
     now = datetime.now(timezone.utc)
 
+    # Build meaningful title
+    if context_type == "web_search":
+        wo_title = f"Review {title[:60]} for GoClear"
+    elif context_type == "alpha_research":
+        wo_title = f"Test: {title[:60]}"
+    else:
+        wo_title = f"Hermes: {title[:60]}"
+
     draft = {
-        "title": f"Hermes: {title[:80]}",
-        "source_context": context.get("context_type", "unknown"),
+        "title": wo_title,
+        "source_context": context_type,
         "source_topic": topic,
         "selected_item": {
             "index": item.get("index"),
-            "title": item.get("title"),
-            "score": item.get("score"),
+            "title": title,
+            "score": score,
         },
-        "why_it_matters": item.get("summary", "")[:200],
+        "why_it_matters": clean_html(item.get("summary", ""))[:200],
         "score": score,
-        "next_steps": item.get("next_action", "Review and approve"),
+        "next_steps": clean_html(item.get("next_action", "Review and approve")),
         "approval_needed": True,
         "suggested_owner": "Nexus",
         "suggested_reviewer": "Ray",
@@ -404,9 +519,9 @@ def format_work_order_draft(context, item=None):
     lines = [
         "Work Order Draft Created",
         "",
-        f"Title: {title[:80]}",
-        f"Source: {context.get('context_type', 'unknown')} ({provider})",
-        f"Focus: {item.get('title', 'top item')[:60]}",
+        f"Title: {wo_title}",
+        f"Source: {context_type} ({provider})",
+        f"Focus: {title[:60]}",
         f"Score: {score}/10",
         f"Approval: Needed before outreach, signup, publishing, or spending.",
         f"Path: {draft_path}",

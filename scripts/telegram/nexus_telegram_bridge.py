@@ -71,6 +71,7 @@ try:
         select_context_item, detect_followup_intent,
         format_score_explanation, format_best_option_explanation,
         format_deeper_research, format_work_order_draft,
+        handle_confirm_pending, compute_top_index, clean_html,
     )
     ACTIVE_CONTEXT_AVAILABLE = True
 except Exception:
@@ -1232,6 +1233,9 @@ def classify_message_intent(text):
 
     # ACTIVE_CONTEXT_FOLLOWUP (number references, explain, deeper, work order — before alpha followup)
     if ACTIVE_CONTEXT_AVAILABLE:
+        # Explicit confirm/yes patterns — route to active context handler
+        if re.match(r"^(confirm|yes|go ahead|proceed|do it)$", text_lower):
+            return "ACTIVE_CONTEXT_FOLLOWUP", None, {"intent": "confirm_pending", "pending_action": None, "confidence": 0.9}
         followup = detect_followup_intent(text_lower)
         if followup.get("intent"):
             return "ACTIVE_CONTEXT_FOLLOWUP", None, followup
@@ -1806,10 +1810,11 @@ def process_command(text):
         if HERMES_SEARCH_AVAILABLE:
             try:
                 advisory = build_advisory_answer(extra or full_text)
+                answer_text = clean_html(advisory.get("answer", "No results."))
                 lines = [
                     f"Hermes Web Search — {extra[:60] if extra else 'query'}",
                     "",
-                    advisory.get("answer", "No results."),
+                    answer_text,
                     "",
                     f"Provider: {advisory.get('provider', 'none')}",
                 ]
@@ -1828,27 +1833,27 @@ def process_command(text):
                 if ACTIVE_CONTEXT_AVAILABLE:
                     try:
                         items = []
-                        for i, result in enumerate(advisory.get("results", [])[:5], 1):
-                            summary = result.get("snippet", "") or result.get("content", "") or ""
+                        for i, finding in enumerate(advisory.get("findings", [])[:5], 1):
                             items.append({
                                 "index": i,
-                                "title": result.get("title", f"Result {i}")[:100],
-                                "summary": re.sub(r"<[^>]+>", "", summary)[:300],
-                                "score": advisory.get("opportunity_score", {}).get("overall", 5),
-                                "url": result.get("url", ""),
+                                "title": finding.get("title", f"Result {i}")[:100],
+                                "summary": finding.get("snippet", "")[:300],
+                                "score": finding.get("score", 5),
+                                "url": finding.get("url", ""),
                                 "source": advisory.get("provider", "unknown"),
-                                "evidence": [],
-                                "risk": [],
+                                "evidence": advisory.get("why_it_matters", [])[:2],
+                                "risk": advisory.get("risks", [])[:2],
                                 "next_action": advisory.get("next_step", ""),
                             })
                         if items:
+                            top_idx = compute_top_index(items)
                             ctx = {
                                 "source_agent": "hermes",
                                 "context_type": "web_search",
                                 "topic": extra or full_text,
                                 "summary": advisory.get("answer", "")[:200],
                                 "items": items,
-                                "top_index": 1,
+                                "top_index": top_idx,
                                 "last_selected_index": None,
                                 "allowed_followups": [
                                     "explain_score", "explain_best", "research_deeper",
@@ -1921,16 +1926,42 @@ def process_command(text):
 
     elif intent == "ALPHA_RESEARCH_REQUEST":
         response = cmd_alpha_fallback(extra or full_text, source="live_polling")
-        # Save active context for follow-ups
+        # Save active context for follow-ups using the score record
         if ACTIVE_CONTEXT_AVAILABLE and response and not response.startswith("Error"):
             try:
+                # Load the latest score record to get individual recommendations
+                score_files = sorted(Path(ALPHA_SCORES_DIR).glob("alpha_*.json")) if os.path.isdir(ALPHA_SCORES_DIR) else []
+                latest_score = None
+                if score_files:
+                    with open(score_files[-1]) as f:
+                        latest_score = json.load(f)
+
+                items = []
+                if latest_score and latest_score.get("ideas"):
+                    for i, idea in enumerate(latest_score["ideas"][:5], 1):
+                        items.append({
+                            "index": i,
+                            "title": idea.get("title", f"Recommendation {i}")[:100],
+                            "summary": idea.get("title", "")[:300],
+                            "score": idea.get("score", 5),
+                            "url": "",
+                            "source": "alpha",
+                            "evidence": [],
+                            "risk": [],
+                            "next_action": "Review and evaluate this recommendation.",
+                        })
+                else:
+                    # Fallback: create single item from topic
+                    items = [{"index": 1, "title": (extra or "research")[:80], "summary": response[:300], "score": 6, "url": "", "source": "alpha", "evidence": [], "risk": [], "next_action": "review research"}]
+
+                top_idx = compute_top_index(items) if items else 1
                 ctx = {
                     "source_agent": "alpha",
                     "context_type": "alpha_research",
                     "topic": extra or full_text,
                     "summary": response[:200],
-                    "items": [{"index": 1, "title": (extra or "research")[:80], "summary": response[:300], "score": 6, "url": "", "source": "alpha", "evidence": [], "risk": [], "next_action": "review research"}],
-                    "top_index": 1,
+                    "items": items,
+                    "top_index": top_idx,
                     "last_selected_index": None,
                     "allowed_followups": [
                         "explain_score", "explain_best", "research_deeper",
@@ -1979,11 +2010,23 @@ def process_command(text):
     elif intent == "ACTIVE_CONTEXT_FOLLOWUP":
         if ACTIVE_CONTEXT_AVAILABLE:
             try:
+                followup_intent = extra  # extra contains the full followup dict
+                f_intent = followup_intent.get("intent")
+
+                # Handle confirm pending action
+                if f_intent == "confirm_pending":
+                    pending = followup_intent.get("pending_action")
+                    if not pending and ACTIVE_CONTEXT_AVAILABLE:
+                        from active_context import load_pending_action
+                        pending = load_pending_action()
+                    if pending:
+                        return handle_confirm_pending(pending)
+                    return "No pending action to confirm. Say 'research deeper' first to create one."
+
                 context = load_active_context()
                 if not context or not is_context_fresh(context):
                     return "No recent search context active. Run a search or research query first, then ask about the results."
-                followup_intent = extra  # extra contains the full followup dict
-                f_intent = followup_intent.get("intent")
+
                 selected_idx = followup_intent.get("selected_index")
                 selected_item = None
                 if selected_idx:
@@ -2000,7 +2043,8 @@ def process_command(text):
                 elif f_intent == "create_work_order":
                     return format_work_order_draft(context, selected_item)
                 elif f_intent == "schedule":
-                    return f"Scheduling: {selected_item.get('title', context.get('topic', 'unspecified'))}\n\nPlease specify when you'd like to schedule this (e.g., 'tomorrow at 9am', 'next week')."
+                    title = clean_html(selected_item.get("title", context.get("topic", "unspecified"))) if selected_item else context.get("topic", "unspecified")
+                    return f"Scheduling: {title}\n\nPlease specify when you'd like to schedule this (e.g., 'tomorrow at 9am', 'next week')."
                 elif f_intent == "send_to_hermes":
                     return f"Hermes review requested for: {context.get('topic', 'last search')}\n\nRouting to Hermes for operational review. Hermes will evaluate feasibility and recommend next steps."
                 elif f_intent == "send_to_alpha":
@@ -2010,11 +2054,11 @@ def process_command(text):
                     items = [next((i for i in context["items"] if i["index"] == idx), None) for idx in indices]
                     items = [i for i in items if i]
                     if len(items) >= 2:
-                        lines = [f"Compare: {items[0]['title']} vs {items[1]['title']}", ""]
+                        lines = [f"Compare: {clean_html(items[0]['title'])} vs {clean_html(items[1]['title'])}", ""]
                         for item in items:
-                            lines.append(f"{item['title']}: {item.get('score', '?')}/10")
+                            lines.append(f"{clean_html(item['title'])}: {item.get('score', '?')}/10")
                             if item.get("summary"):
-                                lines.append(f"  {item['summary'][:120]}")
+                                lines.append(f"  {clean_html(item['summary'][:120])}")
                             lines.append("")
                         avg = sum(i.get("score", 5) for i in items) / len(items)
                         diff = items[0].get("score", 5) - items[1].get("score", 5)
