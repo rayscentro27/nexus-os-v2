@@ -1268,6 +1268,14 @@ def classify_message_intent(text):
         if re.search(pat, text_lower):
             return "NEXUS_STATUS_OR_REPORT", None, None
 
+    # TEMPORAL_INTENT (time, date, schedule, recap — BEFORE active context followup)
+    # Temporal must run before active context followup to prevent number matching
+    # in phrases like "what time is it" from being caught by item selection
+    if TEMPORAL_AVAILABLE:
+        temporal = detect_temporal_intent(text_lower)
+        if temporal.get("matched"):
+            return "TEMPORAL_INTENT", None, temporal
+
     # ALPHA_OPINION (must check before alpha research — opinion is higher priority)
     for pat in ALPHA_OPINION_PATTERNS:
         if re.search(pat, text_lower):
@@ -1277,7 +1285,7 @@ def classify_message_intent(text):
                 break  # fall through to research
             return "ALPHA_OPINION", None, stripped
 
-    # ACTIVE_CONTEXT_FOLLOWUP (number references, explain, deeper, work order — before alpha followup)
+    # ACTIVE_CONTEXT_FOLLOWUP (number references, explain, deeper, work order — after temporal)
     if ACTIVE_CONTEXT_AVAILABLE:
         # Explicit confirm/yes patterns — route to active context handler
         if re.match(r"^(confirm|yes|go ahead|proceed|do it)$", text_lower):
@@ -1303,12 +1311,6 @@ def classify_message_intent(text):
             if not topic:
                 topic = text_lower
             return "ALPHA_RESEARCH_REQUEST", None, topic
-
-    # TEMPORAL_INTENT (time, date, schedule, recap — before fallback)
-    if TEMPORAL_AVAILABLE:
-        temporal = detect_temporal_intent(text_lower)
-        if temporal.get("matched"):
-            return "TEMPORAL_INTENT", None, temporal
 
     # UNKNOWN_HELPFUL_FALLBACK
     return "UNKNOWN_HELPFUL_FALLBACK", None, None
@@ -1612,7 +1614,16 @@ def _handle_active_context_followup_bridge(extra, full_text):
                     pending = load_pending_action()
                 if pending:
                     return handle_confirm_pending(pending)
-                return "No pending action to confirm. Say 'research deeper' first to create one."
+                # No pending action — give context-aware message
+                context = load_active_context()
+                topic = "the current topic"
+                if context and context.get("topic"):
+                    topic = context["topic"]
+                return (
+                    f"I do not have a pending action to confirm.\n"
+                    f"The last active context is: {topic}\n\n"
+                    f"Say 'research deeper' or specify what you want to do."
+                )
             context = load_active_context()
             if not context or not is_context_fresh(context):
                 return "No recent search context active. Run a search or research query first."
@@ -1932,13 +1943,36 @@ def cmd_followup(intent, match, chat_id):
     elif intent == "turn_into_work_order":
         match_text = match.group(1) if match else "1"
         try:
-            idx = int(match_text) - 1
+            idx = int(match_text)
         except ValueError:
-            idx = 0
+            idx = 1
+
+        # Try active context first (more reliable)
+        active_ctx = load_active_context() if ACTIVE_CONTEXT_AVAILABLE else None
+        if active_ctx and active_ctx.get("items"):
+            item = next((i for i in active_ctx["items"] if i["index"] == idx), None)
+            if item:
+                wo_title = f"Work order: {clean_html(item.get('title', 'task'))}"
+                wo = create_work_order(wo_title, "alpha_intake", "ACTIVE_INTERNAL", source="telegram_numbered_followup")
+                write_receipt("alpha", {
+                    "type": "alpha_work_order",
+                    "recommendation_title": item["title"],
+                    "work_order_id": wo["work_order_id"],
+                    "mode": "ACTIVE_INTERNAL",
+                })
+                update_chat_context(ctx, chat_id, {"last_work_order_path": wo.get("work_order_id")})
+                return (
+                    f"Work Order Created: {wo['work_order_id']}\n"
+                    f"Title: {wo_title}\n"
+                    f"Source: active context item #{idx}\n"
+                    f"Mode: ACTIVE_INTERNAL"
+                )
+
+        # Fallback to conversation context
         recs = chat_ctx.get("last_alpha_recommendations", [])
-        if not recs or idx < 0 or idx >= len(recs):
+        if not recs or idx < 1 or idx > len(recs):
             return f"Recommendation #{match_text} not found. You have {len(recs)} recommendations."
-        rec = recs[idx]
+        rec = recs[idx - 1]
         wo = create_work_order(f"Alpha: {rec['title']}", "alpha_intake", "ACTIVE_INTERNAL", source="telegram_alpha_followup")
         write_receipt("alpha", {
             "type": "alpha_work_order",
@@ -2070,20 +2104,37 @@ def process_with_new_router(full_text):
     }
 
     # --- Layer 2: PENDING ACTIONS ---
-    if intent_family == "pending_action" and pending_action:
-        result = handle_confirm_pending(pending_action)
-        router_decision["routed_to"] = "pending_action_confirm"
-        router_decision["pending_action_cleared"] = True
-        _write_router_decision(router_decision)
-        return result
+    if intent_family == "pending_action":
+        if pending_action:
+            result = handle_confirm_pending(pending_action)
+            router_decision["routed_to"] = "pending_action_confirm"
+            router_decision["pending_action_cleared"] = True
+            _write_router_decision(router_decision)
+            return result
+        else:
+            # Confirm without pending action — give context-aware message
+            topic = "the current topic"
+            if active_context and active_context.get("topic"):
+                topic = active_context["topic"]
+            result = (
+                f"I do not have a pending action to confirm.\n"
+                f"The last active context is: {topic}\n\n"
+                f"Say 'research deeper' or specify what you want to do."
+            )
+            router_decision["routed_to"] = "confirm_no_pending"
+            _write_router_decision(router_decision)
+            return result
 
     # --- Layer 3: TEMPORAL INTELLIGENCE ---
     if intent_family == "temporal":
         if TEMPORAL_AVAILABLE:
-            result = format_time_response(understanding)
-            router_decision["routed_to"] = "temporal"
-            _write_router_decision(router_decision)
-            return result
+            temporal_result = detect_temporal_intent(full_text.lower().strip())
+            if temporal_result.get("matched"):
+                result = format_time_response(temporal_result)
+                router_decision["routed_to"] = "temporal"
+                router_decision["temporal_intent"] = temporal_result.get("intent")
+                _write_router_decision(router_decision)
+                return result
 
     # --- Layer 4: ACTIVE CONTEXT FOLLOW-UPS ---
     if intent_family == "active_context_followup" and followup_type != "none":
@@ -2094,6 +2145,21 @@ def process_with_new_router(full_text):
                 router_decision["followup_type"] = followup_type
                 _write_router_decision(router_decision)
                 return followup_result
+
+    # --- Layer 4b: IMPLICIT CONTEXT FOLLOW-UPS ---
+    # Handle cases like "alpha can you do deeper research on this" where the
+    # topic is a pronoun reference to active context
+    if ACTIVE_CONTEXT_AVAILABLE and active_context and active_context.get("items"):
+        text_lower = full_text.lower().strip()
+        if re.search(r"(deeper|more|further|additional)\s+(research|info|details)", text_lower):
+            if re.search(r"(this|that|it)\s*$", text_lower):
+                ctx_copy = dict(active_context)
+                followup_result = _handle_active_context_followup("research_deeper", full_text, ctx_copy)
+                if followup_result:
+                    router_decision["routed_to"] = "active_context_followup"
+                    router_decision["followup_type"] = "research_deeper"
+                    _write_router_decision(router_decision)
+                    return followup_result
 
     # --- Layer 5-6: INTENT → DRAFT → RETRIEVAL → MERGE ---
     if intent_family in ("money_plan", "client_acquisition", "business_strategy",
@@ -2161,7 +2227,14 @@ def _route_to_draft_engine(understanding, full_text, active_context, router_deci
     response = _render_draft(draft, full_text)
 
     # --- Save active context ---
-    if ACTIVE_CONTEXT_AVAILABLE and draft.get("items"):
+    # Only save for real actionable outputs, not fallback/help/greeting/unknown
+    SAVEABLE_INTENTS = {
+        "money_plan", "money_research", "client_acquisition", "client_research",
+        "business_strategy", "implementation_plan", "web_research",
+        "opinion", "critique", "compare_options", "alpha_research",
+        "work_order_request", "schedule_request",
+    }
+    if ACTIVE_CONTEXT_AVAILABLE and draft.get("items") and intent_family in SAVEABLE_INTENTS:
         try:
             items = []
             for item in draft["items"][:5]:
@@ -2204,6 +2277,25 @@ def _route_to_draft_engine(understanding, full_text, active_context, router_deci
 
     # --- Save work order if applicable ---
     if intent_family in ("work_order_request",) and draft.get("items"):
+        # If user referenced a specific item (e.g., "turn number 2 into a work order"),
+        # create work order from the active context item, not from raw text
+        if ACTIVE_CONTEXT_AVAILABLE and active_context:
+            num_match = re.search(r"(?:number|option|item|#)\s*(\d+)", full_text.lower())
+            if num_match:
+                idx = int(num_match.group(1))
+                item = next((i for i in active_context.get("items", []) if i["index"] == idx), None)
+                if item:
+                    wo_title = f"Work order: {clean_html(item.get('title', 'task'))}"
+                    wo = create_work_order(wo_title, "alpha_intake", "ACTIVE_INTERNAL", source="telegram_numbered_followup")
+                    router_decision["work_order_created"] = True
+                    router_decision["work_order_id"] = wo["work_order_id"]
+                    _write_router_decision(router_decision)
+                    return (
+                        f"Work Order Created: {wo['work_order_id']}\n"
+                        f"Title: {wo_title}\n"
+                        f"Source: active context item #{idx}\n"
+                        f"Mode: ACTIVE_INTERNAL"
+                    )
         router_decision["work_order_created"] = True
 
     _write_router_decision(router_decision)
@@ -2341,7 +2433,24 @@ def _handle_active_context_followup(followup_type, full_text, active_context):
         return format_best_option_explanation(active_context, item)
 
     elif followup_type == "research_deeper":
-        return format_deeper_research(active_context)
+        # Resolve "this" from active context
+        topic = active_context.get("topic", "")
+        # If the user's message is just "research deeper" or "deeper research on this",
+        # use the active context topic, not the raw phrase
+        if re.match(r"^(research|do|go|can you)\s+(deeper|more|further|into|additional)", text_lower):
+            pass  # topic already resolved from active_context
+        elif re.search(r"(this|that|it)\s*$", text_lower):
+            pass  # topic already resolved from active_context
+        else:
+            # User specified a new topic in the message
+            topic = re.sub(r"^(research|do|go|can you)\s+(deeper|more|further|into|additional)\s+(on\s+)?", "", text_lower).strip()
+            if not topic:
+                topic = active_context.get("topic", "")
+        # Override the topic in active_context for this call
+        ctx_copy = dict(active_context)
+        if topic:
+            ctx_copy["topic"] = topic
+        return format_deeper_research(ctx_copy)
 
     elif followup_type == "create_work_order":
         item = _find_item_from_text(text_lower, active_context)

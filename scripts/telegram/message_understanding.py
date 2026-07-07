@@ -42,18 +42,19 @@ def understand_message(text, active_context=None, pending_action=None):
                 "confidence": 0.95,
             }
         else:
-            # Confirm without pending action — treat as help
+            # Confirm without pending action — still route as pending_action
+            # so the router can give a context-aware "no pending action" message
             return {
                 "raw_text": raw,
                 "normalized_text": normalized,
                 "explicit_role": explicit_role,
-                "intent_family": "help",
-                "is_followup": False,
-                "followup_type": "none",
+                "intent_family": "pending_action",
+                "is_followup": True,
+                "followup_type": "confirm",
                 "needs_external_evidence": False,
                 "time_sensitive": False,
                 "risk_level": "low",
-                "confidence": 0.6,
+                "confidence": 0.95,
             }
 
     # --- Deterministic slash commands ---
@@ -162,22 +163,27 @@ def _detect_followup(text, active_context):
     """Detect active context follow-up types."""
     t = text.strip()
 
-    # Explicit item selection
-    num = re.search(r"(?:number|option|item|#)\s*(\d+)|^(\d+)$", t)
-    if num:
-        return "select_item"
+    # --- Create work order (check BEFORE number selection to avoid "turn number 2" → select_item) ---
+    if re.search(r"turn\s+(this|that|it)\s+into\s+a\s+work\s+order", t):
+        return "create_work_order"
+    if re.search(r"(turn|make)\s+(?:number\s+)?(\d+)\s+into\s+a\s+work\s+order", t):
+        return "create_work_order"
+    if re.search(r"(create|make)\s+(a\s+)?work\s+order", t):
+        return "create_work_order"
 
-    # Ordinals
-    if re.search(r"\b(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)\s+(one|option|item)?", t):
-        return "select_item"
+    # --- Research deeper (check before number selection) ---
+    if re.search(r"(research|look|go)\s+(deeper|more|further|into|additional)", t):
+        return "research_deeper"
+    if re.search(r"(get|find|show)\s+(more|additional|further)\s+(details|info|information|evidence)", t):
+        return "research_deeper"
 
-    # Explain score
+    # --- Explain score (check before number selection) ---
     if re.search(r"why\s+is\s+(number|option|item)?\s*\d+\s*(scored|rated|ranked)", t):
         return "explain_score"
     if re.search(r"why\s+is\s+(this|that|it)\s*(scored|rated|ranked|so\s+high|so\s+low)", t):
         return "explain_score"
 
-    # Explain best
+    # --- Explain best ---
     if re.search(r"why\s+is\s+(this|that|it)\s+the\s+(best|top|right)", t):
         return "explain_best"
     if re.search(r"why\s+(is|was)\s+(that|this)\s+the\s+best", t):
@@ -187,29 +193,24 @@ def _detect_followup(text, active_context):
     if re.match(r"^(what\s+is\s+the\s+best|best\s+option|top\s+option|best\s+one|top\s+one)", t):
         return "explain_best"
 
-    # Research deeper
-    if re.search(r"(research|look|go)\s+(deeper|more|further|into|additional)", t):
-        return "research_deeper"
-    if re.search(r"(get|find|show)\s+(more|additional|further)\s+(details|info|information|evidence)", t):
-        return "research_deeper"
+    # --- Explicit item selection ( AFTER work order, research deeper, explain) ---
+    num = re.search(r"(?:number|option|item|#)\s*(\d+)|^(\d+)$", t)
+    if num:
+        return "select_item"
 
-    # Create work order
-    if re.search(r"turn\s+(this|that|it)\s+into\s+a\s+work\s+order", t):
-        return "create_work_order"
-    if re.search(r"(turn|make)\s+(?:number\s+)?(\d+)\s+into\s+a\s+work\s+order", t):
-        return "create_work_order"
-    if re.search(r"(create|make)\s+(a\s+)?work\s+order", t):
-        return "create_work_order"
+    # Ordinals
+    if re.search(r"\b(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)\s+(one|option|item)?", t):
+        return "select_item"
 
-    # Schedule
+    # --- Schedule ---
     if re.search(r"schedule\s+(this|that|it)", t):
         return "schedule"
 
-    # Send to agent
+    # --- Send to agent ---
     if re.search(r"send\s+(that|this|it)\s+to\s+(hermes|alpha)", t):
         return "send_to_agent"
 
-    # Compare
+    # --- Compare ---
     if re.search(r"compare\s+(number\s+)?(\d+)\s*(and|&|vs|versus)\s*(number\s+)?(\d+)", t):
         return "compare"
 
