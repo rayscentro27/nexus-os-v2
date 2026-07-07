@@ -48,8 +48,14 @@ try:
     SHARED_REC_AVAILABLE = True
 except Exception:
     SHARED_REC_AVAILABLE = False
-except ImportError:
-    HERMES_SEARCH_AVAILABLE = False
+
+# Alpha opinion advisor import
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "alpha"))
+try:
+    from alpha_opinion_advisor import alpha_opinion, format_alpha_opinion
+    ALPHA_OPINION_AVAILABLE = True
+except Exception:
+    ALPHA_OPINION_AVAILABLE = False
 
 # SSL context for Telegram API (handles macOS self-signed cert issues)
 SSL_CTX = ssl.create_default_context()
@@ -132,7 +138,7 @@ def create_work_order(title, route, mode, source="telegram"):
     return wo
 
 def cmd_start():
-    return "Nexus Mobile Operator Console\n\nCommands:\n/report - Full anytime operator report\n/status - System status\n/daily - Daily monitor\n/research - Research/NotebookLM/Alpha status\n/content - Content drafts/social/email status\n/approvals - Ray Review queue count and summaries\n/orders - Work orders summary\n/hermes <msg> - Hermes advisory\n/recover - Recovery check\n/approve <id> - Approve item\n/reject <id> <reason> - Reject\n/revise <id> <feedback> - Request revision\n/request <text> - Internal request\n/alpha <topic> - Alpha research\n/recs - Shared recommendations\n/processes - Process registry\n/run <id> - Run safe process\n/blocked - Blocked actions"
+    return "Nexus Mobile Operator Console\n\nCommands:\n/report - Full anytime operator report\n/status - System status\n/daily - Daily monitor\n/research - Research/NotebookLM/Alpha status\n/content - Content drafts/social/email status\n/approvals - Ray Review queue count and summaries\n/orders - Work orders summary\n/hermes <msg> - Hermes advisory\n/recover - Recovery check\n/approve <id> - Approve item\n/reject <id> <reason> - Reject\n/revise <id> <feedback> - Request revision\n/request <text> - Internal request\n/alpha <topic> - Alpha outside opinion\n/recs - Shared recommendations\n/processes - Process registry\n/run <id> - Run safe process\n/blocked - Blocked actions"
 
 def cmd_report():
     try:
@@ -645,30 +651,29 @@ def _hermes_url_review_answer(url, full_message):
 
 def cmd_alpha(args):
     if not args:
-        return "Usage: /alpha <topic-or-url>"
+        return "Usage: /alpha <topic-or-question>\n\nI can give an outside opinion, challenge a plan, compare options, or research a topic."
     topic = " ".join(args)
 
-    source_type = "business_idea"
-    if "youtube.com" in topic or "youtu.be" in topic:
-        source_type = "youtube_video"
-    elif "github.com" in topic:
-        source_type = "github_repo"
-    elif "tiktok.com" in topic:
-        source_type = "tiktok_video"
-    elif any(kw in topic.lower() for kw in ["grant", "fund"]):
-        source_type = "grant_page"
-    elif any(kw in topic.lower() for kw in ["stripe", "payment", "billing"]):
-        source_type = "payment_infrastructure"
+    # If it looks like explicit research, route to research
+    research_keywords = ["research", "investigate", "search", "find current", "look up"]
+    if any(kw in topic.lower() for kw in research_keywords):
+        return cmd_alpha_fallback(topic, source="live_polling")
 
-    wo = create_work_order(f"Alpha: {topic}", "alpha_intake", "ACTIVE_INTERNAL", source="telegram_alpha")
-    receipt = write_receipt("alpha", {
-        "type": "alpha_intake",
-        "topic_or_url": topic,
-        "source_type": source_type,
-        "work_order_id": wo["work_order_id"],
-        "mode": "ACTIVE_INTERNAL"
-    })
-    return f"Alpha Intake\nSource Type: {source_type}\nWork Order: {wo['work_order_id']}\nReceipt: {receipt['receipt_id']}"
+    # Otherwise, give an outside opinion
+    if ALPHA_OPINION_AVAILABLE:
+        try:
+            opinion = alpha_opinion(topic)
+            return format_alpha_opinion(opinion)
+        except Exception as e:
+            return f"Alpha opinion error: {str(e)[:100]}\n\nFalling back to general guidance."
+
+    # Fallback if opinion module not available
+    return (
+        f"Alpha outside opinion on: {topic[:80]}\n\n"
+        "I would look at this from the outside. What matters is whether this "
+        "moves the needle for GoClear's core business.\n\n"
+        "Research needed? Say 'alpha research <topic>' if you want current evidence."
+    )
 
 def cmd_orders():
     orders = load_work_orders()
@@ -999,21 +1004,30 @@ CASUAL_AGENT_CHAT_PATTERNS = [
 
 ALPHA_RESEARCH_PATTERNS = [
     r"^alpha\s+research\b",
+    r"^alpha\s+investigate\b",
+    r"^alpha\s+search\s+(the\s+)?web\b",
+    r"^alpha\s+find\s+(current|latest|recent)\b",
+    r"^alpha\s+look\s+up\b",
     r"^research\s+",
-    r"\blook\s+into\b",
-    r"\bis\s+this\s+worth\b",
-    r"\bscore\s+this\b",
-    r"\bcompare\b",
-    r"\bpros\s+and\s+cons\b",
-    r"\bfind\s+the\s+best\b",
-    r"\bwhat\s+are\s+the\s+best\b",
-    r"\bhow\s+can\s+we\s+(get|find|land|acquire|build|create|make)\b",
-    r"\bwhat\s+are\s+the\s+options\b",
-    r"\bexplore\b",
-    r"\banalyze\b",
-    r"\bevaluate\b",
-    r"\bstrateg(y|ize|ies)\b",
-    r"\bplan\s+(for|to|how)\b",
+    r"^search\s+the\s+web\s+for\b",
+    r"^look\s+up\s+(current|latest)\b",
+    r"^find\s+(current|latest)\b",
+]
+
+# Alpha opinion patterns — outside perspective, not research
+ALPHA_OPINION_PATTERNS = [
+    r"^alpha\s+(what\s+do\s+you\s+think|is\s+(this|that|the|it)|should\s+we|what\s+am\s+I\s+missing|what\s+would\s+you|challenge|critique|review|compare|pros\s+and\s+cons|what\s+is\s+the\s+risk|do\s+you\s+agree|is\s+this\s+a\s+good|what\s+would\s+stop|what\s+is\s+better|which\s+option|how\s+would\s+you|opinion|advise|suggest|recommend|your\s+take|your\s+view|best\s+(first|next|move|option|approach)|better\s+(first|next|move|option|approach))",
+    r"^alpha\s+(what|how|why|when|where|who|which|give|tell|show|help|advise|recommend)\b",
+    r"^alpha\s+(think|believe|feel|consider|assess|evaluate|judge)\b",
+    r"^alpha\s+(good\s+morning|good\s+afternoon|good\s+evening|hey|hello|hi|yo|what'?s\s+up|how\s+are\s+you|are\s+you\s+there|what\s+are\s+you\s+doing)",
+    r"^what\s+do\s+you\s+think\s+about\b",
+    r"^is\s+this\s+a\s+good\s+idea\b",
+    r"^should\s+we\s+(do|start|begin|try|focus|prioritize)\b",
+    r"^what\s+am\s+I\s+missing\b",
+    r"^challenge\s+(this|that|the)\b",
+    r"^what\s+would\s+you\s+(do|start|prioritize|focus)\b",
+    r"^compare\s+(these|these\s+two|the)\b",
+    r"^pros\s+and\s+cons\b",
 ]
 
 ALPHA_CONTEXT_FOLLOWUP_PATTERNS = [
@@ -1163,18 +1177,26 @@ def classify_message_intent(text):
         if re.search(pat, text_lower):
             return "NEXUS_STATUS_OR_REPORT", None, None
 
+    # ALPHA_OPINION (must check before alpha research — opinion is higher priority)
+    for pat in ALPHA_OPINION_PATTERNS:
+        if re.search(pat, text_lower):
+            # Check if this is actually a research request disguised as opinion
+            is_research = any(re.search(rp, text_lower) for rp in ALPHA_RESEARCH_PATTERNS)
+            if is_research:
+                break  # fall through to research
+            return "ALPHA_OPINION", None, stripped
+
     # ALPHA_CONTEXT_FOLLOWUP (must check before alpha research)
     for pat, followup_intent in ALPHA_CONTEXT_FOLLOWUP_PATTERNS:
         match = re.search(pat, text_lower)
         if match:
             return "ALPHA_CONTEXT_FOLLOWUP", match, followup_intent
 
-    # ALPHA_RESEARCH_REQUEST
+    # ALPHA_RESEARCH_REQUEST (only explicit research)
     for pat in ALPHA_RESEARCH_PATTERNS:
         if re.search(pat, text_lower):
-            # Extract topic: strip agent prefix and research keywords
             topic = stripped
-            for prefix in ["research ", "look into ", "score this ", "compare ", "analyze ", "evaluate "]:
+            for prefix in ["research ", "investigate ", "search ", "look up ", "find "]:
                 if topic.startswith(prefix):
                     topic = topic[len(prefix):].strip()
                     break
@@ -1212,7 +1234,7 @@ def get_next_step_suggestion():
     ctx = load_conversation_context()
     chat_ctx = get_chat_context(ctx, 1288928049)
     if not chat_ctx.get("last_topic"):
-        return "Start research: 'Alpha research <topic>'"
+        return "Ask Alpha for an outside opinion: 'alpha what do you think about...'"
     if not chat_ctx.get("last_work_order_path"):
         return f"Review Alpha recommendation for: {chat_ctx['last_topic'][:30]}"
     try:
@@ -1239,9 +1261,9 @@ def handle_greeting(agent=None):
 
     if agent == "alpha":
         return (
-            "Good morning Ray. Alpha is online. I can research opportunities, "
-            "compare tools, score ideas, or turn findings into work orders. "
-            "What should I look into today?"
+            "Good morning Ray. Alpha is online. I can give an outside opinion, "
+            "challenge a plan, compare options, or research it if you want current evidence. "
+            "What is on your mind?"
         )
     if agent == "hermes":
         return (
@@ -1270,9 +1292,9 @@ def handle_casual_chat(agent=None):
     """Handle casual agent chat without creating research or work orders."""
     if agent == "alpha":
         return (
-            "Alpha does not sleep, but I'm online and ready. "
-            "I can research, score, compare, or turn an idea into a Nexus work order. "
-            "Want me to look into something?"
+            "Alpha is online. I can give an outside opinion, critique a plan, "
+            "compare options, or research it if you want current evidence. "
+            "What do you need a second brain on?"
         )
     if agent == "hermes":
         return (
@@ -1302,11 +1324,11 @@ def handle_status_report():
 def handle_unknown_fallback():
     """Handle unknown messages with a helpful but concise reply."""
     return (
-        "I'm not sure what you mean. I can:\n"
-        "- Research a topic: 'Alpha research <topic>'\n"
-        "- Advise on priorities: 'what should we do next?'\n"
-        "- Check status: 'what's the status?'\n"
-        "- Route to Hermes: 'hermes <question>'\n\n"
+        "I can help with:\n"
+        "- Outside opinion: 'alpha what do you think about...'\n"
+        "- Operational advice: 'hermes what should we do next?'\n"
+        "- System status: 'what's the status?'\n"
+        "- Research: 'alpha research <topic>'\n\n"
         "Or say /help for the full command list."
     )
 
@@ -1781,6 +1803,20 @@ def process_command(text):
 
     elif intent == "NEXUS_STATUS_OR_REPORT":
         return handle_status_report()
+
+    elif intent == "ALPHA_OPINION":
+        if ALPHA_OPINION_AVAILABLE:
+            try:
+                opinion = alpha_opinion(extra or full_text)
+                return format_alpha_opinion(opinion)
+            except Exception as e:
+                return f"Alpha opinion error: {str(e)[:100]}"
+        else:
+            return (
+                "Alpha opinion module is not available.\n"
+                "Check that scripts/alpha/alpha_opinion_advisor.py exists.\n\n"
+                "I can still route you to Hermes for operational advice: 'hermes <question>'"
+            )
 
     elif intent == "ALPHA_CONTEXT_FOLLOWUP":
         return cmd_followup(extra, match, 1288928049)
