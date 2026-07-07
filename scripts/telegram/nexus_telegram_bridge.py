@@ -64,6 +64,18 @@ try:
 except Exception:
     TEMPORAL_AVAILABLE = False
 
+# Active context import
+try:
+    from active_context import (
+        save_active_context, load_active_context, is_context_fresh,
+        select_context_item, detect_followup_intent,
+        format_score_explanation, format_best_option_explanation,
+        format_deeper_research, format_work_order_draft,
+    )
+    ACTIVE_CONTEXT_AVAILABLE = True
+except Exception:
+    ACTIVE_CONTEXT_AVAILABLE = False
+
 # SSL context for Telegram API (handles macOS self-signed cert issues)
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -1218,6 +1230,12 @@ def classify_message_intent(text):
                 break  # fall through to research
             return "ALPHA_OPINION", None, stripped
 
+    # ACTIVE_CONTEXT_FOLLOWUP (number references, explain, deeper, work order — before alpha followup)
+    if ACTIVE_CONTEXT_AVAILABLE:
+        followup = detect_followup_intent(text_lower)
+        if followup.get("intent"):
+            return "ACTIVE_CONTEXT_FOLLOWUP", None, followup
+
     # ALPHA_CONTEXT_FOLLOWUP (must check before alpha research)
     for pat, followup_intent in ALPHA_CONTEXT_FOLLOWUP_PATTERNS:
         match = re.search(pat, text_lower)
@@ -1806,6 +1824,46 @@ def process_command(text):
                         shared_ingest_hermes(extra or full_text, {"status": "ok", "provider": advisory.get("provider", "unknown")}, advisory, topic=extra or full_text)
                     except Exception:
                         pass
+                # Save active context for follow-ups
+                if ACTIVE_CONTEXT_AVAILABLE:
+                    try:
+                        items = []
+                        for i, result in enumerate(advisory.get("results", [])[:5], 1):
+                            summary = result.get("snippet", "") or result.get("content", "") or ""
+                            items.append({
+                                "index": i,
+                                "title": result.get("title", f"Result {i}")[:100],
+                                "summary": re.sub(r"<[^>]+>", "", summary)[:300],
+                                "score": advisory.get("opportunity_score", {}).get("overall", 5),
+                                "url": result.get("url", ""),
+                                "source": advisory.get("provider", "unknown"),
+                                "evidence": [],
+                                "risk": [],
+                                "next_action": advisory.get("next_step", ""),
+                            })
+                        if items:
+                            ctx = {
+                                "source_agent": "hermes",
+                                "context_type": "web_search",
+                                "topic": extra or full_text,
+                                "summary": advisory.get("answer", "")[:200],
+                                "items": items,
+                                "top_index": 1,
+                                "last_selected_index": None,
+                                "allowed_followups": [
+                                    "explain_score", "explain_best", "research_deeper",
+                                    "create_work_order", "schedule", "compare",
+                                    "send_to_hermes", "send_to_alpha",
+                                ],
+                                "receipt_path": advisory.get("receipt_path"),
+                                "brief_path": None,
+                                "provider": advisory.get("provider"),
+                                "query": extra or full_text,
+                                "expires_after_minutes": 180,
+                            }
+                            save_active_context(ctx)
+                    except Exception:
+                        pass
                 return "\n".join(lines)
             except Exception as e:
                 return f"Search error: {str(e)[:100]}"
@@ -1862,7 +1920,32 @@ def process_command(text):
         return cmd_followup(extra, match, 1288928049)
 
     elif intent == "ALPHA_RESEARCH_REQUEST":
-        return cmd_alpha_fallback(extra or full_text, source="live_polling")
+        response = cmd_alpha_fallback(extra or full_text, source="live_polling")
+        # Save active context for follow-ups
+        if ACTIVE_CONTEXT_AVAILABLE and response and not response.startswith("Error"):
+            try:
+                ctx = {
+                    "source_agent": "alpha",
+                    "context_type": "alpha_research",
+                    "topic": extra or full_text,
+                    "summary": response[:200],
+                    "items": [{"index": 1, "title": (extra or "research")[:80], "summary": response[:300], "score": 6, "url": "", "source": "alpha", "evidence": [], "risk": [], "next_action": "review research"}],
+                    "top_index": 1,
+                    "last_selected_index": None,
+                    "allowed_followups": [
+                        "explain_score", "explain_best", "research_deeper",
+                        "create_work_order", "schedule", "send_to_hermes", "send_to_alpha",
+                    ],
+                    "receipt_path": None,
+                    "brief_path": None,
+                    "provider": None,
+                    "query": extra or full_text,
+                    "expires_after_minutes": 180,
+                }
+                save_active_context(ctx)
+            except Exception:
+                pass
+        return response
 
     elif intent == "WORK_ORDER_REQUEST":
         wo = create_work_order(full_text, "hermes", "ACTIVE_INTERNAL", source="telegram")
@@ -1892,6 +1975,58 @@ def process_command(text):
                 return f"Time error: {str(e)[:100]}"
         else:
             return "Temporal module not available. Check scripts/telegram/temporal_intent.py."
+
+    elif intent == "ACTIVE_CONTEXT_FOLLOWUP":
+        if ACTIVE_CONTEXT_AVAILABLE:
+            try:
+                context = load_active_context()
+                if not context or not is_context_fresh(context):
+                    return "No recent search context active. Run a search or research query first, then ask about the results."
+                followup_intent = extra  # extra contains the full followup dict
+                f_intent = followup_intent.get("intent")
+                selected_idx = followup_intent.get("selected_index")
+                selected_item = None
+                if selected_idx:
+                    selected_item = next((i for i in context.get("items", []) if i["index"] == selected_idx), None)
+                elif f_intent in ("explain_best", "explain_score"):
+                    selected_item = select_context_item(context, "this")
+
+                if f_intent == "explain_score":
+                    return format_score_explanation(context, selected_item)
+                elif f_intent == "explain_best":
+                    return format_best_option_explanation(context, selected_item)
+                elif f_intent == "research_deeper":
+                    return format_deeper_research(context)
+                elif f_intent == "create_work_order":
+                    return format_work_order_draft(context, selected_item)
+                elif f_intent == "schedule":
+                    return f"Scheduling: {selected_item.get('title', context.get('topic', 'unspecified'))}\n\nPlease specify when you'd like to schedule this (e.g., 'tomorrow at 9am', 'next week')."
+                elif f_intent == "send_to_hermes":
+                    return f"Hermes review requested for: {context.get('topic', 'last search')}\n\nRouting to Hermes for operational review. Hermes will evaluate feasibility and recommend next steps."
+                elif f_intent == "send_to_alpha":
+                    return f"Alpha review requested for: {context.get('topic', 'last search')}\n\nRouting to Alpha for opinion/advisory review."
+                elif f_intent == "compare":
+                    indices = followup_intent.get("selected_indices", [])
+                    items = [next((i for i in context["items"] if i["index"] == idx), None) for idx in indices]
+                    items = [i for i in items if i]
+                    if len(items) >= 2:
+                        lines = [f"Compare: {items[0]['title']} vs {items[1]['title']}", ""]
+                        for item in items:
+                            lines.append(f"{item['title']}: {item.get('score', '?')}/10")
+                            if item.get("summary"):
+                                lines.append(f"  {item['summary'][:120]}")
+                            lines.append("")
+                        avg = sum(i.get("score", 5) for i in items) / len(items)
+                        diff = items[0].get("score", 5) - items[1].get("score", 5)
+                        lines.append(f"Difference: {abs(diff):.1f} points")
+                        return "\n".join(lines)
+                    return "I need at least two items to compare."
+                else:
+                    return f"Follow-up intent '{f_intent}' not implemented yet."
+            except Exception as e:
+                return f"Context follow-up error: {str(e)[:100]}"
+        else:
+            return "Active context module not available."
 
     else:  # UNKNOWN_HELPFUL_FALLBACK
         return handle_unknown_fallback()
