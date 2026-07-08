@@ -1,0 +1,89 @@
+{
+  "env_required_keys": {
+    "VITE_SUPABASE_URL": {
+      "status": "FOUND",
+      "file": ".env"
+    },
+    "VITE_SUPABASE_ANON_KEY": {
+      "status": "FOUND",
+      "file": ".env"
+    },
+    "SUPABASE_SERVICE_ROLE_KEY": {
+      "status": "FOUND",
+      "file": ".env"
+    },
+    "SUPABASE_ACCESS_TOKEN": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "SUPABASE_DB_PASSWORD": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "VITE_STRIPE_PUBLISHABLE_KEY": {
+      "status": "FOUND",
+      "file": ".env.nexus.recovered.local"
+    },
+    "VITE_STRIPE_PRICE_ID": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "VITE_STRIPE_PRODUCT_ID": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "STRIPE_SECRET_KEY": {
+      "status": "FOUND",
+      "file": ".env.nexus.recovered.local"
+    },
+    "STRIPE_WEBHOOK_SECRET": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "RESEND_API_KEY": {
+      "status": "FOUND",
+      "file": ".env"
+    },
+    "RESEND_FROM_EMAIL": {
+      "status": "FOUND",
+      "file": ".env"
+    },
+    "TELEGRAM_BOT_TOKEN": {
+      "status": "FOUND",
+      "file": ".env.nexus.recovered.local"
+    },
+    "BRAVE_API_KEY": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "META_ACCESS_TOKEN": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "FACEBOOK_PAGE_ACCESS_TOKEN": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "INSTAGRAM_ACCESS_TOKEN": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "YOUTUBE_API_KEY": {
+      "status": "FOUND",
+      "file": ".env.local"
+    },
+    "NETLIFY_AUTH_TOKEN": {
+      "status": "MISSING",
+      "file": "none"
+    },
+    "NETLIFY_SITE_ID": {
+      "status": "MISSING",
+      "file": "none"
+    }
+  },
+  "summary": {
+    "found": 10,
+    "missing": 10,
+    "total": 20
+  }
+}
