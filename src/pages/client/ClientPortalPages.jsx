@@ -3,6 +3,8 @@ import {
   BadgeCheck, Building2, CheckCircle2, CircleAlert, FileCheck2, FileText, Gauge,
   Landmark, LockKeyhole, Mail, SearchCheck, Settings, TrendingUp, Upload,
   Star, MessageSquare, Lightbulb, CreditCard, ArrowUpCircle, Send,
+  Rocket, Shield, Wallet, CircleCheck, ChevronRight, Sparkles,
+  ArrowRight, Copy, Users, Lock,
 } from 'lucide-react'
 import { ClientGuidePanel } from '../../components/client/ClientGuidePanel'
 import {
@@ -15,6 +17,19 @@ import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveD
 
 const score = data.readinessScores
 
+const fundingJourneySteps = [
+  { label: 'Upload Credit Report', sublabel: 'Credit Report', icon: Upload, status: 'complete', detail: 'Completed' },
+  { label: 'AI Credit Analysis', sublabel: 'AI Analysis', icon: SearchCheck, status: 'complete', detail: 'Completed' },
+  { label: 'Funding Strategy', sublabel: 'Strategy', icon: Wallet, status: 'complete', detail: '$0-95' },
+  { label: 'Business Opportunities', sublabel: 'Opportunities', icon: Building2, status: 'in_progress', detail: '72% Complete' },
+]
+
+const businessOpportunities = [
+  { title: 'ATM Business', difficulty: 'Easy', investment: '$3,000 – $10,000', desc: 'Low overhead, consistent flow.', color: '#e0f2fe' },
+  { title: 'Local Cleaning Service', difficulty: 'Easy', investment: '$4,000 – $8,000', desc: 'Secure start, high demand, cash flow.', color: '#f0fdf4' },
+  { title: 'E-commerce Store', difficulty: 'Medium', investment: '$8,000 – $20,000', desc: 'Home-based, scalable online sales.', color: '#fef3c7' },
+]
+
 export function ClientDashboard() {
   const [live, setLive] = useState(null)
   useEffect(() => {
@@ -25,6 +40,88 @@ export function ClientDashboard() {
   const badge = liveProfile ? 'Live test data' : 'Demo data'
   return <div className="client-page client-dashboard-page">
     <ClientPageHeader title="Dashboard" subtitle="Your approved credit, business, and funding-readiness snapshot." badge={badge} />
+
+    {/* Hero: Step 1 CTA */}
+    <div className="client-card" style={{ marginBottom: 20, background: 'linear-gradient(135deg, rgba(14,165,233,.06), rgba(20,184,166,.04))', border: '1px solid rgba(14,165,233,.15)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, var(--cp-cyan), var(--cp-blue))', display: 'grid', placeItems: 'center', color: 'white', flexShrink: 0 }}><Rocket size={24} /></div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0, fontSize: 18 }}>Step 1: Upload Your Credit Report</h3>
+          <p style={{ margin: '4px 0 0', fontSize: 13 }}>This unlocks your funding strategy and estimated funding range.</p>
+        </div>
+        <button style={{ padding: '10px 20px', borderRadius: 10, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-purple))', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>Upload Credit Report</button>
+      </div>
+      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: 'var(--cp-muted)' }}>
+        <span>✓ Takes 2 minutes</span>
+        <span>•</span>
+        <span>Secure</span>
+        <span>•</span>
+        <span>Phone or computer</span>
+      </div>
+    </div>
+
+    {/* Funding Journey */}
+    <div className="client-card" style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800 }}>Funding Journey</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cp-blue)' }}>72%</span>
+          <div style={{ width: 80, height: 6, borderRadius: 3, background: '#e9edf5', overflow: 'hidden' }}><div style={{ width: '72%', height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, var(--cp-cyan), var(--cp-blue))' }} /></div>
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        {fundingJourneySteps.map((step, i) => {
+          const Icon = step.icon
+          return <div key={i} style={{ padding: 14, borderRadius: 12, border: '1px solid var(--cp-border-light)', background: step.status === 'complete' ? 'rgba(16,185,129,.04)' : 'transparent', textAlign: 'center' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: step.status === 'complete' ? 'rgba(16,185,129,.1)' : 'rgba(14,165,233,.1)', display: 'grid', placeItems: 'center', margin: '0 auto 8px', color: step.status === 'complete' ? 'var(--cp-green)' : 'var(--cp-cyan)' }}><Icon size={20} /></div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--cp-navy)' }}>{step.sublabel}</div>
+            <div style={{ fontSize: 11, color: step.status === 'complete' ? 'var(--cp-green)' : 'var(--cp-muted)', marginTop: 4 }}>{step.detail}</div>
+            {i < fundingJourneySteps.length - 1 && <div style={{ position: 'absolute', right: -8, top: '50%', width: 16, height: 2, background: 'var(--cp-border)' }} />}
+          </div>
+        })}
+      </div>
+    </div>
+
+    {/* Estimated Funding Range */}
+    <div className="client-card" style={{ marginBottom: 20, background: 'linear-gradient(135deg, rgba(37,99,235,.04), rgba(14,165,233,.03))' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 800 }}>Estimated Funding Range</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, color: 'var(--cp-muted)' }}>Level 2</span>
+          <div style={{ width: 60, height: 6, borderRadius: 3, background: '#e9edf5', overflow: 'hidden' }}><div style={{ width: '50%', height: '100%', borderRadius: 3, background: 'var(--cp-blue)' }} /></div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cp-blue)' }}>72%</span>
+        </div>
+      </div>
+      <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(16,185,129,.08)', marginBottom: 16 }}>
+        <span style={{ fontSize: 13, color: 'var(--cp-green)', fontWeight: 600 }}>Great job! You're <strong>28% ready</strong> for funding.</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 12 }}>
+        <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--cp-navy)' }}>$25,000 – $80,000</span>
+        <span style={{ padding: '6px 14px', borderRadius: 20, background: 'rgba(245,158,11,.1)', color: 'var(--cp-orange)', fontWeight: 700, fontSize: 13 }}>Medium</span>
+      </div>
+      <p style={{ fontSize: 13, color: 'var(--cp-muted)', marginBottom: 12 }}>✓ Reduce credit utilization under 30% to increase your approval odds.</p>
+      <button style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-blue-dark))', color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Improve Approval Odds</button>
+      <p style={{ fontSize: 11, color: 'var(--cp-muted-light)', textAlign: 'center', marginTop: 8 }}>Educational estimate only, not a lending decision</p>
+    </div>
+
+    {/* Business Opportunities */}
+    <div style={{ marginBottom: 20 }}>
+      <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--cp-navy)', marginBottom: 4 }}>Business Opportunities</h2>
+      <p style={{ fontSize: 13, color: 'var(--cp-muted)', marginBottom: 16 }}>Top Recommendations for You</p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+        {businessOpportunities.map((opp, i) => <div key={i} className="client-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ height: 100, background: opp.color, display: 'grid', placeItems: 'center', fontSize: 32 }}>🏢</div>
+          <div style={{ padding: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{opp.title}</h3>
+            <span style={{ fontSize: 12, color: 'var(--cp-green)', fontWeight: 600 }}>{opp.difficulty}</span>
+            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--cp-navy)', margin: '8px 0 4px' }}>{opp.investment}</div>
+            <p style={{ fontSize: 12, color: 'var(--cp-muted)', margin: '0 0 12px' }}>{opp.desc}</p>
+            <button style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: '1px solid var(--cp-border)', background: 'white', color: 'var(--cp-blue)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Start This Business</button>
+          </div>
+        </div>)}
+      </div>
+    </div>
+
     <div className="client-metric-grid dashboard">
       <ClientScoreCard title="Overall Readiness" value={71} status="Building momentum" text="Complete this month's highest-impact tasks before requesting funding review." />
       <ClientMetricCard icon={Gauge} label="Credit Repair" value={`${score.creditRepairProgress}%`} note="In progress" />

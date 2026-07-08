@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import {
   BadgeCheck, Bell, Building2, ChartNoAxesCombined, ChevronDown, FileText,
   Gauge, Home, Mail, Menu, Settings, Sparkles, UserRound, X, CircleCheck,
-  Landmark, Lightbulb, MessageSquare, Star, Wallet, LogOut,
+  Landmark, Lightbulb, MessageSquare, Star, Wallet, LogOut, CreditCard,
+  Send, HelpCircle,
 } from 'lucide-react'
 import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
@@ -28,44 +29,66 @@ function getJourneyProgress(path) {
   return idx >= 0 ? idx + 1 : 1
 }
 
-export function ClientTopNav({ path, onNavigate }) {
+export function ClientSidebar({ path, onNavigate }) {
+  const profile = clientPortalData.clientProfile
   return (
-    <nav className="client-topnav" aria-label="Client journey navigation">
-      {journeySteps.map((step, i) => {
-        const Icon = step.icon
-        const isActive = path === step.path
-        const isPast = journeySteps.findIndex(s => s.path === path) > i
-        return (
-          <button key={step.path} className={`client-topnav-item ${isActive ? 'active' : ''} ${isPast ? 'past' : ''}`} onClick={() => onNavigate(step.path)}>
-            <span className="client-topnav-num">{isPast ? <CircleCheck size={14} /> : i + 1}</span>
-            <span className="client-topnav-label">{step.label}</span>
-          </button>
-        )
-      })}
-    </nav>
+    <aside className="client-sidebar">
+      <div className="client-sidebar-brand">
+        <div className="client-logo-n" />
+        <div><strong>Nexus</strong></div>
+      </div>
+
+      <nav className="client-sidebar-nav" aria-label="Client journey navigation">
+        {journeySteps.map((step, i) => {
+          const Icon = step.icon
+          const isActive = path === step.path
+          const isPast = journeySteps.findIndex(s => s.path === path) > i
+          return (
+            <button
+              key={step.path}
+              className={`client-sidebar-item ${isActive ? 'active' : ''} ${isPast ? 'past' : ''}`}
+              onClick={() => onNavigate(step.path)}
+            >
+              <span className="client-sidebar-icon">
+                {isPast ? <CircleCheck size={18} /> : <Icon size={18} />}
+              </span>
+              <span className="client-sidebar-label">{step.label}</span>
+              {step.label === 'Messages' && <span className="client-sidebar-badge">2</span>}
+            </button>
+          )
+        })}
+      </nav>
+
+      <div className="client-sidebar-footer">
+        <button className="client-sidebar-item" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/goclear/login'); }}>
+          <span className="client-sidebar-icon"><LogOut size={18} /></span>
+          <span className="client-sidebar-label">Sign Out</span>
+        </button>
+      </div>
+    </aside>
   )
 }
 
-export function ClientHeader({ path, onNavigate, onMenu }) {
+export function ClientHeader({ path, onNavigate }) {
   const profile = clientPortalData.clientProfile
   const step = getJourneyProgress(path)
   return (
-    <header className="client-header">
+    <header className="client-header-premium">
       <div className="client-header-left">
-        <button className="client-menu" onClick={onMenu} aria-label="Open navigation"><Menu size={21} /></button>
         <div className="client-brand-mark">
           <div className="client-logo-n" />
           <div><strong>NEXUS</strong><span>CLIENT PORTAL</span></div>
         </div>
       </div>
-      <ClientTopNav path={path} onNavigate={onNavigate} />
       <div className="client-header-right">
-        <span className="client-journey-badge">Step {step}/10</span>
-        <span className="client-access-badge">{profile.membershipTier}</span>
-        <button className="client-request-review-btn" onClick={() => onNavigate('/client/request-review')}>Request Review</button>
-        <button className="client-icon-button" aria-label="Notifications"><Bell size={18} /><em>2</em></button>
-        <button className="client-icon-button" aria-label="Sign out" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/goclear/login'); }}><LogOut size={18} /></button>
-        <div className="client-avatar"><UserRound size={18} /></div>
+        <span className="client-step-badge">Step {step}/10</span>
+        <span className="client-membership-badge">{profile.membershipTier}</span>
+        <button className="client-icon-btn" aria-label="Notifications"><Bell size={18} /><em>2</em></button>
+        <button className="client-icon-btn" aria-label="Messages"><Mail size={18} /></button>
+        <button className="client-icon-btn" aria-label="Help"><HelpCircle size={18} /></button>
+        <div className="client-avatar-sm">
+          <span>{profile.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U'}</span>
+        </div>
       </div>
     </header>
   )
@@ -202,8 +225,9 @@ export function ClientPortalShell({ path, onNavigate, children }) {
   useEffect(() => setMobileOpen(false), [path])
   return (
     <div className="client-portal-premium">
-      <ClientHeader path={path} onNavigate={onNavigate} onMenu={() => setMobileOpen(true)} />
+      <ClientHeader path={path} onNavigate={onNavigate} />
       <div className="client-portal-body">
+        <ClientSidebar path={path} onNavigate={onNavigate} />
         <main className="client-main-content">{children}</main>
         <HermesGuidancePanel path={path} />
       </div>
