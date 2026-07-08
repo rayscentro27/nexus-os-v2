@@ -8,6 +8,7 @@ import {
 import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
 import { supabase } from '../../lib/supabaseClient'
+import { generateClientGuidance } from '../../clientPortal/clientGuidance'
 
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Home', icon: Home },
@@ -94,8 +95,9 @@ export function ClientHeader({ path, onNavigate }) {
   )
 }
 
-export function HermesGuidancePanel({ path }) {
+export function HermesGuidancePanel({ path, statuses }) {
   const guidance = getGuidanceForStep(path)
+  const dynamicItems = statuses ? generateClientGuidance(statuses) : []
   return (
     <aside className="client-hermes-panel">
       <div className="client-hermes-header">
@@ -103,24 +105,40 @@ export function HermesGuidancePanel({ path }) {
         <div><strong>Hermes Guidance</strong><span className="client-hermes-advisory">Advisory only — not a decision</span></div>
       </div>
       <div className="client-hermes-body">
-        <div className="client-hermes-section">
-          <strong>Current Step</strong>
-          <p>{guidance.currentStep}</p>
-        </div>
-        <div className="client-hermes-section">
-          <strong>What to do next</strong>
-          <p>{guidance.nextAction}</p>
-        </div>
-        {guidance.missingItems.length > 0 && (
-          <div className="client-hermes-section">
-            <strong>Missing items</strong>
-            <ul>{guidance.missingItems.map((item, i) => <li key={i}>{item}</li>)}</ul>
-          </div>
+        {dynamicItems.length > 0 ? (
+          <>
+            <div className="client-hermes-section">
+              <strong>Your Priority Actions</strong>
+              <ul>{dynamicItems.slice(0, 5).map(item => (
+                <li key={item.id} style={{ marginBottom: 6 }}>
+                  <strong style={{ color: item.priority === 'high' ? '#f59e0b' : item.priority === 'medium' ? '#3b82f6' : '#9ca3af' }}>{item.title}</strong>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#8fa3be' }}>{item.description}</p>
+                </li>
+              ))}</ul>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="client-hermes-section">
+              <strong>Current Step</strong>
+              <p>{guidance.currentStep}</p>
+            </div>
+            <div className="client-hermes-section">
+              <strong>What to do next</strong>
+              <p>{guidance.nextAction}</p>
+            </div>
+            {guidance.missingItems.length > 0 && (
+              <div className="client-hermes-section">
+                <strong>Missing items</strong>
+                <ul>{guidance.missingItems.map((item, i) => <li key={i}>{item}</li>)}</ul>
+              </div>
+            )}
+            <div className="client-hermes-section">
+              <strong>Readiness note</strong>
+              <p>{guidance.readinessNote}</p>
+            </div>
+          </>
         )}
-        <div className="client-hermes-section">
-          <strong>Readiness note</strong>
-          <p>{guidance.readinessNote}</p>
-        </div>
       </div>
       <div className="client-hermes-footer">
         <span className="client-safe-note">Hermes guidance is advisory. GoClear review is required before any application or external action.</span>
@@ -223,13 +241,29 @@ export function ClientMobileSidebar({ path, onNavigate, open, onClose }) {
 export function ClientPortalShell({ path, onNavigate, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   useEffect(() => setMobileOpen(false), [path])
+
+  const docs = clientPortalData.documents
+  const readiness = clientPortalData.readinessScores
+  const statuses = {
+    creditReportUploaded: docs.uploadedDocuments?.some(d => /credit|report/i.test(d)) || false,
+    addressVerified: docs.uploadedDocuments?.some(d => /address/i.test(d)) || false,
+    identityVerified: docs.uploadedDocuments?.some(d => /id|identity|government/i.test(d)) || false,
+    utilizationHigh: (readiness?.creditProfileReadiness || 0) < 60,
+    negativeItemsIdentified: (readiness?.creditRepairProgress || 0) < 50,
+    businessBankAccount: docs.uploadedDocuments?.some(d => /bank/i.test(d)) || false,
+    revenueDocuments: docs.uploadedDocuments?.some(d => /revenue|statement/i.test(d)) || false,
+    documentsComplete: docs.missingDocuments?.length === 0,
+    adminReviewRequired: docs.underReviewDocuments?.length > 0,
+    readinessScore: readiness?.fundingReadiness || 68,
+  }
+
   return (
     <div className="client-portal-premium">
       <ClientHeader path={path} onNavigate={onNavigate} />
       <div className="client-portal-body">
         <ClientSidebar path={path} onNavigate={onNavigate} />
         <main className="client-main-content">{children}</main>
-        <HermesGuidancePanel path={path} />
+        <HermesGuidancePanel path={path} statuses={statuses} />
       </div>
       <ClientMobileSidebar path={path} onNavigate={onNavigate} open={mobileOpen} onClose={() => setMobileOpen(false)} />
     </div>
