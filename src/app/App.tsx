@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { AuthGate, useSession } from '../components/auth';
 import NexusAdminUI from '../admin/NexusAdminUI';
 import ClientPortalRoot from '../pages/client/ClientPortalRoot';
+import ClientLoginPage from '../pages/client/ClientLoginPage';
+import ClientPreviewPage from '../pages/client/ClientPreviewPage';
 import UpdatePasswordPage from '../pages/UpdatePasswordPage';
 import {
   GoClearLandingPage,
@@ -14,7 +16,7 @@ function ClientPortalGate() {
   const { user, loading } = useSession();
   if (loading) return <div className="authwrap"><div className="muted">Loading…</div></div>;
   if (!user) {
-    window.location.assign('/goclear/login');
+    window.location.assign('/client/login');
     return <div className="authwrap"><div className="muted">Redirecting to login…</div></div>;
   }
   return <ClientPortalRoot />;
@@ -56,6 +58,12 @@ export function App() {
 
   if (path === '/update-password') {
     return <UpdatePasswordPage />;
+  }
+  if (path === '/client/login') {
+    return <ClientLoginPage />;
+  }
+  if (path === '/client/preview') {
+    return <ClientPreviewPage />;
   }
   if (path === '/client' || path.startsWith('/client/')) {
     return <ClientPortalGate />;

@@ -1,0 +1,39 @@
+{
+  "template_version": "1.0",
+  "description": "Template for creating tester accounts in GoClear client portal. Replace placeholder values before use.",
+  "notes": "Create these in Supabase Auth dashboard (Authentication → Users → Add User). After creating the auth user, the SECURITY DEFINER trigger on auth.users INSERT will auto-create tenant_memberships and client_profiles rows.",
+  "testers": [
+    {
+      "full_name": "Tester One",
+      "email": "tester1@example.com",
+      "phone": "+1-555-0101",
+      "tester_status": "active",
+      "client_status": "onboarding",
+      "subscription_status": "trial",
+      "credit_report_uploaded": false,
+      "business_setup_status": "not_started",
+      "funding_readiness_status": "not_started",
+      "notes": "Replace email with real tester email before use"
+    },
+    {
+      "full_name": "Tester Two",
+      "email": "tester2@example.com",
+      "phone": "+1-555-0102",
+      "tester_status": "active",
+      "client_status": "onboarding",
+      "subscription_status": "trial",
+      "credit_report_uploaded": false,
+      "business_setup_status": "not_started",
+      "funding_readiness_status": "not_started",
+      "notes": "Replace email with real tester email before use"
+    }
+  ],
+  "creation_steps": [
+    "1. Go to Supabase Dashboard → Authentication → Users → Add User",
+    "2. Enter email and password (use strong password, share securely)",
+    "3. Check 'Auto Confirm Email' to skip email verification",
+    "4. After creation, the trigger auto-creates: memberships row + client_profiles row",
+    "5. Share login URL: https://goclearonline.cc/client/login",
+    "6. Share credentials via secure channel (not email)"
+  ]
+}
