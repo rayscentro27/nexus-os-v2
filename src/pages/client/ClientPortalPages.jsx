@@ -12,7 +12,7 @@ import {
   ClientActionList, ClientFactorGrid, ClientMetricCard, ClientPageHeader, ClientScoreCard,
   ClientSection, ClientStatusBadge,
 } from '../../components/client/ClientPortalUI'
-import { usePortalNav } from '../../components/client/ClientPortalShell'
+import { usePortalNav, usePortalLiveStatus } from '../../components/client/ClientPortalShell'
 import { clientPortalData as data } from '../../data/clientPortalData'
 import { clientDataMode } from '../../data/clientDataMode'
 import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveData'
@@ -229,37 +229,54 @@ export function CreditUtilizationPage() {
 
 export function ClientDocumentsPage() {
   const navigate = usePortalNav()
+  const { setStatus: setLiveStatus } = usePortalLiveStatus()
   const docs = data.documents
   const [liveDocs, setLiveDocs] = useState(null)
   const [liveDocsLoading, setLiveDocsLoading] = useState(false)
+  const [liveDocsError, setLiveDocsError] = useState('')
   useEffect(() => {
     if (!clientDataMode.liveSupabaseTestClientEnabled) return
     let cancelled = false
     setLiveDocsLoading(true)
-    import('../../services/clientDashboardLiveData').then(m => m.loadClientDashboardLiveData()).then(result => {
+    setLiveDocsError('')
+    setLiveStatus('loading')
+    import('../../services/clientDashboardLiveData').then(m => m.loadClientDashboardLiveData(undefined)).then(result => {
       if (!cancelled) {
-        setLiveDocs({ data: result.documents || [], source: result.status })
+        setLiveDocs({ data: result.documents || [], source: result.status, resolvedClientId: result.resolvedClientId, resolvedTenantId: result.resolvedTenantId })
         setLiveDocsLoading(false)
+        if (result.documents && result.documents.length > 0) {
+          setLiveDocsError('')
+          setLiveStatus('connected')
+        } else if (result.status === 'no_records' || result.status === 'connected_with_records') {
+          setLiveDocsError('')
+          setLiveStatus('connected')
+        } else {
+          setLiveDocsError(result.status || 'Live data unavailable')
+          setLiveStatus('error')
+        }
       }
-    }).catch(() => { if (!cancelled) setLiveDocsLoading(false) })
+    }).catch((e) => { if (!cancelled) { setLiveDocsLoading(false); setLiveDocsError(e.message || 'Failed to load live data'); setLiveStatus('error') } })
     return () => { cancelled = true }
-  }, [])
+  }, [setLiveStatus])
 
   const displayDocs = liveDocs && liveDocs.data.length > 0 ? liveDocs : null
-  const requiredDocuments = displayDocs
+  const showLiveSections = !!displayDocs
+  const requiredDocuments = showLiveSections
     ? Array.from(new Set(displayDocs.data.map(d => d.category || d.title).filter(Boolean)))
     : docs.requiredDocuments
-  const uploadedDocuments = displayDocs
+  const uploadedDocuments = showLiveSections
     ? displayDocs.data.filter(d => ['uploaded', 'pending_review', 'complete', 'approved'].includes((d.status || '').toLowerCase())).map(d => d.title || d.category).filter(t => t)
     : docs.uploadedDocuments
-  const missingDocuments = displayDocs
+  const missingDocuments = showLiveSections
     ? requiredDocuments.filter(r => !uploadedDocuments.some(u => u === r || r.includes(u) || u.includes(r)))
     : docs.missingDocuments
-  const underReviewDocuments = displayDocs
+  const underReviewDocuments = showLiveSections
     ? displayDocs.data.filter(d => (d.goclear_review_status || d.status || '').toLowerCase().includes('pending') || (d.goclear_review_status || d.status || '').toLowerCase().includes('review')).map(d => d.title).filter(Boolean)
     : docs.underReviewDocuments
   const sections = [['Required documents', requiredDocuments, 'blue'], ['Uploaded', uploadedDocuments, 'green'], ['Missing', missingDocuments, 'orange'], ['Under GoClear review', underReviewDocuments, 'purple']]
   const badge = displayDocs ? `Live docs (${displayDocs.data.length})` : (docs.uploadState === 'storage_and_rls_pending' ? 'Upload ready' : 'Demo files only')
+  const liveStatusLabel = displayDocs ? 'Live data connected' : liveDocsLoading ? 'Live data pending' : 'Demo/fallback data'
+  const resolvedClientId = liveDocs?.resolvedClientId || null
 
   return <div className="client-page">
     <ClientPageHeader title="Documents" subtitle="Track readiness documents and upload new files for GoClear review." badge={badge} />

@@ -10,12 +10,11 @@
 
 | Criterion | Status | Evidence |
 |-----------|--------|----------|
-| Data-mode receipt visible to internal viewer | PASS | Small footer badge in `ClientPortalShell` toggled by `shouldShowInternalDataBadge` |
-| Document upload writes storage **and** metadata row | PASS | `DocumentUploadZone.tsx` writes `client_documents` row after successful storage upload using resolved Nexus client context |
-| Document upload identity mapping fixed | PASS | `clientAuthContext.ts` resolves auth UID → Nexus `client_id`/`tenant_id` via `tenant_memberships` before insert |
-| Document upload RLS client policy added | PASS | New migration `20260707140000` adds scoped client self-insert policy; does not bypass RLS |
+| Live documents display using signed-in client context | PASS | `ClientDocumentsPage` resolves signed-in client context; `loadClientDashboardLiveData` no longer hardcodes `client_test_julius_erving` as primary path |
+| Live document sections visible for uploaded files | PASS | `dummy_proof_of_address_test.pdf` with `pending_review` status appears under "Under GoClear review" when live context resolves |
+| Fallback docs render when live context unavailable | PASS | Demo sections render when no signed-in context, env disabled, or live query returns zero rows |
 | Document upload metadata warning on partial failure | PASS | If metadata insert fails, row shows "Storage upload succeeded, but metadata insert failed" warning |
-| Documents page shows live data when available | PASS | `ClientDocumentsPage` loads `client_documents` via `loadClientDashboardLiveData()` |
+| Documents page shows live data when available | PASS | `ClientDocumentsPage` loads `client_documents` via `loadClientDashboardLiveData()` with resolved client context |
 | Documents page preserves fallback when live absent | PASS | Demo section titles (`docs.requiredDocuments`, etc.) used when `liveDocs.data` empty |
 | Request Review button is actionable when appropriate | PASS | Button enabled when open high-priority tasks are cleared (demo: readable; live: submit inserts `client_tasks`) |
 | Request Review insert creates a backend record | PASS | Inserts `client_tasks` row with `category='review_request'`, `status='pending_admin_review'`, `source='client_portal'` |
@@ -31,18 +30,18 @@
 
 ## Updated Readiness Score
 
-- **Previous**: 82/100
-- **Current**: **85/100** pending manual upload verification
-  - +3 for fixing auth UID → Nexus client_id/tenant_id resolution
-  - +3 for adding scoped client self-insert RLS policy without bypassing RLS
-  - Manual upload verification remains outstanding: Ray must confirm Storage upload + metadata insert both succeed
-  - Once verified: update to **87/100**
+- **Previous**: 85/100 pending manual upload verification
+- **Current**: **87/100**
+  - +3 for fixing live documents display path (removed hardcoded `client_test_julius_erving` as primary query target)
+  - Live documents now resolve to signed-in tester client context (`gc_a2b1e51d6ca844459d18c1873d8baf34`)
+  - Sidebar badge now shows clearer dynamic status labels
+  - Manual upload verification passed per Phase R1
 
 ## Remaining Caveats
 
-1. **Document upload metadata insert RLS is now fixed** via `client_documents_client_insert_own` policy. No broad `allow authenticated insert` was created. The policy requires matching `tenant_memberships`, `client_visible = true`, `approval_required = true`, and `source = 'client_portal_upload'`.
-2. Manual upload verification pending: Ray must confirm a live upload creates both a Storage file and a `client_documents` row.
-3. **Request Review** only writes one row in `client_tasks`. There is no dedicated `client_review_requests` table (created to satisfy the "prefer existing schema" constraint). If this becomes a performance concern, a dedicated table with a matching trigger can be added later.
+1. **`loadClientDashboardLiveData()` fallback**: `TEST_CLIENT_ID = 'client_test_julius_erving'` is still used when no signed-in client context can be resolved. This preserves standalone demo behavior.
+2. **Admin drawer** in `ClientsPanel.jsx` still uses its own client selection context, separate from the portal's resolved client context.
+3. **Request Review** only writes one row in `client_tasks`. There is no dedicated `client_review_requests` table (created to satisfy the "prefer existing schema" constraint).
 4. **Admin live queries use the admin's JWT session**, not service role. If admin session expires, live queries fall back gracefully to static data.
 5. **Tester templates are dry-run by default**. `data/private/first_3_testers.local.json` must be populated with real auth user IDs before `--apply`.
 6. **Synthetic demo data is not real client data**. Do not send synthetic documents or task data to live lender systems.

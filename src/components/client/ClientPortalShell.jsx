@@ -11,7 +11,9 @@ import { supabase } from '../../lib/supabaseClient'
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
 
 export const PortalNavContext = createContext(() => {})
+export const PortalLiveStatusContext = createContext({ status: 'idle', setStatus: () => {} })
 export function usePortalNav() { return useContext(PortalNavContext) }
+export function usePortalLiveStatus() { return useContext(PortalLiveStatusContext) }
 
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Home', icon: Home },
@@ -69,9 +71,9 @@ export function ClientSidebar({ path, onNavigate }) {
           <span className="client-sidebar-label">Sign Out</span>
         </button>
         {shouldShowInternalDataBadge && (
-          <div className="client-sidebar-data-badge" title={`Portal data mode: ${clientDataMode.internalLabel}. Live reads are disabled.`}>
+          <div className="client-sidebar-data-badge" title={`Portal data mode: ${liveStatusLabel}`}>
             <span className="client-sidebar-data-badge-dot" />
-            <span className="client-sidebar-data-badge-label">{clientDataMode.internalLabel}</span>
+            <span className="client-sidebar-data-badge-label">{liveStatusLabel}</span>
           </div>
         )}
       </div>
@@ -250,6 +252,7 @@ export function ClientMobileSidebar({ path, onNavigate, open, onClose }) {
 
 export function ClientPortalShell({ path, onNavigate, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [liveStatus, setLiveStatus] = useState('idle')
   useEffect(() => setMobileOpen(false), [path])
 
   const docs = clientPortalData.documents
@@ -267,17 +270,21 @@ export function ClientPortalShell({ path, onNavigate, children }) {
     readinessScore: readiness?.fundingReadiness || 68,
   }
 
+  const liveStatusLabel = liveStatus === 'connected' ? 'Live data connected' : liveStatus === 'loading' ? 'Live data pending' : 'Demo/fallback data'
+
   return (
     <PortalNavContext.Provider value={onNavigate}>
-      <div className="client-portal-premium">
-        <ClientHeader path={path} onNavigate={onNavigate} onMenuToggle={() => setMobileOpen(true)} />
-        <div className="client-portal-body">
-          <ClientSidebar path={path} onNavigate={onNavigate} />
-          <main className="client-main-content">{children}</main>
-          <HermesGuidancePanel path={path} statuses={statuses} />
+      <PortalLiveStatusContext.Provider value={{ status: liveStatus, setStatus: setLiveStatus }}>
+        <div className="client-portal-premium">
+          <ClientHeader path={path} onNavigate={onNavigate} onMenuToggle={() => setMobileOpen(true)} />
+          <div className="client-portal-body">
+            <ClientSidebar path={path} onNavigate={onNavigate} />
+            <main className="client-main-content">{children}</main>
+            <HermesGuidancePanel path={path} statuses={statuses} />
+          </div>
+          <ClientMobileSidebar path={path} onNavigate={onNavigate} open={mobileOpen} onClose={() => setMobileOpen(false)} />
         </div>
-        <ClientMobileSidebar path={path} onNavigate={onNavigate} open={mobileOpen} onClose={() => setMobileOpen(false)} />
-      </div>
+      </PortalLiveStatusContext.Provider>
     </PortalNavContext.Provider>
   )
 }

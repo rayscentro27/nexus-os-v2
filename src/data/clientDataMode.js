@@ -16,7 +16,7 @@ export const clientDataMode = {
   liveSupabaseTestClientEnabled: LIVE_TEST_CLIENT_ENABLED,
   firstLiveReadRoute: '/client/dashboard',
   adminOrDemoPreview: true,
-  internalLabel: LIVE_TEST_CLIENT_ENABLED ? 'Live Test Data' : 'Live Data Pending',
+  internalLabel: LIVE_TEST_CLIENT_ENABLED ? 'Live data connected' : 'Demo/fallback data',
 }
 
-export const shouldShowInternalDataBadge = clientDataMode.adminOrDemoPreview && !clientDataMode.supabaseLiveReadsEnabled
+export const shouldShowInternalDataBadge = clientDataMode.adminOrDemoPreview
