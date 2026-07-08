@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import {
   BadgeCheck, Bell, Building2, ChartNoAxesCombined, ChevronDown, FileText,
   Gauge, Home, Mail, Menu, Settings, Sparkles, UserRound, X, CircleCheck,
@@ -9,6 +9,9 @@ import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
 import { supabase } from '../../lib/supabaseClient'
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
+
+export const PortalNavContext = createContext(() => {})
+export function usePortalNav() { return useContext(PortalNavContext) }
 
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Home', icon: Home },
@@ -259,14 +262,16 @@ export function ClientPortalShell({ path, onNavigate, children }) {
   }
 
   return (
-    <div className="client-portal-premium">
-      <ClientHeader path={path} onNavigate={onNavigate} onMenuToggle={() => setMobileOpen(true)} />
-      <div className="client-portal-body">
-        <ClientSidebar path={path} onNavigate={onNavigate} />
-        <main className="client-main-content">{children}</main>
-        <HermesGuidancePanel path={path} statuses={statuses} />
+    <PortalNavContext.Provider value={onNavigate}>
+      <div className="client-portal-premium">
+        <ClientHeader path={path} onNavigate={onNavigate} onMenuToggle={() => setMobileOpen(true)} />
+        <div className="client-portal-body">
+          <ClientSidebar path={path} onNavigate={onNavigate} />
+          <main className="client-main-content">{children}</main>
+          <HermesGuidancePanel path={path} statuses={statuses} />
+        </div>
+        <ClientMobileSidebar path={path} onNavigate={onNavigate} open={mobileOpen} onClose={() => setMobileOpen(false)} />
       </div>
-      <ClientMobileSidebar path={path} onNavigate={onNavigate} open={mobileOpen} onClose={() => setMobileOpen(false)} />
-    </div>
+    </PortalNavContext.Provider>
   )
 }
