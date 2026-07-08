@@ -3,28 +3,28 @@
     "tester_number": 1,
     "auth_email_placeholder": "tester01@example.com",
     "auth_user_id_placeholder": "PASTE_SUPABASE_AUTH_USER_ID_HERE",
-    "display_name": "Tester 01",
+    "display_name": "Tester 01 — Missing Address Proof",
     "client_status": "tester",
     "current_step": "Document Intake",
     "tenant_role": "client",
     "client_id_prefix": "gc_tester01",
     "readiness_scores": [
-      {"category": "credit_readiness", "title": "Credit Readiness", "score": 58, "status": "in_progress", "client_visible": true},
-      {"category": "business_funding", "title": "Business Funding Readiness", "score": 42, "status": "in_progress", "client_visible": true},
-      {"category": "overall", "title": "Overall Readiness", "score": 50, "status": "in_progress", "client_visible": true}
+      {"category": "credit_readiness", "title": "Credit Readiness", "score": 55, "status": "in_progress", "client_visible": true},
+      {"category": "business_funding", "title": "Business Funding Readiness", "score": 38, "status": "in_progress", "client_visible": true},
+      {"category": "overall", "title": "Overall Readiness", "score": 46, "status": "in_progress", "client_visible": true}
     ],
     "client_tasks": [
       {"category": "documents", "title": "Upload proof of address", "status": "open", "priority": "high", "client_visible": true},
-      {"category": "documents", "title": "Upload credit report", "status": "open", "priority": "high", "client_visible": true},
-      {"category": "business", "title": "Confirm business bank account status", "status": "open", "priority": "medium", "client_visible": true}
+      {"category": "documents", "title": "Upload credit report", "status": "pending_review", "priority": "high", "client_visible": true},
+      {"category": "credit", "title": "Reduce revolving utilization where practical", "status": "open", "priority": "medium", "client_visible": true}
     ],
     "client_documents": [
-      {"category": "identity", "title": "Proof of Address", "status": "missing", "client_visible": true},
-      {"category": "credit", "title": "Credit Report", "status": "missing", "client_visible": true},
-      {"category": "income", "title": "Proof of Income", "status": "missing", "client_visible": true}
+      {"category": "identity", "title": "Proof of Address", "status": "missing", "client_visible": true, goclear_review_status": "pending"},
+      {"category": "credit", "title": "Credit Report", "status": "pending_review", "client_visible": true, goclear_review_status: "pending"},
+      {"category": "identification", "title": "Government ID", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"}
     ],
     "credit_workflow_items": [
-      {"category": "credit_report", "title": "Credit report uploaded", "status": "pending", "client_visible": true},
+      {"category": "credit_report", "title": "Credit report under review", "status": "pending", "client_visible": true, priority: "high"},
       {"category": "utilization", "title": "Utilization reviewed", "status": "pending", "client_visible": true},
       {"category": "disputes", "title": "Dispute candidates reviewed", "status": "pending", "client_visible": true}
     ],
@@ -36,93 +36,104 @@
       {"category": "digital", "title": "Business website", "status": "in_progress", "client_visible": true}
     ],
     "approved_client_guidance": [
-      {"category": "documents", "title": "Upload proof of address", "summary": "Upload proof of address to continue your review.", "status": "active", "client_visible": true, "approval_required": false},
-      {"category": "credit", "title": "Lower utilization", "summary": "Lower utilization where possible before funding applications.", "status": "active", "client_visible": true, "approval_required": false},
-      {"category": "business", "title": "Business bank account", "summary": "Add or confirm a business bank account.", "status": "active", "client_visible": true, "approval_required": false}
+      {"category": "documents", "title": "Upload proof of address", "summary": "This is the only missing document block. Upload current proof of address from a utility provider, bank, or government agency.", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "credit", "title": "Reduce utilization", "summary": "Revolving utilization is the main blocker for medium credit readiness. Reduce to under 30% where practical.", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "business", "title": "Complete business website", "summary": "A simple professional domain email improves business profile readiness.", "status": "active", "client_visible": true, "approval_required": false}
     ]
   },
   {
     "tester_number": 2,
     "auth_email_placeholder": "tester02@example.com",
     "auth_user_id_placeholder": "PASTE_SUPABASE_AUTH_USER_ID_HERE",
-    "display_name": "Tester 02",
+    "display_name": "Tester 02 — High Utilization Blocker",
     "client_status": "tester",
     "current_step": "Credit Review",
     "tenant_role": "client",
     "client_id_prefix": "gc_tester02",
     "readiness_scores": [
-      {"category": "credit_readiness", "title": "Credit Readiness", "score": 65, "status": "in_progress", "client_visible": true},
-      {"category": "business_funding", "title": "Business Funding Readiness", "score": 38, "status": "in_progress", "client_visible": true},
-      {"category": "overall", "title": "Overall Readiness", "score": 52, "status": "in_progress", "client_visible": true}
+      {"category": "credit_readiness", "title": "Credit Readiness", "score": 42, "status": "blocked", "client_visible": true},
+      {"category": "business_funding", "title": "Business Funding Readiness", "score": 58, "status": "in_progress", "client_visible": true},
+      {"category": "overall", "title": "Overall Readiness", "score": 50, "status": "in_progress", "client_visible": true}
     ],
     "client_tasks": [
-      {"category": "credit", "title": "Review credit report details", "status": "open", "priority": "high", "client_visible": true},
-      {"category": "documents", "title": "Upload government ID", "status": "open", "priority": "high", "client_visible": true},
-      {"category": "business", "title": "Complete business profile", "status": "open", "priority": "medium", "client_visible": true}
+      {"category": "credit_repair", "title": "Reduce revolving utilization from 78% to below 30%", "status": "open", "priority": "high", "client_visible": true},
+      {"category": "credit_profile_readiness", "title": "Review recent inquiries — need 6 months cooling", "status": "open", "priority": "high", "client_visible": true},
+      {"category": "documents", "title": "Upload request explanation letter for utilization", "status": "pending_review", "priority": "medium", "client_visible": true, approval_required: true, goclear_review_status: "pending"},
+      {"category": "business_profile_readiness", "title": "Add vendor account reference", "status": "open", "priority": "medium", "client_visible": true}
     ],
     "client_documents": [
-      {"category": "identity", "title": "Government ID", "status": "missing", "client_visible": true},
-      {"category": "credit", "title": "Credit Report", "status": "missing", "client_visible": true},
-      {"category": "address", "title": "Proof of Address", "status": "missing", "client_visible": true}
+      {"category": "credit", "title": "Credit Report (most recent)", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "identification", "title": "Government ID", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "address", "title": "Proof of Address", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "business", "title": "Business Formation Documents", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "business", "title": "EIN Confirmation Letter", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "credit_repair", "title": "Dispute Draft Letter — Account 1234", "status": "pending_review", "client_visible": true, approval_required: true, goclear_review_status: "pending"}
     ],
     "credit_workflow_items": [
-      {"category": "credit_report", "title": "Credit report uploaded", "status": "pending", "client_visible": true},
-      {"category": "identity", "title": "Identity verified", "status": "pending", "client_visible": true},
-      {"category": "disputes", "title": "Negative items reviewed", "status": "pending", "client_visible": true}
-    ],
-    "business_profile_requirements": [
-      {"category": "entity", "title": "EIN obtained", "status": "complete", "client_visible": true},
-      {"category": "banking", "title": "Business bank account", "status": "missing", "client_visible": true},
-      {"category": "address", "title": "Business address", "status": "in_progress", "client_visible": true},
-      {"category": "contact", "title": "Business phone", "status": "complete", "client_visible": true},
-      {"category": "digital", "title": "Business website", "status": "missing", "client_visible": true}
-    ],
-    "approved_client_guidance": [
-      {"category": "identity", "title": "Upload government ID", "summary": "Upload a government-issued ID to verify your identity.", "status": "active", "client_visible": true, "approval_required": false},
-      {"category": "credit", "title": "Review credit report", "summary": "Review your credit report for accuracy.", "status": "active", "client_visible": true, "approval_required": false},
-      {"category": "business", "title": "Open business bank account", "summary": "A business banking relationship supports your funding readiness.", "status": "active", "client_visible": true, "approval_required": false}
-    ]
-  },
-  {
-    "tester_number": 3,
-    "auth_email_placeholder": "tester03@example.com",
-    "auth_user_id_placeholder": "PASTE_SUPABASE_AUTH_USER_ID_HERE",
-    "display_name": "Tester 03",
-    "client_status": "tester",
-    "current_step": "Business Setup",
-    "tenant_role": "client",
-    "client_id_prefix": "gc_tester03",
-    "readiness_scores": [
-      {"category": "credit_readiness", "title": "Credit Readiness", "score": 72, "status": "in_progress", "client_visible": true},
-      {"category": "business_funding", "title": "Business Funding Readiness", "score": 55, "status": "in_progress", "client_visible": true},
-      {"category": "overall", "title": "Overall Readiness", "score": 63, "status": "in_progress", "client_visible": true}
-    ],
-    "client_tasks": [
-      {"category": "business", "title": "Complete business website", "status": "open", "priority": "high", "client_visible": true},
-      {"category": "documents", "title": "Upload bank statements", "status": "open", "priority": "high", "client_visible": true},
-      {"category": "credit", "title": "Review utilization plan", "status": "open", "priority": "medium", "client_visible": true}
-    ],
-    "client_documents": [
-      {"category": "business", "title": "Business Website", "status": "missing", "client_visible": true},
-      {"category": "banking", "title": "Bank Statements", "status": "missing", "client_visible": true},
-      {"category": "credit", "title": "Credit Report", "status": "uploaded", "client_visible": true}
-    ],
-    "credit_workflow_items": [
-      {"category": "credit_report", "title": "Credit report uploaded", "status": "complete", "client_visible": true},
-      {"category": "utilization", "title": "Utilization reviewed", "status": "in_progress", "client_visible": true},
-      {"category": "disputes", "title": "Dispute candidates reviewed", "status": "pending", "client_visible": true}
+      {"category": "utilization", "title": "High utilization — primary blocker", "status": "blocked", "client_visible": true, priority: "high"},
+      {"category": "inquiries", "title": "Recent inquiries need cooling period", "status": "in_progress", "client_visible": true, priority: "high"},
+      {"category": "disputes", "title": "Dispute letter under review", "status": "pending_admin_review", "client_visible": true, priority: "medium"}
     ],
     "business_profile_requirements": [
       {"category": "entity", "title": "EIN obtained", "status": "complete", "client_visible": true},
       {"category": "banking", "title": "Business bank account", "status": "complete", "client_visible": true},
       {"category": "address", "title": "Business address", "status": "complete", "client_visible": true},
       {"category": "contact", "title": "Business phone", "status": "complete", "client_visible": true},
-      {"category": "digital", "title": "Business website", "status": "in_progress", "client_visible": true}
+      {"category": "digital", "title": "Business website", "status": "complete", "client_visible": true}
     ],
     "approved_client_guidance": [
-      {"category": "digital", "title": "Complete business website", "summary": "A professional website strengthens your business profile.", "status": "active", "client_visible": true, "approval_required": false},
-      {"category": "banking", "title": "Upload bank statements", "summary": "Three months of bank statements support your funding readiness.", "status": "active", "client_visible": true, "approval_required": false},
-      {"category": "credit", "title": "Review utilization plan", "summary": "Reducing revolving utilization improves your readiness score.", "status": "active", "client_visible": true, "approval_required": false}
+      {"category": "credit", "title": "Pay down highest-balance card first", "summary": "Card B at 78% utilization is the single highest-impact action. Focus there first.", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "credit", "title": "Avoid new credit applications", "summary": "Recent inquiries will age out in approximately 6 months. No new applications.", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "documents", "title": "Hold drafts for GoClear approval", "summary": "Dispute letter has been uploaded but must not be sent until GoClear review is complete.", "status": "active", "client_visible": true, "approval_required": true},
+      {"category": "business", "title": "Add vendor reference", "summary": "One additional vendor account reference will help close the business profile gap.", "status": "active", "client_visible": true, "approval_required": false}
+    ]
+  },
+  {
+    "tester_number": 3,
+    "auth_email_placeholder": "tester03@example.com",
+    "auth_user_id_placeholder": "PASTE_SUPABASE_AUTH_USER_ID_HERE",
+    "display_name": "Tester 03 — Banking Blocker",
+    "client_status": "tester",
+    "current_step": "Business Setup",
+    "tenant_role": "client",
+    "client_id_prefix": "gc_tester03",
+    "readiness_scores": [
+      {"category": "credit_readiness", "title": "Credit Readiness", "score": 68, "status": "in_progress", "client_visible": true},
+      {"category": "business_funding", "title": "Business Funding Readiness", "score": 22, "status": "blocked", "client_visible": true},
+      {"category": "overall", "title": "Overall Readiness", "score": 45, "status": "in_progress", "client_visible": true}
+    ],
+    "client_tasks": [
+      {"category": "business_profile_readiness", "title": "Open business bank account (blocking funding)", "status": "open", "priority": "high", "client_visible": true},
+      {"category": "business_profile_readiness", "title": "Confirm DUNS / business bureau profile", "status": "open", "priority": "high", "client_visible": true},
+      {"category": "documents", "title": "Upload 3 months business bank statements", "status": "open", "priority": "high", "client_visible": true},
+      {"category": "documents", "title": "Upload proof of revenue / revenue summary", "status": "missing", "priority": "high", "client_visible": true},
+      {"category": "business_setup", "title": "Confirm professional domain email", "status": "open", "priority": "medium", "client_visible": true}
+    ],
+    "client_documents": [
+      {"category": "identification", "title": "Government ID", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "address", "title": "Proof of Address", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "business", "title": "Business Formation Documents", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "business", "title": "EIN Confirmation", "status": "uploaded", "client_visible": true, goclear_review_status: "approved"},
+      {"category": "bank_statement", "title": "Business Bank Statements (last 3 months)", "status": "missing", "client_visible": true},
+      {"category": "revenue_summary", "title": "Revenue Summary", "status": "missing", "client_visible": true}
+    ],
+    "credit_workflow_items": [
+      {"category": "credit_report", "title": "Credit report uploaded", "status": "complete", "client_visible": true},
+      {"category": "utilization", "title": "Utilization improving (currently 42%)", "status": "in_progress", "client_visible": true},
+      {"category": "banking", "title": "Business banking — funding blocker", "status": "blocked", "client_visible": true, priority: "high"}
+    ],
+    "business_profile_requirements": [
+      {"category": "entity", "title": "Entity registered", "status": "complete", "client_visible": true},
+      {"category": "banking", "title": "Business bank account", "status": "missing", "client_visible": true},
+      {"category": "address", "title": "Business address", "status": "in_progress", "client_visible": true},
+      {"category": "contact", "title": "Business phone", "status": "complete", "client_visible": true},
+      {"category": "digital", "title": "Professional domain email", "status": "in_progress", "client_visible": true}
+    ],
+    "approved_client_guidance": [
+      {"category": "business", "title": "Open business bank account before anything else", "summary": "Funding readiness is blocked at the banking gate. No lender will review the profile until a business checking account is open and statements are collected.", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "business", "title": "Confirm DUNS / business bureau profile", "summary": "A DUNS profile is required for several funding paths. Start the process while banking is being set up (they operate on different timelines).", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "documents", "title": "Collect last 3 months bank statements", "summary": "Open the account, let activity accumulate, then collect statements. Do not submit old personal statements.", "status": "active", "client_visible": true, "approval_required": false},
+      {"category": "documents", "title": "Prepare revenue summary", "summary": "Summarize last 90 days of revenue or projected revenue. This comes after bank statements.", "status": "active", "client_visible": true, "approval_required": false}
     ]
   }
 ]

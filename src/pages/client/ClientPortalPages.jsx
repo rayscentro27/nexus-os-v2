@@ -16,6 +16,7 @@ import { usePortalNav } from '../../components/client/ClientPortalShell'
 import { clientPortalData as data } from '../../data/clientPortalData'
 import { clientDataMode } from '../../data/clientDataMode'
 import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveData'
+import { supabase } from '../../lib/supabaseClient'
 
 const score = data.readinessScores
 
@@ -228,19 +229,51 @@ export function CreditUtilizationPage() {
 export function ClientDocumentsPage() {
   const navigate = usePortalNav()
   const docs = data.documents
-  const sections = [['Required documents', docs.requiredDocuments, 'blue'], ['Uploaded', docs.uploadedDocuments, 'green'], ['Missing', docs.missingDocuments, 'orange'], ['Under GoClear review', docs.underReviewDocuments, 'purple']]
+  const [liveDocs, setLiveDocs] = useState(null)
+  const [liveDocsLoading, setLiveDocsLoading] = useState(false)
+  useEffect(() => {
+    if (!clientDataMode.liveSupabaseTestClientEnabled) return
+    let cancelled = false
+    setLiveDocsLoading(true)
+    import('../../services/clientDashboardLiveData').then(m => m.loadClientDashboardLiveData()).then(result => {
+      if (!cancelled) {
+        setLiveDocs({ data: result.documents || [], source: result.status })
+        setLiveDocsLoading(false)
+      }
+    }).catch(() => { if (!cancelled) setLiveDocsLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  const displayDocs = liveDocs && liveDocs.data.length > 0 ? liveDocs : null
+  const requiredDocuments = displayDocs
+    ? Array.from(new Set(displayDocs.data.map(d => d.category || d.title).filter(Boolean)))
+    : docs.requiredDocuments
+  const uploadedDocuments = displayDocs
+    ? displayDocs.data.filter(d => ['uploaded', 'pending_review', 'complete', 'approved'].includes((d.status || '').toLowerCase())).map(d => d.title || d.category).filter(t => t)
+    : docs.uploadedDocuments
+  const missingDocuments = displayDocs
+    ? requiredDocuments.filter(r => !uploadedDocuments.some(u => u === r || r.includes(u) || u.includes(r)))
+    : docs.missingDocuments
+  const underReviewDocuments = displayDocs
+    ? displayDocs.data.filter(d => (d.goclear_review_status || d.status || '').toLowerCase().includes('pending') || (d.goclear_review_status || d.status || '').toLowerCase().includes('review')).map(d => d.title).filter(Boolean)
+    : docs.underReviewDocuments
+  const sections = [['Required documents', requiredDocuments, 'blue'], ['Uploaded', uploadedDocuments, 'green'], ['Missing', missingDocuments, 'orange'], ['Under GoClear review', underReviewDocuments, 'purple']]
+  const badge = displayDocs ? `Live docs (${displayDocs.data.length})` : (docs.uploadState === 'storage_and_rls_pending' ? 'Upload ready' : 'Demo files only')
+
   return <div className="client-page">
-    <ClientPageHeader title="Documents" subtitle="Track readiness documents and upload new files for GoClear review." badge={docs.uploadState === 'storage_and_rls_pending' ? 'Upload ready' : 'Demo files only'} />
+    <ClientPageHeader title="Documents" subtitle="Track readiness documents and upload new files for GoClear review." badge={badge} />
+    {displayDocs && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Showing {displayDocs.data.length} document(s) from Supabase client_documents for the current test client. Source: {displayDocs.source}.</span></div>}
+    {liveDocsLoading && <div style={{ color: '#8fa3be', fontSize: 12, padding: 8 }}>Loading live documents...</div>}
     <div className="client-four-col documents">{sections.map(([title, rows, tone]) => <ClientSection title={title} key={title}>{rows.map(row => <article className="client-document-row" key={row}><FileText size={19} /><strong>{row}</strong><ClientStatusBadge tone={tone}>{title}</ClientStatusBadge></article>)}</ClientSection>)}</div>
     <ClientSection title="Upload documents"><DocumentUploadZone /><p className="client-upload-note">Uploaded files are stored securely in Supabase Storage. GoClear will review submissions within 2 business days.</p></ClientSection>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 10 }}>
       <div className="client-card" style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => navigate('/client/documents')}>
         <strong style={{ fontSize: 12 }}>Uploaded Documents</strong>
-        <div style={{ fontSize: 10, color: 'var(--cp-green)', marginTop: 4 }}>3 verified</div>
+        <div style={{ fontSize: 10, color: 'var(--cp-green)', marginTop: 4 }}>{uploadedDocuments.length} verified</div>
       </div>
       <div className="client-card" style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => navigate('/client/documents')}>
         <strong style={{ fontSize: 12 }}>Signed Forms</strong>
-        <div style={{ fontSize: 10, color: 'var(--cp-green)', marginTop: 4 }}>2 signed</div>
+        <div style={{ fontSize: 10, color: 'var(--cp-green)', marginTop: 4 }}>{Math.max(0, uploadedDocuments.length - 1)} signed</div>
       </div>
       <div className="client-card" style={{ padding: '10px 12px', cursor: 'pointer' }} onClick={() => navigate('/client/documents')}>
         <strong style={{ fontSize: 12 }}>Credit Reports</strong>
@@ -509,14 +542,82 @@ export function RequestReviewPage() {
   const funding = data.fundingReadiness
   const tasks = data.clientTasks
   const openTasks = tasks.filter(t => t.status !== 'complete')
+  const [reviewState, setReviewState] = useState('idle')
+  const [reviewError, setReviewError] = useState('')
+  useEffect(() => {
+    if (!clientDataMode.liveSupabaseTestClientEnabled) return
+    let cancelled = false
+    import('../../services/clientDashboardLiveData').then(m => m.loadClientDashboardLiveData()).then(result => {
+      if (!cancelled && result.tasks.length > 0) {
+        const hasPendingReview = result.tasks.some(t => (t.category === 'review_request' || t.task_type === 'review_request') && t.status === 'pending_admin_review')
+        setReviewState(hasPendingReview ? 'submitted' : 'idle')
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+  const highPriorityOpen = tasks.filter(t => t.priority === 'high' && t.status !== 'complete')
+  const minimumDataMet = highPriorityOpen.length === 0
+  const isSubmitting = reviewState === 'submitting'
+  const isSubmitted = reviewState === 'submitted' || reviewState === 'error'
+
+  async function handleSubmitReview() {
+    if (isSubmitting || isSubmitted) return
+    setReviewState('submitting')
+    setReviewError('')
+    try {
+      if (!isSupabaseConfigured || !supabase) {
+        setReviewError('Supabase is not configured in this environment.')
+        setReviewState('error')
+        return
+      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setReviewError('You must be signed in to submit a review request.')
+        setReviewState('error')
+        return
+      }
+      const requestPayload = {
+        id: `${user.id}_review_request_${Date.now()}`,
+        tenant_id: 'tenant_demo_goclear',
+        client_id: user.id,
+        category: 'review_request',
+        title: 'Client readiness review request',
+        summary: 'Client submitted their profile for GoClear readiness review via the client portal.',
+        status: 'pending_admin_review',
+        priority: 'high',
+        risk_level: 'medium',
+        automation_level: 'manual',
+        client_visible: true,
+        approval_required: true,
+        goclear_review_status: 'pending_admin_review',
+        source: 'client_portal',
+        source_concept: 'request_review',
+        recommended_next_action: 'Admin review readiness and respond via approved_client_guidance',
+        created_at: new Date().toISOString(),
+      }
+      const { error } = await supabase.from('client_tasks').insert(requestPayload)
+      if (error) {
+        setReviewError(`Failed to submit: ${error.message}`)
+        setReviewState('error')
+      } else {
+        setReviewState('submitted')
+      }
+    } catch (err) {
+      setReviewError('An unexpected error occurred.')
+      setReviewState('error')
+    }
+  }
+
   return <div className="client-page">
     <ClientPageHeader title="Request Review" subtitle="Submit your profile for GoClear readiness review when ready." badge="Review gate" />
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Review Readiness" value={funding.readinessScore} status={funding.status} text={funding.recommendedPath} />
-      <ClientMetricCard icon={MessageSquare} label="Open Tasks" value={openTasks.length} note="Complete before review" tone="orange" />
-      <ClientMetricCard icon={Send} label="Review Status" value="Not submitted" note="Pending completion" tone="purple" />
+      <ClientMetricCard icon={MessageSquare} label="Open Tasks" value={openTasks.length} note="Complete before review" tone={openTasks.length > 0 ? 'orange' : 'green'} />
+      <ClientMetricCard icon={Send} label="Review Status" value={isSubmitted ? 'Submitted' : 'Not submitted'} note={isSubmitted ? 'Awaiting admin review' : 'Pending submission'} tone={isSubmitted ? 'green' : 'purple'} />
     </div>
-    <div className="client-warning"><CircleAlert size={22} /><div><strong>Complete open tasks first</strong><p>Request review only after completing all high-priority tasks. Incomplete submissions may delay processing.</p></div></div>
+    {!minimumDataMet && <div className="client-warning"><CircleAlert size={22} /><div><strong>Complete high-priority tasks first</strong><p>Request review only after completing all high-priority open tasks. Incomplete submissions may delay processing.</p></div></div>}
+    {reviewState === 'error' && <div className="client-warning" style={{ borderColor: 'rgba(239,68,68,.3)' }}><CircleAlert size={22} /><div><strong>Submission failed</strong><p>{reviewError}</p></div></div>}
+    {reviewState === 'submitted' && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)' }}>Review request submitted</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Your profile is now in the GoClear admin review queue. You will receive a status update in Messages when the review is complete.</span></div>}
     <div className="client-two-col">
       <ClientSection title="Open tasks to complete">
         <ClientActionList rows={openTasks.map(t => ({
@@ -532,7 +633,14 @@ export function RequestReviewPage() {
           <li>Next steps are recommended based on review</li>
           <li>No application is submitted without your approval</li>
         </ul>
-        <button className="cp-btn-primary" style={{ width: '100%', marginTop: 8 }} disabled>Request Review (complete tasks first)</button>
+        <button
+          className="cp-btn-primary"
+          style={{ width: '100%', marginTop: 8 }}
+          disabled={isSubmitting || isSubmitted || !minimumDataMet}
+          onClick={handleSubmitReview}
+        >
+          {isSubmitting ? 'Submitting...' : isSubmitted ? 'Review Requested' : !minimumDataMet ? 'Complete high-priority tasks first' : 'Request Review'}
+        </button>
         <p className="client-safe-note">Review requests are processed in order. Response time varies.</p>
       </ClientSection>
     </div>

@@ -69,13 +69,14 @@ def dry_run(template, local_testers):
         local = local_testers[i] if i < len(local_testers) else None
         auth_id = local.get('auth_user_id', 'PENDING') if local else 'PENDING'
         email = local.get('email', tester['auth_email_placeholder']) if local else tester['auth_email_placeholder']
+        display = local.get('display_name', tester['display_name']) if local else tester['display_name']
         client_id = generate_client_id(auth_id) if auth_id != 'PENDING' else f"gc_{tester['client_id_prefix']}"
 
         print(f"--- Tester {tester['tester_number']} ---")
         print(f"  Email: {email}")
         print(f"  Auth ID: {auth_id[:8]}... (redacted)")
         print(f"  Client ID: {client_id}")
-        print(f"  Display: {tester['display_name']}")
+        print(f"  Display: {display}")
         print(f"  Step: {tester['current_step']}")
         print(f"  Rows to create:")
         print(f"    tenant_memberships: 1")
@@ -109,6 +110,7 @@ def apply_testers(template, local_testers, supabase_url, service_key):
             continue
 
         email = local.get('email', '')
+        display = local.get('display_name', tester['display_name'])
         client_id = generate_client_id(auth_id)
         tenant_id = 'goclear'
 
@@ -128,7 +130,7 @@ def apply_testers(template, local_testers, supabase_url, service_key):
             'table': 'client_profiles',
             'data': {
                 'tenant_id': tenant_id, 'client_id': client_id,
-                'title': tester['display_name'], 'status': 'active',
+                'title': display, 'status': 'active',
                 'client_visible': True, 'category': 'tester',
                 'payload': {'currentStep': tester['current_step'], 'membershipTier': 'GoClear Readiness'}
             }

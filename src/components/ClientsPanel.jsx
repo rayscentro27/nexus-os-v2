@@ -11,6 +11,8 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
   const [storageLoading, setStorageLoading] = useState(false)
   const [adminNote, setAdminNote] = useState('')
   const [adminNoteSaved, setAdminNoteSaved] = useState(false)
+  const [liveDocuments, setLiveDocuments] = useState([])
+  const [liveReviewRequests, setLiveReviewRequests] = useState([])
   if (!client) return null
 
   useEffect(() => {
@@ -21,9 +23,16 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
-        const { data, error } = await supabase.storage.from('client-documents').list(user.id, { limit: 50 })
-        if (!cancelled && !error && data) {
-          setStorageFiles(data)
+        const targetClientId = client.client_id || client.id
+        const [storageResult, docsResult, tasksResult] = await Promise.all([
+          supabase.storage.from('client-documents').list(targetClientId, { limit: 50 }),
+          supabase.from('client_documents').select('title,status,source,created_at,goclear_review_status,category').eq('client_id', targetClientId).limit(20),
+          supabase.from('client_tasks').select('title,status,category,source,created_at').eq('client_id', targetClientId).eq('category', 'review_request').limit(10),
+        ])
+        if (!cancelled) {
+          if (!storageResult.error && storageResult.data) setStorageFiles(storageResult.data)
+          if (!docsResult.error && docsResult.data) setLiveDocuments(docsResult.data)
+          if (!tasksResult.error && tasksResult.data) setLiveReviewRequests(tasksResult.data)
         }
       } catch (e) {
         // silent
@@ -127,7 +136,32 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
           )}
 
           <div style={{ marginBottom: 16 }}>
-            <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Uploaded Files {storageLoading && <span style={{ color: '#8fa3be', fontSize: 11 }}>(loading...)</span>}</h3>
+            <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Live document metadata ({liveDocuments.length}{storageLoading ? ', loading...' : ''})</h3>
+            {liveDocuments.length === 0 && !storageLoading && (
+              <p style={{ color: '#8fa3be', fontSize: 12 }}>No client_documents rows found.</p>
+            )}
+            {liveDocuments.map((d, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #1d3049', fontSize: 12 }}>
+                <span style={{ color: '#c8d5e7' }}>{d.category || d.title || 'Untitled document'}</span>
+                <span style={{ color: '#91a6c0' }}>{d.status}{d.goclear_review_status ? ` · ${d.goclear_review_status}` : ''}</span>
+              </div>
+            ))}
+          </div>
+
+          {liveReviewRequests.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Pending review requests ({liveReviewRequests.length})</h3>
+              {liveReviewRequests.map((r, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #1d3049', fontSize: 12 }}>
+                  <span style={{ color: '#c8d5e7' }}>{r.title || 'Review request'}</span>
+                  <span className={`pill pill-${r.status === 'pending_admin_review' ? 'amber' : 'blue'}`}>{r.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Storage files {storageLoading && <span style={{ color: '#8fa3be', fontSize: 11 }}>(loading...)</span>}</h3>
             {storageFiles.length === 0 && !storageLoading && (
               <p style={{ color: '#8fa3be', fontSize: 12 }}>No files uploaded yet</p>
             )}

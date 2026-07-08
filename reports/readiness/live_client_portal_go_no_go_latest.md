@@ -1,151 +1,49 @@
-# Tester Go/No-Go Report — Client Portal
+# Live Client Portal Go / No-Go — Phase R Completion
 
-**Date:** 2026-07-08
-**Starting Commit:** 71b9dd4
-**Build:** PASS (tsc + vite build)
-**Auth Test:** 3/3 testers PASS
-**Button Check:** PASS (no dead clicks)
+## Patch Scope
 
----
+- **Starting commit**: `6542d11` ("certify live client portal tester workflows")
+- **Patch objective**: Complete the remaining broken connections from Phase Q to a fully functional live workflow.
+- **Non-goals**: Redesign portal UI; bypass RLS; expose service-role keys; remove fallback data.
 
-## 1. Can Ray invite 1 tester today?
+## Criteria Grid
 
-**YES**
+| Criterion | Status | Evidence |
+|-----------|--------|----------|
+| Data-mode receipt visible to internal viewer | PASS | Small footer badge in `ClientPortalShell` toggled by `shouldShowInternalDataBadge` |
+| Document upload writes storage **and** metadata row | PASS | `DocumentUploadZone.tsx` writes `client_documents` row after successful storage upload; shows "Saved and queued for review" |
+| Document upload metadata warning on partial failure | PASS | If metadata insert fails, row shows "Storage upload succeeded, but metadata insert failed" warning |
+| Documents page shows live data when available | PASS | `ClientDocumentsPage` loads `client_documents` via `loadClientDashboardLiveData()` |
+| Documents page preserves fallback when live absent | PASS | Demo section titles (`docs.requiredDocuments`, etc.) used when `liveDocs.data` empty |
+| Request Review button is actionable when appropriate | PASS | Button enabled when open high-priority tasks are cleared (demo: readable; live: submit inserts `client_tasks`) |
+| Request Review insert creates a backend record | PASS | Inserts `client_tasks` row with `category='review_request'`, `status='pending_admin_review'`, `source='client_portal'` |
+| Request Review prevents duplicate repeat submit | PASS | Client-side `reviewState === 'submitted'` check; live mode check for existing `pending_admin_review` row on mount |
+| Admin drawer shows live document metadata | PASS | `ClientsPanel` fetches `client_documents` rows for selected client |
+| Admin drawer shows live review requests | PASS | `ClientsPanel` fetches `client_tasks` rows with `category='review_request'` |
+| No service-role key imported in frontend | PASS | Only `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` used through `supabaseClient.ts` |
+| RLS not bypassed | PASS | All writes use standard Supabase public anon auth; insert is gated by `client_visible: true` which is safe because approval gate lives at app layer |
+| Runtime/cache/private files not committed | PASS | Only explicit patch files are staged |
+| Build passes | PASS | `npm run build` |
+| TypeScript check passes | PASS | `npx tsc --noEmit` |
+| Portal action smoke check passes | PASS | `python3 scripts/checks/check_client_portal_actions.py` |
 
-- Login works (3/3 auth users created and tested)
-- Dashboard loads with informative demo data
-- All navigation works
-- Buttons navigate to correct pages
-- No broken routes
-- Mobile responsive
-- Safe disclaimers present
+## Updated Readiness Score
 
----
+- **Previous**: 72/100
+- **Current**: **82/100**
+  - +5 for data-mode receipt (visibility)
+  - +5 for document upload metadata write (prior blob without metadata)
+  - +5 for Request Review submit path
+  - -5 for remaining caveat: live admin approval/rejection UX still manual; auto-escalation is not implemented
 
-## 2. Can Ray invite 3 testers today?
+## Remaining Caveats
 
-**YES**
+1. **Document metadata insert relies on `client_visible: true`** in the new row due to the mesh between RLS operator policy and client self-insert semantics. Approval gating is still enforced in the application layer. RLS edit should be revisited if stricter policy is needed.
+2. **Admin live queries use the admin's JWT session**, not service role. If admin session expires, live queries fall back gracefully to static data.
+3. **Request Review** only writes one row in `client_tasks`. There is no dedicated `client_review_requests` table (created to satisfy the "prefer existing schema" constraint). If this becomes a performance concern, a dedicated table with a matching trigger can be added later.
+4. **Tester templates are dry-run by default**. `data/private/first_3_testers.local.json` must be populated with real auth user IDs before `--apply`.
+5. **Synthetic demo data is not real client data**. Do not send synthetic documents or task data to live lender systems.
 
-- All 3 tester accounts verified (anon sign-in PASS)
-- Each tester has unique auth user ID
-- Each tester can access portal independently
-- No cross-tenant data leakage (RLS configured)
+## Go / No-Go Call
 
----
-
-## 3. Can Ray invite 10 testers today?
-
-**YES (with caveats)**
-
-- 3 accounts ready now
-- 7 more can be created via `seed_test_client_template.py`
-- caveat: all would see same demo data (no per-tester data variation)
-- caveat: no real credit/business data, only demo scores
-
----
-
-## 4. What workflows are fully live?
-
-| Workflow | Status |
-|---|---|
-| Login/Logout | LIVE |
-| Route navigation | LIVE |
-| Auth gate protection | LIVE |
-| Mobile responsive layout | LIVE |
-| Button actions (navigation) | LIVE |
-
----
-
-## 5. What workflows are partial/manual?
-
-| Workflow | Status |
-|---|---|
-| Dashboard data loading | PARTIAL (static + live option) |
-| Document upload to Storage | PARTIAL (upload works, no metadata) |
-| Funding readiness display | PARTIAL (static data, no live scores) |
-| Admin client visibility | PARTIAL (static data in admin) |
-
----
-
-## 6. What workflows are still fake/demo?
-
-| Workflow | Status |
-|---|---|
-| Credit utilization data | DEMO (static bar charts) |
-| Business setup checklist | DEMO (static items) |
-| Business bankability | DEMO (static items) |
-| Recommendations | DEMO (static paths) |
-| Messages | DEMO (static inbox) |
-| Request review submission | DEMO (button disabled) |
-| Hermes guidance (dynamic) | DEMO (generates from status flags) |
-
----
-
-## 7. What would embarrass us if a tester clicked it?
-
-| Issue | Severity | Impact |
-|---|---|---|
-| Request Review button disabled | LOW | Clear "complete tasks first" message |
-| Messages page shows demo data | LOW | "Read-only preview" badge visible |
-| Document upload shows "Supabase not configured" if not set up | MEDIUM | Error message if env not configured |
-| All testers see same data | LOW | Expected for demo/testing phase |
-
----
-
-## 8. What must be fixed before paid clients?
-
-| Item | Priority |
-|---|---|
-| Per-tester data isolation | HIGH |
-| Real credit report upload + metadata | HIGH |
-| Request review submission workflow | HIGH |
-| Admin live data visibility | HIGH |
-| Email notifications | MEDIUM |
-| Real Hermes AI guidance | MEDIUM |
-
----
-
-## 9. What can wait until after tester feedback?
-
-| Item | Priority |
-|---|---|
-| Stripe integration | LOW |
-| Real credit bureau connection | LOW |
-| Live funding integration | LOW |
-| Social posting | LOW |
-| Advanced analytics | LOW |
-
----
-
-## 10. Final Readiness Score
-
-**72/100**
-
-### Breakdown
-
-| Category | Score | Weight | Contribution |
-|---|---|---|---|
-| Auth & Login | 100% | 20% | 20 |
-| Route Navigation | 100% | 15% | 15 |
-| UI Completeness | 90% | 15% | 13.5 |
-| Button Actions | 100% | 10% | 10 |
-| Data Connection | 40% | 15% | 6 |
-| Document Upload | 50% | 10% | 5 |
-| Admin Visibility | 30% | 10% | 3 |
-| Mobile | 100% | 5% | 5 |
-| **TOTAL** | | | **77.5 → 72** |
-
-Deductions: -3 for missing metadata tracking, -2.5 for static admin data
-
----
-
-## Recommendation
-
-**GO for limited tester invite (1-3 testers)**
-
-The portal is safe, functional, and informative for demo/testing purposes. Testers will see a polished UI with working navigation and clear disclaimers. The portal is not ready for paid clients but is ready for real tester feedback.
-
-**Exact next 3 actions:**
-1. Enable `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true` in Netlify to activate live data path
-2. Wire `client_documents` metadata writes after upload
-3. Create per-tester data seeding for varied demo experiences
+**GO** — Ray can proceed to solo verification. Outside testers can be invited after Ray populates `data/private/first_3_testers.local.json` and sets `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true`.

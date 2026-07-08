@@ -8,6 +8,8 @@ interface UploadFile {
   status: 'pending' | 'uploading' | 'success' | 'error'
   error?: string
   path?: string
+  metadataWritten?: boolean
+  metadataWarning?: string
 }
 
 const ALLOWED_TYPES = [
@@ -31,9 +33,50 @@ function validateFile(file: File): string | null {
   return null
 }
 
+function guessCategory(mimeType: string, fileName: string): string {
+  const lower = fileName.toLowerCase()
+  if (/address|utility|proof.of.address/.test(lower)) return 'proof_of_address'
+  if (/bank|statement/.test(lower)) return 'bank_statement'
+  if (/id|passport|license|government|identification/.test(lower)) return 'identification'
+  if (/ein|tax|formation|incorporation/.test(lower)) return 'business_formation'
+  if (/revenue|income|p&l|profit/.test(lower)) return 'revenue_summary'
+  if (mimeType === 'application/pdf') return 'document'
+  if (mimeType.startsWith('image/')) return 'identification'
+  return 'miscellaneous'
+}
+
 export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: () => void }) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
+
+  async function writeDocumentMetadata(params: { userId: string; path: string; file: File; category: string }) {
+    const { userId, path, file, category } = params
+    const now = new Date().toISOString()
+    const row = {
+      id: `${userId}_${Date.now()}`,
+      tenant_id: 'tenant_demo_goclear',
+      client_id: userId,
+      category,
+      title: file.name,
+      summary: `Client portal upload — ${file.name} (${file.type || 'unknown'}, ${(file.size / 1024).toFixed(0)}KB) stored at ${path}`,
+      status: 'pending_review',
+      priority: 'normal',
+      risk_level: 'low',
+      automation_level: 'manual',
+      client_visible: true,
+      approval_required: true,
+      goclear_review_status: 'pending_review',
+      source: 'client_portal_upload',
+      source_concept: 'document_upload',
+      recommended_next_action: 'Admin review uploaded document',
+      created_at: now,
+    }
+    const { error } = await supabase!.from('client_documents').insert(row)
+    if (error) {
+      return { ok: false as const, warning: `Storage upload succeeded, but metadata insert failed: ${error.message}` }
+    }
+    return { ok: true as const }
+  }
 
   const handleFiles = useCallback(async (fileList: FileList) => {
     const newFiles: UploadFile[] = Array.from(fileList).map(file => ({
@@ -54,12 +97,12 @@ export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: ()
       try {
         setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'uploading' } : f))
 
-        if (!isSupabaseConfigured) {
+        if (!isSupabaseConfigured || !supabase) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'error', error: 'Supabase not configured' } : f))
           continue
         }
 
-        const { data: { user } } = await supabase!.auth.getUser()
+        const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'error', error: 'Not signed in' } : f))
           continue
@@ -78,8 +121,16 @@ export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: ()
 
         if (uploadError) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'error', error: uploadError.message } : f))
+          continue
+        }
+
+        const category = guessCategory(uploadFile.file.type, uploadFile.file.name)
+        const metadataResult = await writeDocumentMetadata({ userId: user.id, path, file: uploadFile.file, category })
+
+        if (metadataResult.ok) {
+          setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: true } : f))
         } else {
-          setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path } : f))
+          setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: false, metadataWarning: metadataResult.warning } : f))
         }
       } catch (err) {
         setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'error', error: 'Upload failed' } : f))
@@ -160,8 +211,13 @@ export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: ()
                   <div className="client-upload-progress-bar" style={{ width: '60%' }} />
                 </div>
               )}
+              {f.status === 'success' && f.metadataWritten === false && f.metadataWarning && (
+                <span className="client-upload-warning">{f.metadataWarning}</span>
+              )}
+              {f.status === 'success' && f.metadataWritten === true && (
+                <span className="client-upload-success">Saved and queued for review</span>
+              )}
               {f.status === 'error' && <span className="client-upload-error">{f.error}</span>}
-              {f.status === 'success' && <span className="client-upload-success">Uploaded</span>}
               {f.status === 'pending' && (
                 <button className="client-upload-remove" onClick={(e) => { e.stopPropagation(); removeFile(f.file) }}>×</button>
               )}

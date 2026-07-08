@@ -68,6 +68,12 @@ export function ClientSidebar({ path, onNavigate }) {
           <span className="client-sidebar-icon"><LogOut size={18} /></span>
           <span className="client-sidebar-label">Sign Out</span>
         </button>
+        {shouldShowInternalDataBadge && (
+          <div className="client-sidebar-data-badge" title={`Portal data mode: ${clientDataMode.internalLabel}. Live reads are disabled.`}>
+            <span className="client-sidebar-data-badge-dot" />
+            <span className="client-sidebar-data-badge-label">{clientDataMode.internalLabel}</span>
+          </div>
+        )}
       </div>
     </aside>
   )
