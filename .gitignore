@@ -31,3 +31,5 @@ _incoming/
 
 # Local Netlify folder
 .netlify
+
+data/private/
