@@ -3,10 +3,36 @@ import { clientsList, clientStages } from '../data/clientsData'
 import { loadSection } from '../lib/liveDataLoader'
 import { setPageContext } from '../lib/hermesSourceReasoner'
 import SourceBanner from './SourceBanner'
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
 
 function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
   const [receipt, setReceipt] = useState(null)
+  const [storageFiles, setStorageFiles] = useState([])
+  const [storageLoading, setStorageLoading] = useState(false)
+  const [adminNote, setAdminNote] = useState('')
+  const [adminNoteSaved, setAdminNoteSaved] = useState(false)
   if (!client) return null
+
+  useEffect(() => {
+    if (!client || !isSupabaseConfigured) return
+    let cancelled = false
+    async function loadStorage() {
+      setStorageLoading(true)
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data, error } = await supabase.storage.from('client-documents').list(user.id, { limit: 50 })
+        if (!cancelled && !error && data) {
+          setStorageFiles(data)
+        }
+      } catch (e) {
+        // silent
+      }
+      if (!cancelled) setStorageLoading(false)
+    }
+    loadStorage()
+    return () => { cancelled = true }
+  }, [client])
 
   function handleApprove() {
     setReceipt({ id: Date.now(), action: 'approve', target: client.name, next: 'Create Ray Review card for fake customer insert' })
@@ -99,6 +125,36 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
               ))}
             </div>
           )}
+
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Uploaded Files {storageLoading && <span style={{ color: '#8fa3be', fontSize: 11 }}>(loading...)</span>}</h3>
+            {storageFiles.length === 0 && !storageLoading && (
+              <p style={{ color: '#8fa3be', fontSize: 12 }}>No files uploaded yet</p>
+            )}
+            {storageFiles.map(f => (
+              <div key={f.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #1d3049', fontSize: 12 }}>
+                <span style={{ color: '#c8d5e7' }}>{f.name}</span>
+                <span style={{ color: '#91a6c0' }}>{f.metadata?.size ? `${(f.metadata.size / 1024).toFixed(0)}KB` : ''}</span>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Admin Notes</h3>
+            <textarea
+              value={adminNote}
+              onChange={e => { setAdminNote(e.target.value); setAdminNoteSaved(false) }}
+              placeholder="Add internal notes about this client..."
+              style={{ width: '100%', minHeight: 60, background: '#0e1c2f', border: '1px solid #213650', borderRadius: 8, color: '#dce9f9', padding: 8, fontSize: 12, resize: 'vertical' }}
+            />
+            <button
+              type="button"
+              onClick={() => setAdminNoteSaved(true)}
+              style={{ marginTop: 6, background: '#1e3a5f', border: '1px solid #315176', color: '#dbe9fa', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}
+            >
+              {adminNoteSaved ? 'Saved' : 'Save Note'}
+            </button>
+          </div>
         </div>
 
         <div style={{ padding: '14px 20px', borderTop: '1px solid #20344d' }}>
