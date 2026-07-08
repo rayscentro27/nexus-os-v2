@@ -37,6 +37,8 @@ function getJourneyProgress(path) {
 
 export function ClientSidebar({ path, onNavigate }) {
   const profile = clientPortalData.clientProfile
+  const { status: liveStatus = 'idle' } = usePortalLiveStatus()
+  const liveStatusLabel = liveStatus === 'connected' ? 'Live data connected' : liveStatus === 'loading' ? 'Live data pending' : 'Demo/fallback data'
   return (
     <aside className="client-sidebar">
       <div className="client-sidebar-brand">
