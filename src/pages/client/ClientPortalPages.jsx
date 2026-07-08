@@ -39,89 +39,64 @@ export function ClientDashboard() {
   const dashboardTasks = live?.tasks?.length ? live.tasks : data.clientTasks
   const badge = liveProfile ? 'Live test data' : 'Demo data'
   return <div className="client-page client-dashboard-page">
-    <ClientPageHeader title="Dashboard" subtitle="Your approved credit, business, and funding-readiness snapshot." badge={badge} />
+    <ClientPageHeader title="Dashboard" subtitle="Your credit, business, and funding-readiness snapshot." badge={badge} />
 
-    {/* Hero: Step 1 CTA */}
-    <div className="client-card" style={{ marginBottom: 20, background: 'linear-gradient(135deg, rgba(14,165,233,.06), rgba(20,184,166,.04))', border: '1px solid rgba(14,165,233,.15)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ width: 48, height: 48, borderRadius: 14, background: 'linear-gradient(135deg, var(--cp-cyan), var(--cp-blue))', display: 'grid', placeItems: 'center', color: 'white', flexShrink: 0 }}><Rocket size={24} /></div>
+    {/* Hero: Step 1 CTA — compact single-line */}
+    <div className="client-card" style={{ marginBottom: 12, padding: '12px 16px', background: 'linear-gradient(135deg, rgba(14,165,233,.06), rgba(20,184,166,.04))', border: '1px solid rgba(14,165,233,.15)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--cp-cyan), var(--cp-blue))', display: 'grid', placeItems: 'center', color: 'white', flexShrink: 0 }}><Rocket size={18} /></div>
         <div style={{ flex: 1 }}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>Step 1: Upload Your Credit Report</h3>
-          <p style={{ margin: '4px 0 0', fontSize: 13 }}>This unlocks your funding strategy and estimated funding range.</p>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Upload Your Credit Report</h3>
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--cp-muted)' }}>Unlocks your funding strategy and estimated range — takes 2 minutes.</p>
         </div>
-        <button style={{ padding: '10px 20px', borderRadius: 10, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-purple))', color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', whiteSpace: 'nowrap' }}>Upload Credit Report</button>
-      </div>
-      <div style={{ display: 'flex', gap: 16, marginTop: 12, fontSize: 12, color: 'var(--cp-muted)' }}>
-        <span>✓ Takes 2 minutes</span>
-        <span>•</span>
-        <span>Secure</span>
-        <span>•</span>
-        <span>Phone or computer</span>
+        <button style={{ padding: '8px 16px', borderRadius: 8, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-purple))', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>Upload Now</button>
       </div>
     </div>
 
-    {/* Funding Journey */}
-    <div className="client-card" style={{ marginBottom: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800 }}>Funding Journey</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cp-blue)' }}>72%</span>
-          <div style={{ width: 80, height: 6, borderRadius: 3, background: '#e9edf5', overflow: 'hidden' }}><div style={{ width: '72%', height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, var(--cp-cyan), var(--cp-blue))' }} /></div>
+    {/* Funding Journey — compact horizontal strip */}
+    <div className="client-card" style={{ marginBottom: 12, padding: '12px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 800 }}>Funding Journey</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cp-blue)' }}>72%</span>
+          <div style={{ width: 60, height: 5, borderRadius: 3, background: '#e9edf5', overflow: 'hidden' }}><div style={{ width: '72%', height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, var(--cp-cyan), var(--cp-blue))' }} /></div>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
         {fundingJourneySteps.map((step, i) => {
           const Icon = step.icon
-          return <div key={i} style={{ padding: 14, borderRadius: 12, border: '1px solid var(--cp-border-light)', background: step.status === 'complete' ? 'rgba(16,185,129,.04)' : 'transparent', textAlign: 'center' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: step.status === 'complete' ? 'rgba(16,185,129,.1)' : 'rgba(14,165,233,.1)', display: 'grid', placeItems: 'center', margin: '0 auto 8px', color: step.status === 'complete' ? 'var(--cp-green)' : 'var(--cp-cyan)' }}><Icon size={20} /></div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--cp-navy)' }}>{step.sublabel}</div>
-            <div style={{ fontSize: 11, color: step.status === 'complete' ? 'var(--cp-green)' : 'var(--cp-muted)', marginTop: 4 }}>{step.detail}</div>
-            {i < fundingJourneySteps.length - 1 && <div style={{ position: 'absolute', right: -8, top: '50%', width: 16, height: 2, background: 'var(--cp-border)' }} />}
+          return <div key={i} style={{ padding: '10px 8px', borderRadius: 8, border: '1px solid var(--cp-border-light)', background: step.status === 'complete' ? 'rgba(16,185,129,.04)' : 'transparent', textAlign: 'center' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: step.status === 'complete' ? 'rgba(16,185,129,.1)' : 'rgba(14,165,233,.1)', display: 'grid', placeItems: 'center', margin: '0 auto 4px', color: step.status === 'complete' ? 'var(--cp-green)' : 'var(--cp-cyan)' }}><Icon size={16} /></div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cp-navy)' }}>{step.sublabel}</div>
+            <div style={{ fontSize: 10, color: step.status === 'complete' ? 'var(--cp-green)' : 'var(--cp-muted)', marginTop: 2 }}>{step.detail}</div>
           </div>
         })}
       </div>
     </div>
 
-    {/* Estimated Funding Range */}
-    <div className="client-card" style={{ marginBottom: 20, background: 'linear-gradient(135deg, rgba(37,99,235,.04), rgba(14,165,233,.03))' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 800 }}>Estimated Funding Range</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--cp-muted)' }}>Level 2</span>
-          <div style={{ width: 60, height: 6, borderRadius: 3, background: '#e9edf5', overflow: 'hidden' }}><div style={{ width: '50%', height: '100%', borderRadius: 3, background: 'var(--cp-blue)' }} /></div>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--cp-blue)' }}>72%</span>
+    {/* Estimated Funding Range — compact */}
+    <div className="client-card" style={{ marginBottom: 12, padding: '12px 16px', background: 'linear-gradient(135deg, rgba(37,99,235,.04), rgba(14,165,233,.03))' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <h2 style={{ fontSize: 14, fontWeight: 800 }}>Estimated Funding Range</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 11, color: 'var(--cp-muted)' }}>Level 2</span>
+          <div style={{ width: 50, height: 5, borderRadius: 3, background: '#e9edf5', overflow: 'hidden' }}><div style={{ width: '50%', height: '100%', borderRadius: 3, background: 'var(--cp-blue)' }} /></div>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cp-blue)' }}>72%</span>
         </div>
       </div>
-      <div style={{ padding: '12px 16px', borderRadius: 10, background: 'rgba(16,185,129,.08)', marginBottom: 16 }}>
-        <span style={{ fontSize: 13, color: 'var(--cp-green)', fontWeight: 600 }}>Great job! You're <strong>28% ready</strong> for funding.</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--cp-navy)' }}>$25,000 – $80,000</span>
+        <span style={{ padding: '4px 10px', borderRadius: 16, background: 'rgba(245,158,11,.1)', color: 'var(--cp-orange)', fontWeight: 700, fontSize: 11 }}>Medium</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 12 }}>
-        <span style={{ fontSize: 32, fontWeight: 800, color: 'var(--cp-navy)' }}>$25,000 – $80,000</span>
-        <span style={{ padding: '6px 14px', borderRadius: 20, background: 'rgba(245,158,11,.1)', color: 'var(--cp-orange)', fontWeight: 700, fontSize: 13 }}>Medium</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 12, color: 'var(--cp-green)', fontWeight: 600 }}>✓ 28% ready for funding</span>
+        <span style={{ fontSize: 11, color: 'var(--cp-muted)' }}>• Reduce utilization under 30% to improve odds.</span>
       </div>
-      <p style={{ fontSize: 13, color: 'var(--cp-muted)', marginBottom: 12 }}>✓ Reduce credit utilization under 30% to increase your approval odds.</p>
-      <button style={{ width: '100%', padding: '12px 0', borderRadius: 10, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-blue-dark))', color: 'white', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Improve Approval Odds</button>
-      <p style={{ fontSize: 11, color: 'var(--cp-muted-light)', textAlign: 'center', marginTop: 8 }}>Educational estimate only, not a lending decision</p>
+      <button style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-blue-dark))', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Improve Approval Odds</button>
+      <p style={{ fontSize: 10, color: 'var(--cp-muted-light)', textAlign: 'center', marginTop: 6 }}>Educational estimate only, not a lending decision</p>
     </div>
 
-    {/* Business Opportunities */}
-    <div style={{ marginBottom: 20 }}>
-      <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--cp-navy)', marginBottom: 4 }}>Business Opportunities</h2>
-      <p style={{ fontSize: 13, color: 'var(--cp-muted)', marginBottom: 16 }}>Top Recommendations for You</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-        {businessOpportunities.map((opp, i) => <div key={i} className="client-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ height: 100, background: opp.color, display: 'grid', placeItems: 'center', fontSize: 32 }}>🏢</div>
-          <div style={{ padding: 16 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>{opp.title}</h3>
-            <span style={{ fontSize: 12, color: 'var(--cp-green)', fontWeight: 600 }}>{opp.difficulty}</span>
-            <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--cp-navy)', margin: '8px 0 4px' }}>{opp.investment}</div>
-            <p style={{ fontSize: 12, color: 'var(--cp-muted)', margin: '0 0 12px' }}>{opp.desc}</p>
-            <button style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: '1px solid var(--cp-border)', background: 'white', color: 'var(--cp-blue)', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Start This Business</button>
-          </div>
-        </div>)}
-      </div>
-    </div>
-
+    {/* Summary metric cards — compact row */}
     <div className="client-metric-grid dashboard">
       <ClientScoreCard title="Overall Readiness" value={71} status="Building momentum" text="Complete this month's highest-impact tasks before requesting funding review." />
       <ClientMetricCard icon={Gauge} label="Credit Repair" value={`${score.creditRepairProgress}%`} note="In progress" />
@@ -129,12 +104,30 @@ export function ClientDashboard() {
       <ClientMetricCard icon={Building2} label="Business Profile" value={score.businessProfileReadiness} note="Four gaps remain" tone="purple" />
       <ClientMetricCard icon={Landmark} label="Funding Readiness" value={score.fundingReadiness} note="Almost Ready" tone="orange" />
     </div>
+
+    {/* Business Opportunities — compact */}
+    <div style={{ marginBottom: 12 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 800, color: 'var(--cp-navy)', marginBottom: 8 }}>Business Opportunities</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+        {businessOpportunities.map((opp, i) => <div key={i} className="client-card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ height: 60, background: opp.color, display: 'grid', placeItems: 'center', fontSize: 24 }}>🏢</div>
+          <div style={{ padding: '10px 12px' }}>
+            <h3 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 2px' }}>{opp.title}</h3>
+            <span style={{ fontSize: 11, color: 'var(--cp-green)', fontWeight: 600 }}>{opp.difficulty}</span>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--cp-navy)', margin: '4px 0 2px' }}>{opp.investment}</div>
+            <p style={{ fontSize: 11, color: 'var(--cp-muted)', margin: '0 0 8px' }}>{opp.desc}</p>
+            <button style={{ width: '100%', padding: '6px 0', borderRadius: 6, border: '1px solid var(--cp-border)', background: 'white', color: 'var(--cp-blue)', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>Start This Business</button>
+          </div>
+        </div>)}
+      </div>
+    </div>
+
+    {/* Dashboard grid — actions + readiness */}
     <div className="client-dashboard-grid">
       <ClientSection title="Your next actions" action={`${dashboardTasks.length} open`}><ClientActionList rows={dashboardTasks} /></ClientSection>
       <ClientSection title="Readiness overview">
         {[['Credit profile', score.creditProfileReadiness], ['Business profile', score.businessProfileReadiness], ['Funding readiness', score.fundingReadiness], ['Business opportunities', score.businessOpportunityScore]].map(([name, value]) => <div className="client-bar-row" key={name}><span>{name}</span><div><i style={{ width: `${value}%` }} /></div><strong>{value}</strong></div>)}
       </ClientSection>
-      <ClientSection title="GoClear review status"><p>{data.fundingReadiness.goclearReviewStatus}</p><ClientStatusBadge tone="orange">Review pending</ClientStatusBadge><p className="client-safe-note">Nothing has been sent, submitted, or applied for from this portal.</p></ClientSection>
     </div>
     <ClientGuidePanel />
   </div>
