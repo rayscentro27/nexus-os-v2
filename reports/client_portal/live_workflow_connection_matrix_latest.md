@@ -5,8 +5,9 @@
 | Component | Change | File |
 |-----------|--------|------|
 | Data-mode receipt badge | Added small unobtrusive live/fallback mode indicator in portal sidebar footer | `src/components/client/ClientPortalShell.jsx` |
-| Document upload metadata | After successful Supabase Storage upload, inserts row into `client_documents` via anon client | `src/components/client/DocumentUploadZone.tsx` |
+| Document upload metadata | After successful Supabase Storage upload, inserts row into `client_documents` via anon client using resolved Nexus client context (`tenant_memberships` → `client_profiles` fallback) | `src/components/client/DocumentUploadZone.tsx`, `src/lib/clientAuthContext.ts` |
 | Upload status UX | Success state text changed from "Uploaded" to "Saved and queued for review"; metadata-warning path shows caveat | `src/components/client/DocumentUploadZone.tsx` |
+| Client self-insert RLS policy | New additive migration adds `client_documents_client_insert_own` policy permitting authenticated clients to insert their own document rows with safe field constraints | `supabase/migrations/20260707140000_client_document_client_insert_rls.sql` |
 | Documents live data | `ClientDocumentsPage` fetches `client_documents` from Supabase when `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true`; falls back to demo data otherwise | `src/pages/client/ClientPortalPages.jsx` |
 | Dashboard live data | `loadClientDashboardLiveData` now also fetches `client_documents` for test client | `src/services/clientDashboardLiveData.ts` |
 | Request Review submission | Client can submit a `pending_admin_review` task via `client_tasks` insert when minimum open tasks complete or when live mode permits | `src/pages/client/ClientPortalPages.jsx` |

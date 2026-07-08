@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient'
+import { resolveClientContextForCurrentUser, type ResolvedClientContext } from '../../lib/clientAuthContext'
 
 interface UploadFile {
   file: File
@@ -45,38 +46,38 @@ function guessCategory(mimeType: string, fileName: string): string {
   return 'miscellaneous'
 }
 
+async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path: string; file: File; category: string }) {
+  const { ctx, path, file, category } = params
+  const now = new Date().toISOString()
+  const row = {
+    id: `${ctx.authUserId}_${Date.now()}`,
+    tenant_id: ctx.tenantId,
+    client_id: ctx.clientId,
+    category,
+    title: file.name,
+    summary: `Client portal upload — ${file.name} (${file.type || 'unknown'}, ${(file.size / 1024).toFixed(0)}KB) stored at ${path}`,
+    status: 'pending_review',
+    priority: 'normal',
+    risk_level: 'low',
+    automation_level: 'manual',
+    client_visible: true,
+    approval_required: true,
+    goclear_review_status: 'pending_review',
+    source: 'client_portal_upload',
+    source_concept: 'document_upload',
+    recommended_next_action: 'Admin review uploaded document',
+    created_at: now,
+  }
+  const { error } = await supabase!.from('client_documents').insert(row)
+  if (error) {
+    return { ok: false as const, warning: `Storage upload succeeded, but metadata insert failed: ${error.message}` }
+  }
+  return { ok: true as const }
+}
+
 export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: () => void }) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
-
-  async function writeDocumentMetadata(params: { userId: string; path: string; file: File; category: string }) {
-    const { userId, path, file, category } = params
-    const now = new Date().toISOString()
-    const row = {
-      id: `${userId}_${Date.now()}`,
-      tenant_id: 'tenant_demo_goclear',
-      client_id: userId,
-      category,
-      title: file.name,
-      summary: `Client portal upload — ${file.name} (${file.type || 'unknown'}, ${(file.size / 1024).toFixed(0)}KB) stored at ${path}`,
-      status: 'pending_review',
-      priority: 'normal',
-      risk_level: 'low',
-      automation_level: 'manual',
-      client_visible: true,
-      approval_required: true,
-      goclear_review_status: 'pending_review',
-      source: 'client_portal_upload',
-      source_concept: 'document_upload',
-      recommended_next_action: 'Admin review uploaded document',
-      created_at: now,
-    }
-    const { error } = await supabase!.from('client_documents').insert(row)
-    if (error) {
-      return { ok: false as const, warning: `Storage upload succeeded, but metadata insert failed: ${error.message}` }
-    }
-    return { ok: true as const }
-  }
 
   const handleFiles = useCallback(async (fileList: FileList) => {
     const newFiles: UploadFile[] = Array.from(fileList).map(file => ({
@@ -124,8 +125,14 @@ export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: ()
           continue
         }
 
+        const ctx = await resolveClientContextForCurrentUser()
+        if (!ctx) {
+          setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: false, metadataWarning: 'Could not resolve your client profile. Please sign out and sign back in or contact GoClear.' } : f))
+          continue
+        }
+
         const category = guessCategory(uploadFile.file.type, uploadFile.file.name)
-        const metadataResult = await writeDocumentMetadata({ userId: user.id, path, file: uploadFile.file, category })
+        const metadataResult = await writeDocumentMetadata({ ctx, path, file: uploadFile.file, category })
 
         if (metadataResult.ok) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: true } : f))

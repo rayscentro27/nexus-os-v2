@@ -17,6 +17,7 @@ import { clientPortalData as data } from '../../data/clientPortalData'
 import { clientDataMode } from '../../data/clientDataMode'
 import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveData'
 import { supabase } from '../../lib/supabaseClient'
+import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
 
 const score = data.readinessScores
 
@@ -576,10 +577,18 @@ export function RequestReviewPage() {
         setReviewState('error')
         return
       }
+
+      const ctx = await resolveClientContextForCurrentUser()
+      if (!ctx) {
+        setReviewError('Could not resolve your client profile. Please sign out and sign back in or contact GoClear.')
+        setReviewState('error')
+        return
+      }
+
       const requestPayload = {
-        id: `${user.id}_review_request_${Date.now()}`,
-        tenant_id: 'tenant_demo_goclear',
-        client_id: user.id,
+        id: `${ctx.authUserId}_review_request_${Date.now()}`,
+        tenant_id: ctx.tenantId,
+        client_id: ctx.clientId,
         category: 'review_request',
         title: 'Client readiness review request',
         summary: 'Client submitted their profile for GoClear readiness review via the client portal.',
