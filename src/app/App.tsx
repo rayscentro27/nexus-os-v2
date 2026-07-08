@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { AuthGate, useSession } from '../components/auth';
+import { AdminGuard } from '../components/auth/AdminGuard';
 import NexusAdminUI from '../admin/NexusAdminUI';
 import ClientPortalRoot from '../pages/client/ClientPortalRoot';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
@@ -72,7 +73,15 @@ export function App() {
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') {
       return <NexusAdminUI email="local-ui-smoke@nexus.invalid" />;
     }
-    return <AuthGate>{(user) => <NexusAdminUI email={user.email} />}</AuthGate>;
+    return (
+      <AdminGuard>
+        {(access) => (
+          <AuthGate>
+            {(user) => <NexusAdminUI email={user.email} adminAccess={access} />}
+          </AuthGate>
+        )}
+      </AdminGuard>
+    );
   }
   window.location.replace('/');
   return null;
