@@ -39,11 +39,13 @@ function GoClearScrollUnlock() {
 export function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const isGoClear = GOCLEAR_ROUTES.includes(path);
+  const isAdmin = path === '/admin' || path.startsWith('/admin/');
 
-  if (isGoClear) {
+  if (isGoClear || path === '/') {
     return (
       <>
         <GoClearScrollUnlock />
+        {path === '/' && <GoClearLandingPage />}
         {path === '/goclear' && <GoClearLandingPage />}
         {path === '/goclear/signup' && <GoClearSignupPage />}
         {path === '/goclear/pricing' && <GoClearPricingPage />}
@@ -58,8 +60,12 @@ export function App() {
   if (path === '/client' || path.startsWith('/client/')) {
     return <ClientPortalGate />;
   }
-  if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') {
-    return <NexusAdminUI email="local-ui-smoke@nexus.invalid" />;
+  if (isAdmin) {
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') {
+      return <NexusAdminUI email="local-ui-smoke@nexus.invalid" />;
+    }
+    return <AuthGate>{(user) => <NexusAdminUI email={user.email} />}</AuthGate>;
   }
-  return <AuthGate>{(user) => <NexusAdminUI email={user.email} />}</AuthGate>;
+  window.location.replace('/');
+  return null;
 }

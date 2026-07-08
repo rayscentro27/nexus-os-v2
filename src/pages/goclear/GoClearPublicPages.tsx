@@ -94,7 +94,7 @@ const plans = [
 
 function GoClearLogo() {
   return (
-    <a className="gc-logo" href="/goclear" aria-label="GoClear home">
+    <a className="gc-logo" href="/" aria-label="GoClear home">
       <span className="gc-logo-mark">✓</span>
       <span>GoClear</span>
     </a>
@@ -111,11 +111,11 @@ function Header({ active = "" }: { active?: string }) {
       <div className="gc-container gc-header-inner">
         <GoClearLogo />
         <nav className="gc-nav" aria-label="GoClear navigation">
-          <a href="/goclear#solutions" className={active === "solutions" ? "active" : ""}>Solutions</a>
-          <a href="/goclear#how-it-works" className={active === "how" ? "active" : ""}>How It Works</a>
+          <a href="/#solutions" className={active === "solutions" ? "active" : ""}>Solutions</a>
+          <a href="/#how-it-works" className={active === "how" ? "active" : ""}>How It Works</a>
           <a href="/goclear/pricing" className={active === "pricing" ? "active" : ""}>Pricing</a>
-          <a href="/goclear#resources">Resources</a>
-          <a href="/goclear#about">About</a>
+          <a href="/#resources">Resources</a>
+          <a href="/#about">About</a>
         </nav>
         <div className="gc-header-actions">
           <a className="gc-btn gc-btn-ghost" href="/goclear/login">Login</a>
@@ -140,29 +140,29 @@ function Footer() {
 
         <div>
           <h4>Solutions</h4>
-          <a href="/goclear#solutions">Credit Readiness</a>
-          <a href="/goclear#solutions">Business Setup</a>
-          <a href="/goclear#solutions">Business Bankability</a>
-          <a href="/goclear#solutions">Funding Preparation</a>
-          <a href="/goclear#solutions">Action Plans</a>
+          <a href="/#solutions">Credit Readiness</a>
+          <a href="/#solutions">Business Setup</a>
+          <a href="/#solutions">Business Bankability</a>
+          <a href="/#solutions">Funding Preparation</a>
+          <a href="/#solutions">Action Plans</a>
         </div>
 
         <div>
           <h4>Company</h4>
-          <a href="/goclear#about">About Us</a>
-          <a href="/goclear#how-it-works">How It Works</a>
+          <a href="/#about">About Us</a>
+          <a href="/#how-it-works">How It Works</a>
           <a href="/goclear/pricing">Pricing</a>
-          <a href="/goclear#resources">Success Stories</a>
-          <a href="/goclear#about">Careers</a>
+          <a href="/#resources">Success Stories</a>
+          <a href="/#about">Careers</a>
         </div>
 
         <div>
           <h4>Resources</h4>
-          <a href="/goclear#resources">Blog</a>
-          <a href="/goclear#resources">Guides & Templates</a>
-          <a href="/goclear#resources">Funding Directory</a>
-          <a href="/goclear#resources">FAQs</a>
-          <a href="/goclear#resources">Community</a>
+          <a href="/#resources">Blog</a>
+          <a href="/#resources">Guides & Templates</a>
+          <a href="/#resources">Funding Directory</a>
+          <a href="/#resources">FAQs</a>
+          <a href="/#resources">Community</a>
         </div>
 
         <div>
