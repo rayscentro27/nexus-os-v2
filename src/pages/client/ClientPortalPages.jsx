@@ -7,6 +7,7 @@ import {
   ArrowRight, Copy, Users, Lock,
 } from 'lucide-react'
 import { ClientGuidePanel } from '../../components/client/ClientGuidePanel'
+import { DocumentUploadZone } from '../../components/client/DocumentUploadZone'
 import {
   ClientActionList, ClientFactorGrid, ClientMetricCard, ClientPageHeader, ClientScoreCard,
   ClientSection, ClientStatusBadge,
@@ -182,7 +183,7 @@ export function CreditUtilizationPage() {
 export function ClientDocumentsPage() {
   const docs = data.documents
   const sections = [['Required documents', docs.requiredDocuments, 'blue'], ['Uploaded', docs.uploadedDocuments, 'green'], ['Missing', docs.missingDocuments, 'orange'], ['Under GoClear review', docs.underReviewDocuments, 'purple']]
-  return <div className="client-page"><ClientPageHeader title="Documents" subtitle="Track demo readiness documents and GoClear review status." badge="Demo files only" /><div className="client-four-col documents">{sections.map(([title, rows, tone]) => <ClientSection title={title} key={title}>{rows.map(row => <article className="client-document-row" key={row}><FileText size={19} /><strong>{row}</strong><ClientStatusBadge tone={tone}>{title}</ClientStatusBadge></article>)}</ClientSection>)}</div><div className="client-upload-placeholder"><Upload size={28} /><strong>Upload is disabled in this prototype</strong><p>Production document upload requires private storage, consent, tenant isolation, and GoClear approval.</p></div><ClientGuidePanel suggestedKeys={['documents_needed', 'what_goclear_is_reviewing', 'what_do_i_do_next']} /></div>
+  return <div className="client-page"><ClientPageHeader title="Documents" subtitle="Track readiness documents and upload new files for GoClear review." badge={docs.uploadState === 'storage_and_rls_pending' ? 'Upload ready' : 'Demo files only'} /><div className="client-four-col documents">{sections.map(([title, rows, tone]) => <ClientSection title={title} key={title}>{rows.map(row => <article className="client-document-row" key={row}><FileText size={19} /><strong>{row}</strong><ClientStatusBadge tone={tone}>{title}</ClientStatusBadge></article>)}</ClientSection>)}</div><ClientSection title="Upload documents"><DocumentUploadZone /><p className="client-upload-note">Uploaded files are stored securely in Supabase Storage. GoClear will review submissions within 2 business days.</p></ClientSection><ClientGuidePanel suggestedKeys={['documents_needed', 'what_goclear_is_reviewing', 'what_do_i_do_next']} /></div>
 }
 
 export function BusinessSetupPage() {
