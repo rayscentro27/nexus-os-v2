@@ -50,7 +50,7 @@ export function ClientDashboard() {
           <h3 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Upload Your Credit Report</h3>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--cp-muted)' }}>Unlocks your funding strategy and estimated range — takes 2 minutes.</p>
         </div>
-        <button style={{ padding: '8px 16px', borderRadius: 8, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-purple))', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>Upload Now</button>
+        <button onClick={() => window.location.href = '/client/documents'} style={{ padding: '8px 16px', borderRadius: 8, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-purple))', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer', whiteSpace: 'nowrap' }}>Upload Now</button>
       </div>
     </div>
 
@@ -93,34 +93,16 @@ export function ClientDashboard() {
         <span style={{ fontSize: 12, color: 'var(--cp-green)', fontWeight: 600 }}>✓ 28% ready for funding</span>
         <span style={{ fontSize: 11, color: 'var(--cp-muted)' }}>• Reduce utilization under 30% to improve odds.</span>
       </div>
-      <button style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-blue-dark))', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Improve Approval Odds</button>
+      <button onClick={() => window.location.href = '/client/credit-utilization'} style={{ width: '100%', padding: '8px 0', borderRadius: 8, border: 0, background: 'linear-gradient(135deg, var(--cp-blue), var(--cp-blue-dark))', color: 'white', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Improve Approval Odds</button>
       <p style={{ fontSize: 10, color: 'var(--cp-muted-light)', textAlign: 'center', marginTop: 6 }}>Educational estimate only, not a lending decision</p>
     </div>
 
     {/* Summary metric cards — compact row */}
     <div className="client-metric-grid dashboard">
       <ClientScoreCard title="Overall Readiness" value={71} status="Building momentum" text="Complete this month's highest-impact tasks before requesting funding review." />
-      <ClientMetricCard icon={Gauge} label="Credit Repair" value={`${score.creditRepairProgress}%`} note="In progress" />
       <ClientMetricCard icon={BadgeCheck} label="Credit Profile" value={score.creditProfileReadiness} note="Nexus Readiness Score" tone="green" />
       <ClientMetricCard icon={Building2} label="Business Profile" value={score.businessProfileReadiness} note="Four gaps remain" tone="purple" />
       <ClientMetricCard icon={Landmark} label="Funding Readiness" value={score.fundingReadiness} note="Almost Ready" tone="orange" />
-    </div>
-
-    {/* Business Opportunities — compact */}
-    <div style={{ marginBottom: 12 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 800, color: 'var(--cp-navy)', marginBottom: 8 }}>Business Opportunities</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-        {businessOpportunities.map((opp, i) => <div key={i} className="client-card" style={{ padding: 0, overflow: 'hidden' }}>
-          <div style={{ height: 60, background: opp.color, display: 'grid', placeItems: 'center', fontSize: 24 }}>🏢</div>
-          <div style={{ padding: '10px 12px' }}>
-            <h3 style={{ fontSize: 13, fontWeight: 700, margin: '0 0 2px' }}>{opp.title}</h3>
-            <span style={{ fontSize: 11, color: 'var(--cp-green)', fontWeight: 600 }}>{opp.difficulty}</span>
-            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--cp-navy)', margin: '4px 0 2px' }}>{opp.investment}</div>
-            <p style={{ fontSize: 11, color: 'var(--cp-muted)', margin: '0 0 8px' }}>{opp.desc}</p>
-            <button style={{ width: '100%', padding: '6px 0', borderRadius: 6, border: '1px solid var(--cp-border)', background: 'white', color: 'var(--cp-blue)', fontWeight: 700, fontSize: 11, cursor: 'pointer' }}>Start This Business</button>
-          </div>
-        </div>)}
-      </div>
     </div>
 
     {/* Dashboard grid — actions + readiness */}
@@ -324,6 +306,7 @@ export function RequestReviewPage() {
           <li>Next steps are recommended based on review</li>
           <li>No application is submitted without your approval</li>
         </ul>
+        <button disabled style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 0, background: '#d1d5db', color: '#9ca3af', fontWeight: 700, fontSize: 13, cursor: 'not-allowed', marginTop: 10 }}>Request Review (complete tasks first)</button>
         <p className="client-safe-note">Review requests are processed in order. Response time varies.</p>
       </ClientSection>
     </div>

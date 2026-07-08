@@ -61,7 +61,7 @@ export function ClientSidebar({ path, onNavigate }) {
       </nav>
 
       <div className="client-sidebar-footer">
-        <button className="client-sidebar-item" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/goclear/login'); }}>
+        <button className="client-sidebar-item" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/client/login'); }}>
           <span className="client-sidebar-icon"><LogOut size={18} /></span>
           <span className="client-sidebar-label">Sign Out</span>
         </button>
@@ -70,12 +70,13 @@ export function ClientSidebar({ path, onNavigate }) {
   )
 }
 
-export function ClientHeader({ path, onNavigate }) {
+export function ClientHeader({ path, onNavigate, onMenuToggle }) {
   const profile = clientPortalData.clientProfile
   const step = getJourneyProgress(path)
   return (
     <header className="client-header-premium">
       <div className="client-header-left">
+        <button className="client-menu" aria-label="Menu" onClick={onMenuToggle} style={{ display: 'none' }}><Menu size={20} /></button>
         <div className="client-brand-mark">
           <div className="client-logo-n" />
           <div><strong>NEXUS</strong><span>CLIENT PORTAL</span></div>
@@ -84,9 +85,9 @@ export function ClientHeader({ path, onNavigate }) {
       <div className="client-header-right">
         <span className="client-step-badge">Step {step}/10</span>
         <span className="client-membership-badge">{profile.membershipTier}</span>
-        <button className="client-icon-btn" aria-label="Notifications"><Bell size={18} /><em>2</em></button>
-        <button className="client-icon-btn" aria-label="Messages"><Mail size={18} /></button>
-        <button className="client-icon-btn" aria-label="Help"><HelpCircle size={18} /></button>
+        <button className="client-icon-btn" aria-label="Notifications" onClick={() => onNavigate('/client/resources')}><Bell size={18} /><em>2</em></button>
+        <button className="client-icon-btn" aria-label="Messages" onClick={() => onNavigate('/client/resources')}><Mail size={18} /></button>
+        <button className="client-icon-btn" aria-label="Help" onClick={() => onNavigate('/client/resources')}><HelpCircle size={18} /></button>
         <div className="client-avatar-sm">
           <span>{profile.name?.split(' ').map(n => n[0]).join('').slice(0, 2) || 'U'}</span>
         </div>
@@ -259,7 +260,7 @@ export function ClientPortalShell({ path, onNavigate, children }) {
 
   return (
     <div className="client-portal-premium">
-      <ClientHeader path={path} onNavigate={onNavigate} />
+      <ClientHeader path={path} onNavigate={onNavigate} onMenuToggle={() => setMobileOpen(true)} />
       <div className="client-portal-body">
         <ClientSidebar path={path} onNavigate={onNavigate} />
         <main className="client-main-content">{children}</main>
