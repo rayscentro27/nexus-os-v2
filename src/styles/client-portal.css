@@ -1073,6 +1073,38 @@
   color: var(--cp-text);
 }
 
+/* === WARNING BOX === */
+.client-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--cp-radius-sm);
+  background: rgba(245, 158, 11, .08);
+  border: 1px solid rgba(245, 158, 11, .2);
+  color: #92400e;
+}
+
+.client-warning svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--cp-orange);
+}
+
+.client-warning strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.client-warning p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 1200px) {
   .client-portal-body {
