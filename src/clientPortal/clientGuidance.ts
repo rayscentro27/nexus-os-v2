@@ -17,9 +17,20 @@ export function generateClientGuidance(statuses: {
   documentsComplete?: boolean
   adminReviewRequired?: boolean
   readinessScore?: number
+  profileIncomplete?: boolean
 }): GuidanceItem[] {
   const items: GuidanceItem[] = []
   const s = statuses
+
+  if (s.profileIncomplete) {
+    items.push({
+      id: 'complete-profile',
+      title: 'Complete Profile & Business Info',
+      description: 'Fill out your profile and business information to improve your readiness score.',
+      priority: 'high',
+      category: 'profile',
+    })
+  }
 
   if (!s.creditReportUploaded) {
     items.push({

@@ -1,108 +1,117 @@
-# Client Portal Launch Certification Master — Nexus OS v2
+# Client Portal Launch Certification — Master Report
 
-## Legend
-- **UI loads**: Page renders without console errors
-- **Correct live data shows**: Live Supabase data appears when env flag is set
-- **Fallback does not override live data**: Demo data does not replace live rows
-- **Button works**: Click handlers execute correctly
-- **Supabase read works**: Live queries return data
-- **Supabase write works**: Live inserts/updates succeed (if applicable)
-- **Admin can see it**: Admin route shows the data/panel
-- **Hermes guidance matches**: Guidance reflects current page data
-- **Mobile usable**: Responsive layout works
-- **Security safe**: No data leaks, proper auth guards
+**Date:** 2026-07-08
+**Starting commit:** 8818221
 
----
+## Routes Certified
 
-## Workflow Certification Matrix
+| Route | Component | Live Data | Build | Status |
+|-------|-----------|-----------|-------|--------|
+| `/client/login` | `ClientLoginPage` | Supabase auth | PASS | READY |
+| `/client/dashboard` | `ClientDashboard` | Live scores + tasks | PASS | READY |
+| `/client/profile` | `ProfileBusinessIntakeForm` | Live profile intake | PASS | READY |
+| `/client/credit-profile` | `CreditProfilePage` | Live readiness_scores | PASS | READY |
+| `/client/credit-utilization` | `CreditUtilizationPage` | Live credit_workflow_items | PASS | READY |
+| `/client/documents` | `ClientDocumentsPage` | Live client_documents | PASS | READY |
+| `/client/business-setup` | `BusinessSetupPage` | Live business_profile_requirements | PASS | READY |
+| `/client/business-bankability` | `BusinessBankabilityPage` | Live business_profile_requirements | PASS | READY |
+| `/client/funding-readiness` | `FundingReadinessPage` | Live funding_readiness_scores | PASS | READY |
+| `/client/recommendations` | `RecommendationsPage` | Live partner_offers | PASS | READY |
+| `/client/resources` | `ResourcesPage` | Live partner_offers | PASS | READY |
+| `/client/request-review` | `RequestReviewPage` | Live tasks + funding scores | PASS | READY |
+| `/admin` | `NexusAdminUI` | AdminGuard protected | PASS | READY |
+| `/admin/command-center` | `NexusAdminUI` | AdminGuard protected | PASS | READY |
 
-| # | Workflow | UI Loads | Live Data | Fallback Safe | Button Works | Supabase Read | Supabase Write | Admin Visible | Hermes Sync | Mobile | Security | Status |
-|---|----------|----------|-----------|---------------|--------------|---------------|----------------|---------------|-------------|--------|----------|--------|
-| 1 | Login | YES | N/A | N/A | YES | N/A | N/A | N/A | N/A | YES | YES | GREEN |
-| 2 | Dashboard | YES | PARTIAL | YES | YES | PARTIAL | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 3 | Credit Profile | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 4 | Credit Utilization | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 5 | Document Requirements | YES | YES | YES | YES | YES | NO | PARTIAL | YES | YES | YES | GREEN |
-| 6 | Document Upload | YES | YES | YES | YES | YES | YES | YES | YES | N/A | YES | GREEN |
-| 7 | GoClear Review Status | YES | PARTIAL | YES | YES | PARTIAL | YES | PARTIAL | YES | PARTIAL | YES | GREEN |
-| 8 | Business Setup | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 9 | Business Bankability | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 10 | Funding Readiness | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 11 | Recommendations | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 12 | Request Review | YES | PARTIAL | YES | GATED | PARTIAL | YES | PARTIAL | YES | PARTIAL | YES | GREEN |
-| 13 | Messages | YES | NO | YES | NO | NO | NO | NO | N/A | YES | YES | YELLOW |
-| 14 | Hermes Guidance | YES | PARTIAL | YES | YES | PARTIAL | NO | PARTIAL | YES | YES | YES | YELLOW |
-| 15 | Admin Client Review | YES | PARTIAL | YES | YES | PARTIAL | NO | YES | N/A | YES | YES | GREEN |
-| 16 | Admin Document Review | YES | YES | YES | YES | YES | NO | YES | N/A | YES | YES | GREEN |
-| 17 | Admin Route Security | YES | N/A | N/A | YES | N/A | N/A | N/A | N/A | YES | YES | GREEN |
-| 18 | Email/Resend | UNKNOWN | NO | N/A | UNKNOWN | NO | NO | NO | N/A | UNKNOWN | UNKNOWN | RED |
-| 19 | Stripe/Subscriptions | YES | NO | YES | NO | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
-| 20 | Affiliate/Tools | YES | NO | YES | YES | NO | NO | NO | PARTIAL | YES | YES | YELLOW |
+## Fields Supported (Profile Intake)
 
----
+- `legal_name` (required)
+- `preferred_name`
+- `phone` (required)
+- `mailing_address_line1`, `mailing_address_line2`, `city`, `state`, `postal_code`
+- `business_name` (required)
+- `entity_type` (required) — dropdown
+- `ein_status` — dropdown
+- `industry` (required)
+- `naics_code`
+- `business_address_line1`, `business_address_line2`, `business_city`, `business_state`, `business_postal_code`
+- `time_in_business` — dropdown
+- `monthly_revenue_range` — dropdown
+- `funding_goal_range` — dropdown
 
-## Readiness by User Tier
+## Table / Columns Used
 
-### Ray Solo Testing
-- **Can test now**: YES
-- **Prerequisites**: Set `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true`, apply RLS migration `20260707140000`
-- **Green workflows**: Login, Dashboard (partial), Documents (live upload), Request Review, Admin routes (guarded)
-- **Yellow workflows**: Credit, Utilization, Business, Funding, Recommendations, Hermes, Messages
-- **Blockers**: None for basic testing
+- `client_profiles` — 21 new text columns via migration `20260708120000_client_profile_intake_fields.sql`
+- No new tables created
+- No duplicate tables
 
-### 1 Outside Tester
-- **Can invite**: CONDITIONAL
-- **Prerequisites**:
-  1. Apply RLS migration to live Supabase
-  2. Create tester auth account in Supabase Auth
-  3. Create `tenant_memberships` row with `role = 'client'`
-  4. Create `client_profiles` row linked to membership
-  5. Set `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true`
-- **Green workflows**: Login, Documents (upload), Request Review
-- **Yellow workflows**: Dashboard (partial), Credit, Utilization, Business, Funding
-- **Blockers**: Yellow workflows show demo data instead of live
+## Migration
 
-### 3 Outside Testers
-- **Can invite**: CONDITIONAL
-- **Prerequisites**: Same as 1 tester, plus 2 more accounts
-- **Green workflows**: Same as 1 tester
-- **Yellow workflows**: Same as 1 tester
-- **Blockers**: None beyond 1-tester blockers
+- Name: `20260708120000_client_profile_intake_fields.sql`
+- Type: Additive only (ALTER TABLE ADD COLUMN IF NOT EXISTS)
+- RLS: No changes — existing policies cover new columns
+- Rollback: DROP COLUMN IF EXISTS (not included in migration)
 
-### 10 Outside Testers
-- **Can invite**: NOT YET
-- **Prerequisites**: Same as above, plus load testing
-- **Blockers**: Yellow workflows need live data connections; no bulk provisioning automation
+## RLS / Security Status
 
-### Paid Clients
-- **Can onboard**: NOT YET
-- **Prerequisites**:
-  1. All yellow workflows connected to live data
-  2. Stripe/subscription integration
-  3. Email/notification system
-  4. Production env with `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true`
-  5. Admin review workflow fully automated
-- **Blockers**: 8 of 20 workflows are still fallback-only
+- RLS enabled on all client portal tables
+- Client can SELECT/UPDATE own row via `tenant_memberships` relationship
+- Admin can SELECT/ALL via `nexus_is_active_admin()` function
+- No service-role key in frontend
+- No RLS disabled
+- No anon/public policies
+- AdminGuard protects `/admin` routes
+- Profile intake: client writes only to own `client_profiles` row
 
-### Real Sensitive Data
-- **Safe**: NO
-- **Prerequisites**:
-  1. All RLS policies verified
-  2. Admin guard tested with real admin accounts
-  3. No service-role keys in frontend
-  4. No sensitive data in demo/fallback mode
-  5. Production audit of all write paths
-- **Blockers**: Admin guard is new; real-data testing incomplete
+## Build Results
 
----
+| Check | Result |
+|-------|--------|
+| `npm run build` | PASS |
+| `npx tsc --noEmit` | PASS |
+| `check_client_portal_actions.py` | PASS |
+| `check_admin_route_guard.py` | PASS (11/11) |
+| `check_client_live_data_wiring.py` | PASS |
 
-## Top Connection Gaps
+## Manual Test Steps
 
-1. **Dashboard/credit/business/funding pages** still use static `clientPortalData.js` instead of live tables
-2. **Hermes guidance** uses demo `statuses` from `clientPortalData.js`; live status propagation incomplete
-3. **Stripe/subscription** not connected to `subscription_memberships` or `payments_status`
-4. **Email/resend** templates not implemented
-5. **Mobile menu toggle** is hidden (`display: none`)
-6. **Header icon buttons** misrouted to `/client/resources`
-7. **`/client/preview`** references missing `ClientPreviewPage`
-8. **`clientPortalDataAdapter.ts`** uses hardcoded `client_test_julius_erving` instead of resolved context
+### Client Profile Intake
+1. Sign in as test client
+2. Navigate to `/client/profile`
+3. Fill required fields: legal name, phone, business name, entity type, industry
+4. Click "Save Profile" — verify success confirmation
+5. Refresh page — verify fields persist
+6. Navigate to Dashboard — verify no incomplete profile CTA
+
+### Admin Profile View
+1. Sign in as admin
+2. Navigate to Admin > Clients
+3. Click a client with profile data
+4. Verify "Profile & Business Info" section shows in detail drawer
+5. Verify all submitted fields are visible
+
+### Route Safety
+1. Verify `/client/login` works
+2. Verify `/client/dashboard` works
+3. Verify `/client/documents` works
+4. Verify `/client/request-review` works
+5. Verify `/admin` requires admin access
+6. Verify `/admin/command-center` requires admin access
+
+## Remaining Caveats
+
+- Profile completeness is client-side only — no server-side validation
+- No email/phone verification
+- No entity type verification
+- Admin cannot edit client profile from drawer (read-only)
+- No bulk profile import
+- No real sensitive data collection (SSN, DOB, bank accounts blocked by design)
+- Messages and Settings pages still use static demo data
+
+## Tester Readiness
+
+| Criterion | Status |
+|-----------|--------|
+| 1 tester ready | YES — Ray can test |
+| 3 testers ready | NO — needs 2 more test accounts |
+| Paid clients ready | NO — needs billing integration |
+| Real sensitive data ready | NO — by design, not collected |

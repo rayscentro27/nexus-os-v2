@@ -3,13 +3,13 @@ import {
   BadgeCheck, Bell, Building2, ChartNoAxesCombined, ChevronDown, FileText,
   Gauge, Home, Mail, Menu, Settings, Sparkles, UserRound, X, CircleCheck,
   Landmark, Lightbulb, MessageSquare, Star, Wallet, LogOut, CreditCard,
-  Send, HelpCircle,
+  Send, HelpCircle, User,
 } from 'lucide-react'
 import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
 import { supabase } from '../../lib/supabaseClient'
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
-import { loadClientPortalLiveData } from '../../lib/clientPortalDataAdapter'
+import { loadClientPortalLiveData, loadClientProfileIntake, checkProfileIntakeComplete } from '../../lib/clientPortalDataAdapter'
 
 export const PortalNavContext = createContext(() => {})
 export const PortalLiveStatusContext = createContext({ status: 'idle', setStatus: () => {} })
@@ -18,6 +18,7 @@ export function usePortalLiveStatus() { return useContext(PortalLiveStatusContex
 
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Home', icon: Home },
+  { path: '/client/profile', label: 'Profile & Info', icon: User },
   { path: '/client/credit-profile', label: 'Credit Profile', icon: BadgeCheck },
   { path: '/client/credit-utilization', label: 'Credit Utilization', icon: Gauge },
   { path: '/client/documents', label: 'Documents', icon: FileText },
@@ -257,6 +258,7 @@ export function ClientPortalShell({ path, onNavigate, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [liveStatus, setLiveStatus] = useState('idle')
   const [livePortalData, setLivePortalData] = useState(null)
+  const [profileIncomplete, setProfileIncomplete] = useState(false)
   useEffect(() => setMobileOpen(false), [path])
 
   useEffect(() => {
@@ -266,6 +268,12 @@ export function ClientPortalShell({ path, onNavigate, children }) {
       if (!cancelled && result.profile) {
         setLivePortalData(result)
         setLiveStatus('connected')
+      }
+    }).catch(() => {})
+    loadClientProfileIntake().then(result => {
+      if (!cancelled && result.source === 'supabase') {
+        const check = checkProfileIntakeComplete(result.data)
+        if (!check.complete) setProfileIncomplete(true)
       }
     }).catch(() => {})
     return () => { cancelled = true }
@@ -288,6 +296,7 @@ export function ClientPortalShell({ path, onNavigate, children }) {
     documentsComplete: docs.missingDocuments?.length === 0,
     adminReviewRequired: docs.underReviewDocuments?.length > 0,
     readinessScore: readiness?.fundingReadiness || 68,
+    profileIncomplete,
   }
 
   const liveStatusLabel = liveStatus === 'connected' ? 'Live data connected' : liveStatus === 'loading' ? 'Live data pending' : 'Demo/fallback data'

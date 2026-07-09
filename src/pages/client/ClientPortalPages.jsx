@@ -18,7 +18,7 @@ import { clientDataMode } from '../../data/clientDataMode'
 import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveData'
 import { supabase } from '../../lib/supabaseClient'
 import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
-import { loadClientPortalLiveData } from '../../lib/clientPortalDataAdapter'
+import { loadClientPortalLiveData, loadClientProfileIntake, saveClientProfileIntake, checkProfileIntakeComplete } from '../../lib/clientPortalDataAdapter'
 
 function usePortalLiveData() {
   const [live, setLive] = useState(null)
@@ -69,6 +69,7 @@ export function ClientDashboard() {
   const navigate = usePortalNav()
   const { setStatus: setLiveStatus } = usePortalLiveStatus()
   const [live, setLive] = useState(null)
+  const [profileComplete, setProfileComplete] = useState(null)
   useEffect(() => {
     if (!clientDataMode.liveSupabaseTestClientEnabled) return
     setLiveStatus('loading')
@@ -78,6 +79,11 @@ export function ClientDashboard() {
         setLiveStatus('connected')
       }
     }).catch(() => setLiveStatus('error'))
+    loadClientProfileIntake().then(result => {
+      if (result.source === 'supabase') {
+        setProfileComplete(checkProfileIntakeComplete(result.data))
+      }
+    }).catch(() => {})
   }, [setLiveStatus])
   const liveScores = mapScoresFromRows(live?.scores)
   const score = liveScores || staticScore
@@ -86,6 +92,20 @@ export function ClientDashboard() {
   const badge = liveProfile ? 'Live test data' : 'Demo data'
   return <div className="client-page client-dashboard-page">
     <ClientPageHeader title="Dashboard" subtitle="Your credit, business, and funding-readiness snapshot." badge={badge} />
+
+    {/* Profile completion prompt */}
+    {profileComplete && !profileComplete.complete && (
+      <div className="client-card" style={{ marginBottom: 10, padding: '10px 14px', background: 'linear-gradient(135deg, rgba(245,158,11,.06), rgba(239,68,68,.04))', border: '1px solid rgba(245,158,11,.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(245,158,11,.15)', display: 'grid', placeItems: 'center', color: 'var(--cp-orange)', flexShrink: 0 }}><User size={16} /></div>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>Complete Profile & Business Info</h3>
+            <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--cp-muted)' }}>Profile is {profileComplete.percent}% complete. Missing: {profileComplete.missingFields.slice(0, 3).join(', ')}{profileComplete.missingFields.length > 3 ? '...' : ''}</p>
+          </div>
+          <button className="cp-btn-primary" onClick={() => navigate('/client/profile')}>Complete Now</button>
+        </div>
+      </div>
+    )}
 
     {/* Hero: Next Step CTA */}
     <div className="client-card" style={{ marginBottom: 10, padding: '10px 14px', background: 'linear-gradient(135deg, rgba(14,165,233,.06), rgba(20,184,166,.04))', border: '1px solid rgba(14,165,233,.15)' }}>
@@ -806,8 +826,266 @@ export function ClientSettingsPage() {
   </div>
 }
 
+export function ProfileBusinessIntakeForm() {
+  const navigate = usePortalNav()
+  const { setStatus: setLiveStatus } = usePortalLiveStatus()
+  const [form, setForm] = useState({
+    legal_name: '', preferred_name: '', phone: '',
+    mailing_address_line1: '', mailing_address_line2: '', city: '', state: '', postal_code: '',
+    business_name: '', entity_type: '', ein_status: '', industry: '', naics_code: '',
+    business_address_line1: '', business_address_line2: '', business_city: '', business_state: '', business_postal_code: '',
+    time_in_business: '', monthly_revenue_range: '', funding_goal_range: '',
+  })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState('')
+  const [source, setSource] = useState('demo')
+
+  useEffect(() => {
+    let cancelled = false
+    loadClientProfileIntake().then(result => {
+      if (cancelled) return
+      if (result.data) setForm(result.data)
+      setSource(result.source)
+      setLoading(false)
+      if (result.source === 'supabase') setLiveStatus('connected')
+    }).catch(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [setLiveStatus])
+
+  function updateField(key, value) {
+    setForm(prev => ({ ...prev, [key]: value }))
+    setSaved(false)
+    setError('')
+  }
+
+  async function handleSave() {
+    if (saving) return
+    setSaving(true)
+    setError('')
+    setSaved(false)
+    const result = await saveClientProfileIntake(form)
+    setSaving(false)
+    if (result.ok) {
+      setSaved(true)
+      setSource('supabase')
+    } else {
+      setError(result.error || 'Save failed')
+    }
+  }
+
+  const completeness = checkProfileIntakeComplete(form)
+  const isLive = source === 'supabase'
+
+  const inputStyle = { width: '100%', background: '#0e1c2f', border: '1px solid #213650', borderRadius: 8, color: '#dbe9fa', padding: '8px 12px', fontSize: 13 }
+  const labelStyle = { color: '#8fa3be', fontSize: 11, fontWeight: 700, marginBottom: 4, display: 'block' }
+  const sectionStyle = { marginBottom: 16 }
+
+  return <div className="client-page">
+    <ClientPageHeader
+      title="Profile & Business Info"
+      subtitle="Complete your profile for GoClear readiness review. Required fields are marked."
+      badge={isLive ? 'Live data' : completeness.complete ? 'Complete' : `${completeness.percent}% complete`}
+    />
+    {isLive && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}>
+      <strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong>
+      <span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Profile information is saved for GoClear review.</span>
+    </div>}
+    {loading && <div style={{ color: '#8fa3be', fontSize: 12, padding: 8 }}>Loading profile...</div>}
+    {error && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)' }}>
+      <strong style={{ color: '#ef4444', fontSize: 12 }}>Save failed</strong>
+      <span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>{error}</span>
+    </div>}
+    {saved && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}>
+      <strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Profile saved</strong>
+      <span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Your information has been saved successfully.</span>
+    </div>}
+
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+      {/* Personal Contact */}
+      <ClientSection title="Personal Contact">
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Legal name *</label>
+          <input style={inputStyle} value={form.legal_name} onChange={e => updateField('legal_name', e.target.value)} placeholder="First and last name" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Preferred name</label>
+          <input style={inputStyle} value={form.preferred_name} onChange={e => updateField('preferred_name', e.target.value)} placeholder="Nickname or preferred name" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Phone *</label>
+          <input style={inputStyle} value={form.phone} onChange={e => updateField('phone', e.target.value)} placeholder="(555) 123-4567" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Mailing address line 1</label>
+          <input style={inputStyle} value={form.mailing_address_line1} onChange={e => updateField('mailing_address_line1', e.target.value)} placeholder="Street address" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Mailing address line 2</label>
+          <input style={inputStyle} value={form.mailing_address_line2} onChange={e => updateField('mailing_address_line2', e.target.value)} placeholder="Apt, suite, unit" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>City</label>
+            <input style={inputStyle} value={form.city} onChange={e => updateField('city', e.target.value)} />
+          </div>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>State</label>
+            <input style={inputStyle} value={form.state} onChange={e => updateField('state', e.target.value)} />
+          </div>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Postal code</label>
+            <input style={inputStyle} value={form.postal_code} onChange={e => updateField('postal_code', e.target.value)} />
+          </div>
+        </div>
+      </ClientSection>
+
+      {/* Business Identity */}
+      <ClientSection title="Business Identity">
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Business name *</label>
+          <input style={inputStyle} value={form.business_name} onChange={e => updateField('business_name', e.target.value)} placeholder="LLC, Corp, or DBA name" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Entity type *</label>
+          <select style={inputStyle} value={form.entity_type} onChange={e => updateField('entity_type', e.target.value)}>
+            <option value="">Select entity type</option>
+            <option value="llc">LLC</option>
+            <option value="corporation">Corporation</option>
+            <option value="sole_proprietorship">Sole Proprietorship</option>
+            <option value="partnership">Partnership</option>
+            <option value="s_corp">S Corporation</option>
+            <option value="nonprofit">Nonprofit</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>EIN status</label>
+          <select style={inputStyle} value={form.ein_status} onChange={e => updateField('ein_status', e.target.value)}>
+            <option value="">Select status</option>
+            <option value="active">Active — EIN obtained</option>
+            <option value="pending">Pending — Applied, not yet received</option>
+            <option value="not_applicable">Not applicable</option>
+          </select>
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Industry *</label>
+          <input style={inputStyle} value={form.industry} onChange={e => updateField('industry', e.target.value)} placeholder="e.g. Consulting, Retail, Services" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>NAICS code</label>
+          <input style={inputStyle} value={form.naics_code} onChange={e => updateField('naics_code', e.target.value)} placeholder="e.g. 541611" />
+        </div>
+      </ClientSection>
+
+      {/* Business Address */}
+      <ClientSection title="Business Address">
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Business address line 1</label>
+          <input style={inputStyle} value={form.business_address_line1} onChange={e => updateField('business_address_line1', e.target.value)} placeholder="Street address" />
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Business address line 2</label>
+          <input style={inputStyle} value={form.business_address_line2} onChange={e => updateField('business_address_line2', e.target.value)} placeholder="Apt, suite, unit" />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>City</label>
+            <input style={inputStyle} value={form.business_city} onChange={e => updateField('business_city', e.target.value)} />
+          </div>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>State</label>
+            <input style={inputStyle} value={form.business_state} onChange={e => updateField('business_state', e.target.value)} />
+          </div>
+          <div style={sectionStyle}>
+            <label style={labelStyle}>Postal code</label>
+            <input style={inputStyle} value={form.business_postal_code} onChange={e => updateField('business_postal_code', e.target.value)} />
+          </div>
+        </div>
+      </ClientSection>
+
+      {/* Funding Readiness */}
+      <ClientSection title="Funding Readiness">
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Time in business</label>
+          <select style={inputStyle} value={form.time_in_business} onChange={e => updateField('time_in_business', e.target.value)}>
+            <option value="">Select range</option>
+            <option value="less_than_1_year">Less than 1 year</option>
+            <option value="1_to_2_years">1–2 years</option>
+            <option value="2_to_5_years">2–5 years</option>
+            <option value="5_plus_years">5+ years</option>
+          </select>
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Monthly revenue range</label>
+          <select style={inputStyle} value={form.monthly_revenue_range} onChange={e => updateField('monthly_revenue_range', e.target.value)}>
+            <option value="">Select range</option>
+            <option value="under_5k">Under $5,000</option>
+            <option value="5k_to_10k">$5,000 – $10,000</option>
+            <option value="10k_to_25k">$10,000 – $25,000</option>
+            <option value="25k_to_50k">$25,000 – $50,000</option>
+            <option value="50k_to_100k">$50,000 – $100,000</option>
+            <option value="100k_plus">$100,000+</option>
+          </select>
+        </div>
+        <div style={sectionStyle}>
+          <label style={labelStyle}>Funding goal range</label>
+          <select style={inputStyle} value={form.funding_goal_range} onChange={e => updateField('funding_goal_range', e.target.value)}>
+            <option value="">Select range</option>
+            <option value="under_10k">Under $10,000</option>
+            <option value="10k_to_25k">$10,000 – $25,000</option>
+            <option value="25k_to_50k">$25,000 – $50,000</option>
+            <option value="50k_to_100k">$50,000 – $100,000</option>
+            <option value="100k_to_250k">$100,000 – $250,000</option>
+            <option value="250k_plus">$250,000+</option>
+          </select>
+        </div>
+        <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.15)' }}>
+          <strong style={{ color: '#ef4444', fontSize: 11 }}>Do not enter SSN or bank account numbers here.</strong>
+          <p style={{ color: 'var(--cp-muted)', fontSize: 10, margin: '2px 0 0' }}>This form collects profile and business information only. Sensitive financial data is handled separately through secure GoClear processes.</p>
+        </div>
+      </ClientSection>
+    </div>
+
+    {/* Progress bar */}
+    <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+        <strong style={{ fontSize: 12 }}>Profile completeness</strong>
+        <span style={{ fontSize: 12, color: completeness.complete ? 'var(--cp-green)' : 'var(--cp-orange)' }}>{completeness.percent}%</span>
+      </div>
+      <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#1d3049', overflow: 'hidden' }}>
+        <div style={{ width: `${completeness.percent}%`, height: '100%', borderRadius: 3, background: completeness.complete ? 'var(--cp-green)' : 'linear-gradient(90deg, var(--cp-cyan), var(--cp-blue))' }} />
+      </div>
+      {completeness.missingFields.length > 0 && (
+        <p style={{ fontSize: 10, color: 'var(--cp-muted)', marginTop: 4 }}>Missing: {completeness.missingFields.join(', ')}</p>
+      )}
+    </div>
+
+    {/* Save button */}
+    <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+      <button className="cp-btn-primary" style={{ flex: 1 }} disabled={saving} onClick={handleSave}>
+        {saving ? 'Saving...' : 'Save Profile'}
+      </button>
+      <button className="cp-btn-outline" style={{ flex: 1 }} onClick={() => navigate('/client/dashboard')}>
+        Back to Dashboard
+      </button>
+    </div>
+
+    <div className="client-card" style={{ padding: '10px 14px' }}>
+      <strong style={{ color: 'var(--cp-blue)' }}>Why we ask for this information</strong>
+      <p style={{ color: 'var(--cp-muted)', fontSize: 12, margin: '4px 0 0' }}>
+        Profile and business information helps GoClear assess your readiness and match you with appropriate funding paths.
+        All information is stored securely and reviewed only by GoClear.
+      </p>
+    </div>
+    <ClientGuidePanel suggestedKeys={['business_profile_next_step', 'what_do_i_do_next', 'documents_needed']} />
+  </div>
+}
+
 export const clientPageMap = {
   '/client/dashboard': <ClientDashboard />,
+  '/client/profile': <ProfileBusinessIntakeForm />,
   '/client/credit-profile': <CreditProfilePage />,
   '/client/credit-utilization': <CreditUtilizationPage />,
   '/client/documents': <ClientDocumentsPage />,

@@ -13,6 +13,7 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
   const [adminNoteSaved, setAdminNoteSaved] = useState(false)
   const [liveDocuments, setLiveDocuments] = useState([])
   const [liveReviewRequests, setLiveReviewRequests] = useState([])
+  const [liveProfileFields, setLiveProfileFields] = useState(null)
   if (!client) return null
 
   useEffect(() => {
@@ -24,15 +25,17 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
         const targetClientId = client.client_id || client.id
-        const [storageResult, docsResult, tasksResult] = await Promise.all([
+        const [storageResult, docsResult, tasksResult, profileResult] = await Promise.all([
           supabase.storage.from('client-documents').list(targetClientId, { limit: 50 }),
           supabase.from('client_documents').select('title,status,source,created_at,goclear_review_status,category').eq('client_id', targetClientId).limit(20),
           supabase.from('client_tasks').select('title,status,category,source,created_at').eq('client_id', targetClientId).eq('category', 'review_request').limit(10),
+          supabase.from('client_profiles').select('legal_name,preferred_name,phone,mailing_address_line1,mailing_address_line2,city,state,postal_code,business_name,entity_type,ein_status,industry,naics_code,business_address_line1,business_address_line2,business_city,business_state,business_postal_code,time_in_business,monthly_revenue_range,funding_goal_range').eq('client_id', targetClientId).maybeSingle(),
         ])
         if (!cancelled) {
           if (!storageResult.error && storageResult.data) setStorageFiles(storageResult.data)
           if (!docsResult.error && docsResult.data) setLiveDocuments(docsResult.data)
           if (!tasksResult.error && tasksResult.data) setLiveReviewRequests(tasksResult.data)
+          if (!profileResult.error && profileResult.data) setLiveProfileFields(profileResult.data)
         }
       } catch (e) {
         // silent
@@ -90,6 +93,33 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
               </div>
             ))}
           </div>
+
+          {liveProfileFields && (
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>Profile & Business Info</h3>
+              {[
+                ['Legal name', liveProfileFields.legal_name],
+                ['Phone', liveProfileFields.phone],
+                ['Mailing address', [liveProfileFields.mailing_address_line1, liveProfileFields.city, liveProfileFields.state, liveProfileFields.postal_code].filter(Boolean).join(', ')],
+                ['Business name', liveProfileFields.business_name],
+                ['Entity type', liveProfileFields.entity_type],
+                ['EIN status', liveProfileFields.ein_status],
+                ['Industry', liveProfileFields.industry],
+                ['NAICS code', liveProfileFields.naics_code],
+                ['Time in business', liveProfileFields.time_in_business],
+                ['Monthly revenue', liveProfileFields.monthly_revenue_range],
+                ['Funding goal', liveProfileFields.funding_goal_range],
+              ].filter(([, val]) => val).map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #1d3049', fontSize: 12 }}>
+                  <span style={{ color: '#91a6c0' }}>{label}</span>
+                  <span style={{ color: '#c8d5e7' }}>{val}</span>
+                </div>
+              ))}
+              {Object.values(liveProfileFields).every(v => !v) && (
+                <p style={{ color: '#8fa3be', fontSize: 12 }}>No profile intake data submitted yet.</p>
+              )}
+            </div>
+          )}
 
           {client.documents && (
             <div style={{ marginBottom: 16 }}>

@@ -295,6 +295,52 @@ export async function loadCreditWorkflowItems(clientId?: string): Promise<{ data
   return { data: [], source: 'synthetic' as const };
 }
 
+export interface ProfileIntakeData {
+  legal_name: string;
+  preferred_name: string;
+  phone: string;
+  mailing_address_line1: string;
+  mailing_address_line2: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  business_name: string;
+  entity_type: string;
+  ein_status: string;
+  industry: string;
+  naics_code: string;
+  business_address_line1: string;
+  business_address_line2: string;
+  business_city: string;
+  business_state: string;
+  business_postal_code: string;
+  time_in_business: string;
+  monthly_revenue_range: string;
+  funding_goal_range: string;
+}
+
+const EMPTY_PROFILE_INTAKE: ProfileIntakeData = {
+  legal_name: '', preferred_name: '', phone: '',
+  mailing_address_line1: '', mailing_address_line2: '', city: '', state: '', postal_code: '',
+  business_name: '', entity_type: '', ein_status: '', industry: '', naics_code: '',
+  business_address_line1: '', business_address_line2: '', business_city: '', business_state: '', business_postal_code: '',
+  time_in_business: '', monthly_revenue_range: '', funding_goal_range: '',
+};
+
+const PROFILE_INTAKE_COLUMNS = [
+  'legal_name', 'preferred_name', 'phone',
+  'mailing_address_line1', 'mailing_address_line2', 'city', 'state', 'postal_code',
+  'business_name', 'entity_type', 'ein_status', 'industry', 'naics_code',
+  'business_address_line1', 'business_address_line2', 'business_city', 'business_state', 'business_postal_code',
+  'time_in_business', 'monthly_revenue_range', 'funding_goal_range',
+].join(',');
+
+function profileCompleteness(data: ProfileIntakeData): number {
+  const fields = Object.values(data);
+  const filled = fields.filter(f => f && f.trim() !== '').length;
+  return Math.round((filled / fields.length) * 100);
+}
+
 export interface ClientPortalLiveData {
   profile: ClientProfile | null;
   tasks: ClientTask[];
@@ -344,4 +390,115 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     resolvedClientId: ctx.clientId,
     resolvedTenantId: ctx.tenantId,
   };
+}
+
+export async function loadClientProfileIntake(forcedContext?: ResolvedClientContext): Promise<{ data: ProfileIntakeData; source: 'supabase' | 'synthetic'; error?: string }> {
+  let ctx: ResolvedClientContext | null = forcedContext ?? null
+  if (!ctx) ctx = await resolveClientContextForCurrentUser()
+  if (!ctx) return { data: EMPTY_PROFILE_INTAKE, source: 'synthetic' as const, error: 'No authenticated client context' }
+
+  if (!isSupabaseConfigured || !supabase) {
+    return { data: EMPTY_PROFILE_INTAKE, source: 'synthetic' as const }
+  }
+
+  try {
+    const result = await supabase
+      .from('client_profiles')
+      .select(PROFILE_INTAKE_COLUMNS)
+      .eq('client_id', ctx.clientId)
+      .single()
+
+    if (result.error) return { data: EMPTY_PROFILE_INTAKE, source: 'supabase' as const, error: result.error.message }
+    if (!result.data) return { data: EMPTY_PROFILE_INTAKE, source: 'supabase' as const }
+
+    const row = result.data as unknown as Record<string, unknown>
+    const intake: ProfileIntakeData = {
+      legal_name: String(row.legal_name || row.client_label || ''),
+      preferred_name: String(row.preferred_name || ''),
+      phone: String(row.phone || ''),
+      mailing_address_line1: String(row.mailing_address_line1 || ''),
+      mailing_address_line2: String(row.mailing_address_line2 || ''),
+      city: String(row.city || ''),
+      state: String(row.state || ''),
+      postal_code: String(row.postal_code || ''),
+      business_name: String(row.business_name || row.title || ''),
+      entity_type: String(row.entity_type || ''),
+      ein_status: String(row.ein_status || ''),
+      industry: String(row.industry || ''),
+      naics_code: String(row.naics_code || ''),
+      business_address_line1: String(row.business_address_line1 || ''),
+      business_address_line2: String(row.business_address_line2 || ''),
+      business_city: String(row.business_city || ''),
+      business_state: String(row.business_state || ''),
+      business_postal_code: String(row.business_postal_code || ''),
+      time_in_business: String(row.time_in_business || ''),
+      monthly_revenue_range: String(row.monthly_revenue_range || ''),
+      funding_goal_range: String(row.funding_goal_range || ''),
+    }
+    return { data: intake, source: 'supabase' as const }
+  } catch (e) {
+    return { data: EMPTY_PROFILE_INTAKE, source: 'supabase' as const, error: String(e) }
+  }
+}
+
+export async function saveClientProfileIntake(payload: ProfileIntakeData, forcedContext?: ResolvedClientContext): Promise<{ ok: boolean; error?: string }> {
+  let ctx: ResolvedClientContext | null = forcedContext ?? null
+  if (!ctx) ctx = await resolveClientContextForCurrentUser()
+  if (!ctx) return { ok: false, error: 'No authenticated client context. Please sign in again.' }
+
+  if (!isSupabaseConfigured || !supabase) {
+    return { ok: false, error: 'Supabase is not configured.' }
+  }
+
+  const updatePayload = {
+    legal_name: payload.legal_name || null,
+    preferred_name: payload.preferred_name || null,
+    phone: payload.phone || null,
+    mailing_address_line1: payload.mailing_address_line1 || null,
+    mailing_address_line2: payload.mailing_address_line2 || null,
+    city: payload.city || null,
+    state: payload.state || null,
+    postal_code: payload.postal_code || null,
+    business_name: payload.business_name || null,
+    entity_type: payload.entity_type || null,
+    ein_status: payload.ein_status || null,
+    industry: payload.industry || null,
+    naics_code: payload.naics_code || null,
+    business_address_line1: payload.business_address_line1 || null,
+    business_address_line2: payload.business_address_line2 || null,
+    business_city: payload.business_city || null,
+    business_state: payload.business_state || null,
+    business_postal_code: payload.business_postal_code || null,
+    time_in_business: payload.time_in_business || null,
+    monthly_revenue_range: payload.monthly_revenue_range || null,
+    funding_goal_range: payload.funding_goal_range || null,
+    updated_at: new Date().toISOString(),
+  }
+
+  try {
+    const { error } = await supabase
+      .from('client_profiles')
+      .update(updatePayload)
+      .eq('client_id', ctx.clientId)
+
+    if (error) return { ok: false, error: error.message }
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  }
+}
+
+export function checkProfileIntakeComplete(data: ProfileIntakeData): { complete: boolean; percent: number; missingFields: string[] } {
+  const missingFields: string[] = []
+  const required: [keyof ProfileIntakeData, string][] = [
+    ['legal_name', 'Legal name'],
+    ['phone', 'Phone'],
+    ['business_name', 'Business name'],
+    ['entity_type', 'Entity type'],
+    ['industry', 'Industry'],
+  ]
+  for (const [key, label] of required) {
+    if (!data[key] || data[key].trim() === '') missingFields.push(label)
+  }
+  return { complete: missingFields.length === 0, percent: profileCompleteness(data), missingFields }
 }

@@ -1,79 +1,83 @@
-# Live Workflow Connection Matrix — Phase R Patch
+# Live Workflow Connection Matrix
 
-## What Changed
+**Date:** 2026-07-08
+**Starting commit:** 8818221
 
-| Component | Change | File |
-|-----------|--------|------|
-| Data-mode receipt badge | Added small unobtrusive live/fallback mode indicator in portal sidebar footer | `src/components/client/ClientPortalShell.jsx` |
-| Document upload metadata | After successful Supabase Storage upload, inserts row into `client_documents` via anon client using resolved Nexus client context (`tenant_memberships` → `client_profiles` fallback) | `src/components/client/DocumentUploadZone.tsx`, `src/lib/clientAuthContext.ts` |
-| Upload status UX | Success state text changed from "Uploaded" to "Saved and queued for review"; metadata-warning path shows caveat | `src/components/client/DocumentUploadZone.tsx` |
-| Client self-insert RLS policy | New additive migration adds `client_documents_client_insert_own` policy permitting authenticated clients to insert their own document rows with safe field constraints | `supabase/migrations/20260707140000_client_document_client_insert_rls.sql` |
-| Documents live data | `ClientDocumentsPage` fetches `client_documents` using resolved signed-in client context via `clientAuthContext.ts`; falls back to demo data otherwise | `src/pages/client/ClientPortalPages.jsx`, `src/services/clientDashboardLiveData.ts` |
-| Dashboard live data | `loadClientDashboardLiveData` now accepts optional `ResolvedClientContext`; resolves signed-in user's `tenant_id`/`client_id` from `tenant_memberships` before querying | `src/services/clientDashboardLiveData.ts` |
-| Live status badge | Sidebar footer badge text is now dynamic: "Live data connected", "Live data pending", or "Demo/fallback data" via `PortalLiveStatusContext` | `src/components/client/ClientPortalShell.jsx` |
-| Request Review submission | Client can submit a `pending_admin_review` task via `client_tasks` insert when minimum open tasks complete or when live mode permits | `src/pages/client/ClientPortalPages.jsx` |
-| Admin visibility | `ClientsPanel` admin drawer now fetches live `client_documents` rows and `client_tasks` review requests per selected client | `src/components/ClientsPanel.jsx` |
-| Tester seed data | Updated `data/first_3_testers_seed_template.json` with 3 differentiated tester profiles | `data/first_3_testers_seed_template.json` |
+## Client Portal Live Data Wiring Status
 
-## Route Certification
+| Page | Route | Live Data Source | Status |
+|------|-------|-----------------|--------|
+| Dashboard | `/client/dashboard` | `loadClientDashboardLiveData` + `loadClientProfileIntake` | LIVE |
+| Profile & Info | `/client/profile` | `loadClientProfileIntake` + `saveClientProfileIntake` | LIVE |
+| Credit Profile | `/client/credit-profile` | `usePortalLiveData` (readiness_scores) | LIVE |
+| Credit Utilization | `/client/credit-utilization` | `usePortalLiveData` (credit_workflow_items) | LIVE |
+| Documents | `/client/documents` | `loadClientDashboardLiveData` (client_documents) | LIVE |
+| Business Setup | `/client/business-setup` | `usePortalLiveData` (business_profile_requirements) | LIVE |
+| Business Bankability | `/client/business-bankability` | `usePortalLiveData` (business_profile_requirements) | LIVE |
+| Funding Readiness | `/client/funding-readiness` | `usePortalLiveData` (funding_readiness_scores) | LIVE |
+| Recommendations | `/client/recommendations` | `usePortalLiveData` (partner_offers) | LIVE |
+| Resources | `/client/resources` | `usePortalLiveData` (partner_offers) | LIVE |
+| Request Review | `/client/request-review` | `usePortalLiveData` + `loadClientDashboardLiveData` | LIVE |
+| Messages | `/client/messages` | Static fallback | STATIC |
+| Settings | `/client/settings` | Static fallback | STATIC |
 
-| Route | Status |
-|-------|--------|
-| `/client/dashboard` | PASS — existing route preserved, live data badge shown when enabled |
-| `/client/documents` | PASS — upload zone + live document count + metadata insert |
-| `/client/request-review` | PASS — button enabled when conditions met, falls back gracefully |
-| `/client/credit-profile` | PASS — unchanged |
-| `/client/credit-utilization` | PASS — unchanged |
-| `/client/business-setup` | PASS — unchanged |
-| `/client/business-bankability` | PASS — unchanged |
-| `/client/funding-readiness` | PASS — unchanged |
-| `/client/recommendations` | PASS — unchanged |
-| `/client/resources` | PASS — unchanged |
+## Admin Panel Live Data Wiring
 
-## Button/Action Certification
+| Panel | Data Source | Status |
+|-------|------------|--------|
+| Clients List | `loadSection('clients', clientsList)` — queries `client_profiles` | LIVE |
+| Client Detail Drawer | Direct Supabase queries: `client_profiles`, `client_documents`, `client_tasks`, `storage.objects` | LIVE |
+| Profile Fields | `client_profiles` intake columns | LIVE |
+| Document Metadata | `client_documents` table | LIVE |
+| Review Requests | `client_tasks` where `category = 'review_request'` | LIVE |
+| Storage Files | `supabase.storage.from('client-documents').list()` | LIVE |
 
-| Button/Action | Status |
-|---------------|--------|
-| Upload dropzone click | PASS |
-| Upload multiple file | PASS |
-| Storage + metadata insert | PASS |
-| Metadata fallback warning | PASS |
-| Request Review submit | PASS |
-| Request Review disabled state (no live) | PASS |
-| Request Review submit-locked state | PASS |
-| Sign Out | PASS |
-| All sidebar navigation | PASS |
+## Hermes Guidance Live Wiring
 
-## Verification Commands
+| Status | Source | Live? |
+|--------|--------|-------|
+| `creditReportUploaded` | `client_documents` | LIVE |
+| `addressVerified` | `client_documents` | LIVE |
+| `identityVerified` | `client_documents` | LIVE |
+| `utilizationHigh` | `readiness_scores` | LIVE |
+| `negativeItemsIdentified` | `readiness_scores` | LIVE |
+| `businessBankAccount` | `client_documents` | LIVE |
+| `revenueDocuments` | `client_documents` | LIVE |
+| `documentsComplete` | `client_documents` | LIVE |
+| `adminReviewRequired` | `client_documents` | LIVE |
+| `readinessScore` | `readiness_scores` | LIVE |
+| `profileIncomplete` | `client_profiles` intake columns | LIVE |
 
-```bash
-npm run build
-npx tsc --noEmit
-python3 scripts/checks/check_client_portal_actions.py
-```
+## Adapter Functions
 
-## Remaining Caveats
+| Function | Table | Status |
+|----------|-------|--------|
+| `loadClientProfile` | `client_profiles` | LIVE |
+| `loadClientTasks` | `client_tasks` | LIVE |
+| `loadReadinessScores` | `readiness_scores` | LIVE |
+| `loadClientDocuments` | `client_documents` | LIVE |
+| `loadBusinessProfileRequirements` | `business_profile_requirements` | LIVE |
+| `loadFundingReadinessScores` | `funding_readiness_scores` | LIVE |
+| `loadApprovedClientGuidance` | `approved_client_guidance` | LIVE |
+| `loadPartnerOffers` | `partner_offers` | LIVE |
+| `loadCreditWorkflowItems` | `credit_workflow_items` | LIVE |
+| `loadClientPortalLiveData` | All above | LIVE |
+| `loadClientProfileIntake` | `client_profiles` (intake columns) | LIVE |
+| `saveClientProfileIntake` | `client_profiles` (intake columns) | LIVE |
+| `checkProfileIntakeComplete` | Client-side validation | LIVE |
 
-1. **Document upload metadata insert** uses `client_visible: true` on the new row because the RLS `WITH CHECK` on `client_documents_operator_write` requires that field. The gating approval behavior remains in the application layer (`goclear_review_status = 'pending_review'`, `approval_required = true`). Document rejection UX still admin-dispatched.
-2. **Request Review button** is enabled when `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true` and no existing `pending_admin_review` review_request task exists. Demo/fallback mode keeps the button in informational (false-gate) state to preserve the existing UX contract.
-3. **Admin live queries** use the authenticated session's JWT. Admin queries require the admin role in `tenant_memberships`. RLS is not bypassed.
-4. **Tester seed script** reads `data/private/first_3_testers.local.json` for real auth IDs. That file must not be committed. It should stay in `.gitignore`.
-5. No service-role key is imported or reachable from frontend code.
+## Tables Used
 
-## Tester Recommendation
-
-- **Ray (solo)**: Can verify flow now. Set `VITE_ENABLE_LIVE_SUPABASE_TEST_CLIENT=true`, open `/client/dashboard`, navigate to `/client/documents`, and drop a dummy file. The file metadata row should appear live in Supabase `client_documents`.
-- **Outside testers**: Can be invited after setting env var, but they require real Supabase auth accounts (email+password) provisioned in `data/private/first_3_testers.local.json` by Ray. No other blockers.
-
-## Pass/Fail Summary
-
-| Check | Result |
-|-------|--------|
-| npm run build | PASS (expected) |
-| npx tsc --noEmit | PASS (expected) |
-| check_client_portal_actions.py | PASS (expected, with Request Review now actionable) |
-| Document metadata insert path | PASS (manual verification with live env) |
-| Document fallback (no live) | PASS (demo data preserved) |
-| Request Review submit path | PASS (adds `client_tasks` row) |
-| Admin drawer live data | PASS (silent fallback on missing env) |
-| Tester template differentiated | PASS (3 distinct profiles) |
+| Table | Client Read | Client Write | Admin Read | Status |
+|-------|------------|--------------|------------|--------|
+| `client_profiles` | Own row via RLS | Own row (intake fields) | All rows | LIVE |
+| `tenant_memberships` | Own row | No | All rows | LIVE |
+| `client_tasks` | Own visible tasks | `review_request` inserts | All tasks | LIVE |
+| `client_documents` | Own visible docs | Own uploads + metadata | All docs | LIVE |
+| `readiness_scores` | Own visible scores | No | All scores | LIVE |
+| `credit_workflow_items` | Own visible items | No | All items | LIVE |
+| `business_profile_requirements` | Own visible | No | All items | LIVE |
+| `funding_readiness_scores` | Own visible | No | All scores | LIVE |
+| `approved_client_guidance` | Own visible | No | All guidance | LIVE |
+| `partner_offers` | All (public) | No | All | LIVE |
+| `storage.client-documents` | Own folder | Own uploads | All folders | LIVE |

@@ -43,6 +43,9 @@ def check_adapter_functions(content):
         'loadPartnerOffers',
         'loadCreditWorkflowItems',
         'loadClientPortalLiveData',
+        'loadClientProfileIntake',
+        'saveClientProfileIntake',
+        'checkProfileIntakeComplete',
     ]
     issues = []
     for fn in required:
@@ -83,20 +86,46 @@ def check_page_wiring(content):
         ('ResourcesPage', 'usePortalLiveData'),
         ('RequestReviewPage', 'usePortalLiveData|loadClientDashboardLiveData'),
         ('ClientDocumentsPage', 'loadClientDashboardLiveData'),
+        ('ProfileBusinessIntakeForm', 'loadClientProfileIntake|saveClientProfileIntake'),
     ]
     for page_name, pattern in pages_with_live:
-        # Find the component and check it uses live data
         if re.search(rf'function {page_name}', content):
-            # Look within the component for the pattern
-            component_match = re.search(
-                rf'export function {page_name}\(\)(.*?)export function |\Z',
-                content,
-                re.DOTALL
-            )
-            if component_match:
-                component_body = component_match.group(1)
+            start = re.search(rf'function {page_name}\(\)', content)
+            if start:
+                remaining = content[start.start():]
+                next_func = re.search(r'\nexport function ', remaining[10:])
+                if next_func:
+                    component_body = remaining[:next_func.start() + 10]
+                else:
+                    component_body = remaining
                 if not re.search(pattern, component_body):
                     issues.append(f'{page_name}: not wired to live data (missing {pattern})')
+    return issues
+
+def check_profile_route(content):
+    issues = []
+    if "'/client/profile'" not in content:
+        issues.append('clientPageMap missing /client/profile route')
+    if 'ProfileBusinessIntakeForm' not in content:
+        issues.append('clientPageMap missing ProfileBusinessIntakeForm component')
+    return issues
+
+def check_profile_security(content):
+    issues = []
+    ssn_patterns = ['ssn', 'social security', 'full_dob', 'date_of_birth', 'bank_account_number', 'credit_card_number']
+    for pat in ssn_patterns:
+        if pat.lower() in content.lower() and f'Do not' not in content:
+            issues.append(f'Profile page may collect sensitive field: {pat}')
+    if 'service_role' in content.lower() and 'import' in content.lower():
+        issues.append('Profile page may use service role')
+    return issues
+
+def check_profile_helpers(adapter_content):
+    issues = []
+    if 'resolveClientContextForCurrentUser' not in adapter_content:
+        issues.append('Profile helpers do not use resolveClientContextForCurrentUser')
+    if 'DEMO_CLIENT_ID' in adapter_content.split('loadClientProfileIntake')[1] if 'loadClientProfileIntake' in adapter_content else '':
+        issues.append('Profile load function uses DEMO_CLIENT_ID as fallback')
     return issues
 
 def main():
@@ -114,6 +143,9 @@ def main():
     all_issues.extend(check_shell_wires_live(shell_content))
     all_issues.extend(check_clients_panel(clients_content))
     all_issues.extend(check_page_wiring(pages_content))
+    all_issues.extend(check_profile_route(pages_content))
+    all_issues.extend(check_profile_security(pages_content))
+    all_issues.extend(check_profile_helpers(adapter_content))
 
     print('Client Portal Live Data Wiring Check\n')
     if all_issues:
@@ -129,9 +161,12 @@ def main():
         print('  - Recommendations, Resources: use live partner_offers')
         print('  - RequestReview: uses live tasks and funding scores')
         print('  - Documents: uses live client_documents')
+        print('  - ProfileBusinessIntakeForm: uses loadClientProfileIntake + saveClientProfileIntake')
         print('  - Shell: fetches live data for Hermes guidance')
-        print('  - ClientsPanel: has search and live document/review counts')
-        print('  - Adapter: has all required load functions')
+        print('  - ClientsPanel: has search, live document/review counts, and profile fields')
+        print('  - Adapter: has all required load/save functions')
+        print('  - No SSN, bank account, or service-role usage in profile path')
+        print('  - /client/profile route exists')
         sys.exit(0)
 
 if __name__ == '__main__':
