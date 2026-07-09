@@ -2,6 +2,7 @@
 
 **Date:** 2026-07-08
 **Starting commit:** 8818221
+**UI Import Status:** COMPLETE (July 8, 2026)
 
 ## Routes Certified
 
@@ -72,6 +73,52 @@
 | `check_admin_route_guard.py` | PASS (11/11) |
 | `check_client_live_data_wiring.py` | PASS |
 
+## UI Import (July 8, 2026)
+
+### Status: COMPLETE ✅
+
+Successfully imported the client portal UI design from `nexus-client-portal-click-preview.zip` while preserving all live workflows.
+
+### Changes Made
+- **CSS Variables:** Updated to match zip palette (#f7f9fd bg, #07143f text, #1264f3 blue, 22px radius)
+- **Background Gradient:** Updated to match zip radial pattern (blue and teal accents)
+- **Card Styling:** Updated to match zip (22px radius, translucent white, subtle shadow)
+- **Header Styling:** Updated to match zip (blur backdrop, translucent white)
+- **Sidebar Styling:** Updated to match zip (blur backdrop, translucent white)
+- **Profile Intake Form:** Fixed dark theme inputs to light theme
+- **Component Gradients:** Updated logo, avatar, step badge, hermes avatar gradients
+- **Status Badges:** Updated all status badge colors to match zip palette
+- **Progress Rings:** Updated all progress ring colors to match zip palette
+
+### Verification Results
+- **TypeScript Check:** PASS (no errors)
+- **Build Check:** PASS (build completed successfully)
+- **Live Data Wiring:** PASS (all connections intact)
+- **Portal Actions:** PASS (all actions functional)
+- **Admin Route Guard:** PASS (all guard checks passed)
+
+### Design Fidelity
+- ✅ Color palette (blue, teal, green, purple, orange, red)
+- ✅ Background gradient pattern (radial blue and teal accents)
+- ✅ Card styling (22px radius, subtle shadow, translucent white)
+- ✅ Header styling (blur backdrop, translucent white)
+- ✅ Sidebar styling (blur backdrop, translucent white)
+- ✅ Typography (Inter font family)
+- ✅ Status badge colors
+- ✅ Progress ring colors
+- ✅ Button gradients
+- ✅ Logo gradient
+
+### Preserved Workflows
+- ✅ Authentication (Supabase auth context resolver)
+- ✅ Live Data (all live data hooks and Supabase connections)
+- ✅ AdminGuard (admin route protection intact)
+- ✅ Document Upload (Supabase Storage integration)
+- ✅ Request Review (GoClear review request submission)
+- ✅ Profile/Intake Save/Load (Supabase read/write operations)
+- ✅ Hermes Guidance (dynamic guidance generation)
+- ✅ Admin Visibility (admin panel access controls)
+
 ## Manual Test Steps
 
 ### Client Profile Intake
@@ -106,6 +153,7 @@
 - No bulk profile import
 - No real sensitive data collection (SSN, DOB, bank accounts blocked by design)
 - Messages and Settings pages still use static demo data
+- UI import complete — design matches reference zip while preserving all functionality
 
 ## Tester Readiness
 

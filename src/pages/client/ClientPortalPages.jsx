@@ -878,8 +878,8 @@ export function ProfileBusinessIntakeForm() {
   const completeness = checkProfileIntakeComplete(form)
   const isLive = source === 'supabase'
 
-  const inputStyle = { width: '100%', background: '#0e1c2f', border: '1px solid #213650', borderRadius: 8, color: '#dbe9fa', padding: '8px 12px', fontSize: 13 }
-  const labelStyle = { color: '#8fa3be', fontSize: 11, fontWeight: 700, marginBottom: 4, display: 'block' }
+  const inputStyle = { width: '100%', background: '#f7f9fd', border: '1px solid #e6ebf5', borderRadius: 8, color: '#07143f', padding: '8px 12px', fontSize: 13 }
+  const labelStyle = { color: '#66708f', fontSize: 11, fontWeight: 700, marginBottom: 4, display: 'block' }
   const sectionStyle = { marginBottom: 16 }
 
   return <div className="client-page">
@@ -1054,7 +1054,7 @@ export function ProfileBusinessIntakeForm() {
         <strong style={{ fontSize: 12 }}>Profile completeness</strong>
         <span style={{ fontSize: 12, color: completeness.complete ? 'var(--cp-green)' : 'var(--cp-orange)' }}>{completeness.percent}%</span>
       </div>
-      <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#1d3049', overflow: 'hidden' }}>
+      <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#e6ebf5', overflow: 'hidden' }}>
         <div style={{ width: `${completeness.percent}%`, height: '100%', borderRadius: 3, background: completeness.complete ? 'var(--cp-green)' : 'linear-gradient(90deg, var(--cp-cyan), var(--cp-blue))' }} />
       </div>
       {completeness.missingFields.length > 0 && (
