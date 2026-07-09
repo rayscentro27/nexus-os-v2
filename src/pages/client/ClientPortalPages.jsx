@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { ClientGuidePanel } from '../../components/client/ClientGuidePanel'
 import { DocumentUploadZone } from '../../components/client/DocumentUploadZone'
+import CreditRepairJourneyView from '../../components/client/CreditRepairJourneyView'
 import {
   ClientActionList, ClientFactorGrid, ClientMetricCard, ClientPageHeader, ClientScoreCard,
   ClientSection, ClientStatusBadge,
@@ -1086,129 +1087,34 @@ export function ProfileBusinessIntakeForm() {
 
 export function CreditRepairJourneyPage() {
   const navigate = usePortalNav()
-  const [journey, setJourney] = useState(null)
+  const livePortal = usePortalLiveData()
+  const [creditRepair, setCreditRepair] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     import('../../lib/creditRepairWorkflow').then(m => m.loadCreditRepairJourney()).then(data => {
-      setJourney(data)
+      setCreditRepair(data)
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
 
-  const steps = [
-    { key: 'profile', label: 'Profile Complete', icon: CheckCircle2, desc: 'Your profile and business info are on file.' },
-    { key: 'upload_report', label: 'Upload Credit Report', icon: Upload, desc: 'Upload your credit report PDF for specialist review.' },
-    { key: 'specialist_review', label: 'Specialist Review', icon: Eye, desc: 'A credit specialist reviews your report and identifies dispute items.' },
-    { key: 'dispute_items', label: 'Dispute Items', icon: FileSearch, desc: 'Review the identified dispute items and evidence.' },
-    { key: 'draft_letters', label: 'Draft Letters', icon: FileText, desc: 'Nexus generates dispute letter drafts for your review.' },
-    { key: 'approve_send', label: 'Approve & Send', icon: Stamp, desc: 'Approve the letter and authorize DocuPost mailing.' },
-    { key: 'track_results', label: 'Track Results', icon: Clock, desc: 'Track mailing status and bureau responses.' },
-  ]
+  const liveData = {
+    profile: livePortal?.profile,
+    documents: livePortal?.documents || [],
+    creditReportReviews: creditRepair?.reviews || [],
+    creditDisputeItems: creditRepair?.disputeItems || [],
+    creditDisputeLetters: creditRepair?.letters || [],
+    docupostMailJobs: creditRepair?.mailJobs || [],
+  }
 
-  const currentIdx = steps.findIndex(s => s.key === journey?.currentStep) ?? 0
-
-  const review = journey?.reviews?.[0]
-  const disputeItems = journey?.disputeItems ?? []
-  const letters = journey?.letters ?? []
-  const mailJobs = journey?.mailJobs ?? []
-
-  return <div className="client-page">
-    <ClientPageHeader
-      title="Credit Repair Journey"
-      subtitle="A guided credit process — what you do, what the specialist does, and when DocuPost can send."
-      badge={journey ? 'Live workflow' : 'Workflow v1'}
-    />
-
-    {loading && <div style={{ color: '#66708f', fontSize: 12, padding: 8 }}>Loading credit repair journey...</div>}
-
-    {/* Journey Steps */}
-    <div className="client-card" style={{ padding: '14px 16px', marginBottom: 12 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>Journey Progress</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${steps.length}, 1fr)`, gap: 4 }}>
-        {steps.map((step, i) => {
-          const Icon = step.icon
-          const isDone = journey?.stepsCompleted?.includes(step.key)
-          const isCurrent = journey?.currentStep === step.key
-          return <div key={step.key} onClick={() => {}} style={{ padding: '8px 4px', borderRadius: 10, border: `1px solid ${isCurrent ? 'rgba(18,100,243,.3)' : '#e6ebf5'}`, background: isDone ? 'rgba(15,175,126,.04)' : isCurrent ? 'rgba(18,100,243,.04)' : 'transparent', textAlign: 'center', cursor: 'pointer', transition: 'all .15s' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: isDone ? 'rgba(15,175,126,.1)' : isCurrent ? 'rgba(18,100,243,.1)' : '#f0f3f8', display: 'grid', placeItems: 'center', margin: '0 auto 4px', color: isDone ? '#0faf7e' : isCurrent ? '#1264f3' : '#66708f' }}>
-              {isDone ? <CheckCircle size={14} /> : <Icon size={14} />}
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: isDone ? '#0faf7e' : isCurrent ? '#1264f3' : '#07143f' }}>{step.label}</div>
-          </div>
-        })}
-      </div>
+  if (loading) {
+    return <div className="client-page">
+      <ClientPageHeader title="Credit Repair Journey" subtitle="A guided credit process — what you do, what the specialist does, and when DocuPost can send." badge="Loading" />
+      <div style={{ color: '#66708f', fontSize: 12, padding: 8 }}>Loading credit repair journey...</div>
     </div>
+  }
 
-    {/* Current Status */}
-    {review && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10, background: 'rgba(18,100,243,.04)', border: '1px solid rgba(18,100,243,.15)' }}>
-      <strong style={{ color: '#1264f3', fontSize: 12 }}>Report Review Status</strong>
-      <span style={{ fontSize: 11, color: '#66708f', marginLeft: 8 }}>{review.status?.replace(/_/g, ' ')}</span>
-      {review.assigned_specialist && <span style={{ fontSize: 11, color: '#66708f', marginLeft: 8 }}>Assigned: {review.assigned_specialist}</span>}
-    </div>}
-
-    {/* Dispute Items */}
-    {disputeItems.length > 0 && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Dispute Items ({disputeItems.length})</h2>
-      <div style={{ display: 'grid', gap: 6 }}>
-        {disputeItems.filter(d => d.client_visible).map(item => <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, border: '1px solid #e6ebf5' }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: item.status === 'resolved' ? 'rgba(15,175,126,.1)' : 'rgba(255,159,26,.1)', display: 'grid', placeItems: 'center', color: item.status === 'resolved' ? '#0faf7e' : '#ff9f1a', flexShrink: 0 }}>
-            {item.status === 'resolved' ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <strong style={{ fontSize: 12, color: '#07143f' }}>{item.furnisher_name || item.account_name || 'Dispute Item'}</strong>
-            <div style={{ fontSize: 10, color: '#66708f' }}>{item.bureau?.toUpperCase()} · {item.dispute_reason || 'Under review'}</div>
-          </div>
-          <span style={{ padding: '3px 8px', borderRadius: 14, background: item.status === 'resolved' ? 'rgba(15,175,126,.1)' : 'rgba(255,159,26,.1)', color: item.status === 'resolved' ? '#0faf7e' : '#ff9f1a', fontWeight: 700, fontSize: 10 }}>{item.status?.replace(/_/g, ' ')}</span>
-        </div>)}
-      </div>
-    </div>}
-
-    {/* Letters */}
-    {letters.length > 0 && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Dispute Letters ({letters.length})</h2>
-      <div style={{ display: 'grid', gap: 6 }}>
-        {letters.map(letter => <div key={letter.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, border: '1px solid #e6ebf5', cursor: 'pointer' }} onClick={() => navigate('/client/dispute-review')}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(18,100,243,.1)', display: 'grid', placeItems: 'center', color: '#1264f3', flexShrink: 0 }}><FileText size={14} /></div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <strong style={{ fontSize: 12, color: '#07143f' }}>Letter to {letter.recipient_name || letter.recipient_type}</strong>
-            <div style={{ fontSize: 10, color: '#66708f' }}>{letter.status?.replace(/_/g, ' ')}</div>
-          </div>
-          <ChevronRight size={14} style={{ color: '#66708f' }} />
-        </div>)}
-      </div>
-    </div>}
-
-    {/* Mail Jobs */}
-    {mailJobs.length > 0 && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Mail Tracking ({mailJobs.length})</h2>
-      <div style={{ display: 'grid', gap: 6 }}>
-        {mailJobs.map(job => <div key={job.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, border: '1px solid #e6ebf5' }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: job.status === 'delivered' ? 'rgba(15,175,126,.1)' : job.status === 'mailed' ? 'rgba(18,100,243,.1)' : 'rgba(255,159,26,.1)', display: 'grid', placeItems: 'center', color: job.status === 'delivered' ? '#0faf7e' : job.status === 'mailed' ? '#1264f3' : '#ff9f1a', flexShrink: 0 }}>
-            <Mail size={14} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <strong style={{ fontSize: 12, color: '#07143f' }}>Mail to {job.recipient_name || 'Recipient'}</strong>
-            <div style={{ fontSize: 10, color: '#66708f' }}>{job.status?.replace(/_/g, ' ')} {job.tracking_number ? `· ${job.tracking_number}` : ''}</div>
-          </div>
-        </div>)}
-      </div>
-    </div>}
-
-    {/* Action Buttons */}
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
-      <button className="cp-btn-primary" onClick={() => navigate('/client/documents')}>Upload Report</button>
-      <button className="cp-btn-outline" onClick={() => navigate('/client/dispute-review')}>Review Letters</button>
-      <button className="cp-btn-outline" onClick={() => navigate('/client/credit-profile')}>View Credit Profile</button>
-    </div>
-
-    <div className="client-card" style={{ padding: '10px 14px', background: '#f7fbff' }}>
-      <strong style={{ color: '#1264f3' }}>How it works:</strong>
-      <span style={{ color: '#66708f', fontSize: 12 }}> Nexus drafts letters only. A specialist reviews, then you approve, then DocuPost sends. No letters are sent without your explicit approval.</span>
-    </div>
-
-    <ClientGuidePanel suggestedKeys={['how_to_improve_credit', 'what_do_i_do_next', 'documents_needed']} />
-  </div>
+  return <CreditRepairJourneyView liveData={liveData} creditRepair={creditRepair} onNavigate={navigate} />
 }
 
 export function DisputeReviewPage() {
