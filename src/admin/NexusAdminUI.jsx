@@ -14,6 +14,7 @@ import MarketingDraftCenter from '../components/MarketingDraftCenter'
 import ResearchMoneyPipeline from '../components/ResearchMoneyPipeline'
 import ClientsPanel from '../components/ClientsPanel'
 import CreditFundingPanel from '../components/CreditFundingPanel'
+import CreditSpecialistWorkbench from '../components/CreditSpecialistWorkbench'
 import BusinessOpportunitiesPanel from '../components/BusinessOpportunitiesPanel'
 import ResearchEnginePanel from '../components/ResearchEnginePanel'
 import MonetizationPanel from '../components/MonetizationPanel'
@@ -31,7 +32,7 @@ import NexusOperationsPanel from '../components/NexusOperationsPanel'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
-  FileWarning, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
+  FileWarning, FileSearch, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
   Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
   TriangleAlert, WandSparkles, Youtube, Zap
 } from 'lucide-react'
@@ -48,7 +49,7 @@ const toneClass = {
 const IconMap = {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
-  FileWarning, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
+  FileWarning, FileSearch, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
   Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
   TriangleAlert, WandSparkles, Youtube, Zap
 }
@@ -74,6 +75,7 @@ const navGroups = [
   { label: 'Business', items: [
     { id: 'clients', label: 'Clients', icon: 'Building2', status: 'Gated', statusTone: 'amber' },
     { id: 'credit', label: 'Credit & Funding', icon: 'SearchCheck', status: 'Active', statusTone: 'green' },
+    { id: 'credit-specialist', label: 'Credit Specialist Workbench', icon: 'FileSearch', status: 'V1', statusTone: 'blue' },
     { id: 'readiness-intake', label: 'Readiness Intake', icon: 'ClipboardList', status: '$97', statusTone: 'blue' },
     { id: 'readiness-admin', label: 'Readiness Review', icon: 'FileCheck2', status: 'Draft', statusTone: 'amber' },
     { id: 'opportunity', label: 'Business Opportunities', icon: 'Target', status: '26 ready', statusTone: 'green' },
@@ -99,6 +101,7 @@ const modeLabels = {
   goclear: 'GoClear / Apex',
   clientworkflow: 'Client Workflow',
   credit: 'Credit Specialist',
+  'credit-specialist': 'Credit Specialist Workbench',
   'readiness-intake': 'Readiness Review — Client Intake',
   'readiness-admin': 'Readiness Review — Admin Review',
   business: 'Business Profile Builder',
@@ -1476,6 +1479,7 @@ export default function NexusAdminUI({ email }) {
     goclear: <ErrorBoundary panelName="GoClear / Apex"><GoClearPage /></ErrorBoundary>,
     clientworkflow: <ErrorBoundary panelName="Client Workflow"><ClientWorkflowPage /></ErrorBoundary>,
     credit: <ErrorBoundary panelName="Credit & Funding"><SimplePage title="Credit & Funding" sub="Readiness Scores · Documents · Disputes · Bankability · Approval-Gated"><CreditFundingPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    'credit-specialist': <ErrorBoundary panelName="Credit Specialist Workbench"><SimplePage title="Credit Specialist Workbench" sub="Review Reports · Dispute Items · Draft Letters · DocuPost"><CreditSpecialistWorkbench onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     'readiness-intake': <ErrorBoundary panelName="Readiness Intake"><SimplePage title="$97 Readiness Review — Client Intake" sub="Collect credit and business funding readiness data · Local draft mode"><ReadinessReviewIntake onComplete={(data) => console.log('Intake complete (local draft):', data)} onCancel={() => navigate('credit')} /></SimplePage></ErrorBoundary>,
     'readiness-admin': <ErrorBoundary panelName="Readiness Review Admin"><SimplePage title="$97 Readiness Review — Admin Review" sub="Score readiness · Add notes · Prepare report draft · Draft-only"><ReadinessReviewAdmin onComplete={(data) => console.log('Admin review complete (local draft):', data)} /></SimplePage></ErrorBoundary>,
     business: <ErrorBoundary panelName="Business Setup"><BusinessSetupPage /></ErrorBoundary>,

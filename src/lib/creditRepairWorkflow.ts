@@ -1,0 +1,549 @@
+/**
+ * Nexus Credit Repair Workflow v1 — Adapter
+ *
+ * Provides types, data loading, draft letter generation, and approval-gated
+ * DocuPost send flow. No automatic sending. No SSN, DOB, or full account numbers.
+ */
+
+import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { resolveClientContextForCurrentUser, type ResolvedClientContext } from './clientAuthContext';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export type CreditJourneyStep =
+  | 'profile'
+  | 'upload_report'
+  | 'specialist_review'
+  | 'dispute_items'
+  | 'draft_letters'
+  | 'approve_send'
+  | 'track_results';
+
+export type CreditReportReviewStatus =
+  | 'pending_review'
+  | 'in_review'
+  | 'items_identified'
+  | 'drafts_ready'
+  | 'client_review'
+  | 'approved_for_docupost'
+  | 'sent_manual'
+  | 'waiting_response'
+  | 'completed'
+  | 'blocked';
+
+export type DisputeItemStatus =
+  | 'identified'
+  | 'draft_needed'
+  | 'draft_ready'
+  | 'specialist_review'
+  | 'client_review'
+  | 'client_approved'
+  | 'approved_for_docupost'
+  | 'sent_docupost'
+  | 'response_received'
+  | 'resolved'
+  | 'rejected'
+  | 'needs_next_round';
+
+export type DisputeItemBureau = 'experian' | 'equifax' | 'transunion' | 'unknown';
+
+export type DisputeItemAction = 'verify' | 'correct' | 'delete' | 'update' | 'investigate';
+
+export type DisputeLetterRecipientType = 'bureau' | 'furnisher';
+
+export type CreditDisputeLetterStatus =
+  | 'draft'
+  | 'specialist_review'
+  | 'ray_review'
+  | 'client_review'
+  | 'client_approved'
+  | 'approved_for_docupost'
+  | 'docupost_queued'
+  | 'docupost_mailed'
+  | 'docupost_delivered'
+  | 'response_received'
+  | 'archived';
+
+export type DocuPostJobStatus =
+  | 'not_sent'
+  | 'approval_required'
+  | 'approved_to_send'
+  | 'docupost_ready'
+  | 'queued'
+  | 'mailed'
+  | 'delivered'
+  | 'failed'
+  | 'canceled';
+
+export interface CreditReportReview {
+  id: string;
+  tenant_id: string;
+  client_id: string;
+  document_id: string | null;
+  assigned_specialist: string | null;
+  status: CreditReportReviewStatus;
+  review_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditDisputeItem {
+  id: string;
+  tenant_id: string;
+  client_id: string;
+  review_id: string | null;
+  bureau: DisputeItemBureau;
+  furnisher_name: string | null;
+  account_name: string | null;
+  account_number_mask: string | null;
+  item_type: string | null;
+  dispute_reason: string | null;
+  factual_basis: string | null;
+  requested_action: DisputeItemAction | null;
+  evidence_document_ids: string[];
+  status: DisputeItemStatus;
+  specialist_notes: string | null;
+  client_visible: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditDisputeLetter {
+  id: string;
+  tenant_id: string;
+  client_id: string;
+  dispute_item_ids: string[];
+  recipient_type: DisputeLetterRecipientType;
+  recipient_name: string | null;
+  letter_body: string;
+  status: CreditDisputeLetterStatus;
+  generated_by: string;
+  approval_required: boolean;
+  client_approved_at: string | null;
+  specialist_approved_at: string | null;
+  docupost_job_id: string | null;
+  sent_at: string | null;
+  response_due_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocuPostMailJob {
+  id: string;
+  tenant_id: string;
+  client_id: string;
+  letter_id: string | null;
+  provider: string;
+  provider_job_id: string | null;
+  status: DocuPostJobStatus;
+  recipient_name: string | null;
+  recipient_address: Record<string, string>;
+  mail_type: string;
+  tracking_number: string | null;
+  request_payload: Record<string, unknown>;
+  response_payload: Record<string, unknown>;
+  error_message: string | null;
+  approval_required: boolean;
+  approved_by_client: boolean;
+  approved_by_specialist: boolean;
+  queued_at: string | null;
+  mailed_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditRepairJourneyData {
+  reviews: CreditReportReview[];
+  disputeItems: CreditDisputeItem[];
+  letters: CreditDisputeLetter[];
+  mailJobs: DocuPostMailJob[];
+  currentStep: CreditJourneyStep;
+  stepsCompleted: CreditJourneyStep[];
+}
+
+// ─── Data Loading ────────────────────────────────────────────────────────────
+
+export async function loadCreditRepairJourney(ctx?: ResolvedClientContext): Promise<CreditRepairJourneyData> {
+  let context = ctx ?? null;
+  if (!context) context = await resolveClientContextForCurrentUser();
+
+  const empty: CreditRepairJourneyData = {
+    reviews: [], disputeItems: [], letters: [], mailJobs: [],
+    currentStep: 'profile', stepsCompleted: [],
+  };
+
+  if (!context) return empty;
+  if (!isSupabaseConfigured || !supabase) return empty;
+
+  try {
+    const [reviewsRes, itemsRes, lettersRes, jobsRes] = await Promise.all([
+      supabase.from('credit_report_reviews').select('*').eq('client_id', context.clientId).order('created_at', { ascending: false }),
+      supabase.from('credit_dispute_items').select('*').eq('client_id', context.clientId).order('created_at', { ascending: false }),
+      supabase.from('credit_dispute_letters').select('*').eq('client_id', context.clientId).order('created_at', { ascending: false }),
+      supabase.from('docupost_mail_jobs').select('*').eq('client_id', context.clientId).order('created_at', { ascending: false }),
+    ]);
+
+    const reviews = (reviewsRes.data ?? []) as CreditReportReview[];
+    const disputeItems = (itemsRes.data ?? []) as CreditDisputeItem[];
+    const letters = (lettersRes.data ?? []) as CreditDisputeLetter[];
+    const mailJobs = (jobsRes.data ?? []) as DocuPostMailJob[];
+
+    const stepsCompleted: CreditJourneyStep[] = [];
+    let currentStep: CreditJourneyStep = 'profile';
+
+    if (reviews.length > 0) {
+      stepsCompleted.push('profile');
+      currentStep = 'upload_report';
+    }
+    if (reviews.some(r => r.status !== 'pending_review')) {
+      stepsCompleted.push('upload_report');
+      currentStep = 'specialist_review';
+    }
+    if (reviews.some(r => ['items_identified', 'drafts_ready', 'client_review', 'approved_for_docupost', 'completed'].includes(r.status))) {
+      stepsCompleted.push('specialist_review');
+      currentStep = 'dispute_items';
+    }
+    if (disputeItems.length > 0) {
+      stepsCompleted.push('dispute_items');
+      currentStep = 'draft_letters';
+    }
+    if (letters.length > 0) {
+      stepsCompleted.push('draft_letters');
+      currentStep = 'approve_send';
+    }
+    if (letters.some(l => ['docupost_queued', 'docupost_mailed', 'docupost_delivered'].includes(l.status))) {
+      stepsCompleted.push('approve_send');
+      currentStep = 'track_results';
+    }
+
+    return { reviews, disputeItems, letters, mailJobs, currentStep, stepsCompleted };
+  } catch {
+    return empty;
+  }
+}
+
+// ─── Credit Report Review ────────────────────────────────────────────────────
+
+export async function createCreditReportReview(
+  clientId: string,
+  tenantId: string,
+  documentId?: string,
+): Promise<{ ok: boolean; id?: string; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from('credit_report_reviews').insert({
+    id,
+    tenant_id: tenantId,
+    client_id: clientId,
+    document_id: documentId ?? null,
+    status: 'pending_review',
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, id };
+}
+
+// ─── Dispute Items ───────────────────────────────────────────────────────────
+
+export async function createDisputeItem(input: {
+  clientId: string;
+  tenantId: string;
+  reviewId?: string;
+  bureau: string;
+  furnisherName?: string;
+  accountName?: string;
+  accountNumberMask?: string;
+  disputeReason: string;
+  factualBasis: string;
+  requestedAction: DisputeItemAction;
+  evidenceDocumentIds?: string[];
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from('credit_dispute_items').insert({
+    id,
+    tenant_id: input.tenantId,
+    client_id: input.clientId,
+    review_id: input.reviewId ?? null,
+    bureau: input.bureau,
+    furnisher_name: input.furnisherName ?? null,
+    account_name: input.accountName ?? null,
+    account_number_mask: input.accountNumberMask ?? null,
+    dispute_reason: input.disputeReason,
+    factual_basis: input.factualBasis,
+    requested_action: input.requestedAction,
+    evidence_document_ids: input.evidenceDocumentIds ?? [],
+    status: 'identified',
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, id };
+}
+
+// ─── Draft Letter Generation ─────────────────────────────────────────────────
+
+export function generateDisputeLetterBody(input: {
+  clientName?: string;
+  clientAddress?: string;
+  recipientName?: string;
+  recipientAddress?: string;
+  bureau?: string;
+  items: Array<{
+    furnisherName?: string;
+    accountName?: string;
+    accountNumberMask?: string;
+    disputeReason?: string;
+    factualBasis?: string;
+    requestedAction?: string;
+  }>;
+  evidenceLabels?: string[];
+}): string {
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const clientName = input.clientName || '[Client Name]';
+  const clientAddress = input.clientAddress || '[Client Address]';
+  const recipientName = input.recipientName || input.bureau || '[Recipient]';
+  const recipientAddress = input.recipientAddress || '[Recipient Address]';
+
+  const itemLines = input.items.map((item, i) => {
+    const action = item.requestedAction ? item.requestedAction.charAt(0).toUpperCase() + item.requestedAction.slice(1) : 'Investigate';
+    return `  ${i + 1}. ${action} the following account:\n` +
+      `     Account: ${item.accountName || '[Account]'} (${item.accountNumberMask || 'XXXX'})\n` +
+      `     Furnisher: ${item.furnisherName || '[Furnisher]'}\n` +
+      `     Reason: ${item.disputeReason || '[Reason]'}\n` +
+      `     Basis: ${item.factualBasis || '[Factual basis]'}`;
+  }).join('\n\n');
+
+  const evidenceSection = input.evidenceLabels && input.evidenceLabels.length > 0
+    ? `\n\nEnclosed documents:\n${input.evidenceLabels.map((l, i) => `  ${i + 1}. ${l}`).join('\n')}`
+    : '';
+
+  return [
+    `${clientName}`,
+    `${clientAddress}`,
+    '',
+    today,
+    '',
+    `${recipientName}`,
+    `${recipientAddress}`,
+    '',
+    'Re: Dispute of Inaccurate Information — Fair Credit Reporting Act (FCRA)',
+    '',
+    `Dear ${recipientName},`,
+    '',
+    'I am writing to dispute the following information on my credit report. I believe the following items are inaccurate or incomplete and request investigation under the Fair Credit Reporting Act, 15 U.S.C. § 1681.',
+    '',
+    'Disputed items:',
+    '',
+    itemLines,
+    '',
+    'I have enclosed supporting documentation for your review. Please investigate these items and correct or remove the inaccurate information as required by law.',
+    '',
+    'Please send me an updated copy of my credit report once the investigation is complete.',
+    '',
+    'Sincerely,',
+    clientName,
+    evidenceSection,
+  ].join('\n');
+}
+
+// ─── Dispute Letters ─────────────────────────────────────────────────────────
+
+export async function createDisputeLetterDraft(input: {
+  tenantId: string;
+  clientId: string;
+  disputeItemIds: string[];
+  recipientType: DisputeLetterRecipientType;
+  recipientName: string;
+  letterBody: string;
+}): Promise<{ ok: boolean; id?: string; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from('credit_dispute_letters').insert({
+    id,
+    tenant_id: input.tenantId,
+    client_id: input.clientId,
+    dispute_item_ids: input.disputeItemIds,
+    recipient_type: input.recipientType,
+    recipient_name: input.recipientName,
+    letter_body: input.letterBody,
+    status: 'draft',
+    generated_by: 'nexus_draft_engine',
+    approval_required: true,
+  });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, id };
+}
+
+export async function approveLetterForSpecialistReview(letterId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const { error } = await supabase.from('credit_dispute_letters').update({
+    status: 'specialist_review',
+    updated_at: new Date().toISOString(),
+  }).eq('id', letterId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function specialistApproveLetter(letterId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const { error } = await supabase.from('credit_dispute_letters').update({
+    status: 'client_review',
+    specialist_approved_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', letterId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function clientApproveLetter(letterId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const { error } = await supabase.from('credit_dispute_letters').update({
+    status: 'client_approved',
+    client_approved_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', letterId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+// ─── DocuPost Send Flow ──────────────────────────────────────────────────────
+
+export async function createDocuPostSendRequest(letterId: string): Promise<{ ok: boolean; jobId?: string; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const letterRes = await supabase.from('credit_dispute_letters').select('*').eq('id', letterId).single();
+  if (letterRes.error || !letterRes.data) return { ok: false, error: 'Letter not found' };
+
+  const letter = letterRes.data as CreditDisputeLetter;
+  const jobId = crypto.randomUUID();
+
+  const { error: jobError } = await supabase.from('docupost_mail_jobs').insert({
+    id: jobId,
+    tenant_id: letter.tenant_id,
+    client_id: letter.client_id,
+    letter_id: letterId,
+    provider: 'docupost',
+    status: 'approval_required',
+    recipient_name: letter.recipient_name,
+    recipient_address: {},
+    mail_type: 'certified',
+    approval_required: true,
+    approved_by_client: false,
+    approved_by_specialist: false,
+  });
+
+  if (jobError) return { ok: false, error: jobError.message };
+
+  await supabase.from('credit_dispute_letters').update({
+    status: 'approved_for_docupost',
+    docupost_job_id: jobId,
+    updated_at: new Date().toISOString(),
+  }).eq('id', letterId);
+
+  return { ok: true, jobId };
+}
+
+export async function approveMailJobForSend(jobId: string, approvedBy: 'client' | 'specialist'): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (approvedBy === 'client') update.approved_by_client = true;
+  if (approvedBy === 'specialist') update.approved_by_specialist = true;
+
+  const { data: job, error: fetchError } = await supabase.from('docupost_mail_jobs').select('*').eq('id', jobId).single();
+  if (fetchError || !job) return { ok: false, error: 'Job not found' };
+
+  const bothApproved = approvedBy === 'client' ? job.approved_by_specialist : job.approved_by_client;
+  if (bothApproved) {
+    update.status = 'approved_to_send';
+  }
+
+  const { error } = await supabase.from('docupost_mail_jobs').update(update).eq('id', jobId);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function markMailJobSent(jobId: string, trackingNumber: string): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase not configured' };
+
+  const { error } = await supabase.from('docupost_mail_jobs').update({
+    status: 'mailed',
+    tracking_number: trackingNumber,
+    mailed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }).eq('id', jobId);
+
+  if (error) return { ok: false, error: error.message };
+
+  const { data: job } = await supabase.from('docupost_mail_jobs').select('letter_id').eq('id', jobId).single();
+  if (job?.letter_id) {
+    await supabase.from('credit_dispute_letters').update({
+      status: 'docupost_mailed',
+      sent_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq('id', job.letter_id);
+  }
+
+  return { ok: true };
+}
+
+// ─── Status Helpers ──────────────────────────────────────────────────────────
+
+const JOURNEY_STEP_LABELS: Record<CreditJourneyStep, string> = {
+  profile: 'Profile Complete',
+  upload_report: 'Upload Credit Report',
+  specialist_review: 'Specialist Review',
+  dispute_items: 'Dispute Items',
+  draft_letters: 'Draft Letters',
+  approve_send: 'Approve & Send',
+  track_results: 'Track Results',
+};
+
+export function getJourneyStepLabel(step: CreditJourneyStep): string {
+  return JOURNEY_STEP_LABELS[step];
+}
+
+const LETTER_STATUS_LABELS: Record<CreditDisputeLetterStatus, string> = {
+  draft: 'Draft',
+  specialist_review: 'Specialist Review',
+  ray_review: 'Ray Review',
+  client_review: 'Client Review',
+  client_approved: 'Client Approved',
+  approved_for_docupost: 'Approved for DocuPost',
+  docupost_queued: 'DocuPost Queued',
+  docupost_mailed: 'Mailed',
+  docupost_delivered: 'Delivered',
+  response_received: 'Response Received',
+  archived: 'Archived',
+};
+
+export function getLetterStatusLabel(status: CreditDisputeLetterStatus): string {
+  return LETTER_STATUS_LABELS[status];
+}
+
+const MAIL_JOB_STATUS_LABELS: Record<DocuPostJobStatus, string> = {
+  not_sent: 'Not Sent',
+  approval_required: 'Awaiting Approval',
+  approved_to_send: 'Approved to Send',
+  docupost_ready: 'DocuPost Ready',
+  queued: 'Queued',
+  mailed: 'Mailed',
+  delivered: 'Delivered',
+  failed: 'Failed',
+  canceled: 'Canceled',
+};
+
+export function getMailJobStatusLabel(status: DocuPostJobStatus): string {
+  return MAIL_JOB_STATUS_LABELS[status];
+}

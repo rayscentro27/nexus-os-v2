@@ -3,7 +3,7 @@ import {
   BadgeCheck, Bell, Building2, ChartNoAxesCombined, ChevronDown, FileText,
   Gauge, Home, Mail, Menu, Settings, Sparkles, UserRound, X, CircleCheck,
   Landmark, Lightbulb, MessageSquare, Star, Wallet, LogOut, CreditCard,
-  Send, HelpCircle, User,
+  Send, HelpCircle, User, FileSearch, RotateCcw,
 } from 'lucide-react'
 import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
@@ -25,6 +25,7 @@ export const journeySteps = [
   { path: '/client/business-setup', label: 'Business Setup', icon: Building2 },
   { path: '/client/business-bankability', label: 'Business Bankability', icon: Landmark },
   { path: '/client/funding-readiness', label: 'Funding Readiness', icon: Wallet },
+  { path: '/client/credit-repair-journey', label: 'Credit Repair Journey', icon: RotateCcw },
   { path: '/client/recommendations', label: 'Recommendations', icon: Lightbulb },
   { path: '/client/resources', label: 'Resources', icon: Star },
   { path: '/client/request-review', label: 'Request Review', icon: MessageSquare },
@@ -224,6 +225,18 @@ function getGuidanceForStep(path) {
       nextAction: 'Complete all open tasks, then request review.',
       missingItems: ['Complete open tasks before requesting'],
       readinessNote: 'Review requests are processed in order. Response time varies.',
+    },
+    '/client/credit-repair-journey': {
+      currentStep: 'Credit Repair Journey — Guided dispute process',
+      nextAction: 'Upload your credit report or review identified dispute items.',
+      missingItems: ['Credit report upload', 'Dispute item review'],
+      readinessNote: 'Nexus drafts letters only. Specialist reviews, then you approve, then DocuPost sends.',
+    },
+    '/client/dispute-review': {
+      currentStep: 'Dispute Review — Review and approve letters',
+      nextAction: 'Review the dispute letter, approve it, and authorize DocuPost mailing.',
+      missingItems: [],
+      readinessNote: 'No letter is sent without your explicit approval.',
     },
   }
   return map[path] || map['/client/dashboard']

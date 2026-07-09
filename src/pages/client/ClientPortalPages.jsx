@@ -4,7 +4,8 @@ import {
   Landmark, LockKeyhole, Mail, SearchCheck, Settings, TrendingUp, Upload,
   Star, MessageSquare, Lightbulb, CreditCard, ArrowUpCircle, Send,
   Rocket, Shield, Wallet, CircleCheck, ChevronRight, Sparkles,
-  ArrowRight, Copy, User, Users, Lock,
+  ArrowRight, Copy, User, Users, Lock, FileSearch, Eye, CheckCircle,
+  Clock, AlertTriangle, Download, Stamp,
 } from 'lucide-react'
 import { ClientGuidePanel } from '../../components/client/ClientGuidePanel'
 import { DocumentUploadZone } from '../../components/client/DocumentUploadZone'
@@ -1083,6 +1084,212 @@ export function ProfileBusinessIntakeForm() {
   </div>
 }
 
+export function CreditRepairJourneyPage() {
+  const navigate = usePortalNav()
+  const [journey, setJourney] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    import('../../lib/creditRepairWorkflow').then(m => m.loadCreditRepairJourney()).then(data => {
+      setJourney(data)
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [])
+
+  const steps = [
+    { key: 'profile', label: 'Profile Complete', icon: CheckCircle2, desc: 'Your profile and business info are on file.' },
+    { key: 'upload_report', label: 'Upload Credit Report', icon: Upload, desc: 'Upload your credit report PDF for specialist review.' },
+    { key: 'specialist_review', label: 'Specialist Review', icon: Eye, desc: 'A credit specialist reviews your report and identifies dispute items.' },
+    { key: 'dispute_items', label: 'Dispute Items', icon: FileSearch, desc: 'Review the identified dispute items and evidence.' },
+    { key: 'draft_letters', label: 'Draft Letters', icon: FileText, desc: 'Nexus generates dispute letter drafts for your review.' },
+    { key: 'approve_send', label: 'Approve & Send', icon: Stamp, desc: 'Approve the letter and authorize DocuPost mailing.' },
+    { key: 'track_results', label: 'Track Results', icon: Clock, desc: 'Track mailing status and bureau responses.' },
+  ]
+
+  const currentIdx = steps.findIndex(s => s.key === journey?.currentStep) ?? 0
+
+  const review = journey?.reviews?.[0]
+  const disputeItems = journey?.disputeItems ?? []
+  const letters = journey?.letters ?? []
+  const mailJobs = journey?.mailJobs ?? []
+
+  return <div className="client-page">
+    <ClientPageHeader
+      title="Credit Repair Journey"
+      subtitle="A guided credit process — what you do, what the specialist does, and when DocuPost can send."
+      badge={journey ? 'Live workflow' : 'Workflow v1'}
+    />
+
+    {loading && <div style={{ color: '#66708f', fontSize: 12, padding: 8 }}>Loading credit repair journey...</div>}
+
+    {/* Journey Steps */}
+    <div className="client-card" style={{ padding: '14px 16px', marginBottom: 12 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10 }}>Journey Progress</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${steps.length}, 1fr)`, gap: 4 }}>
+        {steps.map((step, i) => {
+          const Icon = step.icon
+          const isDone = journey?.stepsCompleted?.includes(step.key)
+          const isCurrent = journey?.currentStep === step.key
+          return <div key={step.key} onClick={() => {}} style={{ padding: '8px 4px', borderRadius: 10, border: `1px solid ${isCurrent ? 'rgba(18,100,243,.3)' : '#e6ebf5'}`, background: isDone ? 'rgba(15,175,126,.04)' : isCurrent ? 'rgba(18,100,243,.04)' : 'transparent', textAlign: 'center', cursor: 'pointer', transition: 'all .15s' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: isDone ? 'rgba(15,175,126,.1)' : isCurrent ? 'rgba(18,100,243,.1)' : '#f0f3f8', display: 'grid', placeItems: 'center', margin: '0 auto 4px', color: isDone ? '#0faf7e' : isCurrent ? '#1264f3' : '#66708f' }}>
+              {isDone ? <CheckCircle size={14} /> : <Icon size={14} />}
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: isDone ? '#0faf7e' : isCurrent ? '#1264f3' : '#07143f' }}>{step.label}</div>
+          </div>
+        })}
+      </div>
+    </div>
+
+    {/* Current Status */}
+    {review && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10, background: 'rgba(18,100,243,.04)', border: '1px solid rgba(18,100,243,.15)' }}>
+      <strong style={{ color: '#1264f3', fontSize: 12 }}>Report Review Status</strong>
+      <span style={{ fontSize: 11, color: '#66708f', marginLeft: 8 }}>{review.status?.replace(/_/g, ' ')}</span>
+      {review.assigned_specialist && <span style={{ fontSize: 11, color: '#66708f', marginLeft: 8 }}>Assigned: {review.assigned_specialist}</span>}
+    </div>}
+
+    {/* Dispute Items */}
+    {disputeItems.length > 0 && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Dispute Items ({disputeItems.length})</h2>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {disputeItems.filter(d => d.client_visible).map(item => <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, border: '1px solid #e6ebf5' }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: item.status === 'resolved' ? 'rgba(15,175,126,.1)' : 'rgba(255,159,26,.1)', display: 'grid', placeItems: 'center', color: item.status === 'resolved' ? '#0faf7e' : '#ff9f1a', flexShrink: 0 }}>
+            {item.status === 'resolved' ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong style={{ fontSize: 12, color: '#07143f' }}>{item.furnisher_name || item.account_name || 'Dispute Item'}</strong>
+            <div style={{ fontSize: 10, color: '#66708f' }}>{item.bureau?.toUpperCase()} · {item.dispute_reason || 'Under review'}</div>
+          </div>
+          <span style={{ padding: '3px 8px', borderRadius: 14, background: item.status === 'resolved' ? 'rgba(15,175,126,.1)' : 'rgba(255,159,26,.1)', color: item.status === 'resolved' ? '#0faf7e' : '#ff9f1a', fontWeight: 700, fontSize: 10 }}>{item.status?.replace(/_/g, ' ')}</span>
+        </div>)}
+      </div>
+    </div>}
+
+    {/* Letters */}
+    {letters.length > 0 && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Dispute Letters ({letters.length})</h2>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {letters.map(letter => <div key={letter.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, border: '1px solid #e6ebf5', cursor: 'pointer' }} onClick={() => navigate('/client/dispute-review')}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: 'rgba(18,100,243,.1)', display: 'grid', placeItems: 'center', color: '#1264f3', flexShrink: 0 }}><FileText size={14} /></div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong style={{ fontSize: 12, color: '#07143f' }}>Letter to {letter.recipient_name || letter.recipient_type}</strong>
+            <div style={{ fontSize: 10, color: '#66708f' }}>{letter.status?.replace(/_/g, ' ')}</div>
+          </div>
+          <ChevronRight size={14} style={{ color: '#66708f' }} />
+        </div>)}
+      </div>
+    </div>}
+
+    {/* Mail Jobs */}
+    {mailJobs.length > 0 && <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Mail Tracking ({mailJobs.length})</h2>
+      <div style={{ display: 'grid', gap: 6 }}>
+        {mailJobs.map(job => <div key={job.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 10, border: '1px solid #e6ebf5' }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: job.status === 'delivered' ? 'rgba(15,175,126,.1)' : job.status === 'mailed' ? 'rgba(18,100,243,.1)' : 'rgba(255,159,26,.1)', display: 'grid', placeItems: 'center', color: job.status === 'delivered' ? '#0faf7e' : job.status === 'mailed' ? '#1264f3' : '#ff9f1a', flexShrink: 0 }}>
+            <Mail size={14} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <strong style={{ fontSize: 12, color: '#07143f' }}>Mail to {job.recipient_name || 'Recipient'}</strong>
+            <div style={{ fontSize: 10, color: '#66708f' }}>{job.status?.replace(/_/g, ' ')} {job.tracking_number ? `· ${job.tracking_number}` : ''}</div>
+          </div>
+        </div>)}
+      </div>
+    </div>}
+
+    {/* Action Buttons */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 10 }}>
+      <button className="cp-btn-primary" onClick={() => navigate('/client/documents')}>Upload Report</button>
+      <button className="cp-btn-outline" onClick={() => navigate('/client/dispute-review')}>Review Letters</button>
+      <button className="cp-btn-outline" onClick={() => navigate('/client/credit-profile')}>View Credit Profile</button>
+    </div>
+
+    <div className="client-card" style={{ padding: '10px 14px', background: '#f7fbff' }}>
+      <strong style={{ color: '#1264f3' }}>How it works:</strong>
+      <span style={{ color: '#66708f', fontSize: 12 }}> Nexus drafts letters only. A specialist reviews, then you approve, then DocuPost sends. No letters are sent without your explicit approval.</span>
+    </div>
+
+    <ClientGuidePanel suggestedKeys={['how_to_improve_credit', 'what_do_i_do_next', 'documents_needed']} />
+  </div>
+}
+
+export function DisputeReviewPage() {
+  const navigate = usePortalNav()
+  const [letters, setLetters] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [approving, setApproving] = useState(null)
+
+  useEffect(() => {
+    import('../../lib/creditRepairWorkflow').then(m => m.loadCreditRepairJourney()).then(data => {
+      setLetters(data.letters ?? [])
+      setLoading(false)
+    }).catch(() => setLoading(false))
+  }, [])
+
+  async function handleApprove(letterId) {
+    setApproving(letterId)
+    const { clientApproveLetter } = await import('../../lib/creditRepairWorkflow')
+    await clientApproveLetter(letterId)
+    setLetters(prev => prev.map(l => l.id === letterId ? { ...l, status: 'client_approved', client_approved_at: new Date().toISOString() } : l))
+    setApproving(null)
+  }
+
+  async function handleRequestSend(letterId) {
+    setApproving(letterId)
+    const { createDocuPostSendRequest } = await import('../../lib/creditRepairWorkflow')
+    await createDocuPostSendRequest(letterId)
+    setLetters(prev => prev.map(l => l.id === letterId ? { ...l, status: 'approved_for_docupost' } : l))
+    setApproving(null)
+  }
+
+  const reviewableLetters = letters.filter(l => ['draft', 'specialist_review', 'client_review', 'client_approved', 'approved_for_docupost'].includes(l.status))
+
+  return <div className="client-page">
+    <ClientPageHeader
+      title="Review & Send Dispute Letters"
+      subtitle="Review your dispute letter, approve it, and authorize mailing through DocuPost."
+      badge="Review gate"
+    />
+
+    <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(18,100,243,.04)', border: '1px solid rgba(18,100,243,.15)' }}>
+      <strong style={{ color: '#1264f3', fontSize: 12 }}>DocuPost sending is enabled only after specialist review and client approval/e-sign authorization.</strong>
+    </div>
+
+    {loading && <div style={{ color: '#66708f', fontSize: 12, padding: 8 }}>Loading letters...</div>}
+
+    {reviewableLetters.length === 0 && !loading && <div className="client-card" style={{ padding: '20px', textAlign: 'center' }}>
+      <FileText size={32} style={{ color: '#66708f', marginBottom: 8 }} />
+      <p style={{ color: '#66708f', fontSize: 13 }}>No letters ready for review yet. Letters appear here after a specialist reviews your dispute items.</p>
+    </div>}
+
+    {reviewableLetters.map(letter => <div key={letter.id} className="client-card" style={{ padding: 0, marginBottom: 10, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid #e6ebf5' }}>
+        <div>
+          <strong style={{ fontSize: 13 }}>Letter to {letter.recipient_name || letter.recipient_type}</strong>
+          <div style={{ fontSize: 11, color: '#66708f', marginTop: 2 }}>Status: {letter.status?.replace(/_/g, ' ')}</div>
+        </div>
+        <span style={{ padding: '4px 10px', borderRadius: 14, background: letter.status === 'client_approved' || letter.status === 'approved_for_docupost' ? 'rgba(15,175,126,.1)' : 'rgba(255,159,26,.1)', color: letter.status === 'client_approved' || letter.status === 'approved_for_docupost' ? '#0faf7e' : '#ff9f1a', fontWeight: 700, fontSize: 11 }}>
+          {letter.status?.replace(/_/g, ' ')}
+        </span>
+      </div>
+      <div style={{ padding: '14px', fontSize: 12, color: '#07143f', lineHeight: 1.6, maxHeight: 300, overflow: 'auto', whiteSpace: 'pre-wrap', fontFamily: 'Georgia, serif' }}>
+        {letter.letter_body}
+      </div>
+      <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderTop: '1px solid #e6ebf5' }}>
+        {letter.status === 'client_review' && <button className="cp-btn-primary" disabled={approving === letter.id} onClick={() => handleApprove(letter.id)}>{approving === letter.id ? 'Approving...' : 'Approve Letter'}</button>}
+        {letter.status === 'client_approved' && <button className="cp-btn-primary" disabled={approving === letter.id} onClick={() => handleRequestSend(letter.id)}>{approving === letter.id ? 'Requesting...' : 'Request DocuPost Send'}</button>}
+        {letter.status === 'approved_for_docupost' && <span style={{ color: '#0faf7e', fontSize: 12, fontWeight: 700 }}>✓ Approved — awaiting DocuPost processing</span>}
+        <button className="cp-btn-outline" onClick={() => navigate('/client/credit-repair-journey')}>Back to Journey</button>
+      </div>
+    </div>)}
+
+    <div className="client-card" style={{ padding: '10px 14px', background: '#f7fbff', marginTop: 10 }}>
+      <strong style={{ color: '#1264f3' }}>Reminder:</strong>
+      <span style={{ color: '#66708f', fontSize: 12 }}> No dispute letter is sent without your explicit approval. DocuPost handles certified mail and return receipt tracking.</span>
+    </div>
+
+    <ClientGuidePanel suggestedKeys={['what_goclear_is_reviewing', 'what_do_i_do_next', 'how_to_improve_credit']} />
+  </div>
+}
+
 export const clientPageMap = {
   '/client/dashboard': <ClientDashboard />,
   '/client/profile': <ProfileBusinessIntakeForm />,
@@ -1097,4 +1304,6 @@ export const clientPageMap = {
   '/client/request-review': <RequestReviewPage />,
   '/client/messages': <ClientMessagesPage />,
   '/client/settings': <ClientSettingsPage />,
+  '/client/credit-repair-journey': <CreditRepairJourneyPage />,
+  '/client/dispute-review': <DisputeReviewPage />,
 }
