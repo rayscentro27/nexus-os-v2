@@ -4,7 +4,7 @@ import {
   Landmark, LockKeyhole, Mail, SearchCheck, Settings, TrendingUp, Upload,
   Star, MessageSquare, Lightbulb, CreditCard, ArrowUpCircle, Send,
   Rocket, Shield, Wallet, CircleCheck, ChevronRight, Sparkles,
-  ArrowRight, Copy, Users, Lock,
+  ArrowRight, Copy, User, Users, Lock,
 } from 'lucide-react'
 import { ClientGuidePanel } from '../../components/client/ClientGuidePanel'
 import { DocumentUploadZone } from '../../components/client/DocumentUploadZone'
