@@ -18,8 +18,39 @@ import { clientDataMode } from '../../data/clientDataMode'
 import { loadClientDashboardLiveData } from '../../services/clientDashboardLiveData'
 import { supabase } from '../../lib/supabaseClient'
 import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
+import { loadClientPortalLiveData } from '../../lib/clientPortalDataAdapter'
 
-const score = data.readinessScores
+function usePortalLiveData() {
+  const [live, setLive] = useState(null)
+  useEffect(() => {
+    if (!clientDataMode.liveSupabaseTestClientEnabled) return
+    loadClientPortalLiveData().then(setLive).catch(() => {})
+  }, [])
+  return live
+}
+
+function mapScoresFromRows(rows) {
+  if (!rows || rows.length === 0) return null
+  const mapped = {}
+  for (const row of rows) {
+    const key = row.score_type || row.category
+    if (key) mapped[key] = Number(row.score ?? 0)
+  }
+  return mapped
+}
+
+function mapTasksFromRows(rows) {
+  if (!rows || rows.length === 0) return null
+  return rows.map(t => ({
+    id: t.id,
+    title: t.title,
+    status: t.status,
+    priority: t.priority,
+    category: t.category,
+  }))
+}
+
+const staticScore = data.readinessScores
 
 const fundingJourneySteps = [
   { label: 'Upload Credit Report', sublabel: 'Credit Report', icon: Upload, status: 'complete', detail: 'Completed', route: '/client/documents' },
@@ -36,12 +67,22 @@ const businessOpportunities = [
 
 export function ClientDashboard() {
   const navigate = usePortalNav()
+  const { setStatus: setLiveStatus } = usePortalLiveStatus()
   const [live, setLive] = useState(null)
   useEffect(() => {
-    if (clientDataMode.liveSupabaseTestClientEnabled) loadClientDashboardLiveData().then(setLive)
-  }, [])
+    if (!clientDataMode.liveSupabaseTestClientEnabled) return
+    setLiveStatus('loading')
+    loadClientDashboardLiveData().then(result => {
+      setLive(result)
+      if (result.enabled && result.status !== 'no_client_context') {
+        setLiveStatus('connected')
+      }
+    }).catch(() => setLiveStatus('error'))
+  }, [setLiveStatus])
+  const liveScores = mapScoresFromRows(live?.scores)
+  const score = liveScores || staticScore
   const liveProfile = live?.profile
-  const dashboardTasks = live?.tasks?.length ? live.tasks : data.clientTasks
+  const dashboardTasks = live?.tasks?.length ? mapTasksFromRows(live.tasks) : data.clientTasks
   const badge = liveProfile ? 'Live test data' : 'Demo data'
   return <div className="client-page client-dashboard-page">
     <ClientPageHeader title="Dashboard" subtitle="Your credit, business, and funding-readiness snapshot." badge={badge} />
@@ -166,9 +207,20 @@ export function ClientDashboard() {
 
 export function CreditProfilePage() {
   const navigate = usePortalNav()
-  const profile = data.creditProfileReadiness
+  const live = usePortalLiveData()
+  const liveScores = mapScoresFromRows(live?.scores)
+  const profile = liveScores ? {
+    ...data.creditProfileReadiness,
+    overallScore: liveScores.credit_profile || data.creditProfileReadiness.overallScore,
+    scoreFactors: data.creditProfileReadiness.scoreFactors,
+    positiveFactors: data.creditProfileReadiness.positiveFactors,
+    negativeFactors: data.creditProfileReadiness.negativeFactors,
+    topActions: data.creditProfileReadiness.topActions,
+  } : data.creditProfileReadiness
+  const badge = live?.profile ? 'Live data' : 'Not FICO'
   return <div className="client-page">
-    <ClientPageHeader title="Credit Profile" subtitle="Understand your educational Nexus Readiness Score and what may improve readiness." badge="Not FICO" />
+    <ClientPageHeader title="Credit Profile" subtitle="Understand your educational Nexus Readiness Score and what may improve readiness." badge={badge} />
+    {live?.scores && live.scores.length > 0 && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Credit profile scores loaded from Supabase readiness_scores.</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Nexus Readiness Score" value={profile.overallScore} status="Good progress" text={profile.scoreDisclaimer} />
       <ClientMetricCard icon={TrendingUp} label="Progress" value="+14" note="Demo six-month trend" tone="green" />
@@ -197,14 +249,22 @@ export function CreditProfilePage() {
 
 export function CreditUtilizationPage() {
   const navigate = usePortalNav()
-  const profile = data.creditProfileReadiness
+  const live = usePortalLiveData()
+  const liveCreditItems = live?.creditItems || []
+  const liveScores = mapScoresFromRows(live?.scores)
+  const profile = liveScores ? {
+    ...data.creditProfileReadiness,
+    scoreFactors: data.creditProfileReadiness.scoreFactors,
+  } : data.creditProfileReadiness
   const utilizationFactor = profile.scoreFactors.find(f => f[0] === 'Utilization')
   const utilizationScore = utilizationFactor ? utilizationFactor[1] : 58
+  const creditItems = liveCreditItems.length > 0 ? liveCreditItems : null
   return <div className="client-page">
-    <ClientPageHeader title="Credit Utilization" subtitle="Review your revolving credit utilization and create a pay-down plan." badge="Balance management" />
+    <ClientPageHeader title="Credit Utilization" subtitle="Review your revolving credit utilization and create a pay-down plan." badge={creditItems ? 'Live data' : 'Balance management'} />
+    {creditItems && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Utilization data loaded from Supabase credit_workflow_items.</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Utilization Score" value={utilizationScore} status={utilizationScore >= 70 ? 'On track' : 'Needs attention'} text="Lower utilization may improve your funding readiness." />
-      <ClientMetricCard icon={CreditCard} label="Revolving Accounts" value="3" note="Demo accounts" />
+      <ClientMetricCard icon={CreditCard} label="Revolving Accounts" value={creditItems ? String(creditItems.length) : '3'} note={creditItems ? 'Live accounts' : 'Demo accounts'} />
       <ClientMetricCard icon={ArrowUpCircle} label="Target" value="30%" note="Recommended max" tone="green" />
     </div>
     <div className="client-two-col">
@@ -307,9 +367,13 @@ export function ClientDocumentsPage() {
 
 export function BusinessSetupPage() {
   const navigate = usePortalNav()
+  const live = usePortalLiveData()
+  const liveBizReqs = live?.businessProfile || []
   const business = data.businessProfileReadiness
+  const hasLiveBiz = liveBizReqs.length > 0
   return <div className="client-page">
-    <ClientPageHeader title="Business Setup" subtitle="Build a consistent, documented business profile before funding review." badge="Profile builder" />
+    <ClientPageHeader title="Business Setup" subtitle="Build a consistent, documented business profile before funding review." badge={hasLiveBiz ? 'Live data' : 'Profile builder'} />
+    {hasLiveBiz && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Business profile requirements loaded from Supabase ({liveBizReqs.length} items).</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Business Readiness" value={business.readinessScore} status="Good start" text={business.fundingImpactNotes} />
       <ClientMetricCard icon={CheckCircle2} label="Completed" value={`${business.completedItems}/10`} note="Checklist items" tone="green" />
@@ -368,9 +432,13 @@ export function BusinessSetupPage() {
 
 export function BusinessBankabilityPage() {
   const navigate = usePortalNav()
+  const live = usePortalLiveData()
+  const liveBizReqs = live?.businessProfile || []
   const business = data.businessProfileReadiness
+  const hasLiveBiz = liveBizReqs.length > 0
   return <div className="client-page">
-    <ClientPageHeader title="Business Bankability" subtitle="Review banking readiness and revenue documentation for funding paths." badge="Banking readiness" />
+    <ClientPageHeader title="Business Bankability" subtitle="Review banking readiness and revenue documentation for funding paths." badge={hasLiveBiz ? 'Live data' : 'Banking readiness'} />
+    {hasLiveBiz && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Business profile requirements loaded from Supabase ({liveBizReqs.length} items).</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Bankability Score" value={business.readinessScore} status="Building" text="Open a business bank account and document the banking relationship to improve readiness." />
       <ClientMetricCard icon={Landmark} label="Bank Account" value="In progress" note="Business account needed" tone="orange" />
@@ -403,12 +471,17 @@ export function BusinessBankabilityPage() {
 
 export function FundingReadinessPage() {
   const navigate = usePortalNav()
+  const live = usePortalLiveData()
+  const liveFundingScores = live?.fundingScores || []
+  const liveScores = mapScoresFromRows(live?.scores)
   const funding = data.fundingReadiness
+  const hasLiveFunding = liveFundingScores.length > 0
   const groups = [['Personal credit blockers', funding.personalCreditBlockers], ['Business profile blockers', funding.businessProfileBlockers], ['Banking blockers', funding.bankingBlockers], ['Document blockers', funding.documentBlockers]]
   return <div className="client-page">
-    <ClientPageHeader title="Funding Readiness" subtitle="See what must be completed before GoClear can review an application path." badge={funding.status} />
+    <ClientPageHeader title="Funding Readiness" subtitle="See what must be completed before GoClear can review an application path." badge={hasLiveFunding ? 'Live data' : funding.status} />
+    {hasLiveFunding && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Funding readiness scores loaded from Supabase ({liveFundingScores.length} entries).</span></div>}
     <div className="client-metric-grid compact">
-      <ClientScoreCard title="Funding Readiness" value={funding.readinessScore} status={funding.status} text={funding.recommendedPath} />
+      <ClientScoreCard title="Funding Readiness" value={liveScores?.funding_readiness || funding.readinessScore} status={funding.status} text={funding.recommendedPath} />
       <ClientMetricCard icon={LockKeyhole} label="Blocker Groups" value={groups.length} note="No application yet" tone="red" />
       <ClientMetricCard icon={FileCheck2} label="GoClear Status" value="Pending" note="Approval required" tone="orange" />
     </div>
@@ -483,9 +556,13 @@ export function FundingReadinessPage() {
 
 export function RecommendationsPage() {
   const navigate = usePortalNav()
+  const live = usePortalLiveData()
+  const livePartnerOffers = live?.partnerOffers || []
   const opportunities = data.businessOpportunities
+  const hasLivePartner = livePartnerOffers.length > 0
   return <div className="client-page">
-    <ClientPageHeader title="Recommendations" subtitle="Explore educational paths matched to your current demo readiness — not guaranteed offers." badge="Fit review required" />
+    <ClientPageHeader title="Recommendations" subtitle="Explore educational paths matched to your current readiness — not guaranteed offers." badge={hasLivePartner ? 'Live data' : 'Fit review required'} />
+    {hasLivePartner && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Partner offers loaded from Supabase ({livePartnerOffers.length} offers).</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Opportunity Score" value={opportunities.opportunityScore} status="Strong potential" text="Improve readiness gaps before selecting a funding or partner path." />
       <ClientMetricCard icon={BadgeCheck} label="Matched Paths" value={opportunities.matchedOpportunities.length} note="Educational matches" tone="purple" />
@@ -499,7 +576,11 @@ export function RecommendationsPage() {
         <ClientActionList rows={opportunities.fundingPaths.map(p => ({ title: p, status: 'goClear review required', _route: '/client/funding-readiness' }))} onNavigate={navigate} />
       </ClientSection>
       <ClientSection title="Partner/tool options">
-        <ClientActionList rows={opportunities.partnerOffers.map(p => ({ title: p, status: 'partner', _route: '/client/resources' }))} onNavigate={navigate} />
+        {hasLivePartner ? (
+          <ClientActionList rows={livePartnerOffers.map(p => ({ title: p.title || p, status: p.status || 'partner', _route: '/client/resources' }))} onNavigate={navigate} />
+        ) : (
+          <ClientActionList rows={opportunities.partnerOffers.map(p => ({ title: p, status: 'partner', _route: '/client/resources' }))} onNavigate={navigate} />
+        )}
         <p className="client-safe-note">Best client outcome first. Affiliate value second. Free/DIY options remain visible.</p>
       </ClientSection>
     </div>
@@ -509,8 +590,12 @@ export function RecommendationsPage() {
 
 export function ResourcesPage() {
   const navigate = usePortalNav()
+  const live = usePortalLiveData()
+  const livePartnerOffers = live?.partnerOffers || []
+  const hasLivePartner = livePartnerOffers.length > 0
   return <div className="client-page">
-    <ClientPageHeader title="Resources & Affiliates" subtitle="Tools, services, and options to support your credit and business readiness." badge="Transparency" />
+    <ClientPageHeader title="Resources & Affiliates" subtitle="Tools, services, and options to support your credit and business readiness." badge={hasLivePartner ? 'Live data' : 'Transparency'} />
+    {hasLivePartner && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Partner offers loaded from Supabase ({livePartnerOffers.length} offers).</span></div>}
     <div className="client-three-col">
       <ClientSection title="Credit Monitoring">
         <ClientActionList rows={[
@@ -529,12 +614,16 @@ export function ResourcesPage() {
         <p className="client-safe-note">Physical mailing requires GoClear approval and compliance review.</p>
       </ClientSection>
       <ClientSection title="Business Banking">
-        <ClientActionList rows={[
-          { title: 'Bluevine — online business checking', status: 'recommended', _route: '/client/business-bankability' },
-          { title: 'Mercury — startup banking', status: 'option', _route: '/client/business-bankability' },
-          { title: 'Relay — business banking', status: 'option', _route: '/client/business-bankability' },
-          { title: 'Credit union business account', status: 'alternative', _route: '/client/business-bankability' },
-        ]} onNavigate={navigate} />
+        {hasLivePartner ? (
+          <ClientActionList rows={livePartnerOffers.filter(p => /bank|mercury|relay|bluevine/i.test(p.title || p.category || '')).map(p => ({ title: p.title || p, status: p.status || 'option', _route: '/client/business-bankability' })).slice(0, 5)} onNavigate={navigate} />
+        ) : (
+          <ClientActionList rows={[
+            { title: 'Bluevine — online business checking', status: 'recommended', _route: '/client/business-bankability' },
+            { title: 'Mercury — startup banking', status: 'option', _route: '/client/business-bankability' },
+            { title: 'Relay — business banking', status: 'option', _route: '/client/business-bankability' },
+            { title: 'Credit union business account', status: 'alternative', _route: '/client/business-bankability' },
+          ]} onNavigate={navigate} />
+        )}
         <p className="client-safe-note">No account has been opened. These are educational recommendations.</p>
       </ClientSection>
     </div>
@@ -557,9 +646,11 @@ export function ResourcesPage() {
 
 export function RequestReviewPage() {
   const navigate = usePortalNav()
-  const funding = data.fundingReadiness
-  const tasks = data.clientTasks
-  const openTasks = tasks.filter(t => t.status !== 'complete')
+  const live = usePortalLiveData()
+  const liveScores = mapScoresFromRows(live?.scores)
+  const liveTasks = live?.tasks || []
+  const funding = liveScores ? { ...data.fundingReadiness, readinessScore: liveScores.funding_readiness || data.fundingReadiness.readinessScore } : data.fundingReadiness
+  const openTasks = (liveTasks.length > 0 ? mapTasksFromRows(liveTasks) : data.clientTasks).filter(t => t.status !== 'complete')
   const [reviewState, setReviewState] = useState('idle')
   const [reviewError, setReviewError] = useState('')
   useEffect(() => {

@@ -9,6 +9,7 @@ import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
 import { supabase } from '../../lib/supabaseClient'
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
+import { loadClientPortalLiveData } from '../../lib/clientPortalDataAdapter'
 
 export const PortalNavContext = createContext(() => {})
 export const PortalLiveStatusContext = createContext({ status: 'idle', setStatus: () => {} })
@@ -255,10 +256,27 @@ export function ClientMobileSidebar({ path, onNavigate, open, onClose }) {
 export function ClientPortalShell({ path, onNavigate, children }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [liveStatus, setLiveStatus] = useState('idle')
+  const [livePortalData, setLivePortalData] = useState(null)
   useEffect(() => setMobileOpen(false), [path])
 
-  const docs = clientPortalData.documents
-  const readiness = clientPortalData.readinessScores
+  useEffect(() => {
+    if (!clientDataMode.liveSupabaseTestClientEnabled) return
+    let cancelled = false
+    loadClientPortalLiveData().then(result => {
+      if (!cancelled && result.profile) {
+        setLivePortalData(result)
+        setLiveStatus('connected')
+      }
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const docs = livePortalData?.documents || clientPortalData.documents
+  const readiness = livePortalData?.scores?.reduce((acc, s) => {
+    const key = s.score_type || s.category
+    if (key) acc[key] = Number(s.score ?? 0)
+    return acc
+  }, {}) || clientPortalData.readinessScores
   const statuses = {
     creditReportUploaded: docs.uploadedDocuments?.some(d => /credit|report/i.test(d)) || false,
     addressVerified: docs.uploadedDocuments?.some(d => /address/i.test(d)) || false,

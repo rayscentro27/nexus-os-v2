@@ -211,6 +211,8 @@ export default function ClientsPanel({ onAskHermes }) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [sectionResult, setSectionResult] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [clientCounts, setClientCounts] = useState({})
 
   useEffect(() => {
     let cancelled = false
@@ -236,7 +238,40 @@ export default function ClientsPanel({ onAskHermes }) {
     return () => { cancelled = true }
   }, [])
 
+  useEffect(() => {
+    if (!sectionResult || !isSupabaseConfigured) return
+    let cancelled = false
+    async function fetchCounts() {
+      const counts = {}
+      for (const client of sectionResult.records) {
+        const clientId = client.client_id || client.id
+        if (!clientId) continue
+        try {
+          const [docsResult, tasksResult] = await Promise.all([
+            supabase.from('client_documents').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
+            supabase.from('client_tasks').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('category', 'review_request').eq('status', 'pending_admin_review'),
+          ])
+          if (!cancelled) {
+            counts[clientId] = {
+              documentCount: docsResult.count ?? 0,
+              pendingReviewCount: tasksResult.count ?? 0,
+            }
+          }
+        } catch { /* silent */ }
+      }
+      if (!cancelled) setClientCounts(counts)
+    }
+    fetchCounts()
+    return () => { cancelled = true }
+  }, [sectionResult])
+
   const items = sectionResult ? sectionResult.records : clientsList
+  const filteredItems = searchQuery
+    ? items.filter(c => {
+        const q = searchQuery.toLowerCase()
+        return (c.name || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q) || (c.client_id || c.id || '').toLowerCase().includes(q)
+      })
+    : items
 
   function handleRowClick(client) {
     setSelected(client)
@@ -278,15 +313,27 @@ export default function ClientsPanel({ onAskHermes }) {
       </div>
 
       <section className="nxos-table-card" style={{ background: '#0d1a2c', border: '1px solid #213650', borderRadius: 14, padding: 20 }}>
-        <h2 style={{ margin: '0 0 12px' }}>Client status (test/fake customer)</h2>
-        {items.map(client => {
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Client status (test/fake customer)</h2>
+          <input
+            type="text"
+            placeholder="Search clients by name, email, or ID..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ background: '#0e1c2f', border: '1px solid #213650', borderRadius: 8, color: '#dbe9fa', padding: '6px 12px', fontSize: 12, width: 280 }}
+          />
+        </div>
+        {filteredItems.length === 0 && <p style={{ color: '#8fa3be', fontSize: 12 }}>No clients match the search.</p>}
+        {filteredItems.map(client => {
           const stage = clientStages.find(s => s.id === client.stage)
+          const clientId = client.client_id || client.id
+          const counts = clientCounts[clientId] || {}
           return (
             <button
               key={client.id}
               type="button"
               className="nxos-table-row"
-              style={{ gridTemplateColumns: '1.2fr auto auto auto', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}
+              style={{ gridTemplateColumns: '1.2fr auto auto auto auto auto', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}
               onClick={() => handleRowClick(client)}
             >
               <div>
@@ -296,6 +343,8 @@ export default function ClientsPanel({ onAskHermes }) {
               <span className="pill pill-green">{client.status}</span>
               <span className="pill pill-amber">{stage ? stage.label : client.stage}</span>
               <span style={{ color: '#91a6c0', fontSize: 12 }}>{client.onboardingReadiness || 0}% ready</span>
+              <span style={{ color: counts.documentCount > 0 ? '#10b981' : '#91a6c0', fontSize: 11 }}>{counts.documentCount || 0} docs</span>
+              <span style={{ color: (counts.pendingReviewCount || 0) > 0 ? '#f59e0b' : '#91a6c0', fontSize: 11 }}>{counts.pendingReviewCount || 0} reviews</span>
             </button>
           )
         })}

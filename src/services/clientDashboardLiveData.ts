@@ -4,7 +4,7 @@ import { resolveClientContextForCurrentUser, type ResolvedClientContext } from '
 
 export interface ClientDashboardLiveResult {
   enabled: boolean;
-  status: ConnectionStatus | 'feature_disabled';
+  status: ConnectionStatus | 'feature_disabled' | 'no_client_context';
   profile: Row | null;
   tasks: Row[];
   scores: Row[];
@@ -13,21 +13,22 @@ export interface ClientDashboardLiveResult {
   resolvedTenantId: string | null;
 }
 
-const TEST_CLIENT_ID = 'client_test_julius_erving';
-const TEST_TENANT_ID = 'tenant_demo_goclear';
-
 export async function loadClientDashboardLiveData(forcedContext?: ResolvedClientContext): Promise<ClientDashboardLiveResult> {
   if (!clientDataMode.liveSupabaseTestClientEnabled) {
     return { enabled: false, status: 'feature_disabled', profile: null, tasks: [], scores: [], documents: [], resolvedClientId: null, resolvedTenantId: null };
   }
 
-  let ctx = forcedContext
+  let ctx: ResolvedClientContext | null = forcedContext ?? null
   if (!ctx) {
-    const resolved = await resolveClientContextForCurrentUser()
-    if (resolved) ctx = resolved
+    ctx = await resolveClientContextForCurrentUser()
   }
-  const clientId = ctx?.clientId || TEST_CLIENT_ID
-  const tenantId = ctx?.tenantId || TEST_TENANT_ID
+
+  if (!ctx) {
+    return { enabled: false, status: 'no_client_context', profile: null, tasks: [], scores: [], documents: [], resolvedClientId: null, resolvedTenantId: null };
+  }
+
+  const clientId = ctx.clientId
+  const tenantId = ctx.tenantId
 
   const [profiles, tasks, scores, documents] = await Promise.all([
     listTableDetailed('client_profiles', { eq: ['client_id', clientId], limit: 1 }),
