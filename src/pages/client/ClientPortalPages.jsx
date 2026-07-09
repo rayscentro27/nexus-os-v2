@@ -160,7 +160,7 @@ export function ClientDashboard() {
         <span style={{ fontSize: 11, color: 'var(--cp-green)', fontWeight: 600 }}>✓ 28% ready for funding</span>
         <span style={{ fontSize: 10, color: 'var(--cp-muted)' }}>• Reduce utilization under 30% to improve odds.</span>
       </div>
-      <button className="cp-btn-primary" style={{ width: '100%' }} onClick={() => navigate('/client/credit-utilization')}>Improve Approval Odds</button>
+      <button className="cp-btn-primary" style={{ width: '100%' }} onClick={() => navigate('/client/credit-profile')}>Improve Approval Odds</button>
       <p style={{ fontSize: 9, color: 'var(--cp-muted-light)', textAlign: 'center', marginTop: 4 }}>Educational estimate only, not a lending decision</p>
     </div>
 
@@ -254,7 +254,7 @@ export function CreditProfilePage() {
       <ClientSection title="Factors needing attention"><ul>{profile.negativeFactors.map(x => <li key={x}>{x}</li>)}</ul></ClientSection>
     </div>
     <ClientSection title="Top actions">
-      <ClientActionList rows={profile.topActions.map(a => ({ title: a, status: 'recommended', _route: a.toLowerCase().includes('utilization') ? '/client/credit-utilization' : a.toLowerCase().includes('document') ? '/client/documents' : '/client/credit-profile' }))} onNavigate={navigate} />
+      <ClientActionList rows={profile.topActions.map(a => ({ title: a, status: 'recommended', _route: a.toLowerCase().includes('utilization') ? '/client/credit-profile' : a.toLowerCase().includes('document') ? '/client/documents' : '/client/credit-profile' }))} onNavigate={navigate} />
     </ClientSection>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 10 }}>
       <button className="cp-btn-primary" onClick={() => navigate('/client/resources')}>Connect Monitoring</button>
@@ -306,6 +306,102 @@ export function CreditUtilizationPage() {
       </ClientSection>
     </div>
     <ClientGuidePanel suggestedKeys={['how_to_improve_credit', 'what_do_i_do_next', 'can_i_apply_for_funding_now']} />
+  </div>
+}
+
+export function CreditHealthPage() {
+  const navigate = usePortalNav()
+  const live = usePortalLiveData()
+  const liveScores = mapScoresFromRows(live?.scores)
+  const liveCreditItems = live?.creditItems || []
+  const profile = liveScores ? {
+    ...data.creditProfileReadiness,
+    overallScore: liveScores.credit_profile || data.creditProfileReadiness.overallScore,
+    scoreFactors: data.creditProfileReadiness.scoreFactors,
+    positiveFactors: data.creditProfileReadiness.positiveFactors,
+    negativeFactors: data.creditProfileReadiness.negativeFactors,
+    topActions: data.creditProfileReadiness.topActions,
+  } : data.creditProfileReadiness
+  const utilizationFactor = profile.scoreFactors.find(f => f[0] === 'Utilization')
+  const utilizationScore = utilizationFactor ? utilizationFactor[1] : 58
+  const creditItems = liveCreditItems.length > 0 ? liveCreditItems : null
+  const badge = live?.profile ? 'Live data' : 'Credit health'
+
+  const hasBadges = utilizationScore < 30
+  const fundingImpact = utilizationScore >= 70 ? 'Strong' : utilizationScore >= 40 ? 'Moderate' : 'Needs improvement'
+
+  return <div className="client-page">
+    <ClientPageHeader title="Credit Health" subtitle="Your combined credit profile, utilization, and readiness — all in one view." badge={badge} />
+
+    {/* Live data banner */}
+    {live?.scores && live.scores.length > 0 && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Scores and utilization loaded from Supabase readiness_scores.</span></div>}
+
+    {/* Top metric cards */}
+    <div className="client-metric-grid compact">
+      <ClientScoreCard title="Nexus Readiness Score" value={profile.overallScore} status="Good progress" text={profile.scoreDisclaimer} />
+      <ClientMetricCard icon={TrendingUp} label="Utilization" value={`${utilizationScore}%`} note={utilizationScore >= 70 ? 'On track' : 'Needs attention'} tone={utilizationScore >= 70 ? 'green' : utilizationScore >= 40 ? 'orange' : 'red'} />
+      <ClientMetricCard icon={CircleAlert} label="Attention Factors" value={profile.negativeFactors.length} note="Review safely" tone="orange" />
+    </div>
+
+    {/* Funding readiness impact card */}
+    <div className="client-card" style={{ padding: '12px 14px', marginBottom: 10, background: 'linear-gradient(135deg, rgba(37,99,235,.06), rgba(14,165,233,.04))', border: '1px solid rgba(37,99,235,.15)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, var(--cp-cyan), var(--cp-blue))', display: 'grid', placeItems: 'center', color: 'white', flexShrink: 0 }}><TrendingUp size={16} /></div>
+        <div style={{ flex: 1 }}>
+          <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800 }}>Funding Readiness Impact: {fundingImpact}</h3>
+          <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--cp-muted)' }}>Your credit health directly affects your funding options. {utilizationScore >= 70 ? 'You\'re in a strong position.' : 'Improving utilization will unlock better terms.'}</p>
+        </div>
+        <button className="cp-btn-primary" style={{ flexShrink: 0 }} onClick={() => navigate('/client/funding-readiness')}>View Funding Readiness</button>
+      </div>
+    </div>
+
+    {/* Score factors */}
+    <ClientSection title="Score factors" action="Educational only"><ClientFactorGrid rows={profile.scoreFactors} /></ClientSection>
+
+    {/* Two column: positive/negative factors */}
+    <div className="client-two-col">
+      <ClientSection title="Positive factors"><ul>{profile.positiveFactors.map(x => <li key={x}>{x}</li>)}</ul></ClientSection>
+      <ClientSection title="Factors needing attention"><ul>{profile.negativeFactors.map(x => <li key={x}>{x}</li>)}</ul></ClientSection>
+    </div>
+
+    {/* Utilization breakdown */}
+    <div className="client-two-col" style={{ marginTop: 10 }}>
+      <ClientSection title="Utilization breakdown">
+        <div className="client-bar-row"><span>Card A — Demo</span><div><i style={{ width: '45%' }} /></div><strong>45%</strong></div>
+        <div className="client-bar-row"><span>Card B — Demo</span><div><i style={{ width: '62%' }} /></div><strong>62%</strong></div>
+        <div className="client-bar-row"><span>Card C — Demo</span><div><i style={{ width: '28%' }} /></div><strong>28%</strong></div>
+        <p className="client-safe-note">Demo values only. Connect live credit monitoring for real utilization data.</p>
+      </ClientSection>
+      <ClientSection title="Recommended actions">
+        <ClientActionList rows={[
+          { title: 'Pay down Card B first (highest utilization)', status: 'recommended', _route: '/client/documents' },
+          { title: 'Keep Card C below 30%', status: 'on_track', _route: '/client/credit-profile' },
+          { title: 'Avoid new revolving accounts', status: 'important', _route: '/client/credit-profile' },
+          { title: 'Request credit limit increase (optional)', status: 'optional', _route: '/client/resources' },
+        ]} onNavigate={navigate} />
+      </ClientSection>
+    </div>
+
+    {/* Top actions */}
+    <ClientSection title="Top actions">
+      <ClientActionList rows={profile.topActions.map(a => ({ title: a, status: 'recommended', _route: a.toLowerCase().includes('utilization') ? '/client/credit-profile' : a.toLowerCase().includes('document') ? '/client/documents' : '/client/credit-profile' }))} onNavigate={navigate} />
+    </ClientSection>
+
+    {/* Quick action buttons */}
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 10 }}>
+      <button className="cp-btn-primary" onClick={() => navigate('/client/documents')}>Upload Report</button>
+      <button className="cp-btn-outline" onClick={() => navigate('/client/credit-repair-journey')}>Credit Repair Journey</button>
+      <button className="cp-btn-outline" onClick={() => navigate('/client/funding-readiness')}>Funding Readiness</button>
+      <button className="cp-btn-outline" onClick={() => navigate('/client/resources')}>Connect Monitoring</button>
+    </div>
+
+    {/* Tip card */}
+    <div className="client-card" style={{ padding: '10px 14px', marginTop: 10, background: '#f7fbff' }}>
+      <strong style={{ color: 'var(--cp-blue)' }}>💡 Did You Know?</strong>
+      <span style={{ color: 'var(--cp-muted)', fontSize: 12 }}> Businesses with utilization below 30% are more likely to qualify for stronger funding terms. Lower utilization improves both your credit score and funding readiness.</span>
+    </div>
+
+    <ClientGuidePanel suggestedKeys={['how_to_improve_credit', 'what_do_i_do_next', 'what_goclear_is_reviewing']} />
   </div>
 }
 
@@ -514,7 +610,7 @@ export function FundingReadinessPage() {
       <h2 style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>Top Blockers</h2>
       <div style={{ display: 'grid', gap: 4 }}>
         {[
-          { title: 'High Credit Utilization', desc: 'Revolving utilization is too high.', route: '/client/credit-utilization' },
+          { title: 'High Credit Utilization', desc: 'Revolving utilization is too high.', route: '/client/credit-profile' },
           { title: 'Missing Business Bank Account', desc: 'Lenders want to see active banking.', route: '/client/business-bankability' },
           { title: 'Thin Credit History', desc: 'Business credit history is limited.', route: '/client/credit-profile' },
           { title: 'Missing Revenue Documents', desc: 'Provide proof of revenue.', route: '/client/documents' },
@@ -530,7 +626,7 @@ export function FundingReadinessPage() {
       <h2 style={{ fontSize: 13, fontWeight: 800, marginBottom: 6 }}>Next Best Actions</h2>
       <ClientActionList rows={[
         { title: 'Open a Business Bank Account', status: 'high priority', _route: '/client/business-bankability' },
-        { title: 'Lower Your Credit Utilization', status: 'high priority', _route: '/client/credit-utilization' },
+        { title: 'Lower Your Credit Utilization', status: 'high priority', _route: '/client/credit-profile' },
         { title: 'Add Revenue Documentation', status: 'medium priority', _route: '/client/documents' },
         { title: 'Build Business Credit', status: 'medium priority', _route: '/client/recommendations' },
       ]} onNavigate={navigate} />
@@ -1199,8 +1295,8 @@ export function DisputeReviewPage() {
 export const clientPageMap = {
   '/client/dashboard': <ClientDashboard />,
   '/client/profile': <ProfileBusinessIntakeForm />,
-  '/client/credit-profile': <CreditProfilePage />,
-  '/client/credit-utilization': <CreditUtilizationPage />,
+  '/client/credit-profile': <CreditHealthPage />,
+  '/client/credit-utilization': <CreditHealthPage />,
   '/client/documents': <ClientDocumentsPage />,
   '/client/business-setup': <BusinessSetupPage />,
   '/client/business-bankability': <BusinessBankabilityPage />,

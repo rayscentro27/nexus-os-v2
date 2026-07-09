@@ -19,8 +19,7 @@ export function usePortalLiveStatus() { return useContext(PortalLiveStatusContex
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Home', icon: Home },
   { path: '/client/profile', label: 'Profile & Info', icon: User },
-  { path: '/client/credit-profile', label: 'Credit Profile', icon: BadgeCheck },
-  { path: '/client/credit-utilization', label: 'Credit Utilization', icon: Gauge },
+  { path: '/client/credit-profile', label: 'Credit Health', icon: BadgeCheck },
   { path: '/client/documents', label: 'Documents', icon: FileText },
   { path: '/client/business-setup', label: 'Business Setup', icon: Building2 },
   { path: '/client/business-bankability', label: 'Business Bankability', icon: Landmark },
@@ -173,13 +172,13 @@ function getGuidanceForStep(path) {
       readinessNote: 'You are building momentum. Focus on the top two tasks this week.',
     },
     '/client/credit-profile': {
-      currentStep: 'Credit Profile — Educational readiness score',
-      nextAction: 'Review score factors and reduce utilization where practical.',
+      currentStep: 'Credit Health — Combined profile and utilization view',
+      nextAction: 'Review score factors, reduce utilization below 30%, and improve funding readiness.',
       missingItems: ['Utilization above target', 'Recent inquiries need time'],
       readinessNote: 'This is an educational readiness measure, not a FICO score.',
     },
     '/client/credit-utilization': {
-      currentStep: 'Credit Utilization — Balance management',
+      currentStep: 'Credit Health — Combined profile and utilization view',
       nextAction: 'Review revolving balances and create a pay-down plan.',
       missingItems: ['Current revolving balances not yet uploaded'],
       readinessNote: 'Lower utilization may improve funding readiness.',
