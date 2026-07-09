@@ -43,7 +43,7 @@ export async function checkAdminAccess(): Promise<AdminAccessResult> {
       .from('tenant_memberships')
       .select('role')
       .eq('user_id', user.id)
-      .in('role', ['super_admin', 'admin', 'operator', 'owner'])
+      .in('role', ['super_admin', 'admin', 'operator'])
       .limit(1)
       .maybeSingle();
 

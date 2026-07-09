@@ -75,9 +75,9 @@ export function App() {
     }
     return (
       <AdminGuard>
-        {(access) => (
+        {() => (
           <AuthGate>
-            {(user) => <NexusAdminUI email={user.email} adminAccess={access} />}
+            {(user) => <NexusAdminUI email={user.email} />}
           </AuthGate>
         )}
       </AdminGuard>
