@@ -100,6 +100,28 @@ const resources: ClientResourceRecommendation[] = [
     clientVisible: true,
     partnerDisclosure: 'No dispute letter is mailed without approval.',
   },
+  {
+    title: 'Utilization Improvement Options',
+    category: 'Utilization Improvement',
+    description: 'Review payoff timing, balance reduction, limit increase prep, and consolidation review options with GoClear.',
+    ctaLabel: 'View utilization options',
+    route: '/client/resources?category=utilization-improvement',
+    placement: 'credit-health',
+    requiresApproval: true,
+    clientVisible: true,
+    partnerDisclosure: 'Options are educational and should be reviewed before action.',
+  },
+  {
+    title: 'Home Buying Prep',
+    category: 'Home Buying Prep',
+    description: 'Understand credit profile and document steps that may support a future home-buying goal.',
+    ctaLabel: 'View home buying prep',
+    route: '/client/resources?category=home-buying-prep',
+    placement: 'resources',
+    requiresApproval: false,
+    clientVisible: true,
+    partnerDisclosure: 'Educational resource only; no approval or financing decision is made here.',
+  },
 ]
 
 export function getClientResources(context?: { category?: string; placement?: string; limit?: number }): ClientResourceRecommendation[] {

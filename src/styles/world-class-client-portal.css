@@ -90,3 +90,14 @@
 .wc-letterOption span{color:var(--wc-blue);font-size:11px;font-weight:900;text-transform:uppercase}.wc-letterOption h4{margin:0;font-size:15px}.wc-letterOption small{display:block;color:var(--wc-muted);font-size:11px}.wc-letterOption button{justify-self:start}
 .wc-caseSafety{border:1px solid #fed7aa;border-radius:16px;background:#fff7ed;padding:12px;display:grid;gap:4px}.wc-caseSafety span{color:#9a3412;font-size:12px}
 @media(max-width:1500px){.wc-caseStatusGrid,.wc-caseGrid{grid-template-columns:1fr}.wc-panel-repair{grid-template-rows:auto}}
+
+/* Three-track customer flow simplification. */
+.wc-panel-home{grid-template-rows:178px auto auto minmax(180px,1fr) auto}
+.wc-panel-credit{grid-template-rows:178px auto auto auto auto auto auto}
+.wc-goalStrip div,.wc-trackPills{display:flex;gap:8px;flex-wrap:wrap}
+.wc-goalStrip button,.wc-trackPills span{border:1px solid var(--wc-line);border-radius:999px;background:#f8fbff;color:#244993;font-size:12px;font-weight:900;padding:9px 12px}
+.wc-trackGrid .wc-miniCard{min-height:150px}
+.wc-reportFirst .wc-actionRow.four{grid-template-columns:repeat(4,1fr);height:auto}
+.wc-simpleTrackHeader{display:grid;gap:6px}
+.wc-monthlyValue .wc-listItem{padding:8px 0}
+@media(max-width:900px){.wc-reportFirst .wc-actionRow.four{grid-template-columns:1fr}.wc-panel-home,.wc-panel-credit{grid-template-rows:auto}}

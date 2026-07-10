@@ -21,6 +21,11 @@
 - Deterministic dispute letter options added: `True`
 - Outcome tracking / next-round learning added: `True`
 - Clyde credit specialist posture updated: `True`
+- Three-track customer flow simplified: `True`
+- Credit Profile report-first flow added: `True`
+- Business Profile flow clarified: `True`
+- Business Funding flow clarified: `True`
+- Backend strategy detail kept in admin/specialist layer: `True`
 
 ## Tester Readiness
 

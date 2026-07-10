@@ -19,6 +19,7 @@ import {
   markMailJobSent,
 } from '../lib/creditRepairWorkflow'
 import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrategyKnowledge'
+import { getStrategyResearchBacklog, recommendNextRoundStrategy, summarizeStrategyOutcomes } from '../lib/creditStrategyResearchEngine'
 
 const DEMO_CLIENT_ID = 'client_test_julius_erving'
 const DEMO_TENANT_ID = 'tenant_default'
@@ -108,6 +109,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const items = journey?.disputeItems ?? []
   const letters = journey?.letters ?? []
   const mailJobs = journey?.mailJobs ?? []
+  const strategySummary = summarizeStrategyOutcomes([])
 
   const tabs = [
     { key: 'case_engine', label: 'Case Engine', count: items.length + letters.length },
@@ -175,9 +177,11 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
           {Object.values(DISPUTE_REASON_LABELS).slice(0, 12).map(reason => <span key={reason} style={{ fontSize: 11, color: '#94a7c3', padding: '5px 7px', borderRadius: 8, background: 'rgba(255,255,255,.06)' }}>{reason}</span>)}
         </div>
         <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 8 }}>Record outcomes after bureau/furnisher responses. Nexus should learn what worked and what did not without promising outcomes.</p>
+        <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 8 }}>Backend strategy summary: {strategySummary.summary}. Next-round rule: {recommendNextRoundStrategy({ response_result: 'verified' })}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {OUTCOME_CATEGORIES.map(result => <span key={result} style={{ fontSize: 11, color: '#edf5ff', padding: '5px 8px', borderRadius: 999, background: 'rgba(23,102,255,.18)' }}>{result.replace(/_/g, ' ')}</span>)}
         </div>
+        <div style={{ marginTop: 10, display: 'grid', gap: 5 }}>{getStrategyResearchBacklog().slice(0, 3).map(item => <span key={item} style={{ fontSize: 11, color: '#94a7c3' }}>• {item}</span>)}</div>
       </section>
     </div>}
 

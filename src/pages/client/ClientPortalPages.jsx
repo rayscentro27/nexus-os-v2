@@ -699,7 +699,7 @@ export function RecommendationsPage() {
         ) : (
           <ClientActionList rows={opportunities.partnerOffers.map(p => ({ title: p, status: 'partner', _route: '/client/resources' }))} onNavigate={navigate} />
         )}
-        <p className="client-safe-note">Best client outcome first. Affiliate value second. Free/DIY options remain visible.</p>
+        <p className="client-safe-note">Best client outcome first. Recommended tool value second. Free/DIY options remain visible.</p>
       </ClientSection>
     </div>
     <ClientGuidePanel suggestedKeys={['what_opportunity_should_i_focus_on', 'can_i_apply_for_funding_now', 'what_do_i_do_next']} />
@@ -712,7 +712,7 @@ export function ResourcesPage() {
   const livePartnerOffers = live?.partnerOffers || []
   const hasLivePartner = livePartnerOffers.length > 0
   return <div className="client-page">
-    <ClientPageHeader title="Resources & Affiliates" subtitle="Tools, services, and options to support your credit and business readiness." badge={hasLivePartner ? 'Live data' : 'Transparency'} />
+    <ClientPageHeader title="Resources & Recommended Tools" subtitle="Tools, services, and options to support your credit and business readiness." badge={hasLivePartner ? 'Live data' : 'Transparency'} />
     {hasLivePartner && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Partner offers loaded from Supabase ({livePartnerOffers.length} offers).</span></div>}
     <div className="client-three-col">
       <ClientSection title="Credit Monitoring">
@@ -721,7 +721,7 @@ export function ResourcesPage() {
           { title: 'AnnualCreditReport.com — free reports', status: 'free', _route: '/client/resources' },
           { title: 'Credit Karma — free monitoring', status: 'free', _route: '/client/resources' },
         ]} onNavigate={navigate} />
-        <p className="client-safe-note">Free options are listed. Affiliate relationships are disclosed.</p>
+        <p className="client-safe-note">Free options are listed. Resource relationships are disclosed.</p>
       </ClientSection>
       <ClientSection title="Mailing Options">
         <ClientActionList rows={[
