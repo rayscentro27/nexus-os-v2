@@ -19,8 +19,9 @@ export default function ClientPortalRoot() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [path])
   function navigate(nextPath) {
+    const nextUrl = new URL(nextPath, window.location.origin)
     window.history.pushState({}, '', nextPath)
-    setPath(nextPath)
+    setPath(normalizePath(nextUrl.pathname))
   }
   if (path === '/client/dispute-review') {
     return <ClientPortalShell path={path} onNavigate={navigate}>{clientPageMap[path]}</ClientPortalShell>
