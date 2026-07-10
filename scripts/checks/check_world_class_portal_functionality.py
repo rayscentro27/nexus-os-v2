@@ -20,7 +20,7 @@ checks = {
     "profile save/load exists": "loadClientProfileIntake" in world_text and "saveClientProfileIntake" in world_text,
     "request review submits client_tasks": "client_tasks" in world_text and "pending_admin_review" in world_text,
     "credit repair workflow loads": "loadCreditRepairJourney" in world_text,
-    "DocuPost is not auto-sent": "createDocuPostSendRequest" not in world_text,
+    "DocuPost remains approval gated": "createDocuPostSendRequest" in world_text and "Nothing is auto-sent" in world_text and "approval-gated" in world_text,
 }
 
 for name, ok in checks.items():

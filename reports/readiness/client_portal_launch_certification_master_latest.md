@@ -10,6 +10,12 @@
 - DocuPost auto-send: `False`
 - Service role in frontend: `False`
 - RLS disabled: `False`
+- Manual UX repair applied: `True`
+- Credit Health overlap fixed: `True`
+- Credit Health clickability repaired: `True`
+- Clyde chat opens in-page drawer: `True`
+- `/client/dispute-review` uses world-class shell: `True`
+- Icons enlarged across client portal: `True`
 
 ## Tester Readiness
 

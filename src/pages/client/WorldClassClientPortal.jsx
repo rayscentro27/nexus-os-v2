@@ -7,7 +7,7 @@ import { InlineDocumentRequirement } from '../../components/client/InlineDocumen
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
 import { getClientResources } from '../../clientPortal/clientResources'
 import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
-import { loadCreditRepairJourney } from '../../lib/creditRepairWorkflow'
+import { loadCreditRepairJourney, clientApproveLetter, createDocuPostSendRequest } from '../../lib/creditRepairWorkflow'
 import { loadClientPortalLiveData, loadClientProfileIntake, saveClientProfileIntake, checkProfileIntakeComplete } from '../../lib/clientPortalDataAdapter'
 import '../../styles/world-class-client-portal.css'
 
@@ -23,7 +23,7 @@ const pageMeta = {
   '/client/business-bankability': { key: 'business', title: 'Business Setup' },
   '/client/funding-readiness': { key: 'funding', title: 'Funding Readiness' },
   '/client/credit-repair-journey': { key: 'repair', title: 'Credit Repair Journey' },
-  '/client/dispute-review': { key: 'repair', title: 'Credit Repair Journey' },
+  '/client/dispute-review': { key: 'dispute', title: 'Review & Send Dispute Letters' },
   '/client/recommendations': { key: 'resources', title: 'Resources' },
   '/client/resources': { key: 'resources', title: 'Resources' },
   '/client/request-review': { key: 'review', title: 'Request Review' },
@@ -195,8 +195,8 @@ function Hero() {
   return <div className="wc-heroExact"><img src={HERO_SRC} alt="Your Path to Funding hero" /></div>
 }
 
-function SectionHead({ title, action }) {
-  return <div className="wc-sectionHead"><h3>{title}</h3>{action && <span>{action}</span>}</div>
+function SectionHead({ title, action, onAction }) {
+  return <div className="wc-sectionHead"><h3>{title}</h3>{action && (onAction ? <button type="button" onClick={onAction}>{action}</button> : <span>{action}</span>)}</div>
 }
 
 function ActionCard({ icon, title, text, button, onClick }) {
@@ -386,6 +386,15 @@ function ProfilePanel({ navigate, onSaved, existingDocuments }) {
 }
 
 function CreditPanel({ navigate, existingDocuments, onUploaded }) {
+  const [showAttention, setShowAttention] = useState(false)
+  const [showPositive, setShowPositive] = useState(false)
+  const [tip, setTip] = useState('')
+  const openCreditUpload = () => document.querySelector('[data-requirement="credit_report"] button')?.click()
+  const scrollToAttention = () => {
+    setShowAttention(true)
+    requestAnimationFrame(() => document.getElementById('attention')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  }
+  const showTip = (message) => setTip(message)
   return <section className="wc-panel wc-panel-credit"><Hero /><div className="wc-scoreFactors"><SectionHead title="Score Factors" action="Updated May 20, 2025" /><div className="wc-factorRow">
     {[
       ['✅', 'Payment History', 'Excellent', '100% · Excellent'],
@@ -393,12 +402,12 @@ function CreditPanel({ navigate, existingDocuments, onUploaded }) {
       ['◔', 'Credit Age', 'Good', '4 yrs 8 mos · Good'],
       ['💳', 'Credit Mix', 'Good', '5 Types · Good'],
       ['📄', 'New Credit', 'Needs Work', '2 · Needs Work'],
-    ].map(([icon, title, tag, text]) => <MiniCard key={title} icon={icon} title={title} tag={tag} text={text} />)}
+    ].map(([icon, title, tag, text]) => <MiniCard key={title} icon={icon} title={title} tag={tag} text={text} button={title === 'Credit Utilization' ? 'Compare' : title === 'New Credit' ? 'Review' : 'Learn'} onClick={() => title === 'Credit Utilization' ? showTip('Compare utilization by card below, then focus first on balances above 30%.') : title === 'New Credit' ? scrollToAttention() : navigate('/client/resources?category=funding-education')} />)}
     </div></div><div className="wc-creditMid"><div className="wc-card wc-util"><h3>Utilization Breakdown by Card</h3>{[['Chase Ink Business', 48], ['Capital One Spark', 28], ['Amex Blue Business', 12], ['Discover It', 8]].map(([name, value]) => <div className="wc-barLine" key={name}><b>{name}</b><span>{value}%</span><i><em style={{ width: `${value}%` }} /></i></div>)}<div className="wc-totalBar"><b>Total Utilization</b><span>32%</span></div></div>
-    <div className="wc-card wc-listCard"><SectionHead title="Factors Needing Attention" action="View all →" /><ListItem tone="orange" mark="!" title="High utilization on 1 card" text="Lower balance first" /><ListItem tone="orange" mark="!" title="Recent hard inquiries" text="Review inquiries" /><ListItem tone="orange" mark="!" title="Limited credit age" text="Average age is below 5 years" /></div>
-    <div className="wc-card wc-listCard"><SectionHead title="Positive Factors" action="View all →" /><ListItem title="Excellent payment history" text="No missed payments reported" /><ListItem title="Low overall utilization" text="Great job keeping balances low" /><ListItem title="Healthy credit mix" text="Strong mix of credit types" /></div>
+    <div className="wc-card wc-listCard" id="attention"><SectionHead title="Factors Needing Attention" action="View all →" onAction={scrollToAttention} /><button className="wc-rowAction" onClick={() => showTip('Start with the highest utilization card. Moving it below 30% usually has the fastest readiness impact.')}><ListItem tone="orange" mark="!" title="High utilization on 1 card" text="Lower balance first" /></button><button className="wc-rowAction" onClick={() => showTip('Upload a current credit report so GoClear can review which inquiries are accurate and whether dispute prep is appropriate.')}><ListItem tone="orange" mark="!" title="Recent hard inquiries" text="Review inquiries" /></button><button className="wc-rowAction" onClick={() => navigate('/client/resources?category=funding-education')}><ListItem tone="orange" mark="!" title="Limited credit age" text="Average age is below 5 years" /></button>{showAttention && <p className="wc-inlineTip">Full attention list is open. Upload a current report before GoClear reviews inquiry or dispute options.</p>}</div>
+    <div className="wc-card wc-listCard"><SectionHead title="Positive Factors" action="View all →" onAction={() => setShowPositive(value => !value)} /><ListItem title="Excellent payment history" text="No missed payments reported" /><ListItem title="Low overall utilization" text="Great job keeping balances low" /><ListItem title="Healthy credit mix" text="Strong mix of credit types" />{showPositive && <ListItem title="Low derogatory activity" text="Keep monitoring and upload current reports for review." />}</div>
     <div className="wc-card wc-uploadBig"><div className="wc-cloud">☁</div><h3>Credit Report Access</h3><p>Get the most accurate picture of your credit health.</p><InlineDocumentRequirement compact title="Credit Report" description="Upload a recent report for GoClear review." category="credit_report" requirementKey="credit_report" fromPage="credit-health" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Needed for credit health, utilization, and repair review." /></div>
-    </div><CreditMonitoringConnectCard navigate={navigate} onUpload={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><div className="wc-card wc-moveBar"><b>Top Next Moves</b><span>1 Pay down balances below 30%</span><span>2 Review recent inquiries</span><span>3 Continue on-time payments</span><button onClick={() => navigate('/client/funding-readiness')}>Continue to Funding Readiness →</button></div></section>
+    </div><CreditMonitoringConnectCard navigate={navigate} onUpload={openCreditUpload} />{tip && <div className="wc-card wc-creditTip"><b>Credit Health Guidance</b><p>{tip}</p><button onClick={() => setTip('')}>Dismiss</button></div>}<div className="wc-card wc-moveBar"><b>Top Next Moves</b><button onClick={() => showTip('Pay down balances above 30% first. Prioritize the highest utilization card, then upload an updated report when available.')}>1 Pay down balances below 30%</button><button onClick={scrollToAttention}>2 Review recent inquiries</button><button onClick={() => showTip('Keep every account paid on time. On-time payment history remains one of the strongest readiness signals.')}>3 Continue on-time payments</button><button onClick={() => navigate('/client/funding-readiness')}>Continue to Funding Readiness →</button></div></section>
 }
 
 function DocumentsPanel({ live, refreshLiveData, withSuggestedUpload, navigate }) {
@@ -454,6 +463,104 @@ function RepairPanel({ scores, navigate, existingDocuments, onUploaded }) {
   const current = journey?.currentStep || 'upload_report'
   const percent = Math.max(scores.repair, Math.round(((completed.length || 1) / stepKeys.length) * 100))
   return <section className="wc-panel wc-panel-repair"><Hero /><div className="wc-card wc-repairJourney"><div className="wc-repairLine">{['Profile Complete', 'Upload Credit Report', 'Specialist Review', 'Dispute Items', 'Draft Letters', 'Approve & Send', 'Track Results'].map((title, i) => <div key={title}><span className={`wc-stepDot ${completed.includes(stepKeys[i]) ? 'done' : current === stepKeys[i] ? 'active' : ''}`}>{i + 1}</span><div className="wc-softIcon">{['👤', '☁', '🔍', '⚖', '✎', '✈', '📊'][i]}</div><b>{title}</b><p>{completed.includes(stepKeys[i]) ? 'Complete' : current === stepKeys[i] ? 'In Progress' : 'Upcoming'}</p></div>)}</div></div><div className="wc-repairMid"><div className="wc-card"><SectionHead title="Your Next Actions" action="View all" /><div className="wc-actionRow three"><ActionCard icon="☁" title="Upload your credit report" text="This helps us analyze your file." button="Upload Now" onClick={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><ActionCard icon="👥" title="Answer a few questions" text="Help us understand your goals." button="Continue Profile" onClick={() => navigate('/client/profile')} /><ActionCard icon="➕" title="Review dispute letters" text={`${journey?.letters?.length || 0} letter(s) in workflow.`} button="Review" onClick={() => navigate('/client/dispute-review')} /></div><div className="wc-inlineRequirementGrid"><InlineDocumentRequirement title="Credit Report" description="Upload a current report for the repair workflow." category="credit_report" requirementKey="credit_report" fromPage="credit-repair" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Starts specialist review." /><InlineDocumentRequirement title="Supporting Dispute Documents" description="Upload evidence or supporting documents for dispute review." category="dispute_support" requirementKey="dispute_support" fromPage="credit-repair" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Helps specialists draft accurate letters." /></div></div><div className="wc-card wc-progressBox"><h3>Progress Overview</h3><Donut value={percent} small tone="blue" /><p>{completed.length} completed · current step: {current.replaceAll('_', ' ')}</p></div></div><div className="wc-repairBottom"><MiniCard icon="✉" title="Send From Home with DocuPost" tag="Approval gated" text="No letter is sent until specialist review and your explicit approval." button="Review gate" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="📝" title="Draft Letters" tag={`${journey?.letters?.length || 0} Ready`} text="Clyde and your specialist draft custom dispute letters." button="View drafts" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="⚑" title="Credit Monitoring Support" tag="Optional" text="Monitoring can support awareness, but upload/review drives this workflow." button="Resources" onClick={() => navigate('/client/resources?category=credit-monitoring')} /></div></section>
+}
+
+function DisputeReviewPanel({ navigate, existingDocuments, onUploaded }) {
+  const [journey, setJourney] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [workingId, setWorkingId] = useState('')
+  const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
+
+  const loadJourney = () => {
+    setLoading(true)
+    loadCreditRepairJourney().then(data => {
+      setJourney(data)
+      setLoading(false)
+    }).catch(err => {
+      setError(err.message || 'Could not load dispute letters.')
+      setLoading(false)
+    })
+  }
+
+  useEffect(() => { loadJourney() }, [])
+
+  const letters = journey?.letters || []
+  const reviewable = letters.filter(letter => ['draft', 'specialist_review', 'client_review', 'client_approved', 'approved_for_docupost'].includes(letter.status || ''))
+  const statusText = (status) => String(status || 'draft').replaceAll('_', ' ')
+
+  async function approveLetter(letter) {
+    if (!letter?.id || workingId) return
+    setWorkingId(letter.id)
+    setNotice('')
+    setError('')
+    const result = await clientApproveLetter(letter.id)
+    setWorkingId('')
+    if (!result.ok) {
+      setError(result.error || 'Approval failed.')
+      return
+    }
+    setNotice('Letter approved. DocuPost mailing still requires the gated send request.')
+    loadJourney()
+  }
+
+  async function requestSend(letter) {
+    if (!letter?.id || workingId || letter.status !== 'client_approved') return
+    setWorkingId(letter.id)
+    setNotice('')
+    setError('')
+    const result = await createDocuPostSendRequest(letter.id)
+    setWorkingId('')
+    if (!result.ok) {
+      setError(result.error || 'DocuPost send request failed.')
+      return
+    }
+    setNotice('DocuPost send request created. Mailing remains approval-gated and is not auto-sent.')
+    loadJourney()
+  }
+
+  async function requestEdits(letter) {
+    if (!letter?.id || workingId) return
+    setWorkingId(letter.id)
+    setNotice('')
+    setError('')
+    try {
+      if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured in this environment.')
+      const ctx = await resolveClientContextForCurrentUser()
+      if (!ctx) throw new Error('Could not resolve your client profile.')
+      const { error: insertError } = await supabase.from('client_tasks').insert({
+        id: `${ctx.authUserId}_dispute_letter_edit_${Date.now()}`,
+        tenant_id: ctx.tenantId,
+        client_id: ctx.clientId,
+        category: 'dispute_letter_edit_request',
+        title: `Edit request for ${letter.recipient_name || 'dispute letter'}`,
+        summary: 'Client requested edits to a dispute letter from the world-class portal dispute review page.',
+        status: 'pending_admin_review',
+        priority: 'medium',
+        risk_level: 'medium',
+        automation_level: 'manual',
+        client_visible: true,
+        approval_required: true,
+        goclear_review_status: 'pending_admin_review',
+        source: 'client_portal',
+        source_concept: `dispute_review:${letter.id}`,
+        created_at: new Date().toISOString(),
+      })
+      if (insertError) throw insertError
+      setNotice('Edit request sent to GoClear for review.')
+    } catch (err) {
+      setError(err.message || 'Could not request edits.')
+    } finally {
+      setWorkingId('')
+    }
+  }
+
+  return <section className="wc-panel wc-panel-dispute"><Hero /><div className="wc-card wc-disputeHero"><div><h2>Review & Send Dispute Letters</h2><p>Review your dispute letters, request edits, approve them, and authorize mailing when ready.</p></div><button onClick={() => navigate('/client/credit-repair-journey')}>Back to Credit Repair Journey</button></div><div className="wc-card wc-safetyBanner"><b>DocuPost safety gate</b><p>DocuPost sending is enabled only after specialist review and client approval/e-sign authorization. Nothing is auto-sent from this page.</p></div><div className="wc-disputeGrid"><div className="wc-card wc-disputeList"><SectionHead title="Letter Review Queue" action={loading ? 'Loading...' : `${reviewable.length} letter(s)`} />{error && <p className="wc-errorText">{error}</p>}{notice && <p className="wc-successText">{notice}</p>}{!loading && !reviewable.length && <div className="wc-emptyState"><div className="wc-softIcon">✉</div><h3>No letters ready yet</h3><p>Upload a current credit report and complete specialist review before letters appear here.</p><button onClick={() => navigate('/client/credit-repair-journey')}>Continue Credit Repair Journey</button></div>}{reviewable.map(letter => {
+    const approved = letter.status === 'client_approved'
+    const sendRequested = letter.status === 'approved_for_docupost'
+    const busy = workingId === letter.id
+    return <article className="wc-disputeLetter" key={letter.id}><div><span>{statusText(letter.status)}</span><h3>{letter.recipient_name || 'Dispute letter'}</h3><p>{letter.letter_body ? `${String(letter.letter_body).slice(0, 220)}...` : 'Letter preview will appear after specialist drafting.'}</p></div><div className="wc-disputeActions"><button onClick={() => setNotice(letter.letter_body || 'Letter preview is not available yet.')}>View letter</button><button onClick={() => requestEdits(letter)} disabled={busy || sendRequested}>{busy ? 'Sending...' : 'Request edits'}</button><button onClick={() => approveLetter(letter)} disabled={busy || approved || sendRequested}>{approved || sendRequested ? 'Approved' : busy ? 'Approving...' : 'Approve letter'}</button><button onClick={() => requestSend(letter)} disabled={busy || !approved || sendRequested}>{sendRequested ? 'Send request created' : 'Authorize/send request'}</button></div></article>
+  })}</div><div className="wc-card wc-disputeStatus"><h3>Mailing/send request status</h3>{[['No letters ready yet', !reviewable.length], ['Letters ready for review', reviewable.some(l => l.status === 'client_review')], ['Approved letters', reviewable.some(l => l.status === 'client_approved')], ['Requested edits', false], ['Mailing/send request status', reviewable.some(l => l.status === 'approved_for_docupost')]].map(([title, active]) => <ListItem key={title} tone={active ? 'green' : 'blue'} mark={active ? '✓' : '·'} title={title} text={active ? 'Active in your workflow' : 'Waiting for the next step'} />)}</div><div className="wc-card wc-disputeUpload"><h3>Supporting Document</h3><InlineDocumentRequirement title="Supporting Dispute Document" description="Upload evidence or support files for GoClear dispute review." category="dispute_support" requirementKey="dispute_support" fromPage="dispute-review" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Supports letter review and edit requests." /></div></div></section>
 }
 
 function ResourcesPanel({ live, navigate }) {
@@ -537,18 +644,41 @@ function IconSystemPanel() {
   ].map(([group, icons]) => <div className="wc-iconGroup" key={group}><h3>{group}</h3><div className="wc-iconGrid">{icons.map(([icon, label]) => <div className="wc-iconDemo" key={label}><div>{icon}</div><b>{label}</b></div>)}</div></div>)}</div></div></section>
 }
 
-function ClydePanel({ navigate, guidance }) {
+function ClydeChatDrawer({ open, onClose, navigate, guidance, pageTitle }) {
+  const [answer, setAnswer] = useState('')
+  if (!open) return null
+  const topActions = guidance.slice(0, 3)
+  const respond = (message) => setAnswer(message)
+  return <div className="wc-clydeOverlay" role="dialog" aria-modal="true" aria-label="Ask Clyde">
+    <div className="wc-clydeDrawer">
+      <div className="wc-clydeDrawerHead"><div className="wc-bot">🤖</div><div><h2>Ask Clyde</h2><p>{pageTitle} guidance</p></div><button onClick={onClose} aria-label="Close Clyde chat">×</button></div>
+      <div className="wc-clydeContext"><b>Current page context</b><p>Clyde can help you understand what is missing, what to upload next, and when to request human review.</p></div>
+      <div className="wc-clydePromptGrid">
+        <button onClick={() => respond('Upload a current credit report, government ID, proof of address, EIN confirmation, and the funding documents requested on your readiness page.')}>Which documents do I need?</button>
+        <button onClick={() => respond('The fastest credit-health action is usually reducing utilization above 30%, then uploading a current report for GoClear review.')}>What can improve my score fastest?</button>
+        <button onClick={() => respond('GoClear needs to review uploaded documents, profile completeness, dispute letter approvals, and any request-review notes before advising next steps.')}>What does GoClear need to review?</button>
+      </div>
+      {topActions.length > 0 && <div className="wc-advisorBox"><h4>Recommended actions</h4>{topActions.map((item, i) => <button className="wc-clydeItem" key={item.id || item.title} onClick={() => { onClose(); navigate(routeFromGuidance(item)) }}><ListItem tone={item.priority === 'high' ? 'orange' : item.priority === 'medium' ? 'blue' : 'green'} mark={String(i + 1)} title={item.title} text={item.description} /></button>)}</div>}
+      {answer && <div className="wc-clydeAnswer"><b>Clyde</b><p>{answer}</p></div>}
+      <label className="wc-clydeInput"><span>Message Clyde</span><input disabled placeholder="Live chat is coming soon. Use the suggested questions or request human review." /></label>
+      <div className="wc-clydeDrawerActions"><button onClick={() => navigate('/client/documents')}>Go to Documents</button><button onClick={() => navigate('/client/request-review')}>Request human review</button></div>
+    </div>
+  </div>
+}
+
+function ClydePanel({ navigate, guidance, onOpenChat }) {
   const recommendations = guidance.length ? guidance.slice(0, 3) : [
     { title: 'Complete profile & business info', description: 'Expires in 7 days', priority: 'high', category: 'profile' },
     { title: 'Upload credit report', description: 'Strongly recommended', priority: 'medium', category: 'documents' },
     { title: 'Verify identity', description: 'Completed', priority: 'low', category: 'documents' },
   ]
-  return <aside className="wc-advisor"><div className="wc-advisorCard"><div className="wc-botTop"><div className="wc-bot">🤖</div><div><h3>Clyde • Credit Specialist</h3><div className="wc-online">● Online</div></div></div><p>Hi Alex! I'm Clyde, your funding coach. I'm here to help you improve your profile and reach your funding goals.</p><div className="wc-advisorBox"><h4>Top Recommendations</h4>{recommendations.map((item, i) => <button className="wc-clydeItem" key={item.id || item.title} onClick={() => navigate(routeFromGuidance(item))}><ListItem tone={item.priority === 'high' ? 'orange' : item.priority === 'medium' ? 'blue' : 'green'} mark={item.priority === 'low' ? '✓' : String(i + 1)} title={item.title} text={item.description} /></button>)}</div><div className="wc-advisorBox"><h4>Clyde's Tip</h4><p>Keeping utilization below 30% can have one of the biggest positive impacts on your score.</p></div><div className="wc-suggestions"><button onClick={() => navigate('/client/credit-profile')}>What can improve my score fastest?</button><button onClick={() => navigate('/client/documents')}>Which documents do I need?</button></div><button className="wc-chatBtn" onClick={() => navigate('/client/resources')}>💬 Chat with Clyde</button></div></aside>
+  return <aside className="wc-advisor"><div className="wc-advisorCard"><div className="wc-botTop"><div className="wc-bot">🤖</div><div><h3>Clyde • Credit Specialist</h3><div className="wc-online">● Online</div></div></div><p>Hi Alex! I'm Clyde, your funding coach. I'm here to help you improve your profile and reach your funding goals.</p><div className="wc-advisorBox"><h4>Top Recommendations</h4>{recommendations.map((item, i) => <button className="wc-clydeItem" key={item.id || item.title} onClick={() => navigate(routeFromGuidance(item))}><ListItem tone={item.priority === 'high' ? 'orange' : item.priority === 'medium' ? 'blue' : 'green'} mark={item.priority === 'low' ? '✓' : String(i + 1)} title={item.title} text={item.description} /></button>)}</div><div className="wc-advisorBox"><h4>Clyde's Tip</h4><p>Keeping utilization below 30% can have one of the biggest positive impacts on your score.</p></div><div className="wc-suggestions"><button onClick={() => navigate('/client/credit-profile')}>What can improve my score fastest?</button><button onClick={() => navigate('/client/documents')}>Which documents do I need?</button></div><button className="wc-chatBtn" onClick={onOpenChat}>💬 Chat with Clyde</button></div></aside>
 }
 
 export default function WorldClassClientPortal({ path, onNavigate }) {
   const { live, profileComplete, status, refreshLiveData } = useWorldClassLiveData()
   const [showIcons, setShowIcons] = useState(false)
+  const [clydeOpen, setClydeOpen] = useState(false)
   const meta = pageMeta[path] || pageMeta['/client/dashboard']
   const scores = useMemo(() => getScores(live), [live])
   const existingDocuments = useMemo(() => getDocumentRows(live), [live])
@@ -561,6 +691,7 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
 
   const routeTo = (nextPath) => {
     setShowIcons(false)
+    setClydeOpen(false)
     if (typeof onNavigate === 'function') {
       onNavigate(nextPath)
       return
@@ -580,6 +711,7 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
     business: <BusinessPanel live={live} navigate={routeTo} />,
     funding: <FundingPanel scores={scores} navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} />,
     repair: <RepairPanel scores={scores} navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} />,
+    dispute: <DisputeReviewPanel navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} />,
     resources: <ResourcesPanel live={live} navigate={routeTo} />,
     review: <ReviewPanel live={live} scores={scores} refreshLiveData={refreshLiveData} existingDocuments={existingDocuments} />,
   }[meta.key]
@@ -587,6 +719,7 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
   return <div className="wc-client-portal">
     <aside className="wc-sidebar"><div className="wc-brandButton"><div className="wc-brandMark">N</div><div className="wc-brandText"><b>NEXUS</b><span>CLIENT PORTAL</span></div></div><nav className="wc-sideNav">{navItems.map(([route, label, icon]) => <button key={route} className={`wc-navLabel ${!showIcons && pageMeta[route]?.key === meta.key ? 'active' : ''}`} onClick={() => routeTo(route)}><span className="wc-navIcon">{icon}</span><span>{label}</span></button>)}</nav><button className={`wc-sideAction ${showIcons ? 'active' : ''}`} onClick={() => setShowIcons(true)}>View icon system →</button><div className="wc-help"><strong>Need help?</strong><p>Our team is here to support you.</p></div>{shouldShowInternalDataBadge && <div className="wc-live"><strong>●</strong> {liveStatusLabel}<p>as of today, 9:41 AM</p></div>}<button className="wc-signOut" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/client/login') }}>Sign Out</button></aside>
     <main className="wc-main"><header className="wc-topbar"><div className="wc-pill">💎 {profile.membershipTier || 'GoClear Readiness Member'}</div><button className="wc-bell" onClick={() => routeTo('/client/resources')}>🔔<span>2</span></button><div className="wc-userPill"><div className="wc-avatar">👨🏻</div>{profile.name || 'Alex Morgan'}⌄</div></header><div className="wc-pageHost">{panel}</div></main>
-    <ClydePanel navigate={routeTo} guidance={clydeGuidance} />
+    <ClydePanel navigate={routeTo} guidance={clydeGuidance} onOpenChat={() => setClydeOpen(true)} />
+    <ClydeChatDrawer open={clydeOpen} onClose={() => setClydeOpen(false)} navigate={routeTo} guidance={clydeGuidance} pageTitle={meta.title} />
   </div>
 }

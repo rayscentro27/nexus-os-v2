@@ -23,3 +23,54 @@
 @media(max-width:900px){.wc-formGrid{grid-template-columns:1fr}.wc-profileForm{grid-column:auto}}
 .wc-intakeSummary,.wc-intakeSection,.wc-inlineRequirement,.wc-setupState,.wc-monitoringCard,.wc-documentVault{border:1px solid var(--wc-line);border-radius:18px;background:#fbfdff;padding:12px}.wc-intakeSummary{margin-bottom:12px}.wc-intakeSummary b{font-size:13px}.wc-intakeSummary p,.wc-intakeSection>p{font-size:12px}.wc-intakeSection{display:grid;gap:10px;margin-top:12px}.wc-inlineRequirementGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}.wc-inlineRequirement{display:grid;gap:10px;text-align:left}.wc-inlineRequirement.compact{padding:9px}.wc-inlineRequirementMain{display:flex;gap:10px;align-items:flex-start}.wc-inlineRequirementTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.wc-inlineRequirementTop b{font-size:13px}.wc-inlineRequirementTop span{border-radius:999px;background:#eaf3ff;color:var(--wc-blue);padding:4px 8px;font-size:10px;font-weight:900}.wc-inlineRequirement small,.wc-inlineRequirement em{display:block;color:var(--wc-muted);font-size:11px;margin-top:4px}.wc-inlineRequirementActions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.wc-inlineRequirementActions span{margin-right:auto;border-radius:999px;background:#eafdf4;color:#059669;padding:4px 8px;font-size:10px;font-weight:900}.wc-inlineRequirementActions button:disabled,.wc-resourceActions button:disabled{opacity:.55;cursor:not-allowed}.wc-setupGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}.wc-setupState b{font-size:13px}.wc-setupState>div{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.wc-setupState button,.wc-resourceActions button{border:1px solid var(--wc-line);background:white;border-radius:13px;padding:8px 10px;color:var(--wc-blue);font-weight:900;cursor:pointer}.wc-setupState button.active{background:#eaf3ff;box-shadow:inset 0 0 0 1px rgba(7,92,246,.14)}.wc-setupState p{font-size:11px;margin-top:8px!important}.wc-resourceActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.wc-vaultRow{display:grid;grid-template-columns:1.2fr .8fr .7fr .8fr .7fr .8fr;gap:8px;align-items:center;border-top:1px solid #edf3ff;padding:9px 0;font-size:11px;color:var(--wc-muted)}.wc-vaultRow b{font-size:12px;color:var(--wc-navy)}.wc-client-portal .client-upload-zone.compact .client-upload-dropzone{padding:10px}.wc-client-portal .client-upload-zone.compact svg{width:22px;height:22px}
 @media(max-width:900px){.wc-inlineRequirementGrid,.wc-setupGrid,.wc-vaultRow{grid-template-columns:1fr}.wc-inlineRequirementActions span{margin-right:0}}
+
+/* Manual UX repair: preserve the world-class shell while allowing dense pages to flow and scroll. */
+.wc-pageHost{overflow:auto}
+.wc-panel{height:auto;min-height:100%}
+.wc-panel-credit{grid-template-rows:178px auto minmax(245px,1fr) auto auto}
+.wc-sectionHead h3{letter-spacing:0}
+.wc-sectionHead button{border:0;background:transparent;color:var(--wc-blue);font-size:12px;font-weight:900;cursor:pointer;padding:0}
+.wc-rowAction{display:block;width:100%;border:0!important;background:transparent!important;padding:0!important;text-align:left;box-shadow:none!important;cursor:pointer}
+.wc-inlineTip,.wc-creditTip p{font-size:12px!important}.wc-creditTip{display:grid;gap:8px}.wc-creditTip button{justify-self:start}
+.wc-moveBar{min-height:76px;flex-wrap:wrap;align-items:center}.wc-moveBar button{white-space:normal}.wc-moveBar>button:not(:last-child){background:#edf5ff!important;color:var(--wc-blue)!important;box-shadow:none!important}
+.wc-monitoringCard{margin-bottom:0}
+
+/* Larger icon system requested by manual test. */
+.wc-navIcon{width:36px;height:36px;border-radius:14px;font-size:30px;flex:0 0 36px}
+.wc-navLabel{height:56px;gap:14px}
+.wc-softIcon,.wc-miniIcon{width:64px;height:64px;border-radius:22px;font-size:34px}
+.wc-actionCard .wc-softIcon{width:76px;height:76px;border-radius:26px;font-size:40px}
+.wc-uploadIcon{width:84px;height:84px;font-size:42px}
+.wc-cloud{width:88px;height:88px;font-size:44px}
+.wc-bot{width:88px;height:88px;border-radius:28px;font-size:48px}
+.wc-stepDot{width:56px;height:56px;font-size:22px}
+.wc-dot{width:48px;height:48px;flex:0 0 48px;font-size:20px}
+.wc-iconDemo div{width:96px;height:96px;font-size:46px}
+.wc-scanStep span{width:58px;height:58px;font-size:26px}
+.wc-actionCard{gap:8px;min-height:190px}
+.wc-miniCard{gap:14px}.wc-listItem{gap:14px}
+.wc-repairLine .wc-softIcon{margin:8px auto}
+
+/* World-class Dispute Review shell. */
+.wc-panel-dispute{grid-template-rows:178px auto auto minmax(360px,1fr)}
+.wc-disputeHero{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.wc-disputeHero h2{margin:0 0 6px;font-size:24px;color:var(--wc-navy)}
+.wc-safetyBanner{background:#f8fbff;display:grid;gap:4px}
+.wc-disputeGrid{display:grid;grid-template-columns:1.45fr .9fr;gap:12px;align-items:start}
+.wc-disputeList{display:grid;gap:10px}.wc-disputeStatus,.wc-disputeUpload{display:grid;gap:8px}
+.wc-disputeLetter{border:1px solid var(--wc-line);border-radius:18px;background:#fbfdff;padding:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px}
+.wc-disputeLetter h3{margin:4px 0 6px;font-size:16px}.wc-disputeLetter span{color:var(--wc-blue);font-size:11px;font-weight:900;text-transform:uppercase}
+.wc-disputeLetter p{font-size:12px}.wc-disputeActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:280px}
+.wc-disputeActions button:disabled{opacity:.55;cursor:not-allowed}.wc-emptyState{text-align:center;display:grid;gap:8px;place-items:center;padding:24px}
+
+/* Clyde in-page chat drawer. */
+.wc-clydeOverlay{position:fixed;inset:0;z-index:60;background:rgba(6,27,95,.18);display:flex;justify-content:flex-end}
+.wc-clydeDrawer{width:min(440px,100vw);height:100%;background:white;border-left:1px solid var(--wc-line);box-shadow:-20px 0 50px rgba(35,75,145,.16);padding:18px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.wc-clydeDrawerHead{display:flex;align-items:center;gap:12px}.wc-clydeDrawerHead h2{margin:0;font-size:24px}.wc-clydeDrawerHead p{font-size:12px}.wc-clydeDrawerHead>button{margin-left:auto;border:1px solid var(--wc-line);background:white;border-radius:14px;width:42px;height:42px;font-size:24px;cursor:pointer;color:var(--wc-navy)}
+.wc-clydeContext,.wc-clydeAnswer{border:1px solid var(--wc-line);border-radius:18px;background:#fbfdff;padding:12px}.wc-clydePromptGrid{display:grid;gap:8px}
+.wc-clydePromptGrid button,.wc-clydeDrawerActions button{border:1px solid var(--wc-line);border-radius:14px;background:#edf5ff;color:var(--wc-blue);font-weight:900;padding:11px 12px;text-align:left;cursor:pointer}
+.wc-clydeInput{display:grid;gap:6px;font-size:12px;font-weight:900;color:#244993}.wc-clydeInput input{border:1px solid var(--wc-line);border-radius:14px;background:#f8fbff;color:var(--wc-muted);padding:12px}
+.wc-clydeDrawerActions{margin-top:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}.wc-clydeDrawerActions button:last-child{background:var(--wc-blue2);color:white}
+
+@media(max-width:1500px){.wc-panel-dispute{grid-template-rows:auto}.wc-disputeGrid{grid-template-columns:1fr}.wc-disputeLetter{grid-template-columns:1fr}.wc-disputeActions{min-width:0}}
+@media(max-width:900px){.wc-disputeHero{display:grid}.wc-clydeDrawer{width:100vw}.wc-clydeDrawerActions{grid-template-columns:1fr}.wc-navIcon{width:34px;height:34px;flex-basis:34px}.wc-navLabel{height:auto;min-height:54px}}

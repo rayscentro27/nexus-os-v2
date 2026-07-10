@@ -74,7 +74,7 @@ export function InlineDocumentRequirement({
       <div className="wc-inlineRequirementActions">
         {impactLabel && <span>{impactLabel}</span>}
         <button onClick={() => setUploadOpen(open => !open)}>{doc ? 'Replace Upload' : 'Upload'}</button>
-        <button disabled title="Safe document viewing is not implemented yet.">View Uploaded Document</button>
+        <button disabled title={doc ? 'Uploaded document is under GoClear review. Safe viewing is not implemented yet.' : 'No reviewed document is available yet.'}>{doc ? 'Uploaded - under review' : 'No reviewed document available yet'}</button>
       </div>
       {uploadOpen && (
         <DocumentUploadZone

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ClientPortalShell, clientRoutes } from '../../components/client/ClientPortalShell'
-import { clientPageMap } from './ClientPortalPages'
+import { clientRoutes } from '../../components/client/ClientPortalShell'
 import WorldClassClientPortal from './WorldClassClientPortal'
 
 const fallbackPath = '/client/dashboard'
@@ -22,9 +21,6 @@ export default function ClientPortalRoot() {
     const nextUrl = new URL(nextPath, window.location.origin)
     window.history.pushState({}, '', nextPath)
     setPath(normalizePath(nextUrl.pathname))
-  }
-  if (path === '/client/dispute-review') {
-    return <ClientPortalShell path={path} onNavigate={navigate}>{clientPageMap[path]}</ClientPortalShell>
   }
   return <WorldClassClientPortal path={path} onNavigate={navigate} />
 }
