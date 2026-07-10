@@ -8,6 +8,8 @@ import { generateClientGuidance } from '../../clientPortal/clientGuidance'
 import { getClientResources } from '../../clientPortal/clientResources'
 import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
 import { loadCreditRepairJourney, clientApproveLetter, createDocuPostSendRequest } from '../../lib/creditRepairWorkflow'
+import { getOrCreateCreditRepairCase, listCreditReportItems, createManualReportItem, markItemForChallenge, selectDisputeReason, generateDisputeLetterOptions, createLetterDraftFromOption } from '../../lib/creditRepairCaseEngine'
+import { DISPUTE_REASON_LABELS } from '../../lib/disputeStrategyKnowledge'
 import { loadClientPortalLiveData, loadClientProfileIntake, saveClientProfileIntake, checkProfileIntakeComplete } from '../../lib/clientPortalDataAdapter'
 import '../../styles/world-class-client-portal.css'
 
@@ -462,7 +464,85 @@ function RepairPanel({ scores, navigate, existingDocuments, onUploaded }) {
   const completed = journey?.stepsCompleted || []
   const current = journey?.currentStep || 'upload_report'
   const percent = Math.max(scores.repair, Math.round(((completed.length || 1) / stepKeys.length) * 100))
-  return <section className="wc-panel wc-panel-repair"><Hero /><div className="wc-card wc-repairJourney"><div className="wc-repairLine">{['Profile Complete', 'Upload Credit Report', 'Specialist Review', 'Dispute Items', 'Draft Letters', 'Approve & Send', 'Track Results'].map((title, i) => <div key={title}><span className={`wc-stepDot ${completed.includes(stepKeys[i]) ? 'done' : current === stepKeys[i] ? 'active' : ''}`}>{i + 1}</span><div className="wc-softIcon">{['👤', '☁', '🔍', '⚖', '✎', '✈', '📊'][i]}</div><b>{title}</b><p>{completed.includes(stepKeys[i]) ? 'Complete' : current === stepKeys[i] ? 'In Progress' : 'Upcoming'}</p></div>)}</div></div><div className="wc-repairMid"><div className="wc-card"><SectionHead title="Your Next Actions" action="View all" /><div className="wc-actionRow three"><ActionCard icon="☁" title="Upload your credit report" text="This helps us analyze your file." button="Upload Now" onClick={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><ActionCard icon="👥" title="Answer a few questions" text="Help us understand your goals." button="Continue Profile" onClick={() => navigate('/client/profile')} /><ActionCard icon="➕" title="Review dispute letters" text={`${journey?.letters?.length || 0} letter(s) in workflow.`} button="Review" onClick={() => navigate('/client/dispute-review')} /></div><div className="wc-inlineRequirementGrid"><InlineDocumentRequirement title="Credit Report" description="Upload a current report for the repair workflow." category="credit_report" requirementKey="credit_report" fromPage="credit-repair" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Starts specialist review." /><InlineDocumentRequirement title="Supporting Dispute Documents" description="Upload evidence or supporting documents for dispute review." category="dispute_support" requirementKey="dispute_support" fromPage="credit-repair" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Helps specialists draft accurate letters." /></div></div><div className="wc-card wc-progressBox"><h3>Progress Overview</h3><Donut value={percent} small tone="blue" /><p>{completed.length} completed · current step: {current.replaceAll('_', ' ')}</p></div></div><div className="wc-repairBottom"><MiniCard icon="✉" title="Send From Home with DocuPost" tag="Approval gated" text="No letter is sent until specialist review and your explicit approval." button="Review gate" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="📝" title="Draft Letters" tag={`${journey?.letters?.length || 0} Ready`} text="Clyde and your specialist draft custom dispute letters." button="View drafts" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="⚑" title="Credit Monitoring Support" tag="Optional" text="Monitoring can support awareness, but upload/review drives this workflow." button="Resources" onClick={() => navigate('/client/resources?category=credit-monitoring')} /></div></section>
+  return <section className="wc-panel wc-panel-repair"><Hero /><div className="wc-card wc-repairJourney"><div className="wc-repairLine">{['Profile Complete', 'Upload Credit Report', 'Specialist Review', 'Dispute Items', 'Draft Letters', 'Approve & Send', 'Track Results'].map((title, i) => <div key={title}><span className={`wc-stepDot ${completed.includes(stepKeys[i]) ? 'done' : current === stepKeys[i] ? 'active' : ''}`}>{i + 1}</span><div className="wc-softIcon">{['👤', '☁', '🔍', '⚖', '✎', '✈', '📊'][i]}</div><b>{title}</b><p>{completed.includes(stepKeys[i]) ? 'Complete' : current === stepKeys[i] ? 'In Progress' : 'Upcoming'}</p></div>)}</div></div><div className="wc-repairMid"><div className="wc-card"><SectionHead title="Your Next Actions" action="View all" /><div className="wc-actionRow three"><ActionCard icon="☁" title="Upload your credit report" text="This helps us analyze your file." button="Upload Now" onClick={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><ActionCard icon="👥" title="Answer a few questions" text="Help us understand your goals." button="Continue Profile" onClick={() => navigate('/client/profile')} /><ActionCard icon="➕" title="Review dispute letters" text={`${journey?.letters?.length || 0} letter(s) in workflow.`} button="Review" onClick={() => navigate('/client/dispute-review')} /></div><div className="wc-inlineRequirementGrid"><InlineDocumentRequirement title="Credit Report" description="Upload a current report for the repair workflow." category="credit_report" requirementKey="credit_report" fromPage="credit-repair" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Starts specialist review." /><InlineDocumentRequirement title="Supporting Dispute Documents" description="Upload evidence or supporting documents for dispute review." category="dispute_support" requirementKey="dispute_support" fromPage="credit-repair" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Helps specialists draft accurate letters." /></div></div><div className="wc-card wc-progressBox"><h3>Progress Overview</h3><Donut value={percent} small tone="blue" /><p>{completed.length} completed · current step: {current.replaceAll('_', ' ')}</p></div></div><CreditRepairCaseEnginePanel existingDocuments={existingDocuments} onUploaded={onUploaded} navigate={navigate} /><div className="wc-repairBottom"><MiniCard icon="✉" title="Send From Home with DocuPost" tag="Approval gated" text="No letter is sent until specialist review and your explicit approval." button="Review gate" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="📝" title="Draft Letters" tag={`${journey?.letters?.length || 0} Ready`} text="Clyde and your specialist draft custom dispute letters." button="View drafts" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="⚑" title="Credit Monitoring Support" tag="Optional" text="Monitoring can support awareness, but upload/review drives this workflow." button="Resources" onClick={() => navigate('/client/resources?category=credit-monitoring')} /></div></section>
+}
+
+function CreditRepairCaseEnginePanel({ existingDocuments, onUploaded, navigate }) {
+  const reasonEntries = Object.entries(DISPUTE_REASON_LABELS)
+  const [ctx, setCtx] = useState(null)
+  const [creditCase, setCreditCase] = useState(null)
+  const [items, setItems] = useState([])
+  const [selectedItemId, setSelectedItemId] = useState('')
+  const [selectedReason, setSelectedReason] = useState('not_sure')
+  const [options, setOptions] = useState([])
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState('')
+  const [form, setForm] = useState({ bureau: 'experian', furnisher_name: '', account_name: '', account_number_masked: '', item_type: 'collection', reported_status: '', raw_notes: '' })
+
+  const loadCase = async () => {
+    try {
+      const resolved = await resolveClientContextForCurrentUser()
+      if (!resolved) throw new Error('Sign in is required to load your credit repair case.')
+      setCtx(resolved)
+      const active = await getOrCreateCreditRepairCase(resolved)
+      setCreditCase(active)
+      const rows = await listCreditReportItems(resolved, active.id)
+      setItems(rows)
+      if (!selectedItemId && rows[0]) setSelectedItemId(rows[0].id)
+    } catch (err) {
+      setError(err.message || 'Could not load credit repair case.')
+    }
+  }
+
+  useEffect(() => { loadCase() }, [])
+
+  const selectedItem = items.find(item => item.id === selectedItemId)
+
+  async function addItem() {
+    if (!ctx || !creditCase) return
+    setError('')
+    const result = await createManualReportItem(ctx, creditCase.id, form)
+    if (!result.ok) {
+      setError(result.error || 'Could not add item.')
+      return
+    }
+    setMessage('Item added. Choose whether you want it challenged and select a reason.')
+    setForm({ bureau: 'experian', furnisher_name: '', account_name: '', account_number_masked: '', item_type: 'collection', reported_status: '', raw_notes: '' })
+    await loadCase()
+  }
+
+  async function toggleChallenge(item) {
+    if (!ctx) return
+    const next = !item.client_wants_challenged
+    const result = await markItemForChallenge(ctx, item.id, next)
+    if (!result.ok) setError(result.error || 'Could not update challenge preference.')
+    else {
+      setMessage(next ? 'Marked for challenge. Choose the dispute reason next.' : 'Challenge preference removed.')
+      await loadCase()
+    }
+  }
+
+  async function chooseReason(reason) {
+    setSelectedReason(reason)
+    if (!selectedItem || !ctx) return
+    const generated = generateDisputeLetterOptions(selectedItem, reason, { caseId: creditCase?.id })
+    setOptions(generated)
+    await selectDisputeReason(ctx, selectedItem.id, reason)
+    setMessage('Dispute options prepared for GoClear review. No letter is sent from this step.')
+  }
+
+  async function prepareDraft(option) {
+    if (!ctx || !selectedItem) return
+    setError('')
+    const result = await createLetterDraftFromOption(ctx, { ...option, caseId: creditCase?.id, reportItemId: selectedItem.id, item: selectedItem })
+    if (!result.ok) {
+      setError(result.error || 'Could not prepare draft.')
+      return
+    }
+    setMessage('Draft prepared for specialist review. Client approval is required before any DocuPost send request.')
+  }
+
+  return <div className="wc-card wc-caseEngine"><SectionHead title="Credit Repair Case Engine" action={creditCase ? `Round ${creditCase.current_round} · ${creditCase.status}` : 'Loading'} /><p>Tell me which items you want challenged. Clyde will help organize them, ask the right dispute questions, prepare options for GoClear review, and move approved disputes into the next action step.</p><div className="wc-caseStatusGrid"><MiniCard icon="⚖" title="Credit Repair Case Status" tag={creditCase?.status || 'Intake'} text={creditCase?.case_goal || 'Challenge negative items and pursue removal or correction when supportable.'} /><MiniCard icon="☁" title="Upload Credit Report" tag="Required" text="Upload the latest report before specialist review." button="Open upload" onClick={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><MiniCard icon="✉" title="Specialist Review" tag="Required" text="GoClear reviews selected items, evidence, and letter options before client approval." button="Review letters" onClick={() => navigate('/client/dispute-review')} /></div><div className="wc-caseGrid"><div className="wc-caseColumn"><h3>Negative Items / Items to Challenge</h3><div className="wc-formGrid two"><label><span>Bureau</span><select value={form.bureau} onChange={e => setForm(p => ({ ...p, bureau: e.target.value }))}><option value="experian">Experian</option><option value="equifax">Equifax</option><option value="transunion">TransUnion</option><option value="other">Other</option></select></label><label><span>Item type</span><select value={form.item_type} onChange={e => setForm(p => ({ ...p, item_type: e.target.value }))}><option value="collection">Collection</option><option value="charge_off">Charge off</option><option value="late_payment">Late payment</option><option value="inquiry">Inquiry</option><option value="personal_info">Personal info</option><option value="duplicate_account">Duplicate account</option><option value="other">Other</option></select></label><label><span>Furnisher</span><input value={form.furnisher_name} onChange={e => setForm(p => ({ ...p, furnisher_name: e.target.value }))} /></label><label><span>Account / item name</span><input value={form.account_name} onChange={e => setForm(p => ({ ...p, account_name: e.target.value }))} /></label><label><span>Account last 4 only</span><input value={form.account_number_masked} onChange={e => setForm(p => ({ ...p, account_number_masked: e.target.value }))} placeholder="1234" /></label><label><span>Reported status</span><input value={form.reported_status} onChange={e => setForm(p => ({ ...p, reported_status: e.target.value }))} /></label></div><textarea className="wc-textarea" value={form.raw_notes} onChange={e => setForm(p => ({ ...p, raw_notes: e.target.value }))} placeholder="Why do you want this reviewed? Do not enter SSN, full DOB, full account numbers, or bureau credentials." /><button className="wc-primaryWide" onClick={addItem}>Add item to case</button><div className="wc-caseItems">{items.length === 0 && <p>No report items added yet. Add items manually while report parsing is not automated.</p>}{items.map(item => <button key={item.id} className={`wc-caseItem ${selectedItemId === item.id ? 'active' : ''}`} onClick={() => { setSelectedItemId(item.id); setOptions([]) }}><b>{item.furnisher_name || item.account_name || item.item_type}</b><span>{item.bureau} · {item.item_type}</span><small>{item.client_wants_challenged ? 'I want this challenged' : 'Not selected yet'}</small></button>)}</div></div><div className="wc-caseColumn"><h3>Dispute Reason Selector</h3>{selectedItem ? <><button className="wc-primaryWide" onClick={() => toggleChallenge(selectedItem)}>{selectedItem.client_wants_challenged ? 'Selected for challenge' : 'I want this challenged'}</button><div className="wc-reasonGrid">{reasonEntries.map(([key, label]) => <button key={key} className={selectedReason === key ? 'active' : ''} onClick={() => chooseReason(key)}>{label}</button>)}</div><InlineDocumentRequirement title="Evidence Upload" description="Upload proof related to this challenge: payment proof, settlement letter, ID, proof of address, bureau response, collection letter, or other support." category="dispute_support" requirementKey="dispute_support" fromPage="credit-repair-case" impactLabel="Evidence" required={false} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Evidence helps GoClear choose the right dispute option." /></> : <p>Select or add an item first.</p>}</div><div className="wc-caseColumn wide"><h3>Letter Options</h3>{options.length === 0 && <p>Choose a dispute reason to see deterministic letter options. Not sure requires specialist review before any recommendation.</p>}{options.map((option, i) => <article key={option.optionType} className="wc-letterOption"><span>{option.recommended ? 'Recommended' : 'Alternate'} · {option.riskLevel} risk</span><h4>{option.title}</h4><p>{option.summary}</p><small><b>When to use:</b> {option.whenToUse}</small><small><b>Why this fits:</b> {option.whyRecommended}</small><small><b>Evidence:</b> {option.evidenceNeeded.join(', ') || 'Client statement'}</small><small><b>Caution:</b> {option.caution}</small><button onClick={() => prepareDraft(option)}>{i === 0 ? 'Prepare recommended draft for GoClear review' : 'Prepare alternate draft for GoClear review'}</button></article>)}</div></div>{message && <p className="wc-successText">{message}</p>}{error && <p className="wc-errorText">{error}</p>}<div className="wc-caseSafety"><b>No guarantees. No auto-send.</b><span>Nexus helps challenge negative items, request investigation/verification, pursue removal or correction when supportable, and track bureau/furnisher responses. Specialist review and client approval are required before mailing.</span></div></div>
 }
 
 function DisputeReviewPanel({ navigate, existingDocuments, onUploaded }) {
@@ -652,11 +732,11 @@ function ClydeChatDrawer({ open, onClose, navigate, guidance, pageTitle }) {
   return <div className="wc-clydeOverlay" role="dialog" aria-modal="true" aria-label="Ask Clyde">
     <div className="wc-clydeDrawer">
       <div className="wc-clydeDrawerHead"><div className="wc-bot">🤖</div><div><h2>Ask Clyde</h2><p>{pageTitle} guidance</p></div><button onClick={onClose} aria-label="Close Clyde chat">×</button></div>
-      <div className="wc-clydeContext"><b>Current page context</b><p>Clyde can help you understand what is missing, what to upload next, and when to request human review.</p></div>
+      <div className="wc-clydeContext"><b>Current page context</b><p>Clyde can help you choose items to challenge, organize dispute reasons, prepare options for GoClear review, and track what worked after bureau or furnisher responses.</p></div>
       <div className="wc-clydePromptGrid">
-        <button onClick={() => respond('Upload a current credit report, government ID, proof of address, EIN confirmation, and the funding documents requested on your readiness page.')}>Which documents do I need?</button>
-        <button onClick={() => respond('The fastest credit-health action is usually reducing utilization above 30%, then uploading a current report for GoClear review.')}>What can improve my score fastest?</button>
-        <button onClick={() => respond('GoClear needs to review uploaded documents, profile completeness, dispute letter approvals, and any request-review notes before advising next steps.')}>What does GoClear need to review?</button>
+        <button onClick={() => respond('Upload a current credit report and any evidence tied to the item: payment proof, settlement letter, ID, proof of address, bureau response, collection letter, or other support.')}>Which documents do I need?</button>
+        <button onClick={() => respond('Tell me which items you want challenged and why. I can prepare dispute options, but GoClear specialist review and client approval are required before mailing.')}>How do I challenge an item?</button>
+        <button onClick={() => respond('If a bureau or furnisher verifies an item, the next option may be method of verification, furnisher dispute, stronger evidence upload, or a funding workaround.')}>What happens if verified?</button>
       </div>
       {topActions.length > 0 && <div className="wc-advisorBox"><h4>Recommended actions</h4>{topActions.map((item, i) => <button className="wc-clydeItem" key={item.id || item.title} onClick={() => { onClose(); navigate(routeFromGuidance(item)) }}><ListItem tone={item.priority === 'high' ? 'orange' : item.priority === 'medium' ? 'blue' : 'green'} mark={String(i + 1)} title={item.title} text={item.description} /></button>)}</div>}
       {answer && <div className="wc-clydeAnswer"><b>Clyde</b><p>{answer}</p></div>}

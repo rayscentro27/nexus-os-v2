@@ -16,6 +16,11 @@
 - Clyde chat opens in-page drawer: `True`
 - `/client/dispute-review` uses world-class shell: `True`
 - Icons enlarged across client portal: `True`
+- Credit repair case engine added: `True`
+- Dispute reason selector added: `True`
+- Deterministic dispute letter options added: `True`
+- Outcome tracking / next-round learning added: `True`
+- Clyde credit specialist posture updated: `True`
 
 ## Tester Readiness
 

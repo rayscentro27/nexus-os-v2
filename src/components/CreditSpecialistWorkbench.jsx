@@ -18,6 +18,7 @@ import {
   createDocuPostSendRequest,
   markMailJobSent,
 } from '../lib/creditRepairWorkflow'
+import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrategyKnowledge'
 
 const DEMO_CLIENT_ID = 'client_test_julius_erving'
 const DEMO_TENANT_ID = 'tenant_default'
@@ -109,6 +110,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const mailJobs = journey?.mailJobs ?? []
 
   const tabs = [
+    { key: 'case_engine', label: 'Case Engine', count: items.length + letters.length },
     { key: 'queue', label: 'Client Queue', count: reviews.length },
     { key: 'items', label: 'Dispute Items', count: items.length },
     { key: 'letters', label: 'Letters', count: letters.length },
@@ -150,6 +152,33 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
           {r.status?.replace(/_/g, ' ')}
         </span>
       </div>)}
+    </div>}
+
+    {activeTab === 'case_engine' && <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 12 }}>
+      <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
+        <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Repair Case Engine Review</h3>
+        <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 10 }}>Specialist reviews selected items, client reasons, evidence, and letter options before sending anything to client approval.</p>
+        {items.length === 0 && <p style={{ fontSize: 12, color: '#94a7c3' }}>No client-selected report items yet.</p>}
+        {items.map(item => <div key={item.id} style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', marginBottom: 8 }}>
+          <strong style={{ fontSize: 13 }}>{item.furnisher_name || item.account_name || 'Report item'}</strong>
+          <div style={{ fontSize: 11, color: '#94a7c3' }}>{item.bureau?.toUpperCase()} · {item.item_type || 'credit item'} · reason: {item.dispute_reason || 'client selection pending'}</div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => onAskHermes && onAskHermes('Review selected dispute item and recommend compliant letter option')} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#1766ff', color: '#fff', fontSize: 11, fontWeight: 700 }}>Review strategy</button>
+            <button type="button" onClick={() => setActiveTab('letters')} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700 }}>Review drafts</button>
+            <button type="button" onClick={() => setActiveTab('mail')} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700 }}>DocuPost gate</button>
+          </div>
+        </div>)}
+      </section>
+      <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
+        <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Supported Reasons & Outcome Learning</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
+          {Object.values(DISPUTE_REASON_LABELS).slice(0, 12).map(reason => <span key={reason} style={{ fontSize: 11, color: '#94a7c3', padding: '5px 7px', borderRadius: 8, background: 'rgba(255,255,255,.06)' }}>{reason}</span>)}
+        </div>
+        <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 8 }}>Record outcomes after bureau/furnisher responses. Nexus should learn what worked and what did not without promising outcomes.</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {OUTCOME_CATEGORIES.map(result => <span key={result} style={{ fontSize: 11, color: '#edf5ff', padding: '5px 8px', borderRadius: 999, background: 'rgba(23,102,255,.18)' }}>{result.replace(/_/g, ' ')}</span>)}
+        </div>
+      </section>
     </div>}
 
     {/* Dispute Items Tab */}

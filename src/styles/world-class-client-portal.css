@@ -74,3 +74,19 @@
 
 @media(max-width:1500px){.wc-panel-dispute{grid-template-rows:auto}.wc-disputeGrid{grid-template-columns:1fr}.wc-disputeLetter{grid-template-columns:1fr}.wc-disputeActions{min-width:0}}
 @media(max-width:900px){.wc-disputeHero{display:grid}.wc-clydeDrawer{width:100vw}.wc-clydeDrawerActions{grid-template-columns:1fr}.wc-navIcon{width:34px;height:34px;flex-basis:34px}.wc-navLabel{height:auto;min-height:54px}}
+
+/* Credit repair case engine. */
+.wc-panel-repair{grid-template-rows:178px minmax(150px,.55fr) minmax(158px,.52fr) auto minmax(145px,.42fr)}
+.wc-caseEngine{display:grid;gap:12px}
+.wc-caseStatusGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.wc-caseGrid{display:grid;grid-template-columns:1.05fr .95fr 1.2fr;gap:12px;align-items:start}
+.wc-caseColumn{border:1px solid var(--wc-line);border-radius:18px;background:#fbfdff;padding:12px;display:grid;gap:10px}
+.wc-caseColumn h3{margin:0;font-size:15px}.wc-formGrid.two{grid-template-columns:1fr 1fr}
+.wc-caseItems{display:grid;gap:8px;margin-top:8px}.wc-caseItem{border:1px solid var(--wc-line);border-radius:14px;background:white;color:#244993;text-align:left;padding:10px;display:grid;gap:3px;cursor:pointer}
+.wc-caseItem.active{background:#eaf3ff;box-shadow:inset 0 0 0 1px rgba(7,92,246,.16)}
+.wc-caseItem b{font-size:13px}.wc-caseItem span,.wc-caseItem small{font-size:11px;color:var(--wc-muted)}
+.wc-reasonGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}.wc-reasonGrid button{border:1px solid var(--wc-line);border-radius:13px;background:white;color:#244993;font-size:11px;font-weight:900;padding:9px;cursor:pointer}.wc-reasonGrid button.active{background:#eaf3ff;color:var(--wc-blue)}
+.wc-letterOption{border:1px solid var(--wc-line);border-radius:16px;background:white;padding:12px;display:grid;gap:7px}
+.wc-letterOption span{color:var(--wc-blue);font-size:11px;font-weight:900;text-transform:uppercase}.wc-letterOption h4{margin:0;font-size:15px}.wc-letterOption small{display:block;color:var(--wc-muted);font-size:11px}.wc-letterOption button{justify-self:start}
+.wc-caseSafety{border:1px solid #fed7aa;border-radius:16px;background:#fff7ed;padding:12px;display:grid;gap:4px}.wc-caseSafety span{color:#9a3412;font-size:12px}
+@media(max-width:1500px){.wc-caseStatusGrid,.wc-caseGrid{grid-template-columns:1fr}.wc-panel-repair{grid-template-rows:auto}}
