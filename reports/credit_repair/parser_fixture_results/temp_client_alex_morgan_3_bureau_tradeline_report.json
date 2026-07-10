@@ -1,0 +1,1163 @@
+{
+  "parserVersion": "preview-0.1.0",
+  "sourceFileName": "temp_client_alex_morgan_3_bureau_tradeline_report.pdf",
+  "sourceFormatGuess": "three_bureau_tradeline",
+  "extractionMode": "text_pdf",
+  "confidence": "medium",
+  "needsSpecialistReview": true,
+  "clientNameGuess": "Alex Morgan  ",
+  "reportDateGuess": "2026-07-10",
+  "bureausDetected": [
+    "experian",
+    "equifax",
+    "transunion"
+  ],
+  "accounts": [
+    {
+      "bureau": "other",
+      "furnisherName": "Alex Morgan 3",
+      "accountName": "Alex Morgan 3",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Alex Morgan 3-Bureau Tradeline Report - Page 1",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Account Summary by Bureau",
+      "accountName": "Account Summary by Bureau",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Account Summary by Bureau",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Open Accounts",
+      "accountName": "Open Accounts",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Open Accounts",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collections",
+      "accountName": "Collections",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collections",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Late Payments",
+      "accountName": "Late Payments",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Late Payments",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Total Balance",
+      "accountName": "Total Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Total Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization",
+      "accountName": "Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Tradelines / Reported Accounts",
+      "accountName": "Tradelines / Reported Accounts",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Tradelines / Reported Accounts",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "High utilization",
+      "accountName": "High utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "High utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "High utilization",
+      "accountName": "High utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "High utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "High utilization",
+      "accountName": "High utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "High utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "ABC Collections",
+      "accountName": "ABC Collections",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "ABC Collections",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Client says paid in 2024",
+      "accountName": "Client says paid in 2024",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Client says paid in 2024",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "paid_or_settled_wrong",
+        "incorrect_balance",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "ABC Collections",
+      "accountName": "ABC Collections",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "ABC Collections",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Possible duplicate with XYZ Recovery",
+      "accountName": "Possible duplicate with XYZ Recovery",
+      "accountNumberMasked": null,
+      "itemType": "duplicate_account",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Possible duplicate with XYZ Recovery",
+      "negativeCandidateReason": "duplicate_account",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "30 days late 03/2025",
+      "accountName": "30 days late 03/2025",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "30 days late 03/2025",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Client disputes late payment",
+      "accountName": "Client disputes late payment",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Client disputes late payment",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Possible duplicate collection",
+      "accountName": "Possible duplicate collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Possible duplicate collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "May be duplicate auto shopping",
+      "accountName": "May be duplicate auto shopping",
+      "accountNumberMasked": null,
+      "itemType": "duplicate_account",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "May be duplicate auto shopping",
+      "negativeCandidateReason": "duplicate_account",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    }
+  ],
+  "inquiries": [
+    {
+      "bureau": "other",
+      "company": "Hard Inquiry",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard Inquiry",
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Hard Inquiry",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard Inquiry",
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Hard Inquiry",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard Inquiry",
+      "confidence": "medium"
+    }
+  ],
+  "personalInfoVariations": [
+    {
+      "field": "personal_info",
+      "value": "Personal Information",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    }
+  ],
+  "utilizationSummary": {
+    "revolvingAccounts": 6,
+    "highUtilizationAccounts": 0,
+    "highestUtilizationPercent": null,
+    "notes": []
+  },
+  "negativeItemCandidates": [
+    {
+      "bureau": "other",
+      "furnisherName": "Collections",
+      "accountName": "Collections",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collections",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Late Payments",
+      "accountName": "Late Payments",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Late Payments",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Total Balance",
+      "accountName": "Total Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Total Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization",
+      "accountName": "Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "High utilization",
+      "accountName": "High utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "High utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "High utilization",
+      "accountName": "High utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "High utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "High utilization",
+      "accountName": "High utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "High utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "ABC Collections",
+      "accountName": "ABC Collections",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "ABC Collections",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "ABC Collections",
+      "accountName": "ABC Collections",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "ABC Collections",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Possible duplicate with XYZ Recovery",
+      "accountName": "Possible duplicate with XYZ Recovery",
+      "accountNumberMasked": null,
+      "itemType": "duplicate_account",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Possible duplicate with XYZ Recovery",
+      "negativeCandidateReason": "duplicate_account",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "30 days late 03/2025",
+      "accountName": "30 days late 03/2025",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "30 days late 03/2025",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Client disputes late payment",
+      "accountName": "Client disputes late payment",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Client disputes late payment",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Possible duplicate collection",
+      "accountName": "Possible duplicate collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Possible duplicate collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "May be duplicate auto shopping",
+      "accountName": "May be duplicate auto shopping",
+      "accountNumberMasked": null,
+      "itemType": "duplicate_account",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "May be duplicate auto shopping",
+      "negativeCandidateReason": "duplicate_account",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "company": "Hard Inquiry",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard Inquiry",
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Hard Inquiry",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard Inquiry",
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Hard Inquiry",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard Inquiry",
+      "confidence": "medium"
+    },
+    {
+      "field": "personal_info",
+      "value": "Personal Information",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    }
+  ],
+  "documentClassification": {
+    "suggestedCategory": "credit_report",
+    "label": "Suggested extraction",
+    "status": "Needs GoClear specialist review",
+    "verified": false
+  },
+  "warnings": [
+    {
+      "code": "SUGGESTED_EXTRACTION_ONLY",
+      "message": "Suggested extraction only. Needs GoClear specialist review and is not verified yet.",
+      "severity": "warning"
+    }
+  ],
+  "rawTextPreview": "FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY Alex Morgan 3-Bureau Tradeline Report - Page 1 3-Bureau Credit File Summary Client: Alex Morgan Report ID: MOCK-AM-001 Date: 2026-07-10 This is fake test data created for Nexus OCR/parser QA. It is not a real credit report. Personal Information Name Address DOB SSN Alex Morgan 100 Test Harbor Dr, Suite 2, Phoenix, AZ 85001 MM/DD/YYYY not provided XXX-XX-1234 Account Summary by Bureau Bureau Open Accounts Collections Late Payments Inquiries Total Balance Total Limit Utilization Experian 5 1 2 3 $8,650 $18,500 47% Equifax 4 2 1 2 $7,900 $17,000 46% TransUnion 5 1 2 4 $9,100 $18,500 49% Tradelines / Reported Accounts Bureau Furnisher Type Status Balance Limit Util Pay Status Notes Experian Capital One Platinum Revolving Open $2,900 $3,500 83% Current High utilization Equifax Capital One Platinum Revolving Open $2,880 $3,500 82% Current High utilization TransUnion Capital One Platinum Revolving Open $2,930 $3,500 84% Current High utilization Experian ABC Collections Collection Closed $640 - - Collection Client says paid in 2024 Equifax ABC Collections Collection Closed $640 - - Collection Possible duplicate wit",
+  "expectedManifest": {
+    "client": "Alex Morgan",
+    "format": "3-bureau tradeline table PDF",
+    "expected_items": 7,
+    "flags": [
+      "high_utilization",
+      "collection_paid_wrong",
+      "duplicate_collection",
+      "late_payment_dispute",
+      "unauthorized_inquiry"
+    ],
+    "recommended_next": "Create credit repair case, verify ABC/XYZ duplicate collection, build utilization plan for Capital One."
+  },
+  "fixtureOnly": true
+}

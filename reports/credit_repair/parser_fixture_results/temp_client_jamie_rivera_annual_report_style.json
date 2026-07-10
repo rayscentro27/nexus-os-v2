@@ -1,0 +1,883 @@
+{
+  "parserVersion": "preview-0.1.0",
+  "sourceFileName": "temp_client_jamie_rivera_annual_report_style.pdf",
+  "sourceFormatGuess": "annual_report_style",
+  "extractionMode": "text_pdf",
+  "confidence": "medium",
+  "needsSpecialistReview": true,
+  "clientNameGuess": "Jamie Rivera  ",
+  "reportDateGuess": null,
+  "bureausDetected": [
+    "experian",
+    "equifax",
+    "transunion"
+  ],
+  "accounts": [
+    {
+      "bureau": "other",
+      "furnisherName": "Consumer requests review of all negative items, especially medical collections, ",
+      "accountName": "Consumer requests review of all negative items, especially medical collections, ",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Consumer requests review of all negative items, especially medical collections, incorrect addresses, and student loan late-payment",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Consumer says several addresses are outdated and one collection was paid by insu",
+      "accountName": "Consumer says several addresses are outdated and one collection was paid by insu",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Consumer says several addresses are outdated and one collection was paid by insurance.",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "personal_info_error",
+        "mixed_file",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Potentially Negative Accounts",
+      "accountName": "Potentially Negative Accounts",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Potentially Negative Accounts",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Account / Furnisher",
+      "accountName": "Account / Furnisher",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Account / Furnisher",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Account Type",
+      "accountName": "Account Type",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Account Type",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "SUNRISE MEDICAL COLLECTIONS",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "$385 balance; placed for collection",
+      "accountName": "$385 balance; placed for collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "$385 balance; placed for collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Client says insurance paid; needs verification",
+      "accountName": "Client says insurance paid; needs verification",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Client says insurance paid; needs verification",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "paid_or_settled_wrong",
+        "incorrect_balance",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "SUNRISE MEDICAL COLLECTIONS",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "$385 balance; collection",
+      "accountName": "$385 balance; collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "$385 balance; collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Duplicate? Same provider as EX",
+      "accountName": "Duplicate? Same provider as EX",
+      "accountNumberMasked": null,
+      "itemType": "duplicate_account",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Duplicate? Same provider as EX",
+      "negativeCandidateReason": "duplicate_account",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "60 days late 08/2024",
+      "accountName": "60 days late 08/2024",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "60 days late 08/2024",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Closed by grantor; 90 days late 2022",
+      "accountName": "Closed by grantor; 90 days late 2022",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Closed by grantor; 90 days late 2022",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Paid/closed but derogatory history remains",
+      "accountName": "Paid/closed but derogatory history remains",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Paid/closed but derogatory history remains",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "paid_or_settled_wrong",
+        "incorrect_balance",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Positive/Open Revolving Accounts",
+      "accountName": "Positive/Open Revolving Accounts",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Positive/Open Revolving Accounts",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization",
+      "accountName": "Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    }
+  ],
+  "inquiries": [],
+  "personalInfoVariations": [
+    {
+      "field": "address",
+      "value": "Consumer requests review of all negative items, especially medical collections, incorrect addresses, and student loan late-payment",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Consumer says several addresses are outdated and one collection was paid by insurance.",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Old address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "personal_info",
+      "value": "Employer",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    }
+  ],
+  "utilizationSummary": {
+    "revolvingAccounts": 5,
+    "highUtilizationAccounts": 0,
+    "highestUtilizationPercent": null,
+    "notes": []
+  },
+  "negativeItemCandidates": [
+    {
+      "bureau": "other",
+      "furnisherName": "Consumer requests review of all negative items, especially medical collections, ",
+      "accountName": "Consumer requests review of all negative items, especially medical collections, ",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Consumer requests review of all negative items, especially medical collections, incorrect addresses, and student loan late-payment",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Consumer says several addresses are outdated and one collection was paid by insu",
+      "accountName": "Consumer says several addresses are outdated and one collection was paid by insu",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Consumer says several addresses are outdated and one collection was paid by insurance.",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "personal_info_error",
+        "mixed_file",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "SUNRISE MEDICAL COLLECTIONS",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "$385 balance; placed for collection",
+      "accountName": "$385 balance; placed for collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "$385 balance; placed for collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountName": "SUNRISE MEDICAL COLLECTIONS",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "SUNRISE MEDICAL COLLECTIONS",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection",
+      "accountName": "Collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "$385 balance; collection",
+      "accountName": "$385 balance; collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "$385 balance; collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Duplicate? Same provider as EX",
+      "accountName": "Duplicate? Same provider as EX",
+      "accountNumberMasked": null,
+      "itemType": "duplicate_account",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Duplicate? Same provider as EX",
+      "negativeCandidateReason": "duplicate_account",
+      "suggestedDisputeReasons": [
+        "duplicate",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "60 days late 08/2024",
+      "accountName": "60 days late 08/2024",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "60 days late 08/2024",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Closed by grantor; 90 days late 2022",
+      "accountName": "Closed by grantor; 90 days late 2022",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Closed by grantor; 90 days late 2022",
+      "negativeCandidateReason": "late_payment",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization",
+      "accountName": "Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Consumer requests review of all negative items, especially medical collections, incorrect addresses, and student loan late-payment",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Consumer says several addresses are outdated and one collection was paid by insurance.",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Old address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "personal_info",
+      "value": "Employer",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    },
+    {
+      "field": "address",
+      "value": "Address",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    }
+  ],
+  "documentClassification": {
+    "suggestedCategory": "credit_report",
+    "label": "Suggested extraction",
+    "status": "Needs GoClear specialist review",
+    "verified": false
+  },
+  "warnings": [
+    {
+      "code": "SUGGESTED_EXTRACTION_ONLY",
+      "message": "Suggested extraction only. Needs GoClear specialist review and is not verified yet.",
+      "severity": "warning"
+    }
+  ],
+  "rawTextPreview": "FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY Jamie Rivera Annual Report Style - Page 1 Annual Credit Report Style Disclosure Client: Jamie Rivera Report ID: MOCK-JR-002 Generated: 2026-07-10 FAKE TEST DATA - resembles a consumer disclosure layout with long text blocks. Consumer Statement Consumer requests review of all negative items, especially medical collections, incorrect addresses, and student loan late-payment history. Consumer says several addresses are outdated and one collection was paid by insurance. Personal Data Variations Field Reported Variation Source/Bureau Concern Name Jamie A Rivera Experian OK Address 44 Old Oak Rd, Mesa, AZ Equifax Old address Employer RIVERA CONSULTING LLC TransUnion OK Address PO BOX 2200, Tucson, AZ Experian Client says never used Potentially Negative Accounts Bureau Account / Furnisher Account Type Reported Status Balance Opened Last Reported Comments Experian SUNRISE MEDICAL COLLECTIONS Collection $385 balance; placed for collection $385 2023-11 2026-05 Client says insurance paid; needs verification Equifax SUNRISE MEDICAL COLLECTIONS Collection $385 balance; collection $385 2023-11 2026-05 Duplicate? Same pro",
+  "expectedManifest": {
+    "client": "Jamie Rivera",
+    "format": "annualcreditreport.com-style disclosure PDF",
+    "expected_items": 4,
+    "flags": [
+      "medical_collection",
+      "old_address",
+      "student_loan_late_payment",
+      "high_utilization_store_card"
+    ],
+    "recommended_next": "Review medical collection evidence, address dispute, student loan deferment proof, utilization action for store card."
+  },
+  "fixtureOnly": true
+}

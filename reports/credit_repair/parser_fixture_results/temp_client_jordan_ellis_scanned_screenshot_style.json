@@ -1,0 +1,55 @@
+{
+  "parserVersion": "preview-0.1.0",
+  "sourceFileName": "temp_client_jordan_ellis_scanned_screenshot_style.pdf",
+  "sourceFormatGuess": "scanned_ocr_text",
+  "extractionMode": "failed",
+  "confidence": "low",
+  "needsSpecialistReview": true,
+  "clientNameGuess": null,
+  "reportDateGuess": null,
+  "bureausDetected": [],
+  "accounts": [],
+  "inquiries": [],
+  "personalInfoVariations": [],
+  "utilizationSummary": {
+    "revolvingAccounts": 0,
+    "highUtilizationAccounts": 0,
+    "highestUtilizationPercent": null,
+    "notes": []
+  },
+  "negativeItemCandidates": [],
+  "documentClassification": {
+    "suggestedCategory": "credit_report",
+    "label": "Suggested extraction",
+    "status": "Needs GoClear specialist review",
+    "verified": false
+  },
+  "warnings": [
+    {
+      "code": "SUGGESTED_EXTRACTION_ONLY",
+      "message": "Suggested extraction only. Needs GoClear specialist review and is not verified yet.",
+      "severity": "warning"
+    },
+    {
+      "code": "SCANNED_IMAGE_TEXT_NOT_EXTRACTED",
+      "message": "Only non-substantive text was available from the scanned fixture. OCR/manual specialist review is required.",
+      "severity": "error"
+    }
+  ],
+  "rawTextPreview": "FAKE TEST CREDIT REPORT - IMAGE-ONLY OCR TEST",
+  "expectedManifest": {
+    "client": "Jordan Ellis",
+    "format": "image-only scanned/screenshot style PDF",
+    "expected_items": 5,
+    "flags": [
+      "ocr_required",
+      "charge_off",
+      "collection_validation",
+      "outdated_collection",
+      "hard_inquiries",
+      "high_utilization"
+    ],
+    "recommended_next": "OCR suggestion only; specialist must verify extracted charge-off, collections, inquiries, and Open Sky utilization."
+  },
+  "fixtureOnly": true
+}

@@ -34,7 +34,11 @@
 - Master client button/action map audited: `True`
 - Credit repair letter workflow audited: `True`
 - Remaining dead client buttons: `0`
-- Credit report parsing/OCR: `False`
+- Credit report parser preview branch: `True`
+- Credit report parsing/OCR live production: `False`
+- Parser suggestions require GoClear specialist review: `True`
+- Parser auto-creates dispute letters: `False`
+- Parser auto-sends DocuPost: `False`
 
 ## Tester Readiness
 

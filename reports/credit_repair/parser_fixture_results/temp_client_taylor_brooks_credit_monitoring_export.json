@@ -1,0 +1,566 @@
+{
+  "parserVersion": "preview-0.1.0",
+  "sourceFileName": "temp_client_taylor_brooks_credit_monitoring_export.pdf",
+  "sourceFormatGuess": "monitoring_export",
+  "extractionMode": "text_pdf",
+  "confidence": "medium",
+  "needsSpecialistReview": true,
+  "clientNameGuess": "Taylor Brooks  ",
+  "reportDateGuess": "2026-07-10",
+  "bureausDetected": [
+    "experian",
+    "equifax",
+    "transunion"
+  ],
+  "accounts": [
+    {
+      "bureau": "other",
+      "furnisherName": "Credit utilization too high",
+      "accountName": "Credit utilization too high",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Credit utilization too high",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "New collection account",
+      "accountName": "New collection account",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "New collection account",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "New collection reported by NEXUS RECOVERY LLC for $1,245",
+      "accountName": "New collection reported by NEXUS RECOVERY LLC for $1,245",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "New collection reported by NEXUS RECOVERY LLC for $1,245",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Challenge/verify collection",
+      "accountName": "Challenge/verify collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Challenge/verify collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance increase",
+      "accountName": "Balance increase",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": "$96",
+      "creditLimit": null,
+      "utilizationPercent": 96,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance increase: Blue Bank Card now 96% utilized",
+      "negativeCandidateReason": "utilization, high_utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization strategy",
+      "accountName": "Utilization strategy",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization strategy",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Credit Card Utilization",
+      "accountName": "Credit Card Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Credit Card Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization",
+      "accountName": "Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "The monitoring app lists high utilization and a new collection as primary concer",
+      "accountName": "The monitoring app lists high utilization and a new collection as primary concer",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "The monitoring app lists high utilization and a new collection as primary concerns.",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "It does not provide full account history.",
+      "accountName": "It does not provide full account history.",
+      "accountNumberMasked": null,
+      "itemType": "other",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "It does not provide full account history.",
+      "negativeCandidateReason": null,
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    }
+  ],
+  "inquiries": [
+    {
+      "bureau": "other",
+      "company": "Hard inquiry from AUTO MALL FINANCE",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard inquiry from AUTO MALL FINANCE",
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Inquiry review",
+      "date": null,
+      "inquiryType": "unknown",
+      "notes": "Inquiry review",
+      "confidence": "medium"
+    }
+  ],
+  "personalInfoVariations": [
+    {
+      "field": "address",
+      "value": "Address change detected: 72 Test Loop, Flagstaff AZ",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    }
+  ],
+  "utilizationSummary": {
+    "revolvingAccounts": 7,
+    "highUtilizationAccounts": 1,
+    "highestUtilizationPercent": 96,
+    "notes": [
+      "Balance increase at 96% utilization"
+    ]
+  },
+  "negativeItemCandidates": [
+    {
+      "bureau": "other",
+      "furnisherName": "Credit utilization too high",
+      "accountName": "Credit utilization too high",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Credit utilization too high",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "New collection account",
+      "accountName": "New collection account",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "New collection account",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "New collection reported by NEXUS RECOVERY LLC for $1,245",
+      "accountName": "New collection reported by NEXUS RECOVERY LLC for $1,245",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "New collection reported by NEXUS RECOVERY LLC for $1,245",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Challenge/verify collection",
+      "accountName": "Challenge/verify collection",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Challenge/verify collection",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance increase",
+      "accountName": "Balance increase",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": "$96",
+      "creditLimit": null,
+      "utilizationPercent": 96,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance increase: Blue Bank Card now 96% utilized",
+      "negativeCandidateReason": "utilization, high_utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization strategy",
+      "accountName": "Utilization strategy",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization strategy",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Credit Card Utilization",
+      "accountName": "Credit Card Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Credit Card Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Balance",
+      "accountName": "Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Utilization",
+      "accountName": "Utilization",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Utilization",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "The monitoring app lists high utilization and a new collection as primary concer",
+      "accountName": "The monitoring app lists high utilization and a new collection as primary concer",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "The monitoring app lists high utilization and a new collection as primary concerns.",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Hard inquiry from AUTO MALL FINANCE",
+      "date": null,
+      "inquiryType": "hard",
+      "notes": "Hard inquiry from AUTO MALL FINANCE",
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "company": "Inquiry review",
+      "date": null,
+      "inquiryType": "unknown",
+      "notes": "Inquiry review",
+      "confidence": "medium"
+    },
+    {
+      "field": "address",
+      "value": "Address change detected: 72 Test Loop, Flagstaff AZ",
+      "bureau": "other",
+      "concern": "possible personal information error",
+      "confidence": "low"
+    }
+  ],
+  "documentClassification": {
+    "suggestedCategory": "credit_report",
+    "label": "Suggested extraction",
+    "status": "Needs GoClear specialist review",
+    "verified": false
+  },
+  "warnings": [
+    {
+      "code": "SUGGESTED_EXTRACTION_ONLY",
+      "message": "Suggested extraction only. Needs GoClear specialist review and is not verified yet.",
+      "severity": "warning"
+    }
+  ],
+  "rawTextPreview": "FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY Taylor Brooks Credit Monitoring Export - Page 1 Credit Monitoring Snapshot Export Client: Taylor Brooks Source: MockCreditTrack Date: 2026-07-10 FAKE TEST DATA - dashboard/export style with score cards and action alerts. Bureau Score Change Top Factor Experian 612 -18 Credit utilization too high Equifax 608 -22 New collection account TransUnion 620 -10 Recent inquiries Alerts Date Alert Recommended Review 2026-06-22 New collection reported by NEXUS RECOVERY LLC for $1,245 Challenge/verify collection 2026-06-08 Balance increase: Blue Bank Card now 96% utilized Utilization strategy 2026-05-30 Hard inquiry from AUTO MALL FINANCE Inquiry review 2026-05-11 Address change detected: 72 Test Loop, Flagstaff AZ Personal info review Credit Card Utilization Card Balance Limit Utilization Minimum Due Blue Bank Card $4,820 $5,000 96% $145 Everyday Rewards Card $2,100 $4,000 53% $63 Secure Credit Builder $120 $500 24% $25 Mock Export Notes The monitoring app lists high utilization and a new collection as primary concerns. It does not provide full account history. GoClear should request full report or supporting documents",
+  "expectedManifest": {
+    "client": "Taylor Brooks",
+    "format": "credit monitoring dashboard export",
+    "expected_items": 4,
+    "flags": [
+      "score_alert",
+      "new_collection",
+      "high_utilization",
+      "hard_inquiry",
+      "address_change"
+    ],
+    "recommended_next": "Ask for full report, create utilization action plan, verify new collection and inquiry."
+  },
+  "fixtureOnly": true
+}

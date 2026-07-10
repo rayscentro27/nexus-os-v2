@@ -20,6 +20,7 @@ import {
 } from '../lib/creditRepairWorkflow'
 import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrategyKnowledge'
 import { getStrategyResearchBacklog, recommendNextRoundStrategy, summarizeStrategyOutcomes } from '../lib/creditStrategyResearchEngine'
+import { CREDIT_REPORT_PARSER_VERSION } from '../lib/creditReportParser'
 
 const DEMO_CLIENT_ID = 'client_test_julius_erving'
 const DEMO_TENANT_ID = 'tenant_default'
@@ -113,6 +114,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
 
   const tabs = [
     { key: 'case_engine', label: 'Case Engine', count: items.length + letters.length },
+    { key: 'parser_preview', label: 'Parser Preview', count: 0 },
     { key: 'queue', label: 'Client Queue', count: reviews.length },
     { key: 'items', label: 'Dispute Items', count: items.length },
     { key: 'letters', label: 'Letters', count: letters.length },
@@ -133,6 +135,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         color: activeTab === tab.key ? '#fff' : '#94a7c3',
       }}>{tab.label} <span style={{ marginLeft: 4, opacity: .7 }}>({tab.count})</span></button>)}
     </div>
+
+    {activeTab === 'parser_preview' && <ParserPreviewPanel />}
 
     {/* Queue Tab */}
     {activeTab === 'queue' && <div>
@@ -251,5 +255,49 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         {job.status === 'approved_to_send' && <button onClick={() => markMailJobSent(job.id, `TRK-${Date.now()}`).then(() => loadCreditRepairJourney().then(setJourney))} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Mark Sent</button>}
       </div>)}
     </div>}
+  </div>
+}
+
+function ParserPreviewPanel() {
+  const previewRows = [
+    { name: '3-bureau tradeline PDF', status: 'Suggested extraction ready', action: 'Confirm selected item' },
+    { name: 'Annual report style PDF', status: 'Suggested extraction ready', action: 'Edit item before creating case item' },
+    { name: 'Credit monitoring export', status: 'Suggested extraction ready', action: 'Reject or request full report' },
+    { name: 'Scanned/screenshot PDF', status: 'OCR required', action: 'Manual review or backend OCR worker' },
+    { name: 'Mixed credit/funding bundle', status: 'Needs specialist split/verify', action: 'Classify before creating items' },
+  ]
+  return <div style={{ display: 'grid', gridTemplateColumns: '1fr .9fr', gap: 12 }}>
+    <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
+      <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Report Parser Preview</h3>
+      <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 10 }}>
+        Parser preview is available for test fixtures/local validation. Live report parsing requires backend extraction worker.
+        Parser output is a suggested extraction, needs GoClear specialist review, and is not verified yet.
+      </p>
+      <div style={{ display: 'grid', gap: 8 }}>
+        {previewRows.map(row => <div key={row.name} style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', background: 'rgba(255,255,255,.04)' }}>
+          <strong style={{ fontSize: 12 }}>{row.name}</strong>
+          <div style={{ fontSize: 11, color: '#94a7c3', marginTop: 3 }}>Status: {row.status}</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            <button type="button" disabled title="Preview only. Run local fixture parser and confirm in specialist workflow before creating case items." style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: 'rgba(23,102,255,.28)', color: '#edf5ff', fontSize: 11, fontWeight: 700, cursor: 'not-allowed' }}>{row.action}</button>
+            <button type="button" disabled title="Parser suggestions cannot create letters automatically." style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: 'rgba(245,158,11,.18)', color: '#f59e0b', fontSize: 11, fontWeight: 700, cursor: 'not-allowed' }}>No auto letters</button>
+          </div>
+        </div>)}
+      </div>
+    </section>
+    <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
+      <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Specialist Confirmation Gate</h3>
+      <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 8 }}>Version: {CREDIT_REPORT_PARSER_VERSION}</p>
+      <ol style={{ color: '#94a7c3', fontSize: 12, lineHeight: 1.7, paddingLeft: 18 }}>
+        <li>Run the local fixture parser against fake reports.</li>
+        <li>Review confidence, warnings, suggested items, and suggested reasons.</li>
+        <li>Confirm selected item or edit before creating a case item.</li>
+        <li>Create report item only after specialist confirmation.</li>
+        <li>Choose reason before letter options are generated.</li>
+        <li>Keep specialist review, client approval, and DocuPost gates in place.</li>
+      </ol>
+      <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 12 }}>
+        Uploaded credit reports remain Pending GoClear Review until a specialist confirms parser suggestions or manually creates report items.
+      </div>
+    </section>
   </div>
 }

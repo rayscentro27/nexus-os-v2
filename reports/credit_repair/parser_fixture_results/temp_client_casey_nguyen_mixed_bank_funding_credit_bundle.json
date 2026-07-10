@@ -1,0 +1,205 @@
+{
+  "parserVersion": "preview-0.1.0",
+  "sourceFileName": "temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf",
+  "sourceFormatGuess": "mixed_credit_funding_bundle",
+  "extractionMode": "mixed",
+  "confidence": "medium",
+  "needsSpecialistReview": true,
+  "clientNameGuess": "Casey Nguyen  ",
+  "reportDateGuess": null,
+  "bureausDetected": [],
+  "accounts": [
+    {
+      "bureau": "other",
+      "furnisherName": "Two revolving cards over 70%; one late payment reported",
+      "accountName": "Two revolving cards over 70%; one late payment reported",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": 70,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Two revolving cards over 70%; one late payment reported",
+      "negativeCandidateReason": "late_payment, high_utilization",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection Notice",
+      "accountName": "Collection Notice",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection Notice",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Ending Balance",
+      "accountName": "Ending Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Ending Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    }
+  ],
+  "inquiries": [
+    {
+      "bureau": "other",
+      "company": "Inquiry List",
+      "date": null,
+      "inquiryType": "unknown",
+      "notes": "Inquiry List",
+      "confidence": "medium"
+    }
+  ],
+  "personalInfoVariations": [],
+  "utilizationSummary": {
+    "revolvingAccounts": 1,
+    "highUtilizationAccounts": 1,
+    "highestUtilizationPercent": 70,
+    "notes": [
+      "Two revolving cards over 70%; one late payment reported at 70% utilization"
+    ]
+  },
+  "negativeItemCandidates": [
+    {
+      "bureau": "other",
+      "furnisherName": "Two revolving cards over 70%; one late payment reported",
+      "accountName": "Two revolving cards over 70%; one late payment reported",
+      "accountNumberMasked": null,
+      "itemType": "late_payment",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": 70,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Two revolving cards over 70%; one late payment reported",
+      "negativeCandidateReason": "late_payment, high_utilization",
+      "suggestedDisputeReasons": [
+        "late_payment_wrong",
+        "incorrect_dates",
+        "not_sure"
+      ],
+      "confidence": "medium"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Collection Notice",
+      "accountName": "Collection Notice",
+      "accountNumberMasked": null,
+      "itemType": "collection",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Collection Notice",
+      "negativeCandidateReason": "collection",
+      "suggestedDisputeReasons": [
+        "verify_or_validate",
+        "not_mine",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "furnisherName": "Ending Balance",
+      "accountName": "Ending Balance",
+      "accountNumberMasked": null,
+      "itemType": "utilization",
+      "status": null,
+      "reportedBalance": null,
+      "creditLimit": null,
+      "utilizationPercent": null,
+      "dateOpened": null,
+      "dateReported": null,
+      "paymentStatus": null,
+      "notes": "Ending Balance",
+      "negativeCandidateReason": "utilization",
+      "suggestedDisputeReasons": [
+        "incorrect_balance",
+        "verify_or_validate",
+        "not_sure"
+      ],
+      "confidence": "low"
+    },
+    {
+      "bureau": "other",
+      "company": "Inquiry List",
+      "date": null,
+      "inquiryType": "unknown",
+      "notes": "Inquiry List",
+      "confidence": "medium"
+    }
+  ],
+  "documentClassification": {
+    "suggestedCategory": "mixed_credit_funding_bundle",
+    "label": "Suggested extraction",
+    "status": "Needs GoClear specialist review",
+    "verified": false
+  },
+  "warnings": [
+    {
+      "code": "SUGGESTED_EXTRACTION_ONLY",
+      "message": "Suggested extraction only. Needs GoClear specialist review and is not verified yet.",
+      "severity": "warning"
+    }
+  ],
+  "rawTextPreview": "FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY Casey Nguyen Mixed Credit/Funding Bundle - Page 1 Mixed Credit + Business Funding Bundle Client: Casey Nguyen Business: Nguyen Studio LLC Report ID: MOCK-CN-005 FAKE TEST DATA - intentionally mixes credit profile and business funding docs to test document classification. Credit Summary Item Detail Suggested Track Credit Report Extract Two revolving cards over 70%; one late payment reported Credit Profile Collection Notice Omega Recovery LLC $899, client wants challenged Credit Repair Inquiry List Three hard inquiries in 60 days Credit Profile Business Funding Documents Included Document Type Period/Date Status Suggested Category Business Bank Statement May 2026 Included bank_statement Profit and Loss YTD 2026 Included profit_and_loss Articles of Organization Filed 2024-03-15 Included business_formation EIN Confirmation Last 4 shown only: 4321 Included ein_confirmation Business Bank Statement Summary Month Deposits Withdrawals Ending Balance 2026-05 $18,400 $15,950 $7,240 2026-04 $21,100 $19,010 $4,790 2026-03 $16,850 $14,620 $2,700 Parser Challenge This file should be classified as a mixed bundle. Nexus sho",
+  "expectedManifest": {
+    "client": "Casey Nguyen",
+    "format": "mixed credit + business funding bundle",
+    "expected_items": 7,
+    "flags": [
+      "mixed_document",
+      "high_utilization",
+      "collection",
+      "late_payment",
+      "bank_statement",
+      "profit_and_loss",
+      "business_formation",
+      "ein_confirmation"
+    ],
+    "recommended_next": "Classify as mixed bundle; specialist should split/verify categories; create credit and funding review tasks."
+  },
+  "fixtureOnly": true
+}

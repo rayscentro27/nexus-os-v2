@@ -1,0 +1,70 @@
+{
+  "temp_client_alex_morgan_3_bureau_tradeline_report.pdf": {
+    "client": "Alex Morgan",
+    "format": "3-bureau tradeline table PDF",
+    "expected_items": 7,
+    "flags": [
+      "high_utilization",
+      "collection_paid_wrong",
+      "duplicate_collection",
+      "late_payment_dispute",
+      "unauthorized_inquiry"
+    ],
+    "recommended_next": "Create credit repair case, verify ABC/XYZ duplicate collection, build utilization plan for Capital One."
+  },
+  "temp_client_jamie_rivera_annual_report_style.pdf": {
+    "client": "Jamie Rivera",
+    "format": "annualcreditreport.com-style disclosure PDF",
+    "expected_items": 4,
+    "flags": [
+      "medical_collection",
+      "old_address",
+      "student_loan_late_payment",
+      "high_utilization_store_card"
+    ],
+    "recommended_next": "Review medical collection evidence, address dispute, student loan deferment proof, utilization action for store card."
+  },
+  "temp_client_taylor_brooks_credit_monitoring_export.pdf": {
+    "client": "Taylor Brooks",
+    "format": "credit monitoring dashboard export",
+    "expected_items": 4,
+    "flags": [
+      "score_alert",
+      "new_collection",
+      "high_utilization",
+      "hard_inquiry",
+      "address_change"
+    ],
+    "recommended_next": "Ask for full report, create utilization action plan, verify new collection and inquiry."
+  },
+  "temp_client_jordan_ellis_scanned_screenshot_style.pdf": {
+    "client": "Jordan Ellis",
+    "format": "image-only scanned/screenshot style PDF",
+    "expected_items": 5,
+    "flags": [
+      "ocr_required",
+      "charge_off",
+      "collection_validation",
+      "outdated_collection",
+      "hard_inquiries",
+      "high_utilization"
+    ],
+    "recommended_next": "OCR suggestion only; specialist must verify extracted charge-off, collections, inquiries, and Open Sky utilization."
+  },
+  "temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf": {
+    "client": "Casey Nguyen",
+    "format": "mixed credit + business funding bundle",
+    "expected_items": 7,
+    "flags": [
+      "mixed_document",
+      "high_utilization",
+      "collection",
+      "late_payment",
+      "bank_statement",
+      "profit_and_loss",
+      "business_formation",
+      "ein_confirmation"
+    ],
+    "recommended_next": "Classify as mixed bundle; specialist should split/verify categories; create credit and funding review tasks."
+  }
+}
