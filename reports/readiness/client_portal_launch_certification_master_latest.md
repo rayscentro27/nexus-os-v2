@@ -31,6 +31,10 @@
 - Clyde functional action engine added: `True`
 - Document classification is context/filename based, not OCR/AI verification: `True`
 - Documents remains master vault: `True`
+- Master client button/action map audited: `True`
+- Credit repair letter workflow audited: `True`
+- Remaining dead client buttons: `0`
+- Credit report parsing/OCR: `False`
 
 ## Tester Readiness
 

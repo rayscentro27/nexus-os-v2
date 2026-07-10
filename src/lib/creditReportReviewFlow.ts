@@ -27,7 +27,7 @@ export function getCreditReportReviewEntryOptions(providerConfigured = false) {
       id: 'manual_negative_item',
       title: 'Manually Add Negative Item',
       description: 'Use non-sensitive fields only. Account last four only.',
-      route: '/client/credit-repair-journey',
+      route: '/client/credit-repair-journey?action=manual-negative-item',
       enabled: true,
     },
   ]
