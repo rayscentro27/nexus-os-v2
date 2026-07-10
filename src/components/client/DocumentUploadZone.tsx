@@ -81,18 +81,21 @@ export function DocumentUploadZone({
   sourceConcept,
   fromPage,
   compact = false,
+  maxFiles,
 }: {
-  onUploadComplete?: () => void
+  onUploadComplete?: (details?: { fileName?: string; category?: string; path?: string; fromPage?: string; sourceConcept?: string }) => void
   category?: string
   sourceConcept?: string
   fromPage?: string
   compact?: boolean
+  maxFiles?: number
 }) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
 
   const handleFiles = useCallback(async (fileList: FileList) => {
-    const newFiles: UploadFile[] = Array.from(fileList).map(file => ({
+    const selectedFiles = maxFiles ? Array.from(fileList).slice(0, maxFiles) : Array.from(fileList)
+    const newFiles: UploadFile[] = selectedFiles.map(file => ({
       file,
       progress: 0,
       status: 'pending' as const,
@@ -148,16 +151,17 @@ export function DocumentUploadZone({
 
         if (metadataResult.ok) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: true } : f))
+          onUploadComplete?.({ fileName: uploadFile.file.name, category: resolvedCategory, path, fromPage, sourceConcept })
         } else {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: false, metadataWarning: metadataResult.warning } : f))
+          onUploadComplete?.({ fileName: uploadFile.file.name, category: resolvedCategory, path, fromPage, sourceConcept })
         }
       } catch (err) {
         setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'error', error: 'Upload failed' } : f))
       }
     }
 
-    onUploadComplete?.()
-  }, [onUploadComplete])
+  }, [onUploadComplete, category, sourceConcept, fromPage, maxFiles])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -180,7 +184,7 @@ export function DocumentUploadZone({
   const handleClick = useCallback(() => {
     const input = document.createElement('input')
     input.type = 'file'
-    input.multiple = true
+    input.multiple = maxFiles !== 1
     input.accept = ALLOWED_TYPES.join(',')
     input.onchange = (e) => {
       const target = e.target as HTMLInputElement
@@ -189,7 +193,7 @@ export function DocumentUploadZone({
       }
     }
     input.click()
-  }, [handleFiles])
+  }, [handleFiles, maxFiles])
 
   const removeFile = useCallback((file: File) => {
     setFiles(prev => prev.filter(f => f.file !== file))
@@ -214,7 +218,7 @@ export function DocumentUploadZone({
         onClick={handleClick}
       >
         <Upload size={32} />
-        <strong>Drop files here or click to upload</strong>
+        <strong>{maxFiles === 1 ? 'Drop one file here or click to upload' : 'Drop files here or click to upload'}</strong>
         <span>PDF, JPEG, PNG, HEIC, TXT, DOCX — Max 10MB</span>
       </div>
 

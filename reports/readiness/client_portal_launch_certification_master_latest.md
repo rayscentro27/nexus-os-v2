@@ -26,6 +26,11 @@
 - Business Profile flow clarified: `True`
 - Business Funding flow clarified: `True`
 - Backend strategy detail kept in admin/specialist layer: `True`
+- In-page one-document upload panel added: `True`
+- Upload redirects removed from main workflow pages: `True`
+- Clyde functional action engine added: `True`
+- Document classification is context/filename based, not OCR/AI verification: `True`
+- Documents remains master vault: `True`
 
 ## Tester Readiness
 

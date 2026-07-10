@@ -101,3 +101,22 @@
 .wc-simpleTrackHeader{display:grid;gap:6px}
 .wc-monthlyValue .wc-listItem{padding:8px 0}
 @media(max-width:900px){.wc-reportFirst .wc-actionRow.four{grid-template-columns:1fr}.wc-panel-home,.wc-panel-credit{grid-template-rows:auto}}
+
+/* Simple in-page one-document upload and Clyde action guide. */
+.wc-simpleUploadLane{display:flex;align-items:center;justify-content:space-between;gap:18px}
+.wc-simpleUploadLane small{display:block;color:var(--wc-muted);font-size:12px;margin-top:4px}
+.wc-uploadPanelOverlay{position:fixed;inset:0;z-index:80;background:rgba(6,27,95,.28);backdrop-filter:blur(6px);display:grid;place-items:center;padding:24px}
+.wc-uploadPanel{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;background:#fff;border:1px solid var(--wc-line);border-radius:22px;box-shadow:var(--wc-shadow);padding:20px;display:grid;gap:14px}
+.wc-uploadPanelHead{display:grid;grid-template-columns:72px 1fr auto;gap:14px;align-items:center}
+.wc-uploadPanelHead h2{margin:0;color:var(--wc-navy);font-size:24px}
+.wc-uploadPanelHead p,.wc-uploadPanelNotice p,.wc-uploadPanelResult p{margin:4px 0 0;color:var(--wc-muted);font-size:13px}
+.wc-uploadPanelHead button{border:0;background:#eef5ff;border-radius:999px;width:38px;height:38px;font-size:24px;color:var(--wc-navy);cursor:pointer}
+.wc-uploadPanelNotice,.wc-uploadPanelResult{border:1px solid var(--wc-line);border-radius:16px;background:#f8fbff;padding:12px;display:grid;gap:6px}
+.wc-uploadPanelResult span{font-size:13px;color:var(--wc-ink);font-weight:800}
+.wc-uploadPanelResult em{display:inline-flex;margin:4px 6px 0 0;padding:6px 9px;border-radius:999px;background:#fff;color:var(--wc-blue);font-size:11px;font-style:normal;font-weight:900;border:1px solid var(--wc-line)}
+.wc-uploadPanelResult.muted{background:#fff}
+.wc-uploadPanelActions,.wc-clydeQuickActions{display:flex;gap:10px;flex-wrap:wrap}
+.wc-uploadPanelActions button,.wc-clydeQuickActions button{border:1px solid var(--wc-line);border-radius:999px;background:#fff;color:var(--wc-blue);font-weight:900;padding:10px 13px;cursor:pointer}
+.wc-uploadPanelActions button:first-child,.wc-clydeDrawerActions button:first-child{background:var(--wc-blue);color:#fff;border-color:var(--wc-blue)}
+.wc-clydeQuickActions{margin-top:10px}
+@media(max-width:900px){.wc-simpleUploadLane,.wc-uploadPanelHead{grid-template-columns:1fr;display:grid}.wc-uploadPanelHead button{justify-self:start}}

@@ -216,10 +216,10 @@ function getGuidanceForStep(path) {
       readinessNote: 'Recommendations are educational. No path is guaranteed.',
     },
     '/client/resources': {
-      currentStep: 'Resources & Affiliates — Tools and services',
+      currentStep: 'Resources & Recommended Tools — Tools and services',
       nextAction: 'Review free and paid options for credit monitoring, mailing, and banking.',
       missingItems: [],
-      readinessNote: 'Free options are listed first. Affiliate relationships are disclosed.',
+      readinessNote: 'Free options are listed first. Resource relationships are disclosed.',
     },
     '/client/request-review': {
       currentStep: 'Request Review — Submit for GoClear review',
