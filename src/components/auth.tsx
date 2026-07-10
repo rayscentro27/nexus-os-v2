@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { getPasswordResetRedirectUrl, updateRecoveredPassword } from '../lib/authHelpers';
+import { forceAuthResetAndRedirect } from '../lib/authSessionCleanup';
 
 interface SessionUser { email: string | null; id: string; }
 
@@ -17,13 +18,14 @@ export function useSession() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session ? { email: session.user.email ?? null, id: session.user.id } : null);
       if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
+      if (event === 'SIGNED_OUT') setUser(null);
     });
     return () => sub.subscription.unsubscribe();
   }, []);
   return { user, loading, recoveryMode };
 }
 
-export function SignInForm() {
+export function SignInForm({ adminOnly = false }: { adminOnly?: boolean }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
@@ -64,7 +66,7 @@ export function SignInForm() {
     <div className="authwrap">
       <form className="authcard" onSubmit={submit}>
         <h1>Nexus <span style={{ color: 'var(--accent)' }}>OS v2</span></h1>
-        <p>Admin sign-in. Authenticated admins only — no public access.</p>
+        <p>{adminOnly ? 'Use an approved GoClear admin account.' : 'Admin sign-in. Authenticated admins only — no public access.'}</p>
         {!isSupabaseConfigured && (
           <div className="err">Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.</div>
         )}
@@ -82,6 +84,7 @@ export function SignInForm() {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
         <button className="btn ghost" type="button" onClick={() => { setResetMode(true); setErr(''); setNotice(''); }} style={{ width:'100%',marginTop:8 }}>Forgot password?</button>
+        <button className="btn ghost" type="button" onClick={() => forceAuthResetAndRedirect('/admin/login')} style={{ width:'100%',marginTop:8 }}>Reset stuck session</button>
       </form>
     </div>
   );
@@ -94,7 +97,7 @@ export function UpdatePasswordForm() {
 }
 
 export function UserMenu({ email }: { email: string | null }) {
-  async function signOut() { await supabase?.auth.signOut(); }
+  async function signOut() { await forceAuthResetAndRedirect('/admin/login'); }
   return (
     <div className="usermenu">
       <span>{email ?? 'admin'}</span>
@@ -109,4 +112,15 @@ export function AuthGate({ children }: { children: (user: SessionUser) => ReactN
   if (recoveryMode) return <UpdatePasswordForm />;
   if (!user) return <SignInForm />;
   return <>{children(user)}</>;
+}
+
+export function AdminLoginPage() {
+  const { user, loading, recoveryMode } = useSession();
+  if (loading) return <div className="authwrap"><div className="muted">Loading…</div></div>;
+  if (recoveryMode) return <UpdatePasswordForm />;
+  if (user) {
+    window.location.assign('/admin');
+    return <div className="authwrap"><div className="muted">Redirecting to admin…</div></div>;
+  }
+  return <SignInForm adminOnly />;
 }

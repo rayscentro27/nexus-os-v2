@@ -11,7 +11,7 @@ import MarketingDraftCenter from './MarketingDraftCenter';
 import ResearchMoneyPipeline from './ResearchMoneyPipeline';
 import NexusActivationStatus from './NexusActivationStatus';
 import { navigationById } from '../data/nexusNavigationConfig';
-import { supabase } from '../lib/supabaseClient';
+import { forceAuthResetAndRedirect } from '../lib/authSessionCleanup';
 
 const allowed = new Set(Object.keys(navigationById));
 function hashDepartment() { const id = window.location.hash.replace(/^#\/?/, ''); return allowed.has(id) ? id : 'command'; }
@@ -52,6 +52,6 @@ export default function NexusAppShell({ email }) {
     if (active === 'clients') return <GenericStatus type="clients" />;
     return <GenericStatus type={active} />;
   }, [active]);
-  async function signOut() { await supabase?.auth.signOut(); }
+  async function signOut() { await forceAuthResetAndRedirect('/admin/login'); }
   return <div className="nxos-root"><NexusSidebar activeId={active} onNavigate={navigate} open={menuOpen} onClose={() => setMenuOpen(false)} /><main className="nxos-main"><header className="nxos-topbar"><button type="button" className="nxos-menu" onClick={() => setMenuOpen((value) => !value)} aria-label="Toggle departments">☰</button><div className="nxos-breadcrumb">Nexus OS <span>/</span> {meta.label}</div><div className="nxos-user"><span>{email || 'admin'}</span><a href="/client/dashboard">Client portal</a><button type="button" onClick={signOut}>Sign out</button></div></header><NexusDepartmentPanel title={meta.label} description={meta.description}>{panel}</NexusDepartmentPanel></main>{menuOpen && <button type="button" className="nxos-overlay" aria-label="Close menu" onClick={() => setMenuOpen(false)} />}</div>;
 }

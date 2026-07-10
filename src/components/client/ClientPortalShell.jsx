@@ -7,9 +7,9 @@ import {
 } from 'lucide-react'
 import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
-import { supabase } from '../../lib/supabaseClient'
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
 import { loadClientPortalLiveData, loadClientProfileIntake, checkProfileIntakeComplete } from '../../lib/clientPortalDataAdapter'
+import { forceAuthResetAndRedirect } from '../../lib/authSessionCleanup'
 
 export const PortalNavContext = createContext(() => {})
 export const PortalLiveStatusContext = createContext({ status: 'idle', setStatus: () => {} })
@@ -72,7 +72,7 @@ export function ClientSidebar({ path, onNavigate }) {
       </nav>
 
       <div className="client-sidebar-footer">
-        <button className="client-sidebar-item" onClick={async () => { await supabase?.auth.signOut(); window.location.assign('/client/login'); }}>
+        <button className="client-sidebar-item" onClick={() => forceAuthResetAndRedirect('/client/login')}>
           <span className="client-sidebar-icon"><LogOut size={18} /></span>
           <span className="client-sidebar-label">Sign Out</span>
         </button>

@@ -41,6 +41,10 @@
 - Parser auto-sends DocuPost: `False`
 - Parser preview merged to main: `True`
 - Parser production OCR certified: `False`
+- Logout/session cleanup fixed: `True`
+- Admin switch-account flow added: `True`
+- Admin login route available: `/admin/login`
+- Emergency auth reset route available: `/auth/reset`
 
 ## Tester Readiness
 

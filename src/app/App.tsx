@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
-import { AuthGate, useSession } from '../components/auth';
+import { AdminLoginPage, AuthGate, useSession } from '../components/auth';
 import { AdminGuard } from '../components/auth/AdminGuard';
 import NexusAdminUI from '../admin/NexusAdminUI';
 import ClientPortalRoot from '../pages/client/ClientPortalRoot';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
 import ClientPreviewPage from '../pages/client/ClientPreviewPage';
 import UpdatePasswordPage from '../pages/UpdatePasswordPage';
+import AuthResetPage from '../pages/AuthResetPage';
 import {
   GoClearLandingPage,
   GoClearSignupPage,
@@ -59,6 +60,12 @@ export function App() {
 
   if (path === '/update-password') {
     return <UpdatePasswordPage />;
+  }
+  if (path === '/auth/reset') {
+    return <AuthResetPage />;
+  }
+  if (path === '/admin/login') {
+    return <AdminLoginPage />;
   }
   if (path === '/client/login') {
     return <ClientLoginPage />;

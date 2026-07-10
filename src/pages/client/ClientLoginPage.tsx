@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { supabase, isSupabaseConfigured } from "../../lib/supabaseClient";
 import { getPasswordResetRedirectUrl } from "../../lib/authHelpers";
+import { forceAuthResetAndRedirect } from "../../lib/authSessionCleanup";
 import "../../pages/goclear/goclear-public.css";
 
 function ClientLogo() {
@@ -140,6 +141,13 @@ export default function ClientLoginPage() {
               onClick={() => { setResetMode(true); setErr(""); setNotice(""); }}
             >
               Need help accessing your account?
+            </button>
+            <button
+              className="gc-btn gc-btn-ghost gc-full-btn"
+              type="button"
+              onClick={() => forceAuthResetAndRedirect("/client/login")}
+            >
+              Reset stuck session
             </button>
           </form>
         )}

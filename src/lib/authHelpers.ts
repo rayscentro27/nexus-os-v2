@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { clearNexusAuthSession } from './authSessionCleanup';
 
 /**
  * Returns the correct redirect URL for Supabase password recovery emails.
@@ -60,7 +61,7 @@ export async function updateRecoveredPassword(newPassword: string): Promise<{ er
   if (newPassword.length < 12) return { error: 'Password must be at least 12 characters.' };
   const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) return { error: error.message };
-  await supabase.auth.signOut();
+  await clearNexusAuthSession('password-recovery-complete');
   window.location.assign('/?password-reset=success');
   return {};
 }
