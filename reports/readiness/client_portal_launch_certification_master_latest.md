@@ -39,6 +39,8 @@
 - Parser suggestions require GoClear specialist review: `True`
 - Parser auto-creates dispute letters: `False`
 - Parser auto-sends DocuPost: `False`
+- Parser preview merged to main: `True`
+- Parser production OCR certified: `False`
 
 ## Tester Readiness
 
