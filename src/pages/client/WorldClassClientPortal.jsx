@@ -3,7 +3,9 @@ import { clientPortalData } from '../../data/clientPortalData'
 import { clientDataMode, shouldShowInternalDataBadge } from '../../data/clientDataMode'
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient'
 import { DocumentUploadZone } from '../../components/client/DocumentUploadZone'
+import { InlineDocumentRequirement } from '../../components/client/InlineDocumentRequirement'
 import { generateClientGuidance } from '../../clientPortal/clientGuidance'
+import { getClientResources } from '../../clientPortal/clientResources'
 import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
 import { loadCreditRepairJourney } from '../../lib/creditRepairWorkflow'
 import { loadClientPortalLiveData, loadClientProfileIntake, saveClientProfileIntake, checkProfileIntakeComplete } from '../../lib/clientPortalDataAdapter'
@@ -106,6 +108,38 @@ function getLiveDocuments(live) {
   }
 }
 
+function getDocumentRows(live) {
+  const rows = live?.documents?.data || []
+  if (rows.length) return rows
+  const docs = live?.documents || clientPortalData.documents
+  return [
+    ...(docs.uploadedDocuments || []).map(title => ({ title, category: title, status: 'uploaded', goclear_review_status: 'pending_review' })),
+    ...(docs.underReviewDocuments || []).map(title => ({ title, category: title, status: 'pending_review', goclear_review_status: 'pending_review' })),
+  ]
+}
+
+function getRequirementStatus(existingDocuments, keys) {
+  const joined = existingDocuments.map(doc => `${doc.category || ''} ${doc.title || ''} ${doc.filename || ''} ${doc.doc_type || ''}`).join(' ').toLowerCase()
+  return keys.some(key => joined.includes(String(key).toLowerCase())) ? 'Uploaded' : 'Missing'
+}
+
+function getCompleteness(form, existingDocuments) {
+  const checks = [
+    ['Basic identity', Boolean(form.legal_name && form.phone)],
+    ['Contact info', Boolean(form.email || form.phone)],
+    ['Address', Boolean(form.mailing_address_line1 && form.city && form.state && form.postal_code)],
+    ['Credit report access', Boolean(form.credit_report_access_status) || getRequirementStatus(existingDocuments, ['credit report']) !== 'Missing'],
+    ['Business basics', Boolean(form.business_name && form.entity_type && form.industry)],
+    ['EIN/entity status', Boolean(form.ein_status)],
+    ['Funding goals', Boolean(form.funding_goal_range && form.funding_purpose && form.funding_timeline)],
+    ['Required documents', ['government', 'address', 'credit report'].every(key => getRequirementStatus(existingDocuments, [key]) !== 'Missing')],
+    ['Business banking status', Boolean(form.business_bank_account_status)],
+  ]
+  const complete = checks.filter(([, ok]) => ok)
+  const missing = checks.filter(([, ok]) => !ok).map(([label]) => label)
+  return { percent: Math.round((complete.length / checks.length) * 100), missing, nextBestAction: missing[0] || 'Ready for review' }
+}
+
 function getBusinessChecklist(live) {
   const rows = live?.businessProfile || []
   if (rows.length) {
@@ -147,6 +181,16 @@ function routeFromGuidance(item) {
   return '/client/funding-readiness'
 }
 
+function SetupStateControl({ label, value, onChange, resourceCategory }) {
+  const resource = getClientResources({ category: resourceCategory, limit: 1 })[0]
+  return <div className="wc-setupState"><b>{label}</b><div>{['I already have this', 'I need help getting this', 'I am not sure'].map(option => <button key={option} className={value === option ? 'active' : ''} onClick={() => onChange(option)}>{option}</button>)}</div>{value === 'I need help getting this' && resource && <p><strong>{resource.title}</strong> · {resource.description}</p>}</div>
+}
+
+function CreditMonitoringConnectCard({ navigate, onUpload }) {
+  const providerConfigured = false
+  return <div className="wc-card wc-monitoringCard"><div className="wc-sectionHead"><h3>Credit Monitoring Connection</h3><span>{providerConfigured ? 'Secure provider' : 'Coming soon'}</span></div><p>Credit monitoring connection is coming soon. For now, upload a recent report or view recommended monitoring resources.</p><div className="wc-resourceActions"><button onClick={onUpload}>Upload credit report instead</button><button onClick={() => navigate('/client/resources?category=credit-monitoring')}>View recommended monitoring resources</button><button disabled title="Secure provider connection is not configured yet.">Connect securely</button></div></div>
+}
+
 function Hero() {
   return <div className="wc-heroExact"><img src={HERO_SRC} alt="Your Path to Funding hero" /></div>
 }
@@ -163,13 +207,17 @@ function MiniCard({ icon, title, tag, text, button, onClick }) {
   return <div className="wc-miniCard"><div className="wc-miniIcon">{icon}</div><div className="wc-miniBody"><div className="wc-miniTop"><b>{title}</b>{tag && <span className="wc-miniTag">{tag}</span>}</div><p>{text}</p>{button && <button onClick={onClick}>{button}</button>}</div></div>
 }
 
-function WcProfileIntakeForm({ onSaved }) {
+function WcProfileIntakeForm({ onSaved, existingDocuments, navigate }) {
   const [form, setForm] = useState({
-    legal_name: '', preferred_name: '', phone: '',
+    legal_name: '', preferred_name: '', email: '', phone: '',
     mailing_address_line1: '', city: '', state: '', postal_code: '',
-    business_name: '', entity_type: '', ein_status: '', industry: '',
+    credit_report_access_status: '',
+    has_business: '', business_name: '', dba_name: '', entity_type: '', state_formed: '', formation_date: '',
+    ein_status: '', ein_last4: '', industry: '', naics_code: '',
     business_address_line1: '', business_city: '', business_state: '', business_postal_code: '',
-    time_in_business: '', monthly_revenue_range: '', funding_goal_range: '',
+    business_phone: '', business_email: '', website: '',
+    time_in_business: '', monthly_revenue_range: '', funding_goal_range: '', funding_purpose: '', funding_timeline: '', preferred_funding_type: '',
+    duns_status: '', business_bank_account_status: '', business_credit_profile_status: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -207,31 +255,78 @@ function WcProfileIntakeForm({ onSaved }) {
     }
   }
 
-  const completeness = checkProfileIntakeComplete(form)
+  const baseCompleteness = checkProfileIntakeComplete(form)
+  const guidedCompleteness = getCompleteness(form, existingDocuments)
   const field = (key, label, placeholder = '') => <label><span>{label}</span><input value={form[key] || ''} onChange={e => updateField(key, e.target.value)} placeholder={placeholder} /></label>
   const select = (key, label, options) => <label><span>{label}</span><select value={form[key] || ''} onChange={e => updateField(key, e.target.value)}><option value="">Select</option>{options.map(([value, text]) => <option key={value} value={value}>{text}</option>)}</select></label>
 
-  return <div className="wc-card wc-profileForm"><div className="wc-sectionHead"><h3>Live Profile & Business Info</h3><span>{loading ? 'Loading...' : `${completeness.percent}% complete`}</span></div>
+  return <div className="wc-card wc-profileForm"><div className="wc-sectionHead"><h3>Guided Funding Readiness Intake</h3><span>{loading ? 'Loading...' : `${Math.max(baseCompleteness.percent, guidedCompleteness.percent)}% complete`}</span></div>
+    <div className="wc-intakeSummary"><b>Next best step: {guidedCompleteness.nextBestAction}</b><p>Missing: {guidedCompleteness.missing.length ? guidedCompleteness.missing.join(', ') : 'None'}</p></div>
+    <div className="wc-intakeSection" id="basic-identity"><div className="wc-sectionHead"><h3>Basic Identity</h3><span>{guidedCompleteness.missing.includes('Basic identity') ? 'Missing' : 'Complete'}</span></div><p>Why it matters: GoClear needs accurate identity and address details before any readiness review.</p>
     <div className="wc-formGrid">
       {field('legal_name', 'Legal name', 'First and last name')}
       {field('preferred_name', 'Preferred name', 'Optional')}
+      {field('email', 'Email', 'name@example.com')}
       {field('phone', 'Phone', '(555) 123-4567')}
       {field('mailing_address_line1', 'Mailing address', 'Street address')}
       {field('city', 'City')}
       {field('state', 'State')}
       {field('postal_code', 'Postal code')}
+    </div><div className="wc-inlineRequirementGrid"><InlineDocumentRequirement title="Government ID" description="Upload a government-issued ID for GoClear identity review." category="identification" requirementKey="government_id" fromPage="profile" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Identity review protects your file and prevents mismatched records." /><InlineDocumentRequirement title="Proof of Address" description="Upload a utility bill, statement, or lease showing your current address." category="proof_of_address" requirementKey="proof_of_address" fromPage="profile" impactLabel="High Impact" existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Address proof supports identity and funding readiness." /></div></div>
+
+    <div className="wc-intakeSection" id="credit-report-access"><div className="wc-sectionHead"><h3>Credit Report Access</h3><span>{form.credit_report_access_status ? 'Needs Review' : 'Missing'}</span></div><p>Why it matters: a recent report gives GoClear the clearest view of credit health.</p>
+      <div className="wc-choiceRow">{['I already have a recent credit report', 'I need help getting my credit report', 'I want to monitor my credit score through a recommended resource', 'I am not sure'].map(option => <button key={option} className={form.credit_report_access_status === option ? 'active' : ''} onClick={() => updateField('credit_report_access_status', option)}>{option}</button>)}</div>
+      <InlineDocumentRequirement title="Credit Report" description="Upload a recent report PDF or image." category="credit_report" requirementKey="credit_report" fromPage="profile" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Credit report review drives credit health and repair recommendations." />
+      <CreditMonitoringConnectCard navigate={navigate} onUpload={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} />
+    </div>
+
+    <div className="wc-intakeSection" id="business-foundation"><div className="wc-sectionHead"><h3>Business Foundation</h3><span>{form.business_name ? 'Needs Review' : 'Missing'}</span></div><p>Why it matters: consistent business records improve funding readiness and review quality.</p><div className="wc-formGrid">
+      {select('has_business', 'Do you already have a business?', [['yes', 'Yes'], ['no', 'No'], ['not_sure', 'Not sure']])}
       {field('business_name', 'Business name')}
+      {field('dba_name', 'DBA optional')}
       {select('entity_type', 'Entity type', [['llc', 'LLC'], ['corporation', 'Corporation'], ['sole_proprietorship', 'Sole Proprietorship'], ['partnership', 'Partnership'], ['s_corp', 'S Corporation'], ['nonprofit', 'Nonprofit'], ['other', 'Other']])}
-      {select('ein_status', 'EIN status', [['active', 'Active - EIN obtained'], ['pending', 'Pending'], ['not_applicable', 'Not applicable']])}
+      {field('state_formed', 'State formed')}
+      {field('formation_date', 'Formation date optional')}
       {field('industry', 'Industry')}
+      {field('naics_code', 'NAICS code optional')}
       {field('business_address_line1', 'Business address')}
       {field('business_city', 'Business city')}
       {field('business_state', 'Business state')}
       {field('business_postal_code', 'Business postal code')}
+      {field('business_phone', 'Business phone')}
+      {field('business_email', 'Business email')}
+      {field('website', 'Website')}
+    </div></div>
+
+    <div className="wc-intakeSection" id="ein-entity-details"><div className="wc-sectionHead"><h3>EIN / Entity Details</h3><span>{form.ein_status ? 'Needs Review' : 'Missing'}</span></div><p>Why it matters: entity records and EIN confirmation help validate the business foundation.</p><div className="wc-formGrid">
+      {select('ein_status', 'EIN status', [['already_have', 'I already have an EIN'], ['need_help', 'I need help getting one'], ['not_sure', 'I am not sure']])}
+      {field('ein_last4', 'EIN last 4 digits optional')}
+    </div><SetupStateControl label="DUNS / Business Profile" value={form.duns_status} onChange={value => updateField('duns_status', value)} resourceCategory="DUNS / Business Profile" /><div className="wc-inlineRequirementGrid"><InlineDocumentRequirement title="EIN Confirmation" description="Upload the EIN confirmation letter if available." category="ein_confirmation" requirementKey="ein_confirmation" fromPage="profile" impactLabel="High Impact" existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Confirms tax identity without collecting full EIN." /><InlineDocumentRequirement title="Business Formation Docs" description="Upload Articles of Organization or Incorporation." category="business_formation" requirementKey="business_formation_docs" fromPage="profile" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Shows the business entity exists." /><InlineDocumentRequirement title="Operating Agreement" description="Upload if available." category="operating_agreement" requirementKey="operating_agreement" fromPage="profile" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Helpful for entity verification when available." /></div></div>
+
+    <div className="wc-intakeSection" id="funding-goals"><div className="wc-sectionHead"><h3>Funding Goals</h3><span>{form.funding_goal_range ? 'Needs Review' : 'Missing'}</span></div><p>Why it matters: goals help Clyde and GoClear prioritize the right readiness steps.</p><div className="wc-formGrid">
       {select('time_in_business', 'Time in business', [['less_than_1_year', 'Less than 1 year'], ['1_to_2_years', '1-2 years'], ['2_to_5_years', '2-5 years'], ['5_plus_years', '5+ years']])}
       {select('monthly_revenue_range', 'Monthly revenue range', [['under_10k', 'Under $10K'], ['10k_to_25k', '$10K-$25K'], ['25k_to_50k', '$25K-$50K'], ['50k_plus', '$50K+']])}
       {select('funding_goal_range', 'Funding goal range', [['under_25k', 'Under $25K'], ['25k_to_100k', '$25K-$100K'], ['100k_to_250k', '$100K-$250K'], ['250k_plus', '$250K+']])}
-    </div>
+      {select('funding_purpose', 'Funding purpose', [['working_capital', 'Working capital'], ['equipment', 'Equipment'], ['growth', 'Growth'], ['debt_refi', 'Debt refinance'], ['not_sure', 'Not sure']])}
+      {select('funding_timeline', 'How soon funding is needed', [['now', 'Now'], ['30_60_days', '30-60 days'], ['60_90_days', '60-90 days'], ['planning', 'Planning ahead']])}
+      {select('preferred_funding_type', 'Preferred funding type', [['business_credit_cards', 'Business credit cards'], ['line_of_credit', 'Line of credit'], ['sba_prep', 'SBA/funding prep'], ['equipment', 'Equipment'], ['grants', 'Grants'], ['not_sure', 'Not sure']])}
+    </div></div>
+
+    <div className="wc-intakeSection" id="required-documents"><div className="wc-sectionHead"><h3>Required Documents</h3><span>Document Status</span></div><p>Why it matters: uploaded documents tell GoClear what is ready, missing, and pending review.</p><div className="wc-inlineRequirementGrid">
+      {[
+        ['Government ID', 'identification', 'government_id'],
+        ['Proof of Address', 'proof_of_address', 'proof_of_address'],
+        ['Credit Report', 'credit_report', 'credit_report'],
+        ['EIN Confirmation', 'ein_confirmation', 'ein_confirmation'],
+        ['Business Formation Docs', 'business_formation', 'business_formation_docs'],
+        ['Business License', 'business_license', 'business_license'],
+        ['Bank Statement', 'bank_statement', 'bank_statement'],
+        ['Tax Return', 'tax_return', 'tax_return'],
+        ['Profit & Loss Statement', 'profit_loss', 'profit_loss_statement'],
+      ].map(([title, category, key]) => <InlineDocumentRequirement key={key} title={title} description={`Upload ${title.toLowerCase()} for readiness review.`} category={category} requirementKey={key} fromPage="profile" impactLabel={['profit_loss_statement'].includes(key) ? 'If required' : 'Required'} required={key !== 'profit_loss_statement'} existingDocuments={existingDocuments} onUploaded={onSaved} whyItMatters="Supports GoClear readiness review." />)}
+    </div></div>
+
+    <div className="wc-intakeSection" id="ready-for-review"><div className="wc-sectionHead"><h3>Ready for Review</h3><span>{guidedCompleteness.percent >= 80 ? 'Ready' : 'Needs Work'}</span></div><p>Why it matters: request review after the key identity, business, credit report, and document items are complete.</p><button className="wc-primaryWide" onClick={() => navigate('/client/request-review')}>Go to Request Review</button></div>
     {message && <p className="wc-successText">{message}</p>}
     {error && <p className="wc-errorText">{error}</p>}
     <button className="wc-primaryWide" disabled={saving || loading} onClick={handleSave}>{saving ? 'Saving...' : 'Save Profile'}</button>
@@ -271,7 +366,7 @@ function HomePanel({ scores, live, profileComplete, navigate }) {
   </section>
 }
 
-function ProfilePanel({ navigate, onSaved }) {
+function ProfilePanel({ navigate, onSaved, existingDocuments }) {
   return <section className="wc-panel wc-panel-profile"><Hero /><div className="wc-profileCards">
     {[
       ['👤', 'Personal Details', 'Complete', 'Personal and identification details.'],
@@ -287,10 +382,10 @@ function ProfilePanel({ navigate, onSaved }) {
         ['📄', 'Proof of Address', 'Pending', 'Upload Document', 'Upload Document', 'orangeText'],
         ['📄', 'Business Formation Docs', 'Pending', 'Upload Document', 'Upload Document', 'orangeText'],
       ].map(([icon, title, status, text, button, cls]) => <div className="wc-card wc-docTile" key={title}><div className="wc-softIcon">{icon}</div><b>{title}</b><span className={`wc-${cls}`}>{status}</span><p>{text}</p><button onClick={() => navigate('/client/documents')}>{button}</button></div>)}
-    </div></div><WcProfileIntakeForm onSaved={onSaved} /></section>
+    </div></div><WcProfileIntakeForm onSaved={onSaved} existingDocuments={existingDocuments} navigate={navigate} /></section>
 }
 
-function CreditPanel({ navigate }) {
+function CreditPanel({ navigate, existingDocuments, onUploaded }) {
   return <section className="wc-panel wc-panel-credit"><Hero /><div className="wc-scoreFactors"><SectionHead title="Score Factors" action="Updated May 20, 2025" /><div className="wc-factorRow">
     {[
       ['✅', 'Payment History', 'Excellent', '100% · Excellent'],
@@ -302,31 +397,52 @@ function CreditPanel({ navigate }) {
     </div></div><div className="wc-creditMid"><div className="wc-card wc-util"><h3>Utilization Breakdown by Card</h3>{[['Chase Ink Business', 48], ['Capital One Spark', 28], ['Amex Blue Business', 12], ['Discover It', 8]].map(([name, value]) => <div className="wc-barLine" key={name}><b>{name}</b><span>{value}%</span><i><em style={{ width: `${value}%` }} /></i></div>)}<div className="wc-totalBar"><b>Total Utilization</b><span>32%</span></div></div>
     <div className="wc-card wc-listCard"><SectionHead title="Factors Needing Attention" action="View all →" /><ListItem tone="orange" mark="!" title="High utilization on 1 card" text="Lower balance first" /><ListItem tone="orange" mark="!" title="Recent hard inquiries" text="Review inquiries" /><ListItem tone="orange" mark="!" title="Limited credit age" text="Average age is below 5 years" /></div>
     <div className="wc-card wc-listCard"><SectionHead title="Positive Factors" action="View all →" /><ListItem title="Excellent payment history" text="No missed payments reported" /><ListItem title="Low overall utilization" text="Great job keeping balances low" /><ListItem title="Healthy credit mix" text="Strong mix of credit types" /></div>
-    <div className="wc-card wc-uploadBig"><div className="wc-cloud">☁</div><h3>Upload Credit Report</h3><p>Get the most accurate picture of your credit health.</p><button onClick={() => navigate('/client/documents')}>Upload Report</button></div>
-    </div><div className="wc-card wc-moveBar"><b>Top Next Moves</b><span>1 Pay down balances below 30%</span><span>2 Review recent inquiries</span><span>3 Continue on-time payments</span><button onClick={() => navigate('/client/funding-readiness')}>Continue to Funding Readiness →</button></div></section>
+    <div className="wc-card wc-uploadBig"><div className="wc-cloud">☁</div><h3>Credit Report Access</h3><p>Get the most accurate picture of your credit health.</p><InlineDocumentRequirement compact title="Credit Report" description="Upload a recent report for GoClear review." category="credit_report" requirementKey="credit_report" fromPage="credit-health" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Needed for credit health, utilization, and repair review." /></div>
+    </div><CreditMonitoringConnectCard navigate={navigate} onUpload={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><div className="wc-card wc-moveBar"><b>Top Next Moves</b><span>1 Pay down balances below 30%</span><span>2 Review recent inquiries</span><span>3 Continue on-time payments</span><button onClick={() => navigate('/client/funding-readiness')}>Continue to Funding Readiness →</button></div></section>
 }
 
 function DocumentsPanel({ live, refreshLiveData, withSuggestedUpload, navigate }) {
   const docs = getLiveDocuments(live)
+  const documentRows = getDocumentRows(live)
   const uploadedDocs = docs.uploaded.length ? docs.uploaded : ['Bank Statement - Chase', 'Pay Stub - April 2025', 'ID - Driver License', 'Utility Bill - April 2025']
   const missingDocs = docs.missing.length ? docs.missing : ['Credit Report', 'Bank Statement', 'Proof of Address']
   const underReviewDocs = docs.underReview.length ? docs.underReview : ['Tax Return - 2023', 'Business License', 'Profit & Loss Statement']
   return <section className="wc-panel wc-panel-documents"><Hero /><div className="wc-docHub"><div className="wc-card wc-drop"><div className="wc-uploadIcon">↑</div><h3>Drag & drop files here to upload</h3><p>or choose an option below</p><DocumentUploadZone onUploadComplete={refreshLiveData} /><small>Accepted: PDF, JPG, PNG, HEIC, TXT, DOCX · Max 10MB</small></div><div className="wc-card wc-scanner"><h3>Smart Scanner Flow</h3>{[['↑', 'Uploaded', 'Your document is securely uploaded'], ['✦', 'Scanning', 'We scan and read the contents'], ['✓', 'Categorized', 'We identify the document type'], ['⌂', 'Routed', 'Stored in the right place automatically']].map(([icon, title, text]) => <div className="wc-scanStep" key={title}><span>{icon}</span><div><b>{title}</b><p>{text}</p></div></div>)}</div></div>
     <div className="wc-quickUpload"><b>Quick Upload</b>{['Credit Report', 'ID Document', 'Proof of Address', 'Bank Statement', 'Tax Return', 'Business License', 'Other'].map(x => <button key={x} onClick={() => withSuggestedUpload('quick-upload', x)}>{x}</button>)}</div>
     <div className="wc-docLists"><div className="wc-card wc-listCard"><SectionHead title="Recently Uploaded" action={docs.source === 'supabase' ? 'Live data' : 'View all →'} />{uploadedDocs.slice(0, 4).map((doc, i) => <ListItem key={`${doc}-${i}`} title={doc} text="Categorized" />)}</div><div className="wc-card wc-listCard"><SectionHead title="Needs Review" action="View all →" />{underReviewDocs.slice(0, 3).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="Pending GoClear review" />)}</div><div className="wc-card wc-listCard"><SectionHead title="Missing Documents" action="View all →" />{missingDocs.slice(0, 3).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="High Impact" />)}</div><div className="wc-card wc-recommended"><h3>Recommended for You</h3><p>Upload Proof of Income</p><p>Add More Bank Statements</p><p>Submit Business License</p><button onClick={() => navigate('/client/resources')}>See recommendations →</button></div></div>
+    <div className="wc-card wc-documentVault"><SectionHead title="Master Document Vault" action={`${documentRows.length} document(s)`} />{documentRows.map((doc, i) => <div className="wc-vaultRow" key={doc.id || `${doc.title}-${i}`}><b>{doc.title || doc.filename || doc.category || 'Uploaded document'}</b><span>{doc.category || doc.doc_type || 'document'}</span><span>{doc.status || 'uploaded'}</span><span>{doc.goclear_review_status || 'pending_review'}</span><span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Uploaded'}</span><span>{/credit/i.test(doc.category || doc.title || '') ? 'Credit Health' : /bank|tax|profit|license/i.test(doc.category || doc.title || '') ? 'Funding Readiness' : 'Profile'}</span></div>)}</div>
     <div className="wc-card wc-secure"><b>🛡 Your documents are safe & secure</b><span>Bank-level encryption protects your data.</span><button onClick={() => navigate('/client/resources')}>Learn about security →</button></div></section>
 }
 
 function BusinessPanel({ live, navigate }) {
   const checklist = getBusinessChecklist(live)
-  return <section className="wc-panel wc-panel-business"><Hero /><div className="wc-card wc-checklist"><SectionHead title="Your Business Setup Checklist" action={`${checklist.length} steps`} /><div className="wc-checkGrid">{checklist.map(({ icon, title, status }) => <div className="wc-checkTile" key={title}><div className="wc-softIcon">{icon}</div><div><b>{title}</b><p>Business foundation item</p><span>{String(status).replaceAll('_', ' ')}</span></div></div>)}</div></div><div className="wc-businessBottom"><div className="wc-card wc-why"><h3>Why this matters for Funding Readiness</h3><div className="wc-whyRow"><span>🛡<b>Builds credibility</b></span><span>🎯<b>Unlocks opportunities</b></span><span>📈<b>Improves trust</b></span></div></div><div className="wc-card wc-next"><h3>Ready for the next step?</h3><p>Once your business foundation is solid, move into Funding Readiness.</p><button onClick={() => navigate('/client/funding-readiness')}>Go to Funding Readiness →</button></div></div></section>
+  const [setupStates, setSetupStates] = useState({})
+  const setSetupState = (key, value) => setSetupStates(prev => ({ ...prev, [key]: value }))
+  return <section className="wc-panel wc-panel-business"><Hero /><div className="wc-card wc-checklist"><SectionHead title="Your Business Setup Checklist" action={`${checklist.length} steps`} /><div className="wc-checkGrid">{checklist.map(({ icon, title, status }) => <div className="wc-checkTile" key={title}><div className="wc-softIcon">{icon}</div><div><b>{title}</b><p>Business foundation item</p><span>{String(status).replaceAll('_', ' ')}</span></div></div>)}</div><div className="wc-setupGrid">{[
+    ['ein', 'EIN', 'EIN / Entity Setup'],
+    ['duns', 'DUNS / Business Profile', 'DUNS / Business Profile'],
+    ['bank', 'Business bank account', 'Business Banking'],
+    ['address', 'Business address', 'Document Prep'],
+    ['website', 'Website', 'Business Credit Builder'],
+    ['phone_email', 'Business phone/email', 'Business Credit Builder'],
+    ['credit_profile', 'Business credit profile', 'Business Credit Builder'],
+    ['license', 'Business license', 'Document Prep'],
+  ].map(([key, label, category]) => <SetupStateControl key={key} label={label} value={setupStates[key]} onChange={value => setSetupState(key, value)} resourceCategory={category} />)}</div></div><div className="wc-businessBottom"><div className="wc-card wc-why"><h3>Why this matters for Funding Readiness</h3><div className="wc-whyRow"><span>🛡<b>Builds credibility</b></span><span>🎯<b>Unlocks opportunities</b></span><span>📈<b>Improves trust</b></span></div></div><div className="wc-card wc-next"><h3>Ready for the next step?</h3><p>Once your business foundation is solid, move into Funding Readiness.</p><button onClick={() => navigate('/client/funding-readiness')}>Go to Funding Readiness →</button></div></div></section>
 }
 
-function FundingPanel({ scores, navigate }) {
-  return <section className="wc-panel wc-panel-funding"><Hero /><div className="wc-card wc-flow"><SectionHead title="How Your Data Builds Your Readiness" /><div className="wc-flowLine">{['Profile & Info', 'Credit Health', 'Documents', 'Business Setup', 'Credit Repair Journey', 'Funding Readiness'].map((title, i) => <div key={title}><span>{i === 5 ? '⚑' : '✓'}</span><b>{title}</b><p>{i === 5 ? 'Unlock offers' : 'Build readiness'}</p></div>)}</div></div><div className="wc-fundingGrid"><div className="wc-card wc-summary"><h3>Readiness Summary</h3><Donut value={scores.funding} /><p><b className="wc-orangeText">Moderate</b><br />You're making solid progress. Complete a few key items to reach Strong.</p><button onClick={() => navigate('/client/request-review')}>View full breakdown</button></div><div className="wc-card wc-listCard"><SectionHead title="Factors Helping You" action="View all →" /><ListItem title="Business years in operation: 7 yrs" text="Strong history" /><ListItem title="On-time payments: 90%" text="Positive credit profile" /><ListItem title="Verified business info" text="Complete" /><ListItem title="Documents uploaded: 13" text="Good record" /></div><div className="wc-card wc-listCard"><SectionHead title="Factors Holding You Back" action="View all →" /><ListItem tone="orange" mark="!" title="Limited business credit history" text="Short" /><ListItem tone="orange" mark="!" title="D-U-N-S number missing" text="Required by many lenders" /><ListItem tone="orange" mark="!" title="Credit inquiries" text="High" /><ListItem tone="orange" mark="!" title="Trade lines reported" text="Low" /></div><div className="wc-card wc-required"><h3>Required Items to Unlock Better Terms</h3>{['D-U-N-S Number', 'Business Bank Statements', 'Tax Return', 'Profit & Loss Statement', 'Business License'].map((title, i) => <div className="wc-req" key={title}><b>{title}</b><p>Impact: {i < 3 ? 'High' : 'Medium'}</p><button onClick={() => navigate(i === 0 ? '/client/business-setup' : '/client/documents')}>{i === 0 ? 'Add Now' : 'Upload'}</button></div>)}</div></div><div className="wc-card wc-opportunityRow"><b>Ready Opportunities for You</b><span>Business Credit · $1K-$250K</span><span>Startup Funding · $5K-$500K</span><span>Equipment Financing · $2K-$1M+</span><span>Monitoring Tools · Recommended</span><button onClick={() => navigate('/client/resources')}>Explore</button></div></section>
+function FundingPanel({ scores, navigate, existingDocuments, onUploaded }) {
+  const fundingResources = getClientResources({ placement: 'funding-readiness', limit: 4 })
+  return <section className="wc-panel wc-panel-funding"><Hero /><div className="wc-card wc-flow"><SectionHead title="How Your Data Builds Your Readiness" /><div className="wc-flowLine">{['Profile & Info', 'Credit Health', 'Documents', 'Business Setup', 'Credit Repair Journey', 'Funding Readiness'].map((title, i) => <div key={title}><span>{i === 5 ? '⚑' : '✓'}</span><b>{title}</b><p>{i === 5 ? 'Unlock offers' : 'Build readiness'}</p></div>)}</div></div><div className="wc-fundingGrid"><div className="wc-card wc-summary"><h3>Readiness Summary</h3><Donut value={scores.funding} /><p><b className="wc-orangeText">Moderate</b><br />You're making solid progress. Complete a few key items to reach Strong.</p><button onClick={() => navigate('/client/request-review')}>View full breakdown</button></div><div className="wc-card wc-listCard"><SectionHead title="Factors Helping You" action="View all →" /><ListItem title="Business years in operation" text="Strong history when documented" /><ListItem title="On-time payments" text="Positive credit profile" /><ListItem title="Verified business info" text="Complete verified items improve readiness" /><ListItem title="Documents uploaded" text={`${existingDocuments.length} file(s) available for review`} /></div><div className="wc-card wc-listCard"><SectionHead title="Factors Holding You Back" action="View all →" /><ListItem tone="orange" mark="!" title="Limited business credit history" text="Short" /><ListItem tone="orange" mark="!" title="D-U-N-S number missing" text="Required by many lenders" /><ListItem tone="orange" mark="!" title="Credit inquiries" text="High" /><ListItem tone="orange" mark="!" title="Trade lines reported" text="Low" /></div><div className="wc-card wc-required"><h3>Required Items to Unlock Better Terms</h3>{[
+    ['Business Bank Statements', 'bank_statement', 'bank_statement', 'High'],
+    ['Tax Return', 'tax_return', 'tax_return', 'High'],
+    ['Profit & Loss Statement', 'profit_loss', 'profit_loss_statement', 'Medium'],
+    ['Business License', 'business_license', 'business_license', 'Medium'],
+    ['EIN Confirmation', 'ein_confirmation', 'ein_confirmation', 'High'],
+    ['Business Formation Docs', 'business_formation', 'business_formation_docs', 'High'],
+  ].map(([title, category, key, impact]) => <InlineDocumentRequirement compact key={key} title={title} description={`Upload ${title.toLowerCase()} for funding readiness review.`} category={category} requirementKey={key} fromPage="funding-readiness" impactLabel={`${impact} Impact`} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="GoClear uses this to verify readiness and reduce review delays." />)}</div></div><div className="wc-card wc-opportunityRow"><b>Ready Opportunities for You</b>{fundingResources.map(resource => <span key={resource.title}>{resource.category}</span>)}<button onClick={() => navigate('/client/resources')}>Explore</button></div></section>
 }
 
-function RepairPanel({ scores, navigate }) {
+function RepairPanel({ scores, navigate, existingDocuments, onUploaded }) {
   const [journey, setJourney] = useState(null)
   useEffect(() => {
     let cancelled = false
@@ -337,7 +453,7 @@ function RepairPanel({ scores, navigate }) {
   const completed = journey?.stepsCompleted || []
   const current = journey?.currentStep || 'upload_report'
   const percent = Math.max(scores.repair, Math.round(((completed.length || 1) / stepKeys.length) * 100))
-  return <section className="wc-panel wc-panel-repair"><Hero /><div className="wc-card wc-repairJourney"><div className="wc-repairLine">{['Profile Complete', 'Upload Credit Report', 'Specialist Review', 'Dispute Items', 'Draft Letters', 'Approve & Send', 'Track Results'].map((title, i) => <div key={title}><span className={`wc-stepDot ${completed.includes(stepKeys[i]) ? 'done' : current === stepKeys[i] ? 'active' : ''}`}>{i + 1}</span><div className="wc-softIcon">{['👤', '☁', '🔍', '⚖', '✎', '✈', '📊'][i]}</div><b>{title}</b><p>{completed.includes(stepKeys[i]) ? 'Complete' : current === stepKeys[i] ? 'In Progress' : 'Upcoming'}</p></div>)}</div></div><div className="wc-repairMid"><div className="wc-card"><SectionHead title="Your Next Actions" action="View all" /><div className="wc-actionRow three"><ActionCard icon="☁" title="Upload your credit report" text="This helps us analyze your file." button="Upload Now" onClick={() => navigate('/client/documents?from=credit-repair&suggested=Credit%20Report')} /><ActionCard icon="👥" title="Answer a few questions" text="Help us understand your goals." button="Continue Profile" onClick={() => navigate('/client/profile')} /><ActionCard icon="➕" title="Review dispute letters" text={`${journey?.letters?.length || 0} letter(s) in workflow.`} button="Review" onClick={() => navigate('/client/dispute-review')} /></div></div><div className="wc-card wc-progressBox"><h3>Progress Overview</h3><Donut value={percent} small tone="blue" /><p>{completed.length} completed · current step: {current.replaceAll('_', ' ')}</p></div></div><div className="wc-repairBottom"><MiniCard icon="✉" title="Send From Home with DocuPost" tag="Approval gated" text="No letter is sent until specialist review and your explicit approval." button="Review gate" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="📝" title="Draft Letters" tag={`${journey?.letters?.length || 0} Ready`} text="Clyde and your specialist draft custom dispute letters." button="View drafts" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="⚑" title="Dispute Items" tag={`${journey?.disputeItems?.length || 0} Active`} text="Track identified items and specialist review status." button="Open" onClick={() => navigate('/client/dispute-review')} /></div></section>
+  return <section className="wc-panel wc-panel-repair"><Hero /><div className="wc-card wc-repairJourney"><div className="wc-repairLine">{['Profile Complete', 'Upload Credit Report', 'Specialist Review', 'Dispute Items', 'Draft Letters', 'Approve & Send', 'Track Results'].map((title, i) => <div key={title}><span className={`wc-stepDot ${completed.includes(stepKeys[i]) ? 'done' : current === stepKeys[i] ? 'active' : ''}`}>{i + 1}</span><div className="wc-softIcon">{['👤', '☁', '🔍', '⚖', '✎', '✈', '📊'][i]}</div><b>{title}</b><p>{completed.includes(stepKeys[i]) ? 'Complete' : current === stepKeys[i] ? 'In Progress' : 'Upcoming'}</p></div>)}</div></div><div className="wc-repairMid"><div className="wc-card"><SectionHead title="Your Next Actions" action="View all" /><div className="wc-actionRow three"><ActionCard icon="☁" title="Upload your credit report" text="This helps us analyze your file." button="Upload Now" onClick={() => document.querySelector('[data-requirement=\"credit_report\"] button')?.click()} /><ActionCard icon="👥" title="Answer a few questions" text="Help us understand your goals." button="Continue Profile" onClick={() => navigate('/client/profile')} /><ActionCard icon="➕" title="Review dispute letters" text={`${journey?.letters?.length || 0} letter(s) in workflow.`} button="Review" onClick={() => navigate('/client/dispute-review')} /></div><div className="wc-inlineRequirementGrid"><InlineDocumentRequirement title="Credit Report" description="Upload a current report for the repair workflow." category="credit_report" requirementKey="credit_report" fromPage="credit-repair" impactLabel="Required" existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Starts specialist review." /><InlineDocumentRequirement title="Supporting Dispute Documents" description="Upload evidence or supporting documents for dispute review." category="dispute_support" requirementKey="dispute_support" fromPage="credit-repair" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={onUploaded} whyItMatters="Helps specialists draft accurate letters." /></div></div><div className="wc-card wc-progressBox"><h3>Progress Overview</h3><Donut value={percent} small tone="blue" /><p>{completed.length} completed · current step: {current.replaceAll('_', ' ')}</p></div></div><div className="wc-repairBottom"><MiniCard icon="✉" title="Send From Home with DocuPost" tag="Approval gated" text="No letter is sent until specialist review and your explicit approval." button="Review gate" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="📝" title="Draft Letters" tag={`${journey?.letters?.length || 0} Ready`} text="Clyde and your specialist draft custom dispute letters." button="View drafts" onClick={() => navigate('/client/dispute-review')} /><MiniCard icon="⚑" title="Credit Monitoring Support" tag="Optional" text="Monitoring can support awareness, but upload/review drives this workflow." button="Resources" onClick={() => navigate('/client/resources?category=credit-monitoring')} /></div></section>
 }
 
 function ResourcesPanel({ live, navigate }) {
@@ -353,7 +469,7 @@ function ResourcesPanel({ live, navigate }) {
   return <section className="wc-panel wc-panel-resources"><Hero /><div className="wc-resourceRec">{cards.map(([tag, title, button]) => <div className="wc-card wc-resCard" key={title}><span>{tag}</span><h3>{title}</h3><p>Recommended based on your current goals.</p><button onClick={() => navigate('/client/resources')}>{button}</button></div>)}</div><div className="wc-card wc-resourceBanner"><h3>Resources connect to real progress.</h3><p>Every article, video, guide, and tool helps you take action and move closer to funding.</p><div><span>✓ Learn proven strategies</span><span>✓ Take action with confidence</span><span>✓ Unlock more opportunities</span></div></div><div className="wc-catRow">{[['🎓', 'Learning Center', 18], ['📘', 'Funding Education', 22], ['📈', 'Credit Repair Tips', 15], ['💼', 'Business Setup Guides', 17], ['🧰', 'Recommended Tools', 12]].map(([icon, title, count]) => <MiniCard key={title} icon={icon} title={title} text={`${count} resources available.`} button="Explore" onClick={() => navigate('/client/resources')} />)}</div><div className="wc-partnerRow">{(offers.length ? offers.slice(0, 4).map(o => [o.title || 'Recommended Tool', o.category || 'Recommended Tools']) : [['LiveWell', 'Credit Monitoring'], ['Nav', 'Business Credit Builder'], ['Relay', 'Business Banking'], ['D&B', 'Business Credit Profile']]).map(([name, text]) => <div className="wc-card wc-partner" key={name}><b>{name}</b><p>{text}</p><button onClick={() => navigate('/client/resources')}>Learn more →</button></div>)}</div></section>
 }
 
-function ReviewPanel({ live, scores, refreshLiveData, withSuggestedUpload }) {
+function ReviewPanel({ live, scores, refreshLiveData, existingDocuments }) {
   const [reviewType, setReviewType] = useState('Standard Review')
   const [topic, setTopic] = useState('Funding Readiness & Profile Strength')
   const [notes, setNotes] = useState('')
@@ -409,7 +525,7 @@ function ReviewPanel({ live, scores, refreshLiveData, withSuggestedUpload }) {
     }
   }
 
-  return <section className="wc-panel wc-panel-review"><Hero /><div className="wc-reviewGrid"><div className="wc-card wc-listCard"><SectionHead title="Review Readiness Checklist" action="View all →" />{checklist.map(([title, ok, text]) => <ListItem key={title} tone={ok ? 'green' : 'orange'} mark={ok ? '✓' : '!'} title={title} text={text} />)}</div><div className="wc-card wc-formCard"><h3>Request Review</h3><p>Tell us what you'd like reviewed.</p><div className="wc-choiceRow">{['Standard Review', 'Final Review', 'Rescore Review', 'Custom Review'].map(x => <button className={reviewType === x ? 'active' : ''} key={x} onClick={() => setReviewType(x)}>{x}</button>)}</div><input className="wc-inputBox" value={topic} onChange={e => setTopic(e.target.value)} /><textarea className="wc-textarea" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Share anything specific you'd like our team to know..." /><button className="wc-dropMini" onClick={() => withSuggestedUpload('request-review', 'Supporting Review File')}>☁ Upload supporting files</button>{error && <p className="wc-errorText">{error}</p>}{isSubmitted && <p className="wc-successText">Review request submitted. Your profile is now in the GoClear admin review queue.</p>}<button className="wc-submitBtn" disabled={state === 'submitting' || isSubmitted} onClick={submitReview}>{state === 'submitting' ? 'Submitting...' : isSubmitted ? 'Review Requested' : 'Submit Review Request'}</button></div><div className="wc-card wc-nextSteps"><h3>What Happens Next</h3>{['Review Submitted', 'Under Review', 'Results Delivered', 'Take Action'].map((title, i) => <ListItem key={title} tone="blue" mark={String(i + 1)} title={title} text={['Confirmation email with next steps.', 'Specialists review your profile.', 'Feedback and recommendations.', 'Improve your profile.'][i]} />)}</div></div></section>
+  return <section className="wc-panel wc-panel-review"><Hero /><div className="wc-reviewGrid"><div className="wc-card wc-listCard"><SectionHead title="Review Readiness Checklist" action="View all →" />{checklist.map(([title, ok, text]) => <ListItem key={title} tone={ok ? 'green' : 'orange'} mark={ok ? '✓' : '!'} title={title} text={text} />)}</div><div className="wc-card wc-formCard"><h3>Request Review</h3><p>Tell us what you'd like reviewed.</p><div className="wc-choiceRow">{['Standard Review', 'Final Review', 'Rescore Review', 'Custom Review'].map(x => <button className={reviewType === x ? 'active' : ''} key={x} onClick={() => setReviewType(x)}>{x}</button>)}</div><input className="wc-inputBox" value={topic} onChange={e => setTopic(e.target.value)} /><textarea className="wc-textarea" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Share anything specific you'd like our team to know..." /><InlineDocumentRequirement title="Review Support Attachment" description="Attach support documents for this review request." category="review_support" requirementKey="review_support" fromPage="request-review" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={refreshLiveData} whyItMatters="Attachments help GoClear review your request with context." />{error && <p className="wc-errorText">{error}</p>}{isSubmitted && <p className="wc-successText">Review request submitted. Your profile is now in the GoClear admin review queue.</p>}<button className="wc-submitBtn" disabled={state === 'submitting' || isSubmitted} onClick={submitReview}>{state === 'submitting' ? 'Submitting...' : isSubmitted ? 'Review Requested' : 'Submit Review Request'}</button></div><div className="wc-card wc-nextSteps"><h3>What Happens Next</h3>{['Review Submitted', 'Under Review', 'Results Delivered', 'Take Action'].map((title, i) => <ListItem key={title} tone="blue" mark={String(i + 1)} title={title} text={['Confirmation email with next steps.', 'Specialists review your profile.', 'Feedback and recommendations.', 'Improve your profile.'][i]} />)}</div></div></section>
 }
 
 function IconSystemPanel() {
@@ -435,6 +551,7 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
   const [showIcons, setShowIcons] = useState(false)
   const meta = pageMeta[path] || pageMeta['/client/dashboard']
   const scores = useMemo(() => getScores(live), [live])
+  const existingDocuments = useMemo(() => getDocumentRows(live), [live])
   const clientStatuses = useMemo(() => buildClientStatuses(live, profileComplete, scores), [live, profileComplete, scores])
   const clydeGuidance = useMemo(() => generateClientGuidance(clientStatuses), [clientStatuses])
   const profile = clientPortalData.clientProfile
@@ -457,14 +574,14 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
 
   const panel = showIcons ? <IconSystemPanel /> : {
     home: <HomePanel scores={scores} live={live} profileComplete={profileComplete} navigate={routeTo} />,
-    profile: <ProfilePanel navigate={routeTo} onSaved={refreshLiveData} />,
-    credit: <CreditPanel navigate={routeTo} />,
+    profile: <ProfilePanel navigate={routeTo} onSaved={refreshLiveData} existingDocuments={existingDocuments} />,
+    credit: <CreditPanel navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} />,
     documents: <DocumentsPanel live={live} refreshLiveData={refreshLiveData} withSuggestedUpload={withSuggestedUpload} navigate={routeTo} />,
     business: <BusinessPanel live={live} navigate={routeTo} />,
-    funding: <FundingPanel scores={scores} navigate={routeTo} />,
-    repair: <RepairPanel scores={scores} navigate={routeTo} />,
+    funding: <FundingPanel scores={scores} navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} />,
+    repair: <RepairPanel scores={scores} navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} />,
     resources: <ResourcesPanel live={live} navigate={routeTo} />,
-    review: <ReviewPanel live={live} scores={scores} refreshLiveData={refreshLiveData} withSuggestedUpload={withSuggestedUpload} />,
+    review: <ReviewPanel live={live} scores={scores} refreshLiveData={refreshLiveData} existingDocuments={existingDocuments} />,
   }[meta.key]
 
   return <div className="wc-client-portal">

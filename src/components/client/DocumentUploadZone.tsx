@@ -46,8 +46,8 @@ function guessCategory(mimeType: string, fileName: string): string {
   return 'miscellaneous'
 }
 
-async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path: string; file: File; category: string }) {
-  const { ctx, path, file, category } = params
+async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path: string; file: File; category: string; sourceConcept?: string; fromPage?: string }) {
+  const { ctx, path, file, category, sourceConcept, fromPage } = params
   const now = new Date().toISOString()
   const row = {
     id: `${ctx.authUserId}_${Date.now()}`,
@@ -55,7 +55,7 @@ async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path:
     client_id: ctx.clientId,
     category,
     title: file.name,
-    summary: `Client portal upload — ${file.name} (${file.type || 'unknown'}, ${(file.size / 1024).toFixed(0)}KB) stored at ${path}`,
+    summary: `Client portal upload${fromPage ? ` from ${fromPage}` : ''} — ${file.name} (${file.type || 'unknown'}, ${(file.size / 1024).toFixed(0)}KB) stored at ${path}`,
     status: 'pending_review',
     priority: 'normal',
     risk_level: 'low',
@@ -64,7 +64,7 @@ async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path:
     approval_required: true,
     goclear_review_status: 'pending_review',
     source: 'client_portal_upload',
-    source_concept: 'document_upload',
+    source_concept: sourceConcept || 'document_upload',
     recommended_next_action: 'Admin review uploaded document',
     created_at: now,
   }
@@ -75,7 +75,19 @@ async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path:
   return { ok: true as const }
 }
 
-export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: () => void }) {
+export function DocumentUploadZone({
+  onUploadComplete,
+  category,
+  sourceConcept,
+  fromPage,
+  compact = false,
+}: {
+  onUploadComplete?: () => void
+  category?: string
+  sourceConcept?: string
+  fromPage?: string
+  compact?: boolean
+}) {
   const [files, setFiles] = useState<UploadFile[]>([])
   const [isDragging, setIsDragging] = useState(false)
 
@@ -131,8 +143,8 @@ export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: ()
           continue
         }
 
-        const category = guessCategory(uploadFile.file.type, uploadFile.file.name)
-        const metadataResult = await writeDocumentMetadata({ ctx, path, file: uploadFile.file, category })
+        const resolvedCategory = category || guessCategory(uploadFile.file.type, uploadFile.file.name)
+        const metadataResult = await writeDocumentMetadata({ ctx, path, file: uploadFile.file, category: resolvedCategory, sourceConcept, fromPage })
 
         if (metadataResult.ok) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: true } : f))
@@ -193,7 +205,7 @@ export function DocumentUploadZone({ onUploadComplete }: { onUploadComplete?: ()
   }
 
   return (
-    <div className="client-upload-zone">
+    <div className={`client-upload-zone ${compact ? 'compact' : ''}`}>
       <div
         className={`client-upload-dropzone ${isDragging ? 'dragging' : ''}`}
         onDrop={handleDrop}

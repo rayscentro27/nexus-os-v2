@@ -1,165 +1,19 @@
-# Client Portal Launch Certification — Master Report
+# Client Portal Launch Certification Master
 
-**Date:** 2026-07-08
-**Starting commit:** 8818221
-**UI Import Status:** COMPLETE (July 8, 2026)
-
-## Routes Certified
-
-| Route | Component | Live Data | Build | Status |
-|-------|-----------|-----------|-------|--------|
-| `/client/login` | `ClientLoginPage` | Supabase auth | PASS | READY |
-| `/client/dashboard` | `ClientDashboard` | Live scores + tasks | PASS | READY |
-| `/client/profile` | `ProfileBusinessIntakeForm` | Live profile intake | PASS | READY |
-| `/client/credit-profile` | `CreditProfilePage` | Live readiness_scores | PASS | READY |
-| `/client/credit-utilization` | `CreditUtilizationPage` | Live credit_workflow_items | PASS | READY |
-| `/client/documents` | `ClientDocumentsPage` | Live client_documents | PASS | READY |
-| `/client/business-setup` | `BusinessSetupPage` | Live business_profile_requirements | PASS | READY |
-| `/client/business-bankability` | `BusinessBankabilityPage` | Live business_profile_requirements | PASS | READY |
-| `/client/funding-readiness` | `FundingReadinessPage` | Live funding_readiness_scores | PASS | READY |
-| `/client/recommendations` | `RecommendationsPage` | Live partner_offers | PASS | READY |
-| `/client/resources` | `ResourcesPage` | Live partner_offers | PASS | READY |
-| `/client/request-review` | `RequestReviewPage` | Live tasks + funding scores | PASS | READY |
-| `/admin` | `NexusAdminUI` | AdminGuard protected | PASS | READY |
-| `/admin/command-center` | `NexusAdminUI` | AdminGuard protected | PASS | READY |
-
-## Fields Supported (Profile Intake)
-
-- `legal_name` (required)
-- `preferred_name`
-- `phone` (required)
-- `mailing_address_line1`, `mailing_address_line2`, `city`, `state`, `postal_code`
-- `business_name` (required)
-- `entity_type` (required) — dropdown
-- `ein_status` — dropdown
-- `industry` (required)
-- `naics_code`
-- `business_address_line1`, `business_address_line2`, `business_city`, `business_state`, `business_postal_code`
-- `time_in_business` — dropdown
-- `monthly_revenue_range` — dropdown
-- `funding_goal_range` — dropdown
-
-## Table / Columns Used
-
-- `client_profiles` — 21 new text columns via migration `20260708120000_client_profile_intake_fields.sql`
-- No new tables created
-- No duplicate tables
-
-## Migration
-
-- Name: `20260708120000_client_profile_intake_fields.sql`
-- Type: Additive only (ALTER TABLE ADD COLUMN IF NOT EXISTS)
-- RLS: No changes — existing policies cover new columns
-- Rollback: DROP COLUMN IF EXISTS (not included in migration)
-
-## RLS / Security Status
-
-- RLS enabled on all client portal tables
-- Client can SELECT/UPDATE own row via `tenant_memberships` relationship
-- Admin can SELECT/ALL via `nexus_is_active_admin()` function
-- No service-role key in frontend
-- No RLS disabled
-- No anon/public policies
-- AdminGuard protects `/admin` routes
-- Profile intake: client writes only to own `client_profiles` row
-
-## Build Results
-
-| Check | Result |
-|-------|--------|
-| `npm run build` | PASS |
-| `npx tsc --noEmit` | PASS |
-| `check_client_portal_actions.py` | PASS |
-| `check_admin_route_guard.py` | PASS (11/11) |
-| `check_client_live_data_wiring.py` | PASS |
-
-## UI Import (July 8, 2026)
-
-### Status: COMPLETE ✅
-
-Successfully imported the client portal UI design from `nexus-client-portal-click-preview.zip` while preserving all live workflows.
-
-### Changes Made
-- **CSS Variables:** Updated to match zip palette (#f7f9fd bg, #07143f text, #1264f3 blue, 22px radius)
-- **Background Gradient:** Updated to match zip radial pattern (blue and teal accents)
-- **Card Styling:** Updated to match zip (22px radius, translucent white, subtle shadow)
-- **Header Styling:** Updated to match zip (blur backdrop, translucent white)
-- **Sidebar Styling:** Updated to match zip (blur backdrop, translucent white)
-- **Profile Intake Form:** Fixed dark theme inputs to light theme
-- **Component Gradients:** Updated logo, avatar, step badge, hermes avatar gradients
-- **Status Badges:** Updated all status badge colors to match zip palette
-- **Progress Rings:** Updated all progress ring colors to match zip palette
-
-### Verification Results
-- **TypeScript Check:** PASS (no errors)
-- **Build Check:** PASS (build completed successfully)
-- **Live Data Wiring:** PASS (all connections intact)
-- **Portal Actions:** PASS (all actions functional)
-- **Admin Route Guard:** PASS (all guard checks passed)
-
-### Design Fidelity
-- ✅ Color palette (blue, teal, green, purple, orange, red)
-- ✅ Background gradient pattern (radial blue and teal accents)
-- ✅ Card styling (22px radius, subtle shadow, translucent white)
-- ✅ Header styling (blur backdrop, translucent white)
-- ✅ Sidebar styling (blur backdrop, translucent white)
-- ✅ Typography (Inter font family)
-- ✅ Status badge colors
-- ✅ Progress ring colors
-- ✅ Button gradients
-- ✅ Logo gradient
-
-### Preserved Workflows
-- ✅ Authentication (Supabase auth context resolver)
-- ✅ Live Data (all live data hooks and Supabase connections)
-- ✅ AdminGuard (admin route protection intact)
-- ✅ Document Upload (Supabase Storage integration)
-- ✅ Request Review (GoClear review request submission)
-- ✅ Profile/Intake Save/Load (Supabase read/write operations)
-- ✅ Hermes Guidance (dynamic guidance generation)
-- ✅ Admin Visibility (admin panel access controls)
-
-## Manual Test Steps
-
-### Client Profile Intake
-1. Sign in as test client
-2. Navigate to `/client/profile`
-3. Fill required fields: legal name, phone, business name, entity type, industry
-4. Click "Save Profile" — verify success confirmation
-5. Refresh page — verify fields persist
-6. Navigate to Dashboard — verify no incomplete profile CTA
-
-### Admin Profile View
-1. Sign in as admin
-2. Navigate to Admin > Clients
-3. Click a client with profile data
-4. Verify "Profile & Business Info" section shows in detail drawer
-5. Verify all submitted fields are visible
-
-### Route Safety
-1. Verify `/client/login` works
-2. Verify `/client/dashboard` works
-3. Verify `/client/documents` works
-4. Verify `/client/request-review` works
-5. Verify `/admin` requires admin access
-6. Verify `/admin/command-center` requires admin access
-
-## Remaining Caveats
-
-- Profile completeness is client-side only — no server-side validation
-- No email/phone verification
-- No entity type verification
-- Admin cannot edit client profile from drawer (read-only)
-- No bulk profile import
-- No real sensitive data collection (SSN, DOB, bank accounts blocked by design)
-- Messages and Settings pages still use static demo data
-- UI import complete — design matches reference zip while preserving all functionality
+- Current world-class design preserved: `True`
+- Old design restored: `False`
+- Hero image preserved: `/assets/client-portal/nexus-funding-path-hero.png`
+- Clyde preserved: `True`
+- Inline uploads active: `True`
+- Documents master vault active: `True`
+- Request Review approval-gated: `True`
+- DocuPost auto-send: `False`
+- Service role in frontend: `False`
+- RLS disabled: `False`
 
 ## Tester Readiness
 
-| Criterion | Status |
-|-----------|--------|
-| 1 tester ready | YES — Ray can test |
-| 3 testers ready | NO — needs 2 more test accounts |
-| Paid clients ready | NO — needs billing integration |
-| Real sensitive data ready | NO — by design, not collected |
+- 1 tester: ready for guided UI smoke testing with non-sensitive test data.
+- 3 testers: ready after confirming login accounts and Supabase test data rows.
+- Paid clients: not certified until production auth, storage policies, provider integrations, and support process are verified.
+- Real sensitive data: not ready; do not collect SSN, full DOB, full EIN, bank account numbers, card numbers, or bureau credentials.
