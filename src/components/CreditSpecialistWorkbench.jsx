@@ -22,6 +22,8 @@ import {
 import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrategyKnowledge'
 import { getStrategyResearchBacklog, recommendNextRoundStrategy, summarizeStrategyOutcomes } from '../lib/creditStrategyResearchEngine'
 import { CREDIT_REPORT_PARSER_VERSION } from '../lib/creditReportParser'
+import { createManualReportItem, getOrCreateCreditRepairCaseForDocument, listCreditReportItems } from '../lib/creditRepairCaseEngine'
+import { supabase } from '../lib/supabaseClient'
 
 const DEMO_CLIENT_ID = 'client_test_julius_erving'
 const DEMO_TENANT_ID = 'tenant_default'
@@ -40,6 +42,23 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const [generating, setGenerating] = useState(false)
   const [queueCheckedAt, setQueueCheckedAt] = useState(null)
   const [queueError, setQueueError] = useState(null)
+  const [actionMessage, setActionMessage] = useState('')
+  const [actionError, setActionError] = useState('')
+  const [reviewPanelOpen, setReviewPanelOpen] = useState(false)
+  const [parserPanelOpen, setParserPanelOpen] = useState(false)
+  const [manualItemFormOpen, setManualItemFormOpen] = useState(false)
+  const [selectedCase, setSelectedCase] = useState(null)
+  const [caseItems, setCaseItems] = useState([])
+  const [manualItemForm, setManualItemForm] = useState({
+    bureau: 'experian',
+    item_type: 'collection',
+    furnisher_name: '',
+    account_name: '',
+    account_number_masked: '',
+    reason: 'verify_or_validate',
+    notes: '',
+    evidence_needed: 'yes',
+  })
 
   useEffect(() => {
     Promise.all([
@@ -62,6 +81,154 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     } catch (e) {
       setQueueError(e?.message || 'Failed to load queue')
     }
+  }
+
+  function selectPendingReview(doc) {
+    if (!doc) {
+      setSelectedPending(null)
+      setSelectedReview(null)
+      setReviewPanelOpen(false)
+      setParserPanelOpen(false)
+      return
+    }
+    setSelectedPending(doc)
+    setSelectedReview({ id: doc.reviewId, client_id: doc.clientId, tenant_id: doc.tenantId, document_id: doc.documentId, status: doc.status })
+    setActionMessage('')
+    setActionError('')
+  }
+
+  function handleReviewReport(doc = selectedPending) {
+    if (!doc) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    selectPendingReview(doc)
+    setReviewPanelOpen(true)
+    setParserPanelOpen(false)
+    setActionMessage(`Review panel opened for ${doc.fileName}.`)
+  }
+
+  function handleRunParserPreview(doc = selectedPending) {
+    if (!doc) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    selectPendingReview(doc)
+    setParserPanelOpen(true)
+    setReviewPanelOpen(true)
+    setActionMessage('Parser preview opened. Live uploaded file parsing is gated until backend extraction worker is available.')
+  }
+
+  async function handleCreateCreditRepairCase(doc = selectedPending) {
+    if (!doc) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    setActionError('')
+    const result = await getOrCreateCreditRepairCaseForDocument({
+      clientId: doc.clientId,
+      tenantId: doc.tenantId,
+      documentId: doc.documentId,
+      source: doc.source || 'client_documents',
+      createdBy: 'admin_credit_specialist_workbench',
+    })
+    if (!result.ok) {
+      setActionError(`Case creation needs database support or permissions. ${result.error || 'Use manual review for now.'}`)
+      return
+    }
+    setSelectedCase(result.case)
+    const ctx = { authUserId: 'admin_credit_specialist', tenantId: doc.tenantId, clientId: doc.clientId }
+    const itemsForCase = await listCreditReportItems(ctx, result.case.id).catch(() => [])
+    setCaseItems(itemsForCase)
+    setActiveTab('case_engine')
+    setActionMessage(`${result.openedExisting ? 'Credit repair case opened' : 'Credit repair case created'} for this report.`)
+  }
+
+  function handleAddManualItem(doc = selectedPending) {
+    if (!doc) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    selectPendingReview(doc)
+    setManualItemFormOpen(true)
+    setReviewPanelOpen(true)
+    setActionMessage('Manual item form opened. Use masked last four only; do not enter SSN, full DOB, full account numbers, or bureau credentials.')
+  }
+
+  async function handleSubmitManualItem(e) {
+    e.preventDefault()
+    if (!selectedPending) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    setActionError('')
+    let activeCase = selectedCase
+    if (!activeCase) {
+      const result = await getOrCreateCreditRepairCaseForDocument({
+        clientId: selectedPending.clientId,
+        tenantId: selectedPending.tenantId,
+        documentId: selectedPending.documentId,
+        source: selectedPending.source || 'client_documents',
+        createdBy: 'admin_credit_specialist_workbench',
+      })
+      if (!result.ok) {
+        setActionError(`Manual item draft could not be saved because case creation failed: ${result.error || 'unknown error'}`)
+        return
+      }
+      activeCase = result.case
+      setSelectedCase(result.case)
+    }
+    const ctx = { authUserId: 'admin_credit_specialist', tenantId: selectedPending.tenantId, clientId: selectedPending.clientId }
+    const item = await createManualReportItem(ctx, activeCase.id, {
+      bureau: manualItemForm.bureau,
+      item_type: manualItemForm.item_type,
+      furnisher_name: manualItemForm.furnisher_name,
+      account_name: manualItemForm.account_name,
+      account_number_masked: manualItemForm.account_number_masked,
+      reported_status: 'specialist_review',
+      raw_notes: [
+        'Specialist-entered item from uploaded credit report review.',
+        `Selected reason: ${manualItemForm.reason}.`,
+        `Evidence needed: ${manualItemForm.evidence_needed}.`,
+        manualItemForm.notes,
+      ].filter(Boolean).join('\n'),
+      client_wants_challenged: true,
+    })
+    if (!item.ok) {
+      setActionError(`Manual item draft could not be saved: ${item.error || 'unknown error'}`)
+      return
+    }
+    const itemsForCase = await listCreditReportItems(ctx, activeCase.id).catch(() => [])
+    setCaseItems(itemsForCase)
+    setManualItemFormOpen(false)
+    setActiveTab('items')
+    setActionMessage('Manual item saved for specialist review. No letters were created.')
+    setManualItemForm({ bureau: 'experian', item_type: 'collection', furnisher_name: '', account_name: '', account_number_masked: '', reason: 'verify_or_validate', notes: '', evidence_needed: 'yes' })
+  }
+
+  async function handleMarkNeedsInfo(doc = selectedPending) {
+    if (!doc) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    if (!supabase) {
+      setActionError('Mark Needs Info requires Supabase.')
+      return
+    }
+    const { error } = await supabase
+      .from('client_documents')
+      .update({
+        goclear_review_status: 'needs_info',
+        status: 'needs_info',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', doc.documentId)
+    if (error) {
+      setActionError(`Unable to mark needs info: ${error.message}`)
+      return
+    }
+    setActionMessage('Marked report as Needs Info. Client document status can reflect this where displayed.')
+    await refreshQueue()
   }
 
   async function handleCreateItem() {
@@ -147,6 +314,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     <p style={{ fontSize: 13, color: '#94a7c3', marginBottom: 16 }}>Review reports, identify dispute items, generate drafts, and move approved letters into DocuPost.</p>
 
     {loading && <div style={{ color: '#94a7c3', fontSize: 12 }}>Loading...</div>}
+    {actionMessage && <div style={{ padding: 10, borderRadius: 8, background: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 12, marginBottom: 10 }}>{actionMessage}</div>}
+    {actionError && <div style={{ padding: 10, borderRadius: 8, background: 'rgba(239,68,68,.12)', color: '#ef4444', fontSize: 12, marginBottom: 10 }}>{actionError}</div>}
 
     {/* Tabs */}
     <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -177,7 +346,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         <div style={{ fontSize: 11, color: '#6b7b94' }}>When a client uploads a credit report from /client/documents, it will appear here.</div>
       </div>}
 
-      {pendingReviews.map(doc => <div key={doc.reviewId} onClick={() => setSelectedPending(selectedPending?.reviewId === doc.reviewId ? null : doc)} style={{
+      {pendingReviews.map(doc => <div key={doc.reviewId} onClick={() => selectPendingReview(selectedPending?.reviewId === doc.reviewId ? null : doc)} style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10,
         border: `1px solid ${selectedPending?.reviewId === doc.reviewId ? 'rgba(23,102,255,.4)' : 'rgba(148,163,184,.18)'}`,
         background: selectedPending?.reviewId === doc.reviewId ? 'rgba(23,102,255,.08)' : 'transparent',
@@ -198,10 +367,17 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         <span style={{ padding: '3px 8px', borderRadius: 12, background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
           {doc.reviewStatusLabel}
         </span>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+          <button onClick={() => handleReviewReport(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#1766ff', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Review Report</button>
+          <button onClick={() => handleRunParserPreview(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Run Parser Preview</button>
+          <button onClick={() => handleCreateCreditRepairCase(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Create Credit Repair Case</button>
+          <button onClick={() => handleAddManualItem(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#f59e0b', color: '#101e32', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add Manual Item</button>
+          <button onClick={() => handleMarkNeedsInfo(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(148,163,184,.22)', background: 'rgba(255,255,255,.06)', color: '#edf5ff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Mark Needs Info</button>
+        </div>
       </div>)}
 
       {/* Detail panel */}
-      {selectedPending && <div style={{ marginTop: 12, padding: 14, borderRadius: 10, border: '1px solid rgba(23,102,255,.25)', background: 'rgba(23,102,255,.06)' }}>
+      {selectedPending && reviewPanelOpen && <div style={{ marginTop: 12, padding: 14, borderRadius: 10, border: '1px solid rgba(23,102,255,.25)', background: 'rgba(23,102,255,.06)' }}>
         <h4 style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>Report Detail</h4>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: '#94a7c3', marginBottom: 12 }}>
           <div><strong>File:</strong> {selectedPending.fileName}</div>
@@ -212,12 +388,35 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
           <div><strong>Uploaded:</strong> {selectedPending.uploadedAt ? new Date(selectedPending.uploadedAt).toLocaleString() : 'Unknown'}</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #1766ff, #7048e8)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Review Report</button>
-          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }} title="Live parser requires backend file extraction worker. Use manual review or test fixtures for parser preview.">Run Parser Preview</button>
-          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }} title="Create case only after parser preview or manual item identification.">Create Credit Repair Case</button>
-          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }}>Add Manual Item</button>
-          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }}>Mark Needs Info</button>
+          <button onClick={() => setActionMessage('Safe file preview is not available yet. Use metadata review and manual item entry for now.')} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #1766ff, #7048e8)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Review Report</button>
+          <button onClick={() => handleRunParserPreview()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#7048e8', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Run Parser Preview</button>
+          <button onClick={() => handleCreateCreditRepairCase()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Create Credit Repair Case</button>
+          <button onClick={() => handleAddManualItem()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#101e32', fontSize: 12, cursor: 'pointer' }}>Add Manual Item</button>
+          <button onClick={() => handleMarkNeedsInfo()} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#edf5ff', fontSize: 12, cursor: 'pointer' }}>Mark Needs Info</button>
         </div>
+        <p style={{ marginTop: 10, color: '#94a7c3', fontSize: 12 }}>Safe file preview is not available yet. Use metadata review and manual item entry for now.</p>
+        {parserPanelOpen && <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: '1px solid rgba(112,72,232,.28)', background: 'rgba(112,72,232,.08)', color: '#d8ccff', fontSize: 12 }}>
+          <strong>Parser Preview</strong>
+          <p style={{ margin: '6px 0 0' }}>Live uploaded file parsing requires a backend file extraction worker or storage file access integration. Parser preview currently works for local text-based fixtures and specialist-confirmed suggestions.</p>
+          <p style={{ margin: '6px 0 0' }}>Suggested next step: Add Manual Item, Create Credit Repair Case, or wait for backend extraction worker. This does not create letters.</p>
+        </div>}
+        {manualItemFormOpen && <form onSubmit={handleSubmitManualItem} style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'rgba(255,255,255,.05)', display: 'grid', gap: 8 }}>
+          <h4 style={{ margin: 0, fontSize: 13 }}>Add Manual Item</h4>
+          <p style={{ margin: 0, color: '#94a7c3', fontSize: 11 }}>Specialist-entered item. Do not enter SSN, full DOB, full account numbers, or bureau credentials.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <label style={{ fontSize: 11, color: '#94a7c3' }}>Bureau<select value={manualItemForm.bureau} onChange={e => setManualItemForm(p => ({ ...p, bureau: e.target.value }))} style={{ width: '100%', marginTop: 4, padding: 6, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }}><option value="experian">Experian</option><option value="equifax">Equifax</option><option value="transunion">TransUnion</option><option value="unknown">Multiple/Unknown</option></select></label>
+            <label style={{ fontSize: 11, color: '#94a7c3' }}>Item type<select value={manualItemForm.item_type} onChange={e => setManualItemForm(p => ({ ...p, item_type: e.target.value }))} style={{ width: '100%', marginTop: 4, padding: 6, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }}><option value="collection">Collection</option><option value="charge_off">Charge-off</option><option value="late_payment">Late payment</option><option value="inquiry">Inquiry</option><option value="incorrect_balance">Incorrect balance</option><option value="personal_info">Personal information</option><option value="other">Other</option></select></label>
+            <label style={{ fontSize: 11, color: '#94a7c3' }}>Furnisher/account name<input value={manualItemForm.furnisher_name} onChange={e => setManualItemForm(p => ({ ...p, furnisher_name: e.target.value, account_name: e.target.value }))} style={{ width: '100%', marginTop: 4, padding: 6, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }} /></label>
+            <label style={{ fontSize: 11, color: '#94a7c3' }}>Masked account last 4 only<input value={manualItemForm.account_number_masked} onChange={e => setManualItemForm(p => ({ ...p, account_number_masked: e.target.value }))} maxLength={4} style={{ width: '100%', marginTop: 4, padding: 6, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }} /></label>
+            <label style={{ fontSize: 11, color: '#94a7c3' }}>Reason<select value={manualItemForm.reason} onChange={e => setManualItemForm(p => ({ ...p, reason: e.target.value }))} style={{ width: '100%', marginTop: 4, padding: 6, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }}>{['not_mine','incorrect_balance','incorrect_dates','duplicate','paid_or_settled_wrong','late_payment_wrong','unauthorized_inquiry','personal_info_error','verify_or_validate','outdated','not_sure'].map(reason => <option key={reason} value={reason}>{reason.replace(/_/g, ' ')}</option>)}</select></label>
+            <label style={{ fontSize: 11, color: '#94a7c3' }}>Evidence needed<select value={manualItemForm.evidence_needed} onChange={e => setManualItemForm(p => ({ ...p, evidence_needed: e.target.value }))} style={{ width: '100%', marginTop: 4, padding: 6, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }}><option value="yes">Yes</option><option value="no">No</option></select></label>
+          </div>
+          <textarea value={manualItemForm.notes} onChange={e => setManualItemForm(p => ({ ...p, notes: e.target.value }))} placeholder="Specialist notes. Do not enter sensitive full identifiers." style={{ minHeight: 70, padding: 8, borderRadius: 6, background: '#101e32', color: '#edf5ff', border: '1px solid rgba(148,163,184,.18)' }} />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="submit" style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', fontWeight: 700 }}>Save Manual Item</button>
+            <button type="button" onClick={() => setManualItemFormOpen(false)} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#edf5ff' }}>Cancel</button>
+          </div>
+        </form>}
         <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 11 }}>
           Parser suggestions and dispute items require specialist confirmation before letters or DocuPost can proceed. No letters are generated automatically.
         </div>
@@ -228,7 +427,12 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
         <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Repair Case Engine Review</h3>
         <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 10 }}>Specialist reviews selected items, client reasons, evidence, and letter options before sending anything to client approval.</p>
-        {items.length === 0 && <p style={{ fontSize: 12, color: '#94a7c3' }}>No client-selected report items yet.</p>}
+        {items.length === 0 && caseItems.length === 0 && <p style={{ fontSize: 12, color: '#94a7c3' }}>No client-selected report items yet. Create a case from Client Queue.</p>}
+        {selectedCase && <div style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(16,185,129,.25)', marginBottom: 8, color: '#94a7c3', fontSize: 12 }}>Selected case: {selectedCase.id} · status: {selectedCase.status}</div>}
+        {caseItems.map(item => <div key={item.id} style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', marginBottom: 8 }}>
+          <strong style={{ fontSize: 13 }}>{item.furnisher_name || item.account_name || 'Manual report item'}</strong>
+          <div style={{ fontSize: 11, color: '#94a7c3' }}>{item.bureau?.toUpperCase()} · {item.item_type || 'credit item'} · specialist-entered item</div>
+        </div>)}
         {items.map(item => <div key={item.id} style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', marginBottom: 8 }}>
           <strong style={{ fontSize: 13 }}>{item.furnisher_name || item.account_name || 'Report item'}</strong>
           <div style={{ fontSize: 11, color: '#94a7c3' }}>{item.bureau?.toUpperCase()} · {item.item_type || 'credit item'} · reason: {item.dispute_reason || 'client selection pending'}</div>
@@ -271,6 +475,15 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         <input placeholder="Factual basis" value={newItemForm.factualBasis} onChange={e => setNewItemForm(p => ({ ...p, factualBasis: e.target.value }))} style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(148,163,184,.18)', background: '#101e32', color: '#edf5ff', fontSize: 12, marginBottom: 8 }} />
         <button onClick={handleCreateItem} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #1766ff, #7048e8)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Add Item</button>
       </div>
+      {caseItems.length === 0 && items.length === 0 && <div style={{ padding: 20, textAlign: 'center', color: '#94a7c3' }}>Add Manual Item from Client Queue.</div>}
+      {caseItems.map(item => <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', marginBottom: 4 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(245,158,11,.12)', display: 'grid', placeItems: 'center', color: '#f59e0b' }}><AlertTriangle size={14} /></div>
+        <div style={{ flex: 1 }}>
+          <strong style={{ fontSize: 12 }}>{item.furnisher_name || item.account_name || 'Manual item'}</strong>
+          <div style={{ fontSize: 10, color: '#94a7c3' }}>{item.bureau?.toUpperCase()} · {item.item_type} · specialist-entered item</div>
+        </div>
+        <span style={{ padding: '2px 6px', borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 10, fontWeight: 700 }}>specialist review</span>
+      </div>)}
       {items.map(item => <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', marginBottom: 4 }}>
         <div style={{ width: 28, height: 28, borderRadius: 6, background: 'rgba(245,158,11,.12)', display: 'grid', placeItems: 'center', color: '#f59e0b' }}><AlertTriangle size={14} /></div>
         <div style={{ flex: 1 }}>

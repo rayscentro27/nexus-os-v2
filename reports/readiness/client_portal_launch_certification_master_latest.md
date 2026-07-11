@@ -45,6 +45,9 @@
 - Admin switch-account flow added: `True`
 - Admin login route available: `/admin/login`
 - Emergency auth reset route available: `/auth/reset`
+- Credit report uploads appear in admin specialist queue: `True`
+- Credit specialist review action buttons active: `True`
+- Live uploaded report parser limitation shown: `True`
 
 ## Tester Readiness
 

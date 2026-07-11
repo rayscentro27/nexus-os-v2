@@ -122,6 +122,49 @@ export async function getOrCreateCreditRepairCase(ctx: ResolvedClientContext): P
   return fallbackCase(ctx)
 }
 
+export async function getOrCreateCreditRepairCaseForDocument(input: {
+  clientId: string
+  tenantId: string
+  documentId?: string
+  source?: string
+  createdBy?: string
+}) {
+  if (!requireDb()) return { ok: false, error: 'Supabase not configured' }
+  if (!input.clientId || !input.tenantId) return { ok: false, error: 'Client and tenant are required' }
+
+  const existing = await supabase!
+    .from('credit_repair_cases')
+    .select('*')
+    .eq('client_id', input.clientId)
+    .in('status', ACTIVE_CASE_STATUSES)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (existing.data) return { ok: true, case: existing.data as CreditRepairCase, openedExisting: true }
+  if (existing.error) return { ok: false, error: existing.error.message }
+
+  const insert = await supabase!
+    .from('credit_repair_cases')
+    .insert({
+      tenant_id: input.tenantId,
+      client_id: input.clientId,
+      status: 'report_uploaded',
+      case_goal: [
+        'Specialist review of uploaded credit report.',
+        input.documentId ? `Source document: ${input.documentId}` : '',
+        input.source ? `Source: ${input.source}` : '',
+        input.createdBy ? `Created by: ${input.createdBy}` : '',
+      ].filter(Boolean).join(' '),
+      current_round: 1,
+    })
+    .select('*')
+    .single()
+
+  if (insert.error) return { ok: false, error: insert.error.message }
+  return { ok: true, case: insert.data as CreditRepairCase, openedExisting: false }
+}
+
 export async function listCreditReportItems(ctx: ResolvedClientContext, caseId?: string): Promise<CreditReportItem[]> {
   if (!requireDb() || !caseId || caseId.startsWith('local_case_')) return []
   const res = await supabase!

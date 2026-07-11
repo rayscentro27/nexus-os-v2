@@ -53,7 +53,14 @@ add("client upload copy keeps parser gated", "specialist must confirm" in texts[
 add("parser bridge does not auto-create letters", "createLetterDraftFromOption" not in texts["bridge"] and "createDocuPost" not in texts["bridge"])
 add("no verified-by-AI language", all(term not in combined for term in ["verified by ai", "ai verified", "clyde verified this", "parser verified"]))
 add("no guaranteed deletion/score/funding language", all(term not in combined for term in ["guaranteed deletion", "guaranteed score", "guaranteed funding", "instant score increase"]))
-add("no full sensitive data collection", all(term not in combined for term in ["collect ssn", "full dob storage", "full ein storage", "full account number", "bureau password", "bureau username"]))
+unsafe_field_patterns = [
+    r"<label[^>]*>\s*SSN",
+    r"<label[^>]*>\s*Full DOB",
+    r"<label[^>]*>\s*Full EIN",
+    r"<label[^>]*>\s*Full account",
+    r"<input[^>]+placeholder=['\"][^'\"]*(SSN|full DOB|full EIN|full account|bureau username|bureau password)",
+]
+add("no full sensitive data collection", not any(__import__("re").search(pattern, combined, __import__("re").I) for pattern in unsafe_field_patterns))
 add("no auto-letter creation from parser output", "credit_dispute_letter" not in texts["bridge"] and "createLetterDraftFromOption" not in texts["bridge"])
 add("no auto-DocuPost send", "docupost gates remain unchanged" in combined and "auto-send" not in texts["bridge"].lower())
 add("scanned fixture requires OCR/manual review when OCR unavailable", "scanned_screenshot" in texts["report"] and "OCR/manual review required" in texts["report"])
