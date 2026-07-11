@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import {
   loadCreditRepairJourney,
+  loadPendingCreditReportReviews,
   createDisputeItem,
   createDisputeLetterDraft,
   generateDisputeLetterBody,
@@ -27,21 +28,41 @@ const DEMO_TENANT_ID = 'tenant_default'
 
 export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const [journey, setJourney] = useState(null)
+  const [pendingReviews, setPendingReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('queue')
   const [selectedReview, setSelectedReview] = useState(null)
+  const [selectedPending, setSelectedPending] = useState(null)
   const [newItemForm, setNewItemForm] = useState({
     bureau: 'experian', furnisherName: '', accountName: '', accountNumberMask: '',
     disputeReason: '', factualBasis: '', requestedAction: 'dispute',
   })
   const [generating, setGenerating] = useState(false)
+  const [queueCheckedAt, setQueueCheckedAt] = useState(null)
+  const [queueError, setQueueError] = useState(null)
 
   useEffect(() => {
-    loadCreditRepairJourney().then(data => {
-      setJourney(data)
+    Promise.all([
+      loadCreditRepairJourney(),
+      loadPendingCreditReportReviews(),
+    ]).then(([journeyData, pending]) => {
+      setJourney(journeyData)
+      setPendingReviews(pending)
+      setQueueCheckedAt(new Date().toISOString())
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
+
+  async function refreshQueue() {
+    try {
+      const pending = await loadPendingCreditReportReviews()
+      setPendingReviews(pending)
+      setQueueCheckedAt(new Date().toISOString())
+      setQueueError(null)
+    } catch (e) {
+      setQueueError(e?.message || 'Failed to load queue')
+    }
+  }
 
   async function handleCreateItem() {
     if (!newItemForm.disputeReason) return
@@ -113,9 +134,9 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const strategySummary = summarizeStrategyOutcomes([])
 
   const tabs = [
+    { key: 'queue', label: 'Client Queue', count: pendingReviews.length },
     { key: 'case_engine', label: 'Case Engine', count: items.length + letters.length },
     { key: 'parser_preview', label: 'Parser Preview', count: 0 },
-    { key: 'queue', label: 'Client Queue', count: reviews.length },
     { key: 'items', label: 'Dispute Items', count: items.length },
     { key: 'letters', label: 'Letters', count: letters.length },
     { key: 'mail', label: 'DocuPost', count: mailJobs.length },
@@ -128,7 +149,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     {loading && <div style={{ color: '#94a7c3', fontSize: 12 }}>Loading...</div>}
 
     {/* Tabs */}
-    <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+    <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
       {tabs.map(tab => <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
         padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 12,
         background: activeTab === tab.key ? 'linear-gradient(135deg, #1766ff, #7048e8)' : 'rgba(255,255,255,.08)',
@@ -136,28 +157,71 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       }}>{tab.label} <span style={{ marginLeft: 4, opacity: .7 }}>({tab.count})</span></button>)}
     </div>
 
-    {activeTab === 'parser_preview' && <ParserPreviewPanel />}
+    {activeTab === 'parser_preview' && <ParserPreviewPanel pendingReviews={pendingReviews} />}
 
-    {/* Queue Tab */}
+    {/* Queue Tab — wired to client_documents pending credit reports */}
     {activeTab === 'queue' && <div>
-      {reviews.length === 0 && <div style={{ padding: 20, textAlign: 'center', color: '#94a7c3' }}>No credit report reviews yet.</div>}
-      {reviews.map(r => <div key={r.id} onClick={() => setSelectedReview(r)} style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10,
-        border: `1px solid ${selectedReview?.id === r.id ? 'rgba(23,102,255,.4)' : 'rgba(148,163,184,.18)'}`,
-        background: selectedReview?.id === r.id ? 'rgba(23,102,255,.08)' : 'transparent',
-        cursor: 'pointer', marginBottom: 6,
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div>
+          <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>Client Queue</h3>
+          <p style={{ fontSize: 12, color: '#94a7c3' }}>Pending credit report uploads from client portal. Queue source: client_documents pending credit_report uploads.</p>
+        </div>
+        <button onClick={refreshQueue} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#94a7c3', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Refresh</button>
+      </div>
+
+      {queueCheckedAt && <div style={{ fontSize: 10, color: '#6b7b94', marginBottom: 8 }}>Last checked: {new Date(queueCheckedAt).toLocaleTimeString()}</div>}
+      {queueError && <div style={{ padding: 8, borderRadius: 6, background: 'rgba(239,68,68,.12)', color: '#ef4444', fontSize: 11, marginBottom: 8 }}>Queue load error: {queueError}</div>}
+
+      {pendingReviews.length === 0 && !loading && <div style={{ padding: 20, textAlign: 'center', color: '#94a7c3' }}>
+        <div style={{ marginBottom: 6 }}>No credit report reviews yet.</div>
+        <div style={{ fontSize: 11, color: '#6b7b94' }}>When a client uploads a credit report from /client/documents, it will appear here.</div>
+      </div>}
+
+      {pendingReviews.map(doc => <div key={doc.reviewId} onClick={() => setSelectedPending(selectedPending?.reviewId === doc.reviewId ? null : doc)} style={{
+        display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10,
+        border: `1px solid ${selectedPending?.reviewId === doc.reviewId ? 'rgba(23,102,255,.4)' : 'rgba(148,163,184,.18)'}`,
+        background: selectedPending?.reviewId === doc.reviewId ? 'rgba(23,102,255,.08)' : 'transparent',
+        cursor: 'pointer', marginBottom: 8,
       }}>
-        <div style={{ width: 36, height: 36, borderRadius: 8, background: 'linear-gradient(135deg, #1766ff, #7048e8)', display: 'grid', placeItems: 'center', color: '#fff', fontWeight: 800, fontSize: 13 }}>
-          {r.client_id?.slice(-2).toUpperCase()}
+        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #1766ff, #7048e8)', display: 'grid', placeItems: 'center', color: '#fff', flexShrink: 0 }}>
+          <FileText size={18} />
         </div>
-        <div style={{ flex: 1 }}>
-          <strong style={{ fontSize: 13 }}>{r.client_id}</strong>
-          <div style={{ fontSize: 11, color: '#94a7c3' }}>Review #{r.id.slice(0, 8)}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <strong style={{ fontSize: 13 }}>{doc.fileName}</strong>
+          <div style={{ fontSize: 11, color: '#94a7c3', marginTop: 2 }}>
+            {doc.clientName || doc.clientId} {doc.clientEmail ? `(${doc.clientEmail})` : ''} · {doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : 'Unknown date'}
+          </div>
+          <div style={{ fontSize: 10, color: '#6b7b94', marginTop: 2 }}>
+            Category: {doc.category || 'credit_report'} · Source: {doc.source || 'client_portal'} · Parser: {doc.parserStatus?.replace(/_/g, ' ')}
+          </div>
         </div>
-        <span style={{ padding: '3px 8px', borderRadius: 12, background: r.status === 'pending_review' ? 'rgba(245,158,11,.15)' : 'rgba(16,185,129,.15)', color: r.status === 'pending_review' ? '#f59e0b' : '#10b981', fontSize: 11, fontWeight: 700 }}>
-          {r.status?.replace(/_/g, ' ')}
+        <span style={{ padding: '3px 8px', borderRadius: 12, background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+          {doc.reviewStatusLabel}
         </span>
       </div>)}
+
+      {/* Detail panel */}
+      {selectedPending && <div style={{ marginTop: 12, padding: 14, borderRadius: 10, border: '1px solid rgba(23,102,255,.25)', background: 'rgba(23,102,255,.06)' }}>
+        <h4 style={{ fontSize: 13, fontWeight: 800, marginBottom: 8 }}>Report Detail</h4>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: '#94a7c3', marginBottom: 12 }}>
+          <div><strong>File:</strong> {selectedPending.fileName}</div>
+          <div><strong>Client:</strong> {selectedPending.clientName || selectedPending.clientId}</div>
+          <div><strong>Status:</strong> {selectedPending.reviewStatusLabel}</div>
+          <div><strong>Parser:</strong> {selectedPending.parserStatus?.replace(/_/g, ' ')}</div>
+          <div><strong>Source:</strong> {selectedPending.source || 'client_portal'}</div>
+          <div><strong>Uploaded:</strong> {selectedPending.uploadedAt ? new Date(selectedPending.uploadedAt).toLocaleString() : 'Unknown'}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #1766ff, #7048e8)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Review Report</button>
+          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }} title="Live parser requires backend file extraction worker. Use manual review or test fixtures for parser preview.">Run Parser Preview</button>
+          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }} title="Create case only after parser preview or manual item identification.">Create Credit Repair Case</button>
+          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }}>Add Manual Item</button>
+          <button disabled style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#6b7b94', fontSize: 12, cursor: 'not-allowed' }}>Mark Needs Info</button>
+        </div>
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 11 }}>
+          Parser suggestions and dispute items require specialist confirmation before letters or DocuPost can proceed. No letters are generated automatically.
+        </div>
+      </div>}
     </div>}
 
     {activeTab === 'case_engine' && <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 12 }}>
@@ -258,8 +322,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   </div>
 }
 
-function ParserPreviewPanel() {
-  const previewRows = [
+function ParserPreviewPanel({ pendingReviews = [] }) {
+  const fixtureRows = [
     { name: '3-bureau tradeline PDF', status: 'Suggested extraction ready', action: 'Confirm selected item' },
     { name: 'Annual report style PDF', status: 'Suggested extraction ready', action: 'Edit item before creating case item' },
     { name: 'Credit monitoring export', status: 'Suggested extraction ready', action: 'Reject or request full report' },
@@ -269,12 +333,22 @@ function ParserPreviewPanel() {
   return <div style={{ display: 'grid', gridTemplateColumns: '1fr .9fr', gap: 12 }}>
     <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
       <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Report Parser Preview</h3>
+      <div style={{ padding: 10, borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 12, marginBottom: 10 }}>
+        Parser preview can read text-based fixtures. Live uploaded file parsing requires a backend extraction worker or storage file access integration.
+      </div>
       <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 10 }}>
         Parser preview is available for test fixtures/local validation. Live report parsing requires backend extraction worker.
         Parser output is a suggested extraction, needs GoClear specialist review, and is not verified yet.
       </p>
+      {pendingReviews.length > 0 && <div style={{ marginBottom: 12 }}>
+        <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Uploaded Reports Needing Review</h4>
+        {pendingReviews.map(doc => <div key={doc.reviewId} style={{ padding: 8, borderRadius: 6, border: '1px solid rgba(148,163,184,.18)', marginBottom: 4, fontSize: 12 }}>
+          <strong>{doc.fileName}</strong>
+          <span style={{ marginLeft: 8, color: '#f59e0b', fontSize: 11 }}>{doc.reviewStatusLabel}</span>
+        </div>)}
+      </div>}
       <div style={{ display: 'grid', gap: 8 }}>
-        {previewRows.map(row => <div key={row.name} style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', background: 'rgba(255,255,255,.04)' }}>
+        {fixtureRows.map(row => <div key={row.name} style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(148,163,184,.18)', background: 'rgba(255,255,255,.04)' }}>
           <strong style={{ fontSize: 12 }}>{row.name}</strong>
           <div style={{ fontSize: 11, color: '#94a7c3', marginTop: 3 }}>Status: {row.status}</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>

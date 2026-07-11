@@ -83,7 +83,7 @@ export function SimpleDocumentUploadPanel({
             <span>Attached to: {pageContext.replaceAll('_', ' ')}</span>
             <p>Clyde is organizing this document for GoClear review.</p>
             {(uploaded.category === 'credit_report' || predictedCategory === 'credit_report') && (
-              <p>Your report is uploaded and pending GoClear review. If parser preview is enabled, GoClear may use it to suggest items, but a specialist must confirm them before dispute options or letters move forward.</p>
+              <p>Your report is uploaded and pending GoClear review. It should appear in the Credit Specialist Workbench for review. If parser preview is enabled, GoClear may use it to suggest items, but a specialist must confirm them before dispute options or letters move forward.</p>
             )}
             <p>Next recommended document: <strong>{nextDocument}</strong></p>
             <div>{usage.map(label => <em key={label}>{label}</em>)}</div>

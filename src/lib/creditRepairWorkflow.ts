@@ -498,6 +498,124 @@ export async function markMailJobSent(jobId: string, trackingNumber: string): Pr
   return { ok: true };
 }
 
+// ─── Pending Credit Report Reviews (Admin Queue Bridge) ─────────────────────
+
+export interface PendingCreditReportReview {
+  reviewId: string;
+  documentId: string;
+  clientId: string;
+  tenantId: string;
+  clientName: string | null;
+  clientEmail: string | null;
+  fileName: string;
+  category: string | null;
+  suggestedCategory: string | null;
+  status: string;
+  goclearReviewStatus: string | null;
+  uploadedAt: string;
+  source: string | null;
+  reviewStatusLabel: string;
+  parserStatus: 'not_parsed' | 'suggested_extraction_available' | 'ocr_required' | 'needs_specialist_review';
+  nextActionLabel: string;
+}
+
+function isCreditReportDocument(doc: Record<string, unknown>): boolean {
+  const text = [
+    doc.category,
+    doc.suggested_category,
+    doc.document_type,
+    doc.source,
+    doc.title,
+    doc.file_name,
+  ].filter(Boolean).map(String).join(' ').toLowerCase();
+  return text.includes('credit') && (text.includes('report') || text.includes('tradeline') || text.includes('bureau'));
+}
+
+export async function loadPendingCreditReportReviews(): Promise<PendingCreditReportReview[]> {
+  if (!isSupabaseConfigured || !supabase) return [];
+
+  try {
+    const { data: docs, error } = await supabase
+      .from('client_documents')
+      .select('*')
+      .eq('client_visible', true)
+      .in('status', ['pending_review', 'review_needed', 'open'])
+      .order('created_at', { ascending: false });
+
+    if (error || !docs) return [];
+
+    const creditReportDocs = docs.filter((doc: Record<string, unknown>) => {
+      const isCredit = isCreditReportDocument(doc);
+      const isPending = doc.goclear_review_status === 'pending_review'
+        || doc.status === 'pending_review'
+        || doc.status === 'review_needed';
+      return isCredit && isPending;
+    });
+
+    if (creditReportDocs.length === 0) return [];
+
+    const clientIds = [...new Set(creditReportDocs.map((d: Record<string, unknown>) => d.client_id).filter(Boolean))];
+    let clientMap: Record<string, { name: string | null; email: string | null }> = {};
+
+    if (clientIds.length > 0) {
+      try {
+        const { data: profiles } = await supabase
+          .from('client_profiles')
+          .select('id, full_name, business_name, email')
+          .in('id', clientIds);
+
+        if (profiles) {
+          for (const p of profiles as Record<string, unknown>[]) {
+            clientMap[p.id as string] = {
+              name: (p.full_name as string) || (p.business_name as string) || null,
+              email: (p.email as string) || null,
+            };
+          }
+        }
+      } catch {
+        // RLS or schema may prevent join — show unknown client
+      }
+    }
+
+    return creditReportDocs.map((doc: Record<string, unknown>) => {
+      const clientId = doc.client_id as string || 'unknown';
+      const client = clientMap[clientId] || { name: null, email: null };
+      const fileName = (doc.title as string) || (doc.file_name as string) || 'Untitled document';
+      const status = (doc.status as string) || 'pending_review';
+      const goclearReviewStatus = (doc.goclear_review_status as string) || status;
+
+      let parserStatus: PendingCreditReportReview['parserStatus'] = 'needs_specialist_review';
+      if (fileName.toLowerCase().includes('ocr')) parserStatus = 'ocr_required';
+      else if (status === 'pending_review') parserStatus = 'suggested_extraction_available';
+
+      let nextActionLabel = 'Review uploaded report';
+      if (parserStatus === 'ocr_required') nextActionLabel = 'Manual review or backend OCR worker';
+      else if (status === 'pending_review') nextActionLabel = 'Run parser preview or manual review';
+
+      return {
+        reviewId: doc.id as string,
+        documentId: doc.id as string,
+        clientId,
+        tenantId: (doc.tenant_id as string) || 'tenant_default',
+        clientName: client.name,
+        clientEmail: client.email,
+        fileName,
+        category: (doc.category as string) || null,
+        suggestedCategory: (doc.suggested_category as string) || null,
+        status,
+        goclearReviewStatus,
+        uploadedAt: (doc.created_at as string) || '',
+        source: (doc.source as string) || null,
+        reviewStatusLabel: status === 'pending_review' ? 'Pending GoClear Review' : status.replace(/_/g, ' '),
+        parserStatus,
+        nextActionLabel,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 // ─── Status Helpers ──────────────────────────────────────────────────────────
 
 const JOURNEY_STEP_LABELS: Record<CreditJourneyStep, string> = {
