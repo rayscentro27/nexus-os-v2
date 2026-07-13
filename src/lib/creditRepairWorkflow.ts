@@ -498,6 +498,104 @@ export async function markMailJobSent(jobId: string, trackingNumber: string): Pr
   return { ok: true };
 }
 
+// ─── Parser Results (Admin Workbench) ─────────────────────────────────────
+
+export interface ParserResultSummary {
+  id: string;
+  documentId: string | null;
+  sourceFileName: string | null;
+  parserVersion: string | null;
+  extractionMode: string | null;
+  extractionSuccess: boolean;
+  textLength: number;
+  confidence: string | null;
+  accountsCount: number;
+  inquiriesCount: number;
+  negativeCandidatesCount: number;
+  structuredItemDraftsCount: number;
+  disputeSuggestionsCount: number;
+  utilizationSummary: Record<string, unknown>;
+  bureausDetected: string[];
+  warnings: Array<{ code: string; message: string; severity: string }>;
+  letterPreview: string | null;
+  status: string;
+  needsSpecialistReview: boolean;
+  createdAt: string;
+}
+
+export async function loadParserResultForDocument(documentId: string): Promise<ParserResultSummary | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('credit_report_parser_results')
+      .select('*')
+      .eq('document_id', documentId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return summarizeParserResult(data);
+  } catch {
+    return null;
+  }
+}
+
+export async function loadParserResultsForDocumentIds(documentIds: string[]): Promise<Record<string, ParserResultSummary>> {
+  if (!isSupabaseConfigured || !supabase || documentIds.length === 0) return {};
+  try {
+    const { data, error } = await supabase
+      .from('credit_report_parser_results')
+      .select('*')
+      .in('document_id', documentIds)
+      .order('created_at', { ascending: false });
+    if (error || !data) return {};
+    const map: Record<string, ParserResultSummary> = {};
+    for (const row of data as Record<string, unknown>[]) {
+      const docId = row.document_id as string;
+      if (docId && !map[docId]) {
+        map[docId] = summarizeParserResult(row);
+      }
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+function summarizeParserResult(row: Record<string, unknown>): ParserResultSummary {
+  const accounts = Array.isArray(row.accounts) ? row.accounts : [];
+  const inquiries = Array.isArray(row.inquiries) ? row.inquiries : [];
+  const negativeCandidates = Array.isArray(row.negative_candidates) ? row.negative_candidates : [];
+  const structuredDrafts = Array.isArray(row.structured_item_drafts) ? row.structured_item_drafts : [];
+  const suggestions = Array.isArray(row.dispute_strategy_suggestions) ? row.dispute_strategy_suggestions : [];
+  const warnings = Array.isArray(row.warnings) ? row.warnings : [];
+  const bureaus = Array.isArray(row.bureaus_detected) ? row.bureaus_detected : [];
+  const utilization = (row.utilization_summary && typeof row.utilization_summary === 'object') ? row.utilization_summary as Record<string, unknown> : {};
+
+  return {
+    id: row.id as string,
+    documentId: row.document_id as string | null,
+    sourceFileName: row.source_file_name as string | null,
+    parserVersion: row.parser_version as string | null,
+    extractionMode: row.extraction_mode as string | null,
+    extractionSuccess: Boolean(row.extraction_success),
+    textLength: (row.text_length as number) || 0,
+    confidence: row.confidence as string | null,
+    accountsCount: accounts.length,
+    inquiriesCount: inquiries.length,
+    negativeCandidatesCount: negativeCandidates.length,
+    structuredItemDraftsCount: structuredDrafts.length,
+    disputeSuggestionsCount: suggestions.length,
+    utilizationSummary: utilization,
+    bureausDetected: bureaus as string[],
+    warnings: warnings as ParserResultSummary['warnings'],
+    letterPreview: row.letter_preview as string | null,
+    status: (row.status as string) || 'suggested_extraction',
+    needsSpecialistReview: Boolean(row.needs_specialist_review),
+    createdAt: (row.created_at as string) || '',
+  };
+}
+
 // ─── Pending Credit Report Reviews (Admin Queue Bridge) ─────────────────────
 
 export interface PendingCreditReportReview {

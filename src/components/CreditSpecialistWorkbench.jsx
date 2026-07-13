@@ -23,6 +23,7 @@ import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrateg
 import { getStrategyResearchBacklog, recommendNextRoundStrategy, summarizeStrategyOutcomes } from '../lib/creditStrategyResearchEngine'
 import { CREDIT_REPORT_PARSER_VERSION } from '../lib/creditReportParser'
 import { createManualReportItem, getOrCreateCreditRepairCaseForDocument, listCreditReportItems } from '../lib/creditRepairCaseEngine'
+import { loadParserResultForDocument } from '../lib/creditRepairWorkflow'
 import { supabase } from '../lib/supabaseClient'
 
 const DEMO_CLIENT_ID = 'client_test_julius_erving'
@@ -59,6 +60,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     notes: '',
     evidence_needed: 'yes',
   })
+  const [parserResult, setParserResult] = useState(null)
+  const [parserResultLoading, setParserResultLoading] = useState(false)
 
   useEffect(() => {
     Promise.all([
@@ -116,7 +119,74 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     selectPendingReview(doc)
     setParserPanelOpen(true)
     setReviewPanelOpen(true)
-    setActionMessage('Parser preview opened. Live uploaded file parsing is gated until backend extraction worker is available.')
+    setParserResultLoading(true)
+    setParserResult(null)
+
+    // Try to load existing parser result from database
+    loadParserResultForDocument(doc.documentId).then(result => {
+      setParserResult(result)
+      setParserResultLoading(false)
+      if (result) {
+        setActionMessage(`Parser result loaded: ${result.accountsCount} accounts, ${result.negativeCandidatesCount} negative candidates, ${result.inquiriesCount} inquiries.`)
+      } else {
+        setActionMessage('No parser result found for this document. Run the local parser worker to generate results.')
+      }
+    }).catch(() => {
+      setParserResultLoading(false)
+      setActionMessage('Could not load parser results. Run the local parser worker to generate results.')
+    })
+  }
+
+  async function handleRefreshParserResults(doc = selectedPending) {
+    if (!doc) return
+    setParserResultLoading(true)
+    try {
+      const result = await loadParserResultForDocument(doc.documentId)
+      setParserResult(result)
+      if (result) {
+        setActionMessage(`Parser result refreshed: ${result.accountsCount} accounts, ${result.negativeCandidatesCount} negative candidates.`)
+      } else {
+        setActionMessage('No parser result found yet. Run the local parser worker first.')
+      }
+    } catch {
+      setActionMessage('Failed to refresh parser results.')
+    }
+    setParserResultLoading(false)
+  }
+
+  async function handleConfirmParserItem(parserItem) {
+    if (!selectedPending) {
+      setActionError('Select a pending report first.')
+      return
+    }
+    setActionError('')
+    setActionMessage('Confirming parser item as case item...')
+    let activeCase = selectedCase
+    if (!activeCase) {
+      const caseResult = await getOrCreateCreditRepairCaseForDocument({
+        clientId: selectedPending.clientId,
+        tenantId: selectedPending.tenantId,
+        documentId: selectedPending.documentId,
+        source: selectedPending.source || 'client_documents',
+        createdBy: 'admin_credit_specialist_workbench',
+      })
+      if (!caseResult.ok) {
+        setActionError(`Cannot confirm item: case creation failed — ${caseResult.error || 'unknown error'}`)
+        return
+      }
+      activeCase = caseResult.case
+      setSelectedCase(caseResult.case)
+    }
+    const { confirmParserItemAsCaseItem } = await import('../lib/creditReportParserToCaseEngine')
+    const ctx = { authUserId: 'admin_credit_specialist', tenantId: selectedPending.tenantId, clientId: selectedPending.clientId }
+    const result = await confirmParserItemAsCaseItem(ctx, activeCase.id, parserItem, { notes: 'Confirmed from parser result in workbench.' })
+    if (result.ok) {
+      setActionMessage(`Parser item confirmed as case item. Dispute strategy must be selected by specialist or client.`)
+      const items = await listCreditReportItems(ctx, activeCase.id)
+      setCaseItems(items)
+    } else {
+      setActionError(`Failed to confirm item: ${result.error || 'unknown error'}`)
+    }
   }
 
   async function handleCreateCreditRepairCase(doc = selectedPending) {
@@ -397,8 +467,37 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         <p style={{ marginTop: 10, color: '#94a7c3', fontSize: 12 }}>Safe file preview is not available yet. Use metadata review and manual item entry for now.</p>
         {parserPanelOpen && <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: '1px solid rgba(112,72,232,.28)', background: 'rgba(112,72,232,.08)', color: '#d8ccff', fontSize: 12 }}>
           <strong>Parser Preview</strong>
-          <p style={{ margin: '6px 0 0' }}>Live uploaded file parsing requires a backend file extraction worker or storage file access integration. Parser preview currently works for local text-based fixtures and specialist-confirmed suggestions.</p>
-          <p style={{ margin: '6px 0 0' }}>Suggested next step: Add Manual Item, Create Credit Repair Case, or wait for backend extraction worker. This does not create letters.</p>
+          {parserResultLoading && <p style={{ margin: '6px 0 0' }}>Loading parser results...</p>}
+          {!parserResultLoading && !parserResult && <div>
+            <p style={{ margin: '6px 0 0' }}>No parser result found for this document. Run the local admin parser worker to generate results:</p>
+            <code style={{ display: 'block', margin: '8px 0', padding: 8, borderRadius: 6, background: 'rgba(0,0,0,.3)', fontSize: 11, whiteSpace: 'pre-wrap' }}>source .venv-credit/bin/activate
+python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPending?.documentId}</code>
+            <button onClick={() => handleRefreshParserResults()} style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', marginTop: 4 }}>Refresh Parser Results</button>
+          </div>}
+          {!parserResultLoading && parserResult && <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, margin: '8px 0' }}>
+              <div style={{ padding: 6, borderRadius: 6, background: 'rgba(0,0,0,.2)' }}>Accounts: <strong>{parserResult.accountsCount}</strong></div>
+              <div style={{ padding: 6, borderRadius: 6, background: 'rgba(0,0,0,.2)' }}>Negative: <strong>{parserResult.negativeCandidatesCount}</strong></div>
+              <div style={{ padding: 6, borderRadius: 6, background: 'rgba(0,0,0,.2)' }}>Inquiries: <strong>{parserResult.inquiriesCount}</strong></div>
+            </div>
+            <div style={{ fontSize: 11, margin: '4px 0' }}>
+              Extraction: {parserResult.extractionMode} · Confidence: {parserResult.confidence} · Bureaus: {parserResult.bureausDetected.join(', ') || 'None'}
+            </div>
+            {parserResult.warnings.length > 0 && <div style={{ margin: '6px 0', fontSize: 11 }}>
+              Warnings: {parserResult.warnings.map(w => w.message).join('; ')}
+            </div>}
+            <div style={{ fontSize: 11, margin: '4px 0', color: '#f59e0b' }}>
+              Suggested extraction — Needs GoClear specialist review. Not verified yet.
+            </div>
+            {parserResult.structuredItemDraftsCount > 0 && <div style={{ margin: '8px 0', fontSize: 11 }}>
+              {parserResult.structuredItemDraftsCount} suggested items ready for specialist review. Confirm, edit, or reject each item before creating case items.
+            </div>}
+            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+              <button onClick={() => handleRefreshParserResults()} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Refresh</button>
+              <button disabled={!parserResult || parserResult.structuredItemDraftsCount === 0} title={parserResult?.structuredItemDraftsCount > 0 ? "Confirm all suggested parser items as case items" : "No parser items to confirm"} onClick={() => handleConfirmParserItem({})} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: parserResult?.structuredItemDraftsCount > 0 ? '#10b981' : 'rgba(255,255,255,.1)', color: parserResult?.structuredItemDraftsCount > 0 ? '#fff' : '#94a7c3', fontSize: 11, fontWeight: 700, cursor: parserResult?.structuredItemDraftsCount > 0 ? 'pointer' : 'not-allowed' }}>Confirm Items</button>
+            </div>
+          </div>}
+          <p style={{ margin: '6px 0 0', fontSize: 11 }}>No letters are created automatically. No DocuPost is sent.</p>
         </div>}
         {manualItemFormOpen && <form onSubmit={handleSubmitManualItem} style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'rgba(255,255,255,.05)', display: 'grid', gap: 8 }}>
           <h4 style={{ margin: 0, fontSize: 13 }}>Add Manual Item</h4>
