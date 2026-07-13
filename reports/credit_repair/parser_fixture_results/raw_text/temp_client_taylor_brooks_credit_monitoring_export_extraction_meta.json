@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "extractionMode": "pypdf",
+  "textLength": 1232,
+  "toolUsed": "pypdf",
+  "warnings": [],
+  "fileName": "temp_client_taylor_brooks_credit_monitoring_export.pdf",
+  "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_taylor_brooks_credit_monitoring_export.pdf",
+  "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_taylor_brooks_credit_monitoring_export_raw_text.txt"
+}

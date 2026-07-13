@@ -1,11 +1,11 @@
 {
-  "parserVersion": "preview-0.1.0",
+  "parserVersion": "preview-0.2.0",
   "sourceFileName": "temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf",
   "sourceFormatGuess": "mixed_credit_funding_bundle",
   "extractionMode": "mixed",
   "confidence": "medium",
   "needsSpecialistReview": true,
-  "clientNameGuess": "Casey Nguyen  ",
+  "clientNameGuess": "Casey Nguyen    Business",
   "reportDateGuess": null,
   "bureausDetected": [],
   "accounts": [

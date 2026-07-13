@@ -1,5 +1,5 @@
 {
-  "parserVersion": "preview-0.2.0",
+  "parserVersion": "proof-0.1.0",
   "sourceFileName": "temp_client_alex_morgan_3_bureau_tradeline_report.pdf",
   "sourceFormatGuess": "three_bureau_tradeline",
   "extractionMode": "text_pdf",
@@ -1132,32 +1132,12 @@
       "confidence": "low"
     }
   ],
-  "documentClassification": {
-    "suggestedCategory": "credit_report",
-    "label": "Suggested extraction",
-    "status": "Needs GoClear specialist review",
-    "verified": false
-  },
   "warnings": [
     {
       "code": "SUGGESTED_EXTRACTION_ONLY",
-      "message": "Suggested extraction only. Needs GoClear specialist review and is not verified yet.",
+      "message": "Suggested extraction only. Needs GoClear specialist review.",
       "severity": "warning"
     }
   ],
-  "rawTextPreview": "FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY Alex Morgan 3-Bureau Tradeline Report - Page 1 3-Bureau Credit File Summary Client: Alex Morgan Report ID: MOCK-AM-001 Date: 2026-07-10 This is fake test data created for Nexus OCR/parser QA. It is not a real credit report. Personal Information Name Address DOB SSN Alex Morgan 100 Test Harbor Dr, Suite 2, Phoenix, AZ 85001 MM/DD/YYYY not provided XXX-XX-1234 Account Summary by Bureau Bureau Open Accounts Collections Late Payments Inquiries Total Balance Total Limit Utilization Experian 5 1 2 3 $8,650 $18,500 47% Equifax 4 2 1 2 $7,900 $17,000 46% TransUnion 5 1 2 4 $9,100 $18,500 49% Tradelines / Reported Accounts Bureau Furnisher Type Status Balance Limit Util Pay Status Notes Experian Capital One Platinum Revolving Open $2,900 $3,500 83% Current High utilization Equifax Capital One Platinum Revolving Open $2,880 $3,500 82% Current High utilization TransUnion Capital One Platinum Revolving Open $2,930 $3,500 84% Current High utilization Experian ABC Collections Collection Closed $640 - - Collection Client says paid in 2024 Equifax ABC Collections Collection Closed $640 - - Collection Possible duplicate wit",
-  "expectedManifest": {
-    "client": "Alex Morgan",
-    "format": "3-bureau tradeline table PDF",
-    "expected_items": 7,
-    "flags": [
-      "high_utilization",
-      "collection_paid_wrong",
-      "duplicate_collection",
-      "late_payment_dispute",
-      "unauthorized_inquiry"
-    ],
-    "recommended_next": "Create credit repair case, verify ABC/XYZ duplicate collection, build utilization plan for Capital One."
-  },
-  "fixtureOnly": true
+  "rawTextPreview": "FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY Alex Morgan 3-Bureau Tradeline Report - Page 1 3-Bureau Credit File Summary Client: Alex Morgan Report ID: MOCK-AM-001 Date: 2026-07-10 This is fake test data created for Nexus OCR/parser QA. It is not a real credit report. Personal Information Name Address DOB SSN Alex Morgan 100 Test Harbor Dr, Suite 2, Phoenix, AZ 85001 MM/DD/YYYY not provided XXX-XX-1234 Account Summary by Bureau Bureau Open Accounts Collections Late Payments Inquiries Total Balance Total Limit Utilization Experian 5 1 2 3 $8,650 $18,500 47% Equifax 4 2 1 2 $7,900 $17,000 46% TransUnion 5 1 2 4 $9,100 $18,500 49% Tradelines / Reported Accounts Bureau Furnisher Type Status Balance Limit Util Pay Status Notes Experian Capital One Platinum Revolving Open $2,900 $3,500 83% Current High utilization Equifax Capital One Platinum Revolving Open $2,880 $3,500 82% Current High utilization TransUnion Capital One Platinum Revolving Open $2,930 $3,500 84% Current High utilization Experian ABC Collections Collection Closed $640 - - Collection Client says paid in 2024 Equifax ABC Collections Collection Closed $640 - - Collection Possible duplicate wit"
 }

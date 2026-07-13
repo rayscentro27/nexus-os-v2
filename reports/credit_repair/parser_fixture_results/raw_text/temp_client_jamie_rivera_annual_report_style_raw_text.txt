@@ -1,0 +1,86 @@
+FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY
+Jamie Rivera Annual Report Style - Page 1
+Annual Credit Report Style Disclosure
+Client: Jamie Rivera    Report ID: MOCK-JR-002    Generated: 2026-07-10
+FAKE TEST DATA - resembles a consumer disclosure layout with long text blocks.
+Consumer Statement
+Consumer requests review of all negative items, especially medical collections, incorrect addresses, and student loan late-payment
+history. Consumer says several addresses are outdated and one collection was paid by insurance.
+Personal Data Variations
+Field
+Reported Variation
+Source/Bureau
+Concern
+Name
+Jamie A Rivera
+Experian
+OK
+Address
+44 Old Oak Rd, Mesa, AZ
+Equifax
+Old address
+Employer
+RIVERA CONSULTING LLC
+TransUnion
+OK
+Address
+PO BOX 2200, Tucson, AZ
+Experian
+Client says never used
+Potentially Negative Accounts
+Bureau
+Account / Furnisher
+Account Type
+Reported Status
+Balance
+Opened
+Last Reported
+Comments
+Experian
+SUNRISE MEDICAL COLLECTIONS
+Collection
+$385 balance; placed for collection
+$385
+2023-11
+2026-05
+Client says insurance paid; needs verification
+Equifax
+SUNRISE MEDICAL COLLECTIONS
+Collection
+$385 balance; collection
+$385
+2023-11
+2026-05
+Duplicate? Same provider as EX
+TransUnion
+FED STUDENT LOAN SERVICER
+Installment
+60 days late 08/2024
+$14,820
+2018-09
+2026-06
+Client says deferment should apply
+Equifax
+CITY CARD SERVICES
+Revolving
+Closed by grantor; 90 days late 2022
+$0
+2019-02
+2026-02
+Paid/closed but derogatory history remains
+Positive/Open Revolving Accounts
+Furnisher
+Balance
+Limit
+Utilization
+Status
+REGIONAL CREDIT UNION VISA
+$1,120
+$8,000
+14%
+Pays as agreed
+NATIONAL STORE CARD
+$780
+$1,000
+78%
+Pays as agreed

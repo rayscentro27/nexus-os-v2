@@ -1,0 +1,66 @@
+{
+  "totalFiles": 5,
+  "successful": 5,
+  "failed": 0,
+  "toolsAvailable": {
+    "pypdf": true,
+    "pdftotext": false
+  },
+  "results": [
+    {
+      "success": true,
+      "extractionMode": "pypdf",
+      "textLength": 1686,
+      "toolUsed": "pypdf",
+      "warnings": [],
+      "fileName": "temp_client_alex_morgan_3_bureau_tradeline_report.pdf",
+      "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_alex_morgan_3_bureau_tradeline_report.pdf",
+      "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_alex_morgan_3_bureau_tradeline_report_raw_text.txt",
+      "metaFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_alex_morgan_3_bureau_tradeline_report_extraction_meta.json"
+    },
+    {
+      "success": true,
+      "extractionMode": "pypdf",
+      "textLength": 1351,
+      "toolUsed": "pypdf",
+      "warnings": [],
+      "fileName": "temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf",
+      "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf",
+      "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_casey_nguyen_mixed_bank_funding_credit_bundle_raw_text.txt",
+      "metaFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_casey_nguyen_mixed_bank_funding_credit_bundle_extraction_meta.json"
+    },
+    {
+      "success": true,
+      "extractionMode": "pypdf",
+      "textLength": 1670,
+      "toolUsed": "pypdf",
+      "warnings": [],
+      "fileName": "temp_client_jamie_rivera_annual_report_style.pdf",
+      "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_jamie_rivera_annual_report_style.pdf",
+      "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_jamie_rivera_annual_report_style_raw_text.txt",
+      "metaFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_jamie_rivera_annual_report_style_extraction_meta.json"
+    },
+    {
+      "success": true,
+      "extractionMode": "pypdf",
+      "textLength": 46,
+      "toolUsed": "pypdf",
+      "warnings": [],
+      "fileName": "temp_client_jordan_ellis_scanned_screenshot_style.pdf",
+      "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_jordan_ellis_scanned_screenshot_style.pdf",
+      "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_jordan_ellis_scanned_screenshot_style_raw_text.txt",
+      "metaFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_jordan_ellis_scanned_screenshot_style_extraction_meta.json"
+    },
+    {
+      "success": true,
+      "extractionMode": "pypdf",
+      "textLength": 1232,
+      "toolUsed": "pypdf",
+      "warnings": [],
+      "fileName": "temp_client_taylor_brooks_credit_monitoring_export.pdf",
+      "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_taylor_brooks_credit_monitoring_export.pdf",
+      "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_taylor_brooks_credit_monitoring_export_raw_text.txt",
+      "metaFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_taylor_brooks_credit_monitoring_export_extraction_meta.json"
+    }
+  ]
+}

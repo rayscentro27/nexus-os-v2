@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "extractionMode": "pypdf",
+  "textLength": 1351,
+  "toolUsed": "pypdf",
+  "warnings": [],
+  "fileName": "temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf",
+  "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf",
+  "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_casey_nguyen_mixed_bank_funding_credit_bundle_raw_text.txt"
+}

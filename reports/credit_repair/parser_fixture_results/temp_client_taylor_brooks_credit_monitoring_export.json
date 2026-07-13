@@ -1,11 +1,11 @@
 {
-  "parserVersion": "preview-0.1.0",
+  "parserVersion": "preview-0.2.0",
   "sourceFileName": "temp_client_taylor_brooks_credit_monitoring_export.pdf",
   "sourceFormatGuess": "monitoring_export",
   "extractionMode": "text_pdf",
   "confidence": "medium",
   "needsSpecialistReview": true,
-  "clientNameGuess": "Taylor Brooks  ",
+  "clientNameGuess": "Taylor Brooks    Source",
   "reportDateGuess": "2026-07-10",
   "bureausDetected": [
     "experian",

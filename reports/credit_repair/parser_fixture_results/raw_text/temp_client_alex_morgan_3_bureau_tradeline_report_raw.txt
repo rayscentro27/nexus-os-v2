@@ -1,0 +1,141 @@
+FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY
+Alex Morgan 3-Bureau Tradeline Report - Page 1
+3-Bureau Credit File Summary
+Client: Alex Morgan    Report ID: MOCK-AM-001    Date: 2026-07-10
+This is fake test data created for Nexus OCR/parser QA. It is not a real credit report.
+Personal Information
+Name
+Address
+DOB
+SSN
+Alex Morgan
+100 Test Harbor Dr, Suite 2, Phoenix, AZ 85001
+MM/DD/YYYY not provided
+XXX-XX-1234
+Account Summary by Bureau
+Bureau
+Open Accounts
+Collections
+Late Payments
+Inquiries
+Total Balance
+Total Limit
+Utilization
+Experian
+5
+1
+2
+3
+$8,650
+$18,500
+47%
+Equifax
+4
+2
+1
+2
+$7,900
+$17,000
+46%
+TransUnion
+5
+1
+2
+4
+$9,100
+$18,500
+49%
+Tradelines / Reported Accounts
+Bureau
+Furnisher
+Type
+Status
+Balance
+Limit
+Util
+Pay Status
+Notes
+Experian
+Capital One Platinum
+Revolving
+Open
+$2,900
+$3,500
+83%
+Current
+High utilization
+Equifax
+Capital One Platinum
+Revolving
+Open
+$2,880
+$3,500
+82%
+Current
+High utilization
+TransUnion
+Capital One Platinum
+Revolving
+Open
+$2,930
+$3,500
+84%
+Current
+High utilization
+Experian
+ABC Collections
+Collection
+Closed
+$640
+-
+-
+Collection
+Client says paid in 2024
+Equifax
+ABC Collections
+Collection
+Closed
+$640
+-
+-
+Collection
+Possible duplicate with XYZ Recovery
+TransUnion
+Auto Finance Co
+Installment
+Open
+$12,200
+-
+-
+30 days late 03/2025
+Client disputes late payment
+Experian
+XYZ Recovery
+Collection
+Closed
+$640
+-
+-
+Collection
+Possible duplicate collection
+Inquiries
+Bureau
+Company
+Date
+Type
+Client Note
+Experian
+CAR DEALER GROUP
+2026-05-04
+Hard Inquiry
+Client says not authorized
+TransUnion
+BANKCARD PREQUAL
+2026-04-21
+Hard Inquiry
+Review needed
+Equifax
+AUTO FINANCE CO
+2026-05-04
+Hard Inquiry
+May be duplicate auto shopping

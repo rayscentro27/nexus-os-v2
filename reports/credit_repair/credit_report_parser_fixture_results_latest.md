@@ -2,12 +2,13 @@
 
 These results use fake/synthetic local test files only. Parser output is a suggested extraction, needs GoClear specialist review, and is not verified yet.
 
-- Parser version: preview-0.1.0
+- Parser version: preview-0.2.0
 - Files tested: 5
+- pypdf available: True
 - pdftotext available: False
 - Tesseract OCR available: False
 
-| File | Format guess | Extraction mode | Confidence | Accounts | Inquiries | Candidates | OCR/manual status |
+| File | Format guess | Extraction mode | Confidence | Accounts | Inquiries | Negative Candidates | OCR/manual status |
 | --- | --- | --- | --- | ---: | ---: | ---: | --- |
 | temp_client_alex_morgan_3_bureau_tradeline_report.pdf | three_bureau_tradeline | text_pdf | medium | 26 | 3 | 26 | Suggested extraction ready |
 | temp_client_casey_nguyen_mixed_bank_funding_credit_bundle.pdf | mixed_credit_funding_bundle | mixed | medium | 3 | 1 | 4 | Suggested extraction ready |

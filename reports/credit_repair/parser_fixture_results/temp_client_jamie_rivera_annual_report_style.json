@@ -1,11 +1,11 @@
 {
-  "parserVersion": "preview-0.1.0",
+  "parserVersion": "preview-0.2.0",
   "sourceFileName": "temp_client_jamie_rivera_annual_report_style.pdf",
   "sourceFormatGuess": "annual_report_style",
   "extractionMode": "text_pdf",
   "confidence": "medium",
   "needsSpecialistReview": true,
-  "clientNameGuess": "Jamie Rivera  ",
+  "clientNameGuess": "Jamie Rivera    Report ID",
   "reportDateGuess": null,
   "bureausDetected": [
     "experian",

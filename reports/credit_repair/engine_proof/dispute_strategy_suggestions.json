@@ -1,0 +1,584 @@
+[
+  {
+    "itemAccountName": "Collections",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collections",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Late Payments",
+    "bureau": "other",
+    "itemType": "late_payment",
+    "disputeReason": "late_payment_wrong",
+    "reasonLabel": "Late Payment Wrong",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Payment confirmation",
+      "Creditor letter"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should compare timeline."
+  },
+  {
+    "itemAccountName": "Late Payments",
+    "bureau": "other",
+    "itemType": "late_payment",
+    "disputeReason": "incorrect_dates",
+    "reasonLabel": "Incorrect Dates",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist review required."
+  },
+  {
+    "itemAccountName": "Total Balance",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "incorrect_balance",
+    "reasonLabel": "Incorrect Balance",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Statement",
+      "Payment proof"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Upload only proof the client chooses to provide."
+  },
+  {
+    "itemAccountName": "Total Balance",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "incorrect_balance",
+    "reasonLabel": "Incorrect Balance",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Statement",
+      "Payment proof"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Upload only proof the client chooses to provide."
+  },
+  {
+    "itemAccountName": "Utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Balance",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "incorrect_balance",
+    "reasonLabel": "Incorrect Balance",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Statement",
+      "Payment proof"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Upload only proof the client chooses to provide."
+  },
+  {
+    "itemAccountName": "Balance",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "High utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "incorrect_balance",
+    "reasonLabel": "Incorrect Balance",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Statement",
+      "Payment proof"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Upload only proof the client chooses to provide."
+  },
+  {
+    "itemAccountName": "High utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "High utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "incorrect_balance",
+    "reasonLabel": "Incorrect Balance",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Statement",
+      "Payment proof"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Upload only proof the client chooses to provide."
+  },
+  {
+    "itemAccountName": "High utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "High utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "incorrect_balance",
+    "reasonLabel": "Incorrect Balance",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Statement",
+      "Payment proof"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Upload only proof the client chooses to provide."
+  },
+  {
+    "itemAccountName": "High utilization",
+    "bureau": "other",
+    "itemType": "utilization",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "ABC Collections",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "ABC Collections",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "ABC Collections",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "ABC Collections",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Possible duplicate with XYZ Recovery",
+    "bureau": "other",
+    "itemType": "duplicate_account",
+    "disputeReason": "duplicate",
+    "reasonLabel": "Duplicate",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Report screenshots from bureaus"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should confirm duplicate identity."
+  },
+  {
+    "itemAccountName": "Possible duplicate with XYZ Recovery",
+    "bureau": "other",
+    "itemType": "duplicate_account",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "30 days late 03/2025",
+    "bureau": "other",
+    "itemType": "late_payment",
+    "disputeReason": "late_payment_wrong",
+    "reasonLabel": "Late Payment Wrong",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Payment confirmation",
+      "Creditor letter"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should compare timeline."
+  },
+  {
+    "itemAccountName": "30 days late 03/2025",
+    "bureau": "other",
+    "itemType": "late_payment",
+    "disputeReason": "incorrect_dates",
+    "reasonLabel": "Incorrect Dates",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist review required."
+  },
+  {
+    "itemAccountName": "Client disputes late payment",
+    "bureau": "other",
+    "itemType": "late_payment",
+    "disputeReason": "late_payment_wrong",
+    "reasonLabel": "Late Payment Wrong",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Payment confirmation",
+      "Creditor letter"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should compare timeline."
+  },
+  {
+    "itemAccountName": "Client disputes late payment",
+    "bureau": "other",
+    "itemType": "late_payment",
+    "disputeReason": "incorrect_dates",
+    "reasonLabel": "Incorrect Dates",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist review required."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "Collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "not_mine",
+    "reasonLabel": "Not Mine",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Government ID",
+      "Proof of address"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Do not claim identity theft unless client states that."
+  },
+  {
+    "itemAccountName": "Possible duplicate collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "duplicate",
+    "reasonLabel": "Duplicate",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Report screenshots from bureaus"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should confirm duplicate identity."
+  },
+  {
+    "itemAccountName": "Possible duplicate collection",
+    "bureau": "other",
+    "itemType": "collection",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  },
+  {
+    "itemAccountName": "May be duplicate auto shopping",
+    "bureau": "other",
+    "itemType": "duplicate_account",
+    "disputeReason": "duplicate",
+    "reasonLabel": "Duplicate",
+    "recommended": false,
+    "evidenceNeeded": [
+      "Report screenshots from bureaus"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should confirm duplicate identity."
+  },
+  {
+    "itemAccountName": "May be duplicate auto shopping",
+    "bureau": "other",
+    "itemType": "duplicate_account",
+    "disputeReason": "verify_or_validate",
+    "reasonLabel": "Verify Or Validate",
+    "recommended": true,
+    "evidenceNeeded": [
+      "Account notices",
+      "Client statement"
+    ],
+    "nextAction": "Prepare draft for GoClear specialist review",
+    "caution": "Specialist should refine the reason if possible."
+  }
+]

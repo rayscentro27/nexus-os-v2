@@ -1,8 +1,17 @@
 #!/usr/bin/env python3
-"""Run the preview credit report parser against local synthetic fixtures.
+"""Run the credit report parser against local synthetic fixtures.
+
+This script extracts text from each fixture PDF using extract_credit_report_text.py
+logic (pypdf), then parses the text and writes structured output.
 
 This script is local-only QA. It does not touch Supabase, real client data,
 client_documents, dispute letters, or DocuPost.
+
+Usage:
+    python3 scripts/credit/parse_credit_report_fixture.py test_fixtures/credit_reports
+    python3 scripts/credit/parse_credit_report_fixture.py test_fixtures/credit_reports \
+        --expected test_fixtures/credit_reports/expected_extraction_manifest.json \
+        --out reports/credit_repair/parser_fixture_results
 """
 
 from __future__ import annotations
@@ -18,7 +27,7 @@ import zlib
 from pathlib import Path
 from typing import Any
 
-PARSER_VERSION = "preview-0.1.0"
+PARSER_VERSION = "preview-0.2.0"
 BUREAUS = ("experian", "equifax", "transunion")
 
 
@@ -64,32 +73,94 @@ def extract_reportlab_text(pdf_path: Path) -> tuple[str, list[dict[str, str]]]:
     return "\n".join(chunks), warnings
 
 
-def extract_text(pdf_path: Path) -> tuple[str, str, list[dict[str, str]]]:
+def extract_text_pypdf(pdf_path: Path) -> tuple[str, str, list[dict[str, str]]]:
+    """Extract text using pypdf (primary method)."""
     warnings: list[dict[str, str]] = []
-    if shutil.which("pdftotext"):
-        proc = subprocess.run(["pdftotext", "-layout", str(pdf_path), "-"], text=True, capture_output=True, check=False)
-        if proc.returncode == 0 and clean(proc.stdout):
-            return proc.stdout, "text_pdf", warnings
-        warnings.append({"code": "PDFTOTEXT_FAILED", "message": clean(proc.stderr) or "pdftotext returned no text.", "severity": "warning"})
-
-    text, reportlab_warnings = extract_reportlab_text(pdf_path)
-    warnings.extend(reportlab_warnings)
-    if clean(text):
-        return text, "text_pdf", warnings
-
-    if shutil.which("tesseract"):
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(str(pdf_path))
+        text_parts: list[str] = []
+        for i, page in enumerate(reader.pages):
+            page_text = page.extract_text() or ""
+            if page_text.strip():
+                text_parts.append(page_text)
+            else:
+                warnings.append({
+                    "code": f"EMPTY_PAGE_{i+1}",
+                    "message": f"Page {i+1} returned no extractable text.",
+                    "severity": "warning",
+                })
+        text = "\n".join(text_parts)
+        if text.strip():
+            return text, "text_pdf", warnings
+    except ImportError:
         warnings.append({
-            "code": "OCR_BACKEND_AVAILABLE_NOT_WIRED",
-            "message": "Tesseract is installed, but image-to-PDF OCR extraction is not wired in this preview CLI.",
+            "code": "PYPDF_NOT_INSTALLED",
+            "message": "pypdf is not installed. Install with: pip install pypdf (or use venv)",
+            "severity": "error",
+        })
+    except Exception as e:
+        warnings.append({
+            "code": "PYPDF_ERROR",
+            "message": f"pypdf failed: {e}",
+            "severity": "warning",
+        })
+    return "", "failed", warnings
+
+
+def extract_text(pdf_path: Path) -> tuple[str, str, list[dict[str, str]]]:
+    """Extract text from PDF using available tools in order of preference."""
+    all_warnings: list[dict[str, str]] = []
+
+    # 1. Try pypdf
+    text, mode, warnings = extract_text_pypdf(pdf_path)
+    all_warnings.extend(warnings)
+    if text.strip():
+        return text, mode, all_warnings
+
+    # 2. Try pdftotext
+    if shutil.which("pdftotext"):
+        try:
+            proc = subprocess.run(
+                ["pdftotext", "-layout", str(pdf_path), "-"],
+                text=True, capture_output=True, check=False, timeout=30,
+            )
+            if proc.returncode == 0 and clean(proc.stdout):
+                return proc.stdout, "text_pdf", all_warnings
+            all_warnings.append({
+                "code": "PDFTOTEXT_FAILED",
+                "message": clean(proc.stderr) or "pdftotext returned no text.",
+                "severity": "warning",
+            })
+        except Exception:
+            pass
+
+    # 3. Try reportlab stream extraction
+    text, reportlab_warnings = extract_reportlab_text(pdf_path)
+    all_warnings.extend(reportlab_warnings)
+    if clean(text):
+        return text, "text_pdf", all_warnings
+
+    # 4. Fallback
+    if shutil.which("tesseract"):
+        all_warnings.append({
+            "code": "OCR_AVAILABLE_NOT_WIRED",
+            "message": "Tesseract is installed but image-to-PDF OCR extraction is not wired.",
             "severity": "warning",
         })
     else:
-        warnings.append({
+        all_warnings.append({
             "code": "OCR_UNAVAILABLE",
-            "message": "OCR dependency is not available locally. This file requires OCR or manual specialist review.",
+            "message": "OCR dependency not available. File requires OCR or manual specialist review.",
             "severity": "error",
         })
-    return "", "failed", warnings
+
+    all_warnings.append({
+        "code": "NO_TEXT_EXTRACTED",
+        "message": "No text could be extracted from this PDF.",
+        "severity": "error",
+    })
+    return "", "failed", all_warnings
 
 
 def detect_format(raw_text: str, file_name: str) -> str:
@@ -202,19 +273,25 @@ def parse_text(raw_text: str, source_file_name: str, extraction_mode: str, extra
         if re.search(r"collection|charge[- ]?off|late|utilization|balance|credit limit|duplicate|settled|paid|tradeline|account", line, re.I):
             item_type = infer_item_type(line)
             util = utilization(line)
+            account_num_masked = None
+            acct_match = re.search(r"(?:account|acct)[^0-9*]*([*Xx\d -]{4,})", line, re.I)
+            if acct_match:
+                digits = re.sub(r"\D", "", acct_match.group(1))
+                if digits:
+                    account_num_masked = f"****{digits[-4:]}"
             reason_bits = [item_type if item_type != "other" else "", "high_utilization" if util and util >= 30 else ""]
             account = {
                 "bureau": detect_bureau(line),
                 "furnisherName": clean(re.split(r"[-|:]", line)[0])[:80] or None,
                 "accountName": clean(re.split(r"[-|:]", line)[0])[:80] or None,
-                "accountNumberMasked": None,
+                "accountNumberMasked": account_num_masked,
                 "itemType": item_type,
-                "status": None,
+                "status": (re.search(r"status\s*[:\-]\s*([^.;|]+)", line, re.I) or [None, None])[1],
                 "reportedBalance": money_after(line, ["balance", "reported balance"]),
                 "creditLimit": money_after(line, ["limit", "credit limit"]),
                 "utilizationPercent": util,
-                "dateOpened": None,
-                "dateReported": None,
+                "dateOpened": (re.search(r"opened\s*[:\-]?\s*([0-9/ -]{6,12})", line, re.I) or [None, None])[1],
+                "dateReported": (re.search(r"reported\s*[:\-]?\s*([0-9/ -]{6,12})", line, re.I) or [None, None])[1],
                 "paymentStatus": (re.search(r"(30|60|90)\s*day\s*late", line, re.I) or [None])[0],
                 "notes": line,
                 "negativeCandidateReason": ", ".join([bit for bit in reason_bits if bit]) or None,
@@ -296,10 +373,19 @@ def main() -> int:
     args = parser.parse_args()
 
     args.out.mkdir(parents=True, exist_ok=True)
+    raw_text_dir = args.out / "raw_text"
+    raw_text_dir.mkdir(parents=True, exist_ok=True)
+
     expected = json.loads(args.expected.read_text()) if args.expected and args.expected.exists() else {}
     results = []
     for pdf in iter_pdfs(args.input):
         raw_text, extraction_mode, warnings = extract_text(pdf)
+
+        # Write raw text for debugging
+        if raw_text.strip():
+            raw_text_file = raw_text_dir / f"{pdf.stem}_raw.txt"
+            raw_text_file.write_text(raw_text, encoding="utf-8")
+
         result = parse_text(raw_text, pdf.name, extraction_mode, warnings)
         result["expectedManifest"] = expected.get(pdf.name)
         result["fixtureOnly"] = True
@@ -316,10 +402,11 @@ def main() -> int:
         "",
         f"- Parser version: {PARSER_VERSION}",
         f"- Files tested: {len(results)}",
+        f"- pypdf available: {_check_module('pypdf')}",
         f"- pdftotext available: {bool(shutil.which('pdftotext'))}",
         f"- Tesseract OCR available: {bool(shutil.which('tesseract'))}",
         "",
-        "| File | Format guess | Extraction mode | Confidence | Accounts | Inquiries | Candidates | OCR/manual status |",
+        "| File | Format guess | Extraction mode | Confidence | Accounts | Inquiries | Negative Candidates | OCR/manual status |",
         "| --- | --- | --- | --- | ---: | ---: | ---: | --- |",
     ]
     for result in results:
@@ -341,6 +428,14 @@ def main() -> int:
     print(f"Wrote {len(results)} parser result file(s) to {args.out}")
     print(f"Wrote summary to {summary_path}")
     return 0
+
+
+def _check_module(name: str) -> bool:
+    try:
+        __import__(name)
+        return True
+    except ImportError:
+        return False
 
 
 if __name__ == "__main__":

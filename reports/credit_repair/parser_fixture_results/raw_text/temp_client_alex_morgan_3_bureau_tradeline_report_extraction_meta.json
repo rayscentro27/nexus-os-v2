@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "extractionMode": "pypdf",
+  "textLength": 1686,
+  "toolUsed": "pypdf",
+  "warnings": [],
+  "fileName": "temp_client_alex_morgan_3_bureau_tradeline_report.pdf",
+  "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_alex_morgan_3_bureau_tradeline_report.pdf",
+  "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_alex_morgan_3_bureau_tradeline_report_raw_text.txt"
+}

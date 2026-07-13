@@ -1,0 +1,61 @@
+FAKE TEST CREDIT REPORT - NOT REAL CONSUMER DATA - FOR NEXUS PARSER QA ONLY
+Taylor Brooks Credit Monitoring Export - Page 1
+Credit Monitoring Snapshot Export
+Client: Taylor Brooks    Source: MockCreditTrack    Date: 2026-07-10
+FAKE TEST DATA - dashboard/export style with score cards and action alerts.
+Bureau
+Score
+Change
+Top Factor
+Experian
+612
+-18
+Credit utilization too high
+Equifax
+608
+-22
+New collection account
+TransUnion
+620
+-10
+Recent inquiries
+Alerts
+Date
+Alert
+Recommended Review
+2026-06-22
+New collection reported by NEXUS RECOVERY LLC for $1,245
+Challenge/verify collection
+2026-06-08
+Balance increase: Blue Bank Card now 96% utilized
+Utilization strategy
+2026-05-30
+Hard inquiry from AUTO MALL FINANCE
+Inquiry review
+2026-05-11
+Address change detected: 72 Test Loop, Flagstaff AZ
+Personal info review
+Credit Card Utilization
+Card
+Balance
+Limit
+Utilization
+Minimum Due
+Blue Bank Card
+$4,820
+$5,000
+96%
+$145
+Everyday Rewards Card
+$2,100
+$4,000
+53%
+$63
+Secure Credit Builder
+$120
+$500
+24%
+$25
+Mock Export Notes
+The monitoring app lists high utilization and a new collection as primary concerns. It does not provide full account history. GoClear
+should request full report or supporting documents before drafting letters.

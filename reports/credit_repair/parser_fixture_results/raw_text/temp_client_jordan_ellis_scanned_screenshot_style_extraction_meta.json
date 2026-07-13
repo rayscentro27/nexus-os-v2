@@ -1,0 +1,10 @@
+{
+  "success": true,
+  "extractionMode": "pypdf",
+  "textLength": 46,
+  "toolUsed": "pypdf",
+  "warnings": [],
+  "fileName": "temp_client_jordan_ellis_scanned_screenshot_style.pdf",
+  "filePath": "/Users/raymonddavis/nexus-os-v2/test_fixtures/credit_reports/temp_client_jordan_ellis_scanned_screenshot_style.pdf",
+  "rawTextFile": "/Users/raymonddavis/nexus-os-v2/reports/credit_repair/parser_fixture_results/raw_text/temp_client_jordan_ellis_scanned_screenshot_style_raw_text.txt"
+}
