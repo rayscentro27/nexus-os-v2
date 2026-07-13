@@ -562,15 +562,37 @@ export async function loadParserResultsForDocumentIds(documentIds: string[]): Pr
   }
 }
 
+function parseJsonbField(value: unknown): unknown {
+  // Handle double-encoded jsonb: worker sent json.dumps() string instead of raw object
+  if (typeof value === 'string' && value.length > 0) {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed;
+    } catch {
+      return value;
+    }
+  }
+  return value;
+}
+
 function summarizeParserResult(row: Record<string, unknown>): ParserResultSummary {
-  const accounts = Array.isArray(row.accounts) ? row.accounts : [];
-  const inquiries = Array.isArray(row.inquiries) ? row.inquiries : [];
-  const negativeCandidates = Array.isArray(row.negative_candidates) ? row.negative_candidates : [];
-  const structuredDrafts = Array.isArray(row.structured_item_drafts) ? row.structured_item_drafts : [];
-  const suggestions = Array.isArray(row.dispute_strategy_suggestions) ? row.dispute_strategy_suggestions : [];
-  const warnings = Array.isArray(row.warnings) ? row.warnings : [];
-  const bureaus = Array.isArray(row.bureaus_detected) ? row.bureaus_detected : [];
-  const utilization = (row.utilization_summary && typeof row.utilization_summary === 'object') ? row.utilization_summary as Record<string, unknown> : {};
+  const accountsRaw = parseJsonbField(row.accounts);
+  const inquiriesRaw = parseJsonbField(row.inquiries);
+  const negativeRaw = parseJsonbField(row.negative_candidates);
+  const draftsRaw = parseJsonbField(row.structured_item_drafts);
+  const suggestionsRaw = parseJsonbField(row.dispute_strategy_suggestions);
+  const warningsRaw = parseJsonbField(row.warnings);
+  const bureausRaw = parseJsonbField(row.bureaus_detected);
+  const utilizationRaw = parseJsonbField(row.utilization_summary);
+
+  const accounts = Array.isArray(accountsRaw) ? accountsRaw : [];
+  const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : [];
+  const negativeCandidates = Array.isArray(negativeRaw) ? negativeRaw : [];
+  const structuredDrafts = Array.isArray(draftsRaw) ? draftsRaw : [];
+  const suggestions = Array.isArray(suggestionsRaw) ? suggestionsRaw : [];
+  const warnings = Array.isArray(warningsRaw) ? warningsRaw : [];
+  const bureaus = Array.isArray(bureausRaw) ? bureausRaw : [];
+  const utilization = (utilizationRaw && typeof utilizationRaw === 'object' && !Array.isArray(utilizationRaw)) ? utilizationRaw as Record<string, unknown> : {};
 
   return {
     id: row.id as string,

@@ -489,8 +489,14 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
             <div style={{ fontSize: 11, margin: '4px 0', color: '#f59e0b' }}>
               Suggested extraction — Needs GoClear specialist review. Not verified yet.
             </div>
+            {parserResult.accountsCount === 0 && parserResult.textLength > 0 && <div style={{ margin: '8px 0', padding: 8, borderRadius: 6, background: 'rgba(239,68,68,.15)', color: '#ef4444', fontSize: 11 }}>
+              Parser result shape mismatch: {parserResult.textLength} chars extracted but 0 accounts displayed. Refresh or rerun worker.
+            </div>}
             {parserResult.structuredItemDraftsCount > 0 && <div style={{ margin: '8px 0', fontSize: 11 }}>
               {parserResult.structuredItemDraftsCount} suggested items ready for specialist review. Confirm, edit, or reject each item before creating case items.
+            </div>}
+            {parserResult.accountsCount > 0 && <div style={{ margin: '8px 0', fontSize: 11, color: '#94a7c3' }}>
+              {parserResult.accountsCount} accounts · {parserResult.inquiriesCount} inquiries · {parserResult.negativeCandidatesCount} negative candidates detected.
             </div>}
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               <button onClick={() => handleRefreshParserResults()} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Refresh</button>

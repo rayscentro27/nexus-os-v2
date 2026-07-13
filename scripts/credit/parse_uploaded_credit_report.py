@@ -482,6 +482,7 @@ def main() -> int:
 
         # 8. Insert/update parser result in database
         print("Saving parser result to database...")
+        print(f"  Saving parser payload: accounts={len(parse_result['accounts'])}, inquiries={len(parse_result['inquiries'])}, negative_candidates={len(parse_result['negativeItemCandidates'])}, structured_item_drafts={len(structured_items)}, suggestions={len(suggestions)}")
         db_row = {
             "tenant_id": tenant_id,
             "client_id": client_id,
@@ -493,16 +494,18 @@ def main() -> int:
             "extraction_success": bool(text.strip()),
             "text_length": len(text),
             "confidence": parse_result["confidence"],
-            "bureaus_detected": json.dumps(parse_result["bureausDetected"]),
-            "accounts": json.dumps(parse_result["accounts"]),
-            "inquiries": json.dumps(parse_result["inquiries"]),
-            "personal_info_variations": json.dumps(parse_result["personalInfoVariations"]),
-            "utilization_summary": json.dumps(parse_result["utilizationSummary"]),
-            "negative_candidates": json.dumps(parse_result["negativeItemCandidates"]),
-            "structured_item_drafts": json.dumps(structured_items),
-            "dispute_strategy_suggestions": json.dumps(suggestions),
+            # Do NOT use json.dumps() for jsonb columns — PostgREST handles serialization.
+            # Sending JSON strings causes double-encoding and the frontend reads strings instead of arrays.
+            "bureaus_detected": parse_result["bureausDetected"],
+            "accounts": parse_result["accounts"],
+            "inquiries": parse_result["inquiries"],
+            "personal_info_variations": parse_result["personalInfoVariations"],
+            "utilization_summary": parse_result["utilizationSummary"],
+            "negative_candidates": parse_result["negativeItemCandidates"],
+            "structured_item_drafts": structured_items,
+            "dispute_strategy_suggestions": suggestions,
             "letter_preview": letter_preview,
-            "warnings": json.dumps(parse_result["warnings"]),
+            "warnings": parse_result["warnings"],
             "status": "suggested_extraction",
             "needs_specialist_review": True,
         }
@@ -524,6 +527,24 @@ def main() -> int:
                     body=db_row)
                 result_id = result[0]["id"] if result else "unknown"
                 print(f"  Created parser result: {result_id}")
+
+            # Verify saved row — read back and check counts match
+            verify_rows = supabase_request("GET", supabase_url, service_role_key,
+                f"credit_report_parser_results?id=eq.{result_id}&select=accounts,inquiries,negative_candidates,structured_item_drafts,dispute_strategy_suggestions,bureaus_detected")
+            if verify_rows:
+                vrow = verify_rows[0]
+                v_accounts = len(vrow.get("accounts") or []) if isinstance(vrow.get("accounts"), list) else 0
+                v_inquiries = len(vrow.get("inquiries") or []) if isinstance(vrow.get("inquiries"), list) else 0
+                v_negative = len(vrow.get("negative_candidates") or []) if isinstance(vrow.get("negative_candidates"), list) else 0
+                v_drafts = len(vrow.get("structured_item_drafts") or []) if isinstance(vrow.get("structured_item_drafts"), list) else 0
+                v_suggestions = len(vrow.get("dispute_strategy_suggestions") or []) if isinstance(vrow.get("dispute_strategy_suggestions"), list) else 0
+                print(f"  Saved row verification: accounts={v_accounts}, inquiries={v_inquiries}, negative_candidates={v_negative}, drafts={v_drafts}, suggestions={v_suggestions}")
+
+                if v_accounts == 0 and len(parse_result['accounts']) > 0:
+                    print("  WARNING: Saved row has 0 accounts but local parse has nonzero. Possible double-encoding or column mismatch.", file=sys.stderr)
+                    print("  Re-running with raw objects (no json.dumps) should fix this.", file=sys.stderr)
+            else:
+                print("  WARNING: Could not read back saved row for verification.", file=sys.stderr)
         except Exception as e:
             print(f"  WARNING: Could not save to database: {e}", file=sys.stderr)
             print("  Local artifacts were saved. Database insert will work once the migration is applied.")
