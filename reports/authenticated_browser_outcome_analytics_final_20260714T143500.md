@@ -50,3 +50,7 @@ After restoring Supabase CLI connectivity and setting ignored local credentials,
 - Authenticated Playwright Persona A certification passed: login, session persistence after reload, and the active admin guard's client-account block all passed (`1/1`). The route intentionally remains `/admin/credit-specialist` while rendering the access-required boundary; the test now validates the guard rather than an incorrect redirect assumption.
 - Targeted outcome and Research-to-Clyde tests passed: `2` files, `11` tests. TypeScript and the outcome static checker passed.
 - Remaining certification gates are still not satisfied: Persona A has not been seeded through the report worker with production-shaped synthetic report data; direct RLS cross-client checks, report-comparison persistence, admin-browser certification, full-suite verification, and commit/push are not yet complete. No claim of release certification is made.
+
+## Storage-backed seed evidence
+
+Persona A was subsequently seeded through the actual `client-documents` storage bucket and `client_documents` metadata contract, then consumed by one bounded worker invocation. The synthetic fixture produced a complete parser result (26 accounts, 3 inquiries, 26 stored tradelines, 26 canonical accounts) and no GoClear exception, mail action, or DocuPost action. Its known one-row-per-account structure does not demonstrate a three-bureau collapse or strategy match, so it is not release certification evidence for those controls.
