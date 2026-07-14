@@ -1,0 +1,5 @@
+{
+  "personaA": {"prior":[{"canonicalAccountId":"a","matchConfidence":"high","balance":2450,"accountStatus":"open"},{"canonicalAccountId":"gone","matchConfidence":"high","balance":100}],"later":[{"canonicalAccountId":"a","matchConfidence":"high","balance":2100,"accountStatus":"closed"}]},
+  "personaB": {"prior":[{"canonicalAccountId":"ambiguous","matchConfidence":"low","balance":400}],"later":[]},
+  "personaC": {"prior":[{"canonicalAccountId":"collector","matchConfidence":"high","ownership":"Collector A"}],"later":[{"canonicalAccountId":"collector","matchConfidence":"high","ownership":"Collector B"}]}
+}

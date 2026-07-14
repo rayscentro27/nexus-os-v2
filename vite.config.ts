@@ -2,6 +2,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { execSync } from 'node:child_process';
+
+const git = (command: string, fallback: string) => { try { return execSync(command, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || fallback; } catch { return fallback; } };
+const buildMetadata = {
+  VITE_BUILD_COMMIT: process.env.VITE_BUILD_COMMIT || process.env.COMMIT_REF || git('git rev-parse --short HEAD', 'unversioned'),
+  VITE_BUILD_BRANCH: process.env.VITE_BUILD_BRANCH || process.env.BRANCH || git('git branch --show-current', 'unknown'),
+  VITE_BUILD_TIMESTAMP: process.env.VITE_BUILD_TIMESTAMP || new Date().toISOString(),
+};
 
 function nexusLocalBridges() {
   return {
@@ -216,5 +224,6 @@ function nexusLocalBridges() {
 
 export default defineConfig({
   plugins: [nexusLocalBridges(), react()],
+  define: Object.fromEntries(Object.entries(buildMetadata).map(([key,value]) => [`import.meta.env.${key}`, JSON.stringify(value)])),
   build: { outDir: 'dist' },
 });

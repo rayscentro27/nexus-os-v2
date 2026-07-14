@@ -24,6 +24,7 @@ import {
 } from '../lib/creditRepairWorkflow'
 import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrategyKnowledge'
 import { getStrategyResearchBacklog, recommendNextRoundStrategy, summarizeStrategyOutcomes } from '../lib/creditStrategyResearchEngine'
+import { BUILD_METADATA } from '../lib/buildMetadata'
 import { CREDIT_REPORT_PARSER_VERSION } from '../lib/creditReportParser'
 import { createManualReportItem, getOrCreateCreditRepairCaseForDocument, listCreditReportItems } from '../lib/creditRepairCaseEngine'
 import { loadParserResultForDocument } from '../lib/creditRepairWorkflow'
@@ -445,6 +446,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
 
   return <div style={{ padding: 16, color: '#edf5ff' }}>
     <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Credit & Funding Readiness Review</h1>
+    <small data-testid="build-metadata">Build {BUILD_METADATA.commit} · {BUILD_METADATA.branch} · {BUILD_METADATA.environment} · schema {BUILD_METADATA.schemaCompatibility}</small>
     <p style={{ fontSize: 13, color: '#94a7c3', marginBottom: 10 }}>Nexus performs the first-pass report comparison and approved strategy matching automatically. GoClear handles low-confidence, safety, identity-theft, legal, complaint, or system exceptions.</p>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8,marginBottom:16}}>{[['Strategy Cards generated',automationMetrics.cards],['Client selections',automationMetrics.choices],['Low-confidence exceptions',automationMetrics.exceptions],['Research awaiting approval',automationMetrics.research],['Failed analysis jobs',automationMetrics.failed]].map(([label,value])=><div key={label} style={{padding:8,borderRadius:8,background:'rgba(255,255,255,.06)'}}><small>{label}</small><strong style={{display:'block'}}>{value}</strong></div>)}</div>
 
