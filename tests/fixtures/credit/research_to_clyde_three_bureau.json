@@ -1,0 +1,11 @@
+{
+  "synthetic": true,
+  "accounts": [
+    {"bureau":"Experian","furnisherName":"NEXUS COMMUNITY BANK","accountNumberMasked":"****4412","itemType":"credit_card","status":"open","reportedBalance":"2450","creditLimit":"5000","dateOpened":"2021-04-10","dateReported":"2026-07-01","confidence":"high","suggestedDisputeReasons":[]},
+    {"bureau":"Equifax","furnisherName":"NEXUS COMMUNITY BK","accountNumberMasked":"XXXX-4412","itemType":"credit_card","status":"open","reportedBalance":"3190","creditLimit":"5000","dateOpened":"2021-04-10","dateReported":"2026-07-02","confidence":"high","suggestedDisputeReasons":[]},
+    {"bureau":"TransUnion","furnisherName":"NEXUS COMMUNITY BANK N.A.","accountNumberMasked":"...4412","itemType":"credit_card","status":"closed","reportedBalance":"2450","creditLimit":"5000","dateOpened":"2021-04-10","dateReported":"2026-07-01","confidence":"high","suggestedDisputeReasons":[]},
+    {"bureau":"Experian","furnisherName":"NEXUS COMMUNITY BANK","accountNumberMasked":"****8821","itemType":"credit_card","status":"open","reportedBalance":"500","creditLimit":"3000","dateOpened":"2024-01-15","dateReported":"2026-07-01","confidence":"high","suggestedDisputeReasons":[]},
+    {"bureau":"Experian","furnisherName":"SYNTHETIC PORTFOLIO LLC","accountNumberMasked":"****1907","itemType":"collection","status":"collection","reportedBalance":"900","dateOpened":"2025-02-01","dateReported":"2026-06-28","confidence":"high","ownership":"purchased debt","originalCreditor":"SYNTHETIC ORIGINAL BANK","suggestedDisputeReasons":[]},
+    {"bureau":"Equifax","furnisherName":"SYNTHETIC PORTFOLIO LLC","accountNumberMasked":"XX1907","itemType":"collection","status":"collection","reportedBalance":"900","dateOpened":"2025-02-01","dateReported":"2026-06-29","confidence":"high","ownership":"collector","originalCreditor":"Not reported","suggestedDisputeReasons":[]}
+  ]
+}

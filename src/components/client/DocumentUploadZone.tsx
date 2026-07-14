@@ -73,7 +73,7 @@ async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path:
   if (error) {
     return { ok: false as const, warning: `Storage upload succeeded, but metadata insert failed: ${error.message}` }
   }
-  return { ok: true as const }
+  return { ok: true as const, documentId: row.id }
 }
 
 export function DocumentUploadZone({
@@ -84,7 +84,7 @@ export function DocumentUploadZone({
   compact = false,
   maxFiles,
 }: {
-  onUploadComplete?: (details?: { fileName?: string; category?: string; path?: string; fromPage?: string; sourceConcept?: string }) => void
+  onUploadComplete?: (details?: { documentId?: string; fileName?: string; category?: string; path?: string; fromPage?: string; sourceConcept?: string }) => void
   category?: string
   sourceConcept?: string
   fromPage?: string
@@ -152,7 +152,7 @@ export function DocumentUploadZone({
 
         if (metadataResult.ok) {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: true } : f))
-          onUploadComplete?.({ fileName: uploadFile.file.name, category: resolvedCategory, path, fromPage, sourceConcept })
+          onUploadComplete?.({ documentId: metadataResult.documentId, fileName: uploadFile.file.name, category: resolvedCategory, path, fromPage, sourceConcept })
         } else {
           setFiles(prev => prev.map(f => f.file === uploadFile.file ? { ...f, status: 'success', path, metadataWritten: false, metadataWarning: metadataResult.warning } : f))
           onUploadComplete?.({ fileName: uploadFile.file.name, category: resolvedCategory, path, fromPage, sourceConcept })

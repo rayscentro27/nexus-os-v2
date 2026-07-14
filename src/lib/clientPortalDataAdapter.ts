@@ -424,6 +424,21 @@ export async function requestCreditStrategyTool(input:{recommendationId:string;t
   return error ? { ok:false, error:error.message } : { ok:true }
 }
 
+export async function saveVersionedStrategySelection(input:{tenantId:string;clientId:string;reportId:string;canonicalAccountId?:string;discrepancyId?:string;strategyId:string;strategyVersion:number;matchId?:string;selectedOption:string;status?:string;clientAnswers?:Record<string,unknown>}) {
+  if (!supabase || !isSupabaseConfigured) return { ok:false, error:'Supabase not configured' }
+  const row={tenant_id:input.tenantId,client_id:input.clientId,report_id:input.reportId,canonical_account_id:input.canonicalAccountId||null,discrepancy_id:input.discrepancyId||null,strategy_id:input.strategyId,strategy_version:input.strategyVersion,match_id:input.matchId||null,selected_option:input.selectedOption,status:input.status||'selected',client_answers:input.clientAnswers||{},actor:'client',revision:1}
+  const {data,error}=await supabase.from('credit_strategy_client_selections').insert(row).select('id').single()
+  if(error||!data)return {ok:false,error:error?.message||'Selection was not saved'}
+  const {error:historyError}=await supabase.from('credit_strategy_selection_history').insert({selection_id:data.id,tenant_id:input.tenantId,client_id:input.clientId,revision:1,previous_state:{},new_state:row,actor_type:'client'})
+  return historyError?{ok:false,error:historyError.message}:{ok:true,selectionId:String(data.id)}
+}
+
+export async function linkStrategyEvidence(input:{selectionId:string;tenantId:string;clientId:string;documentId:string;reportId:string;discrepancyId?:string}){
+  if (!supabase || !isSupabaseConfigured) return { ok:false, error:'Supabase not configured' }
+  const {error}=await supabase.from('credit_strategy_evidence_links').insert({selection_id:input.selectionId,tenant_id:input.tenantId,client_id:input.clientId,document_id:input.documentId,report_id:input.reportId,discrepancy_id:input.discrepancyId||null,status:'uploaded'})
+  return error?{ok:false,error:error.message}:{ok:true}
+}
+
 export async function loadClientProfileIntake(forcedContext?: ResolvedClientContext): Promise<{ data: ProfileIntakeData; source: 'supabase' | 'synthetic'; error?: string }> {
   let ctx: ResolvedClientContext | null = forcedContext ?? null
   if (!ctx) ctx = await resolveClientContextForCurrentUser()

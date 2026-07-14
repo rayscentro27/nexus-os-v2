@@ -69,6 +69,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const [analysisJob, setAnalysisJob] = useState(null)
   const [recommendationDecisions, setRecommendationDecisions] = useState({})
   const [automationMetrics, setAutomationMetrics] = useState({ cards: 0, choices: 0, exceptions: 0, research: 0, failed: 0 })
+  const [researchWorkspace,setResearchWorkspace]=useState({sources:[],claims:[],strategies:[],activity:[],exceptions:[]})
 
   useEffect(() => {
     Promise.all([
@@ -91,6 +92,25 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       supabase.from('credit_analysis_jobs').select('id', { count: 'exact' }).eq('status', 'failed').limit(1),
     ]).then(([cards, choices, research, failed]) => setAutomationMetrics({ cards: cards.count || 0, choices: choices.count || 0, exceptions: (cards.data || []).filter(x => x.status === 'exception_required').length, research: research.count || 0, failed: failed.count || 0 })).catch(() => {})
   }, [analysisJob?.status])
+
+  useEffect(()=>{if(!supabase)return;Promise.all([
+    supabase.from('credit_strategy_sources').select('id,title,source_type,reliability_score,promotional_risk_score,processing_state,duplicate_of').order('created_at',{ascending:false}).limit(20),
+    supabase.from('credit_strategy_claims').select('id,summarized_claim,evidence_level,risk_score,approval_state,rejection_reason').order('created_at',{ascending:false}).limit(20),
+    supabase.from('credit_strategy_versions').select('id,strategy_id,version,title,category,evidence_level,risk_level,approval_state,review_due_at,prohibited_wording').order('created_at',{ascending:false}).limit(20),
+    supabase.from('credit_strategy_client_selections').select('id,status,strategy_id,strategy_version,updated_at').order('updated_at',{ascending:false}).limit(20),
+    supabase.from('credit_strategy_exceptions').select('id,exception_code,reason,confidence,recommended_action,status').neq('status','resolved').limit(20),
+  ]).then(rows=>setResearchWorkspace({sources:rows[0].data||[],claims:rows[1].data||[],strategies:rows[2].data||[],activity:rows[3].data||[],exceptions:rows[4].data||[]})).catch(()=>{})},[])
+
+  async function governStrategy(row,approval_state){
+    const notes=window.prompt(`${approval_state.replaceAll('_',' ')} notes are required.`, '')
+    if(!notes||notes.trim().length<5)return setActionError('Strategy governance requires notes.')
+    if(!window.confirm(`Confirm ${approval_state.replaceAll('_',' ')} for ${row.title} version ${row.version}?`))return
+    const patch={approval_state,...(approval_state==='approved'?{approved_at:new Date().toISOString(),approved_by:'admin_confirmed'}:{}),...(approval_state==='retired'?{retired_at:new Date().toISOString(),retirement_reason:notes.trim()}: {})}
+    const {error}=await supabase.from('credit_strategy_versions').update(patch).eq('id',row.id)
+    if(error)return setActionError(error.message)
+    await supabase.from('research_strategy_audit_events').insert({strategy_id:row.strategy_id,strategy_version:row.version,event_type:`strategy_${approval_state}`,actor_type:'admin',metadata:{notes:notes.trim().slice(0,300)}})
+    setActionMessage(`Strategy ${approval_state.replaceAll('_',' ')} recorded with audit notes.`)
+  }
 
   async function refreshQueue() {
     try {
@@ -417,6 +437,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     { key: 'queue', label: 'Review Queue', count: pendingReviews.length },
     { key: 'case_engine', label: 'Profile Review Cases', count: items.length + letters.length },
     { key: 'parser_preview', label: 'Report Analysis', count: 0 },
+    { key: 'research', label: 'Research & Strategies', count: researchWorkspace.strategies.length },
     { key: 'items', label: 'Report Items', count: items.length },
     { key: 'letters', label: 'Draft Letters', count: letters.length },
     { key: 'mail', label: 'Mail Queue', count: mailJobs.length },
@@ -441,6 +462,13 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     </div>
 
     {activeTab === 'parser_preview' && <ParserPreviewPanel pendingReviews={pendingReviews} />}
+    {activeTab === 'research' && <div style={{display:'grid',gap:12}}>
+      <section><h3>Research Sources</h3>{researchWorkspace.sources.map(x=><div key={x.id} style={{padding:8,borderBottom:'1px solid rgba(148,163,184,.18)'}}><b>{x.title}</b><small style={{display:'block'}}>{x.source_type} · reliability {x.reliability_score} · promotional risk {x.promotional_risk_score} · {x.processing_state}{x.duplicate_of?' · duplicate':''}</small></div>)}</section>
+      <section><h3>Claims</h3>{researchWorkspace.claims.map(x=><div key={x.id} style={{padding:8,borderBottom:'1px solid rgba(148,163,184,.18)'}}><b>{x.summarized_claim}</b><small style={{display:'block'}}>{x.evidence_level} evidence · risk {x.risk_score} · {x.approval_state}{x.rejection_reason?` · ${x.rejection_reason}`:''}</small></div>)}</section>
+      <section><h3>Versioned Strategies</h3>{researchWorkspace.strategies.map(x=><div key={x.id} style={{padding:8,borderBottom:'1px solid rgba(148,163,184,.18)'}}><b>{x.title} v{x.version}</b><small style={{display:'block'}}>{x.category} · {x.evidence_level} · {x.risk_level} risk · {x.approval_state} · review {x.review_due_at||'not set'}</small><small style={{display:'block'}}>Prohibited wording: {(x.prohibited_wording||[]).join(', ')}</small><div style={{display:'flex',gap:6,marginTop:5}}>{['approved','rejected','needs_changes','retired'].map(state=><button key={state} onClick={()=>governStrategy(x,state)}>{state.replaceAll('_',' ')}</button>)}</div></div>)}</section>
+      <section><h3>Client Strategy Activity</h3>{researchWorkspace.activity.map(x=><div key={x.id}>{x.strategy_id} v{x.strategy_version} · {x.status}</div>)}</section>
+      <section><h3>Genuine Exceptions</h3>{researchWorkspace.exceptions.length===0?<p>No research-to-Clyde exceptions require GoClear attention.</p>:researchWorkspace.exceptions.map(x=><div key={x.id}><b>{x.exception_code}</b><p>{x.reason} · {x.recommended_action}</p></div>)}</section>
+    </div>}
 
     {/* Queue Tab — wired to client_documents pending credit reports */}
     {activeTab === 'queue' && <div>

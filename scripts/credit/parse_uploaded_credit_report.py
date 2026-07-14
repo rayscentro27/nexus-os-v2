@@ -24,6 +24,7 @@ import sys
 import tempfile
 import urllib.request
 import urllib.error
+import urllib.parse
 import ssl
 from datetime import datetime, timezone
 from pathlib import Path
@@ -579,7 +580,9 @@ def main() -> int:
                 return 2
 
             comparison = compare_credit_report(parse_result, result_id, document_id)
-            strategy_matches = match_credit_strategies(comparison)
+            approved_versions = supabase_request("GET", supabase_url, service_role_key,
+                "credit_strategy_versions?approval_state=eq.approved&select=strategy_id,version,approval_state")
+            strategy_matches = match_credit_strategies(comparison, approved_versions)
             system_review["summary"].update({
                 "canonicalAccountCount": len(comparison["canonicalAccounts"]),
                 "crossBureauDiscrepancyCount": len(comparison["discrepancies"]),
@@ -658,6 +661,13 @@ def main() -> int:
             # confident cards are client-visible; ambiguous matches route to GoClear.
             supabase_request("DELETE", supabase_url, service_role_key,
                 f"credit_strategy_recommendations?document_id=eq.{document_id}")
+            match_rows=[]
+            for match in strategy_matches:
+                found=supabase_request("GET",supabase_url,service_role_key,f"credit_strategy_matches?discrepancy_id=eq.{urllib.parse.quote(match['discrepancyId'])}&strategy_id=eq.{urllib.parse.quote(match['strategyId'])}&strategy_version=eq.{match['strategyVersion']}&ruleset_version=eq.research-to-clyde-v1&select=id&limit=1")
+                if found:match["matchId"]=found[0]["id"]
+                else:
+                    saved=supabase_request("POST",supabase_url,service_role_key,"credit_strategy_matches",body={"tenant_id":tenant_id,"client_id":client_id,"report_id":document_id,"canonical_account_id":match["canonicalAccountId"],"discrepancy_id":match["discrepancyId"],"strategy_id":match["strategyId"],"strategy_version":match["strategyVersion"],"match_score":85 if match["confidence"]=="high" else 70,"match_reasons":["objective_discrepancy","approved_strategy_version",f"confidence_{match['confidence']}"],"exclusion_reasons":[],"status":"matched","ruleset_version":"research-to-clyde-v1","client_visible":not match["specialistException"]})
+                    match["matchId"]=saved[0]["id"];match_rows.append(saved[0])
             recommendation_rows = [{
                 "tenant_id": tenant_id, "client_id": client_id, "document_id": document_id,
                 "parser_result_id": result_id, "system_review_id": system_review_id,
@@ -669,6 +679,7 @@ def main() -> int:
             } for match in strategy_matches]
             if recommendation_rows:
                 supabase_request("POST", supabase_url, service_role_key, "credit_strategy_recommendations", body=recommendation_rows)
+            print(f"  durable_strategy_matches={len(strategy_matches)}")
             print(f"  durable_strategy_recommendations={len(recommendation_rows)}")
             print(f"  GoClear_exceptions={sum(1 for row in recommendation_rows if not row['client_visible'])}")
         except Exception as e:

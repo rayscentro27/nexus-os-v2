@@ -17,6 +17,14 @@ type ClydeContext = {
   }
 }
 
+export function generateClydeStructuredStrategyAnswer(input:{question:string;detectedFact:string;bureauValues:Record<string,unknown>;strategyTitle:string;strategyVersion:number;clientQuestions:string[];evidenceNeeded:string[];limitations:string;readinessImpact:string;exceptionReason?:string}) {
+  const comparison=Object.entries(input.bureauValues).map(([bureau,value])=>`${bureau}: ${String(value)}`).join(' · ')
+  const sections=[`Nexus detected fact: ${input.detectedFact}`,comparison&&`Bureau comparison: ${comparison}`,`Approved educational strategy: ${input.strategyTitle}, version ${input.strategyVersion}.`,input.clientQuestions.length?`Information only you can provide: ${input.clientQuestions.join(' ')}`:'No additional client fact is required to identify the discrepancy.',input.evidenceNeeded.length?`Evidence you may upload: ${input.evidenceNeeded.join(', ')}.`:'No evidence has been requested yet.',`Funding-readiness relevance: ${input.readinessImpact}.`,`Uncertainty and limitation: ${input.limitations}`]
+  if(input.question.toLowerCase().includes('specialist')&&input.exceptionReason)sections.push(`Specialist review reason: ${input.exceptionReason}`)
+  sections.push('Next action: choose the option matching your records, save it, or request GoClear exception review. No mail is created automatically.')
+  return sections.filter(Boolean).join('\n')
+}
+
 function trackFromRoute(route?: string, fallback?: DocumentTrack): DocumentTrack {
   if (fallback) return fallback
   if (/credit-profile|credit-utilization/.test(route || '')) return 'credit_profile'
