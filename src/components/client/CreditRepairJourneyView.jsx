@@ -371,11 +371,11 @@ export default function CreditRepairJourneyView({
 
       <section className="crj-hero">
         <div>
-          <p className="crj-eyebrow">GoClear Credit Repair</p>
-          <h1>Credit Repair Journey</h1>
+          <p className="crj-eyebrow">Nexus Funding Readiness</p>
+          <h1>Credit Profile Optimization</h1>
           <p>
-            A guided credit process that shows what you do, what your specialist does,
-            when letters are ready, and when DocuPost can mail from home.
+            Review funding-impact report items, organize documentation, and use draft
+            letter tools with GoClear and client approval before DocuPost mailing.
           </p>
         </div>
         <div className="crj-hero-actions">
@@ -516,8 +516,8 @@ export default function CreditRepairJourneyView({
               <strong>{model.profileComplete ? 'Profile is ready' : 'Complete profile first'}</strong>
               <p>
                 {model.profileComplete
-                  ? 'Your profile has enough basics for the credit repair journey.'
-                  : 'Add your profile and business information so the specialist has the right client record.'}
+                  ? 'Your profile has enough basics for Credit Profile Optimization.'
+                  : 'Add your profile and business information so GoClear has the right client record.'}
               </p>
             </div>
             <div>

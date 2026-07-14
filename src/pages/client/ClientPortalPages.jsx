@@ -160,7 +160,7 @@ export function ClientDashboard() {
         <span style={{ fontSize: 11, color: 'var(--cp-green)', fontWeight: 600 }}>✓ 28% ready for funding</span>
         <span style={{ fontSize: 10, color: 'var(--cp-muted)' }}>• Reduce utilization under 30% to improve odds.</span>
       </div>
-      <button className="cp-btn-primary" style={{ width: '100%' }} onClick={() => navigate('/client/credit-profile')}>Improve Approval Odds</button>
+      <button className="cp-btn-primary" style={{ width: '100%' }} onClick={() => navigate('/client/credit-profile')}>Review Funding Readiness</button>
       <p style={{ fontSize: 9, color: 'var(--cp-muted-light)', textAlign: 'center', marginTop: 4 }}>Educational estimate only, not a lending decision</p>
     </div>
 
@@ -241,7 +241,7 @@ export function CreditProfilePage() {
   } : data.creditProfileReadiness
   const badge = live?.profile ? 'Live data' : 'Not FICO'
   return <div className="client-page">
-    <ClientPageHeader title="Credit Profile" subtitle="Understand your educational Nexus Readiness Score and what may improve readiness." badge={badge} />
+    <ClientPageHeader title="Credit Profile" subtitle="Understand how report information, utilization, inquiries, and documentation issues may affect Tier 1 and Tier 2 funding readiness." badge={badge} />
     {live?.scores && live.scores.length > 0 && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Credit profile scores loaded from Supabase readiness_scores.</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Nexus Readiness Score" value={profile.overallScore} status="Good progress" text={profile.scoreDisclaimer} />
@@ -266,6 +266,7 @@ export function CreditProfilePage() {
       <span style={{ color: 'var(--cp-muted)', fontSize: 12 }}> Businesses with utilization below 30% are more likely to qualify for stronger funding terms.</span>
     </div>
     <ClientGuidePanel suggestedKeys={['how_to_improve_credit', 'what_do_i_do_next', 'what_goclear_is_reviewing']} />
+    <p style={{ color: 'var(--cp-muted)', fontSize: 11, marginTop: 10 }}>Nexus provides education, organization tools, and funding-readiness workflows. It does not guarantee credit score increases, item removals, or funding approval.</p>
   </div>
 }
 
@@ -390,7 +391,7 @@ export function CreditHealthPage() {
     {/* Quick action buttons */}
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 10 }}>
       <button className="cp-btn-primary" onClick={() => navigate('/client/documents')}>Upload Report</button>
-      <button className="cp-btn-outline" onClick={() => navigate('/client/credit-repair-journey')}>Credit Repair Journey</button>
+      <button className="cp-btn-outline" onClick={() => navigate('/client/credit-repair-journey')}>Credit Profile Optimization</button>
       <button className="cp-btn-outline" onClick={() => navigate('/client/funding-readiness')}>Funding Readiness</button>
       <button className="cp-btn-outline" onClick={() => navigate('/client/resources')}>Connect Monitoring</button>
     </div>
@@ -596,7 +597,7 @@ export function FundingReadinessPage() {
   const hasLiveFunding = liveFundingScores.length > 0
   const groups = [['Personal credit blockers', funding.personalCreditBlockers], ['Business profile blockers', funding.businessProfileBlockers], ['Banking blockers', funding.bankingBlockers], ['Document blockers', funding.documentBlockers]]
   return <div className="client-page">
-    <ClientPageHeader title="Funding Readiness" subtitle="See what must be completed before GoClear can review an application path." badge={hasLiveFunding ? 'Live data' : funding.status} />
+    <ClientPageHeader title="Funding Readiness" subtitle="Credit Profile + Business Profile readiness for stronger Tier 1 and Tier 2 funding positioning. Lenders make final approval decisions." badge={hasLiveFunding ? 'Live data' : funding.status} />
     {hasLiveFunding && <div className="client-card" style={{ padding: '10px 14px', marginBottom: 10, background: 'rgba(16,185,129,.04)', border: '1px solid rgba(16,185,129,.15)' }}><strong style={{ color: 'var(--cp-green)', fontSize: 12 }}>Live data connected</strong><span style={{ fontSize: 11, color: 'var(--cp-muted)', marginLeft: 8 }}>Funding readiness scores loaded from Supabase ({liveFundingScores.length} entries).</span></div>}
     <div className="client-metric-grid compact">
       <ClientScoreCard title="Funding Readiness" value={liveScores?.funding_readiness || funding.readinessScore} status={funding.status} text={funding.recommendedPath} />
@@ -1205,8 +1206,8 @@ export function CreditRepairJourneyPage() {
 
   if (loading) {
     return <div className="client-page">
-      <ClientPageHeader title="Credit Repair Journey" subtitle="A guided credit process — what you do, what the specialist does, and when DocuPost can send." badge="Loading" />
-      <div style={{ color: '#66708f', fontSize: 12, padding: 8 }}>Loading credit repair journey...</div>
+      <ClientPageHeader title="Credit Profile Optimization" subtitle="Credit Report Review Tools, documentation preparation, and approval-gated draft letters." badge="Loading" />
+      <div style={{ color: '#66708f', fontSize: 12, padding: 8 }}>Loading Credit Profile Optimization...</div>
     </div>
   }
 

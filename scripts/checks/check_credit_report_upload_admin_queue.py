@@ -31,11 +31,11 @@ checks.append(check_file('src/lib/creditRepairWorkflow.ts', [
 checks.append(check_file('src/components/CreditSpecialistWorkbench.jsx', [
     (r'loadPendingCreditReportReviews', 'Uses loadPendingCreditReportReviews'),
     (r'pendingReviews', 'Tracks pendingReviews state'),
-    (r'Client Queue.*\(', 'Client Queue tab shows count'),
+    (r'Review Queue.*\(', 'Review Queue tab shows count'),
     (r'No credit report reviews yet', 'Empty state message exists'),
     (r'Review Report', 'Review Report button exists'),
-    (r'Run Parser Preview', 'Run Parser Preview button exists'),
-    (r'Create Credit Repair Case', 'Create Credit Repair Case button exists'),
+    (r'Run Report Analysis', 'Report Analysis button exists'),
+    (r'Create Profile Review Case', 'Profile Review Case button exists'),
     (r'Add Manual Item', 'Add Manual Item button exists'),
     (r'Mark Needs Info', 'Mark Needs Info button exists'),
     (r'Queue source:', 'Admin diagnostic text exists'),
@@ -52,10 +52,10 @@ checks.append(check_file('src/components/CreditSpecialistWorkbench.jsx', [
 # 4. Client upload copy
 checks.append(check_file('src/components/client/SimpleDocumentUploadPanel.jsx', [
     (r'Pending GoClear Review', 'Client sees Pending GoClear Review'),
-    (r'should appear in the Credit Specialist Workbench', 'Client sees specialist workbench mention'),
-    (r'a specialist must confirm', 'Specialist confirmation gate mentioned'),
-    (r'No.*auto.*letter|specialist must confirm', 'No auto letter claim'),
-    (r'No.*DocuPost.*auto|specialist must confirm', 'No auto DocuPost claim'),
+    (r'should appear in Credit &amp; Funding Readiness Review', 'Client sees admin review destination'),
+    (r'GoClear must confirm', 'GoClear confirmation gate mentioned'),
+    (r'No.*draft letter.*automatically|GoClear must confirm', 'No auto letter claim'),
+    (r'No.*DocuPost.*automatically|GoClear must confirm', 'No auto DocuPost claim'),
 ], 'SimpleDocumentUploadPanel.jsx — Client upload copy'))
 
 # 5. Admin guard/security unchanged

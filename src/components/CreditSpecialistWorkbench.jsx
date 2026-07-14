@@ -1,6 +1,5 @@
 /**
- * Credit Specialist Workbench — Admin page for reviewing credit reports,
- * identifying dispute items, generating draft letters, and managing DocuPost.
+ * Credit & Funding Readiness Review — admin report and documentation review.
  */
 
 import React, { useEffect, useState } from 'react'
@@ -127,7 +126,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       setParserResult(result)
       setParserResultLoading(false)
       if (result) {
-        setActionMessage(`Parser result loaded: ${result.accountsCount} accounts, ${result.negativeCandidatesCount} negative candidates, ${result.inquiriesCount} inquiries.`)
+        setActionMessage(`Report analysis loaded: ${result.accountsCount} accounts, ${result.negativeCandidatesCount} funding-impact items, ${result.inquiriesCount} inquiries.`)
       } else {
         setActionMessage('No parser result found for this document. Run the local parser worker to generate results.')
       }
@@ -144,7 +143,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       const result = await loadParserResultForDocument(doc.documentId)
       setParserResult(result)
       if (result) {
-        setActionMessage(`Parser result refreshed: ${result.accountsCount} accounts, ${result.negativeCandidatesCount} negative candidates.`)
+        setActionMessage(`Report analysis refreshed: ${result.accountsCount} accounts, ${result.negativeCandidatesCount} funding-impact items.`)
       } else {
         setActionMessage('No parser result found yet. Run the local parser worker first.')
       }
@@ -211,7 +210,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     const itemsForCase = await listCreditReportItems(ctx, result.case.id).catch(() => [])
     setCaseItems(itemsForCase)
     setActiveTab('case_engine')
-    setActionMessage(`${result.openedExisting ? 'Credit repair case opened' : 'Credit repair case created'} for this report.`)
+    setActionMessage(`${result.openedExisting ? 'Profile review case opened' : 'Profile review case created'} for this report.`)
   }
 
   function handleAddManualItem(doc = selectedPending) {
@@ -371,17 +370,17 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const strategySummary = summarizeStrategyOutcomes([])
 
   const tabs = [
-    { key: 'queue', label: 'Client Queue', count: pendingReviews.length },
-    { key: 'case_engine', label: 'Case Engine', count: items.length + letters.length },
-    { key: 'parser_preview', label: 'Parser Preview', count: 0 },
-    { key: 'items', label: 'Dispute Items', count: items.length },
-    { key: 'letters', label: 'Letters', count: letters.length },
-    { key: 'mail', label: 'DocuPost', count: mailJobs.length },
+    { key: 'queue', label: 'Review Queue', count: pendingReviews.length },
+    { key: 'case_engine', label: 'Profile Review Cases', count: items.length + letters.length },
+    { key: 'parser_preview', label: 'Report Analysis', count: 0 },
+    { key: 'items', label: 'Report Items', count: items.length },
+    { key: 'letters', label: 'Draft Letters', count: letters.length },
+    { key: 'mail', label: 'Mail Queue', count: mailJobs.length },
   ]
 
   return <div style={{ padding: 16, color: '#edf5ff' }}>
-    <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Credit Specialist Workbench</h1>
-    <p style={{ fontSize: 13, color: '#94a7c3', marginBottom: 16 }}>Review reports, identify dispute items, generate drafts, and move approved letters into DocuPost.</p>
+    <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Credit & Funding Readiness Review</h1>
+    <p style={{ fontSize: 13, color: '#94a7c3', marginBottom: 16 }}>Review uploaded credit reports, funding-impact items, utilization issues, dispute documentation, and DocuPost-ready letters.</p>
 
     {loading && <div style={{ color: '#94a7c3', fontSize: 12 }}>Loading...</div>}
     {actionMessage && <div style={{ padding: 10, borderRadius: 8, background: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 12, marginBottom: 10 }}>{actionMessage}</div>}
@@ -402,7 +401,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     {activeTab === 'queue' && <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
-          <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>Client Queue</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>Review Queue</h3>
           <p style={{ fontSize: 12, color: '#94a7c3' }}>Pending credit report uploads from client portal. Queue source: client_documents pending credit_report uploads.</p>
         </div>
         <button onClick={refreshQueue} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#94a7c3', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Refresh</button>
@@ -439,8 +438,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         </span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
           <button onClick={() => handleReviewReport(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#1766ff', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Review Report</button>
-          <button onClick={() => handleRunParserPreview(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Run Parser Preview</button>
-          <button onClick={() => handleCreateCreditRepairCase(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Create Credit Repair Case</button>
+          <button onClick={() => handleRunParserPreview(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Run Report Analysis</button>
+          <button onClick={() => handleCreateCreditRepairCase(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Create Profile Review Case</button>
           <button onClick={() => handleAddManualItem(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#f59e0b', color: '#101e32', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add Manual Item</button>
           <button onClick={() => handleMarkNeedsInfo(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(148,163,184,.22)', background: 'rgba(255,255,255,.06)', color: '#edf5ff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Mark Needs Info</button>
         </div>
@@ -459,14 +458,14 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => setActionMessage('Safe file preview is not available yet. Use metadata review and manual item entry for now.')} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #1766ff, #7048e8)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Review Report</button>
-          <button onClick={() => handleRunParserPreview()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#7048e8', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Run Parser Preview</button>
-          <button onClick={() => handleCreateCreditRepairCase()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Create Credit Repair Case</button>
+          <button onClick={() => handleRunParserPreview()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#7048e8', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Run Report Analysis</button>
+          <button onClick={() => handleCreateCreditRepairCase()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Create Profile Review Case</button>
           <button onClick={() => handleAddManualItem()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#101e32', fontSize: 12, cursor: 'pointer' }}>Add Manual Item</button>
           <button onClick={() => handleMarkNeedsInfo()} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#edf5ff', fontSize: 12, cursor: 'pointer' }}>Mark Needs Info</button>
         </div>
         <p style={{ marginTop: 10, color: '#94a7c3', fontSize: 12 }}>Safe file preview is not available yet. Use metadata review and manual item entry for now.</p>
         {parserPanelOpen && <div style={{ marginTop: 10, padding: 10, borderRadius: 8, border: '1px solid rgba(112,72,232,.28)', background: 'rgba(112,72,232,.08)', color: '#d8ccff', fontSize: 12 }}>
-          <strong>Parser Preview</strong>
+          <strong>Report Analysis</strong>
           {parserResultLoading && <p style={{ margin: '6px 0 0' }}>Loading parser results...</p>}
           {!parserResultLoading && !parserResult && <div>
             <p style={{ margin: '6px 0 0' }}>No parser result found for this document. Run the local admin parser worker to generate results:</p>
@@ -496,7 +495,7 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
               {parserResult.structuredItemDraftsCount} suggested items ready for specialist review. Confirm, edit, or reject each item before creating case items.
             </div>}
             {parserResult.accountsCount > 0 && <div style={{ margin: '8px 0', fontSize: 11, color: '#94a7c3' }}>
-              {parserResult.accountsCount} accounts · {parserResult.inquiriesCount} inquiries · {parserResult.negativeCandidatesCount} negative candidates detected.
+              {parserResult.accountsCount} accounts · {parserResult.inquiriesCount} inquiries · {parserResult.negativeCandidatesCount} funding-impact items detected.
             </div>}
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               <button onClick={() => handleRefreshParserResults()} style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Refresh</button>
@@ -523,14 +522,14 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
           </div>
         </form>}
         <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 11 }}>
-          Parser suggestions and dispute items require specialist confirmation before letters or DocuPost can proceed. No letters are generated automatically.
+          Suggested next steps and report items require GoClear confirmation before draft letters or DocuPost can proceed. No letters are generated automatically.
         </div>
       </div>}
     </div>}
 
     {activeTab === 'case_engine' && <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 12 }}>
       <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
-        <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Repair Case Engine Review</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Profile Review Cases</h3>
         <p style={{ fontSize: 12, color: '#94a7c3', marginBottom: 10 }}>Specialist reviews selected items, client reasons, evidence, and letter options before sending anything to client approval.</p>
         {items.length === 0 && caseItems.length === 0 && <p style={{ fontSize: 12, color: '#94a7c3' }}>No client-selected report items yet. Create a case from Client Queue.</p>}
         {selectedCase && <div style={{ padding: 10, borderRadius: 8, border: '1px solid rgba(16,185,129,.25)', marginBottom: 8, color: '#94a7c3', fontSize: 12 }}>Selected case: {selectedCase.id} · status: {selectedCase.status}</div>}
@@ -602,6 +601,7 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
     {/* Letters Tab */}
     {activeTab === 'letters' && <div>
       <div style={{ marginBottom: 12 }}>
+        <p style={{ fontSize: 11, color: '#94a7c3' }}>Draft Letter Tool · Documentation Preparation · Client Review Required · GoClear Review Required · Mailing only after approval.</p>
         <button onClick={handleGenerateLetter} disabled={generating || items.length === 0} style={{
           padding: '8px 16px', borderRadius: 8, border: 'none', background: generating ? '#374151' : 'linear-gradient(135deg, #1766ff, #7048e8)',
           color: '#fff', fontWeight: 700, fontSize: 12, cursor: generating ? 'not-allowed' : 'pointer',
@@ -622,6 +622,7 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
         <div style={{ fontSize: 11, color: '#94a7c3', maxHeight: 120, overflow: 'auto', whiteSpace: 'pre-wrap', fontFamily: 'Georgia, serif', lineHeight: 1.5 }}>
           {letter.letter_body?.slice(0, 500)}...
         </div>
+        <div style={{ marginTop: 8, fontSize: 10, color: '#f59e0b' }}>Draft preview only. This document requires review and approval before use. Nexus does not guarantee a specific credit reporting outcome.</div>
       </div>)}
     </div>}
 
@@ -650,7 +651,7 @@ function ParserPreviewPanel({ pendingReviews = [] }) {
   ]
   return <div style={{ display: 'grid', gridTemplateColumns: '1fr .9fr', gap: 12 }}>
     <section style={{ padding: 12, borderRadius: 10, border: '1px solid rgba(148,163,184,.18)' }}>
-      <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Report Parser Preview</h3>
+      <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>Credit Report Report Analysis</h3>
       <div style={{ padding: 10, borderRadius: 8, background: 'rgba(245,158,11,.12)', color: '#f59e0b', fontSize: 12, marginBottom: 10 }}>
         Parser preview can read text-based fixtures. Live uploaded file parsing requires a backend extraction worker or storage file access integration.
       </div>

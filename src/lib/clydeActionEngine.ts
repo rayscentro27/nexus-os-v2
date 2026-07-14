@@ -30,11 +30,11 @@ export function getClydePageContext({ route, track, clientState }: ClydeContext)
     missingRequirements: clientState?.missingRequirements || [],
   })
   const pageGoalMap: Record<DocumentTrack, string> = {
-    credit_profile: 'Improve and repair your Credit Profile.',
+    credit_profile: 'Understand what may be affecting your funding readiness and optimize your Credit Profile.',
     business_profile: 'Complete your Business Profile foundation.',
-    business_funding: 'Prepare for Business Funding review.',
+    business_funding: 'Prepare your Credit Profile and Business Profile for Tier 1 and Tier 2 funding positioning.',
     request_review: 'Package the right support for GoClear Review.',
-    credit_repair: 'Choose items, reasons, evidence, and approval steps.',
+    credit_repair: 'Review report items and organize possible documentation options.',
     documents: 'Keep Documents Vault organized for GoClear Review.',
     general: 'Move to the next best client action.',
   }
@@ -79,7 +79,7 @@ export function generateClydeRecommendations(context: ClydeContext) {
     },
   ]
   if (page.currentTrack === 'credit_profile') {
-    base.splice(1, 0, { title: 'Choose Items to Challenge', reason: 'Pick what you want reviewed and why.', actionLabel: 'Show Options', actionType: 'route', route: '/client/credit-repair-journey', priority: 'medium', status: 'available' })
+    base.splice(1, 0, { title: 'Review Report Items', reason: 'Review items that may affect funding readiness and see documentation options.', actionLabel: 'Show Options', actionType: 'route', route: '/client/credit-repair-journey', priority: 'medium', status: 'available' })
   }
   if (page.currentTrack === 'business_funding') {
     base.splice(1, 0, { title: 'Review Missing Requirements', reason: 'Funding review depends on missing documents and profile blockers.', actionLabel: 'Review Readiness', actionType: 'route', route: '/client/funding-readiness', priority: 'medium', status: 'available' })
@@ -105,12 +105,12 @@ export function generateClydeAnswer(question: string, context: ClydeContext) {
   const lower = question.toLowerCase()
   if (lower.includes('next')) return `Here is your next best action: upload ${page.nextDocument}. It will show as Pending GoClear Review after upload.`
   if (lower.includes('document')) return `Upload one document at a time. For this page, the next useful document is ${page.nextDocument}. Suggested categories are based on context and filename; GoClear will verify.`
-  if (lower.includes('credit')) return 'Start with a credit report, then choose items you want challenged, upload evidence, and let GoClear review dispute options before approval.'
+  if (lower.includes('credit')) return 'I’ll help you understand what may be affecting your funding readiness. Start with a credit report, review utilization and report items, then let GoClear review any documentation options before approval.'
   if (lower.includes('business profile')) return 'Complete business basics, EIN/entity status, address, banking status, and required business documents. Do not enter full EIN or account numbers.'
-  if (lower.includes('funding')) return 'Business Funding depends on Credit Profile, Business Profile, and funding documents. GoClear review is required before any funding recommendation.'
+  if (lower.includes('funding')) return 'Your next step is to improve your Credit Profile and Business Profile readiness. The goal is stronger Tier 1 and Tier 2 funding positioning; lenders make final decisions and readiness does not guarantee approval.'
   if (lower.includes('reviewing')) return 'GoClear reviews uploaded documents, selected dispute items, support evidence, and review requests. Pending items stay marked as Pending GoClear Review.'
   if (lower.includes('utilization')) return 'High utilization may be improved with payoff timing, balance reduction, limit increase prep, or consolidation review. GoClear should review before action.'
-  if (lower.includes('challenge')) return 'Tell me which items you want challenged and why. Nexus prepares options, then specialist review and client approval are required.'
+  if (lower.includes('challenge') || lower.includes('dispute')) return 'Some report items may be worth reviewing if they appear inaccurate, outdated, duplicated, unfamiliar, incomplete, or unverifiable. I can organize documents and show options, but GoClear does not guarantee removals, score increases, or funding approval.'
   if (lower.includes('waiting')) return 'Waiting on you usually means a missing document, profile field, selected dispute reason, or letter approval. Waiting on GoClear means Pending GoClear Review.'
   return `For this page, focus on: ${page.pageGoal} ${page.whatClydeShouldFocusOn}.`
 }

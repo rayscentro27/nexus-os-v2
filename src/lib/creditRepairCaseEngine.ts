@@ -78,7 +78,7 @@ function fallbackCase(ctx: ResolvedClientContext): CreditRepairCase {
     tenant_id: ctx.tenantId,
     client_id: ctx.clientId,
     status: 'intake',
-    case_goal: 'Challenge negative items, pursue correction/removal when supportable, and track outcomes.',
+    case_goal: 'Review funding-impact report items, prepare documentation options when appropriate, and track outcomes.',
     current_round: 1,
   }
 }
@@ -112,7 +112,7 @@ export async function getOrCreateCreditRepairCase(ctx: ResolvedClientContext): P
       tenant_id: ctx.tenantId,
       client_id: ctx.clientId,
       status: 'intake',
-      case_goal: 'Challenge negative items, prepare dispute options, and track bureau/furnisher responses.',
+      case_goal: 'Review funding-impact report items, prepare documentation options, and track bureau/furnisher responses.',
       current_round: 1,
     })
     .select('*')

@@ -75,8 +75,8 @@ export function generateClientGuidance(statuses: {
   if (s.negativeItemsIdentified) {
     items.push({
       id: 'review-negative-items',
-      title: 'Choose items to challenge',
-      description: 'Tell Clyde which negative items you want challenged so Nexus can prepare dispute options for GoClear review.',
+      title: 'Review funding-impact report items',
+      description: 'Review items that may affect readiness and choose whether Nexus should prepare documentation options for GoClear review.',
       priority: 'medium',
       category: 'credit',
     })
@@ -115,8 +115,8 @@ export function generateClientGuidance(statuses: {
   if (s.creditReportUploaded && s.negativeItemsIdentified) {
     items.push({
       id: 'prepare-dispute-options',
-      title: 'Prepare dispute options',
-      description: 'Choose the reason an item should be removed or corrected; Clyde can package options without auto-sending anything.',
+      title: 'Prepare documentation options',
+      description: 'Choose why an item may be inaccurate, outdated, duplicated, unfamiliar, incomplete, or unverifiable. Clyde can package options without auto-sending anything.',
       priority: 'medium',
       category: 'credit',
     })

@@ -72,3 +72,8 @@ python3 scripts/credit/parse_uploaded_credit_report.py \
 Expected: `Saved row verification: accounts=26, inquiries=3, negative_candidates=26`
 
 Then refresh in Admin Credit Specialist Workbench.
+# Positioning Reset Addendum — 2026-07-14
+
+Nexus client and admin experiences are aligned to **Nexus Funding Readiness**, not a credit repair company identity. Credit Profile + Business Profile workflows support Tier 1 and Tier 2 funding preparation. Credit report review and draft dispute letters remain optional documentation tools with GoClear review, client approval, and DocuPost gates preserved.
+
+Visible client language no longer promises repair, deletion, score improvement, or funding approval. The compatibility route `/client/credit-repair-journey` and legacy internal workflow identifiers remain intentionally unchanged. The canonical core, dispute-tool, funding, and draft-letter disclaimers are defined in `src/content/nexusPositioning.ts`.

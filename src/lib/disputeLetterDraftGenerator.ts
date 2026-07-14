@@ -37,8 +37,8 @@ const BUREAU_ADDRESSES: Record<string, string> = {
 }
 
 const DISCLAIMER = [
-  'DRAFT PREVIEW — Requires GoClear specialist review and client approval before any mailing request.',
-  'This draft does not guarantee deletion, score increase, or favorable outcome.',
+  'Draft preview only. This document requires review and approval before use. Nexus does not guarantee a specific credit reporting outcome.',
+  'GoClear review and client approval are required before any mailing request.',
   'Do not include SSN, full DOB, full account numbers, or sensitive identifiers.',
   'All dispute activity must comply with the Fair Credit Reporting Act (FCRA), 15 U.S.C. § 1681.',
 ].join('\n')
