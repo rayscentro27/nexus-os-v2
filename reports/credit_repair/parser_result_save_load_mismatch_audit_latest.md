@@ -63,3 +63,6 @@ Then refresh parser results in the Admin Workbench.
 ## Old Zero Result
 
 The existing DB row (e62cc114) has double-encoded data. The worker's upsert will overwrite it with correct data on re-run.
+# 2026-07-14 Live Verification Addendum
+
+The precise cause remains double-encoded JSONB from the original worker: the live row contained JSON strings, so frontend `Array.isArray` checks displayed zeros. Safe inspection recovered 26 accounts, 3 inquiries, and 26 review candidates from those strings. After the fixed worker reran, the same row held native lists with those counts. Windows-versus-Mac was not causal; both environments target Supabase project `iqjwgpnujbeoyaeuwehj`.

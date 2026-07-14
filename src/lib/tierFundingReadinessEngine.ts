@@ -1,0 +1,15 @@
+import type { ReadinessStatus } from './businessFundingReadiness'
+export interface TierReadinessInput { credit: { status: ReadinessStatus; utilizationHigh?: boolean; recentInquiries?: number; majorFundingImpactItems?: number; dataSufficient?: boolean; pendingReportReviews?: number }; business: { status: ReadinessStatus; completenessScore: number; timeInBusiness?: boolean; revenue?: boolean; banking?: boolean; documentsComplete?: boolean; industryReview?: boolean } }
+export interface TierResult { status: ReadinessStatus; score: number; blockers: string[]; recommendedActions: string[]; missingData: string[]; explanation: string }
+export interface TierFundingReadiness { tier1: TierResult; tier2: TierResult }
+const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)))
+function status(score: number, missing: string[]): ReadinessStatus { return missing.length >= 3 ? 'insufficient_information' : score >= 80 ? 'ready_to_review' : score >= 65 ? 'almost_ready' : 'action_needed' }
+export function evaluateTierFundingReadiness(input: TierReadinessInput): TierFundingReadiness {
+  const commonMissing = [!input.credit.dataSufficient && 'Current Credit Profile analysis', !input.business.completenessScore && 'Business Profile data'].filter(Boolean) as string[]
+  const tier1Blockers = [input.credit.utilizationHigh && 'High revolving utilization', (input.credit.recentInquiries || 0) > 2 && 'Recent inquiry volume', (input.credit.majorFundingImpactItems || 0) > 0 && 'Major funding-impact report items', input.business.completenessScore < 70 && 'Business Profile completeness', (input.credit.pendingReportReviews || 0) > 0 && 'Pending report review'].filter(Boolean) as string[]
+  const tier1Score = clamp(100 - tier1Blockers.length * 12 - commonMissing.length * 20)
+  const tier2Missing = [...commonMissing, !input.business.timeInBusiness && 'Time in business', !input.business.revenue && 'Revenue range', !input.business.banking && 'Business banking status', !input.business.documentsComplete && 'Supporting business documents'].filter(Boolean) as string[]
+  const tier2Blockers = [...tier1Blockers, input.business.industryReview && 'Industry requires additional review'].filter(Boolean) as string[]
+  const tier2Score = clamp(100 - tier2Blockers.length * 9 - tier2Missing.length * 8)
+  return { tier1: { status: status(tier1Score, commonMissing), score: tier1Score, blockers: tier1Blockers, recommendedActions: tier1Blockers.slice(0, 3).map(x => `Address: ${x}`), missingData: commonMissing, explanation: 'Tier 1 readiness combines Credit Profile strength with a complete and consistent Business Profile. This is not an approval decision.' }, tier2: { status: status(tier2Score, tier2Missing), score: tier2Score, blockers: tier2Blockers, recommendedActions: [...tier2Blockers, ...tier2Missing].slice(0, 3).map(x => `Address: ${x}`), missingData: tier2Missing, explanation: 'Tier 2 readiness additionally evaluates operating history, revenue, banking, documents, obligations, and industry review. Lenders make final decisions.' } }
+}

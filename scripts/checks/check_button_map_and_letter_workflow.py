@@ -40,7 +40,7 @@ add("Chat with Clyde does not route to Resources by default", "wc-chatBtn" in te
 add("Upload CTAs open upload panel", "openUploadPanel" in texts["world"] and "SimpleDocumentUploadPanel" in texts["world"])
 add("Upload CTAs do not default to Documents except vault actions", "Upload Files" not in texts["world"] and "withSuggestedUpload" not in texts["world"])
 add("Resources cards have route/gated fallback", "routeForResource" in texts["world"] and "request-review?topic=" in texts["world"])
-add("Credit Repair Journey includes challenge/reason/letter option flow", all(term in texts["world"] for term in ["I want this challenged", "Dispute Reason Selector", "Letter Options", "Prepare recommended draft"]))
+add("Credit Profile Optimization includes review/reason/letter option flow", all(term in texts["world"] for term in ["Review this item", "Documentation Reason Selector", "Letter Options", "Prepare recommended draft"]))
 add("Dispute Review includes specialist/client approval safety language", "specialist review and client approval" in texts["world"].lower() and "nothing is auto-sent" in texts["world"].lower())
 add("no auto-send behavior", "auto-send" in texts["world"].lower() and "Client approval required before DocuPost send request" in texts["case"])
 false_claims = [

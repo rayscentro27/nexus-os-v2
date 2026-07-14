@@ -24,12 +24,17 @@ import sys
 import tempfile
 import urllib.request
 import urllib.error
+import ssl
 from pathlib import Path
 from typing import Any
+
+import certifi
+from funding_readiness_credit_analysis import analyze_credit_for_funding_readiness
 
 
 PARSER_VERSION = "live-0.1.0"
 BUREAUS = ("experian", "equifax", "transunion")
+SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 
 def load_env() -> dict[str, str]:
@@ -70,7 +75,7 @@ def supabase_request(method: str, url: str, service_role_key: str, path: str, **
     req = urllib.request.Request(full_url, data=data, headers=headers, method=method)
 
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30, context=SSL_CONTEXT) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
         body = e.read().decode() if e.fp else ""
@@ -84,7 +89,7 @@ def download_storage_file(url: str, service_role_key: str, bucket: str, path: st
         "apikey": service_role_key,
         "Authorization": f"Bearer {service_role_key}",
     })
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=60, context=SSL_CONTEXT) as resp:
         dest.write_bytes(resp.read())
     return dest
 
@@ -347,8 +352,8 @@ def generate_letter_preview(items: list[dict[str, Any]], client_name: str = "[Co
         "",
         "Sincerely,", client_name, "",
         "---",
-        "DRAFT PREVIEW — Requires GoClear specialist review and client approval.",
-        "This draft does not guarantee deletion, score increase, or favorable outcome.",
+        "Draft preview only. This document requires review and approval before use.",
+        "Nexus does not guarantee deletion, a credit score change, or a specific reporting outcome.",
     ])
     return "\n".join(lines)
 
@@ -465,7 +470,7 @@ def main() -> int:
         parse_result = parse_text(text, title, extraction_mode, extraction_warnings)
         print(f"  Accounts: {len(parse_result['accounts'])}")
         print(f"  Inquiries: {len(parse_result['inquiries'])}")
-        print(f"  Negative candidates: {len(parse_result['negativeItemCandidates'])}")
+        print(f"  Review candidates: {len(parse_result['negativeItemCandidates'])}")
 
         # 6. Build structured items
         structured_items = build_structured_items(parse_result)
@@ -482,7 +487,15 @@ def main() -> int:
 
         # 8. Insert/update parser result in database
         print("Saving parser result to database...")
-        print(f"  Saving parser payload: accounts={len(parse_result['accounts'])}, inquiries={len(parse_result['inquiries'])}, negative_candidates={len(parse_result['negativeItemCandidates'])}, structured_item_drafts={len(structured_items)}, suggestions={len(suggestions)}")
+        system_review = analyze_credit_for_funding_readiness(parse_result)
+        print("Saving parser payload:")
+        print(f"  accounts={len(parse_result['accounts'])}")
+        print(f"  inquiries={len(parse_result['inquiries'])}")
+        print(f"  review_candidates={len(parse_result['negativeItemCandidates'])}")
+        print(f"  personal_info_variations={len(parse_result['personalInfoVariations'])}")
+        print(f"  structured_item_drafts={len(structured_items)}")
+        print(f"  recommendations={len(system_review['fundingImpactItems'])}")
+        print(f"  bureaus={len(parse_result['bureausDetected'])}")
         db_row = {
             "tenant_id": tenant_id,
             "client_id": client_id,
@@ -538,16 +551,52 @@ def main() -> int:
                 v_negative = len(vrow.get("negative_candidates") or []) if isinstance(vrow.get("negative_candidates"), list) else 0
                 v_drafts = len(vrow.get("structured_item_drafts") or []) if isinstance(vrow.get("structured_item_drafts"), list) else 0
                 v_suggestions = len(vrow.get("dispute_strategy_suggestions") or []) if isinstance(vrow.get("dispute_strategy_suggestions"), list) else 0
-                print(f"  Saved row verification: accounts={v_accounts}, inquiries={v_inquiries}, negative_candidates={v_negative}, drafts={v_drafts}, suggestions={v_suggestions}")
-
-                if v_accounts == 0 and len(parse_result['accounts']) > 0:
-                    print("  WARNING: Saved row has 0 accounts but local parse has nonzero. Possible double-encoding or column mismatch.", file=sys.stderr)
-                    print("  Re-running with raw objects (no json.dumps) should fix this.", file=sys.stderr)
+                print("Saved row verification:")
+                print(f"  accounts={v_accounts}")
+                print(f"  inquiries={v_inquiries}")
+                print(f"  review_candidates={v_negative}")
+                print(f"  structured_item_drafts={v_drafts}")
+                print(f"  recommendations={v_suggestions}")
+                expected = (len(parse_result['accounts']), len(parse_result['inquiries']), len(parse_result['negativeItemCandidates']), len(structured_items), len(suggestions))
+                actual = (v_accounts, v_inquiries, v_negative, v_drafts, v_suggestions)
+                if expected != actual:
+                    print(f"ERROR: Parser save verification mismatch. expected={expected} saved={actual}", file=sys.stderr)
+                    return 2
             else:
-                print("  WARNING: Could not read back saved row for verification.", file=sys.stderr)
+                print("ERROR: Could not read back saved parser row for verification.", file=sys.stderr)
+                return 2
+
+            review_row = {
+                "tenant_id": tenant_id, "client_id": client_id, "document_id": document_id,
+                "parser_result_id": result_id, "status": "pending_review", "summary": system_review["summary"],
+                "funding_impact_items": system_review["fundingImpactItems"], "utilization_actions": system_review["utilizationActions"],
+                "report_item_reviews": system_review["reportItemReviews"], "inquiry_reviews": system_review["inquiryReviews"],
+                "personal_info_reviews": system_review["personalInfoReviews"], "evidence_needed": system_review["evidenceNeeded"],
+                "specialist_exceptions": system_review["specialistExceptions"], "no_action_items": system_review["noActionItems"],
+                "recommended_next_steps": system_review["recommendedNextSteps"], "confidence_summary": system_review["confidenceSummary"],
+                "tier_1_impact": system_review["tier1Impact"], "tier_2_impact": system_review["tier2Impact"],
+                "needs_specialist_review": True, "client_visible": False,
+            }
+            existing_reviews = supabase_request("GET", supabase_url, service_role_key, f"credit_report_system_reviews?document_id=eq.{document_id}&select=id&order=created_at.desc&limit=1")
+            if existing_reviews:
+                system_review_id = existing_reviews[0]["id"]
+                supabase_request("PATCH", supabase_url, service_role_key, f"credit_report_system_reviews?id=eq.{system_review_id}", body=review_row)
+            else:
+                created_reviews = supabase_request("POST", supabase_url, service_role_key, "credit_report_system_reviews", body=review_row)
+                system_review_id = created_reviews[0]["id"]
+            verified_reviews = supabase_request("GET", supabase_url, service_role_key, f"credit_report_system_reviews?id=eq.{system_review_id}&select=funding_impact_items,utilization_actions,report_item_reviews,inquiry_reviews,evidence_needed,specialist_exceptions,no_action_items")
+            if not verified_reviews:
+                print("ERROR: System review save verification failed.", file=sys.stderr)
+                return 3
+            saved_review = verified_reviews[0]
+            count = lambda key: len(saved_review.get(key) or []) if isinstance(saved_review.get(key), list) else 0
+            print("System review created:")
+            for label, key in (("funding-impact items","funding_impact_items"),("utilization actions","utilization_actions"),("report-item reviews","report_item_reviews"),("inquiry reviews","inquiry_reviews"),("evidence-needed","evidence_needed"),("specialist exceptions","specialist_exceptions"),("no-action items","no_action_items")):
+                print(f"  {label}={count(key)}")
         except Exception as e:
-            print(f"  WARNING: Could not save to database: {e}", file=sys.stderr)
-            print("  Local artifacts were saved. Database insert will work once the migration is applied.")
+            print(f"ERROR: Could not save verified parser/system review data: {e}", file=sys.stderr)
+            print("Local artifacts were preserved; apply the additive migration or correct server credentials, then retry.", file=sys.stderr)
+            return 3
 
         # 9. Write summary
         summary_text = f"""# Live Upload Parser Result — {title}

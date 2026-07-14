@@ -351,6 +351,7 @@ export interface ClientPortalLiveData {
   guidance: ApprovedClientGuidance[];
   partnerOffers: PartnerOffer[];
   creditItems: CreditWorkflowItem[];
+  systemReviews: Array<Record<string, unknown>>;
   resolvedClientId: string | null;
   resolvedTenantId: string | null;
 }
@@ -361,11 +362,11 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     ctx = await resolveClientContextForCurrentUser()
   }
   if (!ctx) {
-    return { profile: null, tasks: [], scores: [], documents: [], businessProfile: [], fundingScores: [], guidance: [], partnerOffers: [], creditItems: [], resolvedClientId: null, resolvedTenantId: null };
+    return { profile: null, tasks: [], scores: [], documents: [], businessProfile: [], fundingScores: [], guidance: [], partnerOffers: [], creditItems: [], systemReviews: [], resolvedClientId: null, resolvedTenantId: null };
   }
 
   const id = ctx.clientId;
-  const [profileRes, tasksRes, scoresRes, docsRes, bizRes, fundingRes, guidanceRes, partnerRes, creditRes] = await Promise.all([
+  const [profileRes, tasksRes, scoresRes, docsRes, bizRes, fundingRes, guidanceRes, partnerRes, creditRes, systemReviewRes] = await Promise.all([
     loadClientProfile(id),
     loadClientTasks(id),
     loadReadinessScores(id),
@@ -375,6 +376,7 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     loadApprovedClientGuidance(id),
     loadPartnerOffers(),
     loadCreditWorkflowItems(id),
+    supabase!.from('credit_report_system_reviews').select('id,status,summary,utilization_actions,report_item_reviews,evidence_needed,recommended_next_steps,tier_1_impact,tier_2_impact').eq('client_id', id).eq('client_visible', true).eq('status', 'approved_summary').order('created_at', { ascending: false }).limit(1),
   ]);
 
   return {
@@ -387,6 +389,7 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     guidance: guidanceRes.data,
     partnerOffers: partnerRes.data,
     creditItems: creditRes.data,
+    systemReviews: (systemReviewRes.data || []) as Array<Record<string, unknown>>,
     resolvedClientId: ctx.clientId,
     resolvedTenantId: ctx.tenantId,
   };

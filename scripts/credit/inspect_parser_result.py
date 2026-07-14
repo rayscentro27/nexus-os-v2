@@ -17,8 +17,11 @@ import os
 import sys
 import urllib.request
 import urllib.error
+import ssl
+import certifi
 from pathlib import Path
 from typing import Any
+SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 
 def load_env() -> dict[str, str]:
@@ -51,7 +54,7 @@ def supabase_get(url: str, key: str, path: str) -> list[dict[str, Any]]:
     }
     req = urllib.request.Request(full_url, headers=headers, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=30, context=SSL_CONTEXT) as resp:
             return json.loads(resp.read().decode())
     except urllib.error.HTTPError as e:
         body = e.read().decode() if e.fp else ""
@@ -91,7 +94,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Inspect parser result row")
     parser.add_argument("--parser-result-id", help="Parser result row ID")
     parser.add_argument("--document-id", help="Document ID to look up")
-    parser.add_argument("--verbose", action="store_true", help="Print first item preview")
+    parser.add_argument("--latest", action="store_true", help="Select newest successful result for document (default for document lookup)")
+    parser.add_argument("--verbose", "--verbose-safe", dest="verbose", action="store_true", help="Print one safely masked item")
     args = parser.parse_args()
 
     if not args.parser_result_id and not args.document_id:
@@ -110,7 +114,7 @@ def main() -> int:
             f"credit_report_parser_results?id=eq.{args.parser_result_id}&select=*")
     else:
         rows = supabase_get(supabase_url, service_role_key,
-            f"credit_report_parser_results?document_id=eq.{args.document_id}&select=*&order=created_at.desc&limit=1")
+            f"credit_report_parser_results?document_id=eq.{args.document_id}&extraction_success=eq.true&select=*&order=created_at.desc&limit=1")
 
     if not rows:
         print("ERROR: No parser result found.", file=sys.stderr)
@@ -150,13 +154,14 @@ def main() -> int:
     print("COUNTS:")
     print(f"  Accounts:                    {accounts_count}")
     print(f"  Inquiries:                   {inquiries_count}")
-    print(f"  Negative candidates:         {negative_count}")
+    print(f"  Funding-impact/review candidates: {negative_count}")
     print(f"  Structured item drafts:      {drafts_count}")
     print(f"  Dispute strategy suggestions:{suggestions_count}")
     print(f"  Personal info variations:    {personal_count}")
     print(f"  Bureaus detected:            {', '.join(bureaus) if isinstance(bureaus, list) else bureaus}")
     print(f"  Warnings:                    {warnings_count}")
     print(f"  Utilization summary keys:    {util_keys}")
+    print(f"  Database fields present:     {', '.join(sorted(row.keys()))}")
     print()
 
     # Check for double-encoding

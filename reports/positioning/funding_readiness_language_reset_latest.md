@@ -9,3 +9,6 @@ Applied admin language includes Credit & Funding Readiness Review, Review Queue,
 The canonical terms and disclaimers live in `src/content/nexusPositioning.ts`. The compatibility route and legacy internal identifiers remain intentionally unchanged.
 
 Core safety statement: Nexus provides education, organization tools, and funding-readiness workflows. It does not guarantee credit score increases, item removals, or funding approval.
+## Unattended engine sprint addendum — 2026-07-14
+
+System analysis, business readiness, Tier 1/Tier 2 readiness, admin review, client approved summaries, Clyde, and the bounded queue use Funding Readiness language. The centralized description and credit-tool disclaimer were strengthened; the draft disclaimer now explicitly disclaims deletion, score change, and reporting outcomes.

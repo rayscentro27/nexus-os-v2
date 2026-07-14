@@ -77,3 +77,23 @@ Then refresh in Admin Credit Specialist Workbench.
 Nexus client and admin experiences are aligned to **Nexus Funding Readiness**, not a credit repair company identity. Credit Profile + Business Profile workflows support Tier 1 and Tier 2 funding preparation. Credit report review and draft dispute letters remain optional documentation tools with GoClear review, client approval, and DocuPost gates preserved.
 
 Visible client language no longer promises repair, deletion, score improvement, or funding approval. The compatibility route `/client/credit-repair-journey` and legacy internal workflow identifiers remain intentionally unchanged. The canonical core, dispute-tool, funding, and draft-letter disclaimers are defined in `src/content/nexusPositioning.ts`.
+# Unattended Funding Readiness Engine Certification — 2026-07-14
+
+## PASS with fake data
+
+- Fake report upload and canonical admin queue visibility.
+- Live PDF parsing and native JSONB saved-result verification: 26 accounts, 3 inquiries, 26 review candidates.
+- Deterministic system review saved and verified.
+- Admin system-first recommendation and exception-review UI.
+- Deterministic Business Profile and Tier 1/Tier 2 evaluation modules.
+- Approved-summary client read boundary.
+- Bounded analysis job completed successfully.
+- Draft letter eligibility/confirmation gate and existing client approval gate.
+- Existing DocuPost authorization gate; no automatic mailing.
+
+## BLOCKED / NOT READY
+
+- Real sensitive reports are not approved by this fake-data sprint.
+- Paid public launch still requires authenticated cross-browser UAT, production privacy/retention validation, and operational review.
+- No permanent/deployed Python worker was installed; production processing currently requires the bounded Mac queue command.
+- No automated external mailing and no guaranteed deletion, score, approval, or funding outcome.

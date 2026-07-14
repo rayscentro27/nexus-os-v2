@@ -509,10 +509,18 @@ export interface ParserResultSummary {
   extractionSuccess: boolean;
   textLength: number;
   confidence: string | null;
+  accounts: Array<Record<string, unknown>>;
   accountsCount: number;
+  inquiries: Array<Record<string, unknown>>;
   inquiriesCount: number;
+  reviewCandidates: Array<Record<string, unknown>>;
+  reviewCandidatesCount: number;
   negativeCandidatesCount: number;
+  personalInfoVariations: Array<Record<string, unknown>>;
+  structuredItemDrafts: Array<Record<string, unknown>>;
   structuredItemDraftsCount: number;
+  recommendedActions: Array<Record<string, unknown>>;
+  recommendedActionsCount: number;
   disputeSuggestionsCount: number;
   utilizationSummary: Record<string, unknown>;
   bureausDetected: string[];
@@ -530,6 +538,7 @@ export async function loadParserResultForDocument(documentId: string): Promise<P
       .from('credit_report_parser_results')
       .select('*')
       .eq('document_id', documentId)
+      .eq('extraction_success', true)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -547,6 +556,7 @@ export async function loadParserResultsForDocumentIds(documentIds: string[]): Pr
       .from('credit_report_parser_results')
       .select('*')
       .in('document_id', documentIds)
+      .eq('extraction_success', true)
       .order('created_at', { ascending: false });
     if (error || !data) return {};
     const map: Record<string, ParserResultSummary> = {};
@@ -584,6 +594,7 @@ function summarizeParserResult(row: Record<string, unknown>): ParserResultSummar
   const warningsRaw = parseJsonbField(row.warnings);
   const bureausRaw = parseJsonbField(row.bureaus_detected);
   const utilizationRaw = parseJsonbField(row.utilization_summary);
+  const personalRaw = parseJsonbField(row.personal_info_variations);
 
   const accounts = Array.isArray(accountsRaw) ? accountsRaw : [];
   const inquiries = Array.isArray(inquiriesRaw) ? inquiriesRaw : [];
@@ -593,6 +604,7 @@ function summarizeParserResult(row: Record<string, unknown>): ParserResultSummar
   const warnings = Array.isArray(warningsRaw) ? warningsRaw : [];
   const bureaus = Array.isArray(bureausRaw) ? bureausRaw : [];
   const utilization = (utilizationRaw && typeof utilizationRaw === 'object' && !Array.isArray(utilizationRaw)) ? utilizationRaw as Record<string, unknown> : {};
+  const personalInfoVariations = Array.isArray(personalRaw) ? personalRaw : [];
 
   return {
     id: row.id as string,
@@ -603,10 +615,18 @@ function summarizeParserResult(row: Record<string, unknown>): ParserResultSummar
     extractionSuccess: Boolean(row.extraction_success),
     textLength: (row.text_length as number) || 0,
     confidence: row.confidence as string | null,
+    accounts: accounts as Array<Record<string, unknown>>,
     accountsCount: accounts.length,
+    inquiries: inquiries as Array<Record<string, unknown>>,
     inquiriesCount: inquiries.length,
+    reviewCandidates: negativeCandidates as Array<Record<string, unknown>>,
+    reviewCandidatesCount: negativeCandidates.length,
     negativeCandidatesCount: negativeCandidates.length,
+    personalInfoVariations: personalInfoVariations as Array<Record<string, unknown>>,
+    structuredItemDrafts: structuredDrafts as Array<Record<string, unknown>>,
     structuredItemDraftsCount: structuredDrafts.length,
+    recommendedActions: suggestions as Array<Record<string, unknown>>,
+    recommendedActionsCount: suggestions.length,
     disputeSuggestionsCount: suggestions.length,
     utilizationSummary: utilization,
     bureausDetected: bureaus as string[],
@@ -616,6 +636,37 @@ function summarizeParserResult(row: Record<string, unknown>): ParserResultSummar
     needsSpecialistReview: Boolean(row.needs_specialist_review),
     createdAt: (row.created_at as string) || '',
   };
+}
+
+export interface CreditSystemReviewSummary {
+  id: string; documentId: string; parserResultId: string | null; status: string; clientVisible: boolean;
+  summary: Record<string, unknown>; fundingImpactItems: Array<Record<string, unknown>>; utilizationActions: Array<Record<string, unknown>>;
+  reportItemReviews: Array<Record<string, unknown>>; inquiryReviews: Array<Record<string, unknown>>; personalInfoReviews: Array<Record<string, unknown>>;
+  evidenceNeeded: Array<Record<string, unknown>>; specialistExceptions: Array<Record<string, unknown>>; noActionItems: Array<Record<string, unknown>>;
+  recommendedNextSteps: string[]; confidenceSummary: Record<string, unknown>; tier1Impact: Record<string, unknown>; tier2Impact: Record<string, unknown>;
+}
+
+const arrayField = (value: unknown) => { const parsed = parseJsonbField(value); return Array.isArray(parsed) ? parsed as Array<Record<string, unknown>> : [] }
+const objectField = (value: unknown) => { const parsed = parseJsonbField(value); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {} }
+function summarizeSystemReview(row: Record<string, unknown>): CreditSystemReviewSummary {
+  return { id: row.id as string, documentId: row.document_id as string, parserResultId: row.parser_result_id as string | null, status: String(row.status || 'pending_review'), clientVisible: Boolean(row.client_visible), summary: objectField(row.summary), fundingImpactItems: arrayField(row.funding_impact_items), utilizationActions: arrayField(row.utilization_actions), reportItemReviews: arrayField(row.report_item_reviews), inquiryReviews: arrayField(row.inquiry_reviews), personalInfoReviews: arrayField(row.personal_info_reviews), evidenceNeeded: arrayField(row.evidence_needed), specialistExceptions: arrayField(row.specialist_exceptions), noActionItems: arrayField(row.no_action_items), recommendedNextSteps: arrayField(row.recommended_next_steps).map(String), confidenceSummary: objectField(row.confidence_summary), tier1Impact: objectField(row.tier_1_impact), tier2Impact: objectField(row.tier_2_impact) }
+}
+export async function loadSystemReviewForDocument(documentId: string): Promise<CreditSystemReviewSummary | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  const { data, error } = await supabase.from('credit_report_system_reviews').select('*').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  return error || !data ? null : summarizeSystemReview(data as Record<string, unknown>);
+}
+export async function queueCreditReportAnalysis(input: { tenantId: string; clientId: string; documentId: string }) {
+  if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase is not configured.' };
+  const { data: active } = await supabase.from('credit_analysis_jobs').select('id,status').eq('document_id', input.documentId).in('status', ['queued','processing']).limit(1).maybeSingle();
+  if (active) return { ok: true, job: active, duplicatePrevented: true };
+  const { data, error } = await supabase.from('credit_analysis_jobs').insert({ tenant_id: input.tenantId, client_id: input.clientId, document_id: input.documentId, status: 'queued' }).select('id,status').single();
+  return error ? { ok: false, error: error.message } : { ok: true, job: data, duplicatePrevented: false };
+}
+export async function loadLatestAnalysisJob(documentId: string) {
+  if (!isSupabaseConfigured || !supabase) return null;
+  const { data } = await supabase.from('credit_analysis_jobs').select('id,status,failure_code,failure_message,created_at,updated_at').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  return data || null;
 }
 
 // ─── Pending Credit Report Reviews (Admin Queue Bridge) ─────────────────────

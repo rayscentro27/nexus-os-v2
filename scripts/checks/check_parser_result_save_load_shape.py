@@ -97,7 +97,9 @@ add("workflow returns accounts count in summary", "accountsCount: accounts.lengt
 add("workbench displays accountsCount", "accountsCount" in texts["workbench"])
 add("workbench displays negativeCandidatesCount", "negativeCandidatesCount" in texts["workbench"])
 add("workbench displays inquiriesCount", "inquiriesCount" in texts["workbench"])
-add("workbench has mismatch detection for zero accounts", "0 accounts" in texts["workbench"].lower() or "shape mismatch" in texts["workbench"].lower())
+add("workbench has mismatch detection for zero accounts", "0 accounts" in texts["workbench"].lower() or "shape mismatch" in texts["workbench"].lower() or "data mismatch detected" in texts["workbench"].lower())
+add("worker fails on save verification mismatch", "return 2" in texts["worker"] and "Parser save verification mismatch" in texts["worker"])
+add("loader selects newest successful result", ".eq('extraction_success', true)" in texts["workflow"] and ".order('created_at', { ascending: false })" in texts["workflow"])
 
 # No hard-coded counts
 add("no hard-coded 26 accounts in code", "26" not in texts["worker"] or "accounts=26" not in texts["worker"])
