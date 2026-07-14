@@ -79,11 +79,11 @@ export function SimpleDocumentUploadPanel({
           <div className="wc-uploadPanelResult">
             <b>{uploaded.fileName}</b>
             <span>Suggested category: {String(uploaded.category).replaceAll('_', ' ')}</span>
-            <span>Pending GoClear Review</span>
+            <span>{uploaded.category === 'credit_report' ? 'Waiting for analysis' : 'Pending GoClear Review'}</span>
             <span>Attached to: {pageContext.replaceAll('_', ' ')}</span>
-            <p>Clyde is organizing this document for GoClear review.</p>
+            <p>{uploaded.category === 'credit_report' ? 'Nexus queued this report for bounded analysis. GoClear is involved only if a genuine exception is detected.' : 'Clyde is organizing this document for GoClear review.'}</p>
             {(uploaded.category === 'credit_report' || predictedCategory === 'credit_report') && (
-              <p>Your report is uploaded and pending GoClear review. It should appear in Credit &amp; Funding Readiness Review. Report analysis may identify funding-impact items for review, but GoClear must confirm suggested next steps before documentation options or draft letters move forward. No draft letter or DocuPost request is sent automatically.</p>
+              <p>Your report is uploaded and queued for analysis. Normal processing does not require GoClear review. If the parser or canonical matcher detects a genuine exception, Nexus will show that separately. No draft letter or DocuPost request is sent automatically.</p>
             )}
             <p>Next recommended document: <strong>{nextDocument}</strong></p>
             <div>{usage.map(label => <em key={label}>{label}</em>)}</div>

@@ -49,7 +49,7 @@ add("parser fixture results report exists", results_report.exists() and "Files t
 add("parser output includes needsSpecialistReview true", parsed_results and all(r.get("needsSpecialistReview") is True for r in parsed_results))
 add("parser output uses suggested extraction language", "suggested extraction" in combined and "needs goclear specialist review" in combined)
 add("admin report analysis exists", "Credit Report Analysis" in texts["admin"] and "backend extraction worker" in texts["admin"])
-add("client upload copy keeps parser gated", "GoClear must confirm" in texts["upload"] and "pending GoClear review" in texts["upload"])
+add("client upload copy keeps analysis bounded and exception-only", "queued for analysis" in texts["upload"] and "genuine exception" in texts["upload"])
 add("parser bridge does not auto-create letters", "createLetterDraftFromOption" not in texts["bridge"] and "createDocuPost" not in texts["bridge"])
 add("no verified-by-AI language", all(term not in combined for term in ["verified by ai", "ai verified", "clyde verified this", "parser verified"]))
 add("no guaranteed deletion/score/funding language", all(term not in combined for term in ["guaranteed deletion", "guaranteed score", "guaranteed funding", "instant score increase"]))

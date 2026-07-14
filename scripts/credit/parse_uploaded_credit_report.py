@@ -25,6 +25,7 @@ import tempfile
 import urllib.request
 import urllib.error
 import ssl
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +33,8 @@ import certifi
 from funding_readiness_credit_analysis import analyze_credit_for_funding_readiness
 from cross_bureau_credit_comparison import compare_credit_report
 from credit_strategy_matcher import match_credit_strategies
+from canonical_credit_matching import build_canonical_model, detect_discrepancies, ENGINE_VERSION as CANONICAL_ENGINE_VERSION, RULESET_VERSION as CANONICAL_RULESET_VERSION
+from credit_analysis_exception_policy import evaluate_credit_analysis_exception
 
 
 PARSER_VERSION = "live-0.1.0"
@@ -363,6 +366,7 @@ def generate_letter_preview(items: list[dict[str, Any]], client_name: str = "[Co
 def main() -> int:
     parser = argparse.ArgumentParser(description="Parse an uploaded credit report from Supabase Storage")
     parser.add_argument("--document-id", required=True, help="client_documents row ID")
+    parser.add_argument("--analysis-job-id", help="Versioned queue attempt ID; creates a preserved parser result")
     parser.add_argument("--out", type=Path, default=Path("reports/credit_repair/live_upload_parser_results"))
     args = parser.parse_args()
 
@@ -490,6 +494,9 @@ def main() -> int:
         # 8. Insert/update parser result in database
         print("Saving parser result to database...")
         system_review = analyze_credit_for_funding_readiness(parse_result)
+        canonical_model = build_canonical_model(parse_result["accounts"])
+        discrepancies = detect_discrepancies(canonical_model)
+        exception = evaluate_credit_analysis_exception({"parser_confidence": parse_result["confidence"], "extraction_success": bool(text.strip()), "account_count": len(parse_result["accounts"]), "ambiguous_match_count": canonical_model["ambiguous_match_count"]})
         print("Saving parser payload:")
         print(f"  accounts={len(parse_result['accounts'])}")
         print(f"  inquiries={len(parse_result['inquiries'])}")
@@ -524,11 +531,14 @@ def main() -> int:
             "status": "suggested_extraction",
             "needs_specialist_review": True,
         }
+        db_row["needs_specialist_review"] = exception["exception_required"]
+        if args.analysis_job_id:
+            db_row["analysis_job_id"] = args.analysis_job_id
 
         # Check if result already exists for this document
         try:
-            existing = supabase_request("GET", supabase_url, service_role_key,
-                f"credit_report_parser_results?document_id=eq.{document_id}&select=id&order=created_at.desc&limit=1")
+            existing_path = f"credit_report_parser_results?analysis_job_id=eq.{args.analysis_job_id}&select=id&limit=1" if args.analysis_job_id else f"credit_report_parser_results?document_id=eq.{document_id}&select=id&order=created_at.desc&limit=1"
+            existing = supabase_request("GET", supabase_url, service_role_key, existing_path)
 
             if existing:
                 result_id = existing[0]["id"]
@@ -589,7 +599,7 @@ def main() -> int:
                 "specialist_exceptions": system_review["specialistExceptions"], "no_action_items": system_review["noActionItems"],
                 "recommended_next_steps": system_review["recommendedNextSteps"], "confidence_summary": system_review["confidenceSummary"],
                 "tier_1_impact": system_review["tier1Impact"], "tier_2_impact": system_review["tier2Impact"],
-                "needs_specialist_review": True, "client_visible": False,
+                "needs_specialist_review": exception["exception_required"], "client_visible": False,
             }
             existing_reviews = supabase_request("GET", supabase_url, service_role_key, f"credit_report_system_reviews?document_id=eq.{document_id}&select=id&order=created_at.desc&limit=1")
             if existing_reviews:
@@ -607,6 +617,42 @@ def main() -> int:
             print("System review created:")
             for label, key in (("funding-impact items","funding_impact_items"),("utilization actions","utilization_actions"),("report-item reviews","report_item_reviews"),("inquiry reviews","inquiry_reviews"),("evidence-needed","evidence_needed"),("specialist exceptions","specialist_exceptions"),("no-action items","no_action_items")):
                 print(f"  {label}={count(key)}")
+
+            # Persist original normalized bureau tradelines and derived canonical rows.
+            # Prior parser attempts remain intact because queue attempts use a new parser_result_id.
+            tradeline_rows = [{**row,"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"parser_result_id":result_id} for row in canonical_model["tradelines"]]
+            saved_tradelines = supabase_request("POST",supabase_url,service_role_key,"credit_bureau_tradelines",body=tradeline_rows) if tradeline_rows else []
+            tradeline_ids = {row["source_index"]:row["id"] for row in saved_tradelines}
+            canonical_ids = {}
+            for account in canonical_model["canonical_accounts"]:
+                payload={k:v for k,v in account.items() if k not in ("canonical_key","tradeline_indices")};payload.update({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"parser_result_id":result_id})
+                saved=supabase_request("POST",supabase_url,service_role_key,"credit_canonical_accounts",body=payload)[0];canonical_ids[account["canonical_key"]]=saved["id"]
+                links=[{"canonical_account_id":saved["id"],"tradeline_id":tradeline_ids[i]} for i in account["tradeline_indices"] if i in tradeline_ids]
+                if links:supabase_request("POST",supabase_url,service_role_key,"credit_canonical_account_tradelines",body=links)
+            decisions=[]
+            for pair in canonical_model["pair_decisions"]:
+                if pair["left_index"] not in tradeline_ids or pair["right_index"] not in tradeline_ids:continue
+                decisions.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"parser_result_id":result_id,"left_tradeline_id":tradeline_ids[pair["left_index"]],"right_tradeline_id":tradeline_ids[pair["right_index"]],**{k:v for k,v in pair.items() if k not in ("left_index","right_index")}})
+            if decisions:supabase_request("POST",supabase_url,service_role_key,"credit_tradeline_match_decisions",body=decisions)
+            unmatched=[{"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"parser_result_id":result_id,"tradeline_id":tradeline_ids[u["tradeline_index"]],"reason":u["reason"],"exception_required":u["exception_required"]} for u in canonical_model["unmatched_tradelines"] if u["tradeline_index"] in tradeline_ids]
+            if unmatched:supabase_request("POST",supabase_url,service_role_key,"credit_unmatched_tradelines",body=unmatched)
+            discrepancy_rows=[]
+            for item in discrepancies:
+                discrepancy_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"parser_result_id":result_id,"canonical_account_id":canonical_ids.get(item["canonical_key"]),"involved_tradeline_ids":[tradeline_ids[i] for i in item["tradeline_indices"] if i in tradeline_ids],**{k:v for k,v in item.items() if k not in ("canonical_key","tradeline_indices")}})
+            if discrepancy_rows:supabase_request("POST",supabase_url,service_role_key,"credit_report_discrepancies",body=discrepancy_rows)
+            workflow_update={"analysis_status":"complete","exception_review_status":"required" if exception["exception_required"] else "not_required","exception_code":None if not exception["exception_required"] else exception["exception_code"],"exception_reason":None if not exception["exception_required"] else exception["reason"],"latest_parser_result_id":result_id,"canonical_matching_completed_at":datetime.now(timezone.utc).isoformat(),"discrepancy_detection_completed_at":datetime.now(timezone.utc).isoformat()}
+            supabase_request("PATCH",supabase_url,service_role_key,f"credit_document_workflows?document_id=eq.{document_id}",body=workflow_update)
+            event_rows=[{"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"canonical_matching_completed","metadata":{"canonical_accounts":len(canonical_model["canonical_accounts"]),"unmatched_tradelines":len(unmatched),"ambiguous_matches":canonical_model["ambiguous_match_count"]},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION}]
+            if discrepancy_rows:event_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"discrepancy_created","metadata":{"count":len(discrepancy_rows)},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION})
+            if exception["exception_required"]:event_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"exception_required","metadata":{"code":exception["exception_code"]},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION})
+            supabase_request("POST",supabase_url,service_role_key,"credit_workflow_events",body=event_rows)
+            print("Canonical foundation saved:")
+            print(f"  bureau_tradelines={len(saved_tradelines)}")
+            print(f"  canonical_accounts={len(canonical_model['canonical_accounts'])}")
+            print(f"  unmatched_tradelines={len(unmatched)}")
+            print(f"  ambiguous_matches={canonical_model['ambiguous_match_count']}")
+            print(f"  discrepancies={len(discrepancy_rows)}")
+            print(f"  exception_required={str(exception['exception_required']).lower()}")
 
             # Recommendations are rebuilt deterministically for this document. Ordinary,
             # confident cards are client-visible; ambiguous matches route to GoClear.

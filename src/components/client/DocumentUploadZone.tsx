@@ -49,6 +49,7 @@ function guessCategory(mimeType: string, fileName: string): string {
 async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path: string; file: File; category: string; sourceConcept?: string; fromPage?: string }) {
   const { ctx, path, file, category, sourceConcept, fromPage } = params
   const now = new Date().toISOString()
+  const isCreditReport = category === 'credit_report' || category === 'three_bureau_credit_report'
   const row = {
     id: `${ctx.authUserId}_${Date.now()}`,
     tenant_id: ctx.tenantId,
@@ -56,16 +57,16 @@ async function writeDocumentMetadata(params: { ctx: ResolvedClientContext; path:
     category,
     title: file.name,
     summary: `Client portal upload${fromPage ? ` from ${fromPage}` : ''} — ${file.name} (${file.type || 'unknown'}, ${(file.size / 1024).toFixed(0)}KB) stored at ${path}`,
-    status: 'pending_review',
+    status: 'uploaded',
     priority: 'normal',
     risk_level: 'low',
-    automation_level: 'manual',
+    automation_level: isCreditReport ? 'automatic_analysis_queue' : 'manual',
     client_visible: true,
-    approval_required: true,
-    goclear_review_status: 'pending_review',
+    approval_required: !isCreditReport,
+    goclear_review_status: isCreditReport ? 'not_required' : 'pending_review',
     source: 'client_portal_upload',
     source_concept: sourceConcept || 'document_upload',
-    recommended_next_action: 'Admin review uploaded document',
+    recommended_next_action: isCreditReport ? 'Analysis queues automatically after upload' : 'Admin review uploaded document',
     created_at: now,
   }
   const { error } = await supabase!.from('client_documents').insert(row)

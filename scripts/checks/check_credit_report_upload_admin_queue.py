@@ -21,8 +21,8 @@ checks.append(check_file('src/lib/creditRepairWorkflow.ts', [
     (r'export\s+async\s+function\s+loadPendingCreditReportReviews', 'loadPendingCreditReportReviews exists'),
     (r"from\('client_documents'\)", 'Queries client_documents table'),
     (r'isCreditReportDocument', 'Detects credit report via category/suggestedCategory/documentType/source/fileName'),
-    (r'pending_review|review_needed', 'Detects pending_review status'),
-    (r'Pending GoClear Review', 'Returns reviewStatusLabel'),
+    (r'analysisStatus|analysis_status', 'Uses separated analysis status'),
+    (r"exceptionReviewStatus.*Pending GoClear Review.*Analysis Complete", 'Returns exception-aware reviewStatusLabel'),
     (r'parserStatus', 'Returns parserStatus'),
     (r'nextActionLabel', 'Returns nextActionLabel'),
 ], 'creditRepairWorkflow.ts — loadPendingCreditReportReviews'))
@@ -38,7 +38,7 @@ checks.append(check_file('src/components/CreditSpecialistWorkbench.jsx', [
     (r'Create Profile Review Case', 'Profile Review Case button exists'),
     (r'Add Manual Item', 'Add Manual Item button exists'),
     (r'Mark Needs Info', 'Mark Needs Info button exists'),
-    (r'Queue source:', 'Admin diagnostic text exists'),
+    (r'Credit-report pipeline from client_documents', 'Admin pipeline source text exists'),
     (r'last.*checked|Last checked', 'Last checked timestamp shown'),
     (r'No letters are generated automatically', 'No auto letter disclaimer'),
 ], 'CreditSpecialistWorkbench.jsx — Client Queue wiring'))
@@ -51,11 +51,11 @@ checks.append(check_file('src/components/CreditSpecialistWorkbench.jsx', [
 
 # 4. Client upload copy
 checks.append(check_file('src/components/client/SimpleDocumentUploadPanel.jsx', [
-    (r'Pending GoClear Review', 'Client sees Pending GoClear Review'),
-    (r'should appear in Credit &amp; Funding Readiness Review', 'Client sees admin review destination'),
-    (r'GoClear must confirm', 'GoClear confirmation gate mentioned'),
-    (r'No.*draft letter.*automatically|GoClear must confirm', 'No auto letter claim'),
-    (r'No.*DocuPost.*automatically|GoClear must confirm', 'No auto DocuPost claim'),
+    (r'Waiting for analysis', 'Client sees automatic analysis status'),
+    (r'Nexus queued this report for bounded analysis', 'Client sees automatic queue behavior'),
+    (r'GoClear is involved only if a genuine exception', 'Client sees exception-only GoClear rule'),
+    (r'No draft letter.*automatically', 'No auto letter claim'),
+    (r'No.*DocuPost.*automatically', 'No auto DocuPost claim'),
 ], 'SimpleDocumentUploadPanel.jsx — Client upload copy'))
 
 # 5. Admin guard/security unchanged
@@ -67,7 +67,7 @@ checks.append(check_file('src/app/App.tsx', [
 # 6. No auto letter from upload
 checks.append(check_file('src/components/client/DocumentUploadZone.tsx', [
     (r'client_documents', 'Uploads to client_documents'),
-    (r'pending_review', 'Sets status pending_review'),
+    (r"documentStatus.*uploaded|status:\s*'uploaded'", 'Sets uploaded document status'),
     (r'category|sourceConcept', 'Category passed through from caller'),
 ], 'DocumentUploadZone.tsx — Upload destination'))
 

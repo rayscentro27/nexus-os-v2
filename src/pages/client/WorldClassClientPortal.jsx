@@ -90,14 +90,14 @@ function getScores(live) {
 }
 
 function getLiveDocuments(live) {
-  const rows = live?.documents?.data || []
+  const rows = Array.isArray(live?.documents) ? live.documents : live?.documents?.data || []
   if (rows.length) {
     const uploaded = rows
       .filter(d => ['uploaded', 'pending_review', 'complete', 'approved'].includes((d.status || '').toLowerCase()))
       .map(d => d.title || d.filename || d.category)
       .filter(Boolean)
     const underReview = rows
-      .filter(d => /(pending|review)/i.test(d.goclear_review_status || d.status || ''))
+      .filter(d => d.exception_review_status === 'required' || /(pending|review)/i.test(d.goclear_review_status || ''))
       .map(d => d.title || d.filename || d.category)
       .filter(Boolean)
     const required = Array.from(new Set(rows.map(d => d.category || d.title || d.filename).filter(Boolean)))
@@ -116,13 +116,23 @@ function getLiveDocuments(live) {
 }
 
 function getDocumentRows(live) {
-  const rows = live?.documents?.data || []
+  const rows = Array.isArray(live?.documents) ? live.documents : live?.documents?.data || []
   if (rows.length) return rows
   const docs = live?.documents || clientPortalData.documents
   return [
     ...(docs.uploadedDocuments || []).map(title => ({ title, category: title, status: 'uploaded', goclear_review_status: 'pending_review' })),
     ...(docs.underReviewDocuments || []).map(title => ({ title, category: title, status: 'pending_review', goclear_review_status: 'pending_review' })),
   ]
+}
+
+function clientDocumentProgress(doc) {
+  if (doc.exception_review_status === 'required') return 'Needs specialist review'
+  if (doc.analysis_status === 'complete' && doc.client_action_status === 'ready') return 'Ready for client review'
+  if (doc.analysis_status === 'complete') return 'Analysis complete'
+  if (doc.analysis_status === 'processing') return 'Analysis in progress'
+  if (doc.analysis_status === 'queued' || doc.analysis_status === 'not_queued') return 'Waiting for analysis'
+  if (doc.analysis_status === 'failed_permanent') return 'Additional information needed'
+  return 'Uploaded'
 }
 
 function getRequirementStatus(existingDocuments, keys) {
@@ -446,7 +456,7 @@ function DocumentsPanel({ live, refreshLiveData, navigate, openUploadPanel }) {
   return <section className="wc-panel wc-panel-documents"><Hero /><div className="wc-docHub"><div className="wc-card wc-drop"><div className="wc-uploadIcon">↑</div><h3>Documents Vault</h3><p>Documents is your vault. You can upload from any workflow page, and Clyde will organize it here for GoClear review.</p><DocumentUploadZone onUploadComplete={refreshLiveData} maxFiles={1} /><small>One document at a time · Accepted: PDF, JPG, PNG, HEIC, TXT, DOCX · Max 10MB</small></div><div className="wc-card wc-scanner"><h3>Organization Flow</h3>{[['↑', 'Uploaded', 'Your document is securely uploaded'], ['✦', 'Suggested', 'Category is suggested from context and filename'], ['✓', 'Pending Review', 'GoClear verifies the document type'], ['⌂', 'Vaulted', 'Stored in Documents Vault automatically']].map(([icon, title, text]) => <div className="wc-scanStep" key={title}><span>{icon}</span><div><b>{title}</b><p>{text}</p></div></div>)}</div></div>
     <div className="wc-quickUpload"><b>Quick Upload</b>{['Credit Report', 'ID Document', 'Proof of Address', 'Bank Statement', 'Tax Return', 'Business License', 'Other'].map(x => <button key={x} onClick={() => openUploadPanel({ track: 'documents', pageContext: 'documents_vault', suggestedCategory: x.toLowerCase().replaceAll(' ', '_'), title: `Upload ${x}`, description: 'Upload one document to Documents Vault for Pending GoClear Review.' })}>{x}</button>)}</div>
     <div className="wc-docLists"><div className="wc-card wc-listCard"><SectionHead title="Recently Uploaded" action={docs.source === 'supabase' ? 'Live data' : 'View all →'} />{uploadedDocs.slice(0, 4).map((doc, i) => <ListItem key={`${doc}-${i}`} title={doc} text="Categorized" />)}</div><div className="wc-card wc-listCard"><SectionHead title="Needs Review" action="View all →" />{underReviewDocs.slice(0, 3).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="Pending GoClear review" />)}</div><div className="wc-card wc-listCard"><SectionHead title="Missing Documents" action="View all →" />{missingDocs.slice(0, 3).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="High Impact" />)}</div><div className="wc-card wc-recommended"><h3>Recommended for You</h3><p>Upload Proof of Income</p><p>Add More Bank Statements</p><p>Submit Business License</p><button onClick={() => navigate('/client/resources')}>See recommendations →</button></div></div>
-    <div className="wc-card wc-documentVault"><SectionHead title="Master Document Vault" action={`${documentRows.length} document(s)`} />{documentRows.map((doc, i) => <div className="wc-vaultRow" key={doc.id || `${doc.title}-${i}`}><b>{doc.title || doc.filename || doc.category || 'Uploaded document'}</b><span>{doc.category || doc.doc_type || 'document'}</span><span>{doc.status || 'uploaded'}</span><span>{doc.goclear_review_status || 'pending_review'}</span><span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Uploaded'}</span><span>{/credit/i.test(doc.category || doc.title || '') ? 'Credit Health' : /bank|tax|profit|license/i.test(doc.category || doc.title || '') ? 'Funding Readiness' : 'Profile'}</span></div>)}</div>
+    <div className="wc-card wc-documentVault"><SectionHead title="Master Document Vault" action={`${documentRows.length} document(s)`} />{documentRows.map((doc, i) => <div className="wc-vaultRow" key={doc.id || `${doc.title}-${i}`}><b>{doc.title || doc.filename || doc.category || 'Uploaded document'}</b><span>{doc.category || doc.doc_type || 'document'}</span><span>{clientDocumentProgress(doc)}</span><span>{doc.exception_review_status === 'required' ? 'GoClear attention required' : 'Automated workflow'}</span><span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Uploaded'}</span><span>{/credit/i.test(doc.category || doc.title || '') ? 'Credit Profile' : /bank|tax|profit|license/i.test(doc.category || doc.title || '') ? 'Funding Readiness' : 'Profile'}</span></div>)}</div>
     <div className="wc-card wc-secure"><b>🛡 Your documents are safe & secure</b><span>Bank-level encryption protects your data.</span><button onClick={() => navigate('/client/resources')}>Learn about security →</button></div></section>
 }
 

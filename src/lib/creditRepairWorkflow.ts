@@ -656,16 +656,26 @@ export async function loadSystemReviewForDocument(documentId: string): Promise<C
   const { data, error } = await supabase.from('credit_report_system_reviews').select('*').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1).maybeSingle();
   return error || !data ? null : summarizeSystemReview(data as Record<string, unknown>);
 }
+const ACTIVE_ANALYSIS_STATUSES = ['queued','processing'];
+const CURRENT_PARSER_VERSION = 'live-0.1.0';
 export async function queueCreditReportAnalysis(input: { tenantId: string; clientId: string; documentId: string }) {
   if (!isSupabaseConfigured || !supabase) return { ok: false, error: 'Supabase is not configured.' };
-  const { data: active } = await supabase.from('credit_analysis_jobs').select('id,status').eq('document_id', input.documentId).in('status', ['queued','processing']).limit(1).maybeSingle();
+  const { data: active } = await supabase.from('credit_analysis_jobs').select('id,status').eq('document_id', input.documentId).eq('analysis_type','three_bureau_credit_report').eq('parser_version',CURRENT_PARSER_VERSION).in('status', ACTIVE_ANALYSIS_STATUSES).limit(1).maybeSingle();
   if (active) return { ok: true, job: active, duplicatePrevented: true };
-  const { data, error } = await supabase.from('credit_analysis_jobs').insert({ tenant_id: input.tenantId, client_id: input.clientId, document_id: input.documentId, status: 'queued' }).select('id,status').single();
+  const { data: complete } = await supabase.from('credit_analysis_jobs').select('id,status').eq('document_id',input.documentId).eq('analysis_type','three_bureau_credit_report').eq('parser_version',CURRENT_PARSER_VERSION).eq('status','complete').is('superseded_by_job_id',null).limit(1).maybeSingle();
+  if (complete) return { ok:true, job:complete, duplicatePrevented:true, completedVersionExists:true };
+  const { data, error } = await supabase.from('credit_analysis_jobs').insert({ tenant_id: input.tenantId, client_id: input.clientId, document_id: input.documentId, status: 'queued', analysis_type:'three_bureau_credit_report', parser_version:CURRENT_PARSER_VERSION, ruleset_version:'canonical-v1', idempotency_key:`${input.documentId}:three_bureau_credit_report:${CURRENT_PARSER_VERSION}`, requested_reason:'admin recovery queue action' }).select('id,status').single();
   return error ? { ok: false, error: error.message } : { ok: true, job: data, duplicatePrevented: false };
+}
+export async function requestCreditAnalysisRerun(documentId:string,reason:string){
+  if(!isSupabaseConfigured||!supabase)return {ok:false,error:'Supabase is not configured.'};
+  if(reason.trim().length<5)return {ok:false,error:'A rerun reason is required.'};
+  const {data,error}=await supabase.rpc('request_credit_analysis_rerun',{p_document_id:documentId,p_reason:reason.trim()});
+  return error?{ok:false,error:error.message}:{ok:true,jobId:data};
 }
 export async function loadLatestAnalysisJob(documentId: string) {
   if (!isSupabaseConfigured || !supabase) return null;
-  const { data } = await supabase.from('credit_analysis_jobs').select('id,status,failure_code,failure_message,created_at,updated_at').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const { data } = await supabase.from('credit_analysis_jobs').select('id,status,failure_code,failure_message,parser_version,worker_version,ruleset_version,attempt_count,max_attempts,claimed_at,started_at,completed_at,created_at,updated_at').eq('document_id', documentId).order('created_at', { ascending: false }).limit(1).maybeSingle();
   return data || null;
 }
 
@@ -688,6 +698,21 @@ export interface PendingCreditReportReview {
   reviewStatusLabel: string;
   parserStatus: 'not_parsed' | 'suggested_extraction_available' | 'ocr_required' | 'needs_specialist_review';
   nextActionLabel: string;
+  documentStatus: string;
+  analysisStatus: string;
+  strategyStatus: string;
+  clientActionStatus: string;
+  exceptionReviewStatus: string;
+  mailStatus: string;
+  analysisJobStatus: string | null;
+  parserVersion: string | null;
+  canonicalAccountsCount: number;
+  unmatchedTradelinesCount: number;
+  discrepanciesCount: number;
+  exceptionCount: number;
+  accountsParsed: number;
+  inquiriesCount: number;
+  bureauCount: number;
 }
 
 function isCreditReportDocument(doc: Record<string, unknown>): boolean {
@@ -710,18 +735,11 @@ export async function loadPendingCreditReportReviews(): Promise<PendingCreditRep
       .from('client_documents')
       .select('*')
       .eq('client_visible', true)
-      .in('status', ['pending_review', 'review_needed', 'open'])
       .order('created_at', { ascending: false });
 
     if (error || !docs) return [];
 
-    const creditReportDocs = docs.filter((doc: Record<string, unknown>) => {
-      const isCredit = isCreditReportDocument(doc);
-      const isPending = doc.goclear_review_status === 'pending_review'
-        || doc.status === 'pending_review'
-        || doc.status === 'review_needed';
-      return isCredit && isPending;
-    });
+    const creditReportDocs = docs.filter((doc: Record<string, unknown>) => isCreditReportDocument(doc));
 
     if (creditReportDocs.length === 0) return [];
 
@@ -748,18 +766,33 @@ export async function loadPendingCreditReportReviews(): Promise<PendingCreditRep
       }
     }
 
+    const documentIds=creditReportDocs.map((d:Record<string,unknown>)=>String(d.id));
+    const [workflowRes,jobRes,parserRes,canonicalRes,unmatchedRes,discrepancyRes]=await Promise.all([
+      supabase.from('credit_document_workflows').select('*').in('document_id',documentIds),
+      supabase.from('credit_analysis_jobs').select('document_id,status,parser_version,created_at').in('document_id',documentIds).order('created_at',{ascending:false}),
+      supabase.from('credit_report_parser_results').select('document_id,parser_version,accounts,inquiries,bureaus_detected,needs_specialist_review,created_at').in('document_id',documentIds).eq('extraction_success',true).order('created_at',{ascending:false}),
+      supabase.from('credit_canonical_accounts').select('document_id,id').in('document_id',documentIds),
+      supabase.from('credit_unmatched_tradelines').select('document_id,id,exception_required').in('document_id',documentIds),
+      supabase.from('credit_report_discrepancies').select('document_id,id,exception_review_required').in('document_id',documentIds),
+    ]);
+    const firstMap=(rows:any[]|null,key:string)=>{const m:Record<string,any>={};for(const row of rows||[])if(!m[row[key]])m[row[key]]=row;return m};
+    const countMap=(rows:any[]|null,key:string)=>{const m:Record<string,number>={};for(const row of rows||[])m[row[key]]=(m[row[key]]||0)+1;return m};
+    const workflows=firstMap(workflowRes.data,'document_id'), jobs=firstMap(jobRes.data,'document_id'), parsers=firstMap(parserRes.data,'document_id');
+    const canonicalCounts=countMap(canonicalRes.data,'document_id'), unmatchedCounts=countMap(unmatchedRes.data,'document_id'), discrepancyCounts=countMap(discrepancyRes.data,'document_id');
     return creditReportDocs.map((doc: Record<string, unknown>) => {
       const clientId = doc.client_id as string || 'unknown';
       const client = clientMap[clientId] || { name: null, email: null };
       const fileName = (doc.title as string) || (doc.file_name as string) || 'Untitled document';
       const status = (doc.status as string) || 'pending_review';
-      const goclearReviewStatus = (doc.goclear_review_status as string) || status;
+      const workflow=workflows[String(doc.id)]||{};const job=jobs[String(doc.id)]||null;const parser=parsers[String(doc.id)]||null;
+      const exceptionReviewStatus=String(workflow.exception_review_status||((doc.goclear_review_status==='pending_review')?'required':'not_required'));
+      const goclearReviewStatus = exceptionReviewStatus;
 
-      let parserStatus: PendingCreditReportReview['parserStatus'] = 'needs_specialist_review';
+      let parserStatus: PendingCreditReportReview['parserStatus'] = exceptionReviewStatus==='required'?'needs_specialist_review':'not_parsed';
       if (fileName.toLowerCase().includes('ocr')) parserStatus = 'ocr_required';
-      else if (status === 'pending_review') parserStatus = 'suggested_extraction_available';
+      else if (parser) parserStatus = 'suggested_extraction_available';
 
-      let nextActionLabel = 'Review uploaded report';
+      let nextActionLabel = workflow.analysis_status==='complete'?'Inspect completed analysis':'Analysis queues automatically';
       if (parserStatus === 'ocr_required') nextActionLabel = 'Manual review or backend OCR worker';
       else if (status === 'pending_review') nextActionLabel = 'Run parser preview or manual review';
 
@@ -777,9 +810,10 @@ export async function loadPendingCreditReportReviews(): Promise<PendingCreditRep
         goclearReviewStatus,
         uploadedAt: (doc.created_at as string) || '',
         source: (doc.source as string) || null,
-        reviewStatusLabel: status === 'pending_review' ? 'Pending GoClear Review' : status.replace(/_/g, ' '),
+        reviewStatusLabel: exceptionReviewStatus==='required'?'Pending GoClear Review':workflow.analysis_status==='complete'?'Analysis Complete':String(workflow.analysis_status||job?.status||'waiting_for_analysis').replace(/_/g,' '),
         parserStatus,
         nextActionLabel,
+        documentStatus:String(workflow.document_status||'uploaded'),analysisStatus:String(workflow.analysis_status||job?.status||'not_queued'),strategyStatus:String(workflow.strategy_status||'not_started'),clientActionStatus:String(workflow.client_action_status||'not_ready'),exceptionReviewStatus,mailStatus:String(workflow.mail_status||'not_requested'),analysisJobStatus:job?.status||null,parserVersion:parser?.parser_version||job?.parser_version||null,canonicalAccountsCount:canonicalCounts[String(doc.id)]||0,unmatchedTradelinesCount:unmatchedCounts[String(doc.id)]||0,discrepanciesCount:discrepancyCounts[String(doc.id)]||0,exceptionCount:exceptionReviewStatus==='required'?1:0,accountsParsed:Array.isArray(parser?.accounts)?parser.accounts.length:0,inquiriesCount:Array.isArray(parser?.inquiries)?parser.inquiries.length:0,bureauCount:Array.isArray(parser?.bureaus_detected)?parser.bureaus_detected.length:0,
       };
     });
   } catch {

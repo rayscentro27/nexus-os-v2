@@ -47,6 +47,12 @@ export interface ClientDocument {
   filename: string;
   status: string;
   uploaded_at: string;
+  document_status?: string;
+  analysis_status?: string;
+  strategy_status?: string;
+  client_action_status?: string;
+  exception_review_status?: string;
+  mail_status?: string;
 }
 
 export interface BusinessProfileRequirement {
@@ -198,7 +204,12 @@ export async function loadClientDocuments(clientId?: string): Promise<{ data: Cl
         .eq('client_id', id);
 
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      if (data && data.length > 0) {
+        const documentIds=data.map((row:Record<string,unknown>)=>String(row.id));
+        const {data:workflows}=await supabase.from('credit_document_workflows').select('document_id,document_status,analysis_status,strategy_status,client_action_status,exception_review_status,mail_status').in('document_id',documentIds);
+        const byDocument=Object.fromEntries((workflows||[]).map((row:Record<string,unknown>)=>[row.document_id,row]));
+        return { data: data.map((row:Record<string,unknown>)=>({...row,...(byDocument[String(row.id)]||{})})) as unknown as ClientDocument[], source: 'supabase' as const };
+      }
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }

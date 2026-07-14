@@ -33,7 +33,7 @@ unsafe_field_patterns = [
 ]
 add("Manual item form does not request unsafe fields", not any(re.search(pattern, workbench, re.I) for pattern in unsafe_field_patterns))
 add("Parser preview does not fake live parsing", "suggested extraction" in workbench.lower() or "needs goclear specialist review" in workbench.lower())
-add("Mark Needs Info has feedback/error", "Unable to mark needs info" in workbench and "Marked report as Needs Info" in workbench)
+add("Mark Needs Info has feedback/error", "Unable to mark needs info" in workbench and "Marked as Additional Information Needed" in workbench)
 add("Action feedback exists", "actionMessage" in workbench and "actionError" in workbench)
 add("Tabs have meaningful empty states", "Create a case from Client Queue" in workbench and "Add Manual Item from Client Queue" in workbench and "No mail jobs yet" in workbench)
 add("No auto letters from upload", "No letters were created" in workbench and "No letters are generated automatically" in workbench)

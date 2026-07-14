@@ -19,6 +19,7 @@ import {
   markMailJobSent,
   loadSystemReviewForDocument,
   queueCreditReportAnalysis,
+  requestCreditAnalysisRerun,
   loadLatestAnalysisJob,
 } from '../lib/creditRepairWorkflow'
 import { DISPUTE_REASON_LABELS, OUTCOME_CATEGORIES } from '../lib/disputeStrategyKnowledge'
@@ -121,10 +122,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       setActionError('Select a pending report first.')
       return
     }
-    selectPendingReview(doc)
-    setReviewPanelOpen(true)
-    setParserPanelOpen(false)
-    setActionMessage(`Review panel opened for ${doc.fileName}.`)
+    handleRunParserPreview(doc)
+    setActionMessage(`Inspection opened for ${doc.fileName}.`)
   }
 
   function handleRunParserPreview(doc = selectedPending) {
@@ -161,7 +160,18 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
     const result = await queueCreditReportAnalysis({ tenantId: doc.tenantId, clientId: doc.clientId, documentId: doc.documentId })
     if (!result.ok) return setActionError(result.error || 'Could not queue analysis.')
     setAnalysisJob(result.job)
-    setActionMessage(result.duplicatePrevented ? 'An analysis job is already queued or processing.' : 'Analysis queued. Run the bounded Mac queue worker, then refresh analysis.')
+    setActionMessage(result.completedVersionExists ? 'This parser version already completed. Use controlled rerun with a reason if new analysis is necessary.' : result.duplicatePrevented ? 'An analysis job is already queued or processing.' : 'Recovery analysis queued. Run the bounded Mac queue worker, then refresh analysis.')
+  }
+
+  async function handleControlledRerun(doc = selectedPending) {
+    if (!doc) return setActionError('Select a report first.')
+    const reason = window.prompt('Reason for controlled rerun (required; prior attempt will be preserved):', '')
+    if (!reason || reason.trim().length < 5) return setActionError('Controlled rerun cancelled: a specific reason is required.')
+    if (!window.confirm('Create a new preserved analysis attempt? This does not overwrite the prior result.')) return
+    const result = await requestCreditAnalysisRerun(doc.documentId, reason)
+    if (!result.ok) return setActionError(result.error || 'Could not request controlled rerun.')
+    setActionMessage('Controlled rerun queued with its reason and parent attempt preserved.')
+    setAnalysisJob(await loadLatestAnalysisJob(doc.documentId))
   }
 
   async function handleRefreshParserResults(doc = selectedPending) {
@@ -314,11 +324,14 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       setActionError('Mark Needs Info requires Supabase.')
       return
     }
+    const missing = window.prompt('What specific information is missing? Do not enter sensitive identifiers.', '')
+    if (!missing || missing.trim().length < 5) return setActionError('Specify the missing information before changing status.')
     const { error } = await supabase
       .from('client_documents')
       .update({
         goclear_review_status: 'needs_info',
         status: 'needs_info',
+        recommended_next_action: `Additional information needed: ${missing.trim().slice(0, 180)}`,
         updated_at: new Date().toISOString(),
       })
       .eq('id', doc.documentId)
@@ -326,7 +339,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       setActionError(`Unable to mark needs info: ${error.message}`)
       return
     }
-    setActionMessage('Marked report as Needs Info. Client document status can reflect this where displayed.')
+    await supabase.from('credit_document_workflows').update({ exception_review_status:'required', exception_code:'admin_requested_review', exception_reason:'Additional information is required before processing can continue.' }).eq('document_id',doc.documentId)
+    setActionMessage('Marked as Additional Information Needed with a specific sanitized reason.')
     await refreshQueue()
   }
 
@@ -433,7 +447,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
           <h3 style={{ fontSize: 14, fontWeight: 800, marginBottom: 2 }}>Review Queue</h3>
-          <p style={{ fontSize: 12, color: '#94a7c3' }}>Pending credit report uploads from client portal. Queue source: client_documents pending credit_report uploads.</p>
+          <p style={{ fontSize: 12, color: '#94a7c3' }}>Credit-report pipeline from client_documents. Normal reports advance automatically; GoClear appears only for defined exceptions.</p>
         </div>
         <button onClick={refreshQueue} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#94a7c3', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Refresh</button>
       </div>
@@ -463,15 +477,17 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
           <div style={{ fontSize: 10, color: '#6b7b94', marginTop: 2 }}>
             Category: {doc.category || 'credit_report'} · Source: {doc.source || 'client_portal'} · Parser: {doc.parserStatus?.replace(/_/g, ' ')}
           </div>
+          <div style={{ fontSize: 10, color: '#94a7c3', marginTop: 4 }}>Uploaded → {doc.analysisStatus === 'not_queued' ? 'Waiting for analysis' : doc.analysisStatus.replace(/_/g,' ')} → {doc.canonicalAccountsCount ? 'Canonical matching complete' : 'Canonical matching pending'} → {doc.discrepanciesCount ? `${doc.discrepanciesCount} discrepancies detected` : 'No discrepancies recorded'} → Strategy {doc.strategyStatus.replace(/_/g,' ')} → Client {doc.clientActionStatus.replace(/_/g,' ')}</div>
+          {doc.analysisStatus === 'complete' && <div style={{fontSize:10,color:'#10b981',marginTop:3}}>{doc.accountsParsed} accounts · {doc.inquiriesCount} inquiries · {doc.bureauCount} bureaus · {doc.canonicalAccountsCount} canonical · {doc.unmatchedTradelinesCount} unmatched · {doc.exceptionCount ? `${doc.exceptionCount} exception` : 'No GoClear exception required'} · parser {doc.parserVersion||'unknown'}</div>}
         </div>
         <span style={{ padding: '3px 8px', borderRadius: 12, background: 'rgba(245,158,11,.15)', color: '#f59e0b', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
           {doc.reviewStatusLabel}
         </span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
           <button onClick={() => handleReviewReport(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#1766ff', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Review Report</button>
-          <button onClick={() => handleRunParserPreview(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Run Report Analysis</button>
-          <button onClick={() => handleQueueAnalysis(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#0ea5e9', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Queue Analysis</button>
-          <button onClick={() => handleCreateCreditRepairCase(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Create Profile Review Case</button>
+          <button onClick={() => handleControlledRerun(doc)} disabled={doc.analysisStatus !== 'complete'} title={doc.analysisStatus === 'complete' ? 'Creates a new preserved attempt and requires a reason' : 'Controlled rerun is available only after a completed analysis'} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#7048e8', color: '#fff', fontSize: 11, fontWeight: 700, cursor: doc.analysisStatus === 'complete' ? 'pointer' : 'not-allowed', opacity: doc.analysisStatus === 'complete' ? 1 : .5 }}>Run Report Analysis</button>
+          <button onClick={() => handleQueueAnalysis(doc)} disabled={['queued','processing','complete'].includes(doc.analysisStatus)} title={['queued','processing'].includes(doc.analysisStatus) ? 'Analysis is already active' : doc.analysisStatus === 'complete' ? 'Current parser version already completed; use controlled rerun' : 'Recovery action when automatic queueing did not create a job'} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#0ea5e9', color: '#fff', fontSize: 11, fontWeight: 700, cursor: ['queued','processing','complete'].includes(doc.analysisStatus) ? 'not-allowed' : 'pointer', opacity: ['queued','processing','complete'].includes(doc.analysisStatus) ? .5 : 1 }}>Queue Analysis</button>
+          {doc.exceptionReviewStatus === 'required' && <button onClick={() => handleCreateCreditRepairCase(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Create Profile Review Case</button>}
           <button onClick={() => handleAddManualItem(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: 'none', background: '#f59e0b', color: '#101e32', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add Manual Item</button>
           <button onClick={() => handleMarkNeedsInfo(doc)} style={{ padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(148,163,184,.22)', background: 'rgba(255,255,255,.06)', color: '#edf5ff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Mark Needs Info</button>
         </div>
@@ -483,16 +499,18 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, fontSize: 12, color: '#94a7c3', marginBottom: 12 }}>
           <div><strong>File:</strong> {selectedPending.fileName}</div>
           <div><strong>Client:</strong> {selectedPending.clientName || selectedPending.clientId}</div>
-          <div><strong>Status:</strong> {selectedPending.reviewStatusLabel}</div>
-          <div><strong>Parser:</strong> {selectedPending.parserStatus?.replace(/_/g, ' ')}</div>
+          <div><strong>Analysis:</strong> {selectedPending.analysisStatus.replace(/_/g,' ')}</div>
+          <div><strong>Exception review:</strong> {selectedPending.exceptionReviewStatus === 'required' ? 'GoClear attention required' : 'Not required'}</div>
+          <div><strong>Strategy:</strong> {selectedPending.strategyStatus.replace(/_/g,' ')}</div>
+          <div><strong>Client action:</strong> {selectedPending.clientActionStatus.replace(/_/g,' ')}</div>
           <div><strong>Source:</strong> {selectedPending.source || 'client_portal'}</div>
           <div><strong>Uploaded:</strong> {selectedPending.uploadedAt ? new Date(selectedPending.uploadedAt).toLocaleString() : 'Unknown'}</div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => setActionMessage('Safe file preview is not available yet. Use metadata review and manual item entry for now.')} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg, #1766ff, #7048e8)', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>Review Report</button>
-          <button onClick={() => handleRunParserPreview()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#7048e8', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Run Report Analysis</button>
-          <button onClick={() => handleQueueAnalysis()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#0ea5e9', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Queue Analysis</button>
-          <button onClick={() => handleCreateCreditRepairCase()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Create Profile Review Case</button>
+          <button onClick={() => handleControlledRerun()} disabled={selectedPending.analysisStatus !== 'complete'} title="Controlled rerun requires a completed attempt, confirmation, and reason" style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#7048e8', color: '#fff', fontSize: 12, cursor: selectedPending.analysisStatus === 'complete' ? 'pointer' : 'not-allowed', opacity:selectedPending.analysisStatus === 'complete'?1:.5 }}>Run Report Analysis</button>
+          <button onClick={() => handleQueueAnalysis()} disabled={['queued','processing','complete'].includes(selectedPending.analysisStatus)} title="Recovery action only; disabled while active or after current-version completion" style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#0ea5e9', color: '#fff', fontSize: 12, cursor: ['queued','processing','complete'].includes(selectedPending.analysisStatus)?'not-allowed':'pointer', opacity:['queued','processing','complete'].includes(selectedPending.analysisStatus)?.5:1 }}>Queue Analysis</button>
+          {selectedPending.exceptionReviewStatus === 'required' && <button onClick={() => handleCreateCreditRepairCase()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', fontSize: 12, cursor: 'pointer' }}>Create Profile Review Case</button>}
           <button onClick={() => handleAddManualItem()} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: '#f59e0b', color: '#101e32', fontSize: 12, cursor: 'pointer' }}>Add Manual Item</button>
           <button onClick={() => handleMarkNeedsInfo()} style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid rgba(148,163,184,.2)', background: 'rgba(255,255,255,.06)', color: '#edf5ff', fontSize: 12, cursor: 'pointer' }}>Mark Needs Info</button>
         </div>
@@ -519,8 +537,8 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
             {parserResult.warnings.length > 0 && <div style={{ margin: '6px 0', fontSize: 11 }}>
               Warnings: {parserResult.warnings.map(w => w.message).join('; ')}
             </div>}
-            <div style={{ fontSize: 11, margin: '4px 0', color: '#f59e0b' }}>
-              Suggested extraction — Needs GoClear specialist review. Not verified yet.
+            <div style={{ fontSize: 11, margin: '4px 0', color: selectedPending.exceptionReviewStatus === 'required' ? '#f59e0b' : '#10b981' }}>
+              {selectedPending.exceptionReviewStatus === 'required' ? 'Low-confidence exception — GoClear attention required.' : 'Analysis complete — no GoClear exception required. Parsed values remain source-derived, not factual verification.'}
             </div>
             {parserResult.accountsCount === 0 && parserResult.textLength > 0 && <div style={{ margin: '8px 0', padding: 8, borderRadius: 6, background: 'rgba(239,68,68,.15)', color: '#ef4444', fontSize: 11 }}>
               Parser result data mismatch detected. Refresh analysis or inspect the latest result.
@@ -539,7 +557,7 @@ python3 scripts/credit/parse_uploaded_credit_report.py --document-id {selectedPe
           {systemReview && <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'rgba(16,185,129,.08)' }}>
             <h4 style={{ margin: '0 0 8px' }}>System First-Pass Review</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
-              {[['Accounts analyzed', systemReview.summary.accountsAnalyzed || parserResult?.accountsCount || 0], ['Funding-impact items', systemReview.fundingImpactItems.length], ['Utilization actions', systemReview.utilizationActions.length], ['Inquiries reviewed', systemReview.inquiryReviews.length], ['Report items needing review', systemReview.reportItemReviews.length], ['Client evidence requests', systemReview.evidenceNeeded.length], ['Specialist exceptions', systemReview.specialistExceptions.length], ['Credit Profile status', systemReview.summary.creditProfileStatus || 'pending review']].map(([label,value]) => <div key={label} style={{ padding: 6, borderRadius: 6, background: 'rgba(0,0,0,.2)' }}><small>{label}</small><strong style={{ display: 'block' }}>{String(value)}</strong></div>)}
+              {[['Accounts analyzed', systemReview.summary.accountsAnalyzed || parserResult?.accountsCount || 0], ['Funding-impact items', systemReview.fundingImpactItems.length], ['Utilization actions', systemReview.utilizationActions.length], ['Inquiries reviewed', systemReview.inquiryReviews.length], ['Report items needing review', systemReview.reportItemReviews.length], ['Client evidence requests', systemReview.evidenceNeeded.length], ['GoClear exceptions', selectedPending.exceptionCount], ['Credit Profile status', systemReview.summary.creditProfileStatus || 'pending review']].map(([label,value]) => <div key={label} style={{ padding: 6, borderRadius: 6, background: 'rgba(0,0,0,.2)' }}><small>{label}</small><strong style={{ display: 'block' }}>{String(value)}</strong></div>)}
             </div>
             {systemReview.fundingImpactItems.slice(0, 12).map(item => <div key={item.id} style={{ marginTop: 8, padding: 8, border: '1px solid rgba(148,163,184,.18)', borderRadius: 7 }}>
               <strong>{item.creditorFurnisher || 'Report item'} · {item.maskedAccountReference || 'masked reference unavailable'}</strong>
