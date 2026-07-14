@@ -352,6 +352,8 @@ export interface ClientPortalLiveData {
   partnerOffers: PartnerOffer[];
   creditItems: CreditWorkflowItem[];
   systemReviews: Array<Record<string, unknown>>;
+  strategyRecommendations: Array<Record<string, unknown>>;
+  strategyDecisions: Array<Record<string, unknown>>;
   resolvedClientId: string | null;
   resolvedTenantId: string | null;
 }
@@ -362,11 +364,11 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     ctx = await resolveClientContextForCurrentUser()
   }
   if (!ctx) {
-    return { profile: null, tasks: [], scores: [], documents: [], businessProfile: [], fundingScores: [], guidance: [], partnerOffers: [], creditItems: [], systemReviews: [], resolvedClientId: null, resolvedTenantId: null };
+    return { profile: null, tasks: [], scores: [], documents: [], businessProfile: [], fundingScores: [], guidance: [], partnerOffers: [], creditItems: [], systemReviews: [], strategyRecommendations: [], strategyDecisions: [], resolvedClientId: null, resolvedTenantId: null };
   }
 
   const id = ctx.clientId;
-  const [profileRes, tasksRes, scoresRes, docsRes, bizRes, fundingRes, guidanceRes, partnerRes, creditRes, systemReviewRes] = await Promise.all([
+  const [profileRes, tasksRes, scoresRes, docsRes, bizRes, fundingRes, guidanceRes, partnerRes, creditRes, systemReviewRes, strategyRes, decisionRes] = await Promise.all([
     loadClientProfile(id),
     loadClientTasks(id),
     loadReadinessScores(id),
@@ -377,6 +379,8 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     loadPartnerOffers(),
     loadCreditWorkflowItems(id),
     supabase!.from('credit_report_system_reviews').select('id,status,summary,utilization_actions,report_item_reviews,evidence_needed,recommended_next_steps,tier_1_impact,tier_2_impact').eq('client_id', id).eq('client_visible', true).eq('status', 'approved_summary').order('created_at', { ascending: false }).limit(1),
+    supabase!.from('credit_strategy_recommendations').select('id,canonical_account_id,discrepancy_id,strategy_id,strategy_version,status,confidence,payload,created_at').eq('client_id', id).eq('client_visible', true).order('created_at', { ascending: false }).limit(50),
+    supabase!.from('credit_strategy_client_decisions').select('id,recommendation_id,decision,new_state,created_at').eq('client_id', id).order('created_at', { ascending: false }).limit(100),
   ]);
 
   return {
@@ -390,9 +394,23 @@ export async function loadClientPortalLiveData(forcedContext?: ResolvedClientCon
     partnerOffers: partnerRes.data,
     creditItems: creditRes.data,
     systemReviews: (systemReviewRes.data || []) as Array<Record<string, unknown>>,
+    strategyRecommendations: (strategyRes.data || []) as Array<Record<string, unknown>>,
+    strategyDecisions: (decisionRes.data || []) as Array<Record<string, unknown>>,
     resolvedClientId: ctx.clientId,
     resolvedTenantId: ctx.tenantId,
   };
+}
+
+export async function saveCreditStrategyDecision(input:{recommendationId:string;tenantId:string;clientId:string;decision:'viewed'|'selected'|'declined'|'saved'|'evidence_requested'|'evidence_uploaded'|'draft_requested'|'draft_reviewed'|'authorized'|'escalated';notes?:string;newState?:Record<string,unknown>}) {
+  if (!supabase || !isSupabaseConfigured) return { ok:false, error:'Supabase not configured' }
+  const { error } = await supabase.from('credit_strategy_client_decisions').insert({ recommendation_id:input.recommendationId, tenant_id:input.tenantId, client_id:input.clientId, actor_type:'client', decision:input.decision, notes:input.notes||null, previous_state:{}, new_state:input.newState||{} })
+  return error ? { ok:false, error:error.message } : { ok:true }
+}
+
+export async function requestCreditStrategyTool(input:{recommendationId:string;tenantId:string;clientId:string;toolType:string}) {
+  if (!supabase || !isSupabaseConfigured) return { ok:false, error:'Supabase not configured' }
+  const { error } = await supabase.from('credit_strategy_tool_requests').insert({ recommendation_id:input.recommendationId, tenant_id:input.tenantId, client_id:input.clientId, tool_type:input.toolType, status:'requested', client_authorized:false, docupost_authorized:false })
+  return error ? { ok:false, error:error.message } : { ok:true }
 }
 
 export async function loadClientProfileIntake(forcedContext?: ResolvedClientContext): Promise<{ data: ProfileIntakeData; source: 'supabase' | 'synthetic'; error?: string }> {

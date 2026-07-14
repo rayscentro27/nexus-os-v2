@@ -67,6 +67,7 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
   const [systemReview, setSystemReview] = useState(null)
   const [analysisJob, setAnalysisJob] = useState(null)
   const [recommendationDecisions, setRecommendationDecisions] = useState({})
+  const [automationMetrics, setAutomationMetrics] = useState({ cards: 0, choices: 0, exceptions: 0, research: 0, failed: 0 })
 
   useEffect(() => {
     Promise.all([
@@ -79,6 +80,16 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    if (!supabase) return
+    Promise.all([
+      supabase.from('credit_strategy_recommendations').select('id,status', { count: 'exact' }).limit(100),
+      supabase.from('credit_strategy_client_decisions').select('id', { count: 'exact' }).limit(1),
+      supabase.from('credit_strategy_sources').select('id', { count: 'exact' }).in('review_status', ['needs_verification','needs_approval']).limit(1),
+      supabase.from('credit_analysis_jobs').select('id', { count: 'exact' }).eq('status', 'failed').limit(1),
+    ]).then(([cards, choices, research, failed]) => setAutomationMetrics({ cards: cards.count || 0, choices: choices.count || 0, exceptions: (cards.data || []).filter(x => x.status === 'exception_required').length, research: research.count || 0, failed: failed.count || 0 })).catch(() => {})
+  }, [analysisJob?.status])
 
   async function refreshQueue() {
     try {
@@ -399,7 +410,8 @@ export default function CreditSpecialistWorkbench({ onAskHermes }) {
 
   return <div style={{ padding: 16, color: '#edf5ff' }}>
     <h1 style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>Credit & Funding Readiness Review</h1>
-    <p style={{ fontSize: 13, color: '#94a7c3', marginBottom: 16 }}>Nexus performs the first-pass report and funding-impact analysis. Confirm, edit, reject, or request evidence before client-facing actions.</p>
+    <p style={{ fontSize: 13, color: '#94a7c3', marginBottom: 10 }}>Nexus performs the first-pass report comparison and approved strategy matching automatically. GoClear handles low-confidence, safety, identity-theft, legal, complaint, or system exceptions.</p>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(140px,1fr))',gap:8,marginBottom:16}}>{[['Strategy Cards generated',automationMetrics.cards],['Client selections',automationMetrics.choices],['Low-confidence exceptions',automationMetrics.exceptions],['Research awaiting approval',automationMetrics.research],['Failed analysis jobs',automationMetrics.failed]].map(([label,value])=><div key={label} style={{padding:8,borderRadius:8,background:'rgba(255,255,255,.06)'}}><small>{label}</small><strong style={{display:'block'}}>{value}</strong></div>)}</div>
 
     {loading && <div style={{ color: '#94a7c3', fontSize: 12 }}>Loading...</div>}
     {actionMessage && <div style={{ padding: 10, borderRadius: 8, background: 'rgba(16,185,129,.12)', color: '#10b981', fontSize: 12, marginBottom: 10 }}>{actionMessage}</div>}

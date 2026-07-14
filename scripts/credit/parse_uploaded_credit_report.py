@@ -30,6 +30,8 @@ from typing import Any
 
 import certifi
 from funding_readiness_credit_analysis import analyze_credit_for_funding_readiness
+from cross_bureau_credit_comparison import compare_credit_report
+from credit_strategy_matcher import match_credit_strategies
 
 
 PARSER_VERSION = "live-0.1.0"
@@ -566,6 +568,18 @@ def main() -> int:
                 print("ERROR: Could not read back saved parser row for verification.", file=sys.stderr)
                 return 2
 
+            comparison = compare_credit_report(parse_result, result_id, document_id)
+            strategy_matches = match_credit_strategies(comparison)
+            system_review["summary"].update({
+                "canonicalAccountCount": len(comparison["canonicalAccounts"]),
+                "crossBureauDiscrepancyCount": len(comparison["discrepancies"]),
+                "strategyCardCount": len(strategy_matches),
+            })
+            print("Cross-bureau strategy analysis:")
+            print(f"  canonical_accounts={len(comparison['canonicalAccounts'])}")
+            print(f"  discrepancies={len(comparison['discrepancies'])}")
+            print(f"  strategy_cards={len(strategy_matches)}")
+
             review_row = {
                 "tenant_id": tenant_id, "client_id": client_id, "document_id": document_id,
                 "parser_result_id": result_id, "status": "pending_review", "summary": system_review["summary"],
@@ -593,6 +607,24 @@ def main() -> int:
             print("System review created:")
             for label, key in (("funding-impact items","funding_impact_items"),("utilization actions","utilization_actions"),("report-item reviews","report_item_reviews"),("inquiry reviews","inquiry_reviews"),("evidence-needed","evidence_needed"),("specialist exceptions","specialist_exceptions"),("no-action items","no_action_items")):
                 print(f"  {label}={count(key)}")
+
+            # Recommendations are rebuilt deterministically for this document. Ordinary,
+            # confident cards are client-visible; ambiguous matches route to GoClear.
+            supabase_request("DELETE", supabase_url, service_role_key,
+                f"credit_strategy_recommendations?document_id=eq.{document_id}")
+            recommendation_rows = [{
+                "tenant_id": tenant_id, "client_id": client_id, "document_id": document_id,
+                "parser_result_id": result_id, "system_review_id": system_review_id,
+                "canonical_account_id": match["canonicalAccountId"], "discrepancy_id": match["discrepancyId"],
+                "strategy_id": match["strategyId"], "strategy_version": match["strategyVersion"],
+                "status": "exception_required" if match["specialistException"] else "client_choice_pending",
+                "client_visible": not match["specialistException"], "confidence": match["confidence"],
+                "payload": match,
+            } for match in strategy_matches]
+            if recommendation_rows:
+                supabase_request("POST", supabase_url, service_role_key, "credit_strategy_recommendations", body=recommendation_rows)
+            print(f"  durable_strategy_recommendations={len(recommendation_rows)}")
+            print(f"  GoClear_exceptions={sum(1 for row in recommendation_rows if not row['client_visible'])}")
         except Exception as e:
             print(f"ERROR: Could not save verified parser/system review data: {e}", file=sys.stderr)
             print("Local artifacts were preserved; apply the additive migration or correct server credentials, then retry.", file=sys.stderr)

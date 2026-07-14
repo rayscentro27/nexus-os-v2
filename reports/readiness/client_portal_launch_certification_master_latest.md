@@ -1,5 +1,11 @@
 # Client Portal Launch Certification Master Report
 
+## Research-to-Clyde automation — 2026-07-14
+
+PASS in fake/synthetic scope: automated bureau comparison, discrepancy detection, approved strategy matching, Clyde Strategy Cards, durable selections/audit events, exception routing, bounded research intake, draft authorization gating, and DocuPost gating.
+
+NOT READY: real sensitive reports, paid public launch, unreviewed strategies, autonomous mailing, guaranteed outcomes, legal conclusions, and production use before authenticated multi-device/RLS security testing. Outcome data is not yet sufficient.
+
 **Date:** 2026-07-13
 **Scope:** Full credit repair engine integration — parser save/load fix
 
