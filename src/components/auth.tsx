@@ -56,7 +56,7 @@ export function SignInForm({ adminOnly = false }: { adminOnly?: boolean }) {
   if (resetMode) return <div className="authwrap"><form className="authcard" onSubmit={requestReset}>
     <h1>Reset Nexus OS password</h1>
     <p>Enter the administrator email. The new password will be chosen only after opening the secure Supabase recovery link.</p>
-    <div className="field"><label>Email</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required /></div>
+    <div className="field"><label htmlFor="admin-reset-email">Email</label><input id="admin-reset-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required /></div>
     {err && <div className="err">{err}</div>}{notice && <div role="status">{notice}</div>}
     <button className="btn" type="submit" disabled={busy || !isSupabaseConfigured} style={{ width:'100%',marginTop:8 }}>{busy?'Requesting…':'Send secure reset link'}</button>
     <button className="btn ghost" type="button" onClick={()=>{setResetMode(false);setErr('');setNotice('')}} style={{ width:'100%',marginTop:8 }}>Back to sign in</button>
@@ -71,12 +71,12 @@ export function SignInForm({ adminOnly = false }: { adminOnly?: boolean }) {
           <div className="err">Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.</div>
         )}
         <div className="field">
-          <label>Email</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
+          <label htmlFor="admin-email">Email</label>
+          <input id="admin-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
         </div>
         <div className="field">
-          <label>Password</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
+          <label htmlFor="admin-password">Password</label>
+          <input id="admin-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </div>
         {err && <div className="err">{err}</div>}
         {notice && <div role="status">{notice}</div>}
@@ -116,11 +116,13 @@ export function AuthGate({ children }: { children: (user: SessionUser) => ReactN
 
 export function AdminLoginPage() {
   const { user, loading, recoveryMode } = useSession();
+  useEffect(() => {
+    if (!loading && !recoveryMode && user) {
+      window.location.assign('/admin');
+    }
+  }, [user, loading, recoveryMode]);
   if (loading) return <div className="authwrap"><div className="muted">Loading…</div></div>;
   if (recoveryMode) return <UpdatePasswordForm />;
-  if (user) {
-    window.location.assign('/admin');
-    return <div className="authwrap"><div className="muted">Redirecting to admin…</div></div>;
-  }
+  if (user) return <div className="authwrap"><div className="muted">Redirecting to admin…</div></div>;
   return <SignInForm adminOnly />;
 }

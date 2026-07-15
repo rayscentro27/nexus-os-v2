@@ -18,8 +18,10 @@ def read_env(path):
     return values
 
 def request(url, key, method='GET', body=None):
-    req = urllib.request.Request(url, data=json.dumps(body).encode() if body else None, method=method, headers={'apikey':key, 'Authorization':f'Bearer {key}', 'Content-Type':'application/json'})
-    return json.loads(urllib.request.urlopen(req, context=ssl.create_default_context(cafile=certifi.where())).read())
+    req = urllib.request.Request(url, data=json.dumps(body).encode() if body else None, method=method, headers={'apikey':key, 'Authorization':f'Bearer {key}', 'Content-Type':'application/json', 'Prefer':'return=representation'})
+    resp = urllib.request.urlopen(req, context=ssl.create_default_context(cafile=certifi.where()))
+    data = resp.read()
+    return json.loads(data) if data else []
 
 def main():
     parser=argparse.ArgumentParser(); parser.add_argument('--persona',choices=EMAILS,default='a'); args=parser.parse_args()
@@ -34,10 +36,21 @@ def main():
         metadata={'name':f'Nexus Synthetic {args.persona.title()}','role':'admin' if args.persona=='admin' else 'client','synthetic':True}
         if existing:
             request(f"{url}/auth/v1/admin/users/{existing['id']}", key, 'PUT', {'password':password, 'email_confirm':True, 'user_metadata':metadata})
-            status = 'updated'
+            user_id = existing['id']; status = 'updated'
         else:
-            request(f'{url}/auth/v1/admin/users', key, 'POST', {'email':email, 'password':password, 'email_confirm':True, 'user_metadata':metadata})
-            status = 'created'
+            resp = request(f'{url}/auth/v1/admin/users', key, 'POST', {'email':email, 'password':password, 'email_confirm':True, 'user_metadata':metadata})
+            user_id = resp['id']; status = 'created'
+        if args.persona == 'admin':
+            try:
+                existing_admin = request(f"{url}/rest/v1/admin_users?id=eq.{user_id}&select=id", key)
+            except Exception:
+                existing_admin = []
+            if not existing_admin:
+                request(f"{url}/rest/v1/admin_users", key, 'POST', {'id': user_id, 'email': email, 'role': 'admin', 'active': True})
+                status += ' +admin_users row inserted'
+            else:
+                request(f"{url}/rest/v1/admin_users?id=eq.{user_id}", key, 'PATCH', {'active': True, 'role': 'admin'})
+                status += ' +admin_users row verified'
     except urllib.error.HTTPError as error:
         print(f'FAIL: Supabase auth request returned HTTP {error.code}'); return 1
     current={line.split('=',1)[0]:line.split('=',1)[1] for line in E2E_ENV.read_text().splitlines() if '=' in line} if E2E_ENV.exists() else {}
