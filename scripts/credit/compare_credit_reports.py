@@ -16,9 +16,11 @@ def compare(prior, later):
             low=before.get('matchConfidence')=='low'
             results.append({'type':'uncertain_comparison' if low else 'account_not_found_on_later_report','canonicalAccountId':key,'confidence':'low' if low else 'high','causal':False})
             continue
-        if before.get('balance') is not None and after.get('balance') is not None and before['balance'] != after['balance']: results.append({'type':'balance_changed','canonicalAccountId':key,'confidence':'high','causal':False})
-        if before.get('accountStatus') and after.get('accountStatus') and before['accountStatus'] != after['accountStatus']: results.append({'type':'status_changed','canonicalAccountId':key,'confidence':'high','causal':False})
-        if before.get('ownership') and after.get('ownership') and before['ownership'] != after['ownership']: results.append({'type':'ownership_changed','canonicalAccountId':key,'confidence':'medium','causal':False})
+        changed=False
+        if before.get('balance') is not None and after.get('balance') is not None and before['balance'] != after['balance']: results.append({'type':'balance_changed','canonicalAccountId':key,'confidence':'high','causal':False}); changed=True
+        if before.get('accountStatus') and after.get('accountStatus') and before['accountStatus'] != after['accountStatus']: results.append({'type':'status_changed','canonicalAccountId':key,'confidence':'high','causal':False}); changed=True
+        if before.get('ownership') and after.get('ownership') and before['ownership'] != after['ownership']: results.append({'type':'ownership_changed','canonicalAccountId':key,'confidence':'medium','causal':False}); changed=True
+        if not changed: results.append({'type':'no_measurable_change','canonicalAccountId':key,'confidence':'medium','causal':False})
     for key in current:
         if key not in previous: results.append({'type':'account_newly_present','canonicalAccountId':key,'confidence':'medium','causal':False})
     return results
@@ -48,19 +50,35 @@ if args.persist and args.prior_report_id and args.later_report_id:
     if not base or not key:
         print('FAIL: server-side Supabase configuration is unavailable',file=sys.stderr);sys.exit(2)
     q=lambda table,where: rest(base,key,f'/rest/v1/{table}?{urllib.parse.urlencode(where)}')
-    prior_rows=q('credit_canonical_accounts',{'document_id':f'eq.{args.prior_report_id}','select':'id,normalized_creditor_label,masked_account_reference,canonical_status'})
-    later_rows=q('credit_canonical_accounts',{'document_id':f'eq.{args.later_report_id}','select':'id,normalized_creditor_label,masked_account_reference,canonical_status'})
+    prior_rows=q('credit_canonical_accounts',{'document_id':f'eq.{args.prior_report_id}','select':'id,normalized_creditor_label,canonical_status'})
+    later_rows=q('credit_canonical_accounts',{'document_id':f'eq.{args.later_report_id}','select':'id,normalized_creditor_label,canonical_status'})
     if not prior_rows or not later_rows:
         print('FAIL: both reports require persisted canonical accounts',file=sys.stderr);sys.exit(2)
-    prior=[{'canonicalAccountId':f"{r.get('normalized_creditor_label','')}|{r.get('masked_account_reference','')}",'accountStatus':r.get('canonical_status')} for r in prior_rows]
-    later=[{'canonicalAccountId':f"{r.get('normalized_creditor_label','')}|{r.get('masked_account_reference','')}",'accountStatus':r.get('canonical_status')} for r in later_rows]
+    def account_snapshots(rows, report_id):
+        snapshots=[]
+        for account in rows:
+            links=q('credit_canonical_account_tradelines',{'canonical_account_id':f"eq.{account['id']}",'select':'tradeline_id'})
+            ids=[x['tradeline_id'] for x in links]
+            if not ids:
+                snapshots.append({'canonicalAccountId':str(account.get('normalized_creditor_label','')),'accountStatus':account.get('canonical_status')}); continue
+            values=q('credit_bureau_tradelines',{'id':f"in.({','.join(ids)})",'select':'balance,account_status_original,ownership_original,account_suffix'})
+            balances=[x.get('balance') for x in values if x.get('balance') is not None]
+            statuses=[x.get('account_status_original') for x in values if x.get('account_status_original')]
+            ownership=[x.get('ownership_original') for x in values if x.get('ownership_original')]
+            suffix=next((x.get('account_suffix') for x in values if x.get('account_suffix')), 'none')
+            snapshots.append({'canonicalAccountId':f"{account.get('normalized_creditor_label','')}|{suffix}",'balance':'|'.join(str(x) for x in sorted(balances)) if balances else None,'accountStatus':'|'.join(sorted(set(statuses))) if statuses else account.get('canonical_status'),'ownership':'|'.join(sorted(set(ownership))) if ownership else None})
+        return snapshots
+    prior=account_snapshots(prior_rows,args.prior_report_id); later=account_snapshots(later_rows,args.later_report_id)
+    if not prior or not later: print('FAIL: canonical snapshots are incomplete',file=sys.stderr);sys.exit(2)
     observations=compare(prior,later)
     # Resolve tenant/client from the prior document and persist an immutable run plus results.
     docs=q('client_documents',{'id':f'eq.{args.prior_report_id}','select':'tenant_id,client_id'})
     if not docs: print('FAIL: prior report metadata is unavailable',file=sys.stderr);sys.exit(2)
-    tenant,client=docs[0]['tenant_id'],docs[0]['client_id']; engine='outcome-analytics-v1'
+    tenant,client=docs[0]['tenant_id'],docs[0]['client_id']; engine='outcome-analytics-v1.2'
     now=datetime.now(timezone.utc).isoformat()
-    run=rest(base,key,'/rest/v1/credit_report_comparison_runs',method='POST',body={'tenant_id':tenant,'client_id':client,'prior_report_id':args.prior_report_id,'later_report_id':args.later_report_id,'status':'complete','comparison_engine_version':engine,'confidence':'medium','summary':{'observation_count':len(observations)},'completed_at':now})[0]
+    run_body={'tenant_id':tenant,'client_id':client,'prior_report_id':args.prior_report_id,'later_report_id':args.later_report_id,'status':'complete','comparison_engine_version':engine,'confidence':'medium','summary':{'observation_count':len(observations)},'completed_at':now}
+    existing_runs=q('credit_report_comparison_runs',{'tenant_id':f'eq.{tenant}','client_id':f'eq.{client}','prior_report_id':f'eq.{args.prior_report_id}','later_report_id':f'eq.{args.later_report_id}','comparison_engine_version':f'eq.{engine}','select':'id','limit':'1'})
+    run=existing_runs[0] if existing_runs else rest(base,key,'/rest/v1/credit_report_comparison_runs',method='POST',body=run_body)[0]
     rows=[]
     for item in observations:
         rows.append({'comparison_run_id':run['id'],'tenant_id':tenant,'client_id':client,'prior_report_id':args.prior_report_id,'later_report_id':args.later_report_id,'canonical_account_id':item.get('canonicalAccountId'),'observation_type':item['type'],'observation_value':{'causal':False},'observation_source':'structured_report_comparison','confidence':item['confidence'],'notes':'Observed report sequence; not a causal conclusion.'})

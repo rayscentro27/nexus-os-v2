@@ -20,16 +20,19 @@ def req(url,key,path,method='GET',body=None,raw=None,headers=None):
  r=urllib.request.Request(url.rstrip('/')+path,data=data,headers=h,method=method)
  return urllib.request.urlopen(r,context=SSL,timeout=45).read()
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--persona',choices=PERSONAS,default='a');ap.add_argument('--dry-run',action='store_true');a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--persona',choices=PERSONAS,default='a');ap.add_argument('--follow-up',action='store_true');ap.add_argument('--dry-run',action='store_true');a=ap.parse_args()
  e={**envfile(ROOT/'.env'),**os.environ};url=e.get('SUPABASE_URL') or e.get('VITE_SUPABASE_URL');key=e.get('SUPABASE_SERVICE_ROLE_KEY')
  if not url or not key: print('FAIL: required server environment unavailable');return 1
- fixture=FIXTURE_DIR/f'synthetic_persona_{a.persona}_initial.pdf'
- if not fixture.exists(): subprocess.run([sys.executable,str(ROOT/'scripts/testers/generate_authenticated_credit_fixtures.py'),'--persona',a.persona,'--out',str(FIXTURE_DIR)],check=True,capture_output=True)
+ fixture=FIXTURE_DIR/f'synthetic_persona_{a.persona}_{"followup" if a.follow_up else "initial"}.pdf'
+ if not fixture.exists():
+  command=[sys.executable,str(ROOT/'scripts/testers/generate_authenticated_credit_fixtures.py'),'--persona',a.persona,'--out',str(FIXTURE_DIR)]
+  if a.follow_up: command.append('--follow-up')
+  subprocess.run(command,check=True,capture_output=True)
  users=json.loads(req(url,key,'/auth/v1/admin/users?per_page=1000'))['users'];user=next((x for x in users if x.get('email','').lower()==PERSONAS[a.persona]),None)
  if not user: print('FAIL: synthetic Auth user is not provisioned');return 1
  membership=json.loads(req(url,key,f"/rest/v1/tenant_memberships?user_id=eq.{user['id']}&select=tenant_id,client_id&limit=1"))
  if not membership: print('FAIL: synthetic user has no tenant/client bootstrap membership');return 1
- tenant,client=membership[0]['tenant_id'],membership[0]['client_id'];title=f'synthetic_persona_{a.persona}_three_bureau_report_v3.pdf'
+ tenant,client=membership[0]['tenant_id'],membership[0]['client_id'];title=f'synthetic_persona_{a.persona}_three_bureau_report_{"followup_v2" if a.follow_up else "v3"}.pdf'
  existing=json.loads(req(url,key,f'/rest/v1/client_documents?tenant_id=eq.{tenant}&client_id=eq.{client}&title=eq.{title}&select=id&limit=1'))
  if existing: print(json.dumps({'ok':True,'reused':True,'document_id':existing[0]['id'],'persona':a.persona}));return 0
  if a.dry_run: print(json.dumps({'ok':True,'dry_run':True,'persona':a.persona,'storage_bucket':'client-documents'}));return 0

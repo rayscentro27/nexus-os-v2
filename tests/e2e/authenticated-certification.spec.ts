@@ -12,7 +12,7 @@ test.describe('synthetic authenticated client certification', () => {
     await page.getByLabel(/password/i).fill(password!)
     await page.getByRole('button', { name: /sign in/i }).click()
     await expect(page).toHaveURL(/\/client\/(dashboard|documents|credit-profile)/)
-    await page.reload()
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 15_000 })
     await expect(page).not.toHaveURL(/\/client\/login/)
     await page.goto('/admin/credit-specialist')
     await expect(page.getByRole('heading', { name: /admin access required/i })).toBeVisible()

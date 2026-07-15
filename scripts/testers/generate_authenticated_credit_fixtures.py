@@ -7,7 +7,9 @@ ROOT=Path(__file__).resolve().parents[2]
 def lines(kind,followup=False):
     if kind=='a':
       a_balance='1300' if followup else '1200';a_status='Current' if followup else 'Past Due'
-      return ['Synthetic Credit File','Bank Of America - Experian account ****4412 balance $1200 status: Current; opened: 01/01/2020 credit limit $5000','Bank of Amer - Equifax account ****4412 balance $1450 status: Current; opened: 01/01/2020 credit limit $5000',f'B Of A - TransUnion account ****4412 balance ${a_balance} status: {a_status}; opened: 01/01/2020 credit limit $5000','Bank Of America - Experian account ****8821 balance $500 status: Current; opened: 02/01/2018 credit limit $3000','Stable Synthetic Card - Experian account ****7711 balance $100 status: Current; opened: 03/01/2019 credit limit $1000']
+      rows=['Bank Of America - Experian account ****4412 balance $1200 status: Current; opened: 01/01/2020 credit limit $5000','Bank of Amer - Equifax account ****4412 balance $1450 status: Current; opened: 01/01/2020 credit limit $5000',f'B Of A - TransUnion account ****4412 balance ${a_balance} status: {a_status}; opened: 01/01/2020 credit limit $5000','Stable Synthetic Card - Experian account ****7711 balance $100 status: Current; opened: 03/01/2019 credit limit $1000']
+      if not followup: rows.insert(3,'Bank Of America - Experian account ****8821 balance $500 status: Current; opened: 02/01/2018 credit limit $3000')
+      return ['Synthetic Credit File']+rows
     if kind=='b': return ['Synthetic Credit File','Similar Bank - Experian account ****1111 balance $200 status: Current opened: 01/01/2018','Similar Bank - Equifax account ****9999 balance $220 status: Current opened: 02/01/2022']
     return ['Synthetic Credit File','Original Synthetic Creditor - Experian account ****4433 balance $800 status: Collection; ownership: Original Creditor; opened: 01/01/2019','Synthetic Debt Purchaser - Equifax account ****4433 balance $800 status: Collection; ownership: Purchaser; original creditor: Original Synthetic Creditor; opened: 01/01/2019']
 def make_pdf(text_lines):
