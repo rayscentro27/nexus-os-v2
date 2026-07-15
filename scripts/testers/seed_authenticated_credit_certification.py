@@ -32,7 +32,7 @@ def main():
  if not user: print('FAIL: synthetic Auth user is not provisioned');return 1
  membership=json.loads(req(url,key,f"/rest/v1/tenant_memberships?user_id=eq.{user['id']}&select=tenant_id,client_id&limit=1"))
  if not membership: print('FAIL: synthetic user has no tenant/client bootstrap membership');return 1
- tenant,client=membership[0]['tenant_id'],membership[0]['client_id'];title=f'synthetic_persona_{a.persona}_three_bureau_report_{"followup_v2" if a.follow_up else "v3"}.pdf'
+ tenant,client=membership[0]['tenant_id'],membership[0]['client_id'];title=f'synthetic_persona_{a.persona}_three_bureau_report_{"followup_v3" if a.follow_up else "v3"}.pdf'
  existing=json.loads(req(url,key,f'/rest/v1/client_documents?tenant_id=eq.{tenant}&client_id=eq.{client}&title=eq.{title}&select=id&limit=1'))
  if existing: print(json.dumps({'ok':True,'reused':True,'document_id':existing[0]['id'],'persona':a.persona}));return 0
  if a.dry_run: print(json.dumps({'ok':True,'dry_run':True,'persona':a.persona,'storage_bucket':'client-documents'}));return 0
