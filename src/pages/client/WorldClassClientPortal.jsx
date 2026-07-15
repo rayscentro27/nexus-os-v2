@@ -18,6 +18,9 @@ import { loadClientPortalLiveData, loadClientProfileIntake, saveClientProfileInt
 import { forceAuthResetAndRedirect } from '../../lib/authSessionCleanup'
 import { evaluateBusinessFundingReadiness } from '../../lib/businessFundingReadiness'
 import { evaluateTierFundingReadiness } from '../../lib/tierFundingReadinessEngine'
+import { computeJourneyState } from '../../lib/clientJourneyModel'
+import { trackEvent } from '../../lib/clientAnalytics'
+import { FundingReadinessHeader } from '../../components/client/FundingReadinessHeader'
 import '../../styles/world-class-client-portal.css'
 
 const HERO_SRC = '/assets/client-portal/nexus-funding-path-hero.png'
@@ -42,9 +45,9 @@ const pageMeta = {
 
 const navItems = [
   ['/client/dashboard', 'Home', '⌂'],
-  ['/client/credit-profile', 'Credit Profile', '〽'],
-  ['/client/profile', 'Business Profile', '♟'],
-  ['/client/funding-readiness', 'Business Funding', '⚑'],
+  ['/client/credit-profile', 'Credit', '〽'],
+  ['/client/business-setup', 'Business', '♟'],
+  ['/client/funding-readiness', 'Funding Readiness', '⚑'],
   ['/client/documents', 'Documents', '▤'],
   ['/client/resources', 'Resources', '▥'],
   ['/client/request-review', 'Request Review', '▱'],
@@ -824,6 +827,28 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
   const profile = clientPortalData.clientProfile
   const liveStatusLabel = status === 'connected' ? 'Live data connected' : status === 'loading' ? 'Live data pending' : 'Demo/fallback data'
 
+  const journey = useMemo(() => computeJourneyState({
+    creditScore: scores.credit,
+    creditReportUploaded: clientStatuses.creditReportUploaded,
+    hasDiscrepancies: scores.repair < 50,
+    strategySelected: live?.strategySelections?.length > 0,
+    businessProfileComplete: profileComplete?.complete,
+    entityEstablished: /entity|llc|inc|corp/i.test(existingDocuments.map(d => d.title || d.category).join(' ')),
+    einAvailable: /ein|tax/i.test(existingDocuments.map(d => d.title || d.category).join(' ')),
+    businessAddress: /address/i.test(existingDocuments.map(d => d.title || d.category).join(' ')),
+    bankAccountReady: /bank/i.test(existingDocuments.map(d => d.title || d.category).join(' ')),
+    revenueDocumented: /revenue|statement|income/i.test(existingDocuments.map(d => d.title || d.category).join(' ')),
+    documentsComplete: getLiveDocuments(live).missing.length === 0,
+    documentsMissing: getLiveDocuments(live).missing.length,
+    reviewRequested: live?.tasks?.some?.(t => t.task_type === 'review_request' && t.status !== 'rejected'),
+    lastActivity: live?.lastActivity || null,
+    utilizationHigh: scores.credit < 70,
+  }), [live, scores, profileComplete, existingDocuments, clientStatuses])
+
+  useEffect(() => {
+    trackEvent({ event: 'stage_viewed', stage: journey.currentStage, route: path })
+  }, [path, journey.currentStage])
+
   useEffect(() => setShowIcons(false), [path])
 
   const routeTo = (nextPath) => {
@@ -888,7 +913,7 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
 
   return <div className="wc-client-portal">
     <aside className="wc-sidebar"><div className="wc-brandButton"><div className="wc-brandMark">N</div><div className="wc-brandText"><b>NEXUS</b><span>CLIENT PORTAL</span></div></div><nav className="wc-sideNav">{navItems.map(([route, label, icon]) => <button key={route} className={`wc-navLabel ${!showIcons && pageMeta[route]?.key === meta.key ? 'active' : ''}`} onClick={() => routeTo(route)}><span className="wc-navIcon">{icon}</span><span>{label}</span></button>)}</nav><button className={`wc-sideAction ${showIcons ? 'active' : ''}`} onClick={() => setShowIcons(true)}>View icon system →</button><div className="wc-help"><strong>Need help?</strong><p>Our team is here to support you.</p></div>{shouldShowInternalDataBadge && <div className="wc-live"><strong>●</strong> {liveStatusLabel}<p>as of today, 9:41 AM</p></div>}<button className="wc-signOut" onClick={() => forceAuthResetAndRedirect('/client/login')}>Sign Out</button></aside>
-    <main className="wc-main"><header className="wc-topbar"><div className="wc-pill">💎 {profile.membershipTier || 'Nexus Funding Readiness Membership'}</div><button className="wc-bell" disabled title="Notifications panel is coming soon. Ask Clyde or request GoClear review for help.">🔔<span>2</span></button><button className="wc-userPill" onClick={() => routeTo('/client/profile')}><div className="wc-avatar">👨🏻</div>{profile.name || 'Alex Morgan'}⌄</button></header><div className="wc-pageHost">{panel}</div></main>
+    <main className="wc-main"><header className="wc-topbar"><div className="wc-pill">💎 {profile.membershipTier || 'Nexus Funding Readiness Membership'}</div><button className="wc-bell" disabled title="Notifications panel is coming soon. Ask Clyde or request GoClear review for help.">🔔<span>2</span></button><button className="wc-userPill" onClick={() => routeTo('/client/profile')}><div className="wc-avatar">👨🏻</div>{profile.name || 'Alex Morgan'}⌄</button></header><div className="wc-pageHost"><FundingReadinessHeader journey={journey} onNavigate={routeTo} />{panel}</div></main>
     <ClydePanel navigate={routeTo} clydeContext={clydeContext} onClydeAction={handleClydeAction} onOpenChat={() => setClydeOpen(true)} />
     <ClydeChatDrawer open={clydeOpen} onClose={() => setClydeOpen(false)} navigate={routeTo} pageTitle={meta.title} clydeContext={clydeContext} onClydeAction={handleClydeAction} />
     <SimpleDocumentUploadPanel isOpen={uploadPanel.isOpen} onClose={() => setUploadPanel(panel => ({ ...panel, isOpen: false }))} pageContext={uploadPanel.pageContext} track={uploadPanel.track} suggestedCategory={uploadPanel.suggestedCategory} title={uploadPanel.title} description={uploadPanel.description} existingDocuments={existingDocuments} missingRequirements={getLiveDocuments(live).missing} onUploaded={refreshLiveData} onViewVault={() => routeTo('/client/documents')} />

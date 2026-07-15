@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AdminLoginPage, AuthGate, useSession } from '../components/auth';
 import { AdminGuard } from '../components/auth/AdminGuard';
 import NexusAdminUI from '../admin/NexusAdminUI';
@@ -13,11 +13,57 @@ import {
   GoClearPricingPage,
   GoClearLoginPage,
 } from '../pages/goclear/GoClearPublicPages';
+import { resolveClientContextForCurrentUser } from '../lib/clientAuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+
+async function isUserAdmin(userId: string): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const { data: adminRow } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('id', userId)
+      .maybeSingle();
+    if (adminRow) return true;
+  } catch {}
+  try {
+    const { data: membership } = await supabase
+      .from('tenant_memberships')
+      .select('role')
+      .eq('user_id', userId)
+      .in('role', ['super_admin', 'admin', 'operator'])
+      .limit(1)
+      .maybeSingle();
+    if (membership) return true;
+  } catch {}
+  return false;
+}
 
 function ClientPortalGate() {
   const { user, loading } = useSession();
-  if (loading) return <div className="authwrap"><div className="muted">Loading…</div></div>;
-  if (!user) {
+  const [clientOk, setClientOk] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const admin = await isUserAdmin(user.id);
+        if (cancelled) return;
+        if (admin) { setClientOk(false); return; }
+        const ctx = await resolveClientContextForCurrentUser();
+        if (!cancelled) setClientOk(!!ctx);
+      } catch {
+        if (!cancelled) setClientOk(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, loading]);
+
+  if (loading || clientOk === null) {
+    return <div className="authwrap"><div className="muted">Loading…</div></div>;
+  }
+  if (!user || !clientOk) {
     window.location.assign('/client/login');
     return <div className="authwrap"><div className="muted">Redirecting to login…</div></div>;
   }
