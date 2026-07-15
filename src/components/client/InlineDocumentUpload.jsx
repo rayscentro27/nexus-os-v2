@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { isSupabaseConfigured, supabase } from '../../lib/supabaseClient'
+import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
+import { trackEvent } from '../../lib/clientAnalytics'
 
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/heic', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
 const MAX_SIZE = 10 * 1024 * 1024
@@ -18,16 +20,29 @@ function guessCategory(filename, contextCategory) {
 
 const CATEGORY_LABELS = {
   credit_reports: 'Credit Reports',
+  credit_report: 'Credit Reports',
   credit_evidence: 'Credit Evidence',
   identity_authorization: 'Identity & Authorization',
+  government_id: 'Identity & Authorization',
+  identification: 'Identity & Authorization',
+  proof_of_address: 'Identity & Authorization',
   business_formation: 'Business Formation',
+  business_license: 'Business Formation',
+  ein_confirmation: 'Business Formation',
   banking: 'Banking',
+  bank_statement: 'Banking',
   revenue_financials: 'Revenue & Financials',
+  revenue_summary: 'Revenue & Financials',
+  profit_and_loss: 'Revenue & Financials',
   funding_applications: 'Funding Applications',
+  funding_support: 'Funding Applications',
+  review_support: 'Funding Applications',
+  dispute_support: 'Credit Evidence',
   other: 'Other',
+  unknown: 'Other',
 }
 
-export default function InlineDocumentUpload({ category, onUploaded, compact, label, className }) {
+export default function InlineDocumentUpload({ category, onUploaded, compact, label, className, pageContext = 'client_portal', track = 'general', requirementKey = '' }) {
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -52,15 +67,18 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
     setUploading(true)
     setProgress(0)
     setResult(null)
+    trackEvent({ event: 'upload_started', stage: track, requirement: requirementKey, route: pageContext })
 
     try {
+      if (!isSupabaseConfigured || !supabase) throw new Error('Supabase is not configured')
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setResult({ ok: false, message: 'Not authenticated' }); return }
 
-      const userId = session.user.id
+      const context = await resolveClientContextForCurrentUser()
+      if (!context) throw new Error('Could not resolve your client profile')
       const timestamp = Date.now()
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const path = `${userId}/${timestamp}_${safeName}`
+      const path = `${session.user.id}/${timestamp}_${safeName}`
 
       setProgress(30)
 
@@ -73,13 +91,10 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
 
       const cat = selectedCategory || guessCategory(file.name, category)
 
-      const { data: { user } } = await supabase.auth.getUser()
-      const membershipRes = await supabase.from('tenant_memberships').select('tenant_id, client_id').limit(1).single()
-
       const docMeta = {
-        id: `doc_${timestamp}_${safeName}`,
-        tenant_id: membershipRes.data?.tenant_id || '',
-        client_id: membershipRes.data?.client_id || user?.id || '',
+        id: `${context.authUserId}_${timestamp}_${safeName}`,
+        tenant_id: context.tenantId,
+        client_id: context.clientId,
         category: cat,
         title: file.name,
         summary: `Uploaded via inline upload — ${CATEGORY_LABELS[cat] || cat}`,
@@ -87,14 +102,23 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
         score: 0,
         priority: 'normal',
         risk_level: 'low',
+        automation_level: cat === 'credit_reports' ? 'automatic_analysis_queue' : 'manual',
         client_visible: true,
-        approval_required: cat === 'credit_reports',
+        approval_required: true,
+        goclear_review_status: cat === 'credit_reports' ? 'not_required' : 'pending_review',
+        source: 'client_portal_upload',
+        source_concept: `inline_${track}`,
+        recommended_next_action: cat === 'credit_reports' ? 'Analysis queues automatically after upload' : 'Admin review uploaded document',
+        created_at: new Date().toISOString(),
         payload: {
           storage_path: path,
           file_size: file.size,
           mime_type: file.type,
           uploaded_via: 'inline_upload',
           document_category: cat,
+          journey_stage: track,
+          requirement_key: requirementKey || null,
+          page_context: pageContext,
         },
       }
 
@@ -104,9 +128,10 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
       setProgress(100)
       setResult({ ok: true, message: `Uploaded to ${CATEGORY_LABELS[cat] || cat}` })
       setFile(null)
-      onUploaded?.(docMeta)
+      onUploaded?.({ documentId: docMeta.id, fileName: file.name, category: cat, requirementKey, stage: track })
+      trackEvent({ event: 'upload_completed', stage: track, requirement: requirementKey, route: pageContext, detail: cat })
 
-      if (cat === 'credit_reports') {
+      if (cat === 'credit_reports' || cat === 'credit_report') {
         const { error: jobError } = await supabase.from('credit_analysis_jobs').insert({
           tenant_id: docMeta.tenant_id,
           client_id: docMeta.client_id,
@@ -118,6 +143,7 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
       }
     } catch (err) {
       setResult({ ok: false, message: err?.message || 'Upload failed' })
+      trackEvent({ event: 'upload_failed', stage: track, requirement: requirementKey, route: pageContext, detail: err?.message || 'Upload failed' })
     } finally {
       setUploading(false)
     }

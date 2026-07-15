@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { DocumentUploadZone } from './DocumentUploadZone'
+import InlineDocumentUpload from './InlineDocumentUpload'
 import {
   DOCUMENT_CLASSIFICATION_DISCLOSURE,
   getDocumentUsageLabels,
@@ -67,13 +67,13 @@ export function SimpleDocumentUploadPanel({
           <b>One document at a time</b>
           <p>{DOCUMENT_CLASSIFICATION_DISCLOSURE}</p>
         </div>
-        <DocumentUploadZone
-          compact
-          maxFiles={1}
+        <InlineDocumentUpload
           category={predictedCategory}
-          sourceConcept={sourceByTrack[track] || sourceByTrack.general}
-          fromPage={pageContext}
-          onUploadComplete={handleUploadComplete}
+          label="Choose and upload one document"
+          pageContext={pageContext}
+          track={track}
+          requirementKey={suggestedCategory || predictedCategory}
+          onUploaded={handleUploadComplete}
         />
         {uploaded ? (
           <div className="wc-uploadPanelResult">

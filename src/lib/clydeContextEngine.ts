@@ -6,6 +6,11 @@ export interface ClydeContext {
   journey: ClientJourneyState | null
   documents: Array<{ id: string; category: string; status: string; title: string }>
   profileComplete: boolean
+  primaryBlocker?: string | null
+  nextAction?: string
+  readinessState?: string
+  missingFacts?: string[]
+  evidenceState?: string[]
 }
 
 export interface ClydeMessage {
@@ -132,6 +137,56 @@ export function generateClydeMessages(ctx: ClydeContext): ClydeMessage[] {
   }
 
   messages.push(...getStageInsights(ctx.stage, ctx.journey))
+
+  if (ctx.primaryBlocker) {
+    messages.push({
+      id: 'primary-blocker',
+      type: 'warning',
+      text: `Primary blocker: ${ctx.primaryBlocker}`,
+      source: 'nexus_observed',
+      priority: 'high',
+    })
+  }
+
+  if (ctx.nextAction) {
+    messages.push({
+      id: 'next-action',
+      type: 'action',
+      text: `Next action: ${ctx.nextAction}`,
+      source: 'readiness_implication',
+      priority: 'high',
+    })
+  }
+
+  if (ctx.readinessState) {
+    messages.push({
+      id: 'readiness-state',
+      type: 'observation',
+      text: `Funding Readiness state: ${ctx.readinessState.replace(/_/g, ' ')}. This is a workflow state, not an approval prediction.`,
+      source: 'readiness_implication',
+      priority: 'medium',
+    })
+  }
+
+  if (ctx.missingFacts?.length) {
+    messages.push({
+      id: 'missing-facts',
+      type: 'uncertainty',
+      text: `Information still needed: ${ctx.missingFacts.slice(0, 4).join(', ')}.`,
+      source: 'uncertainty',
+      priority: 'medium',
+    })
+  }
+
+  if (ctx.evidenceState?.length) {
+    messages.push({
+      id: 'evidence-state',
+      type: 'fact',
+      text: `Uploaded evidence state: ${ctx.evidenceState.slice(0, 4).join(', ')}.`,
+      source: 'uploaded_evidence',
+      priority: 'low',
+    })
+  }
 
   if (ctx.documents.length === 0) {
     messages.push({

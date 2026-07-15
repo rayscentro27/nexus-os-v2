@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { DocumentUploadZone } from './DocumentUploadZone'
+import InlineDocumentUpload from './InlineDocumentUpload'
 
 function normalize(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '_')
@@ -34,6 +34,15 @@ function toneFor(status) {
   if (status === 'Approved' || status === 'Uploaded') return 'green'
   if (status === 'Pending Review' || status === 'Needs Replacement') return 'orange'
   return 'blue'
+}
+
+function trackForPage(page) {
+  if (/credit-repair|credit-profile|credit-utilization/.test(page || '')) return 'credit_profile'
+  if (/business-bankability/.test(page || '')) return 'business_bankability'
+  if (/business-setup|profile/.test(page || '')) return 'business_profile'
+  if (/funding/.test(page || '')) return 'funding_readiness'
+  if (/request-review|dispute-review/.test(page || '')) return 'request_review'
+  return 'general'
 }
 
 export function InlineDocumentRequirement({
@@ -78,12 +87,12 @@ export function InlineDocumentRequirement({
         <button disabled title={doc ? 'Uploaded document is under GoClear review. Safe viewing is not implemented yet.' : 'No reviewed document is available yet.'}>{doc ? 'Uploaded - under review' : 'No reviewed document available yet'}</button>
       </div>
       {uploadOpen && (
-        <DocumentUploadZone
-          compact
+        <InlineDocumentUpload
           category={category || requirementKey}
-          sourceConcept={requirementKey || category || 'inline_requirement'}
-          fromPage={fromPage}
-          onUploadComplete={onUploaded}
+          pageContext={fromPage || 'client_portal'}
+          track={trackForPage(fromPage)}
+          requirementKey={requirementKey || category || 'inline_requirement'}
+          onUploaded={onUploaded}
         />
       )}
     </article>

@@ -1,14 +1,12 @@
 import React from 'react'
 import { getStageIndex } from '../../lib/clientJourneyModel'
 
-const STAGE_ICONS = {
-  credit_profile: '📋',
-  credit_improvement: '📈',
-  business_foundation: '🏢',
-  business_bankability: '🏦',
-  funding_readiness: '💰',
-  review_plan: '✅',
-}
+const GUIDED_STAGES = [
+  { id: 'credit', label: 'Credit', stageIds: ['credit_profile', 'credit_improvement'], route: '/client/credit-profile' },
+  { id: 'business', label: 'Business', stageIds: ['business_foundation', 'business_bankability'], route: '/client/business-setup' },
+  { id: 'funding', label: 'Funding Readiness', stageIds: ['funding_readiness'], route: '/client/funding-readiness' },
+  { id: 'review', label: 'Request Review', stageIds: ['review_plan'], route: '/client/request-review' },
+]
 
 const STATUS_COLORS = {
   complete: '#10b981',
@@ -20,9 +18,24 @@ const STATUS_COLORS = {
   insufficient_information: '#a855f7',
 }
 
+function guidedStageFor(stageId) {
+  return GUIDED_STAGES.find(stage => stage.stageIds.includes(stageId)) || GUIDED_STAGES[0]
+}
+
+function guidedStatus(journey, stage) {
+  const statuses = stage.stageIds.map(id => journey.stages[id]?.status).filter(Boolean)
+  if (statuses.includes('blocked')) return 'blocked'
+  if (statuses.includes('action_needed')) return 'action_needed'
+  if (statuses.includes('insufficient_information')) return 'insufficient_information'
+  if (statuses.some(status => status === 'in_progress' || status === 'not_started')) return 'in_progress'
+  if (statuses.every(status => status === 'complete')) return 'complete'
+  return statuses.some(status => status === 'ready_to_review') ? 'ready_to_review' : 'not_started'
+}
+
 export function FundingReadinessHeader({ journey, onNavigate }) {
   const currentStage = journey.stages[journey.currentStage]
-  const color = STATUS_COLORS[currentStage?.status] || '#6b7280'
+  const currentGuidedStage = guidedStageFor(journey.currentStage)
+  const color = STATUS_COLORS[guidedStatus(journey, currentGuidedStage)] || '#6b7280'
 
   return (
     <div style={{
@@ -53,30 +66,31 @@ export function FundingReadinessHeader({ journey, onNavigate }) {
         </div>
         <div>
           <div style={{ color: '#94a3b8', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Funding Readiness</div>
-          <div style={{ color: '#f8fafc', fontSize: 13, fontWeight: 600 }}>{currentStage?.displayName || 'Getting Started'}</div>
+          <div style={{ color: '#f8fafc', fontSize: 13, fontWeight: 600 }} title={currentStage?.displayName || 'Getting Started'}>{currentGuidedStage.label || 'Getting Started'}</div>
         </div>
       </div>
 
       {/* Progress dots */}
       <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        {(['credit_profile', 'credit_improvement', 'business_foundation', 'business_bankability', 'funding_readiness', 'review_plan']).map((sid) => {
-          const stage = journey.stages[sid]
-          const isActive = sid === journey.currentStage
-          const isPast = getStageIndex(sid) < getStageIndex(journey.currentStage)
-          const c = STATUS_COLORS[stage?.status] || '#6b7280'
+        {GUIDED_STAGES.map((stage) => {
+          const isActive = stage.id === currentGuidedStage.id
+          const isPast = stage.stageIds.every(sid => getStageIndex(sid) < getStageIndex(journey.currentStage))
+          const status = guidedStatus(journey, stage)
+          const c = STATUS_COLORS[status] || '#6b7280'
           return (
             <div
-              key={sid}
-              title={`${stage?.displayName}: ${stage?.status?.replace(/_/g, ' ')}`}
+              key={stage.id}
+              aria-label={stage.label}
+              title={`${stage.label}: ${status.replace(/_/g, ' ')}`}
               style={{
                 width: isActive ? 24 : 10,
                 height: 10,
                 borderRadius: 5,
-                background: isPast || stage?.status === 'complete' ? '#10b981' : isActive ? c : '#334155',
+                background: isPast || status === 'complete' ? '#10b981' : isActive ? c : '#334155',
                 transition: 'all 0.2s',
                 cursor: 'pointer',
               }}
-              onClick={() => onNavigate(stage?.nextActionRoute || '/client/dashboard')}
+              onClick={() => onNavigate(stage.route)}
             />
           )
         })}

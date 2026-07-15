@@ -11,12 +11,13 @@ function loadDecisions() { try { return JSON.parse(localStorage.getItem(STORAGE_
 
 function mapTaskRequestToCard(row) {
   const payload = row.payload || {};
+  const status = row.status === 'requested' || row.status === 'assigned' || row.status === 'in_progress' ? 'pending' : row.status === 'done' ? 'approved' : row.status;
   return {
     id: row.id,
     title: row.title || payload.title || 'Untitled task',
     category: row.task_type || 'general',
     riskLevel: row.sensitivity || 'public',
-    status: row.status || 'pending',
+    status: status || 'pending',
     externalAction: false,
     recommendation: row.result_summary || payload.recommendation || 'Review and decide.',
     source: 'Supabase task_requests (' + String(row.id).slice(0, 8) + '...)',

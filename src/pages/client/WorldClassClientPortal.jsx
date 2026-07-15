@@ -19,8 +19,12 @@ import { forceAuthResetAndRedirect } from '../../lib/authSessionCleanup'
 import { evaluateBusinessFundingReadiness } from '../../lib/businessFundingReadiness'
 import { evaluateTierFundingReadiness } from '../../lib/tierFundingReadinessEngine'
 import { computeJourneyState } from '../../lib/clientJourneyModel'
+import { buildClientFundingReadiness } from '../../lib/clientFundingReadiness'
 import { trackEvent } from '../../lib/clientAnalytics'
 import { FundingReadinessHeader } from '../../components/client/FundingReadinessHeader'
+import GuidedClientJourneySurface from '../../components/client/GuidedClientJourneySurface'
+import InlineDocumentUpload from '../../components/client/InlineDocumentUpload'
+import { generateClydeMessages as generateContextClydeMessages } from '../../lib/clydeContextEngine'
 import '../../styles/world-class-client-portal.css'
 
 const HERO_SRC = '/assets/client-portal/nexus-funding-path-hero.png'
@@ -464,7 +468,7 @@ function DocumentsPanel({ live, refreshLiveData, navigate, openUploadPanel }) {
   const uploadedDocs = docs.uploaded.length ? docs.uploaded : ['Bank Statement - Chase', 'Pay Stub - April 2025', 'ID - Driver License', 'Utility Bill - April 2025']
   const missingDocs = docs.missing.length ? docs.missing : ['Credit Report', 'Bank Statement', 'Proof of Address']
   const underReviewDocs = docs.underReview.length ? docs.underReview : ['Tax Return - 2023', 'Business License', 'Profit & Loss Statement']
-  return <section className="wc-panel wc-panel-documents"><Hero /><div className="wc-docHub"><div className="wc-card wc-drop"><div className="wc-uploadIcon">↑</div><h3>Documents Vault</h3><p>Documents is your vault. You can upload from any workflow page, and Clyde will organize it here for GoClear review.</p><DocumentUploadZone onUploadComplete={refreshLiveData} maxFiles={1} /><small>One document at a time · Accepted: PDF, JPG, PNG, HEIC, TXT, DOCX · Max 10MB</small></div><div className="wc-card wc-scanner"><h3>Organization Flow</h3>{[['↑', 'Uploaded', 'Your document is securely uploaded'], ['✦', 'Suggested', 'Category is suggested from context and filename'], ['✓', 'Pending Review', 'GoClear verifies the document type'], ['⌂', 'Vaulted', 'Stored in Documents Vault automatically']].map(([icon, title, text]) => <div className="wc-scanStep" key={title}><span>{icon}</span><div><b>{title}</b><p>{text}</p></div></div>)}</div></div>
+  return <section className="wc-panel wc-panel-documents"><Hero /><div className="wc-docHub"><div className="wc-card wc-drop"><div className="wc-uploadIcon">↑</div><h3>Documents Vault</h3><p>Documents is your vault. You can upload from any workflow page, and Clyde will organize it here for GoClear review.</p><InlineDocumentUpload label="Choose and upload one document" pageContext="documents_vault" track="documents" requirementKey="documents_vault" onUploaded={refreshLiveData} /><small>One document at a time · Accepted: PDF, JPG, PNG, HEIC, TXT, DOCX · Max 10MB</small></div><div className="wc-card wc-scanner"><h3>Organization Flow</h3>{[['↑', 'Uploaded', 'Your document is securely uploaded'], ['✦', 'Suggested', 'Category is suggested from context and filename'], ['✓', 'Pending Review', 'GoClear verifies the document type'], ['⌂', 'Vaulted', 'Stored in Documents Vault automatically']].map(([icon, title, text]) => <div className="wc-scanStep" key={title}><span>{icon}</span><div><b>{title}</b><p>{text}</p></div></div>)}</div></div>
     <div className="wc-quickUpload"><b>Quick Upload</b>{['Credit Report', 'ID Document', 'Proof of Address', 'Bank Statement', 'Tax Return', 'Business License', 'Other'].map(x => <button key={x} onClick={() => openUploadPanel({ track: 'documents', pageContext: 'documents_vault', suggestedCategory: x.toLowerCase().replaceAll(' ', '_'), title: `Upload ${x}`, description: 'Upload one document to Documents Vault for Pending GoClear Review.' })}>{x}</button>)}</div>
     <div className="wc-docLists"><div className="wc-card wc-listCard"><SectionHead title="Recently Uploaded" action={docs.source === 'supabase' ? 'Live data' : 'View all →'} />{uploadedDocs.slice(0, 4).map((doc, i) => <ListItem key={`${doc}-${i}`} title={doc} text="Categorized" />)}</div><div className="wc-card wc-listCard"><SectionHead title="Needs Review" action="View all →" />{underReviewDocs.slice(0, 3).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="Pending GoClear review" />)}</div><div className="wc-card wc-listCard"><SectionHead title="Missing Documents" action="View all →" />{missingDocs.slice(0, 3).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="High Impact" />)}</div><div className="wc-card wc-recommended"><h3>Recommended for You</h3><p>Upload Proof of Income</p><p>Add More Bank Statements</p><p>Submit Business License</p><button onClick={() => navigate('/client/resources')}>See recommendations →</button></div></div>
     <div className="wc-card wc-documentVault"><SectionHead title="Master Document Vault" action={`${documentRows.length} document(s)`} />{documentRows.map((doc, i) => <div className="wc-vaultRow" key={doc.id || `${doc.title}-${i}`}><b>{doc.title || doc.filename || doc.category || 'Uploaded document'}</b><span>{doc.category || doc.doc_type || 'document'}</span><span>{clientDocumentProgress(doc)}</span><span>{doc.exception_review_status === 'required' ? 'GoClear attention required' : 'Automated workflow'}</span><span>{doc.created_at ? new Date(doc.created_at).toLocaleDateString() : 'Uploaded'}</span><span>{/credit/i.test(doc.category || doc.title || '') ? 'Credit Profile' : /bank|tax|profit|license/i.test(doc.category || doc.title || '') ? 'Funding Readiness' : 'Profile'}</span></div>)}</div>
@@ -717,7 +721,7 @@ function ResourcesPanel({ live, navigate }) {
   return <section className="wc-panel wc-panel-resources"><Hero /><div className="wc-resourceRec">{cards.map(([tag, title, button]) => <div className="wc-card wc-resCard" key={title}><span>{tag}</span><h3>{title}</h3><p>Recommended based on your current goals.</p><button onClick={() => navigate(routeForResource(tag, title))}>{button}</button></div>)}</div><div className="wc-card wc-resourceBanner"><h3>Resources connect to real progress.</h3><p>Every article, video, guide, and tool helps you take action and move closer to funding.</p><div><span>✓ Learn proven strategies</span><span>✓ Take action with confidence</span><span>✓ Unlock more opportunities</span></div></div><div className="wc-catRow">{[['🎓', 'Learning Center', 18], ['📘', 'Funding Education', 22], ['📈', 'Credit Report Review Tools', 15], ['💼', 'Business Setup Guides', 17], ['🧰', 'Recommended Tools', 12]].map(([icon, title, count]) => <MiniCard key={title} icon={icon} title={title} text={`${count} resources available.`} button="Explore" onClick={() => navigate(routeForResource(title, title))} />)}</div><div className="wc-partnerRow">{(offers.length ? offers.slice(0, 4).map(o => [o.title || 'Recommended Tool', o.category || 'Recommended Tools']) : [['LiveWell', 'Credit Monitoring'], ['Nav', 'Business Credit Builder'], ['Relay', 'Business Banking'], ['D&B', 'Business Credit Profile']]).map(([name, text]) => <div className="wc-card wc-partner" key={name}><b>{name}</b><p>{text}</p><button onClick={() => navigate(routeForResource(text, name))}>Learn more →</button></div>)}</div></section>
 }
 
-function ReviewPanel({ live, scores, refreshLiveData, existingDocuments, openUploadPanel, navigate }) {
+function ReviewPanel({ live, scores, readiness, refreshLiveData, existingDocuments, openUploadPanel, navigate }) {
   const [reviewType, setReviewType] = useState('Standard Review')
   const [topic, setTopic] = useState('Funding Readiness & Profile Strength')
   const [notes, setNotes] = useState('')
@@ -729,10 +733,10 @@ function ReviewPanel({ live, scores, refreshLiveData, existingDocuments, openUpl
   const checklist = [
     ['Basic Profile & Business Info', true, 'Complete'],
     ['Credit Health Overview', scores.credit > 0, `${scores.credit}/100`],
-    ['Identity Verification', buildClientStatuses(live, null, scores).identityVerified, 'Required'],
-    ['Bank Account Verified', buildClientStatuses(live, null, scores).businessBankAccount, 'Recommended'],
-    ['Credit Report Uploaded', buildClientStatuses(live, null, scores).creditReportUploaded, 'Required'],
-    ['Funding Readiness Score', scores.funding >= 70, `${scores.funding}/100 · Recommended 80+`],
+    ['Identity Verification', readiness?.stages?.business_bankability?.requirements?.find(req => req.id === 'identity_consistency')?.status === 'complete', 'Required'],
+    ['Bank Account Verified', readiness?.stages?.business_bankability?.requirements?.find(req => req.id === 'bank_account')?.status === 'complete', 'Recommended'],
+    ['Credit Report Uploaded', readiness?.stages?.credit?.requirements?.find(req => req.id === 'credit_report_status')?.status === 'complete', 'Required'],
+    ['Funding Readiness State', Boolean(readiness), readiness ? `${readiness.state.replaceAll('_', ' ')} · ${readiness.overallScore}/100` : 'Processing'],
   ]
 
   async function submitReview() {
@@ -745,6 +749,31 @@ function ReviewPanel({ live, scores, refreshLiveData, existingDocuments, openUpl
       if (!user) throw new Error('You must be signed in to submit a review request.')
       const ctx = await resolveClientContextForCurrentUser()
       if (!ctx) throw new Error('Could not resolve your client profile. Please sign out and sign back in or contact GoClear.')
+      const { data: activeRequests, error: activeRequestError } = await supabase
+        .from('client_tasks')
+        .select('id,status,payload')
+        .eq('client_id', ctx.clientId)
+        .eq('category', 'review_request')
+        .in('status', ['pending_admin_review', 'in_review'])
+        .limit(1)
+      if (activeRequestError) throw activeRequestError
+      if (activeRequests?.[0]) {
+        setState('submitted')
+        refreshLiveData?.()
+        return
+      }
+      const readinessSnapshot = {
+        state: readiness?.state || 'insufficient_information',
+        overallScore: readiness?.overallScore || 0,
+        primaryBlocker: readiness?.primaryBlocker || null,
+        nextBestAction: readiness?.nextBestAction || null,
+        reviewEligible: Boolean(readiness?.reviewEligible),
+        missingRequirements: (readiness?.outstandingRequirements || []).slice(0, 30),
+        processingDocuments: (readiness?.processingDocuments || []).slice(0, 20),
+        tier1Status: readiness?.tier1?.status || 'insufficient_information',
+        tier2Status: readiness?.tier2?.status || 'insufficient_information',
+        capturedAt: new Date().toISOString(),
+      }
       const { error: insertError } = await supabase.from('client_tasks').insert({
         id: `${ctx.authUserId}_review_request_${Date.now()}`,
         tenant_id: ctx.tenantId,
@@ -762,10 +791,12 @@ function ReviewPanel({ live, scores, refreshLiveData, existingDocuments, openUpl
         source: 'client_portal',
         source_concept: 'request_review',
         recommended_next_action: 'Admin review readiness and respond via approved_client_guidance',
+        payload: { readiness_snapshot: readinessSnapshot, review_type: reviewType, topic: topic.slice(0, 240) },
         created_at: new Date().toISOString(),
       })
       if (insertError) throw insertError
       setState('submitted')
+      trackEvent({ event: 'review_requested', route: '/client/request-review', detail: `${reviewType}:${readinessSnapshot.state}` })
       refreshLiveData?.()
     } catch (err) {
       setError(err.message || 'Review request failed.')
@@ -773,7 +804,7 @@ function ReviewPanel({ live, scores, refreshLiveData, existingDocuments, openUpl
     }
   }
 
-  return <section className="wc-panel wc-panel-review"><Hero /><UploadLane title="Attach Support Document" description="Upload one support document for this review request. Clyde will organize it for Pending GoClear Review." onUpload={() => openUploadPanel({ track: 'request_review', pageContext: 'request_review', suggestedCategory: 'review_support', title: 'Attach Support Document', description: 'Upload one review support document for Pending GoClear Review.' })} onVault={() => navigate('/client/documents')} /><div className="wc-reviewGrid"><div className="wc-card wc-listCard"><SectionHead title="Review Readiness Checklist" action="View all →" />{checklist.map(([title, ok, text]) => <ListItem key={title} tone={ok ? 'green' : 'orange'} mark={ok ? '✓' : '!'} title={title} text={text} />)}</div><div className="wc-card wc-formCard"><h3>Request Review</h3><p>Tell us what you'd like reviewed.</p><div className="wc-choiceRow">{['Standard Review', 'Final Review', 'Rescore Review', 'Custom Review'].map(x => <button className={reviewType === x ? 'active' : ''} key={x} onClick={() => setReviewType(x)}>{x}</button>)}</div><input className="wc-inputBox" value={topic} onChange={e => setTopic(e.target.value)} /><textarea className="wc-textarea" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Share anything specific you'd like our team to know..." /><InlineDocumentRequirement title="Review Support Attachment" description="Attach support documents for this review request." category="review_support" requirementKey="review_support" fromPage="request-review" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={refreshLiveData} onOpenUpload={({ title, category, fromPage, description }) => openUploadPanel({ track: 'request_review', pageContext: fromPage || 'request_review', suggestedCategory: category, title: `Upload ${title}`, description })} whyItMatters="Attachments help GoClear review your request with context." />{error && <p className="wc-errorText">{error}</p>}{isSubmitted && <p className="wc-successText">Review request submitted. Your profile is now in the GoClear admin review queue.</p>}<button className="wc-submitBtn" disabled={state === 'submitting' || isSubmitted} onClick={submitReview}>{state === 'submitting' ? 'Submitting...' : isSubmitted ? 'Review Requested' : 'Submit Review Request'}</button></div><div className="wc-card wc-nextSteps"><h3>What Happens Next</h3>{['Review Submitted', 'Under Review', 'Results Delivered', 'Take Action'].map((title, i) => <ListItem key={title} tone="blue" mark={String(i + 1)} title={title} text={['Confirmation email with next steps.', 'Specialists review your profile.', 'Feedback and recommendations.', 'Improve your profile.'][i]} />)}</div></div></section>
+  return <section className="wc-panel wc-panel-review"><Hero /><UploadLane title="Attach Support Document" description="Upload one support document for this review request. Clyde will organize it for Pending GoClear Review." onUpload={() => openUploadPanel({ track: 'request_review', pageContext: 'request_review', suggestedCategory: 'review_support', title: 'Attach Support Document', description: 'Upload one review support document for Pending GoClear Review.' })} onVault={() => navigate('/client/documents')} /><div className="wc-reviewGrid"><div className="wc-card wc-listCard"><SectionHead title="Review Readiness Checklist" action="View all →" />{checklist.map(([title, ok, text]) => <ListItem key={title} tone={ok ? 'green' : 'orange'} mark={ok ? '✓' : '!'} title={title} text={text} />)}</div><div className="wc-card wc-formCard"><h3>Request Review</h3><p>Tell us what you'd like reviewed. Current readiness: <b>{readiness?.state?.replaceAll('_', ' ') || 'insufficient information'}</b>. {readiness?.reviewEligible ? 'You are eligible to request review.' : 'The request will include outstanding requirements for specialist visibility.'}</p><div className="wc-choiceRow">{['Standard Review', 'Final Review', 'Rescore Review', 'Custom Review'].map(x => <button className={reviewType === x ? 'active' : ''} key={x} onClick={() => setReviewType(x)}>{x}</button>)}</div><input className="wc-inputBox" value={topic} onChange={e => setTopic(e.target.value)} /><textarea className="wc-textarea" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Share anything specific you'd like our team to know..." /><InlineDocumentRequirement title="Review Support Attachment" description="Attach support documents for this review request." category="review_support" requirementKey="review_support" fromPage="request-review" impactLabel="Optional" required={false} existingDocuments={existingDocuments} onUploaded={refreshLiveData} onOpenUpload={({ title, category, fromPage, description }) => openUploadPanel({ track: 'request_review', pageContext: fromPage || 'request_review', suggestedCategory: category, title: `Upload ${title}`, description })} whyItMatters="Attachments help GoClear review your request with context." />{error && <p className="wc-errorText">{error}</p>}{isSubmitted && <p className="wc-successText">Review request submitted. Your profile is now in the GoClear admin review queue. No external message or document submission was triggered.</p>}<button className="wc-submitBtn" disabled={state === 'submitting' || isSubmitted} onClick={submitReview}>{state === 'submitting' ? 'Submitting...' : isSubmitted ? 'Review Requested' : 'Submit Review Request'}</button></div><div className="wc-card wc-nextSteps"><h3>What Happens Next</h3>{['Review Submitted', 'Under Review', 'Results Delivered', 'Take Action'].map((title, i) => <ListItem key={title} tone="blue" mark={String(i + 1)} title={title} text={['In-app confirmation with next steps.', 'Specialists review your profile.', 'Feedback and recommendations.', 'Improve your profile.'][i]} />)}</div></div></section>
 }
 
 function IconSystemPanel() {
@@ -807,10 +838,10 @@ function ClydeChatDrawer({ open, onClose, navigate, pageTitle, clydeContext, onC
   </div>
 }
 
-function ClydePanel({ navigate, onOpenChat, clydeContext, onClydeAction }) {
+function ClydePanel({ navigate, onOpenChat, clydeContext, contextMessages = [], onClydeAction }) {
   const recommendations = generateClydeRecommendations(clydeContext).slice(0, 3)
   const next = getClydePageContext(clydeContext)
-  return <aside className="wc-advisor"><div className="wc-advisorCard"><div className="wc-botTop"><div className="wc-bot">🤖</div><div><h3>Clyde Funding Readiness Guide</h3><div className="wc-online">● Online</div></div></div><p>{next.pageGoal} I’ll show what is missing, what GoClear is reviewing, and what needs your approval.</p><div className="wc-advisorBox"><h4>Top Recommendations</h4>{recommendations.map((item, i) => <button className="wc-clydeItem" key={item.title} onClick={() => onClydeAction(item)}><ListItem tone={item.priority === 'high' ? 'orange' : item.priority === 'medium' ? 'blue' : 'green'} mark={String(i + 1)} title={item.title} text={item.reason} /></button>)}</div><div className="wc-advisorBox"><h4>Clyde's Tip</h4><p>Upload one document and I’ll organize it for GoClear review. Documents is your vault, but you can upload from any workflow page.</p></div><div className="wc-suggestions"><button onClick={() => onClydeAction({ actionType: 'upload', label: 'Upload Document', uploadContext: { track: next.currentTrack } })}>Upload Document</button><button onClick={() => navigate('/client/funding-readiness')}>What does funding need?</button></div><button className="wc-chatBtn" onClick={onOpenChat}>💬 Chat with Clyde</button></div></aside>
+  return <aside className="wc-advisor"><div className="wc-advisorCard"><div className="wc-botTop"><div className="wc-bot">🤖</div><div><h3>Clyde Funding Readiness Guide</h3><div className="wc-online">● Online</div></div></div><p>{next.pageGoal} I’ll show what is missing, what GoClear is reviewing, and what needs your approval.</p><div className="wc-advisorBox"><h4>Persisted context</h4>{contextMessages.slice(0, 3).map(message => <p className="wc-clydeContextLine" key={message.id}><b>{message.source.replaceAll('_', ' ')}</b>: {message.text}</p>)}</div><div className="wc-advisorBox"><h4>Top Recommendations</h4>{recommendations.map((item, i) => <button className="wc-clydeItem" key={item.title} onClick={() => onClydeAction(item)}><ListItem tone={item.priority === 'high' ? 'orange' : item.priority === 'medium' ? 'blue' : 'green'} mark={String(i + 1)} title={item.title} text={item.reason} /></button>)}</div><div className="wc-advisorBox"><h4>Clyde's Tip</h4><p>Upload one document and I’ll organize it for GoClear review. Documents is your vault, but you can upload from any workflow page.</p></div><div className="wc-suggestions"><button onClick={() => onClydeAction({ actionType: 'upload', label: 'Upload Document', uploadContext: { track: next.currentTrack } })}>Upload Document</button><button onClick={() => navigate('/client/funding-readiness')}>What does funding need?</button></div><button className="wc-chatBtn" onClick={onOpenChat}>💬 Chat with Clyde</button></div></aside>
 }
 
 export default function WorldClassClientPortal({ path, onNavigate }) {
@@ -844,6 +875,30 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
     lastActivity: live?.lastActivity || null,
     utilizationHigh: scores.credit < 70,
   }), [live, scores, profileComplete, existingDocuments, clientStatuses])
+
+  const readiness = useMemo(() => buildClientFundingReadiness({
+    profile: live?.profile,
+    documents: existingDocuments,
+    tasks: live?.tasks,
+    scores,
+    systemReviews: live?.systemReviews,
+    strategyRecommendations: live?.strategyRecommendations,
+    strategyDecisions: live?.strategyDecisions,
+    journey,
+  }), [live, existingDocuments, scores, journey])
+
+  const contextClydeMessages = useMemo(() => generateContextClydeMessages({
+    route: path,
+    stage: journey.currentStage,
+    journey,
+    documents: existingDocuments.map((doc, index) => ({ id: String(doc.id || index), category: String(doc.category || doc.doc_type || 'other'), status: String(doc.status || 'uploaded'), title: String(doc.title || doc.filename || 'Document') })),
+    profileComplete: Boolean(profileComplete?.complete || live?.profile),
+    primaryBlocker: readiness.primaryBlocker,
+    nextAction: readiness.nextBestAction,
+    readinessState: readiness.state,
+    missingFacts: readiness.outstandingRequirements,
+    evidenceState: readiness.completedRequirements,
+  }), [path, journey, existingDocuments, profileComplete, live, readiness])
 
   useEffect(() => {
     trackEvent({ event: 'stage_viewed', stage: journey.currentStage, route: path })
@@ -908,13 +963,13 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
     repair: <RepairPanel scores={scores} navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} openUploadPanel={openUploadPanel} />,
     dispute: <DisputeReviewPanel navigate={routeTo} existingDocuments={existingDocuments} onUploaded={refreshLiveData} openUploadPanel={openUploadPanel} />,
     resources: <ResourcesPanel live={live} navigate={routeTo} />,
-    review: <ReviewPanel live={live} scores={scores} refreshLiveData={refreshLiveData} existingDocuments={existingDocuments} openUploadPanel={openUploadPanel} navigate={routeTo} />,
+    review: <ReviewPanel live={live} scores={scores} readiness={readiness} refreshLiveData={refreshLiveData} existingDocuments={existingDocuments} openUploadPanel={openUploadPanel} navigate={routeTo} />,
   }[meta.key]
 
   return <div className="wc-client-portal">
     <aside className="wc-sidebar"><div className="wc-brandButton"><div className="wc-brandMark">N</div><div className="wc-brandText"><b>NEXUS</b><span>CLIENT PORTAL</span></div></div><nav className="wc-sideNav">{navItems.map(([route, label, icon]) => <button key={route} className={`wc-navLabel ${!showIcons && pageMeta[route]?.key === meta.key ? 'active' : ''}`} onClick={() => routeTo(route)}><span className="wc-navIcon">{icon}</span><span>{label}</span></button>)}</nav><button className={`wc-sideAction ${showIcons ? 'active' : ''}`} onClick={() => setShowIcons(true)}>View icon system →</button><div className="wc-help"><strong>Need help?</strong><p>Our team is here to support you.</p></div>{shouldShowInternalDataBadge && <div className="wc-live"><strong>●</strong> {liveStatusLabel}<p>as of today, 9:41 AM</p></div>}<button className="wc-signOut" onClick={() => forceAuthResetAndRedirect('/client/login')}>Sign Out</button></aside>
-    <main className="wc-main"><header className="wc-topbar"><div className="wc-pill">💎 {profile.membershipTier || 'Nexus Funding Readiness Membership'}</div><button className="wc-bell" disabled title="Notifications panel is coming soon. Ask Clyde or request GoClear review for help.">🔔<span>2</span></button><button className="wc-userPill" onClick={() => routeTo('/client/profile')}><div className="wc-avatar">👨🏻</div>{profile.name || 'Alex Morgan'}⌄</button></header><div className="wc-pageHost"><FundingReadinessHeader journey={journey} onNavigate={routeTo} />{panel}</div></main>
-    <ClydePanel navigate={routeTo} clydeContext={clydeContext} onClydeAction={handleClydeAction} onOpenChat={() => setClydeOpen(true)} />
+    <main className="wc-main"><header className="wc-topbar"><div className="wc-pill">💎 {profile.membershipTier || 'Nexus Funding Readiness Membership'}</div><button className="wc-bell" disabled title="Notifications panel is coming soon. Ask Clyde or request GoClear review for help.">🔔<span>2</span></button><button className="wc-userPill" onClick={() => routeTo('/client/profile')}><div className="wc-avatar">👨🏻</div>{profile.name || 'Alex Morgan'}⌄</button></header><div className="wc-pageHost"><FundingReadinessHeader journey={journey} onNavigate={routeTo} /><GuidedClientJourneySurface routeKey={meta.key === 'profile' ? 'business' : meta.key} readiness={readiness} journey={journey} existingDocuments={existingDocuments} openUploadPanel={openUploadPanel} onUploaded={refreshLiveData} navigate={routeTo} />{panel}</div></main>
+    <ClydePanel navigate={routeTo} clydeContext={clydeContext} contextMessages={contextClydeMessages} onClydeAction={handleClydeAction} onOpenChat={() => setClydeOpen(true)} />
     <ClydeChatDrawer open={clydeOpen} onClose={() => setClydeOpen(false)} navigate={routeTo} pageTitle={meta.title} clydeContext={clydeContext} onClydeAction={handleClydeAction} />
     <SimpleDocumentUploadPanel isOpen={uploadPanel.isOpen} onClose={() => setUploadPanel(panel => ({ ...panel, isOpen: false }))} pageContext={uploadPanel.pageContext} track={uploadPanel.track} suggestedCategory={uploadPanel.suggestedCategory} title={uploadPanel.title} description={uploadPanel.description} existingDocuments={existingDocuments} missingRequirements={getLiveDocuments(live).missing} onUploaded={refreshLiveData} onViewVault={() => routeTo('/client/documents')} />
   </div>
