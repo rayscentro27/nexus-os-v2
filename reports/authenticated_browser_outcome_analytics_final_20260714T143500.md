@@ -54,3 +54,14 @@ After restoring Supabase CLI connectivity and setting ignored local credentials,
 ## Storage-backed seed evidence
 
 Persona A was subsequently seeded through the actual `client-documents` storage bucket and `client_documents` metadata contract, then consumed by one bounded worker invocation. The synthetic fixture produced a complete parser result (26 accounts, 3 inquiries, 26 stored tradelines, 26 canonical accounts) and no GoClear exception, mail action, or DocuPost action. Its known one-row-per-account structure does not demonstrate a three-bureau collapse or strategy match, so it is not release certification evidence for those controls.
+
+## Latest parser-shaped certification evidence
+
+- Latest implementation commit: `d811a5aa2f895bdcfd32c4c709137691f09367a2` (pushed to `origin/main`).
+- Migration `20260715152000_strategy_outcome_analytics.sql` is aligned locally and remotely per `supabase migration list`.
+- Parser fixture contract passed: Persona A has five extracted rows, bureau coverage includes Experian, Equifax, and TransUnion, canonical group sizes are `[1,1,3]`, and balance/status discrepancies are detected.
+- Persona A storage-backed processing remains complete with three-bureau grouping, two discrepancies, and two approved strategy matches.
+- Persona C now preserves ownership and original-creditor fields in parser output; its storage-backed rerun produced an ownership discrepancy and one approved `Purchased Debt Documentation Review` match.
+- Genuine parser exceptions now persist to `credit_strategy_exceptions` with sanitized reason and recommended action; Persona B’s latest bounded run produced a required exception without any strategy or mail action.
+- Regression gates passed: TypeScript, Vite build (1,800 modules), static outcome checker, parser/canonical safety checks, 77 Vitest files / 1,219 tests, and the authenticated Persona A Playwright test (`1/1`).
+- Full multi-persona client/admin browser workflows, direct authenticated RLS denial harness, follow-up report comparison persistence, and readiness-history certification remain unverified in this environment; they must not be represented as passed.
