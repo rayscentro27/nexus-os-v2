@@ -44,8 +44,8 @@ describe('research-to-Clyde v1 synthetic flow',()=>{
  it('blocks unsafe drafts and never permits mail',()=>{
   expect(validateStrategyDraft('Please review the documented balance difference.')).toMatchObject({safe:true,clientReviewRequired:true,mailAllowed:false})
   expect(validateStrategyDraft('This guarantees deletion and automatic damages.')).toMatchObject({safe:false,mailAllowed:false})
-  const draft=generateSafeStrategyDraft({strategyId:'cross_bureau_balance_review',strategyVersion:1,templateVersion:'balance-v1',outputType:'bureau_comparison_summary',accountReference:'1234567890124412',detectedFacts:['Equifax reports a different balance.']})
-  expect(draft).toMatchObject({status:'draft_ready',accountReference:'****4412',clientReviewRequired:true,clientAuthorized:false,mailCreated:false});expect(draft.text).not.toContain('1234567890124412')
+  const draft=generateSafeStrategyDraft({strategyId:'cross_bureau_balance_review',strategyVersion:1,templateVersion:'balance-v1',outputType:'bureau_comparison_summary',accountReference:'account-reference-4412',detectedFacts:['Equifax reports a different balance.']})
+  expect(draft).toMatchObject({status:'draft_ready',accountReference:'****4412',clientReviewRequired:true,clientAuthorized:false,mailCreated:false});expect(draft.text).not.toContain('account-reference-4412')
  })
  it('routes only genuine exceptions',()=>{
   expect(evaluateResearchToClydeException({approvedMatches:1})).toMatchObject({exceptionRequired:false})

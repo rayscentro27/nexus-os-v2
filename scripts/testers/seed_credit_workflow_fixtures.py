@@ -3,7 +3,7 @@
 Creates parser results, canonical accounts, discrepancies, strategy matches,
 and strategy recommendations for Personas A, B, C via the Supabase admin API.
 Idempotent — skips rows that already exist."""
-import json, os, ssl, sys, time, uuid, urllib.error, urllib.request
+import argparse, json, os, ssl, sys, time, uuid, urllib.error, urllib.request
 from pathlib import Path
 import certifi
 
@@ -48,15 +48,15 @@ def find_existing(url, key, table, filters):
     return req(url, key, f'/rest/v1/{table}?{qs}&limit=1')
 
 def upsert_row(url, key, table, row):
-    """Insert or update on conflict (id). Returns the row id."""
-    try:
-        result = req(url, key, f'/rest/v1/{table}', method='POST', body=row,
-                     headers={'Prefer': 'resolution=merge-duplicates,return=representation'})
-        return result[0].get('id') if result else row.get('id')
-    except urllib.error.HTTPError:
-        return row.get('id')
+    """Insert or update on conflict (id). Fail loudly on fixture errors."""
+    result = req(url, key, f'/rest/v1/{table}', method='POST', body=row,
+                 headers={'Prefer': 'resolution=merge-duplicates,return=representation'})
+    return result[0].get('id') if result else row.get('id')
 
 def main():
+    parser = argparse.ArgumentParser(description='Seed one or all synthetic credit fixtures')
+    parser.add_argument('--persona', choices=['a', 'b', 'c'], help='only seed the selected persona')
+    args = parser.parse_args()
     env = {**envfile(ROOT / '.env'), **os.environ}
     url = env.get('SUPABASE_URL') or env.get('VITE_SUPABASE_URL')
     key = env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -67,7 +67,8 @@ def main():
     users = req(url, key, '/auth/v1/admin/users?per_page=1000').get('users', [])
     stats = {'created': 0, 'reused': 0}
 
-    for persona_key, email in PERSONAS.items():
+    personas = {args.persona: PERSONAS[args.persona]} if args.persona else PERSONAS
+    for persona_key, email in personas.items():
         user = next((u for u in users if u.get('email', '').lower() == email), None)
         if not user:
             print(f'WARN: persona {persona_key} auth user not found, skipping')
@@ -104,7 +105,10 @@ def main():
             stats['created'] += 1
 
         # 2. Parser result
-        parser_id = str(uuid.uuid4())
+        existing_parser = find_existing(url, key, 'credit_report_parser_results', {
+            'document_id': f'eq.{doc_id}', 'parser_version': 'eq.e2e-synthetic-v1',
+        })
+        parser_id = existing_parser[0]['id'] if existing_parser else str(uuid.uuid4())
         upsert_row(url, key, 'credit_report_parser_results', {
             'id': parser_id, 'tenant_id': tenant_id, 'client_id': client_id,
             'document_id': doc_id, 'source_file_name': doc_title,
@@ -117,9 +121,13 @@ def main():
         })
 
         # 3. Canonical account
-        canonical_id = str(uuid.uuid4())
         furnisher = 'Chase' if persona_key == 'a' else ('Capital One' if persona_key == 'b' else 'Discover')
         last4 = f'{ord(persona_key) - ord("a") + 1}234'
+        existing_canonical = find_existing(url, key, 'credit_canonical_accounts', {
+            'document_id': f'eq.{doc_id}', 'parser_result_id': f'eq.{parser_id}',
+            'normalized_creditor_label': f'eq.{furnisher}',
+        })
+        canonical_id = existing_canonical[0]['id'] if existing_canonical else str(uuid.uuid4())
         upsert_row(url, key, 'credit_canonical_accounts', {
             'id': canonical_id, 'tenant_id': tenant_id, 'client_id': client_id,
             'document_id': doc_id, 'parser_result_id': parser_id,
@@ -135,7 +143,6 @@ def main():
         })
 
         # 4. Discrepancy
-        disc_id = str(uuid.uuid4())
         if persona_key == 'a':
             disc_type, bureau_vals, diff_summary = 'balance_mismatch', \
                 json.dumps({'experian': {'balance': 2500}, 'equifax': {'balance': 2800}, 'transunion': {'balance': 2500}}), \
@@ -148,6 +155,12 @@ def main():
             disc_type, bureau_vals, diff_summary = 'duplicate_possible', \
                 json.dumps({'experian': {'account': 'Discover It #1234'}, 'equifax': {'account': 'Discover It #1234'}, 'transunion': {'account': 'Discover It #5678'}}), \
                 'Possible duplicate: same furnisher with different last-4 digits'
+
+        existing_discrepancy = find_existing(url, key, 'credit_report_discrepancies', {
+            'document_id': f'eq.{doc_id}', 'discrepancy_type': f'eq.{disc_type}',
+            'detection_rule': f'eq.e2e_synthetic_{disc_type}',
+        })
+        disc_id = existing_discrepancy[0]['id'] if existing_discrepancy else str(uuid.uuid4())
 
         upsert_row(url, key, 'credit_report_discrepancies', {
             'id': disc_id, 'tenant_id': tenant_id, 'client_id': client_id,
@@ -167,7 +180,13 @@ def main():
         # 5. Strategy match
         strategy_id = 'cross_bureau_balance_review' if persona_key == 'a' else \
             ('cross_bureau_status_review' if persona_key == 'b' else 'purchased_debt_documentation')
+        existing_match = find_existing(url, key, 'credit_strategy_matches', {
+            'discrepancy_id': f'eq.{disc_id}', 'strategy_id': f'eq.{strategy_id}',
+            'strategy_version': 'eq.1', 'ruleset_version': 'eq.research-to-clyde-v1',
+        })
+        match_id = existing_match[0]['id'] if existing_match else str(uuid.uuid4())
         upsert_row(url, key, 'credit_strategy_matches', {
+            'id': match_id,
             'tenant_id': tenant_id, 'client_id': client_id,
             'report_id': doc_id, 'canonical_account_id': str(canonical_id),
             'discrepancy_id': str(disc_id), 'strategy_id': strategy_id,
@@ -217,7 +236,13 @@ def main():
             },
             'documentId': doc_id,
         }
+        existing_recommendation = find_existing(url, key, 'credit_strategy_recommendations', {
+            'client_id': f'eq.{client_id}', 'document_id': f'eq.{doc_id}',
+            'strategy_id': f'eq.{strategy_id}', 'discrepancy_id': f'eq.{disc_id}',
+        })
+        recommendation_id = existing_recommendation[0]['id'] if existing_recommendation else str(uuid.uuid4())
         upsert_row(url, key, 'credit_strategy_recommendations', {
+            'id': recommendation_id,
             'tenant_id': tenant_id, 'client_id': client_id,
             'document_id': doc_id, 'canonical_account_id': str(canonical_id),
             'discrepancy_id': str(disc_id), 'strategy_id': strategy_id,
@@ -226,7 +251,7 @@ def main():
             'payload': json.dumps(payload),
         })
 
-        print(f'OK: persona {persona_key} — tenant={tenant_id} client={client_id} doc={doc_id}')
+        print(f'OK: persona {persona_key} — synthetic fixture rows seeded')
 
     print(f'Done. Created: {stats["created"]}, Reused: {stats["reused"]}')
     return 0

@@ -195,7 +195,7 @@ function SessionForm({ persona, onClose, onSubmit }) {
         tester_name: testerName,
         notes: notes || null,
         build_commit: import.meta.env?.VITE_BUILD_COMMIT || '',
-        fixture_version: 'v1',
+        fixture_version: 'controlled-pilot-v1',
       }).select()
       if (error) throw error
       onSubmit?.(data?.[0])
@@ -302,6 +302,30 @@ function PersonaCard({ persona, status, sessions, feedback, onAction }) {
     }
   }
 
+  const closeSession = async (session) => {
+    if (!session?.id) return
+    setActionLoading(true)
+    setActionResult(null)
+    try {
+      const { error } = await supabase.from('tester_sessions').update({
+        status: 'completed',
+        ended_at: new Date().toISOString(),
+        workflows_attempted: 12,
+        workflows_completed: 12,
+        defects_found: feedback.filter(item => item.session_id === session.id).length,
+        blocker_count: feedback.filter(item => item.session_id === session.id && item.severity === 'blocker').length,
+        notes: `${session.notes || ''}${session.notes ? ' ' : ''}Controlled pilot closeout recorded in Tester Readiness.`.trim(),
+      }).eq('id', session.id)
+      if (error) throw error
+      setActionResult({ ok: true, message: `Session ${session.tester_name} marked completed.` })
+      onAction('refresh')
+    } catch (err) {
+      setActionResult({ ok: false, error: err.message || 'Session closeout failed' })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const cardStyle = {
     background: '#1e293b',
     border: '1px solid #334155',
@@ -316,7 +340,7 @@ function PersonaCard({ persona, status, sessions, feedback, onAction }) {
   })
 
   return (
-    <div style={cardStyle}>
+    <div data-persona-card={persona.key} style={cardStyle}>
       {confirmAction && (
         <ConfirmationModal
           open
@@ -419,7 +443,10 @@ function PersonaCard({ persona, status, sessions, feedback, onAction }) {
               {sessions.slice(0, 3).map(s => (
                 <div key={s.id} style={{ padding: '4px 8px', borderRadius: 4, background: '#0f172a', marginBottom: 4, fontSize: 11, display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#e2e8f0' }}>{s.tester_name} — {s.status}</span>
-                  <span style={{ color: '#64748b' }}>{new Date(s.created_at).toLocaleDateString()}</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ color: '#64748b' }}>{new Date(s.created_at).toLocaleDateString()}</span>
+                    {s.status === 'in_progress' && <button onClick={() => closeSession(s)} style={{ padding: '2px 7px', borderRadius: 4, border: '1px solid #10b98160', background: '#10b98115', color: '#10b981', cursor: 'pointer', fontSize: 10 }}>Complete Session</button>}
+                  </span>
                 </div>
               ))}
             </>

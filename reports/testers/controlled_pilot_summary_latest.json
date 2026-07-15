@@ -1,0 +1,21 @@
+{
+  "decision": "GO",
+  "starting_commit": "68070d352bb0337fab07a5e54260f99979161c0f",
+  "fixture_version": "controlled-pilot-v1",
+  "personas": ["A", "B", "C"],
+  "sessions_current_run": 3,
+  "sessions_current_run_completed": 3,
+  "prior_interrupted_synthetic_sessions_abandoned": 6,
+  "existing_browser_tests_passed": 58,
+  "controlled_pilot_browser_tests_passed": 9,
+  "controlled_pilot_browser_tests_failed": 0,
+  "controlled_pilot_browser_tests_skipped": 0,
+  "current_run_feedback": {"medium": 2, "low": 1, "blocker": 0, "high": 0},
+  "open_blockers": 0,
+  "open_high_issues": 0,
+  "ray_review_linked_drafts_for_blocker_high": 1,
+  "mail_sent": false,
+  "docupost_submitted": false,
+  "service_role_exposed_frontend": false,
+  "real_pii_used": false
+}
