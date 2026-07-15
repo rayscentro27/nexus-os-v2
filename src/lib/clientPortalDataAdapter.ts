@@ -8,6 +8,7 @@
 
 import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { resolveClientContextForCurrentUser, type ResolvedClientContext } from './clientAuthContext';
+import { generateSafeStrategyDraft } from './researchToClydeEngine';
 
 export interface ClientProfile {
   id: string;
@@ -437,6 +438,13 @@ export async function linkStrategyEvidence(input:{selectionId:string;tenantId:st
   if (!supabase || !isSupabaseConfigured) return { ok:false, error:'Supabase not configured' }
   const {error}=await supabase.from('credit_strategy_evidence_links').insert({selection_id:input.selectionId,tenant_id:input.tenantId,client_id:input.clientId,document_id:input.documentId,report_id:input.reportId,discrepancy_id:input.discrepancyId||null,status:'uploaded'})
   return error?{ok:false,error:error.message}:{ok:true}
+}
+
+export async function generateClientStrategyDraft(input:{selectionId:string;tenantId:string;clientId:string;strategyId:string;strategyVersion:number;outputType:string;accountReference?:string;detectedFacts?:string[];clientConfirmedFacts?:string[]}){
+  if (!supabase || !isSupabaseConfigured) return { ok:false, error:'Supabase not configured' }
+  const draft=generateSafeStrategyDraft({strategyId:input.strategyId,strategyVersion:input.strategyVersion,templateVersion:'research-to-clyde-v1',outputType:input.outputType,accountReference:input.accountReference||'',detectedFacts:input.detectedFacts||[],clientConfirmedFacts:input.clientConfirmedFacts||[]})
+  const {data,error}=await supabase.from('credit_strategy_drafts').insert({selection_id:input.selectionId,tenant_id:input.tenantId,client_id:input.clientId,strategy_id:input.strategyId,strategy_version:input.strategyVersion,template_version:draft.templateVersion,output_type:input.outputType,content:{text:draft.text,accountReference:draft.accountReference},status:draft.status,safety_result:draft.validation,client_review_required:true,client_authorized:false,mail_created:false,actor_type:'client',provenance:draft.provenance}).select('id').single()
+  return error||!data?{ok:false,error:error?.message||'Draft was not saved'}:{ok:true,draftId:String(data.id),draft}
 }
 
 export async function loadClientProfileIntake(forcedContext?: ResolvedClientContext): Promise<{ data: ProfileIntakeData; source: 'supabase' | 'synthetic'; error?: string }> {
