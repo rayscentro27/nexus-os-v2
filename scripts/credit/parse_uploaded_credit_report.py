@@ -257,6 +257,8 @@ def parse_text(raw_text: str, source_file_name: str, extraction_mode: str, extra
                 "dateOpened": (re.search(r"opened\s*[:\-]?\s*([0-9/ -]{6,12})", line, re.I) or [None, None])[1],
                 "dateReported": (re.search(r"reported\s*[:\-]?\s*([0-9/ -]{6,12})", line, re.I) or [None, None])[1],
                 "paymentStatus": (re.search(r"(30|60|90)\s*day\s*late", line, re.I) or [None])[0],
+                "ownership": (re.search(r"ownership\s*[:\-]\s*([^.;|]+)", line, re.I) or [None, None])[1],
+                "originalCreditor": (re.search(r"original\s+creditor\s*[:\-]\s*([^.;|]+)", line, re.I) or [None, None])[1],
                 "notes": line,
                 "negativeCandidateReason": ", ".join([bit for bit in reason_bits if bit]) or None,
                 "suggestedDisputeReasons": suggest_reasons(line),
@@ -649,6 +651,23 @@ def main() -> int:
             if discrepancy_rows:event_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"discrepancy_created","metadata":{"count":len(discrepancy_rows)},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION})
             if exception["exception_required"]:event_rows.append({"tenant_id":tenant_id,"client_id":client_id,"document_id":document_id,"analysis_job_id":args.analysis_job_id,"event_type":"exception_required","metadata":{"code":exception["exception_code"]},"actor_type":"worker","parser_version":PARSER_VERSION,"worker_version":CANONICAL_ENGINE_VERSION,"ruleset_version":CANONICAL_RULESET_VERSION})
             supabase_request("POST",supabase_url,service_role_key,"credit_workflow_events",body=event_rows)
+            if exception["exception_required"]:
+                existing_exception = supabase_request(
+                    "GET", supabase_url, service_role_key,
+                    f"credit_strategy_exceptions?report_id=eq.{urllib.parse.quote(document_id)}&exception_code=eq.{urllib.parse.quote(exception['exception_code'])}&select=id&limit=1",
+                )
+                if not existing_exception:
+                    supabase_request("POST", supabase_url, service_role_key, "credit_strategy_exceptions", body={
+                        "tenant_id": tenant_id,
+                        "client_id": client_id,
+                        "report_id": document_id,
+                        "exception_code": exception["exception_code"],
+                        "reason": exception["reason"],
+                        "confidence": exception["confidence"],
+                        "risk": "medium" if exception["confidence"] != "high" else "high",
+                        "recommended_action": exception["recommended_next_action"],
+                        "status": "required",
+                    })
             print("Canonical foundation saved:")
             print(f"  bureau_tradelines={len(saved_tradelines)}")
             print(f"  canonical_accounts={len(canonical_model['canonical_accounts'])}")
