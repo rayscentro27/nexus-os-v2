@@ -226,4 +226,5 @@ export default defineConfig({
   plugins: [nexusLocalBridges(), react()],
   define: Object.fromEntries(Object.entries(buildMetadata).map(([key,value]) => [`import.meta.env.${key}`, JSON.stringify(value)])),
   build: { outDir: 'dist' },
+  test: { exclude: ['tests/e2e/**', 'node_modules/**', '.netlify/**'] },
 });
