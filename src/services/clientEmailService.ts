@@ -1,6 +1,16 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
 
-export type EmailTemplate = 'welcome' | 'document_received' | 'review_requested' | 'review_complete' | 'status_update'
+export type EmailTemplate =
+  | 'welcome'
+  | 'document_received'
+  | 'review_requested'
+  | 'review_complete'
+  | 'status_update'
+  | 'tester_invitation'
+  | 'invitation_reminder'
+  | 'invitation_revoked'
+  | 'invitation_accepted'
+  | 'test_session_complete'
 
 interface SendEmailOptions {
   to: string
@@ -76,5 +86,63 @@ export async function sendStatusUpdateEmail(to: string, status: string, message:
     to,
     template: 'status_update',
     data: { status, message },
+  })
+}
+
+export async function sendTesterInvitationEmail(to: string, data: {
+  testerName: string
+  testingLevel: string
+  expiresAt: string
+  acceptanceUrl: string
+  stripeTestMode?: string
+  timeCommitment?: string
+}) {
+  return sendClientEmail({
+    to,
+    template: 'tester_invitation',
+    data,
+  })
+}
+
+export async function sendInvitationReminderEmail(to: string, data: {
+  testerName: string
+  expiresAt: string
+  acceptanceUrl: string
+}) {
+  return sendClientEmail({
+    to,
+    template: 'invitation_reminder',
+    data,
+  })
+}
+
+export async function sendInvitationRevokedEmail(to: string, data: {
+  testerName: string
+}) {
+  return sendClientEmail({
+    to,
+    template: 'invitation_revoked',
+    data,
+  })
+}
+
+export async function sendInvitationAcceptedEmail(to: string, data: {
+  testerName: string
+  tasksUrl?: string
+}) {
+  return sendClientEmail({
+    to,
+    template: 'invitation_accepted',
+    data,
+  })
+}
+
+export async function sendTestSessionCompleteEmail(to: string, data: {
+  testerName: string
+}) {
+  return sendClientEmail({
+    to,
+    template: 'test_session_complete',
+    data,
   })
 }

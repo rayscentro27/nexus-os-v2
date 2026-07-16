@@ -78,9 +78,7 @@ export default function TesterInvitationPanel() {
     setMessage('');
     const result = await resendTesterInvitation(inv.id);
     if (!result.ok) { setMessage('Send failed: ' + (result.error || '')); return; }
-    if (!supabase) return;
-    await supabase.from('tester_invitations').update({ invitation_status: 'sent', last_sent_at: new Date().toISOString() }).eq('id', inv.id);
-    setMessage('Invitation sent (or preview generated).');
+    setMessage('Invitation sent. Provider result: ' + (result.data?.provider_result || 'unknown'));
     await load();
   };
 
@@ -116,6 +114,34 @@ export default function TesterInvitationPanel() {
       action: async () => {
         await updatePilotControls({ emergency_checkout_disabled: newState });
         setMessage(newState ? 'Checkout emergency disabled.' : 'Test checkout re-enabled.');
+        await load();
+      },
+    });
+  };
+
+  const toggleInvitations = async () => {
+    if (!controls) return;
+    const newState = !controls.invitations_enabled;
+    setConfirmAction({
+      title: newState ? 'Enable Invitations?' : 'Disable Invitations?',
+      message: newState ? 'This will allow admins to create new tester invitations.' : 'This will prevent new invitation creation.',
+      action: async () => {
+        await updatePilotControls({ invitations_enabled: newState });
+        setMessage(newState ? 'Invitations enabled.' : 'Invitations disabled.');
+        await load();
+      },
+    });
+  };
+
+  const toggleTestPurchases = async () => {
+    if (!controls) return;
+    const newState = !controls.test_mode_purchases_enabled;
+    setConfirmAction({
+      title: newState ? 'Enable Test Purchases?' : 'Disable Test Purchases?',
+      message: newState ? 'This will allow invited testers to make Stripe test-mode purchases.' : 'This will block all test-mode purchases.',
+      action: async () => {
+        await updatePilotControls({ test_mode_purchases_enabled: newState });
+        setMessage(newState ? 'Test purchases enabled.' : 'Test purchases disabled.');
         await load();
       },
     });
@@ -158,7 +184,13 @@ export default function TesterInvitationPanel() {
             <div><strong>Public Live:</strong> {controls.public_live_enabled ? 'ENABLED' : 'Disabled'}</div>
             <div><strong>Emergency Disable:</strong> {controls.emergency_checkout_disabled ? 'ACTIVE' : 'Inactive'}</div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <button onClick={toggleInvitations} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: controls.invitations_enabled ? '#10b981' : '#6b7280', color: '#fff', cursor: 'pointer', fontSize: 13 }} data-testid="invitations-toggle">
+              {controls.invitations_enabled ? 'Invitations: ON' : 'Invitations: OFF'}
+            </button>
+            <button onClick={toggleTestPurchases} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: controls.test_mode_purchases_enabled ? '#10b981' : '#6b7280', color: '#fff', cursor: 'pointer', fontSize: 13 }} data-testid="test-purchases-toggle">
+              {controls.test_mode_purchases_enabled ? 'Test Purchases: ON' : 'Test Purchases: OFF'}
+            </button>
             <button onClick={toggleEmergency} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: controls.emergency_checkout_disabled ? '#10b981' : '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 13 }} data-testid="emergency-toggle">
               {controls.emergency_checkout_disabled ? 'Re-enable Test Checkout' : 'Emergency Disable Checkout'}
             </button>

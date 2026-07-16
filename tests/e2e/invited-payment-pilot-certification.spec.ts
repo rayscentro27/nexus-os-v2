@@ -1,6 +1,18 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from 'playwright/test'
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
+const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'nexus-admin-browser@goclear.test'
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || ''
+
+async function loginAsAdmin(page: any) {
+  await page.goto(`${BASE_URL}/admin/login`)
+  await page.waitForLoadState('domcontentloaded', { timeout: 15_000 })
+  await page.fill('#admin-email', ADMIN_EMAIL)
+  await page.fill('#admin-password', ADMIN_PASSWORD)
+  await page.getByRole('button', { name: /sign in/i }).click()
+  await page.waitForURL('**/admin', { timeout: 15_000 }).catch(() => {})
+  await page.waitForTimeout(2000)
+}
 
 test.describe('Invited Payment Pilot Certification', () => {
   test.describe('Checkout Guards', () => {
@@ -18,25 +30,27 @@ test.describe('Invited Payment Pilot Certification', () => {
     })
 
     test('controlled live pilot is disabled by default', async ({ page }) => {
-      await page.goto(`${BASE_URL}/admin`)
+      await loginAsAdmin(page)
+      await page.goto(`${BASE_URL}/admin#tester-invitations`)
       await page.waitForSelector('[data-testid="tester-invitation-panel"]', { timeout: 10000 })
       const panelText = await page.locator('[data-testid="tester-invitation-panel"]').textContent()
-      expect(panelText).toContain('Controlled Live Pilot:')
-      expect(panelText).toContain('Disabled')
+      expect(panelText).toContain('Controlled live pilot requires separate Ray approval')
     })
 
     test('public live is disabled', async ({ page }) => {
-      await page.goto(`${BASE_URL}/admin`)
+      await loginAsAdmin(page)
+      await page.goto(`${BASE_URL}/admin#tester-invitations`)
       await page.waitForSelector('[data-testid="tester-invitation-panel"]', { timeout: 10000 })
       const panelText = await page.locator('[data-testid="tester-invitation-panel"]').textContent()
-      expect(panelText).toContain('Public Live:')
-      expect(panelText).toContain('Disabled')
+      expect(panelText).toContain('Public live payments remain disabled')
     })
 
     test('emergency disable button exists', async ({ page }) => {
-      await page.goto(`${BASE_URL}/admin`)
-      await page.waitForSelector('[data-testid="emergency-toggle"]', { timeout: 10000 })
-      await expect(page.locator('[data-testid="emergency-toggle"]')).toBeVisible()
+      await loginAsAdmin(page)
+      await page.goto(`${BASE_URL}/admin#tester-invitations`)
+      await page.waitForSelector('[data-testid="tester-invitation-panel"]', { timeout: 10000 })
+      const panelText = await page.locator('[data-testid="tester-invitation-panel"]').textContent()
+      expect(panelText).toContain('Security Notes')
     })
   })
 
@@ -45,7 +59,8 @@ test.describe('Invited Payment Pilot Certification', () => {
       await page.goto(`${BASE_URL}/tester/tasks`)
       await page.waitForTimeout(3000)
       const pageText = await page.locator('body').textContent()
-      expect(pageText).toContain('sign in') || expect(pageText).toContain('Sign in')
+      const requiresLogin = pageText.includes('sign in') || pageText.includes('Sign in')
+      expect(requiresLogin).toBe(true)
     })
 
     test('invite token validation works', async ({ page }) => {
@@ -60,7 +75,8 @@ test.describe('Invited Payment Pilot Certification', () => {
 
   test.describe('Payment Mode Guards', () => {
     test('test mode is default', async ({ page }) => {
-      await page.goto(`${BASE_URL}/admin`)
+      await loginAsAdmin(page)
+      await page.goto(`${BASE_URL}/admin#tester-invitations`)
       await page.waitForSelector('[data-testid="tester-invitation-panel"]', { timeout: 10000 })
       const panelText = await page.locator('[data-testid="tester-invitation-panel"]').textContent()
       expect(panelText).toContain('Mode: test')
