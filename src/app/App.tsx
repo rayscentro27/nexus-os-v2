@@ -14,6 +14,9 @@ import {
   GoClearLoginPage,
 } from '../pages/goclear/GoClearPublicPages';
 import { CheckoutStatusPage, ServiceOfferPage, ServicePricingPage } from '../pages/goclear/ServiceOfferPages';
+import TesterInvitePage from '../pages/tester/TesterInvitePage';
+import TesterAcceptPage from '../pages/tester/TesterAcceptPage';
+import TesterTasksPage from '../pages/tester/TesterTasksPage';
 import { resolveClientContextForCurrentUser } from '../lib/clientAuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
@@ -113,6 +116,15 @@ export function App() {
     );
   }
 
+  if (path === '/tester/invite' || path.startsWith('/tester/invite/')) {
+    return <TesterInvitePage />;
+  }
+  if (path === '/tester/accept') {
+    return <TesterAcceptPage />;
+  }
+  if (path === '/tester/tasks') {
+    return <TesterTasksPage />;
+  }
   if (path === '/update-password') {
     return <UpdatePasswordPage />;
   }

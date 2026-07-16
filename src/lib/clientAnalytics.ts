@@ -13,6 +13,11 @@ export type AnalyticsEvent =
   | 'journey_stage_completed'
   | 'revenue_checkout_started'
   | 'revenue_offer_selected'
+  | 'invitation_created'
+  | 'invitation_accepted'
+  | 'invitation_sent'
+  | 'invitation_revoked'
+  | 'test_checkout_started'
 
 interface AnalyticsPayload {
   event: AnalyticsEvent

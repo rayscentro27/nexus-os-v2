@@ -9,7 +9,7 @@ const corsHeaders = {
 interface EmailRequest {
   to: string
   subject: string
-  template: 'welcome' | 'document_received' | 'review_requested' | 'review_complete' | 'status_update'
+  template: 'welcome' | 'document_received' | 'review_requested' | 'review_complete' | 'status_update' | 'tester_invitation' | 'invitation_reminder' | 'invitation_revoked' | 'invitation_accepted' | 'test_session_complete'
   data?: Record<string, string>
 }
 
@@ -72,6 +72,83 @@ const templates = {
         <h1 style="color: #0f1729; font-size: 24px;">Status Update</h1>
         <p style="color: #4a5568; line-height: 1.6;">${data.message || 'Your status has been updated.'}</p>
         <p style="color: #6b7b99; font-size: 12px;">GoClear Client Portal · Advisory services only</p>
+      </div>
+    `,
+  }),
+  tester_invitation: (data: Record<string, string>) => ({
+    subject: `You're Invited to Test Nexus — GoClear`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #0f1729 0%, #1e3a5f 100%); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+          <h1 style="color: #ffffff; font-size: 22px; margin: 0;">Nexus OS — Tester Invitation</h1>
+          <p style="color: #94a3b8; font-size: 14px; margin: 8px 0 0;">GoClear · Controlled Testing Program</p>
+        </div>
+        <p style="color: #4a5568; line-height: 1.6;">Hello ${data.testerName || 'Tester'},</p>
+        <p style="color: #4a5568; line-height: 1.6;">You've been invited to participate in a controlled testing program for Nexus OS. This is a limited, invitation-only opportunity to help us verify system functionality.</p>
+        <div style="background: #f8fbff; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #d6e3f3;">
+          <h3 style="color: #0f1729; margin: 0 0 10px;">Your Assignment</h3>
+          <ul style="color: #4a5568; line-height: 1.8; margin: 0; padding-left: 20px;">
+            <li><strong>Testing Level:</strong> ${data.testingLevel || 'Invited Test Mode'}</li>
+            <li><strong>Expected Time:</strong> ${data.timeCommitment || '30-60 minutes'}</li>
+            <li><strong>Expires:</strong> ${data.expiresAt || '7 days'}</li>
+          </ul>
+        </div>
+        ${data.stripeTestMode === 'true' ? '<div style="background: #fef3c7; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #fbbf24;"><strong style="color: #92400e;">Stripe Test Mode</strong><p style="color: #92400e; margin: 4px 0 0; font-size: 13;">This invitation includes a test-mode payment. You will use a Stripe test card. No real money will be charged.</p></div>' : ''}
+        <div style="background: #f0fdf4; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #86efac;">
+          <strong style="color: #166534;">Synthetic Test Data</strong>
+          <p style="color: #166534; margin: 4px 0 0; font-size: 13;">This is a controlled testing environment. No real funding, credit, or financial services are provided. Your feedback helps us improve.</p>
+        </div>
+        <p style="color: #4a5568; line-height: 1.6;">To accept this invitation, click the link below and create your password:</p>
+        <a href="${data.acceptanceUrl || '#'}" style="display: inline-block; background: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">Accept Invitation</a>
+        <p style="color: #6b7b99; font-size: 12px; line-height: 1.6;">This is a single-use link. Do not share it. If you did not expect this invitation, please ignore this email.</p>
+        <p style="color: #6b7b99; font-size: 12px; margin-top: 16px;">Your feedback and participation are part of this pilot. No funding, credit, deletion, approval, timeline, or outcome is guaranteed.</p>
+        <p style="color: #6b7b99; font-size: 12px;">GoClear · Nexus OS Testing Program · Advisory services only</p>
+      </div>
+    `,
+  }),
+  invitation_reminder: (data: Record<string, string>) => ({
+    subject: `Reminder: Your Nexus Tester Invitation — GoClear`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #0f1729; font-size: 24px;">Invitation Reminder</h1>
+        <p style="color: #4a5568; line-height: 1.6;">Hello ${data.testerName || 'Tester'},</p>
+        <p style="color: #4a5568; line-height: 1.6;">This is a reminder that your tester invitation is waiting. Please accept before it expires on ${data.expiresAt || 'the expiration date'}.</p>
+        <a href="${data.acceptanceUrl || '#'}" style="display: inline-block; background: #3b82f6; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">Accept Invitation</a>
+        <p style="color: #6b7b99; font-size: 12px;">GoClear · Nexus OS Testing Program</p>
+      </div>
+    `,
+  }),
+  invitation_revoked: (data: Record<string, string>) => ({
+    subject: `Invitation Revoked — GoClear`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #0f1729; font-size: 24px;">Invitation Revoked</h1>
+        <p style="color: #4a5568; line-height: 1.6;">Hello ${data.testerName || 'Tester'},</p>
+        <p style="color: #4a5568; line-height: 1.6;">Your tester invitation has been revoked by an administrator. You will no longer be able to access the testing environment.</p>
+        <p style="color: #6b7b99; font-size: 12px;">GoClear · Nexus OS Testing Program</p>
+      </div>
+    `,
+  }),
+  invitation_accepted: (data: Record<string, string>) => ({
+    subject: `Invitation Accepted — Welcome to Nexus Testing`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #0f1729; font-size: 24px;">Welcome to Nexus Testing!</h1>
+        <p style="color: #4a5568; line-height: 1.6;">Hello ${data.testerName || 'Tester'},</p>
+        <p style="color: #4a5568; line-height: 1.6;">Your invitation has been accepted and your account is ready. You can now sign in and begin your testing assignment.</p>
+        <a href="${data.tasksUrl || '/tester/tasks'}" style="display: inline-block; background: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">Go to Testing Tasks</a>
+        <p style="color: #6b7b99; font-size: 12px;">GoClear · Nexus OS Testing Program</p>
+      </div>
+    `,
+  }),
+  test_session_complete: (data: Record<string, string>) => ({
+    subject: `Testing Session Complete — Thank You!`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #0f1729; font-size: 24px;">Testing Session Complete</h1>
+        <p style="color: #4a5568; line-height: 1.6;">Hello ${data.testerName || 'Tester'},</p>
+        <p style="color: #4a5568; line-height: 1.6;">Thank you for completing your testing session. Your feedback has been recorded and will help us improve Nexus OS.</p>
+        <p style="color: #6b7b99; font-size: 12px;">GoClear · Nexus OS Testing Program</p>
       </div>
     `,
   }),

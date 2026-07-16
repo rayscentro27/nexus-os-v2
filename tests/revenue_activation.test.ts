@@ -34,10 +34,11 @@ describe('Phase 6 — controlled revenue activation', () => {
     expect(webhookFunction).not.toContain('console.log(raw)')
   })
 
-  it('defines exactly the three approved one-time service offers', () => {
-    expect(SERVICE_OFFER_CATALOG.map(offer => offer.slug)).toEqual(['readiness-review-97', 'readiness-action-plan-297', 'funding-readiness-concierge-497'])
-    expect(SERVICE_OFFER_CATALOG.map(offer => offer.price_cents)).toEqual([9700, 29700, 49700])
-    expect(SERVICE_OFFER_CATALOG.every(offer => offer.active && offer.currency === 'usd')).toBe(true)
+  it('defines the approved one-time service offers', () => {
+    expect(SERVICE_OFFER_CATALOG.map(offer => offer.slug)).toEqual(['readiness-review-97', 'readiness-action-plan-297', 'funding-readiness-concierge-497', 'invited-readiness-test'])
+    expect(SERVICE_OFFER_CATALOG.map(offer => offer.price_cents)).toEqual([9700, 29700, 49700, 100])
+    expect(SERVICE_OFFER_CATALOG.filter(offer => ['readiness-review-97', 'readiness-action-plan-297', 'funding-readiness-concierge-497'].includes(offer.slug)).every(offer => offer.active && offer.currency === 'usd')).toBe(true)
+    expect(SERVICE_OFFER_CATALOG.find(offer => offer.slug === 'invited-readiness-test')?.active).toBe(false)
   })
 
   it('resolves trusted server-side price and rejects tampering', () => {
