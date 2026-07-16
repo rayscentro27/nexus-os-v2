@@ -7,6 +7,7 @@ import { isStripeTestSecret, isStripeTestWebhookSecret, reconcileVerifiedPayment
 
 describe('Phase 6 — controlled revenue activation', () => {
   const migration = readFileSync(resolve(import.meta.dirname, '../supabase/migrations/20260715180000_revenue_activation_test_mode.sql'), 'utf8')
+  const revenueRoleFixMigration = readFileSync(resolve(import.meta.dirname, '../supabase/migrations/20260716100000_fix_revenue_service_role_trigger.sql'), 'utf8')
   const checkoutFunction = readFileSync(resolve(import.meta.dirname, '../supabase/functions/create-stripe-checkout/index.ts'), 'utf8')
   const webhookFunction = readFileSync(resolve(import.meta.dirname, '../supabase/functions/stripe-webhook/index.ts'), 'utf8')
 
@@ -17,12 +18,14 @@ describe('Phase 6 — controlled revenue activation', () => {
     expect(migration).toContain('readiness_packets_owner_select')
     expect(migration).toContain('payment_state_is_server_verified')
     expect(migration).toContain('delivered_packet_is_immutable')
+    expect(revenueRoleFixMigration).toContain("current_user <> 'service_role'")
   })
 
   it('keeps provider secrets and payment writes server-side', () => {
     expect(checkoutFunction).toContain('STRIPE_SECRET_KEY')
     expect(checkoutFunction).toContain('price_cents')
     expect(checkoutFunction).toContain('sk_test_')
+    expect(checkoutFunction).toContain('checkout_persistence_failed')
     expect(webhookFunction).toContain('Stripe-Signature')
     expect(webhookFunction).toContain('provider_event_id')
     expect(webhookFunction).toContain('processed_status')

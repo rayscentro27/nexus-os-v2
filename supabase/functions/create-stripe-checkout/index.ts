@@ -95,7 +95,11 @@ serve(async (req) => {
       return json({ error: "checkout_creation_failed" }, 502)
     }
     const session = await stripeResponse.json()
-    await admin.from("client_orders").update({ status: "checkout_created", payment_status: "pending", provider_checkout_session_id: String(session.id || "") }).eq("id", orderId)
+    const { error: persistError } = await admin.from("client_orders").update({ status: "checkout_created", payment_status: "pending", provider_checkout_session_id: String(session.id || "") }).eq("id", orderId)
+    if (persistError) {
+      await admin.from("client_orders").delete().eq("id", orderId)
+      return json({ error: "checkout_persistence_failed" }, 502)
+    }
     return json({ ok: true, order_id: orderId, order_number: orderNumber, status: "checkout_created", checkout_session_id: session.id, checkout_url: session.url || null, mode: "test" })
   } catch {
     return json({ error: "checkout_request_failed" }, 500)
