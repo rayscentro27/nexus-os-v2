@@ -9,6 +9,7 @@ import ReportCenter from '../components/ReportCenter'
 import HermesWorkroom from '../components/HermesWorkroom'
 import AutomationSchedulerPanel from '../components/AutomationSchedulerPanel'
 import RevenueDashboard from '../components/RevenueDashboard'
+import RevenueActivationPanel from '../components/RevenueActivationPanel'
 import CommunicationDashboard from '../components/CommunicationDashboard'
 import MarketingDraftCenter from '../components/MarketingDraftCenter'
 import ResearchMoneyPipeline from '../components/ResearchMoneyPipeline'
@@ -83,6 +84,7 @@ const navGroups = [
     { id: 'opportunity', label: 'Business Opportunities', icon: 'Target', status: '26 ready', statusTone: 'green' },
     { id: 'research', label: 'Research Engine', icon: 'ScanSearch', status: '50', statusTone: 'blue' },
     { id: 'monetization', label: 'Monetization', icon: 'BadgeDollarSign', status: '9 offers', statusTone: 'green' },
+    { id: 'revenue-activation', label: 'Revenue Activation', icon: 'BadgeDollarSign', status: 'Test', statusTone: 'amber' },
     { id: 'marketing', label: 'Marketing Drafts', icon: 'Megaphone', status: 'Draft', statusTone: 'amber' }
   ]},
   { label: 'System', items: [
@@ -110,6 +112,7 @@ const modeLabels = {
   business: 'Business Profile Builder',
   funding: 'Funding Readiness',
   monetization: 'Monetization',
+  'revenue-activation': 'Revenue Activation — Stripe Test Mode',
   partners: 'Partner Offers',
   creative: 'Creative Studio',
   design: 'Design Library',
@@ -1489,6 +1492,7 @@ export default function NexusAdminUI({ email }) {
     business: <ErrorBoundary panelName="Business Setup"><BusinessSetupPage /></ErrorBoundary>,
     funding: <ErrorBoundary panelName="Funding Readiness"><FundingReadinessPage /></ErrorBoundary>,
     monetization: <ErrorBoundary panelName="Monetization"><SimplePage title="Monetization" sub="9 Offers · Revenue Streams · Stripe Status · Approval-Gated"><MonetizationPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
+    'revenue-activation': <ErrorBoundary panelName="Revenue Activation"><SimplePage title="Revenue Activation — Test Mode" sub="Offers · Orders · Payment Verification · Fulfillment · Approval-Gated Delivery"><RevenueActivationPanel /></SimplePage></ErrorBoundary>,
     partners: <ErrorBoundary panelName="Partner Offers"><PartnerOffersPage /></ErrorBoundary>,
     cli: <ErrorBoundary panelName="CLI Control"><CLIControlPage /></ErrorBoundary>,
     proof: <ErrorBoundary panelName="Proof Ledger"><ProofLedgerPage /></ErrorBoundary>,

@@ -455,7 +455,7 @@ function PersonaCard({ persona, status, sessions, feedback, onAction }) {
           {feedback.length > 0 && (
             <>
               <h4 style={{ color: '#94a3b8', fontSize: 12, margin: '12px 0 8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recent Feedback</h4>
-              {feedback.slice(0, 5).map(f => (
+              {[...feedback].sort((a, b) => Number(Boolean(b.ray_review_item_id || b.severity === 'blocker' || b.severity === 'high')) - Number(Boolean(a.ray_review_item_id || a.severity === 'blocker' || a.severity === 'high'))).slice(0, 5).map(f => (
                 <div key={f.id} style={{ padding: '7px 8px', borderRadius: 4, background: '#0f172a', marginBottom: 4, fontSize: 11, display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr) auto', gap: 8, alignItems: 'center' }}>
                   <span style={{ color: SEVERITY_COLORS[f.severity] || '#e2e8f0' }}>[{f.severity}]</span>
                   <span style={{ color: '#e2e8f0', flex: 1, margin: '0 8px' }}>{f.issue_title}</span>

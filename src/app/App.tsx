@@ -13,6 +13,7 @@ import {
   GoClearPricingPage,
   GoClearLoginPage,
 } from '../pages/goclear/GoClearPublicPages';
+import { CheckoutStatusPage, ServiceOfferPage, ServicePricingPage } from '../pages/goclear/ServiceOfferPages';
 import { resolveClientContextForCurrentUser } from '../lib/clientAuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
@@ -70,7 +71,7 @@ function ClientPortalGate() {
   return <ClientPortalRoot />;
 }
 
-const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing'];
+const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
 
 function GoClearScrollUnlock() {
   useEffect(() => {
@@ -99,6 +100,14 @@ export function App() {
         {path === '/goclear' && <GoClearLandingPage />}
         {path === '/goclear/signup' && <GoClearSignupPage />}
         {path === '/goclear/pricing' && <GoClearPricingPage />}
+        {path === '/pricing' && <ServicePricingPage />}
+        {path === '/readiness-review' && <ServiceOfferPage slug="readiness-review-97" />}
+        {path === '/readiness-action-plan' && <ServiceOfferPage slug="readiness-action-plan-297" />}
+        {path === '/funding-readiness-concierge' && <ServiceOfferPage slug="funding-readiness-concierge-497" />}
+        {path === '/checkout/success' && <CheckoutStatusPage status="success" />}
+        {path === '/checkout/pending' && <CheckoutStatusPage status="pending" />}
+        {path === '/checkout/cancelled' && <CheckoutStatusPage status="cancelled" />}
+        {path === '/checkout/failed' && <CheckoutStatusPage status="failed" />}
         {path === '/goclear/login' && <GoClearLoginPage />}
       </>
     );

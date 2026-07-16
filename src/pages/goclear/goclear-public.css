@@ -763,6 +763,21 @@ body.goclear-public-body #root {
   gap: 12px;
 }
 
+/* Controlled service offer additions share the established GoClear surface. */
+.gc-plan-card { display: flex; flex-direction: column; gap: 12px; }
+.gc-plan-card .gc-check-list { flex: 1; }
+.gc-plan-card small { color: var(--gc-muted); }
+.gc-three-col { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.gc-three-col > div { display: grid; gap: 7px; color: var(--gc-muted); }
+.gc-three-col strong { color: var(--gc-navy); }
+.gc-auth-shell { align-items: start; }
+.gc-auth-shell > aside { align-self: stretch; }
+@media (max-width: 760px) {
+  .gc-three-col { grid-template-columns: 1fr; }
+  .gc-auth-shell { display: grid; grid-template-columns: 1fr; }
+  .gc-plan-grid { grid-template-columns: 1fr; }
+}
+
 .gc-check-list li {
   color: var(--gc-text);
   position: relative;

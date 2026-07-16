@@ -11,6 +11,8 @@ export type AnalyticsEvent =
   | 'partner_offer_clicked'
   | 'review_requested'
   | 'journey_stage_completed'
+  | 'revenue_checkout_started'
+  | 'revenue_offer_selected'
 
 interface AnalyticsPayload {
   event: AnalyticsEvent
