@@ -22,10 +22,19 @@ serve(async (req) => {
   try {
     const body = await req.json()
     const rawToken = String(body.token || "").trim()
-    if (!rawToken || rawToken.length < 20) return json({ error: "invalid_token" }, 400)
+    if (!rawToken || rawToken.length < 10) return json({ error: "invalid_token" }, 400)
 
-    const tokenHash = await hashToken(rawToken)
     const admin = createClient(supabaseUrl, serviceKey)
+
+    // Accept both raw tokens (hash them) and token_hashes (use directly)
+    let tokenHash: string
+    if (/^[a-f0-9]{64}$/.test(rawToken)) {
+      // Looks like a hex SHA-256 hash — use directly
+      tokenHash = rawToken
+    } else {
+      // Treat as raw token — hash it
+      tokenHash = await hashToken(rawToken)
+    }
 
     const { data: invitation } = await admin
       .from("tester_invitations")

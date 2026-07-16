@@ -116,6 +116,12 @@ export function App() {
     );
   }
 
+  if (path === '/invite' || path.startsWith('/invite/')) {
+    if (path === '/invite/accept' || path.startsWith('/invite/accept')) {
+      return <TesterAcceptPage />;
+    }
+    return <TesterInvitePage />;
+  }
   if (path === '/tester/invite' || path.startsWith('/tester/invite/')) {
     return <TesterInvitePage />;
   }

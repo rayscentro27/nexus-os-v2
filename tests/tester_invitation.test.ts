@@ -154,7 +154,7 @@ describe('tester invitation system', () => {
 
     it('create-tester-invitation validates admin', () => {
       const fn = readFileSync(resolve(ROOT, 'supabase/functions/create-tester-invitation/index.ts'), 'utf8')
-      expect(fn).toContain('nexus_is_active_admin')
+      expect(fn).toContain('admin_users')
       expect(fn).toContain('admin_required')
     })
 
@@ -302,10 +302,10 @@ describe('tester invitation system', () => {
       expect(src).toContain('new-inv-level')
     })
 
-    it('panel has emergency disable button', () => {
+    it('panel has payment controls toggles', () => {
       const src = readFileSync(resolve(ROOT, 'src/components/TesterInvitationPanel.jsx'), 'utf8')
-      expect(src).toContain('emergency-toggle')
-      expect(src).toContain('Emergency Disable Checkout')
+      expect(src).toContain('invitations-toggle')
+      expect(src).toContain('Invitations: ON')
     })
 
     it('panel shows pilot offers', () => {
@@ -335,10 +335,10 @@ describe('tester invitation system', () => {
       expect(existsSync(resolve(ROOT, 'src/pages/tester/TesterTasksPage.tsx'))).toBe(true)
     })
 
-    it('invite page has token input', () => {
+    it('invite page extracts token from URL', () => {
       const src = readFileSync(resolve(ROOT, 'src/pages/tester/TesterInvitePage.tsx'), 'utf8')
-      expect(src).toContain('invite-token-input')
-      expect(src).toContain('invite-validate-btn')
+      expect(src).toContain('extractToken')
+      expect(src).toContain('window.location.pathname')
     })
 
     it('accept page has password inputs', () => {
@@ -348,9 +348,10 @@ describe('tester invitation system', () => {
       expect(src).toContain('consent-checkbox')
     })
 
-    it('accept page shows pilot disclosure', () => {
+    it('accept page shows Friends & Family terms', () => {
       const src = readFileSync(resolve(ROOT, 'src/pages/tester/TesterAcceptPage.tsx'), 'utf8')
-      expect(src).toContain('PILOT_DISCLOSURE_TEXT')
+      expect(src).toContain('Friends & Family Preview')
+      expect(src).toContain('consent-checkbox')
     })
 
     it('tasks page has checklist', () => {
@@ -370,6 +371,7 @@ describe('tester invitation system', () => {
   describe('app routing', () => {
     it('App.tsx includes tester routes', () => {
       const src = readFileSync(resolve(ROOT, 'src/app/App.tsx'), 'utf8')
+      expect(src).toContain('/invite')
       expect(src).toContain('/tester/invite')
       expect(src).toContain('/tester/accept')
       expect(src).toContain('/tester/tasks')
@@ -414,10 +416,11 @@ describe('tester invitation system', () => {
       expect(invSection).not.toContain('password: ')
     })
 
-    it('invitation email contains test-mode notice', () => {
+    it('invitation email contains GoClear Friends & Family content', () => {
       const fn = readFileSync(resolve(ROOT, 'supabase/functions/send-client-email/index.ts'), 'utf8')
-      expect(fn).toContain('Stripe Test Mode')
-      expect(fn).toContain('No real money will be charged')
+      expect(fn).toContain('GoClear')
+      expect(fn).toContain('Friends & Family')
+      expect(fn).toContain('Accept My Personal Invitation')
     })
   })
 

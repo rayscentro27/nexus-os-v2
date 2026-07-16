@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from './supabaseClient';
 import { trackEvent } from './clientAnalytics';
 
 export type InvitationStatus = 'draft' | 'awaiting_approval' | 'approved' | 'sent' | 'accepted' | 'expired' | 'revoked' | 'completed' | 'failed';
-export type TestingLevel = 'synthetic_internal' | 'invited_test_mode' | 'controlled_live_pilot';
+export type TestingLevel = 'friends_family_free' | 'friends_family_one_dollar' | 'synthetic_internal' | 'invited_test_mode' | 'controlled_live_pilot';
 
 export interface TesterInvitation {
   id: string;

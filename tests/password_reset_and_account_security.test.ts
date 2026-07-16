@@ -155,8 +155,8 @@ describe('Password reset and account security', () => {
       expect(helpersSource).toContain('localhost:5173');
     });
 
-    it('fallback uses nexusv20.netlify.app', () => {
-      expect(helpersSource).toContain('nexusv20.netlify.app');
+    it('fallback uses goclearonline.cc in production', () => {
+      expect(helpersSource).toContain('goclearonline.cc');
     });
 
     it('returns /update-password path', () => {

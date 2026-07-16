@@ -1,12 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createTesterInvitation, resendTesterInvitation, revokeTesterInvitation, loadTesterInvitations, loadPilotControls, updatePilotControls } from '../lib/testerInvitationClient';
-import { HIDDEN_PILOT_OFFERS, PILOT_DISCLOSURE_TEXT } from '../config/serviceOfferCatalog';
+import { HIDDEN_PILOT_OFFERS } from '../config/serviceOfferCatalog';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 const LEVEL_LABELS = {
+  friends_family_free: 'Free Friends & Family Preview',
+  friends_family_one_dollar: '$1 Friends & Family Pilot',
   synthetic_internal: 'Synthetic Internal',
-  invited_test_mode: 'Invited Test Mode',
+  invited_test_mode: 'Invited Preview',
   controlled_live_pilot: 'Controlled $1 Pilot',
+};
+
+const LEVEL_DESCRIPTIONS = {
+  friends_family_free: 'No payment · Full system preview · Feedback requested',
+  friends_family_one_dollar: 'Full system preview · $1 payment pilot · Allowlist required',
+  synthetic_internal: 'Internal synthetic testing',
+  invited_test_mode: 'Invited test mode',
+  controlled_live_pilot: 'Controlled live pilot',
 };
 
 const STATUS_COLORS = {
@@ -35,7 +45,7 @@ export default function TesterInvitationPanel() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [newInv, setNewInv] = useState({ testerName: '', testerEmail: '', testingLevel: 'invited_test_mode', maxSessions: 3, taskChecklistVersion: 'v1', expiresInDays: 7 });
+  const [newInv, setNewInv] = useState({ testerName: '', testerEmail: '', testingLevel: 'friends_family_free', maxSessions: 3, taskChecklistVersion: 'v1', expiresInDays: 14, personalMessage: '' });
   const [controls, setControls] = useState(null);
   const [confirmAction, setConfirmAction] = useState(null);
   const [copiedToken, setCopiedToken] = useState(null);
@@ -57,10 +67,10 @@ export default function TesterInvitationPanel() {
     setMessage('');
     const result = await createTesterInvitation(newInv);
     if (!result.ok) { setMessage('Creation failed: ' + (result.error || 'unknown')); return; }
-    setMessage('Invitation created. Raw token available in response for one-time copy.');
+    setMessage('Invitation created. Token available for one-time copy.');
     if (result.data && result.data.raw_token) setCopiedToken(result.data.raw_token);
     setShowCreate(false);
-    setNewInv({ testerName: '', testerEmail: '', testingLevel: 'invited_test_mode', maxSessions: 3, taskChecklistVersion: 'v1', expiresInDays: 7 });
+    setNewInv({ testerName: '', testerEmail: '', testingLevel: 'friends_family_free', maxSessions: 3, taskChecklistVersion: 'v1', expiresInDays: 14, personalMessage: '' });
     await load();
   };
 
@@ -105,26 +115,12 @@ export default function TesterInvitationPanel() {
     await load();
   };
 
-  const toggleEmergency = async () => {
-    if (!controls) return;
-    const newState = !controls.emergency_checkout_disabled;
-    setConfirmAction({
-      title: newState ? 'Emergency Disable Checkout?' : 'Re-enable Test Checkout?',
-      message: newState ? 'This will block all new checkout sessions. Existing orders remain readable.' : 'This will re-enable test checkout sessions.',
-      action: async () => {
-        await updatePilotControls({ emergency_checkout_disabled: newState });
-        setMessage(newState ? 'Checkout emergency disabled.' : 'Test checkout re-enabled.');
-        await load();
-      },
-    });
-  };
-
   const toggleInvitations = async () => {
     if (!controls) return;
     const newState = !controls.invitations_enabled;
     setConfirmAction({
       title: newState ? 'Enable Invitations?' : 'Disable Invitations?',
-      message: newState ? 'This will allow admins to create new tester invitations.' : 'This will prevent new invitation creation.',
+      message: newState ? 'This will allow admins to create new invitations.' : 'This will prevent new invitation creation.',
       action: async () => {
         await updatePilotControls({ invitations_enabled: newState });
         setMessage(newState ? 'Invitations enabled.' : 'Invitations disabled.');
@@ -138,7 +134,7 @@ export default function TesterInvitationPanel() {
     const newState = !controls.test_mode_purchases_enabled;
     setConfirmAction({
       title: newState ? 'Enable Test Purchases?' : 'Disable Test Purchases?',
-      message: newState ? 'This will allow invited testers to make Stripe test-mode purchases.' : 'This will block all test-mode purchases.',
+      message: newState ? 'This will allow testers to make test-mode purchases.' : 'This will block all test-mode purchases.',
       action: async () => {
         await updatePilotControls({ test_mode_purchases_enabled: newState });
         setMessage(newState ? 'Test purchases enabled.' : 'Test purchases disabled.');
@@ -154,14 +150,13 @@ export default function TesterInvitationPanel() {
     accepted: invitations.filter(i => i.invitation_status === 'accepted').length,
     completed: invitations.filter(i => i.invitation_status === 'completed').length,
     revoked: invitations.filter(i => i.invitation_status === 'revoked').length,
-    expired: invitations.filter(i => i.invitation_status === 'expired').length,
   };
 
   return (
     <div className="nxos-stack" data-testid="tester-invitation-panel">
-      <div className="nxos-callout" style={{ borderLeft: '4px solid #3b82f6' }}>
-        <strong>Tester Invitations</strong>
-        <p>Create, manage, and track tester invitations. Invitation tokens are shown only once at creation. All state changes are audit-logged.</p>
+      <div className="nxos-callout" style={{ borderLeft: '4px solid #10b981' }}>
+        <strong>GoClear Friends & Family Preview Program</strong>
+        <p>Create, manage, and track Friends & Family invitations. Tokens are shown only once at creation. All state changes are audit-logged.</p>
       </div>
 
       <div className="nxos-metric-grid">
@@ -178,11 +173,10 @@ export default function TesterInvitationPanel() {
           <h2>Payment Controls</h2>
           <div style={{ display: 'grid', gap: 8 }}>
             <div><strong>Mode:</strong> {controls.mode}</div>
-            <div><strong>Invitations Enabled:</strong> {controls.invitations_enabled ? 'Yes' : 'No'}</div>
+            <div><strong>Invitations:</strong> {controls.invitations_enabled ? 'ON' : 'OFF'}</div>
             <div><strong>Test Purchases:</strong> {controls.test_mode_purchases_enabled ? 'Enabled' : 'Disabled'}</div>
-            <div><strong>Controlled Live Pilot:</strong> {controls.controlled_live_pilot_enabled ? 'ENABLED' : 'Disabled'}</div>
+            <div><strong>Controlled Live:</strong> {controls.controlled_live_pilot_enabled ? 'ENABLED' : 'Disabled'}</div>
             <div><strong>Public Live:</strong> {controls.public_live_enabled ? 'ENABLED' : 'Disabled'}</div>
-            <div><strong>Emergency Disable:</strong> {controls.emergency_checkout_disabled ? 'ACTIVE' : 'Inactive'}</div>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
             <button onClick={toggleInvitations} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: controls.invitations_enabled ? '#10b981' : '#6b7280', color: '#fff', cursor: 'pointer', fontSize: 13 }} data-testid="invitations-toggle">
@@ -190,9 +184,6 @@ export default function TesterInvitationPanel() {
             </button>
             <button onClick={toggleTestPurchases} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: controls.test_mode_purchases_enabled ? '#10b981' : '#6b7280', color: '#fff', cursor: 'pointer', fontSize: 13 }} data-testid="test-purchases-toggle">
               {controls.test_mode_purchases_enabled ? 'Test Purchases: ON' : 'Test Purchases: OFF'}
-            </button>
-            <button onClick={toggleEmergency} style={{ padding: '6px 14px', borderRadius: 6, border: 'none', background: controls.emergency_checkout_disabled ? '#10b981' : '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 13 }} data-testid="emergency-toggle">
-              {controls.emergency_checkout_disabled ? 'Re-enable Test Checkout' : 'Emergency Disable Checkout'}
             </button>
           </div>
         </section>
@@ -212,7 +203,7 @@ export default function TesterInvitationPanel() {
       <section className="nxos-table-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Invitations</h2>
-          <button onClick={() => setShowCreate(!showCreate)} className="nxos-button" style={{ padding: '6px 14px', background: '#3b82f6', color: '#fff', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13 }} data-testid="create-invitation-btn">
+          <button onClick={() => setShowCreate(!showCreate)} className="nxos-button" style={{ padding: '6px 14px', background: '#10b981', color: '#fff', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 13 }} data-testid="create-invitation-btn">
             {showCreate ? 'Cancel' : 'Create Invitation'}
           </button>
         </div>
@@ -220,17 +211,24 @@ export default function TesterInvitationPanel() {
         {showCreate && (
           <div style={{ background: '#0f172a', padding: 16, borderRadius: 8, border: '1px solid #334155', marginBottom: 16 }}>
             <div style={{ display: 'grid', gap: 12 }}>
-              <input type="text" value={newInv.testerName} onChange={e => setNewInv(p => ({ ...p, testerName: e.target.value }))} placeholder="Tester name" style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} data-testid="new-inv-name" />
-              <input type="email" value={newInv.testerEmail} onChange={e => setNewInv(p => ({ ...p, testerEmail: e.target.value }))} placeholder="Tester email" style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} data-testid="new-inv-email" />
-              <select value={newInv.testingLevel} onChange={e => setNewInv(p => ({ ...p, testingLevel: e.target.value }))} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} data-testid="new-inv-level">
-                <option value="invited_test_mode">Invited Test Mode</option>
-                <option value="controlled_live_pilot">Controlled $1 Pilot</option>
-                <option value="synthetic_internal">Synthetic Internal</option>
-              </select>
-              <div style={{ display: 'flex', gap: 12 }}>
-                <label style={{ color: '#94a3b8', fontSize: 12 }}>Max Sessions: <input type="number" value={newInv.maxSessions} onChange={e => setNewInv(p => ({ ...p, maxSessions: Number(e.target.value) }))} min={1} max={10} style={{ width: 60, padding: '4px 8px', borderRadius: 4, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} /></label>
-                <label style={{ color: '#94a3b8', fontSize: 12 }}>Expires In: <input type="number" value={newInv.expiresInDays} onChange={e => setNewInv(p => ({ ...p, expiresInDays: Number(e.target.value) }))} min={1} max={30} style={{ width: 60, padding: '4px 8px', borderRadius: 4, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} /> days</label>
+              <input type="text" value={newInv.testerName} onChange={e => setNewInv(p => ({ ...p, testerName: e.target.value }))} placeholder="Recipient name" style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} data-testid="new-inv-name" />
+              <input type="email" value={newInv.testerEmail} onChange={e => setNewInv(p => ({ ...p, testerEmail: e.target.value }))} placeholder="Recipient email" style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} data-testid="new-inv-email" />
+
+              <div>
+                <select value={newInv.testingLevel} onChange={e => setNewInv(p => ({ ...p, testingLevel: e.target.value }))} style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} data-testid="new-inv-level">
+                  <option value="friends_family_free">Free Friends & Family Preview</option>
+                  <option value="friends_family_one_dollar">$1 Friends & Family Pilot</option>
+                </select>
+                <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>{LEVEL_DESCRIPTIONS[newInv.testingLevel]}</p>
               </div>
+
+              <textarea value={newInv.personalMessage} onChange={e => setNewInv(p => ({ ...p, personalMessage: e.target.value }))} placeholder="Personal note from Ray (optional)" rows={2} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc', fontSize: 13, resize: 'vertical' }} data-testid="new-inv-personal-note" />
+
+              <div style={{ display: 'flex', gap: 12 }}>
+                <label style={{ color: '#94a3b8', fontSize: 12 }}>Sessions: <input type="number" value={newInv.maxSessions} onChange={e => setNewInv(p => ({ ...p, maxSessions: Number(e.target.value) }))} min={1} max={10} style={{ width: 60, padding: '4px 8px', borderRadius: 4, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} /></label>
+                <label style={{ color: '#94a3b8', fontSize: 12 }}>Expires: <input type="number" value={newInv.expiresInDays} onChange={e => setNewInv(p => ({ ...p, expiresInDays: Number(e.target.value) }))} min={1} max={30} style={{ width: 60, padding: '4px 8px', borderRadius: 4, border: '1px solid #334155', background: '#1e293b', color: '#f8fafc' }} /> days</label>
+              </div>
+
               <button onClick={create} className="nxos-button" style={{ padding: '8px 16px', background: '#10b981', color: '#fff', borderRadius: 6, border: 'none', cursor: 'pointer', fontWeight: 600 }} data-testid="confirm-create-btn">Create Invitation</button>
             </div>
           </div>
@@ -249,28 +247,26 @@ export default function TesterInvitationPanel() {
                 {inv.invitation_status}
               </span>
             </div>
-            <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#94a3b8' }}>
-              <span>Level: {LEVEL_LABELS[inv.testing_level] || inv.testing_level}</span>
+            <div style={{ display: 'flex', gap: 12, fontSize: 11, color: '#94a3b8', flexWrap: 'wrap' }}>
+              <span>{LEVEL_LABELS[inv.testing_level] || inv.testing_level}</span>
               <span>Sessions: {inv.sessions_used}/{inv.max_sessions}</span>
               <span>Expires: {new Date(inv.expires_at).toLocaleDateString()}</span>
-              {inv.payment_mode && <span>Payment: {inv.payment_mode}</span>}
-              {inv.allowlisted_for_pilot && <span style={{ color: '#10b981' }}>Allowlisted</span>}
             </div>
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
               {['draft', 'awaiting_approval'].includes(inv.invitation_status) && (
-                <button onClick={() => approve(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={`approve-${inv.id}`}>Approve</button>
+                <button onClick={() => approve(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#3b82f6', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={'approve-' + inv.id}>Approve</button>
               )}
               {['approved', 'sent'].includes(inv.invitation_status) && (
-                <button onClick={() => send(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={`send-${inv.id}`}>Send</button>
+                <button onClick={() => send(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#8b5cf6', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={'send-' + inv.id}>Send</button>
               )}
               {['approved', 'sent'].includes(inv.invitation_status) && (
-                <button onClick={() => extend(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: '1px solid #475569', background: 'transparent', color: '#e2e8f0', cursor: 'pointer', fontSize: 11 }} data-testid={`extend-${inv.id}`}>Extend</button>
+                <button onClick={() => extend(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: '1px solid #475569', background: 'transparent', color: '#e2e8f0', cursor: 'pointer', fontSize: 11 }} data-testid={'extend-' + inv.id}>Extend</button>
               )}
               {!['revoked', 'completed', 'expired'].includes(inv.invitation_status) && (
-                <button onClick={() => setConfirmAction({ title: 'Revoke Invitation?', message: 'This will permanently revoke the invitation and disable any allowlist entry.', action: () => revoke(inv) })} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={`revoke-${inv.id}`}>Revoke</button>
+                <button onClick={() => setConfirmAction({ title: 'Revoke Invitation?', message: 'This will permanently revoke the invitation.', action: () => revoke(inv) })} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={'revoke-' + inv.id}>Revoke</button>
               )}
               {inv.invitation_status === 'accepted' && (
-                <button onClick={() => markCompleted(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={`complete-${inv.id}`}>Mark Completed</button>
+                <button onClick={() => markCompleted(inv)} style={{ padding: '3px 10px', borderRadius: 4, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontSize: 11 }} data-testid={'complete-' + inv.id}>Mark Completed</button>
               )}
             </div>
           </article>
@@ -279,12 +275,12 @@ export default function TesterInvitationPanel() {
 
       <section className="nxos-table-card">
         <h2>Hidden Pilot Offers (Foundation)</h2>
-        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>These offers exist in the catalog but are not publicly visible and not active.</p>
+        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 8 }}>These offers exist but are not publicly visible and not active.</p>
         {HIDDEN_PILOT_OFFERS.map(offer => (
           <div key={offer.id} className="nxos-table-row" style={{ display: 'grid', gap: 4 }}>
             <div><strong>{offer.name}</strong> <small>{offer.slug}</small></div>
             <div style={{ fontSize: 11, color: '#94a3b8' }}>
-              Price: ${(offer.price_cents / 100).toFixed(2)} · Active: {offer.active ? 'YES' : 'No'} · Public: {offer.publicly_visible ? 'YES' : 'No'} · Mode: {offer.payment_mode_required} · Status: {offer.live_activation_status}
+              Price: ${(offer.price_cents / 100).toFixed(2)} · Active: {offer.active ? 'YES' : 'No'} · Public: {offer.publicly_visible ? 'YES' : 'No'}
             </div>
           </div>
         ))}
@@ -292,7 +288,7 @@ export default function TesterInvitationPanel() {
 
       <div className="nxos-callout">
         <strong>Security Notes</strong>
-        <p>Raw tokens are displayed only once at creation. No passwords are stored. All mutations are admin-only and audit-logged. Public live payments remain disabled. Controlled live pilot requires separate Ray approval.</p>
+        <p>Raw tokens displayed once at creation only. No passwords stored. All mutations admin-only and audit-logged. Public live payments disabled. Controlled live pilot requires separate Ray approval.</p>
       </div>
 
       <ConfirmationModal

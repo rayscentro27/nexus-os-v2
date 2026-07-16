@@ -775,7 +775,7 @@ function SystemHealthPage() {
             <h3>System Components</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
               {[
-                ['Netlify / Live URL', 'nexusv20.netlify.app', 'green', 'Connected'],
+                ['Production Domain', 'goclearonline.cc', 'green', 'Connected'],
                 ['Build Status', 'Passing (tsc + vite)', 'green', 'OK'],
                 ['Repo Branch', 'main', 'green', 'Current'],
                 ['Supabase', 'Configured (partial data)', 'amber', 'Partial'],

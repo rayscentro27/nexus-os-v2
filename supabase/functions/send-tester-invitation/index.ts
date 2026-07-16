@@ -30,8 +30,8 @@ serve(async (req) => {
     if (authError || !authData.user) return json({ error: "unauthorized" }, 401)
 
     const admin = createClient(supabaseUrl, serviceKey)
-    const { data: isAdmin } = await admin.rpc("nexus_is_active_admin")
-    if (!isAdmin) return json({ error: "admin_required" }, 403)
+    const { data: adminRow } = await admin.from("admin_users").select("id, active").eq("id", authData.user.id).eq("active", true).maybeSingle()
+    if (!adminRow) return json({ error: "admin_required" }, 403)
 
     const body = await req.json()
     const invitationId = String(body.invitationId || "").trim()
@@ -39,7 +39,7 @@ serve(async (req) => {
 
     const { data: invitation } = await admin
       .from("tester_invitations")
-      .select("id, invitation_status, tester_email, tester_name, resend_count, expires_at, testing_level, token_hash")
+      .select("id, invitation_status, tester_email, tester_name, resend_count, expires_at, testing_level, token_hash, payment_offer_slug, personal_message")
       .eq("id", invitationId)
       .maybeSingle()
 
@@ -48,19 +48,30 @@ serve(async (req) => {
       return json({ error: "invalid_status_for_send" }, 400)
     }
 
-    const appUrl = Deno.env.get("NEXUS_PUBLIC_APP_URL") || "https://goclear.invalid"
-    const acceptanceUrl = `${appUrl}/tester/invite/${invitation.token_hash}`
+    const appUrl = Deno.env.get("NEXUS_PUBLIC_APP_URL") || "https://goclearonline.cc"
+    const acceptanceUrl = `${appUrl}/invite/${invitation.token_hash}`
+
+    const isFree = !invitation.payment_offer_slug || invitation.testing_level === "friends_family_free" || invitation.testing_level === "invited_test_mode"
+    const isPilot = invitation.testing_level === "friends_family_one_dollar" || invitation.testing_level === "controlled_live_pilot"
+
+    let subject = "A Special Invitation from Ray to Preview GoClear"
+    if (isPilot) {
+      subject = "A Special Invitation from Ray: Join the GoClear $1 Preview Pilot"
+    }
 
     const emailPayload = {
       to: invitation.tester_email,
       template: "tester_invitation" as const,
       data: {
         testerName: invitation.tester_name,
-        testingLevel: invitation.testing_level === "invited_test_mode" ? "Invited Test Mode" : invitation.testing_level,
+        testingLevel: invitation.testing_level,
         expiresAt: new Date(invitation.expires_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
         acceptanceUrl,
-        stripeTestMode: invitation.testing_level === "invited_test_mode" ? "true" : "false",
+        isFree: isFree ? "true" : "false",
+        isPilot: isPilot ? "true" : "false",
         timeCommitment: "30-60 minutes",
+        personalNote: invitation.personal_message || "",
+        subject,
       },
     }
 
@@ -113,7 +124,7 @@ serve(async (req) => {
       invitation_id: invitation.id,
       template_name: "tester_invitation",
       to_email: invitation.tester_email,
-      subject: "You're Invited to Test Nexus — GoClear",
+      subject: subject,
       status: providerResult === "sent" ? "sent" : providerResult === "preview_only" ? "draft" : "failed",
       provider_message_id: providerMessageId,
       sent_at: providerResult === "sent" ? new Date().toISOString() : null,

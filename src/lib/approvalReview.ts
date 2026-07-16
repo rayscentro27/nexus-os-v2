@@ -1,7 +1,7 @@
 import { listTable, listTableDetailed, type Row, type TableQueryResult } from '../services/db';
 import { containsSensitive } from './dataScopes';
 
-const LANDING_PAGE_URL = 'https://nexusv20.netlify.app/goclear-apex-readiness.html';
+const LANDING_PAGE_URL = 'https://goclearonline.cc/goclear-apex-readiness.html';
 const MAX_COPY = 1800;
 
 export interface ApprovalPreview {

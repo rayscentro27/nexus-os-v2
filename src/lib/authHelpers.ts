@@ -13,9 +13,6 @@ export function getPasswordResetRedirectUrl(): string {
   if (origin.includes('goclearonline.cc')) {
     return 'https://goclearonline.cc/update-password';
   }
-  if (origin.includes('nexusv20.netlify.app')) {
-    return 'https://nexusv20.netlify.app/update-password';
-  }
   return `${origin}/update-password`;
 }
 

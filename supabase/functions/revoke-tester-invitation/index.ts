@@ -30,8 +30,8 @@ serve(async (req) => {
     if (authError || !authData.user) return json({ error: "unauthorized" }, 401)
 
     const admin = createClient(supabaseUrl, serviceKey)
-    const { data: isAdmin } = await admin.rpc("nexus_is_active_admin")
-    if (!isAdmin) return json({ error: "admin_required" }, 403)
+    const { data: adminRow } = await admin.from("admin_users").select("id, active").eq("id", authData.user.id).eq("active", true).maybeSingle()
+    if (!adminRow) return json({ error: "admin_required" }, 403)
 
     const body = await req.json()
     const invitationId = String(body.invitationId || "").trim()

@@ -76,35 +76,68 @@ const templates = {
     `,
   }),
   tester_invitation: (data: Record<string, string>) => ({
-    subject: `You're Invited to Test Nexus — GoClear`,
+    subject: data.subject || `A Special Invitation from Ray to Preview GoClear`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background: linear-gradient(135deg, #0f1729 0%, #1e3a5f 100%); border-radius: 12px; padding: 24px; margin-bottom: 20px;">
-          <h1 style="color: #ffffff; font-size: 22px; margin: 0;">Nexus OS — Tester Invitation</h1>
-          <p style="color: #94a3b8; font-size: 14px; margin: 8px 0 0;">GoClear · Controlled Testing Program</p>
+        <div style="background: linear-gradient(135deg, #0f1729 0%, #1e3a5f 100%); border-radius: 12px; padding: 28px; margin-bottom: 24px;">
+          <h1 style="color: #ffffff; font-size: 22px; margin: 0;">A Personal Invitation from Ray</h1>
+          <p style="color: #94a3b8; font-size: 14px; margin: 8px 0 0;">GoClear · Friends & Family Preview</p>
         </div>
-        <p style="color: #4a5568; line-height: 1.6;">Hello ${data.testerName || 'Tester'},</p>
-        <p style="color: #4a5568; line-height: 1.6;">You've been invited to participate in a controlled testing program for Nexus OS. This is a limited, invitation-only opportunity to help us verify system functionality.</p>
+
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">Hi ${data.testerName || 'there'},</p>
+
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">I'm personally inviting you to be one of the first people to experience GoClear, a platform I've been building to help individuals better understand their credit, organize important financial documents, strengthen their business foundation, and prepare for future funding opportunities.</p>
+
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">I'm inviting a small group of family and friends to explore GoClear before it is released more broadly. Your feedback will help me make the experience simpler, clearer, and more useful for future clients.</p>
+
+        ${data.personalNote ? `<div style="background: #f8fbff; border-radius: 10px; padding: 16px 20px; margin: 20px 0; border-left: 4px solid #3b82f6;"><p style="color: #4a5568; font-style: italic; margin: 0; line-height: 1.6; font-size: 14px;">"${data.personalNote}"</p></div>` : ''}
+
         <div style="background: #f8fbff; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #d6e3f3;">
-          <h3 style="color: #0f1729; margin: 0 0 10px;">Your Assignment</h3>
-          <ul style="color: #4a5568; line-height: 1.8; margin: 0; padding-left: 20px;">
-            <li><strong>Testing Level:</strong> ${data.testingLevel || 'Invited Test Mode'}</li>
-            <li><strong>Expected Time:</strong> ${data.timeCommitment || '30-60 minutes'}</li>
-            <li><strong>Expires:</strong> ${data.expiresAt || '7 days'}</li>
+          <h3 style="color: #0f1729; margin: 0 0 12px; font-size: 16px;">During your preview, you'll be able to:</h3>
+          <ul style="color: #4a5568; line-height: 1.8; margin: 0; padding-left: 20px; font-size: 14px;">
+            <li>Explore a guided credit-improvement journey</li>
+            <li>Review credit and funding-readiness tools</li>
+            <li>Upload test documents securely</li>
+            <li>Explore business setup and bankability</li>
+            <li>Receive guidance from Clyde</li>
+            <li>Request a readiness review</li>
+            <li>Share feedback about your experience</li>
           </ul>
         </div>
-        ${data.stripeTestMode === 'true' ? '<div style="background: #fef3c7; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #fbbf24;"><strong style="color: #92400e;">Stripe Test Mode</strong><p style="color: #92400e; margin: 4px 0 0; font-size: 13;">This invitation includes a test-mode payment. You will use a Stripe test card. No real money will be charged.</p></div>' : ''}
-        <div style="background: #f0fdf4; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #86efac;">
-          <strong style="color: #166534;">Synthetic Test Data</strong>
-          <p style="color: #166534; margin: 4px 0 0; font-size: 13;">This is a controlled testing environment. No real funding, credit, or financial services are provided. Your feedback helps us improve.</p>
+
+        ${data.isFree === 'true' ? '<div style="background: #f0fdf4; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #bbf7d0;"><p style="color: #166534; margin: 0; font-size: 14px;"><strong>There is no charge for this invitation.</strong> This is a free preview of the GoClear experience.</p></div>' : ''}
+        ${data.isPilot === 'true' ? '<div style="background: #fffbeb; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #fde68a;"><p style="color: #92400e; margin: 0; font-size: 13px;">You have also been selected for our controlled $1 Friends & Family Pilot. The one-dollar payment helps us verify the complete payment, onboarding, portal, service-delivery, and refund experience before public launch. This is not the normal GoClear service price, and it is not a promise of credit, funding, deletion, approval, or financial results.</p></div>' : ''}
+
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">This personal invitation is intended only for you and expires on ${data.expiresAt || 'soon'}.</p>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${data.acceptanceUrl || '#'}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">Accept My Personal Invitation</a>
         </div>
-        <p style="color: #4a5568; line-height: 1.6;">To accept this invitation, click the link below and create your password:</p>
-        <a href="${data.acceptanceUrl || '#'}" style="display: inline-block; background: #10b981; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin: 16px 0;">Accept Invitation</a>
-        <p style="color: #6b7b99; font-size: 12px; line-height: 1.6;">This is a single-use link. Do not share it. If you did not expect this invitation, please ignore this email.</p>
-        <p style="color: #6b7b99; font-size: 12px; margin-top: 16px;">Your feedback and participation are part of this pilot. No funding, credit, deletion, approval, timeline, or outcome is guaranteed.</p>
-        <p style="color: #6b7b99; font-size: 12px;">GoClear · Nexus OS Testing Program · Advisory services only</p>
+
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">Thank you for helping me build something that can make a real difference.</p>
+
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px; margin-top: 20px;">Ray Davis<br/>Founder, GoClear</p>
+
+        <div style="border-top: 1px solid #e2e8f0; margin-top: 24px; padding-top: 16px;">
+          <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin: 0;">This is a single-use link. Do not share it. If you did not expect this invitation, please ignore this email.</p>
+          <p style="color: #94a3b8; font-size: 12px; line-height: 1.5; margin: 8px 0 0;">GoClear · Advisory services only · goclearonline.cc</p>
+        </div>
       </div>
     `,
+    text: `Hi ${data.testerName || 'there'},
+
+I'm personally inviting you to be one of the first people to experience GoClear, a platform I've been building to help individuals better understand their credit, organize important financial documents, strengthen their business foundation, and prepare for future funding opportunities.
+
+During your preview, you'll be able to explore a guided credit-improvement journey, review funding-readiness tools, upload documents, receive guidance from Clyde, and share feedback.
+
+${data.isFree === 'true' ? 'There is no charge for this invitation.' : ''}
+${data.isPilot === 'true' ? 'You have also been selected for our controlled $1 Friends & Family Pilot.' : ''}
+
+Accept your invitation: ${data.acceptanceUrl || ''}
+
+Ray Davis
+Founder, GoClear
+GoClear · Advisory services only`,
   }),
   invitation_reminder: (data: Record<string, string>) => ({
     subject: `Reminder: Your Nexus Tester Invitation — GoClear`,
