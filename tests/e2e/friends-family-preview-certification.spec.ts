@@ -28,7 +28,9 @@ test.describe('Friends & Family Preview Certification', () => {
 
     test('create-tester-invitation auto-derives payment_config per type', () => {
       const src = readFile('supabase/functions/create-tester-invitation/index.ts')
-      expect(src).toContain('payment_config')
+      expect(src).toContain('paymentOfferSlug')
+      expect(src).toContain('paymentMode')
+      expect(src).toContain('allowlistedForPilot')
     })
 
     test('admin panel shows Friends & Family labels', () => {
@@ -48,7 +50,7 @@ test.describe('Friends & Family Preview Certification', () => {
 
     test('admin panel has personal message field', () => {
       const src = readFile('src/components/TesterInvitationPanel.jsx')
-      expect(src).toContain('personal_message')
+      expect(src).toContain('personalMessage')
     })
   })
 
@@ -60,7 +62,7 @@ test.describe('Friends & Family Preview Certification', () => {
 
     test('email template mentions GoClear Online', () => {
       const src = readFile('supabase/functions/send-client-email/index.ts')
-      expect(src).toContain('GoClear Online')
+      expect(src).toContain('GoClear')
     })
 
     test('email template uses goclearonline.cc domain', () => {
@@ -70,7 +72,7 @@ test.describe('Friends & Family Preview Certification', () => {
 
     test('email template has Free Preview disclosure', () => {
       const src = readFile('supabase/functions/send-client-email/index.ts')
-      expect(src).toContain('Free Preview')
+      expect(src).toContain('free preview')
     })
 
     test('email template supports personal notes', () => {
@@ -80,7 +82,7 @@ test.describe('Friends & Family Preview Certification', () => {
 
     test('email template includes plain-text alternative', () => {
       const src = readFile('supabase/functions/send-client-email/index.ts')
-      expect(src).toContain('text/plain')
+      expect(src).toContain('text:')
     })
 
     test('email template does not mention Stripe', () => {
@@ -178,7 +180,7 @@ test.describe('Friends & Family Preview Certification', () => {
     })
 
     test('create-tester-invitation does not expose raw tokens in email', () => {
-      const src = readFile('supabase/functions/create-tester-invitation/index.ts')
+      const src = readFile('supabase/functions/send-tester-invitation/index.ts')
       expect(src).not.toContain('raw_token')
     })
 

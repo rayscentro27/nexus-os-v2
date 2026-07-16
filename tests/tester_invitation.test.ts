@@ -305,7 +305,9 @@ describe('tester invitation system', () => {
     it('panel has payment controls toggles', () => {
       const src = readFileSync(resolve(ROOT, 'src/components/TesterInvitationPanel.jsx'), 'utf8')
       expect(src).toContain('invitations-toggle')
-      expect(src).toContain('Invitations: ON')
+      expect(src).toContain('test-purchases-toggle')
+      expect(src).toContain('Invitations ON')
+      expect(src).toContain('Test $ ON')
     })
 
     it('panel shows pilot offers', () => {
@@ -316,7 +318,8 @@ describe('tester invitation system', () => {
 
     it('panel shows payment controls', () => {
       const src = readFileSync(resolve(ROOT, 'src/components/TesterInvitationPanel.jsx'), 'utf8')
-      expect(src).toContain('Payment Controls')
+      expect(src).toContain('payment-safety-strip')
+      expect(src).toContain('SAFETY')
       expect(src).toContain('controlled_live_pilot')
       expect(src).toContain('public_live')
     })

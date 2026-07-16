@@ -1489,7 +1489,7 @@ export default function NexusAdminUI({ email }) {
     credit: <ErrorBoundary panelName="Credit & Funding"><SimplePage title="Credit & Funding" sub="Readiness Scores · Documents · Disputes · Bankability · Approval-Gated"><CreditFundingPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     'credit-specialist': <ErrorBoundary panelName="Credit & Funding Readiness Review"><SimplePage title="Credit & Funding Readiness Review" sub="Report Analysis · Funding-Impact Items · Draft Letters · Approval-Gated Mail Queue"><CreditSpecialistWorkbench onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     'tester-readiness': <ErrorBoundary panelName="Tester Readiness"><SimplePage title="Tester Readiness" sub="Synthetic Persona Control · Status · Reset · Reseed · Feedback · Sessions"><TesterReadinessPanel /></SimplePage></ErrorBoundary>,
-    'tester-invitations': <ErrorBoundary panelName="Tester Invitations"><SimplePage title="Tester Invitations" sub="Invite Testers · Test-Mode Payments · Pilot Foundation · Emergency Controls"><TesterInvitationPanel /></SimplePage></ErrorBoundary>,
+    'tester-invitations': <ErrorBoundary panelName="Tester Invitations"><section className="page active tester-invitations-page" style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}><TesterInvitationPanel /></section></ErrorBoundary>,
     'readiness-intake': <ErrorBoundary panelName="Readiness Intake"><SimplePage title="$97 Readiness Review — Client Intake" sub="Collect credit and business funding readiness data · Local draft mode"><ReadinessReviewIntake onComplete={(data) => console.log('Intake complete (local draft):', data)} onCancel={() => navigate('credit')} /></SimplePage></ErrorBoundary>,
     'readiness-admin': <ErrorBoundary panelName="Readiness Review Admin"><SimplePage title="$97 Readiness Review — Admin Review" sub="Score readiness · Add notes · Prepare report draft · Draft-only"><ReadinessReviewAdmin onComplete={(data) => console.log('Admin review complete (local draft):', data)} /></SimplePage></ErrorBoundary>,
     business: <ErrorBoundary panelName="Business Setup"><BusinessSetupPage /></ErrorBoundary>,
@@ -1504,7 +1504,7 @@ export default function NexusAdminUI({ email }) {
   }[activePage] || <CommandCenter />
 
   return (
-    <div className="os-root">
+    <div className={`os-root active-page-${activePage}`}>
       <div className="app-shell">
         <Sidebar activePage={activePage} onNavigate={navigate} />
         <main className="content">

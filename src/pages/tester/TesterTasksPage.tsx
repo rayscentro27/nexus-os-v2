@@ -98,7 +98,7 @@ export default function TesterTasksPage() {
   if (!invitation) return (
     <div className="nxos-stack" style={{ maxWidth: 500, margin: '60px auto', padding: '0 20px' }} data-testid="no-invitation">
       <p style={{ color: '#94a3b8' }}>No accepted invitation found for your account.</p>
-      <a href="/tester/invite" style={{ color: '#3b82f6' }}>Enter invitation token</a>
+      <a href="/invite" style={{ color: '#3b82f6' }}>Enter invitation token</a>
     </div>
   );
 

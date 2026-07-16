@@ -1430,3 +1430,493 @@ body,button,input,textarea,select { font-family: 'Inter', ui-sans-serif, system-
 .approval-receipt-toast { position: sticky; top: 8px; z-index: 20; display: flex; justify-content: space-between; gap: 14px; border: 1px solid #327153; background: #0d3022; border-radius: 11px; padding: 12px 14px; box-shadow: 0 12px 35px rgba(0,0,0,.3); }.approval-receipt-toast p { margin: 4px 0; }.approval-receipt-toast small { color: #91d9b0; }.approval-receipt-toast > div:last-child { display: flex; gap: 6px; align-items: center; }.approval-receipt-toast button { border: 1px solid #39785a; background: #113d2b; color: white; border-radius: 7px; padding: 7px; }
 .receipt-viewer-backdrop { justify-content: center; align-items: center; }.approval-receipt-viewer { width: min(600px,90vw); background: #0b1828; border: 1px solid #2c4969; border-radius: 16px; padding: 18px; }.approval-receipt-viewer header { display: flex; justify-content: space-between; }.approval-receipt-viewer header button { border: 0; background: transparent; color: white; font-size: 24px; }.approval-receipt-viewer h2 { margin: 4px 0 14px; }.approval-receipt-viewer dl div { padding: 9px 0; border-top: 1px solid var(--softline); }.approval-receipt-viewer dt { color: var(--muted); font-size: 10px; }.approval-receipt-viewer dd { margin: 3px 0 0; }
 @media(max-width:1350px){.nexus-command-center{overflow:auto}.page-content:has(.nexus-command-center){overflow:auto}.nexus-command-grid{grid-template-columns:1fr}.system-health-layout{grid-template-columns:1fr}.health-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Phase 7.2.1 tester invitations layout certification */
+.page-content {
+  position: relative;
+  z-index: 2;
+}
+
+.topbar {
+  z-index: 1;
+  overflow: hidden;
+}
+
+.active-page-tester-invitations .page-content {
+  padding-top: 12px;
+}
+
+.active-page-tester-invitations .hermes-global-launcher {
+  top: 6px;
+  right: 14px;
+  bottom: auto;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 24;
+}
+
+.active-page-tester-invitations .hermes-global-launcher div {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.tester-invite-drawer-open .active-page-tester-invitations .hermes-global-launcher {
+  display: none;
+}
+
+.hermes-global-launcher:focus-visible,
+.tester-invitation-panel button:focus-visible,
+.tester-invite-drawer button:focus-visible,
+.tester-invite-drawer input:focus-visible,
+.tester-invite-drawer textarea:focus-visible,
+.tester-invite-drawer select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.tester-invitation-panel {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tester-invitations-page,
+.tester-invitation-header,
+.tester-metric-chips,
+.tester-safety-strip,
+.tester-invitation-table,
+.tester-invitation-table-body,
+.tester-hidden-offers,
+.tester-security-notes {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.tester-security-notes {
+  flex-shrink: 0;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(117,151,204,.18);
+  border-radius: 8px;
+  color: #92a3bd;
+  background: rgba(15,23,42,.42);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.tester-security-notes strong {
+  color: #edf4ff;
+  white-space: nowrap;
+}
+
+.tester-invite-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tester-invite-drawer-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  backdrop-filter: blur(2px);
+}
+
+.tester-invite-drawer {
+  position: relative;
+  width: min(600px, 95vw);
+  height: 100dvh;
+  background: #0f172a;
+  border-left: 1px solid #1e3a5f;
+  display: flex;
+  flex-direction: column;
+  z-index: 101;
+  box-shadow: -8px 0 30px rgba(0,0,0,.4);
+}
+
+.tester-invite-drawer-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #1e3a5f;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background: #0f172a;
+}
+
+.tester-invite-drawer-header h2,
+.tester-invite-drawer-header p {
+  margin: 0;
+}
+
+.tester-invite-drawer-header h2 {
+  font-size: 16px;
+  color: #f8fafc;
+}
+
+.tester-invite-drawer-header p {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.tester-invite-drawer-header button {
+  background: transparent;
+  border: 0;
+  color: #94a3b8;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.tester-invite-drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 20px;
+}
+
+.tester-invite-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.tester-invite-drawer-footer {
+  padding: 12px 20px max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid #1e3a5f;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  background: #0f172a;
+}
+
+.tester-email-preview,
+.tester-create-confirm {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  background: #111c2f;
+  padding: 14px;
+}
+
+.preview-row,
+.tester-create-confirm div {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(51,65,85,.75);
+}
+
+.preview-row span,
+.tester-create-confirm strong,
+.link-preview span {
+  color: #64748b;
+  font-size: 10px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.preview-row strong,
+.tester-create-confirm span {
+  color: #e2e8f0;
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.preview-message p {
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.personal-note {
+  border-left: 3px solid #10b981;
+  padding-left: 10px;
+  font-style: italic;
+}
+
+.link-preview {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid #1e3a5f;
+  border-radius: 6px;
+  background: #0f172a;
+  display: grid;
+  gap: 5px;
+}
+
+.link-preview code {
+  color: #cbd5e1;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.link-preview strong {
+  color: #10b981;
+  font-size: 11px;
+}
+
+.safe-note {
+  color: #92a3bd;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .os-root {
+    width: 100vw;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  .active-page-tester-invitations .app-shell {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .sidebar {
+    display: none;
+  }
+
+  .content {
+    grid-column: 1 !important;
+    width: 100vw;
+    max-width: 100vw;
+    min-width: 0;
+    grid-template-rows: 66px minmax(0, 1fr);
+  }
+
+  .active-page-tester-invitations .content {
+    grid-column: 1 !important;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 0;
+  }
+
+  .topbar {
+    width: 100vw;
+    max-width: 100vw;
+    min-width: 0;
+    padding: 6px 56px 6px 10px;
+    gap: 6px;
+  }
+
+  .searchbar {
+    display: none;
+  }
+
+  .hermes-status,
+  .profile {
+    height: 40px;
+    min-width: 0;
+    border-radius: 10px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .hermes-status span {
+    display: none;
+  }
+
+  .page-content {
+    width: 100vw;
+    max-width: 100vw;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 8px 10px 8px;
+    overflow: hidden;
+  }
+
+  .active-page-tester-invitations .page-content {
+    width: 100vw;
+    max-width: 100vw;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .active-page-tester-invitations .hermes-global-launcher {
+    top: 10px;
+    right: 8px;
+  }
+
+  .footer {
+    height: 44px;
+    min-height: 44px;
+    overflow: hidden;
+    padding: 6px 10px;
+    font-size: 10px;
+  }
+
+  .footer div:not(:last-child) {
+    display: none;
+  }
+
+  .tester-invitation-panel {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    inline-size: calc(100vw - 20px) !important;
+    max-inline-size: calc(100vw - 20px) !important;
+    min-width: 0 !important;
+    flex: 1 1 auto;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 0;
+  }
+
+  .tester-invitations-page,
+  .tester-invitation-header,
+  .tester-metric-chips,
+  .tester-safety-strip,
+  .tester-invitation-table,
+  [data-testid="invitation-table-body"],
+  .tester-hidden-offers,
+  .tester-security-notes {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0 !important;
+  }
+
+  .tester-invitation-header > div,
+  .tester-invitation-actions,
+  .tester-metric-chips,
+  .tester-safety-strip,
+  .tester-invitation-table,
+  [data-testid="invitation-table-body"],
+  .tester-hidden-offers,
+  .tester-security-notes {
+    min-width: 0 !important;
+  }
+
+  .tester-invitation-header {
+    align-items: flex-start !important;
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .tester-invitation-header h2 {
+    font-size: 15px !important;
+    overflow-wrap: anywhere;
+  }
+
+  .tester-invitation-actions,
+  .tester-safety-strip > div:last-child {
+    width: 100%;
+    margin-left: 0 !important;
+    flex-wrap: wrap;
+  }
+
+  .tester-invitation-actions button,
+  .tester-safety-strip button {
+    max-width: 100%;
+    min-height: 36px;
+  }
+
+  .tester-metric-chips > div {
+    flex: 1 1 calc(50% - 8px);
+    justify-content: space-between;
+  }
+
+  .tester-safety-strip {
+    align-items: flex-start !important;
+  }
+
+  .tester-invitation-table {
+    overflow: visible !important;
+    min-height: 180px !important;
+  }
+
+  .tester-invitation-table-head {
+    display: none !important;
+  }
+
+  .tester-invitation-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 4px !important;
+    padding: 10px !important;
+    border-top: 1px solid #1e3a5f !important;
+  }
+
+  .tester-invitation-row > span {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+
+  .tester-row-actions {
+    justify-content: flex-start !important;
+    flex-wrap: wrap;
+    margin-top: 5px;
+  }
+
+  .tester-row-actions button {
+    min-height: 32px;
+  }
+
+  .tester-hidden-offers {
+    margin-bottom: 4px;
+  }
+
+  .tester-security-notes {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tester-invite-drawer {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    border-left: 0;
+  }
+
+  .tester-invite-drawer-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+  }
+
+  .tester-invite-drawer-body {
+    padding: 14px 16px;
+  }
+
+  .tester-invite-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tester-invite-drawer-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    justify-content: stretch;
+    padding: 10px 16px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .tester-invite-drawer-footer button {
+    flex: 1 1 100%;
+    min-height: 40px;
+  }
+
+  .preview-row,
+  .tester-create-confirm div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

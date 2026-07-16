@@ -1,6 +1,23 @@
 import { test, expect } from 'playwright/test'
+import { existsSync, readFileSync } from 'fs'
+import { resolve } from 'path'
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
+
+function loadLocalE2EEnv() {
+  if (process.env.E2E_ADMIN_EMAIL && process.env.E2E_ADMIN_PASSWORD) return
+  const envPath = resolve(process.cwd(), '.env.e2e.local')
+  if (!existsSync(envPath)) return
+  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue
+    const [key, ...valueParts] = trimmed.split('=')
+    if (!process.env[key]) process.env[key] = valueParts.join('=')
+  }
+}
+
+loadLocalE2EEnv()
+
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'nexus-admin-browser@goclear.test'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || ''
 
@@ -64,12 +81,8 @@ test.describe('Invited Payment Pilot Certification', () => {
     })
 
     test('invite token validation works', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/invite`)
-      await page.fill('[data-testid="invite-token-input"]', 'test-invalid-token')
-      await page.click('[data-testid="invite-validate-btn"]')
-      await page.waitForTimeout(2000)
-      const error = page.locator('[data-testid="invite-error"]')
-      await expect(error).toBeVisible()
+      await page.goto(`${BASE_URL}/invite/test-invalid-token`)
+      await expect(page.locator('body')).toContainText(/Invalid Invitation|not valid/)
     })
   })
 

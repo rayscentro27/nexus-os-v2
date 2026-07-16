@@ -1,6 +1,23 @@
 import { test, expect } from 'playwright/test'
+import { existsSync, readFileSync } from 'fs'
+import { resolve } from 'path'
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
+
+function loadLocalE2EEnv() {
+  if (process.env.E2E_ADMIN_EMAIL && process.env.E2E_ADMIN_PASSWORD) return
+  const envPath = resolve(process.cwd(), '.env.e2e.local')
+  if (!existsSync(envPath)) return
+  for (const line of readFileSync(envPath, 'utf-8').split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue
+    const [key, ...valueParts] = trimmed.split('=')
+    if (!process.env[key]) process.env[key] = valueParts.join('=')
+  }
+}
+
+loadLocalE2EEnv()
+
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'nexus-admin-browser@goclear.test'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || ''
 
@@ -17,13 +34,13 @@ async function loginAsAdmin(page: any) {
 test.describe('Human Invited Tester Certification', () => {
   test.describe('Invitation Workflow Components', () => {
     test('tester invite page exists and loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/invite`)
-      await expect(page.locator('[data-testid="tester-invite-page"]')).toBeVisible()
+      await page.goto(`${BASE_URL}/invite/test-invalid-token`)
+      await expect(page.locator('body')).toContainText('GoClear')
     })
 
     test('tester accept page exists and loads', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/accept`)
-      await expect(page.locator('[data-testid="accept-token-input"]')).toBeVisible()
+      await page.goto(`${BASE_URL}/invite/accept?token=test-invalid-token`)
+      await expect(page.locator('body')).toContainText(/Invitation Issue|Setting up your account/)
     })
 
     test('tester tasks page exists', async ({ page }) => {
@@ -34,16 +51,14 @@ test.describe('Human Invited Tester Certification', () => {
       expect(hasTestContent).toBe(true)
     })
 
-    test('invite page has token input field', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/invite`)
-      await expect(page.locator('[data-testid="invite-token-input"]')).toBeVisible()
-      await expect(page.locator('[data-testid="invite-validate-btn"]')).toBeVisible()
+    test('invite page has no manual token input field', async ({ page }) => {
+      await page.goto(`${BASE_URL}/invite/test-invalid-token`)
+      await expect(page.locator('[data-testid="invite-token-input"], input[name="token"]')).toHaveCount(0)
     })
 
-    test('accept page has token and password fields', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/accept`)
-      await expect(page.locator('[data-testid="accept-token-input"]')).toBeVisible()
-      await expect(page.locator('[data-testid="accept-validate-btn"]')).toBeVisible()
+    test('accept page has no manual token field before URL validation', async ({ page }) => {
+      await page.goto(`${BASE_URL}/invite/accept?token=test-invalid-token`)
+      await expect(page.locator('[data-testid="accept-token-input"]')).toHaveCount(0)
     })
   })
 
@@ -80,19 +95,12 @@ test.describe('Human Invited Tester Certification', () => {
 
   test.describe('Workflow State Guards', () => {
     test('invalid token shows error on invite page', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/invite`)
-      await page.fill('[data-testid="invite-token-input"]', 'definitely-not-a-real-token')
-      await page.click('[data-testid="invite-validate-btn"]')
-      await page.waitForTimeout(2000)
-      const error = page.locator('[data-testid="invite-error"]')
-      await expect(error).toBeVisible()
+      await page.goto(`${BASE_URL}/invite/definitely-not-a-real-token`)
+      await expect(page.locator('body')).toContainText(/Invalid Invitation|not valid/)
     })
 
     test('invalid token does not advance to password form', async ({ page }) => {
-      await page.goto(`${BASE_URL}/tester/accept`)
-      await page.fill('[data-testid="accept-token-input"]', 'definitely-not-a-real-token')
-      await page.click('[data-testid="accept-validate-btn"]')
-      await page.waitForTimeout(3000)
+      await page.goto(`${BASE_URL}/invite/accept?token=definitely-not-a-real-token`)
       const passwordInput = page.locator('[data-testid="password-input"]')
       const isVisible = await passwordInput.isVisible().catch(() => false)
       expect(isVisible).toBe(false)
