@@ -1,0 +1,71 @@
+{
+  "date": "2026-07-17",
+  "branch": "main",
+  "starting_commit": "f0c0e2280727c8a8d508aff3fb71d16372cc12e8",
+  "dirty_entries_at_start": 140,
+  "dirty_entries_before_staging": 142,
+  "repairs_made": [
+    {
+      "path": "package.json",
+      "summary": "Quoted Vitest E2E exclude glob so npm test does not expand tests/e2e/** under zsh."
+    }
+  ],
+  "verified_existing_diffs": [
+    "playwright.config.ts",
+    "tests/e2e/authenticated-certification.spec.ts"
+  ],
+  "commands_passed": [
+    "npm run typecheck",
+    "npm run build",
+    "npm test",
+    "python3 scripts/checks/certify_authenticated_rls.py",
+    "python3 scripts/checks/check_authenticated_parser_fixtures.py",
+    "python3 scripts/checks/check_parser_result_save_load_shape.py",
+    "python3 scripts/checks/check_outcome_analytics.py",
+    "python3 scripts/testers/replay_synthetic_credit_case.py --persona a --full",
+    "npx playwright test tests/e2e/authenticated-certification.spec.ts --workers=1 --reporter=line --trace=retain-on-failure",
+    "npx playwright test tests/e2e/client-credit-workflow-certification.spec.ts --workers=1 --reporter=line --trace=retain-on-failure",
+    "npx playwright test tests/e2e/guided-client-portal-certification.spec.ts --workers=1 --reporter=line --trace=retain-on-failure",
+    "supabase projects list",
+    "supabase migration list"
+  ],
+  "commands_failed_or_blocked": [
+    {
+      "command": "supabase status --workdir supabase",
+      "status": "BLOCKED",
+      "reason": "Docker daemon is not running locally."
+    },
+    {
+      "command": "initial authenticated storage metadata probe",
+      "status": "FAIL_EXPECTED_BY_POLICY",
+      "reason": "Probe used approval_required=false, which violates the client insert RLS contract. The probe object was removed."
+    }
+  ],
+  "migration_truth": {
+    "remote_list_available": true,
+    "local_only_migrations": [
+      "20260715200000_tester_invitation_system.sql",
+      "20260716120000_enable_pilot_controls.sql"
+    ],
+    "migrations_applied": false
+  },
+  "security": {
+    "secrets_exposed": false,
+    "real_customer_data_used": false,
+    "production_data_changed": false,
+    "synthetic_data_changed": true,
+    "external_messages_sent": false,
+    "broker_orders_submitted": false,
+    "live_trading_changed": false,
+    "signed_urls_created": false
+  },
+  "process_cleanup": {
+    "temporary_processes_remaining": false,
+    "port_4173_listener_remaining": false
+  },
+  "checkpoint": {
+    "staged_at_manifest_write": false,
+    "commit_created_at_manifest_write": false,
+    "push_performed_at_manifest_write": false
+  }
+}

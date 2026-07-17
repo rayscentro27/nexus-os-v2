@@ -129,6 +129,7 @@ test.describe('authenticated browser certification', () => {
       await expect(page).toHaveURL(/\/admin\/?$/)
       await page.goto('/client/dashboard')
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
+      await page.waitForTimeout(2000)
       const url = page.url()
       const redirectedToLogin = /\/client\/login/.test(url)
       const showsLogin = await page.getByText(/client portal login/i).isVisible().catch(() => false)
