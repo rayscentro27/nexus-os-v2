@@ -75,11 +75,11 @@ export default function TesterAcceptPage() {
     try {
       const result = await acceptTesterInvitation({ token, password, consentAccepted });
       if (!result.ok) { setError(result.error || 'Acceptance failed.'); setAccepting(false); return; }
-      setAccepted(true);
       const { data: { session } } = await supabase?.auth.getSession() || { data: { session: null } };
       if (!session) {
         await supabase?.auth.signInWithPassword({ email: invitation?.tester_email || '', password });
       }
+      setAccepted(true);
     } catch {
       setError('Failed to accept invitation.');
     }
@@ -95,8 +95,8 @@ export default function TesterAcceptPage() {
           <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
             Your account is ready. Start exploring the complete GoClear experience.
           </p>
-          <a href="/client/preview" style={{ display: 'block', textAlign: 'center', padding: '14px 24px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600, fontSize: 16 }} data-testid="start-journey-btn">
-            Start My GoClear Journey
+          <a href="/client/login?accepted=1" style={{ display: 'block', textAlign: 'center', padding: '14px 24px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#fff', borderRadius: 10, textDecoration: 'none', fontWeight: 600, fontSize: 16 }} data-testid="start-journey-btn">
+            Sign In and Start My GoClear Journey
           </a>
         </div>
       </div>

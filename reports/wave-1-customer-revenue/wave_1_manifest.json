@@ -1,0 +1,53 @@
+{
+  "date": "2026-07-17T18:58:18Z",
+  "branch": "main",
+  "starting_commit": "2e0bf90c28774c6e7dfe7bb57c05f19bc203a21a",
+  "dirty_entries_at_start": 139,
+  "dirty_entries_before_staging": 144,
+  "migrations_applied": false,
+  "remote_migration_history_checked": true,
+  "local_only_migrations_deferred": [
+    "20260715200000_tester_invitation_system.sql",
+    "20260716120000_enable_pilot_controls.sql"
+  ],
+  "commands_passed": [
+    "npm run typecheck",
+    "npm run build",
+    "npx vitest run",
+    "python3 scripts/checks/certify_authenticated_rls.py",
+    "python3 scripts/checks/check_authenticated_parser_fixtures.py",
+    "python3 scripts/checks/check_parser_result_save_load_shape.py",
+    "python3 scripts/checks/check_outcome_analytics.py",
+    "npx playwright test targeted Wave 1/Wave 0 browser suites --workers=1 --reporter=line"
+  ],
+  "browser_total": {
+    "passed": 89,
+    "failed": 0
+  },
+  "vitest_total": {
+    "files_passed": 83,
+    "tests_passed": 1389,
+    "failed": 0
+  },
+  "rls_total": {
+    "checks": 45,
+    "failures": 0
+  },
+  "security": {
+    "real_customer_data_used": false,
+    "external_messages_sent": false,
+    "real_payments_charged": false,
+    "broker_orders_submitted": false,
+    "live_trading_changed": false,
+    "secrets_exposed": false
+  },
+  "process_cleanup": {
+    "port_4173_listener_remaining": false,
+    "temporary_processes_remaining": false
+  },
+  "checkpoint": {
+    "staged_at_manifest_write": false,
+    "commit_created_at_manifest_write": false,
+    "push_performed_at_manifest_write": false
+  }
+}

@@ -181,10 +181,15 @@ describe('tester invitation system', () => {
       expect(fn).toContain('invitation_revoked')
     })
 
-    it('accept-tester-invitation creates auth user', () => {
+    it('accept-tester-invitation creates or updates auth user and portal baseline', () => {
       const fn = readFileSync(resolve(ROOT, 'supabase/functions/accept-tester-invitation/index.ts'), 'utf8')
-      expect(fn).toContain('inviteUserByEmail')
+      expect(fn).toContain('admin.auth.admin.createUser')
+      expect(fn).toContain('admin.auth.admin.updateUserById')
       expect(fn).toContain('auth_user_id')
+      expect(fn).toContain('bootstrapClientPortal')
+      expect(fn).toContain('tenant_memberships')
+      expect(fn).toContain('readiness_scores')
+      expect(fn).toContain('client_tasks')
     })
 
     it('accept-tester-invitation does not email password', () => {

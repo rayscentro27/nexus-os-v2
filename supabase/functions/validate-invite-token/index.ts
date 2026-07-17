@@ -26,21 +26,25 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey)
 
-    // Accept both raw tokens (hash them) and token_hashes (use directly)
-    let tokenHash: string
-    if (/^[a-f0-9]{64}$/.test(rawToken)) {
-      // Looks like a hex SHA-256 hash — use directly
-      tokenHash = rawToken
-    } else {
-      // Treat as raw token — hash it
-      tokenHash = await hashToken(rawToken)
-    }
+    // Generated raw tokens are also 64 hex characters. Try the supplied value
+    // first for hash-compatible links, then retry with its SHA-256 hash.
+    const tokenCandidates = Array.from(new Set([
+      /^[a-f0-9]{64}$/.test(rawToken) ? rawToken : "",
+      await hashToken(rawToken),
+    ].filter(Boolean)))
 
-    const { data: invitation } = await admin
+    let invitation = null
+    for (const tokenHash of tokenCandidates) {
+      const { data } = await admin
       .from("tester_invitations")
       .select("id, tester_name, tester_email, testing_level, invitation_status, expires_at, assigned_persona, assigned_client_id, payment_offer_slug, payment_mode, allowlisted_for_pilot, terms_version, consent_version, task_checklist_version")
       .eq("token_hash", tokenHash)
       .maybeSingle()
+      if (data) {
+        invitation = data
+        break
+      }
+    }
 
     if (!invitation) return json({ error: "invitation_not_found" }, 404)
     if (invitation.invitation_status === "revoked") return json({ error: "invitation_revoked" }, 403)
