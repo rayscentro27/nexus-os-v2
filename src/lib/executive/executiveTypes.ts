@@ -150,6 +150,42 @@ export interface ExecutiveCommandCenterState {
       rayApprovalState: string;
     }>;
   };
+  knowledgeHealth?: {
+    totalRecords: number;
+    approvedKnowledge: number;
+    unverifiedClaims: number;
+    staleRecords: number;
+    expiredRecords: number;
+    conflicts: number;
+    missingProvenance: number;
+    pendingReviews: number;
+    rejectedFindings: number;
+    recordsBlockedByPolicy: number;
+    alphaSubmissionsAwaitingReview: number;
+    clientSafeKnowledge: number;
+    brainProfiles: number;
+    activeBrains: number;
+    plannedDepartmentTemplates: number;
+    retrievalDenials: number;
+    documentEvidenceStatus: string;
+    evaluationPassed: number;
+    evaluationTotal: number;
+  };
+  brainProfiles?: Array<{
+    brainId: string;
+    name: string;
+    role: string;
+    status: string;
+    departmentId?: string;
+    mayUseSupabase: boolean;
+    mayUseWeb: boolean;
+    mayAccessClientPii: boolean;
+    mayApproveKnowledge: boolean;
+    mayExecuteWork: boolean;
+    requiredApprovalLevel: string;
+    allowedCapabilities: string[];
+    prohibitedDataClasses: string[];
+  }>;
   dailyBrief: ExecutiveBrief;
   limitations: string[];
 }

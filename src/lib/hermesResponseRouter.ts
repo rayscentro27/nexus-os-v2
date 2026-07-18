@@ -172,6 +172,17 @@ export type QuestionType =
   | 'capability_execution_block'
   | 'capability_proposal_status'
   | 'capability_compare'
+  | 'knowledge_status'
+  | 'approved_policy'
+  | 'evidence_for_claim'
+  | 'research_finding_status'
+  | 'knowledge_freshness'
+  | 'knowledge_conflict'
+  | 'memory_source'
+  | 'brain_access_explanation'
+  | 'brain_handoff_status'
+  | 'knowledge_promotion_status'
+  | 'client_safe_knowledge_check'
   | 'unclear';
 
 export interface ResponseContext {
@@ -312,6 +323,17 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
     case 'capability_execution_block':
     case 'capability_proposal_status':
     case 'capability_compare':
+    case 'knowledge_status':
+    case 'approved_policy':
+    case 'evidence_for_claim':
+    case 'research_finding_status':
+    case 'knowledge_freshness':
+    case 'knowledge_conflict':
+    case 'memory_source':
+    case 'brain_access_explanation':
+    case 'brain_handoff_status':
+    case 'knowledge_promotion_status':
+    case 'client_safe_knowledge_check':
       return {
         text: answerExecutiveIntent(questionType),
         confidence: 'high',

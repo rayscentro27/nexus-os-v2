@@ -54,6 +54,11 @@ test.describe('Executive Command Center Wave 1 certification', () => {
     await expect(page.getByTestId('executive-capability-os')).toContainText(/APPROVAL_GATED/i);
     await expect(page.getByTestId('executive-capability-os')).toContainText(/PROHIBITED|BLOCKED_BY_POLICY/i);
     await expect(page.getByTestId('executive-capability-os')).toContainText(/Live Stripe|Live Trading|Alpha Supabase/i);
+    await expect(page.getByTestId('executive-knowledge-health')).toBeVisible();
+    await expect(page.getByTestId('executive-knowledge-health')).toContainText(/Document evidence/i);
+    await expect(page.getByTestId('executive-brain-profiles')).toContainText(/Nexus Hermes/i);
+    await expect(page.getByTestId('executive-brain-profiles')).toContainText(/Alpha/i);
+    await expect(page.getByTestId('executive-knowledge-review')).toBeVisible();
     await expect(page.getByTestId('executive-department-status')).toBeVisible();
     await expect(page.getByTestId('executive-system-health')).toBeVisible();
     await expect(page.getByTestId('executive-repo-intelligence')).toContainText(/github\/github-mcp-server/i);
@@ -70,6 +75,7 @@ test.describe('Executive Command Center Wave 1 certification', () => {
     await expect(page.getByTestId('executive-command-center')).toBeVisible();
     await expect(page.getByTestId('executive-hermes-advisor')).toBeVisible();
     await expect(page.getByRole('button', { name: /Which capabilities are blocked/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /What is the knowledge status/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /What repo decisions need review/i })).toBeVisible();
     await expect(page.getByText(/This Command Center is a normalized executive read model/i)).toBeVisible();
     await expect(page.getByText(/does not install repositories/i)).toBeVisible();

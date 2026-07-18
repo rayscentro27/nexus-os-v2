@@ -112,7 +112,7 @@ Scope:
 
 ## Wave 2 — Capability OS and governed orchestration
 
-Status: IMPLEMENTED in commit pending from Wave 2.
+Status: IMPLEMENTED in commit `43285f300f6bea15d3e21d43ef6ab54db23af71e`.
 
 Built:
 
@@ -132,12 +132,20 @@ Known follow-up: durable Supabase-backed capability governance overrides remain 
 
 ## Wave 3 — Knowledge and intelligence layer
 
-Build:
+Status: IMPLEMENTED in Wave 3 pending final commit.
+
+Built:
 
 - Separation of knowledge, memory, evidence, context, policy, skill, capability, tool, and model.
 - Approved evidence provenance.
 - Evaluation and freshness checks.
 - Restricted retrieval rules by data classification.
+- Brain Profile Registry for Hermes, Alpha, Client AI, and planned department brain templates.
+- Deterministic retrieval, memory, context assembly, handoff, and structured-output policy.
+- Knowledge Health and AI Brain panels in the Executive Command Center.
+- Capability OS registration for Wave 3 knowledge and brain capabilities.
+
+Known follow-up: durable Supabase-backed knowledge approval history remains deferred until a mutable-state requirement is proven.
 
 ## Wave 4 — Department operations and automation
 
@@ -168,12 +176,12 @@ Build later:
 
 ## Next implementation wave decision
 
-Recommended next wave:
+Recommended next wave after Wave 3 certification:
 
 ```text
-Wave 3 — Knowledge and Intelligence Layer
+Wave 4 — Department Operations and Governed Automation
 ```
 
 Approval decision required:
 
-Approve or reject Wave 3 — Knowledge and Intelligence Layer as the next Nexus 3.0 implementation wave. Repo Intelligence remains read-only and external tools remain uninstalled unless Ray separately approves a bounded evaluation.
+Approve or reject Wave 4 — Department Operations and Governed Automation as the next Nexus 3.0 implementation wave. External tools remain uninstalled, Alpha remains isolated from Supabase, live Stripe remains deferred, and live trading remains blocked unless Ray separately approves a bounded future change.

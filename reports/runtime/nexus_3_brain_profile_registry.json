@@ -1,0 +1,794 @@
+{
+  "generatedAt": "2026-07-18T23:14:10.285Z",
+  "profiles": [
+    {
+      "brainId": "nexus_hermes",
+      "name": "Nexus Hermes",
+      "role": "HERMES",
+      "description": "Private internal Executive Coordinator and CEO advisor.",
+      "departmentId": "executive",
+      "allowedKnowledgeDomains": [
+        "executive",
+        "operations",
+        "capabilities",
+        "knowledge",
+        "customers",
+        "revenue",
+        "research",
+        "security",
+        "deployment"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "unapproved_alpha_fact",
+        "credentials"
+      ],
+      "allowedDataClasses": [
+        "INTERNAL",
+        "EXECUTIVE",
+        "CLIENT_AGGREGATE",
+        "FINANCIAL",
+        "SOURCE_CODE"
+      ],
+      "prohibitedDataClasses": [
+        "CREDENTIAL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "CLAIM",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "CONVERSATION_MEMORY",
+        "SELECTION_MEMORY",
+        "ADVISORY_MEMORY",
+        "TASK_MEMORY",
+        "EXECUTIVE_DECISION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "executive_command_center",
+        "hermes_executive_advisor",
+        "capability_os_registry",
+        "brain_context_assembly",
+        "knowledge_health"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": true,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": true,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": true,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "hermes_executive_context",
+      "retrievalPolicyId": "hermes_retrieval_policy",
+      "memoryPolicyId": "hermes_memory_policy",
+      "systemPolicyId": "hermes_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "ACTIVE"
+    },
+    {
+      "brainId": "alpha_research",
+      "name": "Alpha",
+      "role": "ALPHA",
+      "description": "Independent research and outside-opinion brain.",
+      "departmentId": "research",
+      "allowedKnowledgeDomains": [
+        "public_research",
+        "repo_intelligence",
+        "competitive_patterns",
+        "market",
+        "monetization"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "client_records",
+        "credentials",
+        "production_control",
+        "executive_private_memory"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "FINANCIAL",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL",
+        "SOURCE_CODE"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "CLAIM",
+        "OBSERVATION",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "CONVERSATION_MEMORY",
+        "RESEARCH_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "alpha_independent_research",
+        "repo_intelligence_registry",
+        "github_mcp_reader"
+      ],
+      "mayUseWeb": true,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "alpha_research_context",
+      "retrievalPolicyId": "alpha_public_research_policy",
+      "memoryPolicyId": "alpha_research_memory_policy",
+      "systemPolicyId": "alpha_no_supabase_policy",
+      "tenantIsolationRequired": false,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PARTIAL"
+    },
+    {
+      "brainId": "client_ai",
+      "name": "Client-Facing AI",
+      "role": "CLIENT_AI",
+      "description": "Tenant-safe client guidance and workflow assistance.",
+      "departmentId": "customer_support",
+      "allowedKnowledgeDomains": [
+        "client_safe_guidance",
+        "documents",
+        "credit_readiness",
+        "business_readiness",
+        "review_status"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "executive",
+        "internal_security",
+        "repo_intelligence",
+        "alpha_raw_research"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "CLIENT_AGGREGATE",
+        "CLIENT_PII",
+        "FINANCIAL"
+      ],
+      "prohibitedDataClasses": [
+        "EXECUTIVE",
+        "CREDENTIAL",
+        "SOURCE_CODE",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "CLAIM",
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "CONVERSATION_MEMORY",
+        "CLIENT_JOURNEY_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "client_authentication",
+        "document_upload",
+        "client_review_request",
+        "client_admin_route_guards"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": true,
+      "mayAccessClientPii": true,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": false,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "ADMIN",
+      "contextBuilderId": "client_ai_tenant_context",
+      "retrievalPolicyId": "client_tenant_safe_policy",
+      "memoryPolicyId": "client_journey_memory_policy",
+      "systemPolicyId": "client_safe_language_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": false,
+      "status": "ACTIVE"
+    },
+    {
+      "brainId": "engineering_brain_template",
+      "name": "Engineering Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Engineering Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "engineering",
+      "allowedKnowledgeDomains": [
+        "engineering",
+        "deployment",
+        "capabilities"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "typescript_verification",
+        "production_build",
+        "route_verification"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "research_brain_template",
+      "name": "Research Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Research Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "research",
+      "allowedKnowledgeDomains": [
+        "public_research",
+        "repo_intelligence"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "repo_intelligence_registry"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "credit_funding_brain_template",
+      "name": "Credit and Funding Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Credit and Funding Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "credit_funding",
+      "allowedKnowledgeDomains": [
+        "credit_readiness",
+        "business_readiness",
+        "documents"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "document_upload",
+        "strategy_matching"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "marketing_brain_template",
+      "name": "Marketing Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Marketing Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "marketing",
+      "allowedKnowledgeDomains": [
+        "marketing",
+        "customer_safe_guidance"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "revenue_recommendations"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "creative_brain_template",
+      "name": "Creative Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Creative Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "creative",
+      "allowedKnowledgeDomains": [
+        "creative",
+        "marketing"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "customer_support_brain_template",
+      "name": "Customer Support Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Customer Support Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "customer_support",
+      "allowedKnowledgeDomains": [
+        "customers",
+        "documents",
+        "review_status"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "client_review_request"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "finance_brain_template",
+      "name": "Finance Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Finance Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "finance",
+      "allowedKnowledgeDomains": [
+        "revenue",
+        "payments"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "stripe_test_checkout",
+        "order_creation",
+        "fulfillment"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "knowledge_brain_template",
+      "name": "Knowledge Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Knowledge Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "knowledge",
+      "allowedKnowledgeDomains": [
+        "knowledge",
+        "policy",
+        "evidence"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "intelligence_registry",
+        "knowledge_review"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    },
+    {
+      "brainId": "trading_research_brain_template",
+      "name": "Trading Research Brain",
+      "role": "DEPARTMENT_AI",
+      "description": "Trading Research Brain template for future bounded specialist assistance. It is not an autonomous active worker.",
+      "departmentId": "trading",
+      "allowedKnowledgeDomains": [
+        "public_research",
+        "trading_research"
+      ],
+      "prohibitedKnowledgeDomains": [
+        "credentials",
+        "production_control",
+        "cross_tenant_client_data"
+      ],
+      "allowedDataClasses": [
+        "PUBLIC",
+        "INTERNAL"
+      ],
+      "prohibitedDataClasses": [
+        "CLIENT_PII",
+        "CREDENTIAL",
+        "PRODUCTION_CONTROL"
+      ],
+      "allowedRecordTypes": [
+        "SOURCE",
+        "EVIDENCE",
+        "OBSERVATION",
+        "APPROVED_KNOWLEDGE",
+        "POLICY",
+        "RECOMMENDATION",
+        "MEMORY",
+        "CONTEXT"
+      ],
+      "prohibitedRecordTypes": [
+        "MODEL_OUTPUT"
+      ],
+      "allowedMemoryTypes": [
+        "DEPARTMENT_WORK_MEMORY",
+        "SELECTION_MEMORY"
+      ],
+      "allowedCapabilities": [
+        "trading_research",
+        "backtesting"
+      ],
+      "mayUseWeb": false,
+      "mayUseSupabase": false,
+      "mayAccessClientPii": false,
+      "mayAccessPrivateSourceCode": false,
+      "mayCreateClaims": true,
+      "mayApproveKnowledge": false,
+      "mayCreateWork": false,
+      "mayExecuteWork": false,
+      "requiredApprovalLevel": "RAY_REVIEW",
+      "contextBuilderId": "department_template_context",
+      "retrievalPolicyId": "department_template_retrieval",
+      "memoryPolicyId": "department_template_memory",
+      "systemPolicyId": "department_template_system_policy",
+      "tenantIsolationRequired": true,
+      "evidenceRequired": true,
+      "citationsRequired": true,
+      "status": "PLANNED"
+    }
+  ]
+}

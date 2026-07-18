@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-07-18T22:01:51.704Z",
+  "generated_at": "2026-07-18T23:21:55.637Z",
   "registry_status": "PASS",
-  "certification_state": "CAPABILITY_OS_IMPLEMENTED_TESTED_AND_BROWSER_CERTIFIED",
+  "certification_state": "WAVE_3_CAPABILITY_OS_UPDATED_TESTED_AND_BROWSER_CERTIFIED",
   "capability_counts_by_mode": {
-    "ACTIVE": 26,
-    "APPROVAL_GATED": 19,
-    "READ_ONLY": 15,
+    "ACTIVE": 37,
+    "APPROVAL_GATED": 21,
+    "READ_ONLY": 16,
     "NOT_CONFIGURED": 12,
     "PROHIBITED": 1,
-    "TEST_ONLY": 11,
+    "TEST_ONLY": 13,
     "DEFERRED": 7,
     "BLOCKED_BY_POLICY": 3
   },
   "health_counts": {
-    "HEALTHY": 48,
+    "HEALTHY": 64,
     "UNKNOWN": 8,
     "NOT_CONFIGURED": 19,
     "PROHIBITED": 2,
@@ -22,8 +22,8 @@
     "STALE": 3,
     "BLOCKED": 3
   },
-  "total_capabilities": 94,
-  "approval_gated": 19,
+  "total_capabilities": 110,
+  "approval_gated": 21,
   "missing_credential_count": 11,
   "blocked_count": 5,
   "proposal_count": 13,
@@ -32,14 +32,14 @@
     "DEFERRED": 5
   },
   "test_results": {
-    "focused_capability_tests": "PASS 47/47",
+    "focused_capability_tests": "PASS 33/33 focused Wave 3/Capability/Hermes tests plus 28 guard tests and 35 document readiness tests",
     "typecheck": "PASS",
-    "full_unit_suite": "PASS 1422/1422",
+    "full_unit_suite": "PASS 1437/1437",
     "build": "PASS_WITH_EXISTING_CHUNK_WARNING",
     "rls": "PASS 45/45",
     "executive_browser": "PASS 7/7",
     "authenticated_nexus_3_browser": "PASS 18/18",
-    "document_processing_depth_recheck": "CERTIFIED_BUT_NEEDS_RECHECK; parser/storage/RLS covered, fresh synthetic upload-processing run deferred"
+    "document_processing_depth_recheck": "CERTIFIED_AND_UNCHANGED via synthetic readiness/document fixtures"
   },
   "safety": {
     "live_stripe": "DEFERRED",

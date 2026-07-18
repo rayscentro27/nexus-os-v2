@@ -2,7 +2,9 @@ import repoRegistry from '../../../reports/runtime/nexus_repo_intelligence_regis
 import { NEXUS_TABS } from '../../config/nexusTabs';
 import { getConnectorRegistry, connectorSafetyInvariants } from '../../hermes/nexus/nexusConnectorRegistry';
 import { listTableDetailed, type TableQueryResult } from '../../services/db';
+import { getBrainProfiles } from '../brains/brainRegistry';
 import { buildCapabilityOSSummary } from '../capabilities/capabilityRegistry';
+import { buildKnowledgeHealthSummary } from '../intelligence/knowledgeHealth';
 import type {
   DepartmentStatus,
   ExecutiveActionItem,
@@ -290,6 +292,49 @@ function buildCapabilitySummary() {
   };
 }
 
+function buildKnowledgeSummary() {
+  const summary = buildKnowledgeHealthSummary();
+  return {
+    totalRecords: summary.totalRecords,
+    approvedKnowledge: summary.approvedKnowledge,
+    unverifiedClaims: summary.unverifiedClaims,
+    staleRecords: summary.staleRecords,
+    expiredRecords: summary.expiredRecords,
+    conflicts: summary.conflicts,
+    missingProvenance: summary.missingProvenance,
+    pendingReviews: summary.pendingReviews,
+    rejectedFindings: summary.rejectedFindings,
+    recordsBlockedByPolicy: summary.recordsBlockedByPolicy,
+    alphaSubmissionsAwaitingReview: summary.alphaSubmissionsAwaitingReview,
+    clientSafeKnowledge: summary.clientSafeKnowledge,
+    brainProfiles: summary.brainProfiles,
+    activeBrains: summary.activeBrains,
+    plannedDepartmentTemplates: summary.plannedDepartmentTemplates,
+    retrievalDenials: summary.retrievalDenials,
+    documentEvidenceStatus: summary.documentEvidenceStatus,
+    evaluationPassed: summary.evaluationPassed,
+    evaluationTotal: summary.evaluationTotal,
+  };
+}
+
+function buildBrainSummary() {
+  return getBrainProfiles().map((profile) => ({
+    brainId: profile.brainId,
+    name: profile.name,
+    role: profile.role,
+    status: profile.status,
+    departmentId: profile.departmentId,
+    mayUseSupabase: profile.mayUseSupabase,
+    mayUseWeb: profile.mayUseWeb,
+    mayAccessClientPii: profile.mayAccessClientPii,
+    mayApproveKnowledge: profile.mayApproveKnowledge,
+    mayExecuteWork: profile.mayExecuteWork,
+    requiredApprovalLevel: profile.requiredApprovalLevel,
+    allowedCapabilities: profile.allowedCapabilities,
+    prohibitedDataClasses: profile.prohibitedDataClasses,
+  }));
+}
+
 function buildBrief(state: Omit<ExecutiveCommandCenterState, 'dailyBrief'>): ExecutiveBrief {
   const urgent = state.topActions.filter((item) => item.priority === 'P0' || item.priority === 'P1');
   return {
@@ -334,8 +379,8 @@ function buildBrief(state: Omit<ExecutiveCommandCenterState, 'dailyBrief'>): Exe
       {
         id: 'research',
         title: 'Research and expansion',
-        facts: [`${state.repoIntelligence.length} repo-intelligence candidates`, 'No external repository installation is approved.'],
-        interpretations: ['Repo intelligence is a read-only research lane with Ray Review hooks only.'],
+        facts: [`${state.repoIntelligence.length} repo-intelligence candidates`, `${state.knowledgeHealth?.unverifiedClaims ?? 0} unverified claims`, `${state.brainProfiles?.length ?? 0} brain profiles`, 'No external repository installation is approved.'],
+        interpretations: ['Repo intelligence is a read-only research lane with Ray Review hooks only; Alpha claims do not become Hermes facts automatically.'],
         recommendations: ['Review candidates with UNKNOWN or restrictive license status before any future integration.'],
         unknowns: state.repoIntelligence.filter((item) => item.license === 'UNKNOWN' || item.license === 'NOASSERTION').slice(0, 3).map((item) => `${item.repository} license/security`),
         blockedData: [],
@@ -389,6 +434,8 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
   const customerEvidence = sourceFromResult(clientsResult, 'client_profiles');
   const revenueEvidence = sourceFromResult(ordersResult, 'client_orders');
   const capabilityOS = buildCapabilitySummary();
+  const knowledgeHealth = buildKnowledgeSummary();
+  const brainProfiles = buildBrainSummary();
   const metrics: ExecutiveMetric[] = [
     metric('pending_approvals', 'Pending approvals', approvals.filter((item) => item.state === 'PENDING').length, 'Ray decision queue', 'P0', approvals[0]?.evidence ?? sourceFromResult(approvalsResult, 'approvals')),
     metric('blocked_work', 'Blocked work', governedWork.filter((item) => item.lifecycle === 'BLOCKED' || item.lifecycle === 'FAILED').length, 'Governed execution', 'P0', sourceFromResult(tasksResult, 'task_requests')),
@@ -396,6 +443,7 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
     metric('test_orders', 'Order records', ordersResult.resultCount, 'Test/live labeled revenue records', 'P2', revenueEvidence),
     metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH')),
     metric('capabilities', 'Capabilities governed', capabilityOS.total, `${capabilityOS.approvalGated} approval-gated`, 'P3', evidence('REPORT_BACKED', 'Capability OS registry', 'HIGH')),
+    metric('knowledge_records', 'Knowledge records', knowledgeHealth.totalRecords, `${knowledgeHealth.pendingReviews} reviews pending`, 'P3', evidence('REPORT_BACKED', 'Knowledge Intelligence registry', 'HIGH')),
   ];
   const customerSummary: ExecutiveMetric[] = [
     metric('active_clients', 'Active test clients', clientsResult.resultCount, clientsResult.status, 'P1', customerEvidence),
@@ -451,11 +499,14 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
     systemHealth,
     repoIntelligence,
     capabilityOS,
+    knowledgeHealth,
+    brainProfiles,
     limitations: [
       'Read-only executive aggregation; no external action execution.',
       'Live Stripe configuration deferred by owner.',
       'Repo Intelligence is visible but cannot install or copy external code.',
       'No new database tables were created in Wave 1.',
+      'Wave 3 uses version-controlled intelligence and brain policy with existing approval chains; no new database tables were created.',
     ],
   };
   return { ...withoutBrief, dailyBrief: buildBrief(withoutBrief) };
@@ -464,6 +515,8 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
 export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState {
   const generatedAt = nowIso();
   const repoIntelligence = buildRepoIntelligenceItems();
+  const knowledgeHealth = buildKnowledgeSummary();
+  const brainProfiles = buildBrainSummary();
   const governedWork: GovernedWorkItem[] = [];
   const approvals: ExecutiveApprovalItem[] = [];
   const departments = buildDepartmentStatuses(governedWork, approvals);
@@ -475,6 +528,7 @@ export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState
     metric('stripe_mode', 'Stripe mode', 'TEST', 'Live deferred', 'P2', evidence('DEFERRED', 'Wave 1 Stripe policy', 'HIGH')),
     metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH')),
     metric('capabilities', 'Capabilities governed', buildCapabilitySummary().total, 'Capability OS read model', 'P3', evidence('REPORT_BACKED', 'Capability OS registry', 'HIGH')),
+    metric('knowledge_records', 'Knowledge records', knowledgeHealth.totalRecords, `${knowledgeHealth.pendingReviews} reviews pending`, 'P3', evidence('REPORT_BACKED', 'Knowledge Intelligence registry', 'HIGH')),
   ];
   const topActions: ExecutiveActionItem[] = [
     {
@@ -518,7 +572,12 @@ export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState
     systemHealth,
     repoIntelligence,
     capabilityOS: buildCapabilitySummary(),
-    limitations: ['Static snapshot used until authenticated admin session loads live Supabase summaries.'],
+    knowledgeHealth,
+    brainProfiles,
+    limitations: [
+      'Static snapshot used until authenticated admin session loads live Supabase summaries.',
+      'Knowledge and brain profile records are governed read models; durable knowledge approval persistence is deferred to a later migration decision.',
+    ],
   };
   return { ...state, dailyBrief: buildBrief(state) };
 }

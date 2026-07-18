@@ -42,4 +42,25 @@ describe('Hermes executive intents', () => {
     expect(response.text).toMatch(/Credential metadata stores identifiers only/);
     expect(response.text).not.toMatch(/sk_live_|whsec_|password-value/);
   });
+
+  it('answers knowledge status from the governed intelligence layer', () => {
+    const response = hermesResponseRouter({ message: 'What is the knowledge status?', pageId: 'command' });
+    expect(response.questionType).toBe('knowledge_status');
+    expect(response.text).toMatch(/intelligence records are registered/i);
+    expect(response.text).toMatch(/Document evidence status: CERTIFIED_AND_UNCHANGED/i);
+  });
+
+  it('explains brain access boundaries without creating work', () => {
+    const response = hermesResponseRouter({ message: 'Can Alpha access this client information?', pageId: 'command' });
+    expect(response.questionType).toBe('brain_access_explanation');
+    expect(response.text).toMatch(/Alpha: Supabase blocked/i);
+    expect(response.text).toMatch(/more restrictive Brain Profile and Capability OS policy wins/i);
+  });
+
+  it('denies Alpha to Hermes handoff for unapproved findings', () => {
+    const response = hermesResponseRouter({ message: 'What is the Alpha to Hermes handoff status?', pageId: 'command' });
+    expect(response.questionType).toBe('brain_handoff_status');
+    expect(response.text).toMatch(/BRAIN_HANDOFF_DENIED/);
+    expect(response.text).toMatch(/Knowledge Review/i);
+  });
 });

@@ -14,6 +14,9 @@ import {
   HeartPulse,
   LockKeyhole,
   Network,
+  Brain,
+  BookOpenCheck,
+  GitPullRequestArrow,
   ShieldCheck,
   Sparkles,
   UsersRound,
@@ -299,6 +302,74 @@ function CapabilityOSPanel({ capabilityOS, onNavigate }) {
   )
 }
 
+function KnowledgeIntelligencePanel({ knowledgeHealth, onNavigate }) {
+  const metrics = [
+    ['Approved knowledge', knowledgeHealth?.approvedKnowledge || 0],
+    ['Unverified claims', knowledgeHealth?.unverifiedClaims || 0],
+    ['Stale records', knowledgeHealth?.staleRecords || 0],
+    ['Conflicts', knowledgeHealth?.conflicts || 0],
+    ['Missing provenance', knowledgeHealth?.missingProvenance || 0],
+    ['Client-safe knowledge', knowledgeHealth?.clientSafeKnowledge || 0],
+  ]
+  return (
+    <ExecutiveSection title="Knowledge and Intelligence" subtitle="Knowledge, evidence, claims, recommendations, memory, and context are separated." badge={`${knowledgeHealth?.totalRecords || 0} records`}>
+      <div className="exec-knowledge-panel" data-testid="executive-knowledge-health">
+        <div className="exec-knowledge-grid">
+          {metrics.map(([label, value]) => (
+            <article key={label} className="glass2 exec-knowledge-metric">
+              <BookOpenCheck size={20} />
+              <strong>{value}</strong>
+              <small>{label}</small>
+            </article>
+          ))}
+        </div>
+        <div className="exec-knowledge-status">
+          <p><strong>Document evidence:</strong> {knowledgeHealth?.documentEvidenceStatus || 'UNKNOWN'}</p>
+          <p><strong>Retrieval evaluation:</strong> {knowledgeHealth?.evaluationPassed || 0}/{knowledgeHealth?.evaluationTotal || 0} native fixtures passed</p>
+          <p><strong>Policy blocks:</strong> {knowledgeHealth?.recordsBlockedByPolicy || 0} records have brain-specific prohibitions</p>
+        </div>
+        <button type="button" className="exec-inline-action" onClick={() => onNavigate('reports')}>Open evidence reports</button>
+      </div>
+    </ExecutiveSection>
+  )
+}
+
+function BrainRegistryPanel({ brainProfiles }) {
+  const visible = brainProfiles || []
+  return (
+    <ExecutiveSection title="AI Brain Profiles" subtitle="One governed intelligence foundation with separate brain policies." badge={`${visible.length} profiles`}>
+      <div className="exec-brain-list" data-testid="executive-brain-profiles">
+        {visible.map((brain) => (
+          <article className="glass2 exec-brain-card" key={brain.brainId}>
+            <div className="between">
+              <span><Brain size={18} /><strong>{brain.name}</strong></span>
+              <Pill tone={toneForStatus(brain.status)}>{brain.status}</Pill>
+            </div>
+            <p>{brain.role} · {brain.departmentId || 'unassigned'} · approval: {brain.requiredApprovalLevel}</p>
+            <small>
+              Supabase: {brain.mayUseSupabase ? 'allowed by policy' : 'blocked'} · Web: {brain.mayUseWeb ? 'allowed by policy' : 'blocked'} · Executes work: {brain.mayExecuteWork ? 'yes' : 'no'}
+            </small>
+            <small>Blocked data: {brain.prohibitedDataClasses.join(', ') || 'none'}</small>
+          </article>
+        ))}
+      </div>
+    </ExecutiveSection>
+  )
+}
+
+function KnowledgeReviewPanel({ knowledgeHealth, onNavigate }) {
+  return (
+    <ExecutiveSection title="Knowledge Review" subtitle="Claims and research findings require review before they become approved knowledge." badge={`${knowledgeHealth?.pendingReviews || 0} pending`}>
+      <div className="exec-review-panel" data-testid="executive-knowledge-review">
+        <div><GitPullRequestArrow size={18} /><strong>{knowledgeHealth?.alphaSubmissionsAwaitingReview || 0}</strong><span>Alpha submissions awaiting review</span></div>
+        <div><ShieldCheck size={18} /><strong>{knowledgeHealth?.rejectedFindings || 0}</strong><span>Rejected findings</span></div>
+        <div><AlertTriangle size={18} /><strong>{knowledgeHealth?.expiredRecords || 0}</strong><span>Expired records</span></div>
+        <button type="button" className="exec-inline-action" onClick={() => onNavigate('rayreview')}>Open Ray Review path</button>
+      </div>
+    </ExecutiveSection>
+  )
+}
+
 function HermesExecutiveAdvisor({ state, onAskHermes }) {
   const evidenceLines = [
     `${state.approvals.filter((item) => item.state === 'PENDING').length} pending approvals`,
@@ -317,7 +388,7 @@ function HermesExecutiveAdvisor({ state, onAskHermes }) {
         </div>
       </div>
       <div className="exec-hermes-prompts">
-        {['What needs my attention today?', 'Which capabilities are blocked?', 'Which capabilities need credentials?', 'What repo decisions need review?'].map((prompt) => (
+        {['What needs my attention today?', 'Which capabilities are blocked?', 'What is the knowledge status?', 'What repo decisions need review?'].map((prompt) => (
           <button type="button" key={prompt} onClick={() => onAskHermes(prompt)}>{prompt}</button>
         ))}
       </div>
@@ -368,6 +439,8 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
         <div className="main-stack">
           <TodayView state={state} onNavigate={onNavigate} />
           <CapabilityOSPanel capabilityOS={state.capabilityOS} onNavigate={onNavigate} />
+          <KnowledgeIntelligencePanel knowledgeHealth={state.knowledgeHealth} onNavigate={onNavigate} />
+          <BrainRegistryPanel brainProfiles={state.brainProfiles} />
           <DailyBrief brief={state.dailyBrief} />
           <ApprovalsPanel approvals={state.approvals} onNavigate={onNavigate} />
           <GovernedWorkPanel work={state.governedWork} onNavigate={onNavigate} />
@@ -378,6 +451,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
         <aside className="side-stack executive-side-stack">
           <SystemHealthPanel items={state.systemHealth} onNavigate={onNavigate} />
           <RepoIntelligencePanel candidates={state.repoIntelligence} onNavigate={onNavigate} />
+          <KnowledgeReviewPanel knowledgeHealth={state.knowledgeHealth} onNavigate={onNavigate} />
           <ExecutiveSection title="Deployments and Releases" subtitle="Current deployment evidence is read-only from repository and reports." badge="Traceable">
             <div className="exec-release-list" data-testid="executive-deployment-status">
               <div><GitBranch size={18} /><strong>Branch</strong><span>main</span></div>

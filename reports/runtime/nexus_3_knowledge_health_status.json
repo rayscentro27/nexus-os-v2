@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-07-18T23:14:10.297Z",
+  "totalRecords": 16,
+  "approvedKnowledge": 3,
+  "unverifiedClaims": 2,
+  "staleRecords": 1,
+  "expiredRecords": 0,
+  "conflicts": 1,
+  "missingProvenance": 1,
+  "pendingReviews": 2,
+  "rejectedFindings": 0,
+  "recordsBlockedByPolicy": 16,
+  "alphaSubmissionsAwaitingReview": 1,
+  "clientSafeKnowledge": 3,
+  "brainProfiles": 12,
+  "activeBrains": 2,
+  "plannedDepartmentTemplates": 9,
+  "retrievalDenials": 3,
+  "crossBrainHandoffs": 0,
+  "documentEvidenceStatus": "CERTIFIED_AND_UNCHANGED",
+  "evaluationPassed": 4,
+  "evaluationTotal": 4
+}

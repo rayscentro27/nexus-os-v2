@@ -630,6 +630,107 @@ a {
   line-height: 1.45;
 }
 
+.exec-knowledge-panel,
+.exec-review-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.exec-knowledge-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.exec-knowledge-metric {
+  min-height: 94px;
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.exec-knowledge-metric svg {
+  color: var(--cyan);
+}
+
+.exec-knowledge-metric strong {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.exec-knowledge-metric small,
+.exec-knowledge-status p,
+.exec-brain-card small,
+.exec-review-panel span {
+  color: var(--muted);
+}
+
+.exec-knowledge-status {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(117, 151, 204, .14);
+  border-radius: 14px;
+  background: rgba(255,255,255,.025);
+}
+
+.exec-knowledge-status p {
+  margin: 0;
+}
+
+.exec-inline-action {
+  min-height: 42px;
+  border: 1px solid rgba(47, 140, 255, .38);
+  border-radius: 12px;
+  background: rgba(47, 140, 255, .12);
+  color: var(--text);
+  font-weight: 900;
+}
+
+.exec-brain-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.exec-brain-card {
+  border-radius: 14px;
+  padding: 14px;
+  display: grid;
+  gap: 9px;
+}
+
+.exec-brain-card .between span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.exec-brain-card p,
+.exec-brain-card small {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.exec-review-panel > div {
+  min-height: 54px;
+  border: 1px solid rgba(117, 151, 204, .14);
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 10px;
+  align-items: center;
+  background: rgba(255,255,255,.025);
+}
+
+.exec-review-panel strong {
+  font-size: 20px;
+}
+
 .exec-hermes-card {
   display: flex;
   gap: 13px;
@@ -1427,7 +1528,9 @@ a {
 
   .exec-brief-grid,
   .exec-department-grid,
-  .exec-capability-list {
+  .exec-capability-list,
+  .exec-knowledge-grid,
+  .exec-brain-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1443,7 +1546,9 @@ a {
   .exec-department-grid,
   .exec-capability-summary,
   .exec-capability-columns,
-  .exec-capability-list {
+  .exec-capability-list,
+  .exec-knowledge-grid,
+  .exec-brain-list {
     grid-template-columns: minmax(0, 1fr);
   }
 

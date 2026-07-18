@@ -1,5 +1,10 @@
 import { getExecutiveCommandCenterSnapshot } from './executiveCommandCenterAdapter';
 import { buildCapabilityOSSummary, getCapabilityRegistry } from '../capabilities/capabilityRegistry';
+import { getBrainProfile } from '../brains/brainRegistry';
+import { assembleBrainContext } from '../intelligence/contextAssembler';
+import { buildKnowledgeHealthSummary } from '../intelligence/knowledgeHealth';
+import { getIntelligenceRecord } from '../intelligence/intelligenceRegistry';
+import { evaluateBrainHandoff } from '../brains/brainHandoffs';
 
 export type ExecutiveIntent =
   | 'executive_daily_brief'
@@ -23,7 +28,18 @@ export type ExecutiveIntent =
   | 'capability_approval_requirement'
   | 'capability_execution_block'
   | 'capability_proposal_status'
-  | 'capability_compare';
+  | 'capability_compare'
+  | 'knowledge_status'
+  | 'approved_policy'
+  | 'evidence_for_claim'
+  | 'research_finding_status'
+  | 'knowledge_freshness'
+  | 'knowledge_conflict'
+  | 'memory_source'
+  | 'brain_access_explanation'
+  | 'brain_handoff_status'
+  | 'knowledge_promotion_status'
+  | 'client_safe_knowledge_check';
 
 export function classifyExecutiveIntent(message: string): ExecutiveIntent | null {
   const lower = message.toLowerCase();
@@ -40,6 +56,19 @@ export function classifyExecutiveIntent(message: string): ExecutiveIntent | null
     if (/\b(proposal|repo intelligence|candidate)\b/.test(lower)) return 'capability_proposal_status';
     if (/\b(compare|already have|replaces|overlap)\b/.test(lower)) return 'capability_compare';
     return 'capability_status';
+  }
+  if (/\b(knowledge|evidence|claim|approved policy|research finding|freshness|conflict|memory|brain access|handoff|promotion|client safe|can alpha|client information|client ai)\b/.test(lower)) {
+    if (/\b(approved policy|policy)\b/.test(lower)) return 'approved_policy';
+    if (/\b(evidence for|where did|source)\b/.test(lower)) return 'evidence_for_claim';
+    if (/\b(research finding|alpha finding|alpha research)\b/.test(lower)) return 'research_finding_status';
+    if (/\b(fresh|freshness|current|stale)\b/.test(lower)) return 'knowledge_freshness';
+    if (/\b(conflict|contradict)\b/.test(lower)) return 'knowledge_conflict';
+    if (/\b(memory|remember)\b/.test(lower)) return 'memory_source';
+    if (/\b(can alpha|can client ai|brain access|access this)\b/.test(lower)) return 'brain_access_explanation';
+    if (/\b(handoff|cross brain|cross-brain)\b/.test(lower)) return 'brain_handoff_status';
+    if (/\b(promote|promotion|approve knowledge)\b/.test(lower)) return 'knowledge_promotion_status';
+    if (/\b(client safe|client-safe|client ai)\b/.test(lower)) return 'client_safe_knowledge_check';
+    return 'knowledge_status';
   }
   if (/\b(daily brief|operating brief|brief me)\b/.test(lower)) return 'executive_daily_brief';
   if (/\b(attention today|what.*first|top priorities|priorit(y|ies)|what should we do first)\b/.test(lower)) return 'executive_priorities';
@@ -119,6 +148,62 @@ export function answerExecutiveIntent(intent: ExecutiveIntent): string {
 
   if (intent === 'capability_compare') {
     return `Capability comparison:\n\nFacts:\n- Repo Intelligence proposals carry existing Nexus overlap before any integration decision.\n- The Capability OS can recommend replacing a candidate with an existing Nexus capability when overlap is stronger.\n\nRecommendation:\n- Prefer studying architecture or using existing Nexus capability before adding a dependency.`;
+  }
+
+  if (intent === 'knowledge_status') {
+    const health = buildKnowledgeHealthSummary();
+    return `Knowledge status:\n\nFacts:\n- ${health.totalRecords} intelligence records are registered.\n- ${health.approvedKnowledge} approved knowledge or policy records.\n- ${health.unverifiedClaims} unverified or under-review claims.\n- ${health.missingProvenance} records missing provenance.\n- Document evidence status: ${health.documentEvidenceStatus}.\n\nInterpretation:\n- Knowledge, evidence, claims, observations, recommendations, memory, context, and model output are separated.\n\nRecommendation:\n- Promote findings through Knowledge Review before treating them as approved knowledge.`;
+  }
+
+  if (intent === 'approved_policy') {
+    const context = assembleBrainContext({ brainId: 'nexus_hermes', actorRole: 'admin', query: 'approved policy', requestedDomains: ['executive', 'client_safe_guidance'] });
+    return `Approved policy:\n\nFacts:\n- ${context.policies.join('\n- ') || 'No approved policy records were retrievable.'}\n\nEvidence state: ${context.evidenceState}.\nUnknowns:\n- ${context.unknowns.join('\n- ') || 'No missing-provenance policy records in this query.'}`;
+  }
+
+  if (intent === 'evidence_for_claim') {
+    const claim = getIntelligenceRecord('claim_github_mcp_reader_value');
+    return `Evidence for claim:\n\nClaim:\n- ${claim?.title || 'Claim unavailable'}\n\nClassification:\n- RESEARCH_CLAIM\n- Approval: ${claim?.approvalState || 'UNKNOWN'}\n- Freshness: ${claim?.freshness || 'UNKNOWN'}\n\nBased on:\n- ${claim?.supportingEvidenceIds.join('\n- ') || 'No supporting evidence IDs recorded.'}\n\nRecommendation:\n- Do not treat this claim as approved implementation authority until Ray Review approves a bounded evaluation.`;
+  }
+
+  if (intent === 'research_finding_status') {
+    const context = assembleBrainContext({ brainId: 'alpha_research', actorRole: 'alpha', query: 'alpha research', requestedDomains: ['public_research', 'repo_intelligence'] });
+    return `Research finding status:\n\nFacts:\n- Alpha can retrieve ${context.evidence.length} evidence/source records and ${context.recommendations.length} recommendations in this scoped query.\n- Alpha findings remain CLAIM or RECOMMENDATION until review.\n\nBlocked from Hermes facts:\n- ${context.excluded.filter((item) => item.reason.includes('POLICY')).length} records were blocked by policy in comparable executive contexts.\n\nRecommendation:\n- Submit source-backed findings to Knowledge Review before Hermes uses them as company knowledge.`;
+  }
+
+  if (intent === 'knowledge_freshness') {
+    const health = buildKnowledgeHealthSummary();
+    return `Knowledge freshness:\n\nFacts:\n- ${health.staleRecords} stale records.\n- ${health.expiredRecords} expired records.\n- ${health.evaluationPassed}/${health.evaluationTotal} retrieval evaluation fixtures passed.\n\nRecommendation:\n- Stale or expired records should be refreshed or superseded before they guide high-risk decisions.`;
+  }
+
+  if (intent === 'knowledge_conflict') {
+    const context = assembleBrainContext({ brainId: 'nexus_hermes', actorRole: 'admin', query: 'conflicts' });
+    return `Knowledge conflicts:\n\nFacts:\n- ${context.conflicts.length} conflicts are visible to Hermes in the current governed context.\n- ${context.conflicts.join('\n- ') || 'No retrievable conflicts in this query.'}\n\nRecommendation:\n- Resolve conflicts through Knowledge Review, not by letting a model choose silently.`;
+  }
+
+  if (intent === 'memory_source') {
+    const context = assembleBrainContext({ brainId: 'nexus_hermes', actorRole: 'admin', query: 'memory source', requestedDomains: ['executive'] });
+    return `Memory source:\n\nFacts:\n- Hermes memory is advisory continuity, not approved knowledge.\n- ${context.memories.map((item) => `${item.memoryType}: ${item.summary}`).join('\n- ') || 'No retrievable Hermes memory records in this query.'}\n\nBoundary:\n- Alpha research memory and Client journey memory are separate. Memory never promotes itself into policy.`;
+  }
+
+  if (intent === 'brain_access_explanation') {
+    const hermes = getBrainProfile('nexus_hermes');
+    const alpha = getBrainProfile('alpha_research');
+    const client = getBrainProfile('client_ai');
+    return `Brain access:\n\nFacts:\n- Hermes: Supabase ${hermes?.mayUseSupabase ? 'allowed with governed context' : 'blocked'}, client PII ${hermes?.mayAccessClientPii ? 'allowed' : 'blocked'}.\n- Alpha: Supabase ${alpha?.mayUseSupabase ? 'allowed' : 'blocked'}, client PII ${alpha?.mayAccessClientPii ? 'allowed' : 'blocked'}.\n- Client AI: tenant isolation ${client?.tenantIsolationRequired ? 'required' : 'not required'}, Executive data blocked.\n\nRule:\n- The more restrictive Brain Profile and Capability OS policy wins.`;
+  }
+
+  if (intent === 'brain_handoff_status') {
+    const denied = evaluateBrainHandoff('alpha_research', 'nexus_hermes', ['claim_alpha_raw_market_pattern']);
+    return `Cross-brain handoff status:\n\nFacts:\n- Alpha to Hermes unapproved claim handoff: ${denied.allowed ? 'allowed' : 'denied'}.\n- Event: ${denied.event.action}.\n- Reason: ${denied.reasons.join(' ') || 'No block recorded.'}\n\nRecommendation:\n- Use Knowledge Review before promoting Alpha findings into Hermes context.`;
+  }
+
+  if (intent === 'knowledge_promotion_status') {
+    return `Knowledge promotion status:\n\nFacts:\n- Source -> Evidence -> Claim or Observation -> Review -> Approved Knowledge is the Wave 3 chain.\n- High-risk policy, security, cross-brain permissions, live payments, and live trading decisions require Ray Review or explicit Ray approval.\n\nRecommendation:\n- Create a Knowledge Review item when a finding should become policy or reusable company knowledge.`;
+  }
+
+  if (intent === 'client_safe_knowledge_check') {
+    const context = assembleBrainContext({ brainId: 'client_ai', actorRole: 'client', tenantId: 'synthetic', clientId: 'persona_a', query: 'client safe', requestedDomains: ['client_safe_guidance', 'documents'] });
+    return `Client-safe knowledge check:\n\nFacts:\n- ${context.approvedKnowledge.length} approved policy/knowledge records are available to Client AI in this scoped query.\n- ${context.excluded.length} records are excluded by tenant, data-class, domain, approval, or policy rules.\n\nBoundary:\n- Client AI cannot retrieve Executive records, raw Alpha research, private source code, credentials, or another tenant's data.`;
   }
 
   if (intent === 'executive_priorities') {

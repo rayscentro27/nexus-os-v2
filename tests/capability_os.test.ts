@@ -24,6 +24,14 @@ describe('Capability OS registry', () => {
       'repo_intelligence_registry',
       'github_mcp_reader',
       'github_mcp_writer',
+      'intelligence_registry',
+      'brain_profile_registry',
+      'brain_context_assembly',
+      'brain_retrieval_policy',
+      'knowledge_health',
+      'structured_output_validation',
+      'retrieval_evaluation',
+      'document_evidence_processing',
       'live_trading',
     ].forEach((id) => expect(ids).toContain(id));
     for (const capability of capabilities) {
@@ -40,6 +48,8 @@ describe('Capability OS registry', () => {
     expect(getCapability('live_stripe')).toMatchObject({ activationMode: 'DEFERRED', approvalLevel: 'RAY_EXPLICIT', rayApprovalState: 'DEFERRED' });
     expect(getCapability('live_trading')).toMatchObject({ activationMode: 'BLOCKED_BY_POLICY', healthStatus: 'PROHIBITED' });
     expect(getCapability('alpha_supabase_access_prohibition')).toMatchObject({ activationMode: 'PROHIBITED', alphaMayUse: false });
+    expect(getCapability('brain_profile_registry')).toMatchObject({ activationMode: 'ACTIVE', healthStatus: 'HEALTHY' });
+    expect(getCapability('cross_brain_handoff')).toMatchObject({ activationMode: 'APPROVAL_GATED', approvalLevel: 'RAY_REVIEW' });
   });
 
   it('summarizes capability counts for Executive visibility', () => {
