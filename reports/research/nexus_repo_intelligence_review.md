@@ -1,137 +1,114 @@
 # Nexus Repo Intelligence Review
 
-**Generated:** 2026-07-05  
-**Status:** Research Complete  
+Generated: 2026-07-18
 
-## Research Categories (15)
+## Status
 
-1. Payment Processing
-2. Subscription Management
-3. Document Management
-4. Credit Scoring
-5. Business Onboarding
-6. Grant Discovery
-7. Funding Matching
-8. User Authentication
-9. Role-Based Access
-10. Notification Systems
-11. AI/ML Integration
-12. Analytics Dashboards
-13. API Design Patterns
-14. Testing Strategies
-15. Deployment/DevOps
+RECONSTRUCTED_AND_RECONCILED
 
-## Candidate Repos (22)
+The prior repo-intelligence markdown reports existed, but the expected runtime registry `reports/runtime/nexus_repo_intelligence_registry.json` was missing. This audit reconstructed it as a sanitized, read-only registry.
 
-| # | Repo | Category | Key Learnings |
-|---|------|----------|---------------|
-| 1 | Stripe Samples | Payment | Checkout flow, webhooks, customer portal |
-| 2 | Hyperswitch | Payment | Payment routing, multi-processor |
-| 3 | Kill Bill | Subscription | Billing engine, subscription lifecycle |
-| 4 | BTCPay Server | Payment | Self-hosted crypto payments |
-| 5 | Docmost | Document | Wiki-style doc management |
-| 6 | Paperless-ngx | Document | OCR, document processing |
-| 7 | Credit-Scoring-ML | Credit | ML-based scoring models |
-| 8 | OpenCredit | Credit | Open-source credit scoring |
-| 9 | Rocket.Chat | Auth/RBAC | Auth, roles, channels |
-| 10 | Mattermost | Auth/RBAC | Team auth, permissions |
-| 11 | AppWrite | Full-stack | Auth, DB, functions, storage |
-| 12 | Supabase | Full-stack | Auth, DB, real-time, storage |
-| 13 | N8N | Automation | Workflow automation patterns |
-| 14 | Huginn | Automation | Agent-based automation |
-| 15 | Metabase | Analytics | Dashboard, SQL queries |
-| 16 | Plausible | Analytics | Privacy-first analytics |
-| 17 | Chatwoot | Support | Ticketing, multi-channel |
-| 18 | Cal.com | Scheduling | Booking, calendar integration |
-| 19 | Invoice Ninja | Billing | Invoicing, payment tracking |
-| 20 | Crisp | Support | Live chat, help desk |
-| 21 | Twenty | CRM | Contact management, pipeline |
-| 22 | ERPNext | ERP | Full business suite patterns |
+## Recovered history
 
-## What Nexus Should Learn From Each
+Existing artifacts found:
 
-### Payment Processing
+- `reports/research/nexus_repo_intelligence_review.md`
+- `reports/research/nexus_top_repo_pattern_library.md`
+- `reports/research/nexus_competitive_feature_gap_map.md`
+- `reports/research/nexus_money_engine_recommendations.md`
+- `reports/activation/open_source_repo_scout_for_alpha_and_nexus.md`
+- `reports/activation/open_source_repo_priority_matrix.md`
+- `reports/hermes_alpha/alpha_reference_project_evaluation.md`
+- `reports/hermes_alpha/alpha_framework_research.md`
+- `reports/runtime/nexus_active_operator_receipts/rcpt_repo_intelligence_*.json`
+- `scripts/activation/run_repo_research.py`
+- `scripts/activation/run_repo_concept_extraction.py`
+- `scripts/research/extract_payment_repo_concepts.py`
 
-- **Stripe Samples**: Standard checkout flow, customer portal, webhook handling
-- **Hyperswitch**: Payment routing logic, failover between processors
-- **Kill Bill**: Subscription lifecycle, invoicing, dunning
-- **BTCPay Server**: Crypto payment integration (future consideration)
+Missing artifact:
 
-### Document Management
+- `reports/runtime/nexus_repo_intelligence_registry.json` was absent and has been reconstructed.
 
-- **Docmost**: Rich text editing, version control, permissions
-- **Paperless-ngx**: OCR processing, document classification, tagging
+Git history:
 
-### Credit Scoring
+- `0348176 activate Nexus operating engine dashboard client portal and work router` referenced repo-intelligence artifacts.
 
-- **Credit-Scoring-ML**: ML model training, feature engineering
-- **OpenCredit**: Scoring algorithms, factor weighting
+## Current Nexus overlap
 
-### Authentication & RBAC
+| Area | Existing Nexus capability | Repo-intelligence implication |
+|---|---|---|
+| Stripe payments | Certified test-mode checkout/webhook/order/fulfillment | Study Stripe samples only; do not replace. |
+| Supabase Auth/RLS/Storage | Implemented and certified | Study Supabase patterns; existing stack remains canonical. |
+| Automation | Internal scripts, feeders, task requests, approvals | Study n8n/Huginn/Windmill patterns; do not integrate yet. |
+| Support/CRM | Client/admin workflows exist | Study Chatwoot/Twenty/ERPNext patterns; no immediate dependency. |
+| Research agents | Alpha local/mock providers and no-Supabase guard | Study LangGraph/CrewAI/Pydantic/Letta concepts only. |
+| Documents | Private upload/storage and parser foundations | Study MarkItDown/Paperless patterns; file-processing sandbox required. |
+| Trading | Backtest/demo research only | Study LEAN/vectorbt patterns; live trading blocked. |
 
-- **Rocket.Chat**: Role hierarchy, permission system
-- **Mattermost**: Team-based access, admin controls
+## Candidate status
 
-### Full-Stack Patterns
+| Candidate | Status | Proposed disposition | Notes |
+|---|---|---|---|
+| Stripe Samples | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Existing Stripe path is certified; sample patterns only. |
+| Hyperswitch | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Apache-2.0 metadata; overkill for first revenue loop. |
+| Kill Bill | RESEARCHED | DEFER | Subscription lifecycle reference after one-time service is reliable. |
+| BTCPay Server | RESEARCHED | DEFER | Future payment option only. |
+| Docmost | RESEARCHED | REJECT | AGPL; document/wiki overlap not first priority. |
+| Paperless-ngx | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | GPL; useful OCR/document lifecycle patterns, no code reuse. |
+| Rocket.Chat | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | License unresolved by GitHub API; RBAC/channel patterns only. |
+| Mattermost | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | License unresolved by GitHub API; collaboration patterns only. |
+| Appwrite | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Nexus already uses Supabase. |
+| Supabase | INTEGRATED | REPLACE_WITH_EXISTING_NEXUS_CAPABILITY | Current backend source of truth. |
+| n8n | RESEARCHED | DEFER | License unresolved/source-available concerns; external-action risk. |
+| Huginn | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Automation-agent concepts; do not run. |
+| Metabase | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Dashboard/query UX reference. |
+| Plausible | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | AGPL; privacy analytics patterns only. |
+| Chatwoot | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Support workflow reference; license unresolved in API metadata. |
+| Cal.com | RESEARCHED | DEFER | Scheduling not Wave 1. |
+| Invoice Ninja | RESEARCHED | DEFER | Invoice patterns only; license unresolved. |
+| Twenty | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | CRM pattern reference; license unresolved. |
+| ERPNext | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | GPL; ERP workflow concepts only. |
+| LangGraph | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | State-graph pattern useful after Founder Mode. |
+| CrewAI | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Role/delegation concepts only. |
+| AutoGen | RESEARCHED | DEFER | Current repo metadata reports CC-BY; legal review required. |
+| MarkItDown | RESEARCHED | DEFER | Useful for document normalization; sandbox needed. |
+| Crawl4AI | RESEARCHED | DEFER | Public web extraction candidate; approval/cost controls required. |
+| Firecrawl | RESEARCHED | DEFER | Existing Alpha URL-review foundation; live API not broadly activated. |
+| LiveKit Agents | RESEARCHED | DEFER | Voice prototype later. |
+| Pipecat | RESEARCHED | DEFER | Voice pipeline later. |
+| LanceDB | RESEARCHED | DEFER | Local retrieval only when corpus need is proven. |
+| Freqtrade | RESEARCHED | REJECT | GPL and execution surface; trading remains blocked. |
+| LEAN | RESEARCHED | STUDY_ARCHITECTURE_OR_WORKFLOW_ONLY | Research/backtest reference only. |
+| vectorbt | RESEARCHED | DEFER | License unresolved by API metadata; research only. |
 
-- **AppWrite**: Self-hosted backend, functions system
-- **Supabase**: Real-time subscriptions, row-level security
+## Licensing state
 
-### Automation
+GitHub API metadata was checked during this audit for candidate owner/repo, license SPDX where available, archived status, and recent activity. `NOASSERTION` or report-stated ambiguity means legal review is required before any dependency, code reuse, or hosted integration.
 
-- **N8N**: Workflow triggers, action chains
-- **Huginn**: Autonomous agents, event processing
+No GPL, AGPL, SSPL, source-available, network-copyleft, or ambiguous-license project is approved for integration.
 
-### Analytics
+## Security state
 
-- **Metabase**: Dashboard builder, SQL visualization
-- **Plausible**: Privacy-first tracking, lightweight analytics
+- No external repository was cloned, installed, vendored, or copied.
+- No live provider credentials were configured.
+- No Alpha Supabase access was enabled.
+- No web crawler or social publisher was activated.
+- No live trading or broker action was attempted.
 
-### Support & CRM
+## Evidence gaps
 
-- **Chatwoot**: Multi-channel support, ticketing
-- **Twenty**: CRM data model, pipeline management
+- Exact release-level licenses were not verified for every candidate.
+- Security advisories were not exhaustively checked per exact release.
+- Dependency trees were not reviewed.
+- No legal review occurred.
+- No implementation-cost estimate was proven by prototype.
 
-### Business Operations
+## Recommended disposition
 
-- **Invoice Ninja**: Invoice generation, payment tracking
-- **ERPNext**: Full business process integration
+Repo Intelligence should be:
 
-## Payment Conclusion
+```text
+B — parallel research lane with limited governance hooks in Wave 1
+```
 
-### MVP: Stripe
-
-- Industry standard, excellent docs
-- Test mode for development
-- Customer portal built-in
-- Webhook system for events
-- Subscription management included
-
-### Study: Hyperswitch
-
-- Payment routing optimization
-- Multi-processor failover
-- Cost reduction potential
-- Future consideration for scale
-
-### Study: Kill Bill
-
-- Advanced subscription logic
-- Custom billing rules
-- Enterprise-grade billing
-- Evaluate for complex pricing
-
-### Later: BTCPay
-
-- Crypto payment option
-- Self-hosted, no fees
-- Privacy-focused
-- Niche but growing demand
-
-## Next Actions
-
-1. Clone and review Stripe Samples checkout flow
-2. Study Supabase RLS patterns for access control
-3. Evaluate N8N for workflow automation
-4. Review Metabase dashboard patterns
-5. Test Kill Bill subscription lifecycle
+Wave 1 should show Repo Intelligence status, evidence, risk, and Ray Review hooks inside Founder Mode. It should not integrate external code or activate external services.

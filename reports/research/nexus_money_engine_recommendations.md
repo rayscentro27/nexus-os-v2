@@ -1,171 +1,85 @@
-# Money Engine Recommendations
+# Nexus Money Engine Recommendations
 
-**Generated:** 2026-07-05  
-**Status:** Strategy Complete  
+Generated: 2026-07-18
 
-## How Nexus Moves From Research to Money
+## Operating priority
 
-### Phase 1: Foundation (Weeks 1-4)
+Recommendations preserve:
 
-**Goal:** Establish revenue infrastructure
-
-1. **Stripe Integration**
-   - Payment processing setup
-   - Subscription management
-   - Customer portal
-
-2. **Access Control**
-   - Paywall implementation
-   - Tier-based features
-   - Trial system
-
-3. **Onboarding Flow**
-   - Client registration
-   - Payment collection
-   - Feature activation
-
-### Phase 2: Conversion (Weeks 5-8)
-
-**Goal:** Convert free users to paid
-
-1. **Value Demonstration**
-   - Score improvement preview
-   - Grant match teaser
-   - Funding opportunity glimpse
-
-2. **Upgrade Triggers**
-   - Feature gates
-   - Usage limits
-   - Time-based prompts
-
-3. **Social Proof**
-   - Success stories
-   - Testimonials
-   - Case studies
-
-### Phase 3: Growth (Weeks 9-12)
-
-**Goal:** Increase revenue per user
-
-1. **Upsell Paths**
-   - Starter → Growth → Agency
-   - Add-on features
-   - Premium support
-
-2. **Retention**
-   - Monthly value reports
-   - Score improvement alerts
-   - New grant notifications
-
-3. **Referrals**
-   - Referral rewards
-   - Affiliate program
-   - Partner channels
-
-## Funnel Strategy
-
-```
-Awareness
-  └─→ Website, social, content
-        └─→ Free signup
-              └─→ Onboarding
-                    └─→ Value demo
-                          └─→ Trial start
-                                └─→ Trial convert
-                                      └─→ Paid subscriber
-                                            └─→ Retained user
-                                                  └─→ Referrer
+```text
+P0 — Protect the company
+P1 — Protect and serve customers
+P2 — Generate revenue
+P3 — Improve operations
+P4 — Research and expand
 ```
 
-### Funnel Metrics
+## Immediate revenue enablement
 
-| Stage | Metric | Target |
-|-------|--------|--------|
-| Awareness → Signup | Conversion | 5% |
-| Signup → Onboarding | Completion | 80% |
-| Onboarding → Trial | Start | 60% |
-| Trial → Paid | Conversion | 30% |
-| Paid → Retained | Monthly | 85% |
-| Retained → Referrer | Referral | 20% |
+| Recommendation | Status | Action |
+|---|---|---|
+| Preserve $97 readiness review test-mode path | CERTIFIED | Keep as the revenue proof foundation. |
+| Live Stripe launch | DEFERRED_BY_OWNER | Do not configure live credentials until Nexus 3.0 completion and explicit approval. |
+| Controlled client testing | READY | Use synthetic/founder-controlled users before live payment expansion. |
+| One-time paid readiness delivery workflow | PARTIAL/READY_FOR_CONTROLLED_TESTING | Exercise operationally before subscriptions. |
 
-## Monetization Paths
+## Subscription-cost reduction
 
-### 1. Subscription Tiers
+| Area | Existing evidence | Recommendation |
+|---|---|---|
+| Repo intelligence | Reports and reconstructed registry | Study open-source patterns, do not install heavy platforms yet. |
+| Document conversion | MarkItDown/Paperless patterns | Defer dependency until sandbox and file policy are approved. |
+| Automation | n8n/Huginn patterns | Use current scripts and Ray Review before adding a visual automation platform. |
+| Analytics | Metabase/Plausible patterns | Build internal Founder Mode summaries first. |
 
-| Tier | Price | Target |
-|------|-------|--------|
-| Starter | $29/mo | Solo entrepreneurs |
-| Growth | $79/mo | Growing businesses |
-| Agency | $149/mo | Multi-client managers |
+## Internal automation savings
 
-**Revenue projection:**
-- 100 Starter × $29 = $2,900/mo
-- 50 Growth × $79 = $3,950/mo
-- 10 Agency × $149 = $1,490/mo
-- **Total:** $8,340/mo at 160 clients
+Short-term savings come from consolidating what already exists:
 
-### 2. One-Time Fees
+- Convert runtime report sprawl into Founder Mode summaries.
+- Reuse `task_requests`, `approvals`, `agent_jobs`, and `nexus_events`.
+- Show connector/capability readiness without asking Ray to inspect many files.
+- Keep automation dry-run and approval-gated.
 
-| Service | Price | Volume |
-|---------|-------|--------|
-| Credit Audit | $99 | Monthly |
-| Grant Application | $49 each | Per app |
-| Document Review | $29 each | Per doc |
-| Business Setup | $199 | One-time |
+## Affiliate or referral opportunities
 
-### 3. Premium Features
+Existing affiliate and partner reports exist, but activation is not approved in this audit. Recommended path:
 
-| Feature | Price | Type |
-|---------|-------|------|
-| Priority Support | $19/mo | Add-on |
-| API Access | $29/mo | Add-on |
-| White-label | $99/mo | Add-on |
-| Custom Reports | $49/mo | Add-on |
+1. Track opportunities in Founder Mode as evidence-backed candidates.
+2. Require Ray Review before any public offer, link, or customer recommendation.
+3. Disclose affiliate relationships where customer-facing.
+4. Avoid treating affiliate links as required customer actions.
 
-### 4. Affiliate Revenue
+## Funding-readiness revenue
 
-| Partner | Commission | Source |
-|---------|------------|--------|
-| Business formation | $50/signup | LegalZoom, etc. |
-| Business banking | $25/signup | Mercury, Relay |
-| Business insurance | $30/signup | Next, Insureon |
-| Business credit cards | $50/signup | Card partners |
+The best near-term money path remains the $97 Credit and Funding Readiness Review because it is already closest to certified:
 
-### 5. Data Insights (Anonymized)
+- Test checkout certified.
+- Webhook-backed order and fulfillment certified.
+- Client/admin visibility certified.
+- Readiness portal implemented.
+- Live configuration intentionally deferred.
 
-| Insight | Buyer | Price |
-|---------|-------|-------|
-| Credit trends | Lenders | Custom |
-| Industry benchmarks | Consultants | Custom |
-| Grant success rates | Grantmakers | Custom |
+## Deferred investments
 
-## Revenue Projections
+- Subscription billing.
+- Grant matching engine.
+- Application builder.
+- Social publishing.
+- Customer communication automation.
+- Live provider/crawler activation.
+- Trading.
 
-### Conservative (6 months)
+## Risks and required approvals
 
-```
-Month 1: $500 (10 Starter, 2 Growth)
-Month 2: $1,200 (20 Starter, 5 Growth)
-Month 3: $2,500 (35 Starter, 10 Growth, 2 Agency)
-Month 4: $4,200 (50 Starter, 15 Growth, 5 Agency)
-Month 5: $6,500 (70 Starter, 20 Growth, 8 Agency)
-Month 6: $8,340 (100 Starter, 50 Growth, 10 Agency)
-```
+| Risk | Required approval |
+|---|---|
+| Live payments | Ray approval plus live Stripe variables/webhook/price alignment. |
+| External messages | Ray approval plus provider/domain/consent verification. |
+| External repo dependency | Ray architecture/legal/security approval. |
+| Customer PII in research | Prohibited unless a governed restricted path is approved. |
+| Trading execution | Separate legal/risk approval; currently blocked. |
 
-### Growth (12 months)
+## Recommended next money-engine action
 
-```
-Month 12: $25,000+ (200 Starter, 80 Growth, 20 Agency)
-Year 1: $150,000+
-```
-
-## Next Actions
-
-1. Complete Stripe integration
-2. Build paywall system
-3. Create subscription management UI
-4. Implement trial system
-5. Design upgrade flow
-6. Build referral tracking
-7. Create affiliate dashboard
-8. Launch MVP with Starter tier
+Do not start subscriptions now. Build Executive and Founder Mode Core so Ray can see customer, revenue, health, work, research, and approval status in one governed place. Then run controlled client testing and only afterward reopen live Stripe Customer 001 certification.

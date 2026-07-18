@@ -1,113 +1,49 @@
-# Competitive Feature Gap Map
+# Nexus Competitive Feature Gap Map
 
-**Generated:** 2026-07-05  
-**Status:** Analysis Complete  
+Generated: 2026-07-18
 
-## Features Nexus Has
+This map compares feature patterns, not product mandates.
 
-| Feature | Status | Quality |
-|---------|--------|---------|
-| Credit Score Display | ✅ Implemented | Good |
-| Document Upload | ✅ Implemented | Basic |
-| Basic Dashboard | ✅ Implemented | Good |
-| Hermes AI Chat | ✅ Implemented | Good |
-| Client Portal Shell | ✅ Implemented | Basic |
-| Funding Listings | ✅ Implemented | Basic |
+| Feature pattern | Comparator examples | Nexus status | Gap class | Recommendation |
+|---|---|---|---|---|
+| Webhook-backed one-time payment | Stripe samples | ALREADY_SOLVED | ALREADY_SOLVED | Preserve test-mode path; live deferred. |
+| Subscription billing lifecycle | Kill Bill, Stripe Billing | DEFERRED | VALUABLE | Separate sprint only after controlled customer testing. |
+| Executive operating dashboard | ERPNext, Metabase | PARTIAL | CRITICAL | Build Founder Mode Core first. |
+| Ray approval/HITL queue | LangGraph HITL, n8n manual gates | PARTIAL | CRITICAL | Consolidate `task_requests` and `approvals`. |
+| Capability registry | Appwrite/Supabase console patterns, internal registries | PARTIAL/DUPLICATED | CRITICAL | Create canonical read model in Wave 1/2. |
+| System health dashboard | Metabase/admin consoles | PARTIAL/DUPLICATED | CRITICAL | Canonicalize Supabase health + report evidence. |
+| Repo-intelligence lane | internal research/adapters | PARTIAL/DISCONNECTED | VALUABLE | Run parallel read-only lane with Ray Review hooks. |
+| Client portal and readiness workflow | CRM/customer portals | IMPLEMENTED | ALREADY_SOLVED | Do not redesign in Founder Mode sprint. |
+| Document processing lifecycle | Paperless-ngx, MarkItDown | PARTIAL | VALUABLE | Study only; sandbox before dependencies. |
+| Support inbox/customer communication | Chatwoot | PARTIAL/BLOCKED | VALUABLE | Manual/checklist first; provider sends approval-gated. |
+| CRM/client pipeline | Twenty, ERPNext | PARTIAL | VALUABLE | Improve admin/client pipeline after Founder Mode. |
+| Marketing/social scheduling | Postiz, Mixpost, Mautic | BLOCKED | OPTIONAL | Keep draft-only until legal/provider approval. |
+| Visual automation workflows | n8n, Huginn | PARTIAL/UNSAFE | OPTIONAL | Do not integrate before capability governance. |
+| Knowledge/evidence layer | RAG/eval frameworks | PARTIAL | VALUABLE | Wave 3 after Founder Mode and capability registry. |
+| Trading execution | Freqtrade, LEAN | BLOCKED | NOT_ALIGNED for Wave 1 | Keep research/backtest only. |
 
-## Features Competitors Have
+## Critical gaps before Founder Mode can be called complete
 
-| Feature | Competitor | Nexus Gap |
-|---------|------------|-----------|
-| Subscription Billing | All SaaS | Missing |
-| Real-time Score Updates | Credit Karma | Missing |
-| Grant Matching Engine | GrantWatch | Missing |
-| Application Builder | Fundable | Missing |
-| Team Collaboration | Salesforce | Missing |
-| Automated Workflows | HubSpot | Missing |
-| Mobile App | All major | Missing |
-| API Access | Most platforms | Missing |
-| White-label | Agency tools | Missing |
-| Analytics Dashboard | Most platforms | Partial |
+1. One executive source of truth for Ray.
+2. One approval authority model.
+3. One work/request/job lifecycle.
+4. One system-health summary.
+5. Clear Hermes/Alpha/client-AI separation.
 
-## Gap Analysis
+## Already solved or recently certified
 
-### Critical Gaps (Must Have)
+- Nexus 3 client shell and authenticated client routes.
+- Credit/Business exact page replacement.
+- Admin route guard.
+- RLS tenant isolation.
+- Stripe test-mode one-time review flow foundation.
+- Alpha no-Supabase guard.
 
-1. **Subscription billing** - No revenue without this
-2. **Grant matching** - Core value proposition
-3. **Application builder** - Funding workflow incomplete
-4. **Mobile responsive** - Table stakes
+## Not aligned for first implementation wave
 
-### Important Gaps (Should Have)
-
-5. **Real-time updates** - User expectation
-6. **Team collaboration** - Agency use case
-7. **Automated workflows** - Efficiency gain
-8. **Email notifications** - Engagement driver
-
-### Nice-to-Have Gaps
-
-9. **Mobile app** - Future consideration
-10. **API access** - Developer ecosystem
-11. **White-label** - Agency revenue
-12. **Advanced analytics** - Power users
-
-## Opportunities
-
-### Differentiation Opportunities
-
-1. **AI-Powered Hermes** - Most competitors lack AI guidance
-2. **Unified Platform** - Credit + Funding + Grants in one
-3. **Business Setup Guidance** - Unique onboarding flow
-4. **Action Plan Engine** - Personalized monthly tasks
-
-### Market Gaps
-
-1. **SMB Credit Building** - Most tools focus on enterprise
-2. **Grant Discovery** - Underserved market
-3. **Funding Readiness** - No standard scoring exists
-4. **Document Intelligence** - OCR + validation missing
-
-### Technical Opportunities
-
-1. **Real-time Score Updates** - WebSocket integration
-2. **Smart Document Processing** - OCR + AI validation
-3. **Predictive Analytics** - Score improvement forecasting
-4. **Automation Engine** - Workflow triggers
-
-## Competitive Positioning
-
-### vs Credit Karma
-
-- **Advantage**: Business focus, funding integration
-- **Gap**: Real-time updates, mobile app
-- **Strategy**: Own the SMB credit + funding space
-
-### vs Fundable
-
-- **Advantage**: AI guidance, credit building
-- **Gap**: Application builder, lender network
-- **Strategy**: Build readiness before applications
-
-### vs GrantWatch
-
-- **Advantage**: Integrated platform, AI matching
-- **Gap**: Grant database size
-- **Strategy**: Quality matches over quantity
-
-### vs Salesforce
-
-- **Advantage**: Simplicity, SMB focus
-- **Gap**: Customization, integrations
-- **Strategy**: Purpose-built for credit/funding
-
-## Next Actions
-
-1. Implement subscription billing (Stripe)
-2. Build grant matching engine
-3. Create application builder
-4. Add mobile responsive design
-5. Implement real-time updates
-6. Build team collaboration features
-7. Design automation engine
-8. Plan mobile app
+- Live Stripe.
+- Subscriptions.
+- Trading execution.
+- Public publishing.
+- Broad external automation.
+- Heavy third-party platform installation.
