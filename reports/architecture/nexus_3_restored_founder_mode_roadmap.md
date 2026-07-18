@@ -1,6 +1,7 @@
 # Nexus 3 Restored Founder Mode Roadmap
 
 Generated: 2026-07-18
+Last updated: 2026-07-18 Wave 1 implementation
 
 ## Roadmap decision
 
@@ -38,18 +39,20 @@ Exit gate:
 
 Goal: give Ray one governed operating surface for the company.
 
+Status: implemented in Wave 1 as the canonical Executive Command Center read model and admin surface.
+
 Build:
 
-- Executive Command Center shell.
-- Daily operating brief.
-- Hermes executive briefing panel.
-- Ray Review and Approvals summary.
-- Work/request status summary.
-- Department status read model.
-- Client operations summary.
-- Revenue/opportunity summary.
-- System health summary.
-- Repo Intelligence status and review hooks.
+- Executive Command Center shell. Completed.
+- Daily operating brief. Completed as a deterministic read-model package.
+- Hermes executive briefing panel. Completed with executive intent routing.
+- Ray Review and Approvals summary. Completed as normalized Executive approval items.
+- Work/request status summary. Completed over `task_requests`, `approvals`, `agent_jobs`, and `nexus_events`.
+- Department status read model. Completed with truthful activation states.
+- Client operations summary. Completed as aggregate/admin-authorized signals.
+- Revenue/opportunity summary. Completed with test/live/mock/projected/deferred distinction.
+- System health summary. Completed as canonical Executive health adapter.
+- Repo Intelligence status and review hooks. Completed as read-only registry view.
 
 Reuse:
 
@@ -75,6 +78,13 @@ Acceptance gates:
 - High-risk actions create approval records only.
 - Existing RLS and authenticated certification remain green.
 
+Wave 1 limitations:
+
+- No new database tables were created; the first implementation uses read-model adapters.
+- Existing duplicate legacy registries remain available underneath the normalized Executive view.
+- Full Capability OS persistence is deferred to Wave 2.
+- Repo Intelligence remains research-only; no external code or tool was installed.
+
 ## Parallel Lane R1 — Repo-intelligence recovery
 
 Goal: preserve Nexus ability to study strong open-source systems without unauthorized integration.
@@ -85,6 +95,7 @@ Scope:
 - Track license/security/maintenance evidence.
 - Send only recommendation/status items into Ray Review.
 - No cloning, vendoring, package installation, or source copying without explicit approval.
+- Include GitHub MCP Server as a planned controlled external tool candidate only.
 
 Placement: B — parallel research lane with limited governance hooks in Wave 1.
 

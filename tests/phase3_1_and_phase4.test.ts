@@ -253,9 +253,9 @@ describe('Phase 4 — WorldClassClientPortal integration', () => {
     expect(code).toContain('computeJourneyState')
   })
 
-  it('imports FundingReadinessHeader', () => {
+  it('does not import the legacy global FundingReadinessHeader', () => {
     const code = readFileSync(portalPath, 'utf8')
-    expect(code).toContain('FundingReadinessHeader')
+    expect(code).not.toContain('FundingReadinessHeader')
   })
 
   it('imports analytics', () => {
@@ -269,17 +269,19 @@ describe('Phase 4 — WorldClassClientPortal integration', () => {
     expect(code).toContain('computeJourneyState')
   })
 
-  it('renders FundingReadinessHeader', () => {
+  it('renders the Nexus 3 page host instead of the legacy global readiness header', () => {
     const code = readFileSync(portalPath, 'utf8')
-    expect(code).toContain('<FundingReadinessHeader')
+    expect(code).toContain('wc-pageHost')
+    expect(code).not.toContain('<FundingReadinessHeader')
   })
 
-  it('simplified navigation has 7 items', () => {
+  it('navigation includes the dedicated Recommendations route', () => {
     const code = readFileSync(portalPath, 'utf8')
     const navMatch = code.match(/const navItems = \[([\s\S]*?)\]\s*\n/)
     expect(navMatch).toBeTruthy()
     const navContent = navMatch?.[1] || ''
     const itemCount = (navContent.match(/\[.*?\/client\//g) || []).length
-    expect(itemCount).toBe(7)
+    expect(itemCount).toBe(8)
+    expect(navContent).toContain('/client/recommendations')
   })
 })

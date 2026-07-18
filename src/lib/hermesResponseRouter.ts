@@ -14,6 +14,7 @@ import { detectLearningInstruction, storeHint, findMatchingHints } from './herme
 import { getBackendStatusMessage, getHermesContext, type HermesBackendContextResult } from './hermesBackendContextAdapter';
 import { reasonAboutPage, getAllPageContexts, type PageDataSource } from './hermesSourceReasoner';
 import { isSupabaseConfigured } from './supabaseClient';
+import { answerExecutiveIntent, classifyExecutiveIntent } from './executive/hermesExecutiveAdvisor';
 
 /* ── Nexus topic knowledge base (moved from hermesWorkroomData.js) ── */
 const nexusTopics: Record<string, { topic: string; explain: string; why?: string; safety?: string; approval?: string; howToApprove?: string; specialist?: string; cleanup?: string; next: string; opinion?: string }> = {
@@ -149,6 +150,17 @@ export type QuestionType =
   | 'summary'
   | 'trading'
   | 'source_reasoning'
+  | 'executive_daily_brief'
+  | 'executive_priorities'
+  | 'executive_system_health'
+  | 'executive_customer_risk'
+  | 'executive_revenue_status'
+  | 'executive_approval_status'
+  | 'executive_work_status'
+  | 'executive_department_status'
+  | 'executive_repo_intelligence'
+  | 'executive_deployment_status'
+  | 'executive_recommendation_followup'
   | 'unclear';
 
 export interface ResponseContext {
@@ -267,6 +279,26 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
     case 'source_reasoning':
       return handleSourceReasoning(message);
 
+    case 'executive_daily_brief':
+    case 'executive_priorities':
+    case 'executive_system_health':
+    case 'executive_customer_risk':
+    case 'executive_revenue_status':
+    case 'executive_approval_status':
+    case 'executive_work_status':
+    case 'executive_department_status':
+    case 'executive_repo_intelligence':
+    case 'executive_deployment_status':
+    case 'executive_recommendation_followup':
+      return {
+        text: answerExecutiveIntent(questionType),
+        confidence: 'high',
+        source: 'report_context',
+        questionType,
+        needsClarification: false,
+        sourceHint: 'Executive Command Center read model; no execution performed.',
+      };
+
     case 'trading':
       return handleTrading(message, pageContext);
 
@@ -281,6 +313,8 @@ export function normalizeHermesText(text: string): string {
 
 export function classifyIntent(text: string): QuestionType {
   const lower = normalizeHermesText(text);
+  const executiveIntent = classifyExecutiveIntent(text);
+  if (executiveIntent) return executiveIntent;
 
   // Greetings
   if (/^(hi|hello|hey|yo|sup|good morning|good afternoon|good evening|good night|morning|afternoon|evening|howdy|hola|hey there|what's up|whats up)\b/.test(lower)) {

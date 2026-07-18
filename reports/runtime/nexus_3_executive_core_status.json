@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-07-18T12:35:00-07:00",
+  "wave": "Nexus OS 3.0 Wave 1",
+  "status": "IMPLEMENTED",
+  "stripe_policy": "LIVE STRIPE CONFIGURATION DEFERRED UNTIL NEXUS 3.0 COMPLETION",
+  "external_repository_integration": {
+    "installed": false,
+    "cloned": false,
+    "vendored": false,
+    "code_copied": false
+  },
+  "capabilities": [
+    {"id":"executive_command_center","status":"PASS","evidence":"src/components/CommandCenter.jsx","source_state":"LIVE_OR_REPORT_BACKED"},
+    {"id":"founder_today_view","status":"PASS","evidence":"Founder Mode Today panel","source_state":"LIVE_OR_REPORT_BACKED"},
+    {"id":"daily_operating_brief","status":"PASS","evidence":"src/lib/executive/executiveCommandCenterAdapter.ts","source_state":"LIVE_OR_REPORT_BACKED"},
+    {"id":"ray_review_approvals","status":"PASS","evidence":"approvals/task_requests normalized adapter","source_state":"LIVE_OR_BLOCKED_LABELLED"},
+    {"id":"governed_work","status":"PASS","evidence":"task_requests -> approvals -> agent_jobs -> nexus_events","source_state":"LIVE_OR_BLOCKED_LABELLED"},
+    {"id":"department_status","status":"PASS","evidence":"bounded registry using existing Nexus tab evidence","source_state":"REPORT_BACKED"},
+    {"id":"customer_operations_summary","status":"PASS","evidence":"aggregate admin-authorized customer/document tables","source_state":"LIVE_OR_BLOCKED_LABELLED"},
+    {"id":"revenue_opportunity_summary","status":"PASS","evidence":"client_orders/service_fulfillments and report-backed recommendations","source_state":"LIVE_OR_DEFERRED"},
+    {"id":"executive_system_health","status":"PASS","evidence":"connector registry plus system_health rows","source_state":"LIVE_OR_REPORT_BACKED"},
+    {"id":"hermes_executive_advisor","status":"PASS","evidence":"src/lib/executive/hermesExecutiveAdvisor.ts","source_state":"REPORT_BACKED"},
+    {"id":"repo_intelligence_governance","status":"PASS","evidence":"reports/runtime/nexus_repo_intelligence_registry.json","source_state":"REPORT_BACKED"},
+    {"id":"github_mcp_server_registry","status":"PASS","evidence":"candidate_id github_mcp_server; writer disabled","source_state":"REPORT_BACKED"},
+    {"id":"alpha_boundary","status":"PASS","evidence":"Alpha no-Supabase tests","source_state":"TESTED"},
+    {"id":"stripe_test_preservation","status":"PASS","evidence":"revenue_activation tests; STRIPE_MODE test policy","source_state":"TESTED"},
+    {"id":"live_trading_block","status":"PASS","evidence":"Executive health policy item","source_state":"POLICY_BLOCKED"}
+  ],
+  "tests": {
+    "typecheck": "PASS",
+    "build": "PASS_WITH_EXISTING_CHUNK_WARNING",
+    "unit": "PASS_1408_OF_1408",
+    "focused_wave_1": "PASS_67_OF_67",
+    "rls": "PASS_45_OF_45",
+    "executive_browser": "PASS_6_OF_6",
+    "authenticated_nexus_3_browser": "PASS_18_OF_18"
+  },
+  "ray_decisions_required": [
+    "Approve or reject Wave 2: Capability OS and Governed Orchestration.",
+    "Keep GitHub MCP Server as planned read-only until a separate approval configures it."
+  ]
+}
