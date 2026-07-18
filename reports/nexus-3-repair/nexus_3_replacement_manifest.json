@@ -1,0 +1,25 @@
+{
+  "sprint": "nexus-3-exact-page-replacement-repair",
+  "date": "2026-07-18",
+  "starting_commit": "a2c3227e1995ecbf4a719910fbe9e9ad47e0a529",
+  "status": "PARTIAL",
+  "stripe": "LIVE STRIPE CONFIGURATION DEFERRED UNTIL NEXUS 3.0 COMPLETION",
+  "reports": [
+    "reports/nexus-3-repair/NEXUS_3_REPLACEMENT_FINAL_REPORT.md",
+    "reports/nexus-3-repair/CREDIT_ROUTE_RENDER_TREE_BEFORE.md",
+    "reports/nexus-3-repair/CREDIT_ROUTE_RENDER_TREE_AFTER.md",
+    "reports/nexus-3-repair/BUSINESS_ROUTE_RENDER_TREE_BEFORE.md",
+    "reports/nexus-3-repair/BUSINESS_ROUTE_RENDER_TREE_AFTER.md",
+    "reports/nexus-3-repair/CLIENT_ROUTE_REPLACEMENT_MATRIX.md",
+    "reports/nexus-3-repair/LEGACY_COMPONENT_DISPOSITION.md",
+    "reports/nexus-3-repair/CREDIT_BEFORE_AFTER.md",
+    "reports/nexus-3-repair/BUSINESS_BEFORE_AFTER.md",
+    "reports/nexus-3-repair/VISUAL_REPLACEMENT_CERTIFICATION.md",
+    "reports/nexus-3-repair/AUTHENTICATED_CLIENT_CERTIFICATION.md",
+    "reports/nexus-3-repair/AUTHENTICATED_ADMIN_CERTIFICATION.md",
+    "reports/nexus-3-repair/RESPONSIVE_CERTIFICATION.md",
+    "reports/nexus-3-repair/ACCESSIBILITY_CERTIFICATION.md",
+    "reports/nexus-3-repair/DEPLOYMENT_VERIFICATION.md",
+    "reports/nexus-3-repair/SELECTIVE_COMMIT_PLAN.md"
+  ]
+}
