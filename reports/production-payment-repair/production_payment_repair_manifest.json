@@ -1,0 +1,45 @@
+{
+  "generated": "2026-07-17 America/Phoenix",
+  "branch": "main",
+  "starting_commit": "ab24f749d63255f58b19649a2512fb9eca13a34c",
+  "status": "PRODUCTION_PAYMENT_ARCHITECTURE_READY_LIVE_CONFIGURATION_DEFERRED",
+  "live_payment_attempted": false,
+  "deployment_performed": false,
+  "migrations_applied": false,
+  "secrets_exposed": false,
+  "customer_pii_recorded": false,
+  "broker_activity": false,
+  "owner_deferrals": [
+    "approved live one-time $97 price deferred until Nexus 3.0",
+    "STRIPE_LIVE_SECRET_KEY deferred until Nexus 3.0 production launch",
+    "STRIPE_LIVE_WEBHOOK_SECRET deferred until live webhook is created for Nexus 3.0",
+    "STRIPE_LIVE_PRICE_READINESS_REVIEW_97 deferred until approved live $97 price is created",
+    "STRIPE_MODE must remain test",
+    "live webhook alignment deferred until Nexus 3.0",
+    "live card test deferred until Nexus 3.0 completion"
+  ],
+  "non_live_regression": {
+    "typecheck": "PASS",
+    "build": "PASS",
+    "revenue_tests": "PASS 12/12"
+  },
+  "reports": [
+    "PRODUCTION_PAYMENT_REPAIR_FINAL_REPORT.md",
+    "PRODUCTION_ENDPOINT_INVENTORY.md",
+    "LIVE_PRODUCT_PRICE_VERIFICATION.md",
+    "LIVE_CONFIGURATION_ACTION_PLAN.md",
+    "LIVE_WEBHOOK_OPERATOR_CERTIFICATION.md",
+    "PRE_DEPLOYMENT_LIVE_CONFIGURATION_CERTIFICATION.md",
+    "PRE_DEPLOYMENT_REGRESSION.md",
+    "PRODUCTION_DEPLOYMENT_EXECUTION.md",
+    "PRODUCTION_SMOKE_TEST.md",
+    "FINAL_PRE_PAYMENT_GO_NO_GO.md",
+    "CUSTOMER_001_READY_RECORD.md",
+    "FIRST_LIVE_PAYMENT_CERTIFICATION.md",
+    "LIVE_PAYMENT_SECURITY_CERTIFICATION.md",
+    "CUSTOMER_001_WORKFLOW_CERTIFICATION.md",
+    "FOUNDER_PILOT_PAYMENT_DISPOSITION.md",
+    "FINAL_PRODUCTION_REVENUE_REGRESSION.md",
+    "SELECTIVE_COMMIT_PLAN.md"
+  ]
+}
