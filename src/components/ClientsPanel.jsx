@@ -14,7 +14,6 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
   const [liveDocuments, setLiveDocuments] = useState([])
   const [liveReviewRequests, setLiveReviewRequests] = useState([])
   const [liveProfileFields, setLiveProfileFields] = useState(null)
-  if (!client) return null
 
   useEffect(() => {
     if (!client || !isSupabaseConfigured) return
@@ -46,6 +45,8 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
     return () => { cancelled = true }
   }, [client])
 
+  if (!client) return null
+
   function handleApprove() {
     setReceipt({ id: Date.now(), action: 'approve', target: client.name, next: 'Create Ray Review card for fake customer insert' })
   }
@@ -58,7 +59,7 @@ function ClientDetailDrawer({ client, onClose, onAskHermes, sourceType }) {
   return (
     <>
       <div className="nxos-overlay" onClick={onClose} />
-      <aside style={{
+      <aside data-testid="admin-client-detail-drawer" style={{
         position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(520px,90vw)',
         background: '#0d1a2c', borderLeft: '1px solid #213650', zIndex: 60,
         overflowY: 'auto', display: 'grid', gridTemplateRows: 'auto 1fr auto', padding: 0
@@ -342,7 +343,7 @@ export default function ClientsPanel({ onAskHermes }) {
         </article>
       </div>
 
-      <section className="nxos-table-card" style={{ background: '#0d1a2c', border: '1px solid #213650', borderRadius: 14, padding: 20 }}>
+      <section className="nxos-table-card" data-testid="admin-client-list" style={{ background: '#0d1a2c', border: '1px solid #213650', borderRadius: 14, padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Client status (test/fake customer)</h2>
           <input
@@ -363,6 +364,7 @@ export default function ClientsPanel({ onAskHermes }) {
               key={client.id}
               type="button"
               className="nxos-table-row"
+              data-testid="admin-client-row"
               style={{ gridTemplateColumns: '1.2fr auto auto auto auto auto', background: 'transparent', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}
               onClick={() => handleRowClick(client)}
             >
