@@ -2,6 +2,7 @@ import repoRegistry from '../../../reports/runtime/nexus_repo_intelligence_regis
 import { NEXUS_TABS } from '../../config/nexusTabs';
 import { getConnectorRegistry, connectorSafetyInvariants } from '../../hermes/nexus/nexusConnectorRegistry';
 import { listTableDetailed, type TableQueryResult } from '../../services/db';
+import { buildCapabilityOSSummary } from '../capabilities/capabilityRegistry';
 import type {
   DepartmentStatus,
   ExecutiveActionItem,
@@ -255,6 +256,40 @@ function metric(id: string, label: string, value: string | number, status: strin
   return { id, label, value, status, priority, evidence: source };
 }
 
+function buildCapabilitySummary() {
+  const summary = buildCapabilityOSSummary();
+  const priorityModes = ['PROHIBITED', 'BLOCKED_BY_POLICY', 'DEFERRED', 'NOT_CONFIGURED', 'APPROVAL_GATED', 'TEST_ONLY', 'READ_ONLY', 'ACTIVE'];
+  const topCapabilities = [...summary.capabilities]
+    .sort((a, b) => {
+      const aScore = priorityModes.indexOf(a.activationMode);
+      const bScore = priorityModes.indexOf(b.activationMode);
+      return (aScore === -1 ? 99 : aScore) - (bScore === -1 ? 99 : bScore);
+    })
+    .slice(0, 12)
+    .map((capability) => ({
+      capabilityId: capability.capabilityId,
+      name: capability.name,
+      departmentId: capability.departmentId,
+      activationMode: capability.activationMode,
+      approvalLevel: capability.approvalLevel,
+      healthStatus: capability.healthStatus,
+      credentialRequirements: capability.credentialRequirements,
+      dependencies: capability.dependencies,
+      rayApprovalState: capability.rayApprovalState,
+    }));
+  return {
+    total: summary.total,
+    byActivationMode: summary.byActivationMode,
+    byHealth: summary.byHealth,
+    approvalGated: summary.approvalGated,
+    awaitingRayApproval: summary.awaitingRayApproval,
+    missingCredentials: summary.missingCredentials,
+    dependencyBlocked: summary.dependencyBlocked,
+    proposals: summary.proposals.length,
+    topCapabilities,
+  };
+}
+
 function buildBrief(state: Omit<ExecutiveCommandCenterState, 'dailyBrief'>): ExecutiveBrief {
   const urgent = state.topActions.filter((item) => item.priority === 'P0' || item.priority === 'P1');
   return {
@@ -353,13 +388,14 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
 
   const customerEvidence = sourceFromResult(clientsResult, 'client_profiles');
   const revenueEvidence = sourceFromResult(ordersResult, 'client_orders');
+  const capabilityOS = buildCapabilitySummary();
   const metrics: ExecutiveMetric[] = [
     metric('pending_approvals', 'Pending approvals', approvals.filter((item) => item.state === 'PENDING').length, 'Ray decision queue', 'P0', approvals[0]?.evidence ?? sourceFromResult(approvalsResult, 'approvals')),
     metric('blocked_work', 'Blocked work', governedWork.filter((item) => item.lifecycle === 'BLOCKED' || item.lifecycle === 'FAILED').length, 'Governed execution', 'P0', sourceFromResult(tasksResult, 'task_requests')),
     metric('customer_records', 'Customer records', clientsResult.resultCount, clientsResult.status, 'P1', customerEvidence),
     metric('test_orders', 'Order records', ordersResult.resultCount, 'Test/live labeled revenue records', 'P2', revenueEvidence),
     metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH')),
-    metric('departments', 'Departments classified', departments.length, 'Founder Mode registry', 'P3', evidence('REPORT_BACKED', 'src/config/nexusTabs.ts', 'MEDIUM')),
+    metric('capabilities', 'Capabilities governed', capabilityOS.total, `${capabilityOS.approvalGated} approval-gated`, 'P3', evidence('REPORT_BACKED', 'Capability OS registry', 'HIGH')),
   ];
   const customerSummary: ExecutiveMetric[] = [
     metric('active_clients', 'Active test clients', clientsResult.resultCount, clientsResult.status, 'P1', customerEvidence),
@@ -414,6 +450,7 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
     revenueSummary,
     systemHealth,
     repoIntelligence,
+    capabilityOS,
     limitations: [
       'Read-only executive aggregation; no external action execution.',
       'Live Stripe configuration deferred by owner.',
@@ -437,7 +474,7 @@ export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState
     metric('customer_records', 'Customer records', 'UNKNOWN', 'Requires authenticated admin session', 'P1', evidence('UNKNOWN', 'Supabase client_profiles')),
     metric('stripe_mode', 'Stripe mode', 'TEST', 'Live deferred', 'P2', evidence('DEFERRED', 'Wave 1 Stripe policy', 'HIGH')),
     metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH')),
-    metric('departments', 'Departments classified', departments.length, 'Founder Mode registry', 'P3', evidence('REPORT_BACKED', 'src/config/nexusTabs.ts', 'MEDIUM')),
+    metric('capabilities', 'Capabilities governed', buildCapabilitySummary().total, 'Capability OS read model', 'P3', evidence('REPORT_BACKED', 'Capability OS registry', 'HIGH')),
   ];
   const topActions: ExecutiveActionItem[] = [
     {
@@ -480,6 +517,7 @@ export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState
     revenueSummary: [metrics[3]],
     systemHealth,
     repoIntelligence,
+    capabilityOS: buildCapabilitySummary(),
     limitations: ['Static snapshot used until authenticated admin session loads live Supabase summaries.'],
   };
   return { ...state, dailyBrief: buildBrief(state) };

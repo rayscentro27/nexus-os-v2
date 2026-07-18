@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-07-18T22:01:51.704Z",
+  "registry_status": "PASS",
+  "certification_state": "CAPABILITY_OS_IMPLEMENTED_TESTED_AND_BROWSER_CERTIFIED",
+  "capability_counts_by_mode": {
+    "ACTIVE": 26,
+    "APPROVAL_GATED": 19,
+    "READ_ONLY": 15,
+    "NOT_CONFIGURED": 12,
+    "PROHIBITED": 1,
+    "TEST_ONLY": 11,
+    "DEFERRED": 7,
+    "BLOCKED_BY_POLICY": 3
+  },
+  "health_counts": {
+    "HEALTHY": 48,
+    "UNKNOWN": 8,
+    "NOT_CONFIGURED": 19,
+    "PROHIBITED": 2,
+    "DEGRADED": 1,
+    "DEFERRED": 10,
+    "STALE": 3,
+    "BLOCKED": 3
+  },
+  "total_capabilities": 94,
+  "approval_gated": 19,
+  "missing_credential_count": 11,
+  "blocked_count": 5,
+  "proposal_count": 13,
+  "proposal_status": {
+    "AWAITING_REVIEW": 8,
+    "DEFERRED": 5
+  },
+  "test_results": {
+    "focused_capability_tests": "PASS 47/47",
+    "typecheck": "PASS",
+    "full_unit_suite": "PASS 1422/1422",
+    "build": "PASS_WITH_EXISTING_CHUNK_WARNING",
+    "rls": "PASS 45/45",
+    "executive_browser": "PASS 7/7",
+    "authenticated_nexus_3_browser": "PASS 18/18",
+    "document_processing_depth_recheck": "CERTIFIED_BUT_NEEDS_RECHECK; parser/storage/RLS covered, fresh synthetic upload-processing run deferred"
+  },
+  "safety": {
+    "live_stripe": "DEFERRED",
+    "live_trading": "BLOCKED_BY_POLICY",
+    "alpha_supabase_access": "PROHIBITED",
+    "github_mcp_reader": "NOT_CONFIGURED",
+    "github_mcp_writer": "APPROVAL_GATED_DISABLED",
+    "external_repositories_installed": false,
+    "credential_values_stored": false
+  }
+}

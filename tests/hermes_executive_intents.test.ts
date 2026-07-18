@@ -28,4 +28,18 @@ describe('Hermes executive intents', () => {
     expect(response.questionType).toBe('executive_revenue_status');
     expect(response.text).toMatch(/LIVE STRIPE CONFIGURATION DEFERRED UNTIL NEXUS 3.0 COMPLETION/);
   });
+
+  it('answers capability questions from the Capability OS read model', () => {
+    const response = hermesResponseRouter({ message: 'Which capabilities are active and blocked?', pageId: 'command' });
+    expect(response.questionType).toBe('capability_activation');
+    expect(response.text).toMatch(/Live Stripe is DEFERRED/);
+    expect(response.text).toMatch(/Alpha Supabase access is PROHIBITED/);
+  });
+
+  it('explains capability credential requirements without exposing values', () => {
+    const response = hermesResponseRouter({ message: 'Which capabilities need credentials?', pageId: 'command' });
+    expect(response.questionType).toBe('capability_credentials');
+    expect(response.text).toMatch(/Credential metadata stores identifiers only/);
+    expect(response.text).not.toMatch(/sk_live_|whsec_|password-value/);
+  });
 });

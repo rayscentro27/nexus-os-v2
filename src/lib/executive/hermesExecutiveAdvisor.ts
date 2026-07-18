@@ -1,4 +1,5 @@
 import { getExecutiveCommandCenterSnapshot } from './executiveCommandCenterAdapter';
+import { buildCapabilityOSSummary, getCapabilityRegistry } from '../capabilities/capabilityRegistry';
 
 export type ExecutiveIntent =
   | 'executive_daily_brief'
@@ -11,11 +12,35 @@ export type ExecutiveIntent =
   | 'executive_department_status'
   | 'executive_repo_intelligence'
   | 'executive_deployment_status'
-  | 'executive_recommendation_followup';
+  | 'executive_recommendation_followup'
+  | 'capability_status'
+  | 'capability_owner'
+  | 'capability_health'
+  | 'capability_dependencies'
+  | 'capability_credentials'
+  | 'capability_cost'
+  | 'capability_activation'
+  | 'capability_approval_requirement'
+  | 'capability_execution_block'
+  | 'capability_proposal_status'
+  | 'capability_compare';
 
 export function classifyExecutiveIntent(message: string): ExecutiveIntent | null {
   const lower = message.toLowerCase();
   if (/\b(persist|persisted|save|saved|source type|supabase)\b/.test(lower) && /\bapproval\b/.test(lower)) return null;
+  if (/\b(capabilit(y|ies)|tool policy|activation mode|credential|dependencies|dependency|who owns|approval requirement|can alpha use|access client information|why.*blocked|proposal status|do we already have)\b/.test(lower)) {
+    if (/\b(owner|who owns|department)\b/.test(lower)) return 'capability_owner';
+    if (/\b(health|healthy|unhealthy)\b/.test(lower)) return 'capability_health';
+    if (/\b(dependencies|dependency|depend on)\b/.test(lower)) return 'capability_dependencies';
+    if (/\b(credentials?|secrets?|tokens?|keys?)\b/.test(lower)) return 'capability_credentials';
+    if (/\b(cost|budget|usage)\b/.test(lower)) return 'capability_cost';
+    if (/\b(activate|activation|enabled|active)\b/.test(lower)) return 'capability_activation';
+    if (/\b(approval|ray approve|requires approval)\b/.test(lower)) return 'capability_approval_requirement';
+    if (/\b(blocked|can't|cannot|deny|denied|prohibited)\b/.test(lower)) return 'capability_execution_block';
+    if (/\b(proposal|repo intelligence|candidate)\b/.test(lower)) return 'capability_proposal_status';
+    if (/\b(compare|already have|replaces|overlap)\b/.test(lower)) return 'capability_compare';
+    return 'capability_status';
+  }
   if (/\b(daily brief|operating brief|brief me)\b/.test(lower)) return 'executive_daily_brief';
   if (/\b(attention today|what.*first|top priorities|priorit(y|ies)|what should we do first)\b/.test(lower)) return 'executive_priorities';
   if (/\b(system health|healthy|health status|top risks|risk)\b/.test(lower)) return 'executive_system_health';
@@ -32,6 +57,8 @@ export function classifyExecutiveIntent(message: string): ExecutiveIntent | null
 
 export function answerExecutiveIntent(intent: ExecutiveIntent): string {
   const state = getExecutiveCommandCenterSnapshot();
+  const capabilityOS = buildCapabilityOSSummary();
+  const capabilities = getCapabilityRegistry();
   const pending = state.approvals.filter((item) => item.state === 'PENDING').length;
   const blockedWork = state.governedWork.filter((item) => item.lifecycle === 'BLOCKED' || item.lifecycle === 'FAILED').length;
   const deferredHealth = state.systemHealth.filter((item) => item.status === 'DEFERRED' || item.status === 'BLOCKED_BY_POLICY' || item.status === 'PROHIBITED');
@@ -44,6 +71,54 @@ export function answerExecutiveIntent(intent: ExecutiveIntent): string {
 
   if (intent === 'executive_daily_brief') {
     return `Executive daily brief:\n\nFacts:\n- ${evidence}\n\nInterpretation:\n- P0 protections are holding: live Stripe is deferred, live trading is blocked, Alpha Supabase access is prohibited, and repo intelligence is read-only.\n\nRecommendations:\n1. Confirm no external actions are being activated.\n2. Review Ray Review if live approval rows appear after authentication.\n3. Keep repo-intelligence decisions as research dispositions only.\n\nUnknowns:\n- Live Supabase counts require an authenticated admin session in the browser.\n\nBlocked data:\n- Live Stripe credentials and live webhook are intentionally not configured.`;
+  }
+
+  if (intent === 'capability_status') {
+    return `Capability OS status:\n\nFacts:\n- ${capabilityOS.total} capabilities are registered.\n- ${capabilityOS.byActivationMode.ACTIVE ?? 0} active, ${capabilityOS.byActivationMode.READ_ONLY ?? 0} read-only, ${capabilityOS.byActivationMode.TEST_ONLY ?? 0} test-only, ${capabilityOS.approvalGated} approval-gated.\n- ${capabilityOS.byActivationMode.PROHIBITED ?? 0} prohibited and ${capabilityOS.byActivationMode.BLOCKED_BY_POLICY ?? 0} blocked by policy.\n\nRecommendation:\n- Treat the registry as the deterministic source before running or activating a capability.`;
+  }
+
+  if (intent === 'capability_owner') {
+    const examples = capabilities.slice(0, 5).map((item) => `${item.name}: ${item.departmentId}`).join('\n- ');
+    return `Capability ownership:\n\nFacts:\n- Every registered capability has a primary department and owner type.\n- Examples:\n- ${examples}\n\nRecommendation:\n- Use department ownership for routing, but Ray remains final authority for high-risk activation.`;
+  }
+
+  if (intent === 'capability_health') {
+    return `Capability health:\n\nFacts:\n- ${capabilityOS.byHealth.HEALTHY ?? 0} healthy.\n- ${capabilityOS.byHealth.NOT_CONFIGURED ?? 0} not configured.\n- ${capabilityOS.byHealth.DEFERRED ?? 0} deferred.\n- ${capabilityOS.byHealth.PROHIBITED ?? 0} prohibited.\n\nInterpretation:\n- Intentional policy blocks are not accidental failures.`;
+  }
+
+  if (intent === 'capability_dependencies') {
+    const withDeps = capabilities.filter((item) => item.dependencies.length).slice(0, 6).map((item) => `${item.name}: ${item.dependencies.join(', ')}`).join('\n- ');
+    return `Capability dependencies:\n\nFacts:\n- Dependency mappings are deterministic and typed.\n- ${withDeps || 'No dependency examples found in the snapshot.'}\n\nRecommendation:\n- Block execution preflight when critical dependencies are unhealthy or unknown.`;
+  }
+
+  if (intent === 'capability_credentials') {
+    const needsCreds = capabilities.filter((item) => item.credentialRequirements.length).slice(0, 6).map((item) => `${item.name}: ${item.credentialRequirements.join(', ')}`).join('\n- ');
+    return `Capability credentials:\n\nFacts:\n- Credential metadata stores identifiers only, never values.\n- ${needsCreds || 'No credential requirements found in the snapshot.'}\n\nRecommendation:\n- Missing credentials should block execution, not trigger credential entry through chat.`;
+  }
+
+  if (intent === 'capability_cost') {
+    const billable = capabilities.filter((item) => ['USAGE_BASED', 'SUBSCRIPTION', 'SELF_HOSTED', 'UNKNOWN'].includes(item.costModel)).slice(0, 6).map((item) => `${item.name}: ${item.costModel}`).join('\n- ');
+    return `Capability cost governance:\n\nFacts:\n- External and billable capabilities are classified by cost model.\n- ${billable || 'No billable capabilities found in the snapshot.'}\n\nRecommendation:\n- Unknown or usage-based cost should require approval before activation.`;
+  }
+
+  if (intent === 'capability_activation') {
+    return `Capability activation:\n\nFacts:\n- Activation modes include ACTIVE, READ_ONLY, APPROVAL_GATED, TEST_ONLY, NOT_CONFIGURED, DEFERRED, BLOCKED_BY_POLICY, PROHIBITED, and RETIRED.\n- Live Stripe is DEFERRED.\n- Live trading is BLOCKED_BY_POLICY.\n- Alpha Supabase access is PROHIBITED.\n\nRecommendation:\n- Do not treat registered or proposed capabilities as active.`;
+  }
+
+  if (intent === 'capability_approval_requirement') {
+    return `Capability approval requirements:\n\nFacts:\n- ${capabilityOS.awaitingRayApproval} capabilities are awaiting Ray approval or review state.\n- High-risk activation uses RAY_REVIEW, RAY_EXPLICIT, or LEGAL_AND_RAY.\n- Hermes cannot approve its own proposals.\n\nRecommendation:\n- Use Ray Review for bounded evaluation and Ray explicit approval for live Stripe, writer profiles, or external publishing.`;
+  }
+
+  if (intent === 'capability_execution_block') {
+    return `Capability execution blocks:\n\nFacts:\n- Preflight blocks prohibited, deferred, not configured, missing-credential, unhealthy-dependency, data-policy, and cost-limit failures.\n- Denials emit sanitized capability preflight events.\n\nRecommendation:\n- Read the denial reason before creating a new task or retrying execution.`;
+  }
+
+  if (intent === 'capability_proposal_status') {
+    return `Capability proposal status:\n\nFacts:\n- ${capabilityOS.proposals.length} repo-intelligence candidates are mapped into proposals.\n- Proposals do not activate capabilities automatically.\n- Unknown licenses prevent code-reuse approval.\n\nRecommendation:\n- Review proposals through Ray Review before any bounded evaluation.`;
+  }
+
+  if (intent === 'capability_compare') {
+    return `Capability comparison:\n\nFacts:\n- Repo Intelligence proposals carry existing Nexus overlap before any integration decision.\n- The Capability OS can recommend replacing a candidate with an existing Nexus capability when overlap is stronger.\n\nRecommendation:\n- Prefer studying architecture or using existing Nexus capability before adding a dependency.`;
   }
 
   if (intent === 'executive_priorities') {

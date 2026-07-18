@@ -1,0 +1,4726 @@
+{
+  "generated_at": "2026-07-18T21:52:54.202Z",
+  "source": "src/lib/capabilities/capabilityRegistry.ts",
+  "warning": "Sanitized registry. Credential identifiers only; no values.",
+  "capabilities": [
+    {
+      "capability_id": "executive_command_center",
+      "name": "Executive Command Center",
+      "description": "Founder Mode operating workspace for evidence-backed company status.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "executive_daily_brief",
+        "executive_system_health"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Wave 1 browser certification",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/executive-command-center-certification.spec.ts"
+      ],
+      "rollback_plan": "Revert CommandCenter route to previous committed implementation.",
+      "disable_plan": "Remove admin navigation entry or gate route behind admin allowlist.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/components/CommandCenter.jsx",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "founder_today_view",
+      "name": "Founder Today View",
+      "description": "Prioritized P0-P4 operating attention view.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "executive_command_center"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Executive adapter tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Remove Today panel from Command Center.",
+      "disable_plan": "Hide panel while preserving other executive surfaces.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/executive/executiveCommandCenterAdapter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "executive_daily_brief",
+      "name": "Executive Daily Brief",
+      "description": "Deterministic facts, interpretations, recommendations, unknowns, and blocked-data brief.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "executive_system_health",
+        "ray_review",
+        "governed_work"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Executive adapter tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Disable daily brief panel and retain source panels.",
+      "disable_plan": "Return evidence unavailable in Hermes executive route.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/executive/executiveCommandCenterAdapter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "executive_system_health",
+      "name": "Executive System Health",
+      "description": "Normalized health read model over connector, policy, and system-health evidence.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "connector_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Connector registry and tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Fall back to legacy systemHealthAdapter output.",
+      "disable_plan": "Hide health panel and preserve reports.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/executive/executiveCommandCenterAdapter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "ray_review",
+      "name": "Ray Review",
+      "description": "Ray approval queue and final authority surface.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "task_requests",
+        "approvals"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Supabase approvals/task_requests",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/ray_review_persistence.test.ts"
+      ],
+      "rollback_plan": "Stop creating approval proposals; retain existing rows.",
+      "disable_plan": "Set approval creation unavailable in Hermes/UI.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "task_requests + approvals",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "governed_work",
+      "name": "Governed Work",
+      "description": "Execution read model using task_requests to approvals to agent_jobs to nexus_events.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "task_requests",
+        "approvals",
+        "agent_jobs",
+        "nexus_events"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Executive governed-work adapter",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Disable job queue actions and keep read-only task view.",
+      "disable_plan": "Block preflight before agent_jobs execution.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/lib/executive/executiveCommandCenterAdapter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "deployment_visibility",
+      "name": "Deployment Visibility",
+      "description": "Read-only branch, build, and deployment evidence for releases.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "production_build"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Git and build reports",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "npm run build"
+      ],
+      "rollback_plan": "Hide deployment panel.",
+      "disable_plan": "Use local reports only.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "git HEAD + build output",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "department_status",
+      "name": "Department Status",
+      "description": "Truthful department activation registry.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "executive_command_center"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Wave 1 adapter",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Fall back to static department list.",
+      "disable_plan": "Hide department panel.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/executive/executiveCommandCenterAdapter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "customer_operations_summary",
+      "name": "Customer Operations Summary",
+      "description": "Authorized aggregate customer workflow summary.",
+      "capability_type": "ADMIN_FEATURE",
+      "department_id": "customer_support",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "customer_support",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "client_authentication",
+        "admin_authentication"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Supabase aggregate reads",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/nexus3-final-authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Hide aggregate panel; keep admin detail routes.",
+      "disable_plan": "Return blocked aggregate state.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "client_profiles/client_documents aggregate reads",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "revenue_opportunity_summary",
+      "name": "Revenue and Opportunity Summary",
+      "description": "Test-mode and report-backed revenue operating summary.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "FINANCIAL_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "stripe_test_checkout",
+        "order_creation",
+        "fulfillment"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue tests and reports",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Hide revenue summary; keep Stripe test path unchanged.",
+      "disable_plan": "Display revenue evidence unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "reports/revenue + revenue_activation tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "repo_intelligence_executive_view",
+      "name": "Repo Intelligence Executive View",
+      "description": "Read-only candidate visibility and proposal governance.",
+      "capability_type": "EXECUTIVE_FEATURE",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Registry JSON parse",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Hide repo panel; keep reports.",
+      "disable_plan": "Mark proposals deferred.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_repo_intelligence_registry.json",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "hermes_conversational_advisor",
+      "name": "Hermes Conversational Advisor",
+      "description": "Private advisor and router for Nexus context.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_response_router"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Hermes tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_executive_intents.test.ts"
+      ],
+      "rollback_plan": "Use static fallback responses.",
+      "disable_plan": "Disable Hermes entry points.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermesResponseRouter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "hermes_executive_advisor",
+      "name": "Hermes Executive Advisor",
+      "description": "Evidence-backed executive question answering.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "executive_command_center"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Wave 1 Hermes tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_executive_intents.test.ts"
+      ],
+      "rollback_plan": "Remove executive intent routing.",
+      "disable_plan": "Return capability unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/executive/hermesExecutiveAdvisor.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "hermes_work_request_creation",
+      "name": "Hermes Work-Request Creation",
+      "description": "Hermes may prepare governed task requests only when explicit execution intent is present.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS",
+        "CLIENT_PII"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "task_requests",
+        "ray_review"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Hermes routing tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_executive_intents.test.ts"
+      ],
+      "rollback_plan": "Disable write actions and keep advisory behavior.",
+      "disable_plan": "Reject work-creation preflight.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "Hermes explicit execution intent contract",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "hermes_approval_preparation",
+      "name": "Hermes Approval Preparation",
+      "description": "Draft approval context without self-approval.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "ray_review"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Ray Review tests",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/ray_review_persistence.test.ts"
+      ],
+      "rollback_plan": "Disable approval draft action.",
+      "disable_plan": "Return approval preparation unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "approval queue contract",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "hermes_research_handoff",
+      "name": "Hermes Research Handoff",
+      "description": "Governed handoff from Hermes to Alpha/research lanes.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS",
+        "FINANCIAL_DATA"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "alpha_independent_research"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Alpha boundary tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_alpha_no_supabase_guard.test.ts"
+      ],
+      "rollback_plan": "Disable Alpha handoff prompts.",
+      "disable_plan": "Keep Hermes answer local only.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "Alpha boundary tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "hermes_selection_continuity",
+      "name": "Hermes Selection and Advisory Continuity",
+      "description": "Follow-up context without accidental execution.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_conversational_advisor"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Hermes continuity tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_advisory_continuity_product_routing.test.ts"
+      ],
+      "rollback_plan": "Disable selection memory.",
+      "disable_plan": "Treat follow-ups as new questions.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "Hermes continuity tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "alpha_independent_research",
+      "name": "Alpha Independent Research",
+      "description": "Separate outside-opinion research brain.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "alpha_supabase_access_prohibition"
+      ],
+      "cost_model": "USAGE_BASED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Alpha tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_alpha_no_supabase_guard.test.ts"
+      ],
+      "rollback_plan": "Disable Alpha provider routing and use report-only research.",
+      "disable_plan": "Block Alpha handoff actions.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/alpha + Alpha tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "alpha_url_review",
+      "name": "Alpha URL Review",
+      "description": "Bounded public URL review lane.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [
+        "FIRECRAWL_API_KEY"
+      ],
+      "dependencies": [
+        "alpha_independent_research"
+      ],
+      "cost_model": "USAGE_BASED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Firecrawl preflight reports",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_url_review_safety.test.ts"
+      ],
+      "rollback_plan": "Keep URL review report-backed only.",
+      "disable_plan": "Reject URL review execution preflight.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/alpha/alpha_url_review_firecrawl_preflight.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "alpha_web_search_adapter",
+      "name": "Alpha Web Search Adapter",
+      "description": "Public web-search research adapter with cost and source controls.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "alpha_independent_research"
+      ],
+      "cost_model": "USAGE_BASED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Alpha web-search tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_web_search_connector.test.ts"
+      ],
+      "rollback_plan": "Disable web-search adapter.",
+      "disable_plan": "Return report-only search recommendations.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "tests/alpha_web_search_connector.test.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "alpha_provider_routing",
+      "name": "Alpha Provider Routing",
+      "description": "Model/provider routing for Alpha research.",
+      "capability_type": "MODEL_PROVIDER",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [
+        "OPENROUTER_API_KEY"
+      ],
+      "dependencies": [
+        "alpha_independent_research"
+      ],
+      "cost_model": "USAGE_BASED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Provider reports",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_provider_routing_v2.test.ts"
+      ],
+      "rollback_plan": "Use local/report-backed research only.",
+      "disable_plan": "Reject model-provider preflight.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/alpha/alpha_provider_activation_status.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "alpha_report_generation",
+      "name": "Alpha Report Generation",
+      "description": "Local/report-backed Alpha findings output.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "OPERATOR",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "alpha_independent_research"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Report artifacts",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_alpha_research_adapter_v1.test.ts"
+      ],
+      "rollback_plan": "Stop generating new reports and preserve existing artifacts.",
+      "disable_plan": "Mark Alpha reporting paused.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "reports/alpha",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "alpha_supabase_access_prohibition",
+      "name": "Alpha Supabase Access Prohibition",
+      "description": "Hard boundary: Alpha cannot access unrestricted Supabase or client data.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "PROHIBITED",
+      "approval_level": "LEGAL_AND_RAY",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "NONE"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Alpha no-Supabase guard",
+      "health_status": "PROHIBITED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/hermes_alpha_no_supabase_guard.test.ts"
+      ],
+      "rollback_plan": "Boundary must not be rolled back without legal/Ray decision.",
+      "disable_plan": "N/A: this is a prohibition capability.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "REJECTED",
+      "evidence": [
+        {
+          "source": "tests/hermes_alpha_no_supabase_guard.test.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "client_authentication",
+      "name": "Client Authentication",
+      "description": "Supabase client login and session handling.",
+      "capability_type": "CLIENT_FEATURE",
+      "department_id": "customer_support",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "customer_support",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "supabase_rls"
+      ],
+      "cost_model": "SUBSCRIPTION",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Authenticated browser tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Disable client portal entry.",
+      "disable_plan": "Route clients to login unavailable notice.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "authenticated browser certification",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "admin_authentication",
+      "name": "Admin Authentication",
+      "description": "Synthetic admin/admin allowlist access.",
+      "capability_type": "ADMIN_FEATURE",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE",
+        "CLIENT_PII",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "supabase_rls"
+      ],
+      "cost_model": "SUBSCRIPTION",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Authenticated admin browser tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/nexus3-final-authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Disable admin route access.",
+      "disable_plan": "Show admin login required.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "synthetic-admin certification",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "client_admin_route_guards",
+      "name": "Client/Admin Route Guards",
+      "description": "Route separation for client and admin surfaces.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "client_authentication",
+        "admin_authentication"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Authenticated browser tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/executive-command-center-certification.spec.ts"
+      ],
+      "rollback_plan": "Deny admin route by default.",
+      "disable_plan": "Keep admin route inaccessible.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "client denial tests",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "document_upload",
+      "name": "Document Upload",
+      "description": "Contextual client document upload UI.",
+      "capability_type": "CLIENT_FEATURE",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "document_storage",
+        "supabase_rls"
+      ],
+      "cost_model": "SUBSCRIPTION",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Authenticated Nexus 3 tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/nexus3-final-authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Disable upload actions and keep document list read-only.",
+      "disable_plan": "Show upload unavailable with retention notice.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "Nexus 3 authenticated certification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "document_storage",
+      "name": "Document Storage",
+      "description": "Private Supabase storage-backed document records.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "supabase_rls"
+      ],
+      "cost_model": "SUBSCRIPTION",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Storage/RLS certification",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "scripts/checks/certify_authenticated_rls.py"
+      ],
+      "rollback_plan": "Stop new uploads; preserve private files.",
+      "disable_plan": "Set upload capability blocked.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "RLS 45/45",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "bounded_document_worker",
+      "name": "Bounded Document Worker",
+      "description": "Existing bounded synthetic document-processing worker.",
+      "capability_type": "DOCUMENT_PROCESSOR",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "SUPABASE_PRIVILEGED_SERVER_CREDENTIAL"
+      ],
+      "dependencies": [
+        "document_storage"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Focused Wave 2 recheck",
+      "health_status": "DEGRADED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/goclear_readiness_internal_test_runner.test.ts"
+      ],
+      "rollback_plan": "Pause worker and keep uploaded records pending manual review.",
+      "disable_plan": "Set processing status to manual review required.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/nexus_research/internal_test_runner/readiness_reports",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": "Classified CERTIFIED_BUT_NEEDS_RECHECK until a fresh synthetic upload-processing run is separately executed."
+    },
+    {
+      "capability_id": "credit_parsing",
+      "name": "Credit Parsing",
+      "description": "Synthetic/report-backed credit parser foundation.",
+      "capability_type": "DOCUMENT_PROCESSOR",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "bounded_document_worker"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Parser tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/goclear_readiness_report_builder.test.ts"
+      ],
+      "rollback_plan": "Mark parsed records needs manual review.",
+      "disable_plan": "Disable parser action and preserve raw upload.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "readiness report builder tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "canonical_account_grouping",
+      "name": "Canonical Account Grouping",
+      "description": "Preserves ambiguous credit accounts where uncertainty remains.",
+      "capability_type": "DOCUMENT_PROCESSOR",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "credit_parsing"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Credit tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "scripts/checks/check_canonical_credit_matching_foundation.py"
+      ],
+      "rollback_plan": "Disable automatic grouping and show bureau records separately.",
+      "disable_plan": "Require manual admin review.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "canonical matching certification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "discrepancy_detection",
+      "name": "Discrepancy Detection",
+      "description": "Detects account/bureau/ownership discrepancies without unsafe merge.",
+      "capability_type": "DOCUMENT_PROCESSOR",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "canonical_account_grouping"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Credit workflow certification",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Route all discrepancies to manual review.",
+      "disable_plan": "Hide automated discrepancy claim and request documents.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "Persona B/C certification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "strategy_matching",
+      "name": "Strategy Matching",
+      "description": "Maps discrepancies and readiness context to safe recommendations.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE",
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "discrepancy_detection"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Strategy matcher tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "scripts/checks/check_credit_strategy_matcher.py"
+      ],
+      "rollback_plan": "Show manual recommendation review required.",
+      "disable_plan": "Disable automatic strategy cards.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "strategy matching certification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "comparison_outcome_observation",
+      "name": "Comparison and Outcome Observation",
+      "description": "Non-causal observation language for credit/funding comparisons.",
+      "capability_type": "CLIENT_FEATURE",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "strategy_matching"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Nexus 3 certification",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/nexus3-final-authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Hide outcome observations.",
+      "disable_plan": "Show factual status only.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "non-causal comparison certification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "client_review_request",
+      "name": "Client Review Request",
+      "description": "Client request-review workflow without duplicate active review.",
+      "capability_type": "CLIENT_FEATURE",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "entitlement_foundation"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Review intake/admin tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/readiness_review_intake_admin_flow.test.ts"
+      ],
+      "rollback_plan": "Disable request submission; retain current status.",
+      "disable_plan": "Show review unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "review intake tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "stripe_test_checkout",
+      "name": "Stripe Test Checkout",
+      "description": "Certified test-mode checkout creation.",
+      "capability_type": "PAYMENT",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "FINANCIAL_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "STRIPE_TEST_SECRET_KEY",
+        "VITE_STRIPE_TEST_PUBLISHABLE_KEY"
+      ],
+      "dependencies": [
+        "stripe_webhook",
+        "order_creation"
+      ],
+      "cost_model": "FREE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Disable checkout creation function.",
+      "disable_plan": "Set checkout unavailable in UI.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "Stripe test certification",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "stripe_webhook",
+      "name": "Stripe Webhook",
+      "description": "Signed test webhook verification and idempotent fulfillment.",
+      "capability_type": "PAYMENT",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "FINANCIAL_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "STRIPE_TEST_WEBHOOK_SECRET"
+      ],
+      "dependencies": [
+        "order_creation",
+        "fulfillment"
+      ],
+      "cost_model": "FREE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Keep webhook endpoint but reject all unverified events.",
+      "disable_plan": "Return safe webhook disabled response.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "Stripe webhook tests",
+          "state": "LIVE",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "order_creation",
+      "name": "Order Creation",
+      "description": "Internal pending order creation for approved offer keys.",
+      "capability_type": "PAYMENT",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "FINANCIAL_DATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL"
+      ],
+      "dependencies": [
+        "stripe_test_checkout"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Disable checkout offer mapping.",
+      "disable_plan": "Reject order creation preflight.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "client_orders tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "fulfillment",
+      "name": "Fulfillment",
+      "description": "Exactly-one readiness-review fulfillment from trusted webhook path.",
+      "capability_type": "PAYMENT",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE",
+        "FINANCIAL_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "stripe_webhook",
+        "order_creation"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Mark fulfillment paused; preserve order/payment record.",
+      "disable_plan": "Reject non-webhook fulfillment activation.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "service_fulfillments tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "entitlement_foundation",
+      "name": "Entitlement Foundation",
+      "description": "Paid/test entitlement visibility for customer/admin workflows.",
+      "capability_type": "PAYMENT",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE",
+        "FINANCIAL_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "fulfillment"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Remove entitlement access from UI and keep records.",
+      "disable_plan": "Show payment not verified until webhook truth exists.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "entitlement visibility tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "live_stripe",
+      "name": "Live Stripe",
+      "description": "Live payments are intentionally deferred until Ray authorizes production payment activation.",
+      "capability_type": "PAYMENT",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_EXPLICIT",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "FINANCIAL_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "STRIPE_LIVE_SECRET_KEY",
+        "STRIPE_LIVE_WEBHOOK_SECRET",
+        "STRIPE_LIVE_PRICE_READINESS_REVIEW"
+      ],
+      "dependencies": [
+        "stripe_test_checkout",
+        "stripe_webhook"
+      ],
+      "cost_model": "USAGE_BASED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Owner policy",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Keep STRIPE_MODE=test and live variables absent.",
+      "disable_plan": "Reject live checkout preflight.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "DEFERRED",
+      "evidence": [
+        {
+          "source": "LIVE STRIPE CONFIGURATION DEFERRED UNTIL NEXUS 3.0 COMPLETION",
+          "state": "DEFERRED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "affiliate_link_management",
+      "name": "Affiliate-Link Management",
+      "description": "Report-backed affiliate/referral opportunity tracking.",
+      "capability_type": "PAYMENT",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "FINANCIAL_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "revenue_opportunity_summary"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Revenue reports",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/revenue_activation.test.ts"
+      ],
+      "rollback_plan": "Remove affiliate links from customer-facing surfaces.",
+      "disable_plan": "Keep as report-only opportunity.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/research/nexus_money_engine_recommendations.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "funding_readiness_review",
+      "name": "Funding Readiness Review",
+      "description": "$97 readiness-review service workflow in test-mode foundation.",
+      "capability_type": "CLIENT_FEATURE",
+      "department_id": "credit_funding",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "credit_funding",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE",
+        "CLIENT_PII"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "client_review_request",
+        "entitlement_foundation"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Nexus 3 authenticated tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/nexus3-final-authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Pause review intake and preserve paid/test records.",
+      "disable_plan": "Show review unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": true,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "Nexus 3 final certification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "revenue_recommendations",
+      "name": "Revenue Recommendations",
+      "description": "Research-backed monetization recommendations for Ray review.",
+      "capability_type": "ANALYTICS",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_executive_view"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Money-engine report",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Use static report only.",
+      "disable_plan": "Mark recommendations stale.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/research/nexus_money_engine_recommendations.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "task_requests",
+      "name": "Task Requests",
+      "description": "Canonical requested-work primitive.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "supabase_rls"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Supabase task_requests",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Stop new task requests; retain rows.",
+      "disable_plan": "Reject task request creation.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "task_requests table",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "approvals",
+      "name": "Approvals",
+      "description": "Canonical approval primitive.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [
+        "task_requests"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Supabase approvals",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/ray_review_persistence.test.ts"
+      ],
+      "rollback_plan": "Stop executing approval-gated actions; preserve audit rows.",
+      "disable_plan": "All high-risk preflights return REQUIRES_APPROVAL.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "approvals table",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "agent_jobs",
+      "name": "Agent Jobs",
+      "description": "Canonical queued execution primitive.",
+      "capability_type": "AUTOMATION",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "SUPABASE_PRIVILEGED_SERVER_CREDENTIAL"
+      ],
+      "dependencies": [
+        "approvals"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "manual bounded runner",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Stop runner; leave queued jobs unprocessed.",
+      "disable_plan": "Set runner disabled and preflight denied.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "scripts/nexus_runner.py",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "nexus_events",
+      "name": "Nexus Events",
+      "description": "Canonical event/audit primitive.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL"
+      ],
+      "dependencies": [
+        "supabase_rls"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "nexus_events table",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/executive_command_center_adapter.test.ts"
+      ],
+      "rollback_plan": "Preserve events and stop new event emits.",
+      "disable_plan": "Use local sanitized event output only.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "nexus_events table",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "manual_bounded_runner",
+      "name": "Manual Bounded Runner",
+      "description": "Safe manual executor for queued agent_jobs.",
+      "capability_type": "AUTOMATION",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "SUPABASE_PRIVILEGED_SERVER_CREDENTIAL"
+      ],
+      "dependencies": [
+        "agent_jobs",
+        "nexus_events"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "script audit",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_operational_safety_guards.test.ts"
+      ],
+      "rollback_plan": "Do not start runner.",
+      "disable_plan": "Manual command remains unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "scripts/nexus_runner.py",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "activation_mode_registry",
+      "name": "Activation-Mode Registry",
+      "description": "Legacy/report-backed activation mode evidence.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "legacy report",
+      "health_status": "STALE",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_operational_safety_guards.test.ts"
+      ],
+      "rollback_plan": "Keep as report-only compatibility source.",
+      "disable_plan": "Stop reading legacy report.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_activation_mode_registry.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "connector_registry",
+      "name": "Connector Registry",
+      "description": "Legacy connector inventory feeding Capability OS compatibility.",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "nexusConnectorRegistry.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Use static capability registry only.",
+      "disable_plan": "Stop connector compatibility import.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "system_health_adapter",
+      "name": "System-Health Adapter",
+      "description": "Legacy system health adapter retained as compatibility source.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "connector_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "systemHealthAdapter.ts",
+      "health_status": "STALE",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_operations_panel_visibility.test.ts"
+      ],
+      "rollback_plan": "Use Executive health adapter only.",
+      "disable_plan": "Stop importing legacy adapter.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/systemHealthAdapter.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "process_registry",
+      "name": "Process Registry",
+      "description": "Runtime process registry evidence; not a scheduler authority.",
+      "capability_type": "AUTOMATION",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "OPERATOR",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "data/operations/nexus_process_registry.json",
+      "health_status": "STALE",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_operational_reports.test.ts"
+      ],
+      "rollback_plan": "Use ps/lsof checks only.",
+      "disable_plan": "Ignore stale registry.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "data/operations/nexus_process_registry.json",
+          "state": "CACHED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "repo_intelligence_registry",
+      "name": "Repo-Intelligence Registry",
+      "description": "Sanitized candidate registry for open-source and external tool research.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "JSON parse",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Keep reports; hide capability proposals.",
+      "disable_plan": "Mark registry unavailable.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_repo_intelligence_registry.json",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "competitive_pattern_library",
+      "name": "Competitive Pattern Library",
+      "description": "Architecture/workflow pattern research only.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Research report",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Use markdown report only.",
+      "disable_plan": "Hide pattern-library proposals.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/research/nexus_top_repo_pattern_library.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "feature_gap_map",
+      "name": "Competitive Feature Gap Map",
+      "description": "Feature-pattern gap analysis without automatic implementation.",
+      "capability_type": "ANALYTICS",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Research report",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Use report only.",
+      "disable_plan": "Hide gap-map proposals.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/research/nexus_competitive_feature_gap_map.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "money_engine_recommendations",
+      "name": "Money-Engine Recommendations",
+      "description": "Revenue opportunity recommendation report.",
+      "capability_type": "ANALYTICS",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Research report",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Keep report only.",
+      "disable_plan": "Hide recommendation proposals.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/research/nexus_money_engine_recommendations.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "github_mcp_reader",
+      "name": "GitHub MCP Reader",
+      "description": "Planned controlled read-only external repository intelligence tool.",
+      "capability_type": "MCP_SERVER",
+      "department_id": "research",
+      "supporting_departments": [
+        "engineering"
+      ],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [
+        "GITHUB_MCP_AUTH"
+      ],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Repo-intelligence registry",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Remove candidate from active planning surfaces; preserve registry evidence.",
+      "disable_plan": "Keep GitHub MCP unconfigured.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_repo_intelligence_registry.json",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "github_mcp_writer",
+      "name": "GitHub MCP Writer",
+      "description": "Disabled future profile for bounded engineering writes, never direct main or autonomous merge.",
+      "capability_type": "MCP_SERVER",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_EXPLICIT",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [
+        "GITHUB_MCP_AUTH"
+      ],
+      "dependencies": [
+        "github_mcp_reader"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Policy registry",
+      "health_status": "BLOCKED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Keep writer profile disabled.",
+      "disable_plan": "Block all write/install/merge actions.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "GitHub MCP governance policy",
+          "state": "DEFERRED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": "Direct main writes, autonomous merge, secret access, permission changes, and production deployment are prohibited."
+    },
+    {
+      "capability_id": "firecrawl_adapter_foundation",
+      "name": "Firecrawl Adapter Foundation",
+      "description": "Future URL extraction candidate; not configured.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [
+        "FIRECRAWL_API_KEY"
+      ],
+      "dependencies": [
+        "alpha_url_review"
+      ],
+      "cost_model": "USAGE_BASED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Firecrawl reports",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_url_review_safety.test.ts"
+      ],
+      "rollback_plan": "Keep URL review disabled.",
+      "disable_plan": "Reject Firecrawl preflight.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/alpha/alpha_url_review_firecrawl_preflight.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "crawl4ai_candidate",
+      "name": "Crawl4AI Candidate",
+      "description": "Repo-intelligence candidate only; no integration approved.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Repo-intelligence registry",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Remove from proposal queue.",
+      "disable_plan": "Keep candidate deferred.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_repo_intelligence_registry.json",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "langgraph_candidate",
+      "name": "LangGraph Candidate",
+      "description": "Architecture study candidate only.",
+      "capability_type": "RESEARCH_TOOL",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "repo_intelligence_registry"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Repo-intelligence registry",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Remove from proposal queue.",
+      "disable_plan": "Keep candidate deferred.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_repo_intelligence_registry.json",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "n8n_candidate",
+      "name": "n8n Candidate",
+      "description": "External workflow orchestration candidate; not installed.",
+      "capability_type": "AUTOMATION",
+      "department_id": "operations",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "operations",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_EXPLICIT",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "capability_os_registry"
+      ],
+      "cost_model": "SELF_HOSTED",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Repo-intelligence registry",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/capability_os.test.ts"
+      ],
+      "rollback_plan": "Keep candidate deferred.",
+      "disable_plan": "No n8n install or config exists.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_repo_intelligence_registry.json",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "typescript_verification",
+      "name": "TypeScript Verification",
+      "description": "Static typechecking gate.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "npm run typecheck",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "npm run typecheck"
+      ],
+      "rollback_plan": "Revert failing code changes.",
+      "disable_plan": "Cannot disable before release.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "local verification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "production_build",
+      "name": "Production Build",
+      "description": "Vite production build gate.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "SOURCE_CODE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "typescript_verification"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "npm run build",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "npm run build"
+      ],
+      "rollback_plan": "Revert release commit.",
+      "disable_plan": "Block deployment.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "local verification",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "authenticated_playwright",
+      "name": "Authenticated Playwright",
+      "description": "Synthetic authenticated browser certification.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "E2E_ADMIN_EMAIL",
+        "E2E_ADMIN_PASSWORD"
+      ],
+      "dependencies": [
+        "client_authentication",
+        "admin_authentication"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Playwright suites",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/executive-command-center-certification.spec.ts"
+      ],
+      "rollback_plan": "Skip authenticated browser gate only with documented blocker.",
+      "disable_plan": "Mark certification blocked.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "authenticated browser suites",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "supabase_rls",
+      "name": "Supabase RLS Harness",
+      "description": "Tenant isolation and policy certification.",
+      "capability_type": "SUPABASE_WORKFLOW",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "CLIENT_PII",
+        "CLIENT_AGGREGATE",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "SUBSCRIPTION",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "RLS harness",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "scripts/checks/certify_authenticated_rls.py"
+      ],
+      "rollback_plan": "Stop release; do not weaken policies.",
+      "disable_plan": "Block production release if failing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "RLS 45/45",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "netlify_deployment",
+      "name": "Netlify Deployment",
+      "description": "Production frontend deployment target.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "ADMIN",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "SOURCE_CODE",
+        "PRODUCTION_CONTROL"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "NETLIFY_AUTH_TOKEN",
+        "NETLIFY_SITE_ID"
+      ],
+      "dependencies": [
+        "production_build"
+      ],
+      "cost_model": "SUBSCRIPTION",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "deployment reports",
+      "health_status": "UNKNOWN",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "npm run build"
+      ],
+      "rollback_plan": "Redeploy previous known-good commit.",
+      "disable_plan": "Do not trigger deployment.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/runtime deployment evidence",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "route_verification",
+      "name": "Route Verification",
+      "description": "Browser route availability and no-regression checks.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "SOURCE_CODE",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "production_build"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Playwright tests",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/e2e/nexus3-final-authenticated-certification.spec.ts"
+      ],
+      "rollback_plan": "Revert route change.",
+      "disable_plan": "Block release certification.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "route certification tests",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "secret_scanning",
+      "name": "Secret Scanning",
+      "description": "Changed-file and report secret/privacy scans.",
+      "capability_type": "DEPLOYMENT",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "NONE",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "SOURCE_CODE",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "rg scan",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "manual rg secret scan"
+      ],
+      "rollback_plan": "Remove exposed secret before commit.",
+      "disable_plan": "Cannot disable before release.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "changed-file secret scan",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "trading_research",
+      "name": "Trading Research",
+      "description": "Paper/research trading analysis only.",
+      "capability_type": "TRADING_RESEARCH",
+      "department_id": "trading",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "trading",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "trading reports",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_trading_research_pipeline.test.ts"
+      ],
+      "rollback_plan": "Keep research reports only.",
+      "disable_plan": "Hide trading research lane.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "reports/manual_publish/trading_activation_latest.md",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "backtesting",
+      "name": "Backtesting",
+      "description": "Synthetic/paper backtesting only.",
+      "capability_type": "TRADING_RESEARCH",
+      "department_id": "trading",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "trading",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "PUBLIC_DATA",
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "trading_research"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "trading tests/reports",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_trading_research_pipeline.test.ts"
+      ],
+      "rollback_plan": "Stop backtest scripts.",
+      "disable_plan": "Keep backtesting unavailable.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "paper backtesting reports",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "paper_trading_status",
+      "name": "Paper-Trading Status",
+      "description": "Paper/practice status visibility only.",
+      "capability_type": "TRADING_RESEARCH",
+      "department_id": "trading",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "trading",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "FINANCIAL_DATA",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "trading_research"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "trading reports",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_trading_research_pipeline.test.ts"
+      ],
+      "rollback_plan": "Hide paper trading status.",
+      "disable_plan": "No trading visibility.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": true,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "trading status reports",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "live_trading",
+      "name": "Live Trading",
+      "description": "Funded/broker trading execution is blocked by policy.",
+      "capability_type": "TRADING_RESEARCH",
+      "department_id": "trading",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "trading",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "BLOCKED_BY_POLICY",
+      "approval_level": "LEGAL_AND_RAY",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "NONE"
+      ],
+      "prohibited_data_classes": [
+        "FINANCIAL_DATA",
+        "CREDENTIALS",
+        "PRODUCTION_CONTROL"
+      ],
+      "credential_requirements": [
+        "BROKER_LIVE_TOKEN"
+      ],
+      "dependencies": [
+        "trading_research"
+      ],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "Trading protection policy",
+      "health_status": "PROHIBITED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/alpha_trading_research_pipeline.test.ts"
+      ],
+      "rollback_plan": "Policy block cannot be rolled back in this wave.",
+      "disable_plan": "Reject all live-trading preflight.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "REJECTED",
+      "evidence": [
+        {
+          "source": "LIVE_TRADING_ENABLED=false policy",
+          "state": "BLOCKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "supabase_connector",
+      "name": "Supabase Connector",
+      "description": "Nexus authentication and approved storage",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "VITE_SUPABASE_URL",
+        "VITE_SUPABASE_ANON_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "netlify_connector",
+      "name": "Netlify Connector",
+      "description": "Preview deployment",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "NETLIFY_AUTH_TOKEN",
+        "NETLIFY_SITE_ID"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "github_connector",
+      "name": "GitHub Connector",
+      "description": "Source control and CI",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "GITHUB_TOKEN"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "cloudflare_connector",
+      "name": "Cloudflare tunnel Connector",
+      "description": "Secure tunnel",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "CLOUDFLARE_TUNNEL_TOKEN"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "resend_connector",
+      "name": "Resend Connector",
+      "description": "Transactional email",
+      "capability_type": "CONNECTOR",
+      "department_id": "customer_support",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "customer_support",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "BLOCKED_BY_POLICY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "RESEND_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "BLOCKED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "meta_connector",
+      "name": "Meta/Facebook/Instagram Connector",
+      "description": "Social publishing and insights",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "BLOCKED_BY_POLICY",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "META_ACCESS_TOKEN",
+        "META_PAGE_ID"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "BLOCKED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "gsc_connector",
+      "name": "Google Search Console Connector",
+      "description": "SEO query performance",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "GOOGLE_SEARCH_CONSOLE_CREDENTIALS"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "ga_connector",
+      "name": "Google Analytics Connector",
+      "description": "Site analytics",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "GOOGLE_ANALYTICS_PROPERTY_ID",
+        "GOOGLE_APPLICATION_CREDENTIALS"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "youtube_connector",
+      "name": "YouTube API Connector",
+      "description": "Research metadata",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "OPERATOR",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "YOUTUBE_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "notebooklm_connector",
+      "name": "NotebookLM export folder Connector",
+      "description": "Local research imports",
+      "capability_type": "CONNECTOR",
+      "department_id": "research",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "research",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "READ_ONLY",
+      "approval_level": "OPERATOR",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "drive_connector",
+      "name": "Google Drive/manual export Connector",
+      "description": "Manual artifact intake",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "GOOGLE_DRIVE_FOLDER_ID"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "oanda_connector",
+      "name": "Oanda practice Connector",
+      "description": "Demo account read checks",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "OANDA_API_TOKEN",
+        "OANDA_ACCOUNT_ID",
+        "OANDA_ENVIRONMENT"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "ollama_local_connector",
+      "name": "Ollama local Connector",
+      "description": "Local model inference",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "OPERATOR",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "OLLAMA_BASE_URL"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "ollama_cloud_connector",
+      "name": "Ollama cloud/Pro Connector",
+      "description": "Hosted model inference",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "OLLAMA_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "openrouter_connector",
+      "name": "OpenRouter Connector",
+      "description": "Alpha model routing",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "OPENROUTER_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "groq_connector",
+      "name": "Groq Connector",
+      "description": "Fast hosted inference",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "NOT_CONFIGURED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "GROQ_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "stripe_connector",
+      "name": "Stripe test mode Connector",
+      "description": "Payment-flow testing",
+      "capability_type": "CONNECTOR",
+      "department_id": "finance",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "finance",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "APPROVAL_GATED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "STRIPE_SECRET_KEY",
+        "VITE_STRIPE_PUBLISHABLE_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "NOT_CONFIGURED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "firecrawl_connector",
+      "name": "Firecrawl Connector",
+      "description": "Future web research",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "RESTRICTED",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "FIRECRAWL_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "n8n_connector",
+      "name": "n8n Connector",
+      "description": "Future workflow orchestration",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "N8N_API_KEY",
+        "N8N_BASE_URL"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "capability_id": "postiz_mixpost_connector",
+      "name": "Postiz/Mixpost Connector",
+      "description": "Future social scheduling",
+      "capability_type": "CONNECTOR",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "CONFIG_BACKED",
+      "activation_mode": "DEFERRED",
+      "approval_level": "RAY_REVIEW",
+      "security_class": "HIGH_RISK",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "SOCIAL_SCHEDULER_API_KEY"
+      ],
+      "dependencies": [],
+      "cost_model": "UNKNOWN",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+      "health_status": "DEFERRED",
+      "health_freshness": "REPORT_BACKED",
+      "tests": [
+        "tests/nexus_connector_registry.test.ts"
+      ],
+      "rollback_plan": "Leave connector unconfigured or disabled.",
+      "disable_plan": "Remove connector from active routing.",
+      "hermes_may_recommend": false,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "PENDING",
+      "evidence": [
+        {
+          "source": "src/hermes/nexus/nexusConnectorRegistry.ts",
+          "state": "REPORT_BACKED",
+          "observedAt": "2026-07-18T00:00:00.000Z"
+        }
+      ],
+      "notes": ""
+    }
+  ]
+}

@@ -112,17 +112,23 @@ Scope:
 
 ## Wave 2 — Capability OS and governed orchestration
 
-Start only after Wave 1 passes.
+Status: IMPLEMENTED in commit pending from Wave 2.
 
-Build:
+Built:
 
 - Canonical capability registry.
 - Capability health and dependency model.
 - Activation modes and approval levels.
 - Rollback/test-plan fields.
-- Governed orchestration of approved internal jobs.
+- Governed execution preflight over approved internal jobs.
+- Capability proposal intake from Repo Intelligence.
+- GitHub MCP Reader/Writer governance records without installation.
+- Hermes capability-awareness.
+- Executive Capability OS visibility.
 
 Do not include live external actions until the capability registry and approval gates are proven.
+
+Known follow-up: durable Supabase-backed capability governance overrides remain deferred until a mutable-state requirement is proven.
 
 ## Wave 3 — Knowledge and intelligence layer
 
@@ -160,14 +166,14 @@ Build later:
 - Broader external automation.
 - Trading expansions only if legal/risk gates are separately approved.
 
-## First implementation wave decision
+## Next implementation wave decision
 
-Recommended first wave:
+Recommended next wave:
 
 ```text
-Executive and Founder Mode Core
+Wave 3 — Knowledge and Intelligence Layer
 ```
 
 Approval decision required:
 
-Approve or reject the Executive and Founder Mode Core as the first Nexus 3.0 implementation wave, with Repo Intelligence operating as a parallel, read-only, approval-gated research lane and only its status, evidence, and Ray Review hooks included in Wave 1.
+Approve or reject Wave 3 — Knowledge and Intelligence Layer as the next Nexus 3.0 implementation wave. Repo Intelligence remains read-only and external tools remain uninstalled unless Ray separately approves a bounded evaluation.

@@ -161,6 +161,17 @@ export type QuestionType =
   | 'executive_repo_intelligence'
   | 'executive_deployment_status'
   | 'executive_recommendation_followup'
+  | 'capability_status'
+  | 'capability_owner'
+  | 'capability_health'
+  | 'capability_dependencies'
+  | 'capability_credentials'
+  | 'capability_cost'
+  | 'capability_activation'
+  | 'capability_approval_requirement'
+  | 'capability_execution_block'
+  | 'capability_proposal_status'
+  | 'capability_compare'
   | 'unclear';
 
 export interface ResponseContext {
@@ -290,6 +301,17 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
     case 'executive_repo_intelligence':
     case 'executive_deployment_status':
     case 'executive_recommendation_followup':
+    case 'capability_status':
+    case 'capability_owner':
+    case 'capability_health':
+    case 'capability_dependencies':
+    case 'capability_credentials':
+    case 'capability_cost':
+    case 'capability_activation':
+    case 'capability_approval_requirement':
+    case 'capability_execution_block':
+    case 'capability_proposal_status':
+    case 'capability_compare':
       return {
         text: answerExecutiveIntent(questionType),
         confidence: 'high',

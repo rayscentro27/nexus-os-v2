@@ -13,6 +13,7 @@ import {
   GitBranch,
   HeartPulse,
   LockKeyhole,
+  Network,
   ShieldCheck,
   Sparkles,
   UsersRound,
@@ -255,6 +256,49 @@ function RepoIntelligencePanel({ candidates, onNavigate }) {
   )
 }
 
+function CapabilityOSPanel({ capabilityOS, onNavigate }) {
+  const modeEntries = Object.entries(capabilityOS?.byActivationMode || {}).sort((a, b) => b[1] - a[1])
+  const healthEntries = Object.entries(capabilityOS?.byHealth || {}).sort((a, b) => b[1] - a[1])
+  const topCapabilities = capabilityOS?.topCapabilities || []
+  return (
+    <ExecutiveSection title="Capability OS" subtitle="Canonical capability policy over activation, approval, data access, credentials, dependencies, cost, and health." badge={`${capabilityOS?.total || 0} capabilities`}>
+      <div className="exec-capability-os" data-testid="executive-capability-os">
+        <div className="exec-capability-summary">
+          <article><strong>{capabilityOS?.approvalGated || 0}</strong><small>Approval-gated</small></article>
+          <article><strong>{capabilityOS?.awaitingRayApproval || 0}</strong><small>Awaiting Ray</small></article>
+          <article><strong>{capabilityOS?.missingCredentials || 0}</strong><small>Missing credentials</small></article>
+          <article><strong>{capabilityOS?.dependencyBlocked || 0}</strong><small>Blocked/prohibited</small></article>
+          <article><strong>{capabilityOS?.proposals || 0}</strong><small>Proposals</small></article>
+        </div>
+        <div className="exec-capability-columns">
+          <div>
+            <h4>Activation</h4>
+            {modeEntries.map(([mode, count]) => <p key={mode}><Pill tone={toneForStatus(mode)}>{mode}</Pill><span>{count}</span></p>)}
+          </div>
+          <div>
+            <h4>Health</h4>
+            {healthEntries.map(([status, count]) => <p key={status}><Pill tone={toneForStatus(status)}>{status}</Pill><span>{count}</span></p>)}
+          </div>
+        </div>
+        <div className="exec-capability-list">
+          {topCapabilities.map((capability) => (
+            <button type="button" key={capability.capabilityId} className="exec-capability-card" onClick={() => onNavigate('rayreview')}>
+              <div className="between">
+                <strong>{capability.name}</strong>
+                <Pill tone={toneForStatus(capability.activationMode)}>{capability.activationMode}</Pill>
+              </div>
+              <p>{capability.departmentId} · {capability.approvalLevel} · {capability.healthStatus}</p>
+              <small>
+                Dependencies: {capability.dependencies.length || 'none'} · Credentials: {capability.credentialRequirements.length || 'none'} · Ray: {capability.rayApprovalState}
+              </small>
+            </button>
+          ))}
+        </div>
+      </div>
+    </ExecutiveSection>
+  )
+}
+
 function HermesExecutiveAdvisor({ state, onAskHermes }) {
   const evidenceLines = [
     `${state.approvals.filter((item) => item.state === 'PENDING').length} pending approvals`,
@@ -273,7 +317,7 @@ function HermesExecutiveAdvisor({ state, onAskHermes }) {
         </div>
       </div>
       <div className="exec-hermes-prompts">
-        {['What needs my attention today?', 'What approvals are waiting?', 'Is the system healthy?', 'What repo decisions need review?'].map((prompt) => (
+        {['What needs my attention today?', 'Which capabilities are blocked?', 'Which capabilities need credentials?', 'What repo decisions need review?'].map((prompt) => (
           <button type="button" key={prompt} onClick={() => onAskHermes(prompt)}>{prompt}</button>
         ))}
       </div>
@@ -300,7 +344,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
     return () => { cancelled = true }
   }, [])
 
-  const icons = [ClipboardCheck, AlertTriangle, UsersRound, BadgeDollarSign, FileSearch, BriefcaseBusiness]
+  const icons = [ClipboardCheck, AlertTriangle, UsersRound, BadgeDollarSign, FileSearch, Network]
 
   return (
     <div className="page nexus-command-center executive-command-center" data-testid="executive-command-center">
@@ -323,6 +367,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
       <div className="command-layout executive-layout">
         <div className="main-stack">
           <TodayView state={state} onNavigate={onNavigate} />
+          <CapabilityOSPanel capabilityOS={state.capabilityOS} onNavigate={onNavigate} />
           <DailyBrief brief={state.dailyBrief} />
           <ApprovalsPanel approvals={state.approvals} onNavigate={onNavigate} />
           <GovernedWorkPanel work={state.governedWork} onNavigate={onNavigate} />

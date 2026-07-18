@@ -50,6 +50,10 @@ test.describe('Executive Command Center Wave 1 certification', () => {
     await expect(page.getByTestId('executive-daily-brief')).toBeVisible();
     await expect(page.getByTestId('executive-approval-queue')).toBeVisible();
     await expect(page.getByTestId('executive-governed-work')).toBeVisible();
+    await expect(page.getByTestId('executive-capability-os')).toBeVisible();
+    await expect(page.getByTestId('executive-capability-os')).toContainText(/APPROVAL_GATED/i);
+    await expect(page.getByTestId('executive-capability-os')).toContainText(/PROHIBITED|BLOCKED_BY_POLICY/i);
+    await expect(page.getByTestId('executive-capability-os')).toContainText(/Live Stripe|Live Trading|Alpha Supabase/i);
     await expect(page.getByTestId('executive-department-status')).toBeVisible();
     await expect(page.getByTestId('executive-system-health')).toBeVisible();
     await expect(page.getByTestId('executive-repo-intelligence')).toContainText(/github\/github-mcp-server/i);
@@ -57,6 +61,18 @@ test.describe('Executive Command Center Wave 1 certification', () => {
     await expect(page.getByTestId('executive-safety-boundaries')).toContainText(/Ray remains final authority/i);
     await expect(page.getByText(/STRIPE_MODE=test/i)).toBeVisible();
     await expect(page.getByText(/Live trading blocked/i)).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test('Hermes capability questions are evidence-backed and non-executing', async ({ page }) => {
+    await loginAdmin(page);
+    await page.goto('/admin#command');
+    await expect(page.getByTestId('executive-command-center')).toBeVisible();
+    await expect(page.getByTestId('executive-hermes-advisor')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Which capabilities are blocked/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /What repo decisions need review/i })).toBeVisible();
+    await expect(page.getByText(/This Command Center is a normalized executive read model/i)).toBeVisible();
+    await expect(page.getByText(/does not install repositories/i)).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 

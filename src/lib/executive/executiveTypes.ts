@@ -129,6 +129,27 @@ export interface ExecutiveCommandCenterState {
   revenueSummary: ExecutiveMetric[];
   systemHealth: ExecutiveHealthItem[];
   repoIntelligence: RepoIntelligenceItem[];
+  capabilityOS?: {
+    total: number;
+    byActivationMode: Record<string, number>;
+    byHealth: Record<string, number>;
+    approvalGated: number;
+    awaitingRayApproval: number;
+    missingCredentials: number;
+    dependencyBlocked: number;
+    proposals: number;
+    topCapabilities: Array<{
+      capabilityId: string;
+      name: string;
+      departmentId: string;
+      activationMode: string;
+      approvalLevel: string;
+      healthStatus: string;
+      credentialRequirements: string[];
+      dependencies: string[];
+      rayApprovalState: string;
+    }>;
+  };
   dailyBrief: ExecutiveBrief;
   limitations: string[];
 }
