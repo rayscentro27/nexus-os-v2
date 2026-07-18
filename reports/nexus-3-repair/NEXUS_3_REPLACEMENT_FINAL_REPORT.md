@@ -20,7 +20,8 @@ The exact architectural stacking defect was repaired. `WorldClassClientPortal` n
 | Direct RLS | PASS | 45/45 |
 | Authenticated Persona A/B/C | BLOCKED | credentials absent |
 | Authenticated admin | BLOCKED | credentials absent |
-| Production deployment inspection | BLOCKED | requires deployed commit and protected auth |
+| Production preview deployment inspection | PASS | `https://goclearonline.cc/client/preview` loaded pushed bundle and replacement DOM checks passed |
+| Authenticated production route inspection | BLOCKED | protected credentials absent |
 | Stripe preservation | PASS | no live Stripe changes |
 
 ## Stripe
@@ -28,3 +29,9 @@ The exact architectural stacking defect was repaired. `WorldClassClientPortal` n
 LIVE STRIPE CONFIGURATION DEFERRED UNTIL NEXUS 3.0 COMPLETION
 
 No live key was entered. No live payment was attempted. No live checkout was enabled.
+
+## Commit and Push
+
+Commit created: `7b0d5ce` (`replace legacy credit route with nexus 3 workspace`)
+
+Push result: PASS to `origin/main`

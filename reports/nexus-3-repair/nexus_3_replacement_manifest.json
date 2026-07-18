@@ -3,6 +3,10 @@
   "date": "2026-07-18",
   "starting_commit": "a2c3227e1995ecbf4a719910fbe9e9ad47e0a529",
   "status": "PARTIAL",
+  "repair_commit": "7b0d5ce",
+  "push": "origin/main successful",
+  "production_preview_verification": "PASS",
+  "authenticated_production_verification": "BLOCKED_CREDENTIALS_ABSENT",
   "stripe": "LIVE STRIPE CONFIGURATION DEFERRED UNTIL NEXUS 3.0 COMPLETION",
   "reports": [
     "reports/nexus-3-repair/NEXUS_3_REPLACEMENT_FINAL_REPORT.md",
