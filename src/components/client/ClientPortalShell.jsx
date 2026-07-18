@@ -17,16 +17,19 @@ export function usePortalNav() { return useContext(PortalNavContext) }
 export function usePortalLiveStatus() { return useContext(PortalLiveStatusContext) }
 
 export const journeySteps = [
-  { path: '/client/dashboard', label: 'Home', icon: Home },
+  { path: '/client/dashboard', label: 'Dashboard', icon: Home },
   { path: '/client/profile', label: 'Profile & Info', icon: User },
-  { path: '/client/credit-profile', label: 'Credit Health', icon: BadgeCheck },
+  { path: '/client/credit-profile', label: 'Credit Journey', icon: BadgeCheck },
   { path: '/client/credit-utilization', label: 'Credit Utilization', icon: CreditCard },
+  { path: '/client/account-details', label: 'Account Details', icon: FileSearch },
   { path: '/client/documents', label: 'Documents', icon: FileText },
+  { path: '/client/business-journey', label: 'Business Journey', icon: Building2 },
   { path: '/client/business-setup', label: 'Business Setup', icon: Building2 },
   { path: '/client/business-bankability', label: 'Business Bankability', icon: Landmark },
+  { path: '/client/business-credit', label: 'Business Credit', icon: ChartNoAxesCombined },
   { path: '/client/funding-readiness', label: 'Funding Readiness', icon: Wallet },
-  { path: '/client/credit-repair-journey', label: 'Credit Profile Optimization', icon: RotateCcw },
-  { path: '/client/dispute-review', label: 'Draft Letter Review', icon: FileSearch },
+  { path: '/client/credit-repair-journey', label: 'Credit Repair', icon: RotateCcw },
+  { path: '/client/dispute-review', label: 'Bureau Letter Builder', icon: FileSearch },
   { path: '/client/recommendations', label: 'Recommendations', icon: Lightbulb },
   { path: '/client/resources', label: 'Resources', icon: Star },
   { path: '/client/request-review', label: 'Request Review', icon: MessageSquare },

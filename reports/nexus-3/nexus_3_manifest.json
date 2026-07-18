@@ -1,0 +1,26 @@
+{
+  "sprint": "nexus-3-design-led-platform-implementation",
+  "status": "partial",
+  "starting_commit": "95d8ebc08ae19dfc5d6eb40f22df5631e845151a",
+  "stripe": {
+    "live_configuration": "deferred_until_nexus_3_completion",
+    "test_mode_preserved": true,
+    "live_payment_attempted": false
+  },
+  "assets_imported": [
+    "src/assets/nexus-3/credit/credit-journey-hero.png",
+    "src/assets/nexus-3/credit/credit-repair-hero.png",
+    "src/assets/nexus-3/credit/credit-repair-hero-banner.png",
+    "src/assets/nexus-3/business/business-journey-hero.png",
+    "src/assets/nexus-3/shared/clyde-hermes-agent.png"
+  ],
+  "checks": {
+    "typecheck": "pass",
+    "build": "pass",
+    "revenue_tests": "pass",
+    "hermes_tests": "pass",
+    "readiness_review_tests": "pass",
+    "rls": "pass",
+    "browser_preview": "pass"
+  }
+}

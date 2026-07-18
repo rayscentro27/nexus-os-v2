@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { ClientPortalShell, clientRoutes } from '../../components/client/ClientPortalShell'
-import { clientPageMap } from './ClientPortalPages'
+import { clientRoutes } from '../../components/client/ClientPortalShell'
+import WorldClassClientPortal from './WorldClassClientPortal'
 
 const fallbackPath = '/client/dashboard'
 
@@ -43,9 +43,7 @@ export default function ClientPreviewPage() {
   return (
     <>
       <DemoBanner />
-      <ClientPortalShell path={path} onNavigate={navigate}>
-        {clientPageMap[path] || clientPageMap[fallbackPath]}
-      </ClientPortalShell>
+      <WorldClassClientPortal path={path} onNavigate={navigate} />
     </>
   )
 }
