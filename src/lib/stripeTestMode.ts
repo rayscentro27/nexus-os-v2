@@ -1,10 +1,30 @@
 /** Pure payment-boundary helpers shared by certification and review tooling. */
-export function isStripeTestSecret(value: unknown): boolean {
-  return typeof value === 'string' && value.startsWith('sk_test_');
+export type StripeRuntimeMode = 'test' | 'live';
+
+export function isStripeSecretForMode(value: unknown, mode: StripeRuntimeMode): boolean {
+  return typeof value === 'string' && value.startsWith(mode === 'live' ? 'sk_live_' : 'sk_test_');
 }
 
-export function isStripeTestWebhookSecret(value: unknown): boolean {
+export function isStripeTestSecret(value: unknown): boolean {
+  return isStripeSecretForMode(value, 'test');
+}
+
+export function isStripeLiveSecret(value: unknown): boolean {
+  return isStripeSecretForMode(value, 'live');
+}
+
+export function isStripeWebhookSecret(value: unknown): boolean {
   return typeof value === 'string' && value.startsWith('whsec_');
+}
+
+export const isStripeTestWebhookSecret = isStripeWebhookSecret;
+
+export function isCheckoutSessionForMode(value: unknown, mode: StripeRuntimeMode): boolean {
+  return typeof value === 'string' && value.startsWith(mode === 'live' ? 'cs_live_' : 'cs_test_');
+}
+
+export function stripeEventMatchesRuntime(livemode: unknown, mode: StripeRuntimeMode): boolean {
+  return Boolean(livemode) === (mode === 'live');
 }
 
 export function parseStripeSignatureHeader(value: string): { timestamp: number; signatures: string[] } | null {
@@ -15,7 +35,7 @@ export function parseStripeSignatureHeader(value: string): { timestamp: number; 
 }
 
 export async function verifyStripeTestSignature(rawBody: string, signatureHeader: string, webhookSecret: string, nowSeconds = Math.floor(Date.now() / 1000), toleranceSeconds = 300): Promise<boolean> {
-  if (!isStripeTestWebhookSecret(webhookSecret)) return false;
+  if (!isStripeWebhookSecret(webhookSecret)) return false;
   const parsed = parseStripeSignatureHeader(signatureHeader);
   if (!parsed || Math.abs(nowSeconds - parsed.timestamp) > toleranceSeconds) return false;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(webhookSecret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);

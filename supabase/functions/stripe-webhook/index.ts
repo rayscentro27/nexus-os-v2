@@ -23,22 +23,40 @@ function safePayload(event: any) {
 
 }
 
-function verifiedPaymentMatchesOrder(type: string, object: any, order: any) {
+function getWebhookRuntime() {
+  const mode = Deno.env.get("STRIPE_MODE") || "test"
+  if (mode !== "test" && mode !== "live") return { ok: false as const, error: "stripe_mode_invalid" }
+  const secret = mode === "live" ? (Deno.env.get("STRIPE_LIVE_WEBHOOK_SECRET") || Deno.env.get("STRIPE_WEBHOOK_SECRET") || "") : (Deno.env.get("STRIPE_TEST_WEBHOOK_SECRET") || Deno.env.get("STRIPE_WEBHOOK_SECRET") || "")
+  if (!secret.startsWith("whsec_")) return { ok: false as const, error: mode === "live" ? "live_webhook_not_configured" : "test_webhook_not_configured" }
+  return { ok: true as const, mode, secret }
+}
+
+function orderMatchesRuntime(order: any, mode: string) {
+  const sessionId = String(order?.provider_checkout_session_id || "")
+  const expected = mode === "live" ? "cs_live_" : "cs_test_"
+  return sessionId.startsWith(expected)
+}
+
+function verifiedPaymentMatchesOrder(type: string, object: any, order: any, mode: string) {
+  if (Boolean(object?.livemode) !== (mode === "live")) return false
+  if (!orderMatchesRuntime(order, mode)) return false
   const metadata = object?.metadata || {}
   const metadataOrderId = String(metadata.order_id || object.client_reference_id || "")
   const metadataOfferId = String(metadata.offer_id || "")
+  const metadataMode = String(metadata.stripe_mode || "")
   const amount = type === "checkout.session.completed" ? Number(object.amount_total) : Number(object.amount_received ?? object.amount)
-  return metadataOrderId === String(order.id) && metadataOfferId === String(order.offer_id) && amount === Number(order.amount_cents) && String(object.currency || "").toLowerCase() === String(order.currency || "usd").toLowerCase() && (type !== "checkout.session.completed" || object.payment_status === "paid")
+  const sessionMatches = type !== "checkout.session.completed" || String(object.id || "") === String(order.provider_checkout_session_id || "")
+  const modeMatches = !metadataMode || metadataMode === mode
+  return metadataOrderId === String(order.id) && metadataOfferId === String(order.offer_id) && modeMatches && sessionMatches && amount === Number(order.amount_cents) && String(object.currency || "").toLowerCase() === String(order.currency || "usd").toLowerCase() && (type !== "checkout.session.completed" || object.payment_status === "paid")
 }
 
 serve(async (req) => {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405)
-  const secret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || ""
-  const stripeMode = Deno.env.get("STRIPE_MODE") || "test"
-  if (stripeMode !== "test" || !secret.startsWith("whsec_")) return json({ error: "test_webhook_not_configured" }, 503)
+  const runtime = getWebhookRuntime()
+  if (!runtime.ok) return json({ error: runtime.error }, 503)
   const raw = await req.text()
   const signature = req.headers.get("Stripe-Signature") || ""
-  if (!signature || !(await verifyStripeSignature(raw, signature, secret))) return json({ error: "invalid_signature" }, 400)
+  if (!signature || !(await verifyStripeSignature(raw, signature, runtime.secret))) return json({ error: "invalid_signature" }, 400)
   let event: any
   try { event = JSON.parse(raw) } catch { return json({ error: "invalid_event" }, 400) }
   const providerEventId = String(event.id || "")
@@ -54,14 +72,15 @@ serve(async (req) => {
   const object = event?.data?.object || {}
   const metadata = object.metadata || {}
   const orderId = String(metadata.order_id || object.client_reference_id || "")
-  const { data: order } = orderId ? await admin.from("client_orders").select("id,client_id,offer_id,status,amount_cents,currency,terms_version,referral_code,referral_source").eq("id", orderId).maybeSingle() : { data: null }
+  const { data: order } = orderId ? await admin.from("client_orders").select("id,client_id,offer_id,status,amount_cents,currency,terms_version,referral_code,referral_source,provider_checkout_session_id").eq("id", orderId).maybeSingle() : { data: null }
   const { data: eventRow, error: eventError } = await admin.from("payment_events").insert({ provider: "stripe", provider_event_id: providerEventId, event_type: String(event.type || "unknown").slice(0, 100), event_created_at: event.created ? new Date(Number(event.created) * 1000).toISOString() : null, order_id: order?.id || null, processed_status: "received", sanitized_payload: payload }).select("id").single()
   if (eventError) return json({ error: "event_record_failed" }, 500)
   if (!order) { await admin.from("payment_events").update({ processed_status: "rejected", error_code: "order_not_found", processed_at: new Date().toISOString() }).eq("id", eventRow.id); return json({ error: "order_not_found" }, 422) }
 
   const type = String(event.type || "")
   let update: Record<string, unknown> | null = null
-  if ((type === "checkout.session.completed" || type === "payment_intent.succeeded") && !verifiedPaymentMatchesOrder(type, object, order)) { await admin.from("payment_events").update({ processed_status: "rejected", error_code: "payment_order_mismatch", processed_at: new Date().toISOString() }).eq("id", eventRow.id); return json({ error: "payment_order_mismatch" }, 422) }
+  if (!orderMatchesRuntime(order, runtime.mode)) { await admin.from("payment_events").update({ processed_status: "rejected", error_code: "order_environment_mismatch", processed_at: new Date().toISOString() }).eq("id", eventRow.id); return json({ error: "order_environment_mismatch" }, 422) }
+  if ((type === "checkout.session.completed" || type === "payment_intent.succeeded") && !verifiedPaymentMatchesOrder(type, object, order, runtime.mode)) { await admin.from("payment_events").update({ processed_status: "rejected", error_code: "payment_order_mismatch", processed_at: new Date().toISOString() }).eq("id", eventRow.id); return json({ error: "payment_order_mismatch" }, 422) }
   if (type === "checkout.session.completed" || type === "payment_intent.succeeded") update = { status: "paid", payment_status: "verified_paid", paid_at: new Date().toISOString(), provider_payment_intent_id: object.payment_intent || (object.id?.startsWith("pi_") ? object.id : null), fulfillment_status: "onboarding_required" }
   else if (type === "checkout.session.expired") update = { status: "expired", payment_status: "expired" }
   else if (type === "payment_intent.payment_failed") update = { status: "payment_failed", payment_status: "failed" }

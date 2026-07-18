@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { SERVICE_OFFER_CATALOG, SERVICE_OFFER_DISCLAIMERS, getServiceOffer } from '../src/config/serviceOfferCatalog'
 import { buildReadinessPacketDraft, canTransitionFulfillment, canTransitionOrder, hasUnsafePacketContent, resolveTrustedPrice, summarizeRevenueOrders, validateCheckoutInput } from '../src/lib/revenueActivation'
-import { isStripeTestSecret, isStripeTestWebhookSecret, reconcileVerifiedPaymentEvent, shouldCreateFulfillment, verifyStripeTestSignature } from '../src/lib/stripeTestMode'
+import { isCheckoutSessionForMode, isStripeLiveSecret, isStripeTestSecret, isStripeTestWebhookSecret, reconcileVerifiedPaymentEvent, shouldCreateFulfillment, stripeEventMatchesRuntime, verifyStripeTestSignature } from '../src/lib/stripeTestMode'
 
 describe('Phase 6 — controlled revenue activation', () => {
   const migration = readFileSync(resolve(import.meta.dirname, '../supabase/migrations/20260715180000_revenue_activation_test_mode.sql'), 'utf8')
@@ -23,13 +23,21 @@ describe('Phase 6 — controlled revenue activation', () => {
 
   it('keeps provider secrets and payment writes server-side', () => {
     expect(checkoutFunction).toContain('STRIPE_SECRET_KEY')
+    expect(checkoutFunction).toContain('STRIPE_LIVE_SECRET_KEY')
+    expect(checkoutFunction).toContain('STRIPE_TEST_SECRET_KEY')
+    expect(checkoutFunction).toContain('STRIPE_LIVE_PRICE_READINESS_REVIEW_97')
+    expect(checkoutFunction).toContain('STRIPE_LIVE_PRICE_READINESS_REVIEW')
     expect(checkoutFunction).toContain('price_cents')
     expect(checkoutFunction).toContain('sk_test_')
+    expect(checkoutFunction).toContain('sk_live_')
     expect(checkoutFunction).toContain('checkout_persistence_failed')
+    expect(checkoutFunction).toContain('checkout_environment_mismatch')
     expect(webhookFunction).toContain('Stripe-Signature')
+    expect(webhookFunction).toContain('STRIPE_LIVE_WEBHOOK_SECRET')
     expect(webhookFunction).toContain('provider_event_id')
     expect(webhookFunction).toContain('processed_status')
     expect(webhookFunction).toContain('verifiedPaymentMatchesOrder')
+    expect(webhookFunction).toContain('order_environment_mismatch')
     expect(webhookFunction).toContain('amount_total')
     expect(webhookFunction).not.toContain('console.log(raw)')
   })
@@ -85,6 +93,8 @@ describe('Phase 6 — controlled revenue activation', () => {
   it('accepts only test-mode provider secrets and verifies signed webhook bytes', async () => {
     expect(isStripeTestSecret('sk_test_fixture')).toBe(true)
     expect(isStripeTestSecret(['sk', 'live', 'fixture'].join('_'))).toBe(false)
+    expect(isStripeLiveSecret('sk_live_fixture')).toBe(true)
+    expect(isStripeLiveSecret('sk_test_fixture')).toBe(false)
     expect(isStripeTestWebhookSecret('whsec_fixture')).toBe(true)
     expect(isStripeTestWebhookSecret('')).toBe(false)
     const body = '{"id":"evt_fixture"}'
@@ -94,6 +104,21 @@ describe('Phase 6 — controlled revenue activation', () => {
     const signature = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
     expect(await verifyStripeTestSignature(body, `t=${timestamp},v1=${signature}`, 'whsec_fixture', timestamp)).toBe(true)
     expect(await verifyStripeTestSignature(body, `t=${timestamp},v1=${signature}`, 'whsec_fixture', timestamp + 301)).toBe(false)
+  })
+
+  it('keeps test and live payment identifiers isolated', () => {
+    expect(isCheckoutSessionForMode('cs_test_fixture', 'test')).toBe(true)
+    expect(isCheckoutSessionForMode('cs_live_fixture', 'live')).toBe(true)
+    expect(isCheckoutSessionForMode('cs_test_fixture', 'live')).toBe(false)
+    expect(isCheckoutSessionForMode('cs_live_fixture', 'test')).toBe(false)
+    expect(stripeEventMatchesRuntime(false, 'test')).toBe(true)
+    expect(stripeEventMatchesRuntime(true, 'live')).toBe(true)
+    expect(stripeEventMatchesRuntime(false, 'live')).toBe(false)
+    expect(stripeEventMatchesRuntime(true, 'test')).toBe(false)
+    expect(checkoutFunction).toContain('STRIPE_TEST_PRICE_READINESS_REVIEW')
+    expect(checkoutFunction).toContain('STRIPE_TEST_PRICE_READINESS_REVIEW_97')
+    expect(checkoutFunction).toContain('STRIPE_LIVE_PRICE_READINESS_REVIEW')
+    expect(webhookFunction).toContain('Boolean(object?.livemode) !== (mode === \"live\")')
   })
 
   it('reconciles only verified event types and creates fulfillment once', () => {

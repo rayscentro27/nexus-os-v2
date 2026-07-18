@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-07-18T02:24:54Z",
+  "branch": "main",
+  "starting_commit": "1539b5eb2df6470c37b320c4914d59f245f2aecb",
+  "status": "PARTIAL",
+  "source_files_modified": true,
+  "migrations_applied": false,
+  "live_payment_attempted": false,
+  "real_customer_used": false,
+  "real_live_payment": false,
+  "secrets_exposed": false,
+  "customer_pii_committed": false,
+  "documents_committed": false,
+  "external_messages": false,
+  "broker_activity": false,
+  "live_trading_changes": false,
+  "tests": {
+    "revenue": "PASS 12/12",
+    "typescript": "PASS",
+    "build": "PASS",
+    "secret_scan": "PASS"
+  },
+  "human_gate": "Configure live Stripe secrets, approved live price, matching live webhook endpoint, and approve deployment/payment."
+}

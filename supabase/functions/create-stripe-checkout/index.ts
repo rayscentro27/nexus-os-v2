@@ -15,6 +15,28 @@ function safePath(value: unknown, fallback: string) {
   return typeof value === "string" && /^\/(?!\/)[a-zA-Z0-9/_?=&.-]{1,180}$/.test(value) ? value : fallback
 }
 
+function getEnv(name: string) {
+  return Deno.env.get(name) || ""
+}
+
+function firstEnv(names: string[]) {
+  return names.map(getEnv).find(Boolean) || ""
+}
+
+function resolveStripeRuntime() {
+  const mode = getEnv("STRIPE_MODE") || "test"
+  if (mode !== "test" && mode !== "live") return { ok: false as const, error: "stripe_mode_invalid" }
+  const secret = mode === "live" ? firstEnv(["STRIPE_LIVE_SECRET_KEY", "STRIPE_SECRET_KEY"]) : firstEnv(["STRIPE_TEST_SECRET_KEY", "STRIPE_SECRET_KEY"])
+  const expectedSecretPrefix = mode === "live" ? "sk_live_" : "sk_test_"
+  if (!secret.startsWith(expectedSecretPrefix)) return { ok: false as const, error: mode === "live" ? "live_payment_not_configured" : "test_payment_not_configured" }
+  const priceByOffer: Record<string, string> = {
+    "readiness-review-97": mode === "live" ? firstEnv(["STRIPE_LIVE_PRICE_READINESS_REVIEW_97", "STRIPE_LIVE_PRICE_READINESS_REVIEW"]) : firstEnv(["STRIPE_TEST_PRICE_READINESS_REVIEW_97", "STRIPE_TEST_PRICE_READINESS_REVIEW"]),
+  }
+  const publicAppUrl = mode === "live" ? (getEnv("NEXUS_PUBLIC_APP_URL") || getEnv("PUBLIC_SITE_URL")) : (getEnv("NEXUS_PUBLIC_APP_URL") || getEnv("PUBLIC_SITE_URL") || "https://goclear.invalid")
+  if (mode === "live" && !/^https:\/\/[^/]+/.test(publicAppUrl)) return { ok: false as const, error: "live_public_url_required" }
+  return { ok: true as const, mode, secret, priceByOffer, publicAppUrl }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers })
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405)
@@ -25,10 +47,9 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || ""
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || ""
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || ""
-  const stripeSecret = Deno.env.get("STRIPE_SECRET_KEY") || ""
-  const stripeMode = Deno.env.get("STRIPE_MODE") || "test"
+  const stripeRuntime = resolveStripeRuntime()
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: "server_configuration_missing" }, 503)
-  if (stripeMode !== "test" || !stripeSecret.startsWith("sk_test_")) return json({ error: "live_payment_disabled_or_test_key_missing" }, 503)
+  if (!stripeRuntime.ok) return json({ error: stripeRuntime.error }, 503)
 
   try {
     const body = await req.json()
@@ -48,7 +69,9 @@ serve(async (req) => {
 
     const { data: offer, error: offerError } = await admin.from("service_offers").select("*").eq("slug", offerSlug).eq("active", true).single()
     if (offerError || !offer || !termsAccepted || termsVersion !== offer.terms_version) return json({ error: "offer_terms_validation_failed" }, 400)
-    if (!offer.test_price_id || !String(offer.test_price_id).startsWith("price_")) return json({ error: "test_price_not_configured" }, 503)
+    const configuredPrice = stripeRuntime.priceByOffer[offerSlug]
+    const stripePrice = configuredPrice || (stripeRuntime.mode === "test" ? String(offer.test_price_id || "") : "")
+    if (!stripePrice || !String(stripePrice).startsWith("price_")) return json({ error: stripeRuntime.mode === "live" ? "live_price_not_configured" : "test_price_not_configured" }, 503)
 
     // A still-open order is reused. This prevents repeated clicks from creating
     // multiple paid fulfillment paths for the same client and offer.
@@ -79,9 +102,9 @@ serve(async (req) => {
 
     const stripeParams = new URLSearchParams()
     stripeParams.set("mode", "payment")
-    stripeParams.set("line_items[0][price]", String(offer.test_price_id))
+    stripeParams.set("line_items[0][price]", String(stripePrice))
     stripeParams.set("line_items[0][quantity]", "1")
-    const appBaseUrl = Deno.env.get("NEXUS_PUBLIC_APP_URL") || "https://goclear.invalid"
+    const appBaseUrl = stripeRuntime.publicAppUrl
     stripeParams.set("success_url", `${new URL(successPath, appBaseUrl).toString()}?order=${orderId}`)
     stripeParams.set("cancel_url", `${new URL(cancelPath, appBaseUrl).toString()}?order=${orderId}`)
     stripeParams.set("customer_email", String(authData.user.email || ""))
@@ -89,7 +112,8 @@ serve(async (req) => {
     stripeParams.set("metadata[order_id]", orderId)
     stripeParams.set("metadata[offer_id]", String(offer.id))
     stripeParams.set("metadata[client_id]", String(membership.client_id))
-    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { Authorization: `Bearer ${stripeSecret}`, "Content-Type": "application/x-www-form-urlencoded" }, body: stripeParams, signal: AbortSignal.timeout(15000) })
+    stripeParams.set("metadata[stripe_mode]", stripeRuntime.mode)
+    const stripeResponse = await fetch("https://api.stripe.com/v1/checkout/sessions", { method: "POST", headers: { Authorization: `Bearer ${stripeRuntime.secret}`, "Content-Type": "application/x-www-form-urlencoded" }, body: stripeParams, signal: AbortSignal.timeout(15000) })
     if (!stripeResponse.ok) {
       await admin.from("client_orders").update({ status: "payment_failed", payment_status: "checkout_creation_failed" }).eq("id", orderId)
       return json({ error: "checkout_creation_failed" }, 502)
@@ -100,7 +124,12 @@ serve(async (req) => {
       await admin.from("client_orders").delete().eq("id", orderId)
       return json({ error: "checkout_persistence_failed" }, 502)
     }
-    return json({ ok: true, order_id: orderId, order_number: orderNumber, status: "checkout_created", checkout_session_id: session.id, checkout_url: session.url || null, mode: "test" })
+    const expectedSessionPrefix = stripeRuntime.mode === "live" ? "cs_live_" : "cs_test_"
+    if (!String(session.id || "").startsWith(expectedSessionPrefix)) {
+      await admin.from("client_orders").delete().eq("id", orderId)
+      return json({ error: "checkout_environment_mismatch" }, 502)
+    }
+    return json({ ok: true, order_id: orderId, order_number: orderNumber, status: "checkout_created", checkout_session_id: session.id, checkout_url: session.url || null, mode: stripeRuntime.mode })
   } catch {
     return json({ error: "checkout_request_failed" }, 500)
   }
