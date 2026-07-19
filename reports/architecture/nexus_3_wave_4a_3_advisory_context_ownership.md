@@ -136,7 +136,16 @@ Passed against local production build:
 
 ## 14. Live production certification
 
-Pending until this commit is pushed and the production deployment is verified. Capability health remains degraded for `hermes_advisory_context_production_certification` until live production passes after deployment.
+Passed after deployment.
+
+- Production commit: `9b37b8c6f7115b5997b774bb52afdc676e2ffd4e`
+- Branch: `main`
+- Bundle: `/assets/index-D0QaAbwK.js`
+- Advisory-context Playwright: PASS 2/2
+- Broader Workroom production Playwright: PASS 14/14
+- Stale-topic leakage: 0
+- Page errors: 0
+- Console errors: 0
 
 ## 15. Security
 
@@ -152,8 +161,8 @@ Pending until this commit is pushed and the production deployment is verified. C
 ## 16. Limitations
 
 - Durable cross-session advisory resumption remains intentionally bounded. A new session should not inherit stale prior-day advisory context automatically.
-- Live production certification requires deployed commit verification after push.
+- Durable cross-session advisory resumption remains intentionally bounded and should not become an unlimited raw-chat archive.
 
 ## 17. Department Operations readiness
 
-Local certification supports moving toward Department Operations only after live production advisory-context certification passes with zero stale-topic leakage, zero page errors, and zero console errors.
+Hermes meets the Wave 4A.3 gate for Department Operations readiness. Department Operations can proceed only if future prompts preserve this live Workroom certification and do not weaken action separation, RLS, Alpha isolation, or approval gates.

@@ -220,7 +220,7 @@ Known limitation:
 
 ## Wave 4A.3 — Hermes advisory context ownership and topic switching
 
-Status: IMPLEMENTED locally; live production certification pending post-deploy verification.
+Status: IMPLEMENTED and live-production certified.
 
 Built:
 
@@ -246,7 +246,7 @@ Acceptance evidence:
 
 Exit gate:
 
-- Production deployment must serve the Wave 4A.3 commit and pass live Workroom advisory-context Playwright with zero stale-topic leakage, zero page errors, and zero console errors before Department Operations begins.
+- Completed: production served commit `9b37b8c6f7115b5997b774bb52afdc676e2ffd4e` on `main` with bundle `/assets/index-D0QaAbwK.js`; live Workroom advisory-context Playwright passed with zero stale-topic leakage, zero page errors, and zero console errors.
 
 ## Wave 4 — Department operations and automation
 

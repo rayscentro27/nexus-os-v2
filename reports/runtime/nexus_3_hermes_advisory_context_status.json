@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T16:06:46.774Z",
+  "generated_at": "2026-07-19T16:10:19.742Z",
   "source": "Wave 4A.3 advisory context ownership repair",
   "active_context_contract": "IMPLEMENTED",
   "context_replacement_status": "PASS_NEW_RECOMMENDATION_SUPERSEDES_OLD_ACTIVE_CONTEXT",
@@ -15,8 +15,8 @@
   "page_error_count": 0,
   "console_error_count": 0,
   "local_production_result": "PASS tests/e2e/hermes-advisory-context-certification.spec.ts 2/2 plus existing Workroom suites 14/14",
-  "live_production_result": "PENDING_AFTER_DEPLOYMENT",
-  "certification_state": "LOCAL_CERTIFIED_LIVE_PENDING",
+  "live_production_result": "PASS live https://goclearonline.cc advisory-context Playwright 2/2 plus Workroom production specs 14/14",
+  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
   "tests": {
     "focused_unit": "PASS tests/hermes_advisory_context_ownership.test.ts plus Hermes intent/Workroom contract suites",
     "full_unit": "PASS 94 files / 1476 tests before report updates",
@@ -43,5 +43,19 @@
     "local_workroom_playwright": "PASS 14/14",
     "secret_scan": "PASS credential identifiers only; no values",
     "privacy_scan": "PASS no real PII added"
+  },
+  "deployed_commit": "9b37b8c6f7115b5997b774bb52afdc676e2ffd4e",
+  "deployment_match": "YES",
+  "bundle_filename": "https://goclearonline.cc/assets/index-D0QaAbwK.js",
+  "wave_4a_3_final_live_verification": {
+    "expected_commit": "9b37b8c6f7115b5997b774bb52afdc676e2ffd4e",
+    "deployed_commit": "9b37b8c6f7115b5997b774bb52afdc676e2ffd4e",
+    "deployment_match": "YES",
+    "bundle_filename": "https://goclearonline.cc/assets/index-D0QaAbwK.js",
+    "advisory_context_live_playwright": "PASS 2/2",
+    "workroom_live_playwright": "PASS 14/14",
+    "live_page_errors": 0,
+    "live_console_errors": 0,
+    "stale_topic_leakage": 0
   }
 }

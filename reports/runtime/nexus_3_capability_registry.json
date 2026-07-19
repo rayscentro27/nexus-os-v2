@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T15:59:36.477Z",
+  "generated_at": "2026-07-19T16:10:19.742Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
   "total_capabilities": 135,
@@ -6939,9 +6939,9 @@
       "estimated_monthly_cost": null,
       "cost_notes": "No exact pricing asserted by Capability OS.",
       "health_source": "tests/e2e/hermes-advisory-context-certification.spec.ts",
-      "health_status": "DEGRADED",
+      "health_status": "HEALTHY",
       "health_freshness": "LIVE",
-      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "last_verified_at": "2026-07-19T16:10:19.742Z",
       "tests": [
         "tests/e2e/hermes-advisory-context-certification.spec.ts"
       ],
@@ -6954,12 +6954,12 @@
       "ray_approval_state": "NOT_REQUIRED",
       "evidence": [
         {
-          "source": "tests/e2e/hermes-advisory-context-certification.spec.ts",
+          "source": "live https://goclearonline.cc Playwright advisory-context certification",
           "state": "LIVE",
-          "observedAt": "2026-07-19T15:59:36.477Z"
+          "observedAt": "2026-07-19T16:10:19.742Z"
         }
       ],
-      "notes": "Wave 4A.3 advisory context ownership capability."
+      "notes": "Wave 4A.3 live production advisory-context certification passed after deployment."
     }
   ]
 }
