@@ -51,6 +51,10 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'SYSTEM_STATUS', intent: 'system_status_honesty', confidence: 0.93, reason: 'Question asks for known system or capability status.' };
   }
 
+  if (/\b(is that realistic|is this realistic|is it realistic|why that one|why this one|what would stop us|what would it cost|could we do it without paying|what is the downside|go deeper|which one should we do first|what did you mean by that)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'advisory_followup' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.88 : 0.55, reason: 'Question is a plan-level follow-up.' };
+  }
+
   if (/\b(number\s*\d+|option\s*\d+|the first one|the second one|the third one|the last one|that one|this one|the marketing idea|what you just said|the recommendation|the plan)\b/.test(text)) {
     const actionReference = /\b(turn|create|prepare|make|assign)\b.*\b(plan|task|work request|ray review|approval)\b/.test(text);
     if (actionReference) {
@@ -59,11 +63,7 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'SELECTION_REFERENCE', intent: 'resolve_selection_reference', confidence: hasAdvisoryContext ? 0.9 : 0.65, reason: 'Message refers to a prior recommendation or list item.' };
   }
 
-  if (/\b(is that realistic|is this realistic|is it realistic|why that one|why this one|what would stop us|what would it cost|could we do it without paying|what is the downside|go deeper|which one should we do first|what did you mean by that)\b/.test(text)) {
-    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'advisory_followup' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.88 : 0.55, reason: 'Question is a plan-level follow-up.' };
-  }
-
-  if (/\b(what should we work on first|what should we do first|biggest risk|make money today|which project should we prioritize|where do we start|pick the best one|what is the priority)\b/.test(text)) {
+  if (/\b(what should we focus on today|what should we work on first|what should we do first|what do we do first|what needs my attention|what needs attention|biggest risk|biggest problem|make money today|which project should we prioritize|where do we start|where should we start|pick the best one|pick the top priority|what is the priority|what is today'?s priority|give me today'?s plan|give me today'?s priorities|what should nexus handle first|top priority)\b/.test(text)) {
     return { mode: 'EXECUTIVE_ADVICE', intent: 'executive_priority_advice', confidence: 0.91, reason: 'Question asks Hermes to recommend an operating priority.' };
   }
 

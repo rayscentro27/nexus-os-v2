@@ -71,7 +71,7 @@ export function classifyExecutiveIntent(message: string): ExecutiveIntent | null
     return 'knowledge_status';
   }
   if (/\b(daily brief|operating brief|brief me)\b/.test(lower)) return 'executive_daily_brief';
-  if (/\b(attention today|what.*first|top priorities|priorit(y|ies)|what should we do first)\b/.test(lower)) return 'executive_priorities';
+  if (/\b(attention today|needs my attention|what.*first|focus on today|where should we start|where do we start|top priorities|top priority|priorit(y|ies)|today'?s plan|what should we do first|what should we work on first|what should nexus handle first)\b/.test(lower)) return 'executive_priorities';
   if (/\b(system health|healthy|health status|top risks|risk)\b/.test(lower)) return 'executive_system_health';
   if (/\b(customer risk|customers? blocked|client risk|client blocked)\b/.test(lower)) return 'executive_customer_risk';
   if (/\b(revenue status|stripe|money|orders|fulfillment|checkout)\b/.test(lower)) return 'executive_revenue_status';

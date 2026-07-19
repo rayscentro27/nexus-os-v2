@@ -1,5 +1,6 @@
 import { answerExecutiveIntent, classifyExecutiveIntent } from '../executive/hermesExecutiveAdvisor';
 import type { EvidenceState } from '../executive/executiveTypes';
+import { answerTodayOperatingFocus, type HermesOperatingContext } from './hermesOperatingContext';
 import type {
   HermesAdvisoryContext,
   HermesAdvisoryRecommendation,
@@ -109,6 +110,14 @@ export interface HermesGeneratedResponse {
   warnings: string[];
 }
 
+function getOperatingContext(input: HermesConversationInput): HermesOperatingContext | null {
+  const candidate = input.pageContext && typeof input.pageContext === 'object'
+    ? (input.pageContext as { operatingContext?: HermesOperatingContext }).operatingContext
+    : undefined;
+  if (candidate && Array.isArray(candidate.priorities) && Array.isArray(candidate.blockers)) return candidate;
+  return null;
+}
+
 export function generateHermesResponse(args: {
   input: HermesConversationInput;
   mode: HermesConversationMode;
@@ -174,14 +183,26 @@ export function generateHermesResponse(args: {
   }
 
   if (mode === 'EXECUTIVE_ADVICE') {
-    const nextAdvisory = buildDefaultExecutiveAdvisory();
-    const first = nextAdvisory.recommendations[0];
+    const operatingContext = getOperatingContext(input);
+    if (!operatingContext) {
+      const nextAdvisory = buildDefaultExecutiveAdvisory();
+      const first = nextAdvisory.recommendations[0];
+      return {
+        response: `I would do **${first.label}** first. ${first.rationale} The main risk is ${first.risks?.[0] || 'moving before the evidence is stable'}. Once it passes, move directly into Department Operations and governed automation.`,
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext: nextAdvisory,
+        action: null,
+        contextUsed: ['executive_read_model', 'capability_os', 'knowledge_layer'],
+        warnings,
+      };
+    }
+    const operating = answerTodayOperatingFocus(operatingContext);
     return {
-      response: `I would do **${first.label}** first. ${first.rationale} The main risk is ${first.risks?.[0] || 'moving before the evidence is stable'}. Once it passes, move directly into Department Operations and governed automation.`,
+      response: operating.text,
       evidenceState: 'REPORT_BACKED',
-      advisoryContext: nextAdvisory,
+      advisoryContext: operating.advisoryContext,
       action: null,
-      contextUsed: ['executive_read_model', 'capability_os', 'knowledge_layer'],
+      contextUsed: ['operating_context_panel', 'executive_read_model', 'capability_os', 'knowledge_layer'],
       warnings,
     };
   }
@@ -198,6 +219,16 @@ export function generateHermesResponse(args: {
     }
     const item = reference?.item || advisoryContext.recommendations.find((candidate) => candidate.id === advisoryContext.preferredRecommendationId) || advisoryContext.recommendations[0];
     const lower = message.toLowerCase();
+    if (reference?.item && /\bgo deeper|number\s*\d+|option\s*\d+\b/i.test(lower)) {
+      return {
+        response: `Going deeper on **${item.label}**: ${item.rationale}\n\nWhy it matters now: it is part of the current operating sequence, but it should stay behind the top customer-protection item unless it directly unblocks that work.\n\nMain risks: ${item.risks?.join(', ') || 'unclear evidence and dependency order'}.\n\nNext step: verify the evidence source for this item, then decide whether it needs Ray Review, a governed task, or just monitoring.`,
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: ['advisory_memory', 'selection_memory'],
+        warnings,
+      };
+    }
     if (/\bcost|without paying|free\b/.test(lower)) {
       return {
         response: `${item.label} can be tested with mostly internal effort first. Keep it Nexus-native, use existing fixtures and reports, and avoid adding paid frameworks until the failure is measured. The cost risk is time spent polishing conversation behavior instead of validating it through the corpus.`,

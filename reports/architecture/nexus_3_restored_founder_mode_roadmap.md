@@ -1,7 +1,7 @@
 # Nexus 3 Restored Founder Mode Roadmap
 
 Generated: 2026-07-18
-Last updated: 2026-07-18 Wave 1 implementation
+Last updated: 2026-07-18 Wave 4A.1 live Hermes Workroom repair
 
 ## Roadmap decision
 
@@ -149,7 +149,7 @@ Known follow-up: durable Supabase-backed knowledge approval history remains defe
 
 ## Wave 4A — Hermes conversation and memory architecture
 
-Status: IMPLEMENTED in Wave 4A pending final commit.
+Status: IMPLEMENTED in Wave 4A.
 
 Built:
 
@@ -163,7 +163,33 @@ Built:
 - Executive Hermes Conversation Health panel.
 - Capability OS registration for Wave 4A Hermes conversation capabilities.
 
-Known follow-up: deeper retirement of the rich workroom router remains deferred until a separate migration proves equivalent browser behavior.
+Known follow-up: deeper retirement of non-Workroom legacy routers remains deferred until a separate migration proves equivalent browser behavior.
+
+## Wave 4A.1 — Live Hermes Workroom runtime and context repair
+
+Status: IMPLEMENTED and browser-certified.
+
+Built:
+
+- Connected the authenticated Hermes CEO Advisor Workroom to the canonical Wave 4A conversation engine.
+- Added a normalized serializable Workroom response contract.
+- Removed callback/function persistence from Workroom action rendering.
+- Connected the visible Operating Context evidence to Hermes priority responses.
+- Repaired Executive priority routing for "what should we focus on today?" and related paraphrases.
+- Added production-equivalent authenticated Playwright certification for immediate response rendering, persistence after refresh, multi-turn memory, selection resolution, action separation, responsive layouts, and client denial.
+- Added Capability OS records for Workroom runtime, Workroom response rendering, operating-context adapter, and live conversation certification.
+
+Acceptance evidence:
+
+- `tests/e2e/hermes-live-workroom-certification.spec.ts`: PASS 7/7.
+- Page errors: 0.
+- Console errors: 0.
+- `npm test`: PASS 1466/1466.
+- RLS: PASS 45/45.
+
+Known limitation:
+
+- The original minified production stack for `n is not a function` was not captured because the crash did not reproduce in a clean authenticated session. The source-level live render/persistence contract was repaired and certified.
 
 ## Wave 4 — Department operations and automation
 
@@ -194,7 +220,7 @@ Build later:
 
 ## Next implementation wave decision
 
-Recommended next wave after Wave 3 certification:
+Recommended next wave after Wave 4A.1 certification:
 
 ```text
 Wave 4 — Department Operations and Governed Automation

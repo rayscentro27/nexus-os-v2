@@ -21,7 +21,12 @@ export const SAFE_HERMES_ACTION_TYPES: ReadonlySet<HermesUiActionType> = new Set
   'open_report', 'open_approval', 'view_source', 'open_access_map', 'draft_ray_review', 'prepare_specialist_handoff', 'open_intake', 'open_scorecard', 'open_report_template', 'open_checklist', 'draft_client_report', 'draft_upgrade_recommendation',
 ]);
 
-export function isSafeHermesUiAction(action: HermesUiAction): boolean {
-  return SAFE_HERMES_ACTION_TYPES.has(action.actionType)
-    && (!action.href || /^#\/?(?:reports|rayreview|hermes|system|research|monetization|clients|opportunity|automation|trading)/.test(action.href));
+export function isSafeHermesUiAction(action: unknown): action is HermesUiAction {
+  if (!action || typeof action !== 'object') return false;
+  const candidate = action as Partial<HermesUiAction>;
+  return SAFE_HERMES_ACTION_TYPES.has(candidate.actionType as HermesUiActionType)
+    && typeof candidate.actionLabel === 'string'
+    && typeof candidate.title === 'string'
+    && typeof candidate.source === 'string'
+    && (!candidate.href || /^#\/?(?:reports|rayreview|hermes|system|research|monetization|clients|opportunity|automation|trading)/.test(candidate.href));
 }

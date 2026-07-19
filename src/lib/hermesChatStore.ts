@@ -2,13 +2,14 @@
  *  localStorage only; bounded; sensitive-looking messages are NOT persisted (firewall belt). */
 import { containsSensitive } from './dataScopes';
 import { resetConversationState } from './hermesConversationState';
+import type { HermesWorkroomResponse } from './hermes/hermesWorkroomResponse';
 
 const MSG_KEY = 'nexus_hermes_chat_history';
 const MODE_KEY = 'nexus_hermes_mode';
 const SESSION_KEY = 'nexus_hermes_session_id';
 const MAX = 50;
 
-export interface StoredMsg { role: 'user' | 'hermes'; text: string; meta?: string }
+export interface StoredMsg { role: 'user' | 'hermes'; text: string; meta?: string; workroomResponse?: HermesWorkroomResponse }
 
 function safe(): Storage | null {
   try { return typeof window !== 'undefined' ? window.localStorage : null; } catch { return null; }

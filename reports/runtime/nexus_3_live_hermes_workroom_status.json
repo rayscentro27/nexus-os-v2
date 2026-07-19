@@ -1,0 +1,23 @@
+{
+  "generated_at": "2026-07-19T04:47:49.548Z",
+  "route": "/admin#hermes",
+  "room": "Hermes CEO Advisor",
+  "runtime_render_status": "PASS",
+  "root_cause": "Live Workroom used a legacy pipeline and unnormalized live-only action/render shape while persisted refresh state stripped actions. The bad unknown-context fallback came from src/lib/hermesBrainPipeline.ts. The repaired Workroom now routes through the canonical engine and normalizes serializable responses before persistence and render.",
+  "original_minified_error": "n is not a function",
+  "original_unminified_stack": "NOT_CAPTURED_IN_CLEAN_REPRODUCTION",
+  "canonical_engine_connected": true,
+  "legacy_pipeline_status": "Hermes CEO Advisor Workroom is now a thin adapter to src/lib/hermes/hermesConversationEngine.ts; src/lib/hermesBrainPipeline.ts remains compatibility-only for legacy surfaces.",
+  "operating_context_connected": true,
+  "response_without_refresh": "PASS",
+  "conversation_persistence": "PASS",
+  "multi_turn_continuity": "PASS",
+  "selection_resolution": "PASS",
+  "action_separation": "PASS",
+  "console_error_count": 0,
+  "page_error_count": 0,
+  "browser_test_result": "PASS 7/7 tests/e2e/hermes-live-workroom-certification.spec.ts",
+  "production_build_result": "PASS_WITH_EXISTING_CHUNK_WARNING",
+  "rls_result": "PASS 45/45",
+  "certification_state": "PASS"
+}

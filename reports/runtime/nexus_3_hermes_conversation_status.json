@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-07-19T03:38:27.397Z",
+  "generated_at": "2026-07-19T04:47:49.547Z",
   "source": "src/lib/hermes/hermesConversationEngine.ts",
-  "canonical_pipeline_status": "ACTIVE",
+  "canonical_pipeline_status": "ACTIVE_AND_CONNECTED_TO_ADMIN_WORKROOM",
   "router_count": 18,
   "superseded_route_count": 0,
   "fixture_count": 11,
@@ -23,14 +23,29 @@
   },
   "tests": {
     "typecheck": "PASS",
-    "focused_hermes_and_capability": "PASS",
-    "full_suite": "PASS 91 files / 1455 tests",
+    "focused_hermes_and_capability": "PASS 29 focused Hermes conversation tests plus 42 guard tests",
+    "full_suite": "PASS 92 files / 1466 tests",
     "build": "PASS with existing Vite chunk warning",
     "rls": "PASS 45/45",
     "executive_browser": "PASS 7/7",
     "authenticated_browser": "PASS 18/18",
     "secret_scan": "PASS changed Wave 4A files; broad scan found variable names/assertions only",
-    "privacy_scan": "PASS changed Wave 4A files; no raw customer documents or credential values"
+    "privacy_scan": "PASS changed Wave 4A files; no raw customer documents or credential values",
+    "hermes_live_workroom": "PASS 7/7 production-equivalent authenticated Playwright"
   },
-  "certification_state": "PASS"
+  "certification_state": "PASS_WITH_LIVE_WORKROOM_REPAIR",
+  "live_workroom": {
+    "route": "/admin#hermes",
+    "room": "Hermes CEO Advisor",
+    "canonical_engine_connected": true,
+    "operating_context_connected": true,
+    "response_without_refresh": "PASS",
+    "persistence_after_refresh": "PASS",
+    "multi_turn_continuity": "PASS",
+    "selection_resolution": "PASS",
+    "explicit_action_separation": "PASS",
+    "console_error_count": 0,
+    "page_error_count": 0,
+    "browser_test": "PASS 7/7 tests/e2e/hermes-live-workroom-certification.spec.ts"
+  }
 }
