@@ -1,6 +1,15 @@
 import { answerExecutiveIntent, classifyExecutiveIntent } from '../executive/hermesExecutiveAdvisor';
 import type { EvidenceState } from '../executive/executiveTypes';
-import { answerTodayOperatingFocus, type HermesOperatingContext } from './hermesOperatingContext';
+import {
+  answerBiggestOperatingRisk,
+  answerFollowUpBlockers,
+  answerFollowUpDeepDive,
+  answerFollowUpFeasibility,
+  answerFollowUpRationale,
+  answerRevenueAction,
+  answerTodayOperatingFocus,
+  type HermesOperatingContext,
+} from './hermesOperatingContext';
 import type {
   HermesAdvisoryContext,
   HermesAdvisoryRecommendation,
@@ -13,8 +22,16 @@ import type { HermesReferenceResolution } from './hermesReferenceResolver';
 
 const nowIso = () => new Date().toISOString();
 
-export function chooseHermesResponseStrategy(mode: HermesConversationMode): HermesResponseStrategy {
-  if (['SOCIAL_GREETING', 'CASUAL_CONVERSATION', 'SYSTEM_STATUS', 'COMMAND', 'TASK_REQUEST', 'APPROVAL_REQUEST'].includes(mode)) return 'DETERMINISTIC';
+export function chooseHermesResponseStrategy(mode: HermesConversationMode, intent = ''): HermesResponseStrategy {
+  if (intent === 'executive_risk') return 'executive_risk_response';
+  if (intent === 'revenue_action') return 'revenue_action_response';
+  if (intent === 'executive_priority' || intent === 'executive_priority_advice') return 'executive_priority_response';
+  if (intent === 'followup_rationale') return 'followup_rationale_response';
+  if (intent === 'followup_feasibility') return 'followup_feasibility_response';
+  if (intent === 'followup_blockers') return 'followup_blockers_response';
+  if (intent === 'followup_deep_dive') return 'followup_deep_dive_response';
+  if (mode === 'SYSTEM_STATUS') return intent === 'system_status_honesty' ? 'status_response' : 'security_boundary_response';
+  if (['SOCIAL_GREETING', 'CASUAL_CONVERSATION', 'COMMAND', 'TASK_REQUEST', 'APPROVAL_REQUEST'].includes(mode)) return 'DETERMINISTIC';
   if (['EXECUTIVE_ADVICE', 'FOLLOW_UP_ADVICE', 'SELECTION_REFERENCE', 'DECISION_SUPPORT'].includes(mode)) return 'HYBRID';
   if (['IDEA_REVIEW', 'EXPLANATION'].includes(mode)) return 'MODEL_ASSISTED';
   return 'SAFE_FALLBACK';
@@ -196,7 +213,11 @@ export function generateHermesResponse(args: {
         warnings,
       };
     }
-    const operating = answerTodayOperatingFocus(operatingContext);
+    const operating = args.intent === 'executive_risk'
+      ? answerBiggestOperatingRisk(operatingContext)
+      : args.intent === 'revenue_action'
+        ? answerRevenueAction(operatingContext)
+        : answerTodayOperatingFocus(operatingContext);
     return {
       response: operating.text,
       evidenceState: 'REPORT_BACKED',
@@ -219,6 +240,46 @@ export function generateHermesResponse(args: {
     }
     const item = reference?.item || advisoryContext.recommendations.find((candidate) => candidate.id === advisoryContext.preferredRecommendationId) || advisoryContext.recommendations[0];
     const lower = message.toLowerCase();
+    if (args.intent === 'followup_rationale') {
+      return {
+        response: answerFollowUpRationale(item),
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: ['advisory_memory'],
+        warnings,
+      };
+    }
+    if (args.intent === 'followup_feasibility') {
+      return {
+        response: answerFollowUpFeasibility(item),
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: ['advisory_memory'],
+        warnings,
+      };
+    }
+    if (args.intent === 'followup_blockers') {
+      return {
+        response: answerFollowUpBlockers(item),
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: ['advisory_memory'],
+        warnings,
+      };
+    }
+    if (args.intent === 'followup_deep_dive') {
+      return {
+        response: answerFollowUpDeepDive(item),
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: reference?.item ? ['advisory_memory', 'selection_memory'] : ['advisory_memory'],
+        warnings,
+      };
+    }
     if (reference?.item && /\bgo deeper|number\s*\d+|option\s*\d+\b/i.test(lower)) {
       return {
         response: `Going deeper on **${item.label}**: ${item.rationale}\n\nWhy it matters now: it is part of the current operating sequence, but it should stay behind the top customer-protection item unless it directly unblocks that work.\n\nMain risks: ${item.risks?.join(', ') || 'unclear evidence and dependency order'}.\n\nNext step: verify the evidence source for this item, then decide whether it needs Ray Review, a governed task, or just monitoring.`,
@@ -250,7 +311,7 @@ export function generateHermesResponse(args: {
       };
     }
     return {
-      response: `Yes, it is realistic if we keep it bounded. ${item.label} works because ${item.rationale} I would validate it through the Wave 4A corpus before trusting it as the front door for Department Operations.`,
+      response: answerFollowUpFeasibility(item),
       evidenceState: 'REPORT_BACKED',
       advisoryContext,
       action: null,

@@ -21,7 +21,16 @@ export type HermesResponseStrategy =
   | 'DETERMINISTIC'
   | 'MODEL_ASSISTED'
   | 'HYBRID'
-  | 'SAFE_FALLBACK';
+  | 'SAFE_FALLBACK'
+  | 'executive_priority_response'
+  | 'executive_risk_response'
+  | 'revenue_action_response'
+  | 'followup_rationale_response'
+  | 'followup_feasibility_response'
+  | 'followup_blockers_response'
+  | 'followup_deep_dive_response'
+  | 'status_response'
+  | 'security_boundary_response';
 
 export interface HermesAdvisoryRecommendation {
   id: string;
@@ -29,7 +38,14 @@ export interface HermesAdvisoryRecommendation {
   rationale: string;
   score?: number;
   risks?: string[];
+  blockers?: string[];
   dependencies?: string[];
+  nextStep?: string;
+  feasibility?: {
+    status: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+    reasons: string[];
+  };
+  evidenceIds?: string[];
 }
 
 export interface HermesAdvisoryContext {

@@ -191,6 +191,33 @@ Known limitation:
 
 - The original minified production stack for `n is not a function` was not captured because the crash did not reproduce in a clean authenticated session. The source-level live render/persistence contract was repaired and certified.
 
+## Wave 4A.2 — Hermes production stack and Executive intent differentiation
+
+Status: IMPLEMENTED locally; live production certification pending post-deploy.
+
+Built:
+
+- Traced production `n is not a function` to the Workroom scroll effect returning a non-function cleanup value through React effect lifecycle.
+- Repaired `src/components/HermesChatPanel.jsx` so `scrollIntoView` is performed as a side effect and never returned as cleanup.
+- Added schema-versioned Workroom localStorage migration for legacy messages.
+- Sanitized legacy Workroom actions so callbacks/functions cannot be loaded from storage.
+- Split Executive intent routing into priority, risk, revenue, rationale, feasibility, blocker, and deep-dive strategies.
+- Segmented Hermes operating context into priorities, risks, revenue actions, blockers, opportunities, system health, and unknowns.
+- Added production-style Playwright coverage for legacy state, scroll polyfill return values, zero page errors, zero console errors, response differentiation, action separation, and responsive behavior.
+
+Acceptance evidence:
+
+- `npm run typecheck`: PASS.
+- `npm run build`: PASS with existing chunk-size warning.
+- `npm test -- --reporter=dot`: PASS 1470/1470.
+- RLS: PASS 45/45.
+- `tests/e2e/hermes-production-intent-certification.spec.ts`: PASS 7/7 local production.
+- `tests/e2e/hermes-live-workroom-certification.spec.ts`: PASS 7/7 local production.
+
+Known limitation:
+
+- Live production post-deploy certification must run after the repair commit deploys to `https://goclearonline.cc`.
+
 ## Wave 4 — Department operations and automation
 
 Build:

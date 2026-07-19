@@ -51,8 +51,20 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'SYSTEM_STATUS', intent: 'system_status_honesty', confidence: 0.93, reason: 'Question asks for known system or capability status.' };
   }
 
-  if (/\b(is that realistic|is this realistic|is it realistic|why that one|why this one|what would stop us|what would it cost|could we do it without paying|what is the downside|go deeper|which one should we do first|what did you mean by that)\b/.test(text)) {
-    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'advisory_followup' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.88 : 0.55, reason: 'Question is a plan-level follow-up.' };
+  if (/\b(why that one|why this one|why did you choose that|why is that first|what makes that the priority)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_rationale' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Question asks for the rationale behind prior advice.' };
+  }
+
+  if (/\b(is that realistic|is this realistic|is it realistic|can we actually do that|is that possible|can we pull that off)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_feasibility' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Question asks whether the prior recommendation is feasible.' };
+  }
+
+  if (/\b(what would stop us|what are the blockers|what could prevent this|what could derail it|what is the downside|what is the risk)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_blockers' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Question asks for blockers or constraints on prior advice.' };
+  }
+
+  if (/\b(go deeper|explain that in more detail|break that down|tell me more about|what would it cost|could we do it without paying|which one should we do first|what did you mean by that)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_deep_dive' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.88 : 0.55, reason: 'Question asks for deeper analysis of prior advice.' };
   }
 
   if (/\b(number\s*\d+|option\s*\d+|the first one|the second one|the third one|the last one|that one|this one|the marketing idea|what you just said|the recommendation|the plan)\b/.test(text)) {
@@ -63,8 +75,16 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'SELECTION_REFERENCE', intent: 'resolve_selection_reference', confidence: hasAdvisoryContext ? 0.9 : 0.65, reason: 'Message refers to a prior recommendation or list item.' };
   }
 
-  if (/\b(what should we focus on today|what should we work on first|what should we do first|what do we do first|what needs my attention|what needs attention|biggest risk|biggest problem|make money today|which project should we prioritize|where do we start|where should we start|pick the best one|pick the top priority|what is the priority|what is today'?s priority|give me today'?s plan|give me today'?s priorities|what should nexus handle first|top priority)\b/.test(text)) {
-    return { mode: 'EXECUTIVE_ADVICE', intent: 'executive_priority_advice', confidence: 0.91, reason: 'Question asks Hermes to recommend an operating priority.' };
+  if (/\b(biggest risk|biggest danger|biggest problem|most exposed|hurt us the most|could go wrong first|what could go wrong|where are we exposed)\b/.test(text)) {
+    return { mode: 'EXECUTIVE_ADVICE', intent: 'executive_risk', confidence: 0.92, reason: 'Question asks for the highest current operating risk.' };
+  }
+
+  if (/\b(make money today|generate revenue today|sell first|fastest revenue action|money action|revenue action|how can we make money|what can generate revenue)\b/.test(text)) {
+    return { mode: 'EXECUTIVE_ADVICE', intent: 'revenue_action', confidence: 0.92, reason: 'Question asks for the best immediate revenue action.' };
+  }
+
+  if (/\b(what should we focus on today|what should we work on first|what should we do first|what do we do first|what needs my attention|what needs attention|which project should we prioritize|where do we start|where should we start|pick the best one|pick the top priority|what is the priority|what is today'?s priority|give me today'?s plan|give me today'?s priorities|what should nexus handle first|top priority)\b/.test(text)) {
+    return { mode: 'EXECUTIVE_ADVICE', intent: 'executive_priority', confidence: 0.91, reason: 'Question asks Hermes to recommend an operating priority.' };
   }
 
   if (/\b(is this realistic|is that a good idea|review this idea|what do you think about this idea)\b/.test(text)) {

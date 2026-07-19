@@ -1,7 +1,7 @@
 # Nexus OS 3.0 — Hermes Router Reconciliation
 
 Generated: 2026-07-18
-Last updated: 2026-07-18 Wave 4A.1 live Workroom repair
+Last updated: 2026-07-19 Wave 4A.2 production stack and intent repair
 
 ## Summary
 
@@ -35,6 +35,13 @@ Wave 4A resolves the main conflict by classifying conversation mode before narro
 
 Wave 4A.1 resolves the production Workroom conflict by making the CEO Advisor room use the canonical engine and one normalized response shape for both live render and refresh hydration. The bad compatibility fallback from `hermesBrainPipeline.ts` no longer handles "what should we focus on today?" in the Workroom.
 
+Wave 4A.2 resolves the remaining production stack failure and intent collapse:
+
+- The minified `n is not a function` stack mapped to React effect cleanup invocation of the value returned by `end.current?.scrollIntoView(...)` in `src/components/HermesChatPanel.jsx`.
+- The Workroom scroll effect now uses a block body and returns `undefined`, so a browser/polyfill return value cannot become a React cleanup callback.
+- Legacy localStorage messages now migrate to schema version 2 and are normalized before render.
+- Executive Workroom questions now route to distinct strategy IDs for priority, risk, revenue, rationale, feasibility, blockers, and deep dives.
+
 ## Retirement plan
 
 Do not delete legacy routers until:
@@ -56,3 +63,20 @@ Do not delete legacy routers until:
 - Operating-context answer: PASS
 - Multi-turn continuity: PASS
 - Action separation: PASS
+
+## Wave 4A.2 production stack certification
+
+- Route: `/admin#hermes`
+- Room: Hermes CEO Advisor
+- Root cause: effect cleanup contract in `src/components/HermesChatPanel.jsx`
+- Original minified symbol: `n`
+- Original source symbol: return value of `end.current?.scrollIntoView({ behavior: 'smooth' })`
+- Browser suite: `tests/e2e/hermes-production-intent-certification.spec.ts`
+- Local production result: PASS 7/7
+- Compatibility suite: `tests/e2e/hermes-live-workroom-certification.spec.ts` PASS 7/7
+- Page errors: 0 in local production certification
+- Console errors: 0 in local production certification
+- Legacy persisted-state rendering: PASS
+- Priority/risk/revenue differentiation: PASS
+- Rationale/feasibility/blocker differentiation: PASS
+- Live production post-deploy result: pending until this repair commit is deployed

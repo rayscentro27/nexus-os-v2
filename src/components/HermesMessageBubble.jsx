@@ -10,7 +10,7 @@ function openSafeAction(action) {
 export default function HermesMessageBubble({ message, onDelegate, onAction }) {
   const legacyActions = Array.isArray(message.uiActions) ? message.uiActions.filter(isSafeHermesUiAction) : [];
   const workroomActions = Array.isArray(message.actions) ? message.actions.filter(isSafeWorkroomAction) : [];
-  return <div className={`nxos-message ${message.role}`} data-hermes-mode={message.mode || ''} data-hermes-intent={message.intent || ''}>
+  return <div className={`nxos-message ${message.role}`} data-hermes-mode={message.mode || ''} data-hermes-intent={message.intent || ''} data-hermes-strategy={message.responseStrategy || ''}>
     <strong>{message.role === 'ray' ? 'Ray' : 'Hermes'}</strong>
     <p>{message.text}</p>
     <div className="hermes-message-actions">

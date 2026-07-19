@@ -27,7 +27,7 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     ? classifyHermesConversationMode(workingInput.message, true)
     : classification;
   const reference = resolveHermesReference(workingInput.message, memory.advisoryContext);
-  const strategy = chooseHermesResponseStrategy(secondPass.mode);
+  const strategy = chooseHermesResponseStrategy(secondPass.mode, secondPass.intent);
   let contextUsed: string[] = [];
 
   if (['SYSTEM_STATUS', 'EXECUTIVE_ADVICE', 'FACTUAL_QUESTION', 'EXPLANATION', 'DECISION_SUPPORT'].includes(secondPass.mode)) {

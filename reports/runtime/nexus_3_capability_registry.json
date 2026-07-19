@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-19T04:47:27.552Z",
+  "generated_at": "2026-07-19T12:36:57.670Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
-  "total_capabilities": 123,
+  "total_capabilities": 128,
   "capabilities": [
     {
       "capability_id": "executive_command_center",
@@ -6098,13 +6098,13 @@
       "estimated_monthly_cost": null,
       "cost_notes": "No exact pricing asserted by Capability OS.",
       "health_freshness": "REPORT_BACKED",
-      "last_verified_at": "2026-07-18T00:00:00.000Z",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
       "events_consumed": [],
       "events_emitted": [],
       "notes": "",
       "capability_id": "hermes_workroom_runtime",
       "name": "Hermes Workroom Runtime",
-      "description": "Authenticated admin Workroom submit-to-render path for the Hermes CEO Advisor room.",
+      "description": "Authenticated admin Workroom submit-to-render path for the Hermes CEO Advisor room, including production React effect cleanup safety.",
       "capability_type": "ADMIN_FEATURE",
       "department_id": "executive",
       "owner_id": "executive",
@@ -6129,9 +6129,10 @@
         "admin_authentication"
       ],
       "cost_model": "INTERNAL",
-      "health_source": "tests/e2e/hermes-live-workroom-certification.spec.ts",
+      "health_source": "tests/e2e/hermes-production-intent-certification.spec.ts",
       "health_status": "HEALTHY",
       "tests": [
+        "tests/e2e/hermes-production-intent-certification.spec.ts",
         "tests/e2e/hermes-live-workroom-certification.spec.ts",
         "tests/hermes_live_workroom_contract.test.ts"
       ],
@@ -6146,12 +6147,12 @@
         {
           "source": "src/components/HermesChatPanel.jsx",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
         },
         {
-          "source": "tests/e2e/hermes-live-workroom-certification.spec.ts",
+          "source": "tests/e2e/hermes-production-intent-certification.spec.ts",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
         }
       ]
     },
@@ -6162,7 +6163,7 @@
       "estimated_monthly_cost": null,
       "cost_notes": "No exact pricing asserted by Capability OS.",
       "health_freshness": "REPORT_BACKED",
-      "last_verified_at": "2026-07-18T00:00:00.000Z",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
       "events_consumed": [],
       "events_emitted": [],
       "notes": "",
@@ -6184,14 +6185,15 @@
       ],
       "credential_requirements": [],
       "dependencies": [
-        "hermes_conversation_engine"
+        "hermes_conversation_engine",
+        "hermes_legacy_message_migration"
       ],
       "cost_model": "INTERNAL",
       "health_source": "src/lib/hermes/hermesWorkroomResponse.ts",
       "health_status": "HEALTHY",
       "tests": [
-        "tests/hermes_live_workroom_contract.test.ts",
-        "tests/e2e/hermes-live-workroom-certification.spec.ts"
+        "tests/hermes_production_intent_differentiation.test.ts",
+        "tests/e2e/hermes-production-intent-certification.spec.ts"
       ],
       "rollback_plan": "Render plain Hermes text responses with actions disabled.",
       "disable_plan": "Disable action buttons and show normalized text only.",
@@ -6204,12 +6206,12 @@
         {
           "source": "src/lib/hermes/hermesWorkroomResponse.ts",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
         },
         {
           "source": "src/components/HermesMessageBubble.jsx",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
         }
       ]
     },
@@ -6220,13 +6222,13 @@
       "estimated_monthly_cost": null,
       "cost_notes": "No exact pricing asserted by Capability OS.",
       "health_freshness": "REPORT_BACKED",
-      "last_verified_at": "2026-07-18T00:00:00.000Z",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
       "events_consumed": [],
       "events_emitted": [],
       "notes": "",
       "capability_id": "hermes_operating_context_adapter",
       "name": "Hermes Operating Context Adapter",
-      "description": "Shared structured operating-context read model used by the visible Workroom context panel and Hermes priority answers.",
+      "description": "Shared structured operating-context read model with separate priorities, risks, revenue actions, blockers, opportunities, and health slices.",
       "capability_type": "INTERNAL_SERVICE",
       "department_id": "executive",
       "owner_id": "executive",
@@ -6250,8 +6252,8 @@
       "health_source": "src/lib/hermes/hermesOperatingContext.ts",
       "health_status": "HEALTHY",
       "tests": [
-        "tests/hermes_live_workroom_contract.test.ts",
-        "tests/e2e/hermes-live-workroom-certification.spec.ts"
+        "tests/hermes_production_intent_differentiation.test.ts",
+        "tests/e2e/hermes-production-intent-certification.spec.ts"
       ],
       "rollback_plan": "Use canonical Wave 4A executive recommendations without page operating context.",
       "disable_plan": "Mark operating context unavailable and keep visible panel read-only.",
@@ -6264,12 +6266,12 @@
         {
           "source": "src/lib/hermes/hermesOperatingContext.ts",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
         },
         {
           "source": "src/data/hermesContextData.js",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
         }
       ]
     },
@@ -6280,13 +6282,13 @@
       "estimated_monthly_cost": null,
       "cost_notes": "No exact pricing asserted by Capability OS.",
       "health_freshness": "REPORT_BACKED",
-      "last_verified_at": "2026-07-18T00:00:00.000Z",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
       "events_consumed": [],
       "events_emitted": [],
       "notes": "",
       "capability_id": "hermes_live_conversation_certification",
       "name": "Hermes Live Conversation Certification",
-      "description": "Production-equivalent authenticated Playwright certification for immediate Workroom response rendering, context use, multi-turn continuity, action separation, persistence, and responsive behavior.",
+      "description": "Production-equivalent authenticated Playwright certification for immediate Workroom response rendering, context use, multi-turn continuity, action separation, persistence, response differentiation, and responsive behavior.",
       "capability_type": "ANALYTICS",
       "department_id": "engineering",
       "owner_id": "engineering",
@@ -6306,12 +6308,14 @@
       ],
       "dependencies": [
         "hermes_workroom_runtime",
-        "hermes_operating_context_adapter"
+        "hermes_operating_context_adapter",
+        "hermes_response_differentiation"
       ],
       "cost_model": "INTERNAL",
-      "health_source": "tests/e2e/hermes-live-workroom-certification.spec.ts",
+      "health_source": "tests/e2e/hermes-production-intent-certification.spec.ts",
       "health_status": "HEALTHY",
       "tests": [
+        "tests/e2e/hermes-production-intent-certification.spec.ts",
         "tests/e2e/hermes-live-workroom-certification.spec.ts"
       ],
       "rollback_plan": "Remove live Workroom gate from Department Operations readiness.",
@@ -6325,7 +6329,275 @@
         {
           "source": "authenticated production-equivalent Playwright",
           "state": "LIVE",
-          "observedAt": "2026-07-18T00:00:00.000Z"
+          "observedAt": "2026-07-19T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "source_type": "NEXUS_NATIVE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_freshness": "REPORT_BACKED",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
+      "events_consumed": [],
+      "events_emitted": [],
+      "notes": "",
+      "owner_id": "engineering",
+      "capability_id": "hermes_legacy_message_migration",
+      "name": "Hermes Legacy Message Migration",
+      "description": "Versioned Workroom localStorage migration that normalizes old messages and drops unsafe callback-shaped action data.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "engineering",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_workroom_response_rendering"
+      ],
+      "cost_model": "INTERNAL",
+      "health_source": "src/lib/hermesChatStore.ts",
+      "health_status": "HEALTHY",
+      "tests": [
+        "tests/hermes_production_intent_differentiation.test.ts",
+        "tests/e2e/hermes-production-intent-certification.spec.ts"
+      ],
+      "rollback_plan": "Clear local Workroom history and render only fresh normalized messages.",
+      "disable_plan": "Disable message hydration while preserving send path.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermesChatStore.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "source_type": "NEXUS_NATIVE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_freshness": "REPORT_BACKED",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
+      "events_consumed": [],
+      "events_emitted": [],
+      "notes": "",
+      "owner_id": "executive",
+      "capability_id": "hermes_executive_intent_classifier",
+      "name": "Hermes Executive Intent Classifier",
+      "description": "Differentiates priority, risk, revenue, rationale, feasibility, blocker, deep-dive, status, security, and explicit action intents.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_mode_classifier",
+        "hermes_operating_context_adapter"
+      ],
+      "cost_model": "INTERNAL",
+      "health_source": "src/lib/hermes/hermesModeClassifier.ts",
+      "health_status": "HEALTHY",
+      "tests": [
+        "tests/hermes_production_intent_differentiation.test.ts"
+      ],
+      "rollback_plan": "Revert to broad executive priority classifier.",
+      "disable_plan": "Ask one narrow clarification for ambiguous executive questions.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesModeClassifier.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "source_type": "NEXUS_NATIVE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_freshness": "REPORT_BACKED",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
+      "events_consumed": [],
+      "events_emitted": [],
+      "notes": "",
+      "owner_id": "executive",
+      "capability_id": "hermes_advisory_memory_semantics",
+      "name": "Hermes Advisory Memory Semantics",
+      "description": "Structured recommendation memory separating rationale, feasibility, blockers, dependencies, next step, and evidence.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_advisory_continuity_engine",
+        "hermes_operating_context_adapter"
+      ],
+      "cost_model": "INTERNAL",
+      "health_source": "src/lib/hermes/hermesOperatingContext.ts",
+      "health_status": "HEALTHY",
+      "tests": [
+        "tests/hermes_production_intent_differentiation.test.ts"
+      ],
+      "rollback_plan": "Use summary-only advisory memory.",
+      "disable_plan": "Require explicit target for all follow-ups.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesOperatingContext.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "source_type": "NEXUS_NATIVE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_freshness": "REPORT_BACKED",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
+      "events_consumed": [],
+      "events_emitted": [],
+      "notes": "",
+      "owner_id": "knowledge",
+      "capability_id": "hermes_response_differentiation",
+      "name": "Hermes Response Differentiation",
+      "description": "Prevents priority, risk, revenue, rationale, feasibility, and blocker responses from collapsing into one generic answer.",
+      "capability_type": "ANALYTICS",
+      "department_id": "knowledge",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_response_strategy",
+        "hermes_executive_intent_classifier"
+      ],
+      "cost_model": "INTERNAL",
+      "health_source": "tests/hermes_production_intent_differentiation.test.ts",
+      "health_status": "HEALTHY",
+      "tests": [
+        "tests/hermes_production_intent_differentiation.test.ts",
+        "tests/e2e/hermes-production-intent-certification.spec.ts"
+      ],
+      "rollback_plan": "Block Department Operations readiness until responses are redifferentiated.",
+      "disable_plan": "Mark Hermes executive advice degraded.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "tests/hermes_production_intent_differentiation.test.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "source_type": "NEXUS_NATIVE",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_freshness": "REPORT_BACKED",
+      "last_verified_at": "2026-07-19T00:00:00.000Z",
+      "events_consumed": [],
+      "events_emitted": [],
+      "notes": "",
+      "owner_id": "engineering",
+      "capability_id": "hermes_production_certification",
+      "name": "Hermes Production Certification",
+      "description": "Post-deploy live production certification for zero Workroom page errors, zero console errors, deployed commit match, and distinct executive intent behavior.",
+      "capability_type": "ANALYTICS",
+      "department_id": "engineering",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "NEXUS_E2E_ADMIN_EMAIL",
+        "NEXUS_E2E_ADMIN_PASSWORD"
+      ],
+      "dependencies": [
+        "netlify_deployment",
+        "hermes_live_conversation_certification"
+      ],
+      "cost_model": "INTERNAL",
+      "health_source": "live https://goclearonline.cc Playwright",
+      "health_status": "HEALTHY",
+      "tests": [
+        "tests/e2e/hermes-production-intent-certification.spec.ts"
+      ],
+      "rollback_plan": "Redeploy previous known-good commit or disable Workroom send controls.",
+      "disable_plan": "Keep Hermes Workroom degraded until live production passes.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "reports/runtime/nexus_3_hermes_production_certification.json",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T00:00:00.000Z"
         }
       ]
     }

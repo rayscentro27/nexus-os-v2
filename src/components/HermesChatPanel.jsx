@@ -27,7 +27,12 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
   const [loading, setLoading] = useState(false);
   const end = useRef(null);
 
-  useEffect(() => end.current?.scrollIntoView({ behavior: 'smooth' }), [messages]);
+  useEffect(() => {
+    const target = end.current;
+    if (target && typeof target.scrollIntoView === 'function') {
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const send = useCallback(async (text = input) => {
     const clean = (text || '').trim();

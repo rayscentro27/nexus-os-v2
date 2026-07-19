@@ -59,6 +59,10 @@ function confidence(value: unknown): number {
   return 0.75;
 }
 
+function isKnownWorkroomActionType(value: unknown): value is HermesWorkroomActionType {
+  return ['DRAFT_RAY_REVIEW', 'PREPARE_SPECIALIST_HANDOFF', 'CREATE_TASK_REQUEST', 'NONE'].includes(String(value));
+}
+
 function actionFromCanonical(result: HermesConversationResult): HermesWorkroomAction[] {
   if (!result.action) {
     return [
@@ -133,7 +137,7 @@ export function normalizeHermesWorkroomResponse(
       ? actionFromCanonical(canonical)
       : Array.isArray(persisted?.actions)
         ? persisted.actions
-            .filter((action): action is HermesWorkroomAction => Boolean(action && typeof action === 'object' && typeof action.type === 'string'))
+            .filter((action): action is HermesWorkroomAction => Boolean(action && typeof action === 'object' && isKnownWorkroomActionType((action as Partial<HermesWorkroomAction>).type)))
             .map((action) => ({
               id: text(action.id, stableId('action')),
               type: action.type,
@@ -162,7 +166,7 @@ export function toHermesChatMessage(response: HermesWorkroomResponse): HermesWor
 export function isSafeWorkroomAction(action: unknown): action is HermesWorkroomAction {
   if (!action || typeof action !== 'object') return false;
   const candidate = action as Partial<HermesWorkroomAction>;
-  return ['DRAFT_RAY_REVIEW', 'PREPARE_SPECIALIST_HANDOFF', 'CREATE_TASK_REQUEST', 'NONE'].includes(String(candidate.type))
+  return isKnownWorkroomActionType(candidate.type)
     && typeof candidate.label === 'string'
     && typeof candidate.enabled === 'boolean'
     && typeof candidate.requiresApproval === 'boolean'

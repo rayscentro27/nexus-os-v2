@@ -16,10 +16,10 @@ describe('Hermes live Workroom contract', () => {
     'where should we start?',
     'what is the top priority?',
     'give me today’s priorities',
-    'what is the biggest problem right now?',
     'what should Nexus handle first?',
   ])('routes %s to executive priority advice', (message) => {
     expect(classifyHermesConversationMode(message).mode).toBe('EXECUTIVE_ADVICE');
+    expect(classifyHermesConversationMode(message).intent).toBe('executive_priority');
   });
 
   it('answers today-priority questions from the visible operating context', () => {

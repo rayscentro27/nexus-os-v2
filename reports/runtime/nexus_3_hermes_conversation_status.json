@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T04:47:49.547Z",
+  "generated_at": "2026-07-19T12:37:38.818Z",
   "source": "src/lib/hermes/hermesConversationEngine.ts",
   "canonical_pipeline_status": "ACTIVE_AND_CONNECTED_TO_ADMIN_WORKROOM",
   "router_count": 18,
@@ -8,7 +8,7 @@
   "certification_score": 100,
   "historical_regression_score": 100,
   "action_separation_score": 100,
-  "memory_score": 96,
+  "memory_score": 100,
   "reference_resolution_score": 100,
   "repetition_score": 100,
   "fallback_count": 0,
@@ -23,17 +23,19 @@
   },
   "tests": {
     "typecheck": "PASS",
-    "focused_hermes_and_capability": "PASS 29 focused Hermes conversation tests plus 42 guard tests",
-    "full_suite": "PASS 92 files / 1466 tests",
-    "build": "PASS with existing Vite chunk warning",
+    "focused_hermes_and_capability": "PASS 33 focused Hermes tests plus Capability OS focused tests",
+    "full_suite": "PASS 93 files / 1470 tests",
+    "build": "PASS with existing Vite chunk warning; local bundle index-DzToWJIG.js",
     "rls": "PASS 45/45",
     "executive_browser": "PASS 7/7",
     "authenticated_browser": "PASS 18/18",
     "secret_scan": "PASS changed Wave 4A files; broad scan found variable names/assertions only",
     "privacy_scan": "PASS changed Wave 4A files; no raw customer documents or credential values",
-    "hermes_live_workroom": "PASS 7/7 production-equivalent authenticated Playwright"
+    "hermes_live_workroom": "PASS 7/7 production-equivalent authenticated Playwright",
+    "local_production_workroom": "PASS combined local production Workroom specs 14/14",
+    "hermes_live_workroom_compatibility": "PASS tests/e2e/hermes-live-workroom-certification.spec.ts 7/7"
   },
-  "certification_state": "PASS_WITH_LIVE_WORKROOM_REPAIR",
+  "certification_state": "PASS_WITH_PRODUCTION_STACK_AND_INTENT_REPAIR_PENDING_LIVE_POST_DEPLOY",
   "live_workroom": {
     "route": "/admin#hermes",
     "room": "Hermes CEO Advisor",
@@ -46,6 +48,14 @@
     "explicit_action_separation": "PASS",
     "console_error_count": 0,
     "page_error_count": 0,
-    "browser_test": "PASS 7/7 tests/e2e/hermes-live-workroom-certification.spec.ts"
+    "browser_test": "PASS 7/7 tests/e2e/hermes-live-workroom-certification.spec.ts",
+    "original_minified_symbol": "n",
+    "original_source_symbol": "React effect cleanup value returned from end.current.scrollIntoView(...)",
+    "original_source_file": "src/components/HermesChatPanel.jsx",
+    "original_source_line": 30,
+    "response_differentiation": "PASS priority/risk/revenue and rationale/feasibility/blocker strategies distinct",
+    "legacy_message_migration": "PASS schemaVersion=2",
+    "local_production_browser_test": "PASS 14/14",
+    "live_production_browser_test": "PENDING_POST_DEPLOY"
   }
 }
