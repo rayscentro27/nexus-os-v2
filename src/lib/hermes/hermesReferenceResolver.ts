@@ -1,4 +1,4 @@
-import type { HermesAdvisoryContext, HermesAdvisoryRecommendation } from './hermesConversationTypes';
+import type { HermesAdvisoryContext, HermesAdvisoryRecommendation, HermesSelectionContext } from './hermesConversationTypes';
 
 export interface HermesReferenceResolution {
   item: HermesAdvisoryRecommendation | null;
@@ -16,7 +16,7 @@ const ordinalToIndex: Record<string, number> = {
   last: -1,
 };
 
-export function resolveHermesReference(message: string, advisory?: HermesAdvisoryContext): HermesReferenceResolution {
+export function resolveHermesReference(message: string, advisory?: HermesAdvisoryContext, selection?: HermesSelectionContext): HermesReferenceResolution {
   if (!advisory?.recommendations.length) {
     return { item: null, confidence: 0, referencesResolved: [], reason: 'No advisory context is available.' };
   }
@@ -50,6 +50,12 @@ export function resolveHermesReference(message: string, advisory?: HermesAdvisor
   }
 
   if (/\b(that|this|it|that one|this one|the recommendation|the plan|what you just said)\b/.test(lower)) {
+    const selected = selection?.selectedRecommendationId
+      ? advisory.recommendations.find((item) => item.id === selection.selectedRecommendationId)
+      : null;
+    if (selected) {
+      return { item: selected, confidence: 0.88, referencesResolved: ['selected_recommendation', selected.id], reason: 'Resolved pronoun to the most recent selected recommendation.' };
+    }
     const preferred = advisory.recommendations.find((item) => item.id === advisory.preferredRecommendationId) || advisory.recommendations[0];
     return { item: preferred, confidence: 0.82, referencesResolved: ['preferred_recommendation', preferred.id], reason: 'Resolved pronoun to preferred advisory recommendation.' };
   }

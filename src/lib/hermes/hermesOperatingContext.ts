@@ -53,6 +53,7 @@ export interface HermesOperatingContext {
 }
 
 const slug = (value: string): string => value.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+const sixHoursFromNow = () => new Date(Date.now() + 1000 * 60 * 60 * 6).toISOString();
 
 function priorityForBlocker(title: string): HermesOperatingPriority {
   if (/client|customer|live-data/i.test(title)) return 'P1';
@@ -156,8 +157,66 @@ export function buildHermesOperatingContext(now: Date = new Date()): HermesOpera
   };
 }
 
-export function buildOperatingContextAdvisory(context: HermesOperatingContext = buildHermesOperatingContext()): HermesAdvisoryContext {
-  const recommendations: HermesAdvisoryRecommendation[] = context.priorities.slice(0, 4).map((item) => ({
+function structuredRecommendation(item: HermesAdvisoryRecommendation): NonNullable<HermesAdvisoryContext['recommendation']> {
+  return {
+    id: item.id,
+    title: item.label,
+    summary: item.rationale,
+    rationale: item.rationale,
+    feasibility: item.feasibility || { status: 'UNKNOWN', reasons: ['Current evidence does not include a complete feasibility record.'] },
+    risks: item.risks || [],
+    blockers: item.blockers || [],
+    dependencies: item.dependencies || [],
+    nextStep: item.nextStep || 'Confirm the evidence source before turning this into broader work.',
+    evidenceIds: item.evidenceIds || [],
+  };
+}
+
+function advisoryFromRecommendations(input: {
+  context: HermesOperatingContext;
+  topic: string;
+  topicId: string;
+  topicLabel: string;
+  topicType: NonNullable<HermesAdvisoryContext['topicType']>;
+  sourceIntent: string;
+  sourceResponseStrategy: string;
+  summary: string;
+  recommendations: HermesAdvisoryRecommendation[];
+  evidenceIds: string[];
+}): HermesAdvisoryContext {
+  const preferred = input.recommendations[0];
+  return {
+    advisoryId: `${input.topicId}-${Date.now()}`,
+    topic: input.topic,
+    topicId: input.topicId,
+    topicLabel: input.topicLabel,
+    topicType: input.topicType,
+    sourceIntent: input.sourceIntent,
+    sourceResponseStrategy: input.sourceResponseStrategy,
+    summary: input.summary,
+    recommendations: input.recommendations,
+    preferredRecommendationId: preferred?.id,
+    recommendation: preferred ? structuredRecommendation(preferred) : undefined,
+    alternatives: input.recommendations.slice(1).map((item) => ({
+      id: item.id,
+      title: item.label,
+      summary: item.rationale,
+      rationale: item.rationale,
+      risks: item.risks,
+      blockers: item.blockers,
+      dependencies: item.dependencies,
+      nextStep: item.nextStep,
+    })),
+    evidenceIds: input.evidenceIds,
+    createdAt: input.context.generatedAt,
+    updatedAt: input.context.generatedAt,
+    expiresAt: sixHoursFromNow(),
+    status: 'ACTIVE',
+  };
+}
+
+function buildPriorityRecommendations(context: HermesOperatingContext): HermesAdvisoryRecommendation[] {
+  return context.priorities.slice(0, 4).map((item) => ({
     id: item.id,
     label: item.title,
     rationale: item.summary,
@@ -180,16 +239,100 @@ export function buildOperatingContextAdvisory(context: HermesOperatingContext = 
       : 'Reproduce the item with synthetic/admin evidence and confirm the source of truth before expanding it.',
     evidenceIds: [item.id, 'hermes_operating_context_panel'],
   }));
-  return {
-    advisoryId: `operating-context-${Date.now()}`,
+}
+
+export function buildOperatingContextAdvisory(context: HermesOperatingContext = buildHermesOperatingContext()): HermesAdvisoryContext {
+  const recommendations = buildPriorityRecommendations(context);
+  return advisoryFromRecommendations({
+    context,
     topic: 'today_operating_priorities',
+    topicId: 'today_operating_priorities',
+    topicLabel: recommendations[0]?.label || 'Today operating priorities',
+    topicType: 'EXECUTIVE_PRIORITY',
+    sourceIntent: 'executive_priority',
+    sourceResponseStrategy: 'executive_priority_response',
     summary: 'Prioritize today using the live Workroom operating context and Nexus P0-P4 order.',
     recommendations,
-    preferredRecommendationId: recommendations[0]?.id,
     evidenceIds: ['hermes_operating_context_panel', ...context.priorities.slice(0, 3).map((item) => item.id)],
-    createdAt: context.generatedAt,
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 6).toISOString(),
-  };
+  });
+}
+
+export function buildRiskAdvisory(context: HermesOperatingContext = buildHermesOperatingContext()): HermesAdvisoryContext {
+  const riskRank = (risk: HermesOperatingContext['risks'][number]) => /client.*live-data|live-data.*client/i.test(risk.title) ? -1 : /client|customer/i.test(risk.title) ? 0 : /stripe|payment|revenue/i.test(risk.title) ? 1 : /resend|communication/i.test(risk.title) ? 2 : 3;
+  const recommendations = [...context.risks].sort((a, b) => riskRank(a) - riskRank(b)).slice(0, 4).map((risk, index): HermesAdvisoryRecommendation => ({
+    id: risk.id,
+    label: risk.title,
+    rationale: risk.impact,
+    score: index === 0 ? 94 : 80 - index,
+    risks: [risk.impact],
+    blockers: context.blockers.filter((blocker) => blocker.title === risk.title || risk.title.toLowerCase().includes(blocker.title.toLowerCase())).map((blocker) => blocker.impact),
+    dependencies: context.approvals.slice(0, 2).map((approval) => approval.title),
+    feasibility: {
+      status: 'HIGH',
+      reasons: ['The mitigation can be validated with bounded synthetic/admin evidence.', 'No live payment, live trading, or external writer activation is required.'],
+    },
+    nextStep: risk.mitigation,
+    evidenceIds: [risk.id, 'hermes_operating_context_panel'],
+  }));
+  return advisoryFromRecommendations({
+    context,
+    topic: 'executive_risk_mitigation',
+    topicId: 'executive_risk_mitigation',
+    topicLabel: recommendations[0]?.label || 'Executive risk mitigation',
+    topicType: 'EXECUTIVE_RISK',
+    sourceIntent: 'executive_risk',
+    sourceResponseStrategy: 'executive_risk_response',
+    summary: 'Identify the largest current operating exposure and its immediate mitigation.',
+    recommendations,
+    evidenceIds: ['hermes_operating_context_panel', ...context.risks.slice(0, 3).map((item) => item.id)],
+  });
+}
+
+export function buildRevenueAdvisory(context: HermesOperatingContext = buildHermesOperatingContext()): HermesAdvisoryContext {
+  const recommendations = context.revenueActions.slice(0, 4).map((action, index): HermesAdvisoryRecommendation => {
+    const opportunity = context.opportunities.find((item) => item.title === action.title);
+    const isReadiness = /97|readiness/i.test(action.title);
+    return {
+      id: action.id,
+      label: action.title,
+      rationale: isReadiness
+        ? 'It is a bounded entry offer, an immediate monetization path, and it aligns with the existing readiness-review workflow.'
+        : `${action.state}. ${opportunity?.nextStep || revenueNextStep(action.title)}`,
+      score: isReadiness ? 92 : 82 - index,
+      risks: [
+        'Live payment activation is still deferred.',
+        'Customer communication must remain approval-gated.',
+        'Offer copy and fulfillment readiness must be checked before outreach.',
+      ],
+      blockers: [
+        'Stripe remains test-only.',
+        'Required review and configuration checks are not complete.',
+        'Lead audience readiness must be confirmed before outreach.',
+      ],
+      dependencies: ['approved offer copy', 'test checkout verification', 'delivery workflow', 'permitted outreach path'],
+      feasibility: {
+        status: isReadiness ? 'HIGH' : 'MEDIUM',
+        reasons: [
+          isReadiness ? 'The first step can be prepared as an offer and test-mode journey without live payment activation.' : 'It can be evaluated as a report-backed revenue action before execution.',
+          'The current boundary keeps Stripe test-only and customer communication under review.',
+        ],
+      },
+      nextStep: opportunity?.nextStep || revenueNextStep(action.title),
+      evidenceIds: [action.id, 'hermes_operating_context_panel'],
+    };
+  });
+  return advisoryFromRecommendations({
+    context,
+    topic: 'today_revenue_actions',
+    topicId: 'today_revenue_actions',
+    topicLabel: recommendations[0]?.label || 'Today revenue actions',
+    topicType: 'REVENUE_ACTION',
+    sourceIntent: 'revenue_action',
+    sourceResponseStrategy: 'revenue_action_response',
+    summary: 'Choose the fastest bounded revenue action from the Workroom Money Actions context.',
+    recommendations,
+    evidenceIds: ['hermes_operating_context_panel', ...context.revenueActions.slice(0, 3).map((item) => item.id)],
+  });
 }
 
 export function answerTodayOperatingFocus(context: HermesOperatingContext = buildHermesOperatingContext()): {
@@ -208,7 +351,7 @@ export function answerBiggestOperatingRisk(context: HermesOperatingContext = bui
   text: string;
   advisoryContext: HermesAdvisoryContext;
 } {
-  const advisoryContext = buildOperatingContextAdvisory(context);
+  const advisoryContext = buildRiskAdvisory(context);
   const risk = context.risks.find((item) => /client|customer|live-data/i.test(item.title)) || context.risks[0];
   const affected = /client|customer/i.test(risk?.title || '') ? 'customer-facing workflow and evidence visibility' : 'Nexus operations';
   const text = risk
@@ -221,17 +364,18 @@ export function answerRevenueAction(context: HermesOperatingContext = buildHerme
   text: string;
   advisoryContext: HermesAdvisoryContext;
 } {
-  const advisoryContext = buildOperatingContextAdvisory(context);
+  const advisoryContext = buildRevenueAdvisory(context);
   const action = context.revenueActions.find((item) => /97|readiness/i.test(item.title)) || context.revenueActions[0];
   const opportunity = action ? context.opportunities.find((item) => item.title === action.title) : undefined;
+  const alternatives = advisoryContext.recommendations.slice(1, 3);
   const text = action
-    ? `The fastest revenue action today is **${action.title}**.\n\nTarget it at the safest readiness-review audience already represented in the operating context. The offer is ${action.estimatedValue || 'a report-backed monetization action'}, and the practical move today is: ${opportunity?.nextStep || revenueNextStep(action.title)}\n\nBoundary: Stripe stays test-only. Do not open live checkout or send customer communication until the required review and configuration checks pass.`
+    ? `The fastest revenue action today is **${action.title}**.\n\nTarget it at the safest readiness-review audience already represented in the operating context. The offer is ${action.estimatedValue || 'a report-backed monetization action'}, and the practical move today is: ${opportunity?.nextStep || revenueNextStep(action.title)}\n\n${alternatives.length ? `Other viable money actions:\n${alternatives.map((item, index) => `${index + 2}. **${item.label}** — ${item.rationale}`).join('\n')}\n\n` : ''}Boundary: Stripe stays test-only. Do not open live checkout or send customer communication until the required review and configuration checks pass.`
     : 'The operating context does not show a current money action. Do not invent a revenue push; rebuild the revenue context or create a reviewed monetization proposal first.';
   return { text, advisoryContext };
 }
 
 export function answerFollowUpRationale(item: HermesAdvisoryRecommendation): string {
-  return `I chose **${item.label}** because ${item.rationale}\n\nIt comes before the alternatives because it protects the operating foundation first. The main dependency is ${item.dependencies?.[0] || 'the current evidence source being verified'}.`;
+  return `I chose **${item.label}** because ${item.rationale}\n\nThe main dependency is ${item.dependencies?.[0] || 'the current evidence source being verified'}.`;
 }
 
 export function answerFollowUpFeasibility(item: HermesAdvisoryRecommendation): string {

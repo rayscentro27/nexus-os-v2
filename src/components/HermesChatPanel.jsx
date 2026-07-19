@@ -3,7 +3,7 @@ import { hermesStore } from '../lib/hermesChatStore';
 import { recordActivity } from '../lib/hermesActivityJournal';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { getCapabilityBadge } from '../lib/hermesBrainPipeline';
-import { runHermesConversation } from '../lib/hermes/hermesConversationEngine';
+import { runHermesConversation, seedHermesCanonicalAdvisoryContext } from '../lib/hermes/hermesConversationEngine';
 import { buildHermesOperatingContext } from '../lib/hermes/hermesOperatingContext';
 import { normalizeHermesWorkroomResponse, toHermesChatMessage } from '../lib/hermes/hermesWorkroomResponse';
 import HermesMessageBubble from './HermesMessageBubble';
@@ -14,12 +14,15 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
   const [messages, setMessages] = useState(() => {
     const stored = hermesStore.getMessages();
     if (stored.length > 0) {
-      return stored.map((m, i) => {
+      const normalized = stored.map((m, i) => {
         if (m.role === 'hermes' && m.workroomResponse) {
           return toHermesChatMessage(normalizeHermesWorkroomResponse(m.workroomResponse, { messageId: m.workroomResponse.messageId || `stored-${i}` }));
         }
         return { id: `stored-${i}`, role: m.role === 'user' ? 'ray' : 'hermes', text: m.text };
       });
+      const latestAdvisory = [...normalized].reverse().find((message) => message.role === 'hermes' && message.advisoryContext)?.advisoryContext;
+      if (latestAdvisory) seedHermesCanonicalAdvisoryContext(latestAdvisory, hermesStore.getSessionId());
+      return normalized;
     }
     return [welcome];
   });

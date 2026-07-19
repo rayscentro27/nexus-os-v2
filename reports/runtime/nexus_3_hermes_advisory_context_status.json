@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-07-19T16:06:46.774Z",
+  "source": "Wave 4A.3 advisory context ownership repair",
+  "active_context_contract": "IMPLEMENTED",
+  "context_replacement_status": "PASS_NEW_RECOMMENDATION_SUPERSEDES_OLD_ACTIVE_CONTEXT",
+  "topic_switch_status": "PASS_PRIORITY_TO_REVENUE_AND_REVENUE_TO_RISK",
+  "explicit_topic_recall_status": "PASS_ONE_TURN_RECALL_WITHOUT_REACTIVATION",
+  "priority_to_revenue_switch": "PASS",
+  "status_interruption_preservation": "PASS",
+  "rationale_ownership": "PASS_NEWEST_CONTEXT",
+  "feasibility_ownership": "PASS_NEWEST_CONTEXT",
+  "blocker_ownership": "PASS_NEWEST_CONTEXT",
+  "selection_ownership": "PASS_NUMBERED_SELECTION_AND_TASK_TARGET",
+  "stale_topic_leakage_count": 0,
+  "page_error_count": 0,
+  "console_error_count": 0,
+  "local_production_result": "PASS tests/e2e/hermes-advisory-context-certification.spec.ts 2/2 plus existing Workroom suites 14/14",
+  "live_production_result": "PENDING_AFTER_DEPLOYMENT",
+  "certification_state": "LOCAL_CERTIFIED_LIVE_PENDING",
+  "tests": {
+    "focused_unit": "PASS tests/hermes_advisory_context_ownership.test.ts plus Hermes intent/Workroom contract suites",
+    "full_unit": "PASS 94 files / 1476 tests before report updates",
+    "typecheck": "PASS",
+    "production_build": "PASS dist/assets/index-CPTa5pZ6.js with existing chunk-size warning",
+    "rls": "PASS 45/45",
+    "local_playwright": "PASS 16/16 combined advisory and Workroom production specs",
+    "full_suite": "PASS 94 files / 1476 tests",
+    "build": "PASS with existing Vite chunk warning; local bundle index-DjO7eRMo.js"
+  },
+  "security": {
+    "function_persistence": "PROHIBITED",
+    "alpha_supabase": "PROHIBITED",
+    "live_stripe": "DEFERRED_TEST_ONLY",
+    "live_trading": "BLOCKED_BY_POLICY",
+    "external_frameworks_installed": false
+  },
+  "wave_4a_3_final_local_verification": {
+    "typecheck": "PASS",
+    "production_build": "PASS dist/assets/index-DjO7eRMo.js with existing chunk-size warning",
+    "full_unit": "PASS 94 files / 1476 tests",
+    "rls": "PASS 45/45",
+    "local_advisory_playwright": "PASS 2/2",
+    "local_workroom_playwright": "PASS 14/14",
+    "secret_scan": "PASS credential identifiers only; no values",
+    "privacy_scan": "PASS no real PII added"
+  }
+}

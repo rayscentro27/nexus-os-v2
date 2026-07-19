@@ -18,6 +18,29 @@ export function getHermesCanonicalConversationSession(): HermesConversationSessi
   return defaultSession;
 }
 
+export function seedHermesCanonicalAdvisoryContext(advisoryContext: HermesConversationSession['advisoryContext'], sessionId = 'hermes-default-session'): void {
+  if (!advisoryContext) return;
+  defaultSession = createHermesConversationSession({
+    ...defaultSession,
+    sessionId,
+    channel: defaultSession.channel || 'full_workroom',
+    advisoryContext,
+    advisoryContextId: advisoryContext.advisoryId,
+    activeAdvisoryId: advisoryContext.advisoryId,
+    advisoryHistory: [
+      ...(defaultSession.advisoryHistory || []).filter((item) => item.advisoryId !== advisoryContext.advisoryId),
+      { ...advisoryContext, status: 'ACTIVE' as const },
+    ].slice(-8),
+    selectionContext: {
+      selectionContextId: `selection-${advisoryContext.advisoryId}`,
+      items: advisoryContext.recommendations,
+      selectedRecommendationId: advisoryContext.preferredRecommendationId,
+      createdAt: advisoryContext.createdAt,
+    },
+    selectionContextId: `selection-${advisoryContext.advisoryId}`,
+  });
+}
+
 export function runHermesConversation(input: HermesConversationInput): HermesConversationResult {
   const workingInput = { ...input, session: input.session || defaultSession };
   const initialHasAdvisory = Boolean(workingInput.session?.advisoryContext);
@@ -26,7 +49,7 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
   const secondPass = classification.mode === 'CLARIFICATION_REQUIRED' && memory.advisoryContext
     ? classifyHermesConversationMode(workingInput.message, true)
     : classification;
-  const reference = resolveHermesReference(workingInput.message, memory.advisoryContext);
+  const reference = resolveHermesReference(workingInput.message, memory.advisoryContext, memory.session.selectionContext);
   const strategy = chooseHermesResponseStrategy(secondPass.mode, secondPass.intent);
   let contextUsed: string[] = [];
 
@@ -51,13 +74,15 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     advisoryContext: memory.advisoryContext,
     reference,
   });
+  const recommendationProducing = secondPass.mode === 'EXECUTIVE_ADVICE' && Boolean(generated.advisoryContext);
   const session = updateHermesSessionAfterResponse(memory.session, {
     mode: secondPass.mode,
     intent: secondPass.intent,
     message: workingInput.message,
     response: generated.response,
     strategy,
-    advisoryContext: generated.advisoryContext,
+    advisoryContext: recommendationProducing ? generated.advisoryContext : undefined,
+    selectedRecommendationId: reference.item?.id,
   });
   if (!input.session) defaultSession = session;
 
@@ -77,7 +102,15 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     session,
   };
   const quality = scoreHermesResponse(resultWithoutQuality);
-  const trace = createHermesConversationTrace(resultWithoutQuality, quality.overallScore);
+  const trace = createHermesConversationTrace(resultWithoutQuality, quality.overallScore, {
+    activeAdvisoryIdBefore: memory.activeAdvisoryIdBefore,
+    activeAdvisoryIdAfter: session.activeAdvisoryId,
+    resolvedAdvisoryId: memory.resolvedAdvisoryId,
+    resolutionMethod: memory.resolutionMethod,
+    topicSwitched: Boolean(recommendationProducing && generated.advisoryContext && memory.activeAdvisoryIdBefore && memory.activeAdvisoryIdBefore !== generated.advisoryContext.advisoryId),
+    supersededAdvisoryId: recommendationProducing ? generated.advisoryContext?.supersedesAdvisoryId : undefined,
+    followUpSemantic: secondPass.intent.startsWith('followup_') ? secondPass.intent.replace('followup_', '') : undefined,
+  });
   return { ...resultWithoutQuality, quality, trace };
 }
 

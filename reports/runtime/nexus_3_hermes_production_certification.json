@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T12:45:31.429Z",
+  "generated_at": "2026-07-19T16:06:46.774Z",
   "expected_commit": "dc8153aa3b20d3cc0cb3e29ec341285e88caa21f",
   "deployed_commit": "dc8153aa3b20d3cc0cb3e29ec341285e88caa21f",
   "deployment_match": "YES",
@@ -23,5 +23,24 @@
   "action_separation": "PASS questions create no work; explicit task request creates governed draft action only",
   "local_production_result": "PASS tests/e2e/hermes-production-intent-certification.spec.ts 7/7 and tests/e2e/hermes-live-workroom-certification.spec.ts 7/7; combined local production run 14/14",
   "live_production_result": "PASS live https://goclearonline.cc Workroom Playwright 14/14",
-  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED"
+  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
+  "wave_4a_3_advisory_context": {
+    "active_context_contract": "IMPLEMENTED",
+    "priority_to_revenue_switch": "PASS",
+    "status_interruption_preservation": "PASS",
+    "explicit_older_topic_recall": "PASS",
+    "stale_topic_leakage_count": 0,
+    "local_production_result": "PASS",
+    "live_production_result": "PENDING_AFTER_DEPLOYMENT"
+  },
+  "wave_4a_3_final_local_verification": {
+    "typecheck": "PASS",
+    "production_build": "PASS dist/assets/index-DjO7eRMo.js with existing chunk-size warning",
+    "full_unit": "PASS 94 files / 1476 tests",
+    "rls": "PASS 45/45",
+    "local_advisory_playwright": "PASS 2/2",
+    "local_workroom_playwright": "PASS 14/14",
+    "secret_scan": "PASS credential identifiers only; no values",
+    "privacy_scan": "PASS no real PII added"
+  }
 }

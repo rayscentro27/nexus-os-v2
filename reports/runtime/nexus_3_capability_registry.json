@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-19T12:36:57.670Z",
+  "generated_at": "2026-07-19T15:59:36.477Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
-  "total_capabilities": 128,
+  "total_capabilities": 135,
   "capabilities": [
     {
       "capability_id": "executive_command_center",
@@ -6600,6 +6600,366 @@
           "observedAt": "2026-07-19T00:00:00.000Z"
         }
       ]
+    },
+    {
+      "capability_id": "hermes_active_advisory_context",
+      "name": "Hermes Active Advisory Context",
+      "description": "Authoritative active advisory pointer and bounded history for the latest recommendation-producing Hermes response.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_memory_resolver",
+        "hermes_conversation_engine"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesMemoryResolver.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/hermes_advisory_context_ownership.test.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesMemoryResolver.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
+    },
+    {
+      "capability_id": "hermes_advisory_context_switching",
+      "name": "Hermes Advisory Context Switching",
+      "description": "Replaces the active advisory context when priority, risk, revenue, project, or opportunity recommendations create a newer context.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_active_advisory_context",
+        "hermes_operating_context_adapter"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesConversationEngine.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/hermes_advisory_context_ownership.test.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesConversationEngine.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
+    },
+    {
+      "capability_id": "hermes_followup_ownership",
+      "name": "Hermes Follow-Up Ownership",
+      "description": "Routes ambiguous rationale, feasibility, blocker, deep-dive, and task follow-ups to the newest active advisory context unless an older topic is explicit.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_active_advisory_context",
+        "hermes_reference_resolver"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesReferenceResolver.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/hermes_advisory_context_ownership.test.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesReferenceResolver.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
+    },
+    {
+      "capability_id": "hermes_explicit_topic_recall",
+      "name": "Hermes Explicit Topic Recall",
+      "description": "Allows one-turn recall of superseded advisory topics without reactivating stale memory.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_active_advisory_context"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesMemoryResolver.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/hermes_advisory_context_ownership.test.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesMemoryResolver.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
+    },
+    {
+      "capability_id": "hermes_advisory_persistence",
+      "name": "Hermes Advisory Persistence",
+      "description": "Serializable Workroom advisory metadata for safe same-session refresh reconstruction without function persistence.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_workroom_response_rendering",
+        "hermes_active_advisory_context"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesWorkroomResponse.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/hermes_advisory_context_ownership.test.ts",
+        "tests/e2e/hermes-advisory-context-certification.spec.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesWorkroomResponse.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
+    },
+    {
+      "capability_id": "hermes_stale_topic_leakage_detection",
+      "name": "Hermes Stale-Topic Leakage Detection",
+      "description": "Certification guard that fails when revenue follow-ups leak older priority topics or status turns steal advisory ownership.",
+      "capability_type": "ANALYTICS",
+      "department_id": "knowledge",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "knowledge",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_followup_ownership"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "tests/hermes_advisory_context_ownership.test.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/hermes_advisory_context_ownership.test.ts",
+        "tests/e2e/hermes-advisory-context-certification.spec.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "tests/hermes_advisory_context_ownership.test.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
+    },
+    {
+      "capability_id": "hermes_advisory_context_production_certification",
+      "name": "Hermes Advisory Context Production Certification",
+      "description": "Authenticated local and live Workroom certification for advisory topic switching, newest-context ownership, explicit older-topic recall, and governed task targeting.",
+      "capability_type": "ANALYTICS",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [
+        "NEXUS_E2E_ADMIN_EMAIL",
+        "NEXUS_E2E_ADMIN_PASSWORD"
+      ],
+      "dependencies": [
+        "hermes_advisory_context_switching",
+        "hermes_stale_topic_leakage_detection"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "tests/e2e/hermes-advisory-context-certification.spec.ts",
+      "health_status": "DEGRADED",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T15:59:36.477Z",
+      "tests": [
+        "tests/e2e/hermes-advisory-context-certification.spec.ts"
+      ],
+      "rollback_plan": "Revert to prior production-certified Hermes Workroom advisory behavior.",
+      "disable_plan": "Require explicit target for ambiguous follow-ups and block Department Operations readiness.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "tests/e2e/hermes-advisory-context-certification.spec.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T15:59:36.477Z"
+        }
+      ],
+      "notes": "Wave 4A.3 advisory context ownership capability."
     }
   ]
 }

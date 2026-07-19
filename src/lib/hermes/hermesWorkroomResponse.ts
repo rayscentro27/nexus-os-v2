@@ -1,4 +1,4 @@
-import type { HermesConversationResult } from './hermesConversationTypes';
+import type { HermesAdvisoryContext, HermesConversationResult } from './hermesConversationTypes';
 
 export type HermesWorkroomActionType =
   | 'DRAFT_RAY_REVIEW'
@@ -30,6 +30,16 @@ export interface HermesWorkroomResponse {
   contextUsed: string[];
   warnings: string[];
   traceId?: string;
+  advisoryContext?: HermesAdvisoryContext;
+  recommendationMetadata?: {
+    createsAdvisoryContext: boolean;
+    advisoryId: string;
+    topicId?: string;
+    topicLabel?: string;
+    sourceIntent?: string;
+    responseStrategy?: string;
+    recommendationIds: string[];
+  };
 }
 
 export type HermesWorkroomChatMessage = Omit<Partial<HermesWorkroomResponse>, 'role'> & {
@@ -61,6 +71,25 @@ function confidence(value: unknown): number {
 
 function isKnownWorkroomActionType(value: unknown): value is HermesWorkroomActionType {
   return ['DRAFT_RAY_REVIEW', 'PREPARE_SPECIALIST_HANDOFF', 'CREATE_TASK_REQUEST', 'NONE'].includes(String(value));
+}
+
+function safeAdvisoryContext(value: unknown): HermesAdvisoryContext | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = value as Partial<HermesAdvisoryContext>;
+  if (typeof candidate.advisoryId !== 'string' || typeof candidate.topic !== 'string' || !Array.isArray(candidate.recommendations)) return undefined;
+  return JSON.parse(JSON.stringify({
+    ...candidate,
+    recommendations: candidate.recommendations.filter((item) => item && typeof item === 'object' && typeof item.id === 'string' && typeof item.label === 'string'),
+    status: candidate.status || 'ACTIVE',
+  })) as HermesAdvisoryContext;
+}
+
+function canonicalCreatedAdvisory(result: HermesConversationResult): HermesAdvisoryContext | undefined {
+  const advisory = result.session.advisoryContext;
+  if (!advisory) return undefined;
+  if (advisory.sourceIntent && advisory.sourceIntent !== result.intent) return undefined;
+  if (!['EXECUTIVE_ADVICE', 'FOLLOW_UP_ADVICE', 'SELECTION_REFERENCE', 'TASK_REQUEST', 'APPROVAL_REQUEST'].includes(result.mode)) return undefined;
+  return safeAdvisoryContext(advisory);
 }
 
 function actionFromCanonical(result: HermesConversationResult): HermesWorkroomAction[] {
@@ -123,6 +152,7 @@ export function normalizeHermesWorkroomResponse(
   const canonical = raw && 'response' in raw ? raw as HermesConversationResult : null;
   const persisted = raw && !canonical ? raw as Partial<HermesWorkroomResponse> : null;
   const responseText = canonical ? canonical.response : persisted?.text;
+  const advisoryContext = canonical ? canonicalCreatedAdvisory(canonical) : safeAdvisoryContext(persisted?.advisoryContext);
   const normalized: HermesWorkroomResponse = {
     messageId,
     role: 'hermes',
@@ -151,6 +181,16 @@ export function normalizeHermesWorkroomResponse(
     contextUsed: canonical ? stringArray(canonical.contextUsed) : stringArray(persisted?.contextUsed),
     warnings: canonical ? stringArray(canonical.warnings) : stringArray(persisted?.warnings),
     traceId: canonical ? canonical.traceId : text(persisted?.traceId, ''),
+    advisoryContext,
+    recommendationMetadata: advisoryContext ? {
+      createsAdvisoryContext: true,
+      advisoryId: advisoryContext.advisoryId,
+      topicId: advisoryContext.topicId,
+      topicLabel: advisoryContext.topicLabel,
+      sourceIntent: advisoryContext.sourceIntent,
+      responseStrategy: advisoryContext.sourceResponseStrategy,
+      recommendationIds: advisoryContext.recommendations.map((item) => item.id),
+    } : undefined,
   };
   return JSON.parse(JSON.stringify(normalized)) as HermesWorkroomResponse;
 }

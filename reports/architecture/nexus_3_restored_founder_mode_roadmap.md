@@ -1,7 +1,7 @@
 # Nexus 3 Restored Founder Mode Roadmap
 
 Generated: 2026-07-18
-Last updated: 2026-07-18 Wave 4A.1 live Hermes Workroom repair
+Last updated: 2026-07-19 Wave 4A.3 advisory context ownership repair
 
 ## Roadmap decision
 
@@ -217,6 +217,36 @@ Acceptance evidence:
 Known limitation:
 
 - Live production post-deploy certification passed against `https://goclearonline.cc` with deployed commit `dc8153aa3b20d3cc0cb3e29ec341285e88caa21f`.
+
+## Wave 4A.3 — Hermes advisory context ownership and topic switching
+
+Status: IMPLEMENTED locally; live production certification pending post-deploy verification.
+
+Built:
+
+- Split priority, risk, and revenue recommendation responses into distinct structured advisory contexts.
+- Added an active advisory context pointer and bounded advisory history to the canonical Hermes session.
+- Marked older advisory contexts superseded when a newer recommendation-producing response is created.
+- Preserved active advisory context through greetings, acknowledgements, status answers, and security-boundary answers.
+- Added explicit older-topic recall for requests such as `going back to the client live-data flag`.
+- Added selected-item continuity so `go deeper on number 2` followed by `turn that one into a task` targets number 2.
+- Added serializable Workroom advisory metadata for safe refresh reconstruction without function persistence.
+- Added sanitized trace evidence for active-before, active-after, resolved advisory, resolution method, topic switch, supersession, and follow-up semantic.
+- Added stale-topic leakage tests and production Workroom advisory-context browser certification.
+
+Acceptance evidence:
+
+- `tests/hermes_advisory_context_ownership.test.ts`: PASS.
+- Full unit suite: PASS 94 files / 1476 tests.
+- TypeScript: PASS.
+- Production build: PASS with existing chunk-size warning.
+- RLS: PASS 45/45.
+- Local production Workroom advisory-context Playwright: PASS 2/2.
+- Existing local production Workroom suites: PASS 14/14.
+
+Exit gate:
+
+- Production deployment must serve the Wave 4A.3 commit and pass live Workroom advisory-context Playwright with zero stale-topic leakage, zero page errors, and zero console errors before Department Operations begins.
 
 ## Wave 4 — Department operations and automation
 

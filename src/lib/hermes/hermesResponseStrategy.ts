@@ -67,12 +67,32 @@ export function buildDefaultExecutiveAdvisory(): HermesAdvisoryContext {
   return {
     advisoryId: `advisory-${Date.now()}`,
     topic: 'executive_operations',
+    topicId: 'executive_operations',
+    topicLabel: 'Hermes conversation certification',
+    topicType: 'EXECUTIVE_PRIORITY',
+    sourceIntent: 'executive_priority',
+    sourceResponseStrategy: 'executive_priority_response',
     summary: 'Prioritize Hermes reliability before expanding governed department automation.',
     recommendations,
     preferredRecommendationId: 'hermes_conversation_certification',
+    recommendation: {
+      id: recommendations[0].id,
+      title: recommendations[0].label,
+      summary: recommendations[0].rationale,
+      rationale: recommendations[0].rationale,
+      feasibility: { status: 'HIGH', reasons: ['It can be completed with Nexus-native tests and production-equivalent browser evidence.'] },
+      risks: recommendations[0].risks || [],
+      blockers: ['conversation regressions', 'memory confusion', 'accidental action creation'],
+      dependencies: recommendations[0].dependencies || [],
+      nextStep: 'Run the bounded Hermes certification before expanding department automation.',
+      evidenceIds: ['wave_4a_architecture'],
+    },
+    alternatives: recommendations.slice(1).map((item) => ({ id: item.id, title: item.label, summary: item.rationale, risks: item.risks, dependencies: item.dependencies })),
     evidenceIds: ['capability_os_registry', 'knowledge_layer', 'wave_4a_architecture'],
     createdAt: nowIso(),
+    updatedAt: nowIso(),
     expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 6).toISOString(),
+    status: 'ACTIVE',
   };
 }
 
@@ -292,7 +312,7 @@ export function generateHermesResponse(args: {
     }
     if (/\bcost|without paying|free\b/.test(lower)) {
       return {
-        response: `${item.label} can be tested with mostly internal effort first. Keep it Nexus-native, use existing fixtures and reports, and avoid adding paid frameworks until the failure is measured. The cost risk is time spent polishing conversation behavior instead of validating it through the corpus.`,
+        response: `**${item.label}** should be treated as low-cost until the evidence says otherwise.\n\nUse the existing Nexus workflow first, keep any payments in test mode, and avoid paid tools or live outreach until the offer, audience, and approval path are clear. The main unknown is the actual operating cost after the first bounded test.`,
         evidenceState: 'REPORT_BACKED',
         advisoryContext,
         action: null,
@@ -302,7 +322,7 @@ export function generateHermesResponse(args: {
     }
     if (/\bwhat would stop us|downside|risk|block/i.test(lower)) {
       return {
-        response: `The main blockers are ${item.risks?.join(', ') || 'unclear evidence and implementation drift'}. The path is still realistic if we keep the scope bounded and certify the behavior before using Hermes as the interface for broader automation.`,
+        response: answerFollowUpBlockers(item),
         evidenceState: 'REPORT_BACKED',
         advisoryContext,
         action: null,

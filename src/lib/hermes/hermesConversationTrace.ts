@@ -1,6 +1,13 @@
 import type { HermesConversationResult, HermesConversationTrace } from './hermesConversationTypes';
 
-export function createHermesConversationTrace(result: Omit<HermesConversationResult, 'trace' | 'quality'>, responseQualityScore: number): HermesConversationTrace {
+export function createHermesConversationTrace(
+  result: Omit<HermesConversationResult, 'trace' | 'quality'>,
+  responseQualityScore: number,
+  memoryTrace: Partial<Pick<
+    HermesConversationTrace,
+    'activeAdvisoryIdBefore' | 'activeAdvisoryIdAfter' | 'resolvedAdvisoryId' | 'resolutionMethod' | 'topicSwitched' | 'supersededAdvisoryId' | 'followUpSemantic'
+  >> = {},
+): HermesConversationTrace {
   return {
     traceId: result.traceId || `hermes-trace-${Date.now()}`,
     channel: result.session.channel,
@@ -15,6 +22,7 @@ export function createHermesConversationTrace(result: Omit<HermesConversationRes
     actionDetected: Boolean(result.action),
     policyBlocks: result.warnings.filter((warning) => /blocked|prohibited|denied/i.test(warning)),
     responseQualityScore,
+    ...memoryTrace,
     generatedAt: new Date().toISOString(),
   };
 }

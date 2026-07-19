@@ -48,15 +48,59 @@ export interface HermesAdvisoryRecommendation {
   evidenceIds?: string[];
 }
 
+export type HermesAdvisoryTopicType =
+  | 'EXECUTIVE_PRIORITY'
+  | 'EXECUTIVE_RISK'
+  | 'REVENUE_ACTION'
+  | 'OPPORTUNITY'
+  | 'SYSTEM_REPAIR'
+  | 'PROJECT_RECOMMENDATION'
+  | 'IDEA_REVIEW'
+  | 'DEPARTMENT_RECOMMENDATION'
+  | 'OTHER';
+
 export interface HermesAdvisoryContext {
   advisoryId: string;
+  topicId?: string;
+  topicLabel?: string;
+  topicType?: HermesAdvisoryTopicType;
+  sourceIntent?: string;
+  sourceResponseStrategy?: string;
+  recommendation?: {
+    id: string;
+    title: string;
+    summary: string;
+    rationale: string;
+    feasibility: {
+      status: 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+      reasons: string[];
+    };
+    risks: string[];
+    blockers: string[];
+    dependencies: string[];
+    nextStep: string;
+    evidenceIds: string[];
+  };
+  alternatives?: Array<{
+    id: string;
+    title: string;
+    summary: string;
+    rationale?: string;
+    risks?: string[];
+    blockers?: string[];
+    dependencies?: string[];
+    nextStep?: string;
+  }>;
   topic: string;
   summary: string;
   recommendations: HermesAdvisoryRecommendation[];
   preferredRecommendationId?: string;
   evidenceIds: string[];
   createdAt: string;
+  updatedAt?: string;
   expiresAt?: string;
+  status?: 'ACTIVE' | 'INACTIVE' | 'CONSUMED' | 'EXPIRED' | 'SUPERSEDED';
+  supersedesAdvisoryId?: string;
 }
 
 export interface HermesSelectionContext {
@@ -83,6 +127,8 @@ export interface HermesConversationSession {
   recentIntentHistory: string[];
   recentResponseStrategies: HermesResponseStrategy[];
   advisoryContext?: HermesAdvisoryContext;
+  activeAdvisoryId?: string;
+  advisoryHistory?: HermesAdvisoryContext[];
   selectionContext?: HermesSelectionContext;
   startedAt: string;
   updatedAt: string;
@@ -125,6 +171,13 @@ export interface HermesConversationTrace {
   actionDetected: boolean;
   policyBlocks: string[];
   responseQualityScore: number;
+  activeAdvisoryIdBefore?: string;
+  activeAdvisoryIdAfter?: string;
+  resolvedAdvisoryId?: string;
+  resolutionMethod?: 'EXPLICIT_TOPIC' | 'NUMBERED_SELECTION' | 'ACTIVE_ADVISORY' | 'RECENT_SELECTION' | 'TASK_CONTEXT' | 'CLARIFICATION' | 'NONE';
+  topicSwitched?: boolean;
+  supersededAdvisoryId?: string;
+  followUpSemantic?: string;
   generatedAt: string;
 }
 
