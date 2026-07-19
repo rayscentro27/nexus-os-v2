@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-18T23:21:55.643Z",
+  "generated_at": "2026-07-19T03:28:50.445Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
-  "total_capabilities": 110,
+  "total_capabilities": 119,
   "capabilities": [
     {
       "capability_id": "executive_command_center",
@@ -5636,6 +5636,460 @@
         }
       ],
       "notes": ""
+    },
+    {
+      "capability_id": "hermes_conversation_engine",
+      "name": "Hermes Conversation Engine",
+      "description": "Canonical Wave 4A pipeline for mode classification, memory resolution, context retrieval, response strategy, action separation, and trace evidence.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "brain_profile_registry",
+        "brain_context_assembly",
+        "capability_os_registry",
+        "hermes_executive_advisor"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesConversationEngine.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts",
+        "tests/hermes_conversation_certification.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesConversationEngine.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_mode_classifier",
+      "name": "Hermes Mode Classifier",
+      "description": "Deterministic top-level conversation-mode classifier that runs before narrow intent routing.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_conversation_engine"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesModeClassifier.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesModeClassifier.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_memory_resolver",
+      "name": "Hermes Memory Resolver",
+      "description": "Separates immediate turn, advisory memory, selection memory, task context, page context, and topic changes.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "knowledge",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "knowledge",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_memory",
+        "brain_profile_registry"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesMemoryResolver.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesMemoryResolver.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_advisory_continuity_engine",
+      "name": "Hermes Advisory Continuity Engine",
+      "description": "Maintains bounded advisory contexts for follow-up questions without promoting memory into knowledge.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_memory_resolver",
+        "approved_knowledge"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesMemoryResolver.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesMemoryResolver.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_reference_resolver",
+      "name": "Hermes Reference Resolver",
+      "description": "Resolves pronouns, numbered selections, named recommendations, and plan references against bounded advisory context.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_advisory_continuity_engine"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesReferenceResolver.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesReferenceResolver.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_response_strategy",
+      "name": "Hermes Response Strategy",
+      "description": "Selects deterministic, hybrid, model-assisted, or fallback response behavior based on conversation mode and evidence.",
+      "capability_type": "INTERNAL_SERVICE",
+      "department_id": "executive",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "executive",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA",
+        "CLIENT_AGGREGATE"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_mode_classifier",
+        "hermes_executive_advisor"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesResponseStrategy.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesResponseStrategy.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_conversation_trace",
+      "name": "Hermes Conversation Trace",
+      "description": "Sanitized conversation trace evidence for mode, intent, confidence, memory, response strategy, action detection, and quality score.",
+      "capability_type": "ANALYTICS",
+      "department_id": "engineering",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "engineering",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "ACTIVE",
+      "approval_level": "ADMIN",
+      "security_class": "CONFIDENTIAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CLIENT_PII",
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_conversation_engine"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesConversationTrace.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_engine.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesConversationTrace.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_response_quality_evaluation",
+      "name": "Hermes Response Quality Evaluation",
+      "description": "Deterministic and fixture-assisted quality scoring for intent alignment, memory, naturalness, evidence honesty, safety, repetition, and length.",
+      "capability_type": "ANALYTICS",
+      "department_id": "knowledge",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "knowledge",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_conversation_engine"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "src/lib/hermes/hermesResponseQuality.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_certification.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "src/lib/hermes/hermesResponseQuality.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
+    },
+    {
+      "capability_id": "hermes_conversation_certification",
+      "name": "Hermes Conversation Certification",
+      "description": "Wave 4A multi-turn corpus covering greetings, advice, follow-ups, references, status honesty, action separation, page context, paraphrases, and historical regressions.",
+      "capability_type": "ANALYTICS",
+      "department_id": "knowledge",
+      "supporting_departments": [],
+      "owner_type": "DEPARTMENT",
+      "owner_id": "knowledge",
+      "source_type": "NEXUS_NATIVE",
+      "activation_mode": "TEST_ONLY",
+      "approval_level": "ADMIN",
+      "security_class": "INTERNAL",
+      "allowed_data_classes": [
+        "INTERNAL_METADATA"
+      ],
+      "prohibited_data_classes": [
+        "CREDENTIALS"
+      ],
+      "credential_requirements": [],
+      "dependencies": [
+        "hermes_response_quality_evaluation",
+        "hermes_conversation_trace"
+      ],
+      "cost_model": "INTERNAL",
+      "estimated_monthly_cost": null,
+      "cost_notes": "No exact pricing asserted by Capability OS.",
+      "health_source": "tests/hermes_conversation_certification.test.ts",
+      "health_status": "HEALTHY",
+      "health_freshness": "LIVE",
+      "last_verified_at": "2026-07-19T03:28:50.445Z",
+      "tests": [
+        "tests/hermes_conversation_certification.test.ts"
+      ],
+      "rollback_plan": "Disable the Wave 4A adapter and return to prior certified Hermes routes.",
+      "disable_plan": "Mark the Hermes conversation capability unavailable and keep legacy deterministic responses.",
+      "hermes_may_recommend": true,
+      "hermes_may_execute": false,
+      "alpha_may_use": false,
+      "client_ai_may_use": false,
+      "ray_approval_state": "NOT_REQUIRED",
+      "evidence": [
+        {
+          "source": "tests/hermes_conversation_certification.test.ts",
+          "state": "LIVE",
+          "observedAt": "2026-07-19T03:28:50.445Z"
+        }
+      ],
+      "notes": "Wave 4A conversation and memory architecture capability."
     }
   ]
 }

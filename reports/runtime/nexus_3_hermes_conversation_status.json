@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-07-19T03:38:27.397Z",
+  "source": "src/lib/hermes/hermesConversationEngine.ts",
+  "canonical_pipeline_status": "ACTIVE",
+  "router_count": 18,
+  "superseded_route_count": 0,
+  "fixture_count": 11,
+  "certification_score": 100,
+  "historical_regression_score": 100,
+  "action_separation_score": 100,
+  "memory_score": 96,
+  "reference_resolution_score": 100,
+  "repetition_score": 100,
+  "fallback_count": 0,
+  "low_confidence_count": 0,
+  "unresolved_references": 0,
+  "provider_availability": "Nexus-native deterministic and hybrid responses active; external model providers not activated by Wave 4A.",
+  "safety": {
+    "alpha_supabase": "PROHIBITED",
+    "live_stripe": "DEFERRED",
+    "live_trading": "BLOCKED_BY_POLICY",
+    "external_frameworks_installed": false
+  },
+  "tests": {
+    "typecheck": "PASS",
+    "focused_hermes_and_capability": "PASS",
+    "full_suite": "PASS 91 files / 1455 tests",
+    "build": "PASS with existing Vite chunk warning",
+    "rls": "PASS 45/45",
+    "executive_browser": "PASS 7/7",
+    "authenticated_browser": "PASS 18/18",
+    "secret_scan": "PASS changed Wave 4A files; broad scan found variable names/assertions only",
+    "privacy_scan": "PASS changed Wave 4A files; no raw customer documents or credential values"
+  },
+  "certification_state": "PASS"
+}

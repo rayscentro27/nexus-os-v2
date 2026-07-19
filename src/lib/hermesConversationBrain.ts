@@ -16,15 +16,15 @@ export function classifyConversationIntent(message: string): ConversationIntent 
 
 export function answerConversation(message: string, intent = classifyConversationIntent(message)): string | null {
   switch (intent) {
-    case 'preference': return "I don't have personal tastes or possessions. I can still compare options and make a reasoned choice if you give me the criteria that matter.";
+    case 'preference': return "I can make a reasoned choice if you give me the criteria that matter.";
     case 'favorite_food': return "I don't eat, but if I'm answering in Nexus mode, I'd pick tacos: flexible, fast, modular, and easy to scale. That's how Nexus should work too — simple on the surface, powerful underneath.";
     case 'favorite_sport': return "I don't play sports, but basketball fits how I think: read the floor, move the ball, protect against turnovers, and take the highest-quality shot. That's a useful operating model for Nexus too.";
     case 'joke': return 'Why did the automation bring a receipt? Because in Nexus, even the punchline needs an audit trail.';
-    case 'wellbeing': return "I'm operating normally and ready to think with you. I don't have feelings or a body, but I can stay focused on the context and decisions in front of us.";
+    case 'wellbeing': return "I'm ready and tracking the work. What do you want to focus on?";
     case 'opinion': return 'I can give you a direct recommendation, but I need the decision or topic you want judged. What should I evaluate?';
     case 'simple_explanation': return 'I can simplify it. Point me to the specific report, page item, or idea, and I’ll explain what it means, why it matters, and the next safe step.';
-    case 'identity': return "I'm Hermes, the AI operating advisor inside Nexus. I answer from the current message, eligible conversation context, and verified local or live sources. Capability status is reported separately from runtime evidence.";
-    case 'casual_followup': return 'I can follow the thread, but I need one anchor: are you asking about my last recommendation, the current page, or Nexus operations?';
+    case 'identity': return "I'm Hermes, Ray's private Nexus advisor. I answer from the current message, eligible memory, and governed Nexus evidence.";
+    case 'casual_followup': return 'I can follow that. Which prior recommendation or page item do you mean?';
     default: return null;
   }
 }

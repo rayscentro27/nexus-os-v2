@@ -680,6 +680,48 @@ a {
   margin: 0;
 }
 
+.exec-hermes-health {
+  display: grid;
+  gap: 12px;
+}
+
+.exec-hermes-health-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 10px;
+}
+
+.exec-hermes-health-metric {
+  display: grid;
+  gap: 5px;
+  min-height: 104px;
+  padding: 13px;
+  border: 1px solid rgba(23, 104, 242, 0.14);
+}
+
+.exec-hermes-health-metric svg {
+  color: #1768f2;
+}
+
+.exec-hermes-health-metric strong {
+  color: #08245f;
+  font-size: 1.28rem;
+}
+
+.exec-hermes-health-metric small,
+.exec-hermes-health-status p {
+  color: #667ba9;
+}
+
+.exec-hermes-health-status {
+  display: grid;
+  gap: 7px;
+}
+
+.exec-hermes-health-status p {
+  margin: 0;
+}
+
 .exec-inline-action {
   min-height: 42px;
   border: 1px solid rgba(47, 140, 255, .38);

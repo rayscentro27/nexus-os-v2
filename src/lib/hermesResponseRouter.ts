@@ -15,6 +15,8 @@ import { getBackendStatusMessage, getHermesContext, type HermesBackendContextRes
 import { reasonAboutPage, getAllPageContexts, type PageDataSource } from './hermesSourceReasoner';
 import { isSupabaseConfigured } from './supabaseClient';
 import { answerExecutiveIntent, classifyExecutiveIntent } from './executive/hermesExecutiveAdvisor';
+import { runHermesConversation } from './hermes/hermesConversationEngine';
+import type { HermesConversationMode } from './hermes/hermesConversationTypes';
 
 /* ── Nexus topic knowledge base (moved from hermesWorkroomData.js) ── */
 const nexusTopics: Record<string, { topic: string; explain: string; why?: string; safety?: string; approval?: string; howToApprove?: string; specialist?: string; cleanup?: string; next: string; opinion?: string }> = {
@@ -199,7 +201,7 @@ export interface ResponseContext {
 export interface HermesResponse {
   text: string;
   confidence: 'high' | 'medium' | 'low' | 'none';
-  source: 'time_context' | 'page_context' | 'entity_resolution' | 'memory' | 'supabase_stub' | 'backend_stub' | 'backend_context' | 'report_context' | 'canned' | 'honest_fallback' | 'learning' | 'source_reasoning' | 'live_supabase' | 'static_fallback';
+  source: 'time_context' | 'page_context' | 'entity_resolution' | 'memory' | 'supabase_stub' | 'backend_stub' | 'backend_context' | 'report_context' | 'canned' | 'honest_fallback' | 'learning' | 'source_reasoning' | 'live_supabase' | 'static_fallback' | 'canonical_conversation';
   questionType: QuestionType;
   needsClarification: boolean;
   clarificationQuestion?: string;
@@ -221,6 +223,27 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
       questionType: 'learning_instruction',
       needsClarification: false,
       sourceHint: `Stored as ${learning.hint.memoryType}: "${learning.hint.instruction}"`,
+    };
+  }
+
+  const executiveIntentBeforeCanonical = classifyExecutiveIntent(message);
+  const canonical = runHermesConversation({
+    message,
+    actorRole: 'admin',
+    channel: 'router',
+    pageId,
+    route,
+    pageContext: { activeTab, selectedItem, visibleItems, availableActions, gatedActions },
+  });
+  if (!executiveIntentBeforeCanonical && shouldUseCanonicalConversation(canonical.mode, message)) {
+    return {
+      text: canonical.response,
+      confidence: canonical.confidence >= 0.85 ? 'high' : canonical.confidence >= 0.65 ? 'medium' : 'low',
+      source: 'canonical_conversation',
+      questionType: mapCanonicalModeToQuestionType(canonical.mode, canonical.intent),
+      needsClarification: canonical.mode === 'CLARIFICATION_REQUIRED',
+      clarificationQuestion: canonical.mode === 'CLARIFICATION_REQUIRED' ? canonical.response : undefined,
+      sourceHint: `Canonical Hermes conversation pipeline; strategy=${canonical.responseStrategy}; evidence=${canonical.evidenceState}; trace=${canonical.traceId}`,
     };
   }
 
@@ -349,6 +372,27 @@ export function hermesResponseRouter(ctx: ResponseContext): HermesResponse {
     default:
       return handleUnclear(message, pageContext);
   }
+}
+
+function shouldUseCanonicalConversation(mode: HermesConversationMode, message: string): boolean {
+  const lower = message.toLowerCase().replace(/\bgo;od\b/g, 'good').trim();
+  if (mode === 'SOCIAL_GREETING') return /\b(good morning|good afternoon|good evening|good night)\b/.test(lower);
+  if (mode === 'CASUAL_CONVERSATION') return /\b(how did you sleep|thank you|thanks|that makes sense|i agree)\b/.test(lower);
+  return ['TASK_REQUEST', 'APPROVAL_REQUEST', 'COMMAND'].includes(mode);
+}
+
+function mapCanonicalModeToQuestionType(mode: HermesConversationMode, intent: string): QuestionType {
+  if (mode === 'SOCIAL_GREETING') return 'greeting';
+  if (mode === 'CASUAL_CONVERSATION') return 'casual';
+  if (mode === 'SYSTEM_STATUS') {
+    if (/stripe|revenue/.test(intent)) return 'executive_revenue_status';
+    return 'executive_system_health';
+  }
+  if (mode === 'TASK_REQUEST' || mode === 'COMMAND') return 'execution';
+  if (mode === 'APPROVAL_REQUEST') return 'approval';
+  if (mode === 'SELECTION_REFERENCE') return 'entity_question';
+  if (mode === 'EXECUTIVE_ADVICE' || mode === 'FOLLOW_UP_ADVICE') return 'executive_priorities';
+  return 'unclear';
 }
 
 export function normalizeHermesText(text: string): string {

@@ -147,6 +147,24 @@ Built:
 
 Known follow-up: durable Supabase-backed knowledge approval history remains deferred until a mutable-state requirement is proven.
 
+## Wave 4A — Hermes conversation and memory architecture
+
+Status: IMPLEMENTED in Wave 4A pending final commit.
+
+Built:
+
+- Canonical Hermes conversation pipeline.
+- Deterministic conversation-mode classifier.
+- Bounded advisory and selection memory contracts.
+- Reference resolution for pronouns, numbered items, and named recommendations.
+- Deterministic/hybrid/fallback response strategy.
+- Conversation trace and response-quality evaluator.
+- Durable certification corpus for greetings, advice, follow-ups, references, status honesty, action separation, page-context conflicts, and historical regressions.
+- Executive Hermes Conversation Health panel.
+- Capability OS registration for Wave 4A Hermes conversation capabilities.
+
+Known follow-up: deeper retirement of the rich workroom router remains deferred until a separate migration proves equivalent browser behavior.
+
 ## Wave 4 — Department operations and automation
 
 Build:

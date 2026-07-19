@@ -25,6 +25,7 @@ import {
   getExecutiveCommandCenterSnapshot,
   loadExecutiveCommandCenterState,
 } from '../lib/executive/executiveCommandCenterAdapter'
+import { buildHermesConversationHealthSummary } from '../lib/hermes/hermesConversationEngine'
 
 const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3, P4: 4 }
 
@@ -396,6 +397,40 @@ function HermesExecutiveAdvisor({ state, onAskHermes }) {
   )
 }
 
+function HermesConversationHealthPanel({ onNavigate }) {
+  const health = useMemo(() => buildHermesConversationHealthSummary(), [])
+  const metrics = [
+    ['Certification', `${health.overallScore}%`],
+    ['Historical', `${health.historicalRegressionScore}%`],
+    ['Action safety', `${health.actionSeparationScore}%`],
+    ['Status honesty', `${health.statusHonestyScore}%`],
+    ['Memory', `${health.memoryScore}%`],
+    ['References', `${health.referenceResolutionScore}%`],
+  ]
+  return (
+    <ExecutiveSection title="Hermes Conversation Health" subtitle="Canonical router, memory continuity, reference resolution, and response-quality certification." badge={`${health.fixtureCount} fixtures`}>
+      <div className="exec-hermes-health" data-testid="executive-hermes-conversation-health">
+        <div className="exec-hermes-health-grid">
+          {metrics.map(([label, value]) => (
+            <article key={label} className="glass2 exec-hermes-health-metric">
+              <Sparkles size={18} />
+              <strong>{value}</strong>
+              <small>{label}</small>
+            </article>
+          ))}
+        </div>
+        <div className="exec-hermes-health-status">
+          <p><strong>Canonical pipeline:</strong> {health.canonicalPipeline}</p>
+          <p><strong>Provider availability:</strong> {health.providerAvailability}</p>
+          <p><strong>Fallbacks:</strong> {health.fallbackCount} · <strong>Low confidence:</strong> {health.lowConfidenceCount} · <strong>Memory misses:</strong> {health.memoryMisses}</p>
+          <p><strong>Known risk:</strong> {health.knownRisks.join(' ')}</p>
+        </div>
+        <button type="button" className="exec-inline-action" onClick={() => onNavigate('reports')}>Open sanitized trace report</button>
+      </div>
+    </ExecutiveSection>
+  )
+}
+
 export default function CommandCenter({ onNavigate, onAskHermes }) {
   const [state, setState] = useState(getExecutiveCommandCenterSnapshot)
   const [loadStatus, setLoadStatus] = useState('Loading live executive evidence...')
@@ -452,6 +487,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
           <SystemHealthPanel items={state.systemHealth} onNavigate={onNavigate} />
           <RepoIntelligencePanel candidates={state.repoIntelligence} onNavigate={onNavigate} />
           <KnowledgeReviewPanel knowledgeHealth={state.knowledgeHealth} onNavigate={onNavigate} />
+          <HermesConversationHealthPanel onNavigate={onNavigate} />
           <ExecutiveSection title="Deployments and Releases" subtitle="Current deployment evidence is read-only from repository and reports." badge="Traceable">
             <div className="exec-release-list" data-testid="executive-deployment-status">
               <div><GitBranch size={18} /><strong>Branch</strong><span>main</span></div>
