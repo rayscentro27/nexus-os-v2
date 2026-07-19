@@ -217,7 +217,7 @@ Passed:
 
 ## 18. Live production tests
 
-Live production post-deploy testing is pending until this repair commit is pushed and Netlify deploys the new bundle.
+Live production post-deploy testing passed against https://goclearonline.cc with bundle index-CaZ5nSrF.js.
 
 Required post-deploy checks:
 
@@ -234,8 +234,8 @@ Required post-deploy checks:
 Pre-push state:
 
 - Expected starting commit: `e0d58c99c3138115d5ab29110ef29ccf4a083f87`
-- New commit: pending
-- Deployed commit: pending post-push
+- New commit: dc8153aa3b20d3cc0cb3e29ec341285e88caa21f
+- Deployed commit: dc8153aa3b20d3cc0cb3e29ec341285e88caa21f
 - Netlify token in shell: unavailable
 
 ## 20. Security results
@@ -253,8 +253,8 @@ Preserved:
 
 ## 21. Known limitations
 
-Live production certification cannot be final until the repair commit is deployed and tested against `https://goclearonline.cc/admin#hermes`.
+Live production certification passed against `https://goclearonline.cc/admin#hermes` after deployment.
 
 ## 22. Readiness decision
 
-Department Operations must remain paused until post-deploy live production Workroom testing passes with zero page errors and zero console errors.
+Hermes Workroom is no longer the blocker for Department Operations. Department Operations may proceed only under the existing Capability OS, approval, Stripe test-mode, and live-trading policy boundaries.

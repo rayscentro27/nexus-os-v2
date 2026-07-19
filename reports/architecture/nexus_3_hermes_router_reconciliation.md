@@ -79,4 +79,4 @@ Do not delete legacy routers until:
 - Legacy persisted-state rendering: PASS
 - Priority/risk/revenue differentiation: PASS
 - Rationale/feasibility/blocker differentiation: PASS
-- Live production post-deploy result: pending until this repair commit is deployed
+- Live production post-deploy result: PASS 14/14 against https://goclearonline.cc

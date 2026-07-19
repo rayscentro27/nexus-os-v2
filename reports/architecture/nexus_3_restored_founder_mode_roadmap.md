@@ -193,7 +193,7 @@ Known limitation:
 
 ## Wave 4A.2 — Hermes production stack and Executive intent differentiation
 
-Status: IMPLEMENTED locally; live production certification pending post-deploy.
+Status: IMPLEMENTED and live-production certified.
 
 Built:
 
@@ -216,7 +216,7 @@ Acceptance evidence:
 
 Known limitation:
 
-- Live production post-deploy certification must run after the repair commit deploys to `https://goclearonline.cc`.
+- Live production post-deploy certification passed against `https://goclearonline.cc` with deployed commit `dc8153aa3b20d3cc0cb3e29ec341285e88caa21f`.
 
 ## Wave 4 — Department operations and automation
 

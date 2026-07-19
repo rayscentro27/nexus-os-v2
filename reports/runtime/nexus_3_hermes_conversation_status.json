@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T12:37:38.818Z",
+  "generated_at": "2026-07-19T12:45:31.429Z",
   "source": "src/lib/hermes/hermesConversationEngine.ts",
   "canonical_pipeline_status": "ACTIVE_AND_CONNECTED_TO_ADMIN_WORKROOM",
   "router_count": 18,
@@ -33,9 +33,10 @@
     "privacy_scan": "PASS changed Wave 4A files; no raw customer documents or credential values",
     "hermes_live_workroom": "PASS 7/7 production-equivalent authenticated Playwright",
     "local_production_workroom": "PASS combined local production Workroom specs 14/14",
-    "hermes_live_workroom_compatibility": "PASS tests/e2e/hermes-live-workroom-certification.spec.ts 7/7"
+    "hermes_live_workroom_compatibility": "PASS tests/e2e/hermes-live-workroom-certification.spec.ts 7/7",
+    "live_production_workroom": "PASS live https://goclearonline.cc Workroom Playwright 14/14"
   },
-  "certification_state": "PASS_WITH_PRODUCTION_STACK_AND_INTENT_REPAIR_PENDING_LIVE_POST_DEPLOY",
+  "certification_state": "PASS_WITH_PRODUCTION_STACK_AND_INTENT_REPAIR_LIVE_CERTIFIED",
   "live_workroom": {
     "route": "/admin#hermes",
     "room": "Hermes CEO Advisor",
@@ -56,6 +57,8 @@
     "response_differentiation": "PASS priority/risk/revenue and rationale/feasibility/blocker strategies distinct",
     "legacy_message_migration": "PASS schemaVersion=2",
     "local_production_browser_test": "PASS 14/14",
-    "live_production_browser_test": "PENDING_POST_DEPLOY"
+    "live_production_browser_test": "PASS 14/14",
+    "deployed_commit": "dc8153aa3b20d3cc0cb3e29ec341285e88caa21f",
+    "bundle_filename": "https://goclearonline.cc/assets/index-CaZ5nSrF.js"
   }
 }
