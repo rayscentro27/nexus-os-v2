@@ -6,6 +6,7 @@ import { getCapabilityBadge } from '../lib/hermesBrainPipeline';
 import { runHermesConversation, seedHermesCanonicalAdvisoryContext } from '../lib/hermes/hermesConversationEngine';
 import { buildHermesOperatingContext } from '../lib/hermes/hermesOperatingContext';
 import { normalizeHermesWorkroomResponse, toHermesChatMessage } from '../lib/hermes/hermesWorkroomResponse';
+import { runHermesModelFirstConversation } from '../lib/hermesModelFirst/hermesModelFirstController';
 import HermesMessageBubble from './HermesMessageBubble';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your CEO advisor. I can read live Supabase data and use a live model when the question warrants it. Web search is not configured yet. Ask me about approvals, research, clients, opportunities, or any operating question.' };
@@ -48,15 +49,29 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
 
     try {
       const operatingContext = buildHermesOperatingContext();
-      const brainResult = runHermesConversation({
+      const recentHistory = messages
+        .filter((message) => message.role === 'ray' || message.role === 'hermes')
+        .slice(-10)
+        .map((message) => ({ role: message.role === 'hermes' ? 'assistant' : 'user', content: String(message.text || '').slice(0, 700) }));
+      const pageContext = { pageId: activePage, sectionName: activePage, route: window.location.hash, visibleItems, selectedItem, availableActions, operatingContext };
+      const modelFirstResult = await runHermesModelFirstConversation({
         message: clean,
-        channel: 'full_workroom',
         actorRole: 'admin',
-        pageId: activePage || undefined,
-        route: window.location.hash,
         sessionId: hermesStore.getSessionId(),
-        pageContext: { pageId: activePage, sectionName: activePage, route: window.location.hash, visibleItems, selectedItem, availableActions, operatingContext },
+        recentHistory,
+        pageContext,
       });
+      const brainResult = modelFirstResult.usedModelFirst && modelFirstResult.response
+        ? modelFirstResult.response
+        : runHermesConversation({
+            message: clean,
+            channel: 'full_workroom',
+            actorRole: 'admin',
+            pageId: activePage || undefined,
+            route: window.location.hash,
+            sessionId: hermesStore.getSessionId(),
+            pageContext,
+          });
       hermesResponse = normalizeHermesWorkroomResponse(brainResult, { messageId: `${now}-hermes` });
     } catch (err) {
       console.error('[HermesChatPanel] send error:', err);
@@ -102,7 +117,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
       dataSource: 'local',
       safetyLevel: 'safe',
     });
-  }, [input, activePage, visibleItems, selectedItem, availableActions]);
+  }, [input, activePage, visibleItems, selectedItem, availableActions, messages]);
 
   const clearHistory = useCallback(() => {
     hermesStore.clearHistory();

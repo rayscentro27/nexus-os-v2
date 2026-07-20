@@ -29,7 +29,7 @@ const MODEL_ALLOWLIST: Record<string, string[]> = {
   gemini: ['gemini-1.5-flash', 'gemini-1.5-pro'],
   ollama: ['llama3.1', 'qwen2.5:0.5b', 'gemma3:1b'],
 };
-const REJECT_ACTIONS = /\b(send|email|publish|post|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete|create.*task|start|stop)\b/i;
+const REJECT_ACTIONS = /\b(send|email|publish|post|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete|start\s+live|stop\s+live|activate\s+live)\b/i;
 
 // Stable, cached identity + business context. Keep this byte-stable to maximize prompt-cache hits;
 // bump HERMES_CONTEXT_VERSION to intentionally bust the cache after edits. Contains only
@@ -94,7 +94,15 @@ plain business meaning plus a recommended next step. Never echo private numbers 
 source.
 
 TONE
-Confident, concise, advisory. Lead with the recommendation, then the why, then the next safe step.`;
+Confident, concise, advisory. Lead with the recommendation, then the why, then the next safe step.
+
+MODEL-FIRST CONVERSATION
+You may answer ordinary general-knowledge and conversational questions without requiring a Nexus
+evidence source. First determine whether the message can be answered from general language,
+identity, or the visible conversation. Use Nexus evidence only when current private Nexus facts or
+governed actions are required. When Ray refers to "that," "them," "number three," or "what you just
+said," use the most recent visible conversation first. When Ray corrects you, acknowledge the
+mismatch and continue naturally. Do not expose hidden reasoning.`;
 
 const CONTEXT_VERSION = Deno.env.get('HERMES_CONTEXT_VERSION') ?? 'v1';
 const stableSystem = () => `${STABLE_CONTEXT_BLOCK}\n[context_version: ${CONTEXT_VERSION}]`;
