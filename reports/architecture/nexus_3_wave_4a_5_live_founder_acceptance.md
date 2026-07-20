@@ -79,8 +79,23 @@ Generated: 2026-07-20T16:57:31.444Z
 
 ## Live Production Status
 
-Live post-repair production certification is pending deployment of the repair commit. This report will be updated after production serves the repaired commit.
+Live post-repair production certification passed.
+
+- Deployed commit: c2a679d41f154245c4aa8bef71dbca88b394166e
+- Production bundle: assets/index-CglEFSiQ.js
+- Live target: https://goclearonline.cc/admin#hermes
+- Live observation: 2026-07-20T16:59:35.248Z
+- Live turns tested: 116
+- Live score: 100%
+- Generic fallback count: 0
+- Response similarity failures: 0
+- Page errors: 0
+- Console errors: 0
+- Refresh-required responses: 0
+- Sequence A/B/C: PASS
+- 50-question holdout: PASS
+- Provider honesty, client honesty, Alpha boundary, Stripe state, live-trading state, provenance honesty, and action separation: 100%.
 
 ## Department Operations
 
-Department Operations must not begin until Wave 4A.5 production Founder Acceptance passes on https://goclearonline.cc/admin#hermes.
+Wave 4A.5 production Founder Acceptance passed. Department Operations remains a separate Ray approval decision and must start only from an isolated clean worktree.

@@ -316,7 +316,7 @@ Approve or reject Wave 4 — Department Operations and Governed Automation as th
 
 ## Wave 4A.5 Founder Acceptance Gate
 
-- Status: LOCAL_PASS_LIVE_PENDING.
+- Status: PASS_LIVE_PRODUCTION_CERTIFIED.
 - Clean worktree: /Users/raymonddavis/nexus-os-v2-hermes-cert.
 - Original dirty worktree protected: /Users/raymonddavis/nexus-os-v2.
-- Department Operations remains blocked until live production Founder Acceptance passes.
+- Founder Acceptance passed in production; Department Operations remains blocked until Ray explicitly starts the separate Department Operations wave from an isolated clean worktree.

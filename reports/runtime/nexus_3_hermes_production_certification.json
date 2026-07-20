@@ -57,11 +57,15 @@
     "privacy_scan": "PASS no real PII added"
   },
   "wave_4a_5": {
-    "generated_at": "2026-07-20T16:57:31.444Z",
+    "generated_at": "2026-07-20T17:00:14.814Z",
     "local_founder_acceptance": "PASS",
     "local_turns": 116,
     "local_score": 100,
-    "live_state": "PENDING_DEPLOYMENT",
+    "live_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
+    "live_turns": 116,
+    "live_score": 100,
+    "deployed_commit": "c2a679d41f154245c4aa8bef71dbca88b394166e",
+    "production_bundle": "assets/index-CglEFSiQ.js",
     "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED"
   }
 }

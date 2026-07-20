@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-20T16:57:31.444Z",
+  "generated_at": "2026-07-20T17:00:14.814Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
   "wave_4a_4_added_capability_ids": [
@@ -7000,7 +7000,9 @@
   ],
   "wave_4a_5_release_state": {
     "local_founder_acceptance": "PASS",
-    "live_founder_acceptance": "PENDING_DEPLOYMENT",
+    "live_founder_acceptance": "PASS_LIVE_PRODUCTION_CERTIFIED",
+    "deployed_commit": "c2a679d41f154245c4aa8bef71dbca88b394166e",
+    "production_bundle": "assets/index-CglEFSiQ.js",
     "dirty_worktree_inventory_count": 341,
     "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED",
     "department_operations_ready": false
