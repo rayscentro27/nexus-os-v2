@@ -21,6 +21,7 @@
     "nexus:loop": "python3 scripts/activation/run_nexus_continuous_loop.py --json --safe-internal --feedback-enabled"
   },
   "dependencies": {
+    "@letta-ai/letta-client": "^1.12.1",
     "@supabase/supabase-js": "^2.45.0",
     "lucide-react": "^0.460.0",
     "react": "^18.3.1",
