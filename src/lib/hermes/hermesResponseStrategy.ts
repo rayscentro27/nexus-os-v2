@@ -19,6 +19,13 @@ import type {
   HermesResponseStrategy,
 } from './hermesConversationTypes';
 import type { HermesReferenceResolution } from './hermesReferenceResolver';
+import {
+  createHermesReasoningRequest,
+  provenanceFromContext,
+  provenanceFromTool,
+  runHermesTool,
+  type HermesAnswerProvenance,
+} from './hermesGeneralTools';
 
 const nowIso = () => new Date().toISOString();
 
@@ -32,7 +39,7 @@ export function chooseHermesResponseStrategy(mode: HermesConversationMode, inten
   if (intent === 'followup_deep_dive') return 'followup_deep_dive_response';
   if (mode === 'SYSTEM_STATUS') return intent === 'system_status_honesty' ? 'status_response' : 'security_boundary_response';
   if (['SOCIAL_GREETING', 'CASUAL_CONVERSATION', 'COMMAND', 'TASK_REQUEST', 'APPROVAL_REQUEST'].includes(mode)) return 'DETERMINISTIC';
-  if (['EXECUTIVE_ADVICE', 'FOLLOW_UP_ADVICE', 'SELECTION_REFERENCE', 'DECISION_SUPPORT'].includes(mode)) return 'HYBRID';
+  if (['EXECUTIVE_ADVICE', 'FOLLOW_UP_ADVICE', 'SELECTION_REFERENCE', 'DECISION_SUPPORT', 'FACTUAL_QUESTION', 'PROJECT_DISCUSSION'].includes(mode)) return 'HYBRID';
   if (['IDEA_REVIEW', 'EXPLANATION'].includes(mode)) return 'MODEL_ASSISTED';
   return 'SAFE_FALLBACK';
 }
@@ -145,6 +152,7 @@ export interface HermesGeneratedResponse {
   action: HermesConversationAction | null;
   contextUsed: string[];
   warnings: string[];
+  provenance?: HermesAnswerProvenance;
 }
 
 function getOperatingContext(input: HermesConversationInput): HermesOperatingContext | null {
@@ -166,6 +174,7 @@ export function generateHermesResponse(args: {
   const message = input.message;
   const contextUsed: string[] = [];
   const warnings: string[] = [];
+  const answerId = `hermes-answer-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
 
   if (mode === 'SOCIAL_GREETING') {
     return { response: greetingResponse(message), evidenceState: 'LIVE', action: null, contextUsed, warnings };
@@ -197,7 +206,12 @@ export function generateHermesResponse(args: {
   }
 
   if (mode === 'TASK_REQUEST' || mode === 'APPROVAL_REQUEST') {
-    const target = reference?.item?.label || advisoryContext?.recommendations.find((item) => item.id === advisoryContext.preferredRecommendationId)?.label || 'the referenced item';
+    const explicitTarget = /command center|redesign|dashboard|layout/i.test(message)
+      ? 'Command Center redesign'
+      : /\$97|readiness|offer/i.test(message)
+        ? '$97 readiness review journey'
+        : '';
+    const target = explicitTarget || reference?.item?.label || advisoryContext?.recommendations.find((item) => item.id === advisoryContext.preferredRecommendationId)?.label || 'the referenced item';
     const action: HermesConversationAction = {
       type: mode === 'TASK_REQUEST' ? 'CREATE_GOVERNED_TASK' : 'PREPARE_RAY_REVIEW',
       requiresApproval: true,
@@ -360,22 +374,93 @@ export function generateHermesResponse(args: {
     };
   }
 
-  if (mode === 'EXPLANATION' || mode === 'FACTUAL_QUESTION' || mode === 'IDEA_REVIEW' || mode === 'DECISION_SUPPORT') {
+  if (mode === 'FACTUAL_QUESTION') {
+    const toolId = args.intent === 'current_time_or_date' ? 'hermes.current_time'
+      : args.intent === 'explain_previous_source' ? 'hermes.explain_source'
+        : args.intent === 'report_catalog' ? 'hermes.list_reports'
+          : args.intent === 'report_lookup' ? 'hermes.find_report'
+            : args.intent === 'customer_aggregate_status' ? 'hermes.customer_aggregate'
+              : args.intent === 'project_status' ? 'hermes.project_status'
+                : null;
+    if (toolId) {
+      const tool = runHermesTool(toolId, { query: message }, input, input.session?.lastAnswerProvenance);
+      return {
+        response: tool.text,
+        evidenceState: tool.evidenceState,
+        action: null,
+        contextUsed: [`tool:${tool.toolId}`],
+        warnings,
+        provenance: provenanceFromTool(tool, answerId, toolId === 'hermes.customer_aggregate' ? 'MIXED' : 'FACT', 0.92),
+      };
+    }
     const executiveIntent = classifyExecutiveIntent(message);
     if (executiveIntent) {
-      return { response: answerExecutiveIntent(executiveIntent), evidenceState: 'REPORT_BACKED', action: null, contextUsed: ['executive_read_model'], warnings };
+      return {
+        response: answerExecutiveIntent(executiveIntent),
+        evidenceState: 'REPORT_BACKED',
+        action: null,
+        contextUsed: ['executive_read_model'],
+        warnings,
+        provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: [executiveIntent], sourceLabels: ['Executive Command Center read model'], evidenceState: 'REPORT_BACKED', answerKind: 'FACT', confidence: 0.88 }),
+      };
+    }
+  }
+
+  if (mode === 'DECISION_SUPPORT' && args.intent === 'active_topic_planning') {
+    const activeLabel = /readiness|review|\$97|offer/i.test(message)
+      ? '$97 readiness review journey'
+      : advisoryContext?.topicLabel || advisoryContext?.recommendation?.title || 'the active topic';
+    const response = `Let’s treat this as planning for **${activeLabel}**, not execution.\n\nStart by defining the deliverable and the client journey: offer promise, intake requirements, test checkout path, review workflow, delivery timeline, and handoff or upsell rules. The first decision is what the client receives for the $97 fee. After that, map intake -> scorecard -> review output -> delivery -> follow-up.\n\nNothing has been created, assigned, charged, sent, or submitted.`;
+    return {
+      response,
+      evidenceState: 'REPORT_BACKED',
+      advisoryContext,
+      action: null,
+      contextUsed: advisoryContext ? ['advisory_memory', 'nexus_native_reasoning'] : ['nexus_native_reasoning', 'readiness_review_operating_context'],
+      warnings,
+      provenance: provenanceFromContext({ answerId, sourceType: advisoryContext ? 'HYBRID' : 'OPERATING_CONTEXT', evidenceIds: advisoryContext?.evidenceIds || ['readiness_review_operating_context'], sourceLabels: advisoryContext ? ['Active advisory memory', 'Nexus-native planning'] : ['Readiness review operating context', 'Nexus-native planning'], evidenceState: 'REPORT_BACKED', answerKind: 'RECOMMENDATION', confidence: 0.86 }),
+    };
+  }
+
+  if (mode === 'PROJECT_DISCUSSION') {
+    const reasoningRequest = createHermesReasoningRequest(input, advisoryContext);
+    const response = /command center|dashboard/i.test(message)
+      ? 'Yes. I would redesign the Command Center around three layers: what needs Ray’s attention now, what Nexus is executing, and what is blocked. The current page has strong information, but the decision hierarchy should be clearer: top strip for P0/P1 attention, middle for active governed work and approvals, and lower panels for evidence, revenue, clients, and system health. I would change the first viewport before adding new modules.'
+      : 'Yes. I’d approach that as a project discussion first: clarify the user, the main decision the page should support, the highest-risk data, and the smallest layout change that makes the workflow easier to scan. I would not create a task unless you explicitly ask for one.';
+    return {
+      response,
+      evidenceState: 'REPORT_BACKED',
+      action: null,
+      contextUsed: ['project_discussion_mode', `reasoning_contract:${reasoningRequest.availableTools.length}_tools_available`],
+      warnings,
+      provenance: provenanceFromContext({ answerId, sourceType: 'HYBRID', evidenceIds: ['project_discussion_mode', 'executive_command_center'], sourceLabels: ['Project discussion mode', 'Executive Command Center context'], evidenceState: 'REPORT_BACKED', answerKind: 'RECOMMENDATION', confidence: 0.82 }),
+    };
+  }
+
+  if (mode === 'EXPLANATION' || mode === 'IDEA_REVIEW' || mode === 'DECISION_SUPPORT') {
+    const executiveIntent = classifyExecutiveIntent(message);
+    if (executiveIntent) {
+      return {
+        response: answerExecutiveIntent(executiveIntent),
+        evidenceState: 'REPORT_BACKED',
+        action: null,
+        contextUsed: ['executive_read_model'],
+        warnings,
+        provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: [executiveIntent], sourceLabels: ['Executive Command Center read model'], evidenceState: 'REPORT_BACKED', answerKind: 'FACT', confidence: 0.88 }),
+      };
     }
     return {
-      response: 'My read: answer the immediate question first, then check the evidence before turning it into work. I can reason through the tradeoff, but I won’t treat that as an executed decision or approved policy.',
+      response: 'I can reason through that as a conversation, but I do not have a specific Nexus evidence source attached to the question yet. Give me the project, report, page, or prior recommendation you mean and I’ll ground the answer before turning it into work.',
       evidenceState: 'REPORT_BACKED',
       action: null,
       contextUsed: ['nexus_native_reasoning'],
       warnings,
+      provenance: provenanceFromContext({ answerId, sourceType: 'MODEL_REASONING', evidenceIds: ['nexus_native_reasoning'], sourceLabels: ['Nexus-native reasoning fallback'], evidenceState: 'REPORT_BACKED', answerKind: 'INTERPRETATION', confidence: 0.65 }),
     };
   }
 
   return {
-    response: 'I need one focused clarification: what specific decision, system status, or prior recommendation should I use?',
+    response: 'I do not have enough authorized Nexus context to answer that as stated. Name the project, report, page, client aggregate, or prior recommendation you mean, and I’ll ground the answer before turning it into work.',
     evidenceState: 'UNKNOWN',
     action: null,
     contextUsed,

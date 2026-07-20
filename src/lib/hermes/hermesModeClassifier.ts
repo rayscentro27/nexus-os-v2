@@ -12,6 +12,12 @@ export function normalizeHermesConversationText(message: string): string {
     .toLowerCase()
     .replace(/\bgo;od\b/g, 'good')
     .replace(/[’']/g, "'")
+    .replace(/\breadines\b/g, 'readiness')
+    .replace(/\bre viw\b/g, 'review')
+    .replace(/\breviw\b/g, 'review')
+    .replace(/\bdeparment\b/g, 'department')
+    .replace(/\bdepartmant\b/g, 'department')
+    .replace(/\bsystm\b/g, 'system')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -27,11 +33,11 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'COMMAND', intent: 'blocked_high_risk_command', confidence: 0.96, reason: 'Message requests a prohibited or high-risk external action.' };
   }
 
-  if (/\b(prepare|create|draft|send)\b.*\b(ray review|approval)\b|\bprepare that for ray review\b/i.test(text)) {
+  if (/\b(prepare|create|draft|send)\b.*\b(ray review|approval|review)\b|\bprepare (?:that|this) for (?:ray )?review\b/i.test(text)) {
     return { mode: 'APPROVAL_REQUEST', intent: 'prepare_approval_request', confidence: 0.92, reason: 'Message explicitly asks for Ray Review or approval preparation.' };
   }
 
-  if (/\b(create|turn|make|prepare|assign)\b.*\b(task|work request|governed work|work order)\b|\bassign this to\b/i.test(text)) {
+  if (/\b(create|turn|make|prepare|assign|draft)\b.*\b(task|work request|governed work|work order)\b|\bassign this to\b/i.test(text)) {
     return { mode: 'TASK_REQUEST', intent: 'create_governed_work_request', confidence: 0.92, reason: 'Message explicitly asks to create or assign governed work.' };
   }
 
@@ -39,7 +45,7 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'SOCIAL_GREETING', intent: /night/.test(text) ? 'farewell_or_light_check_in' : 'greeting_or_light_check_in', confidence: 0.98, reason: 'Obvious social greeting with no operational request.' };
   }
 
-  if (/^(thank you|thanks|that makes sense|i agree|makes sense|got it|ok|okay|cool)[.!? ]*$/.test(text)) {
+  if (/^(thank you|thanks|appreciate it|that makes sense|that tracks|i agree|makes sense|got it|ok|okay|ok that tracks|cool)[.!? ]*$/.test(text)) {
     return { mode: 'CASUAL_CONVERSATION', intent: 'acknowledgement', confidence: 0.94, reason: 'Short acknowledgement or casual turn.' };
   }
 
@@ -47,8 +53,40 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'CASUAL_CONVERSATION', intent: 'casual_check_in', confidence: 0.95, reason: 'Casual question without operational request.' };
   }
 
-  if (/\b(stripe live|live stripe|trading active|live trading|alpha.*supabase|github mcp active|web search|system health|how is the system|blocking deployment|deployment blocked|can alpha see client data)\b/.test(text)) {
+  if (/\b(report|reports)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: /latest|recent|most recent|show|summarize|where|find|newest|talks about|mention/.test(text) ? 'report_lookup' : 'report_catalog', confidence: 0.9, reason: 'Question asks about approved Nexus reports.' };
+  }
+
+  if (/\b(stripe live|live stripe|stripe production|trading active|live trades?|live trading|alpha.*supabase|alpha.*customer data|github mcp|github writer|web search|system health|how is the system|blocking deployment|deployment blocked|can alpha see client data)\b/.test(text)) {
     return { mode: 'SYSTEM_STATUS', intent: 'system_status_honesty', confidence: 0.93, reason: 'Question asks for known system or capability status.' };
+  }
+
+  if (/\b(what time is it|whats the time|what's the time|time in arizona|clock time|current time|time now|what day is it|what is today'?s date|current date|what date is it|what date are we on|what day is today|is today)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'current_time_or_date', confidence: 0.96, reason: 'Question asks for current time or date.' };
+  }
+
+  if (/\b(where did (?:that|this|the answer) (?:come from|get|come)|where did you get that|what evidence supports|what backs up|how did you know|what source|source for that|is that your opinion|is that a fact|evidence or judgment|how current is that)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'explain_previous_source', confidence: 0.94, reason: 'Question asks for prior answer provenance.' };
+  }
+
+  if (/\b(departments?|department operations|governed automation|what wave|in the wave|hermes wave|automation departments|what did we finish|what did we build|are we done with hermes|what are we working on|what is next|what did we complete|what is currently stuck|currently stuck)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'project_status', confidence: 0.9, reason: 'Question asks for project or roadmap status.' };
+  }
+
+  if (/\b(redesign|design|layout|dashboard|command center|workroom|client portal|workflow make sense|workflow|what would you change|what do you think of this layout|improve the .*page|page change|cleaner|reorganized|think it through|help me think)\b/.test(text)) {
+    return { mode: 'PROJECT_DISCUSSION', intent: 'project_discussion_design', confidence: 0.86, reason: 'Question asks for project/design discussion, not execution.' };
+  }
+
+  if (/\b(let'?s|lets|okay|ok|continue|start|work on|break it|break|plan it|plan|what comes first|what do we need to do|first step|pick back up)\b.*\b(readiness|review|journey|thing|that|it|plan|\$97|offer)\b/.test(text) || /\bhelp me plan it|break it down|break it into steps|what comes first|what do we need to do first|continue what we were discussing|do not create anything|what should that offer include\b/.test(text)) {
+    return { mode: 'DECISION_SUPPORT', intent: 'active_topic_planning', confidence: hasAdvisoryContext ? 0.88 : 0.8, reason: 'Question asks to continue or plan the active/named topic without execution.' };
+  }
+
+  if (/\b(going back to|go back to|return to|earlier|previous)\b.*\b(client live data|client live-data|live data flag|live-data flag)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_blockers' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Explicit older-topic recall should resolve against advisory history.' };
+  }
+
+  if (/\b(clients?|customers?|paying customers|client rows|client count)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'customer_aggregate_status', confidence: 0.9, reason: 'Question asks for aggregate customer/client status.' };
   }
 
   if (/\b(why that one|why this one|why did you choose that|why is that first|what makes that the priority)\b/.test(text)) {

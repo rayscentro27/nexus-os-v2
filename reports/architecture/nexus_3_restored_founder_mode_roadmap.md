@@ -158,6 +158,24 @@ Built:
 - Bounded advisory and selection memory contracts.
 - Reference resolution for pronouns, numbered items, and named recommendations.
 - Deterministic/hybrid/fallback response strategy.
+
+## Wave 4A.4 — Hermes general intelligence and governed tool use
+
+Status: LOCAL_FOCUSED_PASS; live production verification pending for the new commit.
+
+Built:
+
+- Governed Hermes Tool Registry mapped to Capability OS.
+- Current-time/date tool using Phoenix/Arizona formatting.
+- Project/roadmap status tool.
+- Sanitized report catalog and lookup tools.
+- Customer aggregate tool that distinguishes synthetic/test evidence from unconfirmed real paying customers.
+- Previous-answer provenance tool.
+- Active readiness-review topic continuation.
+- Project discussion/design mode.
+- 200+ general conversation corpus and 40+ holdout evaluation.
+
+Department Operations status after Wave 4A.4: NEXT/PARTIAL. Do not approve Department Operations until the new commit is deployed and live Workroom certification passes.
 - Conversation trace and response-quality evaluator.
 - Durable certification corpus for greetings, advice, follow-ups, references, status honesty, action separation, page-context conflicts, and historical regressions.
 - Executive Hermes Conversation Health panel.
@@ -249,6 +267,13 @@ Exit gate:
 - Completed: production served commit `9b37b8c6f7115b5997b774bb52afdc676e2ffd4e` on `main` with bundle `/assets/index-D0QaAbwK.js`; live Workroom advisory-context Playwright passed with zero stale-topic leakage, zero page errors, and zero console errors.
 
 ## Wave 4 — Department operations and automation
+
+Wave 4A.4R release gate:
+
+- Hermes general-intelligence work is protected for production release.
+- Playwright certification uses the established `playwright/test` package and authenticated `/admin#hermes` route.
+- Strict RLS warnings are classified with zero confirmed unsafe findings; authenticated RLS remains 45/45.
+- Department Operations remains blocked until the pushed Wave 4A.4R commit passes authenticated live certification at `https://goclearonline.cc/admin#hermes`.
 
 Build:
 

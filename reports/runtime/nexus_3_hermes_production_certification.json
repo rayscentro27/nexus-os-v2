@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-19T16:10:19.742Z",
+  "generated_at": "2026-07-20T08:03:30-07:00",
   "expected_commit": "9b37b8c6f7115b5997b774bb52afdc676e2ffd4e",
   "deployed_commit": "9b37b8c6f7115b5997b774bb52afdc676e2ffd4e",
   "deployment_match": "YES",
@@ -23,7 +23,15 @@
   "action_separation": "PASS questions create no work; explicit task request creates governed draft action only",
   "local_production_result": "PASS tests/e2e/hermes-production-intent-certification.spec.ts 7/7 and tests/e2e/hermes-live-workroom-certification.spec.ts 7/7; combined local production run 14/14",
   "live_production_result": "PASS live https://goclearonline.cc advisory-context Playwright 2/2 plus Workroom production specs 14/14",
-  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
+  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED_FOR_PRIOR_WAVE_4A_3",
+  "wave_4a_4_general_intelligence": {
+    "local_focused_result": "PASS",
+    "live_production_result_for_new_commit": "PENDING_DEPLOYMENT",
+    "wave_4a_4r_release_state": "PRE_COMMIT_CHECKS_PASS_RLS_WARNINGS_CLASSIFIED_ZERO_CONFIRMED_UNSAFE",
+    "local_browser_result": "PASS tests/e2e/hermes-general-intelligence-certification.spec.ts 2/2 exact sequence plus 25 holdout",
+    "certification_state": "READY_FOR_PRODUCTION_DEPLOYMENT_AND_LIVE_CERTIFICATION",
+    "required_live_sequence": "tests/e2e/hermes-general-intelligence-certification.spec.ts against https://goclearonline.cc after deployment"
+  },
   "wave_4a_3_advisory_context": {
     "active_context_contract": "IMPLEMENTED",
     "priority_to_revenue_switch": "PASS",

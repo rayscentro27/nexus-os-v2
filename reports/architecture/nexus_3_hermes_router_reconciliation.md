@@ -80,3 +80,27 @@ Do not delete legacy routers until:
 - Priority/risk/revenue differentiation: PASS
 - Rationale/feasibility/blocker differentiation: PASS
 - Live production post-deploy result: PASS 14/14 against https://goclearonline.cc
+
+## Wave 4A.4 general intelligence reconciliation
+
+Last updated: 2026-07-20 Wave 4A.4 Hermes general intelligence and governed tool use
+
+Canonical routing now separates:
+
+1. high-confidence deterministic/system/action intents;
+2. broad safe factual/project/design language;
+3. governed read-only tool selection;
+4. fallback clarification only when no authorized context/tool applies.
+
+New canonical tool layer:
+
+- `src/lib/hermes/hermesGeneralTools.ts`
+- `hermes.current_time`
+- `hermes.project_status`
+- `hermes.list_reports`
+- `hermes.read_report_summary`
+- `hermes.find_report`
+- `hermes.customer_aggregate`
+- `hermes.explain_source`
+
+The old generic response beginning `My read: answer the immediate question first...` is no longer the default for supported safe Workroom questions. Compatibility routers remain in place, but the authenticated Workroom path uses the canonical engine.

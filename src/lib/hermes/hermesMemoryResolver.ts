@@ -1,3 +1,4 @@
+import type { HermesAnswerProvenance } from './hermesGeneralTools';
 import type { HermesAdvisoryContext, HermesConversationInput, HermesConversationSession, HermesConversationMode, HermesConversationTrace } from './hermesConversationTypes';
 
 const nowIso = () => new Date().toISOString();
@@ -139,6 +140,7 @@ export function updateHermesSessionAfterResponse(
     strategy: HermesConversationSession['recentResponseStrategies'][number];
     advisoryContext?: HermesAdvisoryContext;
     selectedRecommendationId?: string;
+    provenance?: HermesAnswerProvenance;
   },
 ): HermesConversationSession {
   const activeTopic = update.advisoryContext?.topic || session.activeTopic || detectTopic(update.message);
@@ -170,6 +172,7 @@ export function updateHermesSessionAfterResponse(
     activeTopic,
     lastUserMessage: update.message,
     lastHermesResponse: update.response.slice(0, 1200),
+    lastAnswerProvenance: update.provenance || session.lastAnswerProvenance,
     advisoryContextId: nextAdvisory?.advisoryId || session.advisoryContextId,
     activeAdvisoryId: nextAdvisory?.advisoryId || session.activeAdvisoryId,
     advisoryHistory,

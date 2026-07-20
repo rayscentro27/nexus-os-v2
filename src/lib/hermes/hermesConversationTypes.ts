@@ -9,6 +9,7 @@ export type HermesConversationMode =
   | 'FACTUAL_QUESTION'
   | 'EXPLANATION'
   | 'IDEA_REVIEW'
+  | 'PROJECT_DISCUSSION'
   | 'DECISION_SUPPORT'
   | 'SELECTION_REFERENCE'
   | 'TASK_REQUEST'
@@ -126,6 +127,7 @@ export interface HermesConversationSession {
   pageContextId?: string;
   recentIntentHistory: string[];
   recentResponseStrategies: HermesResponseStrategy[];
+  lastAnswerProvenance?: import('./hermesGeneralTools').HermesAnswerProvenance;
   advisoryContext?: HermesAdvisoryContext;
   activeAdvisoryId?: string;
   advisoryHistory?: HermesAdvisoryContext[];
@@ -194,6 +196,7 @@ export interface HermesConversationResult {
   action: HermesConversationAction | null;
   warnings: string[];
   traceId?: string;
+  provenance?: import('./hermesGeneralTools').HermesAnswerProvenance;
   session: HermesConversationSession;
   quality?: HermesResponseQuality;
   trace?: HermesConversationTrace;

@@ -7,6 +7,7 @@ import { createHermesConversationTrace } from './hermesConversationTrace';
 import { scoreHermesResponse, getHermesCertificationCorpus, summarizeHermesQuality } from './hermesResponseQuality';
 import type { HermesCertificationSummary, HermesQualityFixture } from './hermesResponseQuality';
 import type { HermesConversationInput, HermesConversationResult, HermesConversationSession } from './hermesConversationTypes';
+import { provenanceFromContext } from './hermesGeneralTools';
 
 let defaultSession = createHermesConversationSession({ sessionId: 'hermes-default-session', channel: 'default' });
 
@@ -74,6 +75,15 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     advisoryContext: memory.advisoryContext,
     reference,
   });
+  const fallbackProvenance = generated.provenance || provenanceFromContext({
+    answerId: `hermes-answer-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    sourceType: generated.contextUsed.some((item) => item.includes('tool:')) ? 'TOOL' : generated.contextUsed.includes('advisory_memory') ? 'CONVERSATION_MEMORY' : 'HYBRID',
+    evidenceIds: generated.contextUsed.length ? generated.contextUsed : ['hermes_canonical_conversation_engine'],
+    sourceLabels: generated.contextUsed.length ? generated.contextUsed : ['Hermes canonical conversation engine'],
+    evidenceState: generated.evidenceState,
+    answerKind: generated.action ? 'MIXED' : generated.contextUsed.includes('nexus_native_reasoning') ? 'INTERPRETATION' : 'FACT',
+    confidence: Math.max(secondPass.confidence, reference.confidence || 0),
+  });
   const recommendationProducing = secondPass.mode === 'EXECUTIVE_ADVICE' && Boolean(generated.advisoryContext);
   const session = updateHermesSessionAfterResponse(memory.session, {
     mode: secondPass.mode,
@@ -83,6 +93,7 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     strategy,
     advisoryContext: recommendationProducing ? generated.advisoryContext : undefined,
     selectedRecommendationId: reference.item?.id,
+    provenance: fallbackProvenance,
   });
   if (!input.session) defaultSession = session;
 
@@ -99,6 +110,7 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     action: generated.action,
     warnings: [...generated.warnings, ...(memory.topicChanged ? ['topic_changed_memory_reset'] : [])],
     traceId: `hermes-trace-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    provenance: fallbackProvenance,
     session,
   };
   const quality = scoreHermesResponse(resultWithoutQuality);

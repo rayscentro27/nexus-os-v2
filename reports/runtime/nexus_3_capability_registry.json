@@ -1,7 +1,29 @@
 {
-  "generated_at": "2026-07-19T16:10:19.742Z",
+  "generated_at": "2026-07-20T08:03:30-07:00",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
+  "wave_4a_4_added_capability_ids": [
+    "hermes_general_language_interpretation",
+    "hermes_governed_tool_planner",
+    "hermes_tool_registry",
+    "hermes_current_time_tool",
+    "hermes_project_status_tool",
+    "hermes_report_catalog_tool",
+    "hermes_customer_aggregate_tool",
+    "hermes_provenance_tool",
+    "hermes_project_discussion_mode",
+    "hermes_general_conversation_certification",
+    "hermes_novel_holdout_evaluation",
+    "hermes_model_provider_profile"
+  ],
+  "wave_4a_4r_release_state": {
+    "generated_at": "2026-07-20T08:36:55-07:00",
+    "playwright_execution_path": "RESTORED",
+    "strict_rls_finding_count": 23,
+    "confirmed_unsafe_rls_count": 0,
+    "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED",
+    "department_operations_ready": false
+  },
   "total_capabilities": 135,
   "capabilities": [
     {

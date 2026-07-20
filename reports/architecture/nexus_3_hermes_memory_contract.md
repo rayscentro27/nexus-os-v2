@@ -73,3 +73,29 @@ Memory may resolve a target for an explicit task or Ray Review request, but the 
 ## Privacy rule
 
 Canonical Wave 4A traces and session state must not store secrets, raw customer documents, credential values, or unnecessary client PII.
+
+## Wave 4A.4 provenance memory
+
+Wave 4A.4 adds bounded previous-answer provenance to the canonical Hermes session.
+
+Stored fields:
+
+- answer ID;
+- source type;
+- tool IDs;
+- evidence IDs;
+- source labels;
+- evidence state;
+- generated timestamp;
+- confidence;
+- answer kind.
+
+Not stored:
+
+- chain-of-thought;
+- raw provider prompts;
+- credentials;
+- raw client documents;
+- unnecessary client PII.
+
+Source-explanation questions such as `where did you get that answer from?` resolve against this bounded provenance record, not a generic advice route.
