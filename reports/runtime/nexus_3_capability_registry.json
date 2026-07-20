@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-20T17:55:00Z",
+  "generated_at": "2026-07-20T18:13:00Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
   "wave_4a_4_added_capability_ids": [
@@ -7037,7 +7037,9 @@
     "focused_result": "PASS_5_FILES_43_TESTS",
     "full_unit_result": "PASS_96_FILES_1494_TESTS",
     "authenticated_rls_result": "PASS_45_OF_45",
-    "live_production_result": "PENDING_DEPLOYMENT",
-    "local_browser_result": "PASS_DEPARTMENT_OPERATIONS_PLAYWRIGHT_1_OF_1"
+    "live_production_result": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES_DEPARTMENT_SEQUENCE",
+    "local_browser_result": "PASS_DEPARTMENT_OPERATIONS_PLAYWRIGHT_1_OF_1",
+    "deployed_commit": "ff6dca5c4345a884d6fad7291a540babd5013f17",
+    "production_bundle": "assets/index-BbOdE28H.js"
   }
 }

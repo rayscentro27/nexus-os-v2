@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-20T18:08:00Z",
+  "generated_at": "2026-07-20T18:13:00Z",
   "starting_commit": "94a5fb3cb8cffcd2596986fdffed0401d5151881",
-  "ending_commit": "PENDING_COMMIT",
-  "deployed_commit": "PENDING_DEPLOYMENT",
+  "ending_commit": "ff6dca5c4345a884d6fad7291a540babd5013f17",
+  "deployed_commit": "ff6dca5c4345a884d6fad7291a540babd5013f17",
   "active_department_count": 5,
   "department_registry_status": "PASS_LOCAL",
   "queue_status": "PASS_LOCAL_SYNTHETIC_SEED",
@@ -28,9 +28,11 @@
   "focused_test_result": "PASS_5_FILES_43_TESTS",
   "typescript_result": "PASS",
   "production_build_result": "PASS_WITH_EXISTING_CHUNK_SIZE_WARNING_DIST_ASSETS_INDEX_DKDUovk9_JS",
-  "live_production_result": "PENDING_DEPLOYMENT",
+  "live_production_result": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES_DEPARTMENT_SEQUENCE",
   "page_error_count": 0,
   "console_error_count": 0,
-  "certification_state": "LOCAL_PRE_RELEASE_PASS_LIVE_PENDING",
-  "local_browser_result": "PASS_DEPARTMENT_OPERATIONS_PLAYWRIGHT_1_OF_1"
+  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
+  "local_browser_result": "PASS_DEPARTMENT_OPERATIONS_PLAYWRIGHT_1_OF_1",
+  "implementation_commit": "ff6dca5c4345a884d6fad7291a540babd5013f17",
+  "production_bundle": "assets/index-BbOdE28H.js"
 }

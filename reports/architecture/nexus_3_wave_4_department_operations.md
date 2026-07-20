@@ -122,20 +122,27 @@ Synthetic seed evidence was created for each active department and is clearly la
 
 - TypeScript: PASS
 - Production build: PASS with existing Vite chunk-size warning
-- Focused Department/Hermes tests: PASS, 4 files / 36 tests
-- Full unit suite: PASS, 96 files / 1493 tests
+- Focused Department/Hermes tests: PASS, 5 files / 43 tests
+- Full unit suite: PASS, 96 files / 1494 tests
 - Authenticated RLS: PASS, 45/45
+- Local production Playwright: PASS, `tests/e2e/department-operations-certification.spec.ts`
 
 ## 23. Production tests
 
-Production deployment and live browser certification remain pending until the Wave 4 commit is pushed and deployed.
+- Implementation commit: `ff6dca5c4345a884d6fad7291a540babd5013f17`
+- Production bundle: `assets/index-BbOdE28H.js`
+- Live production Hermes Department Operations certification: PASS against `https://goclearonline.cc/admin#hermes`
+- Page errors: 0
+- Console errors: 0
+- Generic fallback count: 0 for the certification sequence
+- Action separation: PASS; planning did not create work, explicit draft requests produced governed drafts.
 
 ## 24. Limitations
 
-- Department data is currently a Nexus-native synthetic/read-model seed plus additive schema; production Supabase seed/application of the new migration is pending deployment flow.
+- Department data is currently a Nexus-native synthetic/read-model seed plus additive schema; production Supabase seed/application of the new migration remains governed by the established deployment path.
 - The Department Workspace is embedded in the Command Center but does not yet persist UI-driven mutations.
-- Live production Hermes department certification is pending the deployed Wave 4 commit.
+- The production certification covered Hermes and the deployed UI bundle. Durable table population beyond the synthetic read model remains a later governed operations step.
 
 ## 25. Readiness
 
-Wave 4 is locally implemented and pre-release certified. Department Operations is ready for commit, push, deployment, migration application through the governed path, and live production Hermes certification.
+Wave 4 is implemented, committed, pushed, deployed, and live-certified for the Hermes Department Operations sequence. The next wave may proceed only after Ray accepts the known limitations and the governed migration/seed path.

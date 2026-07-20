@@ -268,7 +268,7 @@ Exit gate:
 
 ## Wave 4 — Department operations and automation
 
-Status: LOCAL_PRE_RELEASE_PASS; production deployment and live Hermes department certification pending.
+Status: PASS_LIVE_PRODUCTION_CERTIFIED for Hermes Department Operations sequence.
 
 Wave 4A.4R release gate:
 
@@ -296,11 +296,12 @@ Local acceptance evidence:
 - Full unit suite: PASS 96 files / 1493 tests.
 - Authenticated RLS: PASS 45/45.
 
-Live acceptance pending:
+Live acceptance:
 
-- Push Wave 4 commit.
-- Verify Netlify production deployment.
-- Run `tests/e2e/department-operations-certification.spec.ts` against `https://goclearonline.cc/admin#hermes`.
+- Implementation commit `ff6dca5c4345a884d6fad7291a540babd5013f17` deployed with production bundle `assets/index-BbOdE28H.js`.
+- `tests/e2e/department-operations-certification.spec.ts` passed against `https://goclearonline.cc/admin#hermes`.
+- Page errors: 0.
+- Console errors: 0.
 
 ## Wave 5 — Growth, creative, and customer operations
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-20T18:08:00Z",
+  "generated_at": "2026-07-20T18:13:00Z",
   "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED",
   "general_model_route_state": "NOT_ACTIVE_FOR_CERTIFICATION",
   "registered_tool_count": 25,
@@ -44,7 +44,7 @@
     "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED"
   },
   "wave_4_department_operations": {
-    "state": "LOCAL_PRE_RELEASE_PASS_LIVE_PENDING",
+    "state": "PASS_LIVE_PRODUCTION_CERTIFIED",
     "active_departments": [
       "operations",
       "engineering",
@@ -57,6 +57,9 @@
     "focused_result": "PASS_5_FILES_43_TESTS",
     "full_unit_result": "PASS_96_FILES_1494_TESTS",
     "local_browser_result": "PASS_DEPARTMENT_OPERATIONS_PLAYWRIGHT_1_OF_1",
-    "rls_result": "PASS_45_OF_45"
+    "rls_result": "PASS_45_OF_45",
+    "live_production_result": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES_DEPARTMENT_SEQUENCE",
+    "deployed_commit": "ff6dca5c4345a884d6fad7291a540babd5013f17",
+    "production_bundle": "assets/index-BbOdE28H.js"
   }
 }
