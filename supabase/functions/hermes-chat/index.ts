@@ -143,6 +143,589 @@ function buildDynamicContext(mode: string, ctx: Record<string, unknown> | undefi
 
 interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string; }
 
+type HermesTurnDecision =
+  | { type: 'DIRECT_RESPONSE'; response: string }
+  | { type: 'TOOL_REQUEST'; toolName: string; arguments: Record<string, unknown>; reasonSummary: string }
+  | { type: 'CLARIFICATION'; question: string; missingFields: string[] };
+
+type ToolActionClass = 'READ_ONLY' | 'DRAFT_ONLY' | 'APPROVAL_REQUIRED';
+type ToolResult = {
+  ok: boolean;
+  toolName: string;
+  data?: Record<string, unknown>;
+  errorCode?: string;
+  evidenceSources: string[];
+  freshness: string;
+};
+type ToolDefinition = {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  requiredRole: string[];
+  requiredCapabilities: string[];
+  dataClassification: 'PUBLIC' | 'INTERNAL_SUMMARY' | 'CLIENT_AGGREGATE' | 'SENSITIVE_INTERNAL';
+  actionClass: ToolActionClass;
+  execute: (ctx: ToolExecutionContext, args: Record<string, unknown>) => Promise<ToolResult>;
+};
+type ToolExecutionContext = {
+  actorRole: string;
+  tenantId: string;
+  traceId: string;
+  authorization: string;
+};
+
+type CapabilityDecision =
+  | { allowed: true; mode: 'READ_ONLY' | 'DRAFT_ONLY' }
+  | {
+      allowed: false;
+      reasonCode:
+        | 'UNKNOWN_TOOL'
+        | 'INVALID_ARGUMENTS'
+        | 'UNAUTHORIZED_ACTOR'
+        | 'TENANT_MISMATCH'
+        | 'CAPABILITY_DENIED'
+        | 'APPROVAL_REQUIRED'
+        | 'SELF_APPROVAL_PROHIBITED'
+        | 'RATE_LIMITED'
+        | 'DUPLICATE_ACTION'
+        | 'DATA_CLASSIFICATION_DENIED';
+    };
+
+const REPORTS = [
+  { id: 'nexus_3_hermes_existing_openrouter_model_first', title: 'Hermes Existing OpenRouter Model-First Routing Repair', category: 'architecture', createdAt: '2026-07-20', freshness: 'CURRENT_BRANCH', source: 'reports/architecture/nexus_3_hermes_existing_openrouter_model_first.md', summary: 'Documents the old deterministic route, existing OpenRouter smoke proof, and model-first routing repair.' },
+  { id: 'nexus_3_department_operations_status', title: 'Department Operations Status', category: 'runtime', createdAt: '2026-07-20', freshness: 'SYNTHETIC_READ_MODEL', source: 'reports/runtime/nexus_3_department_operations_status.json', summary: 'Reports Wave 4 department registry and queue read model state. Durable production queue persistence depends on the unapplied department migration.' },
+  { id: 'nexus_3_hermes_model_first_status', title: 'Hermes Model-First Status', category: 'runtime', createdAt: '2026-07-20', freshness: 'CURRENT_BRANCH', source: 'reports/runtime/nexus_3_hermes_model_first_status.json', summary: 'Tracks OpenRouter provider, model-first routing state, direct model smoke, and pilot certification status.' },
+  { id: 'nexus_3_capability_registry', title: 'Nexus Capability Registry', category: 'runtime', createdAt: '2026-07-20', freshness: 'REPORT_BACKED', source: 'reports/runtime/nexus_3_capability_registry.json', summary: 'Capability OS registry summary for activation, approval, and policy boundaries.' },
+];
+
+function traceId(): string {
+  return `hermes-model-first-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+}
+
+function safeObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function stringArg(args: Record<string, unknown>, key: string): string {
+  return typeof args[key] === 'string' ? String(args[key]).slice(0, 240) : '';
+}
+
+function currentPhoenixTime(timezone = 'America/Phoenix') {
+  const tz = /phoenix|arizona/i.test(timezone) ? 'America/Phoenix' : timezone;
+  const now = new Date();
+  return {
+    currentTime: now.toLocaleString('en-US', { timeZone: tz, weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+    timezone: tz,
+    source: 'SYSTEM_CLOCK',
+    freshness: 'CURRENT',
+  };
+}
+
+async function supabaseCount(table: string, authorization: string): Promise<number | null> {
+  const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('PROJECT_URL');
+  const anon = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!url || !anon || !authorization) return null;
+  const res = await fetch(`${url.replace(/\/$/, '')}/rest/v1/${table}?select=*`, {
+    method: 'HEAD',
+    headers: {
+      apikey: anon,
+      authorization,
+      prefer: 'count=exact',
+    },
+  }).catch(() => null);
+  if (!res?.ok) return null;
+  const range = res.headers.get('content-range') || '';
+  const count = Number(range.split('/')[1]);
+  return Number.isFinite(count) ? count : null;
+}
+
+function toolResult(toolName: string, data: Record<string, unknown>, evidenceSources: string[], freshness = 'CURRENT'): ToolResult {
+  return { ok: true, toolName, data, evidenceSources, freshness };
+}
+
+const toolRegistry: Record<string, ToolDefinition> = {
+  get_current_time: {
+    name: 'get_current_time',
+    description: 'Get current date and time. Use for current time/date questions.',
+    inputSchema: { type: 'object', properties: { timezone: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_current_time_tool'],
+    dataClassification: 'PUBLIC',
+    actionClass: 'READ_ONLY',
+    execute: async (_ctx, args) => toolResult('get_current_time', currentPhoenixTime(stringArg(args, 'timezone') || 'America/Phoenix'), ['system_clock']),
+  },
+  get_hermes_identity: {
+    name: 'get_hermes_identity',
+    description: 'Get Hermes identity and creation evidence state. Use for identity or age questions.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_general_language_interpretation'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_hermes_identity', { name: 'Hermes', role: "Ray Davis's private CEO advisor and Nexus executive coordinator", createdBy: 'Ray Davis', nature: 'AI advisor', creationDates: { evidenceState: 'PARTIAL' }, source: 'Hermes stable identity context' }, ['hermes_identity_context'], 'PARTIAL'),
+  },
+  get_nexus_version: {
+    name: 'get_nexus_version',
+    description: 'Get Nexus version/deployment metadata.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_project_status_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_nexus_version', { product: 'Nexus OS', versionLabel: 'Nexus OS 3.0 Wave 4 / Hermes model-first feature branch', deployedCommit: Deno.env.get('COMMIT_REF') || Deno.env.get('NETLIFY_COMMIT_REF') || 'unknown', branch: Deno.env.get('BRANCH') || 'unknown', buildTimestamp: Deno.env.get('BUILD_ID') || undefined, source: 'deployment environment and branch reports', freshness: 'CONFIG_BACKED' }, ['deployment_environment', 'model_first_status']),
+  },
+  get_project_status: {
+    name: 'get_project_status',
+    description: 'Get approved project status summary.',
+    inputSchema: { type: 'object', properties: { query: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_project_status_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_project_status', { status: 'Hermes model-first routing repair is on the feature branch. Department Operations UI/tools are deployed, but durable production queue persistence depends on the separate unapplied migration. Stripe remains test/deferred; live trading remains blocked; Alpha remains isolated.' }, ['architecture_reports', 'capability_registry']),
+  },
+  get_system_health: {
+    name: 'get_system_health',
+    description: 'Get safe system health summary.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_system_health_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_system_health', { overallState: 'DEGRADED_CONFIG_AWARE', components: [{ name: 'OpenRouter Hermes chat', state: 'LIVE', source: 'hermes-chat diagnostic', freshness: 'CURRENT' }, { name: 'Stripe live payments', state: 'NOT_CONFIGURED', source: 'Capability OS', freshness: 'REPORT_BACKED' }, { name: 'Live trading', state: 'BLOCKED_BY_POLICY', source: 'Capability OS', freshness: 'REPORT_BACKED' }, { name: 'Department queues', state: 'SYNTHETIC_READ_MODEL', source: 'Wave 4 report', freshness: 'REPORT_BACKED' }], limitations: ['This is a safe summary, not raw logs.'] }, ['executive_system_health', 'capability_os']),
+  },
+  list_reports: {
+    name: 'list_reports',
+    description: 'List approved sanitized reports.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_report_catalog_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('list_reports', { reports: REPORTS.map(({ summary: _summary, ...item }) => item) }, ['sanitized_report_registry']),
+  },
+  summarize_report: {
+    name: 'summarize_report',
+    description: 'Summarize an approved report by reportId.',
+    inputSchema: { type: 'object', required: ['reportId'], properties: { reportId: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_report_catalog_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async (_ctx, args) => {
+      const reportId = stringArg(args, 'reportId');
+      const report = REPORTS.find((item) => item.id === reportId || item.title.toLowerCase().includes(reportId.toLowerCase()));
+      if (!report) return { ok: false, toolName: 'summarize_report', errorCode: 'INVALID_ARGUMENTS', evidenceSources: ['sanitized_report_registry'], freshness: 'UNKNOWN' };
+      return toolResult('summarize_report', { id: report.id, title: report.title, category: report.category, summary: report.summary, source: report.source, freshness: report.freshness }, [report.source], report.freshness);
+    },
+  },
+  get_client_aggregate: {
+    name: 'get_client_aggregate',
+    description: 'Get aggregate client/customer counts and synthetic-vs-real status without PII.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_customer_aggregate_tool'],
+    dataClassification: 'CLIENT_AGGREGATE',
+    actionClass: 'READ_ONLY',
+    execute: async (ctx) => {
+      const clientProfiles = await supabaseCount('client_profiles', ctx.authorization);
+      const invitedClients = await supabaseCount('tenant_memberships', ctx.authorization);
+      const total = Math.max(clientProfiles ?? 0, invitedClients ?? 0);
+      return toolResult('get_client_aggregate', { totalClients: total, activeClients: null, syntheticClients: total || null, realClients: null, dataState: total > 0 ? 'MIXED' : 'UNKNOWN', tenantScope: ctx.tenantId, source: clientProfiles == null && invitedClients == null ? 'authorized aggregate unavailable from current token; safe report-backed limitation' : 'authorized Supabase aggregate counts', freshness: clientProfiles == null && invitedClients == null ? 'UNKNOWN' : 'CURRENT', limitations: ['No names, addresses, credit data, SSNs, bank details, or raw documents returned.', 'Real paying customer count is not claimed from synthetic/test evidence.'] }, ['client_profiles_count', 'tenant_memberships_count']);
+    },
+  },
+  get_approval_summary: {
+    name: 'get_approval_summary',
+    description: 'Get safe Ray Review approval summary.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_approval_summary_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async (ctx) => {
+      const pending = await supabaseCount('approvals', ctx.authorization);
+      return toolResult('get_approval_summary', { pending: pending ?? 0, items: [], source: pending == null ? 'approval summary unavailable through current token' : 'approvals aggregate', freshness: pending == null ? 'UNKNOWN' : 'CURRENT' }, ['approvals_count']);
+    },
+  },
+  get_department_status: {
+    name: 'get_department_status',
+    description: 'Get Department Operations status; labels synthetic read model if migration is not applied.',
+    inputSchema: { type: 'object', properties: { department: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['department_operations_registry'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_department_status', { state: 'ACTIVE_PARTIAL', dataState: 'SYNTHETIC_READ_MODEL', departments: ['Operations', 'Engineering', 'Research', 'Knowledge', 'Credit and Funding'], limitation: 'Durable production queue persistence depends on the separate unapplied Department Operations migration.' }, ['wave4_department_read_model'], 'REPORT_BACKED'),
+  },
+  get_revenue_status: {
+    name: 'get_revenue_status',
+    description: 'Get safe revenue status summary.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_revenue_summary_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_revenue_status', { actualRevenue: 'UNKNOWN', testRevenue: 'TEST_MODE_ONLY', projectedRevenue: '$97 readiness-review candidate', dataState: 'PROJECTED_AND_TEST', source: 'Executive revenue summary', limitation: 'Projected revenue is not collected money.' }, ['executive_revenue_status']),
+  },
+  get_repo_intelligence_status: {
+    name: 'get_repo_intelligence_status',
+    description: 'Get approved repository intelligence status summary; no shell or GitHub execution.',
+    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['repo_intelligence_registry'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async () => toolResult('get_repo_intelligence_status', { state: 'REPORT_BACKED', summary: 'Repo Intelligence remains a governed capability/research track. No arbitrary GitHub or shell execution is exposed to the model.' }, ['repo_intelligence_registry']),
+  },
+  get_answer_provenance: {
+    name: 'get_answer_provenance',
+    description: 'Explain source/provenance for the previous answer or trace.',
+    inputSchema: { type: 'object', properties: { traceId: { type: 'string' }, conversationTurnId: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_provenance_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async (_ctx, args) => toolResult('get_answer_provenance', { sourceType: 'GENERAL_MODEL', model: Deno.env.get('HERMES_MODEL') || 'openai/gpt-4o-mini', toolName: stringArg(args, 'traceId') ? undefined : 'none', evidenceSources: ['model_first_trace', 'visible_history'], freshness: 'CURRENT', limitations: ['No hidden reasoning is stored or exposed.'] }, ['model_first_trace']),
+  },
+  draft_task: {
+    name: 'draft_task',
+    description: 'Create a governed task draft only; does not approve or execute.',
+    inputSchema: { type: 'object', required: ['title', 'summary'], properties: { title: { type: 'string' }, summary: { type: 'string' }, department: { type: 'string' }, riskClass: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['governed_work'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'DRAFT_ONLY',
+    execute: async (_ctx, args) => toolResult('draft_task', { draftCreated: true, draftId: `draft-task-${crypto.randomUUID()}`, title: stringArg(args, 'title'), approvalRequired: true, executionStatus: 'NOT_EXECUTED' }, ['draft_task_memory']),
+  },
+  draft_ray_review: {
+    name: 'draft_ray_review',
+    description: 'Create a Ray Review draft only; cannot approve itself.',
+    inputSchema: { type: 'object', required: ['title', 'summary'], properties: { title: { type: 'string' }, summary: { type: 'string' }, riskClass: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['ray_review'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'DRAFT_ONLY',
+    execute: async (_ctx, args) => toolResult('draft_ray_review', { draftCreated: true, draftId: `ray-review-${crypto.randomUUID()}`, title: stringArg(args, 'title'), approvalRequired: true, selfApproval: 'PROHIBITED', executionStatus: 'NOT_EXECUTED' }, ['ray_review_draft']),
+  },
+  draft_schedule: {
+    name: 'draft_schedule',
+    description: 'Create a schedule draft only after report and exact time are known.',
+    inputSchema: { type: 'object', properties: { reportId: { type: 'string' }, reportName: { type: 'string' }, requestedDate: { type: 'string' }, requestedTime: { type: 'string' }, timezone: { type: 'string' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['governed_work'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'DRAFT_ONLY',
+    execute: async (_ctx, args) => {
+      const report = stringArg(args, 'reportId') || stringArg(args, 'reportName');
+      const time = stringArg(args, 'requestedTime');
+      if (!report || !time) return { ok: false, toolName: 'draft_schedule', errorCode: 'INVALID_ARGUMENTS', data: { missingFields: [!report && 'reportId_or_reportName', !time && 'requestedTime'].filter(Boolean) }, evidenceSources: ['schedule_policy'], freshness: 'CURRENT' };
+      return toolResult('draft_schedule', { draftCreated: true, draftId: `schedule-draft-${crypto.randomUUID()}`, report, requestedDate: stringArg(args, 'requestedDate') || 'today', requestedTime: time, timezone: stringArg(args, 'timezone') || 'America/Phoenix', approvalRequired: true, executionStatus: 'NOT_EXECUTED' }, ['schedule_draft_policy']);
+    },
+  },
+};
+
+const DECISION_SCHEMA = {
+  anyOf: [
+    {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        type: { const: 'DIRECT_RESPONSE' },
+        response: { type: 'string' },
+      },
+      required: ['type', 'response'],
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        type: { const: 'TOOL_REQUEST' },
+        toolName: { type: 'string' },
+        arguments: { type: 'object' },
+        reasonSummary: { type: 'string' },
+      },
+      required: ['type', 'toolName', 'arguments', 'reasonSummary'],
+    },
+    {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        type: { const: 'CLARIFICATION' },
+        question: { type: 'string' },
+        missingFields: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['type', 'question', 'missingFields'],
+    },
+  ],
+};
+
+function visibleToolList() {
+  return Object.values(toolRegistry).map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+  }));
+}
+
+function parseDecision(content: unknown): HermesTurnDecision | null {
+  const text = String(content || '').trim();
+  if (!text) return null;
+  const raw = text.startsWith('```') ? text.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim() : text;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (parsed.type === 'DIRECT_RESPONSE' && typeof parsed.response === 'string') {
+      return { type: 'DIRECT_RESPONSE', response: parsed.response };
+    }
+    if (parsed.type === 'TOOL_REQUEST' && typeof parsed.toolName === 'string') {
+      return {
+        type: 'TOOL_REQUEST',
+        toolName: parsed.toolName,
+        arguments: safeObject(parsed.arguments),
+        reasonSummary: typeof parsed.reasonSummary === 'string' ? parsed.reasonSummary.slice(0, 240) : 'Nexus evidence requested',
+      };
+    }
+    if (parsed.type === 'CLARIFICATION' && typeof parsed.question === 'string') {
+      return {
+        type: 'CLARIFICATION',
+        question: parsed.question,
+        missingFields: Array.isArray(parsed.missingFields) ? parsed.missingFields.map((x) => String(x).slice(0, 80)).slice(0, 6) : [],
+      };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function validateArguments(tool: ToolDefinition, args: Record<string, unknown>): boolean {
+  const required = Array.isArray(tool.inputSchema.required) ? tool.inputSchema.required as string[] : [];
+  for (const key of required) {
+    if (!(key in args) || args[key] == null || String(args[key]).trim() === '') return false;
+  }
+  const properties = safeObject(tool.inputSchema.properties);
+  if (tool.inputSchema.additionalProperties === false) {
+    for (const key of Object.keys(args)) if (!(key in properties)) return false;
+  }
+  for (const [key, spec] of Object.entries(properties)) {
+    const value = args[key];
+    if (value == null) continue;
+    const type = typeof safeObject(spec).type === 'string' ? String(safeObject(spec).type) : '';
+    if (type === 'string' && typeof value !== 'string') return false;
+  }
+  return true;
+}
+
+function validateToolRequest(decision: HermesTurnDecision, ctx: ToolExecutionContext): CapabilityDecision {
+  if (decision.type !== 'TOOL_REQUEST') return { allowed: false, reasonCode: 'UNKNOWN_TOOL' };
+  const tool = toolRegistry[decision.toolName];
+  if (!tool) return { allowed: false, reasonCode: 'UNKNOWN_TOOL' };
+  if (!ctx.authorization) return { allowed: false, reasonCode: 'UNAUTHORIZED_ACTOR' };
+  if (!tool.requiredRole.includes(ctx.actorRole)) return { allowed: false, reasonCode: 'UNAUTHORIZED_ACTOR' };
+  if (!validateArguments(tool, decision.arguments)) return { allowed: false, reasonCode: 'INVALID_ARGUMENTS' };
+  if (/approve/i.test(decision.toolName) || /self.?approve/i.test(decision.reasonSummary)) {
+    return { allowed: false, reasonCode: 'SELF_APPROVAL_PROHIBITED' };
+  }
+  if (tool.actionClass === 'APPROVAL_REQUIRED') return { allowed: false, reasonCode: 'APPROVAL_REQUIRED' };
+  return { allowed: true, mode: tool.actionClass === 'DRAFT_ONLY' ? 'DRAFT_ONLY' : 'READ_ONLY' };
+}
+
+async function executeToolRequest(decision: Extract<HermesTurnDecision, { type: 'TOOL_REQUEST' }>, ctx: ToolExecutionContext): Promise<ToolResult> {
+  const tool = toolRegistry[decision.toolName];
+  return await tool.execute(ctx, decision.arguments).catch((error) => ({
+    ok: false,
+    toolName: decision.toolName,
+    errorCode: String(error).slice(0, 80) || 'TOOL_FAILURE',
+    evidenceSources: [decision.toolName],
+    freshness: 'UNKNOWN',
+  }));
+}
+
+async function callOpenRouter(
+  key: string,
+  models: string[],
+  messages: ChatMessage[],
+  startTime: number,
+  responseFormat?: Record<string, unknown>,
+) {
+  let lastError = '';
+  for (const m of models) {
+    try {
+      const payload: Record<string, unknown> = { model: m, messages, max_tokens: MAX_OUTPUT_TOKENS };
+      if (responseFormat) payload.response_format = responseFormat;
+      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) {
+        lastError = `HTTP ${r.status}`;
+        continue;
+      }
+      const d = await r.json();
+      if (d?.error) {
+        lastError = String(d.error?.message || d.error || 'provider error').slice(0, 100);
+        continue;
+      }
+      const reply = d?.choices?.[0]?.message?.content;
+      if (reply && String(reply).trim()) {
+        return {
+          ok: true,
+          reply: String(reply),
+          model: m,
+          fallbackUsed: models.length > 1 && m !== models[0],
+          usage: d?.usage || null,
+          durationMs: Date.now() - startTime,
+        };
+      }
+      lastError = 'Empty reply from model';
+    } catch (e) {
+      lastError = String(e).slice(0, 100);
+    }
+  }
+  return { ok: false, errorCode: lastError || 'OPENROUTER_UNAVAILABLE', model: models[0] ?? 'none', fallbackUsed: models.length > 1, durationMs: Date.now() - startTime };
+}
+
+function usageMetadata(usage: Record<string, unknown> | null | undefined, inputText: string, outputText: string) {
+  return {
+    inputTokens: Number(usage?.prompt_tokens) || undefined,
+    outputTokens: Number(usage?.completion_tokens) || undefined,
+    totalTokens: Number(usage?.total_tokens) || undefined,
+    estimatedInputTokens: usage?.prompt_tokens ? undefined : Math.ceil(inputText.length / 4),
+    estimatedOutputTokens: usage?.completion_tokens ? undefined : Math.ceil(outputText.length / 4),
+  };
+}
+
+function degradedOpenRouterReply(errorCode: string, provider = 'openrouter', model = 'none', startTime = Date.now()) {
+  return json({
+    configured: true,
+    reply: 'My conversational model is temporarily unavailable. I can still provide certain verified local Nexus status responses, but general conversation is degraded.',
+    metadata: { provider, model, fallbackUsed: false, errorCode, decisionType: 'DEGRADED', source: 'hermes-chat', durationMs: Date.now() - startTime },
+  });
+}
+
+async function runModelFirstOpenRouter(
+  key: string,
+  models: string[],
+  baseMessages: ChatMessage[],
+  message: string,
+  context: Record<string, unknown> | undefined,
+  authorization: string,
+  startTime: number,
+) {
+  const tid = traceId();
+  const actorRole = authorization ? 'ray' : 'anonymous';
+  const toolCtx: ToolExecutionContext = {
+    actorRole,
+    tenantId: String(context?.tenantId || 'ray_pilot'),
+    traceId: tid,
+    authorization,
+  };
+  const decisionSystem: ChatMessage = {
+    role: 'system',
+    content: [
+      '[MODEL-FIRST TURN DECISION]',
+      'Return only JSON matching the HermesTurnDecision contract.',
+      'Use DIRECT_RESPONSE for ordinary conversation, definitions, personal statements, planning, writing, identity, and repair.',
+      'Use TOOL_REQUEST only for current Nexus facts, authorized records, report summaries, aggregates, governed drafts, or scheduling drafts.',
+      'Use CLARIFICATION only when essential details are missing.',
+      'Never expose hidden reasoning. reasonSummary is a short operational explanation.',
+      `Approved tools: ${JSON.stringify(visibleToolList())}`,
+    ].join('\n'),
+  };
+  const responseFormat = {
+    type: 'json_schema',
+    json_schema: {
+      name: 'hermes_turn_decision',
+      strict: true,
+      schema: DECISION_SCHEMA,
+    },
+  };
+  let decisionCall = await callOpenRouter(key, models, [...baseMessages, decisionSystem], startTime, responseFormat);
+  let decision = decisionCall.ok ? parseDecision(decisionCall.reply) : null;
+  if (!decision && decisionCall.ok) {
+    decisionCall = await callOpenRouter(key, models, [...baseMessages, decisionSystem, { role: 'user', content: 'Return valid HermesTurnDecision JSON only for the current Ray message.' }], startTime, responseFormat);
+    decision = decisionCall.ok ? parseDecision(decisionCall.reply) : null;
+  }
+  if (!decisionCall.ok) return degradedOpenRouterReply(String(decisionCall.errorCode), 'openrouter', String(decisionCall.model), startTime);
+  if (!decision) return degradedOpenRouterReply('MALFORMED_MODEL_DECISION', 'openrouter', String(decisionCall.model), startTime);
+
+  if (decision.type === 'DIRECT_RESPONSE') {
+    return json({
+      configured: true,
+      reply: decision.response,
+      metadata: {
+        provider: 'openrouter',
+        model: decisionCall.model,
+        fallbackUsed: decisionCall.fallbackUsed,
+        traceId: tid,
+        decisionType: 'DIRECT_RESPONSE',
+        source: 'GENERAL_MODEL',
+        toolRequested: false,
+        toolExecuted: false,
+        modelRounds: 1,
+        ...usageMetadata(decisionCall.usage as Record<string, unknown> | null, message, decision.response),
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        durationMs: Date.now() - startTime,
+      },
+    });
+  }
+
+  if (decision.type === 'CLARIFICATION') {
+    return json({
+      configured: true,
+      reply: decision.question,
+      metadata: {
+        provider: 'openrouter',
+        model: decisionCall.model,
+        fallbackUsed: decisionCall.fallbackUsed,
+        traceId: tid,
+        decisionType: 'CLARIFICATION',
+        missingFields: decision.missingFields,
+        source: 'GENERAL_MODEL',
+        modelRounds: 1,
+        ...usageMetadata(decisionCall.usage as Record<string, unknown> | null, message, decision.question),
+        durationMs: Date.now() - startTime,
+      },
+    });
+  }
+
+  const capabilityDecision = validateToolRequest(decision, toolCtx);
+  const toolResultData = capabilityDecision.allowed
+    ? await executeToolRequest(decision, toolCtx)
+    : { ok: false, toolName: decision.toolName, errorCode: capabilityDecision.reasonCode, evidenceSources: ['capability_os_gateway'], freshness: 'CURRENT' };
+  const finalSystem: ChatMessage = {
+    role: 'system',
+    content: [
+      '[NEXUS TOOL RESULT]',
+      'Write the final answer naturally from this authorized tool result.',
+      'State uncertainty and data state honestly. Do not invent private facts. Do not claim execution occurred for draft tools.',
+      JSON.stringify({ requestedTool: decision.toolName, capabilityDecision, toolResult: toolResultData }).slice(0, 5000),
+    ].join('\n'),
+  };
+  const finalCall = await callOpenRouter(key, models, [...baseMessages, finalSystem], startTime);
+  if (!finalCall.ok) return degradedOpenRouterReply(String(finalCall.errorCode), 'openrouter', String(finalCall.model), startTime);
+  return json({
+    configured: true,
+    reply: finalCall.reply,
+    metadata: {
+      provider: 'openrouter',
+      model: finalCall.model,
+      fallbackUsed: decisionCall.fallbackUsed || finalCall.fallbackUsed,
+      traceId: tid,
+      decisionType: 'TOOL_REQUEST',
+      toolRequested: decision.toolName,
+      toolAllowed: capabilityDecision.allowed,
+      toolExecuted: Boolean(capabilityDecision.allowed && toolResultData.ok),
+      toolErrorCode: toolResultData.ok ? undefined : toolResultData.errorCode,
+      source: capabilityDecision.allowed ? 'NEXUS_TOOL' : 'SAFE_LEGACY_FALLBACK',
+      modelRounds: 2,
+      ...usageMetadata(finalCall.usage as Record<string, unknown> | null, message, finalCall.reply),
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      durationMs: Date.now() - startTime,
+    },
+  });
+}
+
 function buildSafeHistory(ctx: Record<string, unknown> | undefined): ChatMessage[] {
   const raw = Array.isArray(ctx?.history) ? ctx.history : [];
   const out: ChatMessage[] = [];
@@ -249,6 +832,18 @@ Deno.serve(async (req: Request) => {
         .filter((m): m is string => Boolean(m && m.trim()));
       const models = rawModels.filter(m => !m.startsWith('ollama/'));
       if (models.length === 0) models.push('openai/gpt-4o-mini');
+
+      if (mode === 'model_first_conversation') {
+        return await runModelFirstOpenRouter(
+          key,
+          models,
+          messages,
+          message,
+          context,
+          req.headers.get('authorization') || '',
+          startTime,
+        );
+      }
 
       let lastError = '';
       for (const m of models) {

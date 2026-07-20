@@ -56,19 +56,25 @@ function responseFromProvider(provider: ProviderResult, text: string): Partial<H
   const metadata = provider.metadata || {};
   const providerName = String(metadata.provider || provider.modelProvider || 'openrouter');
   const modelName = String(metadata.model || provider.modelName || 'unknown_model');
+  const decisionType = String(metadata.decisionType || 'DIRECT_RESPONSE');
+  const toolRequested = metadata.toolRequested ? String(metadata.toolRequested) : '';
+  const evidenceState = metadata.source === 'NEXUS_TOOL' ? 'TOOL_EVIDENCE' : 'MODEL_REASONING';
   return {
     role: 'hermes',
     text,
     mode: 'MODEL_FIRST',
     intent: 'model_first_conversation',
-    responseStrategy: 'APPROVED_MODEL_DIRECT',
-    evidenceState: 'MODEL_REASONING',
+    responseStrategy: decisionType === 'TOOL_REQUEST' ? 'APPROVED_MODEL_TOOL_BRIDGE' : decisionType === 'CLARIFICATION' ? 'APPROVED_MODEL_CLARIFICATION' : 'APPROVED_MODEL_DIRECT',
+    evidenceState,
     confidence: 0.86,
     actions: [],
     memoryUsed: ['visible_recent_history'],
-    contextUsed: ['supabase_edge_function:hermes-chat', `provider:${providerName}`, `model:${modelName}`, 'recent_visible_history'],
-    warnings: metadata.fallbackUsed ? ['provider_fallback_used'] : [],
-    traceId: `hermes-model-first-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    contextUsed: ['supabase_edge_function:hermes-chat', `provider:${providerName}`, `model:${modelName}`, 'recent_visible_history', toolRequested && `tool:${toolRequested}`].filter(Boolean) as string[],
+    warnings: [
+      metadata.fallbackUsed ? 'provider_fallback_used' : '',
+      metadata.toolAllowed === false ? `tool_denied:${String(metadata.toolErrorCode || 'policy')}` : '',
+    ].filter(Boolean),
+    traceId: typeof metadata.traceId === 'string' ? metadata.traceId : `hermes-model-first-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
   };
 }
 
