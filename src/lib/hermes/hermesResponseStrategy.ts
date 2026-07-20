@@ -1,4 +1,5 @@
 import { answerExecutiveIntent, classifyExecutiveIntent } from '../executive/hermesExecutiveAdvisor';
+import { getTopDepartmentRisk } from '../departments/departmentOperations';
 import type { EvidenceState } from '../executive/executiveTypes';
 import {
   answerBiggestOperatingRisk,
@@ -121,6 +122,57 @@ function casualResponse(message: string): string {
   return 'I’m here, Ray. What do you want to work through?';
 }
 
+function buildDepartmentRiskAdvisory(): HermesAdvisoryContext {
+  const risk = getTopDepartmentRisk();
+  const item = risk.item;
+  const label = item ? `${risk.department.name}: ${item.title}` : `${risk.department.name} department risk`;
+  const rationale = item
+    ? `${risk.department.name} has the highest current department risk because ${item.title} is ${item.priority}, ${item.urgency.toLowerCase()} urgency, ${item.riskLevel.toLowerCase()} risk, and currently ${item.status.toLowerCase().replace(/_/g, ' ')}.`
+    : `${risk.department.name} has the highest current department risk based on the Department Operations health model.`;
+  const blockers = item?.blockerIds.length ? item.blockerIds : risk.health.topBlockers;
+  const nextStep = item?.completionCriteria[0] || 'Confirm the queue evidence and decide whether Ray Review is required.';
+  const recommendations: HermesAdvisoryRecommendation[] = [{
+    id: item?.itemId || `department-risk-${risk.department.departmentId}`,
+    label,
+    rationale,
+    score: item?.priority === 'P0_COMPANY' ? 98 : 86,
+    risks: item ? [item.summary, ...(risk.department.description ? [risk.department.description] : [])] : [risk.department.description],
+    blockers: blockers.length ? blockers : ['No explicit blocker record attached'],
+    dependencies: item?.dependencyIds.length ? item.dependencyIds : ['Department Operations queue evidence'],
+    nextStep,
+    evidenceIds: item ? item.evidenceIds : ['wave4.department_health'],
+  }];
+  return {
+    advisoryId: `department-risk-${Date.now()}`,
+    topic: 'department_operations_risk',
+    topicId: 'department_operations_risk',
+    topicLabel: label,
+    topicType: 'DEPARTMENT_RECOMMENDATION',
+    sourceIntent: 'department_status',
+    sourceResponseStrategy: 'department_status_response',
+    summary: rationale,
+    recommendations,
+    preferredRecommendationId: recommendations[0].id,
+    recommendation: {
+      id: recommendations[0].id,
+      title: recommendations[0].label,
+      summary: recommendations[0].rationale,
+      rationale: recommendations[0].rationale,
+      feasibility: { status: 'MEDIUM', reasons: ['It depends on resolving the attached blockers and approval requirements.'] },
+      risks: recommendations[0].risks || [],
+      blockers: recommendations[0].blockers || [],
+      dependencies: recommendations[0].dependencies || [],
+      nextStep,
+      evidenceIds: recommendations[0].evidenceIds || ['wave4.department_health'],
+    },
+    alternatives: [],
+    evidenceIds: ['wave4.department_health', 'wave4.department_queue', 'wave4.department_blockers'],
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+    status: 'ACTIVE',
+  };
+}
+
 function systemStatusResponse(message: string): { response: string; evidenceState: HermesConversationResponseEvidence } {
   const lower = message.toLowerCase();
   if (/\bstripe|live payment|live checkout|dont activate stripe|don't activate stripe|do not activate stripe\b/.test(lower)) {
@@ -209,11 +261,13 @@ export function generateHermesResponse(args: {
   }
 
   if (mode === 'TASK_REQUEST' || mode === 'APPROVAL_REQUEST') {
-    const explicitTarget = /command center|redesign|dashboard|layout/i.test(message)
-      ? 'Command Center redesign'
-      : /\$97|readiness|offer/i.test(message)
-        ? '$97 readiness review journey'
-        : '';
+    const explicitTarget = /department|operations|engineering|credit|funding|blocked item|first step/i.test(message)
+      ? 'Department Operations governed queue item'
+      : /command center|redesign|dashboard|layout/i.test(message)
+        ? 'Command Center redesign'
+        : /\$97|readiness|offer/i.test(message)
+          ? '$97 readiness review journey'
+          : '';
     const target = explicitTarget || reference?.item?.label || advisoryContext?.recommendations.find((item) => item.id === advisoryContext.preferredRecommendationId)?.label || 'the referenced item';
     const action: HermesConversationAction = {
       type: mode === 'TASK_REQUEST' ? 'CREATE_GOVERNED_TASK' : 'PREPARE_RAY_REVIEW',
@@ -226,8 +280,11 @@ export function generateHermesResponse(args: {
       },
     };
     const noun = mode === 'TASK_REQUEST' ? 'governed work request' : 'Ray Review draft';
+    const departmentDraft = /department|operations|engineering|credit|funding|blocked item|first step/i.test(message)
+      ? runHermesTool(mode === 'TASK_REQUEST' ? 'hermes.prepare_department_task' : 'hermes.prepare_ray_review', { query: message }, input)
+      : null;
     return {
-      response: `I’ll prepare ${target} as a ${noun}. This is conversation-only right now: nothing has been saved, assigned, submitted, or executed. It still requires the governed review path before any action runs.`,
+      response: departmentDraft?.text || `I’ll prepare ${target} as a ${noun}. This is conversation-only right now: nothing has been saved, assigned, submitted, or executed. It still requires the governed review path before any action runs.`,
       evidenceState: 'REPORT_BACKED',
       advisoryContext,
       action,
@@ -308,6 +365,16 @@ export function generateHermesResponse(args: {
       };
     }
     if (args.intent === 'followup_deep_dive') {
+      if (advisoryContext.topicType === 'DEPARTMENT_RECOMMENDATION') {
+        return {
+          response: `First step for **${item.label}**: ${item.nextStep || 'confirm the queue evidence and decide whether Ray Review is required.'}\n\nWhy: ${item.rationale}\n\nBlockers to respect: ${item.blockers?.slice(0, 3).join(', ') || 'no explicit blocker record attached'}.\n\nPlanning only: nothing has been created, assigned, saved, approved, or executed.`,
+          evidenceState: 'REPORT_BACKED',
+          advisoryContext,
+          action: null,
+          contextUsed: ['advisory_memory', 'department_operations_planning'],
+          warnings,
+        };
+      }
       const numberedProjectOption = !reference?.item && /number\s*2|option\s*2|second/i.test(message)
         ? 'Going deeper on number 2: improve the main dashboard decision hierarchy so status, blockers, evidence, and next actions are visible together. The value is faster comparison and fewer missed blockers; the risk is hiding evidence behind cleaner UI, so phase one should preserve source labels and approval states.'
         : null;
@@ -447,14 +514,26 @@ export function generateHermesResponse(args: {
           : args.intent === 'report_lookup' ? 'hermes.find_report'
             : args.intent === 'customer_aggregate_status' ? 'hermes.customer_aggregate'
               : args.intent === 'project_status' ? 'hermes.project_status'
-                : null;
+                : args.intent === 'department_list' ? 'hermes.department_list'
+                  : args.intent === 'department_status' ? 'hermes.department_status'
+                    : args.intent === 'department_queue' ? 'hermes.department_queue'
+                      : args.intent === 'department_blockers' ? 'hermes.department_blockers'
+                        : args.intent === 'department_approvals' ? 'hermes.department_approvals'
+                          : args.intent === 'department_completed_work' ? 'hermes.department_completed_work'
+                            : args.intent === 'department_incidents' ? 'hermes.department_incidents'
+                              : args.intent === 'department_dependencies' ? 'hermes.department_dependencies'
+                                : null;
     if (toolId) {
       const tool = runHermesTool(toolId, { query: message }, input, input.session?.lastAnswerProvenance);
+      const departmentRiskAdvisory = args.intent === 'department_status' && /biggest risk|most risk|highest risk/i.test(message)
+        ? buildDepartmentRiskAdvisory()
+        : undefined;
       return {
         response: tool.text,
         evidenceState: tool.evidenceState,
         action: null,
-        contextUsed: [`tool:${tool.toolId}`],
+        advisoryContext: departmentRiskAdvisory,
+        contextUsed: departmentRiskAdvisory ? [`tool:${tool.toolId}`, 'department_risk_advisory_memory'] : [`tool:${tool.toolId}`],
         warnings,
         provenance: provenanceFromTool(tool, answerId, toolId === 'hermes.customer_aggregate' ? 'MIXED' : 'FACT', 0.92),
       };
@@ -470,6 +549,20 @@ export function generateHermesResponse(args: {
         provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: [executiveIntent], sourceLabels: ['Executive Command Center read model'], evidenceState: 'REPORT_BACKED', answerKind: 'FACT', confidence: 0.88 }),
       };
     }
+  }
+
+  if (mode === 'DECISION_SUPPORT' && args.intent === 'department_plan') {
+    const tool = runHermesTool('hermes.department_blockers', { query: message }, input);
+    return {
+      response: `${tool.text}
+
+Plan, not execution: first confirm the affected queue item, attach the blocker evidence, identify the accountable role, and decide whether Ray Review is required. Nothing has been created, assigned, saved, approved, or executed.`,
+      evidenceState: tool.evidenceState,
+      action: null,
+      contextUsed: [`tool:${tool.toolId}`, 'department_operations_planning'],
+      warnings,
+      provenance: provenanceFromTool(tool, answerId, 'RECOMMENDATION', 0.88),
+    };
   }
 
   if (mode === 'DECISION_SUPPORT' && args.intent === 'active_topic_planning') {

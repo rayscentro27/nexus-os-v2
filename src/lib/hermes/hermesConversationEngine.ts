@@ -84,7 +84,9 @@ export function runHermesConversation(input: HermesConversationInput): HermesCon
     answerKind: generated.action ? 'MIXED' : generated.contextUsed.includes('nexus_native_reasoning') ? 'INTERPRETATION' : 'FACT',
     confidence: Math.max(secondPass.confidence, reference.confidence || 0),
   });
-  const recommendationProducing = secondPass.mode === 'EXECUTIVE_ADVICE' && Boolean(generated.advisoryContext);
+  const recommendationProducing = Boolean(generated.advisoryContext) && !generated.action && (
+    secondPass.mode === 'EXECUTIVE_ADVICE' || generated.contextUsed.includes('department_risk_advisory_memory')
+  );
   const session = updateHermesSessionAfterResponse(memory.session, {
     mode: secondPass.mode,
     intent: secondPass.intent,

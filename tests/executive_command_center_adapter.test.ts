@@ -60,8 +60,9 @@ describe('Executive Command Center adapter', () => {
 
   it('classifies departments truthfully without creating autonomous agents', () => {
     const departments = buildDepartmentStatuses([], []);
-    expect(departments.find((item) => item.departmentId === 'trading')?.currentStatus).toBe('BLOCKED');
-    expect(departments.find((item) => item.departmentId === 'venture_studio')?.currentStatus).toBe('PLANNED');
+    expect(departments.map((item) => item.departmentId)).toEqual(['operations', 'engineering', 'research', 'knowledge', 'credit_funding']);
+    expect(departments.find((item) => item.departmentId === 'trading')).toBeUndefined();
+    expect(departments.every((item) => item.owner && item.activeCapabilities.length > 0 && /READ_ONLY|ADVISORY|DRAFT_ONLY/.test(item.activationState))).toBe(true);
   });
 
   it('marks live Stripe and live trading as deferred or policy-blocked health items', () => {

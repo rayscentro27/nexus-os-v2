@@ -1,7 +1,7 @@
 # Nexus 3 Restored Founder Mode Roadmap
 
 Generated: 2026-07-18
-Last updated: 2026-07-19 Wave 4A.3 advisory context ownership repair
+Last updated: 2026-07-20 Wave 4 Department Operations local pre-release certification
 
 ## Roadmap decision
 
@@ -268,6 +268,8 @@ Exit gate:
 
 ## Wave 4 — Department operations and automation
 
+Status: LOCAL_PRE_RELEASE_PASS; production deployment and live Hermes department certification pending.
+
 Wave 4A.4R release gate:
 
 - Hermes general-intelligence work is protected for production release.
@@ -278,10 +280,27 @@ Wave 4A.4R release gate:
 
 Build:
 
-- Data-driven departments.
-- Department ownership, KPIs, inboxes, and escalation.
-- Bounded internal automations.
-- Incident and recovery workflows.
+- Canonical registry for Operations, Engineering, Research, Knowledge, and Credit and Funding.
+- Department ownership, role assignment, KPIs, inboxes, queues, approvals, blockers, dependencies, and escalation.
+- Hermes Department Operations tools for list, status, queue, blockers, approvals, completed work, incidents, dependencies, governed task drafts, assignment drafts, escalations, Ray Review drafts, and incident plans.
+- Shared Command Center Department Operations workspace.
+- Additive admin-only Supabase schema for durable departments, queue items, blockers, incidents, work verification, and bounded execution plans.
+- Bounded internal execution contract only; no unrestricted autonomous agents.
+- Evidence-backed completion and incident recovery workflows.
+
+Local acceptance evidence:
+
+- TypeScript: PASS.
+- Production build: PASS with existing chunk-size warning.
+- Focused Department/Hermes tests: PASS 4 files / 36 tests.
+- Full unit suite: PASS 96 files / 1493 tests.
+- Authenticated RLS: PASS 45/45.
+
+Live acceptance pending:
+
+- Push Wave 4 commit.
+- Verify Netlify production deployment.
+- Run `tests/e2e/department-operations-certification.spec.ts` against `https://goclearonline.cc/admin#hermes`.
 
 ## Wave 5 — Growth, creative, and customer operations
 
@@ -303,15 +322,15 @@ Build later:
 
 ## Next implementation wave decision
 
-Recommended next wave after Wave 4A.1 certification:
+Recommended next wave after Wave 4 production certification:
 
 ```text
-Wave 4 — Department Operations and Governed Automation
+Wave 5 — Growth, creative, and customer operations
 ```
 
 Approval decision required:
 
-Approve or reject Wave 4 — Department Operations and Governed Automation as the next Nexus 3.0 implementation wave. External tools remain uninstalled, Alpha remains isolated from Supabase, live Stripe remains deferred, and live trading remains blocked unless Ray separately approves a bounded future change.
+Approve production deployment and live certification of Wave 4 before starting Wave 5. External tools remain uninstalled, Alpha remains isolated from Supabase, live Stripe remains deferred, and live trading remains blocked unless Ray separately approves a bounded future change.
 
 
 ## Wave 4A.5 Founder Acceptance Gate
@@ -319,4 +338,4 @@ Approve or reject Wave 4 — Department Operations and Governed Automation as th
 - Status: PASS_LIVE_PRODUCTION_CERTIFIED.
 - Clean worktree: /Users/raymonddavis/nexus-os-v2-hermes-cert.
 - Original dirty worktree protected: /Users/raymonddavis/nexus-os-v2.
-- Founder Acceptance passed in production; Department Operations remains blocked until Ray explicitly starts the separate Department Operations wave from an isolated clean worktree.
+- Founder Acceptance passed in production; Ray started Department Operations from the isolated clean Wave 4 worktree.

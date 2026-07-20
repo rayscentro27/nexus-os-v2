@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-20T08:03:30-07:00",
+  "generated_at": "2026-07-20T18:08:00Z",
   "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED",
   "general_model_route_state": "NOT_ACTIVE_FOR_CERTIFICATION",
-  "registered_tool_count": 12,
+  "registered_tool_count": 25,
   "current_time_status": "PASS_FOCUSED",
   "project_status_tool": "PASS_FOCUSED",
   "report_tool_status": "PASS_FOCUSED",
@@ -42,5 +42,21 @@
     "deployed_commit": "c2a679d41f154245c4aa8bef71dbca88b394166e",
     "production_bundle": "assets/index-CglEFSiQ.js",
     "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED"
+  },
+  "wave_4_department_operations": {
+    "state": "LOCAL_PRE_RELEASE_PASS_LIVE_PENDING",
+    "active_departments": [
+      "operations",
+      "engineering",
+      "research",
+      "knowledge",
+      "credit_funding"
+    ],
+    "hermes_department_tool_count": 13,
+    "action_separation_score": 100,
+    "focused_result": "PASS_5_FILES_43_TESTS",
+    "full_unit_result": "PASS_96_FILES_1494_TESTS",
+    "local_browser_result": "PASS_DEPARTMENT_OPERATIONS_PLAYWRIGHT_1_OF_1",
+    "rls_result": "PASS_45_OF_45"
   }
 }

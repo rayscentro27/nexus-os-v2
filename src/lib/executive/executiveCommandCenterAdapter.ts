@@ -1,10 +1,10 @@
 import repoRegistry from '../../../reports/runtime/nexus_repo_intelligence_registry.json';
-import { NEXUS_TABS } from '../../config/nexusTabs';
 import { getConnectorRegistry, connectorSafetyInvariants } from '../../hermes/nexus/nexusConnectorRegistry';
 import { listTableDetailed, type TableQueryResult } from '../../services/db';
 import { getBrainProfiles } from '../brains/brainRegistry';
 import { buildCapabilityOSSummary } from '../capabilities/capabilityRegistry';
 import { buildKnowledgeHealthSummary } from '../intelligence/knowledgeHealth';
+import { activeDepartmentRegistry, buildDepartmentHealth } from '../departments/departmentOperations';
 import type {
   DepartmentStatus,
   ExecutiveActionItem,
@@ -147,39 +147,25 @@ export function normalizeGovernedWorkRows(taskRows: Row[], approvalRows: Row[], 
   });
 }
 
-export function buildDepartmentStatuses(work: GovernedWorkItem[], approvals: ExecutiveApprovalItem[]): DepartmentStatus[] {
-  const departments = [
-    ['executive', 'Executive', 'Founder decisions, operating cadence, and company protection', 'ACTIVE'],
-    ['operations', 'Operations', 'Internal process control and governed execution', 'PARTIAL'],
-    ['engineering', 'Engineering', 'Build, deploy, test, and release reliability', 'ACTIVE'],
-    ['research', 'Research', 'Alpha and repo-intelligence research intake', 'PARTIAL'],
-    ['marketing', 'Marketing', 'Draft-only marketing and offer messaging', 'PARTIAL'],
-    ['creative', 'Creative', 'Creative assets and campaign packages', 'PARTIAL'],
-    ['sales', 'Sales', 'Pipeline and conversion readiness', 'PLANNED'],
-    ['customer_support', 'Customer Support', 'Support and customer communication workflows', 'PARTIAL'],
-    ['finance', 'Finance', 'Revenue visibility and payment controls', 'PARTIAL'],
-    ['credit_funding', 'Credit and Funding', 'GoClear readiness review operations', 'ACTIVE'],
-    ['knowledge', 'Knowledge', 'Approved knowledge, evidence, and memory separation', 'PLANNED'],
-    ['trading', 'Trading', 'Paper-only research; live execution blocked', 'BLOCKED'],
-    ['venture_studio', 'Venture Studio', 'Future expansion lane', 'PLANNED'],
-  ] as const;
-  return departments.map(([departmentId, displayName, purpose, status]) => {
-    const activeGovernedWork = work.filter((item) => item.department.toLowerCase().includes(departmentId.split('_')[0])).length;
-    const pendingApprovals = approvals.filter((item) => item.department.toLowerCase().includes(departmentId.split('_')[0]) && item.state === 'PENDING').length;
-    const blockers = departmentId === 'trading' ? ['Live trading blocked by policy'] : departmentId === 'sales' ? ['No broad public paid launch authorized'] : [];
+export function buildDepartmentStatuses(_work: GovernedWorkItem[], approvals: ExecutiveApprovalItem[]): DepartmentStatus[] {
+  return activeDepartmentRegistry.map((department) => {
+    const health = buildDepartmentHealth(department.departmentId);
+    const activeGovernedWork = health.openItems;
+    const pendingApprovals = approvals.filter((item) => item.department.toLowerCase().includes(department.departmentId.split('_')[0]) && item.state === 'PENDING').length + health.awaitingApproval;
+    const status: DepartmentStatus['currentStatus'] = health.state === 'HEALTHY' ? 'ACTIVE' : health.state === 'DEGRADED' || health.state === 'BLOCKED' ? 'PARTIAL' : health.state;
     return {
-      departmentId,
-      displayName,
-      purpose,
-      currentStatus: status as DepartmentStatus['currentStatus'],
-      owner: departmentId === 'executive' ? 'Ray Davis' : 'Nexus operator with Ray approval',
-      activeCapabilities: NEXUS_TABS.filter((tab) => tab.label.toLowerCase().includes(displayName.toLowerCase().split(' ')[0])).map((tab) => tab.label).slice(0, 3),
+      departmentId: department.departmentId,
+      displayName: department.name,
+      purpose: department.description,
+      currentStatus: status,
+      owner: department.ownerRole,
+      activeCapabilities: department.allowedCapabilityIds.slice(0, 4),
       activeGovernedWork,
       pendingApprovals,
-      blockers,
-      kpis: activeGovernedWork || pendingApprovals ? [`${activeGovernedWork} work`, `${pendingApprovals} approvals`] : ['No live KPI connected yet'],
-      activationState: status === 'BLOCKED' ? 'Policy blocked' : status === 'PLANNED' ? 'Not autonomous' : 'Governed',
-      evidence: evidence('REPORT_BACKED', 'src/config/nexusTabs.ts + Supabase work summaries', 'MEDIUM'),
+      blockers: health.topBlockers,
+      kpis: [`${health.openItems} open`, `${health.blockedItems} blocked`, `${health.awaitingApproval} approvals`, `${health.overdueItems} overdue`],
+      activationState: `${department.defaultOperationMode} · ${department.status}`,
+      evidence: evidence('REPORT_BACKED', 'src/lib/departments/departmentOperations.ts', 'HIGH'),
     };
   });
 }

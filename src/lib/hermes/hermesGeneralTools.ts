@@ -2,6 +2,18 @@ import { reportRegistry } from '../../data/reportRegistry.js';
 import { getExecutiveCommandCenterSnapshot } from '../executive/executiveCommandCenterAdapter';
 import { answerExecutiveIntent } from '../executive/hermesExecutiveAdvisor';
 import { evaluateCapabilityPolicy } from '../capabilities/capabilityPolicy';
+import {
+  formatDepartmentApprovals,
+  formatDepartmentBlockers,
+  formatDepartmentCompletedWork,
+  formatDepartmentDependencies,
+  formatDepartmentIncidents,
+  formatDepartmentList,
+  formatDepartmentQueue,
+  formatDepartmentStatus,
+  prepareDepartmentRayReviewDraft,
+  prepareDepartmentTaskDraft,
+} from '../departments/departmentOperations';
 import type { CapabilityDataClass, CapabilityApprovalLevel } from '../capabilities/capabilityTypes';
 import type { EvidenceState } from '../executive/executiveTypes';
 import type { HermesAdvisoryContext, HermesConversationInput } from './hermesConversationTypes';
@@ -117,6 +129,19 @@ export const hermesToolRegistry: HermesToolDefinition[] = [
   ['hermes.revenue_summary', 'Hermes Revenue Summary Tool', 'revenue and opportunity summary', 'hermes_revenue_summary_tool', 'READ_ONLY', ['INTERNAL_METADATA', 'FINANCIAL_DATA'], 'ADMIN'],
   ['hermes.capability_status', 'Hermes Capability Status Tool', 'Capability OS status summary', 'hermes_capability_status_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
   ['hermes.explain_source', 'Hermes Provenance Tool', 'explain the source trace for the prior answer', 'hermes_provenance_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_list', 'Hermes Department List Tool', 'list active governed departments', 'hermes_department_list_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_status', 'Hermes Department Status Tool', 'department health and risk status', 'hermes_department_status_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_queue', 'Hermes Department Queue Tool', 'department queue and inbox evidence', 'hermes_department_queue_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_blockers', 'Hermes Department Blockers Tool', 'department blockers and unblocking evidence', 'hermes_department_blockers_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_approvals', 'Hermes Department Approvals Tool', 'department approval requirements linked to Ray Review', 'hermes_department_approvals_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_completed_work', 'Hermes Department Completed Work Tool', 'department completion and verification evidence', 'hermes_department_completed_work_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_incidents', 'Hermes Department Incidents Tool', 'department incident workflow status', 'hermes_department_incidents_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.department_dependencies', 'Hermes Department Dependencies Tool', 'cross-department dependencies', 'hermes_department_dependencies_tool', 'READ_ONLY', ['INTERNAL_METADATA'], 'NONE'],
+  ['hermes.prepare_department_task', 'Hermes Department Task Draft Tool', 'prepare a governed department task draft without execution', 'hermes_prepare_department_task_tool', 'DRAFT_ONLY', ['INTERNAL_METADATA'], 'ADMIN'],
+  ['hermes.prepare_assignment', 'Hermes Department Assignment Draft Tool', 'prepare a logical-role assignment draft', 'hermes_prepare_assignment_tool', 'DRAFT_ONLY', ['INTERNAL_METADATA'], 'ADMIN'],
+  ['hermes.prepare_escalation', 'Hermes Department Escalation Draft Tool', 'prepare blocker escalation draft', 'hermes_prepare_escalation_tool', 'DRAFT_ONLY', ['INTERNAL_METADATA'], 'ADMIN'],
+  ['hermes.prepare_ray_review', 'Hermes Department Ray Review Draft Tool', 'prepare Ray Review request for department work', 'hermes_prepare_ray_review_tool', 'DRAFT_ONLY', ['INTERNAL_METADATA'], 'ADMIN'],
+  ['hermes.prepare_incident_plan', 'Hermes Department Incident Plan Draft Tool', 'prepare incident response plan draft', 'hermes_prepare_incident_plan_tool', 'DRAFT_ONLY', ['INTERNAL_METADATA'], 'ADMIN'],
 ].map(([toolId, name, description, capabilityId, operationMode, allowedDataClasses, approvalLevel]) => ({
   toolId: String(toolId),
   name: String(name),
@@ -129,7 +154,7 @@ export const hermesToolRegistry: HermesToolDefinition[] = [
   prohibitedDataClasses: ['CREDENTIALS', 'CLIENT_PII', 'PRODUCTION_CONTROL'],
   allowedBrainIds: ['hermes'],
   approvalLevel: approvalLevel as CapabilityApprovalLevel,
-  requiresExplicitActionIntent: false,
+  requiresExplicitActionIntent: ['DRAFT_ONLY', 'APPROVAL_GATED', 'BOUNDED_EXECUTION'].includes(operationMode as HermesToolOperationMode),
   healthSource: 'src/lib/hermes/hermesGeneralTools.ts',
 }));
 
@@ -200,6 +225,16 @@ export function runHermesTool(toolId: string, args: Record<string, unknown> = {}
   if (toolId === 'hermes.revenue_summary') return toolResult(toolId, answerExecutiveIntent('executive_revenue_status'), ['executive_revenue_status'], ['Executive Command Center snapshot']);
   if (toolId === 'hermes.capability_status') return toolResult(toolId, answerExecutiveIntent('capability_status'), ['capability_os_registry'], ['Capability OS registry']);
   if (toolId === 'hermes.explain_source') return hermesExplainSource(previousProvenance);
+  if (toolId === 'hermes.department_list') return toolResult(toolId, formatDepartmentList(), ['wave4.department_registry'], ['Department Operations registry']);
+  if (toolId === 'hermes.department_status') return toolResult(toolId, formatDepartmentStatus(String(args.query || input?.message || '')), ['wave4.department_health'], ['Department Operations health read model']);
+  if (toolId === 'hermes.department_queue') return toolResult(toolId, formatDepartmentQueue(String(args.query || input?.message || '')), ['wave4.department_queue'], ['Department Operations queue']);
+  if (toolId === 'hermes.department_blockers') return toolResult(toolId, formatDepartmentBlockers(String(args.query || input?.message || '')), ['wave4.department_blockers'], ['Department Operations blockers']);
+  if (toolId === 'hermes.department_approvals') return toolResult(toolId, formatDepartmentApprovals(String(args.query || input?.message || '')), ['wave4.department_approvals', 'ray_review_reuse_contract'], ['Department Operations approvals', 'Ray Review']);
+  if (toolId === 'hermes.department_completed_work') return toolResult(toolId, formatDepartmentCompletedWork(), ['wave4.department_verification'], ['Department Operations verification']);
+  if (toolId === 'hermes.department_incidents') return toolResult(toolId, formatDepartmentIncidents(), ['wave4.department_incidents'], ['Department incident workflow']);
+  if (toolId === 'hermes.department_dependencies') return toolResult(toolId, formatDepartmentDependencies(), ['wave4.department_dependencies'], ['Department dependency graph']);
+  if (toolId === 'hermes.prepare_department_task' || toolId === 'hermes.prepare_assignment' || toolId === 'hermes.prepare_escalation' || toolId === 'hermes.prepare_incident_plan') return toolResult(toolId, prepareDepartmentTaskDraft(String(args.query || input?.message || '')), ['wave4.department_task_draft'], ['Department Operations draft tools']);
+  if (toolId === 'hermes.prepare_ray_review') return toolResult(toolId, prepareDepartmentRayReviewDraft(String(args.query || input?.message || '')), ['wave4.department_ray_review_draft'], ['Department Operations Ray Review draft']);
   throw new Error(`Unhandled Hermes tool: ${toolId}`);
 }
 
@@ -214,10 +249,10 @@ function hermesCurrentTime(timezone: string): HermesToolResult {
 function hermesProjectStatus(query: string): HermesToolResult {
   const lower = lowerClean(query);
   if (/department operations|governed automation|department/.test(lower)) {
-    return toolResult('hermes.project_status', 'Department Operations and governed automation are **NEXT/PARTIAL**, not fully approved as the next operating phase. The foundations exist: Capability OS, governed work, Ray Review, brain boundaries, and Hermes conversation certification work. The gate is that Hermes general conversation must be certified before Department Operations is approved.', ['capability_os_registry', 'wave_4a_roadmap', 'hermes_conversation_certification'], ['Capability OS registry', 'Founder Mode roadmap', 'Hermes certification reports']);
+    return toolResult('hermes.project_status', 'Department Operations and governed automation are **ACTIVE/PARTIAL** in Wave 4. Five governed departments are registered with canonical queues, operation modes, Ray Review reuse, blockers, incidents, health, and evidence-backed completion. This is not unrestricted autonomy: live Stripe remains test-only, live trading remains blocked, Alpha remains isolated, and execution remains governed.', ['capability_os_registry', 'wave_4a_roadmap', 'hermes_conversation_certification'], ['Capability OS registry', 'Founder Mode roadmap', 'Hermes certification reports']);
   }
   if (/wave|hermes|done|finish|finished|complete|next/.test(lower)) {
-    return toolResult('hermes.project_status', 'We are on **Nexus OS 3.0 Wave 4A.4**: Hermes general intelligence, governed tool use, broad conversation certification, and production verification. Prior Waves completed the Executive foundation, Knowledge/Brain layer, Capability OS, Workroom rendering, and advisory-context ownership. Department Operations remains next after this certification passes.', ['wave_4a_4', 'recent_commits', 'capability_os_registry'], ['Current prompt checkpoint', 'Git recent commits', 'Capability OS registry']);
+    return toolResult('hermes.project_status', 'We are on **Nexus OS 3.0 Wave 4**: Department Operations and Governed Automation. Hermes Founder Acceptance passed, and this wave activates Operations, Engineering, Research, Knowledge, and Credit and Funding as governed departments with queues and evidence-backed status.', ['wave_4a_4', 'recent_commits', 'capability_os_registry'], ['Current prompt checkpoint', 'Git recent commits', 'Capability OS registry']);
   }
   return toolResult('hermes.project_status', 'Project status is report-backed: Hermes certification is the current gate; Department Operations is next; live Stripe is deferred; live trading is blocked; Alpha remains isolated from Supabase/client data.', ['executive_roadmap', 'capability_os_registry'], ['Founder Mode roadmap', 'Capability OS registry']);
 }

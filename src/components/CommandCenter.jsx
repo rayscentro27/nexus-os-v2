@@ -26,6 +26,7 @@ import {
   loadExecutiveCommandCenterState,
 } from '../lib/executive/executiveCommandCenterAdapter'
 import { buildHermesConversationHealthSummary } from '../lib/hermes/hermesConversationEngine'
+import DepartmentOperationsWorkspace from './DepartmentOperationsWorkspace'
 
 const priorityOrder = { P0: 0, P1: 1, P2: 2, P3: 3, P4: 4 }
 
@@ -480,6 +481,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
           <ApprovalsPanel approvals={state.approvals} onNavigate={onNavigate} />
           <GovernedWorkPanel work={state.governedWork} onNavigate={onNavigate} />
           <DepartmentPanel departments={state.departments} />
+          <DepartmentOperationsWorkspace />
           <SummaryPanel title="Customer Operations" items={state.customerSummary} icon={Building2} testId="executive-customer-summary" />
           <SummaryPanel title="Revenue and Opportunities" items={state.revenueSummary} icon={BadgeDollarSign} testId="executive-revenue-summary" />
         </div>

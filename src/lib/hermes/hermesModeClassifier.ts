@@ -37,6 +37,10 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'DECISION_SUPPORT', intent: 'active_topic_planning', confidence: hasAdvisoryContext ? 0.88 : 0.78, reason: 'Message asks for planning while explicitly negating work creation.' };
   }
 
+  if (/\b(prepare|make|draft)\b.*\b(plan)\b.*\b(blocked|department|engineering|operations|credit|funding|queue|first step)\b/.test(text)) {
+    return { mode: 'DECISION_SUPPORT', intent: 'department_plan', confidence: 0.9, reason: 'Message asks for a department plan without explicit work creation.' };
+  }
+
   if (/\b(prepare|create|draft|send)\b.*\b(ray review|approval|review)\b|\bprepare (?:that|this) for (?:ray )?review\b/i.test(text)) {
     return { mode: 'APPROVAL_REQUEST', intent: 'prepare_approval_request', confidence: 0.92, reason: 'Message explicitly asks for Ray Review or approval preparation.' };
   }
@@ -89,6 +93,21 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'FACTUAL_QUESTION', intent: 'explain_previous_source', confidence: 0.94, reason: 'Question asks for prior answer provenance.' };
   }
 
+  if (/\b(what departments are active|department list|which departments|department registry)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'department_list', confidence: 0.94, reason: 'Question asks for active governed departments.' };
+  }
+
+  if (/\b(operations|engineering|research|knowledge|credit|funding|department)\b.*\b(working on|doing|need|needs|queue|inbox|status|active|risk|overdue|approval|approvals|blocked|blockers|completed|finished|incident|incidents|dependency|dependencies)\b|\b(which department has the biggest risk|what is overdue|what completed recently|what finished today|what needs my approval|what is blocked)\b/.test(text)) {
+    const intent = /approval|needs my approval/.test(text) ? 'department_approvals'
+      : /blocked|blockers/.test(text) ? 'department_blockers'
+        : /completed|finished/.test(text) ? 'department_completed_work'
+          : /incident/.test(text) ? 'department_incidents'
+            : /dependency|dependencies/.test(text) ? 'department_dependencies'
+              : /working on|queue|inbox|need|needs/.test(text) ? 'department_queue'
+                : 'department_status';
+    return { mode: 'FACTUAL_QUESTION', intent, confidence: 0.92, reason: 'Question asks for Department Operations evidence.' };
+  }
+
   if (/\b(what have we completed on hermes|what is still missing|where are we really at with hermes|departments?|department operations|governed automation|what wave|in the wave|hermes wave|automation departments|what did we finish|what did we build|are we done with hermes|what are we working on|what is next|next major phase|what is the next major phase|what did we complete|what is currently stuck|currently stuck)\b/.test(text)) {
     return { mode: 'FACTUAL_QUESTION', intent: 'project_status', confidence: 0.9, reason: 'Question asks for project or roadmap status.' };
   }
@@ -103,6 +122,10 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
 
   if (/\b(going back to|go back to|return to|earlier|previous)\b.*\b(client live data|client live-data|live data flag|live-data flag)\b/.test(text)) {
     return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_blockers' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Explicit older-topic recall should resolve against advisory history.' };
+  }
+
+  if (hasAdvisoryContext && /\b(first step|what would the first step be|what should the first step be|what comes first|what do we do first|what should we do first)\b/.test(text)) {
+    return { mode: 'FOLLOW_UP_ADVICE', intent: 'followup_deep_dive', confidence: 0.9, reason: 'Question asks for the first step on the active advisory topic.' };
   }
 
   if (/\b(clients?|customers?|paying customers|client rows|client count)\b/.test(text)) {
