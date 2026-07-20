@@ -312,3 +312,11 @@ Wave 4 — Department Operations and Governed Automation
 Approval decision required:
 
 Approve or reject Wave 4 — Department Operations and Governed Automation as the next Nexus 3.0 implementation wave. External tools remain uninstalled, Alpha remains isolated from Supabase, live Stripe remains deferred, and live trading remains blocked unless Ray separately approves a bounded future change.
+
+
+## Wave 4A.5 Founder Acceptance Gate
+
+- Status: LOCAL_PASS_LIVE_PENDING.
+- Clean worktree: /Users/raymonddavis/nexus-os-v2-hermes-cert.
+- Original dirty worktree protected: /Users/raymonddavis/nexus-os-v2.
+- Department Operations remains blocked until live production Founder Acceptance passes.

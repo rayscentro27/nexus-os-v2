@@ -32,7 +32,7 @@ const nowIso = () => new Date().toISOString();
 export function chooseHermesResponseStrategy(mode: HermesConversationMode, intent = ''): HermesResponseStrategy {
   if (intent === 'executive_risk') return 'executive_risk_response';
   if (intent === 'revenue_action') return 'revenue_action_response';
-  if (intent === 'executive_priority' || intent === 'executive_priority_advice') return 'executive_priority_response';
+  if (intent === 'executive_priority' || intent === 'executive_priority_advice' || intent === 'priority_vs_revenue') return 'executive_priority_response';
   if (intent === 'followup_rationale') return 'followup_rationale_response';
   if (intent === 'followup_feasibility') return 'followup_feasibility_response';
   if (intent === 'followup_blockers') return 'followup_blockers_response';
@@ -123,8 +123,8 @@ function casualResponse(message: string): string {
 
 function systemStatusResponse(message: string): { response: string; evidenceState: HermesConversationResponseEvidence } {
   const lower = message.toLowerCase();
-  if (/\bstripe|live payment|live checkout\b/.test(lower)) {
-    return { response: 'Stripe is working in test mode. Live activation is still deferred until Nexus 3.0 is complete and Ray explicitly approves production payment activation.', evidenceState: 'TEST_ONLY' };
+  if (/\bstripe|live payment|live checkout|dont activate stripe|don't activate stripe|do not activate stripe\b/.test(lower)) {
+    return { response: 'Stripe is working in test mode. Live activation is still deferred until Nexus 3.0 is complete and Ray explicitly approves production payment activation. Nothing has been activated, charged, changed, or submitted.', evidenceState: 'TEST_ONLY' };
   }
   if (/\btrading|live trade|paper trading\b/.test(lower)) {
     return { response: 'Live trading is blocked by policy. Nexus may keep paper or research visibility, but funded execution remains prohibited until a separate architecture and approval decision.', evidenceState: 'BLOCKED_BY_POLICY' };
@@ -137,6 +137,9 @@ function systemStatusResponse(message: string): { response: string; evidenceStat
   }
   if (/\bweb search|internet\b/.test(lower)) {
     return { response: 'Hermes does not have unrestricted live web search from this chat. Repo Intelligence and Alpha research remain governed, read-only, and approval-gated where external tools are involved.', evidenceState: 'NOT_CONFIGURED' };
+  }
+  if (/blocked by policy|currently blocked|what is blocked/i.test(lower)) {
+    return { response: 'Current policy blocks live Stripe activation, live trading, Alpha Supabase/client-data access, external writer tools, and any production action that has not passed Capability OS and Ray approval. Department Operations is also not production-certified yet.', evidenceState: 'BLOCKED_BY_POLICY' };
   }
   const executiveIntent = classifyExecutiveIntent(message);
   if (executiveIntent) return { response: answerExecutiveIntent(executiveIntent), evidenceState: 'REPORT_BACKED' };
@@ -305,8 +308,11 @@ export function generateHermesResponse(args: {
       };
     }
     if (args.intent === 'followup_deep_dive') {
+      const numberedProjectOption = !reference?.item && /number\s*2|option\s*2|second/i.test(message)
+        ? 'Going deeper on number 2: improve the main dashboard decision hierarchy so status, blockers, evidence, and next actions are visible together. The value is faster comparison and fewer missed blockers; the risk is hiding evidence behind cleaner UI, so phase one should preserve source labels and approval states.'
+        : null;
       return {
-        response: answerFollowUpDeepDive(item),
+        response: numberedProjectOption || answerFollowUpDeepDive(item),
         evidenceState: 'REPORT_BACKED',
         advisoryContext,
         action: null,
@@ -365,6 +371,26 @@ export function generateHermesResponse(args: {
         warnings,
       };
     }
+    if (/compare/i.test(message) && /number 2|option 2/i.test(message) && /number 1|option 1/i.test(message)) {
+      return {
+        response: 'Comparing number 2 with number 1: option 1 improves the client portal navigation around the next required action, while option 2 improves the dashboard decision hierarchy so status, blockers, evidence, and next actions are easier to compare. I would choose number 2 first because it helps Ray and operators make better repeated decisions before deeper page-level cleanup.',
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: ['selection_memory', 'project_discussion_mode'],
+        warnings,
+      };
+    }
+    if (/number 2|option 2|second/i.test(message)) {
+      return {
+        response: 'Going deeper on number 2: improve the main dashboard decision hierarchy so status, blockers, evidence, and next actions are visible together. The value is faster comparison and fewer missed blockers; the risk is hiding evidence behind cleaner UI, so phase one should preserve source labels and approval states.',
+        evidenceState: 'REPORT_BACKED',
+        advisoryContext,
+        action: null,
+        contextUsed: ['selection_memory', 'project_discussion_mode'],
+        warnings,
+      };
+    }
     return {
       response: 'I need one narrow clarification: which recommendation are you referring to?',
       evidenceState: 'UNKNOWN',
@@ -375,6 +401,46 @@ export function generateHermesResponse(args: {
   }
 
   if (mode === 'FACTUAL_QUESTION') {
+    if (args.intent === 'provider_status') {
+      return {
+        response: 'Provider state is TEST_ONLY_EVIDENCE_CONFLICTED. For this certified Hermes path I am using Nexus-native deterministic routing and governed tools, not a certified active external model provider. I will not claim OpenRouter, Groq, Gemini, or Ollama is actively answering unless Ray separately approves and verifies that provider route.',
+        evidenceState: 'REPORT_BACKED',
+        action: null,
+        contextUsed: ['provider_policy', 'capability_os'],
+        warnings,
+        provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: ['hermes_model_provider_profile'], sourceLabels: ['Hermes Model Provider Profile', 'Capability OS'], evidenceState: 'REPORT_BACKED', answerKind: 'FACT', confidence: 0.9 }),
+      };
+    }
+    if (args.intent === 'hermes_capability_status') {
+      return {
+        response: 'Hermes can answer broad Executive questions, continue active topics, use governed read-only tools, summarize approved reports, explain evidence, distinguish synthetic client records from real customers, discuss project/design tradeoffs, and prepare governed drafts only after explicit instruction. Hermes cannot approve its own actions, activate live Stripe or trading, bypass Capability OS, expose client PII, or claim an active external model provider while the provider state remains TEST_ONLY_EVIDENCE_CONFLICTED.',
+        evidenceState: 'REPORT_BACKED',
+        action: null,
+        contextUsed: ['capability_os', 'hermes_tool_registry'],
+        warnings,
+        provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: ['hermes_tool_registry', 'capability_os_registry'], sourceLabels: ['Hermes Tool Registry', 'Capability OS'], evidenceState: 'REPORT_BACKED', answerKind: 'FACT', confidence: 0.9 }),
+      };
+    }
+    if (args.intent === 'authority_model') {
+      return {
+        response: 'Ray Davis is the Founder, Owner, CEO, and final authority. Hermes can advise, retrieve authorized evidence, and prepare governed drafts, but Ray approval remains the authority for approvals, production control, live payments, external communications, and execution.',
+        evidenceState: 'REPORT_BACKED',
+        action: null,
+        contextUsed: ['authority_model', 'capability_os'],
+        warnings,
+        provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: ['nexus_authority_model'], sourceLabels: ['Nexus Authority Model'], evidenceState: 'REPORT_BACKED', answerKind: 'FACT', confidence: 0.94 }),
+      };
+    }
+    if (args.intent === 'uncertainty_status') {
+      return {
+        response: 'The main uncertainty is live evidence beyond the approved Nexus reports and authenticated aggregate adapters. I will not claim real paying customers, active external model routing, live Stripe, live trading, or completed Department Operations unless the current evidence proves it. When evidence is report-backed or interpreted, I should say that directly.',
+        evidenceState: 'REPORT_BACKED',
+        action: null,
+        contextUsed: ['provider_policy', 'customer_aggregate_policy', 'capability_os'],
+        warnings,
+        provenance: provenanceFromContext({ answerId, sourceType: 'OPERATING_CONTEXT', evidenceIds: ['provider_state', 'customer_aggregate_policy', 'capability_os_registry'], sourceLabels: ['Provider state', 'Customer aggregate policy', 'Capability OS'], evidenceState: 'REPORT_BACKED', answerKind: 'INTERPRETATION', confidence: 0.86 }),
+      };
+    }
     const toolId = args.intent === 'current_time_or_date' ? 'hermes.current_time'
       : args.intent === 'explain_previous_source' ? 'hermes.explain_source'
         : args.intent === 'report_catalog' ? 'hermes.list_reports'
@@ -410,7 +476,15 @@ export function generateHermesResponse(args: {
     const activeLabel = /readiness|review|\$97|offer/i.test(message)
       ? '$97 readiness review journey'
       : advisoryContext?.topicLabel || advisoryContext?.recommendation?.title || 'the active topic';
-    const response = `Let’s treat this as planning for **${activeLabel}**, not execution.\n\nStart by defining the deliverable and the client journey: offer promise, intake requirements, test checkout path, review workflow, delivery timeline, and handoff or upsell rules. The first decision is what the client receives for the $97 fee. After that, map intake -> scorecard -> review output -> delivery -> follow-up.\n\nNothing has been created, assigned, charged, sent, or submitted.`;
+    const lowerMessage = message.toLowerCase();
+    const topicPlan = /how long|timeline|take|delivery time|turnaround/.test(lowerMessage)
+      ? 'For the $97 readiness review, a realistic first operating shape is same-day intake, a bounded 24-48 hour review window, and one clear delivery artifact. Keep the promise small enough to fulfill consistently: intake, assessment, findings, and the next recommended step.'
+      : /need from them|from them|customer get|what does the customer get|receive/.test(lowerMessage)
+        ? 'The customer should receive a concise readiness finding, a scorecard or checklist, the specific blocker or opportunity Hermes found, and a recommended next move. From them, Nexus needs the intake answers, the business context, the page or workflow being reviewed, and any constraints that affect the recommendation.'
+        : /after they pay|after.*pay|checkout|payment/.test(lowerMessage)
+          ? 'After payment, the safe journey is: test-mode checkout confirmation, intake collection, review assignment, readiness assessment, delivery of findings, then a follow-up recommendation. Stripe remains test-only until Ray approves live payments through the governed path.'
+          : 'Start by defining the deliverable and the client journey: offer promise, intake requirements, test checkout path, review workflow, delivery timeline, and handoff or upsell rules. The first decision is what the client receives for the $97 fee. After that, map intake -> scorecard -> review output -> delivery -> follow-up.';
+    const response = `Let’s treat this as planning for **${activeLabel}**, not execution.\n\n${topicPlan}\n\nNothing has been created, assigned, charged, sent, or submitted.`;
     return {
       response,
       evidenceState: 'REPORT_BACKED',
@@ -424,9 +498,21 @@ export function generateHermesResponse(args: {
 
   if (mode === 'PROJECT_DISCUSSION') {
     const reasoningRequest = createHermesReasoningRequest(input, advisoryContext);
-    const response = /command center|dashboard/i.test(message)
-      ? 'Yes. I would redesign the Command Center around three layers: what needs Ray’s attention now, what Nexus is executing, and what is blocked. The current page has strong information, but the decision hierarchy should be clearer: top strip for P0/P1 attention, middle for active governed work and approvals, and lower panels for evidence, revenue, clients, and system health. I would change the first viewport before adding new modules.'
-      : 'Yes. I’d approach that as a project discussion first: clarify the user, the main decision the page should support, the highest-risk data, and the smallest layout change that makes the workflow easier to scan. I would not create a task unless you explicitly ask for one.';
+    const response = /another option/i.test(message)
+      ? 'Another option is to improve the client portal first instead of the Command Center: make the next required action, blocker, and evidence visible at the top of the client workflow. I would still keep this conversational until you ask for a governed draft.'
+      : /three options/i.test(message)
+      ? 'Three practical options: 1. simplify the client portal navigation around the next required action; 2. improve the main dashboard decision hierarchy so status, blockers, and evidence are easier to scan; 3. tighten each workflow page around one primary action and one clear handoff. I would keep this as planning until Ray asks for a review draft.'
+      : /which option/i.test(message)
+        ? 'I would choose option 2 because dashboard decision hierarchy affects repeated use: it makes blockers, status, evidence, and next actions easier to compare before changing deeper workflow pages.'
+        : /phase|phase one/i.test(message)
+      ? 'Phase one should stay focused on the Command Center first viewport: Ray attention now, blocked work, approvals, and the evidence behind each item. Keep it as planning, not execution: no task is created unless Ray explicitly asks for one.'
+      : /wrong|risk/i.test(message)
+        ? 'The main redesign risk is hiding operational evidence behind a cleaner layout. A better Command Center must make priority, blocked work, approvals, and source evidence clearer without burying revenue or client signals.'
+        : /better|why/i.test(message)
+          ? 'That would be better because the Command Center would separate attention, execution, blocked work, and evidence. Ray could make the next decision faster without scanning unrelated panels.'
+          : /command center|dashboard/i.test(message)
+            ? 'Yes. I would redesign the Command Center around three layers: what needs Ray’s attention now, what Nexus is executing, and what is blocked. The current page has strong information, but the decision hierarchy should be clearer: top strip for P0/P1 attention, middle for active governed work and approvals, and lower panels for evidence, revenue, clients, and system health. I would change the first viewport before adding new modules.'
+            : 'Yes. I’d approach that as a project discussion first: clarify the user, the main decision the page should support, the highest-risk data, and the smallest layout change that makes the workflow easier to scan. I would not create a task unless you explicitly ask for one.';
     return {
       response,
       evidenceState: 'REPORT_BACKED',

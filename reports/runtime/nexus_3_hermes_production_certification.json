@@ -55,5 +55,13 @@
     "local_workroom_playwright": "PASS 14/14",
     "secret_scan": "PASS credential identifiers only; no values",
     "privacy_scan": "PASS no real PII added"
+  },
+  "wave_4a_5": {
+    "generated_at": "2026-07-20T16:57:31.444Z",
+    "local_founder_acceptance": "PASS",
+    "local_turns": 116,
+    "local_score": 100,
+    "live_state": "PENDING_DEPLOYMENT",
+    "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED"
   }
 }

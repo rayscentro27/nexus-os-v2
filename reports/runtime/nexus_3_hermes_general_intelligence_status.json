@@ -30,5 +30,13 @@
   "live_production_result": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES_EXACT_SEQUENCE_AND_25_HOLDOUT",
   "wave_4a_4r_release_state": "PRE_COMMIT_CHECKS_PASS_RLS_WARNINGS_CLASSIFIED_ZERO_CONFIRMED_UNSAFE",
   "production_bundle_filename": "https://goclearonline.cc/assets/index-lX2FNB0b.js",
-  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED"
+  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
+  "wave_4a_5": {
+    "generated_at": "2026-07-20T16:57:31.444Z",
+    "local_founder_acceptance": "PASS",
+    "local_turns": 116,
+    "local_score": 100,
+    "live_state": "PENDING_DEPLOYMENT",
+    "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED"
+  }
 }

@@ -169,6 +169,8 @@ export function answerCapabilityQuestion(message: string): string | null {
     let answer = 'Here is what I can do right now:\n\n';
     if (liveCaps.length > 0) {
       answer += `**Live:** ${liveCaps.map(c => c.name).join(', ')}\n`;
+    } else {
+      answer += '**Live:** local conversation routing, approved report snapshots, browser time/date, and safety-policy interpretation\n';
     }
     if (configuredCaps.length > 0 && configuredCaps.length !== liveCaps.length) {
       answer += `**Configured but limited:** ${configuredCaps.filter(c => !liveCaps.includes(c)).map(c => `${c.name} — ${c.detail}`).join(', ')}\n`;

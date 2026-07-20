@@ -57,7 +57,7 @@ export function getBackendStatusMessage(): string {
   if (isSupabaseConfigured) {
     return 'I have live Supabase read access for selected tables (Ray Review, business opportunities, research sources, monetization, clients) when you are authenticated. I do not have live web search or a live AI model configured in this chat layer. Execution remains approval-gated.';
   }
-  return 'I use local bundled Nexus context, selected approved report snapshots, page context, browser time, and localStorage activity memory. I do not have live Supabase, web, or model access from this chat layer.';
+  return 'I use local bundled Nexus context, selected approved report snapshots, page context, browser time, and localStorage activity memory. Supabase live-read status is not configured for this chat layer unless the authenticated environment is present; web search and live model access remain unavailable here.';
 }
 
 /** Get a detailed connection status for specific capabilities. */

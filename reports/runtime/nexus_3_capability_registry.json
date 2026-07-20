@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-20T08:03:30-07:00",
+  "generated_at": "2026-07-20T16:57:31.444Z",
   "source": "src/lib/capabilities/capabilityRegistry.ts",
   "warning": "Sanitized registry. Credential identifiers only; no values.",
   "wave_4a_4_added_capability_ids": [
@@ -6985,5 +6985,24 @@
       ],
       "notes": "Wave 4A.3 live production advisory-context certification passed after deployment."
     }
-  ]
+  ],
+  "wave_4a_5_added_capability_ids": [
+    "hermes_founder_acceptance_certification",
+    "hermes_adversarial_conversation_testing",
+    "hermes_novel_holdout_testing",
+    "hermes_response_similarity_detection",
+    "hermes_provider_honesty",
+    "hermes_client_evidence_honesty",
+    "hermes_action_separation_certification",
+    "nexus_clean_worktree_gate",
+    "nexus_dirty_worktree_inventory",
+    "nexus_isolated_wave_worktree_policy"
+  ],
+  "wave_4a_5_release_state": {
+    "local_founder_acceptance": "PASS",
+    "live_founder_acceptance": "PENDING_DEPLOYMENT",
+    "dirty_worktree_inventory_count": 341,
+    "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED",
+    "department_operations_ready": false
+  }
 }

@@ -33,6 +33,10 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'COMMAND', intent: 'blocked_high_risk_command', confidence: 0.96, reason: 'Message requests a prohibited or high-risk external action.' };
   }
 
+  if (/\b(dont|don't|do not)\b.*\b(create|make|turn|draft|task|work|review)\b|\bmake a plan but don'?t create a task\b/i.test(text)) {
+    return { mode: 'DECISION_SUPPORT', intent: 'active_topic_planning', confidence: hasAdvisoryContext ? 0.88 : 0.78, reason: 'Message asks for planning while explicitly negating work creation.' };
+  }
+
   if (/\b(prepare|create|draft|send)\b.*\b(ray review|approval|review)\b|\bprepare (?:that|this) for (?:ray )?review\b/i.test(text)) {
     return { mode: 'APPROVAL_REQUEST', intent: 'prepare_approval_request', confidence: 0.92, reason: 'Message explicitly asks for Ray Review or approval preparation.' };
   }
@@ -53,31 +57,47 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'CASUAL_CONVERSATION', intent: 'casual_check_in', confidence: 0.95, reason: 'Casual question without operational request.' };
   }
 
+  if (/\b(what can hermes actually do now|what can hermes do|what can you do now|what cant you do yet|what can't you do yet|hermes actually do)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'hermes_capability_status', confidence: 0.91, reason: 'Question asks what Hermes can and cannot do now.' };
+  }
+
+  if (/\b(who has final authority|final authority|who approves|who decides)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'authority_model', confidence: 0.94, reason: 'Question asks for Nexus authority model.' };
+  }
+
+  if (/\b(what are you unsure about|what is unknown|show uncertainty|uncertainty|not hype|limitations?|what do you not know)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'uncertainty_status', confidence: 0.88, reason: 'Question asks Hermes to state unknowns or limitations.' };
+  }
+
   if (/\b(report|reports)\b/.test(text)) {
     return { mode: 'FACTUAL_QUESTION', intent: /latest|recent|most recent|show|summarize|where|find|newest|talks about|mention/.test(text) ? 'report_lookup' : 'report_catalog', confidence: 0.9, reason: 'Question asks about approved Nexus reports.' };
   }
 
-  if (/\b(stripe live|live stripe|stripe production|trading active|live trades?|live trading|alpha.*supabase|alpha.*customer data|github mcp|github writer|web search|system health|how is the system|blocking deployment|deployment blocked|can alpha see client data)\b/.test(text)) {
+  if (/\b(do you use a real model|which provider|provider.*right now|provider tools active|real model when you answer)\b/.test(text)) {
+    return { mode: 'FACTUAL_QUESTION', intent: 'provider_status', confidence: 0.94, reason: 'Question asks for Hermes model-provider status.' };
+  }
+
+  if (/\b(stripe live|live stripe|stripe production|trading active|live trades?|live trading|alpha.*supabase|alpha.*customer data|github mcp|github writer|web search|system health|how is the system|currently blocked|what is currently blocked|blocked by policy|what is blocked by policy|blocking deployment|deployment blocked|can alpha see client data|dont activate stripe|don't activate stripe|do not activate stripe)\b/.test(text)) {
     return { mode: 'SYSTEM_STATUS', intent: 'system_status_honesty', confidence: 0.93, reason: 'Question asks for known system or capability status.' };
   }
 
-  if (/\b(what time is it|whats the time|what's the time|time in arizona|clock time|current time|time now|what day is it|what is today'?s date|current date|what date is it|what date are we on|what day is today|is today)\b/.test(text)) {
+  if (/\b(what time is it|whats the time|what's the time|time in arizona|clock time|current time|time now|what day is it|what is today'?s date|current date|what date is it|what date are we on|what day is today|is today|what date are we working from|date are we working from)\b/.test(text)) {
     return { mode: 'FACTUAL_QUESTION', intent: 'current_time_or_date', confidence: 0.96, reason: 'Question asks for current time or date.' };
   }
 
-  if (/\b(where did (?:that|this|the answer) (?:come from|get|come)|where did you get that|what evidence supports|what backs up|how did you know|what source|source for that|is that your opinion|is that a fact|evidence or judgment|how current is that)\b/.test(text)) {
+  if (/\b(where did (?:that|this|the answer) (?:come from|get|come)|where did you get that|what evidence supports|what backs up|show me what evidence you used|evidence you used|how did you know|what source|source for that|is that your opinion|is that a fact|evidence or judgment|how current is that)\b/.test(text)) {
     return { mode: 'FACTUAL_QUESTION', intent: 'explain_previous_source', confidence: 0.94, reason: 'Question asks for prior answer provenance.' };
   }
 
-  if (/\b(departments?|department operations|governed automation|what wave|in the wave|hermes wave|automation departments|what did we finish|what did we build|are we done with hermes|what are we working on|what is next|what did we complete|what is currently stuck|currently stuck)\b/.test(text)) {
+  if (/\b(what have we completed on hermes|what is still missing|where are we really at with hermes|departments?|department operations|governed automation|what wave|in the wave|hermes wave|automation departments|what did we finish|what did we build|are we done with hermes|what are we working on|what is next|next major phase|what is the next major phase|what did we complete|what is currently stuck|currently stuck)\b/.test(text)) {
     return { mode: 'FACTUAL_QUESTION', intent: 'project_status', confidence: 0.9, reason: 'Question asks for project or roadmap status.' };
   }
 
-  if (/\b(redesign|design|layout|dashboard|command center|workroom|client portal|workflow make sense|workflow|what would you change|what do you think of this layout|improve the .*page|page change|cleaner|reorganized|think it through|help me think)\b/.test(text)) {
+  if (/\b(redesign|design|layout|give me three options|give me another option|another option|which option would you choose|dashboard|command center|workroom|client portal|workflow make sense|workflow|what would you change|why would that be better|what could go wrong|phase one|phases|what do you think of this layout|improve the .*page|page change|cleaner|reorganized|think it through|help me think)\b/.test(text)) {
     return { mode: 'PROJECT_DISCUSSION', intent: 'project_discussion_design', confidence: 0.86, reason: 'Question asks for project/design discussion, not execution.' };
   }
 
-  if (/\b(let'?s|lets|okay|ok|continue|start|work on|break it|break|plan it|plan|what comes first|what do we need to do|first step|pick back up)\b.*\b(readiness|review|journey|thing|that|it|plan|\$97|offer)\b/.test(text) || /\bhelp me plan it|break it down|break it into steps|what comes first|what do we need to do first|continue what we were discussing|do not create anything|what should that offer include\b/.test(text)) {
+  if (/\b(let'?s|lets|okay|ok|continue|start|work on|break it|break|plan it|plan|what comes first|what do we need to do|what do we need to decide|decide first|first step|pick back up|pick up|resume)\b.*\b(readiness|review|journey|thing|that|it|plan|\$97|offer)\b/.test(text) || /\bhelp me plan it|break it down|break it into steps|what comes first|what do we need to do first|continue what we were discussing|do not create anything|what should that offer include|pick up where we left off on the offer|resume the readiness thing|readiness review plan|readiness review plan pls|what do we need to decide first|what do we need to decide|decide first|how long should it take|what do we need from them|what happens after they pay|make a plan but don\'?t create a task\b/.test(text)) {
     return { mode: 'DECISION_SUPPORT', intent: 'active_topic_planning', confidence: hasAdvisoryContext ? 0.88 : 0.8, reason: 'Question asks to continue or plan the active/named topic without execution.' };
   }
 
@@ -89,16 +109,20 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'FACTUAL_QUESTION', intent: 'customer_aggregate_status', confidence: 0.9, reason: 'Question asks for aggregate customer/client status.' };
   }
 
-  if (/\b(why that one|why this one|why did you choose that|why is that first|what makes that the priority)\b/.test(text)) {
+  if (/\b(why that one|why this one|why did you choose that|why is that first|why you pick that|what makes that the priority)\b/.test(text)) {
     return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_rationale' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Question asks for the rationale behind prior advice.' };
   }
 
-  if (/\b(is that realistic|is this realistic|is it realistic|can we actually do that|is that possible|can we pull that off)\b/.test(text)) {
+  if (/\b(is that realistic|is this realistic|is it realistic|can we actually do that|is that possible|can we pull that off|can we really pull that off)\b/.test(text)) {
     return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_feasibility' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Question asks whether the prior recommendation is feasible.' };
   }
 
-  if (/\b(what would stop us|what are the blockers|what could prevent this|what could derail it|what is the downside|what is the risk)\b/.test(text)) {
+  if (/\b(what would stop us|what are the blockers|what could prevent this|what could derail it|what might mess it up|what is the downside|what is the risk)\b/.test(text)) {
     return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'CLARIFICATION_REQUIRED', intent: hasAdvisoryContext ? 'followup_blockers' : 'missing_advisory_context', confidence: hasAdvisoryContext ? 0.9 : 0.55, reason: 'Question asks for blockers or constraints on prior advice.' };
+  }
+
+  if (/\b(go deeper|explain that in more detail|break that down|tell me more about)\b.*\b(number\s*\d+|option\s*\d+|the first option|the second option|the third option)\b/.test(text)) {
+    return { mode: hasAdvisoryContext ? 'FOLLOW_UP_ADVICE' : 'SELECTION_REFERENCE', intent: hasAdvisoryContext ? 'followup_deep_dive' : 'resolve_selection_reference', confidence: hasAdvisoryContext ? 0.9 : 0.72, reason: 'Message asks for deeper analysis of a numbered option.' };
   }
 
   if (/\b(go deeper|explain that in more detail|break that down|tell me more about|what would it cost|could we do it without paying|which one should we do first|what did you mean by that)\b/.test(text)) {
@@ -113,11 +137,15 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'SELECTION_REFERENCE', intent: 'resolve_selection_reference', confidence: hasAdvisoryContext ? 0.9 : 0.65, reason: 'Message refers to a prior recommendation or list item.' };
   }
 
+  if (/\b(why is that priority over revenue|priority over revenue)\b/.test(text)) {
+    return { mode: 'EXECUTIVE_ADVICE', intent: 'priority_vs_revenue', confidence: 0.9, reason: 'Question asks to compare operating priority against revenue action.' };
+  }
+
   if (/\b(biggest risk|biggest danger|biggest problem|most exposed|hurt us the most|could go wrong first|what could go wrong|where are we exposed)\b/.test(text)) {
     return { mode: 'EXECUTIVE_ADVICE', intent: 'executive_risk', confidence: 0.92, reason: 'Question asks for the highest current operating risk.' };
   }
 
-  if (/\b(make money today|generate revenue today|sell first|fastest revenue action|money action|revenue action|how can we make money|what can generate revenue)\b/.test(text)) {
+  if (/\b(make money today|generate revenue today|sell first|fastest revenue action|money action|money move|revenue action|how can we make money|what can generate revenue)\b/.test(text)) {
     return { mode: 'EXECUTIVE_ADVICE', intent: 'revenue_action', confidence: 0.92, reason: 'Question asks for the best immediate revenue action.' };
   }
 
