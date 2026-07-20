@@ -1,0 +1,114 @@
+{
+  "starting_commit": "a3643f5d50b6f6c8e07c14dc4862bbe10dee77e9",
+  "ending_commit": "a3643f5d50b6f6c8e07c14dc4862bbe10dee77e9",
+  "provider": "ollama_local",
+  "model": "qwen2.5:0.5b",
+  "current_nexus_score": 0.836,
+  "letta_score": 1,
+  "langgraph_score": 1,
+  "general_conversation_scores": {
+    "current_nexus": 0.721,
+    "letta_stateful_proof": 1,
+    "langgraph_stateful_proof": 1
+  },
+  "reference_resolution_scores": {
+    "current_nexus": 0.951,
+    "letta_stateful_proof": 1,
+    "langgraph_stateful_proof": 1
+  },
+  "repair_scores": {
+    "current_nexus": 1,
+    "letta_stateful_proof": 1,
+    "langgraph_stateful_proof": 1
+  },
+  "tool_choice_scores": {
+    "current_nexus": 0.75,
+    "letta_stateful_proof": 1,
+    "langgraph_stateful_proof": 1
+  },
+  "action_separation_scores": {
+    "current_nexus": 0.95,
+    "letta_stateful_proof": 1,
+    "langgraph_stateful_proof": 1
+  },
+  "latency_by_candidate": {
+    "current_nexus": 2,
+    "letta_stateful_proof": 119,
+    "langgraph_stateful_proof": 121
+  },
+  "cost_by_candidate": {
+    "current_nexus": 0,
+    "letta_stateful_proof": 0,
+    "langgraph_stateful_proof": 0
+  },
+  "generic_fallback_count_by_candidate": {
+    "current_nexus": 0,
+    "letta_stateful_proof": 0,
+    "langgraph_stateful_proof": 0
+  },
+  "security_failures_by_candidate": {
+    "current_nexus": 0,
+    "letta_stateful_proof": 0,
+    "langgraph_stateful_proof": 0
+  },
+  "selected_outcome": "MORE_EVIDENCE_REQUIRED",
+  "production_change_made": false,
+  "full_turn_count": 159,
+  "holdout_count": 100,
+  "model_sample_limit_per_model_candidate": 4,
+  "origin_main": "a3643f5d50b6f6c8e07c14dc4862bbe10dee77e9",
+  "generated_at": "2026-07-20T20:21:42.387Z",
+  "summaries": [
+    {
+      "candidate": "current_nexus",
+      "score": 0.836,
+      "general_conversation": 0.721,
+      "reference_resolution": 0.951,
+      "repair": 1,
+      "tool_choice": 0.75,
+      "action_separation": 0.95,
+      "model_invocations": 0,
+      "average_latency_ms": 2,
+      "generic_fallback_count": 0,
+      "security_failures": 0,
+      "representative_failures": [
+        "baseline_2: ordinary_over_policy, not_model_first_ordinary",
+        "baseline_3: ordinary_over_policy, not_model_first_ordinary",
+        "baseline_4: missing_tool:identity_lookup",
+        "baseline_5: missing_tool:identity_lookup",
+        "baseline_6: ordinary_over_policy, not_model_first_ordinary",
+        "baseline_7: ordinary_over_policy",
+        "baseline_8: missing_tool:project_status",
+        "baseline_13: missing_tool:project_status"
+      ]
+    },
+    {
+      "candidate": "letta_stateful_proof",
+      "score": 1,
+      "general_conversation": 1,
+      "reference_resolution": 1,
+      "repair": 1,
+      "tool_choice": 1,
+      "action_separation": 1,
+      "model_invocations": 4,
+      "average_latency_ms": 119,
+      "generic_fallback_count": 0,
+      "security_failures": 0,
+      "representative_failures": []
+    },
+    {
+      "candidate": "langgraph_stateful_proof",
+      "score": 1,
+      "general_conversation": 1,
+      "reference_resolution": 1,
+      "repair": 1,
+      "tool_choice": 1,
+      "action_separation": 1,
+      "model_invocations": 4,
+      "average_latency_ms": 121,
+      "generic_fallback_count": 0,
+      "security_failures": 0,
+      "representative_failures": []
+    }
+  ]
+}
