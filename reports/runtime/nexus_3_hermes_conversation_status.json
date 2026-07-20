@@ -40,7 +40,9 @@
     "confirmed_unsafe_rls_count": 0,
     "pre_commit_tests": "PASS",
     "local_browser_certification": "PASS_2_OF_2_EXACT_SEQUENCE_AND_25_HOLDOUT",
-    "live_certification": "PENDING_DEPLOYMENT"
+    "live_certification": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES_2_OF_2",
+    "production_bundle_filename": "https://goclearonline.cc/assets/index-lX2FNB0b.js",
+    "implementation_commit": "03aebef09770b6ffb292f66cf7e9957b2ecb8f4e"
   },
   "safety": {
     "alpha_supabase": "PROHIBITED",

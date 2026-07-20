@@ -273,7 +273,8 @@ Wave 4A.4R release gate:
 - Hermes general-intelligence work is protected for production release.
 - Playwright certification uses the established `playwright/test` package and authenticated `/admin#hermes` route.
 - Strict RLS warnings are classified with zero confirmed unsafe findings; authenticated RLS remains 45/45.
-- Department Operations remains blocked until the pushed Wave 4A.4R commit passes authenticated live certification at `https://goclearonline.cc/admin#hermes`.
+- Authenticated live Hermes general-intelligence certification passed at `https://goclearonline.cc/admin#hermes` for implementation commit `03aebef09770b6ffb292f66cf7e9957b2ecb8f4e`.
+- Department Operations remains a separate approval decision; this certification removes the Hermes general-intelligence blocker but does not itself approve Department Operations.
 
 Build:
 

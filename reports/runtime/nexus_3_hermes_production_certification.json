@@ -26,10 +26,12 @@
   "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED_FOR_PRIOR_WAVE_4A_3",
   "wave_4a_4_general_intelligence": {
     "local_focused_result": "PASS",
-    "live_production_result_for_new_commit": "PENDING_DEPLOYMENT",
+    "live_production_result_for_new_commit": "PASS live https://goclearonline.cc/admin#hermes 2/2 exact sequence plus 25 holdout",
     "wave_4a_4r_release_state": "PRE_COMMIT_CHECKS_PASS_RLS_WARNINGS_CLASSIFIED_ZERO_CONFIRMED_UNSAFE",
     "local_browser_result": "PASS tests/e2e/hermes-general-intelligence-certification.spec.ts 2/2 exact sequence plus 25 holdout",
-    "certification_state": "READY_FOR_PRODUCTION_DEPLOYMENT_AND_LIVE_CERTIFICATION",
+    "deployed_commit": "03aebef09770b6ffb292f66cf7e9957b2ecb8f4e",
+    "bundle_filename": "https://goclearonline.cc/assets/index-lX2FNB0b.js",
+    "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED",
     "required_live_sequence": "tests/e2e/hermes-general-intelligence-certification.spec.ts against https://goclearonline.cc after deployment"
   },
   "wave_4a_3_advisory_context": {

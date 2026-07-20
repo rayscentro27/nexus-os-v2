@@ -22,6 +22,8 @@
     "strict_rls_finding_count": 23,
     "confirmed_unsafe_rls_count": 0,
     "provider_state": "TEST_ONLY_EVIDENCE_CONFLICTED",
+    "live_certification": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES",
+    "implementation_commit": "03aebef09770b6ffb292f66cf7e9957b2ecb8f4e",
     "department_operations_ready": false
   },
   "total_capabilities": 135,

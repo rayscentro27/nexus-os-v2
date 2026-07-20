@@ -27,7 +27,8 @@
   "page_error_count": 0,
   "console_error_count": 0,
   "local_production_result": "PASS_PLAYWRIGHT_2_OF_2_EXACT_SEQUENCE_AND_25_HOLDOUT",
-  "live_production_result": "NOT_RUN_THIS_TURN_NEW_COMMIT_NOT_DEPLOYED",
+  "live_production_result": "PASS_GOCLEARONLINE_CC_ADMIN_HERMES_EXACT_SEQUENCE_AND_25_HOLDOUT",
   "wave_4a_4r_release_state": "PRE_COMMIT_CHECKS_PASS_RLS_WARNINGS_CLASSIFIED_ZERO_CONFIRMED_UNSAFE",
-  "certification_state": "LOCAL_FOCUSED_PASS_READY_FOR_PRODUCTION_DEPLOYMENT_AND_LIVE_CERTIFICATION"
+  "production_bundle_filename": "https://goclearonline.cc/assets/index-lX2FNB0b.js",
+  "certification_state": "PASS_LIVE_PRODUCTION_CERTIFIED"
 }

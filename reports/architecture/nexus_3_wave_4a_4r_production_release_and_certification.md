@@ -90,11 +90,29 @@ Provider state remains `TEST_ONLY_EVIDENCE_CONFLICTED`. Wave 4A.4 deploys Nexus-
 
 ## Commit, Push, and Deployment
 
-Pending at the time this report was first written. The release sequence will stage explicit Wave 4A.4/4A.4R files only, commit with `build hermes general intelligence and governed tool use`, push `origin main`, then verify the Netlify production deployment before live certification.
+- Implementation commit: `03aebef09770b6ffb292f66cf7e9957b2ecb8f4e`.
+- Push result: `origin/main` matched local HEAD at `03aebef09770b6ffb292f66cf7e9957b2ecb8f4e`.
+- Production bundle observed after deployment: `https://goclearonline.cc/assets/index-lX2FNB0b.js`.
+- Production bundle evidence timestamp: `2026-07-20T15:59:15Z`.
+- Netlify authenticated deploy API metadata was unavailable locally because no `NETLIFY_AUTH_TOKEN` was present; verification used origin commit match, production bundle fetch, bundle code signatures, and authenticated live browser certification.
 
 ## Live Production Certification
 
-Pending until `https://goclearonline.cc` serves the pushed commit. The required target is `https://goclearonline.cc/admin#hermes`.
+- Target: `https://goclearonline.cc/admin#hermes`.
+- Exact live sequence: PASS.
+- Live holdout: PASS, 25/25.
+- Generic fallback count: 0.
+- Page errors: 0.
+- Console errors: 0.
+- Refresh required: 0.
+- Time/date: PASS.
+- Project status: PASS.
+- Reports: PASS.
+- Customer aggregate honesty: PASS.
+- Provenance: PASS.
+- Topic continuation: PASS.
+- Project/design discussion: PASS.
+- Action separation: PASS.
 
 ## Security
 
@@ -106,7 +124,7 @@ External model-assisted general conversation is not certified active in this rel
 
 ## Certification Decision
 
-Pre-deployment release gates are satisfied for commit/push. The restored local browser certification passes the exact sequence and 25-question holdout. Live Hermes general-intelligence certification remains pending until production serves the pushed commit and the authenticated exact sequence plus holdout pass.
+Wave 4A.4R is live production certified for Hermes general intelligence and governed tool use. The restored local browser certification passed the exact sequence and 25-question holdout, then authenticated production Playwright passed the same certification against `https://goclearonline.cc/admin#hermes`.
 
 ## Department Operations Readiness
 
