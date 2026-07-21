@@ -625,6 +625,9 @@ async function runModelFirstOpenRouter(
     content: [
       '[MODEL-FIRST TURN DECISION]',
       'Return only JSON matching the HermesTurnDecision contract.',
+      'Valid direct response shape: {"type":"DIRECT_RESPONSE","response":"..."}',
+      'Valid tool request shape: {"type":"TOOL_REQUEST","toolName":"get_current_time","arguments":{},"reasonSummary":"current time requested"}',
+      'Valid clarification shape: {"type":"CLARIFICATION","question":"...","missingFields":["..."]}',
       'Use DIRECT_RESPONSE for ordinary conversation, definitions, personal statements, planning, writing, identity, and repair.',
       'Use TOOL_REQUEST only for current Nexus facts, authorized records, report summaries, aggregates, governed drafts, or scheduling drafts.',
       'Use CLARIFICATION only when essential details are missing.',
@@ -632,6 +635,9 @@ async function runModelFirstOpenRouter(
       `Approved tools: ${JSON.stringify(visibleToolList())}`,
     ].join('\n'),
   };
+  const userTurn = baseMessages[baseMessages.length - 1];
+  const contextMessages = baseMessages.slice(0, -1);
+  const decisionMessages = [...contextMessages, decisionSystem, userTurn];
   const responseFormat = {
     type: 'json_schema',
     json_schema: {
@@ -640,10 +646,16 @@ async function runModelFirstOpenRouter(
       schema: DECISION_SCHEMA,
     },
   };
-  let decisionCall = await callOpenRouter(key, models, [...baseMessages, decisionSystem], startTime, responseFormat);
+  let decisionCall = await callOpenRouter(key, models, decisionMessages, startTime, responseFormat);
+  let structuredOutputUsed = true;
+  if (!decisionCall.ok && /^HTTP 4/.test(String(decisionCall.errorCode || ''))) {
+    structuredOutputUsed = false;
+    decisionCall = await callOpenRouter(key, models, [...contextMessages, decisionSystem, { role: 'system', content: 'Provider structured-output parameters were unavailable for this configured model. Return valid JSON only; the server will validate it before any tool execution.' }, userTurn], startTime);
+  }
   let decision = decisionCall.ok ? parseDecision(decisionCall.reply) : null;
   if (!decision && decisionCall.ok) {
-    decisionCall = await callOpenRouter(key, models, [...baseMessages, decisionSystem, { role: 'user', content: 'Return valid HermesTurnDecision JSON only for the current Ray message.' }], startTime, responseFormat);
+    const retryResponseFormat = structuredOutputUsed ? responseFormat : undefined;
+    decisionCall = await callOpenRouter(key, models, [...contextMessages, decisionSystem, userTurn, { role: 'user', content: 'Return valid HermesTurnDecision JSON only for the current Ray message.' }], startTime, retryResponseFormat);
     decision = decisionCall.ok ? parseDecision(decisionCall.reply) : null;
   }
   if (!decisionCall.ok) return degradedOpenRouterReply(String(decisionCall.errorCode), 'openrouter', String(decisionCall.model), startTime);
@@ -660,6 +672,7 @@ async function runModelFirstOpenRouter(
         traceId: tid,
         decisionType: 'DIRECT_RESPONSE',
         source: 'GENERAL_MODEL',
+        structuredOutputUsed,
         toolRequested: false,
         toolExecuted: false,
         modelRounds: 1,
@@ -682,6 +695,7 @@ async function runModelFirstOpenRouter(
         decisionType: 'CLARIFICATION',
         missingFields: decision.missingFields,
         source: 'GENERAL_MODEL',
+        structuredOutputUsed,
         modelRounds: 1,
         ...usageMetadata(decisionCall.usage as Record<string, unknown> | null, message, decision.question),
         durationMs: Date.now() - startTime,
@@ -702,7 +716,7 @@ async function runModelFirstOpenRouter(
       JSON.stringify({ requestedTool: decision.toolName, capabilityDecision, toolResult: toolResultData }).slice(0, 5000),
     ].join('\n'),
   };
-  const finalCall = await callOpenRouter(key, models, [...baseMessages, finalSystem], startTime);
+  const finalCall = await callOpenRouter(key, models, [...contextMessages, finalSystem, userTurn], startTime);
   if (!finalCall.ok) return degradedOpenRouterReply(String(finalCall.errorCode), 'openrouter', String(finalCall.model), startTime);
   return json({
     configured: true,
@@ -718,6 +732,7 @@ async function runModelFirstOpenRouter(
       toolExecuted: Boolean(capabilityDecision.allowed && toolResultData.ok),
       toolErrorCode: toolResultData.ok ? undefined : toolResultData.errorCode,
       source: capabilityDecision.allowed ? 'NEXUS_TOOL' : 'SAFE_LEGACY_FALLBACK',
+      structuredOutputUsed,
       modelRounds: 2,
       ...usageMetadata(finalCall.usage as Record<string, unknown> | null, message, finalCall.reply),
       maxOutputTokens: MAX_OUTPUT_TOKENS,
