@@ -55,15 +55,32 @@ Four readiness-report files contain timestamp-only generated diffs. They are cla
 
 ## Not Yet Certified
 
+The first deployed Edge Function smoke passed after repair:
+
+- ordinary question `What is a pulley?`: `DIRECT_RESPONSE`, source `GENERAL_MODEL`, model `openai/gpt-4o-mini`
+- Nexus question `How many clients do we have?`: `TOOL_REQUEST`, tool `get_client_aggregate`, tool executed, source `NEXUS_TOOL`
+- targeted repair/reference sample: PASS after category-level repair guard
+- targeted status/action sample after final patch: PASS for identity, date, schedule draft, task draft, Ray Review draft, provenance, client aggregate, Alpha/Supabase boundary, Stripe live status, trading status, and Engineering status
+
+The 101-turn server holdout initially failed:
+
+- result: 80/101
+- score: 79.2%
+- generic fallback count: 0
+- duplicate actions: 0
+- model calls: 129
+- observed tokens: 193,216
+
+The failures were concentrated in mandatory tool choice, provenance/reference handling, and explicit draft/tool routing. A follow-up category-level mandatory-tool policy was deployed after that holdout, but the full 101-turn holdout was not rerun to certification.
+
 The following were not run in this environment:
 
 - local browser against a locally served updated Edge Function,
-- 100-turn real OpenRouter holdout through the deployed tool bridge,
 - live Ray-only production acceptance,
 - rollback verification in production.
 
-Reason: the clean worktree has no local Supabase/OpenRouter credentials, and the updated Edge Function is not deployed from this branch yet.
+Reason: the clean worktree has no Netlify auth token/site ID available, Netlify CLI status/deploy attempts hang without interactive auth, and production frontend deployment is blocked. The Edge Function is deployed; the production frontend is not.
 
 ## Certification State
 
-`LOCAL_TOOL_BRIDGE_PASS_NOT_LIVE_DEPLOYED`
+`EDGE_DEPLOYED_TOOL_BRIDGE_NOT_FRONTEND_CERTIFIED`
