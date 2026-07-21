@@ -143,7 +143,7 @@ function buildDynamicContext(mode: string, ctx: Record<string, unknown> | undefi
   return lines.join('\n').slice(0, MAX_CONTEXT_TOTAL);
 }
 
-interface ChatMessage { role: 'system' | 'user' | 'assistant'; content: string; }
+interface ChatMessage { role: 'system' | 'user' | 'assistant' | 'tool'; content: string; name?: string; tool_call_id?: string; }
 
 type HermesTurnDecision =
   | { type: 'DIRECT_RESPONSE'; response: string }
@@ -298,7 +298,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   list_reports: {
     name: 'list_reports',
-    description: 'List approved sanitized reports.',
+    description: 'List approved sanitized reports. Use when Ray asks what reports exist or requests a report list. Do not use when Ray refers to a specific report already present in recent conversation.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['hermes_report_catalog_tool'],
@@ -308,7 +308,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   summarize_report: {
     name: 'summarize_report',
-    description: 'Summarize an approved report by reportId.',
+    description: 'Summarize one approved report by reportId. Use when Ray requests details or a summary of one specific known report, including the latest, second, or previously listed report. Do not use for a general report catalog request.',
     inputSchema: { type: 'object', required: ['reportId'], properties: { reportId: { type: 'string' } }, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['hermes_report_catalog_tool'],
@@ -371,7 +371,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   get_repo_intelligence_status: {
     name: 'get_repo_intelligence_status',
-    description: 'Get approved repository intelligence status summary; no shell or GitHub execution.',
+    description: 'Get approved Repo Intelligence subsystem status, repository analysis status, code intelligence status, or repository monitoring status. Do not use when Ray asks where a prior answer came from.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['repo_intelligence_registry'],
@@ -381,7 +381,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   get_answer_provenance: {
     name: 'get_answer_provenance',
-    description: 'Explain source/provenance for the previous answer or trace.',
+    description: 'Explain what source, model, tool, report, or evidence supported a previous Hermes answer. Do not use for Repo Intelligence subsystem status.',
     inputSchema: { type: 'object', properties: { traceId: { type: 'string' }, conversationTurnId: { type: 'string' } }, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['hermes_provenance_tool'],
@@ -391,7 +391,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   draft_task: {
     name: 'draft_task',
-    description: 'Create a governed task draft only; does not approve or execute.',
+    description: 'Create a governed task draft only after Ray explicitly asks to create a task draft. Do not use for discussion, planning, writing, or do-not-create turns. Does not approve or execute.',
     inputSchema: { type: 'object', required: ['title', 'summary'], properties: { title: { type: 'string' }, summary: { type: 'string' }, department: { type: 'string' }, riskClass: { type: 'string' } }, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['governed_work'],
@@ -401,7 +401,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   draft_ray_review: {
     name: 'draft_ray_review',
-    description: 'Create a Ray Review draft only; cannot approve itself.',
+    description: 'Create a Ray Review draft only after Ray explicitly asks for a Ray Review draft or approval packet. Do not use for self-approval. Cannot approve itself.',
     inputSchema: { type: 'object', required: ['title', 'summary'], properties: { title: { type: 'string' }, summary: { type: 'string' }, riskClass: { type: 'string' } }, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['ray_review'],
@@ -411,7 +411,7 @@ const toolRegistry: Record<string, ToolDefinition> = {
   },
   draft_schedule: {
     name: 'draft_schedule',
-    description: 'Create a schedule draft only after report and exact time are known.',
+    description: 'Create a schedule draft only after report, date, time, and timezone details are known and Ray explicitly asks to create the draft. Do not use for planning, clarification, or do-not-create turns.',
     inputSchema: { type: 'object', properties: { reportId: { type: 'string' }, reportName: { type: 'string' }, requestedDate: { type: 'string' }, requestedTime: { type: 'string' }, timezone: { type: 'string' } }, additionalProperties: false },
     requiredRole: ['ray', 'admin'],
     requiredCapabilities: ['governed_work'],
@@ -467,6 +467,29 @@ function visibleToolList() {
     description: tool.description,
     inputSchema: tool.inputSchema,
   }));
+}
+
+function openRouterTools() {
+  return Object.values(toolRegistry).map((tool) => ({
+    type: 'function',
+    function: {
+      name: tool.name,
+      description: tool.description,
+      parameters: tool.inputSchema,
+    },
+  }));
+}
+
+function parseToolArgs(value: unknown): Record<string, unknown> {
+  if (!value) return {};
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value !== 'string') return {};
+  try {
+    const parsed = JSON.parse(value);
+    return safeObject(parsed);
+  } catch {
+    return {};
+  }
 }
 
 function parseDecision(content: unknown): HermesTurnDecision | null {
@@ -631,6 +654,57 @@ async function callOpenRouter(
   return { ok: false, errorCode: lastError || 'OPENROUTER_UNAVAILABLE', model: models[0] ?? 'none', fallbackUsed: models.length > 1, durationMs: Date.now() - startTime };
 }
 
+async function callOpenRouterNative(
+  key: string,
+  models: string[],
+  messages: ChatMessage[],
+  startTime: number,
+  tools?: Record<string, unknown>[],
+) {
+  let lastError = '';
+  for (const m of models) {
+    try {
+      const payload: Record<string, unknown> = { model: m, messages, max_tokens: MAX_OUTPUT_TOKENS };
+      if (tools?.length) {
+        payload.tools = tools;
+        payload.tool_choice = 'auto';
+      }
+      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) {
+        lastError = `HTTP ${r.status}`;
+        continue;
+      }
+      const d = await r.json();
+      if (d?.error) {
+        lastError = String(d.error?.message || d.error || 'provider error').slice(0, 100);
+        continue;
+      }
+      const message = d?.choices?.[0]?.message;
+      const reply = String(message?.content || '').trim();
+      const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
+      if (reply || toolCalls.length) {
+        return {
+          ok: true,
+          reply,
+          toolCalls,
+          model: m,
+          fallbackUsed: models.length > 1 && m !== models[0],
+          usage: d?.usage || null,
+          durationMs: Date.now() - startTime,
+        };
+      }
+      lastError = 'Empty reply from model';
+    } catch (e) {
+      lastError = String(e).slice(0, 100);
+    }
+  }
+  return { ok: false, errorCode: lastError || 'OPENROUTER_UNAVAILABLE', model: models[0] ?? 'none', fallbackUsed: models.length > 1, durationMs: Date.now() - startTime };
+}
+
 function usageMetadata(usage: Record<string, unknown> | null | undefined, inputText: string, outputText: string) {
   return {
     inputTokens: Number(usage?.prompt_tokens) || undefined,
@@ -646,6 +720,123 @@ function degradedOpenRouterReply(errorCode: string, provider = 'openrouter', mod
     configured: true,
     reply: 'My conversational model is temporarily unavailable. I can still provide certain verified local Nexus status responses, but general conversation is degraded.',
     metadata: { provider, model, fallbackUsed: false, errorCode, decisionType: 'DEGRADED', source: 'hermes-chat', durationMs: Date.now() - startTime },
+  });
+}
+
+async function runConversationalOpenRouter(
+  key: string,
+  models: string[],
+  baseMessages: ChatMessage[],
+  message: string,
+  context: Record<string, unknown> | undefined,
+  authorization: string,
+  startTime: number,
+) {
+  const tid = traceId();
+  const actorRole = authorization ? 'ray' : 'anonymous';
+  const toolCtx: ToolExecutionContext = {
+    actorRole,
+    tenantId: String(context?.tenantId || 'ray_pilot'),
+    traceId: tid,
+    authorization,
+  };
+  const conversationSystem: ChatMessage = {
+    role: 'system',
+    content: [
+      '[MODEL-FIRST CONVERSATIONAL MODE]',
+      'You are the conversational brain. Answer ordinary conversation, writing, personal statements, strategy, references, and clarifications directly as normal assistant text.',
+      'Use tools only when Ray asks for current Nexus facts, approved report summaries, aggregate customer status, governed drafts, scheduling drafts, or source provenance.',
+      'Never claim live internal facts without tool evidence. Never request client PII. Never self-approve. Never execute external actions.',
+      'When Ray refers to number three, the first one, that, it, them, or the previous option, resolve from the latest visible conversation before using a tool.',
+      'When Ray asks to write, rewrite, draft copy, create a prompt, brainstorm, challenge an idea, or help think it through, do not use Nexus tools unless current private Nexus evidence is explicitly required.',
+      'If Ray asks to approve yourself or execute an approval-gated action, refuse directly.',
+    ].join('\n'),
+  };
+  const messages = [baseMessages[0], conversationSystem, ...baseMessages.slice(1)];
+  const firstCall = await callOpenRouterNative(key, models, messages, startTime, openRouterTools());
+  if (!firstCall.ok) return degradedOpenRouterReply(String(firstCall.errorCode), 'openrouter', String(firstCall.model), startTime);
+  const toolCalls = Array.isArray(firstCall.toolCalls) ? firstCall.toolCalls : [];
+  if (!toolCalls.length) {
+    return json({
+      configured: true,
+      reply: firstCall.reply,
+      metadata: {
+        provider: 'openrouter',
+        model: firstCall.model,
+        fallbackUsed: firstCall.fallbackUsed,
+        traceId: tid,
+        decisionType: 'DIRECT_RESPONSE',
+        source: 'GENERAL_MODEL',
+        conversationHistorySent: baseMessages.some((item) => item.role === 'assistant' || item.role === 'user') && baseMessages.length > 2,
+        historyTurnCount: baseMessages.filter((item) => item.role === 'assistant' || item.role === 'user').length - 1,
+        toolRequested: false,
+        toolExecuted: false,
+        modelRounds: 1,
+        ...usageMetadata(firstCall.usage as Record<string, unknown> | null, message, firstCall.reply),
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+        durationMs: Date.now() - startTime,
+      },
+    });
+  }
+
+  const toolCall = toolCalls[0] as Record<string, unknown>;
+  const fn = safeObject(toolCall.function);
+  const toolName = String(fn.name || '');
+  const args = parseToolArgs(fn.arguments);
+  const decision: Extract<HermesTurnDecision, { type: 'TOOL_REQUEST' }> = {
+    type: 'TOOL_REQUEST',
+    toolName,
+    arguments: args,
+    reasonSummary: 'native model tool call',
+  };
+  const capabilityDecision = validateToolRequest(decision, toolCtx);
+  const toolResultData = capabilityDecision.allowed
+    ? await executeToolRequest(decision, toolCtx)
+    : { ok: false, toolName, errorCode: capabilityDecision.reasonCode, evidenceSources: ['capability_os_gateway'], freshness: 'CURRENT' };
+  const toolCallId = String(toolCall.id || `tool-${tid}`);
+  const finalMessages: ChatMessage[] = [
+    ...messages,
+    {
+      role: 'assistant',
+      content: firstCall.reply || '',
+      // OpenRouter accepts tool role messages with tool_call_id; the assistant tool_calls object
+      // is included in the raw payload below by preserving it outside this typed helper.
+    },
+    {
+      role: 'tool',
+      tool_call_id: toolCallId,
+      name: toolName,
+      content: JSON.stringify({ capabilityDecision, toolResult: toolResultData }).slice(0, 5000),
+    },
+    {
+      role: 'system',
+      content: 'Write the final answer naturally from the authorized tool result. State uncertainty and data state honestly. Do not claim execution occurred for draft tools.',
+    },
+  ];
+  const rawFinalMessages = [...messages, { role: 'assistant', content: firstCall.reply || '', tool_calls: [toolCall] }, finalMessages[finalMessages.length - 2], finalMessages[finalMessages.length - 1]];
+  const finalCall = await callOpenRouterNative(key, models, rawFinalMessages as ChatMessage[], startTime);
+  if (!finalCall.ok) return degradedOpenRouterReply(String(finalCall.errorCode), 'openrouter', String(finalCall.model), startTime);
+  return json({
+    configured: true,
+    reply: finalCall.reply,
+    metadata: {
+      provider: 'openrouter',
+      model: finalCall.model,
+      fallbackUsed: firstCall.fallbackUsed || finalCall.fallbackUsed,
+      traceId: tid,
+      decisionType: 'TOOL_REQUEST',
+      toolRequested: toolName,
+      toolAllowed: capabilityDecision.allowed,
+      toolExecuted: Boolean(capabilityDecision.allowed && toolResultData.ok),
+      toolErrorCode: toolResultData.ok ? undefined : toolResultData.errorCode,
+      source: capabilityDecision.allowed ? 'NEXUS_TOOL' : 'SAFE_LEGACY_FALLBACK',
+      conversationHistorySent: baseMessages.some((item) => item.role === 'assistant' || item.role === 'user') && baseMessages.length > 2,
+      historyTurnCount: baseMessages.filter((item) => item.role === 'assistant' || item.role === 'user').length - 1,
+      modelRounds: 2,
+      ...usageMetadata(finalCall.usage as Record<string, unknown> | null, message, finalCall.reply),
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      durationMs: Date.now() - startTime,
+    },
   });
 }
 
@@ -945,7 +1136,7 @@ Deno.serve(async (req: Request) => {
       if (models.length === 0) models.push('openai/gpt-4o-mini');
 
       if (mode === 'model_first_conversation') {
-        return await runModelFirstOpenRouter(
+        return await runConversationalOpenRouter(
           key,
           models,
           messages,

@@ -4,14 +4,12 @@ import { readFileSync } from 'node:fs';
 const edgeSource = readFileSync(new URL('../supabase/functions/hermes-chat/index.ts', import.meta.url), 'utf8');
 
 describe('Hermes model-first Edge tool bridge contract', () => {
-  it('defines a validated turn decision contract before tool execution', () => {
-    expect(edgeSource).toContain('type HermesTurnDecision');
-    expect(edgeSource).toContain("type: 'DIRECT_RESPONSE'");
-    expect(edgeSource).toContain("type: 'TOOL_REQUEST'");
-    expect(edgeSource).toContain("type: 'CLARIFICATION'");
-    expect(edgeSource).toContain('parseDecision');
-    expect(edgeSource).toContain('response_format');
-    expect(edgeSource).toContain('hermes_turn_decision');
+  it('uses native conversational text-or-tool calling as the model-first path', () => {
+    expect(edgeSource).toContain('runConversationalOpenRouter');
+    expect(edgeSource).toContain('callOpenRouterNative');
+    expect(edgeSource).toContain('payload.tools = tools');
+    expect(edgeSource).toContain("payload.tool_choice = 'auto'");
+    expect(edgeSource).toContain("source: 'GENERAL_MODEL'");
   });
 
   it('registers the approved model-facing Nexus tools centrally', () => {
@@ -39,7 +37,6 @@ describe('Hermes model-first Edge tool bridge contract', () => {
 
   it('keeps tool execution server-side and denies unsafe tool requests', () => {
     expect(edgeSource).toContain('validateToolRequest');
-    expect(edgeSource).toContain('inferMandatoryDecision');
     expect(edgeSource).toContain('UNKNOWN_TOOL');
     expect(edgeSource).toContain('INVALID_ARGUMENTS');
     expect(edgeSource).toContain('UNAUTHORIZED_ACTOR');
@@ -51,7 +48,7 @@ describe('Hermes model-first Edge tool bridge contract', () => {
 
   it('uses the bridge only for model-first mode and preserves legacy direct chat outside the pilot path', () => {
     expect(edgeSource).toContain("mode === 'model_first_conversation'");
-    expect(edgeSource).toContain('runModelFirstOpenRouter');
+    expect(edgeSource).toContain('runConversationalOpenRouter');
     expect(edgeSource).toContain('body: JSON.stringify({ model: m, messages, max_tokens: MAX_OUTPUT_TOKENS })');
   });
 
