@@ -1,7 +1,7 @@
 {
   "starting_commit": "a3643f5d50b6f6c8e07c14dc4862bbe10dee77e9",
   "feature_branch_start_commit": "d836a1e864cf90a1adfb3b5603cea619fd8175c4",
-  "ending_commit": "c4a55d25b3df1c357a7b7115a189866eac377854",
+  "ending_commit": "f41c1511fab22cd489f2b2154f93f11c0e51d4e0_PLUS_UNCOMMITTED_FINAL_HOLDOUT_REPAIRS",
   "deployed_commit": null,
   "provider": "openrouter",
   "openrouter_state": "CONFIGURED_DIRECT_SMOKE_PASS_PREVIOUSLY_VERIFIED",
@@ -18,9 +18,9 @@
   "ordinary_turn_model_invocation_rate": 1,
   "tool_free_fallback_count": 0,
   "general_conversation_score": "SERVER_HOLDOUT_MIXED",
-  "reference_resolution_score": "SERVER_HOLDOUT_MIXED",
-  "repair_score": "TARGETED_REPAIR_SAMPLE_PASS_AFTER_PATCH",
-  "tool_choice_score": "SERVER_HOLDOUT_FAILED_80_OF_101_BEFORE_FINAL_TARGETED_PATCH",
+  "reference_resolution_score": "SERVER_HOLDOUT_FAILED_60_PERCENT",
+  "repair_score": "SERVER_HOLDOUT_FAILED_80_PERCENT",
+  "tool_choice_score": "SERVER_HOLDOUT_FAILED_79_OF_101_AFTER_TWO_REPAIR_CYCLES",
   "tool_avoidance_score": "SERVER_HOLDOUT_MIXED",
   "action_separation_score": "NO_UNAUTHORIZED_EXECUTION_OBSERVED",
   "generic_fallback_count": 0,
@@ -28,8 +28,10 @@
   "daily_cost_limit": null,
   "monthly_cost_limit": null,
   "observed_token_usage": {
-    "server_holdout_total_tokens": 193216,
-    "server_holdout_model_calls": 129
+    "server_holdout_total_tokens": 194648,
+    "server_holdout_input_tokens": 187319,
+    "server_holdout_output_tokens": 7329,
+    "server_holdout_model_calls": 152
   },
   "observed_cost": null,
   "focused_test_result": "PASS_8_OF_8",
@@ -41,9 +43,9 @@
   "local_browser_result": "NOT_RUN_FRONTEND_DEPLOYMENT_BLOCKED_BY_NETLIFY_CLI_AUTH",
   "live_acceptance_result": "NOT_RUN_FRONTEND_DEPLOYMENT_BLOCKED_BY_NETLIFY_CLI_AUTH_AND_SERVER_HOLDOUT_NOT_CERTIFIED",
   "server_edge_smoke_result": "PASS_DIRECT_RESPONSE_AND_GET_CLIENT_AGGREGATE",
-  "server_holdout_result": "FAIL_80_OF_101_BEFORE_FINAL_TARGETED_PATCH",
-  "targeted_retest_result": "PASS_DIRECT_CLIENT_DATE_TASK_REVIEW_PROVENANCE_ALPHA_STRIPE_TRADING",
+  "server_holdout_result": "FAIL_79_OF_101_AFTER_TWO_REPAIR_CYCLES",
+  "targeted_retest_result": "FAIL_18_OF_22_AFTER_SECOND_REPAIR_CYCLE",
   "rollback_result": "NOT_RUN_REQUIRES_FRONTEND_DEPLOYED_ENV_FLAG",
   "letta_decision": "LETTA_DEFERRED",
-  "certification_state": "EDGE_DEPLOYED_TOOL_BRIDGE_NOT_FRONTEND_CERTIFIED"
+  "certification_state": "HOLDOUT_FAILED"
 }

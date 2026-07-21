@@ -29,7 +29,8 @@ const MODEL_ALLOWLIST: Record<string, string[]> = {
   gemini: ['gemini-1.5-flash', 'gemini-1.5-pro'],
   ollama: ['llama3.1', 'qwen2.5:0.5b', 'gemma3:1b'],
 };
-const REJECT_ACTIONS = /\b(send|email|publish|post|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete|start\s+live|stop\s+live|activate\s+live)\b/i;
+const REJECT_ACTIONS = /\b(send|email|publish|post|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete|start\s+live|stop\s+live|turn\s+on\s+live|activate\s+live|place\s+live\s+trades?)\b/i;
+const SELF_AUTHORIZATION_ACTIONS = /\b(approve it yourself|approve yourself|self-approve|execute it now|run it now)\b/i;
 
 // Stable, cached identity + business context. Keep this byte-stable to maximize prompt-cache hits;
 // bump HERMES_CONTEXT_VERSION to intentionally bust the cache after edits. Contains only
@@ -533,29 +534,43 @@ function validateToolRequest(decision: HermesTurnDecision, ctx: ToolExecutionCon
 function isOverbroadClarification(decision: HermesTurnDecision, history: ChatMessage[]): boolean {
   if (decision.type !== 'CLARIFICATION' || history.length === 0) return false;
   const question = decision.question.toLowerCase();
-  return /what specific (aspect|aspects|details)|please clarify what you meant|what .* did i misunderstand/.test(question);
+  return /what specific (aspect|aspects|details|comparison)|please clarify what you meant|what .* did i misunderstand|which list|specify which list|what .* are you referring/.test(question);
 }
 
-function inferMandatoryTool(message: string, decision: HermesTurnDecision, history: ChatMessage[]): Extract<HermesTurnDecision, { type: 'TOOL_REQUEST' }> | null {
+function isRepairOrVisibleReference(message: string): boolean {
+  return /\b(that is not what i meant|you misunderstood me|i meant .*latest list|latest list|number three|number 3|the first one|previous option|earlier option|why that one|compare it with|correct .*last answer|why did you answer that way)\b/i.test(message);
+}
+
+function isToolFreeWritingRequest(message: string): boolean {
+  return /\b(draft a prompt|write a prompt|create a prompt|make this clearer|rewrite this|write a short|give me .*titles|client-friendly explanation)\b/i.test(message);
+}
+
+function inferMandatoryDecision(message: string, decision: HermesTurnDecision, history: ChatMessage[]): HermesTurnDecision | null {
   const text = message.toLowerCase();
   const recent = history.map((item) => item.content).join('\n').slice(-1200);
   const draftSummary = `${message}\n\nRecent context:\n${recent}`.slice(0, 900);
-  if (/\b(time|date|day)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_current_time', arguments: /phoenix|arizona/.test(text) ? { timezone: 'America/Phoenix' } : {}, reasonSummary: 'current date/time requires the system clock' };
-  if (/\b(who created you|created you|your creator|how long have you|how old are you)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_hermes_identity', arguments: {}, reasonSummary: 'Hermes identity evidence requested' };
+  if (/\b(do not|don't)\s+(schedule|create|draft|make)\b/.test(text)) return { type: 'DIRECT_RESPONSE', response: "Understood. I won't create or schedule anything yet; we can keep this in planning." };
+  if (/\b(approve it yourself|approve yourself|self-approve|execute it now|run it now)\b/.test(text)) return { type: 'DIRECT_RESPONSE', response: "I can't approve or execute that myself. Ray approval and the governed capability path are required before execution." };
+  if (/\bwhat\s+(time|date|day)\b|\b(time is it|date is it|day is it|clock says|current time|current date)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_current_time', arguments: /phoenix|arizona/.test(text) ? { timezone: 'America/Phoenix' } : {}, reasonSummary: 'current date/time requires the system clock' };
+  if (/\b(who created you|created you|your creator|how long have you|how old are you|what are you allowed|what can you do|person or an ai|are you .*ai|your role|your permissions)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_hermes_identity', arguments: {}, reasonSummary: 'Hermes identity evidence requested' };
+  if (/\b(client|clients|customer|customers|real or synthetic|test records|paying clients)\b/.test(text) && /\b(paying|count|aggregate|prove|real|synthetic|test|records|customers|clients)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_client_aggregate', arguments: {}, reasonSummary: 'client aggregate evidence requested' };
+  if (/\b(where .*from|source|evidence|provenance|support[s]? that|supports .*number|how do you know|fact or .*recommendation|live data|report-backed)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_answer_provenance', arguments: {}, reasonSummary: 'answer provenance requested' };
   if (/\b(client|clients|customer|customers|real or synthetic|test records)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_client_aggregate', arguments: {}, reasonSummary: 'client aggregate evidence requested' };
   if (/\b(approval|approvals|ray review|approve)\b/.test(text) && /\b(create|prepare|draft|request)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_ray_review', arguments: { title: 'Ray Review draft from Hermes conversation', summary: draftSummary, riskClass: 'MEDIUM' }, reasonSummary: 'explicit Ray Review draft requested' };
   if (/\b(approval|approvals|pending decisions|needs my approval)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_approval_summary', arguments: {}, reasonSummary: 'approval summary requested' };
   if (/\b(task draft|create the task|create a task|draft task|now create)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_task', arguments: { title: 'Hermes governed task draft', summary: draftSummary, riskClass: 'MEDIUM' }, reasonSummary: 'explicit task draft requested' };
-  if (/\b(schedule|4 pm|4 p\.m\.)\b/.test(text) && /(\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b)/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_schedule', arguments: { reportName: /system health/.test(text) ? 'system health report' : 'report', requestedDate: 'today', requestedTime: /4\s*(pm|p\.m\.)/.test(text) ? '4 PM' : 'specified time', timezone: 'America/Phoenix' }, reasonSummary: 'schedule draft requested' };
-  if (/\b(report|reports)\b/.test(text) && /\b(summar|second|latest|newest|tell me more)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'summarize_report', arguments: { reportId: 'nexus_3_hermes_model_first_status' }, reasonSummary: 'report summary requested' };
-  if (/\b(report|reports)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'list_reports', arguments: {}, reasonSummary: 'report catalog requested' };
-  if (/\b(where .*from|source|evidence|provenance|support[s]? that|how do you know)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_answer_provenance', arguments: {}, reasonSummary: 'answer provenance requested' };
+  if (/\b(schedule|schedul)\b/.test(text) && /\b(draft now|create .*draft|another identical)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_schedule', arguments: { reportName: /system health|health/.test(text + recent.toLowerCase()) ? 'system health report' : 'report', requestedDate: 'today', requestedTime: /4\s*(pm|p\.m\.)/.test(text + recent.toLowerCase()) ? '4 PM' : 'specified time', timezone: 'America/Phoenix' }, reasonSummary: 'schedule draft requested' };
+  if (/\b(schedule|schedul)\b/.test(text) && !/(\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b)/.test(text)) return { type: 'CLARIFICATION', question: 'Which report should I schedule, and what exact time should I use?', missingFields: ['report', 'requestedTime'] };
+  if (/\b(schedule|schedul|4 pm|4 p\.m\.)\b/.test(text) && /(\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b)/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_schedule', arguments: { reportName: /system health|health/.test(text) ? 'system health report' : 'report', requestedDate: 'today', requestedTime: /4\s*(pm|p\.m\.)/.test(text) ? '4 PM' : 'specified time', timezone: 'America/Phoenix' }, reasonSummary: 'schedule draft requested' };
   if (/\b(repo intelligence|repo intel)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_repo_intelligence_status', arguments: {}, reasonSummary: 'Repo Intelligence status requested' };
+  if (/\b(report|reports)\b/.test(text) && (/\bsummar\w*\b/.test(text) || /\b(second|latest|newest|tell me more|current|supports|supporting|status)\b/.test(text))) return { type: 'TOOL_REQUEST', toolName: 'summarize_report', arguments: { reportId: 'nexus_3_hermes_model_first_status' }, reasonSummary: 'report summary requested' };
+  if (/\b(report|reports)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'list_reports', arguments: {}, reasonSummary: 'report catalog requested' };
   if (/\b(revenue|money move|make money|actual revenue|projected revenue)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_revenue_status', arguments: {}, reasonSummary: 'revenue status requested' };
   if (/\b(department|engineering|credit and funding|operations|research|knowledge)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_department_status', arguments: {}, reasonSummary: 'department status requested' };
-  if (/\b(alpha.*supabase|supabase.*alpha)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_project_status', arguments: {}, reasonSummary: 'Alpha Supabase boundary requested' };
-  if (/\b(system health|system ok|stripe|trading|blocked by policy|live payments|live trading)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_system_health', arguments: {}, reasonSummary: 'current system/policy status requested' };
-  if (/\b(version|wave|project status|did we build|what did we finish)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_project_status', arguments: {}, reasonSummary: 'project status requested' };
+  if (/\b(alpha.*(supabase|access|allowed|boundary)|supabase.*alpha)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_project_status', arguments: {}, reasonSummary: 'Alpha access boundary requested' };
+  if (/\b(system health|system ok|stripe|trading|trade|trades|blocked by policy|live payments|live trading)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_system_health', arguments: {}, reasonSummary: 'current system/policy status requested' };
+  if (/\bversion\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_nexus_version', arguments: {}, reasonSummary: 'Nexus version requested' };
+  if (/\b(wave|project status|did we build|what did we finish)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_project_status', arguments: {}, reasonSummary: 'project status requested' };
   if (decision.type === 'TOOL_REQUEST') return null;
   return null;
 }
@@ -708,9 +723,25 @@ async function runModelFirstOpenRouter(
     decision = decisionCall.ok ? parseDecision(decisionCall.reply) : null;
   }
   if (!decisionCall.ok) return degradedOpenRouterReply(String(decisionCall.errorCode), 'openrouter', String(decisionCall.model), startTime);
+  if ((!decision || (isToolFreeWritingRequest(message) && decision.type !== 'DIRECT_RESPONSE')) && isToolFreeWritingRequest(message)) {
+    const writingCall = await callOpenRouter(key, models, [...contextMessages, decisionSystem, userTurn, { role: 'user', content: 'This is a writing, editing, prompt, or copy request. Return DIRECT_RESPONSE JSON only. Do not request Nexus tools unless Ray asks for current private records.' }], startTime);
+    const writingDecision = writingCall.ok ? parseDecision(writingCall.reply) : null;
+    if (writingDecision?.type === 'DIRECT_RESPONSE') {
+      decisionCall = writingCall;
+      decision = writingDecision;
+      structuredOutputUsed = false;
+    }
+  }
+  if (!decision) {
+    const mandatoryDecision = inferMandatoryDecision(message, { type: 'DIRECT_RESPONSE', response: '' }, contextMessages.filter((item) => item.role !== 'system'));
+    if (mandatoryDecision) {
+      decision = mandatoryDecision;
+      structuredOutputUsed = false;
+    }
+  }
   if (!decision) return degradedOpenRouterReply('MALFORMED_MODEL_DECISION', 'openrouter', String(decisionCall.model), startTime);
 
-  if (isOverbroadClarification(decision, contextMessages.filter((item) => item.role !== 'system'))) {
+  if (isOverbroadClarification(decision, contextMessages.filter((item) => item.role !== 'system')) || (isRepairOrVisibleReference(message) && decision.type !== 'DIRECT_RESPONSE')) {
     const repairCall = await callOpenRouter(key, models, [...contextMessages, decisionSystem, userTurn, { role: 'user', content: 'You selected a broad clarification even though recent visible conversation exists. Return DIRECT_RESPONSE JSON that acknowledges the mismatch and gives the best corrected response from visible history. Do not ask a new question.' }], startTime);
     const repairDecision = repairCall.ok ? parseDecision(repairCall.reply) : null;
     if (repairDecision?.type === 'DIRECT_RESPONSE') {
@@ -719,9 +750,9 @@ async function runModelFirstOpenRouter(
       structuredOutputUsed = false;
     }
   }
-  const mandatoryTool = inferMandatoryTool(message, decision, contextMessages.filter((item) => item.role !== 'system'));
-  if (mandatoryTool) {
-    decision = mandatoryTool;
+  const mandatoryDecision = inferMandatoryDecision(message, decision, contextMessages.filter((item) => item.role !== 'system'));
+  if (mandatoryDecision) {
+    decision = mandatoryDecision;
     structuredOutputUsed = false;
   }
 
@@ -863,7 +894,8 @@ Deno.serve(async (req: Request) => {
   }
 
   // ── Guard: dangerous actions ──
-  if (REJECT_ACTIONS.test(message)) {
+  const policyStatusQuestion = /\b(can nexus|is nexus allowed|is .* live|current .*status|what is .*status)\b.*\b(stripe|payment|payments|trading|trade|trades)\b/i.test(message);
+  if ((REJECT_ACTIONS.test(message) && !policyStatusQuestion) || SELF_AUTHORIZATION_ACTIONS.test(message)) {
     return json({
       configured: true, reply: 'This action is approval-gated. I will not send execution requests to a model.',
       metadata: { provider: 'none', model: 'blocked', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },

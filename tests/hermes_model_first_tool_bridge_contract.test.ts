@@ -39,6 +39,7 @@ describe('Hermes model-first Edge tool bridge contract', () => {
 
   it('keeps tool execution server-side and denies unsafe tool requests', () => {
     expect(edgeSource).toContain('validateToolRequest');
+    expect(edgeSource).toContain('inferMandatoryDecision');
     expect(edgeSource).toContain('UNKNOWN_TOOL');
     expect(edgeSource).toContain('INVALID_ARGUMENTS');
     expect(edgeSource).toContain('UNAUTHORIZED_ACTOR');
