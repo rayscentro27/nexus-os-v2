@@ -30,7 +30,7 @@ const MODEL_ALLOWLIST: Record<string, string[]> = {
   ollama: ['llama3.1', 'qwen2.5:0.5b', 'gemma3:1b'],
 };
 const REJECT_ACTIONS = /\b(send|email|publish|post|deploy|charge|trade|dispute|seed|sql|drop|truncate|delete|start\s+live|stop\s+live|turn\s+on\s+live|activate\s+live|place\s+live\s+trades?)\b/i;
-const SELF_AUTHORIZATION_ACTIONS = /\b(approve it yourself|approve yourself|self-approve|execute it now|run it now)\b/i;
+const SELF_AUTHORIZATION_ACTIONS = /\b(approve it yourself|approve yourself|self[- ]approve|execute it now|run it now)\b/i;
 
 // Stable, cached identity + business context. Keep this byte-stable to maximize prompt-cache hits;
 // bump HERMES_CONTEXT_VERSION to intentionally bust the cache after edits. Contains only
@@ -150,6 +150,25 @@ type HermesTurnDecision =
   | { type: 'TOOL_REQUEST'; toolName: string; arguments: Record<string, unknown>; reasonSummary: string }
   | { type: 'CLARIFICATION'; question: string; missingFields: string[] };
 
+type EvidenceObligation =
+  | {
+      required: false;
+      reason:
+        | 'GENERAL_CONVERSATION'
+        | 'GENERAL_KNOWLEDGE'
+        | 'WRITING'
+        | 'BRAINSTORMING'
+        | 'PERSONAL_CONVERSATION'
+        | 'NON_CURRENT_REASONING';
+    }
+  | {
+      required: true;
+      obligation: 'CURRENT_NEXUS_FACT' | 'PRIVATE_OPERATIONAL_FACT' | 'GOVERNED_DRAFT_ACTION';
+      allowedTools: string[];
+      missingFields?: string[];
+      reasonSummary: string;
+    };
+
 type ToolActionClass = 'READ_ONLY' | 'DRAFT_ONLY' | 'APPROVAL_REQUIRED';
 type ToolResult = {
   ok: boolean;
@@ -175,6 +194,23 @@ type ToolExecutionContext = {
   traceId: string;
   authorization: string;
 };
+type OpenRouterResult =
+  | {
+      ok: true;
+      reply: string;
+      toolCalls?: unknown[];
+      model: string;
+      fallbackUsed: boolean;
+      usage: unknown;
+      durationMs: number;
+    }
+  | {
+      ok: false;
+      errorCode: string;
+      model: string;
+      fallbackUsed: boolean;
+      durationMs: number;
+    };
 
 type CapabilityDecision =
   | { allowed: true; mode: 'READ_ONLY' | 'DRAFT_ONLY' }
@@ -316,7 +352,11 @@ const toolRegistry: Record<string, ToolDefinition> = {
     actionClass: 'READ_ONLY',
     execute: async (_ctx, args) => {
       const reportId = stringArg(args, 'reportId');
-      const report = REPORTS.find((item) => item.id === reportId || item.title.toLowerCase().includes(reportId.toLowerCase()));
+      const normalizedReportId = reportId.toLowerCase();
+      const report = REPORTS.find((item) => item.id === reportId || item.title.toLowerCase().includes(normalizedReportId))
+        || (/\bmodel\b/.test(normalizedReportId) && /\bfirst\b/.test(normalizedReportId) ? REPORTS.find((item) => item.id === 'nexus_3_hermes_model_first_status') : undefined)
+        || (/\bdepartment\b/.test(normalizedReportId) ? REPORTS.find((item) => item.id === 'nexus_3_department_operations_status') : undefined)
+        || (/\bcapabilit/.test(normalizedReportId) ? REPORTS.find((item) => item.id === 'nexus_3_capability_registry') : undefined);
       if (!report) return { ok: false, toolName: 'summarize_report', errorCode: 'INVALID_ARGUMENTS', evidenceSources: ['sanitized_report_registry'], freshness: 'UNKNOWN' };
       return toolResult('summarize_report', { id: report.id, title: report.title, category: report.category, summary: report.summary, source: report.source, freshness: report.freshness }, [report.source], report.freshness);
     },
@@ -480,6 +520,20 @@ function openRouterTools() {
   }));
 }
 
+function openRouterToolsFor(names: string[]) {
+  const allowed = new Set(names);
+  return Object.values(toolRegistry)
+    .filter((tool) => allowed.has(tool.name))
+    .map((tool) => ({
+      type: 'function',
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.inputSchema,
+      },
+    }));
+}
+
 function parseToolArgs(value: unknown): Record<string, unknown> {
   if (!value) return {};
   if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
@@ -490,6 +544,50 @@ function parseToolArgs(value: unknown): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function evidenceObligation(message: string, history: ChatMessage[]): EvidenceObligation {
+  const text = message.toLowerCase();
+  const recent = history.map((item) => item.content).join('\n').toLowerCase().slice(-1800);
+  const combined = `${text}\n${recent}`;
+  const writing = /\b(rewrite|write|draft (a )?(message|headline|copy|prompt|note|apology)|create (a )?prompt|make this (clearer|professional|concise)|brainstorm|give me .*ideas|give me .*concepts|help me think|what do you think|strategy|hypothetical|possible|discuss|plan\b(?!.*draft))/i.test(message);
+  const asksCurrentClientEvidence = /\b(clients?|customers?|client records|customer records|real or synthetic|test records|paying clients)\b/i.test(message)
+    && /\b(how many|count|current|do we have|real|synthetic|test|records|paying|aggregate)\b/i.test(message);
+  if (/\b(do not|don't)\s+(create|draft|schedule|make|execute)\b/i.test(message)) return { required: false, reason: 'NON_CURRENT_REASONING' };
+  if (/\b(summarize what i just asked|summarize what i asked|what i just asked you|what did i just ask)\b/i.test(message)) {
+    return { required: false, reason: 'GENERAL_CONVERSATION' };
+  }
+  if (writing && !asksCurrentClientEvidence && !/\b(current|running|deployed|reports?|approvals?|system health|stripe|trading|revenue|repo intelligence|department|where did|evidence|source|schedule draft|task draft|ray review draft)\b/i.test(message)) {
+    return { required: false, reason: 'WRITING' };
+  }
+  if (/\b(approve it yourself|approve yourself|self-approve|execute it now|run it now)\b/i.test(message)) {
+    return { required: false, reason: 'NON_CURRENT_REASONING' };
+  }
+  if (/\b(task draft|create a task|draft a task|create the task|task for)\b/i.test(message)) return { required: true, obligation: 'GOVERNED_DRAFT_ACTION', allowedTools: ['draft_task'], reasonSummary: 'explicit governed task draft requested' };
+  if (/\b(ray review draft|ray review request|prepare a ray review|create .*ray review)\b/i.test(message)) return { required: true, obligation: 'GOVERNED_DRAFT_ACTION', allowedTools: ['draft_ray_review'], reasonSummary: 'explicit Ray Review draft requested' };
+  const schedulingContext = /\bschedule|schedul|schedule draft\b/i.test(combined);
+  const scheduleReportOnly = schedulingContext && /\b(system health|health report|report)\b/i.test(message) && !/\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(message);
+  if (scheduleReportOnly) return { required: true, obligation: 'GOVERNED_DRAFT_ACTION', allowedTools: ['draft_schedule'], missingFields: ['requestedTime'], reasonSummary: 'schedule draft report selected; exact time still required' };
+  if (/\b(schedule|schedul|4 pm|4 p\.m\.|use .*phoenix)\b/i.test(message) && /\b(create|draft now|create .*draft|schedule .*for|\b4\s*(pm|p\.m\.)|use .*phoenix)\b/i.test(message)) {
+    const hasReport = /\b(system health|health report|report)\b/i.test(combined);
+    const hasTime = /\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(combined);
+    return { required: true, obligation: 'GOVERNED_DRAFT_ACTION', allowedTools: ['draft_schedule'], missingFields: [!hasReport && 'report', !hasTime && 'requestedTime'].filter(Boolean) as string[], reasonSummary: 'explicit schedule draft requested or schedule details completed' };
+  }
+  if (/\bwhat\s+(time|date|day)\b|\bcurrent (time|date)|phoenix time|arizona time\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_current_time'], reasonSummary: 'current clock evidence required' };
+  if (/\b(who created you|how old are you|how long have you existed|your role|allowed to do|your permissions|are you .*ai|are you .*human)\b/i.test(message)) return { required: true, obligation: 'PRIVATE_OPERATIONAL_FACT', allowedTools: ['get_hermes_identity'], reasonSummary: 'Hermes identity evidence required' };
+  if (/\b(version|deployed commit|running build|what.*running|deploy.*build|deployed.*build|current build)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_nexus_version'], reasonSummary: 'deployment/version evidence required' };
+  if (asksCurrentClientEvidence || /\b(client records|customer records|real or synthetic|test records|paying clients)\b/i.test(message)) return { required: true, obligation: 'PRIVATE_OPERATIONAL_FACT', allowedTools: ['get_client_aggregate'], reasonSummary: 'client aggregate evidence required' };
+  if (/\b(what reports|reports available|list reports|report list)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['list_reports'], reasonSummary: 'report catalog evidence required' };
+  const recentReportList = /\breports?\b/.test(recent) && /\b(second|third|latest|newest|created|summarize|tell me more|that report|this report)\b/.test(combined);
+  if (recentReportList || /\b(second report|that report|summarize.*report|tell me about.*report|how current.*report|reports? support|supporting reports?|model first report)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['summarize_report'], reasonSummary: 'specific report summary evidence required' };
+  if (/\b(approvals?|pending decisions|ray approval|needs my approval)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_approval_summary'], reasonSummary: 'approval evidence required' };
+  if (/\b(system health|stripe|trading|live trades?|blocked by policy|live payments)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_system_health'], reasonSummary: 'system/policy status evidence required' };
+  if (/\b(revenue|money today|make money|actual vs projected|projected revenue)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_revenue_status'], reasonSummary: 'revenue status evidence required' };
+  if (/\b(repo intelligence|repo intel|repository intelligence)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_repo_intelligence_status'], reasonSummary: 'Repo Intelligence status evidence required' };
+  if (/\b(engineering|department|operations|credit and funding|knowledge|research working|department queues)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_department_status'], reasonSummary: 'department status evidence required' };
+  if (/\b(where did|where.*come from|source|evidence|supports your|supports the|provenance|fact or recommendation|live data|report-backed)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_answer_provenance'], reasonSummary: 'answer provenance evidence required' };
+  if (/\b(project status|what did we finish|next major phase|did we build|alpha.*access|alpha.*supabase)\b/i.test(message)) return { required: true, obligation: 'CURRENT_NEXUS_FACT', allowedTools: ['get_project_status'], reasonSummary: 'project/policy status evidence required' };
+  return { required: false, reason: /\b(what is|explain|define|how does)\b/i.test(message) ? 'GENERAL_KNOWLEDGE' : 'GENERAL_CONVERSATION' };
 }
 
 function parseDecision(content: unknown): HermesTurnDecision | null {
@@ -573,7 +671,7 @@ function inferMandatoryDecision(message: string, decision: HermesTurnDecision, h
   const recent = history.map((item) => item.content).join('\n').slice(-1200);
   const draftSummary = `${message}\n\nRecent context:\n${recent}`.slice(0, 900);
   if (/\b(do not|don't)\s+(schedule|create|draft|make)\b/.test(text)) return { type: 'DIRECT_RESPONSE', response: "Understood. I won't create or schedule anything yet; we can keep this in planning." };
-  if (/\b(approve it yourself|approve yourself|self-approve|execute it now|run it now)\b/.test(text)) return { type: 'DIRECT_RESPONSE', response: "I can't approve or execute that myself. Ray approval and the governed capability path are required before execution." };
+  if (/\b(approve it yourself|approve yourself|self[- ]approve|execute it now|run it now)\b/.test(text)) return { type: 'DIRECT_RESPONSE', response: "I can't approve or execute that myself. Ray approval and the governed capability path are required before execution." };
   if (/\bwhat\s+(time|date|day)\b|\b(time is it|date is it|day is it|clock says|current time|current date)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_current_time', arguments: /phoenix|arizona/.test(text) ? { timezone: 'America/Phoenix' } : {}, reasonSummary: 'current date/time requires the system clock' };
   if (/\b(who created you|created you|your creator|how long have you|how old are you|what are you allowed|what can you do|person or an ai|are you .*ai|your role|your permissions)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_hermes_identity', arguments: {}, reasonSummary: 'Hermes identity evidence requested' };
   if (/\b(client|clients|customer|customers|real or synthetic|test records|paying clients)\b/.test(text) && /\b(paying|count|aggregate|prove|real|synthetic|test|records|customers|clients)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_client_aggregate', arguments: {}, reasonSummary: 'client aggregate evidence requested' };
@@ -581,7 +679,7 @@ function inferMandatoryDecision(message: string, decision: HermesTurnDecision, h
   if (/\b(client|clients|customer|customers|real or synthetic|test records)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_client_aggregate', arguments: {}, reasonSummary: 'client aggregate evidence requested' };
   if (/\b(approval|approvals|ray review|approve)\b/.test(text) && /\b(create|prepare|draft|request)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_ray_review', arguments: { title: 'Ray Review draft from Hermes conversation', summary: draftSummary, riskClass: 'MEDIUM' }, reasonSummary: 'explicit Ray Review draft requested' };
   if (/\b(approval|approvals|pending decisions|needs my approval)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'get_approval_summary', arguments: {}, reasonSummary: 'approval summary requested' };
-  if (/\b(task draft|create the task|create a task|draft task|now create)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_task', arguments: { title: 'Hermes governed task draft', summary: draftSummary, riskClass: 'MEDIUM' }, reasonSummary: 'explicit task draft requested' };
+  if (/\b(task draft|create the task|create a task|draft a task|draft task|now create|turn .* into a task draft)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_task', arguments: { title: 'Hermes governed task draft', summary: draftSummary, riskClass: 'MEDIUM' }, reasonSummary: 'explicit task draft requested' };
   if (/\b(schedule|schedul)\b/.test(text) && /\b(draft now|create .*draft|another identical)\b/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_schedule', arguments: { reportName: /system health|health/.test(text + recent.toLowerCase()) ? 'system health report' : 'report', requestedDate: 'today', requestedTime: /4\s*(pm|p\.m\.)/.test(text + recent.toLowerCase()) ? '4 PM' : 'specified time', timezone: 'America/Phoenix' }, reasonSummary: 'schedule draft requested' };
   if (/\b(schedule|schedul)\b/.test(text) && !/(\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b)/.test(text)) return { type: 'CLARIFICATION', question: 'Which report should I schedule, and what exact time should I use?', missingFields: ['report', 'requestedTime'] };
   if (/\b(schedule|schedul|4 pm|4 p\.m\.)\b/.test(text) && /(\b\d{1,2}\s*(am|pm|a\.m\.|p\.m\.)\b)/.test(text)) return { type: 'TOOL_REQUEST', toolName: 'draft_schedule', arguments: { reportName: /system health|health/.test(text) ? 'system health report' : 'report', requestedDate: 'today', requestedTime: /4\s*(pm|p\.m\.)/.test(text) ? '4 PM' : 'specified time', timezone: 'America/Phoenix' }, reasonSummary: 'schedule draft requested' };
@@ -607,6 +705,82 @@ async function executeToolRequest(decision: Extract<HermesTurnDecision, { type: 
     evidenceSources: [decision.toolName],
     freshness: 'UNKNOWN',
   }));
+}
+
+async function runMandatoryToolFallback(
+  key: string,
+  models: string[],
+  messages: ChatMessage[],
+  message: string,
+  history: ChatMessage[],
+  obligation: Extract<EvidenceObligation, { required: true }>,
+  firstCall: Extract<OpenRouterResult, { ok: true }>,
+  correctionCall: Extract<OpenRouterResult, { ok: true }>,
+  toolCtx: ToolExecutionContext,
+  startTime: number,
+  trace: string,
+) {
+  const inferred = inferMandatoryDecision(message, { type: 'DIRECT_RESPONSE', response: correctionCall.reply || firstCall.reply || '' }, history);
+  if (!inferred) return null;
+  if (inferred.type === 'CLARIFICATION') {
+    return json({
+      configured: true,
+      reply: inferred.question,
+      metadata: {
+        provider: 'openrouter',
+        model: correctionCall.model,
+        fallbackUsed: firstCall.fallbackUsed || correctionCall.fallbackUsed,
+        traceId: trace,
+        decisionType: 'CLARIFICATION',
+        source: 'GENERAL_MODEL',
+        evidenceObligation: obligation,
+        toolRequested: false,
+        toolExecuted: false,
+        modelRounds: 2,
+        durationMs: Date.now() - startTime,
+      },
+    });
+  }
+  if (inferred.type !== 'TOOL_REQUEST' || !obligation.allowedTools.includes(inferred.toolName)) return null;
+  const capabilityDecision = validateToolRequest(inferred, toolCtx);
+  const toolResultData = capabilityDecision.allowed
+    ? await executeToolRequest(inferred, toolCtx)
+    : { ok: false, toolName: inferred.toolName, errorCode: capabilityDecision.reasonCode, evidenceSources: ['capability_os_gateway'], freshness: 'CURRENT' };
+  const finalMessages: ChatMessage[] = [
+    ...messages,
+    { role: 'assistant', content: correctionCall.reply || firstCall.reply || '' },
+    {
+      role: 'system',
+      content: [
+        'A mandatory governed Nexus tool was executed by the server evidence gate because current Nexus evidence or a governed draft was required.',
+        'Write the final answer naturally from this authorized result. State uncertainty and data state honestly. Do not claim external execution for draft tools.',
+        JSON.stringify({ requestedTool: inferred.toolName, capabilityDecision, toolResult: toolResultData }).slice(0, 5000),
+      ].join('\n'),
+    },
+  ];
+  const finalCall = await callOpenRouterNative(key, models, finalMessages, startTime);
+  if (!finalCall.ok) return degradedOpenRouterReply(String(finalCall.errorCode), 'openrouter', String(finalCall.model), startTime);
+  return json({
+    configured: true,
+    reply: finalCall.reply,
+    metadata: {
+      provider: 'openrouter',
+      model: finalCall.model,
+      fallbackUsed: firstCall.fallbackUsed || correctionCall.fallbackUsed || finalCall.fallbackUsed,
+      traceId: trace,
+      decisionType: 'TOOL_REQUEST',
+      toolRequested: inferred.toolName,
+      toolAllowed: capabilityDecision.allowed,
+      toolExecuted: Boolean(capabilityDecision.allowed && toolResultData.ok),
+      toolErrorCode: toolResultData.ok ? undefined : toolResultData.errorCode,
+      source: capabilityDecision.allowed ? 'NEXUS_TOOL' : 'SAFE_LEGACY_FALLBACK',
+      evidenceObligation: obligation,
+      modelRounds: 3,
+      ...usageMetadata(finalCall.usage as Record<string, unknown> | null, message, finalCall.reply),
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      durationMs: Date.now() - startTime,
+    },
+  });
 }
 
 async function callOpenRouter(
@@ -753,10 +927,77 @@ async function runConversationalOpenRouter(
     ].join('\n'),
   };
   const messages = [baseMessages[0], conversationSystem, ...baseMessages.slice(1)];
-  const firstCall = await callOpenRouterNative(key, models, messages, startTime, openRouterTools());
+  const initialObligation = evidenceObligation(message, baseMessages);
+  const initialTools = initialObligation.required ? openRouterToolsFor(initialObligation.allowedTools) : [];
+  let firstCall = await callOpenRouterNative(key, models, messages, startTime, initialTools);
   if (!firstCall.ok) return degradedOpenRouterReply(String(firstCall.errorCode), 'openrouter', String(firstCall.model), startTime);
-  const toolCalls = Array.isArray(firstCall.toolCalls) ? firstCall.toolCalls : [];
+  let toolCalls = Array.isArray(firstCall.toolCalls) ? firstCall.toolCalls : [];
   if (!toolCalls.length) {
+    const obligation = initialObligation;
+    if (obligation.required) {
+      const correctionSystem: ChatMessage = {
+        role: 'system',
+        content: [
+          '[EVIDENCE OBLIGATION]',
+          'The proposed answer requires current Nexus evidence or a governed draft tool.',
+          `Obligation: ${obligation.obligation}`,
+          `Allowed tools: ${obligation.allowedTools.join(', ')}`,
+          obligation.missingFields?.length ? `Missing fields if clarification is needed: ${obligation.missingFields.join(', ')}` : '',
+          `Reason: ${obligation.reasonSummary}`,
+          'Use one of the supplied governed tools. If essential arguments are missing, ask a concise natural clarification question. Do not answer from general context.',
+        ].filter(Boolean).join('\n'),
+      };
+      const correctionCall = await callOpenRouterNative(key, models, [...messages, { role: 'assistant', content: firstCall.reply || '' }, correctionSystem], startTime, openRouterToolsFor(obligation.allowedTools));
+      if (!correctionCall.ok) return degradedOpenRouterReply(String(correctionCall.errorCode), 'openrouter', String(correctionCall.model), startTime);
+      const correctionToolCalls = Array.isArray(correctionCall.toolCalls) ? correctionCall.toolCalls : [];
+      if (!correctionToolCalls.length) {
+        const mandatoryFallback = await runMandatoryToolFallback(key, models, messages, message, baseMessages, obligation, firstCall, correctionCall, toolCtx, startTime, tid);
+        if (mandatoryFallback) return mandatoryFallback;
+        if (obligation.missingFields?.length && correctionCall.reply) {
+          return json({
+            configured: true,
+            reply: correctionCall.reply,
+            metadata: {
+              provider: 'openrouter',
+              model: correctionCall.model,
+              fallbackUsed: firstCall.fallbackUsed || correctionCall.fallbackUsed,
+              traceId: tid,
+              decisionType: 'CLARIFICATION',
+              source: 'GENERAL_MODEL',
+              evidenceObligation: obligation,
+              conversationHistorySent: baseMessages.some((item) => item.role === 'assistant' || item.role === 'user') && baseMessages.length > 2,
+              historyTurnCount: baseMessages.filter((item) => item.role === 'assistant' || item.role === 'user').length - 1,
+              toolRequested: false,
+              toolExecuted: false,
+              modelRounds: 2,
+              ...usageMetadata(correctionCall.usage as Record<string, unknown> | null, message, correctionCall.reply),
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+              durationMs: Date.now() - startTime,
+            },
+          });
+        }
+        return json({
+          configured: true,
+          reply: 'I need to retrieve the current Nexus record before answering that reliably, but I could not complete the governed lookup.',
+          metadata: {
+            provider: 'openrouter',
+            model: correctionCall.model,
+            fallbackUsed: firstCall.fallbackUsed || correctionCall.fallbackUsed,
+            traceId: tid,
+            decisionType: 'DEGRADED',
+            source: 'SAFE_LEGACY_FALLBACK',
+            errorCode: 'UNSUPPORTED_ANSWER_REQUIRES_EVIDENCE',
+            evidenceObligation: obligation,
+            toolRequested: false,
+            toolExecuted: false,
+            modelRounds: 2,
+            durationMs: Date.now() - startTime,
+          },
+        });
+      }
+      firstCall = correctionCall;
+      toolCalls = correctionToolCalls;
+    } else {
     return json({
       configured: true,
       reply: firstCall.reply,
@@ -777,6 +1018,7 @@ async function runConversationalOpenRouter(
         durationMs: Date.now() - startTime,
       },
     });
+    }
   }
 
   const toolCall = toolCalls[0] as Record<string, unknown>;
@@ -1086,7 +1328,8 @@ Deno.serve(async (req: Request) => {
 
   // ── Guard: dangerous actions ──
   const policyStatusQuestion = /\b(can nexus|is nexus allowed|is .* live|current .*status|what is .*status)\b.*\b(stripe|payment|payments|trading|trade|trades)\b/i.test(message);
-  if ((REJECT_ACTIONS.test(message) && !policyStatusQuestion) || SELF_AUTHORIZATION_ACTIONS.test(message)) {
+  const deploymentStatusQuestion = /\b(what|which|is|was|did|has|current|running)\b.*\b(deployed|deployment|deploy commit|build|version)\b/i.test(message);
+  if ((REJECT_ACTIONS.test(message) && !policyStatusQuestion && !deploymentStatusQuestion) || SELF_AUTHORIZATION_ACTIONS.test(message)) {
     return json({
       configured: true, reply: 'This action is approval-gated. I will not send execution requests to a model.',
       metadata: { provider: 'none', model: 'blocked', fallbackUsed: false, source: 'hermes-chat', durationMs: Date.now() - startTime },
