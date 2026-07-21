@@ -529,6 +529,12 @@ function validateToolRequest(decision: HermesTurnDecision, ctx: ToolExecutionCon
   return { allowed: true, mode: tool.actionClass === 'DRAFT_ONLY' ? 'DRAFT_ONLY' : 'READ_ONLY' };
 }
 
+function isOverbroadClarification(decision: HermesTurnDecision, history: ChatMessage[]): boolean {
+  if (decision.type !== 'CLARIFICATION' || history.length === 0) return false;
+  const question = decision.question.toLowerCase();
+  return /what specific (aspect|aspects|details)|please clarify what you meant|what .* did i misunderstand/.test(question);
+}
+
 async function executeToolRequest(decision: Extract<HermesTurnDecision, { type: 'TOOL_REQUEST' }>, ctx: ToolExecutionContext): Promise<ToolResult> {
   const tool = toolRegistry[decision.toolName];
   return await tool.execute(ctx, decision.arguments).catch((error) => ({
@@ -629,8 +635,12 @@ async function runModelFirstOpenRouter(
       'Valid tool request shape: {"type":"TOOL_REQUEST","toolName":"get_current_time","arguments":{},"reasonSummary":"current time requested"}',
       'Valid clarification shape: {"type":"CLARIFICATION","question":"...","missingFields":["..."]}',
       'Use DIRECT_RESPONSE for ordinary conversation, definitions, personal statements, planning, writing, identity, and repair.',
+      'Use DIRECT_RESPONSE for broad brainstorming, requested lists, strategy discussion, conversational repair, and references to the visible conversation even when the topic is broad.',
+      'If Ray asks for ideas, options, priorities, a comparison, a correction, or help thinking it through, provide a useful first-pass answer instead of asking what kind.',
+      'For correction or repair messages like "that is not what I meant", "you misunderstood me", or "why did you answer that way", do not ask a broad clarification; acknowledge the mismatch, use the latest visible turns, and give the best corrected interpretation.',
+      'For "help me think through a decision" when no details are provided, give a concise decision framework and invite Ray to plug in the options inside the same direct answer.',
       'Use TOOL_REQUEST only for current Nexus facts, authorized records, report summaries, aggregates, governed drafts, or scheduling drafts.',
-      'Use CLARIFICATION only when essential details are missing.',
+      'Use CLARIFICATION only when essential details are missing and no useful safe first-pass answer can be given.',
       'Never expose hidden reasoning. reasonSummary is a short operational explanation.',
       `Approved tools: ${JSON.stringify(visibleToolList())}`,
     ].join('\n'),
@@ -660,6 +670,16 @@ async function runModelFirstOpenRouter(
   }
   if (!decisionCall.ok) return degradedOpenRouterReply(String(decisionCall.errorCode), 'openrouter', String(decisionCall.model), startTime);
   if (!decision) return degradedOpenRouterReply('MALFORMED_MODEL_DECISION', 'openrouter', String(decisionCall.model), startTime);
+
+  if (isOverbroadClarification(decision, contextMessages.filter((item) => item.role !== 'system'))) {
+    const repairCall = await callOpenRouter(key, models, [...contextMessages, decisionSystem, userTurn, { role: 'user', content: 'You selected a broad clarification even though recent visible conversation exists. Return DIRECT_RESPONSE JSON that acknowledges the mismatch and gives the best corrected response from visible history. Do not ask a new question.' }], startTime);
+    const repairDecision = repairCall.ok ? parseDecision(repairCall.reply) : null;
+    if (repairDecision?.type === 'DIRECT_RESPONSE') {
+      decisionCall = repairCall;
+      decision = repairDecision;
+      structuredOutputUsed = false;
+    }
+  }
 
   if (decision.type === 'DIRECT_RESPONSE') {
     return json({
