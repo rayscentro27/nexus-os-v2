@@ -48,8 +48,9 @@ function buildContext(input: HermesModelFirstInput): HermesContext {
   ].filter(Boolean).join('\n');
   return {
     facts,
+    conversationId: safeText(input.sessionId, 120),
     history: (input.recentHistory || []).slice(-10),
-  };
+  } as HermesContext & { conversationId?: string };
 }
 
 function responseFromProvider(provider: ProviderResult, text: string): Partial<HermesWorkroomResponse> {

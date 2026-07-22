@@ -30,6 +30,7 @@ describe('Hermes existing OpenRouter model-first controller', () => {
     const result = await runHermesModelFirstConversation({
       message: 'What is a velocipede?',
       actorRole: 'admin',
+      sessionId: 'hermes-session-test-123',
       recentHistory: [{ role: 'user', content: 'good morning' }],
     });
 
@@ -37,6 +38,7 @@ describe('Hermes existing OpenRouter model-first controller', () => {
     expect(mockedHermesChat).toHaveBeenCalledTimes(1);
     expect(mockedHermesChat.mock.calls[0][0]).toBe('What is a velocipede?');
     expect(mockedHermesChat.mock.calls[0][1]).toBe('model_first_conversation');
+    expect(mockedHermesChat.mock.calls[0][2]).toMatchObject({ conversationId: 'hermes-session-test-123' });
     expect(result.response?.responseStrategy).toBe('APPROVED_MODEL_DIRECT');
     expect(result.response?.contextUsed).toContain('provider:openrouter');
     expect(result.response?.contextUsed).toContain('model:openai/gpt-4o-mini');
