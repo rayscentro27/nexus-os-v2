@@ -62,6 +62,7 @@ export interface HermesContext {
   facts?: string;       // safe counts snapshot
   report?: string;      // compact safe report summary
   taskStatus?: string;  // redacted latest task status
+  conversationId?: string;
   pendingAction?: HermesPendingActionContext;
   history?: HermesHistoryTurn[];
 }
@@ -74,6 +75,7 @@ function sanitizeContext(ctx?: HermesContext): HermesContext | undefined {
     const v = ctx[k];
     if (v && !containsSensitive(v)) out[k] = v;
   }
+  if (ctx.conversationId && !containsSensitive(ctx.conversationId)) out.conversationId = ctx.conversationId.slice(0, 120);
   if (ctx.pendingAction) {
     const summary = String(ctx.pendingAction.safe_summary || '').slice(0, 600);
     const title = String(ctx.pendingAction.title || '').slice(0, 120);

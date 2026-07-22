@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 const edge = readFileSync('supabase/functions/hermes-chat/index.ts', 'utf8');
+const provider = readFileSync('src/lib/hermesProviders.ts', 'utf8');
 
 describe('Hermes hard workflow state machine boundary', () => {
   it('loads server-owned conversation state before model-first routing', () => {
@@ -42,6 +43,8 @@ describe('Hermes hard workflow state machine boundary', () => {
     expect(edge).toContain("const rawContext = safeObject(body?.context)");
     expect(edge).toContain("conversationId = String(body?.conversationId || rawContext.conversationId || 'default')");
     expect(edge).toContain('loadHermesState(userId, conversationId)');
+    expect(provider).toContain('conversationId?: string');
+    expect(provider).toContain('out.conversationId = ctx.conversationId.slice(0, 120)');
     expect(edge).not.toContain('body?.pendingAction');
     expect(edge).not.toContain('body?.referenceState');
   });
