@@ -20,7 +20,7 @@ describe('Alpha workspace UI', () => {
       'No Supabase',
       'No client data',
       'alpha-sticky-composer',
-      "position:'sticky'",
+      "gridTemplateRows:'auto minmax(0,1fr) auto'",
     ]) expect(s).toContain(x);
     expect(s).not.toMatch(/import .*hermes\/nexus/i);
   });
@@ -45,9 +45,11 @@ describe('Alpha workspace UI', () => {
       'Actual: {actualProvider}',
       'data-testid="alpha-conversation-panel"',
       'data-testid="alpha-composer"',
-      'data-testid="alpha-message-input"',
-      'data-testid="alpha-send-button"',
-      'minHeight:86',
+      'data-testid="alpha-transcript"',
+      'data-testid="alpha-composer-input"',
+      'data-testid="alpha-composer-send"',
+      'minHeight:84',
+      'Composer: mounted',
     ]) expect(s).toContain(x);
   });
 
