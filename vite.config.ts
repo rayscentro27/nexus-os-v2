@@ -11,6 +11,32 @@ const buildMetadata = {
   VITE_BUILD_TIMESTAMP: process.env.VITE_BUILD_TIMESTAMP || new Date().toISOString(),
 };
 
+const alphaSystemPrompt = [
+  'You are Hermes Alpha, Ray Davis’s independent strategy, research, and creative-thinking partner.',
+  'You provide outside perspective, challenge assumptions, generate ideas, write, reason, and analyze public information when supplied.',
+  'You have no Supabase access, no service-role access, no client PII, no client documents, and no live Nexus internal data.',
+  'Do not claim knowledge of live Nexus internal facts. If Ray asks for internal client counts, approvals, system state, or Supabase facts, say you do not have that access and offer strategy based on a safe summary Ray provides.',
+  'Do not execute external actions, publish, trade, apply, send, or approve. Conversation is not execution.',
+  'Use recent visible conversation first for references such as number two, that option, the previous list, or what you just said.',
+  'Safe static context: Ray is building Nexus OS for GoClear/Apex. Nexus supports credit and funding readiness, business setup, client workflows, internal operations, research, content, and opportunity discovery. The primary offer includes a Credit and Funding Readiness Review. Nexus Hermes is the internal Supabase-connected operational advisor. Hermes Alpha is intentionally separate and cannot access Supabase or client data.',
+].join('\n');
+
+function safeAlphaHistory(raw: any) {
+  if (!Array.isArray(raw)) return [];
+  let total = 0;
+  const out: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  for (const item of raw.slice(-12)) {
+    const role = item?.role === 'assistant' ? 'assistant' : 'user';
+    const content = String(item?.content || '').replace(/\s+/g, ' ').trim().slice(0, 900);
+    if (!content) continue;
+    if (/ssn|social security|password|service role|credit report|bank account/i.test(content)) continue;
+    if (total + content.length > 8000) break;
+    out.push({ role, content });
+    total += content.length;
+  }
+  return out;
+}
+
 function nexusLocalBridges() {
   return {
     name: 'nexus-local-static-and-alpha-bridge',
@@ -161,13 +187,14 @@ function nexusLocalBridges() {
             .sort((a: string, b: string) => Number(b.startsWith('gemma3:1b')) - Number(a.startsWith('gemma3:1b')));
         } catch {}
 
+        const hostedProvider = process.env.OPENROUTER_API_KEY ? 'openrouter' : process.env.GROQ_API_KEY ? 'groq' : 'deterministic_local';
         const status = {
-          activeProvider: 'deterministic_local',
+          activeProvider: hostedProvider,
           providers: {
             deterministic_local: { available: true, reason: 'Always-available local fallback' },
             ollama_local: { available: ollama, reason: ollama ? 'Local Ollama is reachable' : 'Local Ollama is not reachable', models },
-            groq: { available: false, reason: 'Hosted provider requires the deployed Netlify bridge' },
-            openrouter: { available: false, reason: 'Hosted provider requires the deployed Netlify bridge' },
+            groq: { available: Boolean(process.env.GROQ_API_KEY), reason: process.env.GROQ_API_KEY ? 'Server credential present in local dev bridge' : 'Missing server-side Groq credential' },
+            openrouter: { available: Boolean(process.env.OPENROUTER_API_KEY), reason: process.env.OPENROUTER_API_KEY ? 'Server credential present in local dev bridge' : 'Missing server-side OpenRouter credential' },
           },
           liveWeb: Boolean(process.env.ALPHA_SEARXNG_URL),
           webSearch: {
@@ -193,6 +220,65 @@ function nexusLocalBridges() {
         for await (const chunk of req) raw += chunk;
         let body: any = {};
         try { body = JSON.parse(raw); } catch {}
+
+        const provider = String(body.provider || hostedProvider);
+        if ((provider === 'openrouter' && process.env.OPENROUTER_API_KEY) || (provider === 'groq' && process.env.GROQ_API_KEY)) {
+          const prompt = String(body.prompt || '').slice(0, 12000);
+          if (!prompt) {
+            res.statusCode = 400;
+            res.end(JSON.stringify({ error: 'prompt_required' }));
+            return;
+          }
+
+          const history = safeAlphaHistory(body.history);
+          let url = '';
+          let model = '';
+          let headers: Record<string, string> = { 'content-type': 'application/json' };
+          if (provider === 'groq') {
+            url = 'https://api.groq.com/openai/v1/chat/completions';
+            model = process.env.ALPHA_GROQ_MODEL || 'llama-3.3-70b-versatile';
+            headers.authorization = `Bearer ${process.env.GROQ_API_KEY}`;
+          } else {
+            url = 'https://openrouter.ai/api/v1/chat/completions';
+            model = process.env.ALPHA_OPENROUTER_MODEL || process.env.HERMES_MODEL || 'openai/gpt-4o-mini';
+            headers.authorization = `Bearer ${process.env.OPENROUTER_API_KEY}`;
+            headers['HTTP-Referer'] = 'http://127.0.0.1';
+            headers['X-Title'] = 'Nexus Hermes Alpha Local';
+          }
+
+          try {
+            const reply = await fetch(url, {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ model, messages: [{ role: 'system', content: alphaSystemPrompt }, ...history, { role: 'user', content: prompt }], temperature: 0.7, max_tokens: 900 }),
+              signal: AbortSignal.timeout(60000),
+            });
+            const data: any = await reply.json();
+            if (!reply.ok) {
+              res.statusCode = 502;
+              res.end(JSON.stringify({ error: 'provider_request_failed', provider, statusCode: reply.status }));
+              return;
+            }
+            res.statusCode = 200;
+            res.end(JSON.stringify({
+              provider,
+              model,
+              text: data.choices?.[0]?.message?.content || '',
+              usage: { inputTokens: Number(data.usage?.prompt_tokens || 0), outputTokens: Number(data.usage?.completion_tokens || 0) },
+              estimatedSpendUsd: null,
+              externalCallPerformed: true,
+              noSupabaseUsed: true,
+              clientDataUsed: false,
+              historySent: history.length > 0,
+              historyTurnCount: history.length,
+            }));
+            return;
+          } catch {
+            res.statusCode = 502;
+            res.end(JSON.stringify({ error: 'provider_bridge_failed', provider }));
+            return;
+          }
+        }
 
         if (body.provider !== 'ollama_local' || !ollama) {
           res.statusCode = 503;
