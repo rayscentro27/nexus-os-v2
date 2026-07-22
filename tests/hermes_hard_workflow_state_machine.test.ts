@@ -32,6 +32,19 @@ describe('Hermes hard workflow state machine boundary', () => {
     expect(edge).not.toContain("openRouterTools(), startTime");
   });
 
+  it('normalizes real Ray schedule wording and does not trap later current-fact turns', () => {
+    expect(edge).toContain(String.raw`/\bsystem[-\s]+health\b/i.test(message)`);
+    expect(edge).toContain("state.status = missingScheduleFields(state).length ? 'collecting' : 'ready'");
+    expect(edge).toContain('const standaloneCurrentFactTools = currentFactTools(message)');
+    expect(edge).toContain('(subjectChange || standaloneCurrentFactTools) && !fieldCompletion');
+    expect(edge).toContain("return ['get_client_aggregate']");
+  });
+
+  it('treats daily Nexus priority questions as grounded project-status requests', () => {
+    expect(edge).toContain('what should (i|we) focus on today');
+    expect(edge).toContain("return ['get_project_status']");
+  });
+
   it('supports server-owned report search and exact report follow-ups', () => {
     expect(edge).toContain('search_reports');
     expect(edge).toContain("buildReferenceState('report_search'");

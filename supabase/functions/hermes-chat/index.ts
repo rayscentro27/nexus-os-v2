@@ -830,7 +830,7 @@ function normalizeScheduleTime(message: string): string | undefined {
 }
 
 function inferReportName(message: string): string | undefined {
-  if (/\bsystem health\b/i.test(message)) return 'System Health Report';
+  if (/\bsystem[-\s]+health\b/i.test(message)) return 'System Health Report';
   if (/\brevenue\b/i.test(message)) return 'Revenue Status Report';
   if (/\bmodel[- ]first|hermes\b/i.test(message) && /\breport\b/i.test(message)) return 'Hermes Model-First Report';
   return undefined;
@@ -838,7 +838,7 @@ function inferReportName(message: string): string | undefined {
 
 function newScheduleState(message: string): PendingScheduleState {
   const now = new Date().toISOString();
-  return {
+  const state: PendingScheduleState = {
     kind: 'schedule_report',
     reportName: inferReportName(message),
     date: /\btomorrow\b/i.test(message) ? 'tomorrow' : 'today',
@@ -852,6 +852,8 @@ function newScheduleState(message: string): PendingScheduleState {
     updatedAt: now,
     expiresAt: isoIn(120),
   };
+  state.status = missingScheduleFields(state).length ? 'collecting' : 'ready';
+  return state;
 }
 
 function missingScheduleFields(state: PendingScheduleState): string[] {
@@ -917,6 +919,7 @@ function currentFactTools(message: string): string[] | null {
   if (/\b(engineering|department|operations|credit and funding|knowledge|research working|department queues)\b/i.test(message)) return ['get_department_status'];
   if (/\b(where did|where.*come from|source|evidence|supports your|supports the|provenance|fact or recommendation|live data|report-backed)\b/i.test(message)) return ['get_answer_provenance'];
   if (/\b(project status|what did we finish|next major phase|did we build|alpha.*access|alpha.*supabase)\b/i.test(message)) return ['get_project_status'];
+  if (/\b(what should (i|we) focus on today|today'?s priorities|what needs (my|our) attention today|what should nexus handle first)\b/i.test(message)) return ['get_project_status'];
   return null;
 }
 
@@ -928,14 +931,14 @@ function resolveLane(message: string, state: HermesSessionState): HermesTurnLane
     return { lane: 'CANCELLED_WORKFLOW', remainingMessage: cancelMatch[3]?.trim() || undefined };
   }
   if (pending?.kind === 'schedule_report' && pending.status !== 'drafted' && pending.status !== 'cancelled') {
+    const standaloneCurrentFactTools = currentFactTools(message);
     const report = inferReportName(message);
     const time = normalizeScheduleTime(message);
     const fieldCompletion = Boolean(report || time || /\btomorrow\b|\btoday\b|\bphoenix|arizona\b/i.test(message) || /\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message) || /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message));
     const subjectChange = /\bwhat is|define|explain|tell me a joke|write|rewrite|prompt|brainstorm\b/i.test(message)
       && !/\breport|schedule|\d{1,2}(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(message);
-    if (subjectChange && !fieldCompletion) {
-      const tools = currentFactTools(message);
-      return tools ? { lane: 'CURRENT_FACT', allowedTools: tools } : { lane: 'GENERAL_CONVERSATION' };
+    if ((subjectChange || standaloneCurrentFactTools) && !fieldCompletion) {
+      return standaloneCurrentFactTools ? { lane: 'CURRENT_FACT', allowedTools: standaloneCurrentFactTools } : { lane: 'GENERAL_CONVERSATION' };
     }
     const next: PendingScheduleState = { ...pending, updatedAt: new Date().toISOString(), expiresAt: isoIn(120), version: pending.version + 1 };
     if (report) next.reportName = report;
