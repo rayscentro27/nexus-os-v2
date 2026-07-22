@@ -942,7 +942,9 @@ function resolveLane(message: string, state: HermesSessionState): HermesTurnLane
     if (/\btoday\b/i.test(message)) next.date = 'today';
     if (/\bphoenix|arizona\b/i.test(message)) next.timezone = 'America/Phoenix';
     if (/\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message)) next.creationBlocked = true;
-    const createRequested = /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message) && !next.creationBlocked;
+    const explicitCreate = /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message);
+    if (explicitCreate) next.creationBlocked = false;
+    const createRequested = explicitCreate && !next.creationBlocked;
     next.createRequested = createRequested;
     next.status = missingScheduleFields(next).length ? 'collecting' : 'ready';
     const allowedTools = createRequested && next.status === 'ready' ? ['draft_schedule'] : [];
@@ -1560,6 +1562,25 @@ async function runConversationalOpenRouter(
       tid,
       session,
       'CURRENT_FACT',
+    );
+  }
+
+  if (initialLane.lane === 'GENERAL_CONVERSATION' && session.state.pendingAction?.kind === 'schedule_report') {
+    return await runNoToolLaneResponse(
+      key,
+      models,
+      messages,
+      message,
+      [
+        '[GENERAL CONVERSATION DURING ACTIVE WORKFLOW]',
+        'Answer Ray’s unrelated question directly as normal assistant text.',
+        'Do not use Nexus tools and do not reinterpret the message as a schedule field.',
+        'Keep the active schedule workflow pending in server state.',
+      ].join('\n'),
+      baseMessages,
+      startTime,
+      tid,
+      'GENERAL_CONVERSATION',
     );
   }
 
