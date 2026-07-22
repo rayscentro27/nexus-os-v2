@@ -941,8 +941,9 @@ function resolveLane(message: string, state: HermesSessionState): HermesTurnLane
     if (/\btomorrow\b/i.test(message)) next.date = 'tomorrow';
     if (/\btoday\b/i.test(message)) next.date = 'today';
     if (/\bphoenix|arizona\b/i.test(message)) next.timezone = 'America/Phoenix';
-    if (/\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message)) next.creationBlocked = true;
-    const explicitCreate = /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message);
+    const creationDenied = /\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message);
+    if (creationDenied) next.creationBlocked = true;
+    const explicitCreate = !creationDenied && /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message);
     if (explicitCreate) next.creationBlocked = false;
     const createRequested = explicitCreate && !next.creationBlocked;
     next.createRequested = createRequested;
