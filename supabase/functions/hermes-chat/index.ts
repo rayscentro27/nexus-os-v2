@@ -901,6 +901,8 @@ function resolveReportReference(message: string, ref: HermesReferenceState | nul
 
 function currentFactTools(message: string): string[] | null {
   const text = message.toLowerCase();
+  if (/\b(task draft|create a task|draft a task|create the task|draft .*task|task for)\b/i.test(message)) return ['draft_task'];
+  if (/\b(ray review draft|ray review request|prepare a ray review|create .*ray review)\b/i.test(message)) return ['draft_ray_review'];
   if (/\bwhat\s+(time|date|day)\b|\bcurrent (time|date)|phoenix time|arizona time\b/i.test(message)) return ['get_current_time'];
   if (/\b(who created you|how old are you|how long have you existed|your role|allowed to do|your permissions|are you .*ai|are you .*human)\b/i.test(message)) return ['get_hermes_identity'];
   if (/\b(version|deployed commit|running build|what.*running|deploy.*build|deployed.*build|current build)\b/i.test(message)) return ['get_nexus_version'];
@@ -943,7 +945,7 @@ function resolveLane(message: string, state: HermesSessionState): HermesTurnLane
     if (/\bphoenix|arizona\b/i.test(message)) next.timezone = 'America/Phoenix';
     const creationDenied = /\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message);
     if (creationDenied) next.creationBlocked = true;
-    const explicitCreate = !creationDenied && /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message);
+    const explicitCreate = !creationDenied && /\b(create|draft)\b.*\b(schedule draft|draft|it|now)\b/i.test(message);
     if (explicitCreate) next.creationBlocked = false;
     const createRequested = explicitCreate && !next.creationBlocked;
     next.createRequested = createRequested;
@@ -951,7 +953,7 @@ function resolveLane(message: string, state: HermesSessionState): HermesTurnLane
     const allowedTools = createRequested && next.status === 'ready' ? ['draft_schedule'] : [];
     return { lane: 'SCHEDULE_WORKFLOW', allowedTools, workflowState: next, instruction: scheduleInstruction(next) };
   }
-  if (/\bschedule\b/i.test(message) && /\breport\b/i.test(message) && !/\bwhat is|how is|status\b/i.test(message)) {
+  if (/\bschedul\w*\b/i.test(message) && /\breport\b/i.test(message) && !/\bwhat is|how is|status\b/i.test(message)) {
     const workflowState = newScheduleState(message);
     return { lane: 'SCHEDULE_WORKFLOW', allowedTools: [], workflowState, instruction: scheduleInstruction(workflowState) };
   }
@@ -960,6 +962,25 @@ function resolveLane(message: string, state: HermesSessionState): HermesTurnLane
   const tools = currentFactTools(message);
   if (tools) return { lane: 'CURRENT_FACT', allowedTools: tools };
   return { lane: 'GENERAL_CONVERSATION' };
+}
+
+function defaultLaneToolArguments(toolName: string, message: string): Record<string, unknown> {
+  if (toolName === 'search_reports') return { query: message, limit: 10 };
+  if (toolName === 'draft_task') {
+    return {
+      title: 'Hermes governed task draft',
+      summary: message.slice(0, 900),
+      riskClass: 'MEDIUM',
+    };
+  }
+  if (toolName === 'draft_ray_review') {
+    return {
+      title: 'Ray Review draft from Hermes conversation',
+      summary: message.slice(0, 900),
+      riskClass: 'MEDIUM',
+    };
+  }
+  return {};
 }
 
 function inferMandatoryDecision(message: string, decision: HermesTurnDecision, history: ChatMessage[]): HermesTurnDecision | null {
@@ -1538,7 +1559,7 @@ async function runConversationalOpenRouter(
         models,
         factMessages,
         message,
-        { type: 'TOOL_REQUEST', toolName: fallbackTool, arguments: fallbackTool === 'search_reports' ? { query: message, limit: 10 } : {}, reasonSummary: 'current fact lane requires governed evidence' },
+        { type: 'TOOL_REQUEST', toolName: fallbackTool, arguments: defaultLaneToolArguments(fallbackTool, message), reasonSummary: 'current fact lane requires governed evidence' },
         toolCtx,
         baseMessages,
         startTime,
@@ -1556,7 +1577,7 @@ async function runConversationalOpenRouter(
       models,
       factMessages,
       message,
-      { type: 'TOOL_REQUEST', toolName, arguments: toolName === 'search_reports' && !args.query ? { query: message, limit: 10 } : args, reasonSummary: 'current fact lane selected governed evidence tool' },
+      { type: 'TOOL_REQUEST', toolName, arguments: Object.keys(args).length ? args : defaultLaneToolArguments(toolName, message), reasonSummary: 'current fact lane selected governed evidence tool' },
       toolCtx,
       baseMessages,
       startTime,
