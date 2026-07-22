@@ -169,6 +169,50 @@ type EvidenceObligation =
       reasonSummary: string;
     };
 
+type PendingScheduleState = {
+  kind: 'schedule_report';
+  reportId?: string;
+  reportName?: string;
+  date?: string;
+  time?: string;
+  timezone?: string;
+  createRequested: boolean;
+  creationBlocked: boolean;
+  status: 'collecting' | 'ready' | 'drafted' | 'cancelled';
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string;
+};
+
+type HermesReferenceState = {
+  sourceType: 'report_search' | 'report_list';
+  query?: string;
+  items: Array<{
+    id: string;
+    label: string;
+    safeSummary?: string;
+    createdAt?: string;
+    metadata?: Record<string, string | number | boolean | null>;
+  }>;
+  version: number;
+  createdAt: string;
+  expiresAt: string;
+};
+
+type HermesSessionState = {
+  pendingAction?: PendingScheduleState | null;
+  referenceState?: HermesReferenceState | null;
+  version: number;
+};
+
+type HermesTurnLane =
+  | { lane: 'GENERAL_CONVERSATION' }
+  | { lane: 'CURRENT_FACT'; allowedTools: string[] }
+  | { lane: 'SCHEDULE_WORKFLOW'; allowedTools: string[]; workflowState: PendingScheduleState; instruction: string }
+  | { lane: 'REPORT_REFERENCE'; allowedTools: string[]; referenceState: HermesReferenceState; reportId?: string; metadataOnly?: boolean }
+  | { lane: 'CANCELLED_WORKFLOW'; remainingMessage?: string };
+
 type ToolActionClass = 'READ_ONLY' | 'DRAFT_ONLY' | 'APPROVAL_REQUIRED';
 type ToolResult = {
   ok: boolean;
@@ -236,6 +280,12 @@ const REPORTS = [
   { id: 'nexus_3_capability_registry', title: 'Nexus Capability Registry', category: 'runtime', createdAt: '2026-07-20', freshness: 'REPORT_BACKED', source: 'reports/runtime/nexus_3_capability_registry.json', summary: 'Capability OS registry summary for activation, approval, and policy boundaries.' },
 ];
 
+const SESSION_MEMORY = new Map<string, HermesSessionState>();
+
+function isoIn(minutes: number): string {
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
+
 function traceId(): string {
   return `hermes-model-first-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 }
@@ -246,6 +296,104 @@ function safeObject(value: unknown): Record<string, unknown> {
 
 function stringArg(args: Record<string, unknown>, key: string): string {
   return typeof args[key] === 'string' ? String(args[key]).slice(0, 240) : '';
+}
+
+function actorIdFromAuthorization(authorization: string): string {
+  const fallback = '00000000-0000-0000-0000-000000000001';
+  try {
+    const token = authorization.replace(/^Bearer\s+/i, '');
+    const payload = token.split('.')[1];
+    if (!payload) return fallback;
+    const decoded = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')));
+    const sub = typeof decoded?.sub === 'string' ? decoded.sub : '';
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sub) ? sub : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function stateKey(userId: string, conversationId: string): string {
+  return `${userId}:${conversationId || 'default'}`;
+}
+
+function scrubSessionState(state: HermesSessionState): HermesSessionState {
+  const now = Date.now();
+  const pending = state.pendingAction && Date.parse(state.pendingAction.expiresAt) > now && state.pendingAction.status !== 'cancelled'
+    ? state.pendingAction
+    : null;
+  const reference = state.referenceState && Date.parse(state.referenceState.expiresAt) > now
+    ? { ...state.referenceState, items: state.referenceState.items.slice(0, 20) }
+    : null;
+  return { pendingAction: pending, referenceState: reference, version: Number(state.version || 1) };
+}
+
+async function loadHermesState(userId: string, conversationId: string): Promise<HermesSessionState> {
+  const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('PROJECT_URL');
+  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (url && service) {
+    const endpoint = `${url.replace(/\/$/, '')}/rest/v1/hermes_conversation_state?user_id=eq.${encodeURIComponent(userId)}&conversation_id=eq.${encodeURIComponent(conversationId)}&select=pending_action,reference_state,version&limit=1`;
+    const res = await fetch(endpoint, { headers: { apikey: service, authorization: `Bearer ${service}` } }).catch(() => null);
+    if (res?.ok) {
+      const rows = await res.json().catch(() => []);
+      const row = Array.isArray(rows) ? rows[0] : null;
+      if (row) return scrubSessionState({ pendingAction: row.pending_action ?? null, referenceState: row.reference_state ?? null, version: Number(row.version || 1) });
+    }
+  }
+  return scrubSessionState(SESSION_MEMORY.get(stateKey(userId, conversationId)) || { pendingAction: null, referenceState: null, version: 1 });
+}
+
+async function saveHermesState(userId: string, tenantId: string | null, conversationId: string, state: HermesSessionState): Promise<void> {
+  const clean = scrubSessionState({ ...state, version: Number(state.version || 1) + 1 });
+  SESSION_MEMORY.set(stateKey(userId, conversationId), clean);
+  const url = Deno.env.get('SUPABASE_URL') || Deno.env.get('PROJECT_URL');
+  const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !service) return;
+  const body: Record<string, unknown> = {
+    user_id: userId,
+    conversation_id: conversationId,
+    pending_action: clean.pendingAction,
+    reference_state: clean.referenceState,
+    version: clean.version,
+    expires_at: isoIn(240),
+    updated_at: new Date().toISOString(),
+  };
+  if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) body.tenant_id = tenantId;
+  await fetch(`${url.replace(/\/$/, '')}/rest/v1/hermes_conversation_state?on_conflict=user_id,conversation_id`, {
+    method: 'POST',
+    headers: { apikey: service, authorization: `Bearer ${service}`, 'content-type': 'application/json', prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(body),
+  }).catch(() => undefined);
+}
+
+function reportTags(report: typeof REPORTS[number]): string[] {
+  const text = `${report.id} ${report.title} ${report.category} ${report.summary} ${report.source}`.toLowerCase();
+  const tags = new Set<string>();
+  if (/hermes|model|openrouter|routing|pilot|certification|tool/.test(text)) ['hermes', 'model-first', 'openrouter', 'tool-gateway', 'certification'].forEach((tag) => tags.add(tag));
+  if (/alpha|provider|routing/.test(text)) ['alpha', 'provider-routing'].forEach((tag) => tags.add(tag));
+  if (/department|operations|queue|workflow|client/.test(text)) ['department-operations', 'workflow', 'client-workflow'].forEach((tag) => tags.add(tag));
+  if (/capability|approval|policy|boundary|ray review/.test(text)) ['capability-os', 'approval-boundary', 'policy'].forEach((tag) => tags.add(tag));
+  if (/revenue|readiness|funding|credit|money/.test(text)) ['revenue-readiness', 'credit-funding'].forEach((tag) => tags.add(tag));
+  if (/repo|repository|intelligence/.test(text)) tags.add('repo-intelligence');
+  return [...tags];
+}
+
+function searchReportCatalog(query: string, limit = 10) {
+  const terms = query.toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length > 2);
+  return REPORTS.map((report) => {
+    const tags = reportTags(report);
+    const haystack = `${report.id} ${report.title} ${report.category} ${report.summary} ${report.source} ${tags.join(' ')}`.toLowerCase();
+    const score = terms.reduce((sum, term) => sum + (haystack.includes(term) ? 1 : 0), 0)
+      + (/\bmodel[- ]?first\b/i.test(query) && tags.includes('model-first') ? 4 : 0)
+      + (/\balpha\b/i.test(query) && tags.includes('alpha') ? 3 : 0)
+      + (/\brepo|repository\b/i.test(query) && tags.includes('repo-intelligence') ? 3 : 0)
+      + (/\brevenue|readiness|funding|credit\b/i.test(query) && tags.includes('revenue-readiness') ? 3 : 0)
+      + (/\bclient|workflow\b/i.test(query) && tags.includes('client-workflow') ? 2 : 0)
+      + (/\bcapability|approval|boundary\b/i.test(query) && tags.includes('capability-os') ? 3 : 0);
+    return { report, tags, score };
+  }).filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || String(b.report.createdAt).localeCompare(String(a.report.createdAt)))
+    .slice(0, Math.max(1, Math.min(10, limit)))
+    .map(({ report, tags }) => ({ id: report.id, title: report.title, safeSummary: report.summary, tags, createdAt: report.createdAt, sourceType: report.category }));
 }
 
 function currentPhoenixTime(timezone = 'America/Phoenix') {
@@ -341,6 +489,16 @@ const toolRegistry: Record<string, ToolDefinition> = {
     dataClassification: 'INTERNAL_SUMMARY',
     actionClass: 'READ_ONLY',
     execute: async () => toolResult('list_reports', { reports: REPORTS.map(({ summary: _summary, ...item }) => item) }, ['sanitized_report_registry']),
+  },
+  search_reports: {
+    name: 'search_reports',
+    description: 'Search approved sanitized report metadata by topic. Use for report discovery questions such as which reports cover, support, discuss, document, certify, or contain evidence about a topic.',
+    inputSchema: { type: 'object', required: ['query'], properties: { query: { type: 'string' }, limit: { type: 'number' } }, additionalProperties: false },
+    requiredRole: ['ray', 'admin'],
+    requiredCapabilities: ['hermes_report_catalog_tool'],
+    dataClassification: 'INTERNAL_SUMMARY',
+    actionClass: 'READ_ONLY',
+    execute: async (_ctx, args) => toolResult('search_reports', { query: stringArg(args, 'query'), matches: searchReportCatalog(stringArg(args, 'query'), typeof args.limit === 'number' ? args.limit : 10) }, ['sanitized_report_registry']),
   },
   summarize_report: {
     name: 'summarize_report',
@@ -666,6 +824,140 @@ function isToolFreeWritingRequest(message: string): boolean {
   return /\b(draft a prompt|write a prompt|create a prompt|make this clearer|rewrite this|write a short|give me .*titles|client-friendly explanation)\b/i.test(message);
 }
 
+function normalizeScheduleTime(message: string): string | undefined {
+  const match = message.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)\b/i);
+  return match ? `${match[1]}${match[2] ? `:${match[2]}` : ''} ${match[3].replace(/\./g, '').toUpperCase()}` : undefined;
+}
+
+function inferReportName(message: string): string | undefined {
+  if (/\bsystem health\b/i.test(message)) return 'System Health Report';
+  if (/\brevenue\b/i.test(message)) return 'Revenue Status Report';
+  if (/\bmodel[- ]first|hermes\b/i.test(message) && /\breport\b/i.test(message)) return 'Hermes Model-First Report';
+  return undefined;
+}
+
+function newScheduleState(message: string): PendingScheduleState {
+  const now = new Date().toISOString();
+  return {
+    kind: 'schedule_report',
+    reportName: inferReportName(message),
+    date: /\btomorrow\b/i.test(message) ? 'tomorrow' : 'today',
+    time: normalizeScheduleTime(message),
+    timezone: /\bphoenix|arizona\b/i.test(message) ? 'America/Phoenix' : 'America/Phoenix',
+    createRequested: false,
+    creationBlocked: false,
+    status: 'collecting',
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+    expiresAt: isoIn(120),
+  };
+}
+
+function missingScheduleFields(state: PendingScheduleState): string[] {
+  return [!state.reportName && !state.reportId && 'report', !state.time && 'time'].filter(Boolean) as string[];
+}
+
+function scheduleInstruction(state: PendingScheduleState): string {
+  const missing = missingScheduleFields(state);
+  if (missing.includes('report') && missing.includes('time')) return 'Ask which report Ray wants scheduled and what time to use. Do not call tools.';
+  if (missing.includes('report')) return 'Ask which report Ray wants scheduled. Do not call tools.';
+  if (missing.includes('time')) return `The report is ${state.reportName || state.reportId}. Ask what time to use. Do not call tools.`;
+  if (state.creationBlocked) return `The schedule details are complete, but Ray said not to create it yet. Confirm the held details and do not call tools.`;
+  return `The schedule details are complete: ${state.reportName || state.reportId}, ${state.date || 'today'} at ${state.time} ${state.timezone || 'America/Phoenix'}. Ask whether Ray wants the draft created. Do not call tools.`;
+}
+
+function buildReferenceState(sourceType: 'report_search' | 'report_list', query: string | undefined, items: Array<{ id: string; title: string; safeSummary?: string; createdAt?: string; sourceType?: string }>, version = 1): HermesReferenceState {
+  return {
+    sourceType,
+    query,
+    items: items.slice(0, 20).map((item) => ({
+      id: item.id,
+      label: item.title,
+      safeSummary: item.safeSummary?.slice(0, 400),
+      createdAt: item.createdAt,
+      metadata: { createdAt: item.createdAt || null, sourceType: item.sourceType || null },
+    })),
+    version,
+    createdAt: new Date().toISOString(),
+    expiresAt: isoIn(120),
+  };
+}
+
+function resolveReportReference(message: string, ref: HermesReferenceState | null | undefined): { reportId?: string; metadataOnly?: boolean } | null {
+  if (!ref?.items.length || Date.parse(ref.expiresAt) <= Date.now()) return null;
+  const text = message.toLowerCase();
+  let index: number | null = null;
+  if (/\bfirst|1st\b/.test(text)) index = 0;
+  if (/\bsecond|2nd\b/.test(text)) index = 1;
+  if (/\bthird|3rd\b/.test(text)) index = 2;
+  if (/\bnewest\b/.test(text)) {
+    index = ref.items.reduce((best, item, i) => String(item.createdAt || '') > String(ref.items[best]?.createdAt || '') ? i : best, 0);
+    return { reportId: ref.items[index]?.id, metadataOnly: true };
+  }
+  if (index == null && /\b(that report|this report|tell me more|summarize it|source backs|previous report)\b/.test(text)) index = 0;
+  return index == null || !ref.items[index] ? null : { reportId: ref.items[index].id, metadataOnly: false };
+}
+
+function currentFactTools(message: string): string[] | null {
+  const text = message.toLowerCase();
+  if (/\bwhat\s+(time|date|day)\b|\bcurrent (time|date)|phoenix time|arizona time\b/i.test(message)) return ['get_current_time'];
+  if (/\b(who created you|how old are you|how long have you existed|your role|allowed to do|your permissions|are you .*ai|are you .*human)\b/i.test(message)) return ['get_hermes_identity'];
+  if (/\b(version|deployed commit|running build|what.*running|deploy.*build|deployed.*build|current build)\b/i.test(message)) return ['get_nexus_version'];
+  if (/\b(clients?|customers?|client records|customer records|real or synthetic|test records|paying clients)\b/i.test(message) && /\b(how many|count|current|do we have|real|synthetic|test|records|paying|aggregate)\b/i.test(message)) return ['get_client_aggregate'];
+  if (/\b(which|find|show|what|documentation)\b.*\b(reports?|documentation)\b?.*\b(cover|support|discuss|document|certif|contain|related|concerning|about|workflow|boundary)\b/i.test(message)) return ['search_reports'];
+  if (/\b(what reports|reports available|list reports|report list)\b/i.test(message)) return ['list_reports'];
+  if (/\b(approvals?|pending decisions|ray approval|needs my approval)\b/i.test(message)) return ['get_approval_summary'];
+  if (/\b(system health|stripe|trading|live trades?|blocked by policy|live payments)\b/i.test(message)) return ['get_system_health'];
+  if (/\b(revenue|money today|make money|actual vs projected|projected revenue)\b/i.test(message)) return ['get_revenue_status'];
+  if (/\b(repo intelligence|repo intel|repository intelligence)\b/i.test(message)) return ['get_repo_intelligence_status'];
+  if (/\b(engineering|department|operations|credit and funding|knowledge|research working|department queues)\b/i.test(message)) return ['get_department_status'];
+  if (/\b(where did|where.*come from|source|evidence|supports your|supports the|provenance|fact or recommendation|live data|report-backed)\b/i.test(message)) return ['get_answer_provenance'];
+  if (/\b(project status|what did we finish|next major phase|did we build|alpha.*access|alpha.*supabase)\b/i.test(message)) return ['get_project_status'];
+  return null;
+}
+
+function resolveLane(message: string, state: HermesSessionState): HermesTurnLane {
+  const text = message.toLowerCase();
+  const pending = state.pendingAction;
+  const cancelMatch = text.match(/\b(cancel|never mind|start over|forget (it|that|the schedule))\b[.! ]*(.*)$/i);
+  if (cancelMatch && pending) {
+    return { lane: 'CANCELLED_WORKFLOW', remainingMessage: cancelMatch[3]?.trim() || undefined };
+  }
+  if (pending?.kind === 'schedule_report' && pending.status !== 'drafted' && pending.status !== 'cancelled') {
+    const report = inferReportName(message);
+    const time = normalizeScheduleTime(message);
+    const fieldCompletion = Boolean(report || time || /\btomorrow\b|\btoday\b|\bphoenix|arizona\b/i.test(message) || /\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message) || /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message));
+    const subjectChange = /\bwhat is|define|explain|tell me a joke|write|rewrite|prompt|brainstorm\b/i.test(message)
+      && !/\breport|schedule|\d{1,2}(?::\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/i.test(message);
+    if (subjectChange && !fieldCompletion) {
+      const tools = currentFactTools(message);
+      return tools ? { lane: 'CURRENT_FACT', allowedTools: tools } : { lane: 'GENERAL_CONVERSATION' };
+    }
+    const next: PendingScheduleState = { ...pending, updatedAt: new Date().toISOString(), expiresAt: isoIn(120), version: pending.version + 1 };
+    if (report) next.reportName = report;
+    if (time) next.time = time;
+    if (/\btomorrow\b/i.test(message)) next.date = 'tomorrow';
+    if (/\btoday\b/i.test(message)) next.date = 'today';
+    if (/\bphoenix|arizona\b/i.test(message)) next.timezone = 'America/Phoenix';
+    if (/\b(do not|don't)\s+(create|draft|schedule|make)|not yet\b/i.test(message)) next.creationBlocked = true;
+    const createRequested = /\b(create|draft|make)\b.*\b(schedule draft|draft|it|now)\b/i.test(message) && !next.creationBlocked;
+    next.createRequested = createRequested;
+    next.status = missingScheduleFields(next).length ? 'collecting' : 'ready';
+    const allowedTools = createRequested && next.status === 'ready' ? ['draft_schedule'] : [];
+    return { lane: 'SCHEDULE_WORKFLOW', allowedTools, workflowState: next, instruction: scheduleInstruction(next) };
+  }
+  if (/\bschedule\b/i.test(message) && /\breport\b/i.test(message) && !/\bwhat is|how is|status\b/i.test(message)) {
+    const workflowState = newScheduleState(message);
+    return { lane: 'SCHEDULE_WORKFLOW', allowedTools: [], workflowState, instruction: scheduleInstruction(workflowState) };
+  }
+  const ref = resolveReportReference(message, state.referenceState);
+  if (ref && state.referenceState) return { lane: 'REPORT_REFERENCE', allowedTools: ref.metadataOnly ? [] : ['summarize_report'], referenceState: state.referenceState, reportId: ref.reportId, metadataOnly: ref.metadataOnly };
+  const tools = currentFactTools(message);
+  if (tools) return { lane: 'CURRENT_FACT', allowedTools: tools };
+  return { lane: 'GENERAL_CONVERSATION' };
+}
+
 function inferMandatoryDecision(message: string, decision: HermesTurnDecision, history: ChatMessage[]): HermesTurnDecision | null {
   const text = message.toLowerCase();
   const recent = history.map((item) => item.content).join('\n').slice(-1200);
@@ -897,6 +1189,164 @@ function degradedOpenRouterReply(errorCode: string, provider = 'openrouter', mod
   });
 }
 
+function stateContextBlock(state: HermesSessionState, lane: HermesTurnLane): ChatMessage {
+  const pending = state.pendingAction;
+  const ref = state.referenceState;
+  const lines = ['[SERVER-OWNED HERMES STATE]'];
+  lines.push(`Selected lane: ${lane.lane}`);
+  if (pending?.kind === 'schedule_report') {
+    lines.push('Active workflow: schedule_report');
+    lines.push(`Report: ${pending.reportName || pending.reportId || 'missing'}`);
+    lines.push(`Date: ${pending.date || 'today'}`);
+    lines.push(`Time: ${pending.time || 'missing'}`);
+    lines.push(`Timezone: ${pending.timezone || 'America/Phoenix'}`);
+    lines.push(`Create requested: ${pending.createRequested ? 'yes' : 'no'}`);
+    lines.push(`Creation blocked: ${pending.creationBlocked ? 'yes' : 'no'}`);
+    lines.push(`Status: ${pending.status}`);
+  }
+  if (ref?.items.length) {
+    lines.push(`Reference state: ${ref.sourceType}${ref.query ? ` for "${ref.query}"` : ''}`);
+    ref.items.slice(0, 8).forEach((item, index) => {
+      lines.push(`${index + 1}. ${item.label}${item.createdAt ? ` (${item.createdAt})` : ''}${item.safeSummary ? ` - ${item.safeSummary.slice(0, 160)}` : ''}`);
+    });
+  }
+  lines.push('This state is authoritative. Do not infer a different active workflow from older conversation prose.');
+  return { role: 'system', content: lines.join('\n').slice(0, 4000) };
+}
+
+function historyWasSent(baseMessages: ChatMessage[]) {
+  return baseMessages.some((item) => item.role === 'assistant' || item.role === 'user') && baseMessages.length > 2;
+}
+
+function historyTurnCount(baseMessages: ChatMessage[]) {
+  return Math.max(0, baseMessages.filter((item) => item.role === 'assistant' || item.role === 'user').length - 1);
+}
+
+async function runNoToolLaneResponse(
+  key: string,
+  models: string[],
+  messages: ChatMessage[],
+  message: string,
+  instruction: string,
+  baseMessages: ChatMessage[],
+  startTime: number,
+  tid: string,
+  laneName: string,
+) {
+  const call = await callOpenRouterNative(
+    key,
+    models,
+    [...messages, { role: 'system', content: instruction }],
+    startTime,
+    [],
+  );
+  if (!call.ok) return degradedOpenRouterReply(String(call.errorCode), 'openrouter', String(call.model), startTime);
+  return json({
+    configured: true,
+    reply: call.reply,
+    metadata: {
+      provider: 'openrouter',
+      model: call.model,
+      fallbackUsed: call.fallbackUsed,
+      traceId: tid,
+      decisionType: laneName === 'SCHEDULE_WORKFLOW' ? 'CLARIFICATION' : 'DIRECT_RESPONSE',
+      source: 'GENERAL_MODEL',
+      lane: laneName,
+      conversationHistorySent: historyWasSent(baseMessages),
+      historyTurnCount: historyTurnCount(baseMessages),
+      toolRequested: false,
+      toolExecuted: false,
+      modelRounds: 1,
+      ...usageMetadata(call.usage as Record<string, unknown> | null, message, call.reply),
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      durationMs: Date.now() - startTime,
+    },
+  });
+}
+
+async function executeLaneToolAndAnswer(
+  key: string,
+  models: string[],
+  messages: ChatMessage[],
+  message: string,
+  decision: Extract<HermesTurnDecision, { type: 'TOOL_REQUEST' }>,
+  toolCtx: ToolExecutionContext,
+  baseMessages: ChatMessage[],
+  startTime: number,
+  tid: string,
+  session: { userId: string; tenantId: string | null; conversationId: string; state: HermesSessionState },
+  laneName: string,
+) {
+  const capabilityDecision = validateToolRequest(decision, toolCtx);
+  const toolResultData = capabilityDecision.allowed
+    ? await executeToolRequest(decision, toolCtx)
+    : { ok: false, toolName: decision.toolName, errorCode: capabilityDecision.reasonCode, evidenceSources: ['capability_os_gateway'], freshness: 'CURRENT' };
+
+  if (capabilityDecision.allowed && toolResultData.ok) {
+    const data = safeObject(toolResultData.data);
+    if (decision.toolName === 'search_reports') {
+      const matches = Array.isArray(data.matches) ? data.matches as Array<{ id: string; title: string; safeSummary?: string; createdAt?: string; sourceType?: string }> : [];
+      session.state.referenceState = buildReferenceState('report_search', stringArg(decision.arguments, 'query'), matches, (session.state.referenceState?.version || 0) + 1);
+      await saveHermesState(session.userId, session.tenantId, session.conversationId, session.state);
+    }
+    if (decision.toolName === 'list_reports') {
+      const reports = Array.isArray(data.reports) ? data.reports as Array<{ id: string; title: string; safeSummary?: string; createdAt?: string; sourceType?: string }> : [];
+      session.state.referenceState = buildReferenceState('report_list', undefined, reports.map((item) => ({ ...item, safeSummary: item.safeSummary || '' })), (session.state.referenceState?.version || 0) + 1);
+      await saveHermesState(session.userId, session.tenantId, session.conversationId, session.state);
+    }
+    if (decision.toolName === 'draft_schedule' && session.state.pendingAction?.kind === 'schedule_report') {
+      session.state.pendingAction = {
+        ...session.state.pendingAction,
+        createRequested: true,
+        creationBlocked: false,
+        status: 'drafted',
+        updatedAt: new Date().toISOString(),
+        version: session.state.pendingAction.version + 1,
+      };
+      await saveHermesState(session.userId, session.tenantId, session.conversationId, session.state);
+    }
+  }
+
+  const finalMessages: ChatMessage[] = [
+    ...messages,
+    {
+      role: 'system',
+      content: [
+        '[LANE TOOL RESULT]',
+        `Lane: ${laneName}`,
+        'The server selected this lane and executed only its approved governed tool.',
+        'Write the final answer naturally from this authorized result. State uncertainty and data state honestly. Do not claim external execution for draft tools.',
+        JSON.stringify({ requestedTool: decision.toolName, capabilityDecision, toolResult: toolResultData }).slice(0, 5000),
+      ].join('\n'),
+    },
+  ];
+  const finalCall = await callOpenRouterNative(key, models, finalMessages, startTime);
+  if (!finalCall.ok) return degradedOpenRouterReply(String(finalCall.errorCode), 'openrouter', String(finalCall.model), startTime);
+  return json({
+    configured: true,
+    reply: finalCall.reply,
+    metadata: {
+      provider: 'openrouter',
+      model: finalCall.model,
+      fallbackUsed: finalCall.fallbackUsed,
+      traceId: tid,
+      decisionType: 'TOOL_REQUEST',
+      lane: laneName,
+      toolRequested: decision.toolName,
+      toolAllowed: capabilityDecision.allowed,
+      toolExecuted: Boolean(capabilityDecision.allowed && toolResultData.ok),
+      toolErrorCode: toolResultData.ok ? undefined : toolResultData.errorCode,
+      source: capabilityDecision.allowed ? 'NEXUS_TOOL' : 'SAFE_LEGACY_FALLBACK',
+      conversationHistorySent: historyWasSent(baseMessages),
+      historyTurnCount: historyTurnCount(baseMessages),
+      modelRounds: 1,
+      ...usageMetadata(finalCall.usage as Record<string, unknown> | null, message, finalCall.reply),
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      durationMs: Date.now() - startTime,
+    },
+  });
+}
+
 async function runConversationalOpenRouter(
   key: string,
   models: string[],
@@ -905,6 +1355,7 @@ async function runConversationalOpenRouter(
   context: Record<string, unknown> | undefined,
   authorization: string,
   startTime: number,
+  session: { userId: string; tenantId: string | null; conversationId: string; state: HermesSessionState },
 ) {
   const tid = traceId();
   const actorRole = authorization ? 'ray' : 'anonymous';
@@ -926,7 +1377,191 @@ async function runConversationalOpenRouter(
       'If Ray asks to approve yourself or execute an approval-gated action, refuse directly.',
     ].join('\n'),
   };
-  const messages = [baseMessages[0], conversationSystem, ...baseMessages.slice(1)];
+  const initialLane = resolveLane(message, session.state);
+  const messages = [baseMessages[0], conversationSystem, stateContextBlock(session.state, initialLane), ...baseMessages.slice(1)];
+
+  if (initialLane.lane === 'CANCELLED_WORKFLOW') {
+    if (session.state.pendingAction) {
+      session.state.pendingAction = {
+        ...session.state.pendingAction,
+        status: 'cancelled',
+        updatedAt: new Date().toISOString(),
+        version: session.state.pendingAction.version + 1,
+      };
+      await saveHermesState(session.userId, session.tenantId, session.conversationId, session.state);
+      session.state.pendingAction = null;
+    }
+    const remaining = String(initialLane.remainingMessage || '').trim();
+    if (remaining) {
+      const remainingTools = currentFactTools(remaining);
+      if (remainingTools?.length) {
+        const toolName = remainingTools[0];
+        return await executeLaneToolAndAnswer(
+          key,
+          models,
+          [...messages, { role: 'system', content: 'The active workflow was cancelled. Answer the remaining request using only the selected lane tool.' }, { role: 'user', content: remaining }],
+          remaining,
+          { type: 'TOOL_REQUEST', toolName, arguments: {}, reasonSummary: 'remaining request after workflow cancellation' },
+          toolCtx,
+          baseMessages,
+          startTime,
+          tid,
+          session,
+          'CANCELLED_WORKFLOW',
+        );
+      }
+      return await runNoToolLaneResponse(
+        key,
+        models,
+        [...messages, { role: 'user', content: remaining }],
+        remaining,
+        'The active workflow was cancelled. Answer the remaining request naturally. Do not use tools.',
+        baseMessages,
+        startTime,
+        tid,
+        'CANCELLED_WORKFLOW',
+      );
+    }
+    return json({
+      configured: true,
+      reply: 'Cancelled. I will not continue that workflow.',
+      metadata: {
+        provider: 'openrouter',
+        model: models[0],
+        fallbackUsed: false,
+        traceId: tid,
+        decisionType: 'DIRECT_RESPONSE',
+        source: 'GENERAL_MODEL',
+        lane: 'CANCELLED_WORKFLOW',
+        toolRequested: false,
+        toolExecuted: false,
+        durationMs: Date.now() - startTime,
+      },
+    });
+  }
+
+  if (initialLane.lane === 'SCHEDULE_WORKFLOW') {
+    session.state.pendingAction = initialLane.workflowState;
+    await saveHermesState(session.userId, session.tenantId, session.conversationId, session.state);
+    const workflowMessages = [baseMessages[0], conversationSystem, stateContextBlock(session.state, initialLane), ...baseMessages.slice(1)];
+    if (initialLane.allowedTools.includes('draft_schedule')) {
+      return await executeLaneToolAndAnswer(
+        key,
+        models,
+        workflowMessages,
+        message,
+        {
+          type: 'TOOL_REQUEST',
+          toolName: 'draft_schedule',
+          arguments: {
+            reportId: initialLane.workflowState.reportId,
+            reportName: initialLane.workflowState.reportName,
+            requestedDate: initialLane.workflowState.date || 'today',
+            requestedTime: initialLane.workflowState.time || '',
+            timezone: initialLane.workflowState.timezone || 'America/Phoenix',
+          },
+          reasonSummary: 'explicit schedule draft request in active schedule workflow',
+        },
+        toolCtx,
+        baseMessages,
+        startTime,
+        tid,
+        session,
+        'SCHEDULE_WORKFLOW',
+      );
+    }
+    return await runNoToolLaneResponse(
+      key,
+      models,
+      workflowMessages,
+      message,
+      [
+        '[SCHEDULE WORKFLOW]',
+        initialLane.instruction,
+        'The schedule workflow owns this turn. Do not call current-fact tools. Do not create a draft unless the server supplied draft_schedule.',
+      ].join('\n'),
+      baseMessages,
+      startTime,
+      tid,
+      'SCHEDULE_WORKFLOW',
+    );
+  }
+
+  if (initialLane.lane === 'REPORT_REFERENCE') {
+    const referenceMessages = [baseMessages[0], conversationSystem, stateContextBlock(session.state, initialLane), ...baseMessages.slice(1)];
+    if (initialLane.metadataOnly) {
+      return await runNoToolLaneResponse(
+        key,
+        models,
+        referenceMessages,
+        message,
+        'Use the authoritative report reference metadata to answer. Do not call tools.',
+        baseMessages,
+        startTime,
+        tid,
+        'REPORT_REFERENCE',
+      );
+    }
+    return await executeLaneToolAndAnswer(
+      key,
+      models,
+      referenceMessages,
+      message,
+      {
+        type: 'TOOL_REQUEST',
+        toolName: 'summarize_report',
+        arguments: { reportId: initialLane.reportId || initialLane.referenceState.items[0]?.id || '' },
+        reasonSummary: 'server-owned report reference resolved an exact report',
+      },
+      toolCtx,
+      baseMessages,
+      startTime,
+      tid,
+      session,
+      'REPORT_REFERENCE',
+    );
+  }
+
+  if (initialLane.lane === 'CURRENT_FACT') {
+    const factMessages = [baseMessages[0], conversationSystem, stateContextBlock(session.state, initialLane), ...baseMessages.slice(1)];
+    const firstCall = await callOpenRouterNative(key, models, factMessages, startTime, openRouterToolsFor(initialLane.allowedTools));
+    if (!firstCall.ok) return degradedOpenRouterReply(String(firstCall.errorCode), 'openrouter', String(firstCall.model), startTime);
+    const toolCalls = Array.isArray(firstCall.toolCalls) ? firstCall.toolCalls : [];
+    if (!toolCalls.length) {
+      const fallbackTool = initialLane.allowedTools[0];
+      return await executeLaneToolAndAnswer(
+        key,
+        models,
+        factMessages,
+        message,
+        { type: 'TOOL_REQUEST', toolName: fallbackTool, arguments: fallbackTool === 'search_reports' ? { query: message, limit: 10 } : {}, reasonSummary: 'current fact lane requires governed evidence' },
+        toolCtx,
+        baseMessages,
+        startTime,
+        tid,
+        session,
+        'CURRENT_FACT',
+      );
+    }
+    const toolCall = toolCalls[0] as Record<string, unknown>;
+    const fn = safeObject(toolCall.function);
+    const toolName = initialLane.allowedTools.includes(String(fn.name || '')) ? String(fn.name || '') : initialLane.allowedTools[0];
+    const args = toolName === String(fn.name || '') ? parseToolArgs(fn.arguments) : {};
+    return await executeLaneToolAndAnswer(
+      key,
+      models,
+      factMessages,
+      message,
+      { type: 'TOOL_REQUEST', toolName, arguments: toolName === 'search_reports' && !args.query ? { query: message, limit: 10 } : args, reasonSummary: 'current fact lane selected governed evidence tool' },
+      toolCtx,
+      baseMessages,
+      startTime,
+      tid,
+      session,
+      'CURRENT_FACT',
+    );
+  }
+
   const initialObligation = evidenceObligation(message, baseMessages);
   const initialTools = initialObligation.required ? openRouterToolsFor(initialObligation.allowedTools) : [];
   let firstCall = await callOpenRouterNative(key, models, messages, startTime, initialTools);
@@ -1291,7 +1926,18 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const message: string = body?.message ?? '';
   const mode: string = body?.mode ?? 'conversation';
-  const context: Record<string, unknown> | undefined = body?.context;
+  const rawContext = safeObject(body?.context);
+  if (Array.isArray(body?.visibleHistory)) rawContext.history = body.visibleHistory;
+  if (!Array.isArray(rawContext.history) && Array.isArray(body?.recentHistory)) rawContext.history = body.recentHistory;
+  const safePageContext = safeObject(body?.safePageContext);
+  for (const [key, value] of Object.entries(safePageContext)) {
+    if (!(key in rawContext)) rawContext[key] = value;
+  }
+  const context: Record<string, unknown> | undefined = rawContext;
+  const authorization = req.headers.get('authorization') || '';
+  const userId = actorIdFromAuthorization(authorization);
+  const conversationId = String(body?.conversationId || rawContext.conversationId || 'default').slice(0, 120);
+  const tenantId = typeof rawContext.tenantId === 'string' ? String(rawContext.tenantId) : null;
 
   // ── Diagnostic mode: report env status without exposing secrets ──
   if (message === '__diagnostic__') {
@@ -1379,14 +2025,16 @@ Deno.serve(async (req: Request) => {
       if (models.length === 0) models.push('openai/gpt-4o-mini');
 
       if (mode === 'model_first_conversation') {
+        const sessionState = await loadHermesState(userId, conversationId);
         return await runConversationalOpenRouter(
           key,
           models,
           messages,
           message,
           context,
-          req.headers.get('authorization') || '',
+          authorization,
           startTime,
+          { userId, tenantId, conversationId, state: sessionState },
         );
       }
 
