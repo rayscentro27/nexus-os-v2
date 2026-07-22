@@ -905,7 +905,8 @@ function currentFactTools(message: string): string[] | null {
   if (/\b(who created you|how old are you|how long have you existed|your role|allowed to do|your permissions|are you .*ai|are you .*human)\b/i.test(message)) return ['get_hermes_identity'];
   if (/\b(version|deployed commit|running build|what.*running|deploy.*build|deployed.*build|current build)\b/i.test(message)) return ['get_nexus_version'];
   if (/\b(clients?|customers?|client records|customer records|real or synthetic|test records|paying clients)\b/i.test(message) && /\b(how many|count|current|do we have|real|synthetic|test|records|paying|aggregate)\b/i.test(message)) return ['get_client_aggregate'];
-  if (/\b(which|find|show|what|documentation)\b.*\b(reports?|documentation)\b?.*\b(cover|support|discuss|document|certif|contain|related|concerning|about|workflow|boundary)\b/i.test(message)) return ['search_reports'];
+  if (/\b(which|find|show|what)\b.*\b(reports?|documentation)\b.*\b(cover|support|discuss|document|certif|contain|related|concerning|about|workflow|boundary)\b/i.test(message)) return ['search_reports'];
+  if (/\b(documentation|reports?)\b.*\b(cover|support|discuss|document|certif|contain|related|concerning|about|workflow|boundary)\b/i.test(message)) return ['search_reports'];
   if (/\b(what reports|reports available|list reports|report list)\b/i.test(message)) return ['list_reports'];
   if (/\b(approvals?|pending decisions|ray approval|needs my approval)\b/i.test(message)) return ['get_approval_summary'];
   if (/\b(system health|stripe|trading|live trades?|blocked by policy|live payments)\b/i.test(message)) return ['get_system_health'];
