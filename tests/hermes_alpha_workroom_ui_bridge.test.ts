@@ -11,7 +11,8 @@ describe("Hermes Alpha Workroom separation and bridge", () => {
   it("labels Alpha local, direct, isolated, and external-action disabled", () => {
     expect(ui).toMatch(/Provider-aware strategy conversation/);
     expect(ui).toMatch(/No Supabase, client data, or execution/);
-    expect(ui).toMatch(/Active: \{provider\}/);
+    expect(ui).toMatch(/Selected: \{provider\}/);
+    expect(ui).toMatch(/Actual: \{actualProvider\}/);
     expect(ui).toMatch(/External actions disabled/);
     expect(ui).toMatch(/No Supabase/);
   });
