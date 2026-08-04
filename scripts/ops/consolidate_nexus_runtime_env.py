@@ -145,7 +145,8 @@ def collect_candidates() -> dict[str, list[dict[str, Any]]]:
 
 def http_json(method: str, url: str, headers: dict[str, str] | None = None, body: Any = None, timeout: int = 20) -> tuple[bool, int | None, Any, str | None]:
     data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers=headers or {})
+    request_headers = {"User-Agent": "nexus-os-v2/1.0", **(headers or {})}
+    req = urllib.request.Request(url, data=data, method=method, headers=request_headers)
     try:
         import certifi  # type: ignore
         context = ssl.create_default_context(cafile=certifi.where())

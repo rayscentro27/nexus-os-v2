@@ -424,11 +424,13 @@ describe('tester invitation system', () => {
       expect(invSection).not.toContain('password: ')
     })
 
-    it('invitation email contains GoClear Friends & Family content', () => {
+    it('invitation email contains controlled tester no-payment content', () => {
       const fn = readFileSync(resolve(ROOT, 'supabase/functions/send-client-email/index.ts'), 'utf8')
       expect(fn).toContain('GoClear')
-      expect(fn).toContain('Friends & Family')
-      expect(fn).toContain('Accept My Personal Invitation')
+      expect(fn).toContain('Welcome to the Nexus Controlled Tester Program')
+      expect(fn).toContain('No payment is required')
+      expect(fn).toContain('No credit or debit card is required')
+      expect(fn).toContain('Activate Secure Tester Access')
     })
   })
 

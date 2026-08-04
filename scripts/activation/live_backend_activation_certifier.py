@@ -170,11 +170,12 @@ def fingerprint(value: str | None) -> str | None:
 
 def http_json(method: str, url: str, headers: dict[str, str] | None = None, body: Any = None, timeout: int = 20) -> tuple[bool, int | None, Any, str | None, int]:
     start = time.monotonic()
+    request_headers = {"User-Agent": "nexus-os-v2/1.0", **(headers or {})}
     data = None
     if body is not None:
         data = json.dumps(body).encode()
-        headers = {**(headers or {}), "content-type": "application/json"}
-    req = urllib.request.Request(url, data=data, headers=headers or {}, method=method)
+        request_headers = {**request_headers, "content-type": "application/json"}
+    req = urllib.request.Request(url, data=data, headers=request_headers, method=method)
     try:
         try:
             import certifi  # type: ignore

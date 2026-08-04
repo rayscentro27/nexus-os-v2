@@ -54,7 +54,7 @@ serve(async (req) => {
     const isFree = !invitation.payment_offer_slug || invitation.testing_level === "friends_family_free" || invitation.testing_level === "invited_test_mode"
     const isPilot = invitation.testing_level === "friends_family_one_dollar" || invitation.testing_level === "controlled_live_pilot"
 
-    let subject = "A Special Invitation from Ray to Preview GoClear"
+    let subject = "Welcome to the Nexus Controlled Tester Program"
     if (isPilot) {
       subject = "A Special Invitation from Ray: Join the GoClear $1 Preview Pilot"
     }

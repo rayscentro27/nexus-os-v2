@@ -76,45 +76,42 @@ const templates = {
     `,
   }),
   tester_invitation: (data: Record<string, string>) => ({
-    subject: data.subject || `A Special Invitation from Ray to Preview GoClear`,
+    subject: data.subject || `Welcome to the Nexus Controlled Tester Program`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #0f1729 0%, #1e3a5f 100%); border-radius: 12px; padding: 28px; margin-bottom: 24px;">
-          <h1 style="color: #ffffff; font-size: 22px; margin: 0;">A Personal Invitation from Ray</h1>
-          <p style="color: #94a3b8; font-size: 14px; margin: 8px 0 0;">GoClear · Friends & Family Preview</p>
+          <h1 style="color: #ffffff; font-size: 22px; margin: 0;">Welcome to the Nexus Controlled Tester Program</h1>
+          <p style="color: #94a3b8; font-size: 14px; margin: 8px 0 0;">GoClear · Controlled tester access</p>
         </div>
 
         <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">Hi ${data.testerName || 'there'},</p>
 
-        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">I'm personally inviting you to be one of the first people to experience GoClear, a platform I've been building to help individuals better understand their credit, organize important financial documents, strengthen their business foundation, and prepare for future funding opportunities.</p>
-
-        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">I'm inviting a small group of family and friends to explore GoClear before it is released more broadly. Your feedback will help me make the experience simpler, clearer, and more useful for future clients.</p>
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">You have been invited to help certify the GoClear client portal before broader release. Your access is controlled, tenant-scoped, and intended for product testing and feedback.</p>
 
         ${data.personalNote ? `<div style="background: #f8fbff; border-radius: 10px; padding: 16px 20px; margin: 20px 0; border-left: 4px solid #3b82f6;"><p style="color: #4a5568; font-style: italic; margin: 0; line-height: 1.6; font-size: 14px;">"${data.personalNote}"</p></div>` : ''}
 
         <div style="background: #f8fbff; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #d6e3f3;">
-          <h3 style="color: #0f1729; margin: 0 0 12px; font-size: 16px;">During your preview, you'll be able to:</h3>
+          <h3 style="color: #0f1729; margin: 0 0 12px; font-size: 16px;">During your test access, please review:</h3>
           <ul style="color: #4a5568; line-height: 1.8; margin: 0; padding-left: 20px; font-size: 14px;">
-            <li>Explore a guided credit-improvement journey</li>
-            <li>Review credit and funding-readiness tools</li>
-            <li>Upload test documents securely</li>
-            <li>Explore business setup and bankability</li>
-            <li>Receive guidance from Clyde</li>
-            <li>Request a readiness review</li>
-            <li>Share feedback about your experience</li>
+            <li>The guided client dashboard and current-stage guidance</li>
+            <li>Credit, business setup, bankability, and funding-readiness pages</li>
+            <li>The document upload flow using synthetic or explicitly authorized files only</li>
+            <li>Clyde's client guidance and next-action explanations</li>
+            <li>The request-review workflow and feedback path</li>
           </ul>
         </div>
 
-        ${data.isFree === 'true' ? '<div style="background: #f0fdf4; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #bbf7d0;"><p style="color: #166534; margin: 0; font-size: 14px;"><strong>There is no charge for this invitation.</strong> This is a free preview of the GoClear experience.</p></div>' : ''}
+        ${data.isFree === 'true' ? '<div style="background: #f0fdf4; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #bbf7d0;"><p style="color: #166534; margin: 0; font-size: 14px;"><strong>Your access is complimentary.</strong> No payment is required. No credit or debit card is required.</p></div>' : ''}
         ${data.isPilot === 'true' ? '<div style="background: #fffbeb; border-radius: 8px; padding: 12px 16px; margin: 16px 0; border: 1px solid #fde68a;"><p style="color: #92400e; margin: 0; font-size: 13px;">You have also been selected for our controlled $1 Friends & Family Pilot. The one-dollar payment helps us verify the complete payment, onboarding, portal, service-delivery, and refund experience before public launch. This is not the normal GoClear service price, and it is not a promise of credit, funding, deletion, approval, or financial results.</p></div>' : ''}
 
-        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">This personal invitation is intended only for you and expires on ${data.expiresAt || 'soon'}.</p>
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">Do not upload sensitive real documents unless Ray or GoClear has specifically authorized that test. Use synthetic or approved sample documents whenever possible.</p>
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">This secure activation link opens the production portal and is intended only for you. It expires on ${data.expiresAt || 'the listed expiration date'}.</p>
 
         <div style="text-align: center; margin: 28px 0;">
-          <a href="${data.acceptanceUrl || '#'}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">Accept My Personal Invitation</a>
+          <a href="${data.acceptanceUrl || '#'}" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px;">Activate Secure Tester Access</a>
         </div>
 
-        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">Thank you for helping me build something that can make a real difference.</p>
+        <p style="color: #4a5568; line-height: 1.7; font-size: 15px;">Please send feedback through the portal review request flow or the feedback instructions Ray provided with your invitation.</p>
 
         <p style="color: #4a5568; line-height: 1.7; font-size: 15px; margin-top: 20px;">Ray Davis<br/>Founder, GoClear</p>
 
@@ -128,12 +125,16 @@ const templates = {
 
 I'm personally inviting you to be one of the first people to experience GoClear, a platform I've been building to help individuals better understand their credit, organize important financial documents, strengthen their business foundation, and prepare for future funding opportunities.
 
-During your preview, you'll be able to explore a guided credit-improvement journey, review funding-readiness tools, upload documents, receive guidance from Clyde, and share feedback.
+Your access is complimentary. No payment is required. No credit or debit card is required.
 
-${data.isFree === 'true' ? 'There is no charge for this invitation.' : ''}
+Please test the guided dashboard, credit and funding-readiness pages, document upload flow, Clyde guidance, and request-review workflow.
+
+Avoid sensitive real documents unless specifically authorized. Use synthetic or approved sample documents whenever possible.
+
+${data.isFree === 'true' ? 'No Stripe checkout or payment method is required for this tester invitation.' : ''}
 ${data.isPilot === 'true' ? 'You have also been selected for our controlled $1 Friends & Family Pilot.' : ''}
 
-Accept your invitation: ${data.acceptanceUrl || ''}
+Activate your secure tester access: ${data.acceptanceUrl || ''}
 
 Ray Davis
 Founder, GoClear
@@ -196,6 +197,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const resendApiKey = Deno.env.get('RESEND_API_KEY')!
+    const configuredFrom = Deno.env.get('RESEND_FROM_EMAIL') || Deno.env.get('RESEND_FROM') || 'GoClear <notifications@goclearonline.cc>'
 
     if (!resendApiKey) {
       return new Response(
@@ -250,7 +252,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'GoClear <notifications@goclearonline.cc>',
+        from: configuredFrom,
         to: [to],
         subject: subject || emailSubject,
         html,

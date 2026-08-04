@@ -70,9 +70,11 @@ test.describe('Friends & Family Preview Certification', () => {
       expect(src).toContain('goclearonline.cc')
     })
 
-    test('email template has Free Preview disclosure', () => {
+    test('email template has complimentary controlled tester disclosure', () => {
       const src = readFile('supabase/functions/send-client-email/index.ts')
-      expect(src).toContain('free preview')
+      expect(src).toContain('Your access is complimentary')
+      expect(src).toContain('No payment is required')
+      expect(src).toContain('No credit or debit card is required')
     })
 
     test('email template supports personal notes', () => {
@@ -85,11 +87,11 @@ test.describe('Friends & Family Preview Certification', () => {
       expect(src).toContain('text:')
     })
 
-    test('email template does not mention Stripe', () => {
+    test('email template discloses no checkout for complimentary testers', () => {
       const src = readFile('supabase/functions/send-client-email/index.ts')
-      const lines = src.split('\n')
-      const testerTemplate = lines.filter(l => l.includes('tester_invitation')).join('\n')
-      expect(testerTemplate).not.toMatch(/stripe|Stripe|STRIPE/i)
+      expect(src).toContain('No payment is required')
+      expect(src).toContain('No credit or debit card is required')
+      expect(src).toContain('No Stripe checkout or payment method is required for this tester invitation.')
     })
 
     test('email template does not contain netlify URLs', () => {

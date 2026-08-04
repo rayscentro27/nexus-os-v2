@@ -6,12 +6,13 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"ops"))
 from same_day_common import ROOT,now,parse_env,write_report  # noqa:E402
 def build():
  values=dict(os.environ)
- for p in (ROOT/".env",ROOT/".env.local",ROOT/".env.nexus.recovered.local"):values.update(parse_env(p))
+ for p in (Path.home()/".config/nexus/runtime.env",ROOT/".env",ROOT/".env.local",ROOT/".env.nexus.recovered.local"):
+  if p.exists(): values.update({k:v for k,v in parse_env(p).items() if k not in values})
  key=values.get("RESEND_API_KEY","");sender=values.get("RESEND_FROM_EMAIL") or values.get("RESEND_FROM") or values.get("EMAIL_FROM") or "";domains=[];error=None;http_status=None;checked=False
  if key:
   try:
    import certifi
-   ctx=ssl.create_default_context(cafile=certifi.where());req=urllib.request.Request("https://api.resend.com/domains",headers={"Authorization":f"Bearer {key}"})
+   ctx=ssl.create_default_context(cafile=certifi.where());req=urllib.request.Request("https://api.resend.com/domains",headers={"Authorization":f"Bearer {key}","User-Agent":"nexus-os-v2/1.0"})
    with urllib.request.urlopen(req,timeout=20,context=ctx) as response:http_status=response.status;data=json.loads(response.read());checked=True;domains=[{"name":x.get("name"),"status":x.get("status")} for x in data.get("data",[]) if isinstance(x,dict)]
   except urllib.error.HTTPError as exc:
    error="HTTPError";http_status=exc.code
