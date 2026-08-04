@@ -80,7 +80,7 @@ def integration_summary() -> dict:
     resend_recipients = ("RESEND_TO_EMAIL", "RAY_EMAIL", "RESEND_TEST_TO", "TO_EMAIL", "TEST_EMAIL")
     meta_names = ("META_PAGE_ACCESS_TOKEN", "FACEBOOK_PAGE_ACCESS_TOKEN", "META_PAGE_ID", "FACEBOOK_PAGE_ID", "META_INSTAGRAM_ACCOUNT_ID", "INSTAGRAM_BUSINESS_ACCOUNT_ID")
     tiktok_names = ("TIKTOK_ACCESS_TOKEN", "TIKTOK_CLIENT_KEY", "TIKTOK_OPEN_ID")
-    oanda_names = ("OANDA_ENV", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID", "PAPER_ONLY", "LIVE_TRADING", "NEXUS_DRY_RUN", "TRADING_LIVE_EXECUTION_ENABLED")
+    oanda_names = ("OANDA_ENV", "OANDA_ENVIRONMENT", "OANDA_PRACTICE", "TRADING_MODE", "BROKER_ENV", "OANDA_API_TOKEN", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN", "OANDA_ACCOUNT_ID", "PAPER_ONLY", "LIVE_TRADING", "NEXUS_DRY_RUN", "TRADING_LIVE_EXECUTION_ENABLED")
     trading_values = {
         "OANDA_ENV": sb.ENV.get("OANDA_ENV", "").lower(),
         "OANDA_ENVIRONMENT": sb.ENV.get("OANDA_ENVIRONMENT", "").lower(),
@@ -148,7 +148,7 @@ def integration_summary() -> dict:
             "missing_names": env_missing(*tiktok_names),
         },
         "oanda": {
-            "connected": bool(env_present("OANDA_API_KEY", "OANDA_ACCESS_TOKEN") and env_present("OANDA_ACCOUNT_ID")),
+            "connected": bool(env_present("OANDA_API_TOKEN", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN") and env_present("OANDA_ACCOUNT_ID")),
             "present_names": env_present(*oanda_names),
             "missing_names": env_missing(*oanda_names),
             "demo_or_paper": demo,
@@ -615,7 +615,7 @@ def trading_test(integrations: dict) -> dict:
         return {"connection_tested": False, "trade_placed": False, "status": "blocked_missing_oanda_config", "missing_env_names": oanda.get("missing_names", [])}
     if oanda["live_signal"] or not oanda["demo_or_paper"]:
         return {"connection_tested": False, "trade_placed": False, "status": "blocked_live_trade_requires_explicit_approval", "missing_env_names": oanda.get("missing_names", [])}
-    token = first_env("OANDA_API_KEY", "OANDA_ACCESS_TOKEN")
+    token = first_env("OANDA_API_TOKEN", "OANDA_API_KEY", "OANDA_ACCESS_TOKEN")
     account_id = first_env("OANDA_ACCOUNT_ID")
     ok, resp = secret_get(f"https://api-fxpractice.oanda.com/v3/accounts/{urllib.parse.quote(account_id)}/summary", {"Authorization": f"Bearer {token}"})
     status = "demo_connection_ok" if ok else "demo_connection_failed"

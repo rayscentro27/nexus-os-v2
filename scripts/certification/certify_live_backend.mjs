@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { loadRuntimeEnv } from '../ops/nexusRuntimeEnv.mjs';
 
 const ROOT = process.cwd();
-const ORIGINAL_ROOT = process.env.NEXUS_ORIGINAL_REPO || '/Users/raymonddavis/nexus-os-v2';
 const REPORT = path.join(ROOT, 'NEXUS_LIVE_BACKEND_CERTIFICATION.md');
 
 function readEnvFile(file) {
@@ -25,12 +25,7 @@ function readEnvFile(file) {
 }
 
 function loadEnv() {
-  const values = {};
-  for (const root of [ORIGINAL_ROOT, ROOT]) {
-    for (const name of ['.env', '.env.local', '.env.e2e.local']) {
-      Object.assign(values, readEnvFile(path.join(root, name)));
-    }
-  }
+  const values = loadRuntimeEnv({ override: true });
   Object.assign(values, process.env);
   return values;
 }

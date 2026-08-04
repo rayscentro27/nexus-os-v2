@@ -13,6 +13,9 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent  # repo root
+import sys
+sys.path.insert(0, str(ROOT / "scripts" / "ops"))
+from nexus_runtime_env import load_runtime_env  # noqa: E402
 
 try:
     import certifi  # type: ignore
@@ -30,6 +33,7 @@ def load_env() -> dict:
             if s and not s.startswith("#") and "=" in s:
                 k, v = s.split("=", 1)
                 env[k.strip()] = v.strip().strip('"').strip("'")
+    env.update(load_runtime_env())
     return env
 
 

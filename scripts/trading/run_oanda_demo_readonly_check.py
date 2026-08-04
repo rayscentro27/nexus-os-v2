@@ -4,10 +4,12 @@ import argparse,json,os,ssl,sys,urllib.request
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"ops"))
 from same_day_common import ROOT,now,parse_env,write_report  # noqa:E402
+from nexus_runtime_env import load_runtime_env  # noqa:E402
 def build():
  values=dict(os.environ)
  for p in (ROOT/".env",ROOT/".env.local",ROOT/".env.nexus.recovered.local",Path.home()/"nexuslive/.env"):values.update(parse_env(p))
- token=values.get("OANDA_API_KEY") or values.get("OANDA_ACCESS_TOKEN") or "";account=values.get("OANDA_ACCOUNT_ID","");mode=(values.get("OANDA_ENVIRONMENT") or values.get("OANDA_API_URL") or "").lower();practice=mode in {"practice","demo"} or "api-fxpractice.oanda.com" in mode;checked=False;status_code=None;error=None;account_currency=None
+ values.update(load_runtime_env())
+ token=values.get("OANDA_API_TOKEN") or values.get("OANDA_API_KEY") or values.get("OANDA_ACCESS_TOKEN") or "";account=values.get("OANDA_ACCOUNT_ID","");mode=(values.get("OANDA_ENVIRONMENT") or values.get("OANDA_API_URL") or "").lower();practice=mode in {"practice","demo"} or "api-fxpractice.oanda.com" in mode;checked=False;status_code=None;error=None;account_currency=None
  if practice and token and account:
   try:
    import certifi

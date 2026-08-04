@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "ops"))
 from same_day_common import RUNTIME, now, parse_env, read_json  # noqa: E402
+from nexus_runtime_env import load_runtime_env  # noqa: E402
 
 PRACTICE_HOST = "https://api-fxpractice.oanda.com"
 LIVE_HOST = "https://api-fxtrade.oanda.com"
@@ -23,7 +24,8 @@ def environment() -> dict:
     values = dict(os.environ)
     for path in (ROOT / ".env", ROOT / ".env.local", ROOT / ".env.nexus.recovered.local", Path.home() / "nexuslive/.env"):
         values.update(parse_env(path))
-    token = values.get("OANDA_API_KEY") or values.get("OANDA_ACCESS_TOKEN") or ""
+    values.update(load_runtime_env())
+    token = values.get("OANDA_API_TOKEN") or values.get("OANDA_API_KEY") or values.get("OANDA_ACCESS_TOKEN") or ""
     account_id = values.get("OANDA_ACCOUNT_ID") or ""
     configured = " ".join(values.get(key, "") for key in ("OANDA_API_HOST", "OANDA_API_URL", "OANDA_ENVIRONMENT")).lower()
     live_toggle = any(values.get(key, "").strip().lower() in {"1", "true", "yes", "enabled", "live"} for key in ("LIVE_TRADING", "TRADING_LIVE"))

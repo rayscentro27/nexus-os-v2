@@ -4,9 +4,9 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { loadRuntimeEnv } from '../ops/nexusRuntimeEnv.mjs';
 
 const ROOT = path.resolve(process.cwd());
-const ORIGINAL_ROOT = process.env.NEXUS_ORIGINAL_REPO || '/Users/raymonddavis/nexus-os-v2';
 const DEFAULT_RUNTIME_DIR = '/Users/raymonddavis/nexus-hermes-runtime';
 const PROCESS_KEY = 'official_hermes_runtime_adapter';
 const REPORT_DIR = path.join(ROOT, 'reports', 'runtime');
@@ -32,25 +32,8 @@ export const PROHIBITED_TASK_TYPES = new Set([
   'ARBITRARY_SHELL_COMMAND',
 ]);
 
-function readEnvFile(file) {
-  if (!fs.existsSync(file)) return {};
-  const out = {};
-  for (const raw of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith('#') || !line.includes('=')) continue;
-    const [key, ...rest] = line.split('=');
-    let value = rest.join('=').trim();
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
-    out[key.trim()] = value;
-  }
-  return out;
-}
-
 function loadEnv() {
-  const values = {};
-  for (const root of [ORIGINAL_ROOT, ROOT]) {
-    for (const name of ['.env', '.env.local', '.env.e2e.local']) Object.assign(values, readEnvFile(path.join(root, name)));
-  }
+  const values = loadRuntimeEnv({ override: true });
   Object.assign(values, process.env);
   return values;
 }

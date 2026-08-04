@@ -26,6 +26,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts" / "ops"))
+from nexus_runtime_env import CANONICAL_RUNTIME_ENV, apply_aliases, load_runtime_env  # noqa: E402
+
 ORIGINAL_ROOT = Path(os.environ.get("NEXUS_ORIGINAL_REPO", "/Users/raymonddavis/nexus-os-v2"))
 REPORT_DIR = ROOT / "reports" / "activation"
 RUNTIME_DIR = ROOT / "reports" / "runtime" / "activation"
@@ -42,6 +45,48 @@ FINAL_CONFIG = "BLOCKED_BY_PROVIDER_CONFIGURATION"
 FINAL_POLICY = "BLOCKED_BY_LEGAL_OR_POLICY_BOUNDARY"
 FINAL_FAILED = "FAILED_CERTIFICATION"
 FINAL_RETIRED = "RETIRED_AND_REPLACED"
+
+RUNTIME_MANAGED_ENV_KEYS = {
+    "TELEGRAM_BOT_TOKEN",
+    "NEXUS_TELEGRAM_BOT_TOKEN",
+    "ALPHA_TELEGRAM_BOT_TOKEN",
+    "TELEGRAM_CHAT_ID",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL",
+    "RESEND_FROM",
+    "EMAIL_FROM",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_PUBLISHABLE_KEY",
+    "VITE_STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "SUPABASE_URL",
+    "VITE_SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "VITE_SUPABASE_ANON_KEY",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "OPENROUTER_API_KEY",
+    "OPENAI_API_KEY",
+    "GROQ_API_KEY",
+    "BRAVE_SEARCH_API_KEY",
+    "YOUTUBE_API_KEY",
+    "META_ACCESS_TOKEN",
+    "META_PAGE_ACCESS_TOKEN",
+    "META_PAGE_ID",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_BUSINESS_ACCOUNT_ID",
+    "WHATSAPP_VERIFY_TOKEN",
+    "OANDA_API_TOKEN",
+    "OANDA_API_KEY",
+    "OANDA_ACCESS_TOKEN",
+    "OANDA_ACCOUNT_ID",
+    "OANDA_ENVIRONMENT",
+    "NETLIFY_AUTH_TOKEN",
+    "NETLIFY_SITE_ID",
+    "GITHUB_TOKEN",
+    "FIRECRAWL_API_KEY",
+    "OLLAMA_BASE_URL",
+    "OLLAMA_API_KEY",
+}
 
 
 def utc_now() -> str:
@@ -66,7 +111,7 @@ def parse_env(path: Path) -> dict[str, str]:
 
 
 def env_sources() -> list[Path]:
-    names = [".env", ".env.local", ".env.production", ".env.development", ".env.test", ".env.e2e.local", ".env.nexus.recovered.local"]
+    names = [".env", ".env.local", ".env.production", ".env.development", ".env.test", ".env.nexus.recovered.local"]
     sources = []
     for root in (ORIGINAL_ROOT, ROOT):
         for name in names:
@@ -74,19 +119,28 @@ def env_sources() -> list[Path]:
             if path.exists() and path not in sources:
                 sources.append(path)
         for path in sorted(root.glob(".env.*.local")):
+            if path.name == ".env.e2e.local":
+                continue
             if path not in sources:
                 sources.append(path)
+    if CANONICAL_RUNTIME_ENV.exists() and CANONICAL_RUNTIME_ENV not in sources:
+        sources.append(CANONICAL_RUNTIME_ENV)
     return sources
 
 
 def load_env() -> tuple[dict[str, str], dict[str, list[str]]]:
-    merged = dict(os.environ)
+    merged = {key: value for key, value in os.environ.items() if key not in RUNTIME_MANAGED_ENV_KEYS}
     source_map: dict[str, list[str]] = {}
     for path in env_sources():
         for key, value in parse_env(path).items():
-            merged[key] = value
+            if key not in RUNTIME_MANAGED_ENV_KEYS:
+                merged[key] = value
             source_map.setdefault(key, []).append(str(path))
-    return merged, source_map
+    runtime_values = load_runtime_env(override=True)
+    for key, value in runtime_values.items():
+        merged[key] = value
+        source_map.setdefault(key, []).append(str(CANONICAL_RUNTIME_ENV))
+    return apply_aliases(merged), source_map
 
 
 ENV, ENV_SOURCE_MAP = load_env()
