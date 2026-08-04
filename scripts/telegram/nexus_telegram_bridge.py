@@ -106,6 +106,12 @@ except Exception:
     ALPHA_DRAFT_AVAILABLE = False
 
 try:
+    from alpha_live_research import run_alpha_live_research, format_alpha_live_research_response
+    ALPHA_LIVE_RESEARCH_AVAILABLE = True
+except Exception:
+    ALPHA_LIVE_RESEARCH_AVAILABLE = False
+
+try:
     from retrieval_gate import should_retrieve
     RETRIEVAL_GATE_AVAILABLE = True
 except Exception:
@@ -161,6 +167,8 @@ TELEGRAM_STATE_PATH = "data/runtime/telegram_last_update_id.json"
 TELEGRAM_REPORT_PATH = "reports/telegram/nexus_telegram_live_polling_activation.md"
 HERMES_WEB_SEARCH_DIR = "reports/hermes/web_search"
 HERMES_URL_REVIEW_DIR = "reports/telegram/receipts/hermes_web_search"
+ALPHA_LIVE_RESEARCH_STATUS_PATH = "reports/runtime/alpha_live_research_latest.json"
+OANDA_PRACTICE_STATUS_PATH = "reports/runtime/oanda_practice_engine_status_latest.json"
 
 # Allowed chat IDs (Ray's private chat only)
 ALLOWED_CHAT_IDS = set()
@@ -758,10 +766,9 @@ def cmd_alpha(args):
         return "Usage: /alpha <topic-or-question>\n\nI can give an outside opinion, challenge a plan, compare options, or research a topic."
     topic = " ".join(args)
 
-    # If it looks like explicit research, route to research
-    research_keywords = ["research", "investigate", "search", "find current", "look up"]
-    if any(kw in topic.lower() for kw in research_keywords):
-        return cmd_alpha_fallback(topic, source="live_polling")
+    # If it looks like explicit research, route to live external research.
+    if is_alpha_live_research_request(topic):
+        return _handle_alpha_research(topic)
 
     # Otherwise, give an outside opinion
     if ALPHA_OPINION_AVAILABLE:
@@ -1107,16 +1114,46 @@ CASUAL_AGENT_CHAT_PATTERNS = [
 ]
 
 ALPHA_RESEARCH_PATTERNS = [
-    r"^alpha\s+research\b",
-    r"^alpha\s+investigate\b",
-    r"^alpha\s+search\s+(the\s+)?web\b",
-    r"^alpha\s+find\s+(current|latest|recent)\b",
-    r"^alpha\s+look\s+up\b",
+    r"^alpha\s*[,:\-]?\s*research\b",
+    r"^alpha\s*[,:\-]?\s*investigate\b",
+    r"^alpha\s*[,:\-]?\s*search\s+(the\s+)?web\b",
+    r"^alpha\s*[,:\-]?\s*find\s+(one\s+)?(current|latest|recent|business|affiliate|technology|grant|funding|market|competitor|opportun)",
+    r"^alpha\s*[,:\-]?\s*look\s+up\b",
+    r"^alpha\s*[,:\-]?\s*what\s+changed\b",
+    r"^alpha\s*[,:\-]?\s*(research|find|search|look\s+up).*\b(opportunity|grant|funding|affiliate|market|competitor|technology|trading|current|this\s+week)\b",
     r"^research\s+",
     r"^search\s+the\s+web\s+for\b",
     r"^look\s+up\s+(current|latest)\b",
     r"^find\s+(current|latest)\b",
 ]
+
+ALPHA_LIVE_RESEARCH_KEYWORDS = (
+    "research",
+    "current",
+    "latest",
+    "this week",
+    "find one",
+    "business opportunity",
+    "opportunities",
+    "grant",
+    "funding",
+    "affiliate",
+    "market research",
+    "competitor",
+    "technology",
+    "trading research",
+)
+
+
+def is_alpha_live_research_request(text):
+    clean = re.sub(r"^(?:/alpha\s+|@?alpha\s*[,:\-]?\s*)", "", text.lower().strip()).strip()
+    if re.match(r"^(research|investigate|search|look\s+up)\b", clean):
+        return True
+    if re.match(r"^find\s+(one\s+)?(current|latest|recent|business|affiliate|technology|grant|funding|market|competitor|opportun)", clean):
+        return True
+    if re.match(r"^what\s+changed\b", clean) and any(x in clean for x in ("funding", "business", "market", "credit", "this week")):
+        return True
+    return any(keyword in clean for keyword in ALPHA_LIVE_RESEARCH_KEYWORDS)
 
 # Alpha opinion patterns — outside perspective, not research
 ALPHA_OPINION_PATTERNS = [
@@ -1216,7 +1253,7 @@ def classify_message_intent(text):
     """
     text_lower = text.lower().strip()
     # Strip agent prefix if present (e.g., "alpha good morning" → "good morning")
-    stripped = re.sub(r"^(alpha|hermes|nexus)\s+", "", text_lower)
+    stripped = re.sub(r"^(alpha|hermes|nexus)\s*[,:\-]?\s+", "", text_lower)
 
     # APPROVAL_ACTION — slash-only, handled before this
     # But check anyway for plain-language like "approve EMAIL-001"
@@ -1289,13 +1326,22 @@ def classify_message_intent(text):
         if temporal.get("matched"):
             return "TEMPORAL_INTENT", None, temporal
 
-    # ALPHA_OPINION (must check before alpha research — opinion is higher priority)
+    # ALPHA_RESEARCH_REQUEST. Explicit current/research requests must beat broad
+    # Alpha opinion patterns like "Alpha, find..." and "Alpha, give...".
+    for pat in ALPHA_RESEARCH_PATTERNS:
+        if re.search(pat, text_lower):
+            topic = stripped
+            for prefix in ["research ", "investigate ", "search ", "look up ", "find "]:
+                if topic.startswith(prefix):
+                    topic = topic[len(prefix):].strip()
+                    break
+            if not topic:
+                topic = text_lower
+            return "ALPHA_RESEARCH_REQUEST", None, topic
+
+    # ALPHA_OPINION
     for pat in ALPHA_OPINION_PATTERNS:
         if re.search(pat, text_lower):
-            # Check if this is actually a research request disguised as opinion
-            is_research = any(re.search(rp, text_lower) for rp in ALPHA_RESEARCH_PATTERNS)
-            if is_research:
-                break  # fall through to research
             return "ALPHA_OPINION", None, stripped
 
     # ACTIVE_CONTEXT_FOLLOWUP (number references, explain, deeper, work order — after temporal)
@@ -1312,18 +1358,6 @@ def classify_message_intent(text):
         match = re.search(pat, text_lower)
         if match:
             return "ALPHA_CONTEXT_FOLLOWUP", match, followup_intent
-
-    # ALPHA_RESEARCH_REQUEST (only explicit research)
-    for pat in ALPHA_RESEARCH_PATTERNS:
-        if re.search(pat, text_lower):
-            topic = stripped
-            for prefix in ["research ", "investigate ", "search ", "look up ", "find "]:
-                if topic.startswith(prefix):
-                    topic = topic[len(prefix):].strip()
-                    break
-            if not topic:
-                topic = text_lower
-            return "ALPHA_RESEARCH_REQUEST", None, topic
 
     # UNKNOWN_HELPFUL_FALLBACK
     return "UNKNOWN_HELPFUL_FALLBACK", None, None
@@ -1536,6 +1570,49 @@ def _handle_hermes_url_review(url):
     return _hermes_url_review_answer(url, "")
 
 
+def is_trading_status_question(text):
+    lower = text.lower()
+    return bool(re.search(r"\b(trading|oanda|practice|strategy|signal|position|order|kill\s*switch|simulated\s+p&l|pnl)\b", lower)) and bool(
+        re.search(r"\b(active|running|status|strategy|instruments|positions?|orders?|signal|risk|limits?|p&l|pnl|stop|kill)\b", lower)
+    )
+
+
+def _handle_trading_status_question():
+    status = load_json(OANDA_PRACTICE_STATUS_PATH) or {}
+    if not status:
+        return "Hermes Trading Status — unavailable\n\nNo current Oanda practice runtime status file is available. I will not answer from static trading context."
+    limits = status.get("risk_limits", {})
+    decision = status.get("most_recent_decision", {}) or {}
+    lines = [
+        "Hermes Trading Status — Oanda Practice",
+        "",
+        f"Active: {'YES' if status.get('engine_active') else 'NO'}",
+        f"Environment: {status.get('environment', 'OANDA_PRACTICE')}",
+        f"State: {status.get('state', 'unknown')}",
+        f"Strategy: {status.get('strategy', 'unknown')}",
+        f"Monitored instruments: {', '.join(status.get('monitored_instruments', [])[:8])}",
+        f"Open practice positions: {status.get('open_position_count', 'unknown')}",
+        f"Pending practice orders: {status.get('pending_order_count', 'unknown')}",
+        f"Today simulated P&L: {status.get('current_simulated_pnl', 'unknown')}",
+        f"Last decision: {decision.get('state', 'unknown')} — {decision.get('reason', 'no reason recorded')}",
+        f"Kill switch active: {'YES' if status.get('kill_switch_active') else 'NO'}",
+        "",
+        "Risk limits:",
+        f"- approved instruments: {', '.join(limits.get('approved_instruments', []))}",
+        f"- max order units: {limits.get('max_order_units')}",
+        f"- max open positions: {limits.get('max_open_positions')}",
+        f"- max trades/day: {limits.get('max_trades_per_day')}",
+        f"- signal confidence: {limits.get('signal_confidence_threshold')}",
+        "",
+        f"Last heartbeat: {status.get('heartbeat_at', 'unknown')}",
+        f"Next evaluation: {status.get('next_evaluation_time', 'unknown')}",
+        "",
+        f"Stop command: {status.get('kill_command', 'write the governed kill-switch file')}",
+        "Source: reports/runtime/oanda_practice_engine_status_latest.json",
+    ]
+    return "\n".join(lines)
+
+
 def _handle_alpha_opinion(text):
     """Handle Alpha opinion intent."""
     if ALPHA_OPINION_AVAILABLE:
@@ -1548,28 +1625,32 @@ def _handle_alpha_opinion(text):
 
 
 def _handle_alpha_research(text):
-    """Handle Alpha research intent with proper context save."""
-    response = cmd_alpha_fallback(text, source="live_polling")
+    """Handle Alpha research intent with live provider-backed evidence."""
+    if not ALPHA_LIVE_RESEARCH_AVAILABLE:
+        return (
+            "Alpha Live Research — LOOKUP FAILED\n\n"
+            "The live Alpha research module could not be imported. I will not return the internal fallback as live research."
+        )
+    try:
+        result = run_alpha_live_research(text, source="telegram")
+    except Exception as e:
+        return f"Alpha Live Research — LOOKUP FAILED\n\nError: {str(e)[:160]}"
+    response = format_alpha_live_research_response(result)
     if ACTIVE_CONTEXT_AVAILABLE and response and not response.startswith("Error"):
         try:
-            score_files = sorted(Path(ALPHA_SCORES_DIR).glob("alpha_*.json")) if os.path.isdir(ALPHA_SCORES_DIR) else []
-            latest_score = None
-            if score_files:
-                with open(score_files[-1]) as f:
-                    latest_score = json.load(f)
             items = []
-            if latest_score and latest_score.get("ideas"):
-                for i, idea in enumerate(latest_score["ideas"][:5], 1):
+            if result.get("sources"):
+                for i, source in enumerate(result["sources"][:5], 1):
                     items.append({
                         "index": i,
-                        "title": idea.get("title", f"Recommendation {i}")[:100],
-                        "summary": idea.get("title", "")[:300],
-                        "score": idea.get("score", 5),
-                        "url": "",
-                        "source": "alpha",
-                        "evidence": [],
-                        "risk": [],
-                        "next_action": "Review and evaluate this recommendation.",
+                        "title": source.get("title", f"Source {i}")[:100],
+                        "summary": source.get("snippet", "")[:300],
+                        "score": result.get("score", 7),
+                        "url": source.get("url", ""),
+                        "source": source.get("provider", "alpha_live_research"),
+                        "evidence": [source.get("url", "")],
+                        "risk": [result.get("risk", "Ray Review required before action.")],
+                        "next_action": result.get("recommended_next_action", "Review source and decide whether to create a work order."),
                     })
             else:
                 items = [{"index": 1, "title": text[:80], "summary": response[:300], "score": 6, "url": "", "source": "alpha", "evidence": [], "risk": [], "next_action": "review research"}]
@@ -1577,8 +1658,8 @@ def _handle_alpha_research(text):
             ctx = {
                 "source_agent": "alpha",
                 "context_type": "alpha_research",
-                "topic": text,
-                "summary": response[:200],
+                "topic": result.get("query", text),
+                "summary": result.get("summary", response[:200])[:200],
                 "items": items,
                 "top_index": top_idx,
                 "last_selected_index": None,
@@ -1587,9 +1668,9 @@ def _handle_alpha_research(text):
                     "create_work_order", "schedule", "send_to_hermes", "send_to_alpha",
                 ],
                 "receipt_path": None,
-                "brief_path": None,
-                "provider": None,
-                "query": text,
+                "brief_path": result.get("local_json"),
+                "provider": "brave_openrouter",
+                "query": result.get("query", text),
                 "expires_after_minutes": 180,
             }
             save_active_context(ctx)
@@ -2251,6 +2332,13 @@ def process_with_new_router(full_text):
                     _write_router_decision(router_decision)
                     return reroute
 
+    # --- Trading status from live runtime state ---
+    if is_trading_status_question(full_text):
+        result = _handle_trading_status_question()
+        router_decision["routed_to"] = "oanda_practice_status"
+        _write_router_decision(router_decision)
+        return result
+
     # --- Layer 4b: IMPLICIT CONTEXT FOLLOW-UPS ---
     # Handle cases like "alpha can you do deeper research on this" where the
     # topic is a pronoun reference to active context
@@ -2737,6 +2825,12 @@ def _route_alpha_explicit(full_text, understanding, active_context, router_decis
     clean_text = re.sub(r"^(?:@)?alpha\s*[,:\-]?\s*", "", text_lower).strip()
     clean_topic = re.sub(r"^(?:@)?alpha\s*[,:\-]?\s*", "", full_text.strip(), flags=re.IGNORECASE).strip()
 
+    if re.search(r"\b(strongest|best|top)\s+(opportunity|candidate|option)\b", clean_text):
+        result = _alpha_strongest_opportunity()
+        router_decision["routed_to"] = "alpha_strongest_opportunity"
+        _write_router_decision(router_decision)
+        return result
+
     # --- Alpha challenge Nexus option ---
     challenge_match = re.search(
         r"(?:based\s+on\s+)?(?:nexus\s+)?(?:option|number|#)\s*(\d+)",
@@ -2755,9 +2849,7 @@ def _route_alpha_explicit(full_text, understanding, active_context, router_decis
             return result
 
     # --- Alpha research ---
-    if intent in ("web_research", "money_research", "client_research") or re.search(
-        r"^(research|search|find|look\s+up)\s+", clean_text
-    ):
+    if intent in ("web_research", "money_research", "client_research") or is_alpha_live_research_request(clean_text):
         result = _alpha_research(clean_text, clean_topic)
         router_decision["routed_to"] = "alpha_research"
         _write_router_decision(router_decision)
@@ -2912,100 +3004,42 @@ def _alpha_challenge_nexus(item_idx, topic, active_context):
 
 
 def _alpha_research(clean_text, clean_topic):
-    """Alpha research — attempt web search or give graceful fallback."""
-    search_query = re.sub(r"^(research|search|find|look\s+up)\s+", "", clean_text).strip()
-    if not search_query:
-        search_query = clean_topic
+    """Alpha research — live providers only, no internal context as live truth."""
+    return _handle_alpha_research(clean_topic or clean_text)
 
-    # Rewrite query for business context (avoid irrelevant Nexus/Alpha results)
-    biz_query = search_query
-    if "goclear" in biz_query.lower() or "nexus" in biz_query.lower():
-        biz_query = re.sub(r"(goclear|nexus)", "", biz_query, flags=re.IGNORECASE).strip()
 
+def _alpha_strongest_opportunity():
+    latest = load_json(ALPHA_LIVE_RESEARCH_STATUS_PATH) or {}
+    if not latest:
+        return "Alpha Opportunity Opinion — unavailable\n\nNo live Alpha research result is available yet. Ask Alpha to research an opportunity first."
+    sources = latest.get("sources", [])
+    analysis = latest.get("analysis", {})
     lines = [
-        f"Alpha — Outside Research: {clean_topic[:60]}",
+        "Alpha — Independent Opinion on the Strongest Opportunity",
         "",
+        f"Strongest current candidate: {latest.get('title') or latest.get('query')}",
+        f"Category: {latest.get('category', 'unknown')}",
+        f"Confidence: {latest.get('confidence', 'unknown')}",
+        "",
+        f"My view: {analysis.get('summary', latest.get('summary', ''))[:600]}",
+        "",
+        f"Why it matters: {analysis.get('why_it_matters', latest.get('strategic_fit', ''))[:450]}",
+        f"Revenue potential: {latest.get('revenue_potential')}",
+        f"Effort: {latest.get('estimated_effort')}",
+        f"Risk: {latest.get('risk')}",
+        "",
+        f"Recommended next step: {latest.get('recommended_next_action')}",
+        f"Ray Review: {latest.get('approval_requirement')}",
+        "",
+        "Evidence:",
     ]
-
-    # Try web search
-    if HERMES_SEARCH_AVAILABLE:
-        try:
-            advisory = build_advisory_answer(biz_query)
-            if advisory.get("search_status") == "ok" and advisory.get("findings"):
-                findings = advisory["findings"]
-                for i, f in enumerate(findings[:5], 1):
-                    title = f.get("title", "Result")
-                    summary = f.get("summary", "")[:150]
-                    score = f.get("score", 7)
-                    lines.append(f"{i}. {title}")
-                    lines.append(f"   Score: {score}/10")
-                    if summary:
-                        lines.append(f"   {summary}")
-                    lines.append("")
-                lines.append("Source: web search + Alpha analysis")
-                lines.append("")
-                lines.append("Say 'number 1' or 'turn number 1 into an idea brief' to continue.")
-
-                # Save active context
-                if ACTIVE_CONTEXT_AVAILABLE:
-                    items = []
-                    for i, f in enumerate(findings[:5], 1):
-                        items.append({
-                            "index": i,
-                            "title": f.get("title", "Result"),
-                            "summary": f.get("summary", "")[:200],
-                            "score": f.get("score", 7),
-                            "url": f.get("url", ""),
-                            "source": "alpha_research",
-                            "evidence": [],
-                            "risk": [],
-                            "next_action": "Review and evaluate fit for GoClear.",
-                        })
-                    save_active_context({
-                        "source_agent": "alpha",
-                        "context_type": "alpha_research",
-                        "topic": clean_topic,
-                        "summary": f"Alpha research on {clean_topic[:80]}",
-                        "items": items,
-                        "top_index": 1,
-                        "last_selected_index": None,
-                        "allowed_followups": [
-                            "explain_score", "research_deeper", "create_work_order",
-                            "send_to_command", "compare",
-                        ],
-                        "provider": "brave",
-                        "query": biz_query,
-                        "expires_after_minutes": 180,
-                    })
-
-                return "\n".join(lines)
-        except Exception:
-            pass
-
-    # Fallback: no web search available
-    lines.append("Live web research is not available right now.")
-    lines.append("")
-    lines.append("Based on general strategy, here is what Alpha would research first:")
-    lines.append("")
-    lines.append("1. Current market landscape for this topic")
-    lines.append("   What competitors are doing, pricing, gaps.")
-    lines.append("")
-    lines.append("2. GoClear-specific fit")
-    lines.append("   How this connects to credit/funding readiness clients.")
-    lines.append("")
-    lines.append("3. Revenue model options")
-    lines.append("   Direct offer, affiliate, service, or hybrid.")
-    lines.append("")
-    lines.append("4. Compliance and risk notes")
-    lines.append("   What is safe to promote and what requires disclaimers.")
-    lines.append("")
-    lines.append("5. First test step")
-    lines.append("   Smallest action to validate demand before building.")
-    lines.append("")
-    lines.append("Source: Alpha general strategy (no live web data)")
-    lines.append("")
-    lines.append('Say "research [specific topic]" when web search is available.')
-
+    for i, source in enumerate(sources[:3], 1):
+        lines.append(f"{i}. {source.get('title', 'Source')} — {source.get('url', '')}")
+    lines.extend([
+        "",
+        f"Research ID: {latest.get('research_id')}",
+        "Source: reports/runtime/alpha_live_research_latest.json",
+    ])
     return "\n".join(lines)
 
 

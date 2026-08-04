@@ -27,7 +27,7 @@ const PAGE_CONTEXT = {
     return `You are on Credit & Funding. Credit readiness: ${creditReadiness.score}/100. Funding readiness: ${fundingReadiness.score}/100 (${fundingReadiness.status}). ${missing} documents missing. ${disputesReady} dispute drafts ready for review. Bankability: ${complete}/${bankabilityChecklist.length} items complete.`;
   },
   trading: () => {
-    return `You are on Trading Demo. Status: paper/backtest only. No live trades, no real money. Oanda demo endpoint verified. Vibe paper backtests running. Live and funded execution remain completely blocked.`;
+    return `You are on Trading Demo. Status: Oanda practice engine active from runtime evidence when /runtime/oanda-practice-status.json is current. Real-money trading remains not configured. The native Nexus bridge replaced the Vibe CLI dependency for practice monitoring, risk controls, and reconciliation.`;
   },
   clients: () => {
     const client = clientsList[0];

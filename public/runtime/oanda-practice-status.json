@@ -1,0 +1,53 @@
+{
+  "ok": true,
+  "environment": "OANDA_PRACTICE",
+  "engine_active": true,
+  "state": "WAITING_FOR_VALID_SIGNAL",
+  "strategy": "nexus_practice_monitor_v1",
+  "monitored_instruments": [
+    "AUD_USD",
+    "EUR_USD",
+    "GBP_USD",
+    "USD_CAD",
+    "NZD_USD"
+  ],
+  "risk_limits": {
+    "label": "TEMPORARY_PRACTICE_CERTIFICATION_LIMITS",
+    "approved_instruments": [
+      "AUD_USD",
+      "EUR_USD",
+      "GBP_USD",
+      "USD_CAD",
+      "NZD_USD"
+    ],
+    "approved_strategy": "nexus_practice_monitor_v1",
+    "max_order_units": 1,
+    "max_order_notional_usd": 10,
+    "max_open_positions": 1,
+    "max_trades_per_day": 3,
+    "max_daily_simulated_loss_usd": 5,
+    "signal_confidence_threshold": 0.75,
+    "stale_signal_seconds": 120,
+    "max_spread_units": 0.0015,
+    "cooldown_seconds": 300,
+    "allowed_order_types": [
+      "MARKET"
+    ],
+    "source": "temporary_practice_certification_defaults"
+  },
+  "current_simulated_pnl": "-16.1533",
+  "open_position_count": 0,
+  "pending_order_count": 0,
+  "most_recent_signal": null,
+  "most_recent_decision": {
+    "state": "WAITING_FOR_VALID_SIGNAL",
+    "signal": null,
+    "reason": "no_valid_strategy_signal_available",
+    "strategy_id": "nexus_practice_monitor_v1",
+    "market_ok": true
+  },
+  "kill_switch_active": false,
+  "last_market_data_fetch": "2026-08-04T18:38:59.893399+00:00",
+  "last_reconciliation": "2026-08-04T18:38:59.705168+00:00",
+  "updated_at": "2026-08-04T18:38:59.893347+00:00"
+}

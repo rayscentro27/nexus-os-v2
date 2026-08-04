@@ -73,7 +73,7 @@ const navGroups = [
     { id: 'reports', label: 'Reports', icon: 'FileText', status: '13', statusTone: 'blue' }
   ]},
   { label: 'Hermes Alpha — Separate', items: [
-    { id: 'alpha', label: 'Hermes Alpha', icon: 'Orbit', status: 'Local', statusTone: 'green' }
+    { id: 'alpha', label: 'Hermes Alpha', icon: 'Orbit', status: 'Research', statusTone: 'green' }
   ]},
   { label: 'Business', items: [
     { id: 'clients', label: 'Clients', icon: 'Building2', status: 'Gated', statusTone: 'amber' },
@@ -90,7 +90,7 @@ const navGroups = [
     { id: 'marketing', label: 'Marketing Drafts', icon: 'Megaphone', status: 'Draft', statusTone: 'amber' }
   ]},
   { label: 'System', items: [
-    { id: 'trading', label: 'Trading Demo', icon: 'TrendingUp', status: 'Paper', statusTone: 'amber' },
+    { id: 'trading', label: 'Trading Demo', icon: 'TrendingUp', status: 'Practice', statusTone: 'green' },
     { id: 'automation', label: 'Automation Scheduler', icon: 'Bot', status: '2 loaded', statusTone: 'green' },
     { id: 'cli', label: 'CLI / Tool Registry', icon: 'Database', status: 'Valid', statusTone: 'blue' },
     { id: 'settings', label: 'Settings', icon: 'Settings', status: 'Safe', statusTone: 'green' }
@@ -118,7 +118,7 @@ const modeLabels = {
   partners: 'Partner Offers',
   creative: 'Creative Studio',
   design: 'Design Library',
-  trading: 'Trading Lab (Paper Only)',
+  trading: 'Trading Lab (Oanda Practice)',
   seo: 'SEO / Marketing',
   integrations: 'Integrations',
   ops: 'Ops & Improvements',
@@ -127,7 +127,7 @@ const modeLabels = {
   health: 'System Health',
   proof: 'Events / Proof Ledger',
   hermes: 'Hermes Advisor',
-  alpha: 'Hermes Alpha — Local Conversation',
+  alpha: 'Hermes Alpha — Live Research',
   feedback: 'Hermes Feedback',
   settings: 'Settings'
 }
@@ -154,8 +154,8 @@ const datasets = {
     ['Options Income Idea', 'SPY • 1D • Jun 19, 2026', 'Needs Review', ''],
     ['Crypto Breakout Model', 'BTCUSDT • 4H', 'Paper Demo', ''],
     ['AI Market Watcher', 'SPX • 1D', 'Backtested', ''],
-    ['Vibe Trading Bridge Research', 'MULTI • 1D', 'Scheduled', ''],
-    ['Backtest Batch — Q2 Ideas', 'Various', 'Blocked', '']
+    ['Native Oanda Practice Engine', 'AUD/USD majors • 60s monitor', 'Active', 'Waiting for signal'],
+    ['Backtest Batch — Q2 Ideas', 'Various', 'Research', '']
   ],
   seo: [
     ['Funding Readiness Landing Page', 'Landing Page', 'Live', '92'],
@@ -169,7 +169,7 @@ const datasets = {
     ['Supabase', 'Postgres Database', 'Connected', ''],
     ['Netlify', 'Web Hosting & Deploy', 'Partial', ''],
     ['OpenRouter', 'LLM Routing', 'Connected', ''],
-    ['Oanda Demo', 'Market Data (Demo)', 'Needs Config', ''],
+    ['Oanda Practice', 'Market Data + Engine', 'Connected', ''],
     ['Oracle Read-Only', 'Data Warehouse', 'Partial', ''],
     ['Resend', 'Email Delivery', 'Connected', ''],
     ['YouTube Monitor', 'Channel & Video Data', 'Connected', ''],

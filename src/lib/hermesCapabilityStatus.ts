@@ -67,16 +67,16 @@ export function getCapabilityReport(): CapabilityReport {
 
   const webSearch: Capability = {
     name: 'Web Search',
-    status: 'not-deployed',
-    detail: 'The hermes-search edge function exists but is not deployed to Supabase.',
-    userFacing: 'I cannot search the internet yet. Web search requires deploying the hermes-search edge function.',
+    status: 'live',
+    detail: 'Alpha live research uses Brave Search through the server-side Telegram/runtime bridge and stores source-backed results.',
+    userFacing: 'Alpha can perform live external research through the server-side bridge. I will distinguish those source-backed results from local context.',
   };
 
   const trading: Capability = {
     name: 'Trading',
-    status: 'not-configured',
-    detail: 'No live broker API key. Trading is paper/demo only. Live trading is always blocked.',
-    userFacing: 'I cannot execute live trades. Trading is paper/demo only. Any real trading requires explicit approval.',
+    status: 'live',
+    detail: 'Oanda practice account is connected. The native Nexus practice engine monitors approved instruments, enforces risk controls, and blocks real-money endpoints.',
+    userFacing: 'Autonomous practice trading is active in the Oanda demo environment. Real-money trading is not configured.',
   };
 
   const youtubeResearch: Capability = {

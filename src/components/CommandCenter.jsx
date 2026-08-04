@@ -19,6 +19,7 @@ import {
   GitPullRequestArrow,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   UsersRound,
 } from 'lucide-react'
 import {
@@ -435,6 +436,8 @@ function HermesConversationHealthPanel({ onNavigate }) {
 export default function CommandCenter({ onNavigate, onAskHermes }) {
   const [state, setState] = useState(getExecutiveCommandCenterSnapshot)
   const [loadStatus, setLoadStatus] = useState('Loading live executive evidence...')
+  const [alphaLive, setAlphaLive] = useState(null)
+  const [tradingLive, setTradingLive] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -451,6 +454,19 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
     return () => { cancelled = true }
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    Promise.allSettled([
+      fetch('/runtime/alpha-live-research-status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null),
+      fetch('/runtime/oanda-practice-status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null),
+    ]).then(([alpha, trading]) => {
+      if (cancelled) return
+      setAlphaLive(alpha.status === 'fulfilled' ? alpha.value : null)
+      setTradingLive(trading.status === 'fulfilled' ? trading.value : null)
+    })
+    return () => { cancelled = true }
+  }, [])
+
   const icons = [ClipboardCheck, AlertTriangle, UsersRound, BadgeDollarSign, FileSearch, Network]
 
   return (
@@ -463,8 +479,8 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
       <div className="exec-topline">
         <Pill tone="green">{loadStatus}</Pill>
         <Pill tone="amber">STRIPE_MODE=test</Pill>
-        <Pill tone="red">Live trading blocked</Pill>
-        <Pill tone="blue">Repo Intelligence read-only</Pill>
+        <Pill tone={tradingLive?.engine_active ? 'green' : 'amber'}>{tradingLive?.engine_active ? `Oanda practice: ${tradingLive.state}` : 'Oanda practice: not checked'}</Pill>
+        <Pill tone={alphaLive?.ok ? 'green' : 'amber'}>{alphaLive?.ok ? `Alpha research: ${alphaLive.source_count} sources` : 'Alpha research: not checked'}</Pill>
       </div>
 
       <div className="metrics-grid executive-metrics-grid">
@@ -487,6 +503,22 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
         </div>
         <aside className="side-stack executive-side-stack">
           <SystemHealthPanel items={state.systemHealth} onNavigate={onNavigate} />
+          <ExecutiveSection title="Alpha Live Research" subtitle="Telegram-routed external research with source preservation." badge={alphaLive?.ok ? 'ACTIVE' : 'Not checked'}>
+            <div className="exec-release-list" data-testid="executive-alpha-live-research">
+              <div><Brain size={18} /><strong>Provider path</strong><span>{alphaLive?.brave_ok ? 'Brave PASS' : 'Brave not checked'} · {alphaLive?.openrouter_ok ? 'OpenRouter PASS' : 'OpenRouter not checked'}</span></div>
+              <div><BookOpenCheck size={18} /><strong>Last query</strong><span>{alphaLive?.query || 'No runtime snapshot loaded'}</span></div>
+              <div><Network size={18} /><strong>Sources</strong><span>{alphaLive?.source_count ?? 'unknown'}</span></div>
+              <div><GitPullRequestArrow size={18} /><strong>Opportunity</strong><span>{alphaLive?.opportunity_stored ? 'Stored for Ray Review' : 'Not stored or not checked'}</span></div>
+            </div>
+          </ExecutiveSection>
+          <ExecutiveSection title="Oanda Practice Trading" subtitle="Demo-account autonomous monitor. Real-money endpoints are blocked." badge={tradingLive?.engine_active ? 'PRACTICE ACTIVE' : 'Not checked'}>
+            <div className="exec-release-list" data-testid="executive-oanda-practice-trading">
+              <div><TrendingUp size={18} /><strong>State</strong><span>{tradingLive?.state || 'No runtime snapshot loaded'}</span></div>
+              <div><ShieldCheck size={18} /><strong>Strategy</strong><span>{tradingLive?.strategy || 'unknown'}</span></div>
+              <div><Activity size={18} /><strong>Positions / orders</strong><span>{tradingLive ? `${tradingLive.open_position_count} open · ${tradingLive.pending_order_count} pending` : 'unknown'}</span></div>
+              <div><LockKeyhole size={18} /><strong>Kill switch</strong><span>{tradingLive?.kill_switch_active ? 'ACTIVE' : 'Available / not active'}</span></div>
+            </div>
+          </ExecutiveSection>
           <RepoIntelligencePanel candidates={state.repoIntelligence} onNavigate={onNavigate} />
           <KnowledgeReviewPanel knowledgeHealth={state.knowledgeHealth} onNavigate={onNavigate} />
           <HermesConversationHealthPanel onNavigate={onNavigate} />
@@ -511,7 +543,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
       </div>
 
       <p className="nxos-notice">
-        This Command Center is a normalized executive read model. It does not install repositories, activate live Stripe, run live trading, publish content, send customer messages, or bypass Ray Review.
+        This Command Center is a normalized executive read model. It does not install repositories, activate live Stripe, run real-money trading, publish content, send customer messages, or bypass Ray Review.
       </p>
     </div>
   )
