@@ -9,7 +9,7 @@ import certifi
 
 ROOT = Path(__file__).resolve().parents[2]
 SSL = ssl.create_default_context(cafile=certifi.where())
-PERSONAS = {
+DEFAULT_PERSONAS = {
     'a': 'nexus-persona-a-browser@goclear.test',
     'b': 'nexus-persona-b-browser@goclear.test',
     'c': 'nexus-persona-c-browser@goclear.test',
@@ -53,6 +53,16 @@ def upsert_row(url, key, table, row):
                  headers={'Prefer': 'resolution=merge-duplicates,return=representation'})
     return result[0].get('id') if result else row.get('id')
 
+def list_auth_users(url, key):
+    users = []
+    for page in range(1, 11):
+        data = req(url, key, f'/auth/v1/admin/users?page={page}&per_page=200')
+        rows = data.get('users', []) if isinstance(data, dict) else []
+        users.extend(rows)
+        if len(rows) < 200:
+            break
+    return users
+
 def main():
     parser = argparse.ArgumentParser(description='Seed one or all synthetic credit fixtures')
     parser.add_argument('--persona', choices=['a', 'b', 'c'], help='only seed the selected persona')
@@ -64,12 +74,17 @@ def main():
         print('FAIL: server-side Supabase credentials unavailable')
         return 1
 
-    users = req(url, key, '/auth/v1/admin/users?per_page=1000').get('users', [])
+    users = list_auth_users(url, key)
     stats = {'created': 0, 'reused': 0}
 
-    personas = {args.persona: PERSONAS[args.persona]} if args.persona else PERSONAS
+    configured_personas = {
+        'a': env.get('E2E_PERSONA_A_EMAIL') or DEFAULT_PERSONAS['a'],
+        'b': env.get('E2E_PERSONA_B_EMAIL') or DEFAULT_PERSONAS['b'],
+        'c': env.get('E2E_PERSONA_C_EMAIL') or DEFAULT_PERSONAS['c'],
+    }
+    personas = {args.persona: configured_personas[args.persona]} if args.persona else configured_personas
     for persona_key, email in personas.items():
-        user = next((u for u in users if u.get('email', '').lower() == email), None)
+        user = next((u for u in users if u.get('email', '').lower() == email.lower()), None)
         if not user:
             print(f'WARN: persona {persona_key} auth user not found, skipping')
             continue

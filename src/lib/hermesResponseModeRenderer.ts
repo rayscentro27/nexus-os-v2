@@ -14,9 +14,9 @@ function cleanForCeo(text: string, strict = false): string {
 
 function renderSystemHealthCeo(text: string): string {
   const counts = text.match(/(\d+) locally reported healthy; (\d+) blocked or approval-gated/i);
-  const healthy = counts?.[1] || 'Most';
+  const healthy = counts?.[1] || 'Some';
   const blocked = counts?.[2] || 'some';
-  return `The system is mostly healthy. ${healthy} areas look good, and ${blocked} still need review or approval. This is based on local reports, not a fresh production check. The next move is to verify Supabase and deployment live.`;
+  return `The system is not live-certified from this answer. ${healthy} areas are locally reported healthy, and ${blocked} still need review or approval. This is based on local reports, not a fresh production check. The next move is to verify Supabase, the process registry, providers, and deployment with live probes.`;
 }
 
 function renderApprovalsCeo(text: string): string {

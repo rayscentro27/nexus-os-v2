@@ -161,18 +161,20 @@ test.describe('client credit workflow certification', () => {
         if (!token) return { error: 'no session' }
         const headers = { apikey: args.key, Authorization: `Bearer ${token}` }
 
-        // Get own client_id
-        const memRes = await fetch(`${args.url}/rest/v1/tenant_memberships?select=client_id&limit=1`, { headers }).catch(() => null)
+        // Get own client memberships. Certification users can have a legacy synthetic
+        // client and a dedicated certification client; both must remain isolated to
+        // this authenticated user.
+        const memRes = await fetch(`${args.url}/rest/v1/tenant_memberships?select=tenant_id,client_id,user_id&limit=20`, { headers }).catch(() => null)
         const membership = memRes?.ok ? await memRes.json() : []
-        const ownClientId = membership?.[0]?.client_id
+        const ownClientIds = new Set((membership || []).map((row: any) => row.client_id).filter(Boolean))
 
         // Get documents — RLS should only show own docs
         const docRes = await fetch(`${args.url}/rest/v1/client_documents?select=id,client_id&limit=50`, { headers }).catch(() => null)
         const docs = docRes?.ok ? await docRes.json() : []
 
-        // All visible docs should belong to this client
-        const allOwnDocs = docs.every((d: any) => d.client_id === ownClientId)
-        return { ownClientId, docCount: docs.length, allOwnDocs }
+        // All visible docs should belong to one of this user's client memberships.
+        const allOwnDocs = ownClientIds.size > 0 && docs.every((d: any) => ownClientIds.has(d.client_id))
+        return { ownClientIds: Array.from(ownClientIds), docCount: docs.length, allOwnDocs }
       }, { url: supabaseUrl, key: supabaseKey })
 
       expect(result.allOwnDocs).toBeTruthy()

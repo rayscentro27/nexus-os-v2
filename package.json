@@ -21,8 +21,8 @@
     "nexus:loop": "python3 scripts/activation/run_nexus_continuous_loop.py --json --safe-internal --feedback-enabled"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
-    "lucide-react": "^0.460.0",
+    "@supabase/supabase-js": "^2.112.0",
+    "lucide-react": "^1.28.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -33,6 +33,6 @@
     "playwright": "^1.61.1",
     "typescript": "^5.5.4",
     "vite": "^5.4.2",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   }
 }

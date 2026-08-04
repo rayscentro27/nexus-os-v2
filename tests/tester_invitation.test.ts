@@ -116,7 +116,7 @@ describe('tester invitation system', () => {
     it('creates hash function', () => {
       const sql = readFileSync(migrationPath, 'utf8')
       expect(sql).toContain('nexus_hash_invitation_token')
-      expect(sql).toContain("encode(digest(raw_token, 'sha256'), 'hex')")
+      expect(sql).toContain("encode(extensions.digest(raw_token, 'sha256'), 'hex')")
     })
 
     it('creates updated_at triggers', () => {

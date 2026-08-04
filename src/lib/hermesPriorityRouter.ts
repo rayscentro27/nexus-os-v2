@@ -47,6 +47,10 @@ export function routeHermesPriority(input: PriorityRouterInput): RouteDecision {
   const risky = /\b(place|execute|open|make)\b.*\b(?:trade|position)\b|\b(?:publish|charge|deploy|delete|truncate|run shell|submit (?:a )?dispute)\b|\bsend\b(?!.*\bevery\b)|\b(?:buy|sell)\b.*\b(?:asset|stock|crypto|security|position|trade)\b|\bstart\b.*\bscheduler\b/i.test(lower);
   if (risky) return decision({ routeId: 'safety_gate', activationLevel: 0, domain, intent: 'risky_execution', memoryPolicy: 'none', retrievalPolicy: 'none', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'blocked', reason: 'A state-changing or live/funded execution request is blocked before context retrieval.' });
 
+  if (/\bwhat (?:still )?needs my approval\b|\bwhat needs approval before action\b|\bwhat is waiting for (?:my |ray )?(?:approval|review)\b/i.test(lower)) {
+    return decision({ routeId: 'explicit_domain_retrieval', activationLevel: 2, domain: 'approvals', intent: 'approval_inventory', memoryPolicy: 'none', retrievalPolicy: 'supabase_then_static_fallback', modelPolicy: 'forbidden', diagnosticsPolicy: 'hidden', actionPolicy: 'none', reason: 'Explicit approval inventory questions must read approval/Ray Review context before status snapshots or session memory.' });
+  }
+
   // Active session continuation — check before intent frame and keyword chains
   const scopeKey = input.scopeKey;
   if (scopeKey && isSessionActive(scopeKey)) {

@@ -82,6 +82,11 @@ serve(async (req) => {
       paymentMode = "controlled_live_pilot"
       allowlistedForPilot = true
     }
+    const payment_config = {
+      payment_offer_slug: paymentOfferSlug,
+      payment_mode: paymentMode,
+      allowlisted_for_pilot: allowlistedForPilot,
+    }
 
     if (paymentMode === "public_live") return json({ error: "public_live_disabled" }, 400)
 
@@ -112,9 +117,9 @@ serve(async (req) => {
       task_checklist_version: taskChecklistVersion,
       build_commit: typeof body.buildCommit === "string" ? body.buildCommit.slice(0, 80) : null,
       fixture_version: typeof body.fixtureVersion === "string" ? body.fixtureVersion.slice(0, 40) : "v1",
-      payment_offer_slug: paymentOfferSlug,
-      payment_mode: paymentMode,
-      allowlisted_for_pilot: allowlistedForPilot,
+      payment_offer_slug: payment_config.payment_offer_slug,
+      payment_mode: payment_config.payment_mode,
+      allowlisted_for_pilot: payment_config.allowlisted_for_pilot,
       terms_version: termsVersion,
       personal_message: personalMessage,
     }).select("id, tester_name, tester_email, testing_level, invitation_status, token_last_four, expires_at, created_at").single()
@@ -131,7 +136,7 @@ serve(async (req) => {
       metadata: { testing_level: testingLevel, tester_email: testerEmail, personal_message: !!personalMessage },
     })
 
-    return json({ ok: true, invitation, acceptance_url: `/invite/${tokenHash}`, raw_token: rawToken })
+    return json({ ok: true, invitation, acceptance_url: `/invite/${tokenHash}`, payment_config, raw_token: rawToken })
   } catch (err) {
     console.error("[create-tester-invitation]", err)
     return json({ error: "internal_error" }, 500)

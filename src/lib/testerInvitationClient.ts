@@ -4,6 +4,12 @@ import { trackEvent } from './clientAnalytics';
 export type InvitationStatus = 'draft' | 'awaiting_approval' | 'approved' | 'sent' | 'accepted' | 'expired' | 'revoked' | 'completed' | 'failed';
 export type TestingLevel = 'friends_family_free' | 'friends_family_one_dollar' | 'synthetic_internal' | 'invited_test_mode' | 'controlled_live_pilot';
 
+export const TESTER_INVITATION_PAYMENT_GUARDS = {
+  friends_family_one_dollar: true,
+  controlled_live_pilot: false,
+  public_live: false,
+} as const;
+
 export interface TesterInvitation {
   id: string;
   tester_name: string;

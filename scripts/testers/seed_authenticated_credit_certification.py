@@ -5,7 +5,7 @@ from pathlib import Path
 import certifi
 
 ROOT=Path(__file__).resolve().parents[2]; SSL=ssl.create_default_context(cafile=certifi.where())
-PERSONAS={'a':'nexus-persona-a-browser@goclear.test','b':'nexus-persona-b-browser@goclear.test','c':'nexus-persona-c-browser@goclear.test'}
+DEFAULT_PERSONAS={'a':'nexus-persona-a-browser@goclear.test','b':'nexus-persona-b-browser@goclear.test','c':'nexus-persona-c-browser@goclear.test'}
 FIXTURE_DIR=ROOT/'data/runtime/authenticated_credit_fixtures'
 def envfile(path):
  d={}
@@ -28,7 +28,8 @@ def main():
   command=[sys.executable,str(ROOT/'scripts/testers/generate_authenticated_credit_fixtures.py'),'--persona',a.persona,'--out',str(FIXTURE_DIR)]
   if a.follow_up: command.append('--follow-up')
   subprocess.run(command,check=True,capture_output=True)
- users=json.loads(req(url,key,'/auth/v1/admin/users?per_page=1000'))['users'];user=next((x for x in users if x.get('email','').lower()==PERSONAS[a.persona]),None)
+ personas={'a':e.get('E2E_PERSONA_A_EMAIL') or DEFAULT_PERSONAS['a'],'b':e.get('E2E_PERSONA_B_EMAIL') or DEFAULT_PERSONAS['b'],'c':e.get('E2E_PERSONA_C_EMAIL') or DEFAULT_PERSONAS['c']}
+ users=json.loads(req(url,key,'/auth/v1/admin/users?per_page=1000'))['users'];user=next((x for x in users if x.get('email','').lower()==personas[a.persona]),None)
  if not user: print('FAIL: synthetic Auth user is not provisioned');return 1
  membership=json.loads(req(url,key,f"/rest/v1/tenant_memberships?user_id=eq.{user['id']}&select=tenant_id,client_id&limit=1"))
  if not membership: print('FAIL: synthetic user has no tenant/client bootstrap membership');return 1

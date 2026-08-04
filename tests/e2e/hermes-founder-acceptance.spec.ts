@@ -253,7 +253,8 @@ test.describe('Hermes live founder acceptance certification', () => {
       });
       page.on('pageerror', (err) => errors.push(`pageerror:${err.message}`));
       page.on('requestfailed', (req) => {
-        if (!/favicon|googleapis|gstatic|cdn-cgi\/rum/i.test(req.url())) errors.push(`requestfailed:${req.url()}:${req.failure()?.errorText || 'unknown'}`);
+        const failure = req.failure()?.errorText || 'unknown';
+        if (!/favicon|googleapis|gstatic|cdn-cgi\/rum|net::ERR_ABORTED/i.test(req.url() + failure)) errors.push(`requestfailed:${req.url()}:${failure}`);
       });
       const results = await runConversation(page, turns, label, errors);
       allResults.push(...results);

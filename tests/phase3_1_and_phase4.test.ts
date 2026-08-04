@@ -39,10 +39,12 @@ describe('Phase 3.1 — Ray Review routing', () => {
     expect(code).toContain('duplicate')
   })
 
-  it('only routes blocker/high severity', () => {
+  it('only routes medium/high/blocker severity', () => {
     const code = readFileSync(routingPath, 'utf8')
-    expect(code).toContain("severity !== 'blocker'")
-    expect(code).toContain("severity !== 'high'")
+    expect(code).toContain("'blocker'")
+    expect(code).toContain("'high'")
+    expect(code).toContain("'medium'")
+    expect(code).toContain('RAY_REVIEW_SEVERITIES')
   })
 
   it('sanitizes text fields', () => {

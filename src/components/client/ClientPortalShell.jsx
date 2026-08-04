@@ -123,7 +123,7 @@ export function HermesGuidancePanel({ path, statuses }) {
     <aside className="client-hermes-panel">
       <div className="client-hermes-header">
         <div className="client-hermes-avatar"><Sparkles size={22} /></div>
-        <div><strong>Hermes Guidance</strong><span className="client-hermes-advisory">Advisory only — not a decision</span></div>
+        <div><strong>Clyde Guidance</strong><span className="client-hermes-advisory">Advisory only — not a decision</span></div>
       </div>
       <div className="client-hermes-body">
         {dynamicItems.length > 0 ? (
@@ -162,7 +162,7 @@ export function HermesGuidancePanel({ path, statuses }) {
         )}
       </div>
       <div className="client-hermes-footer">
-        <span className="client-safe-note">Hermes guidance is advisory. GoClear review is required before any application or external action.</span>
+        <span className="client-safe-note">Clyde guidance is advisory. GoClear review is required before any application or external action.</span>
       </div>
     </aside>
   )

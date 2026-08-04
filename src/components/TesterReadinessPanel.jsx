@@ -25,6 +25,11 @@ const SEVERITY_COLORS = {
   low: '#3b82f6',
   cosmetic: '#a855f7',
 }
+const RAY_REVIEW_SEVERITIES = new Set(['blocker', 'high', 'medium'])
+
+function canRouteFeedbackToRayReview(item) {
+  return RAY_REVIEW_SEVERITIES.has(String(item?.severity || '').toLowerCase())
+}
 
 function StatusDot({ status }) {
   const color = STATUS_COLORS[status] || STATUS_COLORS.unknown
@@ -97,6 +102,10 @@ function FeedbackForm({ persona, sessionId, onClose, onSubmit }) {
         build_commit: import.meta.env?.VITE_BUILD_COMMIT || '',
       }).select()
       if (res.error) throw res.error
+      const inserted = Array.isArray(res.data) ? res.data[0] : res.data
+      if (inserted && canRouteFeedbackToRayReview(inserted)) {
+        await routeFeedbackToRayReview(inserted).catch(err => console.warn('Ray Review routing skipped:', err?.message || err))
+      }
       onSubmit?.()
       onClose?.()
     } catch (err) {
@@ -459,8 +468,8 @@ function PersonaCard({ persona, status, sessions, feedback, onAction }) {
                 <div key={f.id} style={{ padding: '7px 8px', borderRadius: 4, background: '#0f172a', marginBottom: 4, fontSize: 11, display: 'grid', gridTemplateColumns: 'auto minmax(0,1fr) auto', gap: 8, alignItems: 'center' }}>
                   <span style={{ color: SEVERITY_COLORS[f.severity] || '#e2e8f0' }}>[{f.severity}]</span>
                   <span style={{ color: '#e2e8f0', flex: 1, margin: '0 8px' }}>{f.issue_title}</span>
-                  <span style={{ color: f.ray_review_item_id ? '#10b981' : '#64748b' }}>{f.ray_review_item_id ? 'Ray Review linked' : f.severity === 'blocker' || f.severity === 'high' ? 'Needs Ray Review' : 'Tester backlog'}</span>
-                  {f.ray_review_item_id ? <button onClick={() => { window.location.hash = 'rayreview' }} style={{ gridColumn: '2 / -1', justifySelf: 'start', padding: '3px 8px', borderRadius: 5, border: '1px solid #10b98160', background: '#10b98115', color: '#10b981', cursor: 'pointer', fontSize: 10 }}>Open linked Ray Review draft</button> : (f.severity === 'blocker' || f.severity === 'high') ? <button disabled={routingId === f.id} onClick={() => routeFeedback(f)} style={{ gridColumn: '2 / -1', justifySelf: 'start', padding: '3px 8px', borderRadius: 5, border: '1px solid #f9731660', background: '#f9731615', color: '#f97316', cursor: routingId === f.id ? 'default' : 'pointer', fontSize: 10 }}>{routingId === f.id ? 'Routing...' : 'Create Ray Review draft'}</button> : null}
+                  <span style={{ color: f.ray_review_item_id ? '#10b981' : '#64748b' }}>{f.ray_review_item_id ? 'Ray Review linked' : canRouteFeedbackToRayReview(f) ? 'Needs Ray Review' : 'Tester backlog'}</span>
+                  {f.ray_review_item_id ? <button onClick={() => { window.location.hash = 'rayreview' }} style={{ gridColumn: '2 / -1', justifySelf: 'start', padding: '3px 8px', borderRadius: 5, border: '1px solid #10b98160', background: '#10b98115', color: '#10b981', cursor: 'pointer', fontSize: 10 }}>Open linked Ray Review draft</button> : canRouteFeedbackToRayReview(f) ? <button disabled={routingId === f.id} onClick={() => routeFeedback(f)} style={{ gridColumn: '2 / -1', justifySelf: 'start', padding: '3px 8px', borderRadius: 5, border: '1px solid #f9731660', background: '#f9731615', color: '#f97316', cursor: routingId === f.id ? 'default' : 'pointer', fontSize: 10 }}>{routingId === f.id ? 'Routing...' : 'Create Ray Review draft'}</button> : null}
                 </div>
               ))}
             </>

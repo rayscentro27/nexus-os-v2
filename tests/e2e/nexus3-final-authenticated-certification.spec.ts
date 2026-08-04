@@ -104,10 +104,26 @@ async function verifyClientRoute(page: Page, route: string, panelClass: string, 
   } else {
     await expect(page.locator('.wc-advisor')).toBeHidden()
   }
-  await expect(page.locator('.wc-pageHost')).not.toContainText(/Purchased service/i)
-  await expect(page.locator('.wc-pageHost')).not.toContainText(/Credit stage guidance/i)
-  await expect(page.locator('.wc-pageHost .guided-client-journey')).toHaveCount(0)
-  await expect(page.locator('[data-testid="client-revenue-service"]')).toHaveCount(0)
+  if (route === '/client/dashboard') {
+    await expect(page.getByTestId('guided-dashboard')).toBeVisible()
+    await expect(page.getByTestId('client-revenue-service')).toBeVisible()
+    await expect(page.getByTestId('client-revenue-service')).toContainText(/TEST MODE|No paid readiness service/i)
+  } else {
+    await expect(page.getByTestId('client-revenue-service')).toHaveCount(0)
+  }
+  if (route === '/client/credit-profile' || route === '/client/credit-utilization') {
+    await expect(page.locator('.wc-guidedStageStack')).toBeVisible()
+    await expect(page.locator('.wc-pageHost')).toContainText(/Credit stage guidance/i)
+  }
+  if (route === '/client/documents') {
+    await expect(page.getByTestId('guided-documents-vault')).toBeVisible()
+  }
+  if (route === '/client/funding-readiness') {
+    await expect(page.getByTestId('guided-funding-readiness')).toBeVisible()
+  }
+  if (route === '/client/request-review') {
+    await expect(page.getByTestId('guided-request-review')).toBeVisible()
+  }
   await expectNoHorizontalOverflow(page)
   await expectBasicAccessibility(page)
   expect(errors.filter(text => !/favicon|Failed to load resource|TypeError: Failed to fetch/i.test(text))).toEqual([])
@@ -126,10 +142,10 @@ test.describe('Nexus 3 final authenticated certification', () => {
         for (const [route, panelClass, heading] of clientRoutes) {
           await verifyClientRoute(page, route, panelClass, heading)
         }
-        await page.getByRole('button', { name: /Chat with Hermes/i }).click()
-        await expect(page.getByRole('dialog', { name: /Ask Hermes/i })).toBeVisible()
-        await expect(page.getByRole('dialog', { name: /Ask Hermes/i })).toContainText(/Current page context|Recommended actions/i)
-        await page.getByRole('button', { name: /Close Hermes chat/i }).click()
+        await page.getByRole('button', { name: /Chat with Clyde/i }).click()
+        await expect(page.getByRole('dialog', { name: /Ask Clyde/i })).toBeVisible()
+        await expect(page.getByRole('dialog', { name: /Ask Clyde/i })).toContainText(/Current page context|Recommended actions/i)
+        await page.getByRole('button', { name: /Close Clyde chat/i }).click()
         await page.locator('.wc-topSignOut').click()
         await expect(page).toHaveURL(/\/client\/login/, { timeout: 15_000 })
       })

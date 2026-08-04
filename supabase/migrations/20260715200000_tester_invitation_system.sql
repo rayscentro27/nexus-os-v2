@@ -227,7 +227,7 @@ grant select on public.invite_email_drafts to authenticated;
 -- ── Helper: hash invitation token ─────────────────────────────────────────────
 create or replace function public.nexus_hash_invitation_token(raw_token text)
 returns text language sql immutable as $$
-  encode(digest(raw_token, 'sha256'), 'hex')
+  select encode(extensions.digest(raw_token, 'sha256'), 'hex')
 $$;
 
 -- ── Trigger: update updated_at ────────────────────────────────────────────────

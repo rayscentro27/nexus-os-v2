@@ -14,6 +14,8 @@ create table if not exists public.hermes_conversation_state (
 
 alter table public.hermes_conversation_state enable row level security;
 
+grant select, insert, update on public.hermes_conversation_state to authenticated;
+
 do $$
 begin
   if not exists (

@@ -6,6 +6,7 @@
  */
 
 import { isSupabaseConfigured } from './supabaseClient';
+import { getBundledOperationalSnapshot } from './nexusOperationalTruth';
 
 export interface HealthCheck {
   id: string;
@@ -32,16 +33,18 @@ export function runSystemHealthChecks(): HealthCheck[] {
   const now = new Date().toISOString();
   const checks: HealthCheck[] = [];
 
+  const bundledRegistry = getBundledOperationalSnapshot();
+
   // Supabase
   checks.push({
     id: 'supabase_connection',
     name: 'Supabase Connection',
     category: 'database',
-    status: isSupabaseConfigured ? 'healthy' : 'not_configured',
+    status: isSupabaseConfigured ? 'unknown' : 'not_configured',
     last_checked: now,
     source: 'local',
-    details: isSupabaseConfigured ? 'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY configured' : 'Supabase not configured',
-    next_action: isSupabaseConfigured ? 'Verify live connectivity' : 'Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY',
+    details: isSupabaseConfigured ? 'Browser Supabase configuration is present; live connectivity requires an authenticated probe.' : 'Supabase not configured',
+    next_action: isSupabaseConfigured ? 'Run authenticated Supabase health probe' : 'Configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY',
   });
 
   // Build status
@@ -49,11 +52,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'build_status',
     name: 'Build Status',
     category: 'system',
-    status: 'healthy',
+    status: 'unknown',
     last_checked: now,
     source: 'local',
-    details: 'Last build passed (TypeScript + Vite)',
-    next_action: 'Monitor for build failures',
+    details: 'Build health must come from the latest completed local or CI command, not static UI state.',
+    next_action: 'Run npm run build and record the result',
   });
 
   // Test suite
@@ -73,11 +76,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'got_funding',
     name: 'Got Funding Landing Page',
     category: 'marketing',
-    status: 'healthy',
+    status: 'unknown',
     last_checked: now,
     source: 'config',
-    details: 'Deployed on Netlify, form submission working',
-    next_action: 'Monitor form submissions',
+    details: 'Production form status is not certified by this browser adapter.',
+    next_action: 'Run production form smoke test',
   });
 
   // Netlify
@@ -85,11 +88,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'netlify',
     name: 'Netlify Deployment',
     category: 'deployment',
-    status: 'healthy',
+    status: 'unknown',
     last_checked: now,
     source: 'config',
-    details: 'netlify.toml configured, build command set',
-    next_action: 'Verify production deployment',
+    details: 'netlify.toml is configured; deployment status requires Netlify or production probe evidence.',
+    next_action: 'Verify production deployment identity',
   });
 
   // Alpha provider
@@ -98,11 +101,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'alpha_provider',
     name: 'Alpha Provider (OpenRouter)',
     category: 'alpha',
-    status: openrouterStatus.present ? 'healthy' : 'not_configured',
+    status: openrouterStatus.present ? 'unknown' : 'not_configured',
     last_checked: now,
     source: openrouterStatus.source as 'env' | 'config',
-    details: openrouterStatus.present ? 'OPENROUTER_API_KEY present' : 'OPENROUTER_API_KEY not set',
-    next_action: openrouterStatus.present ? 'Test Alpha provider bridge' : 'Configure OPENROUTER_API_KEY',
+    details: openrouterStatus.present ? 'Provider key presence only; bridge reachability has not been probed.' : 'OPENROUTER_API_KEY not set',
+    next_action: openrouterStatus.present ? 'Run bounded Alpha provider probe' : 'Configure OPENROUTER_API_KEY',
   });
 
   // Firecrawl
@@ -134,11 +137,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'youtube_api',
     name: 'YouTube API',
     category: 'research',
-    status: 'healthy',
+    status: 'unknown',
     last_checked: now,
     source: 'env',
-    details: 'YOUTUBE_API_KEY present in .env.local',
-    next_action: 'Test YouTube API call',
+    details: 'YouTube key presence is not a successful retrieval or ingestion record.',
+    next_action: 'Run bounded YouTube retrieval probe',
   });
 
   // Resend
@@ -170,11 +173,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'oanda',
     name: 'Oanda Demo Trading',
     category: 'trading',
-    status: 'healthy',
+    status: 'unknown',
     last_checked: now,
     source: 'env',
-    details: 'OANDA_API_KEY and OANDA_ACCOUNT_ID present, demo mode active',
-    next_action: 'Test demo trading connectivity',
+    details: 'Oanda credential presence is not a live provider check.',
+    next_action: 'Run bounded Oanda demo connectivity probe',
   });
 
   // Meta/Instagram
@@ -194,11 +197,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'process_registry',
     name: 'Process Registry',
     category: 'system',
-    status: 'healthy',
+    status: bundledRegistry.freshness === 'CURRENT' ? 'unknown' : 'degraded',
     last_checked: now,
     source: 'local',
-    details: '20 processes registered in nexusProcessRegistry.ts',
-    next_action: 'Verify all processes have receipts',
+    details: `${bundledRegistry.processes.length} bundled process rows; freshness ${bundledRegistry.freshness}. This is not the live Supabase run registry.`,
+    next_action: 'Run live process registry probe',
   });
 
   // Report registry
@@ -206,11 +209,11 @@ export function runSystemHealthChecks(): HealthCheck[] {
     id: 'report_registry',
     name: 'Report Registry',
     category: 'system',
-    status: 'healthy',
+    status: 'unknown',
     last_checked: now,
     source: 'local',
-    details: '1620+ reports generated across all categories',
-    next_action: 'Connect reports to dashboard',
+    details: 'Reports are bundled/local artifacts; freshness and active consumers vary by report.',
+    next_action: 'Connect reports to authoritative registry records',
   });
 
   // Client portal

@@ -13,7 +13,7 @@ describe('Hermes CEO default, access registry, and safe actions', () => {
 
   it('uses CEO system-health output by default and audit only on request', async () => {
     const health = await handleHermesMessage({ message: 'what is the system health', ...scope });
-    expect(health.text).toMatch(/system is mostly healthy/i);
+    expect(health.text).toMatch(/not live-certified/i);
     expect(health.text).toMatch(/local reports.*not a fresh production check/i);
     expect(health.text).toMatch(/next move/i);
     expect(health.text).not.toMatch(/Audit details|Route:|reports\//i);

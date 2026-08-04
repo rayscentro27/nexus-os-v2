@@ -128,6 +128,13 @@ alter table public.department_incidents enable row level security;
 alter table public.department_work_verifications enable row level security;
 alter table public.governed_execution_plans enable row level security;
 
+grant select, insert, update on public.nexus_departments to authenticated;
+grant select, insert, update on public.department_queue_items to authenticated;
+grant select, insert, update on public.department_blockers to authenticated;
+grant select, insert, update on public.department_incidents to authenticated;
+grant select, insert, update on public.department_work_verifications to authenticated;
+grant select, insert, update on public.governed_execution_plans to authenticated;
+
 -- Admin-only RLS. Clients, anonymous users, and Alpha have no direct table policies.
 do $$
 declare t text;

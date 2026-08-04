@@ -37,7 +37,7 @@ import {
   ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
   FileWarning, FileSearch, Image, Layers3, LayoutDashboard, LayoutGrid, Megaphone, Orbit, PauseCircle,
   Plug, ScanSearch, Search, SearchCheck, Send, Settings, Sparkles, Star, Target, TrendingUp,
-  TriangleAlert, WandSparkles, Youtube, Zap
+  TriangleAlert, WandSparkles, Video as Youtube, Zap
 } from 'lucide-react'
 
 const toneClass = {
@@ -65,9 +65,9 @@ const kindThumbIcon = {
 
 const navGroups = [
   { label: 'Executive', items: [
-    { id: 'command', label: 'Command Center', icon: 'LayoutDashboard', status: 'Live', statusTone: 'green' },
-    { id: 'operations', label: 'Nexus Operations', icon: 'Orbit', status: 'Internal', statusTone: 'green' },
-    { id: 'health', label: 'System Health', icon: 'Activity', status: 'Healthy', statusTone: 'green' },
+    { id: 'command', label: 'Command Center', icon: 'LayoutDashboard', status: 'Internal', statusTone: 'blue' },
+    { id: 'operations', label: 'Nexus Operations', icon: 'Orbit', status: 'Report-backed', statusTone: 'amber' },
+    { id: 'health', label: 'System Health', icon: 'Activity', status: 'Probe required', statusTone: 'amber' },
     { id: 'rayreview', label: 'Ray Review', icon: 'CheckCircle2', status: '64', statusTone: 'green' },
     { id: 'hermes', label: 'Hermes Workroom', icon: 'Sparkles', status: 'Advisor', statusTone: 'blue' },
     { id: 'reports', label: 'Reports', icon: 'FileText', status: '13', statusTone: 'blue' }

@@ -64,7 +64,7 @@ describe('Hermes client provenance and CEO renderer polish', () => {
   it('renders system health as a short spoken CEO answer', async () => {
     await handleHermesMessage({ message: 'what is the system health', ...scope });
     const ceo = await handleHermesMessage({ message: 'give me the CEO version', ...scope });
-    expect(ceo.text).toMatch(/system is mostly healthy/i);
+    expect(ceo.text).toMatch(/not live-certified/i);
     expect(ceo.text).toMatch(/local reports.*not a fresh production check/i);
     expect(ceo.text).toMatch(/next move/i);
     expect(ceo.text.split(/[.!?]+/).filter((sentence) => sentence.trim())).toHaveLength(4);

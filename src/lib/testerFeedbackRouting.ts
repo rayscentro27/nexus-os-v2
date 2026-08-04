@@ -28,6 +28,7 @@ const SEVERITY_TO_RISK: Record<string, string> = {
   low: 'low',
   cosmetic: 'low',
 }
+const RAY_REVIEW_SEVERITIES = new Set(['blocker', 'high', 'medium'])
 
 function sanitize(text: unknown, maxLen = 2000): string {
   if (text === null || text === undefined) return ''
@@ -64,8 +65,8 @@ async function findExistingRayReview(client: SupabaseLike, feedbackId: string) {
 export async function routeFeedbackToRayReview(feedback: FeedbackRow, client: SupabaseLike | null = supabase): Promise<{ ok: boolean; rayReviewId?: string; error?: string }> {
   if (!client) return { ok: false, error: 'Supabase not configured' }
   const severity = sanitize(feedback.severity, 20).toLowerCase()
-  if (severity !== 'blocker' && severity !== 'high') {
-    return { ok: false, error: 'Only blocker/high feedback is routed to Ray Review' }
+  if (!RAY_REVIEW_SEVERITIES.has(severity)) {
+    return { ok: false, error: 'Only medium/high/blocker feedback is routed to Ray Review' }
   }
 
   if (feedback.ray_review_item_id) {
@@ -154,7 +155,7 @@ export async function routeAllBlockerHighFeedback(): Promise<{ routed: number; s
   const { data: feedbacks } = await supabase
     .from('tester_feedback')
     .select('*')
-    .in('severity', ['blocker', 'high'])
+    .in('severity', ['blocker', 'high', 'medium'])
     .eq('status', 'open')
     .limit(50)
 

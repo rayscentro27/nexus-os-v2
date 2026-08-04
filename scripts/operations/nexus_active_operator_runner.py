@@ -20,6 +20,8 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+from process_registry_adapter import emit_process_run
+
 REGISTRY_PATH = "data/operations/nexus_process_registry.json"
 HEARTBEAT_PATH = "reports/runtime/nexus_active_operator_heartbeat_latest.json"
 RUNNER_REPORT_PATH = "reports/runtime/nexus_active_operator_runner_latest.md"
@@ -83,9 +85,9 @@ def run_process(process, dry_run=False, telegram_triggered=False):
         "risk_level": risk,
         "report_path": report_path,
         "simulated": True,
-        "note": "Active internal run — receipt written"
+        "note": "Active internal runner wrote a receipt only; no underlying job was executed."
     }
-    return "completed", details
+    return "simulated", details
 
 def main():
     args = sys.argv[1:]
@@ -114,6 +116,24 @@ def main():
 
         status, details = run_process(process, dry_run, telegram_triggered)
         receipt = write_receipt(process["process_id"], status, details, telegram_triggered)
+        emit_process_run(
+            process_key=process["process_id"],
+            name=process.get("name", process["process_id"]),
+            status="SIMULATED" if status in {"simulated", "dry_run"} else status.upper(),
+            idempotency_key=receipt["receipt_id"],
+            entry_point="scripts/operations/nexus_active_operator_runner.py",
+            trigger_type="telegram" if telegram_triggered else "manual",
+            output_location=os.path.join(RECEIPT_DIR, f"{receipt['receipt_id']}.json"),
+            items_attempted=1,
+            items_succeeded=0 if status in {"simulated", "dry_run"} else 1,
+            items_failed=0,
+            metadata={
+                "runner_status": status,
+                "dry_run": dry_run,
+                "telegram_triggered": telegram_triggered,
+                "remote_registry_updated": False,
+            },
+        )
         receipts.append(receipt)
         results.append({
             "process_id": process["process_id"],

@@ -5,9 +5,10 @@ const enabled = process.env.E2E_ENABLE_AUTHENTICATED === 'true'
 const personaA = { email: process.env.E2E_PERSONA_A_EMAIL, password: process.env.E2E_PERSONA_A_PASSWORD }
 const personaB = { email: process.env.E2E_PERSONA_B_EMAIL, password: process.env.E2E_PERSONA_B_PASSWORD }
 const personaC = { email: process.env.E2E_PERSONA_C_EMAIL, password: process.env.E2E_PERSONA_C_PASSWORD }
+const personaD = { email: process.env.E2E_PERSONA_D_EMAIL, password: process.env.E2E_PERSONA_D_PASSWORD }
 const admin = { email: process.env.E2E_ADMIN_EMAIL, password: process.env.E2E_ADMIN_PASSWORD }
 
-const anyPersona = [personaA, personaB, personaC, admin].some(p => p.email && p.password)
+const anyPersona = [personaA, personaB, personaC, personaD, admin].some(p => p.email && p.password)
 
 test.describe('authenticated browser certification', () => {
   test.skip(!enabled || !anyPersona, 'Set E2E_ENABLE_AUTHENTICATED=true and at least one set of persona credentials in env.')
@@ -86,6 +87,33 @@ test.describe('authenticated browser certification', () => {
       await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
       await page.getByLabel(/email/i).fill(personaC.email!)
       await page.getByLabel(/password/i).fill(personaC.password!)
+      await page.getByRole('button', { name: /sign in/i }).click()
+      await expect(page).toHaveURL(/\/client\/(dashboard|documents|credit-profile)/)
+      await page.goto('/admin/credit-specialist')
+      await expect(page.getByRole('heading', { name: /admin access required/i })).toBeVisible()
+    })
+  })
+
+  // ─── Persona D ────────────────────────────────────────────────────────
+  test.describe('Persona D', () => {
+    test.skip(!personaD.email || !personaD.password, 'E2E_PERSONA_D_EMAIL and E2E_PERSONA_D_PASSWORD required')
+
+    test('Persona D: client login succeeds and session persists', async ({ page }) => {
+      await page.goto('/client/login')
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
+      await page.getByLabel(/email/i).fill(personaD.email!)
+      await page.getByLabel(/password/i).fill(personaD.password!)
+      await page.getByRole('button', { name: /sign in/i }).click()
+      await expect(page).toHaveURL(/\/client\/(dashboard|documents|credit-profile)/)
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 15_000 })
+      await expect(page).not.toHaveURL(/\/client\/login/)
+    })
+
+    test('Persona D: cannot access admin routes', async ({ page }) => {
+      await page.goto('/client/login')
+      await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
+      await page.getByLabel(/email/i).fill(personaD.email!)
+      await page.getByLabel(/password/i).fill(personaD.password!)
       await page.getByRole('button', { name: /sign in/i }).click()
       await expect(page).toHaveURL(/\/client\/(dashboard|documents|credit-profile)/)
       await page.goto('/admin/credit-specialist')

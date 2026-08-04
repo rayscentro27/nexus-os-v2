@@ -60,14 +60,19 @@ describe('tester feedback → persisted Ray Review routing', () => {
     expect(client.calls.some((call: any[]) => call[0] === 'update' && call[1].ray_review_item_id === 'ray-001')).toBe(true)
   })
 
-  it('reuses an existing draft and keeps medium feedback in the backlog', async () => {
+  it('reuses an existing draft, routes medium feedback, and keeps low feedback in the backlog', async () => {
     const duplicateClient = fakeClient({ existing: [{ id: 'ray-existing', payload: { feedback_record_id: 'feedback-001' } }] })
     const duplicate = await routeFeedbackToRayReview(feedback(), duplicateClient)
     expect(duplicate).toEqual({ ok: true, rayReviewId: 'ray-existing' })
     expect(duplicateClient.calls.filter((call: any[]) => call[0] === 'insert')).toHaveLength(0)
 
-    const backlog = await routeFeedbackToRayReview(feedback({ id: 'feedback-002', severity: 'medium' }), fakeClient())
+    const mediumClient = fakeClient()
+    const medium = await routeFeedbackToRayReview(feedback({ id: 'feedback-002', severity: 'medium' }), mediumClient)
+    expect(medium).toEqual({ ok: true, rayReviewId: 'ray-001' })
+    expect(mediumClient.calls.some((call: any[]) => call[0] === 'update' && call[1].ray_review_item_id === 'ray-001')).toBe(true)
+
+    const backlog = await routeFeedbackToRayReview(feedback({ id: 'feedback-003', severity: 'low' }), fakeClient())
     expect(backlog.ok).toBe(false)
-    expect(backlog.error).toMatch(/Only blocker\/high/)
+    expect(backlog.error).toMatch(/Only medium\/high\/blocker/)
   })
 })

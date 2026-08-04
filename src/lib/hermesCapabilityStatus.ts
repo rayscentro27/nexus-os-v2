@@ -45,23 +45,23 @@ export function getCapabilityReport(): CapabilityReport {
 
   const supabase: Capability = {
     name: 'Supabase Database',
-    status: supabaseConfigured ? 'live' : 'not-configured',
+    status: supabaseConfigured ? 'available' : 'not-configured',
     detail: supabaseConfigured
-      ? 'Supabase client is configured with anon key. Live read queries work when authenticated.'
+      ? 'Supabase client is configured. A current authenticated probe is required before calling it live.'
       : 'VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are not set.',
     userFacing: supabaseConfigured
-      ? 'I have live Supabase read access for supported tables when you are authenticated.'
+      ? 'Supabase is configured, but I need a current authenticated read probe before I can call it connected.'
       : 'I do not have live Supabase access. I use local bundled data.',
   };
 
   const liveModel: Capability = {
     name: 'Live AI Model',
-    status: model.configured ? 'live' : 'not-configured',
+    status: model.configured ? 'available' : 'not-configured',
     detail: model.configured
-      ? `Using ${model.model} via ${model.provider}. Cost-capped and logged.`
+      ? `${model.model} via ${model.provider} is configured. A bounded live probe is required before calling it connected.`
       : 'VITE_HERMES_CHAT_ENABLED is not true.',
     userFacing: model.configured
-      ? `I have a live AI model (${model.model}) for strategic reasoning.`
+      ? `A model route is configured for ${model.model}, but I need a successful probe before I call it live.`
       : 'I do not have a live AI model. I reason from local context, Supabase data, and reports.',
   };
 
@@ -109,7 +109,7 @@ export function getCapabilityReport(): CapabilityReport {
 
   const conversationMemory: Capability = {
     name: 'Conversation Memory',
-    status: chatEnabled ? 'live' : 'not-configured',
+    status: chatEnabled ? 'available' : 'not-configured',
     detail: chatEnabled
       ? 'Conversation history is tracked within the session. Follow-up references like "number 3" and "that one" resolve against recent context.'
       : 'No conversation memory — each message is independent.',
@@ -127,17 +127,10 @@ export function getCapabilityReport(): CapabilityReport {
   if (liveCount === totalCount) overallStatus = 'all-live';
   else if (liveCount > 0) overallStatus = 'partially-live';
 
-  // Badge text for UI
-  let badgeText = 'Local context only';
-  if (liveCount === 3 && supabaseConfigured && model.configured) {
-    badgeText = 'Live Supabase + Model Ready';
-  } else if (supabaseConfigured && model.configured) {
-    badgeText = 'Live Supabase + Model Ready';
-  } else if (supabaseConfigured) {
-    badgeText = 'Live Supabase Ready';
-  } else if (model.configured) {
-    badgeText = 'Model Ready';
-  }
+  const availableCount = capabilities.filter(c => c.status === 'available').length;
+  let badgeText = 'Local context';
+  if (availableCount > 0) badgeText = 'Configured; probe required';
+  if (liveCount > 0) badgeText = 'Probe-backed partial access';
 
   return {
     supabase,

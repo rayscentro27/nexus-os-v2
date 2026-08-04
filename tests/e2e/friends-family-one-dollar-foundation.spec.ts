@@ -1,5 +1,5 @@
 import { test, expect } from 'playwright/test'
-import { readFileSync } from 'fs'
+import { readdirSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 
 const BASE_URL = process.env.E2E_BASE_URL || 'http://127.0.0.1:4173'
@@ -12,7 +12,7 @@ function readFile(relativePath: string): string {
 function readDistJs(): string {
   try {
     const distDir = resolve(process.cwd(), 'dist')
-    const files = require('fs').readdirSync(resolve(distDir, 'assets')).filter((f: string) => f.endsWith('.js'))
+    const files = readdirSync(resolve(distDir, 'assets')).filter((f: string) => f.endsWith('.js'))
     return files.map((f: string) => readFileSync(resolve(distDir, 'assets', f), 'utf-8')).join('\n')
   } catch {
     return ''

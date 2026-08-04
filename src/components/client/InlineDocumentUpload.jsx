@@ -18,6 +18,16 @@ function guessCategory(filename, contextCategory) {
   return 'other'
 }
 
+function inferClassification(filename, contextCategory) {
+  const category = guessCategory(filename, contextCategory)
+  const confidence = contextCategory ? 0.86 : category === 'other' ? 0.35 : 0.72
+  return {
+    category,
+    confidence,
+    state: confidence >= 0.7 ? 'CLASSIFIED_HIGH_CONFIDENCE' : 'NEEDS_CLIENT_CONFIRMATION',
+  }
+}
+
 const CATEGORY_LABELS = {
   credit_reports: 'Credit Reports',
   credit_report: 'Credit Reports',
@@ -48,6 +58,7 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState(null)
   const [selectedCategory, setSelectedCategory] = useState(category || '')
+  const [classification, setClassification] = useState(null)
   const inputRef = useRef(null)
 
   const handleFile = (e) => {
@@ -59,7 +70,9 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
     }
     setFile(f)
     setResult(null)
-    if (!selectedCategory) setSelectedCategory(guessCategory(f.name, category))
+    const inferred = inferClassification(f.name, category)
+    setClassification(inferred)
+    if (!selectedCategory || inferred.state === 'CLASSIFIED_HIGH_CONFIDENCE') setSelectedCategory(inferred.category)
   }
 
   const handleUpload = async () => {
@@ -89,7 +102,8 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
       if (uploadError) throw uploadError
       setProgress(70)
 
-      const cat = selectedCategory || guessCategory(file.name, category)
+      const inferred = classification || inferClassification(file.name, category)
+      const cat = selectedCategory || inferred.category
 
       const docMeta = {
         id: `${context.authUserId}_${timestamp}_${safeName}`,
@@ -116,6 +130,9 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
           mime_type: file.type,
           uploaded_via: 'inline_upload',
           document_category: cat,
+          classification_status: inferred.state,
+          classification_confidence: inferred.confidence,
+          classification_basis: category ? 'workflow_context' : 'filename_extension_mime',
           journey_stage: track,
           requirement_key: requirementKey || null,
           page_context: pageContext,
@@ -128,6 +145,7 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
       setProgress(100)
       setResult({ ok: true, message: `Uploaded to ${CATEGORY_LABELS[cat] || cat}` })
       setFile(null)
+      setClassification(null)
       onUploaded?.({ documentId: docMeta.id, fileName: file.name, category: cat, requirementKey, stage: track })
       trackEvent({ event: 'upload_completed', stage: track, requirement: requirementKey, route: pageContext, detail: cat })
 
@@ -172,6 +190,9 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
     )
   }
 
+  const needsCategoryConfirmation = file && classification?.state === 'NEEDS_CLIENT_CONFIRMATION'
+  const suggestedLabel = classification ? CATEGORY_LABELS[classification.category] || classification.category : null
+
   return (
     <div className={className} style={{
       padding: 12, borderRadius: 8, background: '#0f172a', border: '1px solid #334155',
@@ -181,20 +202,6 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
       </div>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <select
-          value={selectedCategory}
-          onChange={e => setSelectedCategory(e.target.value)}
-          style={{
-            padding: '4px 8px', borderRadius: 6, border: '1px solid #334155',
-            background: '#1e293b', color: '#e2e8f0', fontSize: 12,
-          }}
-        >
-          <option value="">Select category...</option>
-          {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-
         <input ref={inputRef} type="file" accept={ALLOWED_TYPES.join(',')} onChange={handleFile} style={{ display: 'none' }} />
         <button
           onClick={() => inputRef.current?.click()}
@@ -213,10 +220,33 @@ export default function InlineDocumentUpload({ category, onUploaded, compact, la
           </span>
         )}
 
+        {file && !needsCategoryConfirmation && suggestedLabel && (
+          <span style={{ color: '#94a3b8', fontSize: 12 }}>
+            Suggested: {suggestedLabel}
+          </span>
+        )}
+
+        {needsCategoryConfirmation && (
+          <select
+            aria-label="Confirm document category"
+            value={selectedCategory}
+            onChange={e => setSelectedCategory(e.target.value)}
+            style={{
+              padding: '4px 8px', borderRadius: 6, border: '1px solid #334155',
+              background: '#1e293b', color: '#e2e8f0', fontSize: 12,
+            }}
+          >
+            <option value="">Confirm category...</option>
+            {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>{v}</option>
+            ))}
+          </select>
+        )}
+
         {file && (
           <button
             onClick={handleUpload}
-            disabled={uploading || !selectedCategory}
+            disabled={uploading || (needsCategoryConfirmation && !selectedCategory)}
             style={{
               padding: '4px 12px', borderRadius: 6, border: 'none',
               background: uploading ? '#475569' : '#3b82f6', color: '#fff',

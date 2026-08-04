@@ -60,6 +60,19 @@ export function renderRecordContract(kind: 'approvals' | 'clients', live: LiveHe
 
   if (clean.status === 'success' || clean.status === 'empty_success') {
     const sourceUsed = succeeded.join(', ');
+    if (kind === 'approvals') {
+      return `**Approval inventory:** ${count} pending approval rows returned. Status: ${clean.status}.
+**approval_required:** ${count > 0 ? 'true for returned Ray Review / task-request rows' : 'none returned by this read'}.
+**approval_status:** ${count > 0 ? 'pending or requested; open Ray Review for record-level state' : 'no pending approval rows returned'}.
+**approval_reason:** external, consequential, approval-gated, or Ray Davis decision-required work must remain blocked until reviewed.
+**ray_review_id:** ${count > 0 ? 'available in Ray Review/task_requests rows; open Ray Review for exact record IDs' : 'unavailable because no pending rows were returned'}.
+**proposed_action:** inspect Ray Review, prioritize Credit and Funding and Engineering approval-gated items, then approve/revise/hold from the review queue.
+**execution_blocked:** true; Hermes cannot approve, send, charge, deploy, trade, or submit anything from this answer.
+**next_permitted_action:** Ray Davis may open Ray Review and inspect the highest-impact pending item.
+**provenance:** ${sourceUsed}; source checked ${sourceName}; verified read-only/authenticated when a session was available.
+**Freshness:** request-time check ${live.timestamp}.
+**Blocker:** none.`;
+    }
     return `**Result:** ${count} ${label}. Status: ${clean.status}.\n**Source checked:** ${sourceName}.\n**Verification:** verified read; read-only and authenticated when a session was available.\n**Provenance:** ${sourceUsed}.\n${kind === 'clients' ? '**Adjacent context:** approvals/task_requests excluded from client evidence.\n' : ''}**Freshness:** request-time check ${live.timestamp}.\n**Blocker:** none.\n**Next safe action:** ${count > 0 ? (kind === 'clients' ? 'open the client list and verify active status per record' : 'open Ray Review and inspect the highest-impact pending item') : (kind === 'clients' ? 'confirm this empty state is expected' : 'no approval action is needed unless another source is expected')}.`;
   }
 
