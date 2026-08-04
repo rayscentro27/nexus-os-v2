@@ -438,6 +438,7 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
   const [loadStatus, setLoadStatus] = useState('Loading live executive evidence...')
   const [alphaLive, setAlphaLive] = useState(null)
   const [tradingLive, setTradingLive] = useState(null)
+  const [telegramMissions, setTelegramMissions] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -459,10 +460,12 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
     Promise.allSettled([
       fetch('/runtime/alpha-live-research-status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null),
       fetch('/runtime/oanda-practice-status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null),
-    ]).then(([alpha, trading]) => {
+      fetch('/runtime/nexus-telegram-missions.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null),
+    ]).then(([alpha, trading, missions]) => {
       if (cancelled) return
       setAlphaLive(alpha.status === 'fulfilled' ? alpha.value : null)
       setTradingLive(trading.status === 'fulfilled' ? trading.value : null)
+      setTelegramMissions(missions.status === 'fulfilled' ? missions.value : null)
     })
     return () => { cancelled = true }
   }, [])
@@ -517,6 +520,18 @@ export default function CommandCenter({ onNavigate, onAskHermes }) {
               <div><ShieldCheck size={18} /><strong>Strategy</strong><span>{tradingLive?.strategy || 'unknown'}</span></div>
               <div><Activity size={18} /><strong>Positions / orders</strong><span>{tradingLive ? `${tradingLive.open_position_count} open · ${tradingLive.pending_order_count} pending` : 'unknown'}</span></div>
               <div><LockKeyhole size={18} /><strong>Kill switch</strong><span>{tradingLive?.kill_switch_active ? 'ACTIVE' : 'Available / not active'}</span></div>
+            </div>
+          </ExecutiveSection>
+          <ExecutiveSection title="Nexus Communications Missions" subtitle="Redacted mission state from the Nexus Telegram worker." badge={telegramMissions?.missions?.length ? `${telegramMissions.missions.length} recent` : 'Not checked'}>
+            <div className="exec-release-list" data-testid="executive-nexus-communications-missions">
+              {(telegramMissions?.missions || []).slice(0, 4).map((mission) => (
+                <div key={mission.mission_id}>
+                  <Activity size={18} />
+                  <strong>{mission.selected_intent || 'unrouted'}</strong>
+                  <span>{mission.state || 'unknown'} · {mission.selected_tool || 'no tool'} · {mission.response_telegram_message_id ? 'delivered' : 'not delivered'}</span>
+                </div>
+              ))}
+              {!telegramMissions?.missions?.length && <div><Clock3 size={18} /><strong>No mission snapshot</strong><span>No current redacted runtime mission file was loaded.</span></div>}
             </div>
           </ExecutiveSection>
           <RepoIntelligencePanel candidates={state.repoIntelligence} onNavigate={onNavigate} />

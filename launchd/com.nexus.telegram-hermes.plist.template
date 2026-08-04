@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.telegram-hermes</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/raymonddavis/nexus-os-v2-activation-20260804T014509Z/scripts/ops/run_with_nexus_runtime_env.sh</string>
+    <string>/usr/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2-activation-20260804T014509Z/scripts/telegram/nexus_telegram_bridge.py</string>
+    <string>--once</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/raymonddavis/nexus-os-v2-activation-20260804T014509Z</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StartInterval</key>
+  <integer>30</integer>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2-activation-20260804T014509Z/reports/runtime/telegram_hermes_launchd.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2-activation-20260804T014509Z/reports/runtime/telegram_hermes_launchd_error.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+</dict>
+</plist>

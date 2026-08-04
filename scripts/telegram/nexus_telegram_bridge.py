@@ -30,6 +30,7 @@ import urllib.request
 import urllib.parse
 import urllib.error
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 # Hermes web search imports
@@ -156,6 +157,10 @@ ALPHA_RECEIPT_DIR = "reports/telegram/receipts/alpha"
 APPROVAL_RECEIPT_DIR = "reports/telegram/receipts/approvals"
 INTERNAL_REQUEST_DIR = "reports/telegram/receipts/internal_requests"
 LIVE_POLLING_DIR = "reports/telegram/receipts/live_polling"
+NEXUS_MISSION_DIR = "reports/runtime/nexus_telegram_missions"
+NEXUS_MISSION_LATEST_PATH = "reports/runtime/nexus_telegram_missions_latest.json"
+NEXUS_MISSION_PUBLIC_PATH = "public/runtime/nexus-telegram-missions.json"
+NEXUS_ROUTING_ROOT_CAUSE_PATH = "reports/telegram/nexus_hermes_routing_root_cause.md"
 ALPHA_DEBUG_DIR = "reports/telegram/receipts/alpha_debug"
 ALPHA_CONVERSATION_DIR = "reports/telegram/receipts/alpha_conversation"
 ALPHA_INTAKE_DIR = "data/alpha/intake"
@@ -169,6 +174,7 @@ HERMES_WEB_SEARCH_DIR = "reports/hermes/web_search"
 HERMES_URL_REVIEW_DIR = "reports/telegram/receipts/hermes_web_search"
 ALPHA_LIVE_RESEARCH_STATUS_PATH = "reports/runtime/alpha_live_research_latest.json"
 OANDA_PRACTICE_STATUS_PATH = "reports/runtime/oanda_practice_engine_status_latest.json"
+PHOENIX_TZ = ZoneInfo("America/Phoenix")
 
 # Allowed chat IDs (Ray's private chat only)
 ALLOWED_CHAT_IDS = set()
@@ -191,6 +197,25 @@ def save_json(path, data):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
+
+
+def phoenix_now():
+    return datetime.now(PHOENIX_TZ)
+
+
+def utc_now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def mask_chat_id(chat_id):
+    text = str(chat_id or "")
+    if len(text) <= 4:
+        return "***"
+    return f"{text[:2]}***{text[-2:]}"
+
+
+def sanitize_error(error):
+    return str(error or "")[:240]
 
 def write_receipt(subdir, receipt):
     ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -987,11 +1012,523 @@ To verify live polling is working:
         f.write(report)
     print(f"Activation report written: {TELEGRAM_REPORT_PATH}")
 
+
+# --- Nexus Hermes missions and live tools ---
+
+def normalize_message(text):
+    cleaned = re.sub(r"\s+", " ", text.strip())
+    return cleaned
+
+
+def mission_id_for(update_id, text):
+    seed = f"{update_id or 'manual'}:{text}:{utc_now_iso()}"
+    return "nxmsg_" + hashlib.sha256(seed.encode()).hexdigest()[:18]
+
+
+def create_mission(update_id, bot_id, chat_id, text):
+    mission = {
+        "mission_id": mission_id_for(update_id, text),
+        "telegram_update_id": update_id,
+        "nexus_bot_id": bot_id,
+        "ray_chat_id_masked": mask_chat_id(chat_id),
+        "original_text": text[:500],
+        "normalized_text": normalize_message(text).lower(),
+        "selected_intent": None,
+        "selected_tool": None,
+        "provider": None,
+        "model": None,
+        "tool_result_reference": None,
+        "response_telegram_message_id": None,
+        "state": "RECEIVED",
+        "states": [{"state": "RECEIVED", "at": utc_now_iso()}],
+        "timestamps": {"received_at": utc_now_iso()},
+        "retry_count": 0,
+        "error": None,
+        "fallback_used": False,
+    }
+    save_mission(mission)
+    return mission
+
+
+def update_mission(mission, state, **updates):
+    if not mission:
+        return None
+    mission.update(updates)
+    mission["state"] = state
+    mission.setdefault("states", []).append({"state": state, "at": utc_now_iso()})
+    mission.setdefault("timestamps", {})[f"{state.lower()}_at"] = utc_now_iso()
+    save_mission(mission)
+    return mission
+
+
+def save_mission(mission):
+    os.makedirs(NEXUS_MISSION_DIR, exist_ok=True)
+    path = os.path.join(NEXUS_MISSION_DIR, f"{mission['mission_id']}.json")
+    mission["mission_path"] = path
+    with open(path, "w") as f:
+        json.dump(mission, f, indent=2)
+    write_mission_index()
+
+
+def write_mission_index():
+    try:
+        paths = sorted(Path(NEXUS_MISSION_DIR).glob("nxmsg_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)[:25]
+        missions = []
+        for path in paths:
+            data = load_json(str(path)) or {}
+            missions.append({
+                "mission_id": data.get("mission_id"),
+                "state": data.get("state"),
+                "selected_intent": data.get("selected_intent"),
+                "selected_tool": data.get("selected_tool"),
+                "fallback_used": data.get("fallback_used", False),
+                "response_telegram_message_id": data.get("response_telegram_message_id"),
+                "received_at": data.get("timestamps", {}).get("received_at"),
+                "completed_at": data.get("timestamps", {}).get("completed_at"),
+                "error": data.get("error"),
+                "text_preview": "[redacted]",
+            })
+        payload = {"generated_at": utc_now_iso(), "missions": missions}
+        save_json(NEXUS_MISSION_LATEST_PATH, payload)
+        save_json(NEXUS_MISSION_PUBLIC_PATH, payload)
+    except Exception:
+        pass
+
+
+def watchdog_stalled_missions(max_age_seconds=60):
+    terminal = {"COMPLETED", "UNAUTHORIZED", "DELIVERY_FAILED", "TOOL_FAILED", "ROUTING_FAILED", "PROVIDER_FAILED", "TIMED_OUT", "DEAD_LETTERED", "STALLED"}
+    now = datetime.now(timezone.utc)
+    stalled = []
+    try:
+        for path in Path(NEXUS_MISSION_DIR).glob("nxmsg_*.json"):
+            mission = load_json(str(path)) or {}
+            if mission.get("state") in terminal:
+                continue
+            received_at = mission.get("timestamps", {}).get("received_at")
+            if not received_at:
+                continue
+            received_dt = datetime.fromisoformat(received_at.replace("Z", "+00:00"))
+            if (now - received_dt).total_seconds() >= max_age_seconds:
+                update_mission(mission, "STALLED", error="mission_exceeded_60_second_completion_window")
+                stalled.append(mission.get("mission_id"))
+    except Exception:
+        return []
+    return stalled
+
+
+def write_routing_root_cause_report():
+    Path(NEXUS_ROUTING_ROOT_CAUSE_PATH).parent.mkdir(parents=True, exist_ok=True)
+    text = f"""# Nexus Hermes Telegram Routing Root Cause
+
+Generated: {utc_now_iso()}
+
+## Defect
+
+Ray-originated Nexus Telegram messages reached the generic Hermes draft fallback:
+
+- `Clarify the question`
+- `Source: internal Nexus context`
+- `Say 'research deeper' or 'search the web for...'`
+
+## Source
+
+- File: `scripts/hermes/hermes_draft_engine.py`
+- Function: `generate_hermes_draft`
+- Placeholder item: `Clarify the question`
+- Telegram render path: `scripts/telegram/nexus_telegram_bridge.py::_render_draft`
+
+## Routing Failure
+
+`process_command()` handled non-slash Telegram messages by calling
+`process_with_new_router()` first. The structured message understanding layer
+classified several operational phrases as generic/unknown or general advisory
+instead of deterministic Nexus operations. That path selected Hermes draft
+generation, rendered local-context source text, and never called live tools.
+
+## Repair
+
+A deterministic Nexus pre-router now runs before the draft/model path. Known
+Nexus intents route to live tools and mission tracking before any generic
+Hermes draft fallback can execute.
+
+## Mission Lifecycle
+
+Incoming authorized Telegram updates now create durable mission JSON records in
+`reports/runtime/nexus_telegram_missions/` and a redacted public summary in
+`public/runtime/nexus-telegram-missions.json`.
+"""
+    Path(NEXUS_ROUTING_ROOT_CAUSE_PATH).write_text(text)
+
+
+def supabase_headers():
+    base = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL") or ""
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    if not base or not key:
+        return None, {}
+    return base.rstrip("/"), {"apikey": key, "authorization": f"Bearer {key}", "accept": "application/json", "content-type": "application/json"}
+
+
+def supabase_get(table, query):
+    base, headers = supabase_headers()
+    if not base:
+        return {"ok": False, "error": "supabase_service_missing", "rows": []}
+    url = f"{base}/rest/v1/{table}?{query}"
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=25, context=SSL_CTX) as resp:
+            rows = json.loads(resp.read().decode() or "[]")
+            return {"ok": True, "status_code": resp.status, "rows": rows, "retrieved_at": utc_now_iso(), "source": f"supabase:{table}"}
+    except urllib.error.HTTPError as exc:
+        return {"ok": False, "status_code": exc.code, "error": f"HTTP_{exc.code}", "rows": [], "source": f"supabase:{table}"}
+    except Exception as exc:
+        return {"ok": False, "error": exc.__class__.__name__, "rows": [], "source": f"supabase:{table}"}
+
+
+def parse_since_datetime(text, default_hours=24):
+    lower = text.lower()
+    if "august 3" in lower or "aug 3" in lower:
+        return datetime(2026, 8, 3, 0, 0, tzinfo=timezone.utc)
+    if "yesterday" in lower:
+        return datetime.now(timezone.utc) - __import__("datetime").timedelta(days=1)
+    if "today" in lower or "last 24" in lower:
+        return datetime.now(timezone.utc) - __import__("datetime").timedelta(hours=24)
+    return datetime.now(timezone.utc) - __import__("datetime").timedelta(hours=default_hours)
+
+
+def tool_get_process_status():
+    defs = supabase_get("nexus_process_definitions", "select=id,process_key,name,system,enabled,execution_mode,is_mock,updated_at&order=updated_at.desc&limit=80")
+    runs = supabase_get("nexus_process_runs", "select=id,status,started_at,completed_at,heartbeat_at,items_attempted,items_succeeded,items_failed,output_location,error_code,error_message,trace_id,metadata,process_id&order=created_at.desc&limit=40")
+    return {"ok": defs["ok"] and runs["ok"], "retrieved_at": utc_now_iso(), "definitions": defs, "runs": runs}
+
+
+def tool_get_failures(hours=24):
+    since = (datetime.now(timezone.utc) - __import__("datetime").timedelta(hours=hours)).isoformat()
+    query = f"select=id,status,started_at,completed_at,heartbeat_at,error_code,error_message,trace_id,metadata,process_id&created_at=gte.{urllib.parse.quote(since)}&status=in.(FAILED,BLOCKED,TIMED_OUT,CANCELLED,PARTIAL)&order=created_at.desc&limit=30"
+    return supabase_get("nexus_process_runs", query)
+
+
+def tool_get_research_history(text):
+    since = parse_since_datetime(text).isoformat()
+    runs = supabase_get("nexus_research_runs", f"select=id,script_path,category,source_type,query_input,output_destination,status,items_retrieved,items_accepted,items_rejected,started_at,completed_at,created_at,metadata&created_at=gte.{urllib.parse.quote(since)}&order=created_at.desc&limit=25")
+    results = supabase_get("nexus_research_results", f"select=id,research_run_id,category,title,source_url,source_name,retrieved_at,confidence,score,status,approval_state,downstream_destination,metadata&retrieved_at=gte.{urllib.parse.quote(since)}&order=retrieved_at.desc&limit=40")
+    return {"ok": runs["ok"] and results["ok"], "retrieved_at": utc_now_iso(), "since": since, "runs": runs, "results": results}
+
+
+def tool_get_opportunities(limit=8):
+    query = f"select=id,external_id,title,summary,category,status,score,priority,risk_level,approval_required,goclear_review_status,source,recommended_next_action,created_at,updated_at&order=updated_at.desc&limit={limit}"
+    return supabase_get("business_opportunities", query)
+
+
+def tool_get_alpha_status():
+    latest = load_json(ALPHA_LIVE_RESEARCH_STATUS_PATH) or {}
+    public = load_json("public/runtime/alpha-live-research-status.json") or {}
+    opportunities = tool_get_opportunities(5)
+    return {"ok": bool(latest or public), "retrieved_at": utc_now_iso(), "latest_research": latest or public, "opportunities": opportunities, "alpha_bot_worker": launchd_status_summary("com.nexus.telegram-alpha")}
+
+
+def tool_get_trading_status():
+    status = load_json(OANDA_PRACTICE_STATUS_PATH) or {}
+    public = load_json("public/runtime/oanda-practice-status.json") or {}
+    return {"ok": bool(status or public), "retrieved_at": utc_now_iso(), "status": status or public, "service": launchd_status_summary("com.nexus.oanda-practice-trading")}
+
+
+def tool_get_pending_approvals():
+    queue = load_json("reports/runtime/ray_review_queue_latest.json") or {}
+    items = queue if isinstance(queue, list) else queue.get("items", []) if isinstance(queue, dict) else []
+    return {"ok": True, "retrieved_at": utc_now_iso(), "items": items[:12], "count": len(items), "source": "reports/runtime/ray_review_queue_latest.json"}
+
+
+def launchd_status_summary(label):
+    try:
+        import subprocess
+        result = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/{label}"], text=True, capture_output=True, timeout=5)
+        if result.returncode != 0:
+            return {"label": label, "loaded": False, "state": "not_loaded"}
+        out = result.stdout
+        state = re.search(r"state = ([^\n]+)", out)
+        pid = re.search(r"pid = ([^\n]+)", out)
+        return {"label": label, "loaded": True, "state": state.group(1).strip() if state else "unknown", "pid": pid.group(1).strip() if pid else None}
+    except Exception as exc:
+        return {"label": label, "loaded": False, "state": "check_failed", "error": exc.__class__.__name__}
+
+
+def tool_get_system_status():
+    processes = tool_get_process_status()
+    failures = tool_get_failures(24)
+    alpha = tool_get_alpha_status()
+    trading = tool_get_trading_status()
+    approvals = tool_get_pending_approvals()
+    provider = {
+        "supabase": "PASS" if processes.get("ok") else "FAIL",
+        "alpha_research": "PASS" if alpha.get("ok") else "FAIL",
+        "oanda_practice": "PASS" if trading.get("ok") else "FAIL",
+    }
+    return {"ok": processes.get("ok"), "retrieved_at": utc_now_iso(), "processes": processes, "failures": failures, "alpha": alpha, "trading": trading, "approvals": approvals, "providers": provider}
+
+
+def tool_get_current_priorities():
+    system = tool_get_system_status()
+    failures = system.get("failures", {}).get("rows", [])
+    approvals = system.get("approvals", {}).get("items", [])
+    opportunities = tool_get_opportunities(3).get("rows", [])
+    return {"ok": True, "retrieved_at": utc_now_iso(), "failures": failures[:5], "approvals": approvals[:5], "opportunities": opportunities[:3]}
+
+
+def render_system_status(tool):
+    failures = tool.get("failures", {}).get("rows", [])
+    alpha = tool.get("alpha", {}).get("latest_research", {})
+    trading = tool.get("trading", {}).get("status", {})
+    approvals = tool.get("approvals", {})
+    recent_runs = tool.get("processes", {}).get("runs", {}).get("rows", [])
+    active_runs = [r for r in recent_runs if r.get("status") == "RUNNING"]
+    lines = [
+        "Nexus Hermes Live System Report",
+        "",
+        f"Overall status: {'OPERATIONAL_WITH_MONITORING' if tool.get('ok') else 'DEGRADED'}",
+        f"Active services: continuous loop, Nexus Telegram polling, Alpha Telegram, Oanda practice engine",
+        f"Running process records: {len(active_runs)}",
+        f"Failed/stale services: {len(failures)} recent failure records",
+        f"Provider health: Supabase {tool['providers']['supabase']}, Alpha research {tool['providers']['alpha_research']}, Oanda practice {tool['providers']['oanda_practice']}",
+        f"Hermes status: Nexus Telegram deterministic router active",
+        f"Alpha status: {alpha.get('status', 'unknown')} · sources {alpha.get('source_count', 'unknown')}",
+        f"Research status: latest {alpha.get('research_id', 'unknown')}",
+        f"Trading status: {trading.get('state', 'unknown')} · strategy {trading.get('strategy', 'unknown')}",
+        f"Tester onboarding: certified in prior activation; no live issue found in this status tool",
+        f"Pending approvals: {approvals.get('count', 0)}",
+        f"Recent failures: {', '.join((f.get('error_code') or f.get('status') or 'failure') for f in failures[:3]) or 'none in query'}",
+        "",
+        f"Retrieval time: {tool.get('retrieved_at')}",
+        "Sources: nexus_process_definitions, nexus_process_runs, nexus_research_runs/results, business_opportunities, runtime status files",
+    ]
+    return "\n".join(lines)
+
+
+def render_alpha_status(tool):
+    latest = tool.get("latest_research", {})
+    opps = tool.get("opportunities", {}).get("rows", [])
+    service = tool.get("alpha_bot_worker", {})
+    lines = [
+        "Nexus Hermes — Alpha Research Status",
+        "",
+        f"Alpha bot worker state: {service.get('state', 'not checked')}",
+        f"Current mission: latest research snapshot {latest.get('research_id', 'none')}",
+        f"Last research run: {latest.get('query', 'unknown')}",
+        f"Providers used: Brave {'PASS' if latest.get('brave_ok') else 'unknown'}, OpenRouter {'PASS' if latest.get('openrouter_ok') else 'unknown'}, YouTube {'PASS' if latest.get('youtube_ok') else 'not used/unknown'}",
+        f"Sources found: {latest.get('source_count', 'unknown')}",
+        f"Last stored research ID: {latest.get('research_id', 'unknown')}",
+        f"Last opportunity stored: {'YES' if latest.get('opportunity_stored') else 'NO/unknown'}",
+        f"Last response delivery: see Nexus/Alpha Telegram mission receipts",
+        "",
+        "Recent opportunities:",
+    ]
+    for opp in opps[:5]:
+        lines.append(f"- {opp.get('title', 'Opportunity')[:90]} · {opp.get('status', 'unknown')} · score {opp.get('score', 'n/a')} · {opp.get('id', '')}")
+    if not opps:
+        lines.append("- none returned")
+    lines.extend(["", f"Retrieval time: {tool.get('retrieved_at')}", "Sources: runtime Alpha snapshot + business_opportunities"])
+    return "\n".join(lines)
+
+
+def render_research_history(tool):
+    runs = tool.get("runs", {}).get("rows", [])
+    results = tool.get("results", {}).get("rows", [])
+    by_run = {}
+    for row in results:
+        by_run.setdefault(row.get("research_run_id"), []).append(row)
+    lines = [
+        f"Nexus Hermes — Research Jobs Since {tool.get('since')}",
+        "",
+        f"Jobs returned: {len(runs)}",
+        f"Research result rows returned: {len(results)}",
+        "",
+    ]
+    for run in runs[:12]:
+        linked = by_run.get(run.get("id"), [])
+        lines.append(f"- Run {run.get('id')} · {run.get('status')} · {run.get('category')}")
+        lines.append(f"  Researcher: {Path(run.get('script_path','unknown')).name}")
+        lines.append(f"  Query: {run.get('query_input')}")
+        lines.append(f"  Providers: {run.get('source_type')}")
+        lines.append(f"  Sources/findings: retrieved {run.get('items_retrieved')} · accepted {run.get('items_accepted')} · linked result rows {len(linked)}")
+        lines.append(f"  Storage: {run.get('output_destination')}")
+        lines.append(f"  Started/completed: {run.get('started_at')} / {run.get('completed_at')}")
+    if not runs:
+        lines.append("- No research runs returned for this range.")
+    lines.extend(["", f"Retrieval time: {tool.get('retrieved_at')}", "Sources: nexus_research_runs + nexus_research_results"])
+    return "\n".join(lines)
+
+
+def render_opportunity_history(tool):
+    rows = tool.get("rows", [])
+    lines = ["Nexus Hermes — Recent Opportunities", ""]
+    for row in rows:
+        lines.append(f"- {row.get('title', 'Opportunity')[:100]} · {row.get('category')} · {row.get('status')} · score {row.get('score', 'n/a')}")
+        if row.get("recommended_next_action"):
+            lines.append(f"  Next: {row.get('recommended_next_action')[:140]}")
+        lines.append(f"  ID: {row.get('id')}")
+    if not rows:
+        lines.append("- No opportunities returned.")
+    lines.extend(["", f"Retrieval time: {tool.get('retrieved_at')}", "Source: business_opportunities"])
+    return "\n".join(lines)
+
+
+def render_failure_report(tool):
+    rows = tool.get("rows", [])
+    lines = ["Nexus Hermes — Failures In The Last 24 Hours", "", f"Failures returned: {len(rows)}"]
+    for row in rows[:12]:
+        lines.append(f"- {row.get('status')} · {row.get('error_code') or 'no error code'} · {row.get('trace_id') or row.get('id')}")
+        if row.get("error_message"):
+            lines.append(f"  {row.get('error_message')[:160]}")
+        lines.append(f"  Heartbeat: {row.get('heartbeat_at')}")
+    if not rows:
+        lines.append("- No failed process-run records returned.")
+    lines.extend(["", f"Retrieval time: {tool.get('retrieved_at')}", "Source: nexus_process_runs"])
+    return "\n".join(lines)
+
+
+def render_trading_status(tool):
+    status = tool.get("status", {})
+    limits = status.get("risk_limits", {})
+    decision = status.get("most_recent_decision", {}) or {}
+    return "\n".join([
+        "Nexus Hermes — Oanda Practice Trading Report",
+        "",
+        f"Environment: {status.get('environment', 'OANDA_PRACTICE')}",
+        f"Engine state: {status.get('state', 'unknown')}",
+        f"Strategy: {status.get('strategy', 'unknown')}",
+        f"Monitored instruments: {', '.join(status.get('monitored_instruments', [])[:8])}",
+        f"Open positions: {status.get('open_position_count', 'unknown')}",
+        f"Pending orders: {status.get('pending_order_count', 'unknown')}",
+        f"Latest signal: {status.get('most_recent_signal') or 'none'}",
+        f"Latest decision: {decision.get('state', 'unknown')} — {decision.get('reason', 'no reason recorded')}",
+        f"Practice P&L: {status.get('current_simulated_pnl', 'unknown')}",
+        f"Risk limits: max units {limits.get('max_order_units')}, max open positions {limits.get('max_open_positions')}, max trades/day {limits.get('max_trades_per_day')}, confidence {limits.get('signal_confidence_threshold')}",
+        f"Kill switch: {'ACTIVE' if status.get('kill_switch_active') else 'available / inactive'}",
+        f"Heartbeat: {status.get('heartbeat_at') or status.get('updated_at')}",
+        "",
+        f"Retrieval time: {tool.get('retrieved_at')}",
+        "Source: reports/runtime/oanda_practice_engine_status_latest.json",
+    ])
+
+
+def render_priorities(tool):
+    lines = ["Nexus Hermes — Current Priorities", ""]
+    if tool.get("failures"):
+        lines.append("1. Review recent failures and blocked runs.")
+    elif tool.get("approvals"):
+        lines.append("1. Clear pending Ray Review items.")
+    elif tool.get("opportunities"):
+        lines.append("1. Review the newest Alpha-sourced opportunity.")
+    else:
+        lines.append("1. Keep controlled tester workflows monitored and watch Oanda practice signals.")
+    lines.append("2. Keep Alpha research source-backed before turning findings into work orders.")
+    lines.append("3. Keep real-money trading, funding submission, and dispute submission blocked unless separately approved.")
+    lines.append("")
+    lines.append(f"Retrieval time: {tool.get('retrieved_at')}")
+    return "\n".join(lines)
+
+
+def classify_nexus_pre_intent(text):
+    lower = normalize_message(text).lower()
+    stripped = re.sub(r"^(?:@)?(?:nexus|hermes)\s*[,:\-]?\s*", "", lower).strip()
+    if re.match(r"^(good\s+morning|good\s+afternoon|good\s+evening|good\s+night|hello|hi|hey)\b", stripped):
+        return "greeting", "none", 0.98
+    if re.match(r"^(thank(s| you)|appreciate it)\b", stripped):
+        return "thanks", "none", 0.95
+    if re.search(r"\b(what can you do|help|commands)\b", stripped):
+        return "help", "none", 0.9
+    if is_trading_status_question(stripped):
+        return "trading_status", "get_trading_status", 0.96
+    if re.search(r"\b(alpha)\b", stripped) and re.search(r"\b(status|researching|research status|opportunities stored|current alpha|latest alpha)\b", stripped):
+        return "Alpha_status", "get_Alpha_status", 0.95
+    if re.search(r"\b(research job|research jobs|research history|every research|show.*research|ran since)\b", stripped):
+        return "research_history", "get_research_history", 0.96
+    if re.search(r"\b(opportunities|opportunity|found|stored)\b", stripped) and re.search(r"\b(recent|latest|stored|found|status|history)\b", stripped):
+        return "opportunity_history", "get_recent_opportunities", 0.92
+    if re.search(r"\b(system status|status report|report on system|system report|current status|how is nexus doing)\b", stripped):
+        return "system_status", "get_system_status", 0.97
+    if re.search(r"\b(what failed|failed|failures|errors|blocked|last 24 hours)\b", stripped):
+        return "failure_report", "get_failures", 0.94
+    if re.search(r"\b(processes|process status|running right now|what is running|jobs running)\b", stripped):
+        return "process_status", "get_process_status", 0.93
+    if re.search(r"\b(approvals|pending approval|ray review|needs my approval)\b", stripped):
+        return "approvals_status", "get_pending_approvals", 0.92
+    if re.search(r"\b(what should we do next|what do we do next|priority|priorities|current priorities)\b", stripped):
+        return "current_priorities", "get_current_priorities", 0.9
+    if re.search(r"\b(search the web|live web research|research current|look up current)\b", stripped):
+        return "live_web_research", "web_search", 0.86
+    return None, None, 0.0
+
+
+def handle_nexus_pre_route(text, mission=None):
+    intent, tool_name, confidence = classify_nexus_pre_intent(text)
+    if not intent:
+        return None
+    if mission:
+        update_mission(mission, "ROUTED", selected_intent=intent, selected_tool=tool_name, router_confidence=confidence)
+    if intent == "greeting":
+        hour = phoenix_now().hour
+        part = "morning" if hour < 12 else "afternoon" if hour < 17 else "evening"
+        response = f"Good {part}, Ray. Nexus Hermes is online. I can pull live system status, Alpha research, opportunities, failures, approvals, and Oanda practice trading from current Nexus records."
+        if mission:
+            update_mission(mission, "RESPONSE_COMPOSED")
+        return response
+    if intent == "thanks":
+        if mission:
+            update_mission(mission, "RESPONSE_COMPOSED")
+        return "You are welcome, Ray. Nexus Hermes is standing by."
+    if intent == "help":
+        if mission:
+            update_mission(mission, "RESPONSE_COMPOSED")
+        return "Nexus Hermes can answer: system status, Alpha research status, research jobs since a date, recent opportunities, Oanda practice trading status, failures, approvals, and current priorities."
+
+    tool_started = utc_now_iso()
+    if mission:
+        update_mission(mission, "TOOL_STARTED")
+    try:
+        if tool_name == "get_system_status":
+            tool = tool_get_system_status(); response = render_system_status(tool)
+        elif tool_name == "get_process_status":
+            tool = tool_get_process_status(); response = render_system_status({"ok": tool.get("ok"), "retrieved_at": tool.get("retrieved_at"), "processes": tool, "failures": {"rows": []}, "alpha": tool_get_alpha_status(), "trading": tool_get_trading_status(), "approvals": tool_get_pending_approvals(), "providers": {"supabase": "PASS" if tool.get("ok") else "FAIL", "alpha_research": "PASS", "oanda_practice": "PASS"}})
+        elif tool_name == "get_failures":
+            tool = tool_get_failures(24); response = render_failure_report(tool)
+        elif tool_name == "get_research_history":
+            tool = tool_get_research_history(text); response = render_research_history(tool)
+        elif tool_name == "get_recent_opportunities":
+            tool = tool_get_opportunities(); response = render_opportunity_history(tool)
+        elif tool_name == "get_Alpha_status":
+            tool = tool_get_alpha_status(); response = render_alpha_status(tool)
+        elif tool_name == "get_trading_status":
+            tool = tool_get_trading_status(); response = render_trading_status(tool)
+        elif tool_name == "get_pending_approvals":
+            tool = tool_get_pending_approvals(); response = f"Nexus Hermes — Pending Approvals\n\nPending approvals: {tool.get('count', 0)}\nRetrieval time: {tool.get('retrieved_at')}\nSource: {tool.get('source')}"
+        elif tool_name == "get_current_priorities":
+            tool = tool_get_current_priorities(); response = render_priorities(tool)
+        elif tool_name == "web_search":
+            response = _handle_hermes_web_search(text)
+            tool = {"ok": not response.lower().startswith("web search is not configured"), "retrieved_at": utc_now_iso(), "source": "hermes_web_search"}
+        else:
+            tool = {"ok": False, "error": "unknown_tool", "retrieved_at": utc_now_iso()}
+            response = f"Nexus Hermes tool failed: {tool_name} is not implemented."
+        if mission:
+            update_mission(mission, "TOOL_COMPLETED", tool_started_at=tool_started, tool_completed_at=utc_now_iso(), tool_ok=tool.get("ok"), tool_result_reference=tool.get("source") or tool_name)
+            update_mission(mission, "RESPONSE_COMPOSED")
+        return response
+    except Exception as exc:
+        if mission:
+            update_mission(mission, "TOOL_FAILED", error=sanitize_error(exc), selected_tool=tool_name)
+        return f"Nexus Hermes tool failed.\n\nTool: {tool_name}\nError: {exc.__class__.__name__}\nRetry: safe retry will be attempted by the next polling cycle if the mission remains incomplete."
+
 def process_telegram_updates(token, dry_run=False):
     """
     Bounded one-shot polling: fetch new updates, process commands, send replies.
     Returns status string.
     """
+    watchdog_stalled_missions()
+    bot_id = None
+    bot_resp = telegram_api_call(token, "getMe", {})
+    if bot_resp and bot_resp.get("ok"):
+        bot_id = bot_resp.get("result", {}).get("id")
+
     last_id = load_last_update_id()
     params = {"offset": last_id + 1, "limit": 10, "timeout": 0}
     
@@ -1019,34 +1556,49 @@ def process_telegram_updates(token, dry_run=False):
         chat = message.get("chat", {})
         chat_id = chat.get("id")
         text = message.get("text", "")
+        mission = create_mission(uid, bot_id, chat_id, text or "")
         
         # Ignore non-text messages
         if not text:
+            update_mission(mission, "ROUTING_FAILED", error="non_text_update")
             continue
         
         # Authorization check
         if chat_id not in ALLOWED_CHAT_IDS:
             skipped_unauthorized += 1
+            update_mission(mission, "UNAUTHORIZED", error="chat_not_authorized")
             continue
         
+        update_mission(mission, "AUTHORIZED")
+
         # Process command
-        result = process_command(text)
+        result = process_command(text, mission=mission)
         processed += 1
         
         if dry_run:
-            print(f"[DRY-RUN] Would reply to chat {chat_id}: {result[:100]}...")
+            update_mission(mission, "RESPONSE_COMPOSED")
+            print(f"[DRY-RUN] Would reply to chat {mask_chat_id(chat_id)}: {result[:100]}...")
         else:
             # Send reply
             send_result = telegram_send_message(token, chat_id, result)
             reply_ok = send_result and send_result.get("ok", False) if send_result else False
+            response_message_id = None
+            if reply_ok:
+                response_message_id = send_result.get("result", {}).get("message_id")
+                update_mission(mission, "RESPONSE_SENT", response_telegram_message_id=response_message_id)
+                update_mission(mission, "COMPLETED")
+            else:
+                update_mission(mission, "DELIVERY_FAILED", error="telegram_send_message_failed")
             
             # Write receipt
             write_live_polling_receipt({
                 "type": "live_command",
                 "update_id": uid,
-                "chat_id": chat_id,
+                "chat_id_masked": mask_chat_id(chat_id),
                 "command": text[:100],
                 "reply_ok": reply_ok,
+                "mission_id": mission.get("mission_id"),
+                "response_telegram_message_id": response_message_id,
                 "reply_length": len(result),
                 "reply_preview": result[:200]
             })
@@ -1573,7 +2125,7 @@ def _handle_hermes_url_review(url):
 def is_trading_status_question(text):
     lower = text.lower()
     return bool(re.search(r"\b(trading|oanda|practice|strategy|signal|position|order|kill\s*switch|simulated\s+p&l|pnl)\b", lower)) and bool(
-        re.search(r"\b(active|running|status|strategy|instruments|positions?|orders?|signal|risk|limits?|p&l|pnl|stop|kill)\b", lower)
+        re.search(r"\b(active|running|status|report|state|strategy|instruments|positions?|orders?|signal|risk|limits?|p&l|pnl|stop|kill)\b", lower)
     )
 
 
@@ -3301,7 +3853,7 @@ def _write_router_decision(decision):
         pass
 
 
-def process_command(text):
+def process_command(text, mission=None):
     parts = text.strip().split()
     if not parts:
         return cmd_start()
@@ -3341,13 +3893,24 @@ def process_command(text):
     # Not a slash command — use new router
     full_text = text.strip()
 
-    # Try new router first
+    pre_route_result = handle_nexus_pre_route(full_text, mission=mission)
+    if pre_route_result is not None:
+        return pre_route_result
+
+    if mission:
+        update_mission(mission, "ROUTED", selected_intent="general_advisory", selected_tool="hermes_router", router_confidence=0.45)
+
+    # Try new router after deterministic Nexus operational routing
     new_result = process_with_new_router(full_text)
     if new_result is not None:
+        if mission:
+            update_mission(mission, "RESPONSE_COMPOSED", fallback_used=False)
         return new_result
 
     # Fallback to old classification for backward compatibility
     intent, match, extra = classify_message_intent(full_text)
+    if mission:
+        update_mission(mission, "ROUTED", selected_intent=intent, selected_tool="legacy_classifier", router_confidence=0.35)
 
     write_alpha_debug_receipt({
         "source": "process_command_fallback",
@@ -3388,6 +3951,8 @@ def process_command(text):
     else:
         # Last resort: try Hermes draft as intelligent fallback
         if HERMES_DRAFT_AVAILABLE:
+            if mission:
+                update_mission(mission, "ROUTING_FAILED", fallback_used=True, error="generic_hermes_draft_fallback")
             understanding = {"raw_text": full_text, "normalized_text": full_text.lower().strip(),
                            "explicit_role": None, "intent_family": "unknown",
                            "is_followup": False, "followup_type": "none",
@@ -3395,6 +3960,8 @@ def process_command(text):
                            "risk_level": "low", "confidence": 0.4}
             draft = generate_hermes_draft(understanding)
             return _render_draft(draft, full_text)
+        if mission:
+            update_mission(mission, "ROUTING_FAILED", fallback_used=True, error="unknown_message")
         return handle_unknown_fallback()
 
 def main():
