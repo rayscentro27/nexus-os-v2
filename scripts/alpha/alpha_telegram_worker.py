@@ -45,6 +45,9 @@ ALPHA_ERROR_LOG = os.path.join(REPO_ROOT, "reports", "runtime", "alpha_telegram_
 RESEARCH_RESULTS_DIR = os.path.join(REPO_ROOT, "reports", "alpha", "research_results")
 OPPORTUNITIES_DIR = os.path.join(REPO_ROOT, "reports", "alpha", "opportunities")
 
+# Agent Platform path
+sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
+
 # ─── SSL ────────────────────────────────────────────────
 
 SSL_CTX = ssl.create_default_context()
@@ -859,6 +862,38 @@ def process_message(update):
     update_mission(mission, "AUTHORIZED")
     update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
 
+    # --- Agent Platform path (feature-flag gated) ---
+    try:
+        from nexus_agent_platform.integration import try_alpha_platform
+        platform_result = try_alpha_platform(
+            text=text,
+            mission=mission,
+            chat_id=chat_id,
+            update_id=update_id,
+        )
+        if platform_result is not None:
+            update_mission(mission, "ROUTED", {"selected_intent": "platform_graph", "selected_tool": "alpha_agent_platform"})
+            update_status_field("current_mission", mission["mission_id"])
+            update_status_field("mission_stage", "ROUTED")
+            msg_ids = tg_send_message(chat_id, platform_result)
+            if msg_ids:
+                update_mission(mission, "COMPLETED", {
+                    "response_message_ids": msg_ids,
+                    "response_source": "platform_graph",
+                })
+                update_status_field("mission_stage", "COMPLETED")
+                update_status_field("current_mission", None)
+                _log(f"Alpha platform delivered: mission={mission['mission_id']} msg_ids={msg_ids}")
+            else:
+                update_mission(mission, "DELIVERY_FAILED", {"failure_reason": "platform_response_delivery_failed"})
+                update_status_field("mission_stage", "DELIVERY_FAILED")
+            return
+    except ImportError:
+        pass  # Platform not installed — fall through to legacy
+    except Exception as _platform_exc:
+        _log_error(f"Alpha platform error: {_platform_exc}")
+
+    # --- Legacy routing path ---
     # Classify intent
     intent, normalized = classify_intent(text)
     update_mission(mission, "ROUTED", {"selected_intent": intent})

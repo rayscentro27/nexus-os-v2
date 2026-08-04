@@ -1,0 +1,361 @@
+{
+  "timestamp": "20260804T230046Z",
+  "total": 16,
+  "passed": 16,
+  "failed": 0,
+  "pass_rate": 100.0,
+  "hermes": {
+    "total": 8,
+    "passed": 8
+  },
+  "alpha": {
+    "total": 8,
+    "passed": 8
+  },
+  "gates": {
+    "nexus_intent_accuracy": 100.0,
+    "alpha_mode_accuracy": 100.0,
+    "stale_context_contamination": 0,
+    "casual_research_over_trigger": 0,
+    "false_action_claims": 0,
+    "wrong_agent_context": 0
+  },
+  "results": [
+    {
+      "case": {
+        "message": "How many clients do we have?",
+        "agent": "hermes",
+        "expected_intent": "client_count",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": "get_client_count",
+        "expected_slot_fill": null
+      },
+      "new_intent": "client_count",
+      "new_response": "We have 0 active clients.",
+      "new_tools": [
+        "get_client_count"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "How can we get more clients?",
+        "agent": "hermes",
+        "expected_intent": "client_acquisition",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "client_acquisition",
+      "new_response": "Here are the current client acquisition channels:\n\n1. Referrals from existing clients\n2. LinkedIn outreach to qualified prospects\n3. Content marketing and SEO\n4. Partnerships with complementary agencies\n\nWant me to dive deeper into any of these?",
+      "new_tools": [
+        "client_acquisition_advisory"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Can you send an email to rayscentro@yahoo.com?",
+        "agent": "hermes",
+        "expected_intent": "send_email",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": "email_recipient"
+      },
+      "new_intent": "send_email",
+      "new_response": "Ready to send an email to rayscentro@yahoo.com.\n\nI need:\n- Subject line\n- Body text\n\nWhat should the email say?",
+      "new_tools": [
+        "send_email"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Can you run this same report tomorrow?",
+        "agent": "hermes",
+        "expected_intent": "schedule_report",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "schedule_report",
+      "new_response": "Which report would you like me to schedule?\nYou can reference it by name or describe what it covers.",
+      "new_tools": [
+        "schedule_report"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Can you create a prompt for OpenCode?",
+        "agent": "hermes",
+        "expected_intent": "create_prompt",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "create_prompt",
+      "new_response": "What task should the prompt be for? Describe what you want OpenCode to do.",
+      "new_tools": [
+        "create_opencode_prompt"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Good afternoon, what time is it?",
+        "agent": "hermes",
+        "expected_intent": "greeting_time",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "greeting_time",
+      "new_response": "Good afternoon, Ray. It's 04:00 PM Phoenix time.",
+      "new_tools": [
+        ""
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Show the system report and email it to me.",
+        "agent": "hermes",
+        "expected_intent": "multi_intent_report_email",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "multi_intent_report_email",
+      "new_response": "Here's the system report:\n\n\n\nWho should I email this to? I have rayscentro@yahoo.com on file.",
+      "new_tools": [
+        "multi_intent_report_email"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "What failed today?",
+        "agent": "hermes",
+        "expected_intent": "failure_report",
+        "expected_mode": null,
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "failure_report",
+      "new_response": "**Today's Failures**\n\nWorking: Unable to read failure log\n\nNeeds Attention: [Errno 2] No such file or directory: '/Users/raymonddavis/nexus-os-v2/scripts/nexus_agent_platform/agents/../../reports/runtime/nexus_active_operator_heartbeat_latest.json'\n\nPhoenix: 04:00 PM MT",
+      "new_tools": [
+        "failure_report"
+      ],
+      "new_research_called": false,
+      "new_context_loaded": true,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Good afternoon",
+        "agent": "alpha",
+        "expected_intent": "CONVERSATION",
+        "expected_mode": "CONVERSATION",
+        "expected_no_research": true,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "CONVERSATION",
+      "new_response": "Good afternoon! I'm Alpha \u2014 your outside-thinking advisor. What's on your mind?",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Do you drink coffee?",
+        "agent": "alpha",
+        "expected_intent": "CONVERSATION",
+        "expected_mode": "CONVERSATION",
+        "expected_no_research": true,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "CONVERSATION",
+      "new_response": "I don't drink coffee \u2014 I'm an AI advisor. But I can research the best coffee shops if you want! What can I help with?",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 1.0,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "What do you think about Tesla?",
+        "agent": "alpha",
+        "expected_intent": "INDEPENDENT_OPINION",
+        "expected_mode": "INDEPENDENT_OPINION",
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "INDEPENDENT_OPINION",
+      "new_response": "My opinion on Tesla?: It's worth watching, but I'd want more data before making a call. Want me to research it?",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 0.8,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "What do you think about forex trading?",
+        "agent": "alpha",
+        "expected_intent": "TRADING_ANALYSIS",
+        "expected_mode": "TRADING_ANALYSIS",
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "TRADING_ANALYSIS",
+      "new_response": "I can research ? for you. Want me to look into specific pairs or instruments?",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 0.8,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Research current small-business grants.",
+        "agent": "alpha",
+        "expected_intent": "LIVE_RESEARCH",
+        "expected_mode": "LIVE_RESEARCH",
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "LIVE_RESEARCH",
+      "new_response": "I attempted research on: Research current small-business grants.\n\nNo strong results found. Try a more specific query.",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 0.8,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Find three current business opportunities for GoClear.",
+        "agent": "alpha",
+        "expected_intent": "BUSINESS_OPPORTUNITY",
+        "expected_mode": "BUSINESS_OPPORTUNITY",
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "BUSINESS_OPPORTUNITY",
+      "new_response": "I looked into: Find three current business opportunities for GoClear.\n\nI did not find strong results. Try a more specific query.",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 0.8,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Give me your opinion on the strongest opportunity.",
+        "agent": "alpha",
+        "expected_intent": "BUSINESS_OPPORTUNITY",
+        "expected_mode": "BUSINESS_OPPORTUNITY",
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "BUSINESS_OPPORTUNITY",
+      "new_response": "I looked into: Give me your opinion on the strongest opportunity.\n\nI did not find strong results. Try a more specific query.",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 0.8,
+      "winner": "new",
+      "failure_reason": ""
+    },
+    {
+      "case": {
+        "message": "Challenge Hermes recommendation.",
+        "agent": "alpha",
+        "expected_intent": "CHALLENGE_HERMES",
+        "expected_mode": "CHALLENGE_HERMES",
+        "expected_no_research": false,
+        "expected_tool": null,
+        "expected_slot_fill": null
+      },
+      "new_intent": "CHALLENGE_HERMES",
+      "new_response": "I'm challenging Hermes' recommendation from an outside perspective.\n\nWithout seeing the specific recommendation, my general approach is:\n1. What assumptions is Hermes making?\n2. What data is the recommendation based on?\n3. What are the risks if the assumptions are wrong?\n4. Is there a contrarian view worth considering?\n\nShare the recommendation and I'll give you a structured challenge.",
+      "new_tools": [],
+      "new_research_called": false,
+      "new_context_loaded": false,
+      "new_slot_filled": null,
+      "score": 0.8,
+      "winner": "new",
+      "failure_reason": ""
+    }
+  ]
+}

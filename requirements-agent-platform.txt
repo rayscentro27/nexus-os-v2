@@ -1,0 +1,25 @@
+# Nexus Agent Platform — Python dependencies
+# Core
+pydantic>=2.0
+
+# LangGraph (graph orchestration)
+langgraph>=1.2.10
+
+# Temporal (workflow orchestration)
+temporalio>=1.31.0
+
+# LiteLLM (LLM gateway)
+litellm>=1.95.0
+
+# Langfuse (tracing/observability)
+langfuse>=4.14.2
+
+# Telegram
+python-telegram-bot>=21.0
+
+# HTTP
+httpx>=0.27
+requests>=2.31
+
+# Web search
+brave-search>=0.2

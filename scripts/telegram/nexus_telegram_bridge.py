@@ -3890,9 +3890,30 @@ def process_command(text, mission=None):
     if handler:
         return handler(args)
 
-    # Not a slash command — use new router
+    # Not a slash command — try Platform graph first when enabled
     full_text = text.strip()
 
+    # --- Agent Platform path (Ray-only, feature-flag gated) ---
+    try:
+        from nexus_agent_platform.integration import try_hermes_platform
+        platform_result = try_hermes_platform(
+            text=full_text,
+            mission=mission,
+            chat_id=mission.get("ray_chat_id_masked") if mission else None,
+            update_id=mission.get("telegram_update_id") if mission else None,
+        )
+        if platform_result is not None:
+            if mission:
+                update_mission(mission, "ROUTED", selected_intent="platform_graph", selected_tool="nexus_agent_platform", router_confidence=0.95)
+                update_mission(mission, "RESPONSE_COMPOSED", fallback_used=False, response_source="platform_graph")
+            return platform_result
+    except ImportError:
+        pass  # Platform not installed — fall through to legacy
+    except Exception as _platform_exc:
+        import logging as _log
+        _log.getLogger("nexus_telegram_bridge").warning("Platform integration error: %s", _platform_exc)
+
+    # --- Legacy routing path ---
     pre_route_result = handle_nexus_pre_route(full_text, mission=mission)
     if pre_route_result is not None:
         return pre_route_result
