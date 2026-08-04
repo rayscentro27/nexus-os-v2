@@ -16,6 +16,7 @@ describe('Hermes existing OpenRouter model-first controller', () => {
 
   it('sends ordinary language to the existing hermes-chat model gateway in Ray-only pilot mode', async () => {
     vi.stubEnv('VITE_HERMES_MODEL_FIRST_MODE', 'RAY_ONLY_PILOT');
+    vi.stubEnv('VITE_HERMES_MODEL_FIRST_PRIMARY_ENABLED', 'true');
     mockedHermesChat.mockResolvedValue({
       configured: true,
       text: 'A velocipede is an early human-powered wheeled vehicle, often a predecessor to the bicycle.',
@@ -44,8 +45,21 @@ describe('Hermes existing OpenRouter model-first controller', () => {
     expect(result.response?.contextUsed).toContain('model:openai/gpt-4o-mini');
   });
 
+  it('keeps model-first out of the primary path unless the primary gate is explicitly enabled', async () => {
+    vi.stubEnv('VITE_HERMES_MODEL_FIRST_MODE', 'RAY_ONLY_PILOT');
+    const result = await runHermesModelFirstConversation({
+      message: 'What is a velocipede?',
+      actorRole: 'admin',
+    });
+
+    expect(result.usedModelFirst).toBe(false);
+    expect(result.reason).toBe('model_first_ray_only_pilot');
+    expect(mockedHermesChat).not.toHaveBeenCalled();
+  });
+
   it('does not invoke the model-first path when the feature flag is off', async () => {
     vi.stubEnv('VITE_HERMES_MODEL_FIRST_MODE', 'OFF');
+    vi.stubEnv('VITE_HERMES_MODEL_FIRST_PRIMARY_ENABLED', 'true');
     const result = await runHermesModelFirstConversation({
       message: 'What is a hovercraft?',
       actorRole: 'admin',
@@ -57,6 +71,7 @@ describe('Hermes existing OpenRouter model-first controller', () => {
 
   it('returns truthful degraded state instead of a legacy generic fallback when the provider is unavailable', async () => {
     vi.stubEnv('VITE_HERMES_MODEL_FIRST_MODE', 'RAY_ONLY_PILOT');
+    vi.stubEnv('VITE_HERMES_MODEL_FIRST_PRIMARY_ENABLED', 'true');
     mockedHermesChat.mockResolvedValue({ configured: false, text: '', metadata: { provider: 'openrouter', model: 'none' } });
 
     const result = await runHermesModelFirstConversation({

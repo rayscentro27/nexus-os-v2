@@ -28,7 +28,13 @@ export function getHermesModelFirstMode(): HermesModelFirstMode {
   return modelFirstMode();
 }
 
+function modelFirstPrimaryEnabled(): boolean {
+  const env = import.meta.env as Record<string, string | undefined>;
+  return env.VITE_HERMES_MODEL_FIRST_PRIMARY_ENABLED === 'true' || env.HERMES_MODEL_FIRST_PRIMARY_ENABLED === 'true';
+}
+
 export function isHermesModelFirstPrimary(actorRole: HermesModelFirstInput['actorRole'] = 'unknown'): boolean {
+  if (!modelFirstPrimaryEnabled()) return false;
   const mode = modelFirstMode();
   if (mode === 'ACTIVE') return actorRole !== 'client' && actorRole !== 'alpha';
   if (mode === 'RAY_ONLY_PILOT') return actorRole === 'ray' || actorRole === 'admin';
