@@ -1,0 +1,6 @@
+/got-funding /got-funding/index.html 200
+/got-funding/ /got-funding/index.html 200
+/api/alpha/search /.netlify/functions/alpha-search 200
+/api/alpha/url-review /.netlify/functions/alpha-url-review 200
+/api/alpha/* /.netlify/functions/alpha-provider/:splat 200
+/* /index.html 200
