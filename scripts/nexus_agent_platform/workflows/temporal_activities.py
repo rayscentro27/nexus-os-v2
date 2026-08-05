@@ -19,6 +19,45 @@ from typing import Any, Dict
 from temporalio import activity
 
 
+# ─── Canonical Runtime Configuration ──────────────────────────
+
+def _load_canonical_runtime() -> None:
+    """Load canonical Nexus runtime environment if not already loaded."""
+    if os.environ.get("_NEXUS_RUNTIME_LOADED"):
+        return
+    runtime_env = "/Users/raymonddavis/.config/nexus/runtime.env"
+    if os.path.isfile(runtime_env):
+        try:
+            with open(runtime_env) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#") or "=" not in line:
+                        continue
+                    key, value = line.split("=", 1)
+                    key = key.strip().removeprefix("export ").strip()
+                    if key and not os.environ.get(key):
+                        os.environ[key] = value.strip().strip("'").strip('"')
+        except Exception:
+            pass
+    os.environ["_NEXUS_RUNTIME_LOADED"] = "1"
+
+
+_load_canonical_runtime()
+
+# ─── Safe Presence Report ─────────────────────────────────────
+
+def _presence_report() -> dict[str, bool]:
+    """Return which required variables are configured, without values."""
+    return {
+        "supabase_url": bool(os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")),
+        "supabase_service_key": bool(os.environ.get("SUPABASE_SERVICE_ROLE_KEY")),
+        "telegram_bot_token": bool(os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("NEXUS_TELEGRAM_BOT_TOKEN")),
+        "telegram_allowed_chat_ids": bool(os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS")),
+        "langfuse": bool(os.environ.get("LANGFUSE_TRACING_ENABLED", "").lower() == "true" and
+                       (os.environ.get("LANGFUSE_PUBLIC_KEY") or os.environ.get("LANGFUSE_SECRET_KEY"))),
+    }
+
+
 # ─── Report Activities ───────────────────────────────────────
 
 @activity.defn
@@ -64,6 +103,7 @@ async def resolve_report_definition_activity(report_definition: str) -> Dict[str
 async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dict[str, Any]:
     """Retrieve fresh data for the report at execution time."""
     import httpx
+    import ssl
 
     supabase_url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
     supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
@@ -71,22 +111,28 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
     if not supabase_url or not supabase_key:
         raise RuntimeError("Supabase credentials not configured")
 
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+
     handler = report_def.get("handler", "")
 
     # Route to appropriate handler
     if handler == "hermes._get_process_status":
-        url = f"{supabase_url}/rest/v1/nexus_process_definitions?select=id,name,status"
+        url = f"{supabase_url}/rest/v1/nexus_process_definitions?select=id,process_key,name,system,enabled,execution_mode,is_mock,updated_at&order=updated_at.desc&limit=80"
         headers = {
+            "apikey": supabase_key,
             "Authorization": f"Bearer {supabase_key}",
-            "Content-Type": "application/json",
+            "accept": "application/json",
+            "content-type": "application/json",
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=ssl_ctx) as client:
             response = await client.get(url, headers=headers, timeout=30.0)
             if response.status_code != 200:
                 raise RuntimeError(f"Supabase query failed: HTTP {response.status_code}")
             definitions = response.json()
 
-            runs_url = f"{supabase_url}/rest/v1/nexus_process_runs?select=id,definition_id,status,last_run_at&order=last_run_at.desc&limit=20"
+            runs_url = f"{supabase_url}/rest/v1/nexus_process_runs?select=id,status,started_at,completed_at,heartbeat_at,items_attempted,items_succeeded,items_failed,output_location,error_code,error_message,trace_id,metadata,process_id&order=created_at.desc&limit=40"
             runs_response = await client.get(runs_url, headers=headers, timeout=30.0)
             runs = runs_response.json() if runs_response.status_code == 200 else []
 
@@ -99,10 +145,12 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
     elif handler == "hermes._get_client_count":
         url = f"{supabase_url}/rest/v1/client_profiles?select=tenant_id,status,source"
         headers = {
+            "apikey": supabase_key,
             "Authorization": f"Bearer {supabase_key}",
             "Content-Type": "application/json",
+            "Prefer": "count=exact",
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=ssl_ctx) as client:
             response = await client.get(url, headers=headers, timeout=30.0)
             if response.status_code != 200:
                 raise RuntimeError(f"Supabase query failed: HTTP {response.status_code}")
@@ -122,7 +170,7 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
 
     elif handler == "hermes._get_failure_report":
         heartbeat_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "reports", "runtime",
+            os.path.dirname(__file__), "..", "..", "..", "reports", "runtime",
             "nexus_active_operator_heartbeat_latest.json"
         )
         try:
@@ -219,9 +267,14 @@ async def deliver_telegram_report_activity(delivery_target: str, rendered: str) 
     """Deliver report via Telegram."""
     import httpx
 
-    bot_token = os.environ.get("NEXUS_TELEGRAM_BOT_TOKEN")
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("NEXUS_TELEGRAM_BOT_TOKEN")
     if not bot_token:
         raise RuntimeError("Telegram bot token not configured")
+
+    allowed_raw = os.environ.get("TELEGRAM_ALLOWED_CHAT_IDS", "1288928049")
+    allowed_ids = {cid.strip() for cid in allowed_raw.split(",") if cid.strip()}
+    if delivery_target not in allowed_ids:
+        raise PermissionError(f"Unauthorized Telegram delivery target: {delivery_target}")
 
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     payload = {
@@ -288,7 +341,7 @@ async def send_email_activity(recipient: str, subject: str, body: str, idempoten
 async def persist_delivery_receipt_activity(mission_id: str, delivery_result: Dict[str, Any], idempotency_key: str) -> None:
     """Persist delivery receipt for idempotency."""
     receipts_dir = os.path.join(
-        os.path.dirname(__file__), "..", "..", "reports", "runtime", "action_receipts"
+        os.path.dirname(__file__), "..", "..", "..", "reports", "runtime", "action_receipts"
     )
     os.makedirs(receipts_dir, exist_ok=True)
 
@@ -308,7 +361,7 @@ async def persist_delivery_receipt_activity(mission_id: str, delivery_result: Di
 async def update_nexus_mission_activity(mission_id: str, status: str) -> None:
     """Update mission status."""
     mission_dir = os.path.join(
-        os.path.dirname(__file__), "..", "..", "data", "missions"
+        os.path.dirname(__file__), "..", "..", "..", "data", "missions"
     )
     os.makedirs(mission_dir, exist_ok=True)
 
