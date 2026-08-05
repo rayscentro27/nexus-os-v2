@@ -32,4 +32,7 @@ _incoming/
 # Local Netlify folder
 .netlify
 
+# Temporal local persistence
+.temporal/
+
 data/private/

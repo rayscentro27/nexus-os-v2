@@ -16,6 +16,8 @@ import hashlib
 import json
 import os
 import uuid
+import asyncio
+import concurrent.futures
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
@@ -30,6 +32,22 @@ from .typed import (
     error_result,
     empty_result,
 )
+from nexus_agent_platform.workflows.temporal_workflows import ScheduledReportWorkflow
+
+try:
+    from temporalio.client import Client as TemporalClient
+except ImportError:
+    TemporalClient = None
+
+
+def _run_coroutine_sync(coro):
+    """Run an asyncio coroutine from synchronous code."""
+    try:
+        return asyncio.run(coro)
+    except RuntimeError:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(asyncio.run, coro)
+            return future.result(timeout=30)
 
 
 # ─── Idempotency ────────────────────────────────────────────
@@ -325,6 +343,95 @@ def schedule_report(
             execution=ExecutionInfo(handler_id=handler_id),
             trace_id=mission_id,
             warnings=["Duplicate execution - returning cached receipt"],
+        )
+
+    execution_mode = os.environ.get("SCHEDULE_REPORT_EXECUTION_MODE", "local_file").lower().strip()
+    temporal_enabled = os.environ.get("TEMPORAL_WORKFLOWS_ENABLED", "").lower() == "true"
+
+    if execution_mode == "temporal" and temporal_enabled:
+        if TemporalClient is None:
+            return error_result(
+                capability_id=capability_id,
+                capability_version=version,
+                definition_id="",
+                error="temporalio not installed",
+                status=ResultStatus.UNAVAILABLE.value,
+                handler_id=handler_id,
+                tenant=tenant,
+                trace_id=mission_id,
+            )
+
+        workflow_id = f"schedule_report:{mission_id}"
+        config = {
+            "mission_id": mission_id,
+            "report_definition": report_def,
+            "scheduled_time": execution_time,
+            "timezone": tz,
+            "delivery_channel": taskspec.get("delivery_channel", "telegram"),
+            "delivery_target": taskspec.get("delivery_recipient", ""),
+            "idempotency_key": idempotency_key,
+            "trace_id": mission_id,
+        }
+
+        async def _start_workflow():
+            client = await TemporalClient.connect("localhost:7233")
+            await client.start_workflow(
+                ScheduledReportWorkflow.run,
+                config,
+                id=workflow_id,
+                task_queue="nexus-scheduled-reports",
+            )
+
+        try:
+            _run_coroutine_sync(_start_workflow())
+        except Exception as exc:
+            err_msg = str(exc).lower()
+            if "already started" in err_msg or "already_exists" in err_msg:
+                pass
+            else:
+                return error_result(
+                    capability_id=capability_id,
+                    capability_version=version,
+                    definition_id="",
+                    error=f"Temporal unavailable: {exc}",
+                    status=ResultStatus.UNAVAILABLE.value,
+                    handler_id=handler_id,
+                    tenant=tenant,
+                    trace_id=mission_id,
+                )
+
+        receipt = {
+            "status": ResultStatus.OK.value,
+            "schedule_id": workflow_id,
+            "report_definition": report_def,
+            "execution_time": exec_dt.isoformat(),
+            "timezone": tz,
+            "recurrence": taskspec.get("recurrence", "none"),
+            "delivery_channel": taskspec.get("delivery_channel", "telegram"),
+            "idempotency_key": idempotency_key,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "mission_id": mission_id,
+            "workflow_status": "started",
+        }
+        _store_receipt(idempotency_key, receipt, RECEIPTS_DIR)
+
+        return ok_result(
+            capability_id=capability_id,
+            capability_version=version,
+            definition_id="",
+            data={
+                "schedule_id": workflow_id,
+                "execution_time": exec_dt.isoformat(),
+                "timezone": tz,
+                "report_definition": report_def,
+                "status": "started",
+            },
+            source_id="temporal_workflow",
+            source_type="temporal_workflow",
+            query_id=f"schedule:{workflow_id}",
+            handler_id=handler_id,
+            tenant=tenant,
+            trace_id=mission_id,
         )
 
     # Store schedule definition

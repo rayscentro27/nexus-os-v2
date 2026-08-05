@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import time
+import inspect
 from typing import Any, Dict, Optional
 
 from nexus_agent_platform.contracts.typed import (
@@ -161,7 +162,15 @@ class CapabilityDispatcher:
                 trace_id=trace_id,
             )
 
+        mission_id = (mission_context or {}).get("mission_id", trace_id) if mission_context else trace_id
         try:
+            sig = inspect.signature(handler)
+            params = [p for p in sig.parameters.values() if p.kind in (p.POSITIONAL_OR_KEYWORD, p.POSITIONAL_ONLY)]
+            if params:
+                raw_result = handler(taskspec, mission_id, tenant)
+            else:
+                raw_result = handler()
+        except TypeError:
             raw_result = handler()
         except Exception as exc:
             elapsed = int(time.time() * 1000) - start_ms
