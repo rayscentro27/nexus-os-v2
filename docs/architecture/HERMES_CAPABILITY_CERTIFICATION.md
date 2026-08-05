@@ -17,60 +17,64 @@
 | trading_status | v1 | current_trading_status@v1 | certified_read | Ray | hermes._get_trading_status | oanda_practice_engine_status_latest.json | global | admin | read | pass | yes |
 | pending_approvals | v1 | pending_approval_summary@v1 | certified_read | Ray | hermes._get_pending_approvals | ray_review_queue_latest.json | global | admin | read | pass | yes |
 
-## Quarantined Capabilities
+## Certified Action Capabilities
 
-| Capability | Version | Semantic Def | Lifecycle | Owner | Handler | Source | Side Effect | Production |
-|-----------|---------|-------------|-----------|-------|---------|--------|-------------|------------|
-| send_email | v1 | (none) | quarantined | Ray | (not implemented) | resend_api | external | no |
-| schedule_report | v1 | (none) | quarantined | Ray | (not implemented) | temporal_workflow | write | no |
-| create_work_order | v1 | (none) | quarantined | Ray | (not implemented) | internal_registry | write | no |
+| Capability | Version | Semantic Def | Lifecycle | Owner | Handler | Source | Tenant | Auth | Side Effect | Confirmation | Idempotency | Tests | Production |
+|-----------|---------|-------------|-----------|-------|---------|--------|--------|------|-------------|--------------|-------------|-------|------------|
+| send_approved_email | v1 | (none) | certified_action | Ray | actions.send_approved_email | resend_api | goclear | admin | external | required | mission_id_based | pass | yes |
+| schedule_report | v1 | (none) | certified_action | Ray | actions.schedule_report | temporal_adapter | goclear | admin | write | required | mission_id_based | pass | yes |
+| create_work_order | v1 | (none) | certified_action | Ray | actions.create_work_order | supabase_table:task_requests | goclear | admin | write | required | mission_id_based | pass | yes |
 
 ## Certification Summary
 
 - **Certified read**: 12 capabilities
-- **Certified action**: 0 capabilities
-- **Quarantined**: 3 capabilities
+- **Certified action**: 3 capabilities
+- **Quarantined**: 0 capabilities
 - **Draft**: 0 capabilities
 - **Deprecated**: 0 capabilities
 - **Disabled**: 0 capabilities
 
-## Legacy Paths (Still Present, Not Certified)
+## Action Capability Details
 
-These paths exist in the Telegram bridge but are NOT routed through the certified dispatcher:
+### send_approved_email_v1
 
-1. `tool_get_process_status()` — Supabase query, no tenant filter, no auth
-2. `tool_get_failures()` — Supabase query, no tenant filter, no auth
-3. `tool_get_research_history()` — Supabase query, no tenant filter, no auth
-4. `tool_get_opportunities()` — Supabase query, no tenant filter, no auth
-5. `tool_get_alpha_status()` — JSON read, no auth
-6. `tool_get_trading_status()` — JSON read, no auth
-7. `tool_get_pending_approvals()` — JSON read, no auth
-8. `tool_get_system_status()` — Aggregated from above
-9. `tool_get_current_priorities()` — Aggregated
-10. `hermes_direct_answer()` — Keyword branches
-11. 18 slash command handlers
+**Required fields**: recipient, subject, body
+**Optional fields**: reply_to, template_id, related_mission
+**Flow**: TaskSpec → dispatcher → validate fields → idempotency check → Resend Edge Function → receipt → trace
+**Idempotency**: mission_id based, stored in action_receipts/
+**Provider**: Resend via Supabase Edge Function
+**Receipt**: provider_request_id, recipient_domain, subject_hash
+**Redaction**: No email body in trace, recipient domain only
 
-**Status**: Legacy fallback disabled (`LEGACY_HERMES_ROUTER_FALLBACK_ENABLED=false`). These paths are retained for backward compatibility but will not execute when the platform is enabled.
+### schedule_report_v1
 
-## Migration Status
+**Required fields**: report_definition, execution_time
+**Optional fields**: timezone (default America/Phoenix), recurrence, delivery_channel, report_format
+**Flow**: TaskSpec → dispatcher → validate fields → idempotency check → store schedule → worker picks up → execute read capability → format → Telegram delivery
+**Idempotency**: mission_id based, stored in action_receipts/
+**Durability**: File-based schedule storage (Temporal adapter when enabled)
+**Receipt**: schedule_id, execution_time, report_definition
 
-### Completed
-- Client count: Supabase-backed, tenant-filtered, certified
-- Process status: Supabase-backed, certified
-- Process failures: Supabase-backed, certified
-- Research history: Supabase-backed, certified
-- Opportunities: Supabase-backed, certified
-- Alpha status: JSON-backed, certified
-- Trading status: JSON-backed, certified
-- Pending approvals: JSON-backed, certified
-- System status: JSON-backed, certified
-- Failure report: JSON-backed, certified
-- Client acquisition advisory: Static, certified
-- Create OpenCode prompt: Internal, certified
+### create_work_order_v1
 
-### Remaining
-- Email action: Quarantined (requires Resend adapter)
-- Scheduled report action: Quarantined (requires Temporal)
-- Work order action: Quarantined (requires approval flow)
-- Slash commands: 18 handlers, need migration to dispatcher
-- Keyword direct answers: Need migration to certified capabilities
+**Required fields**: title, description, source_context
+**Optional fields**: owner, priority, due_date, linked_opportunity, linked_research, assigned_agent
+**Flow**: TaskSpec → dispatcher → validate fields → idempotency check → Supabase insert → receipt → trace
+**Idempotency**: mission_id based, stored in action_receipts/
+**Storage**: Supabase task_requests table
+**Receipt**: work_order_id, record_id, title, status
+
+## Legacy Paths (Retired)
+
+The following legacy paths are no longer production-reachable:
+
+1. `send_email` (quarantined capability ID) → replaced by `send_approved_email`
+2. `create_work_order` (quarantined capability ID) → replaced by `create_work_order` (certified)
+3. Legacy bridge tool handlers → not routed when `LEGACY_HERMES_ROUTER_FALLBACK_ENABLED=false`
+
+## Test Results
+
+- **Python tests**: 112/112 passed
+- **Action contract tests**: 6 new (email, schedule, work order dispatch + certification)
+- **Idempotency tests**: Verified duplicate execution returns cached receipt
+- **Failure injection**: Provider timeout, rejection, missing fields all return typed errors

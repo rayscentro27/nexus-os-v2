@@ -258,59 +258,65 @@ def _register_builtins():
         certification_result="passed",
     ), handler=None)
 
-    # ── Quarantined: Send Email ────────────────────────────────
+    # ── Certified Action: Send Email ───────────────────────────
+    from nexus_agent_platform.contracts.actions import send_approved_email
     contract_registry.register(CapabilityContract(
-        capability_id="send_email",
+        capability_id="send_approved_email",
         capability_version="v1",
         semantic_definition_id="",
-        description="Send email via Resend (requires approval)",
+        description="Send approved email via Resend with idempotency",
         supported_operations=["execute_action"],
-        canonical_handler_id="",
+        canonical_handler_id="actions.send_approved_email",
         authoritative_source="resend_api",
         side_effect_class=SideEffectClass.EXTERNAL.value,
         confirmation_required=True,
         idempotency_policy="mission_id_based",
         fallback_policy="fail_closed",
+        response_renderer="deterministic",
         owner="Ray",
-        lifecycle=LifecycleState.QUARANTINED.value,
-        certification_result=None,
-    ))
+        lifecycle=LifecycleState.CERTIFIED_ACTION.value,
+        certification_result="passed",
+    ), handler=send_approved_email)
 
-    # ── Quarantined: Schedule Report ───────────────────────────
+    # ── Certified Action: Schedule Report ──────────────────────
+    from nexus_agent_platform.contracts.actions import schedule_report
     contract_registry.register(CapabilityContract(
         capability_id="schedule_report",
         capability_version="v1",
         semantic_definition_id="",
-        description="Schedule a recurring report (requires approval)",
+        description="Schedule a report for future execution with durability",
         supported_operations=["schedule_action"],
-        canonical_handler_id="",
-        authoritative_source="temporal_workflow",
+        canonical_handler_id="actions.schedule_report",
+        authoritative_source="temporal_adapter",
         side_effect_class=SideEffectClass.WRITE.value,
         confirmation_required=True,
         idempotency_policy="mission_id_based",
         fallback_policy="fail_closed",
+        response_renderer="deterministic",
         owner="Ray",
-        lifecycle=LifecycleState.QUARANTINED.value,
-        certification_result=None,
-    ))
+        lifecycle=LifecycleState.CERTIFIED_ACTION.value,
+        certification_result="passed",
+    ), handler=schedule_report)
 
-    # ── Quarantined: Create Work Order ─────────────────────────
+    # ── Certified Action: Create Work Order ────────────────────
+    from nexus_agent_platform.contracts.actions import create_work_order
     contract_registry.register(CapabilityContract(
         capability_id="create_work_order",
         capability_version="v1",
         semantic_definition_id="",
-        description="Create a work order for execution",
+        description="Create work order in Supabase with idempotency",
         supported_operations=["execute_action"],
-        canonical_handler_id="",
-        authoritative_source="internal_registry",
+        canonical_handler_id="actions.create_work_order",
+        authoritative_source="supabase_table:task_requests",
         side_effect_class=SideEffectClass.WRITE.value,
         confirmation_required=True,
         idempotency_policy="mission_id_based",
         fallback_policy="fail_closed",
+        response_renderer="deterministic",
         owner="Ray",
-        lifecycle=LifecycleState.QUARANTINED.value,
-        certification_result=None,
-    ))
+        lifecycle=LifecycleState.CERTIFIED_ACTION.value,
+        certification_result="passed",
+    ), handler=create_work_order)
 
     # ── Certified Read: Create Prompt ──────────────────────────
     contract_registry.register(CapabilityContract(

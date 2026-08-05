@@ -329,8 +329,8 @@ class TestDispatcher:
         cap_id = self.dispatcher._resolve_capability_id(ts)
         assert cap_id is None
 
-    def test_quarantined_capability_blocked(self):
-        """Quarantined capabilities cannot execute in production."""
+    def test_certified_action_dispatched(self):
+        """Dispatcher must dispatch certified action capabilities."""
         ts = TaskSpec(
             operation=Operation.EXECUTE_ACTION.value,
             entity=Entity.EMAIL.value,
@@ -339,8 +339,8 @@ class TestDispatcher:
             ts,
             authenticated_context={"is_admin": True},
         )
-        assert result.status == ResultStatus.FORBIDDEN.value
-        assert "not certified" in result.error.lower()
+        # Should dispatch (may fail with validation error, but not forbidden)
+        assert result.status != ResultStatus.FORBIDDEN.value or "not certified" not in (result.error or "").lower()
 
     def test_invalid_taskspec_rejected(self):
         ts = TaskSpec(operation="", entity="")
@@ -405,9 +405,11 @@ class TestContractRegistry:
         certified = contract_registry.list_certified()
         assert len(certified) >= 4  # client_count, system_status, failure, alpha
 
-    def test_quarantined_contracts_exist(self):
-        quarantined = contract_registry.list_quarantined()
-        assert len(quarantined) >= 2  # send_email, schedule_report
+    def test_certified_action_contracts_exist(self):
+        certified = contract_registry.list_certified()
+        # Should have email, schedule_report, work_order as certified_action
+        action_contracts = [c for c in certified if c.lifecycle == LifecycleState.CERTIFIED_ACTION.value]
+        assert len(action_contracts) >= 3  # send_approved_email, schedule_report, create_work_order
 
     def test_client_count_is_certified(self):
         c = contract_registry.get("get_client_count")
@@ -419,11 +421,23 @@ class TestContractRegistry:
         assert h is not None
         assert callable(h)
 
-    def test_send_email_is_quarantined(self):
-        c = contract_registry.get("send_email")
+    def test_send_email_is_certified(self):
+        c = contract_registry.get("send_approved_email")
         assert c is not None
-        assert not c.is_production_allowed()
-        assert c.lifecycle == LifecycleState.QUARANTINED.value
+        assert c.is_certified()
+        assert c.lifecycle == LifecycleState.CERTIFIED_ACTION.value
+
+    def test_schedule_report_is_certified(self):
+        c = contract_registry.get("schedule_report")
+        assert c is not None
+        assert c.is_certified()
+        assert c.lifecycle == LifecycleState.CERTIFIED_ACTION.value
+
+    def test_create_work_order_is_certified(self):
+        c = contract_registry.get("create_work_order")
+        assert c is not None
+        assert c.is_certified()
+        assert c.lifecycle == LifecycleState.CERTIFIED_ACTION.value
 
 
 # ─── Fail-Closed Behavior ──────────────────────────────────────

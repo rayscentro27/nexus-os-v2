@@ -43,6 +43,11 @@ from nexus_agent_platform.contracts.validators import (
     validate_result,
     validate_contract,
 )
+from nexus_agent_platform.contracts.actions import (
+    send_approved_email,
+    schedule_report,
+    create_work_order,
+)
 
 __all__ = [
     "TaskSpec", "Scope", "Authorization", "ExecutionInfo", "SourceInfo",
@@ -52,4 +57,5 @@ __all__ = [
     "CapabilityContract", "LifecycleState", "ContractRegistry", "contract_registry",
     "dispatch", "CapabilityDispatcher",
     "validate_taskspec", "validate_result", "validate_contract",
+    "send_approved_email", "schedule_report", "create_work_order",
 ]

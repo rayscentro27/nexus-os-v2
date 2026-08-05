@@ -171,46 +171,52 @@
       "production_allowed": true
     },
     {
-      "capability_id": "send_email",
+      "capability_id": "send_approved_email",
       "version": "v1",
       "semantic_definition": "",
-      "lifecycle": "quarantined",
+      "lifecycle": "certified_action",
       "owner": "Ray",
-      "handler": "",
+      "handler": "actions.send_approved_email",
       "source": "resend_api",
-      "tenant_scope": "server_injected",
+      "tenant_scope": "server_injected_goclear",
       "authorization": "admin_only",
       "side_effect": "external",
+      "confirmation_required": true,
+      "idempotency_policy": "mission_id_based",
       "fallback": "fail_closed",
-      "production_allowed": false
+      "production_allowed": true
     },
     {
       "capability_id": "schedule_report",
       "version": "v1",
       "semantic_definition": "",
-      "lifecycle": "quarantined",
+      "lifecycle": "certified_action",
       "owner": "Ray",
-      "handler": "",
-      "source": "temporal_workflow",
-      "tenant_scope": "server_injected",
+      "handler": "actions.schedule_report",
+      "source": "temporal_adapter",
+      "tenant_scope": "server_injected_goclear",
       "authorization": "admin_only",
       "side_effect": "write",
+      "confirmation_required": true,
+      "idempotency_policy": "mission_id_based",
       "fallback": "fail_closed",
-      "production_allowed": false
+      "production_allowed": true
     },
     {
       "capability_id": "create_work_order",
       "version": "v1",
       "semantic_definition": "",
-      "lifecycle": "quarantined",
+      "lifecycle": "certified_action",
       "owner": "Ray",
-      "handler": "",
-      "source": "internal_registry",
-      "tenant_scope": "server_injected",
+      "handler": "actions.create_work_order",
+      "source": "supabase_table:task_requests",
+      "tenant_scope": "server_injected_goclear",
       "authorization": "admin_only",
       "side_effect": "write",
+      "confirmation_required": true,
+      "idempotency_policy": "mission_id_based",
       "fallback": "fail_closed",
-      "production_allowed": false
+      "production_allowed": true
     }
   ],
   "semantic_definitions": [
@@ -308,8 +314,8 @@
   ],
   "summary": {
     "certified_read": 12,
-    "certified_action": 0,
-    "quarantined": 3,
+    "certified_action": 3,
+    "quarantined": 0,
     "draft": 0,
     "deprecated": 0,
     "disabled": 0
