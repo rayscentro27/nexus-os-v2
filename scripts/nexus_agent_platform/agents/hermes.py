@@ -459,6 +459,263 @@ def _get_alpha_status() -> str:
         return "Alpha status unavailable"
 
 
+def _get_process_status() -> Dict[str, Any]:
+    """Query Supabase for process definitions and runs status."""
+    try:
+        client = _supabase_client()
+        if not client:
+            return {"status": "unavailable", "error": "Supabase not configured"}
+
+        defs = client.table("nexus_process_definitions").select(
+            "id,name,status,schedule,created_at"
+        ).execute()
+        runs = client.table("nexus_process_runs").select(
+            "id,definition_id,status,last_run_at,error_message"
+        ).order("last_run_at", desc=True).limit(40).execute()
+
+        definitions = defs.data or []
+        run_list = runs.data or []
+
+        running_runs = [r for r in run_list if r.get("status") == "RUNNING"]
+        completed_runs = [r for r in run_list if r.get("status") == "COMPLETED"]
+        failed_runs = [r for r in run_list if r.get("status") in ("FAILED", "BLOCKED", "TIMED_OUT", "CANCELLED", "PARTIAL")]
+
+        enabled_defs = [d for d in definitions if d.get("status") == "enabled"]
+        disabled_defs = [d for d in definitions if d.get("status") != "enabled"]
+
+        return {
+            "status": "ok",
+            "definitions": {
+                "total": len(definitions),
+                "enabled": len(enabled_defs),
+                "disabled": len(disabled_defs),
+                "items": [
+                    {"id": d.get("id"), "name": d.get("name"), "status": d.get("status"), "schedule": d.get("schedule")}
+                    for d in definitions[:10]
+                ],
+            },
+            "runs": {
+                "total": len(run_list),
+                "running": len(running_runs),
+                "completed": len(completed_runs),
+                "failed": len(failed_runs),
+                "recent": [
+                    {
+                        "id": r.get("id"),
+                        "definition_id": r.get("definition_id"),
+                        "status": r.get("status"),
+                        "last_run_at": r.get("last_run_at"),
+                        "error": r.get("error_message"),
+                    }
+                    for r in run_list[:10]
+                ],
+            },
+        }
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
+def _get_process_failures() -> Dict[str, Any]:
+    """Query Supabase for failed process runs in the last 24 hours."""
+    try:
+        client = _supabase_client()
+        if not client:
+            return {"status": "unavailable", "error": "Supabase not configured"}
+
+        from datetime import datetime, timedelta, timezone
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+        runs = client.table("nexus_process_runs").select(
+            "id,definition_id,status,last_run_at,error_message,duration_ms"
+        ).in_(
+            "status", ["FAILED", "BLOCKED", "TIMED_OUT", "CANCELLED", "PARTIAL"]
+        ).gte("last_run_at", cutoff).order("last_run_at", desc=True).limit(30).execute()
+
+        failures = runs.data or []
+
+        by_status = {}
+        for f in failures:
+            s = f.get("status", "unknown")
+            by_status[s] = by_status.get(s, 0) + 1
+
+        return {
+            "status": "ok",
+            "period": "last_24_hours",
+            "total": len(failures),
+            "by_status": by_status,
+            "failures": [
+                {
+                    "id": f.get("id"),
+                    "definition_id": f.get("definition_id"),
+                    "status": f.get("status"),
+                    "last_run_at": f.get("last_run_at"),
+                    "error": f.get("error_message"),
+                    "duration_ms": f.get("duration_ms"),
+                }
+                for f in failures[:10]
+            ],
+        }
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
+def _get_research_history() -> Dict[str, Any]:
+    """Query Supabase for recent research runs and results."""
+    try:
+        client = _supabase_client()
+        if not client:
+            return {"status": "unavailable", "error": "Supabase not configured"}
+
+        runs = client.table("nexus_research_runs").select(
+            "id,query,status,category,created_at,completed_at"
+        ).order("created_at", desc=True).limit(25).execute()
+
+        results = client.table("nexus_research_results").select(
+            "id,run_id,source,title,url,created_at"
+        ).order("created_at", desc=True).limit(40).execute()
+
+        run_list = runs.data or []
+        result_list = results.data or []
+
+        completed_runs = [r for r in run_list if r.get("status") == "completed"]
+        failed_runs = [r for r in run_list if r.get("status") == "failed"]
+
+        return {
+            "status": "ok",
+            "runs": {
+                "total": len(run_list),
+                "completed": len(completed_runs),
+                "failed": len(failed_runs),
+                "items": [
+                    {
+                        "id": r.get("id"),
+                        "query": r.get("query"),
+                        "status": r.get("status"),
+                        "category": r.get("category"),
+                        "created_at": r.get("created_at"),
+                        "completed_at": r.get("completed_at"),
+                    }
+                    for r in run_list[:10]
+                ],
+            },
+            "results": {
+                "total": len(result_list),
+                "items": [
+                    {
+                        "id": r.get("id"),
+                        "run_id": r.get("run_id"),
+                        "source": r.get("source"),
+                        "title": r.get("title"),
+                        "url": r.get("url"),
+                        "created_at": r.get("created_at"),
+                    }
+                    for r in result_list[:10]
+                ],
+            },
+        }
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
+def _get_opportunities() -> Dict[str, Any]:
+    """Query Supabase for current business opportunities."""
+    try:
+        client = _supabase_client()
+        if not client:
+            return {"status": "unavailable", "error": "Supabase not configured"}
+
+        opps = client.table("business_opportunities").select(
+            "id,title,description,status,revenue_potential,action_state,updated_at"
+        ).order("updated_at", desc=True).limit(8).execute()
+
+        opportunities = opps.data or []
+
+        active = [o for o in opportunities if o.get("action_state") == "active"]
+        reviewed = [o for o in opportunities if o.get("action_state") == "reviewed"]
+        rejected = [o for o in opportunities if o.get("action_state") == "rejected"]
+
+        return {
+            "status": "ok",
+            "total": len(opportunities),
+            "by_state": {
+                "active": len(active),
+                "reviewed": len(reviewed),
+                "rejected": len(rejected),
+            },
+            "opportunities": [
+                {
+                    "id": o.get("id"),
+                    "title": o.get("title"),
+                    "description": o.get("description"),
+                    "status": o.get("status"),
+                    "revenue_potential": o.get("revenue_potential"),
+                    "action_state": o.get("action_state"),
+                    "updated_at": o.get("updated_at"),
+                }
+                for o in opportunities
+            ],
+        }
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
+def _get_trading_status() -> Dict[str, Any]:
+    """Read current Oanda practice trading engine status."""
+    try:
+        status_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "reports", "runtime", "oanda_practice_engine_status_latest.json"
+        )
+        with open(status_path) as f:
+            data = json.load(f)
+
+        return {
+            "status": "ok",
+            "engine_state": data.get("engine_state", "unknown"),
+            "mode": data.get("mode", "unknown"),
+            "kill_switch": data.get("kill_switch", False),
+            "open_positions": data.get("open_positions", []),
+            "pending_orders": data.get("pending_orders", []),
+            "last_signal": data.get("last_signal"),
+            "practice_account": True,
+        }
+    except FileNotFoundError:
+        return {"status": "unavailable", "error": "Trading status file not found"}
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
+def _get_pending_approvals() -> Dict[str, Any]:
+    """Read pending approvals from the review queue."""
+    try:
+        queue_path = os.path.join(
+            os.path.dirname(__file__), "..", "..", "reports", "runtime", "ray_review_queue_latest.json"
+        )
+        with open(queue_path) as f:
+            data = json.load(f)
+
+        items = data if isinstance(data, list) else data.get("items", [])
+        pending = [i for i in items if i.get("status") == "pending"]
+
+        return {
+            "status": "ok",
+            "total": len(items),
+            "pending_count": len(pending),
+            "items": [
+                {
+                    "id": i.get("id"),
+                    "type": i.get("type"),
+                    "title": i.get("title"),
+                    "created_at": i.get("created_at"),
+                }
+                for i in pending[:10]
+            ],
+        }
+    except FileNotFoundError:
+        return {"status": "unavailable", "error": "Review queue file not found"}
+    except Exception as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
 # ─── Graph Builder ──────────────────────────────────────────
 
 def build_hermes_graph() -> GraphAdapter:
@@ -507,6 +764,13 @@ def get_hermes_capabilities() -> CapabilityRegistry:
         _capabilities.register("system_status", "System status report", _get_system_status)
         _capabilities.register("failure_report", "Today's failure report", _get_failure_report)
         _capabilities.register("alpha_status", "Alpha agent status", _get_alpha_status)
+        # New certified capabilities
+        _capabilities.register("process_status", "Process definitions and runs", _get_process_status)
+        _capabilities.register("process_failures", "Failed process runs", _get_process_failures)
+        _capabilities.register("research_history", "Research runs and results", _get_research_history)
+        _capabilities.register("opportunities", "Business opportunities", _get_opportunities)
+        _capabilities.register("trading_status", "Oanda practice trading status", _get_trading_status)
+        _capabilities.register("pending_approvals", "Items awaiting approval", _get_pending_approvals)
     return _capabilities
 
 

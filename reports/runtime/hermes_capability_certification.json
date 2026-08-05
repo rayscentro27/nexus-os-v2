@@ -73,6 +73,104 @@
       "production_allowed": true
     },
     {
+      "capability_id": "create_opencode_prompt",
+      "version": "v1",
+      "semantic_definition": "",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._create_opencode_prompt",
+      "source": "internal_context",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "none",
+      "fallback": "static_response",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "process_status",
+      "version": "v1",
+      "semantic_definition": "process_definition_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_process_status",
+      "source": "supabase_table:nexus_process_definitions,nexus_process_runs",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "process_failures",
+      "version": "v1",
+      "semantic_definition": "process_failure_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_process_failures",
+      "source": "supabase_table:nexus_process_runs",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "research_history",
+      "version": "v1",
+      "semantic_definition": "research_run_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_research_history",
+      "source": "supabase_table:nexus_research_runs,nexus_research_results",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "opportunities",
+      "version": "v1",
+      "semantic_definition": "business_opportunity_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_opportunities",
+      "source": "supabase_table:business_opportunities",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "trading_status",
+      "version": "v1",
+      "semantic_definition": "current_trading_status@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_trading_status",
+      "source": "runtime_file:oanda_practice_engine_status_latest.json",
+      "tenant_scope": "global",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "pending_approvals",
+      "version": "v1",
+      "semantic_definition": "pending_approval_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_pending_approvals",
+      "source": "runtime_file:ray_review_queue_latest.json",
+      "tenant_scope": "global",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
       "capability_id": "send_email",
       "version": "v1",
       "semantic_definition": "",
@@ -113,20 +211,6 @@
       "side_effect": "write",
       "fallback": "fail_closed",
       "production_allowed": false
-    },
-    {
-      "capability_id": "create_opencode_prompt",
-      "version": "v1",
-      "semantic_definition": "",
-      "lifecycle": "certified_read",
-      "owner": "Ray",
-      "handler": "hermes._create_opencode_prompt",
-      "source": "internal_context",
-      "tenant_scope": "server_injected",
-      "authorization": "admin_only",
-      "side_effect": "none",
-      "fallback": "static_response",
-      "production_allowed": true
     }
   ],
   "semantic_definitions": [
@@ -147,48 +231,83 @@
     {
       "definition_id": "onboarding_client_count",
       "version": "v1",
-      "lifecycle": "draft",
+      "lifecycle": "certified_read",
       "owner": "Ray",
       "source": "supabase_table:client_profiles"
     },
     {
       "definition_id": "current_running_process_summary",
       "version": "v1",
-      "lifecycle": "draft",
+      "lifecycle": "certified_read",
       "owner": "Ray",
       "source": "runtime_file:nexus_process_registry.json"
     },
     {
+      "definition_id": "process_definition_summary",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:nexus_process_definitions"
+    },
+    {
+      "definition_id": "process_run_summary",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:nexus_process_runs"
+    },
+    {
+      "definition_id": "process_failure_summary",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:nexus_process_runs"
+    },
+    {
+      "definition_id": "research_run_summary",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:nexus_research_runs,nexus_research_results"
+    },
+    {
+      "definition_id": "business_opportunity_summary",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:business_opportunities"
+    },
+    {
       "definition_id": "current_failure_summary",
       "version": "v1",
-      "lifecycle": "draft",
+      "lifecycle": "certified_read",
       "owner": "Ray",
       "source": "runtime_file:nexus_active_operator_heartbeat_latest.json"
     },
     {
       "definition_id": "current_alpha_status",
       "version": "v1",
-      "lifecycle": "draft",
+      "lifecycle": "certified_read",
       "owner": "Ray",
       "source": "runtime_file:alpha_telegram_status.json"
     },
     {
       "definition_id": "current_trading_status",
       "version": "v1",
-      "lifecycle": "draft",
+      "lifecycle": "certified_read",
       "owner": "Ray",
       "source": "runtime_file:oanda_practice_engine_status_latest.json"
     },
     {
       "definition_id": "pending_approval_summary",
       "version": "v1",
-      "lifecycle": "draft",
+      "lifecycle": "certified_read",
       "owner": "Ray",
       "source": "runtime_file:ray_review_queue_latest.json"
     }
   ],
   "summary": {
-    "certified_read": 6,
+    "certified_read": 12,
     "certified_action": 0,
     "quarantined": 3,
     "draft": 0,

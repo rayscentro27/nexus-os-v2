@@ -137,6 +137,12 @@ def _register_builtins():
         _get_system_status,
         _get_failure_report,
         _get_alpha_status,
+        _get_process_status,
+        _get_process_failures,
+        _get_research_history,
+        _get_opportunities,
+        _get_trading_status,
+        _get_pending_approvals,
     )
 
     # ── Certified Read: Client Count ───────────────────────────
@@ -322,6 +328,138 @@ def _register_builtins():
         lifecycle=LifecycleState.CERTIFIED_READ.value,
         certification_result="passed",
     ))
+
+    # ── Certified Read: Process Status ─────────────────────────
+    contract_registry.register(CapabilityContract(
+        capability_id="process_status",
+        capability_version="v1",
+        semantic_definition_id="process_definition_summary@v1",
+        description="Query Supabase for process definitions and runs",
+        supported_operations=["retrieve_status", "retrieve_list"],
+        canonical_handler_id="hermes._get_process_status",
+        authoritative_source="supabase_table:nexus_process_definitions,nexus_process_runs",
+        cache_policy="none",
+        freshness_policy="real_time",
+        tenant_scope_policy="server_injected",
+        authorization_policy="admin_only",
+        query_or_template_id="GET /rest/v1/nexus_process_definitions,nexus_process_runs",
+        side_effect_class=SideEffectClass.READ.value,
+        fallback_policy="fail_closed",
+        response_renderer="ceo_formatter",
+        owner="Ray",
+        lifecycle=LifecycleState.CERTIFIED_READ.value,
+        certification_result="passed",
+    ), handler=_get_process_status)
+
+    # ── Certified Read: Process Failures ───────────────────────
+    contract_registry.register(CapabilityContract(
+        capability_id="process_failures",
+        capability_version="v1",
+        semantic_definition_id="process_failure_summary@v1",
+        description="Query Supabase for failed process runs in last 24 hours",
+        supported_operations=["retrieve_status"],
+        canonical_handler_id="hermes._get_process_failures",
+        authoritative_source="supabase_table:nexus_process_runs",
+        cache_policy="none",
+        freshness_policy="real_time",
+        tenant_scope_policy="server_injected",
+        authorization_policy="admin_only",
+        query_or_template_id="GET /rest/v1/nexus_process_runs?status=FAILED",
+        side_effect_class=SideEffectClass.READ.value,
+        fallback_policy="fail_closed",
+        response_renderer="ceo_formatter",
+        owner="Ray",
+        lifecycle=LifecycleState.CERTIFIED_READ.value,
+        certification_result="passed",
+    ), handler=_get_process_failures)
+
+    # ── Certified Read: Research History ───────────────────────
+    contract_registry.register(CapabilityContract(
+        capability_id="research_history",
+        capability_version="v1",
+        semantic_definition_id="research_run_summary@v1",
+        description="Query Supabase for research runs and results",
+        supported_operations=["retrieve_list"],
+        canonical_handler_id="hermes._get_research_history",
+        authoritative_source="supabase_table:nexus_research_runs,nexus_research_results",
+        cache_policy="none",
+        freshness_policy="real_time",
+        tenant_scope_policy="server_injected",
+        authorization_policy="admin_only",
+        query_or_template_id="GET /rest/v1/nexus_research_runs,nexus_research_results",
+        side_effect_class=SideEffectClass.READ.value,
+        fallback_policy="fail_closed",
+        response_renderer="ceo_formatter",
+        owner="Ray",
+        lifecycle=LifecycleState.CERTIFIED_READ.value,
+        certification_result="passed",
+    ), handler=_get_research_history)
+
+    # ── Certified Read: Opportunities ──────────────────────────
+    contract_registry.register(CapabilityContract(
+        capability_id="opportunities",
+        capability_version="v1",
+        semantic_definition_id="business_opportunity_summary@v1",
+        description="Query Supabase for business opportunities",
+        supported_operations=["retrieve_list"],
+        canonical_handler_id="hermes._get_opportunities",
+        authoritative_source="supabase_table:business_opportunities",
+        cache_policy="none",
+        freshness_policy="real_time",
+        tenant_scope_policy="server_injected",
+        authorization_policy="admin_only",
+        query_or_template_id="GET /rest/v1/business_opportunities",
+        side_effect_class=SideEffectClass.READ.value,
+        fallback_policy="fail_closed",
+        response_renderer="ceo_formatter",
+        owner="Ray",
+        lifecycle=LifecycleState.CERTIFIED_READ.value,
+        certification_result="passed",
+    ), handler=_get_opportunities)
+
+    # ── Certified Read: Trading Status ─────────────────────────
+    contract_registry.register(CapabilityContract(
+        capability_id="trading_status",
+        capability_version="v1",
+        semantic_definition_id="current_trading_status@v1",
+        description="Read Oanda practice trading engine status",
+        supported_operations=["retrieve_status"],
+        canonical_handler_id="hermes._get_trading_status",
+        authoritative_source="runtime_file:oanda_practice_engine_status_latest.json",
+        cache_policy="none",
+        freshness_policy="real_time",
+        tenant_scope_policy="global",
+        authorization_policy="admin_only",
+        query_or_template_id="READ oanda_practice_engine_status_latest.json",
+        side_effect_class=SideEffectClass.READ.value,
+        fallback_policy="fail_closed",
+        response_renderer="deterministic",
+        owner="Ray",
+        lifecycle=LifecycleState.CERTIFIED_READ.value,
+        certification_result="passed",
+    ), handler=_get_trading_status)
+
+    # ── Certified Read: Pending Approvals ──────────────────────
+    contract_registry.register(CapabilityContract(
+        capability_id="pending_approvals",
+        capability_version="v1",
+        semantic_definition_id="pending_approval_summary@v1",
+        description="Read pending approvals from review queue",
+        supported_operations=["retrieve_list"],
+        canonical_handler_id="hermes._get_pending_approvals",
+        authoritative_source="runtime_file:ray_review_queue_latest.json",
+        cache_policy="none",
+        freshness_policy="real_time",
+        tenant_scope_policy="global",
+        authorization_policy="admin_only",
+        query_or_template_id="READ ray_review_queue_latest.json",
+        side_effect_class=SideEffectClass.READ.value,
+        fallback_policy="fail_closed",
+        response_renderer="deterministic",
+        owner="Ray",
+        lifecycle=LifecycleState.CERTIFIED_READ.value,
+        certification_result="passed",
+    ), handler=_get_pending_approvals)
 
 
 _register_builtins()

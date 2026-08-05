@@ -196,6 +196,153 @@ def _register_builtins():
     ))
 
     semantic_registry.register(SemanticDefinition(
+        definition_id="process_run_summary",
+        version="v1",
+        business_meaning=(
+            "Summary of process execution runs from Supabase, "
+            "including running, completed, failed, and blocked."
+        ),
+        business_owner="Ray",
+        technical_owner="Hermes Platform",
+        included_records=(
+            "nexus_process_runs rows, grouped by status, "
+            "ordered by last_run_at DESC"
+        ),
+        excluded_records="deleted runs",
+        tenant_policy="server_injected",
+        status_policy="all_statuses",
+        time_policy="current_snapshot",
+        distinctness_policy="one_row_per_run_id",
+        freshness_requirement="real_time_supabase_query",
+        approved_source="supabase_table:nexus_process_runs",
+        approved_fallback="unavailable_status_no_fabrication",
+        expected_result_type="dict_with_counts_and_recent_runs",
+        zero_is_valid=True,
+        empty_is_valid=True,
+        stale_allowed=False,
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_process_status",
+    ))
+
+    semantic_registry.register(SemanticDefinition(
+        definition_id="process_definition_summary",
+        version="v1",
+        business_meaning=(
+            "Summary of configured process definitions from Supabase, "
+            "including enabled/disabled state and schedule."
+        ),
+        business_owner="Ray",
+        technical_owner="Hermes Platform",
+        included_records="nexus_process_definitions rows",
+        excluded_records="deleted definitions",
+        tenant_policy="server_injected",
+        status_policy="all_statuses",
+        time_policy="current_snapshot",
+        distinctness_policy="one_row_per_definition_id",
+        freshness_requirement="real_time_supabase_query",
+        approved_source="supabase_table:nexus_process_definitions",
+        approved_fallback="unavailable_status_no_fabrication",
+        expected_result_type="dict_with_counts_and_definitions",
+        zero_is_valid=True,
+        empty_is_valid=True,
+        stale_allowed=False,
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_process_status",
+    ))
+
+    semantic_registry.register(SemanticDefinition(
+        definition_id="process_failure_summary",
+        version="v1",
+        business_meaning=(
+            "Failed, blocked, timed out, cancelled, or partial process runs "
+            "from the last 24 hours. Distinguishes active failures from resolved."
+        ),
+        business_owner="Ray",
+        technical_owner="Hermes Platform",
+        included_records=(
+            "nexus_process_runs where status IN "
+            "('FAILED','BLOCKED','TIMED_OUT','CANCELLED','PARTIAL') "
+            "AND last_run_at > now() - interval '24 hours'"
+        ),
+        excluded_records="successful runs, runs older than 24 hours",
+        tenant_policy="server_injected",
+        status_policy="failed_only",
+        time_policy="last_24_hours",
+        distinctness_policy="one_row_per_run_id",
+        freshness_requirement="real_time_supabase_query",
+        approved_source="supabase_table:nexus_process_runs",
+        approved_fallback="unavailable_status_no_fabrication",
+        expected_result_type="dict_with_failures_and_counts",
+        zero_is_valid=True,
+        empty_is_valid=True,
+        stale_allowed=False,
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_failures",
+    ))
+
+    semantic_registry.register(SemanticDefinition(
+        definition_id="research_run_summary",
+        version="v1",
+        business_meaning=(
+            "Summary of research runs and results from Supabase, "
+            "including recent completions, failures, and source breakdown."
+        ),
+        business_owner="Ray",
+        technical_owner="Hermes Platform",
+        included_records=(
+            "nexus_research_runs (25 rows) and nexus_research_results (40 rows), "
+            "ordered by created_at DESC"
+        ),
+        excluded_records="deleted runs",
+        tenant_policy="server_injected",
+        status_policy="all_statuses",
+        time_policy="current_snapshot",
+        distinctness_policy="one_row_per_run_id_and_result_id",
+        freshness_requirement="real_time_supabase_query",
+        approved_source="supabase_table:nexus_research_runs,nexus_research_results",
+        approved_fallback="unavailable_status_no_fabrication",
+        expected_result_type="dict_with_runs_and_results",
+        zero_is_valid=True,
+        empty_is_valid=True,
+        stale_allowed=False,
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_research_history",
+    ))
+
+    semantic_registry.register(SemanticDefinition(
+        definition_id="business_opportunity_summary",
+        version="v1",
+        business_meaning=(
+            "Current business opportunities from Supabase, "
+            "including status, revenue potential, and action state."
+        ),
+        business_owner="Ray",
+        technical_owner="Hermes Platform",
+        included_records=(
+            "business_opportunities rows ordered by updated_at DESC"
+        ),
+        excluded_records="deleted opportunities",
+        tenant_policy="server_injected",
+        status_policy="all_statuses",
+        time_policy="current_snapshot",
+        distinctness_policy="one_row_per_opportunity_id",
+        freshness_requirement="real_time_supabase_query",
+        approved_source="supabase_table:business_opportunities",
+        approved_fallback="unavailable_status_no_fabrication",
+        expected_result_type="dict_with_opportunities",
+        zero_is_valid=True,
+        empty_is_valid=True,
+        stale_allowed=False,
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_opportunities",
+    ))
+
+    semantic_registry.register(SemanticDefinition(
         definition_id="current_failure_summary",
         version="v1",
         business_meaning="Today's failures from the heartbeat log.",
@@ -232,7 +379,9 @@ def _register_builtins():
         approved_fallback="unavailable_status_no_fabrication",
         expected_result_type="dict_with_status_fields",
         zero_is_valid=True,
-        lifecycle_state="draft",
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy hermes.py _get_alpha_status",
     ))
 
     semantic_registry.register(SemanticDefinition(
@@ -252,7 +401,9 @@ def _register_builtins():
         approved_fallback="unavailable_status_no_fabrication",
         expected_result_type="dict_with_status_fields",
         zero_is_valid=True,
-        lifecycle_state="draft",
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_trading_status",
     ))
 
     semantic_registry.register(SemanticDefinition(
@@ -272,7 +423,9 @@ def _register_builtins():
         approved_fallback="unavailable_status_no_fabrication",
         expected_result_type="dict_with_count_and_items",
         zero_is_valid=True,
-        lifecycle_state="draft",
+        lifecycle_state="certified_read",
+        certification_date="2026-08-05",
+        certification_evidence="Migrated from legacy bridge tool_get_pending_approvals",
     ))
 
 
