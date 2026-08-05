@@ -142,9 +142,35 @@ def _execute_capability(state: AgentState) -> AgentState:
         state.assistant_response = f"It's {now.strftime('%I:%M %p')} Phoenix time."
 
     elif intent == "client_count":
-        count = _get_client_count()
-        state.assistant_response = f"We have {count} active clients."
+        counts = _get_client_count()
+        if counts.get("error"):
+            state.assistant_response = (
+                f"Client count query encountered an issue: {counts['error']}. "
+                "Please check Supabase connectivity."
+            )
+        elif counts["production_total"] == 0:
+            state.assistant_response = (
+                "No production client profiles found in the GoClear tenant."
+            )
+        else:
+            parts = [
+                f"GoClear currently has {counts['production_total']} production client profiles.",
+                "",
+                f"\u2022 {counts['active']} active",
+                f"\u2022 {counts['onboarding']} onboarding",
+            ]
+            if counts["inactive"] > 0:
+                parts.append(f"\u2022 {counts['inactive']} inactive")
+            if counts["hidden"] > 0:
+                parts.append(f"\n{counts['hidden']} profiles are hidden from client view.")
+            if counts["tester_or_certification"] > 0:
+                parts.append(
+                    f"\nThere are also {counts['tester_or_certification']} demo or certification "
+                    "profiles, which are not included in the production total."
+                )
+            state.assistant_response = "\n".join(parts)
         state.metadata["capability_used"] = "get_client_count"
+        state.metadata["client_count_result"] = counts
 
     elif intent == "client_acquisition":
         state.assistant_response = (
@@ -260,19 +286,118 @@ def _compose_response(state: AgentState) -> AgentState:
 
 # ─── Capability Helpers ─────────────────────────────────────
 
-def _get_client_count() -> int:
-    """Read live client count from Supabase or local registry."""
+# Production tenant — matches Supabase tenant_id for GoClear production clients
+_PRODUCTION_TENANT = "goclear"
+
+# Demo/certification tenant prefixes to exclude from production counts
+_NON_PRODUCTION_TENANT_PREFIXES = ("tenant_demo_", "tenant-cert-")
+
+# Sources that indicate tester or synthetic records
+_TESTER_SOURCES = ("tester_invitation", "static_import", "synthetic_certification")
+
+
+def _supabase_client():
+    """Return a requests session configured for Supabase REST API, or None."""
     try:
-        registry_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "operations", "nexus_process_registry.json"
-        )
-        with open(registry_path) as f:
-            data = json.load(f)
-        # Count processes marked as "client"
-        clients = [p for p in data if p.get("type") == "client" or p.get("category") == "client"]
-        return len(clients) if clients else 0
+        import requests as _req
+        url = os.getenv("SUPABASE_URL")
+        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        if not url or not key:
+            return None
+        session = _req.Session()
+        session.headers.update({
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Prefer": "count=exact",
+        })
+        session._supabase_url = url.rstrip("/")
+        return session
     except Exception:
-        return 0
+        return None
+
+
+def _get_client_count() -> dict:
+    """Query Supabase client_profiles for authoritative production counts.
+
+    Returns a structured dict with production metrics. Never reads the
+    process registry. No PII is included in the response.
+    """
+    empty = {
+        "production_total": 0, "active": 0, "onboarding": 0, "inactive": 0,
+        "hidden": 0, "tester_or_certification": 0, "all_profiles": 0,
+        "tenant": _PRODUCTION_TENANT, "retrieved_at": "", "error": None,
+    }
+    try:
+        from datetime import datetime, timezone
+        from zoneinfo import ZoneInfo
+        empty["retrieved_at"] = datetime.now(ZoneInfo("America/Phoenix")).strftime("%I:%M %p MT")
+
+        session = _supabase_client()
+        if session is None:
+            empty["error"] = "Supabase credentials not configured"
+            return empty
+
+        resp = session.get(
+            f"{session._supabase_url}/rest/v1/client_profiles",
+            params={"select": "tenant_id,status,client_visible,source"},
+            timeout=10,
+        )
+        if not resp.ok:
+            empty["error"] = f"Supabase query failed: {resp.status_code}"
+            return empty
+
+        rows = resp.json()
+        empty["all_profiles"] = len(rows)
+
+        # Classify each row
+        production = []
+        tester_or_cert = 0
+        for row in rows:
+            tenant = row.get("tenant_id", "")
+            source = row.get("source", "")
+
+            # Exclude non-production tenants
+            if tenant != _PRODUCTION_TENANT:
+                if any(tenant.startswith(p) for p in _NON_PRODUCTION_TENANT_PREFIXES):
+                    tester_or_cert += 1
+                continue
+
+            # Production tenant — check if tester/synthetic
+            if source in _TESTER_SOURCES:
+                tester_or_cert += 1
+                continue
+
+            production.append(row)
+
+        # Group production profiles by status
+        active = 0
+        onboarding = 0
+        inactive = 0
+        hidden = 0
+        for row in production:
+            status = (row.get("status") or "").lower()
+            if status == "active":
+                active += 1
+            elif status == "onboarding":
+                onboarding += 1
+            else:
+                inactive += 1
+            if not row.get("client_visible", True):
+                hidden += 1
+
+        empty.update({
+            "production_total": len(production),
+            "active": active,
+            "onboarding": onboarding,
+            "inactive": inactive,
+            "hidden": hidden,
+            "tester_or_certification": tester_or_cert,
+        })
+        return empty
+
+    except Exception as exc:
+        empty["error"] = str(exc)
+        return empty
 
 
 def _get_system_status() -> Dict[str, str]:
