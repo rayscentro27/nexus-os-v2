@@ -1,6 +1,14 @@
 {
   "version": "1.0",
   "generated_at": "2026-08-05",
+  "temporal_audit": {
+    "temporal_server": "running_dev_mode",
+    "temporal_cli": "available",
+    "temporal_enabled_flag": false,
+    "adapter_mode": "direct_invocation",
+    "schedule_implementation": "LOCAL_FILE_DURABLE",
+    "schedule_storage": "data/runtime/scheduled_reports/"
+  },
   "capabilities": [
     {
       "capability_id": "get_client_count",
@@ -183,6 +191,7 @@
       "side_effect": "external",
       "confirmation_required": true,
       "idempotency_policy": "mission_id_based",
+      "durability": "immediate",
       "fallback": "fail_closed",
       "production_allowed": true
     },
@@ -190,15 +199,16 @@
       "capability_id": "schedule_report",
       "version": "v1",
       "semantic_definition": "",
-      "lifecycle": "certified_action",
+      "lifecycle": "certified_action_local_file",
       "owner": "Ray",
       "handler": "actions.schedule_report",
-      "source": "temporal_adapter",
+      "source": "local_file_scheduler",
       "tenant_scope": "server_injected_goclear",
       "authorization": "admin_only",
       "side_effect": "write",
       "confirmation_required": true,
       "idempotency_policy": "mission_id_based",
+      "durability": "LOCAL_FILE_DURABLE",
       "fallback": "fail_closed",
       "production_allowed": true
     },
@@ -215,6 +225,7 @@
       "side_effect": "write",
       "confirmation_required": true,
       "idempotency_policy": "mission_id_based",
+      "durability": "DATABASE_DURABLE",
       "fallback": "fail_closed",
       "production_allowed": true
     }
@@ -314,7 +325,8 @@
   ],
   "summary": {
     "certified_read": 12,
-    "certified_action": 3,
+    "certified_action": 2,
+    "certified_action_local_file": 1,
     "quarantined": 0,
     "draft": 0,
     "deprecated": 0,
