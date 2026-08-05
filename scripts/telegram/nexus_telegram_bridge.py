@@ -33,6 +33,11 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
+# Agent Platform imports (nexus_agent_platform lives at scripts/nexus_agent_platform/)
+_SCRIPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
 # Hermes web search imports
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hermes"))
 try:
@@ -3893,9 +3898,22 @@ def process_command(text, mission=None):
     # Not a slash command — try Platform graph first when enabled
     full_text = text.strip()
 
+    # --- Diagnostic trace: routing entry ---
+    _route_trace = {
+        "worker_pid": os.getpid(),
+        "source_commit": os.getenv("NEXUS_SOURCE_COMMIT", "unknown"),
+        "platform_enabled": os.getenv("NEXUS_AGENT_PLATFORM_ENABLED", "false"),
+        "hermes_graph_enabled": os.getenv("NEXUS_HERMES_LANGGRAPH_ENABLED", "false"),
+        "legacy_fallback_enabled": os.getenv("LEGACY_HERMES_ROUTER_FALLBACK_ENABLED", "true"),
+        "langfuse_tracing_enabled": os.getenv("LANGFUSE_TRACING_ENABLED", "false"),
+        "message_length": len(full_text),
+    }
+
     # --- Agent Platform path (Ray-only, feature-flag gated) ---
+    _route_trace["path_attempted"] = "platform_graph"
     try:
         from nexus_agent_platform.integration import try_hermes_platform
+        _route_trace["platform_import"] = "success"
         platform_result = try_hermes_platform(
             text=full_text,
             mission=mission,
@@ -3903,35 +3921,49 @@ def process_command(text, mission=None):
             update_id=mission.get("telegram_update_id") if mission else None,
         )
         if platform_result is not None:
+            _route_trace["platform_result"] = "handled"
+            _route_trace["platform_response_len"] = len(platform_result)
             if mission:
                 update_mission(mission, "ROUTED", selected_intent="platform_graph", selected_tool="nexus_agent_platform", router_confidence=0.95)
                 update_mission(mission, "RESPONSE_COMPOSED", fallback_used=False, response_source="platform_graph")
+            _write_routing_trace(_route_trace)
             return platform_result
-    except ImportError:
-        pass  # Platform not installed — fall through to legacy
+        _route_trace["platform_result"] = "returned_none"
+    except ImportError as _imp_err:
+        _route_trace["platform_import"] = f"ImportError: {_imp_err}"
     except Exception as _platform_exc:
+        _route_trace["platform_result"] = f"exception: {_platform_exc}"
         import logging as _log
         _log.getLogger("nexus_telegram_bridge").warning("Platform integration error: %s", _platform_exc)
 
     # --- Legacy routing path ---
+    _route_trace["path_attempted"] = "legacy_pre_route"
     pre_route_result = handle_nexus_pre_route(full_text, mission=mission)
     if pre_route_result is not None:
+        _route_trace["legacy_result"] = "handled_by_pre_route"
+        _write_routing_trace(_route_trace)
         return pre_route_result
 
     if mission:
         update_mission(mission, "ROUTED", selected_intent="general_advisory", selected_tool="hermes_router", router_confidence=0.45)
 
     # Try new router after deterministic Nexus operational routing
+    _route_trace["path_attempted"] = "new_router"
     new_result = process_with_new_router(full_text)
     if new_result is not None:
+        _route_trace["legacy_result"] = "handled_by_new_router"
         if mission:
             update_mission(mission, "RESPONSE_COMPOSED", fallback_used=False)
+        _write_routing_trace(_route_trace)
         return new_result
 
     # Fallback to old classification for backward compatibility
+    _route_trace["path_attempted"] = "legacy_classifier"
     intent, match, extra = classify_message_intent(full_text)
     if mission:
         update_mission(mission, "ROUTED", selected_intent=intent, selected_tool="legacy_classifier", router_confidence=0.35)
+    _route_trace["legacy_result"] = f"classifier_intent={intent}"
+    _write_routing_trace(_route_trace)
 
     write_alpha_debug_receipt({
         "source": "process_command_fallback",
@@ -4014,6 +4046,22 @@ def main():
             print(process_command(cmd))
     else:
         print("Usage: --test-command '<cmd>' | --once | --dry-run")
+
+def _write_routing_trace(trace_data):
+    """Write routing diagnostic trace to local file for legacy path analysis."""
+    import json as _json
+    from datetime import datetime, timezone
+    trace_dir = os.path.join(os.path.dirname(__file__), "..", "..", "reports", "runtime", "agent_traces")
+    os.makedirs(trace_dir, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    filepath = os.path.join(trace_dir, f"routing_trace_{ts}.json")
+    trace_data["timestamp"] = datetime.now(timezone.utc).isoformat()
+    try:
+        with open(filepath, "w") as f:
+            _json.dump(trace_data, f, indent=2, default=str)
+    except Exception:
+        pass
+
 
 if __name__ == "__main__":
     main()

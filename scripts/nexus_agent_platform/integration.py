@@ -67,7 +67,7 @@ def try_hermes_platform(
     try:
         from nexus_agent_platform.platform import Platform
         from nexus_agent_platform.state import AgentState
-        from nexus_agent_platform.agents.hermes import (
+        from nexus_agent_platform.agents import (
             get_hermes_graph, get_hermes_capabilities, get_hermes_otel, HERMES_SOUL,
         )
         from nexus_agent_platform.context.resolver import get_active_context, load_context
@@ -111,6 +111,7 @@ def try_hermes_platform(
                 output_text=(result.assistant_response or "")[:200],
                 metadata={"mission_id": mission_id, "intent": result.intent},
             )
+            otel.flush()
 
         response = result.assistant_response or ""
         if response:
@@ -187,6 +188,7 @@ def try_alpha_platform(
                 output_text=(result.assistant_response or "")[:200],
                 metadata={"mission_id": mission_id, "intent": result.intent},
             )
+            otel.flush()
 
         response = result.assistant_response or ""
         if response:
