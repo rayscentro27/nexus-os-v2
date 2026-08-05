@@ -1,0 +1,198 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-08-05",
+  "capabilities": [
+    {
+      "capability_id": "get_client_count",
+      "version": "v2",
+      "semantic_definition": "production_client_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_client_count",
+      "source": "supabase_table:client_profiles",
+      "tenant_scope": "server_injected_goclear",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "get_system_status",
+      "version": "v1",
+      "semantic_definition": "current_running_process_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_system_status",
+      "source": "runtime_file:nexus_process_registry.json",
+      "tenant_scope": "global",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "get_failure_report",
+      "version": "v1",
+      "semantic_definition": "current_failure_summary@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_failure_report",
+      "source": "runtime_file:nexus_active_operator_heartbeat_latest.json",
+      "tenant_scope": "global",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "get_alpha_status",
+      "version": "v1",
+      "semantic_definition": "current_alpha_status@v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._get_alpha_status",
+      "source": "runtime_file:alpha_telegram_status.json",
+      "tenant_scope": "global",
+      "authorization": "admin_only",
+      "side_effect": "read",
+      "fallback": "fail_closed",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "client_acquisition_advisory",
+      "version": "v1",
+      "semantic_definition": "",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._client_acquisition_advisory",
+      "source": "internal_knowledge",
+      "tenant_scope": "global",
+      "authorization": "admin_only",
+      "side_effect": "none",
+      "fallback": "static_response",
+      "production_allowed": true
+    },
+    {
+      "capability_id": "send_email",
+      "version": "v1",
+      "semantic_definition": "",
+      "lifecycle": "quarantined",
+      "owner": "Ray",
+      "handler": "",
+      "source": "resend_api",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "external",
+      "fallback": "fail_closed",
+      "production_allowed": false
+    },
+    {
+      "capability_id": "schedule_report",
+      "version": "v1",
+      "semantic_definition": "",
+      "lifecycle": "quarantined",
+      "owner": "Ray",
+      "handler": "",
+      "source": "temporal_workflow",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "write",
+      "fallback": "fail_closed",
+      "production_allowed": false
+    },
+    {
+      "capability_id": "create_work_order",
+      "version": "v1",
+      "semantic_definition": "",
+      "lifecycle": "quarantined",
+      "owner": "Ray",
+      "handler": "",
+      "source": "internal_registry",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "write",
+      "fallback": "fail_closed",
+      "production_allowed": false
+    },
+    {
+      "capability_id": "create_opencode_prompt",
+      "version": "v1",
+      "semantic_definition": "",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "handler": "hermes._create_opencode_prompt",
+      "source": "internal_context",
+      "tenant_scope": "server_injected",
+      "authorization": "admin_only",
+      "side_effect": "none",
+      "fallback": "static_response",
+      "production_allowed": true
+    }
+  ],
+  "semantic_definitions": [
+    {
+      "definition_id": "production_client_summary",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:client_profiles"
+    },
+    {
+      "definition_id": "active_client_count",
+      "version": "v1",
+      "lifecycle": "certified_read",
+      "owner": "Ray",
+      "source": "supabase_table:client_profiles"
+    },
+    {
+      "definition_id": "onboarding_client_count",
+      "version": "v1",
+      "lifecycle": "draft",
+      "owner": "Ray",
+      "source": "supabase_table:client_profiles"
+    },
+    {
+      "definition_id": "current_running_process_summary",
+      "version": "v1",
+      "lifecycle": "draft",
+      "owner": "Ray",
+      "source": "runtime_file:nexus_process_registry.json"
+    },
+    {
+      "definition_id": "current_failure_summary",
+      "version": "v1",
+      "lifecycle": "draft",
+      "owner": "Ray",
+      "source": "runtime_file:nexus_active_operator_heartbeat_latest.json"
+    },
+    {
+      "definition_id": "current_alpha_status",
+      "version": "v1",
+      "lifecycle": "draft",
+      "owner": "Ray",
+      "source": "runtime_file:alpha_telegram_status.json"
+    },
+    {
+      "definition_id": "current_trading_status",
+      "version": "v1",
+      "lifecycle": "draft",
+      "owner": "Ray",
+      "source": "runtime_file:oanda_practice_engine_status_latest.json"
+    },
+    {
+      "definition_id": "pending_approval_summary",
+      "version": "v1",
+      "lifecycle": "draft",
+      "owner": "Ray",
+      "source": "runtime_file:ray_review_queue_latest.json"
+    }
+  ],
+  "summary": {
+    "certified_read": 6,
+    "certified_action": 0,
+    "quarantined": 3,
+    "draft": 0,
+    "deprecated": 0,
+    "disabled": 0
+  }
+}
