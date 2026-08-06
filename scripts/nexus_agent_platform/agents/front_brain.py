@@ -465,11 +465,30 @@ def detect_provenance_followup(user_message: str) -> bool:
     return bool(_PROVENANCE_RE.search(user_message))
 
 
+def _format_phoenix_time(iso_timestamp: str) -> str:
+    """Convert an ISO-8601 UTC timestamp to human-friendly America/Phoenix time."""
+    if not iso_timestamp:
+        return "unknown time"
+    try:
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        # Parse ISO timestamp (handle Z and +00:00)
+        ts = iso_timestamp.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(ts)
+        phoenix = dt.astimezone(ZoneInfo("America/Phoenix"))
+        return phoenix.strftime("%-I:%M %p Phoenix time on %B %-d, %Y")
+    except Exception:
+        return iso_timestamp
+
+
 def generate_provenance_response(
     user_message: str,
     last_capability_result: Optional[Dict[str, Any]] = None,
 ) -> Optional[str]:
     """Generate a deterministic provenance response from persisted context.
+
+    Correctly distinguishes SOURCE (where data came from) from
+    ACCESS BOUNDARY (how Hermes was permitted to retrieve it).
 
     Returns None if no relevant capability result exists.
     """
@@ -484,7 +503,6 @@ def generate_provenance_response(
     status = last_capability_result.get("status", "unknown")
     access_boundary = last_capability_result.get("access_boundary", "certified capability only")
     safe_summary = last_capability_result.get("safe_summary", {})
-    query_target = last_capability_result.get("query_target", "")
 
     # Accept both "success" and "ok" as valid statuses
     if status not in ("success", "ok"):
@@ -493,90 +511,109 @@ def generate_provenance_response(
             f"(status: {status}). I cannot provide verified data from that query."
         )
 
-    # Build capability description
     cap_desc = cap.replace("_", " ")
-
-    # Determine freshness label
-    if freshness == "live":
-        freshness_label = "live"
-    elif freshness == "cached":
-        freshness_label = "cached"
-    else:
-        freshness_label = freshness
-
-    # Build summary string
-    summary_parts = []
-    if safe_summary:
-        for k, v in safe_summary.items():
-            label = k.replace("_", " ").title()
-            summary_parts.append(f"  {label}: {v}")
-    summary_str = "\n".join(summary_parts) if summary_parts else "  (no summary available)"
-
-    # Answer the specific question
     msg_lower = user_message.lower()
+    phoenix_time = _format_phoenix_time(retrieved_at)
 
-    if "where" in msg_lower or "source" in msg_lower or "which" in msg_lower or "how did" in msg_lower:
+    # ── Direct source confirmation ──────────────────────────
+    # "Did that come directly from Supabase?" / "So you queried Supabase?"
+    is_direct_source_question = (
+        ("directly" in msg_lower or "direct" in msg_lower or "itself" in msg_lower
+         or "so you" in msg_lower or "actually" in msg_lower)
+        and ("supabase" in msg_lower or "source" in msg_lower or "database" in msg_lower)
+    )
+    if is_direct_source_question:
+        if source_type in ("live_governed_read", "cached_governed_read") and source != "unknown":
+            return (
+                f"Yes. The {cap_desc} capability queried the approved "
+                f"{source} source directly during your request. I accessed it "
+                f"through a governed capability, not unrestricted database access."
+            )
+        else:
+            return (
+                f"No. The data did not come directly from {source}. "
+                f"It came from {source_type}."
+            )
+
+    # ── Source identification ───────────────────────────────
+    # "Where did you get that?" / "What source?" / "Which capability?"
+    if "where" in msg_lower or "source" in msg_lower or "how did" in msg_lower:
         return (
-            f"That information came from the {cap_desc} capability, which "
-            f"queried the approved {source} source during your request.\n\n"
-            f"Source: {source} ({source_type})\n"
-            f"Access boundary: {access_boundary}\n"
-            f"Retrieved at: {retrieved_at}\n\n"
-            f"I do not have unrestricted database access. I can only query "
-            f"through approved certified capabilities."
+            f"From the {cap_desc} capability, which queried the approved "
+            f"{source} source during your request. Access was through a "
+            f"governed capability — I do not have unrestricted database access."
         )
 
+    # ── Live/cached question ────────────────────────────────
     if "live" in msg_lower or "real-time" in msg_lower or "current" in msg_lower or "fresh" in msg_lower:
         if freshness == "live":
             return (
                 f"Yes, that data is live. It was retrieved through a "
-                f"{freshness_label} governed {source} query at {retrieved_at}.\n\n"
-                f"I do not have unrestricted database access. This came through "
-                f"the approved {cap_desc} capability."
+                f"governed {source} query at {phoenix_time}."
+            )
+        elif freshness == "cached":
+            return (
+                f"That data is cached, not live. It was last retrieved "
+                f"at {phoenix_time}."
             )
         else:
             return (
-                f"That data is {freshness_label}, not live. It was last "
-                f"retrieved at {retrieved_at} through the {cap_desc} capability."
+                f"That data is {freshness}. It was last retrieved "
+                f"at {phoenix_time}."
             )
 
-    if "when" in msg_lower or "retrieved" in msg_lower or "timestamp" in msg_lower:
+    # ── When/timestamp question ─────────────────────────────
+    if "when" in msg_lower or "timestamp" in msg_lower or "retrieved" in msg_lower:
         return (
-            f"The data was retrieved at {retrieved_at} through a {freshness_label} "
-            f"governed {source} query via the {cap_desc} capability."
+            f"It was retrieved at {phoenix_time} through a "
+            f"{freshness} governed {source} query."
         )
 
+    # ── Cached question ─────────────────────────────────────
+    if "cached" in msg_lower or "cache" in msg_lower:
+        if freshness == "live":
+            return (
+                f"No, that was not cached. It was a live governed "
+                f"{source} query at {phoenix_time}."
+            )
+        elif freshness == "cached":
+            return (
+                f"Yes, that was a cached result, originally from "
+                f"{source}."
+            )
+        else:
+            return (
+                f"The freshness was {freshness}."
+            )
+
+    # ── Capability identification (concise) ─────────────────
+    if "capability" in msg_lower or "tool" in msg_lower:
+        return f"I used {cap_desc}."
+
+    # ── Confidence question ─────────────────────────────────
     if "sure" in msg_lower:
+        summary_parts = []
+        for k, v in safe_summary.items():
+            label = k.replace("_", " ").title()
+            summary_parts.append(f"  {label}: {v}")
+        summary_str = "\n".join(summary_parts) if summary_parts else "  (no summary available)"
         return (
-            f"Yes, I'm confident in that number. It came from a verified "
-            f"{freshness_label} {source} query through the {cap_desc} capability "
-            f"at {retrieved_at}.\n\n"
-            f"{summary_str}"
+            f"Yes, I'm confident. It came from a verified {freshness} "
+            f"{source} query through the {cap_desc} capability "
+            f"at {phoenix_time}.\n\n{summary_str}"
         )
 
-    if "capability" in msg_lower or "tool" in msg_lower or "system" in msg_lower:
-        return (
-            f"I used the {cap_desc} certified capability.\n\n"
-            f"Source: {source}\n"
-            f"Type: {source_type}\n"
-            f"Freshness: {freshness_label}\n"
-            f"Retrieved at: {retrieved_at}\n"
-            f"Access boundary: {access_boundary}"
-        )
-
+    # ── Lookup/query question ───────────────────────────────
     if "look that up" in msg_lower or "query" in msg_lower or "fetch" in msg_lower:
         return (
-            f"Yes, I looked that up in real-time through the {cap_desc} certified "
-            f"capability, which queried the approved {source} source at {retrieved_at}."
+            f"Yes, I looked that up in real-time through the {cap_desc} "
+            f"capability, which queried the approved {source} source."
         )
 
-    # Default provenance response
+    # ── Default: concise provenance ─────────────────────────
     return (
-        f"That came from the {cap_desc} capability, which queried the "
-        f"approved {source} source. It was a {freshness_label} read "
-        f"retrieved at {retrieved_at}.\n\n"
-        f"I have governed access through certified capabilities, "
-        f"not unrestricted system access."
+        f"From the {cap_desc} capability, querying the approved "
+        f"{source} source. It was a {freshness} read."
     )
 
 

@@ -162,7 +162,7 @@ response = generate_provenance_response("Where did you get that information from
 assert response is not None
 assert "supabase" in response.lower()
 assert "get client count" in response.lower()
-assert "certified capability" in response.lower()
+assert "governed" in response.lower()
 print("PROVENANCE_OK")
 print(f"response_preview={{response[:100]}}")
 """
@@ -518,3 +518,178 @@ print("STALE_BLOCKED")
             )
 
         clear_conversation(chat_id)
+
+
+class TestProvenanceResponseWording:
+    """Provenance responses must correctly distinguish source from access boundary."""
+
+    LIVE_RESULT = {
+        "capability": "get_client_count",
+        "result_id": "trace_live",
+        "status": "ok",
+        "source": "supabase",
+        "source_type": "live_governed_read",
+        "retrieved_at": "2026-08-06T22:00:00Z",
+        "freshness": "live",
+        "query_target": "https://test.supabase.co/rest/v1/client_profiles",
+        "filters": {},
+        "access_boundary": "certified capability only",
+        "trace_id": "trace_live",
+        "safe_summary": {
+            "production_clients": 14,
+            "active": 14,
+            "onboarding": 0,
+            "tester_or_certification": 24,
+        },
+    }
+
+    CACHED_RESULT = {
+        "capability": "get_client_count",
+        "result_id": "trace_cached",
+        "status": "ok",
+        "source": "supabase",
+        "source_type": "cached_governed_read",
+        "retrieved_at": "2026-08-06T21:00:00Z",
+        "freshness": "cached",
+        "query_target": "https://test.supabase.co/rest/v1/client_profiles",
+        "filters": {},
+        "access_boundary": "certified capability only",
+        "trace_id": "trace_cached",
+        "safe_summary": {"production_clients": 14, "active": 14},
+    }
+
+    TEST_RESULT = {
+        "capability": "get_client_count",
+        "result_id": "trace_test",
+        "status": "ok",
+        "source": "test_data",
+        "source_type": "test_data",
+        "retrieved_at": "2026-08-06T20:00:00Z",
+        "freshness": "unknown",
+        "query_target": "",
+        "filters": {},
+        "access_boundary": "certified capability only",
+        "trace_id": "trace_test",
+        "safe_summary": {},
+    }
+
+    LOCAL_RESULT = {
+        "capability": "get_system_status",
+        "result_id": "trace_local",
+        "status": "ok",
+        "source": "local_file",
+        "source_type": "local_runtime_read",
+        "retrieved_at": "2026-08-06T22:00:00Z",
+        "freshness": "live",
+        "query_target": "nexus_process_registry.json",
+        "filters": {},
+        "access_boundary": "certified capability only",
+        "trace_id": "trace_local",
+        "safe_summary": {},
+    }
+
+    def test_live_supabase_directly_answered_yes(self):
+        """'Did that come directly from Supabase?' must answer yes for live governed read."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "So you did get that directly from Supabase?", self.LIVE_RESULT
+        )
+        assert resp is not None
+        assert resp.lower().startswith("yes")
+        assert "supabase" in resp.lower()
+        assert "governed capability" in resp.lower()
+        assert "unrestricted" not in resp.lower() or "not unrestricted" in resp.lower()
+
+    def test_live_supabase_so_you_queried(self):
+        """'So you queried Supabase?' must answer yes for live governed read."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "So you queried Supabase?", self.LIVE_RESULT
+        )
+        assert resp is not None
+        assert resp.lower().startswith("yes")
+
+    def test_cached_supabase_not_direct(self):
+        """Cached result must not claim direct live query."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "Is that cached data?", self.CACHED_RESULT
+        )
+        assert resp is not None
+        # Should identify it as cached
+        assert "cached" in resp.lower()
+
+    def test_test_data_not_supabase(self):
+        """Test data must not claim Supabase source."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "Did that come from Supabase?", self.TEST_RESULT
+        )
+        assert resp is not None
+        assert "no" in resp.lower() or "test" in resp.lower()
+
+    def test_local_runtime_not_supabase(self):
+        """Local runtime read must not claim Supabase source."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "Did that come from Supabase?", self.LOCAL_RESULT
+        )
+        assert resp is not None
+        assert "no" in resp.lower() or "local" in resp.lower()
+
+    def test_concise_capability_answer(self):
+        """'Which capability did you use?' must be concise."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "Which capability did you use?", self.LIVE_RESULT
+        )
+        assert resp is not None
+        assert "get client count" in resp.lower()
+        # Must be concise — just the capability name
+        assert len(resp) < 50
+
+    def test_phoenix_time_displayed(self):
+        """'When was it retrieved?' must show Phoenix-local time."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "When was it retrieved?", self.LIVE_RESULT
+        )
+        assert resp is not None
+        assert "phoenix" in resp.lower()
+
+    def test_no_unrestricted_database_claim(self):
+        """Provenance must never claim unrestricted database access."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        questions = [
+            "Where did you get that?",
+            "So you did get that directly from Supabase?",
+            "Is that live data?",
+            "When was it retrieved?",
+            "Which capability did you use?",
+            "Was that cached?",
+        ]
+        for q in questions:
+            resp = generate_provenance_response(q, self.LIVE_RESULT)
+            if resp:
+                # Should not claim unrestricted access without negation
+                assert "unrestricted database access" not in resp.lower() or \
+                    "not unrestricted" in resp.lower() or \
+                    "do not have unrestricted" in resp.lower(), \
+                    f"Question '{q}' produced unrestricted access claim"
+
+    def test_live_result_source_not_denied(self):
+        """Live Supabase result must not deny its Supabase source."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        resp = generate_provenance_response(
+            "So you did get that directly from Supabase?", self.LIVE_RESULT
+        )
+        assert resp is not None
+        # Must NOT say "no" when it was a live Supabase query
+        first_word = resp.strip().split()[0].lower().rstrip(".")
+        assert first_word == "yes", f"Expected 'yes', got '{first_word}' in: {resp}"
+
+    def test_no_response_without_result(self):
+        """No provenance result must return None."""
+        from nexus_agent_platform.agents.front_brain import generate_provenance_response
+        assert generate_provenance_response("Where did you get that?", None) is None
+        assert generate_provenance_response("Where did you get that?", {}) is None
