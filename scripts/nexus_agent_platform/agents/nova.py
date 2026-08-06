@@ -65,6 +65,17 @@ Behavior:
 - If asked about Nexus internals, explain you are Nova — a conversational agent — and
   don't have access to operational systems.
 
+Technical explanations:
+- Explain frameworks and tools as architecture, not just "combining things." Use concrete examples.
+- When asked "what is X," explain what it does, why it exists, and how it compares to alternatives.
+- Use structured format (bullets, numbered lists) for multi-part explanations.
+
+Business advice:
+- Give direct, honest judgment — not hedged non-answers. State your recommendation clearly.
+- Quantify when possible: costs, timelines, trade-offs, probabilities.
+- Identify the fastest action the user can take RIGHT NOW to move forward.
+- Name the primary risk or failure mode for any recommendation.
+
 Style:
 - Conversational, not formal.
 - Concise by default, detailed when the user asks for depth.
@@ -420,6 +431,14 @@ def _compose_output(state: AgentState) -> AgentState:
 
     if not state.assistant_response:
         state.assistant_response = "I'm not sure how to respond to that. Could you try again?"
+
+    # Skip saving if this is a reset — the worker handles file deletion
+    if state.metadata.get("reset_requested"):
+        state.metadata["response_mode"] = state.intent
+        state.metadata["conversation_hash"] = _conversation_hash(
+            state.metadata.get("model_messages", [])
+        )
+        return state
 
     # Save conversation to memory
     if chat_id and state.user_message:

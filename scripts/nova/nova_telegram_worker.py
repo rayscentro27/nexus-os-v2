@@ -315,6 +315,40 @@ def write_receipt(receipt_data):
         json.dump(receipt_data, f, indent=2)
     return receipt_data
 
+# ─── Single-Delivery Lock ───────────────────────────────
+
+def _acquire_chat_lock(chat_id):
+    """Acquire a per-chat file lock to prevent concurrent processing."""
+    lock_dir = os.path.join(NOVA_STATE_DIR, "nova_locks")
+    os.makedirs(lock_dir, exist_ok=True)
+    lock_path = os.path.join(lock_dir, f"chat_{chat_id}.lock")
+
+    # Use atomic create — fails if lock already exists
+    try:
+        fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.write(fd, f"{os.getpid()}\n".encode())
+        os.close(fd)
+        return lock_path
+    except FileExistsError:
+        # Check if lock is stale (older than 120s)
+        try:
+            age = time.time() - os.path.getmtime(lock_path)
+            if age > 120:
+                os.remove(lock_path)
+                return _acquire_chat_lock(chat_id)
+        except OSError:
+            pass
+        return None
+
+
+def _release_chat_lock(chat_id):
+    """Release the per-chat file lock."""
+    lock_path = os.path.join(NOVA_STATE_DIR, "nova_locks", f"chat_{chat_id}.lock")
+    try:
+        os.remove(lock_path)
+    except OSError:
+        pass
+
 # ─── Message Processing ─────────────────────────────────
 
 def process_message(update):
@@ -329,21 +363,27 @@ def process_message(update):
     update_id = update.get("update_id", 0)
 
     if not text or not chat_id:
-        return
+        return False
 
     _log(f"Incoming: update={update_id} chat={chat_id} user={username} text={text[:80]}")
 
-    mission = create_mission(update_id, chat_id, user_id, text)
-
-    if not is_authorized(chat_id, user_id, username):
-        update_mission(mission, "UNAUTHORIZED")
-        tg_send_message(chat_id, "This bot is private. You are not authorized.")
-        return
-
-    update_mission(mission, "AUTHORIZED")
-    _update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
+    # Acquire per-chat lock to prevent duplicate delivery
+    lock = _acquire_chat_lock(chat_id)
+    if not lock:
+        _log(f"Skipped update {update_id} — another worker processing chat {chat_id}")
+        return False
 
     try:
+        mission = create_mission(update_id, chat_id, user_id, text)
+
+        if not is_authorized(chat_id, user_id, username):
+            update_mission(mission, "UNAUTHORIZED")
+            tg_send_message(chat_id, "This bot is private. You are not authorized.")
+            return True
+
+        update_mission(mission, "AUTHORIZED")
+        _update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
+
         from nexus_agent_platform.agents.nova import (
             get_nova_graph, get_nova_otel, reset_memory, AGENT_ID,
         )
@@ -353,12 +393,11 @@ def process_message(update):
         if not HERMES_NOVA_ENABLED:
             tg_send_message(chat_id, "Nova is currently disabled. Try again later.")
             update_mission(mission, "DISABLED")
-            return
+            return True
 
         graph = get_nova_graph()
         otel = get_nova_otel()
 
-        # Build state
         state = AgentState(
             agent_id=AGENT_ID,
             mission_id=mission["mission_id"],
@@ -372,19 +411,16 @@ def process_message(update):
             },
         )
 
-        # Run through Nova graph
         t0 = time.monotonic()
         result = graph.invoke(state)
         latency_ms = round((time.monotonic() - t0) * 1000, 1)
 
         response = result.assistant_response or ""
 
-        # Check for reset
         if result.metadata.get("reset_requested"):
             reset_memory(chat_id)
             _log(f"Memory reset for chat {chat_id}")
 
-        # Trace
         if otel.is_enabled:
             otel.record_generation(
                 name=f"nova_conversation_{mission['mission_id']}",
@@ -432,8 +468,11 @@ def process_message(update):
 
     except Exception as exc:
         _log_error(f"Nova processing error: {exc}")
-        update_mission(mission, "ERROR", {"error": str(exc)})
         tg_send_message(chat_id, "I hit a snag processing that. Give me another try.")
+    finally:
+        _release_chat_lock(chat_id)
+
+    return True
 
 # ─── Runtime Status ─────────────────────────────────────
 
@@ -490,23 +529,19 @@ def run_once():
         write_status(os.getpid(), "IDLE")
         return "NO_UPDATES"
 
-    max_update_id = offset
     processed = 0
 
     for update in updates:
         uid = update.get("update_id", 0)
-        if uid > max_update_id:
-            max_update_id = uid
         try:
-            process_message(update)
-            processed += 1
+            if process_message(update):
+                # Save offset immediately after each successful message
+                save_offset(uid)
+                processed += 1
         except Exception as e:
             _log_error(f"Error processing update {uid}: {e}")
 
-    if max_update_id > offset:
-        save_offset(max_update_id)
-
-    _log(f"Nova worker: processed {processed} updates, max_id={max_update_id}")
+    _log(f"Nova worker: processed {processed} updates")
     write_status(os.getpid(), "IDLE")
     return f"PROCESSED {processed}"
 

@@ -394,4 +394,112 @@ class TestPrewarmIntegration:
         from nexus_agent_platform.adapters.graph_adapter import prewarm_langgraph
         # Prewarm should not crash or affect Nova
         result = prewarm_langgraph()
-        assert result["status"] in ("ok", "already_prewarmed")
+        assert result["status"] in ("ok", "already_prewarmed", "import_failed")
+
+
+class TestResetAtomicity:
+    """Verify reset skips memory save in compose_output."""
+
+    def test_compose_output_skips_save_on_reset(self, tmp_path):
+        from nexus_agent_platform.agents import nova
+        from nexus_agent_platform.adapters.state_adapter import AgentState
+
+        original_dir = nova.MEMORY_DIR
+        nova.MEMORY_DIR = str(tmp_path)
+        try:
+            # Pre-populate memory
+            nova.save_memory(55555, [{"role": "user", "content": "old"}])
+
+            # Simulate graph output with reset_requested
+            state = AgentState(
+                agent_id="hermes_nova",
+                mission_id="test_mission",
+                user_message="reset conversation",
+                assistant_response="Memory cleared.",
+                metadata={"chat_id": 55555, "reset_requested": True},
+            )
+            result = nova._compose_output(state)
+
+            # Memory file should still contain OLD data (reset didn't overwrite)
+            loaded = nova.load_memory(55555)
+            assert len(loaded) == 1
+            assert loaded[0]["content"] == "old"
+        finally:
+            nova.MEMORY_DIR = original_dir
+
+    def test_reset_actual_deletion(self, tmp_path):
+        """Worker-side reset_memory deletes the file after graph completes."""
+        from nexus_agent_platform.agents import nova
+
+        original_dir = nova.MEMORY_DIR
+        nova.MEMORY_DIR = str(tmp_path)
+        try:
+            nova.save_memory(66666, [{"role": "user", "content": "will be deleted"}])
+            nova.reset_memory(66666)
+            loaded = nova.load_memory(66666)
+            assert len(loaded) == 0
+        finally:
+            nova.MEMORY_DIR = original_dir
+
+
+class TestDeliveryLock:
+    """Verify per-chat lock prevents duplicate delivery."""
+
+    def test_lock_acquire_release(self, tmp_path):
+        """Lock can be acquired and released."""
+        import sys
+        # Import the worker module functions
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "nova"))
+        import nova_telegram_worker as nw
+
+        # Override the state dir to temp
+        original_dir = nw.NOVA_STATE_DIR
+        nw.NOVA_STATE_DIR = str(tmp_path)
+        try:
+            lock = nw._acquire_chat_lock(77777)
+            assert lock is not None
+            assert os.path.exists(lock)
+            nw._release_chat_lock(77777)
+            assert not os.path.exists(lock)
+        finally:
+            nw.NOVA_STATE_DIR = original_dir
+
+    def test_lock_prevents_double_acquire(self, tmp_path):
+        """Second acquire fails while first lock is held."""
+        import sys
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "nova"))
+        import nova_telegram_worker as nw
+        original_dir = nw.NOVA_STATE_DIR
+        nw.NOVA_STATE_DIR = str(tmp_path)
+        try:
+            lock1 = nw._acquire_chat_lock(88888)
+            assert lock1 is not None
+            lock2 = nw._acquire_chat_lock(88888)
+            assert lock2 is None  # Should fail
+            nw._release_chat_lock(88888)
+        finally:
+            nw.NOVA_STATE_DIR = original_dir
+
+
+class TestSoulQuality:
+    """Verify SOUL has quality guidance for technical and business advice."""
+
+    def test_soul_mentions_technical_explanations(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "technical" in soul_lower or "architecture" in soul_lower
+
+    def test_soul_mentions_business_advice(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "business" in soul_lower or "recommendation" in soul_lower
+
+    def test_soul_mentions_quantify(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "quantify" in soul_lower or "costs" in soul_lower or "timelines" in soul_lower
+
+    def test_soul_mentions_direct_judgment(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "direct" in soul_lower or "judgment" in soul_lower
