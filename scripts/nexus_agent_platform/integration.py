@@ -71,6 +71,12 @@ def try_hermes_platform(
             get_hermes_graph, get_hermes_capabilities, get_hermes_otel, HERMES_SOUL,
         )
         from nexus_agent_platform.context.resolver import get_active_context, load_context
+        from nexus_agent_platform.context.hermes_store import (
+            load_conversation, save_capability_result, save_mode_result,
+        )
+        from nexus_agent_platform.agents.front_brain import (
+            detect_provenance_followup, generate_provenance_response,
+        )
         from nexus_agent_platform.missions.mission import Mission as PlatformMission
 
         # Build request context
@@ -80,6 +86,27 @@ def try_hermes_platform(
         # Load agent context
         ctx = load_context("hermes")
         active = get_active_context("hermes")
+
+        # Load persistent conversation context (survives --once process exits)
+        conv_ctx = {}
+        if chat_id:
+            conv_ctx = load_conversation(chat_id)
+            if conv_ctx:
+                # Merge persistent context into active context for the graph
+                for key in ("last_capability", "last_capability_result", "last_mode",
+                            "last_topic", "last_response_preview"):
+                    if key in conv_ctx and key not in active:
+                        active[key] = conv_ctx[key]
+
+        # Check for provenance follow-up BEFORE running the graph
+        if chat_id and detect_provenance_followup(text):
+            last_result = conv_ctx.get("last_capability_result")
+            prov_response = generate_provenance_response(text, last_result)
+            if prov_response:
+                log.info("Hermes provenance follow-up for mission %s (chat %s)", mission_id, chat_id)
+                # Update conversation context
+                save_mode_result(chat_id, "provenance_followup", None, prov_response)
+                return prov_response
 
         # Build state
         state = AgentState(
@@ -100,6 +127,17 @@ def try_hermes_platform(
         # Run through graph
         graph = get_hermes_graph()
         result = graph.invoke(state)
+
+        # Persist capability result for follow-up provenance queries
+        if chat_id and result.metadata.get("capability_used"):
+            cap_used = result.metadata["capability_used"]
+            cap_result = result.metadata.get("capability_result")
+            if cap_result and isinstance(cap_result, dict):
+                save_capability_result(chat_id, cap_used, cap_result)
+            else:
+                save_mode_result(chat_id, result.intent, cap_used, result.assistant_response or "")
+        elif chat_id:
+            save_mode_result(chat_id, result.intent, None, result.assistant_response or "")
 
         # Record trace if otel enabled
         if _otel_enabled():

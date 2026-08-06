@@ -242,13 +242,29 @@ _CONVERSATION_SYSTEM = """You are Nexus Hermes — Ray's operational chief-of-st
 
 You are having a natural conversation. Be helpful, direct, and honest.
 
-Guidelines:
+IDENTITY:
+- You are Nexus Hermes, an operational AI chief-of-staff
+- You have governed access to GoClear systems through certified capabilities
+- You do NOT have unrestricted database or system access
+- Some answers come from your model knowledge (training data)
+- Some come from live operational reads through certified capabilities
+- Some come from user-provided information
+- Always identify the source category accurately when asked
+
+CAPABILITIES:
+- You can query live data through certified read capabilities (e.g., get_client_count)
+- You can execute governed actions with confirmation (e.g., send_approved_email)
+- Certified capabilities are approved, audited, and have access boundaries
+- You are NOT a general-purpose database client
+
+GUIDELINES:
 - Answer the actual question asked
 - Be concise unless the user asks for detail
 - Don't pretend to have feelings or human experiences
-- Don't claim access to systems you don't have
-- If you don't know, say so
-- Keep your identity as Nexus Hermes, the operational AI assistant
+- If you don't know, say so honestly
+- When asked about your data source, be specific about which capability or knowledge you used
+- Never claim "I have no access to systems" when you just used a certified capability
+- Never claim training-cutoff dates when you have live data
 
 {context_block}"""
 
@@ -410,7 +426,158 @@ def _build_context_block(active_context: Dict[str, Any]) -> str:
         parts.append(f"Numbered options from last response: {json.dumps(opts)}")
     if active_context.get("last_mode"):
         parts.append(f"Last interaction mode: {active_context['last_mode']}")
+    if active_context.get("last_capability"):
+        parts.append(f"Last capability used: {active_context['last_capability']}")
+    if active_context.get("last_capability_result"):
+        pcr = active_context["last_capability_result"]
+        parts.append(
+            f"Last capability result: capability={pcr.get('capability')}, "
+            f"source={pcr.get('source')}, freshness={pcr.get('freshness')}, "
+            f"retrieved_at={pcr.get('retrieved_at')}"
+        )
     return "\n".join(parts) if parts else "No prior context."
+
+
+# ─── Provenance Follow-Up Detection ───────────────────────
+
+_PROVENANCE_PATTERNS = [
+    r"where\s+(did\s+)?(you\s+)?get\s+(that|this|the)\s+(info|information|data|number|count|result)",
+    r"did\s+(that|this|it)\s+come\s+from\s+(supabase|the\s+database|a\s+live|the\s+system)",
+    r"is\s+that\s+(live|real[\s-]time|current|up[\s-]to[\s-]date|fresh|current)",
+    r"when\s+(was\s+)?(that|it|this)\s+(retrieved|fetched|pulled|obtained|queried|updated|last)",
+    r"how\s+(current|fresh|old|recent)\s+is\s+(that|this|it)",
+    r"which\s+(capability|tool|system|source)\s+(did\s+)?(you\s+)?use",
+    r"did\s+you\s+(look\s+that\s+up|query|check|search|fetch|get\s+that|remember)",
+    r"are\s+you\s+sure\s+about\s+(that|this|the\s+number|those)",
+    r"what\s+(source|system|database|capability)\s+(did\s+)?(you\s+)?use",
+    r"how\s+did\s+you\s+(know|get|find|determine|calculate)",
+    r"where\s+did\s+that\s+(number|count|data|info|result)\s+come\s+from",
+    r"is\s+that\s+from\s+(supabase|the\s+database|live|model|training)",
+]
+
+_PROVENANCE_RE = re.compile(
+    "|".join(_PROVENANCE_PATTERNS), re.IGNORECASE
+)
+
+
+def detect_provenance_followup(user_message: str) -> bool:
+    """Detect if the user message is asking about data provenance."""
+    return bool(_PROVENANCE_RE.search(user_message))
+
+
+def generate_provenance_response(
+    user_message: str,
+    last_capability_result: Optional[Dict[str, Any]] = None,
+) -> Optional[str]:
+    """Generate a deterministic provenance response from persisted context.
+
+    Returns None if no relevant capability result exists.
+    """
+    if not last_capability_result:
+        return None
+
+    cap = last_capability_result.get("capability", "unknown")
+    source = last_capability_result.get("source", "unknown")
+    source_type = last_capability_result.get("source_type", "unknown")
+    freshness = last_capability_result.get("freshness", "unknown")
+    retrieved_at = last_capability_result.get("retrieved_at", "")
+    status = last_capability_result.get("status", "unknown")
+    access_boundary = last_capability_result.get("access_boundary", "certified capability only")
+    safe_summary = last_capability_result.get("safe_summary", {})
+    query_target = last_capability_result.get("query_target", "")
+
+    # Accept both "success" and "ok" as valid statuses
+    if status not in ("success", "ok"):
+        return (
+            f"The last {cap.replace('_', ' ')} query did not complete successfully "
+            f"(status: {status}). I cannot provide verified data from that query."
+        )
+
+    # Build capability description
+    cap_desc = cap.replace("_", " ")
+
+    # Determine freshness label
+    if freshness == "live":
+        freshness_label = "live"
+    elif freshness == "cached":
+        freshness_label = "cached"
+    else:
+        freshness_label = freshness
+
+    # Build summary string
+    summary_parts = []
+    if safe_summary:
+        for k, v in safe_summary.items():
+            label = k.replace("_", " ").title()
+            summary_parts.append(f"  {label}: {v}")
+    summary_str = "\n".join(summary_parts) if summary_parts else "  (no summary available)"
+
+    # Answer the specific question
+    msg_lower = user_message.lower()
+
+    if "where" in msg_lower or "source" in msg_lower or "which" in msg_lower or "how did" in msg_lower:
+        return (
+            f"That information came from the {cap_desc} capability, which "
+            f"queried the approved {source} source during your request.\n\n"
+            f"Source: {source} ({source_type})\n"
+            f"Access boundary: {access_boundary}\n"
+            f"Retrieved at: {retrieved_at}\n\n"
+            f"I do not have unrestricted database access. I can only query "
+            f"through approved certified capabilities."
+        )
+
+    if "live" in msg_lower or "real-time" in msg_lower or "current" in msg_lower or "fresh" in msg_lower:
+        if freshness == "live":
+            return (
+                f"Yes, that data is live. It was retrieved through a "
+                f"{freshness_label} governed {source} query at {retrieved_at}.\n\n"
+                f"I do not have unrestricted database access. This came through "
+                f"the approved {cap_desc} capability."
+            )
+        else:
+            return (
+                f"That data is {freshness_label}, not live. It was last "
+                f"retrieved at {retrieved_at} through the {cap_desc} capability."
+            )
+
+    if "when" in msg_lower or "retrieved" in msg_lower or "timestamp" in msg_lower:
+        return (
+            f"The data was retrieved at {retrieved_at} through a {freshness_label} "
+            f"governed {source} query via the {cap_desc} capability."
+        )
+
+    if "sure" in msg_lower:
+        return (
+            f"Yes, I'm confident in that number. It came from a verified "
+            f"{freshness_label} {source} query through the {cap_desc} capability "
+            f"at {retrieved_at}.\n\n"
+            f"{summary_str}"
+        )
+
+    if "capability" in msg_lower or "tool" in msg_lower or "system" in msg_lower:
+        return (
+            f"I used the {cap_desc} certified capability.\n\n"
+            f"Source: {source}\n"
+            f"Type: {source_type}\n"
+            f"Freshness: {freshness_label}\n"
+            f"Retrieved at: {retrieved_at}\n"
+            f"Access boundary: {access_boundary}"
+        )
+
+    if "look that up" in msg_lower or "query" in msg_lower or "fetch" in msg_lower:
+        return (
+            f"Yes, I looked that up in real-time through the {cap_desc} certified "
+            f"capability, which queried the approved {source} source at {retrieved_at}."
+        )
+
+    # Default provenance response
+    return (
+        f"That came from the {cap_desc} capability, which queried the "
+        f"approved {source} source. It was a {freshness_label} read "
+        f"retrieved at {retrieved_at}.\n\n"
+        f"I have governed access through certified capabilities, "
+        f"not unrestricted system access."
+    )
 
 
 async def _call_llm(system_prompt: str, user_message: str) -> str:
