@@ -383,3 +383,138 @@ print("STALE_BLOCKED")
         clear_conversation(chat_id)
         assert load_conversation(chat_id) == {}
         assert not os.path.exists(_store_path(chat_id))
+
+    def test_unsafe_fields_rejected(self):
+        """Unsafe fields must be stripped from persisted context."""
+        chat_id = 999000011
+        from nexus_agent_platform.context.hermes_store import (
+            save_capability_result, load_conversation, clear_conversation,
+        )
+
+        save_capability_result(chat_id, "get_client_count", {
+            "status": "ok",
+            "data": {
+                "production_total": 14,
+                "active": 14,
+                "client_name": "SECRET NAME",
+                "client_email": "secret@example.com",
+            },
+            "provenance": {
+                "status": "success",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": "2026-08-06T22:00:00Z",
+                "freshness": "live",
+                "token": "SECRET_TOKEN",
+                "service_role_key": "SECRET_KEY",
+                "bot_token": "SECRET_BOT",
+                "api_key": "SECRET_API",
+                "secret": "SECRET",
+                "password": "SECRET_PW",
+                "trace_id": "trace_test",
+            },
+        })
+
+        ctx = load_conversation(chat_id)
+        pcr = ctx.get("last_capability_result", {})
+
+        # Verify unsafe fields are NOT present
+        assert "token" not in pcr
+        assert "service_role_key" not in pcr
+        assert "bot_token" not in pcr
+        assert "api_key" not in pcr
+        assert "secret" not in pcr
+        assert "password" not in pcr
+        assert "client_name" not in pcr.get("safe_summary", {})
+        assert "client_email" not in pcr.get("safe_summary", {})
+
+        # Verify safe fields ARE present
+        assert pcr.get("capability") == "get_client_count"
+        assert pcr.get("source") == "supabase"
+        assert pcr.get("freshness") == "live"
+        assert pcr.get("safe_summary", {}).get("production_clients") == 14
+        assert pcr.get("safe_summary", {}).get("active") == 14
+
+        clear_conversation(chat_id)
+
+    def test_schema_version_in_context(self):
+        """Persisted context must include schema_version."""
+        chat_id = 999000012
+        from nexus_agent_platform.context.hermes_store import (
+            save_conversation, load_conversation, clear_conversation, _SCHEMA_VERSION,
+        )
+
+        save_conversation(chat_id, {"last_mode": "test"})
+        ctx = load_conversation(chat_id)
+        assert ctx.get("schema_version") == _SCHEMA_VERSION
+
+        clear_conversation(chat_id)
+
+    def test_old_schema_rejected(self):
+        """Context with older schema version must be rejected."""
+        chat_id = 999000013
+        from nexus_agent_platform.context.hermes_store import (
+            save_conversation, load_conversation, clear_conversation, _store_path,
+        )
+
+        # Manually write old schema
+        path = _store_path(chat_id)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump({"last_mode": "test", "schema_version": 0}, f)
+
+        ctx = load_conversation(chat_id)
+        assert ctx == {}  # rejected
+
+        clear_conversation(chat_id)
+
+    def test_no_raw_telegram_id_in_filename(self):
+        """Filenames must be hashed, not raw Telegram IDs."""
+        chat_id = 123456789
+        from nexus_agent_platform.context.hermes_store import _store_path
+        path = _store_path(chat_id)
+        filename = os.path.basename(path)
+        assert "123456789" not in filename
+        assert filename.endswith(".json")
+        # Must be a hex hash
+        assert len(filename.replace(".json", "")) == 16
+        int(filename.replace(".json", ""), 16)  # must not raise
+
+    def test_no_secrets_in_context_files(self):
+        """Generated context files must not contain secret-like patterns."""
+        chat_id = 999000014
+        from nexus_agent_platform.context.hermes_store import (
+            save_capability_result, clear_conversation, _store_path,
+        )
+
+        save_capability_result(chat_id, "get_client_count", {
+            "status": "ok",
+            "data": {"production_total": 14, "active": 14},
+            "provenance": {
+                "status": "success",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": "2026-08-06T22:00:00Z",
+                "freshness": "live",
+                "query_target": "https://test.supabase.co/rest/v1/client_profiles",
+                "filters": {},
+                "trace_id": "trace_test",
+            },
+        })
+
+        path = _store_path(chat_id)
+        with open(path) as f:
+            content = f.read()
+
+        # Check for common secret patterns
+        secret_patterns = [
+            "service_role", "SUPABASE_SERVICE", "bot_token", "TELEGRAM_BOT",
+            "api_key", "API_KEY", "sk-", "eyJ", "password", "SECRET",
+            "credentials", "authorization",
+        ]
+        for pattern in secret_patterns:
+            assert pattern.lower() not in content.lower(), (
+                f"Found secret pattern '{pattern}' in context file"
+            )
+
+        clear_conversation(chat_id)

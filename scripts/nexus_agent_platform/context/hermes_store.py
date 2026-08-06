@@ -19,6 +19,37 @@ from typing import Any, Dict, Optional
 
 _STORE_DIR = os.path.expanduser("~/.config/nexus/hermes_context")
 _DEFAULT_TTL = 3600  # 1 hour
+_SCHEMA_VERSION = 1
+
+# ─── Safe Persistence Projections ──────────────────────────
+# Only these fields may appear in persisted capability results.
+# All other fields are rejected to prevent unsafe data leakage.
+
+_SAFE_PROVENANCE_FIELDS = frozenset({
+    "capability", "result_id", "status", "source", "source_type",
+    "retrieved_at", "freshness", "query_target", "filters",
+    "access_boundary", "trace_id", "safe_summary",
+})
+
+# Per-capability safe data projections: only these fields are allowed.
+# Keys are handler output field names; values are the safe persisted names.
+_SAFE_DATA_PROJECTIONS = {
+    "get_client_count": {
+        "production_total": "production_clients",
+        "active": "active",
+        "onboarding": "onboarding",
+        "tester_or_certification": "tester_or_certification",
+    },
+}
+
+# Fields that must NEVER appear in persisted context (blocklist)
+_UNSAFE_FIELDS = frozenset({
+    "credentials", "token", "api_key", "service_role_key", "bot_token",
+    "secret", "password", "authorization", "raw_rows", "raw_data",
+    "client_name", "client_email", "email_body", "credit_report",
+    "trading_position", "research_document", "conversation_full",
+    "provider_payload", "stack_trace", "service_role", "supabase_key",
+})
 
 
 def _ensure_store() -> None:
@@ -54,8 +85,19 @@ def _atomic_write(path: str, data: Dict[str, Any]) -> None:
         raise
 
 
+def _reject_unsafe_fields(data: Dict[str, Any]) -> None:
+    """Remove any unsafe fields from a dict in-place."""
+    for field in _UNSAFE_FIELDS:
+        data.pop(field, None)
+    # Also reject any nested unsafe fields in safe_summary
+    summary = data.get("safe_summary", {})
+    if isinstance(summary, dict):
+        for field in _UNSAFE_FIELDS:
+            summary.pop(field, None)
+
+
 def load_conversation(chat_id: int) -> Dict[str, Any]:
-    """Load persisted conversation context. Returns empty dict if missing/expired."""
+    """Load persisted conversation context. Returns empty dict if missing/expired/corrupted."""
     path = _store_path(chat_id)
     if not os.path.exists(path):
         return {}
@@ -63,6 +105,10 @@ def load_conversation(chat_id: int) -> Dict[str, Any]:
         with open(path) as f:
             data = json.load(f)
     except (json.JSONDecodeError, OSError):
+        return {}
+
+    # Check schema version
+    if data.get("schema_version", 0) < _SCHEMA_VERSION:
         return {}
 
     # Check expiry
@@ -75,29 +121,40 @@ def load_conversation(chat_id: int) -> Dict[str, Any]:
 def save_conversation(chat_id: int, data: Dict[str, Any]) -> None:
     """Persist conversation context atomically with 0600 permissions."""
     data["updated_at"] = time.time()
+    data["schema_version"] = _SCHEMA_VERSION
     if "expires_at" not in data:
         data["expires_at"] = time.time() + _DEFAULT_TTL
+    # Bound recent_provenance list to max 5 entries
+    recent = data.get("recent_provenance", [])
+    if isinstance(recent, list) and len(recent) > 5:
+        data["recent_provenance"] = recent[-5:]
     _atomic_write(_store_path(chat_id), data)
 
 
 def save_capability_result(chat_id: int, capability: str, result: Dict[str, Any]) -> None:
-    """Save a capability result with provenance to the conversation store."""
+    """Save a capability result with provenance to the conversation store.
+
+    Applies safe persistence projections: only approved aggregate fields
+    are stored per capability. Unsafe fields are rejected.
+    """
     ctx = load_conversation(chat_id)
 
     # Build safe summary — no PII, no raw rows
     provenance = result.get("provenance", {})
     data = result.get("data", {})
-    safe_summary = {}
-    if capability == "get_client_count":
-        safe_summary = {
-            "production_clients": data.get("production_total", 0),
-            "active": data.get("active", 0),
-            "onboarding": data.get("onboarding", 0),
-            "tester_or_certification": data.get("tester_or_certification", 0),
-        }
 
-    ctx["last_capability"] = capability
-    ctx["last_capability_result"] = {
+    # Apply per-capability safe data projection
+    safe_summary = {}
+    projection = _SAFE_DATA_PROJECTIONS.get(capability)
+    if projection and isinstance(data, dict):
+        for handler_field, safe_field in projection.items():
+            if handler_field in data:
+                safe_summary[safe_field] = data[handler_field]
+    # If capability has no approved projection, safe_summary stays empty
+    # (provenance metadata only, no operational data)
+
+    # Build provenance record with only safe fields
+    provenance_record = {
         "capability": capability,
         "result_id": provenance.get("trace_id", ""),
         "status": result.get("status", "unknown"),
@@ -111,8 +168,15 @@ def save_capability_result(chat_id: int, capability: str, result: Dict[str, Any]
         "trace_id": provenance.get("trace_id", ""),
         "safe_summary": safe_summary,
     }
+
+    # Reject unsafe fields from provenance record
+    _reject_unsafe_fields(provenance_record)
+
+    ctx["last_capability"] = capability
+    ctx["last_capability_result"] = provenance_record
     ctx["last_mode"] = "operational_read"
     ctx["last_topic"] = capability.replace("_", " ")
+    ctx["schema_version"] = _SCHEMA_VERSION
     save_conversation(chat_id, ctx)
 
 
