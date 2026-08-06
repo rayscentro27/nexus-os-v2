@@ -99,17 +99,34 @@ def try_hermes_platform(
 
         # Run through graph
         graph = get_hermes_graph()
-        result = asyncio.run(graph.ainvoke(state))
+        result = graph.invoke(state)
 
         # Record trace if otel enabled
         if _otel_enabled():
             otel = get_hermes_otel()
+            trace_metadata = {
+                "mission_id": mission_id,
+                "intent": result.intent,
+                "agent": "nexus_hermes",
+                "update_id": update_id,
+                "conversation_epoch": result.metadata.get("conversation_epoch", 0),
+            }
+            # Add front-brain metadata when available
+            if result.metadata.get("front_brain_mode"):
+                trace_metadata["selected_mode"] = result.metadata["front_brain_mode"]
+                trace_metadata["selected_capability"] = result.metadata.get("front_brain_capability")
+                trace_metadata["front_brain_confidence"] = result.metadata.get("front_brain_confidence", 0)
+                trace_metadata["front_brain_reason"] = result.metadata.get("front_brain_reason", "")
+            trace_metadata["capability_used"] = result.metadata.get("capability_used")
+            trace_metadata["model_used"] = result.metadata.get("model_used")
+            trace_metadata["model_provider"] = result.metadata.get("model_provider")
+
             otel.record_generation(
                 name=f"hermes_mission_{mission_id}",
-                model="langgraph",
+                model=result.metadata.get("model_used", "langgraph"),
                 input_text=text[:200],
                 output_text=(result.assistant_response or "")[:200],
-                metadata={"mission_id": mission_id, "intent": result.intent},
+                metadata=trace_metadata,
             )
             otel.flush()
 
