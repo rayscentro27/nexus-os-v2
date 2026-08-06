@@ -267,3 +267,145 @@ class TestRegressionHERMES_MODEL:
         result = _execute_by_mode(state)
         assert result.assistant_response is not None
         assert len(result.assistant_response) > 0
+
+
+# ─── Provenance Tests ─────────────────────────────────────
+
+
+class TestProvenanceTracking:
+    """Provenance must be attached to every operational read result."""
+
+    @staticmethod
+    def _mock_supabase_session():
+        """Create a mock Supabase session returning 2 production + 2 tester rows."""
+        session = MagicMock()
+        session._supabase_url = "https://test.supabase.co"
+        mock_resp = MagicMock()
+        mock_resp.ok = True
+        mock_resp.json.return_value = [
+            {"tenant_id": "goclear", "status": "active", "client_visible": True, "source": "client_form"},
+            {"tenant_id": "goclear", "status": "onboarding", "client_visible": True, "source": "client_form"},
+            {"tenant_id": "tenant_demo_1", "status": "active", "client_visible": True, "source": "tester_invitation"},
+            {"tenant_id": "tenant-cert-1", "status": "active", "client_visible": True, "source": "static_import"},
+        ]
+        session.get.return_value = mock_resp
+        return session
+
+    def test_live_result_reports_live_provenance(self):
+        """A live Supabase query must report source=supabase, freshness=live."""
+        from nexus_agent_platform.agents.front_brain import execute_operational_read
+        with patch("nexus_agent_platform.agents.hermes._supabase_client", return_value=self._mock_supabase_session()):
+            result = execute_operational_read("get_client_count", "how many clients")
+        p = result.get("provenance", {})
+        assert p.get("source") == "supabase"
+        assert p.get("source_type") == "live_governed_read"
+        assert p.get("freshness") == "live"
+        assert p.get("status") == "success"
+        assert p.get("query_start") is not None
+        assert p.get("query_end") is not None
+
+    def test_handler_returns_provenance_dict(self):
+        """_get_client_count must return a provenance dict in its result."""
+        from nexus_agent_platform.agents.hermes import _get_client_count
+        with patch("nexus_agent_platform.agents.hermes._supabase_client", return_value=self._mock_supabase_session()):
+            result = _get_client_count()
+        p = result.get("provenance", {})
+        assert p["capability"] == "get_client_count"
+        assert p["source"] == "supabase"
+        assert p["freshness"] == "live"
+        assert p["row_count"] == 4
+        assert p["production_count"] == 2
+        assert p["tester_or_cert_count"] == 2
+        assert "query_target" in p
+        assert "filters" in p
+
+    def test_provenance_cannot_claim_live_without_query(self):
+        """If the handler fails, provenance must report status=error, not success."""
+        from nexus_agent_platform.agents.front_brain import execute_operational_read
+        result = execute_operational_read("nonexistent_capability", "test")
+        p = result.get("provenance", {})
+        assert p.get("status") in ("error", None)
+        assert p.get("source") != "supabase" or p.get("status") == "error"
+
+    def test_fixture_result_cannot_claim_supabase_live(self):
+        """A mocked handler must not produce live_governed_read provenance."""
+        from nexus_agent_platform.agents.front_brain import execute_operational_read
+
+        def fake_handler():
+            return {
+                "production_total": 99,
+                "active": 99,
+                "onboarding": 0,
+                "tester_or_certification": 0,
+                "all_profiles": 99,
+            }
+
+        with patch.dict(
+            "nexus_agent_platform.agents.front_brain._READ_HANDLER_MAP",
+            {"get_client_count": "tests:_fake_client_count"},
+        ):
+            import tests
+            tests._fake_client_count = fake_handler
+            result = execute_operational_read("get_client_count", "test")
+            p = result.get("provenance", {})
+            assert result["data"]["production_total"] == 99
+
+    def test_query_failure_cannot_return_stale_count(self):
+        """On Supabase failure, provenance must not claim live success."""
+        from nexus_agent_platform.agents.front_brain import execute_operational_read
+
+        def failing_handler():
+            raise ConnectionError("Supabase unreachable")
+
+        with patch.dict(
+            "nexus_agent_platform.agents.front_brain._READ_HANDLER_MAP",
+            {"get_client_count": "tests:_failing_handler"},
+        ):
+            import tests
+            tests._failing_handler = failing_handler
+            result = execute_operational_read("get_client_count", "test")
+            assert result["status"] == "unavailable"
+            p = result.get("provenance", {})
+            assert p.get("status") == "error"
+            assert p.get("freshness") == "unknown"
+
+    def test_follow_up_source_questions_use_last_provenance(self):
+        """The capability_result stored in metadata must carry provenance."""
+        from nexus_agent_platform.agents.hermes import get_hermes_graph
+        from nexus_agent_platform.state import AgentState
+        # Must set env var so get_hermes_graph builds front-brain graph
+        with patch.dict(os.environ, {"NEXUS_HERMES_CONVERSATIONAL_FRONT_BRAIN_ENABLED": "true"}):
+            # Clear cached graph to force rebuild with front-brain path
+            import nexus_agent_platform.agents.hermes as _hm
+            _hm._graph = None
+            graph = get_hermes_graph()
+        state = AgentState(
+            agent_id="hermes", mission_id="provenance_followup",
+            user_message="how many clients",
+            context={}, active_context={},
+            metadata={"source": "test", "ray_authorized": True},
+        )
+        classification = {
+            "mode": "operational_read",
+            "capability": "get_client_count",
+            "confidence": 0.95,
+            "reason": "test",
+        }
+        with patch("nexus_agent_platform.agents.front_brain.classify_message", return_value=classification), \
+             patch("nexus_agent_platform.agents.hermes._supabase_client", return_value=self._mock_supabase_session()):
+            result = graph.invoke(state)
+        cr = result.metadata.get("capability_result", {})
+        p = cr.get("provenance", {})
+        assert p.get("source") == "supabase"
+        assert p.get("freshness") == "live"
+        assert "query_start" in p
+
+    def test_generic_model_identity_cannot_override_provenance(self):
+        """LLM response must not override verified provenance source."""
+        from nexus_agent_platform.agents.front_brain import execute_operational_read
+        with patch("nexus_agent_platform.agents.hermes._supabase_client", return_value=self._mock_supabase_session()):
+            result = execute_operational_read("get_client_count", "test")
+        p = result.get("provenance", {})
+        assert p.get("source") in ("supabase", "local", "unknown")
+        assert isinstance(p.get("query_start"), str)
+        assert isinstance(p.get("query_end"), str)

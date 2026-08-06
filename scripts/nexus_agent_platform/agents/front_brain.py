@@ -567,66 +567,116 @@ def generate_advisory_response(
 
 # ─── Operational Read Execution ────────────────────────────
 
+_READ_HANDLER_MAP: Dict[str, str] = {
+    "get_client_count": "nexus_agent_platform.agents.hermes:_get_client_count",
+    "get_system_status": "nexus_agent_platform.agents.hermes:_get_system_status",
+    "get_failure_report": "nexus_agent_platform.agents.hermes:_get_failure_report",
+    "get_alpha_status": "nexus_agent_platform.agents.hermes:_get_alpha_status",
+    "process_status": "nexus_agent_platform.agents.hermes:_get_process_status",
+    "process_failures": "nexus_agent_platform.agents.hermes:_get_failure_report",
+    "research_history": "nexus_agent_platform.agents.hermes:_get_research_history",
+    "opportunities": "nexus_agent_platform.agents.hermes:_get_opportunities",
+    "trading_status": "nexus_agent_platform.agents.hermes:_get_trading_status",
+    "pending_approvals": "nexus_agent_platform.agents.hermes:_get_pending_approvals",
+}
+
+_PROVENANCE_SOURCES = {
+    "get_client_count": "supabase",
+}
+
+
+def _import_handler(handler_path: str):
+    """Lazy import a handler function by module:function path."""
+    module_path, _, func_name = handler_path.rpartition(":")
+    import importlib
+    mod = importlib.import_module(module_path)
+    return getattr(mod, func_name)
+
+
 def execute_operational_read(
     capability: str,
     user_message: str,
     authenticated_context: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """Execute a certified read capability through the dispatcher.
+    """Execute a certified read capability by calling its handler directly.
 
-    Returns the raw capability result dict.
+    Bypasses the dispatcher import chain to avoid pulling in optional
+    dependencies (temporalio) that read-only capabilities do not need.
+    Returns the raw capability result dict with provenance metadata.
     """
-    from nexus_agent_platform.contracts.typed import TaskSpec
-    from nexus_agent_platform.contracts.dispatcher import dispatch
+    from datetime import datetime, timezone
 
-    # Map capability to (operation, entity)
-    capability_map = {
-        "get_client_count": ("retrieve_metric", "client"),
-        "get_system_status": ("retrieve_status", "process"),
-        "get_failure_report": ("retrieve_status", "failure"),
-        "get_alpha_status": ("retrieve_status", "alpha"),
-        "process_status": ("retrieve_status", "process"),
-        "process_failures": ("retrieve_status", "failure"),
-        "research_history": ("retrieve_list", "research"),
-        "opportunities": ("retrieve_list", "opportunity"),
-        "trading_status": ("retrieve_status", "trading"),
-        "pending_approvals": ("retrieve_status", "approval"),
-    }
-
-    op_entity = capability_map.get(capability)
-    if not op_entity:
+    if capability not in _READ_HANDLER_MAP:
         return {"status": "unavailable", "error": f"Unknown capability: {capability}"}
 
-    operation, entity = op_entity
+    handler_path = _READ_HANDLER_MAP[capability]
+    try:
+        handler = _import_handler(handler_path)
+    except Exception as exc:
+        log.error("Failed to import handler for %s: %s", capability, exc)
+        return {"status": "unavailable", "error": f"Handler import failed: {exc}"}
 
-    taskspec = TaskSpec(
-        operation=operation,
-        entity=entity,
-        metric_definition=capability,
-        confidence=1.0,
-    )
-
-    auth_ctx = authenticated_context or {}
-    if auth_ctx.get("ray_authorized") or auth_ctx.get("is_ray"):
-        auth_ctx.setdefault("is_ray", True)
-        auth_ctx.setdefault("is_admin", True)
+    query_start = datetime.now(timezone.utc)
+    trace_id = f"front_brain_{capability}_{query_start.strftime('%Y%m%d%H%M%S')}"
 
     try:
-        result = dispatch(
-            taskspec,
-            authenticated_context=auth_ctx,
-            mission_context={"mission_id": f"front_brain_{capability}"},
-            trace_id=f"front_brain_{capability}",
-        )
-        return {
-            "status": result.status,
-            "capability": capability,
-            "data": result.data,
-            "error": result.error,
-        }
+        raw_result = handler()
     except Exception as exc:
         log.error("Operational read failed for %s: %s", capability, exc)
-        return {"status": "unavailable", "error": str(exc)}
+        return {
+            "status": "unavailable",
+            "capability": capability,
+            "error": str(exc),
+            "provenance": {
+                "capability": capability,
+                "status": "error",
+                "source": "unknown",
+                "source_type": "unknown",
+                "retrieved_at": query_start.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+                "error": str(exc),
+            },
+        }
+
+    query_end = datetime.now(timezone.utc)
+
+    # Normalize handler result into standard shape
+    if isinstance(raw_result, dict):
+        status = raw_result.pop("status", "ok") if "status" in raw_result else "ok"
+        data = raw_result
+    elif isinstance(raw_result, str):
+        status = "ok"
+        data = {"detail": raw_result}
+    else:
+        status = "ok"
+        data = {"result": raw_result}
+
+    source_type = _PROVENANCE_SOURCES.get(capability, "local")
+    provenance = {
+        "capability": capability,
+        "status": status,
+        "source": source_type,
+        "source_type": "live_governed_read" if source_type == "supabase" else "local_read",
+        "retrieved_at": query_end.isoformat(),
+        "query_start": query_start.isoformat(),
+        "query_end": query_end.isoformat(),
+        "freshness": "live" if source_type == "supabase" else "static",
+        "trace_id": trace_id,
+        "handler": handler_path,
+    }
+
+    # Carry any existing provenance from the handler (e.g. from _get_client_count)
+    if isinstance(raw_result, dict) and "provenance" in raw_result:
+        provenance.update(raw_result.pop("provenance"))
+
+    return {
+        "status": status,
+        "capability": capability,
+        "data": data,
+        "error": data.get("error"),
+        "provenance": provenance,
+    }
 
 
 # ─── Capability Result Synthesis ──────────────────────────

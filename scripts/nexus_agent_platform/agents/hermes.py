@@ -514,21 +514,36 @@ def _supabase_client():
 def _get_client_count() -> dict:
     """Query Supabase client_profiles for authoritative production counts.
 
-    Returns a structured dict with production metrics. Never reads the
-    process registry. No PII is included in the response.
+    Returns a structured dict with production metrics and provenance.
+    Never reads the process registry. No PII is included in the response.
     """
+    from zoneinfo import ZoneInfo
+    from datetime import timezone
+
+    query_start = datetime.now(timezone.utc)
     empty = {
         "production_total": 0, "active": 0, "onboarding": 0, "inactive": 0,
         "hidden": 0, "tester_or_certification": 0, "all_profiles": 0,
         "tenant": _PRODUCTION_TENANT, "retrieved_at": "", "error": None,
     }
     try:
-        from zoneinfo import ZoneInfo
         empty["retrieved_at"] = datetime.now(ZoneInfo("America/Phoenix")).strftime("%I:%M %p MT")
 
         session = _supabase_client()
         if session is None:
             empty["error"] = "Supabase credentials not configured"
+            query_end = datetime.now(timezone.utc)
+            empty["provenance"] = {
+                "capability": "get_client_count",
+                "status": "unavailable",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "query_start": query_start.isoformat(),
+                "query_end": query_end.isoformat(),
+                "freshness": "unknown",
+                "error": "Supabase credentials not configured",
+            }
             return empty
 
         resp = session.get(
@@ -537,7 +552,19 @@ def _get_client_count() -> dict:
             timeout=10,
         )
         if not resp.ok:
+            query_end = datetime.now(timezone.utc)
             empty["error"] = f"Supabase query failed: {resp.status_code}"
+            empty["provenance"] = {
+                "capability": "get_client_count",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "query_start": query_start.isoformat(),
+                "query_end": query_end.isoformat(),
+                "freshness": "unknown",
+                "error": f"Supabase query failed: {resp.status_code}",
+            }
             return empty
 
         rows = resp.json()
@@ -579,6 +606,7 @@ def _get_client_count() -> dict:
             if not row.get("client_visible", True):
                 hidden += 1
 
+        query_end = datetime.now(timezone.utc)
         empty.update({
             "production_total": len(production),
             "active": active,
@@ -587,10 +615,42 @@ def _get_client_count() -> dict:
             "hidden": hidden,
             "tester_or_certification": tester_or_cert,
         })
+        empty["provenance"] = {
+            "capability": "get_client_count",
+            "status": "success",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "row_count": len(rows),
+            "production_count": len(production),
+            "tester_or_cert_count": tester_or_cert,
+            "query_target": f"{session._supabase_url}/rest/v1/client_profiles",
+            "filters": {
+                "select": "tenant_id,status,client_visible,source",
+                "production_tenant": _PRODUCTION_TENANT,
+                "non_production_prefixes": list(_NON_PRODUCTION_TENANT_PREFIXES),
+                "tester_sources": list(_TESTER_SOURCES),
+            },
+        }
         return empty
 
     except Exception as exc:
+        query_end = datetime.now(timezone.utc)
         empty["error"] = str(exc)
+        empty["provenance"] = {
+            "capability": "get_client_count",
+            "status": "error",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "unknown",
+            "error": str(exc),
+        }
         return empty
 
 
