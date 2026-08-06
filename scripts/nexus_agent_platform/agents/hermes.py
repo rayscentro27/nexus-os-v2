@@ -193,6 +193,7 @@ def _execute_by_mode(state: AgentState) -> AgentState:
         synthesize_operational_response,
         update_active_context_for_hermes,
         CERTIFIED_ACTIONS,
+        HERMES_MODEL,
     )
 
     mode = state.intent or "conversation"

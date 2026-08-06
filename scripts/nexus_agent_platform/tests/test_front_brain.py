@@ -238,3 +238,32 @@ class TestActiveContextUpdate:
         ctx = update_active_context_for_hermes({}, "Email me the report", "Sure?", "governed_action", "send_approved_email")
         assert "pending_action" in ctx
         assert ctx["pending_action"]["capability"] == "send_approved_email"
+
+
+class TestRegressionHERMES_MODEL:
+    """Regression: HERMES_MODEL must be importable in hermes.py execute_by_mode."""
+
+    def test_hermes_model_used_in_execute_by_mode(self):
+        """HERMES_MODEL was referenced but not imported — caused live failure."""
+        import inspect
+        from nexus_agent_platform.agents.hermes import _execute_by_mode
+        source = inspect.getsource(_execute_by_mode)
+        assert "HERMES_MODEL" in source
+        # Verify it's imported from front_brain, not just referenced
+        assert "from nexus_agent_platform.agents.front_brain import" in source
+        assert "HERMES_MODEL" in source.split("from nexus_agent_platform.agents.front_brain import")[1]
+
+    def test_execute_by_mode_conversation_works(self):
+        """Conversation mode must not NameError on HERMES_MODEL."""
+        from nexus_agent_platform.agents.hermes import _execute_by_mode
+        from nexus_agent_platform.state import AgentState
+        state = AgentState(
+            agent_id="hermes", mission_id="test_regression",
+            user_message="Hello", context={}, active_context={},
+            metadata={"front_brain_mode": "conversation", "front_brain_capability": None},
+        )
+        state.intent = "conversation"
+        # Must not raise NameError
+        result = _execute_by_mode(state)
+        assert result.assistant_response is not None
+        assert len(result.assistant_response) > 0
