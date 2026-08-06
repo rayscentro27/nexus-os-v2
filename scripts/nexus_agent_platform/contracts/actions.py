@@ -34,10 +34,14 @@ from .typed import (
 )
 from nexus_agent_platform.workflows.temporal_workflows import ScheduledReportWorkflow
 
-try:
-    from temporalio.client import Client as TemporalClient
-except ImportError:
-    TemporalClient = None
+
+def _load_temporal_client():
+    """Lazily import TemporalClient to avoid startup hangs."""
+    try:
+        from temporalio.client import Client as TemporalClient
+        return TemporalClient
+    except ImportError:
+        return None
 
 
 def _run_coroutine_sync(coro):
@@ -77,9 +81,9 @@ def _store_receipt(key: str, receipt: Dict[str, Any], receipt_dir: str) -> None:
 
 # ─── Email Action ────────────────────────────────────────────
 
-RECEIPTS_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "reports", "runtime", "action_receipts"
-)
+from nexus_agent_platform.runtime.paths import get_nexus_repo_root
+
+RECEIPTS_DIR = str(get_nexus_repo_root() / "reports" / "runtime" / "action_receipts")
 
 
 def send_approved_email(
@@ -349,6 +353,7 @@ def schedule_report(
     temporal_enabled = os.environ.get("TEMPORAL_WORKFLOWS_ENABLED", "").lower() == "true"
 
     if execution_mode == "temporal" and temporal_enabled:
+        TemporalClient = _load_temporal_client()
         if TemporalClient is None:
             return error_result(
                 capability_id=capability_id,
@@ -452,9 +457,7 @@ def schedule_report(
     _store_receipt(idempotency_key, receipt, RECEIPTS_DIR)
 
     # Also store the schedule definition for the worker to pick up
-    schedules_dir = os.path.join(
-        os.path.dirname(__file__), "..", "..", "data", "runtime", "scheduled_reports"
-    )
+    schedules_dir = str(get_nexus_repo_root() / "data" / "runtime" / "scheduled_reports")
     os.makedirs(schedules_dir, exist_ok=True)
     schedule_path = os.path.join(schedules_dir, f"{schedule_id}.json")
     with open(schedule_path, "w") as f:

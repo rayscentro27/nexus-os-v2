@@ -18,6 +18,7 @@ from nexus_agent_platform.adapters.graph_adapter import GraphAdapter
 from nexus_agent_platform.adapters.otel_adapter import OtelAdapter
 from nexus_agent_platform.state import AgentState
 from nexus_agent_platform.capabilities.registry import CapabilityRegistry
+from nexus_agent_platform.runtime.paths import get_nexus_repo_root
 from nexus_agent_platform.context.resolver import get_active_context, update_active_context
 
 log = logging.getLogger(__name__)
@@ -226,9 +227,7 @@ def _compose_challenge(text: str, context: dict) -> str:
 
 def _compose_research_status() -> str:
     try:
-        status_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "runtime", "alpha_telegram_status.json"
-        )
+        status_path = get_nexus_repo_root() / "data" / "runtime" / "alpha_telegram_status.json"
         with open(status_path) as f:
             data = json.load(f)
         mission = data.get("current_mission", "none")

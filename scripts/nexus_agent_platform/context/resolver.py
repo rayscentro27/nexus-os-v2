@@ -12,9 +12,9 @@ import time
 from typing import Any, Dict, List, Optional
 
 
-_CONTEXT_DIR = os.path.join(
-    os.path.dirname(__file__), "..", "..", "data", "runtime", "agent_context"
-)
+from nexus_agent_platform.runtime.paths import get_nexus_repo_root
+
+_CONTEXT_DIR = str(get_nexus_repo_root() / "data" / "runtime" / "agent_context")
 
 
 def _ensure_dir() -> None:

@@ -23,7 +23,7 @@ from nexus_agent_platform.state import AgentState
 from nexus_agent_platform.agents.hermes import _classify_intent as hermes_classify, SOUL as HERMES_SOUL
 from nexus_agent_platform.agents.alpha import _detect_mode as alpha_detect
 
-EVAL_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "reports", "runtime", "shadow_evaluation")
+EVAL_DIR = os.path.join(_REPO_ROOT, "reports", "runtime", "shadow_evaluation")
 
 
 @dataclass

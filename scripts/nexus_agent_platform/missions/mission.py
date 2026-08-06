@@ -18,7 +18,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 
-_MISSIONS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "missions")
+from nexus_agent_platform.runtime.paths import get_nexus_repo_root
+
+_MISSIONS_DIR = str(get_nexus_repo_root() / "data" / "missions")
 
 
 def _ensure_dir(agent_id: str) -> str:

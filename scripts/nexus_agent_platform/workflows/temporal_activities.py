@@ -16,7 +16,7 @@ import os
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from temporalio import activity
+from nexus_agent_platform.runtime.paths import get_nexus_repo_root
 
 
 # ─── Canonical Runtime Configuration ──────────────────────────
@@ -169,10 +169,7 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
         }
 
     elif handler == "hermes._get_failure_report":
-        heartbeat_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "..", "reports", "runtime",
-            "nexus_active_operator_heartbeat_latest.json"
-        )
+        heartbeat_path = get_nexus_repo_root() / "reports" / "runtime" / "nexus_active_operator_heartbeat_latest.json"
         try:
             with open(heartbeat_path) as f:
                 data = json.load(f)
@@ -181,10 +178,7 @@ async def retrieve_fresh_report_data_activity(report_def: Dict[str, Any]) -> Dic
             return {"failures": [], "as_of": datetime.now(timezone.utc).isoformat()}
 
     elif handler == "hermes._get_system_status":
-        registry_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "operations",
-            "nexus_process_registry.json"
-        )
+        registry_path = get_nexus_repo_root() / "data" / "operations" / "nexus_process_registry.json"
         try:
             with open(registry_path) as f:
                 data = json.load(f)
@@ -340,9 +334,7 @@ async def send_email_activity(recipient: str, subject: str, body: str, idempoten
 @activity.defn
 async def persist_delivery_receipt_activity(mission_id: str, delivery_result: Dict[str, Any], idempotency_key: str) -> None:
     """Persist delivery receipt for idempotency."""
-    receipts_dir = os.path.join(
-        os.path.dirname(__file__), "..", "..", "..", "reports", "runtime", "action_receipts"
-    )
+    receipts_dir = get_nexus_repo_root() / "reports" / "runtime" / "action_receipts"
     os.makedirs(receipts_dir, exist_ok=True)
 
     receipt = {
@@ -360,9 +352,7 @@ async def persist_delivery_receipt_activity(mission_id: str, delivery_result: Di
 @activity.defn
 async def update_nexus_mission_activity(mission_id: str, status: str) -> None:
     """Update mission status."""
-    mission_dir = os.path.join(
-        os.path.dirname(__file__), "..", "..", "..", "data", "missions"
-    )
+    mission_dir = get_nexus_repo_root() / "data" / "missions"
     os.makedirs(mission_dir, exist_ok=True)
 
     mission_path = os.path.join(mission_dir, f"{mission_id}.json")

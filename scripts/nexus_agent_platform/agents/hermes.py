@@ -21,6 +21,7 @@ from nexus_agent_platform.state import AgentState
 from nexus_agent_platform.capabilities.registry import CapabilityRegistry
 from nexus_agent_platform.context.resolver import get_active_context, update_active_context
 from nexus_agent_platform.reports.ceo_formatter import format_ceo_report
+from nexus_agent_platform.runtime.paths import get_nexus_repo_root
 
 log = logging.getLogger(__name__)
 
@@ -403,9 +404,7 @@ def _get_client_count() -> dict:
 def _get_system_status() -> Dict[str, str]:
     """Read live system status from process registry and runtime files."""
     try:
-        registry_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "operations", "nexus_process_registry.json"
-        )
+        registry_path = get_nexus_repo_root() / "data" / "operations" / "nexus_process_registry.json"
         with open(registry_path) as f:
             data = json.load(f)
         running = [p for p in data if p.get("status") == "running"]
@@ -422,9 +421,7 @@ def _get_system_status() -> Dict[str, str]:
 def _get_failure_report() -> Dict[str, str]:
     """Read today's failures from runtime logs."""
     try:
-        heartbeat_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "reports", "runtime", "nexus_active_operator_heartbeat_latest.json"
-        )
+        heartbeat_path = get_nexus_repo_root() / "reports" / "runtime" / "nexus_active_operator_heartbeat_latest.json"
         with open(heartbeat_path) as f:
             data = json.load(f)
         failures = data.get("failures", [])
@@ -442,9 +439,7 @@ def _get_failure_report() -> Dict[str, str]:
 def _get_alpha_status() -> str:
     """Read Alpha's current status."""
     try:
-        status_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "data", "runtime", "alpha_telegram_status.json"
-        )
+        status_path = get_nexus_repo_root() / "data" / "runtime" / "alpha_telegram_status.json"
         with open(status_path) as f:
             data = json.load(f)
         state = data.get("State", "unknown")
@@ -662,9 +657,7 @@ def _get_opportunities() -> Dict[str, Any]:
 def _get_trading_status() -> Dict[str, Any]:
     """Read current Oanda practice trading engine status."""
     try:
-        status_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "reports", "runtime", "oanda_practice_engine_status_latest.json"
-        )
+        status_path = get_nexus_repo_root() / "reports" / "runtime" / "oanda_practice_engine_status_latest.json"
         with open(status_path) as f:
             data = json.load(f)
 
@@ -687,9 +680,7 @@ def _get_trading_status() -> Dict[str, Any]:
 def _get_pending_approvals() -> Dict[str, Any]:
     """Read pending approvals from the review queue."""
     try:
-        queue_path = os.path.join(
-            os.path.dirname(__file__), "..", "..", "reports", "runtime", "ray_review_queue_latest.json"
-        )
+        queue_path = get_nexus_repo_root() / "reports" / "runtime" / "ray_review_queue_latest.json"
         with open(queue_path) as f:
             data = json.load(f)
 

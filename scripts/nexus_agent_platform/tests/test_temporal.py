@@ -51,7 +51,8 @@ class TestScheduleReportExecutionMode:
         async def _failing_connect(*args, **kwargs):
             raise ConnectionError("Temporal server unreachable")
 
-        monkeypatch.setattr(actions.TemporalClient, "connect", _failing_connect)
+        from temporalio.client import Client as TemporalClient
+        monkeypatch.setattr(TemporalClient, "connect", _failing_connect)
 
         exec_time = (datetime.now(timezone.utc) + timedelta(minutes=2)).isoformat()
         result = schedule_report(
