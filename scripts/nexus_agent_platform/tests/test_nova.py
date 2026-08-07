@@ -249,7 +249,7 @@ class TestResponseValidation:
 
     def test_false_nexus_claim(self):
         from nexus_agent_platform.agents.nova import validate_response
-        assert validate_response("I'll check the process registry", "status") == "false_nexus_claim"
+        assert validate_response("I'll create a new user account", "status") == "false_nexus_claim"
 
     def test_capability_menu(self):
         from nexus_agent_platform.agents.nova import validate_response
@@ -277,7 +277,7 @@ class TestGraphStructure:
     def test_all_nodes_registered(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        expected = ["classify_intent", "handle_utility", "build_context",
+        expected = ["classify_intent", "handle_utility", "check_supabase", "build_context",
                     "generate_response", "validate_output", "compose_output"]
         assert list(graph._node_fns.keys()) == expected
 

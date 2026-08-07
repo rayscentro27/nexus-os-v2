@@ -13,8 +13,13 @@ Nova has its own:
   - OpenRouter model
   - Langfuse trace namespace
 
+Governed read access:
+  - get_nova_runtime_capabilities — what Nova can access
+  - get_client_count — live client profile counts
+  - find_test_user_by_email — exact email lookup
+
 Nova does NOT have access to:
-  - Supabase
+  - Unrestricted Supabase writes
   - Oanda
   - Temporal
   - Nexus Hermes memory
@@ -38,6 +43,12 @@ from typing import Any, Dict, List, Optional
 from nexus_agent_platform.adapters.graph_adapter import GraphAdapter
 from nexus_agent_platform.adapters.otel_adapter import OtelAdapter
 from nexus_agent_platform.adapters.state_adapter import AgentState
+from nexus_agent_platform.connectors.nova_supabase import (
+    detect_nova_write_request,
+    execute_nova_capability,
+    generate_nova_provenance_response,
+    get_nova_capabilities,
+)
 
 log = logging.getLogger(__name__)
 
@@ -61,9 +72,18 @@ Behavior:
 - Handle pronouns and numbered references naturally ("that idea", "number two").
 - Give short, natural answers for simple questions. Go deeper when asked.
 - Never fabricate business tools, system access, or data you don't have.
-- Never claim to access Supabase, Oanda, Temporal, or other Nexus systems.
-- If asked about Nexus internals, explain you are Nova — a conversational agent — and
-  don't have access to operational systems.
+- Never claim unrestricted access to Supabase, Oanda, Temporal, or other Nexus systems.
+
+Governed read access:
+- You have read-only access to Supabase through three approved governed capabilities:
+  1. get_nova_runtime_capabilities — tells you what you can access
+  2. get_client_count — live client profile counts
+  3. find_test_user_by_email — exact email lookup for test users
+- This is governed, audited, read-only access — not unrestricted database access.
+- When you use a capability, identify the source accurately (e.g., "from the Supabase client source").
+- You cannot create, edit, disable, invite, or delete users.
+- You cannot execute arbitrary SQL or query arbitrary tables.
+- When asked about Nexus internals beyond your reads, explain you are Nova with limited governed access.
 
 Technical explanations:
 - Explain frameworks and tools as architecture, not just "combining things." Use concrete examples.
@@ -256,11 +276,11 @@ _VALIDATION_PATTERNS = [
     # Leaked system prompt
     (re.compile(r'you are (?:Hermes|Nexus|Alpha|a system|an AI (?:system|designed))', re.I),
      "system_prompt_leak"),
-    # False tool claims
+    # False tool claims — unrestricted access (NOT governed reads)
     (re.compile(r'(?:I\s+(?:have\s+)?access(?:ed|ing)?\s+(?:your|the)\s+(?:Supabase|database|Oanda|trading|Temporal|calendar|email))', re.I),
      "false_tool_claim"),
-    # False Nexus access claims
-    (re.compile(r"(?:I(?:'ll| will)\s+(?:check|query|pull|fetch|look up)\s+(?:in\s+)?(?:Supabase|the (?:process|registry|database)))", re.I),
+    # False Nexus write claims
+    (re.compile("(?:I['\u2019]ll|I will)\\s+(?:create|add|insert|update|delete|remove|disable|enable|invite)\\s+(?:a\\s+)?(?:new\\s+)?(?:user|account|profile)", re.I),
      "false_nexus_claim"),
     # Generic capability menu
     (re.compile(r'(?:here\s+(?:is|are)\s+(?:a\s+)?(?:list|menu)\s+of\s+(?:my\s+)?(?:capabilities|things?\s+I\s+can))', re.I),
@@ -340,6 +360,48 @@ def _handle_utility(state: AgentState) -> AgentState:
 
     # Not a utility — pass through to model
     state.metadata["utility_used"] = None
+    return state
+
+
+def _check_supabase_capability(state: AgentState) -> AgentState:
+    """Check if the user message is requesting a governed Supabase capability."""
+    # Skip if utility already handled it
+    if state.assistant_response:
+        state.metadata["capability_used"] = None
+        return state
+
+    text = state.user_message
+
+    # Check for write attempts first
+    write_denial = detect_nova_write_request(text)
+    if write_denial:
+        state.assistant_response = write_denial
+        state.metadata["capability_used"] = "write_denied"
+        return state
+
+    # Check for capability triggers
+    lower = text.lower()
+    capabilities = get_nova_capabilities()
+    triggered = None
+
+    for cap in capabilities:
+        if cap["trigger"](lower):
+            triggered = cap
+            break
+
+    if not triggered:
+        state.metadata["capability_used"] = None
+        return state
+
+    # Execute the capability
+    capability_id = triggered["id"]
+    result = execute_nova_capability(capability_id)
+
+    # Build response with provenance
+    response = generate_nova_provenance_response(capability_id, result)
+    state.assistant_response = response
+    state.metadata["capability_used"] = capability_id
+    state.metadata["capability_result"] = result
     return state
 
 
@@ -463,13 +525,25 @@ def build_nova_graph() -> GraphAdapter:
     graph = GraphAdapter(agent_id=AGENT_ID)
     graph.add_node("classify_intent", _classify_intent)
     graph.add_node("handle_utility", _handle_utility)
+    graph.add_node("check_supabase", _check_supabase_capability)
     graph.add_node("build_context", _build_context)
     graph.add_node("generate_response", _generate_response)
     graph.add_node("validate_output", _validate_output)
     graph.add_node("compose_output", _compose_output)
 
     graph.add_edge("classify_intent", "handle_utility")
-    graph.add_edge("handle_utility", "build_context")
+    graph.add_edge("handle_utility", "check_supabase")
+
+    def _route_after_check(state: AgentState) -> str:
+        if state.metadata.get("capability_used"):
+            return "to_compose"
+        return "to_context"
+
+    graph.add_conditional_edge(
+        "check_supabase",
+        _route_after_check,
+        {"to_compose": "compose_output", "to_context": "build_context"},
+    )
     graph.add_edge("build_context", "generate_response")
     graph.add_edge("generate_response", "validate_output")
     graph.add_edge("validate_output", "compose_output")
