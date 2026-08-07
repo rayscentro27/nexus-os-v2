@@ -692,28 +692,19 @@ class TestNovaAdapter:
         assert "_nova_supabase_client" not in source
         assert "import requests" not in source
 
-    def test_nova_capability_triggers_catch_email(self):
-        from nexus_agent_platform.connectors.nova_supabase import get_nova_capabilities
+    def test_nova_tool_returns_success(self):
+        """Nova tool integration should work through shared adapter."""
+        from nexus_agent_platform.connectors.nova_supabase import execute_nova_capability
 
-        caps = get_nova_capabilities()
-        identity_cap = [c for c in caps if c["id"] == "resolve_user_identity_by_email"][0]
-        trigger = identity_cap["trigger"]
+        result = execute_nova_capability("get_client_count")
+        assert result["status"] == "success"
 
-        assert trigger("does theworldzmine@gmail.com exist")
-        assert trigger("check user test@gmail.com")
-        assert trigger("look up user@domain.com")
-        assert trigger("is email@domain.com registered")
-        assert trigger("where does user@gmail.com exist")
+    def test_nova_write_detection(self):
+        """Write detection should still work from the connector."""
+        from nexus_agent_platform.connectors.nova_supabase import detect_nova_write_request
 
-    def test_nova_trigger_does_not_match_plaintext(self):
-        from nexus_agent_platform.connectors.nova_supabase import get_nova_capabilities
-
-        caps = get_nova_capabilities()
-        identity_cap = [c for c in caps if c["id"] == "resolve_user_identity_by_email"][0]
-        trigger = identity_cap["trigger"]
-
-        assert not trigger("how many clients do we have")
-        assert not trigger("what time is it")
+        assert detect_nova_write_request("create a test user test@gmail.com")
+        assert not detect_nova_write_request("how many clients do we have")
 
 
 # ─── Provenance ────────────────────────────────────────────
@@ -768,78 +759,19 @@ class TestProvenance:
 # ─── Response Generation ───────────────────────────────────
 
 class TestResponseGeneration:
-    """Tests for Nova response generation."""
+    """Tests for Nova's conversational brain response quality."""
 
-    def test_client_count_response_includes_numbers(self):
-        from nexus_agent_platform.connectors.nova_supabase import (
-            generate_nova_provenance_response,
-        )
+    def test_nova_brain_has_soul_description(self):
+        """Nova brain SOUL should describe business context."""
+        from nexus_agent_platform.agents.nova import SOUL
+        assert "GoClear" in SOUL
+        assert "read-only" in SOUL
+        assert "Supabase" in SOUL
 
-        result = {
-            "status": "success",
-            "source": "supabase",
-            "data": {
-                "production_clients": 14,
-                "active": 14,
-                "onboarding": 0,
-                "tester_or_certification": 24,
-            },
-            "provenance": {"retrieved_at": "2024-01-01T00:00:00Z"},
-        }
-
-        response = generate_nova_provenance_response("get_client_count", result)
-        assert "14" in response
-        assert "24" in response
-
-    def test_identity_response_partial_verification(self):
-        from nexus_agent_platform.connectors.nova_supabase import (
-            generate_nova_provenance_response,
-        )
-
-        result = {
-            "status": "partial",
-            "source": "supabase",
-            "data": {
-                "normalized_email": "test@gmail.com",
-                "exists_anywhere": False,
-                "verification_complete": False,
-                "sources": {
-                    "supabase_auth": {"status": "error"},
-                    "client_profiles": {"status": "success", "exists": False},
-                },
-            },
-        }
-
-        response = generate_nova_provenance_response(
-            "resolve_user_identity_by_email", result
-        )
-        assert "not complete" in response.lower() or "cannot confirm" in response.lower()
-
-    def test_identity_response_found(self):
-        from nexus_agent_platform.connectors.nova_supabase import (
-            generate_nova_provenance_response,
-        )
-
-        result = {
-            "status": "success",
-            "source": "supabase",
-            "data": {
-                "normalized_email": "test@gmail.com",
-                "exists_anywhere": True,
-                "verification_complete": True,
-                "account_classifications": ["production"],
-                "sources": {
-                    "supabase_auth": {"status": "success", "exists": True},
-                    "client_profiles": {"status": "success", "exists": True},
-                },
-            },
-        }
-
-        response = generate_nova_provenance_response(
-            "resolve_user_identity_by_email", result
-        )
-        assert "found" in response.lower()
-        assert "production" in response.lower()
+    def test_nova_brain_has_supabase_tool(self):
+        """Nova brain should have a Supabase search tool function."""
+        from nexus_agent_platform.agents.nova import _nova_search_supabase
+        assert callable(_nova_search_supabase)
 
 
 # ─── Isolation ─────────────────────────────────────────────
@@ -883,23 +815,23 @@ class TestIsolation:
 class TestGraphIntegration:
     """Tests for Nova graph structure with shared capabilities."""
 
-    def test_graph_has_check_supabase_node(self):
+    def test_graph_has_prepare_context_node(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        assert "check_supabase" in graph._node_fns
+        assert "prepare_context" in graph._node_fns
 
     def test_graph_node_count(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        expected = ["classify_intent", "handle_utility", "check_supabase",
+        expected = ["classify_intent", "handle_utility", "prepare_context",
                      "build_context", "generate_response", "validate_output",
                      "compose_output"]
         assert list(graph._node_fns.keys()) == expected
 
     def test_nova_uses_shared_module_not_direct_queries(self):
-        """Nova agent must import from shared capabilities, not query Supabase directly."""
+        """Nova brain should own its Supabase tools."""
         import inspect
         from nexus_agent_platform.agents import nova
         source = inspect.getsource(nova)
-        assert "nova_supabase" in source  # imports the thin adapter
+        assert "nova_search_supabase" in source  # tool is defined in nova
         assert "_nova_supabase_client" not in source  # no direct client

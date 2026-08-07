@@ -13,13 +13,11 @@ Nova has its own:
   - OpenRouter model
   - Langfuse trace namespace
 
-Governed read access (routed through shared certified capabilities):
-  - get_runtime_capabilities — what Nova can access
-  - get_client_count — live client profile counts
-  - resolve_user_identity_by_email — exact email lookup across approved identity sources
+Supabase is an optional read-only information source.
+Nova decides when to use it. The source never decides for Nova.
 
 Nova does NOT have access to:
-  - Unrestricted Supabase writes
+  - Supabase writes
   - Oanda
   - Temporal
   - Nexus Hermes memory
@@ -43,12 +41,6 @@ from typing import Any, Dict, List, Optional
 from nexus_agent_platform.adapters.graph_adapter import GraphAdapter
 from nexus_agent_platform.adapters.otel_adapter import OtelAdapter
 from nexus_agent_platform.adapters.state_adapter import AgentState
-from nexus_agent_platform.connectors.nova_supabase import (
-    detect_nova_write_request,
-    execute_nova_capability,
-    generate_nova_provenance_response,
-    get_nova_capabilities,
-)
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +48,7 @@ AGENT_ID = "hermes_nova"
 
 # ─── SOUL ─────────────────────────────────────────────────
 
-SOUL = """You are Hermes Nova — a thoughtful, conversational AI assistant.
+SOUL = """You are Hermes Nova — Ray Davis's independent strategic adviser and conversational partner.
 
 Personality:
 - You speak naturally, like a knowledgeable friend — not a menu or a bot.
@@ -74,16 +66,29 @@ Behavior:
 - Never fabricate business tools, system access, or data you don't have.
 - Never claim unrestricted access to Supabase, Oanda, Temporal, or other Nexus systems.
 
-Governed read access:
-- You have read-only access to Supabase through three approved governed capabilities:
-  1. get_runtime_capabilities — tells you what you can access
-  2. get_client_count — live client profile counts
-  3. resolve_user_identity_by_email — exact email lookup across approved identity sources
-- This is governed, audited, read-only access — not unrestricted database access.
-- When you use a capability, identify the source accurately (e.g., "from the Supabase source").
-- You cannot create, edit, disable, invite, or delete users.
-- You cannot execute arbitrary SQL or query arbitrary tables.
-- When asked about Nexus internals beyond your reads, explain you are Nova with limited governed access.
+Business context:
+- Ray Davis is the founder of GoClear and Nexus OS.
+- GoClear provides Credit and Funding Readiness Reviews ($97 entry offer).
+- Nexus OS is the operational platform: CRM, client portal, workflow automation.
+- Revenue streams: readiness reviews, outsourced credit-deletion fulfillment,
+  business foundation and bankability services, business funding services.
+- Referral partners: loan officers, real estate agents, auto salespeople,
+  business owners needing funding preparation.
+- Nova's role: independent strategic adviser grounded in GoClear and Nexus context.
+- When Ray asks how to make money, default to his actual businesses and systems
+  unless he explicitly asks for unrelated personal side-hutle ideas.
+
+Supabase access (read-only, when explicitly requested):
+- You have governed read-only access to approved Supabase information.
+- When Ray explicitly asks you to search or check Supabase, you can use
+  your read-only tools to retrieve information.
+- Available reads: client counts, identity lookups, runtime capabilities,
+  and general approved-table discovery.
+- You cannot create, update, delete, or alter records.
+- You cannot execute arbitrary SQL.
+- When you retrieve Supabase data, identify the source accurately.
+- If a source fails or is unavailable, say so honestly — never claim
+  "not found" when verification was incomplete.
 
 Technical explanations:
 - Explain frameworks and tools as architecture, not just "combining things." Use concrete examples.
@@ -249,6 +254,344 @@ def _evaluate_arithmetic(text: str) -> Optional[str]:
         return None
 
 
+# ─── Source-Directed Supabase Detection ────────────────────
+
+_SUPABASE_SOURCE_PATTERN = re.compile(
+    r'\b(?:search|check|query|look\s+(?:in|through|up)|inspect|find|verify|review|'
+    r'research|pull|use)\b.*\bsupabase\b',
+    re.I,
+)
+
+_SUPABASE_NAME_PATTERN = re.compile(r'\bsupabase\b', re.I)
+
+
+def _detect_supabase_source(text: str) -> Optional[str]:
+    """Detect if the user explicitly named Supabase as an information source.
+
+    Returns the raw user request to pass to the Supabase tool, or None
+    if Supabase was not explicitly named.
+
+    This is source-directed detection — not an intent classifier.
+    Its only purpose is: Ray explicitly named Supabase → give the request
+    to Nova's Supabase information tool.
+    """
+    if _SUPABASE_SOURCE_PATTERN.search(text):
+        return text
+    return None
+
+
+def _is_write_request(text: str) -> bool:
+    """Detect if the user is requesting a write operation."""
+    write_patterns = re.compile(
+        r'\b(?:create|add|insert|update|delete|remove|disable|enable|invite|'
+        r'edit|modify|set|change|revoke|approve|reject)\b.*'
+        r'\b(?:user|account|profile|record|client)\b',
+        re.I,
+    )
+    return bool(write_patterns.search(text))
+
+
+# ─── Nova-Owned Supabase Tool ──────────────────────────────
+
+def _nova_search_supabase(
+    request: str,
+    *,
+    chat_id: int = 0,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Nova-owned read-only Supabase search tool.
+
+    This tool belongs to Nova's toolbox. It delegates to shared
+    technical infrastructure for the actual queries, but Nova
+    decides when to use it.
+
+    Returns a result envelope that Nova's brain can incorporate
+    into its natural response.
+    """
+    from nexus_agent_platform.capabilities.shared import (
+        execute_shared_capability,
+        detect_write_request,
+    )
+
+    if not trace_id:
+        trace_id = f"nova_search_{int(time.time())}"
+
+    # Write denial
+    if _is_write_request(request):
+        return {
+            "tool": "nova_search_supabase",
+            "status": "denied",
+            "message": (
+                "Write operations are not permitted. I have read-only access to Supabase. "
+                "I can look up existing information but cannot create, modify, or delete anything."
+            ),
+            "trace_id": trace_id,
+        }
+
+    # Detect what kind of Supabase query is needed
+    request_lower = request.lower()
+
+    # Identity lookup (email present)
+    email_match = re.search(
+        r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', request
+    )
+    if email_match and any(w in request_lower for w in [
+        "user", "account", "identity", "email", "who", "verify", "check",
+        "exist", "registered", "profile",
+    ]):
+        result = execute_shared_capability(
+            "hermes_nova",
+            "resolve_user_identity_by_email",
+            {"email": email_match.group(0)},
+            trace_id=trace_id,
+        )
+        return {
+            "tool": "nova_search_supabase",
+            "query_type": "identity_lookup",
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+            "provenance": result.get("provenance", {}),
+            "trace_id": trace_id,
+        }
+
+    # Client count
+    if any(w in request_lower for w in [
+        "client count", "how many clients", "total clients",
+        "number of clients", "client profiles", "production clients",
+        "active clients", "customer total", "client total",
+    ]):
+        result = execute_shared_capability(
+            "hermes_nova",
+            "get_client_count",
+            {},
+            trace_id=trace_id,
+        )
+        return {
+            "tool": "nova_search_supabase",
+            "query_type": "client_count",
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+            "provenance": result.get("provenance", {}),
+            "trace_id": trace_id,
+        }
+
+    # Runtime capabilities
+    if any(w in request_lower for w in [
+        "what can you access", "your capabilities", "what do you have access",
+        "what systems", "can you access", "your access", "what can you do",
+    ]):
+        result = execute_shared_capability(
+            "hermes_nova",
+            "get_runtime_capabilities",
+            {},
+            trace_id=trace_id,
+        )
+        return {
+            "tool": "nova_search_supabase",
+            "query_type": "runtime_capabilities",
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+            "provenance": result.get("provenance", {}),
+            "trace_id": trace_id,
+        }
+
+    # General search — approved tables and metadata
+    return _nova_general_search(request, trace_id=trace_id)
+
+
+def _nova_general_search(
+    request: str,
+    *,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """General read-only search across approved Supabase sources.
+
+    Searches approved tables, views, and metadata for matches.
+    Returns safe results only.
+    """
+    from nexus_agent_platform.capabilities.shared import _supabase_session
+
+    session = _supabase_session()
+    if session is None:
+        return {
+            "tool": "nova_search_supabase",
+            "query_type": "general_search",
+            "status": "unavailable",
+            "message": "Supabase credentials not configured.",
+            "trace_id": trace_id,
+        }
+
+    results = []
+    sources_searched = []
+
+    # Search approved tables for keyword matches
+    approved_tables = [
+        ("client_profiles", "client_label", "Client profiles"),
+        ("client_profiles", "legal_name", "Client legal names"),
+        ("client_profiles", "business_name", "Business names"),
+    ]
+
+    # Extract search terms from the request
+    search_terms = re.findall(r'\b[a-zA-Z]{3,}\b', request)
+    if not search_terms:
+        search_terms = [request]
+
+    for table, column, description in approved_tables:
+        sources_searched.append(table)
+        try:
+            # Search for any matching term
+            for term in search_terms[:3]:  # limit to 3 terms
+                resp = session.get(
+                    f"{session._supabase_url}/rest/v1/{table}",
+                    params={
+                        "select": f"id,{column},status,source,tenant_id",
+                        f"{column}": f"ilike.*{term}*",
+                        "limit": 5,
+                    },
+                    timeout=10,
+                )
+                if resp.ok:
+                    rows = resp.json()
+                    for row in rows:
+                        results.append({
+                            "source": table,
+                            "match": row.get(column, ""),
+                            "status": row.get("status", ""),
+                            "type": description,
+                        })
+        except Exception:
+            continue
+
+    # Search process definitions for webhooks/workflows
+    try:
+        resp = session.get(
+            f"{session._supabase_url}/rest/v1/nexus_process_definitions",
+            params={
+                "select": "id,name,system,enabled,execution_mode",
+                "limit": 20,
+            },
+            timeout=10,
+        )
+        if resp.ok:
+            sources_searched.append("nexus_process_definitions")
+            for row in resp.json():
+                name = (row.get("name") or "").lower()
+                for term in search_terms:
+                    if term.lower() in name:
+                        results.append({
+                            "source": "nexus_process_definitions",
+                            "match": row.get("name", ""),
+                            "system": row.get("system", ""),
+                            "enabled": row.get("enabled", False),
+                            "type": "Process/webhook definition",
+                        })
+                        break
+    except Exception:
+        pass
+
+    if results:
+        return {
+            "tool": "nova_search_supabase",
+            "query_type": "general_search",
+            "status": "success",
+            "matches": results[:10],
+            "sources_searched": sources_searched,
+            "message": f"Found {len(results)} potential matches.",
+            "trace_id": trace_id,
+        }
+
+    return {
+        "tool": "nova_search_supabase",
+        "query_type": "general_search",
+        "status": "not_found",
+        "matches": [],
+        "sources_searched": sources_searched,
+        "message": (
+            "I searched the approved Supabase tables and process definitions "
+            "but did not find an exact match for that query."
+        ),
+        "trace_id": trace_id,
+    }
+
+
+def _format_supabase_result(result: Dict[str, Any]) -> str:
+    """Format a Supabase search result as natural context for Nova's brain."""
+    status = result.get("status", "unknown")
+    query_type = result.get("query_type", "unknown")
+
+    if status == "denied":
+        return result.get("message", "Write operations are not permitted.")
+
+    if status == "unavailable":
+        return result.get("message", "Supabase is not available right now.")
+
+    if query_type == "client_count":
+        data = result.get("data", {})
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("America/Phoenix"))
+        timestamp = now.strftime("%-I:%M %p Phoenix time on %B %-d, %Y")
+        return (
+            f"Supabase data (retrieved {timestamp}):\n"
+            f"- Production clients: {data.get('production_clients', 'unknown')}\n"
+            f"- Active: {data.get('active', 'unknown')}\n"
+            f"- Onboarding: {data.get('onboarding', 'unknown')}\n"
+            f"- Tester/certification: {data.get('tester_or_certification', 'unknown')}\n"
+            f"- Total profiles: {data.get('all_profiles', 'unknown')}"
+        )
+
+    if query_type == "identity_lookup":
+        data = result.get("data", {})
+        email = data.get("normalized_email", "unknown")
+        exists = data.get("exists_anywhere", False)
+        complete = data.get("verification_complete", True)
+        classifications = data.get("account_classifications", [])
+        sources = data.get("sources", {})
+
+        lines = [f"Identity lookup for {email}:"]
+        if not complete:
+            failed = [k for k, v in sources.items()
+                      if v.get("status") in ("error", "incomplete")]
+            lines.append(f"Verification incomplete. Sources with issues: {', '.join(failed)}")
+        elif exists:
+            lines.append(f"Found in approved identity sources.")
+            if classifications:
+                lines.append(f"Classifications: {', '.join(classifications)}")
+            for src, info in sources.items():
+                if info.get("exists"):
+                    lines.append(f"  - {src}: found")
+                else:
+                    lines.append(f"  - {src}: not found")
+        else:
+            lines.append("Not found in any approved identity source.")
+        return "\n".join(lines)
+
+    if query_type == "runtime_capabilities":
+        data = result.get("data", {})
+        reads = data.get("available_reads", [])
+        writes = data.get("available_actions", [])
+        return (
+            f"Supabase access status:\n"
+            f"- Connected: {data.get('connected_systems', {}).get('supabase', {}).get('status', 'unknown')}\n"
+            f"- Approved reads: {', '.join(sorted(reads))}\n"
+            f"- Approved writes: {', '.join(sorted(writes)) if writes else 'none'}"
+        )
+
+    if query_type == "general_search":
+        matches = result.get("matches", [])
+        if not matches:
+            return result.get("message", "No matches found.")
+        lines = [f"Supabase search results ({len(matches)} matches):"]
+        for m in matches[:5]:
+            source = m.get("source", "")
+            match_val = m.get("match", "")
+            mtype = m.get("type", "")
+            detail = f" ({m.get('status', '')})" if m.get("status") else ""
+            lines.append(f"  - [{source}] {match_val}{detail} — {mtype}")
+        return "\n".join(lines)
+
+    return f"Supabase result: {json.dumps(result, default=str)[:300]}"
+
+
 # ─── Model Gateway ─────────────────────────────────────────
 
 async def _call_model(messages: List[Dict[str, str]], chat_id: int) -> Dict[str, Any]:
@@ -363,79 +706,42 @@ def _handle_utility(state: AgentState) -> AgentState:
     return state
 
 
-def _check_supabase_capability(state: AgentState) -> AgentState:
-    """Check if the user message is requesting a governed Supabase capability."""
-    # Skip if utility already handled it
+def _prepare_context(state: AgentState) -> AgentState:
+    """Prepare context for the model, including Supabase data if explicitly requested.
+
+    This node runs AFTER handle_utility and BEFORE build_context.
+    It detects explicit Supabase source mentions and fetches data
+    to include as context for the model.
+
+    This is NOT an intent classifier. It is source-directed detection:
+    Ray explicitly named Supabase → fetch data → include in context.
+    """
     if state.assistant_response:
-        state.metadata["capability_used"] = None
+        state.metadata["supabase_data"] = None
         return state
 
     text = state.user_message
+    chat_id = state.metadata.get("chat_id", 0)
 
-    # Check for write attempts first
-    write_denial = detect_nova_write_request(text)
-    if write_denial:
-        # Optionally check if the email already exists before denying
-        email = write_denial.get("arguments", {}).get("email")
-        if email and write_denial.get("read_available"):
-            result = execute_nova_capability(
-                "resolve_user_identity_by_email",
-                {"email": email},
-            )
-            existence_note = generate_nova_provenance_response(
-                "resolve_user_identity_by_email", result
-            )
-            state.assistant_response = (
-                "Write operations are not permitted — I have read-only access. "
-                f"However, I can tell you that {existence_note}"
-            )
-        else:
-            state.assistant_response = (
-                "Write operations are not permitted. I have read-only access to Supabase — "
-                "I can look up existing information but cannot create, modify, or delete anything."
-            )
-        state.metadata["capability_used"] = "write_denied"
-        return state
-
-    # Check for capability triggers
-    lower = text.lower()
-    capabilities = get_nova_capabilities()
-    triggered = None
-
-    for cap in capabilities:
-        if cap["trigger"](lower):
-            triggered = cap
-            break
-
-    if not triggered:
-        state.metadata["capability_used"] = None
-        return state
-
-    # Extract arguments for the capability
-    capability_id = triggered["id"]
-    arguments = {}
-
-    if capability_id == "resolve_user_identity_by_email":
-        import re as _re
-        email_match = _re.search(
-            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text
+    # Source-directed detection: did Ray explicitly name Supabase?
+    supabase_request = _detect_supabase_source(text)
+    if supabase_request:
+        trace_id = f"nova_{chat_id}_{int(time.time())}"
+        result = _nova_search_supabase(
+            supabase_request,
+            chat_id=chat_id,
+            trace_id=trace_id,
         )
-        if email_match:
-            arguments["email"] = email_match.group(0)
+        state.metadata["supabase_data"] = result
+        state.metadata["supabase_trace_id"] = trace_id
+    else:
+        state.metadata["supabase_data"] = None
 
-    # Execute the capability through the shared adapter
-    result = execute_nova_capability(capability_id, arguments)
-
-    # Build response with provenance
-    response = generate_nova_provenance_response(capability_id, result)
-    state.assistant_response = response
-    state.metadata["capability_used"] = capability_id
-    state.metadata["capability_result"] = result
     return state
 
 
 def _build_context(state: AgentState) -> AgentState:
-    """Build the model context with SOUL and conversation history."""
+    """Build the model context with SOUL, conversation history, and any Supabase data."""
     chat_id = state.metadata.get("chat_id", 0)
 
     # Load conversation history
@@ -449,8 +755,19 @@ def _build_context(state: AgentState) -> AgentState:
     for msg in history[-MEMORY_MAX_TURNS * 2:]:
         messages.append(msg)
 
-    # Add current user message
-    messages.append({"role": "user", "content": state.user_message})
+    # Build the user message, potentially with Supabase context
+    user_content = state.user_message
+
+    supabase_data = state.metadata.get("supabase_data")
+    if supabase_data:
+        supabase_context = _format_supabase_result(supabase_data)
+        user_content = (
+            f"{state.user_message}\n\n"
+            f"[Supabase data retrieved for your reference — incorporate this naturally into your response]\n"
+            f"{supabase_context}"
+        )
+
+    messages.append({"role": "user", "content": user_content})
 
     state.metadata["model_messages"] = messages
     return state
@@ -550,29 +867,28 @@ def _compose_output(state: AgentState) -> AgentState:
 # ─── Graph Builder ─────────────────────────────────────────
 
 def build_nova_graph() -> GraphAdapter:
-    """Build and compile the Nova LangGraph."""
+    """Build and compile the Nova LangGraph.
+
+    Graph flow:
+      classify_intent → handle_utility → prepare_context → build_context
+      → generate_response → validate_output → compose_output
+
+    Nova's original conversational brain always runs.
+    Supabase data is fetched as context when explicitly requested.
+    No pre-model capability interception.
+    """
     graph = GraphAdapter(agent_id=AGENT_ID)
     graph.add_node("classify_intent", _classify_intent)
     graph.add_node("handle_utility", _handle_utility)
-    graph.add_node("check_supabase", _check_supabase_capability)
+    graph.add_node("prepare_context", _prepare_context)
     graph.add_node("build_context", _build_context)
     graph.add_node("generate_response", _generate_response)
     graph.add_node("validate_output", _validate_output)
     graph.add_node("compose_output", _compose_output)
 
     graph.add_edge("classify_intent", "handle_utility")
-    graph.add_edge("handle_utility", "check_supabase")
-
-    def _route_after_check(state: AgentState) -> str:
-        if state.metadata.get("capability_used"):
-            return "to_compose"
-        return "to_context"
-
-    graph.add_conditional_edge(
-        "check_supabase",
-        _route_after_check,
-        {"to_compose": "compose_output", "to_context": "build_context"},
-    )
+    graph.add_edge("handle_utility", "prepare_context")
+    graph.add_edge("prepare_context", "build_context")
     graph.add_edge("build_context", "generate_response")
     graph.add_edge("generate_response", "validate_output")
     graph.add_edge("validate_output", "compose_output")
