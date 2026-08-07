@@ -1,10 +1,15 @@
-"""Governed read-only Supabase connector for Hermes Nova.
+"""Thin Nova adapter over shared certified capabilities.
 
-Provides exactly three approved read capabilities via a bounded allowlist.
-All credentials, authorization, validation, and result normalization happen
-inside this module. Nova receives only normalized results.
+Nova-specific code is responsible ONLY for:
+  - recognizing intent (trigger patterns)
+  - extracting validated arguments
+  - requesting an approved capability via the shared adapter
+  - receiving a normalized result
+  - preserving safe provenance
+  - generating a natural response
 
-No write access. No arbitrary SQL. No unrestricted database access.
+All Supabase queries, credential handling, result schemas,
+classification logic, and safety controls live in the shared layer.
 """
 
 from __future__ import annotations
@@ -19,16 +24,14 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
+from nexus_agent_platform.capabilities.shared import (
+    NOVA_ALLOWED_READS,
+    _normalize_email,
+    detect_write_request,
+    execute_shared_capability,
+)
+
 log = logging.getLogger(__name__)
-
-# ─── Nova Capability Allowlist ─────────────────────────────
-# Exactly three approved reads. No writes. No arbitrary queries.
-
-NOVA_ALLOWED_CAPABILITIES = frozenset({
-    "get_nova_runtime_capabilities",
-    "get_client_count",
-    "find_test_user_by_email",
-})
 
 # ─── Provenance Store (Nova-scoped) ────────────────────────
 
@@ -106,12 +109,13 @@ def save_nova_capability_result(chat_id: int, capability: str,
 
     safe_summary = {}
     if capability == "get_client_count" and isinstance(data, dict):
-        for field in ("production_clients", "active", "onboarding", "tester_or_certification"):
+        for field in ("production_clients", "active", "onboarding",
+                       "tester_or_certification"):
             if field in data:
                 safe_summary[field] = data[field]
-    elif capability == "find_test_user_by_email" and isinstance(data, dict):
-        for field in ("normalized_email", "exists_in_auth", "exists_in_profile",
-                       "record_state", "classification", "role", "enabled"):
+    elif capability == "resolve_user_identity_by_email" and isinstance(data, dict):
+        for field in ("normalized_email", "exists_anywhere",
+                       "verification_complete", "account_classifications"):
             if field in data:
                 safe_summary[field] = data[field]
 
@@ -145,35 +149,13 @@ def clear_nova_conversation(chat_id: int) -> None:
         os.unlink(path)
 
 
-# ─── Supabase Client (reuses Hermes pattern) ──────────────
-
-def _nova_supabase_client():
-    """Return a requests session configured for Supabase REST API, or None."""
-    try:
-        import requests as _req
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if not url or not key:
-            return None
-        session = _req.Session()
-        session.headers.update({
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Prefer": "count=exact",
-        })
-        session._supabase_url = url.rstrip("/")
-        return session
-    except Exception:
-        return None
-
-
-# ─── Capability Discovery ──────────────────────────────────
+# ─── Intent Recognition ────────────────────────────────────
 
 def get_nova_capabilities():
     """Return list of capability dicts with trigger patterns for Nova."""
     return [
         {
-            "id": "get_nova_runtime_capabilities",
+            "id": "get_runtime_capabilities",
             "name": "Runtime Capabilities",
             "description": "What systems Nova can access",
             "trigger": lambda text: any(w in text for w in [
@@ -191,22 +173,33 @@ def get_nova_capabilities():
             ]),
         },
         {
-            "id": "find_test_user_by_email",
-            "name": "Find Test User",
-            "description": "Exact email lookup for test users",
+            "id": "resolve_user_identity_by_email",
+            "name": "Identity Resolution",
+            "description": "Exact email lookup across approved identity sources",
             "trigger": lambda text: (
-                any(w in text for w in ["find user", "look up user", "search for user", "check user"])
-                and ("@" in text or "email" in text)
+                any(w in text for w in [
+                    "find user", "look up user", "search for user", "check user",
+                    "does this email exist", "does the email exist",
+                    "is this email registered", "email exist",
+                    "identity source", "identity lookup", "check identity",
+                    "who is this", "where does this email",
+                ])
+                or ("@" in text and any(w in text for w in [
+                    "exist", "registered", "find", "check", "look up",
+                    "who is", "identity", "user", "account", "profile",
+                    "login", "tester", "admin", "client",
+                ]))
             ),
         },
     ]
 
 
+# ─── Response Generation ───────────────────────────────────
+
 def generate_nova_provenance_response(capability_id: str, result: Dict[str, Any]) -> str:
     """Generate a human-readable response with provenance from a capability result."""
     status = result.get("status", "unknown")
     source = result.get("source", "unknown")
-    source_type = result.get("source_type", "unknown")
 
     if status == "unavailable":
         return (
@@ -217,7 +210,7 @@ def generate_nova_provenance_response(capability_id: str, result: Dict[str, Any]
     if status == "unauthorized":
         return (
             f"I don't have permission for that capability. "
-            f"My approved reads are: {', '.join(sorted(result.get('available_capabilities', [])))}."
+            f"My approved reads are: {', '.join(sorted(NOVA_ALLOWED_READS))}."
         )
 
     if status == "error":
@@ -226,394 +219,78 @@ def generate_nova_provenance_response(capability_id: str, result: Dict[str, Any]
             "This is governed read access — I can't bypass errors."
         )
 
-    # Success responses by capability
-    if capability_id == "get_nova_runtime_capabilities":
+    if status == "denied":
+        return (
+            "Write operations are not permitted. I have read-only access to Supabase. "
+            "I can look up existing information but cannot create, modify, or delete anything."
+        )
+
+    prov = result.get("provenance", {})
+
+    if capability_id == "get_runtime_capabilities":
+        data = result.get("data", {})
+        reads = data.get("available_reads", [])
         return (
             f"I have read-only access to {source} through governed capabilities. "
-            f"My approved reads are: {', '.join(sorted(result.get('available_reads', [])))}. "
+            f"My approved reads are: {', '.join(sorted(reads))}. "
             "I cannot create, edit, or delete anything."
         )
 
     if capability_id == "get_client_count":
         data = result.get("data", {})
-        total = data.get("total", "unknown")
         return (
-            f"From the {source} source: there are {total} client profiles. "
-            f"This is a live governed read — data retrieved at {result.get('retrieved_at', 'unknown')}."
+            f"From the {source} source: {data.get('production_clients', 'unknown')} production clients, "
+            f"{data.get('active', 'unknown')} active, "
+            f"{data.get('onboarding', 'unknown')} onboarding, "
+            f"{data.get('tester_or_certification', 'unknown')} tester/certification. "
+            f"This is a live governed read — data retrieved at {prov.get('retrieved_at', 'unknown')}."
         )
 
-    if capability_id == "find_test_user_by_email":
-        record = result.get("record")
-        if record:
+    if capability_id == "resolve_user_identity_by_email":
+        data = result.get("data", {})
+        email = data.get("normalized_email", "unknown")
+        exists = data.get("exists_anywhere", False)
+        complete = data.get("verification_complete", True)
+        classifications = data.get("account_classifications", [])
+        sources = data.get("sources", {})
+
+        if not complete:
+            failed = [k for k, v in sources.items()
+                      if v.get("status") in ("error", "incomplete")]
             return (
-                f"From the {source} source: found test user — "
-                f"{record.get('full_name', 'unknown')} ({record.get('email', 'unknown')}). "
-                f"Role: {record.get('role', 'unknown')}, state: {record.get('account_state', 'unknown')}."
+                f"I checked the approved identity sources for {email}, but verification "
+                f"was not complete. The following sources could not be fully checked: "
+                f"{', '.join(failed)}. I cannot confirm whether the email exists."
             )
-        return (
-            f"From the {source} source: no test user found matching that email. "
-            "This is a governed read — I can only look up test users."
-        )
+
+        if not exists:
+            return (
+                f"I checked the approved identity sources and did not find {email}."
+            )
+
+        parts = [f"I found {email} in the approved identity sources."]
+        if classifications:
+            parts.append(f"Classifications: {', '.join(classifications)}.")
+        source_details = []
+        for src_name, src_data in sources.items():
+            if src_data.get("exists"):
+                source_details.append(f"{src_name}: found")
+            else:
+                source_details.append(f"{src_name}: not found")
+        if source_details:
+            parts.append(f"Source details: {'; '.join(source_details)}.")
+        return " ".join(parts)
 
     return f"Capability result from {source}: {json.dumps(result, default=str)[:200]}"
 
 
-# ─── Capability Handlers ──────────────────────────────────
-
-def _get_nova_runtime_capabilities() -> Dict[str, Any]:
-    """Return Nova's actual current runtime capabilities."""
-    from datetime import timezone
-    now = datetime.now(timezone.utc)
-
-    session = _nova_supabase_client()
-    supabase_status = "connected" if session else "unavailable"
-
-    return {
-        "status": "success",
-        "agent_id": "hermes_nova",
-        "connected_systems": {
-            "supabase": {
-                "status": supabase_status,
-                "access_level": "read_only",
-                "access_boundary": "approved capabilities only",
-            }
-        },
-        "available_reads": sorted(NOVA_ALLOWED_CAPABILITIES),
-        "available_actions": [],
-        "retrieved_at": now.isoformat(),
-        "source": "runtime_capability_registry",
-        "source_type": "local_runtime_read",
-        "provenance": {
-            "capability": "get_nova_runtime_capabilities",
-            "status": "success",
-            "source": "runtime",
-            "source_type": "local_runtime_read",
-            "retrieved_at": now.isoformat(),
-            "freshness": "live",
-        },
-    }
-
-
-def _get_client_count_nova() -> Dict[str, Any]:
-    """Query Supabase client_profiles — Nova-scoped safe projection.
-
-    Reuses the verified Supabase client pattern from Hermes.
-    Returns only approved aggregate counts.
-    """
-    from zoneinfo import ZoneInfo
-
-    query_start = datetime.now(timezone.utc)
-    result = {
-        "status": "success",
-        "capability": "get_client_count",
-        "source": "supabase",
-        "source_type": "live_governed_read",
-        "freshness": "live",
-        "access_boundary": "approved read capability only",
-        "data": {},
-        "error": None,
-    }
-
-    try:
-        session = _nova_supabase_client()
-        if session is None:
-            result["status"] = "unavailable"
-            result["error"] = "Supabase credentials not configured"
-            result["freshness"] = "unknown"
-            query_end = datetime.now(timezone.utc)
-            result["retrieved_at"] = query_end.isoformat()
-            result["provenance"] = {
-                "capability": "get_client_count",
-                "status": "unavailable",
-                "source": "supabase",
-                "source_type": "live_governed_read",
-                "retrieved_at": query_end.isoformat(),
-                "freshness": "unknown",
-            }
-            return result
-
-        resp = session.get(
-            f"{session._supabase_url}/rest/v1/client_profiles",
-            params={"select": "tenant_id,status,client_visible,source"},
-            timeout=10,
-        )
-        if not resp.ok:
-            result["status"] = "error"
-            result["error"] = f"Supabase query failed: {resp.status_code}"
-            result["freshness"] = "unknown"
-            query_end = datetime.now(timezone.utc)
-            result["retrieved_at"] = query_end.isoformat()
-            result["provenance"] = {
-                "capability": "get_client_count",
-                "status": "error",
-                "source": "supabase",
-                "source_type": "live_governed_read",
-                "retrieved_at": query_end.isoformat(),
-                "freshness": "unknown",
-            }
-            return result
-
-        rows = resp.json()
-
-        # Classification (same logic as Hermes)
-        production_tenant = "goclear"
-        non_production_prefixes = ("tenant_demo_", "tenant-cert-")
-        tester_sources = ("tester_invitation", "static_import", "synthetic_certification")
-
-        production = []
-        tester_or_cert = 0
-        for row in rows:
-            tenant = row.get("tenant_id", "")
-            source = row.get("source", "")
-            if tenant != production_tenant:
-                if any(tenant.startswith(p) for p in non_production_prefixes):
-                    tester_or_cert += 1
-                continue
-            if source in tester_sources:
-                tester_or_cert += 1
-                continue
-            production.append(row)
-
-        active = sum(1 for r in production if (r.get("status") or "").lower() == "active")
-        onboarding = sum(1 for r in production if (r.get("status") or "").lower() == "onboarding")
-
-        query_end = datetime.now(timezone.utc)
-        result["data"] = {
-            "production_clients": len(production),
-            "active": active,
-            "onboarding": onboarding,
-            "tester_or_certification": tester_or_cert,
-        }
-        result["retrieved_at"] = query_end.isoformat()
-        result["provenance"] = {
-            "capability": "get_client_count",
-            "status": "success",
-            "source": "supabase",
-            "source_type": "live_governed_read",
-            "retrieved_at": query_end.isoformat(),
-            "query_start": query_start.isoformat(),
-            "query_end": query_end.isoformat(),
-            "freshness": "live",
-            "row_count": len(rows),
-        }
-
-    except Exception as exc:
-        query_end = datetime.now(timezone.utc)
-        result["status"] = "error"
-        result["error"] = str(exc)
-        result["freshness"] = "unknown"
-        result["retrieved_at"] = query_end.isoformat()
-        result["provenance"] = {
-            "capability": "get_client_count",
-            "status": "error",
-            "source": "supabase",
-            "source_type": "live_governed_read",
-            "retrieved_at": query_end.isoformat(),
-            "freshness": "unknown",
-        }
-
-    return result
-
-
-def _normalize_email(raw: str) -> Optional[str]:
-    """Normalize an email input to lowercase, stripped, plain format.
-
-    Handles: uppercase, whitespace, mailto: prefix, Markdown mailto links.
-    Returns None if the result is not a valid email.
-    """
-    if not raw or not isinstance(raw, str):
-        return None
-
-    text = raw.strip()
-
-    # Extract from Markdown mailto link: [EMAIL](mailto:EMAIL)
-    md_match = re.search(r'\[([^\]]+)\]\(mailto:([^)]+)\)', text)
-    if md_match:
-        text = md_match.group(2)
-
-    # Strip mailto: prefix
-    if text.lower().startswith("mailto:"):
-        text = text[7:]
-
-    text = text.strip().lower()
-
-    # Basic email validation
-    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', text):
-        return None
-
-    return text
-
-
-def _find_test_user_by_email(email: str) -> Dict[str, Any]:
-    """Bounded exact-email lookup against approved Supabase sources.
-
-    Read-only. Checks Auth and client_profiles for the exact normalized email.
-    """
-    from zoneinfo import ZoneInfo
-
-    normalized = _normalize_email(email)
-    if normalized is None:
-        return {
-            "status": "error",
-            "capability": "find_test_user_by_email",
-            "source": "supabase",
-            "source_type": "live_governed_read",
-            "freshness": "unknown",
-            "access_boundary": "approved exact-email lookup only",
-            "data": {
-                "normalized_email": None,
-                "exists_in_auth": False,
-                "exists_in_profile": False,
-                "record_state": "invalid_email",
-                "classification": None,
-                "role": None,
-                "enabled": None,
-            },
-            "error": f"Invalid email format: {email}",
-        }
-
-    query_start = datetime.now(timezone.utc)
-    result = {
-        "status": "success",
-        "capability": "find_test_user_by_email",
-        "source": "supabase",
-        "source_type": "live_governed_read",
-        "freshness": "live",
-        "access_boundary": "approved exact-email lookup only",
-        "data": {
-            "normalized_email": normalized,
-            "exists_in_auth": False,
-            "exists_in_profile": False,
-            "record_state": "not_found",
-            "classification": None,
-            "role": None,
-            "enabled": None,
-        },
-        "error": None,
-    }
-
-    try:
-        session = _nova_supabase_client()
-        if session is None:
-            result["status"] = "unavailable"
-            result["error"] = "Supabase credentials not configured"
-            result["freshness"] = "unknown"
-            query_end = datetime.now(timezone.utc)
-            result["retrieved_at"] = query_end.isoformat()
-            result["provenance"] = {
-                "capability": "find_test_user_by_email",
-                "status": "unavailable",
-                "source": "supabase",
-                "source_type": "live_governed_read",
-                "retrieved_at": query_end.isoformat(),
-                "freshness": "unknown",
-            }
-            return result
-
-        # Check Auth users via admin API (single page, bounded)
-        try:
-            auth_resp = session.get(
-                f"{session._supabase_url}/auth/v1/admin/users",
-                params={"page": 1, "per_page": 200},
-                timeout=10,
-            )
-            if auth_resp.ok:
-                auth_users = auth_resp.json().get("users", [])
-                for user in auth_users:
-                    if (user.get("email") or "").lower() == normalized:
-                        result["data"]["exists_in_auth"] = True
-                        result["data"]["enabled"] = user.get("email_confirmed_at") is not None
-                        break
-        except Exception:
-            pass  # Auth check is best-effort
-
-        # Check client_profiles for exact email
-        try:
-            profile_resp = session.get(
-                f"{session._supabase_url}/rest/v1/client_profiles",
-                params={
-                    "select": "id,email,status,source,tenant_id",
-                    "email": f"eq.{normalized}",
-                },
-                timeout=10,
-            )
-            if profile_resp.ok:
-                profiles = profile_resp.json()
-                if profiles:
-                    result["data"]["exists_in_profile"] = True
-                    profile = profiles[0]
-                    source = profile.get("source", "")
-                    tenant = profile.get("tenant_id", "")
-                    status = (profile.get("status") or "").lower()
-
-                    # Classification
-                    if source in ("tester_invitation", "static_import", "synthetic_certification"):
-                        result["data"]["classification"] = "test"
-                    elif tenant != "goclear":
-                        result["data"]["classification"] = "test"
-                    else:
-                        result["data"]["classification"] = "production"
-
-                    result["data"]["role"] = source
-                    result["data"]["enabled"] = status == "active"
-        except Exception:
-            pass  # Profile check is best-effort
-
-        # Determine record state
-        d = result["data"]
-        if d["exists_in_auth"] and d["exists_in_profile"]:
-            d["record_state"] = "complete"
-        elif d["exists_in_auth"]:
-            d["record_state"] = "auth_only"
-        elif d["exists_in_profile"]:
-            d["record_state"] = "profile_only"
-        else:
-            d["record_state"] = "not_found"
-            result["status"] = "not_found"
-
-        query_end = datetime.now(timezone.utc)
-        result["retrieved_at"] = query_end.isoformat()
-        result["provenance"] = {
-            "capability": "find_test_user_by_email",
-            "status": result["status"],
-            "source": "supabase",
-            "source_type": "live_governed_read",
-            "retrieved_at": query_end.isoformat(),
-            "query_start": query_start.isoformat(),
-            "query_end": query_end.isoformat(),
-            "freshness": "live",
-        }
-
-    except Exception as exc:
-        query_end = datetime.now(timezone.utc)
-        result["status"] = "error"
-        result["error"] = str(exc)
-        result["freshness"] = "unknown"
-        result["retrieved_at"] = query_end.isoformat()
-        result["provenance"] = {
-            "capability": "find_test_user_by_email",
-            "status": "error",
-            "source": "supabase",
-            "source_type": "live_governed_read",
-            "retrieved_at": query_end.isoformat(),
-            "freshness": "unknown",
-        }
-
-    return result
-
-
-# ─── Capability Dispatch ───────────────────────────────────
-
-_CAPABILITY_HANDLERS = {
-    "get_nova_runtime_capabilities": _get_nova_runtime_capabilities,
-    "get_client_count": _get_client_count_nova,
-    "find_test_user_by_email": _find_test_user_by_email,
-}
+# ─── Capability Execution (thin adapter) ───────────────────
 
 # Requests that look like writes — must be denied
 _WRITE_PATTERNS = re.compile(
     r'(create|add|insert|update|delete|remove|disable|enable|invite|'
-    r'edit|modify|set|change|revoke|approve|reject)\s+(user|account|profile|record)',
+    r'edit|modify|set|change|revoke|approve|reject)\s+.*'
+    r'\b(user|account|profile|record)\b',
     re.IGNORECASE,
 )
 
@@ -624,72 +301,29 @@ def execute_nova_capability(
 ) -> Dict[str, Any]:
     """Execute a governed read-only capability for Nova.
 
-    Enforces the allowlist in code. Returns structured error for
-    unregistered or write capabilities.
+    Delegates entirely to the shared capability adapter.
+    Nova-specific code only handles argument normalization and
+    the permission check is enforced in the shared layer.
     """
     args = arguments or {}
 
-    # Deny unregistered capabilities
-    if capability not in NOVA_ALLOWED_CAPABILITIES:
+    # Reject unregistered capabilities
+    if capability not in NOVA_ALLOWED_READS:
         return {
             "status": "unauthorized",
             "capability": capability,
             "error": f"Capability '{capability}' is not in Nova's approved read allowlist.",
-            "available_capabilities": sorted(NOVA_ALLOWED_CAPABILITIES),
+            "available_capabilities": sorted(NOVA_ALLOWED_READS),
         }
 
-    # Deny write attempts
-    raw_text = args.get("raw_text", "") or args.get("email", "") or ""
-    if _WRITE_PATTERNS.search(str(raw_text)):
-        return {
-            "status": "denied",
-            "capability": capability,
-            "error": "Write operations are not permitted. Nova has read-only access.",
-            "requested_action": "write",
-            "execution_allowed": False,
-        }
-
-    # Dispatch to handler
-    handler = _CAPABILITY_HANDLERS.get(capability)
-    if handler is None:
-        return {
-            "status": "unavailable",
-            "capability": capability,
-            "error": f"Handler not found for '{capability}'.",
-        }
-
-    try:
-        if capability == "find_test_user_by_email":
-            result = handler(email=args.get("email", ""))
-        else:
-            result = handler()
-        return result
-    except Exception as exc:
-        log.error("Nova capability %s failed: %s", capability, exc)
-        return {
-            "status": "error",
-            "capability": capability,
-            "error": str(exc),
-        }
+    # Delegate to shared adapter
+    return execute_shared_capability(
+        agent_id="hermes_nova",
+        capability=capability,
+        arguments=args,
+    )
 
 
 def detect_nova_write_request(user_message: str) -> Optional[Dict[str, Any]]:
-    """Detect if the user is requesting a write operation.
-
-    Returns a structured dict describing the requested write, or None.
-    """
-    msg_lower = user_message.lower()
-
-    # Detect user creation patterns
-    if any(w in msg_lower for w in ["add user", "create user", "new user", "invite user"]):
-        email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', user_message)
-        email = _normalize_email(email_match.group(0)) if email_match else None
-        return {
-            "requested_action": "create_test_user",
-            "target_system": "supabase",
-            "arguments": {"email": email},
-            "execution_allowed": False,
-            "read_available": email is not None,
-        }
-
-    return None
+    """Detect if the user is requesting a write operation."""
+    return detect_write_request(user_message)

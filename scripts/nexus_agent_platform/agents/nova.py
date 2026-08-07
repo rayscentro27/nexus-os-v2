@@ -13,10 +13,10 @@ Nova has its own:
   - OpenRouter model
   - Langfuse trace namespace
 
-Governed read access:
-  - get_nova_runtime_capabilities — what Nova can access
+Governed read access (routed through shared certified capabilities):
+  - get_runtime_capabilities — what Nova can access
   - get_client_count — live client profile counts
-  - find_test_user_by_email — exact email lookup
+  - resolve_user_identity_by_email — exact email lookup across approved identity sources
 
 Nova does NOT have access to:
   - Unrestricted Supabase writes
@@ -76,11 +76,11 @@ Behavior:
 
 Governed read access:
 - You have read-only access to Supabase through three approved governed capabilities:
-  1. get_nova_runtime_capabilities — tells you what you can access
+  1. get_runtime_capabilities — tells you what you can access
   2. get_client_count — live client profile counts
-  3. find_test_user_by_email — exact email lookup for test users
+  3. resolve_user_identity_by_email — exact email lookup across approved identity sources
 - This is governed, audited, read-only access — not unrestricted database access.
-- When you use a capability, identify the source accurately (e.g., "from the Supabase client source").
+- When you use a capability, identify the source accurately (e.g., "from the Supabase source").
 - You cannot create, edit, disable, invite, or delete users.
 - You cannot execute arbitrary SQL or query arbitrary tables.
 - When asked about Nexus internals beyond your reads, explain you are Nova with limited governed access.
@@ -375,7 +375,25 @@ def _check_supabase_capability(state: AgentState) -> AgentState:
     # Check for write attempts first
     write_denial = detect_nova_write_request(text)
     if write_denial:
-        state.assistant_response = write_denial
+        # Optionally check if the email already exists before denying
+        email = write_denial.get("arguments", {}).get("email")
+        if email and write_denial.get("read_available"):
+            result = execute_nova_capability(
+                "resolve_user_identity_by_email",
+                {"email": email},
+            )
+            existence_note = generate_nova_provenance_response(
+                "resolve_user_identity_by_email", result
+            )
+            state.assistant_response = (
+                "Write operations are not permitted — I have read-only access. "
+                f"However, I can tell you that {existence_note}"
+            )
+        else:
+            state.assistant_response = (
+                "Write operations are not permitted. I have read-only access to Supabase — "
+                "I can look up existing information but cannot create, modify, or delete anything."
+            )
         state.metadata["capability_used"] = "write_denied"
         return state
 
@@ -393,9 +411,20 @@ def _check_supabase_capability(state: AgentState) -> AgentState:
         state.metadata["capability_used"] = None
         return state
 
-    # Execute the capability
+    # Extract arguments for the capability
     capability_id = triggered["id"]
-    result = execute_nova_capability(capability_id)
+    arguments = {}
+
+    if capability_id == "resolve_user_identity_by_email":
+        import re as _re
+        email_match = _re.search(
+            r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text
+        )
+        if email_match:
+            arguments["email"] = email_match.group(0)
+
+    # Execute the capability through the shared adapter
+    result = execute_nova_capability(capability_id, arguments)
 
     # Build response with provenance
     response = generate_nova_provenance_response(capability_id, result)
