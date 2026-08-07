@@ -395,121 +395,19 @@ def _nova_search_supabase(
             "trace_id": trace_id,
         }
 
-    # General search — approved tables and metadata
-    return _nova_general_search(request, trace_id=trace_id)
-
-
-def _nova_general_search(
-    request: str,
-    *,
-    trace_id: str = "",
-) -> Dict[str, Any]:
-    """General read-only search across approved Supabase sources.
-
-    Searches approved tables, views, and metadata for matches.
-    Returns safe results only.
-    """
-    from nexus_agent_platform.capabilities.shared import _supabase_session
-
-    session = _supabase_session()
-    if session is None:
-        return {
-            "tool": "nova_search_supabase",
-            "query_type": "general_search",
-            "status": "unavailable",
-            "message": "Supabase credentials not configured.",
-            "trace_id": trace_id,
-        }
-
-    results = []
-    sources_searched = []
-
-    # Search approved tables for keyword matches
-    approved_tables = [
-        ("client_profiles", "client_label", "Client profiles"),
-        ("client_profiles", "legal_name", "Client legal names"),
-        ("client_profiles", "business_name", "Business names"),
-    ]
-
-    # Extract search terms from the request
-    search_terms = re.findall(r'\b[a-zA-Z]{3,}\b', request)
-    if not search_terms:
-        search_terms = [request]
-
-    for table, column, description in approved_tables:
-        sources_searched.append(table)
-        try:
-            # Search for any matching term
-            for term in search_terms[:3]:  # limit to 3 terms
-                resp = session.get(
-                    f"{session._supabase_url}/rest/v1/{table}",
-                    params={
-                        "select": f"id,{column},status,source,tenant_id",
-                        f"{column}": f"ilike.*{term}*",
-                        "limit": 5,
-                    },
-                    timeout=10,
-                )
-                if resp.ok:
-                    rows = resp.json()
-                    for row in rows:
-                        results.append({
-                            "source": table,
-                            "match": row.get(column, ""),
-                            "status": row.get("status", ""),
-                            "type": description,
-                        })
-        except Exception:
-            continue
-
-    # Search process definitions for webhooks/workflows
-    try:
-        resp = session.get(
-            f"{session._supabase_url}/rest/v1/nexus_process_definitions",
-            params={
-                "select": "id,name,system,enabled,execution_mode",
-                "limit": 20,
-            },
-            timeout=10,
-        )
-        if resp.ok:
-            sources_searched.append("nexus_process_definitions")
-            for row in resp.json():
-                name = (row.get("name") or "").lower()
-                for term in search_terms:
-                    if term.lower() in name:
-                        results.append({
-                            "source": "nexus_process_definitions",
-                            "match": row.get("name", ""),
-                            "system": row.get("system", ""),
-                            "enabled": row.get("enabled", False),
-                            "type": "Process/webhook definition",
-                        })
-                        break
-    except Exception:
-        pass
-
-    if results:
-        return {
-            "tool": "nova_search_supabase",
-            "query_type": "general_search",
-            "status": "success",
-            "matches": results[:10],
-            "sources_searched": sources_searched,
-            "message": f"Found {len(results)} potential matches.",
-            "trace_id": trace_id,
-        }
-
+    # General search — route through shared layer
+    result = execute_shared_capability(
+        "hermes_nova",
+        "general_search",
+        {"query": request},
+        trace_id=trace_id,
+    )
     return {
         "tool": "nova_search_supabase",
         "query_type": "general_search",
-        "status": "not_found",
-        "matches": [],
-        "sources_searched": sources_searched,
-        "message": (
-            "I searched the approved Supabase tables and process definitions "
-            "but did not find an exact match for that query."
-        ),
+        "status": result.get("status", "unknown"),
+        "data": result.get("data", {}),
+        "provenance": result.get("provenance", {}),
         "trace_id": trace_id,
     }
 
@@ -577,9 +475,14 @@ def _format_supabase_result(result: Dict[str, Any]) -> str:
         )
 
     if query_type == "general_search":
-        matches = result.get("matches", [])
+        data = result.get("data", {})
+        matches = data.get("matches", [])
         if not matches:
-            return result.get("message", "No matches found.")
+            sources_searched = data.get("sources_searched", [])
+            return (
+                f"I searched the approved Supabase tables ({', '.join(sources_searched)}) "
+                f"but did not find an exact match for that query."
+            )
         lines = [f"Supabase search results ({len(matches)} matches):"]
         for m in matches[:5]:
             source = m.get("source", "")

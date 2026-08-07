@@ -111,7 +111,7 @@ class TestPermissions:
     def test_nova_allowed_reads_frozen(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_READS
         assert isinstance(NOVA_ALLOWED_READS, frozenset)
-        assert len(NOVA_ALLOWED_READS) == 3
+        assert len(NOVA_ALLOWED_READS) == 4
 
     def test_nova_allowed_writes_empty(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_WRITES
@@ -627,6 +627,193 @@ class TestSharedCapabilityExecution:
         assert "get_client_count" in result["data"]["available_reads"]
 
 
+# ─── General Search ─────────────────────────────────────────
+
+class TestGeneralSearch:
+    """Tests for the shared general_search capability."""
+
+    def test_empty_query_returns_error(self):
+        from nexus_agent_platform.capabilities.shared import _handle_general_search
+        result = _handle_general_search({"query": ""})
+        assert result["status"] == "error"
+        assert "No search query" in result["error"]
+
+    def test_unavailable_session_returns_unavailable(self):
+        from nexus_agent_platform.capabilities.shared import _handle_general_search
+        with patch("nexus_agent_platform.capabilities.shared._supabase_session",
+                    return_value=None):
+            result = _handle_general_search({"query": "test"})
+        assert result["status"] == "unavailable"
+
+    def test_search_approved_tables(self):
+        from nexus_agent_platform.capabilities.shared import _handle_general_search
+
+        session = MagicMock()
+        session._supabase_url = "https://test.supabase.co"
+
+        resp = MagicMock()
+        resp.ok = True
+        resp.json.return_value = [
+            {"id": "1", "client_label": "ray@example.com", "status": "active",
+             "source": "manual", "tenant_id": "goclear"},
+        ]
+        session.get = MagicMock(return_value=resp)
+
+        with patch("nexus_agent_platform.capabilities.shared._supabase_session",
+                    return_value=session):
+            result = _handle_general_search({"query": "ray@example.com"})
+
+        assert result["status"] == "success"
+        assert result["data"]["match_count"] >= 1
+        assert "client_profiles" in result["data"]["sources_searched"]
+        prov = result["provenance"]
+        assert prov["capability"] == "general_search"
+        assert prov["freshness"] == "live"
+        assert "client_profiles" in prov["tables_searched"]
+
+    def test_no_matches_returns_not_found(self):
+        from nexus_agent_platform.capabilities.shared import _handle_general_search
+
+        session = MagicMock()
+        session._supabase_url = "https://test.supabase.co"
+
+        resp = MagicMock()
+        resp.ok = True
+        resp.json.return_value = []
+        session.get = MagicMock(return_value=resp)
+
+        with patch("nexus_agent_platform.capabilities.shared._supabase_session",
+                    return_value=session):
+            result = _handle_general_search({"query": "zzznonexistent999"})
+
+        assert result["status"] == "not_found"
+        assert result["data"]["match_count"] == 0
+
+    def test_provenance_has_trace_id(self):
+        from nexus_agent_platform.capabilities.shared import _handle_general_search
+
+        session = MagicMock()
+        session._supabase_url = "https://test.supabase.co"
+        resp = MagicMock()
+        resp.ok = True
+        resp.json.return_value = []
+        session.get = MagicMock(return_value=resp)
+
+        with patch("nexus_agent_platform.capabilities.shared._supabase_session",
+                    return_value=session):
+            result = _handle_general_search(
+                {"query": "test"}, trace_id="gs_trace_123"
+            )
+
+        assert result["provenance"]["trace_id"] == "gs_trace_123"
+
+    def test_nova_can_invoke_general_search(self):
+        from nexus_agent_platform.capabilities.shared import execute_shared_capability
+
+        session = MagicMock()
+        session._supabase_url = "https://test.supabase.co"
+        resp = MagicMock()
+        resp.ok = True
+        resp.json.return_value = []
+        session.get = MagicMock(return_value=resp)
+
+        with patch("nexus_agent_platform.capabilities.shared._supabase_session",
+                    return_value=session):
+            result = execute_shared_capability(
+                "hermes_nova", "general_search",
+                {"query": "test"}, trace_id="nova_gs_test"
+            )
+
+        assert result["status"] in ("success", "not_found")
+        assert result["capability"] == "general_search"
+
+
+# ─── Nova Search Tool Routing ───────────────────────────────
+
+class TestNovaSearchToolRouting:
+    """Tests for _nova_search_supabase routing through shared layer."""
+
+    def test_write_denied(self):
+        from nexus_agent_platform.agents.nova import _nova_search_supabase
+        result = _nova_search_supabase("create a test user at x@y.com")
+        assert result["status"] == "denied"
+        assert result["tool"] == "nova_search_supabase"
+
+    def test_identity_lookup_routes_to_shared(self):
+        from nexus_agent_platform.agents.nova import _nova_search_supabase
+        with patch("nexus_agent_platform.capabilities.shared.execute_shared_capability",
+                    return_value={
+                        "status": "success",
+                        "data": {"normalized_email": "test@gmail.com",
+                                 "exists_anywhere": True,
+                                 "verification_complete": True,
+                                 "account_classifications": ["auth_user"],
+                                 "sources": {}},
+                        "provenance": {"capability": "resolve_user_identity_by_email"},
+                    }) as mock_exec:
+            result = _nova_search_supabase(
+                "check if test@gmail.com exists in supabase"
+            )
+        assert result["query_type"] == "identity_lookup"
+        mock_exec.assert_called_once()
+        call_args = mock_exec.call_args
+        assert call_args[0][1] == "resolve_user_identity_by_email"
+
+    def test_client_count_routes_to_shared(self):
+        from nexus_agent_platform.agents.nova import _nova_search_supabase
+        with patch("nexus_agent_platform.capabilities.shared.execute_shared_capability",
+                    return_value={
+                        "status": "success",
+                        "data": {"production_clients": 14, "active": 14},
+                        "provenance": {"capability": "get_client_count"},
+                    }) as mock_exec:
+            result = _nova_search_supabase(
+                "how many clients do we have in supabase"
+            )
+        assert result["query_type"] == "client_count"
+        call_args = mock_exec.call_args
+        assert call_args[0][1] == "get_client_count"
+
+    def test_capabilities_routes_to_shared(self):
+        from nexus_agent_platform.agents.nova import _nova_search_supabase
+        with patch("nexus_agent_platform.capabilities.shared.execute_shared_capability",
+                    return_value={
+                        "status": "success",
+                        "data": {"available_reads": ["get_client_count"]},
+                        "provenance": {"capability": "get_runtime_capabilities"},
+                    }) as mock_exec:
+            result = _nova_search_supabase(
+                "what can you access in supabase"
+            )
+        assert result["query_type"] == "runtime_capabilities"
+        call_args = mock_exec.call_args
+        assert call_args[0][1] == "get_runtime_capabilities"
+
+    def test_general_fallback_routes_to_shared(self):
+        from nexus_agent_platform.agents.nova import _nova_search_supabase
+        with patch("nexus_agent_platform.capabilities.shared.execute_shared_capability",
+                    return_value={
+                        "status": "not_found",
+                        "data": {"matches": [], "sources_searched": ["client_profiles"],
+                                 "match_count": 0},
+                        "provenance": {"capability": "general_search"},
+                    }) as mock_exec:
+            result = _nova_search_supabase(
+                "search supabase for GoClear workflows"
+            )
+        assert result["query_type"] == "general_search"
+        call_args = mock_exec.call_args
+        assert call_args[0][1] == "general_search"
+
+    def test_nova_has_no_direct_supabase_access(self):
+        """Nova must not have its own Supabase client or session."""
+        import inspect
+        from nexus_agent_platform.agents import nova
+        source = inspect.getsource(nova)
+        assert "_nova_supabase_client" not in source
+        assert "import requests" not in source
+
+
 # ─── Nova Adapter ──────────────────────────────────────────
 
 class TestNovaAdapter:
@@ -637,7 +824,8 @@ class TestNovaAdapter:
         assert "get_runtime_capabilities" in NOVA_ALLOWED_READS
         assert "get_client_count" in NOVA_ALLOWED_READS
         assert "resolve_user_identity_by_email" in NOVA_ALLOWED_READS
-        assert len(NOVA_ALLOWED_READS) == 3
+        assert "general_search" in NOVA_ALLOWED_READS
+        assert len(NOVA_ALLOWED_READS) == 4
 
     def test_nova_rejects_unregistered_capability(self):
         from nexus_agent_platform.connectors.nova_supabase import execute_nova_capability

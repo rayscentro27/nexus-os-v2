@@ -26,6 +26,7 @@ NOVA_ALLOWED_READS = frozenset({
     "get_runtime_capabilities",
     "get_client_count",
     "resolve_user_identity_by_email",
+    "general_search",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -567,11 +568,142 @@ def _handle_runtime_capabilities(
     }
 
 
+# ─── General Search (approved tables only) ──────────────────
+
+# Approved tables for read-only search. Each entry:
+#   (table_name, searchable_columns, description)
+_APPROVED_SEARCH_TABLES = [
+    ("client_profiles", ["client_label", "legal_name", "business_name"], "Client profiles"),
+    ("nexus_process_definitions", ["name"], "Process/webhook definitions"),
+]
+
+
+def _handle_general_search(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Read-only search across approved Supabase tables.
+
+    Searches approved tables for keyword matches. Returns safe results only.
+    No write access. No arbitrary tables. No PII beyond what is needed.
+    """
+    args = arguments or {}
+    query = args.get("query", "")
+    if not query:
+        return {
+            "status": "error",
+            "capability": "general_search",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": "No search query provided.",
+            "provenance": {
+                "capability": "general_search",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    session = _supabase_session()
+    if session is None:
+        return {
+            "status": "unavailable",
+            "capability": "general_search",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": "Supabase credentials not configured.",
+            "provenance": {
+                "capability": "general_search",
+                "status": "unavailable",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    query_start = datetime.now(timezone.utc)
+    search_terms = re.findall(r'\b[a-zA-Z]{3,}\b', query)
+    if not search_terms:
+        search_terms = [query]
+
+    results = []
+    sources_searched = []
+
+    for table, columns, description in _APPROVED_SEARCH_TABLES:
+        sources_searched.append(table)
+        try:
+            for term in search_terms[:3]:
+                for col in columns:
+                    resp = session.get(
+                        f"{session._supabase_url}/rest/v1/{table}",
+                        params={
+                            "select": f"id,{col},status,source,tenant_id",
+                            col: f"ilike.*{term}*",
+                            "limit": 5,
+                        },
+                        timeout=10,
+                    )
+                    if resp.ok:
+                        for row in resp.json():
+                            safe_match = {
+                                "source": table,
+                                "column": col,
+                                "match": row.get(col, ""),
+                                "status": row.get("status", ""),
+                                "type": description,
+                            }
+                            results.append(safe_match)
+        except Exception as exc:
+            log.warning("General search failed for table %s: %s", table, exc)
+
+    query_end = datetime.now(timezone.utc)
+
+    return {
+        "status": "success" if results else "not_found",
+        "capability": "general_search",
+        "source": "supabase",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": {
+            "matches": results[:10],
+            "sources_searched": sources_searched,
+            "match_count": len(results),
+        },
+        "error": None,
+        "provenance": {
+            "capability": "general_search",
+            "status": "success" if results else "not_found",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "tables_searched": sources_searched,
+            "search_terms": search_terms[:3],
+        },
+    }
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_client_count": lambda args, tid: _handle_client_count(args, tid),
     "resolve_user_identity_by_email": lambda args, tid: _handle_identity_resolution(args, tid),
+    "general_search": lambda args, tid: _handle_general_search(args, tid),
     "get_runtime_capabilities": None,  # handled specially (needs agent_id)
 }
 
