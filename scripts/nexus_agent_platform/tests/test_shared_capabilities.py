@@ -754,7 +754,7 @@ class TestNovaSearchToolRouting:
             result = _nova_search_supabase(
                 "check if test@gmail.com exists in supabase"
             )
-        assert result["query_type"] == "identity_lookup"
+        assert result["query_type"] == "resolve_user_identity_by_email"
         mock_exec.assert_called_once()
         call_args = mock_exec.call_args
         assert call_args[0][1] == "resolve_user_identity_by_email"
@@ -770,7 +770,7 @@ class TestNovaSearchToolRouting:
             result = _nova_search_supabase(
                 "how many clients do we have in supabase"
             )
-        assert result["query_type"] == "client_count"
+        assert result["query_type"] == "get_client_count"
         call_args = mock_exec.call_args
         assert call_args[0][1] == "get_client_count"
 
@@ -785,7 +785,7 @@ class TestNovaSearchToolRouting:
             result = _nova_search_supabase(
                 "what can you access in supabase"
             )
-        assert result["query_type"] == "runtime_capabilities"
+        assert result["query_type"] == "get_runtime_capabilities"
         call_args = mock_exec.call_args
         assert call_args[0][1] == "get_runtime_capabilities"
 
@@ -1003,15 +1003,15 @@ class TestIsolation:
 class TestGraphIntegration:
     """Tests for Nova graph structure with shared capabilities."""
 
-    def test_graph_has_prepare_context_node(self):
+    def test_graph_has_capability_gate_node(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        assert "prepare_context" in graph._node_fns
+        assert "capability_gate" in graph._node_fns
 
     def test_graph_node_count(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        expected = ["classify_intent", "handle_utility", "prepare_context",
+        expected = ["classify_intent", "handle_utility", "capability_gate",
                      "build_context", "generate_response", "validate_output",
                      "compose_output"]
         assert list(graph._node_fns.keys()) == expected
@@ -1023,3 +1023,426 @@ class TestGraphIntegration:
         source = inspect.getsource(nova)
         assert "nova_search_supabase" in source  # tool is defined in nova
         assert "_nova_supabase_client" not in source  # no direct client
+
+
+# ─── Semantic Capability Gate ──────────────────────────────
+
+class TestSemanticCapabilityGate:
+    """Tests for semantic intent matching without requiring 'Supabase' keyword."""
+
+    def test_identity_without_supabase_keyword(self):
+        """Email lookup must trigger without requiring 'Supabase'."""
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Look up user@example.com")
+        assert result is not None
+        cap, args = result
+        assert cap == "resolve_user_identity_by_email"
+        assert args["email"] == "user@example.com"
+
+    def test_identity_what_kind_of_account(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("What kind of account is ray@example.com?")
+        assert result is not None
+        cap, args = result
+        assert cap == "resolve_user_identity_by_email"
+        assert args["email"] == "ray@example.com"
+
+    def test_identity_markdown_email(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Check [user@example.com](mailto:user@example.com)")
+        assert result is not None
+        cap, args = result
+        assert cap == "resolve_user_identity_by_email"
+
+    def test_identity_uppercase_email(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Look up USER@EXAMPLE.COM")
+        assert result is not None
+        cap, args = result
+        assert cap == "resolve_user_identity_by_email"
+        assert args["email"] == "USER@EXAMPLE.COM"
+
+    def test_client_count_without_supabase_keyword(self):
+        """Client count must trigger without 'Supabase'."""
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("How many clients do we have?")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_client_count"
+
+    def test_client_count_production_tester(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate(
+            "How many production clients and tester profiles?"
+        )
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_client_count"
+
+    def test_client_count_onboarding(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Are any clients onboarding?")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_client_count"
+
+    def test_client_count_breakdown(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Give me the client breakdown")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_client_count"
+
+    def test_runtime_without_supabase_keyword(self):
+        """Runtime query must trigger without 'Supabase'."""
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("What can you access?")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_runtime_capabilities"
+
+    def test_runtime_connected(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Are you connected to Supabase?")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_runtime_capabilities"
+
+    def test_runtime_what_tools(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("What tools do you currently have?")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_runtime_capabilities"
+
+    def test_general_search_requires_both_verb_and_term(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Search Supabase for GoClear")
+        assert result is not None
+        cap, _ = result
+        assert cap == "general_search"
+
+    def test_no_tool_conversation(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        assert _semantic_capability_gate("Why is the sky blue?") is None
+
+    def test_no_tool_opinion(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        assert _semantic_capability_gate("What do you think of Cadillac SUVs?") is None
+
+    def test_no_tool_greeting(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        assert _semantic_capability_gate("hello") is None
+
+    def test_precedence_identity_over_general(self):
+        """Email with search verb should resolve identity, not general search."""
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate("Search for user@example.com in the records")
+        assert result is not None
+        cap, _ = result
+        assert cap == "resolve_user_identity_by_email"
+
+    def test_precedence_client_count_over_general(self):
+        """Client count request should not go to general search."""
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        result = _semantic_capability_gate(
+            "Search for how many clients we have in the system"
+        )
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_client_count"
+
+
+# ─── Write Detection with Identity Read ────────────────────
+
+class TestWriteDetectionWithIdentity:
+    """Tests for write request detection and optional identity read."""
+
+    def test_write_detected(self):
+        from nexus_agent_platform.agents.nova import _detect_write_request
+        result = _detect_write_request("Add a test user for user@example.com")
+        assert result is not None
+        assert result["requested_action"] == "create_test_user"
+        assert result["execution_allowed"] is False
+        assert result["arguments"]["email"] == "user@example.com"
+
+    def test_write_no_email(self):
+        from nexus_agent_platform.agents.nova import _detect_write_request
+        result = _detect_write_request("Add a new test user account")
+        assert result is not None
+        assert result["arguments"]["email"] is None
+
+    def test_read_not_detected_as_write(self):
+        from nexus_agent_platform.agents.nova import _detect_write_request
+        assert _detect_write_request("How many clients do we have?") is None
+
+    def test_identity_lookup_not_detected_as_write(self):
+        from nexus_agent_platform.agents.nova import _detect_write_request
+        assert _detect_write_request("Check if user@example.com exists") is None
+
+
+# ─── Contradiction Validation ──────────────────────────────
+
+class TestContradictionValidation:
+    """Tests for response validation against verified capability facts."""
+
+    def test_client_count_contradiction_rejected(self):
+        """Model saying 56 production when tool says 14 must be rejected."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability(
+            "We have 56 production clients and 12 tester profiles.",
+            {
+                "status": "success",
+                "query_type": "get_client_count",
+                "data": {
+                    "production_clients": 14,
+                    "tester_or_certification": 24,
+                },
+            },
+        )
+        assert result == "capability_contradiction"
+
+    def test_client_count_correct_allowed(self):
+        """Model saying 14 when tool says 14 must be allowed."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability(
+            "We have 14 production clients.",
+            {
+                "status": "success",
+                "query_type": "get_client_count",
+                "data": {"production_clients": 14},
+            },
+        )
+        assert result is None
+
+    def test_identity_exists_denial_rejected(self):
+        """Model saying 'cannot look up' when email exists must be rejected."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability(
+            "I can't look up specific email addresses directly.",
+            {
+                "status": "success",
+                "query_type": "resolve_user_identity_by_email",
+                "data": {
+                    "exists_anywhere": True,
+                    "verification_complete": True,
+                },
+            },
+        )
+        assert result == "capability_contradiction"
+
+    def test_identity_nonexistent_allowed(self):
+        """Model saying 'not found' when email doesn't exist must be allowed."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability(
+            "That email was not found in our records.",
+            {
+                "status": "success",
+                "query_type": "resolve_user_identity_by_email",
+                "data": {
+                    "exists_anywhere": False,
+                    "verification_complete": True,
+                },
+            },
+        )
+        assert result is None
+
+    def test_no_contradiction_without_capability(self):
+        """No capability result means no contradiction check."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability("The sky is blue.", None)
+        assert result is None
+
+    def test_no_contradiction_on_failed_capability(self):
+        """Failed capability should not trigger contradiction."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability(
+            "I couldn't get the data.",
+            {
+                "status": "error",
+                "query_type": "get_client_count",
+                "data": {},
+            },
+        )
+        assert result is None
+
+    def test_identity_exists_nonexistent_claim_rejected(self):
+        """Model saying 'does not exist' when email exists must be rejected."""
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+        result = _validate_against_capability(
+            "That account does not exist in our system.",
+            {
+                "status": "success",
+                "query_type": "resolve_user_identity_by_email",
+                "data": {
+                    "exists_anywhere": True,
+                    "verification_complete": True,
+                },
+            },
+        )
+        assert result == "capability_contradiction"
+
+
+# ─── Fail-Closed Behavior ──────────────────────────────────
+
+class TestFailClosed:
+    """Tests that capability failures prevent model from fabricating data."""
+
+    def test_client_count_error_produces_fallback(self):
+        """When get_client_count fails, the fallback must not contain numbers."""
+        from nexus_agent_platform.agents.nova import _build_fallback_response
+        resp = _build_fallback_response("capability_contradiction", "how many clients")
+        assert "correct" in resp.lower() or "verified" in resp.lower() or "different" in resp.lower()
+
+    def test_identity_error_prevents_fabrication(self):
+        """When identity capability fails, model must not claim user absent."""
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "error",
+            "query_type": "resolve_user_identity_by_email",
+            "data": {},
+            "error": "Connection refused",
+        })
+        assert "error" in context.lower()
+        assert "Do NOT fabricate" in context
+
+    def test_capability_unavailable_in_context(self):
+        """Unavailable capability must appear in verified context."""
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "unavailable",
+            "query_type": "get_client_count",
+            "data": {},
+        })
+        assert "unavailable" in context.lower()
+        assert "Do NOT fabricate" in context
+
+
+# ─── Verified Context Formatting ───────────────────────────
+
+class TestVerifiedContextFormatting:
+    """Tests for the VERIFIED OPERATIONAL DATA context blocks."""
+
+    def test_client_count_context_structure(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "success",
+            "query_type": "get_client_count",
+            "data": {
+                "production_clients": 14,
+                "active": 14,
+                "onboarding": 0,
+                "tester_or_certification": 24,
+                "all_profiles": 38,
+            },
+        })
+        assert "[VERIFIED OPERATIONAL DATA]" in context
+        assert "[END VERIFIED OPERATIONAL DATA]" in context
+        assert "production_clients: 14" in context
+        assert "tester_or_certification: 24" in context
+
+    def test_identity_context_structure(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "success",
+            "query_type": "resolve_user_identity_by_email",
+            "data": {
+                "normalized_email": "test@gmail.com",
+                "exists_anywhere": True,
+                "verification_complete": True,
+                "account_classifications": ["auth_user", "production"],
+                "sources": {},
+            },
+        })
+        assert "[VERIFIED OPERATIONAL DATA]" in context
+        assert "normalized_email: test@gmail.com" in context
+        assert "exists_anywhere: true" in context
+        assert "auth_user" in context
+
+    def test_identity_incomplete_includes_warning(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "partial",
+            "query_type": "resolve_user_identity_by_email",
+            "data": {
+                "normalized_email": "test@gmail.com",
+                "exists_anywhere": False,
+                "verification_complete": False,
+                "account_classifications": [],
+                "sources": {"supabase_auth": {"status": "error"}},
+            },
+        })
+        assert "Do NOT claim the user does not exist" in context
+
+    def test_general_search_context_structure(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "success",
+            "query_type": "general_search",
+            "data": {
+                "matches": [{"source": "client_profiles", "match": "test@test.com",
+                             "type": "Client profiles"}],
+                "sources_searched": ["client_profiles"],
+                "match_count": 1,
+            },
+        })
+        assert "[VERIFIED OPERATIONAL DATA]" in context
+        assert "match_count: 1" in context
+
+    def test_runtime_context_structure(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "success",
+            "query_type": "get_runtime_capabilities",
+            "data": {
+                "available_reads": ["get_client_count", "general_search"],
+                "available_actions": [],
+                "connected_systems": {"supabase": {"status": "connected"}},
+            },
+        })
+        assert "get_client_count" in context
+        assert "supabase_connected: connected" in context
+
+    def test_write_denied_context(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "denied",
+            "query_type": "write_denied",
+            "message": "Write operations are not permitted.",
+        })
+        assert "Write operations are not permitted" in context
+
+    def test_unauthorized_context(self):
+        from nexus_agent_platform.agents.nova import _format_verified_context
+        context = _format_verified_context({
+            "status": "unauthorized",
+            "query_type": "get_system_status",
+            "data": {},
+        })
+        assert "not authorized" in context.lower()
+
+
+# ─── SOUL Quality ──────────────────────────────────────────
+
+class TestSoulUpdates:
+    """Tests for SOUL behavioral instructions."""
+
+    def test_soul_allows_email_lookup(self):
+        """SOUL must not deny email lookup capability."""
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "you can look up specific email" in soul_lower or "identity resolution" in soul_lower
+
+    def test_soul_mentions_governed_reads(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        assert "governed read" in SOUL.lower() or "approved governed" in SOUL.lower()
+
+    def test_soul_mentions_fail_closed(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "never fabricate" in soul_lower or "do not fabricate" in soul_lower or "never fabricate operational" in soul_lower
+
+    def test_soul_mentions_verified_data(self):
+        from nexus_agent_platform.agents.nova import SOUL
+        soul_lower = SOUL.lower()
+        assert "verified operational data" in soul_lower or "treat verified" in soul_lower

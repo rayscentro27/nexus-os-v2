@@ -277,7 +277,7 @@ class TestGraphStructure:
     def test_all_nodes_registered(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        expected = ["classify_intent", "handle_utility", "prepare_context", "build_context",
+        expected = ["classify_intent", "handle_utility", "capability_gate", "build_context",
                     "generate_response", "validate_output", "compose_output"]
         assert list(graph._node_fns.keys()) == expected
 

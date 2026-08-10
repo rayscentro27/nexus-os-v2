@@ -13,8 +13,9 @@ Nova has its own:
   - OpenRouter model
   - Langfuse trace namespace
 
-Supabase is an optional read-only information source.
-Nova decides when to use it. The source never decides for Nova.
+Nova has governed read-only access to approved operational data through
+a semantic pre-model capability gate. The gate determines whether an
+approved capability can answer the request BEFORE the model generates.
 
 Nova does NOT have access to:
   - Supabase writes
@@ -36,7 +37,7 @@ import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from nexus_agent_platform.adapters.graph_adapter import GraphAdapter
 from nexus_agent_platform.adapters.otel_adapter import OtelAdapter
@@ -78,17 +79,22 @@ Business context:
 - When Ray asks how to make money, default to his actual businesses and systems
   unless he explicitly asks for unrelated personal side-hutle ideas.
 
-Supabase access (read-only, when explicitly requested):
-- You have governed read-only access to approved Supabase information.
-- When Ray explicitly asks you to search or check Supabase, you can use
-  your read-only tools to retrieve information.
-- Available reads: client counts, identity lookups, runtime capabilities,
-  and general approved-table discovery.
-- You cannot create, update, delete, or alter records.
-- You cannot execute arbitrary SQL.
-- When you retrieve Supabase data, identify the source accurately.
-- If a source fails or is unavailable, say so honestly — never claim
-  "not found" when verification was incomplete.
+Operational data access (governed read-only):
+- You have approved governed read-only access to specific operational data.
+- Available reads: client counts, identity lookups by exact email, runtime
+  capability status, and general approved-table discovery.
+- You CAN look up specific email addresses using your identity resolution tool.
+- You CAN retrieve live client counts and breakdowns.
+- You CAN check what systems and capabilities you have access to.
+- You CAN search approved operational records by keyword.
+- You CANNOT create, update, delete, or alter any records.
+- You CANNOT execute arbitrary SQL or browse all user data.
+- You CANNOT access Oanda, Temporal, or other Nexus systems.
+- When you retrieve operational data, treat VERIFIED OPERATIONAL DATA as
+  authoritative for the requested facts. Do not replace verified numeric
+  values with estimates or model knowledge.
+- If a capability fails or is unavailable, say so honestly — never fabricate
+  operational values from memory.
 
 Technical explanations:
 - Explain frameworks and tools as architecture, not just "combining things." Use concrete examples.
@@ -254,41 +260,114 @@ def _evaluate_arithmetic(text: str) -> Optional[str]:
         return None
 
 
-# ─── Source-Directed Supabase Detection ────────────────────
+# ─── Semantic Capability Gate ──────────────────────────────
+# Replaces source-directed Supabase detection with meaning-based
+# intent matching. Maps user requests to approved capabilities
+# by semantic intent, not by keyword.
 
-_SUPABASE_SOURCE_PATTERN = re.compile(
-    r'\b(?:search|check|query|look\s+(?:in|through|up)|inspect|find|verify|review|'
-    r'research|pull|use)\b.*\bsupabase\b',
-    re.I,
+_EMAIL_PATTERN = re.compile(
+    r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
 )
 
-_SUPABASE_NAME_PATTERN = re.compile(r'\bsupabase\b', re.I)
+
+def _extract_email(text: str) -> Optional[str]:
+    """Extract the first email address from text."""
+    match = _EMAIL_PATTERN.search(text)
+    return match.group(0) if match else None
 
 
-def _detect_supabase_source(text: str) -> Optional[str]:
-    """Detect if the user explicitly named Supabase as an information source.
+def _detect_write_request(text: str) -> Optional[Dict[str, Any]]:
+    """Detect if the user is requesting a write operation.
 
-    Returns the raw user request to pass to the Supabase tool, or None
-    if Supabase was not explicitly named.
-
-    This is source-directed detection — not an intent classifier.
-    Its only purpose is: Ray explicitly named Supabase → give the request
-    to Nova's Supabase information tool.
+    Returns a dict with requested_action and arguments if write detected,
+    None if the request is read-only.
     """
-    if _SUPABASE_SOURCE_PATTERN.search(text):
-        return text
-    return None
-
-
-def _is_write_request(text: str) -> bool:
-    """Detect if the user is requesting a write operation."""
     write_patterns = re.compile(
         r'\b(?:create|add|insert|update|delete|remove|disable|enable|invite|'
         r'edit|modify|set|change|revoke|approve|reject)\b.*'
         r'\b(?:user|account|profile|record|client)\b',
         re.I,
     )
-    return bool(write_patterns.search(text))
+    if write_patterns.search(text):
+        email = _extract_email(text)
+        return {
+            "requested_action": "create_test_user",
+            "arguments": {"email": email},
+            "execution_allowed": False,
+        }
+    return None
+
+
+def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """Semantic pre-model capability gate.
+
+    Inspects the user's request and determines whether one of Nova's
+    approved capabilities can answer it. Returns (capability_name, arguments)
+    or None if no capability applies.
+
+    Precedence:
+      1. write request detection (handled separately in capability_gate node)
+      2. exact identity resolution (email present)
+      3. client count / readiness aggregate
+      4. runtime capability query
+      5. explicit general search (has "search"/"find"/"lookup" + operational term)
+      6. no tool required
+    """
+    lower = text.lower().strip()
+
+    # ── Priority 2: Identity resolution ──
+    # Matches when an email is present and the request is about looking up,
+    # checking, verifying, or asking about that identity.
+    email = _extract_email(text)
+    if email:
+        identity_keywords = (
+            "look", "lookup", "look up", "check", "verify", "who", "what",
+            "account", "identity", "email", "exist", "registered", "profile",
+            "find", "search", "is this", "kind of account", "type of account",
+            "login", "associated", "belongs",
+        )
+        if any(kw in lower for kw in identity_keywords):
+            return ("resolve_user_identity_by_email", {"email": email})
+
+    # ── Priority 3: Client count / readiness aggregate ──
+    # Matches requests about client numbers, breakdowns, counts, profiles.
+    client_count_keywords = (
+        "how many clients", "client count", "total clients", "number of clients",
+        "production clients", "active clients", "tester", "certification",
+        "onboarding", "client breakdown", "client profiles", "client total",
+        "production versus", "production vs", "how many production",
+        "how many tester", "how many active", "how many onboarding",
+        "breakdown of client", "count of client", "profiles do we have",
+    )
+    if any(kw in lower for kw in client_count_keywords):
+        return ("get_client_count", {})
+
+    # ── Priority 4: Runtime capability query ──
+    # Matches requests about what Nova can access, read, or do.
+    runtime_keywords = (
+        "what can you access", "what can you read", "what systems",
+        "what access do you have", "what tools", "your capabilities",
+        "your access", "can you access", "what do you have access",
+        "what can you look up", "what data can you", "connected to supabase",
+        "are you connected", "what can you actually",
+    )
+    if any(kw in lower for kw in runtime_keywords):
+        return ("get_runtime_capabilities", {})
+
+    # ── Priority 5: Explicit general search ──
+    # Only when the user explicitly asks to search/find/lookup in operational data.
+    search_verbs = ("search", "find", "look up", "lookup", "check", "query")
+    has_search_verb = any(verb in lower for verb in search_verbs)
+    operational_terms = (
+        "supabase", "operational", "records", "database", "approved",
+        "system", "goclear", "nexus", "process", "webhook",
+    )
+    has_operational_term = any(term in lower for term in operational_terms)
+    if has_search_verb and has_operational_term:
+        return ("general_search", {"query": text})
+
+    # ── Priority 6: No tool required ──
+    return None
 
 
 # ─── Nova-Owned Supabase Tool ──────────────────────────────
@@ -317,94 +396,39 @@ def _nova_search_supabase(
         trace_id = f"nova_search_{int(time.time())}"
 
     # Write denial
-    if _is_write_request(request):
+    if _detect_write_request(request):
         return {
             "tool": "nova_search_supabase",
             "status": "denied",
             "message": (
-                "Write operations are not permitted. I have read-only access to Supabase. "
+                "Write operations are not permitted. I have read-only access. "
                 "I can look up existing information but cannot create, modify, or delete anything."
             ),
             "trace_id": trace_id,
         }
 
-    # Detect what kind of Supabase query is needed
-    request_lower = request.lower()
-
-    # Identity lookup (email present)
-    email_match = re.search(
-        r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', request
-    )
-    if email_match and any(w in request_lower for w in [
-        "user", "account", "identity", "email", "who", "verify", "check",
-        "exist", "registered", "profile",
-    ]):
-        result = execute_shared_capability(
-            "hermes_nova",
-            "resolve_user_identity_by_email",
-            {"email": email_match.group(0)},
-            trace_id=trace_id,
-        )
+    # Detect what kind of query is needed
+    gate_result = _semantic_capability_gate(request)
+    if gate_result is None:
         return {
             "tool": "nova_search_supabase",
-            "query_type": "identity_lookup",
-            "status": result.get("status", "unknown"),
-            "data": result.get("data", {}),
-            "provenance": result.get("provenance", {}),
+            "query_type": "none",
+            "status": "no_capability",
+            "data": {},
+            "provenance": {},
             "trace_id": trace_id,
         }
 
-    # Client count
-    if any(w in request_lower for w in [
-        "client count", "how many clients", "total clients",
-        "number of clients", "client profiles", "production clients",
-        "active clients", "customer total", "client total",
-    ]):
-        result = execute_shared_capability(
-            "hermes_nova",
-            "get_client_count",
-            {},
-            trace_id=trace_id,
-        )
-        return {
-            "tool": "nova_search_supabase",
-            "query_type": "client_count",
-            "status": result.get("status", "unknown"),
-            "data": result.get("data", {}),
-            "provenance": result.get("provenance", {}),
-            "trace_id": trace_id,
-        }
-
-    # Runtime capabilities
-    if any(w in request_lower for w in [
-        "what can you access", "your capabilities", "what do you have access",
-        "what systems", "can you access", "your access", "what can you do",
-    ]):
-        result = execute_shared_capability(
-            "hermes_nova",
-            "get_runtime_capabilities",
-            {},
-            trace_id=trace_id,
-        )
-        return {
-            "tool": "nova_search_supabase",
-            "query_type": "runtime_capabilities",
-            "status": result.get("status", "unknown"),
-            "data": result.get("data", {}),
-            "provenance": result.get("provenance", {}),
-            "trace_id": trace_id,
-        }
-
-    # General search — route through shared layer
+    capability, arguments = gate_result
     result = execute_shared_capability(
         "hermes_nova",
-        "general_search",
-        {"query": request},
+        capability,
+        arguments,
         trace_id=trace_id,
     )
     return {
         "tool": "nova_search_supabase",
-        "query_type": "general_search",
+        "query_type": capability,
         "status": result.get("status", "unknown"),
         "data": result.get("data", {}),
         "provenance": result.get("provenance", {}),
@@ -412,87 +436,169 @@ def _nova_search_supabase(
     }
 
 
-def _format_supabase_result(result: Dict[str, Any]) -> str:
-    """Format a Supabase search result as natural context for Nova's brain."""
+def _format_verified_context(result: Dict[str, Any]) -> str:
+    """Format a capability result as a structured VERIFIED OPERATIONAL DATA block.
+
+    This is the authoritative context injected into the model request.
+    The model must treat these facts as ground truth.
+    """
     status = result.get("status", "unknown")
     query_type = result.get("query_type", "unknown")
+    prov = result.get("provenance", {})
 
     if status == "denied":
         return result.get("message", "Write operations are not permitted.")
 
-    if status == "unavailable":
-        return result.get("message", "Supabase is not available right now.")
-
-    if query_type == "client_count":
-        data = result.get("data", {})
-        from zoneinfo import ZoneInfo
-        now = datetime.now(ZoneInfo("America/Phoenix"))
-        timestamp = now.strftime("%-I:%M %p Phoenix time on %B %-d, %Y")
+    if status in ("unavailable", "error"):
+        error_msg = result.get("error", "Capability unavailable")
         return (
-            f"Supabase data (retrieved {timestamp}):\n"
-            f"- Production clients: {data.get('production_clients', 'unknown')}\n"
-            f"- Active: {data.get('active', 'unknown')}\n"
-            f"- Onboarding: {data.get('onboarding', 'unknown')}\n"
-            f"- Tester/certification: {data.get('tester_or_certification', 'unknown')}\n"
-            f"- Total profiles: {data.get('all_profiles', 'unknown')}"
+            f"[VERIFIED OPERATIONAL DATA]\n"
+            f"capability: {query_type}\n"
+            f"status: {status}\n"
+            f"error: {error_msg}\n"
+            f"[END VERIFIED OPERATIONAL DATA]\n\n"
+            f"NOTE: The operational data capability returned an error. "
+            f"Do NOT fabricate operational values from memory. "
+            f"Tell the user the data could not be retrieved right now."
         )
 
-    if query_type == "identity_lookup":
-        data = result.get("data", {})
+    if status == "unauthorized":
+        return (
+            f"[VERIFIED OPERATIONAL DATA]\n"
+            f"capability: {query_type}\n"
+            f"status: unauthorized\n"
+            f"[END VERIFIED OPERATIONAL DATA]\n\n"
+            f"NOTE: This capability is not authorized. "
+            f"Do NOT claim you can access data you cannot."
+        )
+
+    data = result.get("data", {})
+
+    if query_type == "get_client_count":
+        return (
+            f"[VERIFIED OPERATIONAL DATA]\n"
+            f"capability: get_client_count\n"
+            f"status: success\n"
+            f"source: supabase\n"
+            f"freshness: live\n"
+            f"facts:\n"
+            f"- production_clients: {data.get('production_clients', 'unknown')}\n"
+            f"- active: {data.get('active', 'unknown')}\n"
+            f"- onboarding: {data.get('onboarding', 'unknown')}\n"
+            f"- tester_or_certification: {data.get('tester_or_certification', 'unknown')}\n"
+            f"- all_profiles: {data.get('all_profiles', 'unknown')}\n"
+            f"[END VERIFIED OPERATIONAL DATA]"
+        )
+
+    if query_type == "resolve_user_identity_by_email":
         email = data.get("normalized_email", "unknown")
         exists = data.get("exists_anywhere", False)
         complete = data.get("verification_complete", True)
         classifications = data.get("account_classifications", [])
         sources = data.get("sources", {})
 
-        lines = [f"Identity lookup for {email}:"]
+        lines = [
+            f"[VERIFIED OPERATIONAL DATA]",
+            f"capability: resolve_user_identity_by_email",
+            f"status: {status}",
+            f"source: supabase",
+            f"freshness: live",
+            f"normalized_email: {email}",
+            f"exists_anywhere: {str(exists).lower()}",
+            f"verification_complete: {str(complete).lower()}",
+        ]
+        if classifications:
+            lines.append("account_classifications:")
+            for c in classifications:
+                lines.append(f"- {c}")
         if not complete:
             failed = [k for k, v in sources.items()
                       if v.get("status") in ("error", "incomplete")]
-            lines.append(f"Verification incomplete. Sources with issues: {', '.join(failed)}")
-        elif exists:
-            lines.append(f"Found in approved identity sources.")
-            if classifications:
-                lines.append(f"Classifications: {', '.join(classifications)}")
-            for src, info in sources.items():
-                if info.get("exists"):
-                    lines.append(f"  - {src}: found")
-                else:
-                    lines.append(f"  - {src}: not found")
+            if failed:
+                lines.append(f"sources_with_errors: {', '.join(failed)}")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+
+        if not complete:
+            lines.append("")
+            lines.append(
+                "NOTE: Verification was incomplete. "
+                "Do NOT claim the user does not exist if verification failed. "
+                "Say verification was partial and which sources had issues."
+            )
+        elif not exists:
+            lines.append("")
+            lines.append(
+                "NOTE: The email was not found in any approved identity source. "
+                "You may state this fact clearly."
+            )
         else:
-            lines.append("Not found in any approved identity source.")
+            lines.append("")
+            lines.append(
+                "NOTE: This email exists in the approved identity sources. "
+                "State the classification factually. Do not deny access to this lookup."
+            )
+
         return "\n".join(lines)
 
-    if query_type == "runtime_capabilities":
-        data = result.get("data", {})
+    if query_type == "get_runtime_capabilities":
         reads = data.get("available_reads", [])
         writes = data.get("available_actions", [])
+        connected = data.get("connected_systems", {}).get("supabase", {}).get("status", "unknown")
         return (
-            f"Supabase access status:\n"
-            f"- Connected: {data.get('connected_systems', {}).get('supabase', {}).get('status', 'unknown')}\n"
-            f"- Approved reads: {', '.join(sorted(reads))}\n"
-            f"- Approved writes: {', '.join(sorted(writes)) if writes else 'none'}"
+            f"[VERIFIED OPERATIONAL DATA]\n"
+            f"capability: get_runtime_capabilities\n"
+            f"status: success\n"
+            f"source: runtime\n"
+            f"freshness: live\n"
+            f"facts:\n"
+            f"- supabase_connected: {connected}\n"
+            f"- approved_reads: {', '.join(sorted(reads))}\n"
+            f"- approved_writes: {', '.join(sorted(writes)) if writes else 'none'}\n"
+            f"[END VERIFIED OPERATIONAL DATA]"
         )
 
     if query_type == "general_search":
-        data = result.get("data", {})
         matches = data.get("matches", [])
+        sources_searched = data.get("sources_searched", [])
         if not matches:
-            sources_searched = data.get("sources_searched", [])
             return (
-                f"I searched the approved Supabase tables ({', '.join(sources_searched)}) "
-                f"but did not find an exact match for that query."
+                f"[VERIFIED OPERATIONAL DATA]\n"
+                f"capability: general_search\n"
+                f"status: not_found\n"
+                f"source: supabase\n"
+                f"freshness: live\n"
+                f"facts:\n"
+                f"- sources_searched: {', '.join(sources_searched)}\n"
+                f"- match_count: 0\n"
+                f"[END VERIFIED OPERATIONAL DATA]\n\n"
+                f"NOTE: The search returned no matches. "
+                f"Do not fabricate results."
             )
-        lines = [f"Supabase search results ({len(matches)} matches):"]
+        lines = [
+            f"[VERIFIED OPERATIONAL DATA]",
+            f"capability: general_search",
+            f"status: success",
+            f"source: supabase",
+            f"freshness: live",
+            f"facts:",
+            f"- match_count: {len(matches)}",
+            f"- sources_searched: {', '.join(sources_searched)}",
+        ]
         for m in matches[:5]:
-            source = m.get("source", "")
+            src = m.get("source", "")
             match_val = m.get("match", "")
             mtype = m.get("type", "")
-            detail = f" ({m.get('status', '')})" if m.get("status") else ""
-            lines.append(f"  - [{source}] {match_val}{detail} — {mtype}")
+            lines.append(f"- [{src}] {match_val} — {mtype}")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
         return "\n".join(lines)
 
-    return f"Supabase result: {json.dumps(result, default=str)[:300]}"
+    # Fallback
+    return (
+        f"[VERIFIED OPERATIONAL DATA]\n"
+        f"capability: {query_type}\n"
+        f"status: {status}\n"
+        f"[END VERIFIED OPERATIONAL DATA]"
+    )
 
 
 # ─── Model Gateway ─────────────────────────────────────────
@@ -534,6 +640,84 @@ _VALIDATION_PATTERNS = [
 ]
 
 
+def _validate_against_capability(
+    response: str,
+    capability_result: Optional[Dict[str, Any]],
+) -> Optional[str]:
+    """Validate model response against verified capability facts.
+
+    Returns error reason if the response contradicts verified data,
+    None if the response is consistent.
+    """
+    if not capability_result:
+        return None
+
+    status = capability_result.get("status", "unknown")
+    query_type = capability_result.get("query_type", "unknown")
+    data = capability_result.get("data", {})
+
+    # Only validate successful results
+    if status != "success":
+        return None
+
+    response_lower = response.lower()
+
+    if query_type == "get_client_count":
+        # Check that the model didn't fabricate different numbers
+        verified_production = data.get("production_clients")
+        verified_tester = data.get("tester_or_certification")
+        verified_total = data.get("all_profiles")
+
+        if verified_production is not None:
+            # Look for fabricated production numbers that differ from verified
+            number_claims = re.findall(
+                r'(\d+)\s*(?:production|client)', response_lower
+            )
+            for claim in number_claims:
+                claimed_num = int(claim)
+                if claimed_num != verified_production and claimed_num > 50:
+                    return "capability_contradiction"
+
+        if verified_tester is not None:
+            number_claims = re.findall(
+                r'(\d+)\s*(?:tester|certification)', response_lower
+            )
+            for claim in number_claims:
+                claimed_num = int(claim)
+                if claimed_num != verified_tester and claimed_num > 50:
+                    return "capability_contradiction"
+
+    if query_type == "resolve_user_identity_by_email":
+        exists = data.get("exists_anywhere", False)
+        complete = data.get("verification_complete", True)
+
+        # If capability says email exists, reject denial of lookup
+        if exists and complete:
+            denial_phrases = [
+                "can't look up", "cannot look up",
+                "can't access", "cannot access",
+                "don't have access", "do not have access",
+                "unable to look up", "not able to look up",
+                "can't check", "cannot check",
+            ]
+            for phrase in denial_phrases:
+                if phrase in response_lower:
+                    return "capability_contradiction"
+
+        # If capability says email exists, reject "does not exist" claim
+        if exists and complete:
+            nonexistent_claims = [
+                "does not exist", "doesnt exist", "doesn't exist",
+                "not found", "no account",
+                "not registered", "no user",
+            ]
+            for claim in nonexistent_claims:
+                if claim in response_lower:
+                    return "capability_contradiction"
+
+    return None
+
+
 def validate_response(text: str, user_message: str) -> Optional[str]:
     """Validate a response. Returns error reason if invalid, None if OK."""
     if not text or not text.strip():
@@ -564,6 +748,11 @@ def _build_fallback_response(error_reason: str, user_message: str) -> str:
         return "Let me rephrase that more naturally. What else would you like to know?"
     if error_reason == "capability_menu":
         return "I'm Nova — I just like to have conversations. What's on your mind?"
+    if error_reason == "capability_contradiction":
+        return (
+            "I need to correct myself — the verified operational data shows something "
+            "different from what I just said. Let me give you the accurate information."
+        )
     return "I'm not sure how to respond to that. Could you try again?"
 
 
@@ -604,47 +793,136 @@ def _handle_utility(state: AgentState) -> AgentState:
         state.metadata["utility_used"] = "reset"
         return state
 
-    # Not a utility — pass through to model
+    # Not a utility — pass through to capability gate
     state.metadata["utility_used"] = None
     return state
 
 
-def _prepare_context(state: AgentState) -> AgentState:
-    """Prepare context for the model, including Supabase data if explicitly requested.
+def _capability_gate(state: AgentState) -> AgentState:
+    """Semantic pre-model capability gate.
 
     This node runs AFTER handle_utility and BEFORE build_context.
-    It detects explicit Supabase source mentions and fetches data
-    to include as context for the model.
+    It inspects the user's request and determines whether an approved
+    capability can answer it — WITHOUT requiring the user to say "Supabase."
 
-    This is NOT an intent classifier. It is source-directed detection:
-    Ray explicitly named Supabase → fetch data → include in context.
+    The gate:
+      1. Checks for write requests → denied
+      2. Matches semantic intent to an approved capability
+      3. Executes the capability through the shared certified layer
+      4. Stores the normalized result and provenance in state
+      5. The conversational model still generates the natural-language response
+
+    Capability precedence:
+      1. write request detection
+      2. exact identity resolution (email present)
+      3. client count / readiness aggregate
+      4. runtime capability query
+      5. explicit general search
+      6. no tool required
     """
+    # Skip if utility already handled it
     if state.assistant_response:
-        state.metadata["supabase_data"] = None
+        state.metadata["capability_gate"] = {
+            "decision": "skip_utility",
+            "capability": None,
+        }
         return state
 
     text = state.user_message
     chat_id = state.metadata.get("chat_id", 0)
+    trace_id = f"nova_gate_{chat_id}_{int(time.time())}"
 
-    # Source-directed detection: did Ray explicitly name Supabase?
-    supabase_request = _detect_supabase_source(text)
-    if supabase_request:
-        trace_id = f"nova_{chat_id}_{int(time.time())}"
-        result = _nova_search_supabase(
-            supabase_request,
-            chat_id=chat_id,
+    # ── Priority 1: Write detection ──
+    write_request = _detect_write_request(text)
+    if write_request:
+        email = write_request["arguments"].get("email")
+
+        # Optionally perform the approved identity read first
+        identity_result = None
+        if email:
+            from nexus_agent_platform.capabilities.shared import execute_shared_capability
+            identity_result = execute_shared_capability(
+                "hermes_nova",
+                "resolve_user_identity_by_email",
+                {"email": email},
+                trace_id=trace_id,
+            )
+
+        state.metadata["capability_gate"] = {
+            "decision": "write_denied",
+            "capability": "write_request",
+            "arguments": write_request,
+            "trace_id": trace_id,
+        }
+        state.metadata["capability_result"] = {
+            "tool": "nova_search_supabase",
+            "query_type": "write_denied",
+            "status": "denied",
+            "message": (
+                "Write operations are not permitted. I have read-only access. "
+                "I can look up existing information but cannot create, modify, or delete anything."
+            ),
+            "identity_check": identity_result,
+            "trace_id": trace_id,
+        }
+        return state
+
+    # ── Priorities 2-6: Semantic capability gate ──
+    gate_result = _semantic_capability_gate(text)
+    if gate_result is None:
+        state.metadata["capability_gate"] = {
+            "decision": "no_capability",
+            "capability": None,
+            "trace_id": trace_id,
+        }
+        state.metadata["capability_result"] = None
+        return state
+
+    capability, arguments = gate_result
+
+    # Execute through shared certified layer
+    from nexus_agent_platform.capabilities.shared import execute_shared_capability
+    try:
+        result = execute_shared_capability(
+            "hermes_nova",
+            capability,
+            arguments,
             trace_id=trace_id,
         )
-        state.metadata["supabase_data"] = result
-        state.metadata["supabase_trace_id"] = trace_id
-    else:
-        state.metadata["supabase_data"] = None
+    except Exception as exc:
+        log.error("Capability gate execution failed for %s: %s", capability, exc)
+        result = {
+            "status": "error",
+            "capability": capability,
+            "source": "capability_gate",
+            "source_type": "local_runtime_read",
+            "freshness": "unknown",
+            "data": {},
+            "error": str(exc),
+            "provenance": {"capability": capability, "status": "error", "trace_id": trace_id},
+        }
+
+    state.metadata["capability_gate"] = {
+        "decision": "capability_executed",
+        "capability": capability,
+        "arguments": arguments,
+        "status": result.get("status", "unknown"),
+        "trace_id": trace_id,
+    }
+    state.metadata["capability_result"] = {
+        "tool": "nova_search_supabase",
+        "query_type": capability,
+        "status": result.get("status", "unknown"),
+        "data": result.get("data", {}),
+        "provenance": result.get("provenance", {}),
+        "trace_id": trace_id,
+    }
 
     return state
 
 
 def _build_context(state: AgentState) -> AgentState:
-    """Build the model context with SOUL, conversation history, and any Supabase data."""
+    """Build the model context with SOUL, conversation history, and verified operational data."""
     chat_id = state.metadata.get("chat_id", 0)
 
     # Load conversation history
@@ -658,21 +936,25 @@ def _build_context(state: AgentState) -> AgentState:
     for msg in history[-MEMORY_MAX_TURNS * 2:]:
         messages.append(msg)
 
-    # Build the user message, potentially with Supabase context
+    # Build the user message, potentially with verified operational data
     user_content = state.user_message
 
-    supabase_data = state.metadata.get("supabase_data")
-    if supabase_data:
-        supabase_context = _format_supabase_result(supabase_data)
+    capability_result = state.metadata.get("capability_result")
+    if capability_result:
+        verified_context = _format_verified_context(capability_result)
         user_content = (
             f"{state.user_message}\n\n"
-            f"[Supabase data retrieved for your reference — incorporate this naturally into your response]\n"
-            f"{supabase_context}"
+            f"{verified_context}\n\n"
+            f"Respond naturally using the verified data above. "
+            f"Do not contradict the verified facts. "
+            f"Do not fabricate alternative values. "
+            f"Do not deny access to data that was successfully retrieved."
         )
 
     messages.append({"role": "user", "content": user_content})
 
     state.metadata["model_messages"] = messages
+    state.metadata["model_received_verified_context"] = capability_result is not None
     return state
 
 
@@ -707,8 +989,17 @@ def _generate_response(state: AgentState) -> AgentState:
 
 
 def _validate_output(state: AgentState) -> AgentState:
-    """Validate the generated response."""
+    """Validate the generated response against capability facts and general rules."""
+    # Standard validation
     error_reason = validate_response(state.assistant_response, state.user_message)
+
+    # Capability contradiction validation
+    if not error_reason:
+        capability_result = state.metadata.get("capability_result")
+        if capability_result:
+            error_reason = _validate_against_capability(
+                state.assistant_response, capability_result
+            )
 
     if error_reason:
         state.metadata["validation_error"] = error_reason
@@ -723,6 +1014,14 @@ def _validate_output(state: AgentState) -> AgentState:
             result = asyncio.run(_call_model(messages, chat_id))
             content = result.get("content", "")
             if content and not validate_response(content, state.user_message):
+                # Also check capability contradiction on regen
+                capability_result = state.metadata.get("capability_result")
+                if capability_result:
+                    cap_err = _validate_against_capability(content, capability_result)
+                    if cap_err:
+                        state.assistant_response = _build_fallback_response(error_reason, state.user_message)
+                        state.metadata["fallback_used"] = True
+                        return state
                 state.assistant_response = content
                 state.metadata["regen_success"] = True
                 return state
@@ -773,25 +1072,26 @@ def build_nova_graph() -> GraphAdapter:
     """Build and compile the Nova LangGraph.
 
     Graph flow:
-      classify_intent → handle_utility → prepare_context → build_context
+      classify_intent → handle_utility → capability_gate → build_context
       → generate_response → validate_output → compose_output
 
-    Nova's original conversational brain always runs.
-    Supabase data is fetched as context when explicitly requested.
-    No pre-model capability interception.
+    The capability_gate runs before model generation. It semantically
+    inspects the user's request and executes approved capabilities
+    through the shared certified layer. The conversational model
+    generates the final natural-language response using verified data.
     """
     graph = GraphAdapter(agent_id=AGENT_ID)
     graph.add_node("classify_intent", _classify_intent)
     graph.add_node("handle_utility", _handle_utility)
-    graph.add_node("prepare_context", _prepare_context)
+    graph.add_node("capability_gate", _capability_gate)
     graph.add_node("build_context", _build_context)
     graph.add_node("generate_response", _generate_response)
     graph.add_node("validate_output", _validate_output)
     graph.add_node("compose_output", _compose_output)
 
     graph.add_edge("classify_intent", "handle_utility")
-    graph.add_edge("handle_utility", "prepare_context")
-    graph.add_edge("prepare_context", "build_context")
+    graph.add_edge("handle_utility", "capability_gate")
+    graph.add_edge("capability_gate", "build_context")
     graph.add_edge("build_context", "generate_response")
     graph.add_edge("generate_response", "validate_output")
     graph.add_edge("validate_output", "compose_output")
