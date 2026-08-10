@@ -127,7 +127,8 @@ class TestPendingApprovals:
                     return_value={"status": "unavailable", "error": "File not found"}):
             result = _handle_pending_approvals(trace_id="test_a4")
         assert result["status"] == "unavailable"
-        assert result["data"]["count"] == 0
+        assert result["data"]["count"] is None
+        assert result["data"]["data_available"] is False
 
     def test_semantic_routing(self):
         from nexus_agent_platform.agents.nova import _semantic_capability_gate
@@ -172,6 +173,8 @@ class TestRecentResearch:
                     return_value={"status": "unavailable", "error": "Supabase not configured"}):
             result = _handle_recent_research(trace_id="test_r3")
         assert result["status"] == "unavailable"
+        assert result["data"]["runs"] is None
+        assert result["data"]["data_available"] is False
 
     def test_semantic_routing(self):
         from nexus_agent_platform.agents.nova import _semantic_capability_gate
@@ -209,6 +212,8 @@ class TestOpportunities:
                     return_value={"status": "unavailable", "error": "Supabase not configured"}):
             result = _handle_opportunities(trace_id="test_o3")
         assert result["status"] == "unavailable"
+        assert result["data"]["total"] is None
+        assert result["data"]["data_available"] is False
 
     def test_semantic_routing(self):
         from nexus_agent_platform.agents.nova import _semantic_capability_gate
@@ -327,7 +332,9 @@ class TestFundingReadiness:
         with patch("nexus_agent_platform.capabilities.shared._supabase_session", return_value=session):
             result = _handle_funding_readiness({"email": "test@example.com"}, trace_id="test_f1")
         assert result["status"] == "success"
-        assert result["data"]["funding_readiness_status"] == "ready"
+        assert result["data"]["funding_readiness_status"] == "not_yet_certified"
+        assert result["data"]["verification_complete"] is False
+        assert "credit_readiness_score" in result["data"]["missing_signals"]
 
     def test_not_ready(self):
         from nexus_agent_platform.capabilities.shared import _handle_funding_readiness
@@ -342,8 +349,9 @@ class TestFundingReadiness:
         session.get.return_value = mock_resp
         with patch("nexus_agent_platform.capabilities.shared._supabase_session", return_value=session):
             result = _handle_funding_readiness({"email": "test@example.com"}, trace_id="test_f2")
-        assert result["data"]["funding_readiness_status"] == "not_ready"
-        assert len(result["data"]["blocking_items"]) > 0
+        # Should NOT say "not_ready" — should say "not_yet_certified"
+        assert result["data"]["funding_readiness_status"] == "not_yet_certified"
+        assert result["data"]["verification_complete"] is False
 
     def test_partial(self):
         from nexus_agent_platform.capabilities.shared import _handle_funding_readiness
@@ -358,8 +366,9 @@ class TestFundingReadiness:
         session.get.return_value = mock_resp
         with patch("nexus_agent_platform.capabilities.shared._supabase_session", return_value=session):
             result = _handle_funding_readiness({"email": "test@example.com"}, trace_id="test_f3")
-        assert result["data"]["funding_readiness_status"] == "almost_ready"
-        assert len(result["data"]["missing_requirements"]) > 0
+        # Should NOT say "almost_ready" — should say "not_yet_certified"
+        assert result["data"]["funding_readiness_status"] == "not_yet_certified"
+        assert len(result["data"]["missing_signals"]) > 0
 
     def test_client_not_found(self):
         from nexus_agent_platform.capabilities.shared import _handle_funding_readiness
@@ -654,12 +663,12 @@ class TestContextFormatting:
         result = {
             "query_type": "get_funding_readiness",
             "status": "success",
-            "data": {"client_identifier": "test@example.com", "client_found": True, "funding_readiness_status": "almost_ready", "missing_requirements": ["Documents needed"], "blocking_items": [], "next_recommended_steps": ["Upload docs"]},
+            "data": {"client_identifier": "test@example.com", "client_found": True, "funding_readiness_status": "not_yet_certified", "missing_signals": ["credit_readiness_score", "financial_statement_analysis"], "blocking_signals": [], "available_signals": ["classification", "client_status"]},
         }
         ctx = _format_verified_context(result)
         assert "get_funding_readiness" in ctx
-        assert "almost_ready" in ctx
-        assert "Documents needed" in ctx
+        assert "not_yet_certified" in ctx
+        assert "credit_readiness_score" in ctx
 
     def test_operational_summary_format(self):
         from nexus_agent_platform.agents.nova import _format_verified_context

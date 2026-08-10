@@ -715,6 +715,13 @@ def _handle_system_health(
 
     Combines local JSON file reads (system_status, failure_report) with
     Supabase process status into a single health summary.
+
+    Status semantics:
+    - active_services: processes confirmed running
+    - degraded_services: processes with POSITIVE evidence of degradation
+    - failed_services: processes with POSITIVE evidence of failure
+    - unknown_services: processes where status could not be determined
+    - overall_status: healthy only if all sources succeed and no failures
     """
     query_start = datetime.now(timezone.utc)
     health_data: Dict[str, Any] = {
@@ -722,55 +729,79 @@ def _handle_system_health(
         "active_services": 0,
         "degraded_services": 0,
         "failed_services": 0,
+        "unknown_services": 0,
         "recent_failures": [],
         "important_warnings": [],
         "sources_checked": [],
+        "source_statuses": {},
+        "verification_complete": False,
     }
-    errors: list = []
+    source_errors: list = []
+    total_services = 0
 
     # Source 1: Process registry (local JSON)
+    source_1_ok = False
     try:
         from nexus_agent_platform.agents.hermes import _get_system_status
         raw = _get_system_status()
-        health_data["sources_checked"].append("process_registry")
         working = raw.get("working", "")
-        if "/" in working:
-            parts = working.split("/")
-            try:
-                active = int(parts[0].strip())
-                total = int(parts[1].split()[0].strip())
-                health_data["active_services"] = active
-                health_data["degraded_services"] = total - active
-            except (ValueError, IndexError):
-                pass
-        detail = raw.get("detail", "")
-        if detail:
-            health_data["important_warnings"].extend(
-                [line.strip() for line in detail.split("\n") if line.strip()]
-            )
+        if "Unable to read" in working:
+            health_data["source_statuses"]["process_registry"] = "unavailable"
+            source_errors.append(f"process_registry: {raw.get('needs_attention', 'unknown')}")
+        else:
+            health_data["sources_checked"].append("process_registry")
+            health_data["source_statuses"]["process_registry"] = "success"
+            source_1_ok = True
+            if "/" in working:
+                parts = working.split("/")
+                try:
+                    active = int(parts[0].strip())
+                    total = int(parts[1].split()[0].strip())
+                    health_data["active_services"] = active
+                    total_services = total
+                    # Non-running processes are unknown, NOT degraded
+                    # Degradation requires positive evidence (from failure_report or process_failures)
+                    health_data["unknown_services"] = max(0, total - active)
+                except (ValueError, IndexError):
+                    pass
+            detail = raw.get("detail", "")
+            if detail:
+                health_data["important_warnings"].extend(
+                    [line.strip() for line in detail.split("\n") if line.strip()]
+                )
     except Exception as exc:
-        errors.append(f"process_registry: {exc}")
+        health_data["source_statuses"]["process_registry"] = "error"
+        source_errors.append(f"process_registry: {exc}")
 
     # Source 2: Failure report (local JSON)
+    source_2_ok = False
     try:
         from nexus_agent_platform.agents.hermes import _get_failure_report
         raw = _get_failure_report()
-        health_data["sources_checked"].append("failure_report")
         working = raw.get("working", "")
-        needs = raw.get("needs_attention", "")
-        if working and "No failures" not in working:
-            health_data["recent_failures"].append(working)
-        if needs:
-            health_data["recent_failures"].append(needs)
+        if "Unable to read" in working:
+            health_data["source_statuses"]["failure_report"] = "unavailable"
+            source_errors.append(f"failure_report: {raw.get('needs_attention', 'unknown')}")
+        else:
+            health_data["sources_checked"].append("failure_report")
+            health_data["source_statuses"]["failure_report"] = "success"
+            source_2_ok = True
+            needs = raw.get("needs_attention", "")
+            if needs:
+                health_data["recent_failures"].append(needs)
     except Exception as exc:
-        errors.append(f"failure_report: {exc}")
+        health_data["source_statuses"]["failure_report"] = "error"
+        source_errors.append(f"failure_report: {exc}")
 
     # Source 3: Process failures from Supabase
+    source_3_ok = False
     try:
         from nexus_agent_platform.agents.hermes import _get_process_failures
         raw = _get_process_failures()
         if raw.get("status") == "ok":
             health_data["sources_checked"].append("process_failures")
+            health_data["source_statuses"]["process_failures"] = "success"
+            source_3_ok = True
             total_failures = raw.get("total", 0)
             health_data["failed_services"] = total_failures
             by_status = raw.get("by_status", {})
@@ -780,36 +811,59 @@ def _handle_system_health(
                         f"{count} process(es) with status {status_name}"
                     )
         else:
-            errors.append(f"process_failures: {raw.get('error', 'unavailable')}")
+            health_data["source_statuses"]["process_failures"] = "unavailable"
+            source_errors.append(f"process_failures: {raw.get('error', 'unavailable')}")
     except Exception as exc:
-        errors.append(f"process_failures: {exc}")
+        health_data["source_statuses"]["process_failures"] = "error"
+        source_errors.append(f"process_failures: {exc}")
 
-    # Determine overall status
-    if health_data["failed_services"] > 0:
-        health_data["overall_status"] = "degraded"
-    elif health_data["active_services"] == 0:
+    # Determine overall status using canonical rules:
+    # - healthy: all sources OK, no failures, services active
+    # - degraded: positive evidence of degradation (failures > 0 OR degraded > 0)
+    # - unhealthy: critical failures
+    # - unknown: insufficient telemetry to determine health
+    confirmed_sources = sum(1 for s in health_data["source_statuses"].values() if s == "success")
+    total_sources = len(health_data["source_statuses"])
+
+    if confirmed_sources == 0:
+        # No sources available — health is unknown, NOT degraded
         health_data["overall_status"] = "unknown"
-    else:
+    elif health_data["failed_services"] > 0:
+        health_data["overall_status"] = "degraded"
+    elif health_data["degraded_services"] > 0:
+        health_data["overall_status"] = "degraded"
+    elif health_data["active_services"] > 0 and health_data["failed_services"] == 0:
         health_data["overall_status"] = "healthy"
+    else:
+        health_data["overall_status"] = "unknown"
 
-    if errors:
+    health_data["verification_complete"] = (
+        confirmed_sources == total_sources and total_sources > 0
+    )
+
+    if source_errors:
         health_data["important_warnings"].append(
-            f"Partial data: some sources returned errors ({len(errors)})"
+            f"Partial telemetry: {len(source_errors)} source(s) returned errors"
         )
+
+    # Envelope status: success if all sources OK, partial if some failed
+    envelope_status = "success"
+    if not health_data["verification_complete"]:
+        envelope_status = "partial" if confirmed_sources > 0 else "unavailable"
 
     query_end = datetime.now(timezone.utc)
     return {
-        "status": "success",
+        "status": envelope_status,
         "capability": "get_system_health",
         "source": "composite",
         "source_type": "live_governed_read",
         "freshness": "live",
         "access_boundary": "approved read capability only",
         "data": health_data,
-        "error": "; ".join(errors) if errors else None,
+        "error": "; ".join(source_errors) if source_errors else None,
         "provenance": {
             "capability": "get_system_health",
-            "status": "success",
+            "status": envelope_status,
             "source": "composite",
             "source_type": "live_governed_read",
             "retrieved_at": query_end.isoformat(),
@@ -818,6 +872,7 @@ def _handle_system_health(
             "freshness": "live",
             "trace_id": trace_id,
             "sources_checked": health_data["sources_checked"],
+            "source_statuses": health_data["source_statuses"],
             "handler": "shared._handle_system_health",
             "access_boundary": "approved read capability only",
         },
@@ -845,7 +900,7 @@ def _handle_pending_approvals(
             "source_type": "live_governed_read",
             "freshness": "unknown",
             "access_boundary": "approved read capability only",
-            "data": {"count": 0, "items": []},
+            "data": {"count": None, "items": None, "data_available": False},
             "error": str(exc),
             "provenance": {
                 "capability": "get_pending_approvals",
@@ -868,7 +923,7 @@ def _handle_pending_approvals(
             "source_type": "live_governed_read",
             "freshness": "unknown",
             "access_boundary": "approved read capability only",
-            "data": {"count": 0, "items": []},
+            "data": {"count": None, "items": None, "data_available": False},
             "error": raw.get("error", "Review queue unavailable"),
             "provenance": {
                 "capability": "get_pending_approvals",
@@ -884,6 +939,7 @@ def _handle_pending_approvals(
     canonical_data = {
         "count": raw.get("pending_count", 0),
         "items": raw.get("items", []),
+        "data_available": True,
     }
     return {
         "status": "success",
@@ -931,7 +987,7 @@ def _handle_recent_research(
             "source_type": "live_governed_read",
             "freshness": "unknown",
             "access_boundary": "approved read capability only",
-            "data": {"runs": {"total": 0, "completed": 0, "items": []}, "results": {"total": 0, "items": []}},
+            "data": {"runs": None, "results": None, "data_available": False},
             "error": str(exc),
             "provenance": {
                 "capability": "get_recent_research",
@@ -954,7 +1010,7 @@ def _handle_recent_research(
             "source_type": "live_governed_read",
             "freshness": "unknown",
             "access_boundary": "approved read capability only",
-            "data": {"runs": {"total": 0, "completed": 0, "items": []}, "results": {"total": 0, "items": []}},
+            "data": {"runs": None, "results": None, "data_available": False},
             "error": raw.get("error", "Research history unavailable"),
             "provenance": {
                 "capability": "get_recent_research",
@@ -1006,7 +1062,7 @@ def _handle_recent_research(
         "source_type": "live_governed_read",
         "freshness": "live",
         "access_boundary": "approved read capability only",
-        "data": {"runs": safe_runs, "results": safe_results},
+        "data": {"runs": safe_runs, "results": safe_results, "data_available": True},
         "error": None,
         "provenance": {
             "capability": "get_recent_research",
@@ -1045,7 +1101,7 @@ def _handle_opportunities(
             "source_type": "live_governed_read",
             "freshness": "unknown",
             "access_boundary": "approved read capability only",
-            "data": {"total": 0, "by_state": {}, "items": []},
+            "data": {"total": None, "by_state": None, "items": None, "data_available": False},
             "error": str(exc),
             "provenance": {
                 "capability": "get_opportunities",
@@ -1068,7 +1124,7 @@ def _handle_opportunities(
             "source_type": "live_governed_read",
             "freshness": "unknown",
             "access_boundary": "approved read capability only",
-            "data": {"total": 0, "by_state": {}, "items": []},
+            "data": {"total": None, "by_state": None, "items": None, "data_available": False},
             "error": raw.get("error", "Opportunities unavailable"),
             "provenance": {
                 "capability": "get_opportunities",
@@ -1098,6 +1154,7 @@ def _handle_opportunities(
         "total": raw.get("total", 0),
         "by_state": raw.get("by_state", {}),
         "items": safe_items,
+        "data_available": True,
     }
 
     return {
@@ -1535,42 +1592,37 @@ def _handle_funding_readiness(
             p.get("source", ""), p.get("tenant_id", ""), status_val
         )
 
-        # Derive readiness from onboarding_step and status
-        # These are the canonical Nexus signals for readiness
-        missing_requirements = []
-        blocking_items = []
-        next_steps = []
-
-        if status_val in ("inactive", "archived"):
-            readiness = "not_ready"
-            blocking_items.append("Client account is inactive")
-        elif onboarding_step in ("", "initial", "signup"):
-            readiness = "not_ready"
-            missing_requirements.append("Onboarding not started")
-            next_steps.append("Complete onboarding intake")
-        elif onboarding_step in ("docs_pending", "awaiting_documents"):
-            readiness = "almost_ready"
-            missing_requirements.append("Required documents not yet uploaded")
-            next_steps.append("Upload required documents")
-        elif onboarding_step in ("review", "under_review"):
-            readiness = "almost_ready"
-            next_steps.append("Awaiting review completion")
-        elif onboarding_step in ("complete", "active", "funded"):
-            readiness = "ready"
-        else:
-            readiness = "unknown"
-            next_steps.append("Review onboarding status manually")
+        # Funding readiness status:
+        # onboarding_step and status are AVAILABLE SIGNALS but NOT a canonical
+        # funding readiness model. Nova must not issue a readiness verdict
+        # based solely on these signals. The canonical readiness model lives
+        # in the client portal (clientFundingReadiness.ts) and requires
+        # credit data, document completeness, business foundation, and
+        # bankability signals that are not available through this handler.
+        available_signals = {
+            "client_status": status_val,
+            "onboarding_step": onboarding_step,
+            "classification": classification,
+        }
+        missing_signals = [
+            "credit_readiness_score",
+            "business_foundation_score",
+            "bankability_score",
+            "document_completeness",
+            "funding_readiness_score",
+            "tier_classification",
+        ]
 
         canonical_data = {
             "client_identifier": identifier,
             "client_found": True,
-            "funding_readiness_status": readiness,
-            "classification": classification,
+            "funding_readiness_status": "not_yet_certified",
+            "available_signals": available_signals,
+            "missing_signals": missing_signals,
+            "verification_complete": False,
             "client_status": status_val,
             "onboarding_step": onboarding_step,
-            "missing_requirements": missing_requirements,
-            "blocking_items": blocking_items,
-            "next_recommended_steps": next_steps,
+            "classification": classification,
         }
 
         return {
@@ -1630,11 +1682,19 @@ def _handle_operational_summary(
 
     This is NOT a new data source. It calls approved read capabilities
     and returns their results as a single structured context block.
-    Individual failures are reported as unavailable, not fabricated.
+
+    Status semantics:
+    - Each component preserves its own status independently
+    - "unavailable" means data could NOT be retrieved (NOT zero records)
+    - "empty" means data was retrieved and zero records exist
+    - "success" means data was retrieved successfully
+    - "partial" means some components succeeded, some didn't
+    - The component_statuses dict provides a flat status map
     """
     query_start = datetime.now(timezone.utc)
     components: Dict[str, Any] = {}
-    errors: list = []
+    component_statuses: Dict[str, str] = {}
+    component_errors: list = []
 
     # System health
     try:
@@ -1643,9 +1703,11 @@ def _handle_operational_summary(
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
         }
+        component_statuses["system_health"] = result.get("status", "unknown")
     except Exception as exc:
         components["system_health"] = {"status": "unavailable", "error": str(exc)}
-        errors.append(f"system_health: {exc}")
+        component_statuses["system_health"] = "unavailable"
+        component_errors.append(f"system_health: {exc}")
 
     # Client count
     try:
@@ -1654,9 +1716,11 @@ def _handle_operational_summary(
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
         }
+        component_statuses["client_counts"] = result.get("status", "unknown")
     except Exception as exc:
         components["client_counts"] = {"status": "unavailable", "error": str(exc)}
-        errors.append(f"client_counts: {exc}")
+        component_statuses["client_counts"] = "unavailable"
+        component_errors.append(f"client_counts: {exc}")
 
     # Pending approvals
     try:
@@ -1665,9 +1729,11 @@ def _handle_operational_summary(
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
         }
+        component_statuses["pending_approvals"] = result.get("status", "unknown")
     except Exception as exc:
         components["pending_approvals"] = {"status": "unavailable", "error": str(exc)}
-        errors.append(f"pending_approvals: {exc}")
+        component_statuses["pending_approvals"] = "unavailable"
+        component_errors.append(f"pending_approvals: {exc}")
 
     # Recent research
     try:
@@ -1676,9 +1742,11 @@ def _handle_operational_summary(
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
         }
+        component_statuses["recent_research"] = result.get("status", "unknown")
     except Exception as exc:
         components["recent_research"] = {"status": "unavailable", "error": str(exc)}
-        errors.append(f"recent_research: {exc}")
+        component_statuses["recent_research"] = "unavailable"
+        component_errors.append(f"recent_research: {exc}")
 
     # Opportunities
     try:
@@ -1687,15 +1755,31 @@ def _handle_operational_summary(
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
         }
+        component_statuses["opportunities"] = result.get("status", "unknown")
     except Exception as exc:
         components["opportunities"] = {"status": "unavailable", "error": str(exc)}
-        errors.append(f"opportunities: {exc}")
+        component_statuses["opportunities"] = "unavailable"
+        component_errors.append(f"opportunities: {exc}")
 
     query_end = datetime.now(timezone.utc)
 
-    overall_status = "success"
-    if errors:
-        overall_status = "partial" if len(errors) < 5 else "unavailable"
+    # Determine overall status from component statuses
+    statuses = list(component_statuses.values())
+    success_count = sum(1 for s in statuses if s in ("success", "empty"))
+    partial_count = sum(1 for s in statuses if s == "partial")
+    unavailable_count = sum(1 for s in statuses if s in ("unavailable", "error"))
+    total = len(statuses)
+
+    if total == 0:
+        overall_status = "unavailable"
+    elif success_count == total:
+        overall_status = "success"
+    elif success_count + partial_count == total:
+        overall_status = "partial"
+    elif unavailable_count == total:
+        overall_status = "unavailable"
+    else:
+        overall_status = "partial"
 
     return {
         "status": overall_status,
@@ -1705,7 +1789,8 @@ def _handle_operational_summary(
         "freshness": "live",
         "access_boundary": "approved read capability only",
         "data": components,
-        "error": "; ".join(errors) if errors else None,
+        "component_statuses": component_statuses,
+        "error": "; ".join(component_errors) if component_errors else None,
         "provenance": {
             "capability": "get_operational_summary",
             "status": overall_status,
@@ -1720,7 +1805,8 @@ def _handle_operational_summary(
                 "system_health", "client_counts", "pending_approvals",
                 "recent_research", "opportunities",
             ],
-            "components_failed": errors,
+            "component_statuses": component_statuses,
+            "components_failed": component_errors,
             "handler": "shared._handle_operational_summary",
             "access_boundary": "approved read capability only",
         },

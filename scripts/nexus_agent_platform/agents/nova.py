@@ -99,7 +99,25 @@ Operational data access (governed read-only):
 - You CANNOT create, update, delete, or alter any records.
 - You CANNOT execute arbitrary SQL or browse all user data.
 - You CANNOT access Oanda, Temporal, or other Nexus systems.
-- When you retrieve operational data, treat VERIFIED OPERATIONAL DATA as
+
+Status semantics — CRITICAL:
+- "success" = capability executed and returned verified data.
+- "empty" = capability executed successfully and verified zero records exist.
+- "unavailable" = data source could NOT be reached or queried.
+- "partial" = some data sources succeeded, others did not.
+- "error" = capability execution failed.
+- "unknown" = insufficient evidence to determine status.
+- NEVER treat "unavailable" as "zero" or "none". If research is unavailable,
+  say "I couldn't retrieve research data" — NOT "there was no research."
+- NEVER treat "partial" as "success". If health is partial, say "I can't
+  fully verify system health" — NOT "everything is healthy."
+- "not_yet_certified" means the system lacks sufficient canonical data to
+  make a readiness determination. Say "I don't have enough certified data
+  to determine funding readiness" — NOT "not ready."
+- EMPTY means verified zero. "You have no pending approvals" is correct
+  when status=success and count=0. UNAVAILABLE means unknown.
+
+When you retrieve operational data, treat VERIFIED OPERATIONAL DATA as
   authoritative for the requested facts. Do not replace verified numeric
   values with estimates or model knowledge.
 - If a capability fails or is unavailable, say so honestly — never fabricate
@@ -143,52 +161,91 @@ MEMORY_EXPIRY_SECONDS = 3600  # 1 hour
 
 # ─── Provenance Store ──────────────────────────────────────
 # Persists provenance across --once worker lifecycle for follow-up queries.
+# Hardened: hashed filenames, proper permissions, atomic writes, schema validation.
+
+import tempfile
 
 PROVENANCE_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "runtime", "nova_provenance"
 )
+_PROVENANCE_NAMESPACE = "hermes_nova_provenance"
 
 
-def _provenance_key(chat_id: int) -> str:
-    return f"nova_prov_{chat_id}"
+def _provenance_hash(chat_id: int) -> str:
+    """Derive a deterministic hashed filename from namespace + chat_id."""
+    raw = f"{_PROVENANCE_NAMESPACE}:{chat_id}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:24]
+
+
+def _provenance_path(chat_id: int) -> str:
+    """Return the hashed provenance file path for a chat."""
+    return os.path.join(PROVENANCE_DIR, f"{_provenance_hash(chat_id)}.json")
 
 
 def save_provenance(chat_id: int, provenance: Dict[str, Any]) -> None:
-    """Persist the most recent capability provenance for a chat."""
-    key = _provenance_key(chat_id)
-    path = os.path.join(PROVENANCE_DIR, f"{key}.json")
-    os.makedirs(PROVENANCE_DIR, exist_ok=True)
+    """Persist the most recent capability provenance for a chat.
+
+    Uses atomic write (tempfile + os.replace) and safe file permissions.
+    Only safe provenance fields are persisted.
+    """
+    # Filter to safe fields only
+    safe_fields = {
+        "capability", "status", "source", "source_type", "freshness",
+        "retrieved_at", "handler", "trace_id", "verification_complete",
+        "sources_checked", "source_statuses",
+    }
+    safe_prov = {k: v for k, v in provenance.items() if k in safe_fields}
+
+    path = _provenance_path(chat_id)
+    os.makedirs(PROVENANCE_DIR, mode=0o700, exist_ok=True)
+
     data = {
-        "chat_id": chat_id,
-        "provenance": provenance,
+        "provenance": safe_prov,
         "saved_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": time.time() + MEMORY_EXPIRY_SECONDS,
+        "schema_version": 1,
     }
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+
+    # Atomic write with restricted permissions
+    fd, tmp_path = tempfile.mkstemp(dir=PROVENANCE_DIR, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            json.dump(data, f, indent=2)
+        os.chmod(tmp_path, 0o600)
+        os.replace(tmp_path, path)
+    except Exception:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def load_provenance(chat_id: int) -> Optional[Dict[str, Any]]:
     """Load the most recent provenance for a chat, or None if expired/missing."""
-    key = _provenance_key(chat_id)
-    path = os.path.join(PROVENANCE_DIR, f"{key}.json")
+    path = _provenance_path(chat_id)
     try:
         with open(path) as f:
             data = json.load(f)
         if not isinstance(data, dict):
             return None
+        # Schema validation
+        if data.get("schema_version") != 1:
+            return None
         expires_at = data.get("expires_at", 0)
         if expires_at and time.time() > expires_at:
             return None
-        return data.get("provenance")
+        prov = data.get("provenance")
+        if not isinstance(prov, dict):
+            return None
+        return prov
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
         return None
 
 
 def _clear_provenance(chat_id: int) -> None:
     """Clear provenance for a chat."""
-    key = _provenance_key(chat_id)
-    path = os.path.join(PROVENANCE_DIR, f"{key}.json")
+    path = _provenance_path(chat_id)
     try:
         os.remove(path)
     except FileNotFoundError:
@@ -751,13 +808,16 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         active = data.get("active_services", 0)
         degraded = data.get("degraded_services", 0)
         failed = data.get("failed_services", 0)
+        unknown_svc = data.get("unknown_services", 0)
+        verification = data.get("verification_complete", False)
+        source_statuses = data.get("source_statuses", {})
         failures = data.get("recent_failures", [])
         warnings = data.get("important_warnings", [])
         sources = data.get("sources_checked", [])
         lines = [
             "[VERIFIED OPERATIONAL DATA]",
             "capability: get_system_health",
-            "status: success",
+            f"status: {status}",
             "source: composite",
             "freshness: live",
             "facts:",
@@ -765,8 +825,14 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
             f"- active_services: {active}",
             f"- degraded_services: {degraded}",
             f"- failed_services: {failed}",
+            f"- unknown_services: {unknown_svc}",
+            f"- verification_complete: {str(verification).lower()}",
             f"- sources_checked: {', '.join(sources)}",
         ]
+        if source_statuses:
+            lines.append("- source_statuses:")
+            for src, st in source_statuses.items():
+                lines.append(f"  - {src}: {st}")
         if failures:
             lines.append("- recent_failures:")
             for f in failures[:5]:
@@ -917,73 +983,100 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         readiness = data.get("funding_readiness_status", "unknown")
         identifier = data.get("client_identifier", "unknown")
         client_found = data.get("client_found", False)
+        verification = data.get("verification_complete", False)
         lines = [
             "[VERIFIED OPERATIONAL DATA]",
             "capability: get_funding_readiness",
-            "status: success",
+            f"status: {status}",
             "source: supabase",
             "freshness: live",
             "facts:",
             f"- client_identifier: {identifier}",
             f"- client_found: {str(client_found).lower()}",
             f"- funding_readiness_status: {readiness}",
+            f"- verification_complete: {str(verification).lower()}",
         ]
         if client_found:
             lines.append(f"- classification: {data.get('classification', 'unknown')}")
             lines.append(f"- client_status: {data.get('client_status', 'unknown')}")
             lines.append(f"- onboarding_step: {data.get('onboarding_step', 'unknown')}")
-            missing = data.get("missing_requirements", [])
+            available = data.get("available_signals", [])
+            if available:
+                lines.append(f"- available_signals: {', '.join(available)}")
+            missing = data.get("missing_signals", [])
             if missing:
-                lines.append("- missing_requirements:")
+                lines.append("- missing_signals:")
                 for m in missing:
                     lines.append(f"  - {m}")
-            blocking = data.get("blocking_items", [])
-            if blocking:
-                lines.append("- blocking_items:")
-                for b in blocking:
-                    lines.append(f"  - {b}")
-            next_steps = data.get("next_recommended_steps", [])
-            if next_steps:
-                lines.append("- next_recommended_steps:")
-                for s in next_steps:
-                    lines.append(f"  - {s}")
         lines.append("[END VERIFIED OPERATIONAL DATA]")
         return "\n".join(lines)
 
     if query_type == "get_operational_summary":
         components = data
+        comp_statuses = result.get("data", {}).get("component_statuses", {})
+        # Also check the top-level component_statuses from the handler
+        if not comp_statuses:
+            comp_statuses = {}
+            for name in ["system_health", "client_counts", "pending_approvals",
+                         "recent_research", "opportunities"]:
+                comp = components.get(name, {})
+                comp_statuses[name] = comp.get("status", "unknown")
         lines = [
             "[VERIFIED OPERATIONAL DATA]",
             "capability: get_operational_summary",
-            "status: success",
+            f"status: {status}",
             "source: composite",
             "freshness: live",
             "facts:",
         ]
         # System health
         sh = components.get("system_health", {})
+        sh_status = sh.get("status", "unknown")
         sh_data = sh.get("data", {})
-        lines.append(f"- system_health: {sh_data.get('overall_status', 'unknown')} "
-                      f"({sh_data.get('active_services', 0)} active)")
+        if sh_status in ("unavailable", "error"):
+            lines.append(f"- system_health: {sh_status} (data unavailable)")
+        else:
+            lines.append(f"- system_health: {sh_data.get('overall_status', 'unknown')} "
+                          f"({sh_data.get('active_services', 0)} active, "
+                          f"verification: {sh_data.get('verification_complete', False)})")
         # Client counts
         cc = components.get("client_counts", {})
+        cc_status = cc.get("status", "unknown")
         cc_data = cc.get("data", {})
-        lines.append(f"- production_clients: {cc_data.get('production_clients', 'unknown')}")
-        lines.append(f"- tester_or_certification: {cc_data.get('tester_or_certification', 'unknown')}")
+        if cc_status in ("unavailable", "error"):
+            lines.append(f"- client_counts: {cc_status} (data unavailable)")
+        else:
+            lines.append(f"- production_clients: {cc_data.get('production_clients', 'unknown')}")
+            lines.append(f"- tester_or_certification: {cc_data.get('tester_or_certification', 'unknown')}")
         # Pending approvals
         pa = components.get("pending_approvals", {})
+        pa_status = pa.get("status", "unknown")
         pa_data = pa.get("data", {})
-        lines.append(f"- pending_approvals: {pa_data.get('count', 0)}")
+        if pa_status in ("unavailable", "error"):
+            lines.append(f"- pending_approvals: {pa_status} (data unavailable)")
+        else:
+            count = pa_data.get("count", 0)
+            data_avail = pa_data.get("data_available", True)
+            lines.append(f"- pending_approvals: {count} (verified, data_available: {data_avail})")
         # Recent research
         rr = components.get("recent_research", {})
+        rr_status = rr.get("status", "unknown")
         rr_data = rr.get("data", {})
-        runs_total = rr_data.get("runs", {}).get("total", 0)
-        lines.append(f"- recent_research_runs: {runs_total}")
+        if rr_status in ("unavailable", "error"):
+            lines.append(f"- recent_research: {rr_status} (data unavailable)")
+        else:
+            runs_total = rr_data.get("runs", {}).get("total", 0) if rr_data.get("runs") else 0
+            lines.append(f"- recent_research_runs: {runs_total} (verified)")
         # Opportunities
         opp = components.get("opportunities", {})
+        opp_status = opp.get("status", "unknown")
         opp_data = opp.get("data", {})
-        lines.append(f"- opportunities: {opp_data.get('total', 0)} "
-                      f"({opp_data.get('by_state', {}).get('active', 0)} active)")
+        if opp_status in ("unavailable", "error"):
+            lines.append(f"- opportunities: {opp_status} (data unavailable)")
+        else:
+            opp_total = opp_data.get("total", 0) if opp_data.get("total") is not None else 0
+            active = opp_data.get("by_state", {}).get("active", 0) if opp_data.get("by_state") else 0
+            lines.append(f"- opportunities: {opp_total} ({active} active, verified)")
         lines.append("[END VERIFIED OPERATIONAL DATA]")
         return "\n".join(lines)
 
@@ -1006,6 +1099,18 @@ def _format_provenance_context(provenance: Dict[str, Any]) -> str:
             "[END PROVENANCE]"
         )
 
+    # Convert UTC retrieval time to Phoenix-local for natural display
+    retrieved_at = provenance.get("retrieved_at", "unknown")
+    phoenix_time = ""
+    if retrieved_at and retrieved_at != "unknown":
+        try:
+            from zoneinfo import ZoneInfo
+            utc_dt = datetime.fromisoformat(retrieved_at.replace("Z", "+00:00"))
+            phoenix_dt = utc_dt.astimezone(ZoneInfo("America/Phoenix"))
+            phoenix_time = phoenix_dt.strftime("%I:%M %p Phoenix time on %A, %B %-d")
+        except Exception:
+            phoenix_time = ""
+
     lines = [
         "[PROVENANCE]",
         f"capability: {provenance.get('capability', 'unknown')}",
@@ -1013,14 +1118,21 @@ def _format_provenance_context(provenance: Dict[str, Any]) -> str:
         f"source: {provenance.get('source', 'unknown')}",
         f"source_type: {provenance.get('source_type', 'unknown')}",
         f"freshness: {provenance.get('freshness', 'unknown')}",
-        f"retrieved_at: {provenance.get('retrieved_at', 'unknown')}",
+        f"retrieved_at_utc: {retrieved_at}",
     ]
+    if phoenix_time:
+        lines.append(f"retrieved_at_phoenix: {phoenix_time}")
     handler = provenance.get("handler", "")
     if handler:
         lines.append(f"handler: {handler}")
     sources_checked = provenance.get("sources_checked", [])
     if sources_checked:
         lines.append(f"sources_checked: {', '.join(sources_checked)}")
+    source_statuses = provenance.get("source_statuses", {})
+    if source_statuses:
+        lines.append("source_statuses:")
+        for src, st in source_statuses.items():
+            lines.append(f"  - {src}: {st}")
     verification = provenance.get("verification_complete")
     if verification is not None:
         lines.append(f"verification_complete: {str(verification).lower()}")
@@ -1028,7 +1140,8 @@ def _format_provenance_context(provenance: Dict[str, Any]) -> str:
     lines.append("")
     lines.append(
         "NOTE: Answer the user's provenance question using the data above. "
-        "Be specific about capability name, source, freshness, and retrieval time."
+        "Be specific about capability name, source, freshness, and retrieval time. "
+        "For natural responses, use the Phoenix-local time."
     )
     return "\n".join(lines)
 
@@ -1146,6 +1259,58 @@ def _validate_against_capability(
             for claim in nonexistent_claims:
                 if claim in response_lower:
                     return "capability_contradiction"
+
+    # ── Status semantics validation ──
+    # Prevent model from treating unavailable/error as empty/zero
+
+    # For any capability with unavailable/error status, reject claims of zero/none
+    if status in ("unavailable", "error"):
+        zero_claims = [
+            "no research", "no recent research", "there was no research",
+            "no opportunities", "there are no opportunities", "there were no opportunities",
+            "no approvals", "no pending approvals",
+            "no failures", "no issues", "everything is healthy", "system is healthy",
+            "all services", "everything is running",
+        ]
+        for claim in zero_claims:
+            if claim in response_lower:
+                return "status_contradiction"
+
+    # For system health with overall_status=unknown, reject "degraded" or "unhealthy"
+    if query_type == "get_system_health" and status == "success":
+        overall = data.get("overall_status", "unknown")
+        if overall == "unknown":
+            degraded_claims = [
+                "is degraded", "is unhealthy", "is failing", "is down",
+                "facing challenges", "having issues", "services are failing",
+                "system is degraded", "system is unhealthy",
+            ]
+            for claim in degraded_claims:
+                if claim in response_lower:
+                    return "status_contradiction"
+
+    # For funding readiness with not_yet_certified, reject ready/not_ready verdicts
+    if query_type == "get_funding_readiness":
+        readiness = data.get("funding_readiness_status", "unknown")
+        if readiness == "not_yet_certified":
+            verdict_claims = [
+                "is ready", "is not ready", "is almost ready",
+                "funding ready", "not funding ready",
+                "credit ready", "not credit ready",
+            ]
+            for claim in verdict_claims:
+                if claim in response_lower:
+                    return "status_contradiction"
+
+    # For operational summary with partial status, reject "everything is fine"
+    if query_type == "get_operational_summary" and status == "partial":
+        all_ok_claims = [
+            "everything is", "all systems", "everything looks good",
+            "all operational", "everything is running",
+        ]
+        for claim in all_ok_claims:
+            if claim in response_lower:
+                return "status_contradiction"
 
     return None
 
