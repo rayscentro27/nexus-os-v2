@@ -81,10 +81,19 @@ Business context:
 
 Operational data access (governed read-only):
 - You have approved governed read-only access to specific operational data.
-- Available reads: client counts, identity lookups by exact email, runtime
-  capability status, and general approved-table discovery.
+- Available reads: client counts, identity lookups by exact email, client profiles,
+  funding readiness, system health, pending approvals, recent research,
+  opportunities, operational summaries, runtime capability status, and general
+  approved-table discovery.
 - You CAN look up specific email addresses using your identity resolution tool.
 - You CAN retrieve live client counts and breakdowns.
+- You CAN pull up client profiles by exact email.
+- You CAN check funding readiness for a specific client.
+- You CAN check system health and failures.
+- You CAN see pending approvals waiting for review.
+- You CAN see recent research from Alpha.
+- You CAN see current business opportunities.
+- You CAN get a combined operational summary.
 - You CAN check what systems and capabilities you have access to.
 - You CAN search approved operational records by keyword.
 - You CANNOT create, update, delete, or alter any records.
@@ -95,6 +104,9 @@ Operational data access (governed read-only):
   values with estimates or model knowledge.
 - If a capability fails or is unavailable, say so honestly — never fabricate
   operational values from memory.
+- When asked about provenance (where data came from, was it live, which source),
+  answer precisely using the capability name, source system, freshness, and
+  retrieval time. Do not say "operational data" generically.
 
 Technical explanations:
 - Explain frameworks and tools as architecture, not just "combining things." Use concrete examples.
@@ -128,6 +140,59 @@ MEMORY_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "runtime", "nova_memory"
 )
 MEMORY_EXPIRY_SECONDS = 3600  # 1 hour
+
+# ─── Provenance Store ──────────────────────────────────────
+# Persists provenance across --once worker lifecycle for follow-up queries.
+
+PROVENANCE_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "..", "data", "runtime", "nova_provenance"
+)
+
+
+def _provenance_key(chat_id: int) -> str:
+    return f"nova_prov_{chat_id}"
+
+
+def save_provenance(chat_id: int, provenance: Dict[str, Any]) -> None:
+    """Persist the most recent capability provenance for a chat."""
+    key = _provenance_key(chat_id)
+    path = os.path.join(PROVENANCE_DIR, f"{key}.json")
+    os.makedirs(PROVENANCE_DIR, exist_ok=True)
+    data = {
+        "chat_id": chat_id,
+        "provenance": provenance,
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": time.time() + MEMORY_EXPIRY_SECONDS,
+    }
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_provenance(chat_id: int) -> Optional[Dict[str, Any]]:
+    """Load the most recent provenance for a chat, or None if expired/missing."""
+    key = _provenance_key(chat_id)
+    path = os.path.join(PROVENANCE_DIR, f"{key}.json")
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            return None
+        expires_at = data.get("expires_at", 0)
+        if expires_at and time.time() > expires_at:
+            return None
+        return data.get("provenance")
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        return None
+
+
+def _clear_provenance(chat_id: int) -> None:
+    """Clear provenance for a chat."""
+    key = _provenance_key(chat_id)
+    path = os.path.join(PROVENANCE_DIR, f"{key}.json")
+    try:
+        os.remove(path)
+    except FileNotFoundError:
+        pass
 
 
 def _conversation_key(chat_id: int) -> str:
@@ -276,6 +341,25 @@ def _extract_email(text: str) -> Optional[str]:
     return match.group(0) if match else None
 
 
+_PROVENANCE_FOLLOWUP_PATTERNS = re.compile(
+    r'\b(?:where\s+(?:did|do)\s+(?:you\s+)?(?:get|find|pull|retrieve|look\s+up)|'
+    r'which\s+(?:capability|tool|source|system)|'
+    r'(?:was|is)\s+that\s+(?:live|cached|real[- ]time)|'
+    r'when\s+(?:did|was)\s+(?:you\s+)?(?:retrieve|get|pull|check)|'
+    r'how\s+(?:fresh|recent|old)\s+is\s+(?:that|the|this)|'
+    r'(?:did\s+that\s+)?come\s+(?:from|directly)\s+(?:from\s+)?(?:supabase|the\s+database|alpha)|'
+    r'which\s+(?:source|database|table)\s+(?:did|was)|'
+    r'where\s+did\s+(?:those|the|that|these)\s+(?:numbers?|data|results?)|'
+    r'(?:is|was)\s+that\s+(?:from\s+)?(?:supabase|alpha|live|cached|a\s+live))\b',
+    re.IGNORECASE,
+)
+
+
+def _detect_provenance_followup(text: str) -> bool:
+    """Detect if the user is asking about the provenance of a prior result."""
+    return bool(_PROVENANCE_FOLLOWUP_PATTERNS.search(text))
+
+
 def _detect_write_request(text: str) -> Optional[Dict[str, Any]]:
     """Detect if the user is requesting a write operation.
 
@@ -306,31 +390,53 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     or None if no capability applies.
 
     Precedence:
-      1. write request detection (handled separately in capability_gate node)
-      2. exact identity resolution (email present)
-      3. client count / readiness aggregate
-      4. runtime capability query
-      5. explicit general search (has "search"/"find"/"lookup" + operational term)
-      6. no tool required
+      1. provenance follow-up (handled separately in capability_gate node)
+      2. write request detection (handled separately in capability_gate node)
+      3. exact identity resolution (email present)
+      4. exact client profile (email present + profile keywords)
+      5. funding readiness (email present + readiness keywords)
+      6. client count
+      7. pending approvals
+      8. system health
+      9. recent research
+      10. opportunities
+      11. operational summary
+      12. runtime capabilities
+      13. explicit general search
+      14. no tool required
     """
     lower = text.lower().strip()
 
-    # ── Priority 2: Identity resolution ──
-    # Matches when an email is present and the request is about looking up,
-    # checking, verifying, or asking about that identity.
+    # ── Priority 3: Identity resolution (email present) ──
     email = _extract_email(text)
     if email:
+        # Check client profile and funding readiness FIRST (more specific)
+        profile_keywords = (
+            "pull up", "show", "profile", "tell me about",
+            "client profile", "client info",
+        )
+        if any(kw in lower for kw in profile_keywords):
+            return ("get_client_profile", {"email": email})
+
+        readiness_keywords = (
+            "funding readiness", "funding ready", "ready for funding",
+            "what's this client", "what are they missing", "what's blocking",
+            "how close", "what should they fix", "readiness",
+            "score", "funding", "credit readiness",
+        )
+        if any(kw in lower for kw in readiness_keywords):
+            return ("get_funding_readiness", {"email": email})
+
         identity_keywords = (
-            "look", "lookup", "look up", "check", "verify", "who", "what",
-            "account", "identity", "email", "exist", "registered", "profile",
+            "look", "lookup", "look up", "check", "verify", "who",
+            "account", "identity", "email", "exist", "registered",
             "find", "search", "is this", "kind of account", "type of account",
             "login", "associated", "belongs",
         )
         if any(kw in lower for kw in identity_keywords):
             return ("resolve_user_identity_by_email", {"email": email})
 
-    # ── Priority 3: Client count / readiness aggregate ──
-    # Matches requests about client numbers, breakdowns, counts, profiles.
+    # ── Priority 6: Client count ──
     client_count_keywords = (
         "how many clients", "client count", "total clients", "number of clients",
         "production clients", "active clients", "tester", "certification",
@@ -342,8 +448,57 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if any(kw in lower for kw in client_count_keywords):
         return ("get_client_count", {})
 
-    # ── Priority 4: Runtime capability query ──
-    # Matches requests about what Nova can access, read, or do.
+    # ── Priority 7: Pending approvals ──
+    approval_keywords = (
+        "pending approval", "anything to approve", "approve", "waiting for me",
+        "needs my approval", "ray review", "review queue", "what's pending",
+        "anything waiting", "anything pending",
+        "approve anything", "approval", "approvals",
+    )
+    if any(kw in lower for kw in approval_keywords):
+        return ("get_pending_approvals", {})
+
+    # ── Priority 8: System health ──
+    health_keywords = (
+        "how is nexus doing", "system healthy", "is the system", "anything broken",
+        "anything wrong", "system health", "are all services", "what needs attention",
+        "technically", "failures", "anything down", "system status",
+        "how's the system", "how is the system", "nexus doing",
+        "anything to worry about", "any issues", "system running",
+    )
+    if any(kw in lower for kw in health_keywords):
+        return ("get_system_health", {})
+
+    # ── Priority 9: Recent research ──
+    research_keywords = (
+        "research came in", "what has alpha been researching", "any new research",
+        "latest research", "recent research", "research findings", "research history",
+        "what research", "alpha researching", "research runs",
+    )
+    if any(kw in lower for kw in research_keywords):
+        return ("get_recent_research", {})
+
+    # ── Priority 10: Opportunities ──
+    opportunity_keywords = (
+        "what opportunities", "any opportunities", "opportunities worth",
+        "what should i review", "show current opportunities",
+        "money-making opportunities", "business opportunities",
+        "opportunity", "opportunities in nexus", "look at first",
+    )
+    if any(kw in lower for kw in opportunity_keywords):
+        return ("get_opportunities", {})
+
+    # ── Priority 11: Operational summary ──
+    summary_keywords = (
+        "what needs my attention", "status update", "operational summary",
+        "what's going on", "what should i look at", "nexus briefing",
+        "today's briefing", "give me an update", "give me a summary",
+        "operational update", "what's happening", "briefing",
+    )
+    if any(kw in lower for kw in summary_keywords):
+        return ("get_operational_summary", {})
+
+    # ── Priority 12: Runtime capability query ──
     runtime_keywords = (
         "what can you access", "what can you read", "what systems",
         "what access do you have", "what tools", "your capabilities",
@@ -354,8 +509,7 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if any(kw in lower for kw in runtime_keywords):
         return ("get_runtime_capabilities", {})
 
-    # ── Priority 5: Explicit general search ──
-    # Only when the user explicitly asks to search/find/lookup in operational data.
+    # ── Priority 13: Explicit general search ──
     search_verbs = ("search", "find", "look up", "lookup", "check", "query")
     has_search_verb = any(verb in lower for verb in search_verbs)
     operational_terms = (
@@ -366,7 +520,7 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if has_search_verb and has_operational_term:
         return ("general_search", {"query": text})
 
-    # ── Priority 6: No tool required ──
+    # ── Priority 14: No tool required ──
     return None
 
 
@@ -592,6 +746,247 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         lines.append("[END VERIFIED OPERATIONAL DATA]")
         return "\n".join(lines)
 
+    if query_type == "get_system_health":
+        overall = data.get("overall_status", "unknown")
+        active = data.get("active_services", 0)
+        degraded = data.get("degraded_services", 0)
+        failed = data.get("failed_services", 0)
+        failures = data.get("recent_failures", [])
+        warnings = data.get("important_warnings", [])
+        sources = data.get("sources_checked", [])
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_system_health",
+            "status: success",
+            "source: composite",
+            "freshness: live",
+            "facts:",
+            f"- overall_status: {overall}",
+            f"- active_services: {active}",
+            f"- degraded_services: {degraded}",
+            f"- failed_services: {failed}",
+            f"- sources_checked: {', '.join(sources)}",
+        ]
+        if failures:
+            lines.append("- recent_failures:")
+            for f in failures[:5]:
+                lines.append(f"  - {f}")
+        if warnings:
+            lines.append("- important_warnings:")
+            for w in warnings[:5]:
+                lines.append(f"  - {w}")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    if query_type == "get_pending_approvals":
+        count = data.get("count", 0)
+        items = data.get("items", [])
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_pending_approvals",
+            "status: success",
+            "source: local_json",
+            "freshness: live",
+            "facts:",
+            f"- count: {count}",
+        ]
+        if items:
+            lines.append("- items:")
+            for item in items[:5]:
+                title = item.get("title", "untitled")
+                item_type = item.get("type", "unknown")
+                created = item.get("created_at", "unknown")
+                lines.append(f"  - [{item_type}] {title} (created: {created})")
+        else:
+            lines.append("- items: none pending")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    if query_type == "get_recent_research":
+        runs = data.get("runs", {})
+        results = data.get("results", {})
+        run_items = runs.get("items", [])
+        result_items = results.get("items", [])
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_recent_research",
+            "status: success",
+            "source: supabase",
+            "freshness: live",
+            "facts:",
+            f"- total_runs: {runs.get('total', 0)}",
+            f"- completed_runs: {runs.get('completed', 0)}",
+            f"- total_results: {results.get('total', 0)}",
+        ]
+        if run_items:
+            lines.append("- recent_runs:")
+            for r in run_items[:5]:
+                query = r.get("query", "unknown")
+                status = r.get("status", "unknown")
+                category = r.get("category", "unknown")
+                lines.append(f"  - [{status}] {query} ({category})")
+        if result_items:
+            lines.append("- recent_results:")
+            for r in result_items[:5]:
+                title = r.get("title", "unknown")
+                source = r.get("source", "unknown")
+                lines.append(f"  - {title} (source: {source})")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    if query_type == "get_opportunities":
+        total = data.get("total", 0)
+        by_state = data.get("by_state", {})
+        items = data.get("items", [])
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_opportunities",
+            "status: success",
+            "source: supabase",
+            "freshness: live",
+            "facts:",
+            f"- total: {total}",
+            f"- active: {by_state.get('active', 0)}",
+            f"- reviewed: {by_state.get('reviewed', 0)}",
+            f"- rejected: {by_state.get('rejected', 0)}",
+        ]
+        if items:
+            lines.append("- opportunities:")
+            for o in items[:5]:
+                title = o.get("title", "unknown")
+                action = o.get("action_state", "unknown")
+                revenue = o.get("revenue_potential", "unknown")
+                lines.append(f"  - {title} (state: {action}, revenue: {revenue})")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    if query_type == "get_client_profile":
+        found = data.get("found", False)
+        ambiguous = data.get("ambiguous", False)
+        if not found:
+            return (
+                "[VERIFIED OPERATIONAL DATA]\n"
+                "capability: get_client_profile\n"
+                "status: success\n"
+                "source: supabase\n"
+                "freshness: live\n"
+                "facts:\n"
+                "- found: false\n"
+                "[END VERIFIED OPERATIONAL DATA]\n\n"
+                "NOTE: No client profile was found for the given lookup. "
+                "Do not fabricate client data."
+            )
+        if ambiguous:
+            matches = data.get("matches", [])
+            lines = [
+                "[VERIFIED OPERATIONAL DATA]",
+                "capability: get_client_profile",
+                "status: success",
+                "source: supabase",
+                "freshness: live",
+                "facts:",
+                "- found: true",
+                "- ambiguous: true",
+                f"- match_count: {data.get('match_count', 0)}",
+            ]
+            for m in matches[:3]:
+                lines.append(f"  - {m.get('client_label', 'unknown')} ({m.get('classification', 'unknown')})")
+            lines.append("[END VERIFIED OPERATIONAL DATA]")
+            return "\n".join(lines)
+        classification = data.get("classification", "unknown")
+        status_val = data.get("status", "unknown")
+        onboarding = data.get("onboarding_step", "unknown")
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_client_profile",
+            "status: success",
+            "source: supabase",
+            "freshness: live",
+            "facts:",
+            f"- found: true",
+            f"- client_id: {data.get('client_id', 'unknown')}",
+            f"- status: {status_val}",
+            f"- classification: {classification}",
+            f"- onboarding_step: {onboarding}",
+            f"- business_name: {data.get('business_name', 'unknown')}",
+        ]
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    if query_type == "get_funding_readiness":
+        readiness = data.get("funding_readiness_status", "unknown")
+        identifier = data.get("client_identifier", "unknown")
+        client_found = data.get("client_found", False)
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_funding_readiness",
+            "status: success",
+            "source: supabase",
+            "freshness: live",
+            "facts:",
+            f"- client_identifier: {identifier}",
+            f"- client_found: {str(client_found).lower()}",
+            f"- funding_readiness_status: {readiness}",
+        ]
+        if client_found:
+            lines.append(f"- classification: {data.get('classification', 'unknown')}")
+            lines.append(f"- client_status: {data.get('client_status', 'unknown')}")
+            lines.append(f"- onboarding_step: {data.get('onboarding_step', 'unknown')}")
+            missing = data.get("missing_requirements", [])
+            if missing:
+                lines.append("- missing_requirements:")
+                for m in missing:
+                    lines.append(f"  - {m}")
+            blocking = data.get("blocking_items", [])
+            if blocking:
+                lines.append("- blocking_items:")
+                for b in blocking:
+                    lines.append(f"  - {b}")
+            next_steps = data.get("next_recommended_steps", [])
+            if next_steps:
+                lines.append("- next_recommended_steps:")
+                for s in next_steps:
+                    lines.append(f"  - {s}")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    if query_type == "get_operational_summary":
+        components = data
+        lines = [
+            "[VERIFIED OPERATIONAL DATA]",
+            "capability: get_operational_summary",
+            "status: success",
+            "source: composite",
+            "freshness: live",
+            "facts:",
+        ]
+        # System health
+        sh = components.get("system_health", {})
+        sh_data = sh.get("data", {})
+        lines.append(f"- system_health: {sh_data.get('overall_status', 'unknown')} "
+                      f"({sh_data.get('active_services', 0)} active)")
+        # Client counts
+        cc = components.get("client_counts", {})
+        cc_data = cc.get("data", {})
+        lines.append(f"- production_clients: {cc_data.get('production_clients', 'unknown')}")
+        lines.append(f"- tester_or_certification: {cc_data.get('tester_or_certification', 'unknown')}")
+        # Pending approvals
+        pa = components.get("pending_approvals", {})
+        pa_data = pa.get("data", {})
+        lines.append(f"- pending_approvals: {pa_data.get('count', 0)}")
+        # Recent research
+        rr = components.get("recent_research", {})
+        rr_data = rr.get("data", {})
+        runs_total = rr_data.get("runs", {}).get("total", 0)
+        lines.append(f"- recent_research_runs: {runs_total}")
+        # Opportunities
+        opp = components.get("opportunities", {})
+        opp_data = opp.get("data", {})
+        lines.append(f"- opportunities: {opp_data.get('total', 0)} "
+                      f"({opp_data.get('by_state', {}).get('active', 0)} active)")
+        lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
     # Fallback
     return (
         f"[VERIFIED OPERATIONAL DATA]\n"
@@ -599,6 +994,43 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         f"status: {status}\n"
         f"[END VERIFIED OPERATIONAL DATA]"
     )
+
+
+def _format_provenance_context(provenance: Dict[str, Any]) -> str:
+    """Format stored provenance as a context block for follow-up questions."""
+    if not provenance:
+        return (
+            "[PROVENANCE]\n"
+            "status: no_recent_capability\n"
+            "error: No recent operational capability was used in this conversation.\n"
+            "[END PROVENANCE]"
+        )
+
+    lines = [
+        "[PROVENANCE]",
+        f"capability: {provenance.get('capability', 'unknown')}",
+        f"status: {provenance.get('status', 'unknown')}",
+        f"source: {provenance.get('source', 'unknown')}",
+        f"source_type: {provenance.get('source_type', 'unknown')}",
+        f"freshness: {provenance.get('freshness', 'unknown')}",
+        f"retrieved_at: {provenance.get('retrieved_at', 'unknown')}",
+    ]
+    handler = provenance.get("handler", "")
+    if handler:
+        lines.append(f"handler: {handler}")
+    sources_checked = provenance.get("sources_checked", [])
+    if sources_checked:
+        lines.append(f"sources_checked: {', '.join(sources_checked)}")
+    verification = provenance.get("verification_complete")
+    if verification is not None:
+        lines.append(f"verification_complete: {str(verification).lower()}")
+    lines.append("[END PROVENANCE]")
+    lines.append("")
+    lines.append(
+        "NOTE: Answer the user's provenance question using the data above. "
+        "Be specific about capability name, source, freshness, and retrieval time."
+    )
+    return "\n".join(lines)
 
 
 # ─── Model Gateway ─────────────────────────────────────────
@@ -806,19 +1238,29 @@ def _capability_gate(state: AgentState) -> AgentState:
     capability can answer it — WITHOUT requiring the user to say "Supabase."
 
     The gate:
-      1. Checks for write requests → denied
-      2. Matches semantic intent to an approved capability
-      3. Executes the capability through the shared certified layer
-      4. Stores the normalized result and provenance in state
-      5. The conversational model still generates the natural-language response
+      1. Checks for provenance follow-ups → answer from stored provenance
+      2. Checks for write requests → denied
+      3. Matches semantic intent to an approved capability
+      4. Executes the capability through the shared certified layer
+      5. Stores the normalized result and provenance in state
+      6. Persists provenance for follow-up queries
+      7. The conversational model still generates the natural-language response
 
     Capability precedence:
-      1. write request detection
-      2. exact identity resolution (email present)
-      3. client count / readiness aggregate
-      4. runtime capability query
-      5. explicit general search
-      6. no tool required
+      1. provenance follow-up
+      2. write request detection
+      3. exact identity resolution (email present)
+      4. exact client profile
+      5. funding readiness
+      6. client count
+      7. pending approvals
+      8. system health
+      9. recent research
+      10. opportunities
+      11. operational summary
+      12. runtime capabilities
+      13. explicit general search
+      14. no tool required
     """
     # Skip if utility already handled it
     if state.assistant_response:
@@ -832,7 +1274,25 @@ def _capability_gate(state: AgentState) -> AgentState:
     chat_id = state.metadata.get("chat_id", 0)
     trace_id = f"nova_gate_{chat_id}_{int(time.time())}"
 
-    # ── Priority 1: Write detection ──
+    # ── Priority 1: Provenance follow-up ──
+    if _detect_provenance_followup(text):
+        stored = load_provenance(chat_id)
+        state.metadata["capability_gate"] = {
+            "decision": "provenance_followup",
+            "capability": "provenance_followup",
+            "trace_id": trace_id,
+        }
+        state.metadata["capability_result"] = {
+            "tool": "nova_search_supabase",
+            "query_type": "provenance_followup",
+            "status": "success",
+            "data": {"stored_provenance": stored},
+            "provenance": stored or {},
+            "trace_id": trace_id,
+        }
+        return state
+
+    # ── Priority 2: Write detection ──
     write_request = _detect_write_request(text)
     if write_request:
         email = write_request["arguments"].get("email")
@@ -867,7 +1327,7 @@ def _capability_gate(state: AgentState) -> AgentState:
         }
         return state
 
-    # ── Priorities 2-6: Semantic capability gate ──
+    # ── Priorities 3-14: Semantic capability gate ──
     gate_result = _semantic_capability_gate(text)
     if gate_result is None:
         state.metadata["capability_gate"] = {
@@ -918,6 +1378,11 @@ def _capability_gate(state: AgentState) -> AgentState:
         "trace_id": trace_id,
     }
 
+    # Persist provenance for follow-up queries
+    prov = result.get("provenance", {})
+    if prov:
+        save_provenance(chat_id, prov)
+
     return state
 
 
@@ -941,15 +1406,25 @@ def _build_context(state: AgentState) -> AgentState:
 
     capability_result = state.metadata.get("capability_result")
     if capability_result:
-        verified_context = _format_verified_context(capability_result)
-        user_content = (
-            f"{state.user_message}\n\n"
-            f"{verified_context}\n\n"
-            f"Respond naturally using the verified data above. "
-            f"Do not contradict the verified facts. "
-            f"Do not fabricate alternative values. "
-            f"Do not deny access to data that was successfully retrieved."
-        )
+        query_type = capability_result.get("query_type", "")
+
+        if query_type == "provenance_followup":
+            stored = capability_result.get("data", {}).get("stored_provenance")
+            provenance_context = _format_provenance_context(stored)
+            user_content = (
+                f"{state.user_message}\n\n"
+                f"{provenance_context}"
+            )
+        else:
+            verified_context = _format_verified_context(capability_result)
+            user_content = (
+                f"{state.user_message}\n\n"
+                f"{verified_context}\n\n"
+                f"Respond naturally using the verified data above. "
+                f"Do not contradict the verified facts. "
+                f"Do not fabricate alternative values. "
+                f"Do not deny access to data that was successfully retrieved."
+            )
 
     messages.append({"role": "user", "content": user_content})
 
@@ -1044,6 +1519,7 @@ def _compose_output(state: AgentState) -> AgentState:
 
     # Skip saving if this is a reset — the worker handles file deletion
     if state.metadata.get("reset_requested"):
+        _clear_provenance(chat_id)
         state.metadata["response_mode"] = state.intent
         state.metadata["conversation_hash"] = _conversation_hash(
             state.metadata.get("model_messages", [])

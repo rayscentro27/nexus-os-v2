@@ -77,7 +77,10 @@ class TestPermissions:
     def test_nova_can_invoke_approved_reads(self):
         from nexus_agent_platform.capabilities.shared import _check_permission
         for cap in ["get_runtime_capabilities", "get_client_count",
-                     "resolve_user_identity_by_email"]:
+                     "resolve_user_identity_by_email", "get_system_health",
+                     "get_pending_approvals", "get_recent_research",
+                     "get_opportunities", "get_client_profile",
+                     "get_funding_readiness", "get_operational_summary"]:
             assert _check_permission("hermes_nova", cap, is_write=False) is None
 
     def test_nova_cannot_invoke_writes(self):
@@ -111,7 +114,7 @@ class TestPermissions:
     def test_nova_allowed_reads_frozen(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_READS
         assert isinstance(NOVA_ALLOWED_READS, frozenset)
-        assert len(NOVA_ALLOWED_READS) == 4
+        assert len(NOVA_ALLOWED_READS) == 11
 
     def test_nova_allowed_writes_empty(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_WRITES
@@ -825,7 +828,14 @@ class TestNovaAdapter:
         assert "get_client_count" in NOVA_ALLOWED_READS
         assert "resolve_user_identity_by_email" in NOVA_ALLOWED_READS
         assert "general_search" in NOVA_ALLOWED_READS
-        assert len(NOVA_ALLOWED_READS) == 4
+        assert "get_system_health" in NOVA_ALLOWED_READS
+        assert "get_pending_approvals" in NOVA_ALLOWED_READS
+        assert "get_recent_research" in NOVA_ALLOWED_READS
+        assert "get_opportunities" in NOVA_ALLOWED_READS
+        assert "get_client_profile" in NOVA_ALLOWED_READS
+        assert "get_funding_readiness" in NOVA_ALLOWED_READS
+        assert "get_operational_summary" in NOVA_ALLOWED_READS
+        assert len(NOVA_ALLOWED_READS) == 11
 
     def test_nova_rejects_unregistered_capability(self):
         from nexus_agent_platform.connectors.nova_supabase import execute_nova_capability

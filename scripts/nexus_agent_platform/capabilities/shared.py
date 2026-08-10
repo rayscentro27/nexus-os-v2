@@ -27,6 +27,13 @@ NOVA_ALLOWED_READS = frozenset({
     "get_client_count",
     "resolve_user_identity_by_email",
     "general_search",
+    "get_system_health",
+    "get_pending_approvals",
+    "get_recent_research",
+    "get_opportunities",
+    "get_client_profile",
+    "get_funding_readiness",
+    "get_operational_summary",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -698,12 +705,1041 @@ def _handle_general_search(
     }
 
 
+# ─── Shared Handler: System Health ──────────────────────────
+
+def _handle_system_health(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Aggregate system health from process registry, heartbeat, and process status.
+
+    Combines local JSON file reads (system_status, failure_report) with
+    Supabase process status into a single health summary.
+    """
+    query_start = datetime.now(timezone.utc)
+    health_data: Dict[str, Any] = {
+        "overall_status": "unknown",
+        "active_services": 0,
+        "degraded_services": 0,
+        "failed_services": 0,
+        "recent_failures": [],
+        "important_warnings": [],
+        "sources_checked": [],
+    }
+    errors: list = []
+
+    # Source 1: Process registry (local JSON)
+    try:
+        from nexus_agent_platform.agents.hermes import _get_system_status
+        raw = _get_system_status()
+        health_data["sources_checked"].append("process_registry")
+        working = raw.get("working", "")
+        if "/" in working:
+            parts = working.split("/")
+            try:
+                active = int(parts[0].strip())
+                total = int(parts[1].split()[0].strip())
+                health_data["active_services"] = active
+                health_data["degraded_services"] = total - active
+            except (ValueError, IndexError):
+                pass
+        detail = raw.get("detail", "")
+        if detail:
+            health_data["important_warnings"].extend(
+                [line.strip() for line in detail.split("\n") if line.strip()]
+            )
+    except Exception as exc:
+        errors.append(f"process_registry: {exc}")
+
+    # Source 2: Failure report (local JSON)
+    try:
+        from nexus_agent_platform.agents.hermes import _get_failure_report
+        raw = _get_failure_report()
+        health_data["sources_checked"].append("failure_report")
+        working = raw.get("working", "")
+        needs = raw.get("needs_attention", "")
+        if working and "No failures" not in working:
+            health_data["recent_failures"].append(working)
+        if needs:
+            health_data["recent_failures"].append(needs)
+    except Exception as exc:
+        errors.append(f"failure_report: {exc}")
+
+    # Source 3: Process failures from Supabase
+    try:
+        from nexus_agent_platform.agents.hermes import _get_process_failures
+        raw = _get_process_failures()
+        if raw.get("status") == "ok":
+            health_data["sources_checked"].append("process_failures")
+            total_failures = raw.get("total", 0)
+            health_data["failed_services"] = total_failures
+            by_status = raw.get("by_status", {})
+            for status_name, count in by_status.items():
+                if count > 0:
+                    health_data["recent_failures"].append(
+                        f"{count} process(es) with status {status_name}"
+                    )
+        else:
+            errors.append(f"process_failures: {raw.get('error', 'unavailable')}")
+    except Exception as exc:
+        errors.append(f"process_failures: {exc}")
+
+    # Determine overall status
+    if health_data["failed_services"] > 0:
+        health_data["overall_status"] = "degraded"
+    elif health_data["active_services"] == 0:
+        health_data["overall_status"] = "unknown"
+    else:
+        health_data["overall_status"] = "healthy"
+
+    if errors:
+        health_data["important_warnings"].append(
+            f"Partial data: some sources returned errors ({len(errors)})"
+        )
+
+    query_end = datetime.now(timezone.utc)
+    return {
+        "status": "success",
+        "capability": "get_system_health",
+        "source": "composite",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": health_data,
+        "error": "; ".join(errors) if errors else None,
+        "provenance": {
+            "capability": "get_system_health",
+            "status": "success",
+            "source": "composite",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "sources_checked": health_data["sources_checked"],
+            "handler": "shared._handle_system_health",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
+# ─── Shared Handler: Pending Approvals ─────────────────────
+
+def _handle_pending_approvals(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Read pending approvals from the canonical review queue."""
+    from nexus_agent_platform.agents.hermes import _get_pending_approvals
+
+    query_start = datetime.now(timezone.utc)
+    try:
+        raw = _get_pending_approvals()
+    except Exception as exc:
+        query_end = datetime.now(timezone.utc)
+        return {
+            "status": "error",
+            "capability": "get_pending_approvals",
+            "source": "local_json",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"count": 0, "items": []},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_pending_approvals",
+                "status": "error",
+                "source": "local_json",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    query_end = datetime.now(timezone.utc)
+    status = raw.get("status", "unavailable")
+    if status == "unavailable":
+        return {
+            "status": "unavailable",
+            "capability": "get_pending_approvals",
+            "source": "local_json",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"count": 0, "items": []},
+            "error": raw.get("error", "Review queue unavailable"),
+            "provenance": {
+                "capability": "get_pending_approvals",
+                "status": "unavailable",
+                "source": "local_json",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    canonical_data = {
+        "count": raw.get("pending_count", 0),
+        "items": raw.get("items", []),
+    }
+    return {
+        "status": "success",
+        "capability": "get_pending_approvals",
+        "source": "local_json",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": canonical_data,
+        "error": None,
+        "provenance": {
+            "capability": "get_pending_approvals",
+            "status": "success",
+            "source": "local_json",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "handler": "hermes._get_pending_approvals",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
+# ─── Shared Handler: Recent Research ───────────────────────
+
+def _handle_recent_research(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Read recent research runs and results from canonical source."""
+    from nexus_agent_platform.agents.hermes import _get_research_history
+
+    query_start = datetime.now(timezone.utc)
+    try:
+        raw = _get_research_history()
+    except Exception as exc:
+        query_end = datetime.now(timezone.utc)
+        return {
+            "status": "error",
+            "capability": "get_recent_research",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"runs": {"total": 0, "completed": 0, "items": []}, "results": {"total": 0, "items": []}},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_recent_research",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    query_end = datetime.now(timezone.utc)
+    status = raw.get("status", "unavailable")
+    if status == "unavailable":
+        return {
+            "status": "unavailable",
+            "capability": "get_recent_research",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"runs": {"total": 0, "completed": 0, "items": []}, "results": {"total": 0, "items": []}},
+            "error": raw.get("error", "Research history unavailable"),
+            "provenance": {
+                "capability": "get_recent_research",
+                "status": "unavailable",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    # Normalize: keep safe fields only
+    runs_data = raw.get("runs", {})
+    results_data = raw.get("results", {})
+    safe_runs = {
+        "total": runs_data.get("total", 0),
+        "completed": runs_data.get("completed", 0),
+        "failed": runs_data.get("failed", 0),
+        "items": [
+            {
+                "id": r.get("id"),
+                "query": r.get("query"),
+                "status": r.get("status"),
+                "category": r.get("category"),
+                "created_at": r.get("created_at"),
+                "completed_at": r.get("completed_at"),
+            }
+            for r in runs_data.get("items", [])[:10]
+        ],
+    }
+    safe_results = {
+        "total": results_data.get("total", 0),
+        "items": [
+            {
+                "id": r.get("id"),
+                "source": r.get("source"),
+                "title": r.get("title"),
+                "created_at": r.get("created_at"),
+            }
+            for r in results_data.get("items", [])[:10]
+        ],
+    }
+
+    return {
+        "status": "success",
+        "capability": "get_recent_research",
+        "source": "supabase",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": {"runs": safe_runs, "results": safe_results},
+        "error": None,
+        "provenance": {
+            "capability": "get_recent_research",
+            "status": "success",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "handler": "hermes._get_research_history",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
+# ─── Shared Handler: Opportunities ─────────────────────────
+
+def _handle_opportunities(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Read current business opportunities from canonical source."""
+    from nexus_agent_platform.agents.hermes import _get_opportunities
+
+    query_start = datetime.now(timezone.utc)
+    try:
+        raw = _get_opportunities()
+    except Exception as exc:
+        query_end = datetime.now(timezone.utc)
+        return {
+            "status": "error",
+            "capability": "get_opportunities",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"total": 0, "by_state": {}, "items": []},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_opportunities",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    query_end = datetime.now(timezone.utc)
+    status = raw.get("status", "unavailable")
+    if status == "unavailable":
+        return {
+            "status": "unavailable",
+            "capability": "get_opportunities",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"total": 0, "by_state": {}, "items": []},
+            "error": raw.get("error", "Opportunities unavailable"),
+            "provenance": {
+                "capability": "get_opportunities",
+                "status": "unavailable",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    # Normalize: safe fields only
+    items = raw.get("opportunities", [])
+    safe_items = [
+        {
+            "id": o.get("id"),
+            "title": o.get("title"),
+            "status": o.get("status"),
+            "revenue_potential": o.get("revenue_potential"),
+            "action_state": o.get("action_state"),
+            "updated_at": o.get("updated_at"),
+        }
+        for o in items
+    ]
+    canonical_data = {
+        "total": raw.get("total", 0),
+        "by_state": raw.get("by_state", {}),
+        "items": safe_items,
+    }
+
+    return {
+        "status": "success",
+        "capability": "get_opportunities",
+        "source": "supabase",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": canonical_data,
+        "error": None,
+        "provenance": {
+            "capability": "get_opportunities",
+            "status": "success",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "handler": "hermes._get_opportunities",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
+# ─── Shared Handler: Client Profile ────────────────────────
+
+def _handle_client_profile(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Look up a single client profile by exact email or exact ID.
+
+    Returns safe fields only: status, classification, tenant, onboarding state.
+    Does not expose raw credit data, SSN, bank details, or credentials.
+    """
+    args = arguments or {}
+    raw_email = args.get("email", "")
+    client_id = args.get("client_id", "")
+
+    query_start = datetime.now(timezone.utc)
+    session = _supabase_session()
+    if session is None:
+        return {
+            "status": "unavailable",
+            "capability": "get_client_profile",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"found": False, "ambiguous": False},
+            "error": "Supabase credentials not configured",
+            "provenance": {
+                "capability": "get_client_profile",
+                "status": "unavailable",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    # Normalize email if provided
+    normalized = _normalize_email(raw_email) if raw_email else None
+    if raw_email and normalized is None:
+        return {
+            "status": "error",
+            "capability": "get_client_profile",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"found": False, "ambiguous": False},
+            "error": f"Invalid email format: {raw_email}",
+            "provenance": {
+                "capability": "get_client_profile",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    # Build query
+    if normalized:
+        params = {
+            "select": "id,client_label,status,source,tenant_id,business_name,legal_name,onboarding_step,created_at,updated_at",
+            "client_label": f"eq.{normalized}",
+        }
+    elif client_id:
+        params = {
+            "select": "id,client_label,status,source,tenant_id,business_name,legal_name,onboarding_step,created_at,updated_at",
+            "id": f"eq.{client_id}",
+        }
+    else:
+        return {
+            "status": "error",
+            "capability": "get_client_profile",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"found": False, "ambiguous": False},
+            "error": "Provide an email or client_id for lookup.",
+            "provenance": {
+                "capability": "get_client_profile",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    try:
+        resp = session.get(
+            f"{session._supabase_url}/rest/v1/client_profiles",
+            params=params,
+            timeout=10,
+        )
+        query_end = datetime.now(timezone.utc)
+
+        if not resp.ok:
+            return {
+                "status": "error",
+                "capability": "get_client_profile",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "freshness": "unknown",
+                "access_boundary": "approved read capability only",
+                "data": {"found": False, "ambiguous": False},
+                "error": f"Profile query returned {resp.status_code}",
+                "provenance": {
+                    "capability": "get_client_profile",
+                    "status": "error",
+                    "source": "supabase",
+                    "source_type": "live_governed_read",
+                    "retrieved_at": query_end.isoformat(),
+                    "freshness": "unknown",
+                    "trace_id": trace_id,
+                },
+            }
+
+        profiles = resp.json()
+        if not profiles:
+            return {
+                "status": "success",
+                "capability": "get_client_profile",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "freshness": "live",
+                "access_boundary": "approved read capability only",
+                "data": {"found": False, "ambiguous": False},
+                "error": None,
+                "provenance": {
+                    "capability": "get_client_profile",
+                    "status": "success",
+                    "source": "supabase",
+                    "source_type": "live_governed_read",
+                    "retrieved_at": query_end.isoformat(),
+                    "freshness": "live",
+                    "trace_id": trace_id,
+                    "handler": "shared._handle_client_profile",
+                },
+            }
+
+        if len(profiles) > 1:
+            return {
+                "status": "success",
+                "capability": "get_client_profile",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "freshness": "live",
+                "access_boundary": "approved read capability only",
+                "data": {
+                    "found": True,
+                    "ambiguous": True,
+                    "match_count": len(profiles),
+                    "matches": [
+                        {
+                            "id": p.get("id"),
+                            "client_label": p.get("client_label"),
+                            "status": (p.get("status") or "").lower(),
+                            "classification": _classify_profile(
+                                p.get("source", ""), p.get("tenant_id", ""), (p.get("status") or "").lower()
+                            ),
+                        }
+                        for p in profiles[:5]
+                    ],
+                },
+                "error": None,
+                "provenance": {
+                    "capability": "get_client_profile",
+                    "status": "success",
+                    "source": "supabase",
+                    "source_type": "live_governed_read",
+                    "retrieved_at": query_end.isoformat(),
+                    "freshness": "live",
+                    "trace_id": trace_id,
+                    "handler": "shared._handle_client_profile",
+                },
+            }
+
+        p = profiles[0]
+        classification = _classify_profile(
+            p.get("source", ""), p.get("tenant_id", ""), (p.get("status") or "").lower()
+        )
+        safe_profile = {
+            "found": True,
+            "ambiguous": False,
+            "client_id": p.get("id"),
+            "client_label": p.get("client_label"),
+            "status": (p.get("status") or "").lower(),
+            "classification": classification,
+            "tenant_id": p.get("tenant_id"),
+            "business_name": p.get("business_name"),
+            "legal_name": p.get("legal_name"),
+            "onboarding_step": p.get("onboarding_step"),
+            "created_at": p.get("created_at"),
+            "updated_at": p.get("updated_at"),
+        }
+
+        return {
+            "status": "success",
+            "capability": "get_client_profile",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": safe_profile,
+            "error": None,
+            "provenance": {
+                "capability": "get_client_profile",
+                "status": "success",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "query_start": query_start.isoformat(),
+                "query_end": query_end.isoformat(),
+                "freshness": "live",
+                "trace_id": trace_id,
+                "handler": "shared._handle_client_profile",
+                "access_boundary": "approved read capability only",
+            },
+        }
+
+    except Exception as exc:
+        query_end = datetime.now(timezone.utc)
+        return {
+            "status": "error",
+            "capability": "get_client_profile",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"found": False, "ambiguous": False},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_client_profile",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+
+# ─── Shared Handler: Funding Readiness ─────────────────────
+
+def _handle_funding_readiness(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Read funding readiness status for a specific client.
+
+    Uses the client_profiles onboarding_step and status fields as the
+    canonical readiness signal. If a dedicated readiness table exists,
+    it will be queried; otherwise falls back to profile-based inference.
+    """
+    args = arguments or {}
+    raw_email = args.get("email", "")
+    client_id = args.get("client_id", "")
+
+    normalized = _normalize_email(raw_email) if raw_email else None
+    if raw_email and normalized is None:
+        return {
+            "status": "error",
+            "capability": "get_funding_readiness",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"client_identifier": raw_email, "funding_readiness_status": "unknown"},
+            "error": f"Invalid email format: {raw_email}",
+            "provenance": {
+                "capability": "get_funding_readiness",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    if not normalized and not client_id:
+        return {
+            "status": "error",
+            "capability": "get_funding_readiness",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"client_identifier": "unknown", "funding_readiness_status": "unknown"},
+            "error": "Provide an email or client_id for readiness lookup.",
+            "provenance": {
+                "capability": "get_funding_readiness",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    session = _supabase_session()
+    if session is None:
+        return {
+            "status": "unavailable",
+            "capability": "get_funding_readiness",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"client_identifier": normalized or client_id, "funding_readiness_status": "unknown"},
+            "error": "Supabase credentials not configured",
+            "provenance": {
+                "capability": "get_funding_readiness",
+                "status": "unavailable",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+    query_start = datetime.now(timezone.utc)
+    identifier = normalized or client_id
+
+    # First, find the client profile
+    try:
+        if normalized:
+            profile_resp = session.get(
+                f"{session._supabase_url}/rest/v1/client_profiles",
+                params={
+                    "select": "id,client_label,status,source,tenant_id,onboarding_step,business_name,created_at",
+                    "client_label": f"eq.{normalized}",
+                },
+                timeout=10,
+            )
+        else:
+            profile_resp = session.get(
+                f"{session._supabase_url}/rest/v1/client_profiles",
+                params={
+                    "select": "id,client_label,status,source,tenant_id,onboarding_step,business_name,created_at",
+                    "id": f"eq.{client_id}",
+                },
+                timeout=10,
+            )
+
+        query_end = datetime.now(timezone.utc)
+
+        if not profile_resp.ok:
+            return {
+                "status": "error",
+                "capability": "get_funding_readiness",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "freshness": "unknown",
+                "access_boundary": "approved read capability only",
+                "data": {"client_identifier": identifier, "funding_readiness_status": "unknown"},
+                "error": f"Profile query returned {profile_resp.status_code}",
+                "provenance": {
+                    "capability": "get_funding_readiness",
+                    "status": "error",
+                    "source": "supabase",
+                    "source_type": "live_governed_read",
+                    "retrieved_at": query_end.isoformat(),
+                    "freshness": "unknown",
+                    "trace_id": trace_id,
+                },
+            }
+
+        profiles = profile_resp.json()
+        if not profiles:
+            return {
+                "status": "success",
+                "capability": "get_funding_readiness",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "freshness": "live",
+                "access_boundary": "approved read capability only",
+                "data": {
+                    "client_identifier": identifier,
+                    "funding_readiness_status": "not_found",
+                    "client_found": False,
+                },
+                "error": None,
+                "provenance": {
+                    "capability": "get_funding_readiness",
+                    "status": "success",
+                    "source": "supabase",
+                    "source_type": "live_governed_read",
+                    "retrieved_at": query_end.isoformat(),
+                    "freshness": "live",
+                    "trace_id": trace_id,
+                    "handler": "shared._handle_funding_readiness",
+                },
+            }
+
+        p = profiles[0]
+        status_val = (p.get("status") or "").lower()
+        onboarding_step = p.get("onboarding_step") or ""
+        classification = _classify_profile(
+            p.get("source", ""), p.get("tenant_id", ""), status_val
+        )
+
+        # Derive readiness from onboarding_step and status
+        # These are the canonical Nexus signals for readiness
+        missing_requirements = []
+        blocking_items = []
+        next_steps = []
+
+        if status_val in ("inactive", "archived"):
+            readiness = "not_ready"
+            blocking_items.append("Client account is inactive")
+        elif onboarding_step in ("", "initial", "signup"):
+            readiness = "not_ready"
+            missing_requirements.append("Onboarding not started")
+            next_steps.append("Complete onboarding intake")
+        elif onboarding_step in ("docs_pending", "awaiting_documents"):
+            readiness = "almost_ready"
+            missing_requirements.append("Required documents not yet uploaded")
+            next_steps.append("Upload required documents")
+        elif onboarding_step in ("review", "under_review"):
+            readiness = "almost_ready"
+            next_steps.append("Awaiting review completion")
+        elif onboarding_step in ("complete", "active", "funded"):
+            readiness = "ready"
+        else:
+            readiness = "unknown"
+            next_steps.append("Review onboarding status manually")
+
+        canonical_data = {
+            "client_identifier": identifier,
+            "client_found": True,
+            "funding_readiness_status": readiness,
+            "classification": classification,
+            "client_status": status_val,
+            "onboarding_step": onboarding_step,
+            "missing_requirements": missing_requirements,
+            "blocking_items": blocking_items,
+            "next_recommended_steps": next_steps,
+        }
+
+        return {
+            "status": "success",
+            "capability": "get_funding_readiness",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": canonical_data,
+            "error": None,
+            "provenance": {
+                "capability": "get_funding_readiness",
+                "status": "success",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "query_start": query_start.isoformat(),
+                "query_end": query_end.isoformat(),
+                "freshness": "live",
+                "trace_id": trace_id,
+                "handler": "shared._handle_funding_readiness",
+                "access_boundary": "approved read capability only",
+            },
+        }
+
+    except Exception as exc:
+        query_end = datetime.now(timezone.utc)
+        return {
+            "status": "error",
+            "capability": "get_funding_readiness",
+            "source": "supabase",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {"client_identifier": identifier, "funding_readiness_status": "unknown"},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_funding_readiness",
+                "status": "error",
+                "source": "supabase",
+                "source_type": "live_governed_read",
+                "retrieved_at": query_end.isoformat(),
+                "freshness": "unknown",
+                "trace_id": trace_id,
+            },
+        }
+
+
+# ─── Shared Handler: Operational Summary ───────────────────
+
+def _handle_operational_summary(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Aggregator: collect verified results from multiple read capabilities.
+
+    This is NOT a new data source. It calls approved read capabilities
+    and returns their results as a single structured context block.
+    Individual failures are reported as unavailable, not fabricated.
+    """
+    query_start = datetime.now(timezone.utc)
+    components: Dict[str, Any] = {}
+    errors: list = []
+
+    # System health
+    try:
+        result = _handle_system_health(trace_id=trace_id)
+        components["system_health"] = {
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+        }
+    except Exception as exc:
+        components["system_health"] = {"status": "unavailable", "error": str(exc)}
+        errors.append(f"system_health: {exc}")
+
+    # Client count
+    try:
+        result = _handle_client_count(trace_id=trace_id)
+        components["client_counts"] = {
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+        }
+    except Exception as exc:
+        components["client_counts"] = {"status": "unavailable", "error": str(exc)}
+        errors.append(f"client_counts: {exc}")
+
+    # Pending approvals
+    try:
+        result = _handle_pending_approvals(trace_id=trace_id)
+        components["pending_approvals"] = {
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+        }
+    except Exception as exc:
+        components["pending_approvals"] = {"status": "unavailable", "error": str(exc)}
+        errors.append(f"pending_approvals: {exc}")
+
+    # Recent research
+    try:
+        result = _handle_recent_research(trace_id=trace_id)
+        components["recent_research"] = {
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+        }
+    except Exception as exc:
+        components["recent_research"] = {"status": "unavailable", "error": str(exc)}
+        errors.append(f"recent_research: {exc}")
+
+    # Opportunities
+    try:
+        result = _handle_opportunities(trace_id=trace_id)
+        components["opportunities"] = {
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+        }
+    except Exception as exc:
+        components["opportunities"] = {"status": "unavailable", "error": str(exc)}
+        errors.append(f"opportunities: {exc}")
+
+    query_end = datetime.now(timezone.utc)
+
+    overall_status = "success"
+    if errors:
+        overall_status = "partial" if len(errors) < 5 else "unavailable"
+
+    return {
+        "status": overall_status,
+        "capability": "get_operational_summary",
+        "source": "composite",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": components,
+        "error": "; ".join(errors) if errors else None,
+        "provenance": {
+            "capability": "get_operational_summary",
+            "status": overall_status,
+            "source": "composite",
+            "source_type": "live_governed_read",
+            "retrieved_at": query_end.isoformat(),
+            "query_start": query_start.isoformat(),
+            "query_end": query_end.isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "components_requested": [
+                "system_health", "client_counts", "pending_approvals",
+                "recent_research", "opportunities",
+            ],
+            "components_failed": errors,
+            "handler": "shared._handle_operational_summary",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_client_count": lambda args, tid: _handle_client_count(args, tid),
     "resolve_user_identity_by_email": lambda args, tid: _handle_identity_resolution(args, tid),
     "general_search": lambda args, tid: _handle_general_search(args, tid),
+    "get_system_health": lambda args, tid: _handle_system_health(args, tid),
+    "get_pending_approvals": lambda args, tid: _handle_pending_approvals(args, tid),
+    "get_recent_research": lambda args, tid: _handle_recent_research(args, tid),
+    "get_opportunities": lambda args, tid: _handle_opportunities(args, tid),
+    "get_client_profile": lambda args, tid: _handle_client_profile(args, tid),
+    "get_funding_readiness": lambda args, tid: _handle_funding_readiness(args, tid),
+    "get_operational_summary": lambda args, tid: _handle_operational_summary(args, tid),
     "get_runtime_capabilities": None,  # handled specially (needs agent_id)
 }
 
