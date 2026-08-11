@@ -19,6 +19,20 @@ from typing import Any, Callable, Dict, Optional
 
 log = logging.getLogger(__name__)
 
+from nexus_agent_platform.capabilities.nexus_knowledge import (
+    get_nexus_overview as _nk_get_nexus_overview,
+    get_nexus_architecture as _nk_get_nexus_architecture,
+    get_agent_registry as _nk_get_agent_registry,
+    get_agent_details as _nk_get_agent_details,
+    get_tool_registry as _nk_get_tool_registry,
+    get_capability_registry as _nk_get_capability_registry,
+    get_process_registry_live as _nk_get_process_registry_live,
+    get_process_details as _nk_get_process_details,
+    get_report_index_live as _nk_get_report_index_live,
+    get_latest_reports_live as _nk_get_latest_reports_live,
+    get_recent_activity_live as _nk_get_recent_activity_live,
+)
+
 # ─── Agent Permission Profiles ─────────────────────────────
 # Code-enforced capability allowlists per agent.
 
@@ -34,6 +48,17 @@ NOVA_ALLOWED_READS = frozenset({
     "get_client_profile",
     "get_funding_readiness",
     "get_operational_summary",
+    # Nexus Knowledge Layer
+    "get_nexus_overview",
+    "get_agent_registry",
+    "get_agent_details",
+    "get_tool_registry",
+    "get_capability_registry",
+    "get_process_registry",
+    "get_process_details",
+    "get_report_index",
+    "get_latest_reports",
+    "get_recent_activity",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -1813,6 +1838,546 @@ def _handle_operational_summary(
     }
 
 
+# ─── Nexus Knowledge Handlers ─────────────────────────────
+
+def _handle_nexus_overview(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return a verified overview of the Nexus system."""
+    try:
+        data = _nk_get_nexus_overview()
+        return {
+            "status": "success",
+            "capability": "get_nexus_overview",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_nexus_overview",
+                "status": "success",
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_nexus_overview",
+                "access_boundary": "approved read capability only",
+            },
+        }
+    except Exception as exc:
+        log.error("get_nexus_overview failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_nexus_overview",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_nexus_overview",
+                "status": "error",
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_nexus_overview",
+            },
+        }
+
+
+def _handle_agent_registry(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return all agents with their metadata."""
+    try:
+        data = _nk_get_agent_registry()
+        return {
+            "status": "success",
+            "capability": "get_agent_registry",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_agent_registry",
+                "status": "success",
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_agent_registry",
+            },
+        }
+    except Exception as exc:
+        log.error("get_agent_registry failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_agent_registry",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_agent_registry",
+                "status": "error",
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_agent_registry",
+            },
+        }
+
+
+def _handle_agent_details(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return details for a specific agent."""
+    args = arguments or {}
+    agent_id = args.get("agent_id", "").strip().lower()
+    if not agent_id:
+        return {
+            "status": "error",
+            "capability": "get_agent_details",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": "agent_id is required.",
+            "provenance": {
+                "capability": "get_agent_details",
+                "status": "error",
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_agent_details",
+            },
+        }
+    try:
+        data = _nk_get_agent_details(agent_id)
+        status = "success" if data.get("found") else "not_found"
+        return {
+            "status": status,
+            "capability": "get_agent_details",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None if data.get("found") else data.get("error"),
+            "provenance": {
+                "capability": "get_agent_details",
+                "status": status,
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_agent_details",
+            },
+        }
+    except Exception as exc:
+        log.error("get_agent_details failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_agent_details",
+            "source": "nexus_knowledge_registry",
+            "source_type": "repository_registry",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_agent_details",
+                "status": "error",
+                "source": "nexus_knowledge_registry",
+                "source_type": "repository_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_agent_details",
+            },
+        }
+
+
+def _handle_tool_registry(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return the tool registry."""
+    try:
+        data = _nk_get_tool_registry()
+        return {
+            "status": "success",
+            "capability": "get_tool_registry",
+            "source": "nexus_knowledge_registry",
+            "source_type": "configuration_registry",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_tool_registry",
+                "status": "success",
+                "source": "nexus_knowledge_registry",
+                "source_type": "configuration_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_tool_registry",
+            },
+        }
+    except Exception as exc:
+        log.error("get_tool_registry failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_tool_registry",
+            "source": "nexus_knowledge_registry",
+            "source_type": "configuration_registry",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_tool_registry",
+                "status": "error",
+                "source": "nexus_knowledge_registry",
+                "source_type": "configuration_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_tool_registry",
+            },
+        }
+
+
+def _handle_capability_registry(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return the capability registry."""
+    try:
+        data = _nk_get_capability_registry()
+        return {
+            "status": "success",
+            "capability": "get_capability_registry",
+            "source": "nexus_knowledge_registry",
+            "source_type": "capability_registry",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_capability_registry",
+                "status": "success",
+                "source": "nexus_knowledge_registry",
+                "source_type": "capability_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_capability_registry",
+            },
+        }
+    except Exception as exc:
+        log.error("get_capability_registry failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_capability_registry",
+            "source": "nexus_knowledge_registry",
+            "source_type": "capability_registry",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_capability_registry",
+                "status": "error",
+                "source": "nexus_knowledge_registry",
+                "source_type": "capability_registry",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_capability_registry",
+            },
+        }
+
+
+def _handle_process_registry(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return the live process registry."""
+    try:
+        data = _nk_get_process_registry_live()
+        status = data.get("status", "success")
+        return {
+            "status": status,
+            "capability": "get_process_registry",
+            "source": "process_registry",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": data.get("error"),
+            "provenance": {
+                "capability": "get_process_registry",
+                "status": status,
+                "source": "process_registry",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_process_registry",
+            },
+        }
+    except Exception as exc:
+        log.error("get_process_registry failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_process_registry",
+            "source": "process_registry",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_process_registry",
+                "status": "error",
+                "source": "process_registry",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_process_registry",
+            },
+        }
+
+
+def _handle_process_details(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return details for a specific process."""
+    args = arguments or {}
+    process_id = args.get("process_id", "").strip().lower()
+    if not process_id:
+        return {
+            "status": "error",
+            "capability": "get_process_details",
+            "source": "process_registry",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": "process_id is required.",
+            "provenance": {
+                "capability": "get_process_details",
+                "status": "error",
+                "source": "process_registry",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_process_details",
+            },
+        }
+    try:
+        data = _nk_get_process_details(process_id)
+        status = "success" if data.get("found") else "not_found"
+        return {
+            "status": status,
+            "capability": "get_process_details",
+            "source": "process_registry",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None if data.get("found") else data.get("error"),
+            "provenance": {
+                "capability": "get_process_details",
+                "status": status,
+                "source": "process_registry",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_process_details",
+            },
+        }
+    except Exception as exc:
+        log.error("get_process_details failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_process_details",
+            "source": "process_registry",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_process_details",
+                "status": "error",
+                "source": "process_registry",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_process_details",
+            },
+        }
+
+
+def _handle_report_index(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return the report index."""
+    try:
+        data = _nk_get_report_index_live()
+        return {
+            "status": "success",
+            "capability": "get_report_index",
+            "source": "report_index",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_report_index",
+                "status": "success",
+                "source": "report_index",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_report_index",
+            },
+        }
+    except Exception as exc:
+        log.error("get_report_index failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_report_index",
+            "source": "report_index",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_report_index",
+                "status": "error",
+                "source": "report_index",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_report_index",
+            },
+        }
+
+
+def _handle_latest_reports(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return the latest reports."""
+    try:
+        data = _nk_get_latest_reports_live()
+        return {
+            "status": data.get("status", "success"),
+            "capability": "get_latest_reports",
+            "source": "report_index",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": data.get("error"),
+            "provenance": {
+                "capability": "get_latest_reports",
+                "status": data.get("status", "success"),
+                "source": "report_index",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_latest_reports",
+            },
+        }
+    except Exception as exc:
+        log.error("get_latest_reports failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_latest_reports",
+            "source": "report_index",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_latest_reports",
+                "status": "error",
+                "source": "report_index",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_latest_reports",
+            },
+        }
+
+
+def _handle_recent_activity(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Aggregate recent activity from approved operational sources."""
+    try:
+        data = _nk_get_recent_activity_live()
+        return {
+            "status": data.get("status", "success"),
+            "capability": "get_recent_activity",
+            "source": "composite",
+            "source_type": "live_governed_read",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_recent_activity",
+                "status": data.get("status", "success"),
+                "source": "composite",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_recent_activity",
+            },
+        }
+    except Exception as exc:
+        log.error("get_recent_activity failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_recent_activity",
+            "source": "composite",
+            "source_type": "live_governed_read",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_recent_activity",
+                "status": "error",
+                "source": "composite",
+                "source_type": "live_governed_read",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_recent_activity",
+            },
+        }
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -1827,6 +2392,17 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_funding_readiness": lambda args, tid: _handle_funding_readiness(args, tid),
     "get_operational_summary": lambda args, tid: _handle_operational_summary(args, tid),
     "get_runtime_capabilities": None,  # handled specially (needs agent_id)
+    # Nexus Knowledge Layer
+    "get_nexus_overview": lambda args, tid: _handle_nexus_overview(args, tid),
+    "get_agent_registry": lambda args, tid: _handle_agent_registry(args, tid),
+    "get_agent_details": lambda args, tid: _handle_agent_details(args, tid),
+    "get_tool_registry": lambda args, tid: _handle_tool_registry(args, tid),
+    "get_capability_registry": lambda args, tid: _handle_capability_registry(args, tid),
+    "get_process_registry": lambda args, tid: _handle_process_registry(args, tid),
+    "get_process_details": lambda args, tid: _handle_process_details(args, tid),
+    "get_report_index": lambda args, tid: _handle_report_index(args, tid),
+    "get_latest_reports": lambda args, tid: _handle_latest_reports(args, tid),
+    "get_recent_activity": lambda args, tid: _handle_recent_activity(args, tid),
 }
 
 _WRITE_CAPABILITIES: frozenset = frozenset()

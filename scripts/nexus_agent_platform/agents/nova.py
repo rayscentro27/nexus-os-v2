@@ -100,6 +100,19 @@ Operational data access (governed read-only):
 - You CANNOT execute arbitrary SQL or browse all user data.
 - You CANNOT access Oanda, Temporal, or other Nexus systems.
 
+Nexus system awareness:
+- You understand Nexus architecture, agents, tools, processes, and capabilities.
+- You CAN explain what Nexus is, how it's structured, and what it does.
+- You CAN describe each agent (Hermes, Nova, Alpha) and their roles.
+- You CAN list registered tools and capabilities with their live/mock status.
+- You CAN describe processes, their status, and whether they're enabled.
+- You CAN list report types and the most recent reports.
+- You CAN describe recent activity across processes, approvals, and research.
+- You distinguish static architecture from live runtime state.
+- You know what's configured vs. what's actually running.
+- You know what's mock/unavailable vs. what's live.
+- When describing Nexus, use verified data from the knowledge registry — not model memory.
+
 Status semantics — CRITICAL:
 - "success" = capability executed and returned verified data.
 - "empty" = capability executed successfully and verified zero records exist.
@@ -558,7 +571,7 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     # ── Priority 12: Runtime capability query ──
     runtime_keywords = (
         "what can you access", "what can you read", "what systems",
-        "what access do you have", "what tools", "your capabilities",
+        "what access do you have", "your capabilities",
         "your access", "can you access", "what do you have access",
         "what can you look up", "what data can you", "connected to supabase",
         "are you connected", "what can you actually",
@@ -566,7 +579,96 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if any(kw in lower for kw in runtime_keywords):
         return ("get_runtime_capabilities", {})
 
-    # ── Priority 13: Explicit general search ──
+    # ── Priority 13: Nexus overview ──
+    overview_keywords = (
+        "what is nexus", "tell me about nexus", "what does nexus do",
+        "what is this system", "what's nexus", "explain nexus",
+        "what is nexus os", "nexus overview", "what's this all about",
+        "what are we building", "what is this project",
+    )
+    if any(kw in lower for kw in overview_keywords):
+        return ("get_nexus_overview", {})
+
+    # ── Priority 14: Architecture ──
+    architecture_keywords = (
+        "how does nexus work", "how is nexus structured", "nexus architecture",
+        "how is this set up", "what's the architecture", "how are things organized",
+        "what are the major parts", "what components", "system design",
+        "how does this all fit together",
+    )
+    if any(kw in lower for kw in architecture_keywords):
+        return ("get_nexus_overview", {})
+
+    # ── Priority 15: Agent registry ──
+    agent_registry_keywords = (
+        "what agents", "which agents", "agent registry", "list agents",
+        "who are the agents", "what ai agents", "what bots",
+        "how many agents", "agent list",
+    )
+    if any(kw in lower for kw in agent_registry_keywords):
+        return ("get_agent_registry", {})
+
+    # ── Priority 16: Agent details ──
+    agent_detail_keywords = {
+        "alpha": ("alpha", "what does alpha do", "tell me about alpha", "alpha agent"),
+        "hermes_nova": ("nova", "what do you do", "tell me about nova", "your role", "your purpose", "who are you"),
+        "nexus_hermes": ("hermes", "what does hermes do", "tell me about hermes", "hermes agent", "nexus hermes"),
+    }
+    for agent_id, keywords in agent_detail_keywords.items():
+        if any(kw in lower for kw in keywords):
+            return ("get_agent_details", {"agent_id": agent_id})
+
+    # ── Priority 17: Tool registry ──
+    tool_keywords = (
+        "what tools", "tool registry", "available tools", "what tools do we have",
+        "what tools are", "tool list", "list tools", "what's installed",
+        "what software", "what's available",
+    )
+    if any(kw in lower for kw in tool_keywords):
+        return ("get_tool_registry", {})
+
+    # ── Priority 18: Capability registry ──
+    capability_keywords = (
+        "what capabilities", "capability registry", "what can nexus do",
+        "what's live", "what's available", "what capabilities are",
+        "capability list", "what systems are live", "what's working",
+        "what's still mock", "what's incomplete", "what's unavailable",
+        "what parts", "what's not working", "what's missing",
+    )
+    if any(kw in lower for kw in capability_keywords):
+        return ("get_capability_registry", {})
+
+    # ── Priority 19: Process registry ──
+    process_keywords = (
+        "what processes", "list processes", "process registry", "what's running",
+        "what processes exist", "process list", "what automations",
+        "what jobs", "what's enabled", "what's disabled", "which processes",
+        "active processes", "running processes", "processes are",
+    )
+    if any(kw in lower for kw in process_keywords):
+        return ("get_process_registry", {})
+
+    # ── Priority 20: Report lookup ──
+    report_keywords = (
+        "what reports", "report index", "latest reports", "what reports exist",
+        "any reports", "report list", "show reports", "what reports were",
+        "recent reports", "what reports do we have",
+    )
+    if any(kw in lower for kw in report_keywords):
+        return ("get_latest_reports", {})
+
+    # ── Priority 21: Recent activity ──
+    activity_keywords = (
+        "what happened today", "what happened", "what failed", "what's new",
+        "recent activity", "what changed", "what ran today", "anything new",
+        "what's going on today", "today's activity", "what happened overnight",
+        "what should i focus on", "what needs attention",
+        "what should we build next", "what's stuck",
+    )
+    if any(kw in lower for kw in activity_keywords):
+        return ("get_recent_activity", {})
+
+    # ── Priority 22: Explicit general search ──
     search_verbs = ("search", "find", "look up", "lookup", "check", "query")
     has_search_verb = any(verb in lower for verb in search_verbs)
     operational_terms = (
@@ -577,7 +679,7 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if has_search_verb and has_operational_term:
         return ("general_search", {"query": text})
 
-    # ── Priority 14: No tool required ──
+    # ── Priority 23: No tool required ──
     return None
 
 
@@ -1078,6 +1180,271 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
             active = opp_data.get("by_state", {}).get("active", 0) if opp_data.get("by_state") else 0
             lines.append(f"- opportunities: {opp_total} ({active} active, verified)")
         lines.append("[END VERIFIED OPERATIONAL DATA]")
+        return "\n".join(lines)
+
+    # ── Nexus Knowledge Capability Formatters ──
+
+    if query_type == "get_nexus_overview":
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_nexus_overview",
+            f"status: {status}",
+            "source: nexus_knowledge_registry",
+            "freshness: current_commit",
+            "facts:",
+            f"- system_name: {data.get('system_name', 'unknown')}",
+            f"- version: {data.get('version', 'unknown')}",
+            f"- purpose: {data.get('purpose', 'unknown')}",
+            f"- agent_count: {data.get('agent_count', 0)}",
+            f"- specialist_count: {data.get('specialist_count', 0)}",
+            f"- process_count: {data.get('process_count', 0)}",
+            f"- enabled_processes: {data.get('enabled_processes', 0)}",
+            f"- research_lane_count: {data.get('research_lane_count', 0)}",
+        ]
+        agents = data.get("agents", [])
+        if agents:
+            lines.append(f"- agents: {', '.join(agents)}")
+        components = data.get("major_components", [])
+        if components:
+            lines.append("- major_components:")
+            for c in components:
+                lines.append(f"  - {c}")
+        incomplete = data.get("known_incomplete_areas", [])
+        if incomplete:
+            lines.append("- known_incomplete_areas:")
+            for area in incomplete[:5]:
+                lines.append(f"  - {area}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_agent_registry":
+        agents = data.get("agents", [])
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_agent_registry",
+            f"status: {status}",
+            "source: nexus_knowledge_registry",
+            "freshness: current_commit",
+            "facts:",
+            f"- total: {data.get('total', 0)}",
+            f"- specialist_profiles: {data.get('specialist_profiles', 0)}",
+        ]
+        if agents:
+            lines.append("- agents:")
+            for a in agents:
+                lines.append(
+                    f"  - {a.get('agent_id', 'unknown')}: "
+                    f"{a.get('name', 'unknown')} ({a.get('role', 'unknown')}) "
+                    f"[reads: {a.get('permissions', {}).get('read_count', 0)}, "
+                    f"writes: {a.get('permissions', {}).get('write_count', 0)}]"
+                )
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_agent_details":
+        found = data.get("found", False)
+        if not found:
+            return (
+                "[VERIFIED NEXUS KNOWLEDGE]\n"
+                f"capability: get_agent_details\n"
+                f"status: not_found\n"
+                f"source: nexus_knowledge_registry\n"
+                f"freshness: current_commit\n"
+                f"facts:\n"
+                f"- found: false\n"
+                f"- available_agents: {', '.join(data.get('available_agents', []))}\n"
+                f"[END VERIFIED NEXUS KNOWLEDGE]"
+            )
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_agent_details",
+            f"status: {status}",
+            "source: nexus_knowledge_registry",
+            "freshness: current_commit",
+            "facts:",
+            f"- agent_id: {data.get('agent_id', 'unknown')}",
+            f"- name: {data.get('name', 'unknown')}",
+            f"- role: {data.get('role', 'unknown')}",
+            f"- model: {data.get('model', 'unknown')}",
+            f"- provider: {data.get('provider', 'unknown')}",
+            f"- runtime_status: {data.get('runtime_status', 'unknown')}",
+        ]
+        responsibilities = data.get("responsibilities", [])
+        if responsibilities:
+            lines.append("- responsibilities:")
+            for r in responsibilities:
+                lines.append(f"  - {r}")
+        perms = data.get("permissions", {})
+        reads = perms.get("reads", [])
+        writes = perms.get("writes", [])
+        if reads:
+            lines.append(f"- approved_reads: {', '.join(reads)}")
+        if writes:
+            lines.append(f"- approved_writes: {', '.join(writes)}")
+        else:
+            lines.append("- approved_writes: NONE")
+        isolation = data.get("isolation", {})
+        if isolation:
+            lines.append("- isolation:")
+            for k, v in isolation.items():
+                lines.append(f"  - {k}: {v}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_tool_registry":
+        categories = data.get("categories", {})
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_tool_registry",
+            f"status: {status}",
+            "source: nexus_knowledge_registry",
+            "freshness: current_commit",
+            "facts:",
+            f"- total_tools: {data.get('total_tools', 0)}",
+            f"- live_tools: {data.get('live_tools', 0)}",
+            f"- approval_gated: {data.get('approval_gated', 0)}",
+            f"- unavailable_tools: {data.get('unavailable_tools', 0)}",
+            f"- default_policy: {data.get('default_policy', 'unknown')}",
+        ]
+        for cat, info in categories.items():
+            tools = info.get("tools", [])
+            lines.append(f"- {cat}: {', '.join(tools)}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_capability_registry":
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_capability_registry",
+            f"status: {status}",
+            "source: nexus_knowledge_registry",
+            "freshness: current_commit",
+            "facts:",
+            f"- total_shared_handlers: {data.get('total_shared_handlers', 0)}",
+            f"- total_nova_knowledge: {data.get('total_nova_knowledge', 0)}",
+            f"- nova_writes: {data.get('nova_writes', 0)}",
+            f"- hermes_writes: {data.get('hermes_writes', 0)}",
+        ]
+        shared = data.get("shared_handlers", [])
+        if shared:
+            lines.append(f"- shared_handlers: {', '.join(shared)}")
+        nova_k = data.get("nova_knowledge_capabilities", [])
+        if nova_k:
+            lines.append(f"- nova_knowledge: {', '.join(nova_k)}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_process_registry":
+        processes = data.get("processes", [])
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_process_registry",
+            f"status: {status}",
+            "source: process_registry",
+            "freshness: live",
+            "facts:",
+            f"- total: {data.get('total', 0)}",
+            f"- enabled: {data.get('enabled', 0)}",
+            f"- disabled: {data.get('disabled', 0)}",
+        ]
+        if processes:
+            lines.append("- processes:")
+            for p in processes:
+                enabled_str = "enabled" if p.get("enabled") else "disabled"
+                lines.append(
+                    f"  - {p.get('process_id', 'unknown')}: "
+                    f"{p.get('name', 'unknown')} [{enabled_str}] "
+                    f"(mode: {p.get('mode', 'unknown')}, "
+                    f"status: {p.get('last_status', 'never_run')})"
+                )
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_report_index":
+        categories = data.get("categories", [])
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_report_index",
+            f"status: {status}",
+            "source: report_index",
+            "freshness: live",
+            "facts:",
+            f"- category_count: {data.get('category_count', 0)}",
+            f"- root_report_count: {data.get('root_report_count', 0)}",
+        ]
+        if categories:
+            lines.append("- categories:")
+            for c in categories[:10]:
+                lines.append(
+                    f"  - {c.get('category', 'unknown')}: "
+                    f"{c.get('report_count', 0)} reports"
+                )
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_latest_reports":
+        reports = data.get("reports", [])
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_latest_reports",
+            f"status: {status}",
+            "source: report_index",
+            "freshness: live",
+            "facts:",
+            f"- total_latest: {data.get('total_latest', 0)}",
+        ]
+        if reports:
+            lines.append("- latest_reports:")
+            for r in reports[:10]:
+                lines.append(
+                    f"  - {r.get('name', 'unknown')} "
+                    f"(modified: {r.get('modified', 'unknown')})"
+                )
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_recent_activity":
+        components = data.get("components", {})
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_recent_activity",
+            f"status: {status}",
+            "source: composite",
+            "freshness: live",
+            "facts:",
+        ]
+        # Processes
+        proc = components.get("processes", {})
+        if proc.get("status") == "success":
+            lines.append(
+                f"- processes: {proc.get('enabled', 0)} enabled, "
+                f"{proc.get('failed', 0)} failed, "
+                f"all_simulated: {str(proc.get('all_simulated', False)).lower()}"
+            )
+        else:
+            lines.append(f"- processes: {proc.get('status', 'unknown')}")
+        # Approvals
+        appr = components.get("approvals", {})
+        if appr.get("status") == "success":
+            lines.append(f"- pending_approvals: {appr.get('pending', 0)}")
+        else:
+            lines.append(f"- approvals: {appr.get('status', 'unknown')}")
+        # Research
+        res = components.get("research", {})
+        if res.get("status") == "success":
+            lines.append(
+                f"- research_lanes: {res.get('approved_lanes', 0)} approved "
+                f"of {res.get('total_lanes', 0)} total"
+            )
+        else:
+            lines.append(f"- research: {res.get('status', 'unknown')}")
+        # Alpha
+        alpha = components.get("alpha", {})
+        if alpha.get("status") == "success":
+            lines.append(f"- alpha_state: {alpha.get('state', 'unknown')}")
+        else:
+            lines.append(f"- alpha: {alpha.get('status', 'unknown')}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
         return "\n".join(lines)
 
     # Fallback

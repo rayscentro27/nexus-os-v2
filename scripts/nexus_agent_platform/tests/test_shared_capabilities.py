@@ -114,7 +114,7 @@ class TestPermissions:
     def test_nova_allowed_reads_frozen(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_READS
         assert isinstance(NOVA_ALLOWED_READS, frozenset)
-        assert len(NOVA_ALLOWED_READS) == 11
+        assert len(NOVA_ALLOWED_READS) == 21  # 11 operational + 10 knowledge
 
     def test_nova_allowed_writes_empty(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_WRITES
@@ -835,7 +835,18 @@ class TestNovaAdapter:
         assert "get_client_profile" in NOVA_ALLOWED_READS
         assert "get_funding_readiness" in NOVA_ALLOWED_READS
         assert "get_operational_summary" in NOVA_ALLOWED_READS
-        assert len(NOVA_ALLOWED_READS) == 11
+        # Nexus Knowledge Layer
+        assert "get_nexus_overview" in NOVA_ALLOWED_READS
+        assert "get_agent_registry" in NOVA_ALLOWED_READS
+        assert "get_agent_details" in NOVA_ALLOWED_READS
+        assert "get_tool_registry" in NOVA_ALLOWED_READS
+        assert "get_capability_registry" in NOVA_ALLOWED_READS
+        assert "get_process_registry" in NOVA_ALLOWED_READS
+        assert "get_process_details" in NOVA_ALLOWED_READS
+        assert "get_report_index" in NOVA_ALLOWED_READS
+        assert "get_latest_reports" in NOVA_ALLOWED_READS
+        assert "get_recent_activity" in NOVA_ALLOWED_READS
+        assert len(NOVA_ALLOWED_READS) == 21
 
     def test_nova_rejects_unregistered_capability(self):
         from nexus_agent_platform.connectors.nova_supabase import execute_nova_capability
@@ -1120,7 +1131,16 @@ class TestSemanticCapabilityGate:
 
     def test_runtime_what_tools(self):
         from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        # "What tools do you currently have?" now routes to tool registry (Nexus tools)
         result = _semantic_capability_gate("What tools do you currently have?")
+        assert result is not None
+        cap, _ = result
+        assert cap == "get_tool_registry"
+
+    def test_runtime_your_capabilities(self):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        # "Your capabilities" routes to runtime capabilities (Nova's access)
+        result = _semantic_capability_gate("What are your capabilities?")
         assert result is not None
         cap, _ = result
         assert cap == "get_runtime_capabilities"
