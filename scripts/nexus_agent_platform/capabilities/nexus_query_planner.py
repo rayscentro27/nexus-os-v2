@@ -187,6 +187,8 @@ You have access to these Nexus domains and their fields:
 WHAT IS NEXUS?
 Nexus is an automation platform with processes (jobs/workflows), tools, agents, reports, approvals, research, system health, and activity tracking. A question is about Nexus if it asks about ANY of these things — even in casual or indirect language.
 
+Do NOT classify generic reasoning, epistemology, philosophy, or ordinary machine examples as Nexus unless the user explicitly mentions Nexus/system data/processes/jobs/workflows/approvals/tools/reports, or the bounded conversation context clearly says the follow-up is about Nexus.
+
 Examples of Nexus questions (and their domains):
 - "Which processes are enabled?" → processes
 - "What jobs are running?" → processes
@@ -231,7 +233,17 @@ RULES:
 5. If the question asks about execution evidence or proof, set source_requirement to "execution_telemetry".
 6. If the question is about provenance/source, set operation to "provenance".
 7. Do NOT answer the question. Only output the plan.
-8. If the question is clearly NOT about Nexus data (greetings, opinions, weather, jokes, etc.), output: {{"domain": "none"}}"""
+8. If the question is clearly NOT about Nexus data (greetings, opinions, weather, jokes, generic logic/reasoning, generic machines, etc.), output: {{"domain": "none"}}
+
+FILTER CONDITION RULES FOR PROCESSES:
+- If the user asks for a process configuration state, include a condition on configuration_state.
+- If the user asks for an execution mode, include a condition on execution_mode.
+- If the user asks for a runtime state, include a condition on runtime_state.
+- "at runtime", "during runtime", and "runtime blocked" refer to runtime_state, not execution_mode.
+- Conditions across different process dimensions are intersections, not alternatives.
+- Preserve independent dimensions: enabled/disabled, DRY_RUN/BLOCKED/SANDBOX_TEST, and simulated/skipped/blocked are separate fields.
+- Do not omit conditions for explicit process states in filter operations.
+- If the user asks for categories separately, overlapping categories, or A/B/C "or" categories, do NOT combine those category conditions as an intersection. Use a list, overview, or group_count plan with no category filters so the executor returns raw records and dimension counts for Nova to separate."""
 
 
 def _build_schema_text() -> str:
@@ -634,12 +646,18 @@ def execute_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
         filtered = _apply_process_filters(data["processes"], conditions)
         data = {**data, "processes": filtered, "filtered_count": len(filtered)}
 
-    # Apply projection
+    # Apply projection. Process state dimensions are a fact contract: keep them
+    # together so Nova can reason over intersections and overlapping categories.
     projection = plan.get("projection", [])
     if projection and domain == "processes" and "processes" in data:
+        required_process_fields = {
+            "process_id", "name",
+            "configuration_state", "execution_mode", "runtime_state",
+        }
+        projection_fields = set(projection) | required_process_fields
         projected = []
         for item in data["processes"]:
-            projected.append({k: v for k, v in item.items() if k in projection or k in ("process_id", "name")})
+            projected.append({k: v for k, v in item.items() if k in projection_fields})
         data = {**data, "processes": projected}
 
     # Build coverage

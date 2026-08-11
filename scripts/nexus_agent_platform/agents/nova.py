@@ -140,6 +140,9 @@ Nexus system awareness:
 - You know what's configured vs. what's actually running.
 - You know what's mock/unavailable vs. what's live.
 - When describing Nexus, use verified data from the knowledge registry — not model memory.
+- When the user asks a generic non-Nexus reasoning question, answer it generically.
+  Do not import Nexus terms like process, telemetry, runtime_state, or capability unless
+  the user asks about Nexus or verified Nexus data has been injected into the turn.
 
 Process dimensions — CRITICAL (three independent dimensions, never mix):
 - CONFIGURATION STATE: enabled (Nexus allows this to run) or disabled (Nexus does not allow this). Derived from the registry "enabled" field. Enabled does NOT mean running.
@@ -154,6 +157,7 @@ Process dimensions — CRITICAL (three independent dimensions, never mix):
 Execution state semantics — CRITICAL:
 - "enabled" = turned on in configuration. Does NOT mean currently running.
 - "simulated" = last recorded state is simulated. No real execution telemetry.
+- "skipped" = last recorded runtime state is skipped. It does NOT mean disabled.
 - "running" = verified real-time execution observed. Distinguish from "enabled".
 - "completed" = verified real execution finished successfully.
 - "failed" = verified real execution failed.
@@ -163,6 +167,9 @@ Execution state semantics — CRITICAL:
 - NEVER say "not all simulated" if all_simulated_or_skipped=true.
 - NEVER say "everything ran smoothly" if telemetry_summary says "No real execution telemetry".
 - Enabled + simulated = configured to run but no evidence it actually ran today.
+- Enabled + skipped is valid: a process can be configured to run and still have runtime_state=skipped.
+- Categories from different dimensions can overlap. Do not treat configuration_state, execution_mode, and runtime_state as mutually exclusive.
+- Enabled category membership is determined only by configuration_state=enabled, regardless of execution_mode or runtime_state.
 - When runtime telemetry is absent, say that directly: "I can see the configured process registry, but I do not have verified live telemetry showing any Nexus processes are actively executing right now."
 
 Failure and approval semantics — CRITICAL:
@@ -175,7 +182,7 @@ Source classification — CRITICAL (three distinct levels, never conflate):
 - VERIFIED EXECUTION TELEMETRY: actual process start/completion/failure, execution duration, job ID, runtime worker events. This is the only level that proves real execution occurred.
 - Never call operational state "real execution telemetry."
 - Never call simulated registry markers "verified live execution."
-- When telemetry is absent, say so: "I do not have verified execution telemetry proving any real execution occurred today."
+- For Nexus execution-proof questions, when telemetry is absent, say so: "I do not have verified execution telemetry proving any real execution occurred today."
 - When answering "which parts are configuration and which are runtime?", use all three categories if needed.
 
 Dimension labeling — CRITICAL:
@@ -951,22 +958,26 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
 
     # Data summary — domain-specific
     if domain == "processes" and isinstance(data, dict):
-        total = data.get("total", data.get("filtered_count", "?"))
+        total = total_count if total_count is not None else data.get("total", data.get("filtered_count", "?"))
+        returned = returned_count if returned_count is not None else data.get("filtered_count", total)
         lines.append(f"total_count: {total}")
-        if "filtered_count" in data and data["filtered_count"] != data.get("total"):
-            lines.append(f"returned_count: {data['filtered_count']}")
-            lines.append("truncated: false")
+        lines.append(f"returned_count: {returned}")
+        lines.append(f"truncated: {str(truncated).lower()}")
         lines.append("")
 
         processes = data.get("processes", [])
         if processes:
-            lines.append("Results:")
+            lines.append("Process records (independent dimensions; categories may overlap):")
             for p in processes:
                 name = p.get("name", p.get("process_id", "?"))
                 config = p.get("configuration_state", "?")
                 mode = p.get("execution_mode", "?")
                 runtime = p.get("runtime_state", "?")
-                lines.append(f"  - {name} [config={config}, mode={mode}, runtime={runtime}]")
+                lines.append(f"  - {name}:")
+                lines.append(f"      process_id: {p.get('process_id', '?')}")
+                lines.append(f"      configuration_state: {config}")
+                lines.append(f"      execution_mode: {mode}")
+                lines.append(f"      runtime_state: {runtime}")
             lines.append("")
 
         # Dimension counts for count/group_count operations
@@ -983,6 +994,18 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
             recon = data["reconciliation"]
             lines.append(f"reconciliation: {recon}")
         lines.append("")
+
+        if processes:
+            lines.append("Field indexes (exact raw-field membership; categories across fields may overlap):")
+            for field in ("configuration_state", "execution_mode", "runtime_state"):
+                groups: Dict[str, List[str]] = {}
+                for p in processes:
+                    value = str(p.get(field, "unknown"))
+                    groups.setdefault(value, []).append(p.get("name", p.get("process_id", "?")))
+                lines.append(f"  {field}:")
+                for value, names in sorted(groups.items()):
+                    lines.append(f"    {value}: {', '.join(names)}")
+            lines.append("")
 
     elif domain == "tools" and isinstance(data, dict):
         lines.append(f"total_tools: {data.get('total', '?')}")
@@ -2388,9 +2411,19 @@ def _validate_against_capability(
     if capability_result.get("tool") == "nexus_query_planner" and status == "success":
         coverage = capability_result.get("coverage", {})
         plan = capability_result.get("plan", {})
+        source_requirement = (
+            capability_result.get("source_requirement")
+            or plan.get("source_requirement")
+        )
+        if source_requirement is None and plan.get("domain") == "recent_activity":
+            source_requirement = "execution_telemetry"
 
-        # Execution telemetry unavailable → no "ran" claims
-        if not coverage.get("execution_telemetry", False):
+        # Execution telemetry unavailable → no execution-proof claims, but only
+        # when the query actually required execution telemetry.
+        if (
+            source_requirement == "execution_telemetry"
+            and not coverage.get("execution_telemetry", False)
+        ):
             telemetry_claims = [
                 "actually ran", "really ran", "did run", "has run",
                 "currently running", "running live", "executed successfully",
@@ -2492,6 +2525,10 @@ def _build_verified_planner_fallback(
     data = capability_result.get("data", {})
     coverage = capability_result.get("coverage", {})
     domain = plan.get("domain")
+    source_requirement = (
+        capability_result.get("source_requirement")
+        or plan.get("source_requirement")
+    )
 
     if error_reason == "planner_telemetry_contradiction":
         return "I do not have verified execution telemetry proving anything ran."
@@ -2524,12 +2561,15 @@ def _build_verified_planner_fallback(
         if total is not None and returned is not None and returned != total:
             lines.append(f"Retrieved {returned} matching records out of {total} total records.")
 
-        if not coverage.get("execution_telemetry", False):
+        if (
+            source_requirement == "execution_telemetry"
+            and not coverage.get("execution_telemetry", False)
+        ):
             lines.append("I do not have verified execution telemetry proving anything ran.")
 
         return "\n".join(lines) if lines else None
 
-    if domain == "recent_activity":
+    if domain == "recent_activity" and source_requirement == "execution_telemetry":
         return "I do not have verified execution telemetry proving anything ran."
 
     return None
@@ -2835,6 +2875,16 @@ def _build_context(state: AgentState) -> AgentState:
             )
         elif capability_result.get("tool") == "nexus_query_planner":
             planner_context = _format_planner_context(capability_result)
+            source_requirement = (
+                capability_result.get("source_requirement")
+                or capability_result.get("plan", {}).get("source_requirement")
+            )
+            telemetry_instruction = ""
+            if source_requirement == "execution_telemetry":
+                telemetry_instruction = (
+                    "If verified execution telemetry is unavailable, say that directly. "
+                    "Do not turn lack of telemetry into proof that nothing ran. "
+                )
             user_content = (
                 f"{state.user_message}\n\n"
                 f"{planner_context}\n\n"
@@ -2843,8 +2893,14 @@ def _build_context(state: AgentState) -> AgentState:
                 f"Do not fabricate alternative values. "
                 f"Do not deny access to data that was successfully retrieved. "
                 f"If the data shows a total count, do not list fewer items and imply completeness. "
-                f"If source classification shows execution_telemetry is false, "
-                f"do not claim anything ran — say telemetry is unavailable."
+                f"Treat configuration_state, execution_mode, and runtime_state as independent dimensions. "
+                f"Do not infer disabled from skipped, or skipped from disabled. "
+                f"Allow records to belong to multiple categories across different dimensions. "
+                f"Enabled category membership is based only on configuration_state=enabled, regardless of execution_mode or runtime_state. "
+                f"If the user asks to keep categories separate, build each category from the raw process records. "
+                f"If you state a category count and present the category as a list, include every matching record "
+                f"or explicitly say which names were omitted. "
+                f"{telemetry_instruction}"
             )
         else:
             verified_context = _format_verified_context(capability_result)
