@@ -581,3 +581,136 @@ class TestProcessDimensionSemantics:
         assert "enabled" not in result  # raw field should not be exposed
         assert "mode" not in result  # raw field should not be exposed
         assert "last_status" not in result  # raw field should not be exposed
+
+
+class TestComparativeRouting:
+    """Phase 16: Test comparative process queries route correctly."""
+
+    def _get_gate(self, text):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        return _semantic_capability_gate(text)
+
+    def test_enabled_but_not_actually_executing(self):
+        cap, _ = self._get_gate("Which processes are enabled but not actually executing?")
+        assert cap == "get_process_registry"
+
+    def test_enabled_but_not_executing(self):
+        cap, _ = self._get_gate("Which processes are enabled but not executing?")
+        assert cap == "get_process_registry"
+
+    def test_configured_but_not_running(self):
+        cap, _ = self._get_gate("Which configured processes are not running?")
+        assert cap == "get_process_registry"
+
+    def test_configured_but_inactive(self):
+        cap, _ = self._get_gate("Which processes are configured but inactive?")
+        assert cap == "get_process_registry"
+
+    def test_enabled_but_simulated(self):
+        cap, _ = self._get_gate("Which enabled processes are simulated?")
+        assert cap == "get_process_registry"
+
+    def test_enabled_but_skipped(self):
+        cap, _ = self._get_gate("Which enabled processes are skipped?")
+        assert cap == "get_process_registry"
+
+    def test_not_running_even_though_enabled(self):
+        cap, _ = self._get_gate("Which processes are not running even though enabled?")
+        assert cap == "get_process_registry"
+
+    def test_active_in_config_but_not_live(self):
+        cap, _ = self._get_gate("Which processes are active in config but not live?")
+        assert cap == "get_process_registry"
+
+
+class TestBlockedDimensions:
+    """Phase 17: Test blocked dimension separation."""
+
+    def test_process_registry_has_distinct_blocked(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        runtime_blocked = result["runtime_counts"].get("blocked", 0)
+        mode_blocked = result["mode_counts"].get("BLOCKED", 0)
+        # These are independent dimensions — they may differ
+        assert isinstance(runtime_blocked, int)
+        assert isinstance(mode_blocked, int)
+
+    def test_telegram_operator_is_skipped_not_simulated(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        for p in result["processes"]:
+            if p["process_id"] == "telegram_operator":
+                assert p["runtime_state"] == "skipped"
+                assert p["runtime_state"] != "simulated"
+
+    def test_disabled_processes_have_correct_config_state(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        disabled = [p for p in result["processes"] if p["configuration_state"] == "disabled"]
+        assert len(disabled) == result["configuration_counts"].get("disabled", 0)
+        for p in disabled:
+            assert p["process_id"] in ("stripe_test_paywall", "client_portal_paywall_access")
+
+
+class TestIncompleteCategoryIntegrity:
+    """Phase 18: Test incomplete category count/item consistency."""
+
+    def test_simulated_count_equals_items(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        sim = result["categories"].get("simulated", {})
+        assert sim.get("count", 0) == len(sim.get("items", []))
+
+    def test_dry_run_count_equals_items(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        dr = result["categories"].get("dry_run", {})
+        assert dr.get("count", 0) == len(dr.get("items", []))
+
+    def test_unavailable_tools_count_equals_items(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        ut = result["categories"].get("unavailable_tools", {})
+        assert ut.get("count", 0) == len(ut.get("items", []))
+
+    def test_skipped_not_in_simulated(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        sim_items = result["categories"].get("simulated", {}).get("items", [])
+        # Telegram Operator is skipped, not simulated — should not appear in simulated
+        assert "Telegram Operator" not in sim_items
+
+    def test_unique_count_deduplication(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        unique = result["unique_incomplete_count"]
+        cat_sum = sum(result["category_counts"].values())
+        assert unique <= cat_sum
+
+
+class TestSourceClassification:
+    """Phase 19: Test source classification model."""
+
+    def test_process_registry_has_source_classification(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        # Process registry is structural/configuration
+        assert result["source_type"] == "process_registry"
+
+    def test_incomplete_areas_is_registry_derived(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        assert result["source_type"] == "registry_derived"
+
+    def test_approval_queue_is_operational_state(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_recent_activity_live
+        result = get_recent_activity_live()
+        approvals = result["components"].get("approvals", {})
+        # Approvals are operational state, not structural
+        assert approvals.get("status") in ("success", "unavailable", "error")
+
+    def test_all_simulated_implies_no_execution_telemetry(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        if result["all_simulated_or_skipped"]:
+            assert result["has_real_execution"] is False

@@ -140,6 +140,21 @@ Execution state semantics — CRITICAL:
 Failure and approval semantics — CRITICAL:
 - Zero observed failures means: "No failures were found in the checked failure source." It does NOT mean "all processes completed successfully."
 - Zero pending approvals means: "The checked approval queue currently has zero pending items." It does NOT mean "every necessary action was reviewed" or "nothing requires attention."
+
+Source classification — CRITICAL (three distinct levels, never conflate):
+- STRUCTURAL / CONFIGURATION: process count, enabled count, execution mode definitions, agent definitions, tool registry, capability permissions. These are repository/config facts.
+- OPERATIONAL STATE: simulated runtime markers, pending approvals, report index freshness, research lane state, agent heartbeat. These are current-state indicators, not verified execution.
+- VERIFIED EXECUTION TELEMETRY: actual process start/completion/failure, execution duration, job ID, runtime worker events. This is the only level that proves real execution occurred.
+- Never call operational state "real execution telemetry."
+- Never call simulated registry markers "verified live execution."
+- When telemetry is absent, say so: "I do not have verified execution telemetry proving any real execution occurred today."
+- When answering "which parts are configuration and which are runtime?", use all three categories if needed.
+
+Dimension labeling — CRITICAL:
+- "blocked" appears in two dimensions: execution_mode BLOCKED (uppercase) and runtime_state blocked (lowercase).
+- When the user asks "how many are blocked?", distinguish all three: configuration blocked, execution mode BLOCKED, runtime blocked.
+- Never label runtime_state blocked as execution_mode BLOCKED unless that specific process actually has execution_mode == BLOCKED.
+- The three dimensions are: configuration_state, execution_mode, runtime_state. Keep labels precise.
 - NEVER infer successful execution from absence of failures.
 - NEVER infer complete review from absence of pending approvals.
 
@@ -463,7 +478,13 @@ _PROVENANCE_FOLLOWUP_PATTERNS = re.compile(
     r'(?:did\s+that\s+)?come\s+(?:from|directly)\s+(?:from\s+)?(?:supabase|the\s+database|alpha)|'
     r'which\s+(?:source|database|table)\s+(?:did|was)|'
     r'where\s+did\s+(?:those|the|that|these)\s+(?:numbers?|data|results?)|'
-    r'(?:is|was)\s+that\s+(?:from\s+)?(?:supabase|alpha|live|cached|a\s+live))\b',
+    r'(?:is|was)\s+that\s+(?:from\s+)?(?:supabase|alpha|live|cached|a\s+live)|'
+    r'which\s+parts?\s+(?:\w+\s+)*?(?:are|is)\s+(?:configuration|operational|runtime|structural|real)|'
+    r'(?:configuration|operational|runtime|structural)\s+(?:or|and)\s+(?:real|runtime|operational)|'
+    r'source\s+classification|how\s+(?:is|are)\s+(?:that|those)\s+classified|'
+    r'which\s+(?:category|level|type)\s+(?:is|are)\s+(?:that|those)|'
+    r'verified\s+execution\s+telemetry|execution\s+telemetry\s+(?:available|unavailable)|'
+    r'(?:operational|configuration)\s+or\s+(?:real|runtime|verified))\b',
     re.IGNORECASE,
 )
 
@@ -669,6 +690,8 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
         "what parts are unavailable", "what is missing",
         "what needs work", "what is blocked", "what is not working",
         "what's incomplete", "what's missing",
+        "incomplete components", "simulated incomplete",
+        "mock blocked unavailable",
     )
     if any(kw in lower for kw in incomplete_keywords):
         return ("get_incomplete_areas", {})
@@ -703,7 +726,7 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if any(kw in lower for kw in capability_keywords):
         return ("get_capability_registry", {})
 
-    # ── Priority 19: Process registry / runtime status ──
+    # ── Priority 19: Process registry / runtime status / comparative state ──
     process_keywords = (
         "what processes", "list processes", "process registry", "what's running",
         "what processes exist", "process list", "what automations",
@@ -714,6 +737,19 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
         "what is running", "what is nexus doing", "is anything running",
         "is anything executing", "live processes", "process runtime",
         "enabled but not running", "simulated processes",
+        "enabled but not actually", "enabled but not executing",
+        "configured but not running", "configured but not executing",
+        "configured but inactive", "enabled but simulated",
+        "enabled but skipped", "not running even though enabled",
+        "active in config but not", "configured processes are not",
+        "enabled processes are not", "which enabled processes",
+        "how many are enabled", "how many are disabled",
+        "how many are blocked", "how many enabled",
+        "how many disabled", "how many blocked",
+        "simulated or skipped", "is simulated or skipped",
+        "execution mode blocked", "runtime state blocked",
+        "how many simulated incomplete", "evidence that anything",
+        "do you have evidence", "proof that anything",
     )
     if any(kw in lower for kw in process_keywords):
         return ("get_process_registry", {})
@@ -1413,6 +1449,8 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         modes = data.get("mode_counts", {})
         runtime = data.get("runtime_counts", {})
         recon = data.get("reconciliation", {})
+        has_real = data.get("has_real_execution", False)
+        all_sim = data.get("all_simulated_or_skipped", False)
         lines = [
             "[VERIFIED NEXUS KNOWLEDGE]",
             "capability: get_process_registry",
@@ -1421,6 +1459,11 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
             f"freshness: {data.get('freshness', 'current_registry')}",
             "facts:",
             f"- total: {data.get('total', 0)}",
+            "",
+            "SOURCE CLASSIFICATION:",
+            "  structural/configuration: total process count, enabled/disabled counts, execution mode definitions",
+            "  operational state: simulated/skipped/blocked runtime markers (registry-backed, not verified execution)",
+            "  verified execution telemetry: currently unavailable — no real execution telemetry observed",
             "",
             "Configuration state (is Nexus configured to allow this to run?):",
         ]
@@ -1437,8 +1480,11 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         for state, count in sorted(runtime.items()):
             lines.append(f"  - {state}: {count}")
         lines.append(f"  - reconciliation: {str(recon.get('runtime_state', False)).lower()}")
-        lines.append(f"- has_real_execution: {str(data.get('has_real_execution', False)).lower()}")
-        lines.append(f"- all_simulated_or_skipped: {str(data.get('all_simulated_or_skipped', False)).lower()}")
+        lines.append("")
+        lines.append("Execution telemetry:")
+        lines.append(f"  - coverage: {'observed' if has_real else 'unavailable'}")
+        lines.append(f"  - has_real_execution: {str(has_real).lower()}")
+        lines.append(f"  - all_simulated_or_skipped: {str(all_sim).lower()}")
         if processes:
             lines.append("")
             lines.append("Processes (each showing three independent dimensions):")
@@ -1596,10 +1642,13 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         ]
         for cat, cat_data in categories.items():
             count = cat_data.get("count", 0)
+            items = cat_data.get("items", [])
             if count > 0:
-                lines.append(f"  {cat} ({count}):")
-                for item in cat_data.get("items", [])[:5]:
+                lines.append(f"  {cat} ({count} items, showing up to 5):")
+                for item in items[:5]:
                     lines.append(f"    - {item}")
+                if len(items) > 5:
+                    lines.append(f"    ... and {len(items) - 5} more")
         lines.append("")
         lines.append("NOTE: unique_incomplete_count counts each component once.")
         lines.append("Category counts may overlap — do NOT sum them to get unique count.")
@@ -1978,6 +2027,46 @@ def _validate_against_capability(
         for claim in source_mixed_claims:
             if claim in response_lower:
                 return "mixed_provenance_contradiction"
+
+    # ── Dimension mislabeling: runtime blocked ≠ execution-mode BLOCKED ──
+    if query_type == "get_process_registry" and status == "success":
+        runtime = data.get("runtime_counts", {})
+        modes = data.get("mode_counts", {})
+        runtime_blocked = runtime.get("blocked", 0)
+        mode_blocked = modes.get("BLOCKED", 0)
+        if runtime_blocked > 0 and mode_blocked == 0:
+            # There are runtime-blocked processes but NO execution-mode BLOCKED processes
+            # Reject if Nova labels runtime blocked as execution-mode blocked
+            mode_blocked_claims = re.findall(
+                r'(?:execution\s*mode|mode)\s*(?:BLOCKED|blocked)\s*[:=]?\s*(\d+)',
+                response_lower
+            )
+            for claim in mode_blocked_claims:
+                claimed = int(claim)
+                if claimed == runtime_blocked and claimed != mode_blocked:
+                    return "dimension_mislabeling_contradiction"
+
+    # ── Incomplete category count ≠ item count ──
+    if query_type == "get_incomplete_areas" and status == "success":
+        categories = data.get("categories", {})
+        for cat, cat_data in categories.items():
+            declared_count = cat_data.get("count", 0)
+            actual_items = cat_data.get("items", [])
+            if declared_count != len(actual_items):
+                return "incomplete_count_contradiction"
+
+    # ── Source classification: operational state ≠ execution telemetry ──
+    if query_type in ("get_process_registry", "get_recent_activity") and status == "success":
+        all_sim = data.get("all_simulated_or_skipped", False)
+        if all_sim:
+            telemetry_claims = [
+                "verified execution", "actual execution occurred",
+                "real execution happened", "processes actually ran",
+                "confirmed execution", "proven execution",
+            ]
+            for claim in telemetry_claims:
+                if claim in response_lower:
+                    return "source_classification_contradiction"
 
     return None
 
