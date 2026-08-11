@@ -45,7 +45,7 @@ NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "
 # Agent Platform path
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
-from nexus_agent_platform.runtime.execution_telemetry import execution_run
+from nexus_agent_platform.runtime.execution_telemetry import execution_run, stage_execution, telemetry_context
 
 # ─── SSL ────────────────────────────────────────────────
 
@@ -59,6 +59,7 @@ TELEGRAM_API = "https://api.telegram.org/bot{token}/{method}"
 TELEGRAM_MAX_MSG = 4000
 POLL_TIMEOUT = 30
 HEARTBEAT_INTERVAL = 60
+TELEGRAM_SEND_TIMEOUT = int(os.getenv("HERMES_NOVA_TELEGRAM_SEND_TIMEOUT_SECONDS", "20"))
 
 # ─── Runtime env loader ─────────────────────────────────
 
@@ -140,7 +141,7 @@ def _tg_api(method, params=None, token=None, timeout=20):
         return None
 
 
-def tg_send_message(chat_id, text, token=None):
+def tg_send_message(chat_id, text, token=None, timeout=TELEGRAM_SEND_TIMEOUT):
     """Send a message, chunking if needed. Returns list of message IDs."""
     if not text:
         return []
@@ -156,7 +157,7 @@ def tg_send_message(chat_id, text, token=None):
         result = _tg_api("sendMessage", {
             "chat_id": chat_id,
             "text": chunk,
-        }, token=token)
+        }, token=token, timeout=timeout)
         if result and result.get("ok"):
             msg_id = result.get("result", {}).get("message_id")
             if msg_id:
@@ -167,7 +168,7 @@ def tg_send_message(chat_id, text, token=None):
             result = _tg_api("sendMessage", {
                 "chat_id": chat_id,
                 "text": chunk,
-            }, token=token)
+            }, token=token, timeout=timeout)
             if result and result.get("ok"):
                 msg_id = result.get("result", {}).get("message_id")
                 if msg_id:
@@ -367,6 +368,11 @@ def process_message(update):
     if not text or not chat_id:
         return False
 
+    base_metadata = {
+        "update_id": update_id,
+        "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16],
+    }
+
     with execution_run(
         process_id="telegram_operator",
         process_name="Telegram Operator",
@@ -374,44 +380,82 @@ def process_message(update):
         agent_id="hermes_nova",
         execution_type="telegram_update_run",
         source="scripts/nova/nova_telegram_worker.py:process_message",
-        metadata={"update_id": update_id, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16]},
-    ):
-        return _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id)
+        metadata=base_metadata,
+    ) as run_id:
+        with telemetry_context(parent_run_id=run_id, metadata=base_metadata):
+            with stage_execution(
+                stage="telegram_update_received",
+                source="scripts/nova/nova_telegram_worker.py:process_message",
+            ):
+                pass
+            return _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id)
 
 
 def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id):
     _log(f"Incoming: update={update_id} chat={chat_id} user={username} text={text[:80]}")
 
     # Acquire per-chat lock to prevent duplicate delivery
-    lock = _acquire_chat_lock(chat_id)
+    with stage_execution(
+        stage="chat_lock",
+        source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+    ):
+        lock = _acquire_chat_lock(chat_id)
     if not lock:
         _log(f"Skipped update {update_id} — another worker processing chat {chat_id}")
         return False
 
     try:
-        mission = create_mission(update_id, chat_id, user_id, text)
+        with stage_execution(
+            stage="mission_create",
+            source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+        ):
+            mission = create_mission(update_id, chat_id, user_id, text)
 
-        if not is_authorized(chat_id, user_id, username):
+        with stage_execution(
+            stage="authorization",
+            source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+        ):
+            authorized = is_authorized(chat_id, user_id, username)
+
+        if not authorized:
             update_mission(mission, "UNAUTHORIZED")
-            tg_send_message(chat_id, "This bot is private. You are not authorized.")
+            with stage_execution(
+                stage="telegram_send",
+                source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+                metadata={"mission_id": mission["mission_id"], "unauthorized": True},
+            ):
+                tg_send_message(chat_id, "This bot is private. You are not authorized.")
             return True
 
         update_mission(mission, "AUTHORIZED")
         _update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
 
-        from nexus_agent_platform.agents.nova import (
-            get_nova_graph, get_nova_otel, reset_memory, AGENT_ID,
-        )
-        from nexus_agent_platform.adapters.state_adapter import AgentState
-        from nexus_agent_platform.flags import HERMES_NOVA_ENABLED
+        with stage_execution(
+            stage="graph_setup",
+            source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+        ):
+            from nexus_agent_platform.agents.nova import (
+                get_nova_graph, get_nova_otel, reset_memory, AGENT_ID,
+            )
+            from nexus_agent_platform.adapters.state_adapter import AgentState
+            from nexus_agent_platform.flags import HERMES_NOVA_ENABLED
+
+            if not HERMES_NOVA_ENABLED:
+                graph = None
+                otel = None
+            else:
+                graph = get_nova_graph()
+                otel = get_nova_otel()
 
         if not HERMES_NOVA_ENABLED:
-            tg_send_message(chat_id, "Nova is currently disabled. Try again later.")
+            with stage_execution(
+                stage="telegram_send",
+                source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+                metadata={"mission_id": mission["mission_id"], "disabled": True},
+            ):
+                tg_send_message(chat_id, "Nova is currently disabled. Try again later.")
             update_mission(mission, "DISABLED")
             return True
-
-        graph = get_nova_graph()
-        otel = get_nova_otel()
 
         state = AgentState(
             agent_id=AGENT_ID,
@@ -427,7 +471,12 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         )
 
         t0 = time.monotonic()
-        result = graph.invoke(state)
+        with stage_execution(
+            stage="graph_invoke",
+            source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+            metadata={"mission_id": mission["mission_id"]},
+        ):
+            result = graph.invoke(state)
         latency_ms = round((time.monotonic() - t0) * 1000, 1)
 
         response = result.assistant_response or ""
@@ -461,7 +510,16 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 "fallback_used": result.metadata.get("fallback_used", False),
             })
 
-            msg_ids = tg_send_message(chat_id, response)
+            with stage_execution(
+                stage="telegram_send",
+                source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+                metadata={
+                    "mission_id": mission["mission_id"],
+                    "response_chars": len(response),
+                    "chunk_count": len(_chunk_message(response)),
+                },
+            ):
+                msg_ids = tg_send_message(chat_id, response)
             if msg_ids:
                 update_mission(mission, "COMPLETED", {
                     "response_message_ids": msg_ids,
@@ -479,11 +537,21 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 _log_error(f"Delivery failed: mission={mission['mission_id']}")
         else:
             update_mission(mission, "EMPTY_RESPONSE")
-            tg_send_message(chat_id, "I'm not sure what to say. Could you try again?")
+            with stage_execution(
+                stage="telegram_send",
+                source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+                metadata={"mission_id": mission["mission_id"], "fallback_empty_response": True},
+            ):
+                tg_send_message(chat_id, "I'm not sure what to say. Could you try again?")
 
     except Exception as exc:
         _log_error(f"Nova processing error: {exc}")
-        tg_send_message(chat_id, "I hit a snag processing that. Give me another try.")
+        with stage_execution(
+            stage="telegram_send",
+            source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+            metadata={"error_type": exc.__class__.__name__},
+        ):
+            tg_send_message(chat_id, "I hit a snag processing that. Give me another try.")
     finally:
         _release_chat_lock(chat_id)
 

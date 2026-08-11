@@ -50,19 +50,24 @@ class LlmGatewayAdapter:
             return await self._litellm_completion(
                 model, messages, temperature, max_tokens, tools, **kwargs
             )
-        return await self._fallback_completion(model, messages, temperature, max_tokens)
+        return await self._fallback_completion(model, messages, temperature, max_tokens, **kwargs)
 
     async def _litellm_completion(
         self, model: str, messages: List[Dict[str, str]],
         temperature: float, max_tokens: int,
         tools: Optional[List[Dict]] = None, **kwargs: Any,
     ) -> Dict[str, Any]:
+        timeout = kwargs.get("timeout") or kwargs.get("request_timeout")
         try:
             import litellm
+            kwargs.pop("timeout", None)
+            kwargs.pop("request_timeout", None)
             kwargs["model"] = model
             kwargs["messages"] = messages
             kwargs["temperature"] = temperature
             kwargs["max_tokens"] = max_tokens
+            if timeout:
+                kwargs["timeout"] = timeout
             if tools:
                 kwargs["tools"] = tools
             response = await litellm.acompletion(**kwargs)
@@ -81,17 +86,20 @@ class LlmGatewayAdapter:
             }
         except Exception as exc:
             log.warning("LiteLLM completion failed for %s: %s", self.agent_id, exc)
-            return await self._fallback_completion(model, messages, temperature, max_tokens)
+            return await self._fallback_completion(
+                model, messages, temperature, max_tokens, timeout=timeout
+            )
 
     async def _fallback_completion(
         self, model: str, messages: List[Dict[str, str]],
-        temperature: float, max_tokens: int,
+        temperature: float, max_tokens: int, **kwargs: Any,
     ) -> Dict[str, Any]:
         """Fallback to OpenRouter direct."""
         try:
             import httpx
             api_key = os.getenv("OPENROUTER_API_KEY", "")
-            async with httpx.AsyncClient(timeout=60) as client:
+            timeout = kwargs.get("timeout") or kwargs.get("request_timeout") or 60
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.post(
                     "https://openrouter.ai/api/v1/chat/completions",
                     headers={

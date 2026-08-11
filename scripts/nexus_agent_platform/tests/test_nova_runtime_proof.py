@@ -572,6 +572,64 @@ class TestTruthGuardTelemetry:
         )
         assert err is None
 
+    def test_runtime_count_contradiction_rejected(self):
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+
+        result = {
+            "tool": "nexus_query_planner",
+            "query_type": "runtime_execution",
+            "status": "success",
+            "coverage": {"execution_telemetry": True},
+            "plan": {
+                "domain": "runtime_execution",
+                "operation": "overview",
+                "source_requirement": "execution_telemetry",
+            },
+            "data": {
+                "coverage": {"coverage_status": "partial"},
+                "summary": {
+                    "active_count": 1,
+                    "completed_count": 5,
+                    "failed_count": 0,
+                    "skipped_count": 0,
+                    "stale_count": 0,
+                },
+                "runs": [],
+            },
+        }
+
+        err = _validate_against_capability("1 currently running and 4 completed.", result)
+        assert err == "runtime_count_contradiction"
+
+    def test_runtime_count_match_allowed(self):
+        from nexus_agent_platform.agents.nova import _validate_against_capability
+
+        result = {
+            "tool": "nexus_query_planner",
+            "query_type": "runtime_execution",
+            "status": "success",
+            "coverage": {"execution_telemetry": True},
+            "plan": {
+                "domain": "runtime_execution",
+                "operation": "overview",
+                "source_requirement": "execution_telemetry",
+            },
+            "data": {
+                "coverage": {"coverage_status": "complete"},
+                "summary": {
+                    "active_count": 1,
+                    "completed_count": 5,
+                    "failed_count": 0,
+                    "skipped_count": 0,
+                    "stale_count": 0,
+                },
+                "runs": [],
+            },
+        }
+
+        err = _validate_against_capability("1 currently running and 5 completed.", result)
+        assert err is None
+
 
 # ═══════════════════════════════════════════════════════════════
 # SECURITY INVARIANTS

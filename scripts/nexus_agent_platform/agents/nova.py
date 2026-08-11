@@ -46,6 +46,7 @@ from nexus_agent_platform.capabilities.nexus_query_planner import (
     plan_query, execute_plan, format_plan_result, register_executor,
     validate_plan, DOMAIN_SCHEMAS,
 )
+from nexus_agent_platform.runtime.execution_telemetry import stage_execution
 
 log = logging.getLogger(__name__)
 
@@ -1070,6 +1071,7 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
 
         runs = data.get("runs", [])
         if runs:
+            lines.append(f"verified_run_list_count: {len(runs)}")
             lines.append("Verified execution runs:")
             for r in runs:
                 lines.append(f"  - run_id: {r.get('run_id', '?')}")
@@ -2008,19 +2010,42 @@ def _format_provenance_context(provenance: Dict[str, Any]) -> str:
 
 # ─── Model Gateway ─────────────────────────────────────────
 
-async def _call_model(messages: List[Dict[str, str]], chat_id: int) -> Dict[str, Any]:
+GENERATION_TIMEOUT_SECONDS = float(os.getenv("HERMES_NOVA_GENERATION_TIMEOUT_SECONDS", "60"))
+
+
+async def _call_model(
+    messages: List[Dict[str, str]],
+    chat_id: int,
+    purpose: str = "final_generation",
+) -> Dict[str, Any]:
     """Call the configured OpenRouter model via LlmGatewayAdapter."""
+    import asyncio
     from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
 
     model = os.getenv("HERMES_NOVA_MODEL", DEFAULT_MODEL)
     adapter = LlmGatewayAdapter(agent_id=AGENT_ID)
 
-    result = await adapter.completion(
-        model=model,
-        messages=messages,
-        temperature=DEFAULT_TEMPERATURE,
-        max_tokens=DEFAULT_MAX_TOKENS,
-    )
+    with stage_execution(
+        stage="model_call",
+        source="scripts/nexus_agent_platform/agents/nova.py:_call_model",
+        metadata={
+            "purpose": purpose,
+            "provider": "litellm" if adapter.is_enabled else "openrouter",
+            "model": model,
+            "timeout_seconds": GENERATION_TIMEOUT_SECONDS,
+        },
+    ):
+        result = await asyncio.wait_for(
+            adapter.completion(
+                model=model,
+                messages=messages,
+                temperature=DEFAULT_TEMPERATURE,
+                max_tokens=DEFAULT_MAX_TOKENS,
+                timeout=GENERATION_TIMEOUT_SECONDS,
+                request_timeout=GENERATION_TIMEOUT_SECONDS,
+            ),
+            timeout=GENERATION_TIMEOUT_SECONDS + 5,
+        )
     return result
 
 
@@ -2029,6 +2054,7 @@ async def _call_model(messages: List[Dict[str, str]], chat_id: int) -> Dict[str,
 PLANNER_MODEL = os.getenv("HERMES_NOVA_PLANNER_MODEL", "openai/gpt-4o-mini")
 PLANNER_TEMPERATURE = 0.3
 PLANNER_MAX_TOKENS = 512
+PLANNER_TIMEOUT_SECONDS = float(os.getenv("HERMES_NOVA_PLANNER_TIMEOUT_SECONDS", "30"))
 
 
 def _planner_model_call(messages: List[Dict[str, str]]) -> Dict[str, Any]:
@@ -2038,12 +2064,27 @@ def _planner_model_call(messages: List[Dict[str, str]]) -> Dict[str, Any]:
 
     async def _async_planner_call(msgs: List[Dict[str, str]]) -> Dict[str, Any]:
         adapter = LlmGatewayAdapter(agent_id=f"{AGENT_ID}_planner")
-        result = await adapter.completion(
-            model=PLANNER_MODEL,
-            messages=msgs,
-            temperature=PLANNER_TEMPERATURE,
-            max_tokens=PLANNER_MAX_TOKENS,
-        )
+        with stage_execution(
+            stage="model_call",
+            source="scripts/nexus_agent_platform/agents/nova.py:_planner_model_call",
+            metadata={
+                "purpose": "planner",
+                "provider": "litellm" if adapter.is_enabled else "openrouter",
+                "model": PLANNER_MODEL,
+                "timeout_seconds": PLANNER_TIMEOUT_SECONDS,
+            },
+        ):
+            result = await asyncio.wait_for(
+                adapter.completion(
+                    model=PLANNER_MODEL,
+                    messages=msgs,
+                    temperature=PLANNER_TEMPERATURE,
+                    max_tokens=PLANNER_MAX_TOKENS,
+                    timeout=PLANNER_TIMEOUT_SECONDS,
+                    request_timeout=PLANNER_TIMEOUT_SECONDS,
+                ),
+                timeout=PLANNER_TIMEOUT_SECONDS + 5,
+            )
         result["provider"] = "litellm" if adapter.is_enabled else "openrouter"
         return result
 
@@ -2533,6 +2574,28 @@ def _validate_against_capability(
             telemetry_coverage = data_obj.get("coverage", {})
             coverage_status = telemetry_coverage.get("coverage_status", "unknown")
             runs = data_obj.get("runs", [])
+
+            count_labels = {
+                "active_count": ("active", "running", "currently running"),
+                "completed_count": ("completed", "complete"),
+                "failed_count": ("failed", "failure", "failures"),
+                "skipped_count": ("skipped",),
+                "stale_count": ("stale", "stuck"),
+            }
+            for summary_key, labels in count_labels.items():
+                verified_count = summary.get(summary_key)
+                if verified_count is None:
+                    continue
+                for label in labels:
+                    patterns = [
+                        rf'\b(\d+)\s+{re.escape(label)}\b',
+                        rf'\b{re.escape(label)}\s*[:=]\s*(\d+)\b',
+                    ]
+                    for pattern in patterns:
+                        for match in re.findall(pattern, response_lower):
+                            if int(match) != int(verified_count):
+                                return "runtime_count_contradiction"
+
             if coverage_status != "complete":
                 absolute_absence_claims = [
                     "nothing ran", "no process ran", "no processes ran",
@@ -2666,6 +2729,8 @@ def _build_fallback_response(error_reason: str, user_message: str) -> str:
             "I have verified Telegram worker poll telemetry, but I do not have a "
             "verified telegram_update_run showing Telegram Operator actually processed a message."
         )
+    if error_reason == "runtime_count_contradiction":
+        return "The generated response disagreed with the verified runtime telemetry counts."
     if error_reason == "planner_completeness_contradiction":
         return "I retrieved a partial result set, so I cannot honestly present it as a complete list."
     if error_reason == "planner_ambiguity_contradiction":
@@ -2910,13 +2975,28 @@ def _capability_gate(state: AgentState) -> AgentState:
     # Uses LLM-driven planning by default; deterministic fallback on failure.
     try:
         planner_context = _build_planner_context(state)
-        planner_plan = plan_query(
-            text,
-            conversation_context=planner_context,
-            model_call_fn=_planner_model_call,
-        )
+        with stage_execution(
+            stage="planner",
+            source="scripts/nexus_agent_platform/agents/nova.py:_capability_gate",
+            metadata={"operation": "plan_query"},
+        ):
+            planner_plan = plan_query(
+                text,
+                conversation_context=planner_context,
+                model_call_fn=_planner_model_call,
+            )
         if planner_plan.get("domain") not in (None, "none"):
-            planner_result = execute_plan(planner_plan)
+            with stage_execution(
+                stage="capability",
+                source="scripts/nexus_agent_platform/agents/nova.py:_capability_gate",
+                metadata={
+                    "operation": "execute_plan",
+                    "domain": planner_plan.get("domain"),
+                    "planner_mode": planner_plan.get("planner_mode"),
+                    "capability": DOMAIN_SCHEMAS.get(planner_plan.get("domain"), {}).get("capability"),
+                },
+            ):
+                planner_result = execute_plan(planner_plan)
             if planner_result.get("status") not in ("error",):
                 planner_data = planner_result.get("data", {})
                 total_count, returned_count, truncated = _planner_result_counts(planner_data)
@@ -2988,12 +3068,17 @@ def _capability_gate(state: AgentState) -> AgentState:
     # Execute through shared certified layer
     from nexus_agent_platform.capabilities.shared import execute_shared_capability
     try:
-        result = execute_shared_capability(
-            "hermes_nova",
-            capability,
-            arguments,
-            trace_id=trace_id,
-        )
+        with stage_execution(
+            stage="capability",
+            source="scripts/nexus_agent_platform/agents/nova.py:_capability_gate",
+            metadata={"operation": "execute_shared_capability", "capability": capability},
+        ):
+            result = execute_shared_capability(
+                "hermes_nova",
+                capability,
+                arguments,
+                trace_id=trace_id,
+            )
     except Exception as exc:
         log.error("Capability gate execution failed for %s: %s", capability, exc)
         result = {
@@ -3125,7 +3210,12 @@ def _generate_response(state: AgentState) -> AgentState:
     chat_id = state.metadata.get("chat_id", 0)
 
     try:
-        result = asyncio.run(_call_model(messages, chat_id))
+        with stage_execution(
+            stage="generation",
+            source="scripts/nexus_agent_platform/agents/nova.py:_generate_response",
+            metadata={"purpose": "final_generation"},
+        ):
+            result = asyncio.run(_call_model(messages, chat_id, purpose="final_generation"))
         content = result.get("content", "")
         model_used = result.get("model", os.getenv("HERMES_NOVA_MODEL", DEFAULT_MODEL))
         usage = result.get("usage", {})
@@ -3137,6 +3227,7 @@ def _generate_response(state: AgentState) -> AgentState:
     except Exception as exc:
         log.error("Nova model call failed: %s", exc)
         state.metadata["model_error"] = str(exc)
+        state.metadata["model_error_type"] = exc.__class__.__name__
         content = ""
 
     state.assistant_response = content
@@ -3145,20 +3236,33 @@ def _generate_response(state: AgentState) -> AgentState:
 
 def _validate_output(state: AgentState) -> AgentState:
     """Validate the generated response against capability facts and general rules."""
-    # Standard validation
-    error_reason = validate_response(state.assistant_response, state.user_message)
+    with stage_execution(
+        stage="truth_guard",
+        source="scripts/nexus_agent_platform/agents/nova.py:_validate_output",
+    ):
+        # Standard validation
+        error_reason = validate_response(state.assistant_response, state.user_message)
 
-    # Capability contradiction validation
-    if not error_reason:
-        capability_result = state.metadata.get("capability_result")
-        if capability_result:
-            error_reason = _validate_against_capability(
-                state.assistant_response, capability_result
-            )
+        # Capability contradiction validation
+        if not error_reason:
+            capability_result = state.metadata.get("capability_result")
+            if capability_result:
+                error_reason = _validate_against_capability(
+                    state.assistant_response, capability_result
+                )
 
     if error_reason:
         state.metadata["validation_error"] = error_reason
         state.metadata["validation_regen"] = True
+        if state.metadata.get("model_error_type") in ("TimeoutError", "TimeoutException"):
+            state.metadata["validation_regen"] = False
+            capability_result = state.metadata.get("capability_result") or {}
+            state.assistant_response = (
+                _build_verified_planner_fallback(capability_result, error_reason)
+                or _build_fallback_response("provider_exception", state.user_message)
+            )
+            state.metadata["fallback_used"] = True
+            return state
 
         # One regeneration attempt
         import asyncio
@@ -3166,7 +3270,12 @@ def _validate_output(state: AgentState) -> AgentState:
         chat_id = state.metadata.get("chat_id", 0)
 
         try:
-            result = asyncio.run(_call_model(messages, chat_id))
+            with stage_execution(
+                stage="generation",
+                source="scripts/nexus_agent_platform/agents/nova.py:_validate_output",
+                metadata={"purpose": "validation_regeneration"},
+            ):
+                result = asyncio.run(_call_model(messages, chat_id, purpose="validation_regeneration"))
             content = result.get("content", "")
             if content and not validate_response(content, state.user_message):
                 # Also check capability contradiction on regen

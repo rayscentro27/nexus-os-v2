@@ -12,6 +12,7 @@ import os
 import re
 import time
 import uuid
+from contextvars import ContextVar
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -28,6 +29,9 @@ DEFAULT_STALE_SECONDS = 15 * 60
 DEFAULT_RETENTION_DAYS = 30
 DEFAULT_MAX_BYTES = 10 * 1024 * 1024
 STORE_ENV = "NEXUS_EXECUTION_TELEMETRY_PATH"
+
+_CURRENT_PARENT_RUN_ID: ContextVar[Optional[str]] = ContextVar("nexus_execution_parent_run_id", default=None)
+_CURRENT_STAGE_METADATA: ContextVar[Dict[str, Any]] = ContextVar("nexus_execution_stage_metadata", default={})
 
 _SECRET_KEYS = {
     "token", "secret", "api_key", "apikey", "authorization", "cookie",
@@ -189,6 +193,61 @@ def append_event(event: Dict[str, Any], path: Optional[Path] = None) -> Dict[str
 
 def emit_event(**kwargs: Any) -> Dict[str, Any]:
     return append_event(build_event(**kwargs))
+
+
+@contextmanager
+def telemetry_context(
+    *,
+    parent_run_id: Optional[str] = None,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> Iterator[None]:
+    """Attach safe parent metadata to nested runtime telemetry in this context."""
+    parent_token = _CURRENT_PARENT_RUN_ID.set(parent_run_id)
+    metadata_token = _CURRENT_STAGE_METADATA.set(_sanitize_metadata(metadata or {}))
+    try:
+        yield
+    finally:
+        _CURRENT_STAGE_METADATA.reset(metadata_token)
+        _CURRENT_PARENT_RUN_ID.reset(parent_token)
+
+
+def current_parent_run_id() -> Optional[str]:
+    return _CURRENT_PARENT_RUN_ID.get()
+
+
+def current_stage_metadata() -> Dict[str, Any]:
+    return dict(_CURRENT_STAGE_METADATA.get() or {})
+
+
+@contextmanager
+def stage_execution(
+    *,
+    stage: str,
+    process_id: str = "telegram_operator",
+    process_name: Optional[str] = "Telegram Operator",
+    worker_id: str = "nova_telegram_worker",
+    agent_id: str = "hermes_nova",
+    source: str,
+    metadata: Optional[Dict[str, Any]] = None,
+) -> Iterator[str]:
+    """Record a bounded child stage under the active execution run."""
+    parent_run_id = current_parent_run_id()
+    if not parent_run_id:
+        yield ""
+        return
+    base_metadata = current_stage_metadata()
+    merged_metadata = {**base_metadata, **(metadata or {}), "stage": stage}
+    with execution_run(
+        process_id=process_id,
+        process_name=process_name,
+        worker_id=worker_id,
+        agent_id=agent_id,
+        execution_type=f"stage:{stage}",
+        source=source,
+        parent_run_id=parent_run_id,
+        metadata=merged_metadata,
+    ) as run_id:
+        yield run_id
 
 
 @contextmanager

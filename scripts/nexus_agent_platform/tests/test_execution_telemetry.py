@@ -166,3 +166,133 @@ def test_partial_line_is_tolerated(monkeypatch, tmp_path):
 
     assert len(read_events()) == 1
 
+
+def test_stage_execution_records_child_run(monkeypatch, tmp_path):
+    store = tmp_path / "events.jsonl"
+    monkeypatch.setenv("NEXUS_EXECUTION_TELEMETRY_PATH", str(store))
+
+    from nexus_agent_platform.runtime.execution_telemetry import (
+        execution_run,
+        read_events,
+        stage_execution,
+        telemetry_context,
+    )
+
+    with execution_run(
+        process_id="telegram_operator",
+        worker_id="pytest",
+        agent_id="hermes_nova",
+        execution_type="telegram_update_run",
+        source="test",
+        metadata={"update_id": 590356972, "raw_message": "do not store"},
+    ) as parent_run:
+        with telemetry_context(parent_run_id=parent_run, metadata={"update_id": 590356972}):
+            with stage_execution(stage="planner", source="test", metadata={"model": "test-model"}):
+                pass
+
+    events = read_events()
+    stage_events = [e for e in events if e["execution_type"] == "stage:planner"]
+    assert len(stage_events) == 2
+    assert {e["event_type"] for e in stage_events} == {"started", "completed"}
+    assert all(e["parent_run_id"] == parent_run for e in stage_events)
+    assert all(e["metadata"]["update_id"] == 590356972 for e in stage_events)
+    assert all(e["metadata"]["stage"] == "planner" for e in stage_events)
+
+
+def test_stage_execution_noops_without_parent(monkeypatch, tmp_path):
+    store = tmp_path / "events.jsonl"
+    monkeypatch.setenv("NEXUS_EXECUTION_TELEMETRY_PATH", str(store))
+
+    from nexus_agent_platform.runtime.execution_telemetry import read_events, stage_execution
+
+    with stage_execution(stage="generation", source="test"):
+        pass
+
+    assert read_events() == []
+
+
+def test_generation_timeout_uses_fallback_without_regen(monkeypatch):
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+    from nexus_agent_platform.agents import nova
+
+    calls = {"count": 0}
+
+    async def timeout_model(messages, chat_id, purpose="final_generation"):
+        calls["count"] += 1
+        raise TimeoutError("provider timed out")
+
+    monkeypatch.setattr(nova, "_call_model", timeout_model)
+
+    state = AgentState(
+        agent_id=nova.AGENT_ID,
+        mission_id="pytest",
+        user_message="How are you?",
+        metadata={"model_messages": [{"role": "user", "content": "How are you?"}]},
+    )
+
+    generated = nova._generate_response(state)
+    assert generated.assistant_response == ""
+    assert generated.metadata["model_error_type"] == "TimeoutError"
+
+    validated = nova._validate_output(generated)
+    assert validated.metadata["fallback_used"] is True
+    assert validated.metadata["validation_regen"] is False
+    assert calls["count"] == 1
+
+
+def test_runtime_count_contradiction_rejected_offline():
+    from nexus_agent_platform.agents.nova import _validate_against_capability
+
+    result = {
+        "tool": "nexus_query_planner",
+        "query_type": "runtime_execution",
+        "status": "success",
+        "coverage": {"execution_telemetry": True},
+        "plan": {
+            "domain": "runtime_execution",
+            "operation": "overview",
+            "source_requirement": "execution_telemetry",
+        },
+        "data": {
+            "coverage": {"coverage_status": "partial"},
+            "summary": {
+                "active_count": 1,
+                "completed_count": 5,
+                "failed_count": 0,
+                "skipped_count": 0,
+                "stale_count": 0,
+            },
+            "runs": [],
+        },
+    }
+
+    err = _validate_against_capability("1 currently running and 4 completed.", result)
+    assert err == "runtime_count_contradiction"
+
+
+def test_telegram_send_uses_timeout_and_single_retry(monkeypatch):
+    import importlib.util
+    from pathlib import Path
+
+    worker_path = Path(__file__).resolve().parents[2] / "nova" / "nova_telegram_worker.py"
+    spec = importlib.util.spec_from_file_location("nova_telegram_worker_test", worker_path)
+    worker = importlib.util.module_from_spec(spec)
+    assert spec and spec.loader
+    spec.loader.exec_module(worker)
+
+    calls = []
+
+    def fake_tg_api(method, params=None, token=None, timeout=20):
+        calls.append({"method": method, "timeout": timeout})
+        if len(calls) == 1:
+            return None
+        return {"ok": True, "result": {"message_id": 123}}
+
+    monkeypatch.setattr(worker, "_tg_api", fake_tg_api)
+    monkeypatch.setattr(worker, "_log_error", lambda msg: None)
+
+    ids = worker.tg_send_message(42, "hello", token="test-token", timeout=3)
+
+    assert ids == [123]
+    assert len(calls) == 2
+    assert all(call["timeout"] == 3 for call in calls)
