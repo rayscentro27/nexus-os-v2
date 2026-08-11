@@ -1031,6 +1031,80 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
         lines.append(f"telemetry_summary: {data.get('telemetry_summary', 'unknown')}")
         lines.append("")
 
+    elif domain == "runtime_execution" and isinstance(data, dict):
+        summary = data.get("summary", {})
+        telemetry_coverage = data.get("coverage", {})
+        health = data.get("telemetry_health", {})
+        lines.append(f"window: {plan.get('window', 'all')}")
+        lines.append(f"coverage_status: {telemetry_coverage.get('coverage_status', 'unknown')}")
+        lines.append(f"coverage_window_start: {telemetry_coverage.get('window_start')}")
+        lines.append(f"coverage_window_end: {telemetry_coverage.get('window_end')}")
+        lines.append(f"telemetry_source_count: {telemetry_coverage.get('source_count', 0)}")
+        lines.append(f"event_count: {summary.get('event_count', 0)}")
+        lines.append(f"run_count: {summary.get('run_count', 0)}")
+        lines.append(f"active_count: {summary.get('active_count', 0)}")
+        lines.append(f"completed_count: {summary.get('completed_count', 0)}")
+        lines.append(f"failed_count: {summary.get('failed_count', 0)}")
+        lines.append(f"skipped_count: {summary.get('skipped_count', 0)}")
+        lines.append(f"blocked_count: {summary.get('blocked_count', 0)}")
+        lines.append(f"stale_count: {summary.get('stale_count', 0)}")
+        lines.append(f"telemetry_health_status: {health.get('status', 'unknown')}")
+        lines.append(f"last_event_at: {health.get('last_event_at')}")
+        lines.append("")
+
+        processes = data.get("processes", [])
+        if processes:
+            lines.append("Process execution state records:")
+            for p in processes:
+                lines.append(f"  - {p.get('process_name', p.get('process_id', '?'))}:")
+                lines.append(f"      process_id: {p.get('process_id', '?')}")
+                lines.append(f"      current_state: {p.get('current_state', '?')}")
+                lines.append(f"      last_terminal_status: {p.get('last_terminal_status', '?')}")
+                lines.append(f"      last_run_id: {p.get('last_run_id', '?')}")
+                lines.append(f"      last_started_at: {p.get('last_started_at')}")
+                lines.append(f"      last_completed_at: {p.get('last_completed_at')}")
+                lines.append(f"      last_duration_ms: {p.get('last_duration_ms')}")
+                lines.append(f"      last_worker_id: {p.get('last_worker_id', '?')}")
+                lines.append(f"      stale: {str(p.get('stale', False)).lower()}")
+            lines.append("")
+
+        runs = data.get("runs", [])
+        if runs:
+            lines.append("Verified execution runs:")
+            for r in runs:
+                lines.append(f"  - run_id: {r.get('run_id', '?')}")
+                lines.append(f"      process_id: {r.get('process_id', '?')}")
+                lines.append(f"      process_name: {r.get('process_name', '?')}")
+                lines.append(f"      worker_id: {r.get('worker_id', '?')}")
+                lines.append(f"      execution_type: {r.get('execution_type', '?')}")
+                lines.append(f"      status: {r.get('status', '?')}")
+                lines.append(f"      current_state: {r.get('current_state', '?')}")
+                lines.append(f"      last_terminal_status: {r.get('last_terminal_status', '?')}")
+                lines.append(f"      started_at: {r.get('started_at')}")
+                lines.append(f"      completed_at: {r.get('completed_at')}")
+                lines.append(f"      duration_ms: {r.get('duration_ms')}")
+                lines.append(f"      source_type: {r.get('source_type', '?')}")
+            lines.append("")
+
+        missing_enabled = data.get("enabled_processes_without_verified_run", [])
+        if missing_enabled:
+            lines.append("Enabled processes without a verified telemetry run in this window:")
+            for p in missing_enabled:
+                lines.append(f"  - {p.get('name', p.get('process_id', '?'))}:")
+                lines.append(f"      process_id: {p.get('process_id', '?')}")
+                lines.append(f"      configuration_state: {p.get('configuration_state', '?')}")
+                lines.append(f"      execution_mode: {p.get('execution_mode', '?')}")
+                lines.append(f"      runtime_state: {p.get('runtime_state', '?')}")
+                lines.append("      note: missing telemetry is not proof the process did not run unless coverage is complete")
+            lines.append("")
+
+        lines.append("Telemetry rules:")
+        lines.append("  - running right now requires a fresh started run with no terminal event.")
+        lines.append("  - completed requires a completed terminal event.")
+        lines.append("  - failed requires a failed terminal event.")
+        lines.append("  - partial/unavailable coverage means no matching run is not proof nothing ran.")
+        lines.append("")
+
     elif domain == "incomplete_areas" and isinstance(data, dict):
         lines.append(f"incomplete_count: {data.get('unique_incomplete_count', data.get('count', '?'))}")
         areas = data.get("areas", [])
@@ -1998,14 +2072,20 @@ def _planner_result_counts(data: Any) -> Tuple[Optional[int], Optional[int], boo
         total = data.get("pending_count")
     if total is None and "count" in data:
         total = data.get("count")
+    if total is None and "total_count" in data:
+        total = data.get("total_count")
 
-    returned = data.get("filtered_count")
+    returned = data.get("returned_count")
+    if returned is None:
+        returned = data.get("filtered_count")
     if returned is None and isinstance(data.get("processes"), list):
         returned = len(data["processes"])
     if returned is None and isinstance(data.get("reports"), list):
         returned = len(data["reports"])
     if returned is None and isinstance(data.get("agents"), list):
         returned = len(data["agents"])
+    if returned is None and "returned_count" in data:
+        returned = data.get("returned_count")
     if returned is None:
         returned = total
 
@@ -2448,6 +2528,76 @@ def _validate_against_capability(
                     if claim in response_lower:
                         return "planner_completeness_contradiction"
 
+        if plan.get("domain") == "runtime_execution" and isinstance(data_obj, dict):
+            summary = data_obj.get("summary", {})
+            telemetry_coverage = data_obj.get("coverage", {})
+            coverage_status = telemetry_coverage.get("coverage_status", "unknown")
+            runs = data_obj.get("runs", [])
+            if coverage_status != "complete":
+                absolute_absence_claims = [
+                    "nothing ran", "no process ran", "no processes ran",
+                    "no nexus processes ran", "nothing executed",
+                    "no process executed", "no processes executed",
+                    "definitely did not run", "definitely didn't run",
+                    "no failures", "no failures reported", "no processes failed",
+                    "failed: 0", "failed=0",
+                    "without failures", "without any failures",
+                    "nothing failed", "no skipped", "no processes were skipped",
+                    "no processes that were skipped", "none marked as skipped",
+                    "no processes skipped", "skipped: 0", "skipped=0",
+                    "count for skipped processes is zero",
+                    "nothing was skipped", "all processes that ran",
+                    "all recorded processes", "all work succeeded",
+                    "all runs completed successfully", "runs completing successfully",
+                    "processes ran without",
+                    "all processes are currently idle",
+                    "completed their last executions successfully",
+                ]
+                for claim in absolute_absence_claims:
+                    if claim in response_lower:
+                        return "runtime_coverage_contradiction"
+
+            if summary.get("active_count", 0) == 0:
+                running_claims = [
+                    "is running right now", "are running right now",
+                    "currently running", "actively running",
+                ]
+                for claim in running_claims:
+                    if claim in response_lower:
+                        return "runtime_running_contradiction"
+
+            if summary.get("completed_count", 0) == 0:
+                completed_claims = [
+                    "completed today", "completed successfully",
+                    "has completed", "did complete",
+                ]
+                for claim in completed_claims:
+                    if claim in response_lower:
+                        return "runtime_completion_contradiction"
+
+            if summary.get("failed_count", 0) == 0:
+                failed_claims = [
+                    "failed today", "has failed", "did fail",
+                    "is failing", "are failing",
+                ]
+                for claim in failed_claims:
+                    if claim in response_lower:
+                        return "runtime_failure_contradiction"
+
+            wants_telegram_processing = any(
+                word in response_lower
+                for word in ("processed", "handled", "message", "update", "user work", "tasks today")
+            ) and "telegram" in response_lower
+            if wants_telegram_processing:
+                has_update_run = any(
+                    r.get("process_id") == "telegram_operator"
+                    and r.get("execution_type") == "telegram_update_run"
+                    and r.get("last_terminal_status") == "completed"
+                    for r in runs
+                )
+                if not has_update_run:
+                    return "runtime_polling_contradiction"
+
         # Ambiguity unresolved — reject definitive single-dimension claims
         ambiguity = plan.get("ambiguity")
         if ambiguity:
@@ -2503,6 +2653,19 @@ def _build_fallback_response(error_reason: str, user_message: str) -> str:
         )
     if error_reason == "planner_telemetry_contradiction":
         return "I do not have verified execution telemetry proving anything ran."
+    if error_reason == "runtime_coverage_contradiction":
+        return "Telemetry coverage is partial, so I cannot turn missing records into proof that nothing ran."
+    if error_reason == "runtime_running_contradiction":
+        return "I do not have a fresh non-stale started run proving a Nexus process is running right now."
+    if error_reason == "runtime_completion_contradiction":
+        return "I do not have a completed terminal telemetry event for that claim."
+    if error_reason == "runtime_failure_contradiction":
+        return "I do not have a failed terminal telemetry event for that claim."
+    if error_reason == "runtime_polling_contradiction":
+        return (
+            "I have verified Telegram worker poll telemetry, but I do not have a "
+            "verified telegram_update_run showing Telegram Operator actually processed a message."
+        )
     if error_reason == "planner_completeness_contradiction":
         return "I retrieved a partial result set, so I cannot honestly present it as a complete list."
     if error_reason == "planner_ambiguity_contradiction":
@@ -2568,6 +2731,31 @@ def _build_verified_planner_fallback(
             lines.append("I do not have verified execution telemetry proving anything ran.")
 
         return "\n".join(lines) if lines else None
+
+    if domain == "runtime_execution" and isinstance(data, dict):
+        summary = data.get("summary", {})
+        telemetry_coverage = data.get("coverage", {})
+        lines = [
+            f"Runtime telemetry coverage is {telemetry_coverage.get('coverage_status', 'unknown')}.",
+            (
+                "Verified run counts: "
+                f"active={summary.get('active_count', 0)}, "
+                f"completed={summary.get('completed_count', 0)}, "
+                f"failed={summary.get('failed_count', 0)}, "
+                f"skipped={summary.get('skipped_count', 0)}, "
+                f"stale={summary.get('stale_count', 0)}."
+            ),
+        ]
+        if telemetry_coverage.get("coverage_status") != "complete":
+            lines.append("Because coverage is not complete, missing records are not proof that nothing ran.")
+        runs = data.get("runs", [])
+        if runs:
+            latest = runs[0]
+            lines.append(
+                f"Most recent verified run: {latest.get('process_name', latest.get('process_id'))} "
+                f"({latest.get('run_id')}) status={latest.get('status')}."
+            )
+        return " ".join(lines)
 
     if domain == "recent_activity" and source_requirement == "execution_telemetry":
         return "I do not have verified execution telemetry proving anything ran."
@@ -2884,6 +3072,11 @@ def _build_context(state: AgentState) -> AgentState:
                 telemetry_instruction = (
                     "If verified execution telemetry is unavailable, say that directly. "
                     "Do not turn lack of telemetry into proof that nothing ran. "
+                    "For runtime_execution data: claim running only for a fresh non-stale run with no terminal event; "
+                    "claim completed only from completed terminal events; claim failed only from failed terminal events; "
+                    "when coverage is partial or unavailable, qualify absence of matching records. "
+                    "Do not treat worker_poll as proof that user work or a Telegram message was processed; "
+                    "Telegram message processing requires execution_type=telegram_update_run. "
                 )
             user_content = (
                 f"{state.user_message}\n\n"
@@ -3052,9 +3245,9 @@ def build_nova_graph() -> GraphAdapter:
     """
     # Register the capability executor for the semantic query planner
     from nexus_agent_platform.capabilities.shared import execute_shared_capability
-    def _planner_executor(capability: str) -> Dict[str, Any]:
+    def _planner_executor(capability: str, arguments: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         return execute_shared_capability(
-            "hermes_nova", capability, trace_id="planner",
+            "hermes_nova", capability, arguments or {}, trace_id="planner",
         )
     register_executor(_planner_executor)
 

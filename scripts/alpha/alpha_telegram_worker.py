@@ -48,6 +48,8 @@ OPPORTUNITIES_DIR = os.path.join(REPO_ROOT, "reports", "alpha", "opportunities")
 # Agent Platform path
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
+from nexus_agent_platform.runtime.execution_telemetry import execution_run
+
 # ─── SSL ────────────────────────────────────────────────
 
 SSL_CTX = ssl.create_default_context()
@@ -388,6 +390,19 @@ def _normalize_query(text):
 
 def execute_research(query, mission):
     """Execute live research via Brave Search and synthesize results."""
+    with execution_run(
+        process_id="alpha_research_intake",
+        process_name="Alpha Research Intake",
+        worker_id="alpha_telegram_worker",
+        agent_id="alpha",
+        execution_type="research_execution",
+        source="scripts/alpha/alpha_telegram_worker.py:execute_research",
+        metadata={"mission_id": mission.get("mission_id"), "query_length": len(query or "")},
+    ):
+        return _execute_research_inner(query, mission)
+
+
+def _execute_research_inner(query, mission):
     # Import web search
     sys.path.insert(0, os.path.join(REPO_ROOT, "scripts", "hermes"))
     try:
@@ -848,6 +863,19 @@ def process_message(update):
     if not text or not chat_id:
         return
 
+    with execution_run(
+        process_id="alpha_research_intake",
+        process_name="Alpha Research Intake",
+        worker_id="alpha_telegram_worker",
+        agent_id="alpha",
+        execution_type="telegram_update_run",
+        source="scripts/alpha/alpha_telegram_worker.py:process_message",
+        metadata={"update_id": update_id, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16]},
+    ):
+        return _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id)
+
+
+def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id):
     _log(f"Incoming: update={update_id} chat={chat_id} user={username} text={text[:80]}")
 
     # Create mission
@@ -973,43 +1001,52 @@ def process_message(update):
 def run_once():
     """Single polling cycle: fetch updates, process, return."""
     _log("Alpha worker: --once cycle starting")
-    write_status(os.getpid(), "RUNNING")
+    with execution_run(
+        process_id="alpha_research_intake",
+        process_name="Alpha Research Intake",
+        worker_id="alpha_telegram_worker",
+        agent_id="alpha",
+        execution_type="worker_poll",
+        source="scripts/alpha/alpha_telegram_worker.py:run_once",
+        metadata={"mode": "once"},
+    ):
+        write_status(os.getpid(), "RUNNING")
 
-    offset = load_offset()
-    result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
+        offset = load_offset()
+        result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
 
-    if not result or not result.get("ok"):
-        _log_error(f"getUpdates failed: {result}")
-        write_status(os.getpid(), "API_ERROR")
-        return "API_ERROR"
+        if not result or not result.get("ok"):
+            _log_error(f"getUpdates failed: {result}")
+            write_status(os.getpid(), "API_ERROR")
+            return "API_ERROR"
 
-    updates = result.get("result", [])
-    if not updates:
-        _log("Alpha worker: no new updates")
+        updates = result.get("result", [])
+        if not updates:
+            _log("Alpha worker: no new updates")
+            write_status(os.getpid(), "IDLE")
+            return "NO_UPDATES"
+
+        max_update_id = offset
+        processed = 0
+
+        for update in updates:
+            uid = update.get("update_id", 0)
+            if uid > max_update_id:
+                max_update_id = uid
+
+            try:
+                process_message(update)
+                processed += 1
+            except Exception as e:
+                _log_error(f"Error processing update {uid}: {e}")
+
+        # Save offset after processing (not before)
+        if max_update_id > offset:
+            save_offset(max_update_id)
+
+        _log(f"Alpha worker: processed {processed} updates, max_id={max_update_id}")
         write_status(os.getpid(), "IDLE")
-        return "NO_UPDATES"
-
-    max_update_id = offset
-    processed = 0
-
-    for update in updates:
-        uid = update.get("update_id", 0)
-        if uid > max_update_id:
-            max_update_id = uid
-
-        try:
-            process_message(update)
-            processed += 1
-        except Exception as e:
-            _log_error(f"Error processing update {uid}: {e}")
-
-    # Save offset after processing (not before)
-    if max_update_id > offset:
-        save_offset(max_update_id)
-
-    _log(f"Alpha worker: processed {processed} updates, max_id={max_update_id}")
-    write_status(os.getpid(), "IDLE")
-    return f"PROCESSED {processed}"
+        return f"PROCESSED {processed}"
 
 
 def run_poll():

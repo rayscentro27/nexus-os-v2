@@ -20,6 +20,8 @@ import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from nexus_agent_platform.runtime.execution_telemetry import execution_run
 from process_registry_adapter import emit_process_run
 
 REGISTRY_PATH = "data/operations/nexus_process_registry.json"
@@ -90,6 +92,19 @@ def run_process(process, dry_run=False, telegram_triggered=False):
     return "simulated", details
 
 def main():
+    with execution_run(
+        process_id="daily_monitor",
+        process_name="Daily Monitor",
+        worker_id="nexus_active_operator_runner",
+        agent_id="nexus_operations",
+        execution_type="bounded_active_operator_runner",
+        source="scripts/operations/nexus_active_operator_runner.py:main",
+        metadata={"argv_count": len(sys.argv[1:])},
+    ):
+        return _main_inner()
+
+
+def _main_inner():
     args = sys.argv[1:]
     dry_run = "--dry-run" in args
     once = "--once" in args

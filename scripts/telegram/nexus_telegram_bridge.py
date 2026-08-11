@@ -70,6 +70,8 @@ try:
 except Exception:
     TEMPORAL_AVAILABLE = False
 
+from nexus_agent_platform.runtime.execution_telemetry import execution_run
+
 # Active context import
 try:
     from active_context import (
@@ -1528,91 +1530,110 @@ def process_telegram_updates(token, dry_run=False):
     Bounded one-shot polling: fetch new updates, process commands, send replies.
     Returns status string.
     """
-    watchdog_stalled_missions()
-    bot_id = None
-    bot_resp = telegram_api_call(token, "getMe", {})
-    if bot_resp and bot_resp.get("ok"):
-        bot_id = bot_resp.get("result", {}).get("id")
+    with execution_run(
+        process_id="hermes_router",
+        process_name="Hermes Work Router",
+        worker_id="nexus_telegram_bridge",
+        agent_id="nexus_hermes",
+        execution_type="worker_poll",
+        source="scripts/telegram/nexus_telegram_bridge.py:process_telegram_updates",
+        metadata={"dry_run": dry_run},
+    ) as poll_run_id:
+        watchdog_stalled_missions()
+        bot_id = None
+        bot_resp = telegram_api_call(token, "getMe", {})
+        if bot_resp and bot_resp.get("ok"):
+            bot_id = bot_resp.get("result", {}).get("id")
 
-    last_id = load_last_update_id()
-    params = {"offset": last_id + 1, "limit": 10, "timeout": 0}
+        last_id = load_last_update_id()
+        params = {"offset": last_id + 1, "limit": 10, "timeout": 0}
     
-    resp = telegram_api_call(token, "getUpdates", params)
-    if not resp:
-        return "TELEGRAM_API_ERROR"
+        resp = telegram_api_call(token, "getUpdates", params)
+        if not resp:
+            return "TELEGRAM_API_ERROR"
     
-    if not resp.get("ok"):
-        return "TELEGRAM_API_NOT_OK"
+        if not resp.get("ok"):
+            return "TELEGRAM_API_NOT_OK"
     
-    updates = resp.get("result", [])
-    if not updates:
-        return "NO_NEW_UPDATES"
+        updates = resp.get("result", [])
+        if not updates:
+            return "NO_NEW_UPDATES"
     
-    processed = 0
-    skipped_unauthorized = 0
-    max_update_id = last_id
+        processed = 0
+        skipped_unauthorized = 0
+        max_update_id = last_id
     
-    for update in updates:
-        uid = update.get("update_id", 0)
-        if uid > max_update_id:
-            max_update_id = uid
+        for update in updates:
+            uid = update.get("update_id", 0)
+            if uid > max_update_id:
+                max_update_id = uid
         
-        message = update.get("message") or update.get("edited_message") or {}
-        chat = message.get("chat", {})
-        chat_id = chat.get("id")
-        text = message.get("text", "")
-        mission = create_mission(uid, bot_id, chat_id, text or "")
+            message = update.get("message") or update.get("edited_message") or {}
+            chat = message.get("chat", {})
+            chat_id = chat.get("id")
+            text = message.get("text", "")
+            mission = create_mission(uid, bot_id, chat_id, text or "")
         
-        # Ignore non-text messages
-        if not text:
-            update_mission(mission, "ROUTING_FAILED", error="non_text_update")
-            continue
+            # Ignore non-text messages
+            if not text:
+                update_mission(mission, "ROUTING_FAILED", error="non_text_update")
+                continue
         
-        # Authorization check
-        if chat_id not in ALLOWED_CHAT_IDS:
-            skipped_unauthorized += 1
-            update_mission(mission, "UNAUTHORIZED", error="chat_not_authorized")
-            continue
+            # Authorization check
+            if chat_id not in ALLOWED_CHAT_IDS:
+                skipped_unauthorized += 1
+                update_mission(mission, "UNAUTHORIZED", error="chat_not_authorized")
+                continue
         
-        update_mission(mission, "AUTHORIZED")
+            update_mission(mission, "AUTHORIZED")
 
-        # Process command
-        result = process_command(text, mission=mission)
-        processed += 1
+            with execution_run(
+                process_id="hermes_router",
+                process_name="Hermes Work Router",
+                worker_id="nexus_telegram_bridge",
+                agent_id="nexus_hermes",
+                execution_type="telegram_update_run",
+                source="scripts/telegram/nexus_telegram_bridge.py:process_telegram_updates",
+                parent_run_id=poll_run_id,
+                metadata={"update_id": uid, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16]},
+            ):
+                # Process command
+                result = process_command(text, mission=mission)
+                processed += 1
         
-        if dry_run:
-            update_mission(mission, "RESPONSE_COMPOSED")
-            print(f"[DRY-RUN] Would reply to chat {mask_chat_id(chat_id)}: {result[:100]}...")
-        else:
-            # Send reply
-            send_result = telegram_send_message(token, chat_id, result)
-            reply_ok = send_result and send_result.get("ok", False) if send_result else False
-            response_message_id = None
-            if reply_ok:
-                response_message_id = send_result.get("result", {}).get("message_id")
-                update_mission(mission, "RESPONSE_SENT", response_telegram_message_id=response_message_id)
-                update_mission(mission, "COMPLETED")
+            if dry_run:
+                update_mission(mission, "RESPONSE_COMPOSED")
+                print(f"[DRY-RUN] Would reply to chat {mask_chat_id(chat_id)}: {result[:100]}...")
             else:
-                update_mission(mission, "DELIVERY_FAILED", error="telegram_send_message_failed")
+                # Send reply
+                send_result = telegram_send_message(token, chat_id, result)
+                reply_ok = send_result and send_result.get("ok", False) if send_result else False
+                response_message_id = None
+                if reply_ok:
+                    response_message_id = send_result.get("result", {}).get("message_id")
+                    update_mission(mission, "RESPONSE_SENT", response_telegram_message_id=response_message_id)
+                    update_mission(mission, "COMPLETED")
+                else:
+                    update_mission(mission, "DELIVERY_FAILED", error="telegram_send_message_failed")
             
-            # Write receipt
-            write_live_polling_receipt({
-                "type": "live_command",
-                "update_id": uid,
-                "chat_id_masked": mask_chat_id(chat_id),
-                "command": text[:100],
-                "reply_ok": reply_ok,
-                "mission_id": mission.get("mission_id"),
-                "response_telegram_message_id": response_message_id,
-                "reply_length": len(result),
-                "reply_preview": result[:200]
-            })
+                # Write receipt
+                write_live_polling_receipt({
+                    "type": "live_command",
+                    "update_id": uid,
+                    "chat_id_masked": mask_chat_id(chat_id),
+                    "command": text[:100],
+                    "reply_ok": reply_ok,
+                    "mission_id": mission.get("mission_id"),
+                    "response_telegram_message_id": response_message_id,
+                    "reply_length": len(result),
+                    "reply_preview": result[:200]
+                })
     
-    # Save the latest update_id
-    if max_update_id > last_id:
-        save_last_update_id(max_update_id)
+        # Save the latest update_id
+        if max_update_id > last_id:
+            save_last_update_id(max_update_id)
     
-    return f"PROCESSED {processed} | SKIPPED {skipped_unauthorized} unauthorized | LAST_UPDATE_ID {max_update_id}"
+        return f"PROCESSED {processed} | SKIPPED {skipped_unauthorized} unauthorized | LAST_UPDATE_ID {max_update_id}"
 
 # --- Conversation Context ---
 

@@ -9,7 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "ai_access"))
+from nexus_agent_platform.runtime.execution_telemetry import execution_run  # noqa: E402
 import agent_runtime_model as rt  # noqa: E402
 
 RUNTIME = ROOT / "reports" / "runtime" / "ai_agent_runtime_report_latest.json"
@@ -21,6 +23,19 @@ def now() -> str:
 
 
 def main() -> int:
+    with execution_run(
+        process_id="repo_intelligence",
+        process_name="Repo Intelligence",
+        worker_id="generate_agent_runtime_report",
+        agent_id="nexus_reports",
+        execution_type="report_generation",
+        source="scripts/ai_access/generate_agent_runtime_report.py:main",
+        metadata={"argv_count": len(sys.argv[1:])},
+    ):
+        return _main_inner()
+
+
+def _main_inner() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--dry-run", action="store_true", default=True)
     p.add_argument("--json", action="store_true")

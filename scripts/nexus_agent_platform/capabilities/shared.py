@@ -61,6 +61,14 @@ NOVA_ALLOWED_READS = frozenset({
     "get_report_index",
     "get_latest_reports",
     "get_recent_activity",
+    "get_runtime_execution_summary",
+    "get_active_runs",
+    "get_recent_runs",
+    "get_failed_runs",
+    "get_process_execution_history",
+    "get_last_process_run",
+    "get_execution_evidence",
+    "get_runtime_telemetry_health",
     "get_nexus_datetime",
     "get_incomplete_areas",
 })
@@ -752,6 +760,24 @@ def _handle_system_health(
     - unknown_services: processes where status could not be determined
     - overall_status: healthy only if all sources succeed and no failures
     """
+    from nexus_agent_platform.runtime.execution_telemetry import execution_run
+
+    with execution_run(
+        process_id="system_health",
+        process_name="System Health Check",
+        worker_id="shared_capability_adapter",
+        agent_id="nexus_agent_platform",
+        execution_type="system_health_check",
+        source="scripts/nexus_agent_platform/capabilities/shared.py:_handle_system_health",
+        metadata={"trace_id": trace_id},
+    ):
+        return _handle_system_health_inner(arguments, trace_id)
+
+
+def _handle_system_health_inner(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
     query_start = datetime.now(timezone.utc)
     health_data: Dict[str, Any] = {
         "overall_status": "unknown",
@@ -2382,6 +2408,149 @@ def _handle_recent_activity(
         }
 
 
+def _runtime_telemetry_envelope(
+    *,
+    capability: str,
+    data: Dict[str, Any],
+    trace_id: str,
+) -> Dict[str, Any]:
+    return {
+        "status": data.get("status", "success"),
+        "capability": capability,
+        "source": "runtime_execution_telemetry",
+        "source_type": "verified_execution_telemetry",
+        "freshness": "live",
+        "access_boundary": "approved read capability only",
+        "data": data,
+        "error": data.get("error"),
+        "provenance": {
+            "capability": capability,
+            "status": data.get("status", "success"),
+            "source": "runtime_execution_telemetry",
+            "source_type": "verified_execution_telemetry",
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "freshness": "live",
+            "trace_id": trace_id,
+            "handler": f"shared.{capability}",
+            "access_boundary": "approved read capability only",
+        },
+    }
+
+
+def _handle_runtime_execution_summary(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    from nexus_agent_platform.runtime.execution_telemetry import query_runtime_telemetry
+
+    args = arguments or {}
+    data = query_runtime_telemetry(
+        operation=args.get("operation", "overview"),
+        conditions=args.get("conditions", []),
+        window=args.get("window", "all"),
+        limit=int(args.get("limit", 50)),
+    )
+    return _runtime_telemetry_envelope(
+        capability="get_runtime_execution_summary",
+        data=data,
+        trace_id=trace_id,
+    )
+
+
+def _handle_active_runs(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    args = arguments or {}
+    conditions = list(args.get("conditions", []))
+    conditions.append({"field": "current_state", "operator": "eq", "value": "running"})
+    data = _runtime_query("filter", conditions, args)
+    return _runtime_telemetry_envelope(capability="get_active_runs", data=data, trace_id=trace_id)
+
+
+def _handle_recent_runs(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    args = arguments or {}
+    data = _runtime_query("list", args.get("conditions", []), args)
+    return _runtime_telemetry_envelope(capability="get_recent_runs", data=data, trace_id=trace_id)
+
+
+def _handle_failed_runs(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    args = arguments or {}
+    conditions = list(args.get("conditions", []))
+    conditions.append({"field": "last_terminal_status", "operator": "eq", "value": "failed"})
+    data = _runtime_query("filter", conditions, args)
+    return _runtime_telemetry_envelope(capability="get_failed_runs", data=data, trace_id=trace_id)
+
+
+def _handle_process_execution_history(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    args = arguments or {}
+    process_id = args.get("process_id")
+    conditions = list(args.get("conditions", []))
+    if process_id:
+        conditions.append({"field": "process_id", "operator": "eq", "value": process_id})
+    data = _runtime_query("list", conditions, args)
+    return _runtime_telemetry_envelope(capability="get_process_execution_history", data=data, trace_id=trace_id)
+
+
+def _handle_last_process_run(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    args = arguments or {}
+    process_id = args.get("process_id")
+    conditions = list(args.get("conditions", []))
+    if process_id:
+        conditions.append({"field": "process_id", "operator": "eq", "value": process_id})
+    data = _runtime_query("lookup", conditions, {**args, "limit": 1})
+    return _runtime_telemetry_envelope(capability="get_last_process_run", data=data, trace_id=trace_id)
+
+
+def _handle_execution_evidence(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    args = arguments or {}
+    data = _runtime_query("summarize", args.get("conditions", []), args)
+    data["evidence_standard"] = (
+        "Execution proof requires verified_execution_telemetry events from an actual runtime boundary."
+    )
+    return _runtime_telemetry_envelope(capability="get_execution_evidence", data=data, trace_id=trace_id)
+
+
+def _handle_runtime_telemetry_health(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    from nexus_agent_platform.runtime.execution_telemetry import query_runtime_telemetry
+
+    data = query_runtime_telemetry(operation="overview", window=(arguments or {}).get("window", "last_24_hours"))
+    return _runtime_telemetry_envelope(
+        capability="get_runtime_telemetry_health",
+        data={"status": "success", **data.get("telemetry_health", {}), "coverage": data.get("coverage", {})},
+        trace_id=trace_id,
+    )
+
+
+def _runtime_query(operation: str, conditions: list, args: Dict[str, Any]) -> Dict[str, Any]:
+    from nexus_agent_platform.runtime.execution_telemetry import query_runtime_telemetry
+
+    return query_runtime_telemetry(
+        operation=operation,
+        conditions=conditions,
+        window=args.get("window", "all"),
+        limit=int(args.get("limit", 50)),
+    )
+
+
 def _handle_nexus_datetime(
     arguments: Optional[Dict[str, Any]] = None,
     trace_id: str = "",
@@ -2505,6 +2674,14 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_report_index": lambda args, tid: _handle_report_index(args, tid),
     "get_latest_reports": lambda args, tid: _handle_latest_reports(args, tid),
     "get_recent_activity": lambda args, tid: _handle_recent_activity(args, tid),
+    "get_runtime_execution_summary": lambda args, tid: _handle_runtime_execution_summary(args, tid),
+    "get_active_runs": lambda args, tid: _handle_active_runs(args, tid),
+    "get_recent_runs": lambda args, tid: _handle_recent_runs(args, tid),
+    "get_failed_runs": lambda args, tid: _handle_failed_runs(args, tid),
+    "get_process_execution_history": lambda args, tid: _handle_process_execution_history(args, tid),
+    "get_last_process_run": lambda args, tid: _handle_last_process_run(args, tid),
+    "get_execution_evidence": lambda args, tid: _handle_execution_evidence(args, tid),
+    "get_runtime_telemetry_health": lambda args, tid: _handle_runtime_telemetry_health(args, tid),
     "get_nexus_datetime": lambda args, tid: _handle_nexus_datetime(args, tid),
     "get_incomplete_areas": lambda args, tid: _handle_incomplete_areas(args, tid),
 }

@@ -27,6 +27,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))             # for `import runner_handlers`
 sys.path.insert(0, str(HERE / "social"))  # for _supabase
 import _supabase as sb  # noqa: E402
+from nexus_agent_platform.runtime.execution_telemetry import execution_run  # noqa: E402
 from runner_handlers import REGISTRY, list_handlers  # noqa: E402
 
 RUNNER_ID = "nexus_runner_local"
@@ -57,6 +58,19 @@ def finalize(job_id: str, result: dict) -> None:
 
 
 def main() -> int:
+    with execution_run(
+        process_id="work_orders",
+        process_name="Work Orders",
+        worker_id=RUNNER_ID,
+        agent_id="nexus_runner",
+        execution_type="bounded_manual_runner",
+        source="scripts/nexus_runner.py:main",
+        metadata={"argv_count": len(sys.argv[1:])},
+    ):
+        return _main_inner()
+
+
+def _main_inner() -> int:
     ap = argparse.ArgumentParser(description="Safe manual executor for queued agent_jobs.")
     ap.add_argument("--once", action="store_true", help="run a single bounded pass (default)")
     ap.add_argument("--limit", type=int, default=1)

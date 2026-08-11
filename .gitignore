@@ -36,3 +36,4 @@ _incoming/
 .temporal/
 
 data/private/
+data/runtime/execution_telemetry/

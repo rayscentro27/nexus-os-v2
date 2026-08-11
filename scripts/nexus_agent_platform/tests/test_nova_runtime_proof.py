@@ -177,7 +177,7 @@ class TestRuntimeProof:
 
         assert plan["planner_mode"] == "model"
         assert plan["fallback_reason"] is None
-        assert plan["domain"] == "recent_activity"
+        assert plan["domain"] == "runtime_execution"
         assert plan["source_requirement"] == "execution_telemetry"
 
     def test_proof_4_how_many_blocked(self):
@@ -279,7 +279,7 @@ class TestGraphD:
         _print_metadata(question, gate_state, plan, result)
 
         assert gate.get("planner_mode") == "model"
-        assert plan.get("domain") == "recent_activity"
+        assert plan.get("domain") == "runtime_execution"
         assert plan.get("source_requirement") == "execution_telemetry"
 
 
@@ -298,7 +298,8 @@ class TestGraphE:
         _print_metadata(question, gate_state, plan, result)
 
         assert gate.get("planner_mode") == "model"
-        assert plan.get("domain") == "recent_activity"
+        assert plan.get("domain") == "runtime_execution"
+        assert plan.get("source_requirement") == "execution_telemetry"
 
 
 class TestGraphF:

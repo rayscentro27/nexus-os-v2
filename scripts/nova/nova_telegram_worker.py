@@ -45,6 +45,8 @@ NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "
 # Agent Platform path
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
+from nexus_agent_platform.runtime.execution_telemetry import execution_run
+
 # ─── SSL ────────────────────────────────────────────────
 
 SSL_CTX = ssl.create_default_context()
@@ -365,6 +367,19 @@ def process_message(update):
     if not text or not chat_id:
         return False
 
+    with execution_run(
+        process_id="telegram_operator",
+        process_name="Telegram Operator",
+        worker_id="nova_telegram_worker",
+        agent_id="hermes_nova",
+        execution_type="telegram_update_run",
+        source="scripts/nova/nova_telegram_worker.py:process_message",
+        metadata={"update_id": update_id, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16]},
+    ):
+        return _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id)
+
+
+def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id):
     _log(f"Incoming: update={update_id} chat={chat_id} user={username} text={text[:80]}")
 
     # Acquire per-chat lock to prevent duplicate delivery
@@ -513,37 +528,46 @@ def _update_status_field(key, value):
 def run_once():
     """Single polling cycle."""
     _log("Nova worker: --once cycle starting")
-    write_status(os.getpid(), "RUNNING")
+    with execution_run(
+        process_id="telegram_operator",
+        process_name="Telegram Operator",
+        worker_id="nova_telegram_worker",
+        agent_id="hermes_nova",
+        execution_type="worker_poll",
+        source="scripts/nova/nova_telegram_worker.py:run_once",
+        metadata={"mode": "once"},
+    ):
+        write_status(os.getpid(), "RUNNING")
 
-    offset = load_offset()
-    result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
+        offset = load_offset()
+        result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
 
-    if not result or not result.get("ok"):
-        _log_error(f"getUpdates failed: {result}")
-        write_status(os.getpid(), "API_ERROR")
-        return "API_ERROR"
+        if not result or not result.get("ok"):
+            _log_error(f"getUpdates failed: {result}")
+            write_status(os.getpid(), "API_ERROR")
+            return "API_ERROR"
 
-    updates = result.get("result", [])
-    if not updates:
-        _log("Nova worker: no new updates")
+        updates = result.get("result", [])
+        if not updates:
+            _log("Nova worker: no new updates")
+            write_status(os.getpid(), "IDLE")
+            return "NO_UPDATES"
+
+        processed = 0
+
+        for update in updates:
+            uid = update.get("update_id", 0)
+            try:
+                if process_message(update):
+                    # Save offset immediately after each successful message
+                    save_offset(uid)
+                    processed += 1
+            except Exception as e:
+                _log_error(f"Error processing update {uid}: {e}")
+
+        _log(f"Nova worker: processed {processed} updates")
         write_status(os.getpid(), "IDLE")
-        return "NO_UPDATES"
-
-    processed = 0
-
-    for update in updates:
-        uid = update.get("update_id", 0)
-        try:
-            if process_message(update):
-                # Save offset immediately after each successful message
-                save_offset(uid)
-                processed += 1
-        except Exception as e:
-            _log_error(f"Error processing update {uid}: {e}")
-
-    _log(f"Nova worker: processed {processed} updates")
-    write_status(os.getpid(), "IDLE")
-    return f"PROCESSED {processed}"
+        return f"PROCESSED {processed}"
 
 
 def run_poll():

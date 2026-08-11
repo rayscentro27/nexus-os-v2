@@ -124,6 +124,27 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "operations": ["overview", "summarize"],
         "capability": "get_recent_activity",
     },
+    "runtime_execution": {
+        "description": "Verified Nexus runtime execution telemetry — actual worker/process run events",
+        "fields": {
+            "process_id": {"type": "string", "values": "any"},
+            "process_name": {"type": "string", "values": "any"},
+            "run_id": {"type": "string", "values": "any"},
+            "worker_id": {"type": "string", "values": "any"},
+            "status": {"type": "enum", "values": ["running", "completed", "failed", "skipped", "blocked", "stale", "unknown"]},
+            "current_state": {"type": "enum", "values": ["running", "idle", "unknown"]},
+            "last_terminal_status": {"type": "enum", "values": ["completed", "failed", "skipped", "blocked", "unknown"]},
+            "event_type": {"type": "enum", "values": ["started", "heartbeat", "completed", "failed", "skipped", "blocked"]},
+            "started_at": {"type": "string", "values": "any"},
+            "completed_at": {"type": "string", "values": "any"},
+            "duration_ms": {"type": "integer", "values": "any"},
+            "error_type": {"type": "string", "values": "any"},
+            "telemetry_available": {"type": "boolean", "values": [True, False]},
+            "source_type": {"type": "enum", "values": ["verified_execution_telemetry"]},
+        },
+        "operations": ["overview", "list", "filter", "count", "lookup", "summarize"],
+        "capability": "get_runtime_execution_summary",
+    },
     "incomplete_areas": {
         "description": "Nexus incomplete/unavailable areas — what is not yet live",
         "fields": {
@@ -170,6 +191,7 @@ SOURCE_REQUIREMENTS = {
     "research": "operational_state",
     "system_health": "operational_state",
     "recent_activity": "execution_telemetry",
+    "runtime_execution": "execution_telemetry",
     "incomplete_areas": "structural",
     "overview": "structural",
 }
@@ -195,11 +217,18 @@ Examples of Nexus questions (and their domains):
 - "How many tools are installed?" → tools
 - "Do I have pending approvals?" → approvals
 - "What happened recently?" → recent_activity
+- "What happened in Nexus in the last hour?" → runtime_execution
 - "Is the system healthy?" → system_health
 - "Which jobs aren't doing anything?" → processes (asks about idle/inactive processes)
 - "What's turned on but not working?" → processes (asks about enabled but non-executing)
 - "How many are blocked?" → processes (asks about blocked processes)
-- "Can you prove something ran?" → recent_activity (asks about execution evidence)
+- "Can you prove something ran?" → runtime_execution (asks about execution evidence)
+- "What actually ran today?" → runtime_execution
+- "What is running right now?" → runtime_execution
+- "What completed today?" → runtime_execution
+- "When did System Health Check last run?" → runtime_execution
+- "Which worker executed the most recent run?" → runtime_execution
+- "Which enabled processes have no verified run today?" → runtime_execution
 - "What's the overview?" → overview
 - "Which of those are simulated?" → processes (follow-up filter)
 - "Is that configuration or operational state?" → provenance (follow-up clarification)
@@ -220,6 +249,7 @@ OUTPUT FORMAT — return ONLY a JSON object (no markdown, no explanation):
   ],
   "projection": ["<field1>", "<field2>"],
   "aggregate": null,
+  "window": "all|today|last_hour|last_24_hours|latest|most_recent",
   "ambiguity": null,
   "source_requirement": "structural|operational_state|execution_telemetry|any",
   "reason": "<brief explanation of what this query answers>"
@@ -234,6 +264,10 @@ RULES:
 6. If the question is about provenance/source, set operation to "provenance".
 7. Do NOT answer the question. Only output the plan.
 8. If the question is clearly NOT about Nexus data (greetings, opinions, weather, jokes, generic logic/reasoning, generic machines, etc.), output: {{"domain": "none"}}
+9. Use domain "runtime_execution" for actual runtime questions: really ran, actually ran, completed, failed, skipped today, active right now, stuck/stale, last run, proof/evidence of execution, recent real executions, or worker that executed a run.
+10. Use window "today" for today/since midnight, "last_hour" for last hour, "last_24_hours" for last 24 hours, and "latest" or "most_recent" for latest/most recent.
+11. For Telegram proof, distinguish worker_poll from telegram_update_run. A worker_poll proves the poll cycle ran; only telegram_update_run proves a Telegram update/message was actually handled.
+12. If a question combines configuration with execution telemetry, such as enabled processes with no verified run, use runtime_execution. The executor will provide the structural cross-reference.
 
 FILTER CONDITION RULES FOR PROCESSES:
 - If the user asks for a process configuration state, include a condition on configuration_state.
@@ -554,6 +588,10 @@ def validate_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
     # Ensure required fields
     plan.setdefault("projection", [])
     plan.setdefault("aggregate", None)
+    if plan.get("window") not in ("all", "today", "last_hour", "last_24_hours", "latest", "most_recent", None):
+        plan["window"] = "all"
+    else:
+        plan.setdefault("window", "all")
     plan.setdefault("ambiguity", None)
     plan["source_requirement"] = source_requirement
     plan.setdefault("reason", "")
@@ -619,8 +657,20 @@ def execute_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
             "error": "No capability executor registered",
         }
 
+    capability_args: Dict[str, Any] = {}
+    if domain == "runtime_execution":
+        capability_args = {
+            "operation": plan.get("operation", "overview"),
+            "conditions": plan.get("conditions", []),
+            "window": plan.get("window", "all"),
+            "limit": 50,
+        }
+
     try:
-        result = _capability_executor(capability)
+        try:
+            result = _capability_executor(capability, capability_args)
+        except TypeError:
+            result = _capability_executor(capability)
     except Exception as exc:
         return {
             "status": "error",
@@ -675,6 +725,8 @@ def execute_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
             has_real = data["has_real_execution"]
         elif domain == "recent_activity" and "has_any_real_execution" in data:
             has_real = data["has_any_real_execution"]
+        elif domain == "runtime_execution":
+            has_real = data.get("summary", {}).get("event_count", 0) > 0
         coverage["execution_telemetry"] = has_real
 
     return {
@@ -789,6 +841,8 @@ def format_plan_result(result: Dict[str, Any]) -> str:
         lines.extend(_format_approval_data(data))
     elif domain == "recent_activity":
         lines.extend(_format_activity_data(data))
+    elif domain == "runtime_execution":
+        lines.extend(_format_runtime_execution_data(data, plan))
     elif domain == "incomplete_areas":
         lines.extend(_format_incomplete_data(data))
     elif domain == "overview":
@@ -852,6 +906,89 @@ def _format_process_data(data: Dict, plan: Dict) -> List[str]:
                 f"runtime: {p.get('runtime_state', '?')}]"
             )
 
+    return lines
+
+
+def _format_runtime_execution_data(data: Dict, plan: Dict) -> List[str]:
+    """Format verified execution telemetry for Nova context."""
+    lines: List[str] = []
+    summary = data.get("summary", {})
+    coverage = data.get("coverage", {})
+    health = data.get("telemetry_health", {})
+    runs = data.get("runs", [])
+    processes = data.get("processes", [])
+
+    lines.append(f"Window: {plan.get('window', 'all')}")
+    lines.append(f"Total matching runs: {data.get('total_count', 0)}")
+    lines.append(f"Returned runs: {data.get('returned_count', 0)}")
+    lines.append(f"Truncated: {str(data.get('truncated', False)).lower()}")
+    lines.append("")
+    lines.append("Telemetry coverage:")
+    lines.append(f"  coverage_status: {coverage.get('coverage_status', 'unknown')}")
+    lines.append(f"  window_start: {coverage.get('window_start')}")
+    lines.append(f"  window_end: {coverage.get('window_end')}")
+    lines.append(f"  source_count: {coverage.get('source_count', 0)}")
+    covered = coverage.get("covered_processes", [])
+    if covered:
+        lines.append(f"  covered_processes: {', '.join(covered)}")
+    lines.append("")
+    lines.append("Run summary:")
+    for key in (
+        "event_count", "run_count", "active_count", "completed_count",
+        "failed_count", "skipped_count", "blocked_count", "stale_count",
+    ):
+        lines.append(f"  {key}: {summary.get(key, 0)}")
+    lines.append("")
+    lines.append("Telemetry health:")
+    lines.append(f"  status: {health.get('status', 'unknown')}")
+    lines.append(f"  last_event_at: {health.get('last_event_at')}")
+    lines.append(f"  event_count_24h: {health.get('event_count_24h', 0)}")
+
+    if processes:
+        lines.append("")
+        lines.append("Current/last-known process execution state:")
+        for p in processes[:20]:
+            lines.append(
+                f"  - {p.get('process_id', '?')}: {p.get('process_name', '?')} "
+                f"[current_state: {p.get('current_state', '?')}, "
+                f"last_terminal_status: {p.get('last_terminal_status', '?')}, "
+                f"last_run_id: {p.get('last_run_id', '?')}, "
+                f"last_started_at: {p.get('last_started_at')}, "
+                f"last_completed_at: {p.get('last_completed_at')}, "
+                f"worker: {p.get('last_worker_id', '?')}, stale: {str(p.get('stale', False)).lower()}]"
+            )
+
+    if runs:
+        lines.append("")
+        lines.append("Verified execution runs:")
+        for r in runs[:20]:
+            lines.append(
+                f"  - {r.get('run_id', '?')}: {r.get('process_id', '?')} "
+                f"[status: {r.get('status', '?')}, current_state: {r.get('current_state', '?')}, "
+                f"terminal: {r.get('last_terminal_status', '?')}, "
+                f"started_at: {r.get('started_at')}, completed_at: {r.get('completed_at')}, "
+                f"duration_ms: {r.get('duration_ms')}, worker: {r.get('worker_id', '?')}, "
+                f"source_type: {r.get('source_type', '?')}]"
+            )
+
+    missing_enabled = data.get("enabled_processes_without_verified_run", [])
+    if missing_enabled:
+        lines.append("")
+        lines.append("Enabled processes without verified telemetry in this window:")
+        for p in missing_enabled[:20]:
+            lines.append(
+                f"  - {p.get('process_id', '?')}: {p.get('name', '?')} "
+                f"[config: {p.get('configuration_state', '?')}, "
+                f"mode: {p.get('execution_mode', '?')}, runtime: {p.get('runtime_state', '?')}]"
+            )
+        lines.append("  note: missing telemetry is not proof the process did not run unless coverage is complete.")
+
+    lines.append("")
+    lines.append("Execution proof rules:")
+    lines.append("  running right now requires a non-stale started run with no terminal event.")
+    lines.append("  completed requires a completed terminal event.")
+    lines.append("  failed requires a failed terminal event.")
+    lines.append("  partial or unavailable coverage means absence of a matching run is not proof nothing ran.")
     return lines
 
 
