@@ -42,6 +42,10 @@ from typing import Any, Dict, List, Optional, Tuple
 from nexus_agent_platform.adapters.graph_adapter import GraphAdapter
 from nexus_agent_platform.adapters.otel_adapter import OtelAdapter
 from nexus_agent_platform.adapters.state_adapter import AgentState
+from nexus_agent_platform.capabilities.nexus_query_planner import (
+    plan_query, execute_plan, format_plan_result, register_executor,
+    validate_plan, DOMAIN_SCHEMAS,
+)
 
 log = logging.getLogger(__name__)
 
@@ -2248,7 +2252,36 @@ def _capability_gate(state: AgentState) -> AgentState:
         }
         return state
 
-    # ── Priorities 3-14: Semantic capability gate ──
+    # ── Priority 2.5: Semantic query planner ──
+    # Try the schema-aware planner before keyword routing.
+    # If it produces a valid plan, execute it and skip keyword routing.
+    try:
+        planner_plan = plan_query(text)
+        if planner_plan.get("domain") not in (None, "none"):
+            planner_result = execute_plan(planner_plan)
+            if planner_result.get("status") not in ("error",):
+                state.metadata["capability_gate"] = {
+                    "decision": "planner_executed",
+                    "domain": planner_plan.get("domain"),
+                    "operation": planner_plan.get("operation"),
+                    "plan": planner_plan,
+                    "trace_id": trace_id,
+                }
+                state.metadata["capability_result"] = {
+                    "tool": "nexus_query_planner",
+                    "query_type": planner_plan.get("domain", "unknown"),
+                    "status": planner_result.get("status", "unknown"),
+                    "data": planner_result.get("data", {}),
+                    "provenance": planner_result.get("provenance", {}),
+                    "coverage": planner_result.get("coverage", {}),
+                    "plan": planner_plan,
+                    "trace_id": trace_id,
+                }
+                return state
+    except Exception as exc:
+        log.debug("Planner failed, falling through to keyword routing: %s", exc)
+
+    # ── Priorities 3-14: Semantic capability gate (legacy keyword routing) ──
     gate_result = _semantic_capability_gate(text)
     if gate_result is None:
         state.metadata["capability_gate"] = {
@@ -2477,6 +2510,14 @@ def build_nova_graph() -> GraphAdapter:
     through the shared certified layer. The conversational model
     generates the final natural-language response using verified data.
     """
+    # Register the capability executor for the semantic query planner
+    from nexus_agent_platform.capabilities.shared import execute_shared_capability
+    def _planner_executor(capability: str) -> Dict[str, Any]:
+        return execute_shared_capability(
+            "hermes_nova", capability, trace_id="planner",
+        )
+    register_executor(_planner_executor)
+
     graph = GraphAdapter(agent_id=AGENT_ID)
     graph.add_node("classify_intent", _classify_intent)
     graph.add_node("handle_utility", _handle_utility)
