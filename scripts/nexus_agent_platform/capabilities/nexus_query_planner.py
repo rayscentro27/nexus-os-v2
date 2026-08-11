@@ -184,6 +184,30 @@ You have access to these Nexus domains and their fields:
 
 {schema_text}
 
+WHAT IS NEXUS?
+Nexus is an automation platform with processes (jobs/workflows), tools, agents, reports, approvals, research, system health, and activity tracking. A question is about Nexus if it asks about ANY of these things — even in casual or indirect language.
+
+Examples of Nexus questions (and their domains):
+- "Which processes are enabled?" → processes
+- "What jobs are running?" → processes
+- "How many tools are installed?" → tools
+- "Do I have pending approvals?" → approvals
+- "What happened recently?" → recent_activity
+- "Is the system healthy?" → system_health
+- "Which jobs aren't doing anything?" → processes (asks about idle/inactive processes)
+- "What's turned on but not working?" → processes (asks about enabled but non-executing)
+- "How many are blocked?" → processes (asks about blocked processes)
+- "Can you prove something ran?" → recent_activity (asks about execution evidence)
+- "What's the overview?" → overview
+- "Which of those are simulated?" → processes (follow-up filter)
+- "Is that configuration or operational state?" → provenance (follow-up clarification)
+
+Examples of NON-Nexus questions (domain: "none"):
+- "How are you?" → none
+- "What's the weather?" → none
+- "Tell me a joke" → none
+- "What do you think about coffee?" → none
+
 OUTPUT FORMAT — return ONLY a JSON object (no markdown, no explanation):
 
 {{
@@ -203,11 +227,11 @@ RULES:
 1. Only use domains and fields listed above.
 2. Operations: overview, list, filter, count, group_count, lookup, compare, summarize, provenance.
 3. Operators: eq, neq, in, not_in, contains, exists.
-4. If "blocked" is mentioned without context, set ambiguity field.
-5. If the question asks about execution evidence, set source_requirement to "execution_telemetry".
+4. If "blocked" is mentioned without context, set ambiguity field to "blocked" and still use processes domain.
+5. If the question asks about execution evidence or proof, set source_requirement to "execution_telemetry".
 6. If the question is about provenance/source, set operation to "provenance".
 7. Do NOT answer the question. Only output the plan.
-8. If the question is NOT about Nexus data (greetings, opinions, etc.), output: {{"domain": "none"}}"""
+8. If the question is clearly NOT about Nexus data (greetings, opinions, weather, jokes, etc.), output: {{"domain": "none"}}"""
 
 
 def _build_schema_text() -> str:
@@ -252,18 +276,23 @@ def plan_query(
         plan = _deterministic_plan(user_question)
         plan["planner_mode"] = "deterministic_fallback"
         plan["planner_model"] = None
+        plan["planner_provider"] = None
         plan["fallback_reason"] = "no_model_call_fn"
+        plan["validation_status"] = "deterministic_fallback"
         return plan
 
     try:
         result = model_call_fn(messages)
         content = result.get("content", "")
         model_name = result.get("model", "unknown")
+        provider_name = result.get("provider", "unknown")
         if not content:
             plan = _deterministic_plan(user_question)
             plan["planner_mode"] = "deterministic_fallback"
             plan["planner_model"] = model_name
+            plan["planner_provider"] = provider_name
             plan["fallback_reason"] = "empty_model_response"
+            plan["validation_status"] = "deterministic_fallback"
             return plan
 
         # Parse JSON from response
@@ -272,14 +301,18 @@ def plan_query(
             plan = _deterministic_plan(user_question)
             plan["planner_mode"] = "deterministic_fallback"
             plan["planner_model"] = model_name
+            plan["planner_provider"] = provider_name
             plan["fallback_reason"] = "json_parse_failure"
+            plan["validation_status"] = "deterministic_fallback"
             return plan
 
         # Validate
         validated = validate_plan(plan)
         validated["planner_mode"] = "model"
         validated["planner_model"] = model_name
+        validated["planner_provider"] = provider_name
         validated["fallback_reason"] = None
+        validated["validation_status"] = "valid"
         return validated
 
     except Exception as exc:
@@ -287,7 +320,9 @@ def plan_query(
         plan = _deterministic_plan(user_question)
         plan["planner_mode"] = "deterministic_fallback"
         plan["planner_model"] = None
+        plan["planner_provider"] = None
         plan["fallback_reason"] = f"model_exception: {exc}"
+        plan["validation_status"] = "deterministic_fallback"
         return plan
 
 
@@ -498,11 +533,17 @@ def validate_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
 
     plan["conditions"] = valid_conditions
 
+    source_requirement = plan.get("source_requirement")
+    if source_requirement not in ("structural", "operational_state", "execution_telemetry", "any"):
+        source_requirement = SOURCE_REQUIREMENTS.get(domain, "any")
+    if domain != "processes":
+        source_requirement = SOURCE_REQUIREMENTS.get(domain, source_requirement)
+
     # Ensure required fields
     plan.setdefault("projection", [])
     plan.setdefault("aggregate", None)
     plan.setdefault("ambiguity", None)
-    plan.setdefault("source_requirement", SOURCE_REQUIREMENTS.get(domain, "any"))
+    plan["source_requirement"] = source_requirement
     plan.setdefault("reason", "")
 
     return plan
@@ -628,6 +669,8 @@ def execute_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
             "freshness": result.get("freshness", "unknown"),
         },
         "coverage": coverage,
+        "capability_selected": capability,
+        "source_requirement": source_req,
     }
 
 
@@ -709,7 +752,10 @@ def format_plan_result(result: Dict[str, Any]) -> str:
     # Ambiguity
     ambiguity = plan.get("ambiguity")
     if ambiguity:
-        lines.append(f"Ambiguity: '{ambiguity.get('field', '?')}' maps to {ambiguity.get('matches', [])}")
+        if isinstance(ambiguity, dict):
+            lines.append(f"Ambiguity: '{ambiguity.get('field', '?')}' maps to {ambiguity.get('matches', [])}")
+        else:
+            lines.append(f"Ambiguity: {ambiguity}")
         lines.append("")
 
     # Data (domain-specific formatting)

@@ -51,6 +51,30 @@ log = logging.getLogger(__name__)
 
 AGENT_ID = "hermes_nova"
 
+# ─── Build Identifier ────────────────────────────────────────
+# Git SHA for runtime verification. Set at deploy time or read from .git/HEAD.
+def _get_build_sha() -> str:
+    """Return the git SHA for this build, for runtime verification."""
+    # Check environment variable first
+    sha = os.getenv("NOVA_BUILD_SHA", "").strip()
+    if sha:
+        return sha[:12]
+    # Try reading from .git/HEAD
+    try:
+        git_head = Path(__file__).resolve().parent.parent.parent.parent / ".git" / "HEAD"
+        if git_head.exists():
+            ref = git_head.read_text().strip()
+            if ref.startswith("ref: "):
+                ref_path = Path(__file__).resolve().parent.parent.parent.parent / ".git" / ref[5:]
+                if ref_path.exists():
+                    return ref_path.read_text().strip()[:12]
+            return ref[:12]
+    except Exception:
+        pass
+    return "unknown"
+
+BUILD_SHA = _get_build_sha()
+
 # ─── SOUL ─────────────────────────────────────────────────
 
 SOUL = """You are Hermes Nova — Ray Davis's independent strategic adviser and conversational partner.
@@ -873,6 +897,15 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
     domain = plan.get("domain", "unknown")
     operation = plan.get("operation", "unknown")
     planner_mode = result.get("planner_mode", "unknown")
+    planner_model = result.get("planner_model")
+    planner_provider = result.get("planner_provider")
+    fallback_reason = result.get("fallback_reason")
+    validation_status = result.get("validation_status")
+    source_requirement = result.get("source_requirement") or plan.get("source_requirement", "any")
+    capability_selected = result.get("capability_selected")
+    total_count = result.get("total_count")
+    returned_count = result.get("returned_count")
+    truncated = result.get("truncated", False)
 
     lines = [
         "[VERIFIED NEXUS KNOWLEDGE]",
@@ -880,8 +913,17 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
         f"operation: {operation}",
         f"status: {status}",
         f"planner_mode: {planner_mode}",
+        f"planner_model: {planner_model}",
+        f"planner_provider: {planner_provider}",
+        f"fallback_reason: {fallback_reason}",
+        f"validation_status: {validation_status}",
+        f"source_requirement: {source_requirement}",
+        f"capability_selected: {capability_selected}",
         f"source: {prov.get('source_type', 'unknown')}",
         f"freshness: {prov.get('freshness', 'unknown')}",
+        f"total_count: {total_count}",
+        f"returned_count: {returned_count}",
+        f"truncated: {str(truncated).lower()}",
         "",
         "Source classification:",
         f"  structural: {str(coverage.get('structural', False)).lower()}",
@@ -893,7 +935,10 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
     # Ambiguity
     ambiguity = plan.get("ambiguity")
     if ambiguity:
-        lines.append(f"Ambiguity: '{ambiguity.get('field', '?')}' maps to {ambiguity.get('matches', [])}")
+        if isinstance(ambiguity, dict):
+            lines.append(f"Ambiguity: '{ambiguity.get('field', '?')}' maps to {ambiguity.get('matches', [])}")
+        else:
+            lines.append(f"Ambiguity: {ambiguity}")
         lines.append("")
 
     # Conditions applied
@@ -1821,6 +1866,21 @@ def _format_provenance_context(provenance: Dict[str, Any]) -> str:
         f"freshness: {provenance.get('freshness', 'unknown')}",
         f"retrieved_at_utc: {retrieved_at}",
     ]
+    source_requirement = provenance.get("source_requirement")
+    if source_requirement:
+        lines.append(f"source_requirement: {source_requirement}")
+    coverage = provenance.get("coverage", {})
+    if coverage:
+        lines.append("coverage:")
+        lines.append(f"  structural: {str(coverage.get('structural', False)).lower()}")
+        lines.append(f"  operational_state: {str(coverage.get('operational_state', False)).lower()}")
+        lines.append(f"  execution_telemetry: {str(coverage.get('execution_telemetry', False)).lower()}")
+    domain = provenance.get("domain")
+    if domain:
+        lines.append(f"domain: {domain}")
+    operation = provenance.get("operation")
+    if operation:
+        lines.append(f"operation: {operation}")
     if phoenix_time:
         lines.append(f"retrieved_at_phoenix: {phoenix_time}")
     handler = provenance.get("handler", "")
@@ -1842,6 +1902,8 @@ def _format_provenance_context(provenance: Dict[str, Any]) -> str:
     lines.append(
         "NOTE: Answer the user's provenance question using the data above. "
         "Be specific about capability name, source, freshness, and retrieval time. "
+        "If source_requirement is present, use it to answer whether the prior fact "
+        "was configuration, operational state, or execution telemetry. "
         "For natural responses, use the Phoenix-local time."
     )
     return "\n".join(lines)
@@ -1879,14 +1941,57 @@ def _planner_model_call(messages: List[Dict[str, str]]) -> Dict[str, Any]:
 
     async def _async_planner_call(msgs: List[Dict[str, str]]) -> Dict[str, Any]:
         adapter = LlmGatewayAdapter(agent_id=f"{AGENT_ID}_planner")
-        return await adapter.completion(
+        result = await adapter.completion(
             model=PLANNER_MODEL,
             messages=msgs,
             temperature=PLANNER_TEMPERATURE,
             max_tokens=PLANNER_MAX_TOKENS,
         )
+        result["provider"] = "litellm" if adapter.is_enabled else "openrouter"
+        return result
 
     return asyncio.run(_async_planner_call(messages))
+
+
+def _bounded_text(value: Any, limit: int = 240) -> str:
+    """Compact user/assistant history for planner follow-up context."""
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+
+def _planner_result_counts(data: Any) -> Tuple[Optional[int], Optional[int], bool]:
+    """Return total/returned/truncated metadata for planner execution results."""
+    if not isinstance(data, dict):
+        return None, None, False
+
+    total = data.get("total")
+    if total is None:
+        total = data.get("total_latest")
+    if total is None:
+        total = data.get("unique_incomplete_count")
+    if total is None and "pending_count" in data:
+        total = data.get("pending_count")
+    if total is None and "count" in data:
+        total = data.get("count")
+
+    returned = data.get("filtered_count")
+    if returned is None and isinstance(data.get("processes"), list):
+        returned = len(data["processes"])
+    if returned is None and isinstance(data.get("reports"), list):
+        returned = len(data["reports"])
+    if returned is None and isinstance(data.get("agents"), list):
+        returned = len(data["agents"])
+    if returned is None:
+        returned = total
+
+    truncated = (
+        isinstance(total, int)
+        and isinstance(returned, int)
+        and returned < total
+    )
+    return total, returned, truncated
 
 
 def _build_planner_context(state: AgentState) -> Optional[str]:
@@ -1898,7 +2003,20 @@ def _build_planner_context(state: AgentState) -> Optional[str]:
     """
     parts = []
 
-    # Previous planner result from this conversation turn
+    chat_id = state.metadata.get("chat_id", 0)
+
+    if chat_id:
+        history = load_memory(chat_id)
+        bounded_history = history[-6:]
+        if bounded_history:
+            parts.append("Recent bounded conversation:")
+            for msg in bounded_history:
+                role = msg.get("role", "unknown")
+                content = _bounded_text(msg.get("content", ""), 220)
+                if content:
+                    parts.append(f"- {role}: {content}")
+
+    # Previous planner result from this state, used by direct node tests and retries.
     prev_gate = state.metadata.get("capability_gate")
     if prev_gate and prev_gate.get("decision") == "planner_executed":
         prev_plan = prev_gate.get("plan", {})
@@ -2300,7 +2418,7 @@ def _validate_against_capability(
         # Ambiguity unresolved — reject definitive single-dimension claims
         ambiguity = plan.get("ambiguity")
         if ambiguity:
-            field = ambiguity.get("field", "")
+            field = ambiguity.get("field", "") if isinstance(ambiguity, dict) else str(ambiguity)
             if field == "blocked":
                 definitive_claims = [
                     "blocked in execution mode",
@@ -2350,7 +2468,71 @@ def _build_fallback_response(error_reason: str, user_message: str) -> str:
             "I need to correct myself — the verified operational data shows something "
             "different from what I just said. Let me give you the accurate information."
         )
+    if error_reason == "planner_telemetry_contradiction":
+        return "I do not have verified execution telemetry proving anything ran."
+    if error_reason == "planner_completeness_contradiction":
+        return "I retrieved a partial result set, so I cannot honestly present it as a complete list."
+    if error_reason == "planner_ambiguity_contradiction":
+        return (
+            "Blocked is dimension-specific in Nexus: configuration_state blocked, "
+            "execution_mode BLOCKED, and runtime_state blocked are separate states."
+        )
     return "I'm not sure how to respond to that. Could you try again?"
+
+
+def _build_verified_planner_fallback(
+    capability_result: Dict[str, Any],
+    error_reason: str,
+) -> Optional[str]:
+    """Build a deterministic truthful answer from verified planner data."""
+    if capability_result.get("tool") != "nexus_query_planner":
+        return None
+
+    plan = capability_result.get("plan", {})
+    data = capability_result.get("data", {})
+    coverage = capability_result.get("coverage", {})
+    domain = plan.get("domain")
+
+    if error_reason == "planner_telemetry_contradiction":
+        return "I do not have verified execution telemetry proving anything ran."
+
+    if domain == "processes" and isinstance(data, dict):
+        config = data.get("configuration_counts", {})
+        modes = data.get("mode_counts", {})
+        runtime = data.get("runtime_counts", {})
+        lines = []
+
+        if plan.get("operation") in ("count", "group_count", "overview", "list", "filter"):
+            if config:
+                lines.append(
+                    "Configuration state: "
+                    + ", ".join(f"{key}={value}" for key, value in sorted(config.items()))
+                )
+            if modes:
+                lines.append(
+                    "Execution mode: "
+                    + ", ".join(f"{key}={value}" for key, value in sorted(modes.items()))
+                )
+            if runtime:
+                lines.append(
+                    "Runtime state: "
+                    + ", ".join(f"{key}={value}" for key, value in sorted(runtime.items()))
+                )
+
+        total = capability_result.get("total_count")
+        returned = capability_result.get("returned_count")
+        if total is not None and returned is not None and returned != total:
+            lines.append(f"Retrieved {returned} matching records out of {total} total records.")
+
+        if not coverage.get("execution_telemetry", False):
+            lines.append("I do not have verified execution telemetry proving anything ran.")
+
+        return "\n".join(lines) if lines else None
+
+    if domain == "recent_activity":
+        return "I do not have verified execution telemetry proving anything ran."
+
+    return None
 
 
 # ─── Graph Node Functions ──────────────────────────────────
@@ -2432,6 +2614,7 @@ def _capability_gate(state: AgentState) -> AgentState:
         state.metadata["capability_gate"] = {
             "decision": "skip_utility",
             "capability": None,
+            "build_sha": BUILD_SHA,
         }
         return state
 
@@ -2445,6 +2628,7 @@ def _capability_gate(state: AgentState) -> AgentState:
         state.metadata["capability_gate"] = {
             "decision": "provenance_followup",
             "capability": "provenance_followup",
+            "build_sha": BUILD_SHA,
             "trace_id": trace_id,
         }
         state.metadata["capability_result"] = {
@@ -2477,6 +2661,7 @@ def _capability_gate(state: AgentState) -> AgentState:
             "decision": "write_denied",
             "capability": "write_request",
             "arguments": write_request,
+            "build_sha": BUILD_SHA,
             "trace_id": trace_id,
         }
         state.metadata["capability_result"] = {
@@ -2505,27 +2690,55 @@ def _capability_gate(state: AgentState) -> AgentState:
         if planner_plan.get("domain") not in (None, "none"):
             planner_result = execute_plan(planner_plan)
             if planner_result.get("status") not in ("error",):
+                planner_data = planner_result.get("data", {})
+                total_count, returned_count, truncated = _planner_result_counts(planner_data)
                 state.metadata["capability_gate"] = {
                     "decision": "planner_executed",
                     "domain": planner_plan.get("domain"),
                     "operation": planner_plan.get("operation"),
+                    "source_requirement": planner_plan.get("source_requirement"),
+                    "capability_selected": planner_result.get("capability_selected"),
                     "plan": planner_plan,
                     "planner_mode": planner_plan.get("planner_mode", "unknown"),
                     "planner_model": planner_plan.get("planner_model"),
+                    "planner_provider": planner_plan.get("planner_provider"),
                     "fallback_reason": planner_plan.get("fallback_reason"),
+                    "validation_status": planner_plan.get("validation_status"),
+                    "build_sha": BUILD_SHA,
                     "trace_id": trace_id,
                 }
                 state.metadata["capability_result"] = {
                     "tool": "nexus_query_planner",
                     "query_type": planner_plan.get("domain", "unknown"),
                     "status": planner_result.get("status", "unknown"),
-                    "data": planner_result.get("data", {}),
+                    "data": planner_data,
                     "provenance": planner_result.get("provenance", {}),
                     "coverage": planner_result.get("coverage", {}),
                     "plan": planner_plan,
                     "planner_mode": planner_plan.get("planner_mode", "unknown"),
+                    "planner_model": planner_plan.get("planner_model"),
+                    "planner_provider": planner_plan.get("planner_provider"),
+                    "fallback_reason": planner_plan.get("fallback_reason"),
+                    "validation_status": planner_plan.get("validation_status"),
+                    "source_requirement": planner_result.get("source_requirement") or planner_plan.get("source_requirement"),
+                    "capability_selected": planner_result.get("capability_selected"),
+                    "total_count": total_count,
+                    "returned_count": returned_count,
+                    "truncated": truncated,
                     "trace_id": trace_id,
                 }
+                planner_provenance = {
+                    **(planner_result.get("provenance") or {}),
+                    "tool": "nexus_query_planner",
+                    "domain": planner_plan.get("domain"),
+                    "operation": planner_plan.get("operation"),
+                    "source_requirement": planner_result.get("source_requirement") or planner_plan.get("source_requirement"),
+                    "coverage": planner_result.get("coverage", {}),
+                    "capability_selected": planner_result.get("capability_selected"),
+                    "status": planner_result.get("status", "unknown"),
+                    "trace_id": trace_id,
+                }
+                save_provenance(chat_id, planner_provenance)
                 return state
     except Exception as exc:
         log.debug("Planner failed, falling through to keyword routing: %s", exc)
@@ -2536,6 +2749,7 @@ def _capability_gate(state: AgentState) -> AgentState:
         state.metadata["capability_gate"] = {
             "decision": "no_capability",
             "capability": None,
+            "build_sha": BUILD_SHA,
             "trace_id": trace_id,
         }
         state.metadata["capability_result"] = None
@@ -2570,6 +2784,7 @@ def _capability_gate(state: AgentState) -> AgentState:
         "capability": capability,
         "arguments": arguments,
         "status": result.get("status", "unknown"),
+        "build_sha": BUILD_SHA,
         "trace_id": trace_id,
     }
     state.metadata["capability_result"] = {
@@ -2710,7 +2925,10 @@ def _validate_output(state: AgentState) -> AgentState:
                 if capability_result:
                     cap_err = _validate_against_capability(content, capability_result)
                     if cap_err:
-                        state.assistant_response = _build_fallback_response(error_reason, state.user_message)
+                        state.assistant_response = (
+                            _build_verified_planner_fallback(capability_result, cap_err)
+                            or _build_fallback_response(error_reason, state.user_message)
+                        )
                         state.metadata["fallback_used"] = True
                         return state
                 state.assistant_response = content
@@ -2720,7 +2938,11 @@ def _validate_output(state: AgentState) -> AgentState:
             pass
 
         # Regen failed — use fallback
-        state.assistant_response = _build_fallback_response(error_reason, state.user_message)
+        capability_result = state.metadata.get("capability_result") or {}
+        state.assistant_response = (
+            _build_verified_planner_fallback(capability_result, error_reason)
+            or _build_fallback_response(error_reason, state.user_message)
+        )
         state.metadata["fallback_used"] = True
 
     return state
