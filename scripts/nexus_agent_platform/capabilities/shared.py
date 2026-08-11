@@ -31,6 +31,8 @@ from nexus_agent_platform.capabilities.nexus_knowledge import (
     get_report_index_live as _nk_get_report_index_live,
     get_latest_reports_live as _nk_get_latest_reports_live,
     get_recent_activity_live as _nk_get_recent_activity_live,
+    get_current_datetime as _nk_get_current_datetime,
+    get_incomplete_areas as _nk_get_incomplete_areas,
 )
 
 # ─── Agent Permission Profiles ─────────────────────────────
@@ -59,6 +61,8 @@ NOVA_ALLOWED_READS = frozenset({
     "get_report_index",
     "get_latest_reports",
     "get_recent_activity",
+    "get_nexus_datetime",
+    "get_incomplete_areas",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -2378,6 +2382,104 @@ def _handle_recent_activity(
         }
 
 
+def _handle_nexus_datetime(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return current date and time from deterministic utility."""
+    try:
+        data = _nk_get_current_datetime()
+        return {
+            "status": "success",
+            "capability": "get_nexus_datetime",
+            "source": "deterministic_utility",
+            "source_type": "deterministic_utility",
+            "freshness": "live",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_nexus_datetime",
+                "status": "success",
+                "source": "deterministic_utility",
+                "source_type": "deterministic_utility",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "live",
+                "handler": "shared._handle_nexus_datetime",
+            },
+        }
+    except Exception as exc:
+        log.error("get_nexus_datetime failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_nexus_datetime",
+            "source": "deterministic_utility",
+            "source_type": "deterministic_utility",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_nexus_datetime",
+                "status": "error",
+                "source": "deterministic_utility",
+                "source_type": "deterministic_utility",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_nexus_datetime",
+            },
+        }
+
+
+def _handle_incomplete_areas(
+    arguments: Optional[Dict[str, Any]] = None,
+    trace_id: str = "",
+) -> Dict[str, Any]:
+    """Return incomplete/unavailable areas derived from actual registries."""
+    try:
+        data = _nk_get_incomplete_areas()
+        return {
+            "status": "success",
+            "capability": "get_incomplete_areas",
+            "source": "registry_derived",
+            "source_type": "registry_derived",
+            "freshness": "current_commit",
+            "access_boundary": "approved read capability only",
+            "data": data,
+            "error": None,
+            "provenance": {
+                "capability": "get_incomplete_areas",
+                "status": "success",
+                "source": "registry_derived",
+                "source_type": "registry_derived",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "current_commit",
+                "handler": "shared._handle_incomplete_areas",
+            },
+        }
+    except Exception as exc:
+        log.error("get_incomplete_areas failed: %s", exc)
+        return {
+            "status": "error",
+            "capability": "get_incomplete_areas",
+            "source": "registry_derived",
+            "source_type": "registry_derived",
+            "freshness": "unknown",
+            "access_boundary": "approved read capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": "get_incomplete_areas",
+                "status": "error",
+                "source": "registry_derived",
+                "source_type": "registry_derived",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "freshness": "unknown",
+                "handler": "shared._handle_incomplete_areas",
+            },
+        }
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -2403,6 +2505,8 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_report_index": lambda args, tid: _handle_report_index(args, tid),
     "get_latest_reports": lambda args, tid: _handle_latest_reports(args, tid),
     "get_recent_activity": lambda args, tid: _handle_recent_activity(args, tid),
+    "get_nexus_datetime": lambda args, tid: _handle_nexus_datetime(args, tid),
+    "get_incomplete_areas": lambda args, tid: _handle_incomplete_areas(args, tid),
 }
 
 _WRITE_CAPABILITIES: frozenset = frozenset()

@@ -114,7 +114,7 @@ class TestPermissions:
     def test_nova_allowed_reads_frozen(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_READS
         assert isinstance(NOVA_ALLOWED_READS, frozenset)
-        assert len(NOVA_ALLOWED_READS) == 21  # 11 operational + 10 knowledge
+        assert len(NOVA_ALLOWED_READS) == 23  # 11 operational + 12 knowledge
 
     def test_nova_allowed_writes_empty(self):
         from nexus_agent_platform.capabilities.shared import NOVA_ALLOWED_WRITES
@@ -846,7 +846,9 @@ class TestNovaAdapter:
         assert "get_report_index" in NOVA_ALLOWED_READS
         assert "get_latest_reports" in NOVA_ALLOWED_READS
         assert "get_recent_activity" in NOVA_ALLOWED_READS
-        assert len(NOVA_ALLOWED_READS) == 21
+        assert "get_nexus_datetime" in NOVA_ALLOWED_READS
+        assert "get_incomplete_areas" in NOVA_ALLOWED_READS
+        assert len(NOVA_ALLOWED_READS) == 23
 
     def test_nova_rejects_unregistered_capability(self):
         from nexus_agent_platform.connectors.nova_supabase import execute_nova_capability

@@ -503,3 +503,81 @@ class TestSoulQuality:
         from nexus_agent_platform.agents.nova import SOUL
         soul_lower = SOUL.lower()
         assert "direct" in soul_lower or "judgment" in soul_lower
+
+
+class TestSemanticRouting:
+    """Phase 20: Test that runtime-focused questions route correctly."""
+
+    def _get_gate(self, text):
+        from nexus_agent_platform.agents.nova import _semantic_capability_gate
+        return _semantic_capability_gate(text)
+
+    def test_what_processes_routes_to_process_registry(self):
+        cap, _ = self._get_gate("What processes exist?")
+        assert cap == "get_process_registry"
+
+    def test_what_is_running_routes_to_process_registry(self):
+        cap, _ = self._get_gate("What is running right now?")
+        assert cap == "get_process_registry"
+
+    def test_actually_running_routes_to_process_registry(self):
+        cap, _ = self._get_gate("Which processes are actually running right now?")
+        assert cap == "get_process_registry"
+
+    def test_currently_executing_routes_to_process_registry(self):
+        cap, _ = self._get_gate("Is anything currently executing?")
+        assert cap == "get_process_registry"
+
+    def test_enabled_but_not_running_routes_to_process_registry(self):
+        cap, _ = self._get_gate("Which processes are enabled but not running?")
+        assert cap == "get_process_registry"
+
+    def test_simulated_processes_routes_to_process_registry(self):
+        cap, _ = self._get_gate("Which processes are only simulated?")
+        assert cap == "get_process_registry"
+
+    def test_what_failed_routes_to_recent_activity(self):
+        cap, _ = self._get_gate("What failed today?")
+        assert cap == "get_recent_activity"
+
+    def test_what_happened_today_routes_to_recent_activity(self):
+        cap, _ = self._get_gate("What happened in Nexus today?")
+        assert cap == "get_recent_activity"
+
+    def test_anything_pending_approval_routes_to_pending_approvals(self):
+        cap, _ = self._get_gate("Do I have anything pending approval?")
+        assert cap == "get_pending_approvals"
+
+    def test_incomplete_areas_routes_correctly(self):
+        cap, _ = self._get_gate("What parts of Nexus are incomplete?")
+        assert cap == "get_incomplete_areas"
+
+    def test_what_tools_routes_to_tool_registry(self):
+        cap, _ = self._get_gate("What tools does Nexus have?")
+        assert cap == "get_tool_registry"
+
+
+class TestProcessDimensionSemantics:
+    """Phase 18+: Verify process dimensions are semantically correct."""
+
+    def test_enabled_count_plus_disabled_equals_total(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        config = result["configuration_counts"]
+        assert config.get("enabled", 0) + config.get("disabled", 0) == result["total"]
+
+    def test_has_real_execution_false_when_all_simulated(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        if result["all_simulated_or_skipped"]:
+            assert result["has_real_execution"] is False
+
+    def test_process_details_uses_normalized_fields(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_details
+        result = get_process_details("daily_monitor")
+        assert "configuration_state" in result
+        assert "execution_mode" in result
+        assert "runtime_state" in result
+        assert "enabled" not in result  # raw field should not be exposed
+        assert "mode" not in result  # raw field should not be exposed
+        assert "last_status" not in result  # raw field should not be exposed

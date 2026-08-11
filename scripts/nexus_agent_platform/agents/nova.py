@@ -105,13 +105,56 @@ Nexus system awareness:
 - You CAN explain what Nexus is, how it's structured, and what it does.
 - You CAN describe each agent (Hermes, Nova, Alpha) and their roles.
 - You CAN list registered tools and capabilities with their live/mock status.
-- You CAN describe processes, their status, and whether they're enabled.
+- You CAN describe processes using three independent dimensions: configuration state, execution mode, and runtime state.
 - You CAN list report types and the most recent reports.
 - You CAN describe recent activity across processes, approvals, and research.
 - You distinguish static architecture from live runtime state.
 - You know what's configured vs. what's actually running.
 - You know what's mock/unavailable vs. what's live.
 - When describing Nexus, use verified data from the knowledge registry — not model memory.
+
+Process dimensions — CRITICAL (three independent dimensions, never mix):
+- CONFIGURATION STATE: enabled (Nexus allows this to run) or disabled (Nexus does not allow this). Derived from the registry "enabled" field. Enabled does NOT mean running.
+- EXECUTION MODE: ACTIVE_INTERNAL, DRY_RUN, TELEGRAM_OPERATOR, SANDBOX_TEST, BLOCKED, etc. Derived from the registry "mode" field. DRY_RUN is an execution mode, not a configuration state.
+- RUNTIME STATE: running, simulated, completed, failed, skipped, blocked, never_run, unknown. Derived from the registry "last_status" field. This is the only dimension that tells you what is actually happening.
+- Each dimension reconciles independently to the total. Do NOT sum enabled + disabled + dry_run + blocked as if they are the same dimension.
+- When answering "how many are enabled, disabled, and blocked?" — use configuration_counts.
+- When answering "how many are dry-run?" — use mode_counts.
+- When answering "how many are simulated or running?" — use runtime_counts.
+- NEVER say "19 processes: 17 enabled, 2 disabled, 2 blocked" — those are from different dimensions and do not reconcile.
+
+Execution state semantics — CRITICAL:
+- "enabled" = turned on in configuration. Does NOT mean currently running.
+- "simulated" = last recorded state is simulated. No real execution telemetry.
+- "running" = verified real-time execution observed. Distinguish from "enabled".
+- "completed" = verified real execution finished successfully.
+- "failed" = verified real execution failed.
+- "blocked" = prevented by policy or missing credential.
+- "dry_run" = simulation mode, no real execution.
+- NEVER say processes are "running" or "operational" unless runtime_state=running.
+- NEVER say "not all simulated" if all_simulated_or_skipped=true.
+- NEVER say "everything ran smoothly" if telemetry_summary says "No real execution telemetry".
+- Enabled + simulated = configured to run but no evidence it actually ran today.
+- When runtime telemetry is absent, say that directly: "I can see the configured process registry, but I do not have verified live telemetry showing any Nexus processes are actively executing right now."
+
+Failure and approval semantics — CRITICAL:
+- Zero observed failures means: "No failures were found in the checked failure source." It does NOT mean "all processes completed successfully."
+- Zero pending approvals means: "The checked approval queue currently has zero pending items." It does NOT mean "every necessary action was reviewed" or "nothing requires attention."
+- NEVER infer successful execution from absence of failures.
+- NEVER infer complete review from absence of pending approvals.
+
+Source provenance — CRITICAL:
+- When answering mixed questions, preserve component-level source types.
+- Repository/config: agent definitions, tool registry, process definitions, capability permissions.
+- Runtime/live: approval queue, report index, failure sources.
+- Deterministic utility: current date/time.
+- NEVER say "entirely from live runtime" if the answer includes repository/config facts.
+- When asked "which parts came from repository vs live?", list each component's source explicitly.
+
+Incomplete areas — CRITICAL:
+- unique_incomplete_count counts each component once, even if it appears in multiple categories.
+- Categories may overlap. Do NOT sum category counts to get the unique count.
+- A process in DRY_RUN mode and simulated state appears in both categories but counts as one unique component.
 
 Status semantics — CRITICAL:
 - "success" = capability executed and returned verified data.
@@ -608,6 +651,28 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if any(kw in lower for kw in agent_registry_keywords):
         return ("get_agent_registry", {})
 
+    # ── Priority 15b: Date/time utility (deterministic, never LLM) ──
+    datetime_keywords = (
+        "what time is it", "what's the time", "current time", "what time",
+        "today's date", "what is today", "what's today", "current date",
+        "what day is it", "what day", "what's the date", "what is the date",
+        "what is today's date", "what is the current date",
+        "what time is it in phoenix", "phoenix time",
+    )
+    if any(kw in lower for kw in datetime_keywords):
+        return ("get_nexus_datetime", {})
+
+    # ── Priority 15c: Incomplete/unavailable areas ──
+    incomplete_keywords = (
+        "what is incomplete", "what is unavailable", "what is still mock",
+        "what's not live", "what parts of nexus are incomplete",
+        "what parts are unavailable", "what is missing",
+        "what needs work", "what is blocked", "what is not working",
+        "what's incomplete", "what's missing",
+    )
+    if any(kw in lower for kw in incomplete_keywords):
+        return ("get_incomplete_areas", {})
+
     # ── Priority 16: Agent details ──
     agent_detail_keywords = {
         "alpha": ("alpha", "what does alpha do", "tell me about alpha", "alpha agent"),
@@ -638,12 +703,17 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if any(kw in lower for kw in capability_keywords):
         return ("get_capability_registry", {})
 
-    # ── Priority 19: Process registry ──
+    # ── Priority 19: Process registry / runtime status ──
     process_keywords = (
         "what processes", "list processes", "process registry", "what's running",
         "what processes exist", "process list", "what automations",
         "what jobs", "what's enabled", "what's disabled", "which processes",
         "active processes", "running processes", "processes are",
+        "actually running", "currently running", "running right now",
+        "currently executing", "executing right now", "active right now",
+        "what is running", "what is nexus doing", "is anything running",
+        "is anything executing", "live processes", "process runtime",
+        "enabled but not running", "simulated processes",
     )
     if any(kw in lower for kw in process_keywords):
         return ("get_process_registry", {})
@@ -1297,14 +1367,17 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
             "[VERIFIED NEXUS KNOWLEDGE]",
             "capability: get_tool_registry",
             f"status: {status}",
-            "source: nexus_knowledge_registry",
-            "freshness: current_commit",
+            f"source: {data.get('source_type', 'configuration_registry')}",
+            f"freshness: {data.get('freshness', 'current_commit')}",
             "facts:",
-            f"- total_tools: {data.get('total_tools', 0)}",
-            f"- live_tools: {data.get('live_tools', 0)}",
-            f"- approval_gated: {data.get('approval_gated', 0)}",
-            f"- unavailable_tools: {data.get('unavailable_tools', 0)}",
+            f"- total: {data.get('total', 0)}",
+            f"- usable_now: {data.get('usable_now', 0)} (internal_safe + read_only)",
+            f"- internal_safe: {data.get('internal_safe_count', 0)}",
+            f"- read_only: {data.get('read_only_count', 0)}",
+            f"- approval_gated: {data.get('approval_gated_count', 0)}",
+            f"- unavailable: {data.get('unavailable_count', 0)}",
             f"- default_policy: {data.get('default_policy', 'unknown')}",
+            f"- reconciliation: {str(data.get('reconciliation', False)).lower()}",
         ]
         for cat, info in categories.items():
             tools = info.get("tools", [])
@@ -1336,26 +1409,46 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
 
     if query_type == "get_process_registry":
         processes = data.get("processes", [])
+        config = data.get("configuration_counts", {})
+        modes = data.get("mode_counts", {})
+        runtime = data.get("runtime_counts", {})
+        recon = data.get("reconciliation", {})
         lines = [
             "[VERIFIED NEXUS KNOWLEDGE]",
             "capability: get_process_registry",
             f"status: {status}",
-            "source: process_registry",
-            "freshness: live",
+            f"source: {data.get('source_type', 'process_registry')}",
+            f"freshness: {data.get('freshness', 'current_registry')}",
             "facts:",
             f"- total: {data.get('total', 0)}",
-            f"- enabled: {data.get('enabled', 0)}",
-            f"- disabled: {data.get('disabled', 0)}",
+            "",
+            "Configuration state (is Nexus configured to allow this to run?):",
         ]
+        for state, count in sorted(config.items()):
+            lines.append(f"  - {state}: {count}")
+        lines.append(f"  - reconciliation: {str(recon.get('configuration', False)).lower()}")
+        lines.append("")
+        lines.append("Execution mode (what mode is it designed to execute in?):")
+        for mode, count in sorted(modes.items()):
+            lines.append(f"  - {mode}: {count}")
+        lines.append(f"  - reconciliation: {str(recon.get('execution_mode', False)).lower()}")
+        lines.append("")
+        lines.append("Runtime state (what runtime evidence exists right now?):")
+        for state, count in sorted(runtime.items()):
+            lines.append(f"  - {state}: {count}")
+        lines.append(f"  - reconciliation: {str(recon.get('runtime_state', False)).lower()}")
+        lines.append(f"- has_real_execution: {str(data.get('has_real_execution', False)).lower()}")
+        lines.append(f"- all_simulated_or_skipped: {str(data.get('all_simulated_or_skipped', False)).lower()}")
         if processes:
-            lines.append("- processes:")
+            lines.append("")
+            lines.append("Processes (each showing three independent dimensions):")
             for p in processes:
-                enabled_str = "enabled" if p.get("enabled") else "disabled"
                 lines.append(
                     f"  - {p.get('process_id', 'unknown')}: "
-                    f"{p.get('name', 'unknown')} [{enabled_str}] "
-                    f"(mode: {p.get('mode', 'unknown')}, "
-                    f"status: {p.get('last_status', 'never_run')})"
+                    f"{p.get('name', 'unknown')} "
+                    f"[config: {p.get('configuration_state', 'unknown')}, "
+                    f"mode: {p.get('execution_mode', 'unknown')}, "
+                    f"runtime: {p.get('runtime_state', 'unknown')}]"
                 )
         lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
         return "\n".join(lines)
@@ -1409,41 +1502,107 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
             "[VERIFIED NEXUS KNOWLEDGE]",
             "capability: get_recent_activity",
             f"status: {status}",
-            "source: composite",
-            "freshness: live",
+            f"source: {data.get('source_type', 'composite')}",
+            f"freshness: {data.get('freshness', 'live')}",
             "facts:",
+            f"- telemetry_summary: {data.get('telemetry_summary', 'unknown')}",
+            f"- has_any_real_execution: {str(data.get('has_any_real_execution', False)).lower()}",
         ]
         # Processes
         proc = components.get("processes", {})
         if proc.get("status") == "success":
+            configured = proc.get("configured", {})
+            verified = proc.get("verified_activity", {})
+            simulated = proc.get("simulated_state", {})
             lines.append(
-                f"- processes: {proc.get('enabled', 0)} enabled, "
-                f"{proc.get('failed', 0)} failed, "
-                f"all_simulated: {str(proc.get('all_simulated', False)).lower()}"
+                f"- processes: configured={configured.get('total', 0)} total, "
+                f"{configured.get('enabled', 0)} enabled; "
+                f"verified: {verified.get('running', 0)} running, "
+                f"{verified.get('completed', 0)} completed, "
+                f"{verified.get('failed', 0)} failed; "
+                f"simulated: {simulated.get('simulated_count', 0)}"
             )
+            lines.append(f"  - telemetry_coverage: {proc.get('telemetry_coverage', 'unknown')}")
         else:
             lines.append(f"- processes: {proc.get('status', 'unknown')}")
         # Approvals
         appr = components.get("approvals", {})
         if appr.get("status") == "success":
-            lines.append(f"- pending_approvals: {appr.get('pending', 0)}")
+            configured = appr.get("configured", {})
+            verified = appr.get("verified_activity", {})
+            lines.append(
+                f"- pending_approvals: {configured.get('pending', 0)} "
+                f"(external_actions_executed: {verified.get('external_actions_executed', 0)})"
+            )
         else:
             lines.append(f"- approvals: {appr.get('status', 'unknown')}")
         # Research
         res = components.get("research", {})
         if res.get("status") == "success":
+            configured = res.get("configured", {})
+            verified = res.get("verified_activity", {})
             lines.append(
-                f"- research_lanes: {res.get('approved_lanes', 0)} approved "
-                f"of {res.get('total_lanes', 0)} total"
+                f"- research_lanes: {configured.get('approved_lanes', 0)} approved "
+                f"of {configured.get('total_lanes', 0)} total; "
+                f"recent_runs: {verified.get('recent_runs', 0)}"
             )
         else:
             lines.append(f"- research: {res.get('status', 'unknown')}")
         # Alpha
         alpha = components.get("alpha", {})
         if alpha.get("status") == "success":
-            lines.append(f"- alpha_state: {alpha.get('state', 'unknown')}")
+            configured = alpha.get("configured", {})
+            verified = alpha.get("verified_activity", {})
+            lines.append(
+                f"- alpha_state: {configured.get('state', 'unknown')}; "
+                f"last_incoming: {verified.get('last_incoming', 'unknown')}"
+            )
         else:
             lines.append(f"- alpha: {alpha.get('status', 'unknown')}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_nexus_datetime":
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_nexus_datetime",
+            f"status: {status}",
+            "source: deterministic_utility",
+            "freshness: live",
+            "facts:",
+            f"- phoenix_date: {data.get('phoenix_date', 'unknown')}",
+            f"- phoenix_time: {data.get('phoenix_time', 'unknown')}",
+            f"- phoenix_day_of_week: {data.get('phoenix_day_of_week', 'unknown')}",
+            f"- utc_datetime: {data.get('utc_datetime', 'unknown')}",
+        ]
+        if data.get("timezone_note"):
+            lines.append(f"- timezone_note: {data['timezone_note']}")
+        lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_incomplete_areas":
+        categories = data.get("categories", {})
+        counts = data.get("category_counts", {})
+        lines = [
+            "[VERIFIED NEXUS KNOWLEDGE]",
+            "capability: get_incomplete_areas",
+            f"status: {status}",
+            f"source: {data.get('source_type', 'registry_derived')}",
+            f"freshness: {data.get('freshness', 'current_commit')}",
+            "facts:",
+            f"- unique_incomplete_count: {data.get('unique_incomplete_count', 0)}",
+            "",
+            "Categories (components may appear in multiple categories):",
+        ]
+        for cat, cat_data in categories.items():
+            count = cat_data.get("count", 0)
+            if count > 0:
+                lines.append(f"  {cat} ({count}):")
+                for item in cat_data.get("items", [])[:5]:
+                    lines.append(f"    - {item}")
+        lines.append("")
+        lines.append("NOTE: unique_incomplete_count counts each component once.")
+        lines.append("Category counts may overlap — do NOT sum them to get unique count.")
         lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
         return "\n".join(lines)
 
@@ -1678,6 +1837,147 @@ def _validate_against_capability(
         for claim in all_ok_claims:
             if claim in response_lower:
                 return "status_contradiction"
+
+    # ── Tool count contradiction ──
+    if query_type == "get_tool_registry" and status == "success":
+        verified_total = data.get("total", 0)
+        if verified_total > 0:
+            tool_count_claims = re.findall(r'(\d+)\s*(?:tools?|total)', response_lower)
+            for claim in tool_count_claims:
+                claimed_num = int(claim)
+                if claimed_num != verified_total and claimed_num > 10:
+                    return "tool_count_contradiction"
+
+    # ── Process count contradiction (dimension mixing) ──
+    if query_type == "get_process_registry" and status == "success":
+        total = data.get("total", 0)
+        config = data.get("configuration_counts", {})
+        modes = data.get("mode_counts", {})
+        runtime = data.get("runtime_counts", {})
+        recon = data.get("reconciliation", {})
+
+        # Reject if any dimension doesn't reconcile
+        if not recon.get("all_reconciled", False):
+            return "process_count_contradiction"
+
+        # Reject if claimed numbers don't match any single dimension
+        if total > 0:
+            # Look for patterns like "X enabled, Y disabled, Z blocked"
+            # that mix dimensions into one count
+            enabled_claims = re.findall(r'(\d+)\s*enabled', response_lower)
+            disabled_claims = re.findall(r'(\d+)\s*disabled', response_lower)
+            for claim in enabled_claims:
+                claimed = int(claim)
+                verified_enabled = config.get("enabled", 0)
+                if claimed != verified_enabled:
+                    return "process_count_contradiction"
+            for claim in disabled_claims:
+                claimed = int(claim)
+                verified_disabled = config.get("disabled", 0)
+                if claimed != verified_disabled:
+                    return "process_count_contradiction"
+
+    # ── Simulated count exceeds total ──
+    if query_type == "get_process_registry" and status == "success":
+        total = data.get("total", 0)
+        runtime = data.get("runtime_counts", {})
+        simulated = runtime.get("simulated", 0)
+        if total > 0 and simulated > total:
+            return "process_count_contradiction"
+
+    # ── Simulated → live contradiction ──
+    if query_type == "get_process_registry" and status == "success":
+        all_sim = data.get("all_simulated_or_skipped", False)
+        if all_sim:
+            live_claims = [
+                "running live", "currently executing", "operational in real time",
+                "actively running", "not simulated", "successfully ran today",
+                "running in a live state", "processes are live",
+                "not all simulated", "operational", "processes operating in a live state",
+            ]
+            for claim in live_claims:
+                if claim in response_lower:
+                    return "simulated_to_live_contradiction"
+
+    # ── Enabled ≠ running contradiction ──
+    if query_type == "get_process_registry" and status == "success":
+        has_real = data.get("has_real_execution", False)
+        if not has_real:
+            running_claims = [
+                "are running", "is running", "currently running",
+                "running right now", "actively running",
+            ]
+            for claim in running_claims:
+                if claim in response_lower:
+                    return "enabled_not_running_contradiction"
+
+    # ── Recent activity: no telemetry → no success claims ──
+    if query_type == "get_recent_activity" and status == "success":
+        telemetry = data.get("telemetry_summary", "")
+        if "No real execution telemetry" in telemetry:
+            success_claims = [
+                "everything ran smoothly", "all processes succeeded",
+                "no failures today", "everything is running smoothly",
+                "functioning without issues", "running smoothly",
+                "all processes are functioning",
+            ]
+            for claim in success_claims:
+                if claim in response_lower:
+                    return "telemetry_contradiction"
+
+    # ── Failure inference: zero failures ≠ successful execution ──
+    if query_type == "get_recent_activity" and status == "success":
+        proc = data.get("components", {}).get("processes", {})
+        telemetry_cov = proc.get("telemetry_coverage", "")
+        if telemetry_cov == "no_real_execution_telemetry":
+            success_claims = [
+                "everything ran successfully", "all processes completed successfully",
+                "no failures means everything worked", "zero failures means success",
+                "all processes are healthy", "everything is working correctly",
+            ]
+            for claim in success_claims:
+                if claim in response_lower:
+                    return "failure_inference_contradiction"
+
+    # ── Approval inference: zero pending ≠ everything reviewed ──
+    if query_type == "get_pending_approvals" and status == "success":
+        count = data.get("count", 0)
+        if count == 0:
+            inference_claims = [
+                "everything necessary was reviewed", "all actions were approved",
+                "there is nothing requiring attention", "every required approval was completed",
+                "all approvals are done", "nothing needs review",
+            ]
+            for claim in inference_claims:
+                if claim in response_lower:
+                    return "approval_inference_contradiction"
+
+    # ── Incomplete areas: category overlap not summed ──
+    if query_type == "get_incomplete_areas" and status == "success":
+        unique = data.get("unique_incomplete_count", 0)
+        cats = data.get("category_counts", {})
+        # Reject if any single category exceeds unique count
+        for cat, count in cats.items():
+            if count > unique and unique > 0:
+                return "incomplete_count_contradiction"
+        # Reject blind sum of categories
+        blind_sum = sum(cats.values())
+        if blind_sum > unique and unique > 0 and len(cats) > 1:
+            sum_claims = re.findall(r'(\d+)\s*(?:total|incomplete|items)', response_lower)
+            for claim in sum_claims:
+                claimed = int(claim)
+                if claimed == blind_sum and blind_sum != unique:
+                    return "incomplete_count_contradiction"
+
+    # ── Mixed provenance contradiction ──
+    if query_type == "get_nexus_overview" and status == "success":
+        source_mixed_claims = [
+            "entirely from live runtime", "all from live runtime",
+            "entirely live", "all from runtime",
+        ]
+        for claim in source_mixed_claims:
+            if claim in response_lower:
+                return "mixed_provenance_contradiction"
 
     return None
 

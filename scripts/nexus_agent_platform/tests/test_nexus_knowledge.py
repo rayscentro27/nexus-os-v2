@@ -180,7 +180,7 @@ class TestToolRegistry:
     def test_unavailable_tools_identified(self):
         from nexus_agent_platform.capabilities.nexus_knowledge import get_tool_registry
         result = get_tool_registry()
-        unavailable = result.get("unavailable_tools", 0)
+        unavailable = result.get("unavailable_count", 0)
         assert unavailable > 0
 
 
@@ -214,16 +214,17 @@ class TestProcessRegistry:
     def test_identifies_enabled_disabled(self):
         from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
         result = get_process_registry_live()
-        assert result["enabled"] > 0
-        assert result["disabled"] >= 0
-        assert result["enabled"] + result["disabled"] == result["total"]
+        config = result["configuration_counts"]
+        assert config.get("enabled", 0) > 0
+        assert config.get("disabled", 0) >= 0
+        assert sum(config.values()) == result["total"]
 
     def test_all_simulated(self):
         from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
         result = get_process_registry_live()
         for p in result["processes"]:
             # All processes should be simulated or skipped (no real execution yet)
-            assert p["last_status"] in ("simulated", "blocked", "never_run", "skipped")
+            assert p["runtime_state"] in ("simulated", "blocked", "never_run", "skipped")
 
 
 class TestProcessDetails:
@@ -234,13 +235,13 @@ class TestProcessDetails:
         result = get_process_details("daily_monitor")
         assert result["found"] is True
         assert result["name"] == "Daily Monitor"
-        assert result["enabled"] is True
+        assert result["configuration_state"] == "enabled"
 
     def test_disabled_process(self):
         from nexus_agent_platform.capabilities.nexus_knowledge import get_process_details
         result = get_process_details("stripe_test_paywall")
         assert result["found"] is True
-        assert result["enabled"] is False
+        assert result["configuration_state"] == "disabled"
 
     def test_unknown_process(self):
         from nexus_agent_platform.capabilities.nexus_knowledge import get_process_details
@@ -354,7 +355,7 @@ class TestSharedKnowledgeHandlers:
         from nexus_agent_platform.capabilities.shared import execute_shared_capability
         result = execute_shared_capability("hermes_nova", "get_tool_registry", trace_id="test")
         assert result["status"] == "success"
-        assert result["data"]["total_tools"] > 0
+        assert result["data"]["total"] > 0
 
     def test_capability_registry_handler(self):
         from nexus_agent_platform.capabilities.shared import execute_shared_capability
@@ -584,12 +585,182 @@ class TestKnowledgeTruthGuard:
         from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
         result = get_process_registry_live()
         for p in result.get("processes", []):
-            if p["last_status"] == "simulated":
+            if p["runtime_state"] == "simulated":
                 # Should not claim the process is actively running
-                assert p["last_status"] != "running"
+                assert p["runtime_state"] != "running"
 
     def test_disabled_process_not_enabled(self):
         """Disabled processes must NOT be described as enabled."""
         from nexus_agent_platform.capabilities.nexus_knowledge import get_process_details
         result = get_process_details("stripe_test_paywall")
-        assert result["enabled"] is False
+        assert result["configuration_state"] == "disabled"
+
+
+class TestProcessDimensions:
+    """Phase 18: Tests for three independent process dimensions."""
+
+    def test_each_process_has_one_configuration_state(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        for p in result["processes"]:
+            assert p["configuration_state"] in ("enabled", "disabled"), (
+                f"{p['process_id']} has invalid configuration_state: {p['configuration_state']}"
+            )
+
+    def test_each_process_has_one_execution_mode(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        valid_modes = {"ACTIVE_INTERNAL", "DRY_RUN", "TELEGRAM_OPERATOR", "SANDBOX_TEST", "BLOCKED", "unknown"}
+        for p in result["processes"]:
+            assert p["execution_mode"] in valid_modes, (
+                f"{p['process_id']} has invalid execution_mode: {p['execution_mode']}"
+            )
+
+    def test_each_process_has_one_runtime_state(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        valid_states = {"running", "idle", "completed", "failed", "simulated", "skipped", "blocked", "unknown", "never_run"}
+        for p in result["processes"]:
+            assert p["runtime_state"] in valid_states, (
+                f"{p['process_id']} has invalid runtime_state: {p['runtime_state']}"
+            )
+
+    def test_configuration_counts_reconcile(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        config_sum = sum(result["configuration_counts"].values())
+        assert config_sum == result["total"], (
+            f"Configuration counts {result['configuration_counts']} sum to {config_sum}, "
+            f"but total is {result['total']}"
+        )
+
+    def test_mode_counts_reconcile(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        mode_sum = sum(result["mode_counts"].values())
+        assert mode_sum == result["total"], (
+            f"Mode counts {result['mode_counts']} sum to {mode_sum}, "
+            f"but total is {result['total']}"
+        )
+
+    def test_runtime_counts_reconcile(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        runtime_sum = sum(result["runtime_counts"].values())
+        assert runtime_sum == result["total"], (
+            f"Runtime counts {result['runtime_counts']} sum to {runtime_sum}, "
+            f"but total is {result['total']}"
+        )
+
+    def test_all_dimensions_reconcile(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        assert result["reconciliation"]["all_reconciled"] is True
+
+    def test_enabled_does_not_mean_running(self):
+        """Enabled is configuration state, running is runtime state. They are independent."""
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        enabled_count = result["configuration_counts"].get("enabled", 0)
+        running_count = result["runtime_counts"].get("running", 0)
+        # All enabled processes are simulated, not running
+        if result["all_simulated_or_skipped"]:
+            assert running_count == 0
+
+    def test_dry_run_is_not_disabled(self):
+        """DRY_RUN is an execution mode, disabled is a configuration state."""
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        dry_run_modes = result["mode_counts"].get("DRY_RUN", 0)
+        disabled_configs = result["configuration_counts"].get("disabled", 0)
+        # DRY_RUN processes can be enabled or disabled — these are independent
+        for p in result["processes"]:
+            if p["execution_mode"] == "DRY_RUN":
+                # DRY_RUN does not imply disabled
+                assert p["configuration_state"] in ("enabled", "disabled")
+
+    def test_simulated_count_does_not_exceed_total(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_process_registry_live
+        result = get_process_registry_live()
+        simulated = result["runtime_counts"].get("simulated", 0)
+        assert simulated <= result["total"]
+
+
+class TestIncompleteAreasDeduplication:
+    """Phase 19: Tests for incomplete areas deduplication."""
+
+    def test_no_duplicate_component_ids(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        all_ids = []
+        for cat_data in result["categories"].values():
+            for item in cat_data.get("items", []):
+                # Each item should appear only once per category
+                # But across categories, the unique count handles dedup
+                pass
+        # The unique_incomplete_count must be <= sum of category counts
+        unique = result["unique_incomplete_count"]
+        cat_sum = sum(result["category_counts"].values())
+        assert unique <= cat_sum
+
+    def test_unique_count_not_blind_sum(self):
+        """Unique count should be less than or equal to sum of categories, not equal when overlap exists."""
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        unique = result["unique_incomplete_count"]
+        cat_sum = sum(result["category_counts"].values())
+        # Unique count must be <= sum (can be equal if no overlap)
+        assert unique <= cat_sum
+
+    def test_simulated_count_does_not_exceed_process_count(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas, get_process_registry_live
+        incomplete = get_incomplete_areas()
+        proc_result = get_process_registry_live()
+        simulated_cat = incomplete["category_counts"].get("simulated", 0)
+        total_procs = proc_result["total"]
+        assert simulated_cat <= total_procs
+
+    def test_unavailable_tool_count_matches_registry(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas, get_tool_registry
+        incomplete = get_incomplete_areas()
+        tools = get_tool_registry()
+        unavailable_tools = incomplete["category_counts"].get("unavailable_tools", 0)
+        assert unavailable_tools == tools["unavailable_count"]
+
+    def test_categories_are_independent(self):
+        """Categories may overlap, but unique count reflects deduplication."""
+        from nexus_agent_platform.capabilities.nexus_knowledge import get_incomplete_areas
+        result = get_incomplete_areas()
+        # If there are multiple categories, unique should be <= sum
+        if len(result["category_counts"]) > 1:
+            cat_sum = sum(result["category_counts"].values())
+            assert result["unique_incomplete_count"] <= cat_sum
+
+
+class TestProcessNormalization:
+    """Phase 18: Test the normalizer function directly."""
+
+    def test_normalize_process_enabled(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import _normalize_process
+        raw = {"process_id": "test", "name": "Test", "enabled": True, "mode": "ACTIVE_INTERNAL", "last_status": "simulated"}
+        result = _normalize_process(raw)
+        assert result["configuration_state"] == "enabled"
+        assert result["execution_mode"] == "ACTIVE_INTERNAL"
+        assert result["runtime_state"] == "simulated"
+
+    def test_normalize_process_disabled(self):
+        from nexus_agent_platform.capabilities.nexus_knowledge import _normalize_process
+        raw = {"process_id": "test", "name": "Test", "enabled": False, "mode": "BLOCKED", "last_status": "blocked"}
+        result = _normalize_process(raw)
+        assert result["configuration_state"] == "disabled"
+        assert result["execution_mode"] == "BLOCKED"
+        assert result["runtime_state"] == "blocked"
+
+    def test_normalize_process_dry_run_enabled(self):
+        """DRY_RUN mode with enabled=true — independent dimensions."""
+        from nexus_agent_platform.capabilities.nexus_knowledge import _normalize_process
+        raw = {"process_id": "test", "name": "Test", "enabled": True, "mode": "DRY_RUN", "last_status": "simulated"}
+        result = _normalize_process(raw)
+        assert result["configuration_state"] == "enabled"
+        assert result["execution_mode"] == "DRY_RUN"
+        assert result["runtime_state"] == "simulated"

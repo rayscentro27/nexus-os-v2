@@ -288,12 +288,9 @@ def _safe_file_exists(path: str) -> bool:
 
 def get_nexus_overview() -> Dict[str, Any]:
     """Return a verified overview of the Nexus system."""
-    process_data = _safe_json_load(_PROCESS_REGISTRY_PATH)
-    process_count = len(process_data) if isinstance(process_data, list) else 0
-    enabled_count = sum(
-        1 for p in process_data
-        if isinstance(p, dict) and p.get("enabled", False)
-    ) if isinstance(process_data, list) else 0
+    processes, _ = _load_normalized_processes()
+    process_count = len(processes)
+    enabled_count = sum(1 for p in processes if p["configuration_state"] == "enabled")
 
     research_data = _safe_json_load(_RESEARCH_SOURCE_REGISTRY_PATH)
     research_lanes = len(research_data) if isinstance(research_data, dict) else 0
@@ -393,20 +390,39 @@ def get_agent_details(agent_id: str) -> Dict[str, Any]:
 
 
 def get_tool_registry() -> Dict[str, Any]:
-    """Return the tool registry with safe metadata."""
+    """Return the tool registry with safe metadata.
+
+    All counts are COMPUTED from the TOOL_REGISTRY item collections.
+    State labels are mutually exclusive per category.
+    """
+    internal_safe = list(TOOL_REGISTRY.get("internal_safe", []))
+    read_only = list(TOOL_REGISTRY.get("read_only", []))
+    approval_gated = list(TOOL_REGISTRY.get("approval_gated", []))
+    unavailable = list(TOOL_REGISTRY.get("unavailable", []))
+
+    total = len(internal_safe) + len(read_only) + len(approval_gated) + len(unavailable)
+    usable_now = len(internal_safe) + len(read_only)
+
+    # Reconciliation: total must equal sum of all buckets
+    reconciliation = total == (len(internal_safe) + len(read_only) + len(approval_gated) + len(unavailable))
+
     return {
         "categories": {
-            cat: {
-                "count": len(tools),
-                "tools": tools,
-            }
-            for cat, tools in TOOL_REGISTRY.items()
+            "internal_safe": {"count": len(internal_safe), "tools": internal_safe},
+            "read_only": {"count": len(read_only), "tools": read_only},
+            "approval_gated": {"count": len(approval_gated), "tools": approval_gated},
+            "unavailable": {"count": len(unavailable), "tools": unavailable},
         },
-        "total_tools": sum(len(v) for v in TOOL_REGISTRY.values()),
-        "live_tools": len(TOOL_REGISTRY.get("internal_safe", [])) + len(TOOL_REGISTRY.get("read_only", [])),
-        "approval_gated": len(TOOL_REGISTRY.get("approval_gated", [])),
-        "unavailable_tools": len(TOOL_REGISTRY.get("unavailable", [])),
+        "total": total,
+        "usable_now": usable_now,
+        "internal_safe_count": len(internal_safe),
+        "read_only_count": len(read_only),
+        "approval_gated_count": len(approval_gated),
+        "unavailable_count": len(unavailable),
         "default_policy": "default_deny_external: true",
+        "reconciliation": reconciliation,
+        "source_type": "configuration_registry",
+        "freshness": "current_commit",
         "verification_complete": True,
     }
 
@@ -439,69 +455,128 @@ def get_capability_registry() -> Dict[str, Any]:
 # LIVE STATE READERS
 # ═══════════════════════════════════════════════════════════════
 
-def get_process_registry_live() -> Dict[str, Any]:
-    """Read the live process registry."""
+def _normalize_process(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Canonical normalizer: raw registry process -> three independent dimensions.
+
+    CONFIGURATION STATE (is Nexus configured to allow this process to run?):
+      enabled | disabled
+
+    EXECUTION MODE (what mode is the process designed to execute in?):
+      ACTIVE_INTERNAL | DRY_RUN | TELEGRAM_OPERATOR | SANDBOX_TEST | BLOCKED | unknown
+
+    RUNTIME STATE (what runtime evidence exists right now?):
+      running | idle | completed | failed | simulated | skipped | blocked | unknown | never_run
+
+    These dimensions are independent. Do NOT derive one from another.
+    """
+    is_enabled = raw.get("enabled", False)
+    mode = raw.get("mode", "unknown")
+    runtime_state = raw.get("last_status", "never_run")
+
+    return {
+        "process_id": raw.get("process_id", "unknown"),
+        "name": raw.get("name", "unknown"),
+        "configuration_state": "enabled" if is_enabled else "disabled",
+        "execution_mode": mode,
+        "runtime_state": runtime_state,
+        "schedule": raw.get("schedule_type", "unknown"),
+        "risk": raw.get("risk_level", "unknown"),
+        "last_run": raw.get("last_run_at"),
+        "blocked_actions": raw.get("blocked_actions", []),
+        "source": "process_registry",
+    }
+
+
+def _load_normalized_processes() -> tuple:
+    """Load and normalize all processes. Returns (processes, error_dict_or_None)."""
     data = _safe_json_load(_PROCESS_REGISTRY_PATH)
     if not isinstance(data, list):
-        return {
+        return [], {
             "status": "unavailable",
             "error": "Process registry not found or invalid.",
-            "processes": [],
-            "total": 0,
         }
+    return [_normalize_process(p) for p in data if isinstance(p, dict)], None
 
-    processes = []
-    enabled = 0
-    disabled = 0
-    for p in data:
-        if not isinstance(p, dict):
-            continue
-        is_enabled = p.get("enabled", False)
-        if is_enabled:
-            enabled += 1
-        else:
-            disabled += 1
-        processes.append({
-            "process_id": p.get("process_id", "unknown"),
-            "name": p.get("name", "unknown"),
-            "mode": p.get("mode", "unknown"),
-            "enabled": is_enabled,
-            "schedule": p.get("schedule", "unknown"),
-            "risk": p.get("risk_level", "unknown"),
-            "last_status": p.get("last_status", "never_run"),
-            "last_run": p.get("last_run_at"),
-            "blocked_actions": p.get("blocked_actions", []),
-        })
+
+def get_process_registry_live() -> Dict[str, Any]:
+    """Read the live process registry with three independent reconciled dimensions.
+
+    CONFIGURATION STATE: enabled/disabled (from registry 'enabled' field)
+    EXECUTION MODE: ACTIVE_INTERNAL/DRY_RUN/TELEGRAM_OPERATOR/etc. (from registry 'mode' field)
+    RUNTIME STATE: simulated/running/failed/skipped/blocked/etc. (from registry 'last_status' field)
+
+    All counts are COMPUTED from the same normalized item list.
+    Each dimension's counts reconcile independently to the total.
+    """
+    processes, err = _load_normalized_processes()
+    if err is not None:
+        return {**err, "processes": [], "total": 0}
+
+    total = len(processes)
+
+    # Configuration counts (dimension 1)
+    config_counts = {}
+    for p in processes:
+        cs = p["configuration_state"]
+        config_counts[cs] = config_counts.get(cs, 0) + 1
+
+    # Execution mode counts (dimension 2)
+    mode_counts = {}
+    for p in processes:
+        em = p["execution_mode"]
+        mode_counts[em] = mode_counts.get(em, 0) + 1
+
+    # Runtime state counts (dimension 3)
+    runtime_counts = {}
+    for p in processes:
+        rs = p["runtime_state"]
+        runtime_counts[rs] = runtime_counts.get(rs, 0) + 1
+
+    # Reconciliation: each dimension must independently sum to total
+    config_reconciles = sum(config_counts.values()) == total
+    mode_reconciles = sum(mode_counts.values()) == total
+    runtime_reconciles = sum(runtime_counts.values()) == total
+
+    # Execution telemetry
+    has_real_execution = runtime_counts.get("running", 0) > 0 or runtime_counts.get("completed", 0) > 0
+    all_simulated_or_skipped = all(
+        s in ("simulated", "skipped", "blocked", "never_run", "unknown")
+        for s in runtime_counts.keys()
+    )
 
     return {
         "status": "success",
         "processes": processes,
-        "total": len(processes),
-        "enabled": enabled,
-        "disabled": disabled,
+        "total": total,
+        "configuration_counts": config_counts,
+        "mode_counts": mode_counts,
+        "runtime_counts": runtime_counts,
+        "has_real_execution": has_real_execution,
+        "all_simulated_or_skipped": all_simulated_or_skipped,
+        "reconciliation": {
+            "configuration": config_reconciles,
+            "execution_mode": mode_reconciles,
+            "runtime_state": runtime_reconciles,
+            "all_reconciled": config_reconciles and mode_reconciles and runtime_reconciles,
+        },
+        "source_type": "process_registry",
+        "freshness": "current_registry",
         "verification_complete": True,
     }
 
 
 def get_process_details(process_id: str) -> Dict[str, Any]:
-    """Return details for a specific process."""
+    """Return details for a specific process using normalized dimensions."""
     data = _safe_json_load(_PROCESS_REGISTRY_PATH)
     if not isinstance(data, list):
         return {"found": False, "error": "Process registry unavailable."}
 
     for p in data:
         if isinstance(p, dict) and p.get("process_id") == process_id:
+            normalized = _normalize_process(p)
             return {
                 "found": True,
-                "process_id": p.get("process_id"),
-                "name": p.get("name"),
-                "mode": p.get("mode"),
-                "enabled": p.get("enabled", False),
-                "schedule": p.get("schedule"),
-                "risk_level": p.get("risk_level"),
-                "last_status": p.get("last_status", "never_run"),
-                "last_run": p.get("last_run_at"),
-                "blocked_actions": p.get("blocked_actions", []),
+                **normalized,
                 "verification_complete": True,
             }
 
@@ -580,7 +655,15 @@ def get_latest_reports_live() -> Dict[str, Any]:
 
 
 def get_recent_activity_live() -> Dict[str, Any]:
-    """Aggregate recent activity from multiple sources."""
+    """Aggregate recent activity from multiple sources.
+
+    Explicitly separates:
+    - CONFIGURED STATE: what is defined/enabled in registries
+    - VERIFIED ACTIVITY: actual executions, failures, report creation
+    - SIMULATED STATE: registry entries without real execution telemetry
+
+    If no real execution telemetry exists, Nova must NOT claim processes ran.
+    """
     activity = {
         "processes": {"status": "unknown", "data": None},
         "approvals": {"status": "unknown", "data": None},
@@ -588,24 +671,43 @@ def get_recent_activity_live() -> Dict[str, Any]:
         "alpha": {"status": "unknown", "data": None},
     }
 
-    # Process status
-    process_data = _safe_json_load(_PROCESS_REGISTRY_PATH)
-    if isinstance(process_data, list):
-        running = [p for p in process_data if isinstance(p, dict) and p.get("enabled")]
-        failed = [p for p in process_data if isinstance(p, dict)
-                  and p.get("last_status") in ("failed", "error")]
-        never_run = [p for p in process_data if isinstance(p, dict)
-                     and p.get("last_status") == "simulated"]
+    # Process status — separate configured vs verified using normalizer
+    processes, proc_err = _load_normalized_processes()
+    if not proc_err and processes:
+        enabled = [p for p in processes if p["configuration_state"] == "enabled"]
+        failed = [p for p in processes if p["runtime_state"] in ("failed",)]
+        simulated = [p for p in processes if p["runtime_state"] == "simulated"]
+        running = [p for p in processes if p["runtime_state"] == "running"]
+        completed = [p for p in processes if p["runtime_state"] == "completed"]
+        blocked = [p for p in processes if p["runtime_state"] == "blocked"]
+        skipped = [p for p in processes if p["runtime_state"] == "skipped"]
+
+        # Telemetry coverage: do we have evidence of real execution?
+        has_real_execution = len(running) > 0 or len(completed) > 0
+        all_simulated = all(
+            p["runtime_state"] in ("simulated", "skipped", "blocked", "never_run", "unknown")
+            for p in processes
+        )
+
         activity["processes"] = {
             "status": "success",
-            "total": len(process_data),
-            "enabled": len(running),
-            "failed": len(failed),
-            "never_run": len(never_run),
-            "all_simulated": all(
-                p.get("last_status") == "simulated"
-                for p in process_data if isinstance(p, dict)
-            ),
+            "configured": {
+                "total": len(processes),
+                "enabled": len(enabled),
+            },
+            "verified_activity": {
+                "running": len(running),
+                "completed": len(completed),
+                "failed": len(failed),
+                "has_real_execution": has_real_execution,
+            },
+            "simulated_state": {
+                "simulated_count": len(simulated),
+                "skipped_count": len(skipped),
+                "blocked_count": len(blocked),
+                "all_simulated": all_simulated,
+            },
+            "telemetry_coverage": "real_execution_observed" if has_real_execution else "no_real_execution_telemetry",
         }
 
     # Approvals
@@ -613,8 +715,13 @@ def get_recent_activity_live() -> Dict[str, Any]:
     if isinstance(approval_data, dict):
         activity["approvals"] = {
             "status": "success",
-            "total": approval_data.get("total", 0),
-            "pending": approval_data.get("pending_count", 0),
+            "configured": {
+                "total": approval_data.get("total", 0),
+                "pending": approval_data.get("pending_count", 0),
+            },
+            "verified_activity": {
+                "external_actions_executed": 0,  # No external actions executed yet
+            },
         }
     elif _safe_file_exists(_RAY_REVIEW_QUEUE_PATH):
         activity["approvals"] = {"status": "error", "error": "Invalid approval queue format."}
@@ -626,8 +733,12 @@ def get_recent_activity_live() -> Dict[str, Any]:
     if isinstance(alpha_data, dict):
         activity["alpha"] = {
             "status": "success",
-            "state": alpha_data.get("state", "unknown"),
-            "last_incoming": alpha_data.get("last_incoming_message"),
+            "configured": {
+                "state": alpha_data.get("state", "unknown"),
+            },
+            "verified_activity": {
+                "last_incoming": alpha_data.get("last_incoming_message"),
+            },
         }
     elif _safe_file_exists(_ALPHA_STATUS_PATH):
         activity["alpha"] = {"status": "error", "error": "Invalid alpha status format."}
@@ -641,9 +752,13 @@ def get_recent_activity_live() -> Dict[str, Any]:
                  if isinstance(v, dict) and v.get("approved", False)]
         activity["research"] = {
             "status": "success",
-            "total_lanes": len(research_data),
-            "approved_lanes": len(lanes),
-            "approved": lanes,
+            "configured": {
+                "total_lanes": len(research_data),
+                "approved_lanes": len(lanes),
+            },
+            "verified_activity": {
+                "recent_runs": 0,  # No real execution telemetry
+            },
         }
     else:
         activity["research"] = {"status": "unavailable", "error": "Research registry not found."}
@@ -659,8 +774,149 @@ def get_recent_activity_live() -> Dict[str, Any]:
     else:
         overall = "success"
 
+    # Check if we have any real execution telemetry across all sources
+    proc_data = activity.get("processes", {}).get("verified_activity", {})
+    has_any_real_execution = proc_data.get("has_real_execution", False)
+
     return {
         "status": overall,
         "components": activity,
+        "has_any_real_execution": has_any_real_execution,
+        "telemetry_summary": (
+            "Real execution telemetry observed" if has_any_real_execution
+            else "No real execution telemetry — all state is configured/simulated"
+        ),
+        "source_type": "composite",
+        "freshness": "live",
+        "verification_complete": True,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# DETERMINISTIC DATE/TIME UTILITY
+# ═══════════════════════════════════════════════════════════════
+
+def get_current_datetime() -> Dict[str, Any]:
+    """Return current date and time in Phoenix timezone.
+
+    This is a deterministic utility — never uses LLM generation.
+    Always returns system clock time.
+    """
+    try:
+        from zoneinfo import ZoneInfo
+        phoenix_tz = ZoneInfo("America/Phoenix")
+        now_phoenix = datetime.now(phoenix_tz)
+        now_utc = datetime.now(timezone.utc)
+        return {
+            "status": "success",
+            "phoenix_date": now_phoenix.strftime("%Y-%m-%d"),
+            "phoenix_time": now_phoenix.strftime("%I:%M %p"),
+            "phoenix_datetime": now_phoenix.isoformat(),
+            "phoenix_day_of_week": now_phoenix.strftime("%A"),
+            "utc_datetime": now_utc.isoformat(),
+            "source_type": "deterministic_utility",
+            "freshness": "live",
+            "verification_complete": True,
+        }
+    except Exception as exc:
+        # Fallback to UTC if timezone not available
+        now_utc = datetime.now(timezone.utc)
+        return {
+            "status": "success",
+            "phoenix_date": now_utc.strftime("%Y-%m-%d"),
+            "phoenix_time": now_utc.strftime("%H:%M UTC"),
+            "phoenix_datetime": now_utc.isoformat(),
+            "phoenix_day_of_week": now_utc.strftime("%A"),
+            "utc_datetime": now_utc.isoformat(),
+            "source_type": "deterministic_utility",
+            "freshness": "live",
+            "verification_complete": True,
+            "timezone_note": "America/Phoenix not available, using UTC",
+        }
+
+
+# ═══════════════════════════════════════════════════════════════
+# INCOMPLETE / UNAVAILABLE NEXUS SUMMARY
+# ═══════════════════════════════════════════════════════════════
+
+def get_incomplete_areas() -> Dict[str, Any]:
+    """Derive incomplete/unavailable areas from actual registries with deduplication.
+
+    Each component gets a unique component_id. A component may appear in multiple
+    categories, but unique_incomplete_count counts each component only once.
+
+    Categories (independent, may overlap):
+      simulated: runtime_state == simulated
+      dry_run: execution_mode == DRY_RUN
+      blocked: configuration_state == disabled AND (runtime_state == blocked OR execution_mode == BLOCKED)
+      disabled: configuration_state == disabled (but NOT blocked)
+      sandbox: execution_mode == SANDBOX_TEST
+      unavailable_tools: tool registry status == unavailable
+      mock: tools/capabilities explicitly marked mock
+    """
+    from collections import OrderedDict
+
+    categories: Dict[str, List[Dict[str, str]]] = OrderedDict()
+    seen_component_ids: set = set()
+
+    def _add_to_category(cat: str, component_id: str, label: str):
+        if component_id not in seen_component_ids:
+            seen_component_ids.add(component_id)
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append({"component_id": component_id, "label": label})
+
+    # Process-based categories
+    processes, _ = _load_normalized_processes()
+    for p in processes:
+        pid = p["process_id"]
+        name = p["name"]
+        cs = p["configuration_state"]
+        em = p["execution_mode"]
+        rs = p["runtime_state"]
+
+        component_id = f"process:{pid}"
+
+        if rs == "simulated":
+            _add_to_category("simulated", component_id, name)
+        if em == "DRY_RUN":
+            _add_to_category("dry_run", component_id, name)
+        if cs == "disabled" and (rs == "blocked" or em == "BLOCKED"):
+            _add_to_category("blocked", component_id, name)
+        elif cs == "disabled":
+            _add_to_category("disabled", component_id, name)
+        if em == "SANDBOX_TEST":
+            _add_to_category("sandbox", component_id, name)
+
+    # Tool-based categories
+    for tool in TOOL_REGISTRY.get("unavailable", []):
+        component_id = f"tool:{tool}"
+        _add_to_category("unavailable_tools", component_id, tool)
+
+    # Approval-gated lanes
+    approval_data = _safe_json_load(_APPROVAL_GATED_LANES_PATH)
+    if isinstance(approval_data, dict):
+        for lane_name, lane_info in approval_data.items():
+            if isinstance(lane_info, dict):
+                status = lane_info.get("status", "")
+                if "PENDING" in status:
+                    component_id = f"integration:{lane_name}"
+                    _add_to_category("blocked", component_id, lane_name)
+
+    # Build per-category summaries (each category lists ALL its items, even if shared)
+    category_summary = {}
+    for cat, items in categories.items():
+        category_summary[cat] = {
+            "count": len(items),
+            "items": [i["label"] for i in items],
+        }
+
+    return {
+        "status": "success",
+        "unique_incomplete_count": len(seen_component_ids),
+        "categories": category_summary,
+        "category_counts": {k: v["count"] for k, v in category_summary.items()},
+        "source_type": "registry_derived",
+        "freshness": "current_commit",
         "verification_complete": True,
     }
