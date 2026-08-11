@@ -859,6 +859,128 @@ def _nova_search_supabase(
     }
 
 
+def _format_planner_context(result: Dict[str, Any]) -> str:
+    """Format a planner execution result as structured VERIFIED NEXUS KNOWLEDGE.
+
+    This is the authoritative context for planner-sourced data.
+    Includes plan, structured result, coverage, provenance, and truth-guard hints.
+    """
+    plan = result.get("plan", {})
+    data = result.get("data", {})
+    prov = result.get("provenance", {})
+    coverage = result.get("coverage", {})
+    status = result.get("status", "unknown")
+    domain = plan.get("domain", "unknown")
+    operation = plan.get("operation", "unknown")
+    planner_mode = result.get("planner_mode", "unknown")
+
+    lines = [
+        "[VERIFIED NEXUS KNOWLEDGE]",
+        f"domain: {domain}",
+        f"operation: {operation}",
+        f"status: {status}",
+        f"planner_mode: {planner_mode}",
+        f"source: {prov.get('source_type', 'unknown')}",
+        f"freshness: {prov.get('freshness', 'unknown')}",
+        "",
+        "Source classification:",
+        f"  structural: {str(coverage.get('structural', False)).lower()}",
+        f"  operational_state: {str(coverage.get('operational_state', False)).lower()}",
+        f"  execution_telemetry: {str(coverage.get('execution_telemetry', False)).lower()}",
+        "",
+    ]
+
+    # Ambiguity
+    ambiguity = plan.get("ambiguity")
+    if ambiguity:
+        lines.append(f"Ambiguity: '{ambiguity.get('field', '?')}' maps to {ambiguity.get('matches', [])}")
+        lines.append("")
+
+    # Conditions applied
+    conditions = plan.get("conditions", [])
+    if conditions:
+        lines.append("Filters applied:")
+        for c in conditions:
+            lines.append(f"  {c.get('field', '?')} {c.get('operator', '?')} {c.get('value', '?')}")
+        lines.append("")
+
+    # Data summary — domain-specific
+    if domain == "processes" and isinstance(data, dict):
+        total = data.get("total", data.get("filtered_count", "?"))
+        lines.append(f"total_count: {total}")
+        if "filtered_count" in data and data["filtered_count"] != data.get("total"):
+            lines.append(f"returned_count: {data['filtered_count']}")
+            lines.append("truncated: false")
+        lines.append("")
+
+        processes = data.get("processes", [])
+        if processes:
+            lines.append("Results:")
+            for p in processes:
+                name = p.get("name", p.get("process_id", "?"))
+                config = p.get("configuration_state", "?")
+                mode = p.get("execution_mode", "?")
+                runtime = p.get("runtime_state", "?")
+                lines.append(f"  - {name} [config={config}, mode={mode}, runtime={runtime}]")
+            lines.append("")
+
+        # Dimension counts for count/group_count operations
+        if "configuration_counts" in data:
+            cc = data["configuration_counts"]
+            lines.append(f"configuration_counts: {cc}")
+        if "mode_counts" in data:
+            mc = data["mode_counts"]
+            lines.append(f"mode_counts: {mc}")
+        if "runtime_counts" in data:
+            rc = data["runtime_counts"]
+            lines.append(f"runtime_counts: {rc}")
+        if "reconciliation" in data:
+            recon = data["reconciliation"]
+            lines.append(f"reconciliation: {recon}")
+        lines.append("")
+
+    elif domain == "tools" and isinstance(data, dict):
+        lines.append(f"total_tools: {data.get('total', '?')}")
+        for cat in ("internal_safe", "read_only", "approval_gated", "unavailable"):
+            if cat in data:
+                lines.append(f"  {cat}: {data[cat]}")
+        lines.append("")
+
+    elif domain == "agents" and isinstance(data, dict):
+        agents = data.get("agents", [])
+        lines.append(f"agent_count: {len(agents)}")
+        for a in agents:
+            lines.append(f"  - {a.get('name', '?')} ({a.get('agent_id', '?')}): {a.get('role', a.get('purpose', '?'))}")
+        lines.append("")
+
+    elif domain == "approvals" and isinstance(data, dict):
+        lines.append(f"pending_count: {data.get('pending_count', '?')}")
+        lines.append(f"queue_status: {data.get('queue_status', '?')}")
+        lines.append("")
+
+    elif domain == "recent_activity" and isinstance(data, dict):
+        lines.append(f"has_any_real_execution: {str(data.get('has_any_real_execution', False)).lower()}")
+        lines.append(f"telemetry_summary: {data.get('telemetry_summary', 'unknown')}")
+        lines.append("")
+
+    elif domain == "incomplete_areas" and isinstance(data, dict):
+        lines.append(f"incomplete_count: {data.get('unique_incomplete_count', data.get('count', '?'))}")
+        areas = data.get("areas", [])
+        if areas:
+            for a in areas[:10]:
+                lines.append(f"  - {a.get('name', a.get('area', '?'))}: {a.get('status', '?')}")
+        lines.append("")
+
+    else:
+        # Generic data dump for other domains
+        if data:
+            lines.append(f"data: {json.dumps(data, default=str)[:500]}")
+            lines.append("")
+
+    lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+    return "\n".join(lines)
+
+
 def _format_verified_context(result: Dict[str, Any]) -> str:
     """Format a capability result as a structured VERIFIED OPERATIONAL DATA block.
 
@@ -1743,6 +1865,78 @@ async def _call_model(messages: List[Dict[str, str]], chat_id: int) -> Dict[str,
     return result
 
 
+# ─── Planner Model Gateway ──────────────────────────────────
+
+PLANNER_MODEL = os.getenv("HERMES_NOVA_PLANNER_MODEL", "openai/gpt-4o-mini")
+PLANNER_TEMPERATURE = 0.3
+PLANNER_MAX_TOKENS = 512
+
+
+def _planner_model_call(messages: List[Dict[str, str]]) -> Dict[str, Any]:
+    """Synchronous planner model call — wraps LlmGatewayAdapter for plan_query()."""
+    import asyncio
+    from nexus_agent_platform.workflows.litellm_adapter import LlmGatewayAdapter
+
+    async def _async_planner_call(msgs: List[Dict[str, str]]) -> Dict[str, Any]:
+        adapter = LlmGatewayAdapter(agent_id=f"{AGENT_ID}_planner")
+        return await adapter.completion(
+            model=PLANNER_MODEL,
+            messages=msgs,
+            temperature=PLANNER_TEMPERATURE,
+            max_tokens=PLANNER_MAX_TOKENS,
+        )
+
+    return asyncio.run(_async_planner_call(messages))
+
+
+def _build_planner_context(state: AgentState) -> Optional[str]:
+    """Build bounded conversation context for the semantic planner.
+
+    Extracts previous domain, operation, and referenced entities from
+    the current state's capability gate history. Does NOT send raw
+    conversation history — only structured summaries.
+    """
+    parts = []
+
+    # Previous planner result from this conversation turn
+    prev_gate = state.metadata.get("capability_gate")
+    if prev_gate and prev_gate.get("decision") == "planner_executed":
+        prev_plan = prev_gate.get("plan", {})
+        if prev_plan:
+            domain = prev_plan.get("domain", "unknown")
+            operation = prev_plan.get("operation", "unknown")
+            parts.append(f"Previous query domain: {domain}")
+            parts.append(f"Previous query operation: {operation}")
+
+            # Extract conditions as entity references
+            conditions = prev_plan.get("conditions", [])
+            for cond in conditions:
+                field = cond.get("field", "")
+                value = cond.get("value")
+                if field and value:
+                    parts.append(f"Previous filter: {field} = {value}")
+
+    # Previous capability result summary
+    prev_result = state.metadata.get("capability_result")
+    if prev_result and prev_result.get("tool") == "nexus_query_planner":
+        data = prev_result.get("data", {})
+        if isinstance(data, dict):
+            # Process count summary
+            if "total" in data:
+                parts.append(f"Previous result total: {data['total']}")
+            if "processes" in data and isinstance(data["processes"], list):
+                names = [p.get("name", p.get("process_id", "?")) for p in data["processes"][:5]]
+                if names:
+                    parts.append(f"Previous result included: {', '.join(names)}")
+            # Tool counts
+            if "total" in data and "internal_safe" in data:
+                parts.append(f"Previous tool breakdown: {data}")
+
+    if not parts:
+        return None
+    return "\n".join(parts)
+
+
 # ─── Response Validation ───────────────────────────────────
 
 _VALIDATION_PATTERNS = [
@@ -2072,6 +2266,52 @@ def _validate_against_capability(
                 if claim in response_lower:
                     return "source_classification_contradiction"
 
+    # ── Planner-specific truth guards ──
+    if capability_result.get("tool") == "nexus_query_planner" and status == "success":
+        coverage = capability_result.get("coverage", {})
+        plan = capability_result.get("plan", {})
+
+        # Execution telemetry unavailable → no "ran" claims
+        if not coverage.get("execution_telemetry", False):
+            telemetry_claims = [
+                "actually ran", "really ran", "did run", "has run",
+                "currently running", "running live", "executed successfully",
+                "genuine run", "real execution", "processes ran",
+            ]
+            for claim in telemetry_claims:
+                if claim in response_lower:
+                    return "planner_telemetry_contradiction"
+
+        # Total count vs returned count — reject implied completeness
+        data_obj = capability_result.get("data", {})
+        if isinstance(data_obj, dict):
+            total = data_obj.get("total", 0)
+            filtered = data_obj.get("filtered_count")
+            if total and filtered and filtered < total:
+                # Model listed items but didn't mention truncation
+                completeness_claims = [
+                    "all processes", "every process", "the complete list",
+                    "all of them", "here are all", "full list",
+                ]
+                for claim in completeness_claims:
+                    if claim in response_lower:
+                        return "planner_completeness_contradiction"
+
+        # Ambiguity unresolved — reject definitive single-dimension claims
+        ambiguity = plan.get("ambiguity")
+        if ambiguity:
+            field = ambiguity.get("field", "")
+            if field == "blocked":
+                definitive_claims = [
+                    "blocked in execution mode",
+                    "blocked in runtime",
+                    "execution mode is blocked",
+                    "runtime state is blocked",
+                ]
+                for claim in definitive_claims:
+                    if claim in response_lower:
+                        return "planner_ambiguity_contradiction"
+
     return None
 
 
@@ -2254,9 +2494,14 @@ def _capability_gate(state: AgentState) -> AgentState:
 
     # ── Priority 2.5: Semantic query planner ──
     # Try the schema-aware planner before keyword routing.
-    # If it produces a valid plan, execute it and skip keyword routing.
+    # Uses LLM-driven planning by default; deterministic fallback on failure.
     try:
-        planner_plan = plan_query(text)
+        planner_context = _build_planner_context(state)
+        planner_plan = plan_query(
+            text,
+            conversation_context=planner_context,
+            model_call_fn=_planner_model_call,
+        )
         if planner_plan.get("domain") not in (None, "none"):
             planner_result = execute_plan(planner_plan)
             if planner_result.get("status") not in ("error",):
@@ -2265,6 +2510,9 @@ def _capability_gate(state: AgentState) -> AgentState:
                     "domain": planner_plan.get("domain"),
                     "operation": planner_plan.get("operation"),
                     "plan": planner_plan,
+                    "planner_mode": planner_plan.get("planner_mode", "unknown"),
+                    "planner_model": planner_plan.get("planner_model"),
+                    "fallback_reason": planner_plan.get("fallback_reason"),
                     "trace_id": trace_id,
                 }
                 state.metadata["capability_result"] = {
@@ -2275,6 +2523,7 @@ def _capability_gate(state: AgentState) -> AgentState:
                     "provenance": planner_result.get("provenance", {}),
                     "coverage": planner_result.get("coverage", {}),
                     "plan": planner_plan,
+                    "planner_mode": planner_plan.get("planner_mode", "unknown"),
                     "trace_id": trace_id,
                 }
                 return state
@@ -2368,6 +2617,19 @@ def _build_context(state: AgentState) -> AgentState:
             user_content = (
                 f"{state.user_message}\n\n"
                 f"{provenance_context}"
+            )
+        elif capability_result.get("tool") == "nexus_query_planner":
+            planner_context = _format_planner_context(capability_result)
+            user_content = (
+                f"{state.user_message}\n\n"
+                f"{planner_context}\n\n"
+                f"Respond naturally using the verified data above. "
+                f"Do not contradict the verified facts. "
+                f"Do not fabricate alternative values. "
+                f"Do not deny access to data that was successfully retrieved. "
+                f"If the data shows a total count, do not list fewer items and imply completeness. "
+                f"If source classification shows execution_telemetry is false, "
+                f"do not claim anything ran — say telemetry is unavailable."
             )
         else:
             verified_context = _format_verified_context(capability_result)
