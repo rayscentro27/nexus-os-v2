@@ -21,8 +21,9 @@ import json
 import logging
 import os
 import subprocess
+import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ _STUDY_ARTIFACT_DIR = os.path.join(_REPO_ROOT, "reports", "nova_study")
 _STUDY_SNAPSHOT_PATH = os.path.join(_STUDY_ARTIFACT_DIR, "nexus_study_snapshot.json")
 _STUDY_GAPS_PATH = os.path.join(_STUDY_ARTIFACT_DIR, "nexus_gaps.json")
 _STUDY_UNKNOWNS_PATH = os.path.join(_STUDY_ARTIFACT_DIR, "nexus_unknowns.json")
+_ARTIFACT_CACHE: Dict[str, Tuple[float, int, Any]] = {}
 
 
 def _safe_json_load(path: str) -> Optional[Any]:
@@ -58,9 +60,26 @@ def _safe_json_load(path: str) -> Optional[Any]:
         return None
 
 
+def _cached_artifact_json(path: str) -> Optional[Any]:
+    """Load generated study artifacts with an mtime/size cache."""
+    try:
+        if not os.path.isfile(path):
+            return None
+        stat = os.stat(path)
+        cached = _ARTIFACT_CACHE.get(path)
+        if cached and cached[0] == stat.st_mtime and cached[1] == stat.st_size:
+            return cached[2]
+        with open(path) as f:
+            data = json.load(f)
+        _ARTIFACT_CACHE[path] = (stat.st_mtime, stat.st_size, data)
+        return data
+    except Exception:
+        return None
+
+
 def _artifact_snapshot() -> Optional[Dict[str, Any]]:
     """Return the latest generated study snapshot artifact if available."""
-    data = _safe_json_load(_STUDY_SNAPSHOT_PATH)
+    data = _cached_artifact_json(_STUDY_SNAPSHOT_PATH)
     if isinstance(data, dict) and data.get("status") == "success":
         data = dict(data)
         data.setdefault("source_type", "study_snapshot_artifact")
@@ -88,7 +107,7 @@ def _artifact_domain(domain: str) -> Optional[Dict[str, Any]]:
 
 
 def _artifact_file(path: str, source_ref: str) -> Optional[Dict[str, Any]]:
-    data = _safe_json_load(path)
+    data = _cached_artifact_json(path)
     if not isinstance(data, dict) or data.get("status") != "success":
         return None
     result = dict(data)
@@ -149,6 +168,147 @@ def _with_current_runtime_reconciliation(snapshot: Dict[str, Any]) -> Dict[str, 
             "error_type": exc.__class__.__name__,
         }
     return result
+
+
+def _study_artifact_bytes() -> Dict[str, int]:
+    sizes = {}
+    for label, path in {
+        "snapshot": _STUDY_SNAPSHOT_PATH,
+        "gaps": _STUDY_GAPS_PATH,
+        "unknowns": _STUDY_UNKNOWNS_PATH,
+    }.items():
+        try:
+            sizes[label] = os.path.getsize(path)
+        except OSError:
+            sizes[label] = 0
+    return sizes
+
+
+def _count_by(records: List[Dict[str, Any]], field: str) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for record in records:
+        value = str(record.get(field, "unknown"))
+        counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def get_nexus_study_overview() -> Dict[str, Any]:
+    """Return a compact generated-study index for broad live Nova answers."""
+    started = time.monotonic()
+    artifact_started = time.monotonic()
+    artifact_snapshot = _artifact_snapshot() or {}
+    artifact_index_load_ms = int((time.monotonic() - artifact_started) * 1000)
+    reconciliation_started = time.monotonic()
+    snapshot = _with_current_runtime_reconciliation(artifact_snapshot)
+    reconciliation_ms = int((time.monotonic() - reconciliation_started) * 1000)
+    if not snapshot:
+        snapshot = get_nexus_study_snapshot()
+
+    domains = snapshot.get("domains", {})
+    system = snapshot.get("system", {})
+    processes = domains.get("processes", {}) if isinstance(domains, dict) else {}
+    business = domains.get("business_model", {}) if isinstance(domains, dict) else {}
+    integrations = domains.get("integrations", {}) if isinstance(domains, dict) else {}
+    gaps = domains.get("gaps", {}) if isinstance(domains, dict) else {}
+    unknowns = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
+    gap_records = gaps.get("gaps", []) if isinstance(gaps, dict) else []
+    unknown_records = unknowns.get("unknowns", []) if isinstance(unknowns, dict) else []
+    contradictions = snapshot.get("contradictions", []) if isinstance(snapshot.get("contradictions"), list) else []
+    current_runtime = snapshot.get("current_runtime_update", {})
+    reconciliation = snapshot.get("study_current_reconciliation", {})
+
+    overview = {
+        "status": "success",
+        "source_type": "study_snapshot_artifact",
+        "source_ref": "reports/nova_study/nexus_study_snapshot.json",
+        "source_commit": snapshot.get("source_commit"),
+        "generated_at": snapshot.get("generated_at"),
+        "freshness": "generated_study_snapshot",
+        "context_profile": "compact_overview",
+        "system": {
+            "name": system.get("name", "Nexus OS"),
+            "agent_count": system.get("agent_count"),
+            "process_count": system.get("process_count", processes.get("total")),
+            "enabled_processes": system.get("enabled_processes", processes.get("configuration_counts", {}).get("enabled")),
+            "disabled_processes": processes.get("configuration_counts", {}).get("disabled"),
+            "configuration_counts": processes.get("configuration_counts", {}),
+            "execution_mode_counts": processes.get("mode_counts", {}),
+            "study_runtime_state_counts": processes.get("runtime_counts", {}),
+            "study_has_real_execution": processes.get("has_real_execution", False),
+        },
+        "business": {
+            "offer_count": business.get("offers_count"),
+            "operational_offers": len(business.get("operational_revenue_paths", [])),
+            "planned_offers": len(business.get("planned_revenue_paths", [])),
+            "stripe_live_mode_allowed": business.get("stripe_live_mode_allowed"),
+        },
+        "integrations": {
+            "total": integrations.get("connector_count"),
+            "live": integrations.get("live_enabled_count"),
+            "status_counts": integrations.get("status_counts", {}),
+            "mode_counts": integrations.get("mode_counts", {}),
+        },
+        "study_findings": {
+            "gap_count": gaps.get("gap_count", 0),
+            "contradiction_count": len(contradictions),
+            "unknown_count": unknowns.get("unknown_count", 0),
+            "gap_severity_counts": _count_by(gap_records, "severity"),
+            "gap_domain_counts": _count_by(gap_records, "domain"),
+        },
+        "unknowns": [
+            {
+                "id": u.get("unknown_id"),
+                "domain": u.get("domain"),
+                "title": u.get("title"),
+                "evidence_status": u.get("evidence_status"),
+            }
+            for u in unknown_records
+        ],
+        "top_gaps": [
+            {
+                "id": g.get("gap_id"),
+                "domain": g.get("domain"),
+                "title": g.get("title"),
+                "severity": g.get("severity"),
+                "evidence": g.get("evidence"),
+            }
+            for g in gap_records[:10]
+        ],
+        "contradiction_summary": {
+            "count": len(contradictions),
+            "kind_counts": _count_by(contradictions, "kind"),
+            "examples": [
+                {
+                    "kind": c.get("kind"),
+                    "entity": c.get("entity"),
+                    "registry": c.get("registry"),
+                    "runtime": c.get("runtime"),
+                    "interpretation": c.get("interpretation"),
+                }
+                for c in contradictions[:5]
+            ],
+        },
+        "current_reconciliation": {
+            "verified_execution_telemetry_now_available": current_runtime.get("telemetry_available_now", False),
+            "event_count_24h": current_runtime.get("event_count_24h", 0),
+            "coverage_status": current_runtime.get("coverage", {}).get("coverage_status"),
+            "study_u01_partially_resolved": bool(reconciliation.get("changed_findings")),
+            "changed_findings": reconciliation.get("changed_findings", []),
+        },
+        "retrieval_metrics": {
+            "raw_artifact_bytes": _study_artifact_bytes(),
+            "artifact_index_load_ms": artifact_index_load_ms,
+            "runtime_reconciliation_ms": reconciliation_ms,
+            "overview_build_ms": int((time.monotonic() - started) * 1000),
+            "structured_records_selected": {
+                "top_gaps": min(len(gap_records), 10),
+                "contradiction_examples": min(len(contradictions), 5),
+                "unknowns": len(unknown_records),
+            },
+        },
+        "verification_complete": True,
+    }
+    return overview
 
 
 def _safe_file_exists(path: str) -> bool:

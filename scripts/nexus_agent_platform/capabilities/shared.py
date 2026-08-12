@@ -52,6 +52,7 @@ from nexus_agent_platform.capabilities.nexus_study import (
     get_nexus_gap_summary as _st_nexus_gap_summary,
     get_nexus_unknowns as _st_nexus_unknowns,
     get_nexus_study_snapshot as _st_nexus_study_snapshot,
+    get_nexus_study_overview as _st_nexus_study_overview,
 )
 
 # ─── Agent Permission Profiles ─────────────────────────────
@@ -107,6 +108,7 @@ NOVA_ALLOWED_READS = frozenset({
     "get_nexus_gap_summary",
     "get_nexus_unknowns",
     "get_nexus_study_snapshot",
+    "get_nexus_study_overview",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -2705,6 +2707,7 @@ _STUDY_HANDLERS: Dict[str, Callable[[], Dict[str, Any]]] = {
     "get_nexus_gap_summary": _st_nexus_gap_summary,
     "get_nexus_unknowns": _st_nexus_unknowns,
     "get_nexus_study_snapshot": _st_nexus_study_snapshot,
+    "get_nexus_study_overview": _st_nexus_study_overview,
 }
 
 

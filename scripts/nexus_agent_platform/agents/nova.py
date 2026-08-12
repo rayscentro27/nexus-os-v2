@@ -1034,21 +1034,83 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
     elif domain == "nexus_system" and isinstance(data, dict):
         system = data.get("system", {})
         domains = data.get("domains", {})
-        gaps = domains.get("gaps", {}) if isinstance(domains, dict) else {}
-        unknowns = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
-        processes = domains.get("processes", {}) if isinstance(domains, dict) else {}
-        business = domains.get("business_model", {}) if isinstance(domains, dict) else {}
-        integrations = domains.get("integrations", {}) if isinstance(domains, dict) else {}
-        contradictions = data.get("contradictions", [])
-        current_runtime = data.get("current_runtime_update", {})
-        reconciliation = data.get("study_current_reconciliation", {})
+        compact = data.get("context_profile") == "compact_overview"
 
-        gap_records = gaps.get("gaps", []) if isinstance(gaps, dict) else []
-        severity_counts: Dict[str, int] = {}
-        gap_domain_counts: Dict[str, int] = {}
-        for gap in gap_records:
-            severity_counts[str(gap.get("severity", "unknown"))] = severity_counts.get(str(gap.get("severity", "unknown")), 0) + 1
-            gap_domain_counts[str(gap.get("domain", "unknown"))] = gap_domain_counts.get(str(gap.get("domain", "unknown")), 0) + 1
+        if compact:
+            business_summary = data.get("business", {})
+            integration_summary = data.get("integrations", {})
+            findings = data.get("study_findings", {})
+            unknown_records = data.get("unknowns", [])
+            top_gaps = data.get("top_gaps", [])
+            contradiction_summary = data.get("contradiction_summary", {})
+            reconciliation_summary = data.get("current_reconciliation", {})
+            current_runtime = {
+                "telemetry_available_now": reconciliation_summary.get("verified_execution_telemetry_now_available", False),
+                "event_count_24h": reconciliation_summary.get("event_count_24h", 0),
+                "coverage": {"coverage_status": reconciliation_summary.get("coverage_status")},
+            }
+            reconciliation = {
+                "study_has_real_execution": system.get("study_has_real_execution", False),
+                "current_has_verified_execution_telemetry": reconciliation_summary.get("verified_execution_telemetry_now_available", False),
+                "changed_findings": reconciliation_summary.get("changed_findings", []),
+            }
+            gap_count = findings.get("gap_count", 0)
+            contradiction_count = findings.get("contradiction_count", contradiction_summary.get("count", 0))
+            unknown_count = findings.get("unknown_count", len(unknown_records))
+            severity_counts = findings.get("gap_severity_counts", {})
+            gap_domain_counts = findings.get("gap_domain_counts", {})
+        else:
+            gaps = domains.get("gaps", {}) if isinstance(domains, dict) else {}
+            unknowns = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
+            processes = domains.get("processes", {}) if isinstance(domains, dict) else {}
+            business_summary = domains.get("business_model", {}) if isinstance(domains, dict) else {}
+            integration_summary = domains.get("integrations", {}) if isinstance(domains, dict) else {}
+            contradictions = data.get("contradictions", [])
+            current_runtime = data.get("current_runtime_update", {})
+            reconciliation = data.get("study_current_reconciliation", {})
+            gap_records = gaps.get("gaps", []) if isinstance(gaps, dict) else []
+            severity_counts: Dict[str, int] = {}
+            gap_domain_counts: Dict[str, int] = {}
+            for gap in gap_records:
+                severity_counts[str(gap.get("severity", "unknown"))] = severity_counts.get(str(gap.get("severity", "unknown")), 0) + 1
+                gap_domain_counts[str(gap.get("domain", "unknown"))] = gap_domain_counts.get(str(gap.get("domain", "unknown")), 0) + 1
+            top_gaps = [
+                {
+                    "id": gap.get("gap_id"),
+                    "domain": gap.get("domain"),
+                    "title": gap.get("title"),
+                    "severity": gap.get("severity"),
+                    "evidence": gap.get("evidence"),
+                }
+                for gap in gap_records[:10]
+            ]
+            unknown_records = [
+                {
+                    "id": u.get("unknown_id"),
+                    "domain": u.get("domain"),
+                    "title": u.get("title"),
+                    "evidence_status": u.get("evidence_status"),
+                    "recommended_step": u.get("recommended_step"),
+                }
+                for u in (unknowns.get("unknowns", []) if isinstance(unknowns, dict) else [])
+            ]
+            contradiction_summary = {
+                "count": len(contradictions),
+                "kind_counts": {},
+                "examples": contradictions[:5],
+            }
+            processes = domains.get("processes", {}) if isinstance(domains, dict) else {}
+            system = {
+                **system,
+                "disabled_processes": processes.get("configuration_counts", {}).get("disabled"),
+                "configuration_counts": processes.get("configuration_counts", {}),
+                "execution_mode_counts": processes.get("mode_counts", {}),
+                "study_runtime_state_counts": processes.get("runtime_counts", {}),
+                "study_has_real_execution": processes.get("has_real_execution", False),
+            }
+            gap_count = gaps.get("gap_count", 0)
+            contradiction_count = len(contradictions)
+            unknown_count = unknowns.get("unknown_count", 0) if isinstance(unknowns, dict) else 0
 
         lines.append("Study snapshot facts:")
         lines.append(f"  source_ref: {data.get('source_ref', prov.get('source_ref', 'reports/nova_study/nexus_study_snapshot.json'))}")
@@ -1056,37 +1118,41 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
         lines.append(f"  generated_at: {data.get('generated_at', prov.get('generated_at'))}")
         lines.append(f"  system_name: {system.get('name', '?')}")
         lines.append(f"  agent_count: {system.get('agent_count', '?')}")
-        lines.append(f"  process_count: {system.get('process_count', processes.get('total', '?'))}")
-        lines.append(f"  enabled_processes: {system.get('enabled_processes', processes.get('configuration_counts', {}).get('enabled', '?'))}")
-        lines.append(f"  process_configuration_counts: {processes.get('configuration_counts', {})}")
-        lines.append(f"  process_execution_mode_counts: {processes.get('mode_counts', {})}")
-        lines.append(f"  study_runtime_state_counts: {processes.get('runtime_counts', {})}")
-        lines.append(f"  study_has_real_execution: {str(processes.get('has_real_execution', False)).lower()}")
-        lines.append(f"  offer_count: {business.get('offers_count', '?')}")
-        lines.append(f"  operational_offer_count: {len(business.get('operational_revenue_paths', []))}")
-        lines.append(f"  planned_offer_count: {len(business.get('planned_revenue_paths', []))}")
-        lines.append(f"  integration_count: {integrations.get('connector_count', '?')}")
-        lines.append(f"  live_integration_count: {integrations.get('live_enabled_count', '?')}")
-        lines.append(f"  integration_status_counts: {integrations.get('status_counts', {})}")
-        lines.append(f"  gap_count: {gaps.get('gap_count', 0)}")
+        lines.append(f"  process_count: {system.get('process_count', '?')}")
+        lines.append(f"  enabled_processes: {system.get('enabled_processes', '?')}")
+        lines.append(f"  disabled_processes: {system.get('disabled_processes', '?')}")
+        lines.append(f"  process_configuration_counts: {system.get('configuration_counts', {})}")
+        lines.append(f"  process_execution_mode_counts: {system.get('execution_mode_counts', {})}")
+        lines.append(f"  study_runtime_state_counts: {system.get('study_runtime_state_counts', {})}")
+        lines.append(f"  study_has_real_execution: {str(system.get('study_has_real_execution', False)).lower()}")
+        lines.append(f"  offer_count: {business_summary.get('offer_count', business_summary.get('offers_count', '?'))}")
+        lines.append(f"  operational_offer_count: {business_summary.get('operational_offers', len(business_summary.get('operational_revenue_paths', [])))}")
+        lines.append(f"  planned_offer_count: {business_summary.get('planned_offers', len(business_summary.get('planned_revenue_paths', [])))}")
+        lines.append(f"  integration_count: {integration_summary.get('total', integration_summary.get('connector_count', '?'))}")
+        lines.append(f"  live_integration_count: {integration_summary.get('live', integration_summary.get('live_enabled_count', '?'))}")
+        lines.append(f"  integration_status_counts: {integration_summary.get('status_counts', {})}")
+        lines.append(f"  gap_count: {gap_count}")
         lines.append(f"  gap_severity_counts: {severity_counts}")
         lines.append(f"  gap_domain_counts: {gap_domain_counts}")
-        lines.append(f"  contradiction_count: {len(contradictions)}")
-        lines.append(f"  unknown_count: {unknowns.get('unknown_count', 0)}")
+        lines.append(f"  contradiction_count: {contradiction_count}")
+        lines.append(f"  unknown_count: {unknown_count}")
         lines.append("")
 
-        if gap_records:
-            lines.append("Study gap records (first 12, preserve ids/titles/evidence):")
-            for gap in gap_records[:12]:
-                lines.append(f"  - {gap.get('gap_id', '?')}: {gap.get('title', '?')}")
+        if top_gaps:
+            lines.append("Study gap records (bounded top records; more detail available on request):")
+            for gap in top_gaps:
+                lines.append(f"  - {gap.get('id', '?')}: {gap.get('title', '?')}")
                 lines.append(f"      domain: {gap.get('domain', '?')}")
                 lines.append(f"      severity: {gap.get('severity', '?')}")
                 lines.append(f"      evidence: {gap.get('evidence', '?')}")
             lines.append("")
 
-        if contradictions:
-            lines.append("Study contradictions (all records):")
-            for contradiction in contradictions:
+        examples = contradiction_summary.get("examples", [])
+        if examples:
+            lines.append("Study contradiction summary (bounded examples; full detail available on request):")
+            lines.append(f"  count: {contradiction_summary.get('count', contradiction_count)}")
+            lines.append(f"  kind_counts: {contradiction_summary.get('kind_counts', {})}")
+            for contradiction in examples:
                 lines.append(
                     "  - "
                     f"kind={contradiction.get('kind', '?')} "
@@ -1097,14 +1163,14 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
                 )
             lines.append("")
 
-        unknown_records = unknowns.get("unknowns", []) if isinstance(unknowns, dict) else []
         if unknown_records:
             lines.append("Study unknowns:")
             for unknown in unknown_records:
-                lines.append(f"  - {unknown.get('unknown_id', '?')}: {unknown.get('title', '?')}")
+                lines.append(f"  - {unknown.get('id', unknown.get('unknown_id', '?'))}: {unknown.get('title', '?')}")
                 lines.append(f"      domain: {unknown.get('domain', '?')}")
                 lines.append(f"      evidence_status: {unknown.get('evidence_status', '?')}")
-                lines.append(f"      recommended_step: {unknown.get('recommended_step', '?')}")
+                if unknown.get("recommended_step"):
+                    lines.append(f"      recommended_step: {unknown.get('recommended_step', '?')}")
             lines.append("")
 
         if current_runtime:
@@ -3220,7 +3286,9 @@ def _capability_gate(state: AgentState) -> AgentState:
 
 def _build_context(state: AgentState) -> AgentState:
     """Build the model context with SOUL, conversation history, and verified operational data."""
+    started = time.monotonic()
     chat_id = state.metadata.get("chat_id", 0)
+    verified_context_chars = 0
 
     # Load conversation history
     history = load_memory(chat_id)
@@ -3249,6 +3317,7 @@ def _build_context(state: AgentState) -> AgentState:
             )
         elif capability_result.get("tool") == "nexus_query_planner":
             planner_context = _format_planner_context(capability_result)
+            verified_context_chars = len(planner_context)
             source_requirement = (
                 capability_result.get("source_requirement")
                 or capability_result.get("plan", {}).get("source_requirement")
@@ -3307,6 +3376,25 @@ def _build_context(state: AgentState) -> AgentState:
 
     state.metadata["model_messages"] = messages
     state.metadata["model_received_verified_context"] = capability_result is not None
+    if capability_result and capability_result.get("query_type") == "nexus_system":
+        capability_data = capability_result.get("data", {})
+        capability_chars = len(json.dumps(capability_data, default=str))
+        context_chars = sum(len(m.get("content", "")) for m in messages)
+        state.metadata["study_context_metrics"] = {
+            "capability_result_chars": capability_chars,
+            "capability_result_approx_tokens": capability_chars // 4,
+            "verified_context_chars": verified_context_chars,
+            "verified_context_approx_tokens": verified_context_chars // 4,
+            "model_context_chars": context_chars,
+            "model_context_approx_tokens": context_chars // 4,
+            "context_shaping_ms": int((time.monotonic() - started) * 1000),
+            "context_profile": capability_data.get("context_profile", "full_snapshot"),
+            "raw_artifact_bytes": capability_data.get("retrieval_metrics", {}).get("raw_artifact_bytes", {}),
+            "artifact_index_load_ms": capability_data.get("retrieval_metrics", {}).get("artifact_index_load_ms"),
+            "runtime_reconciliation_ms": capability_data.get("retrieval_metrics", {}).get("runtime_reconciliation_ms"),
+            "overview_build_ms": capability_data.get("retrieval_metrics", {}).get("overview_build_ms"),
+            "structured_records_selected": capability_data.get("retrieval_metrics", {}).get("structured_records_selected", {}),
+        }
     return state
 
 

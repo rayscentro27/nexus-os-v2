@@ -9,6 +9,7 @@ No writes, no arbitrary execution, no credential/PII exposure.
 
 from __future__ import annotations
 
+import json
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -342,19 +343,61 @@ class TestStudyArtifactRetrieval:
         assert integrations["connector_count"] == 15
         assert integrations["live_enabled_count"] == 3
 
+    def test_compact_overview_preserves_core_facts_with_bounded_payload(self):
+        from nexus_agent_platform.capabilities.nexus_study import get_nexus_study_overview
+
+        overview = get_nexus_study_overview()
+        encoded = json.dumps(overview, default=str)
+
+        assert overview["status"] == "success"
+        assert overview["context_profile"] == "compact_overview"
+        assert overview["source_commit"] == "550ae77"
+        assert overview["system"]["process_count"] == 19
+        assert overview["system"]["enabled_processes"] == 17
+        assert overview["system"]["disabled_processes"] == 2
+        assert overview["business"]["offer_count"] == 9
+        assert overview["business"]["operational_offers"] == 1
+        assert overview["business"]["planned_offers"] == 8
+        assert overview["integrations"]["total"] == 15
+        assert overview["integrations"]["live"] == 3
+        assert overview["study_findings"]["gap_count"] == 46
+        assert overview["study_findings"]["contradiction_count"] == 18
+        assert overview["study_findings"]["unknown_count"] == 3
+        assert [u["id"] for u in overview["unknowns"]] == [
+            "NEXUS-U01", "NEXUS-U02", "NEXUS-U03",
+        ]
+        assert len(encoded) < 15000
+        metrics = overview["retrieval_metrics"]
+        assert metrics["raw_artifact_bytes"]["snapshot"] > 100000
+        assert metrics["structured_records_selected"] == {
+            "top_gaps": 10,
+            "contradiction_examples": 5,
+            "unknowns": 3,
+        }
+
+    def test_artifact_cache_reuses_generated_snapshot_until_file_changes(self):
+        from nexus_agent_platform.capabilities import nexus_study
+
+        nexus_study._ARTIFACT_CACHE.clear()
+        first = nexus_study._cached_artifact_json(nexus_study._STUDY_SNAPSHOT_PATH)
+        second = nexus_study._cached_artifact_json(nexus_study._STUDY_SNAPSHOT_PATH)
+
+        assert first is second
+        assert nexus_study._STUDY_SNAPSHOT_PATH in nexus_study._ARTIFACT_CACHE
+
     def test_nexus_system_context_exposes_study_counts(self):
         from nexus_agent_platform.agents.nova import _format_planner_context
-        from nexus_agent_platform.capabilities.nexus_study import get_nexus_study_snapshot
+        from nexus_agent_platform.capabilities.nexus_study import get_nexus_study_overview
 
         context = _format_planner_context({
             "tool": "nexus_query_planner",
             "query_type": "nexus_system",
             "status": "success",
-            "data": get_nexus_study_snapshot(),
+            "data": get_nexus_study_overview(),
             "coverage": {"structural": True},
             "plan": {"domain": "nexus_system", "operation": "overview"},
             "planner_mode": "model",
-            "capability_selected": "get_nexus_study_snapshot",
+            "capability_selected": "get_nexus_study_overview",
             "source_requirement": "structural",
             "provenance": {
                 "source_type": "study_snapshot_artifact",
@@ -372,6 +415,34 @@ class TestStudyArtifactRetrieval:
         assert "NEXUS-U01" in context
         assert "changed_findings" in context
         assert "partially_resolved_by_current_runtime_telemetry" in context
+        assert len(context) < 10000
+
+    def test_build_context_records_study_budget_metrics(self):
+        from nexus_agent_platform.adapters.state_adapter import AgentState
+        from nexus_agent_platform.agents.nova import _build_context
+        from nexus_agent_platform.capabilities.nexus_study import get_nexus_study_overview
+
+        state = AgentState(user_message="What did you learn about Nexus?", metadata={"chat_id": 991337})
+        state.metadata["capability_result"] = {
+            "tool": "nexus_query_planner",
+            "query_type": "nexus_system",
+            "status": "success",
+            "data": get_nexus_study_overview(),
+            "coverage": {"structural": True},
+            "plan": {"domain": "nexus_system", "operation": "overview"},
+            "planner_mode": "model",
+            "capability_selected": "get_nexus_study_overview",
+            "source_requirement": "structural",
+            "provenance": {"source_commit": "550ae77"},
+        }
+
+        result = _build_context(state)
+        metrics = result.metadata["study_context_metrics"]
+
+        assert metrics["context_profile"] == "compact_overview"
+        assert metrics["capability_result_approx_tokens"] < 2000
+        assert metrics["verified_context_approx_tokens"] < 2500
+        assert metrics["artifact_index_load_ms"] is not None
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -385,7 +456,8 @@ class TestPlannerNexusSystem:
 
     def test_domain_capability(self):
         from nexus_agent_platform.capabilities.nexus_query_planner import DOMAIN_SCHEMAS
-        assert DOMAIN_SCHEMAS["nexus_system"]["capability"] == "get_nexus_study_snapshot"
+        assert DOMAIN_SCHEMAS["nexus_system"]["capability"] == "get_nexus_study_overview"
+        assert DOMAIN_SCHEMAS["nexus_system"]["detail_capabilities"]["snapshot"] == "get_nexus_study_snapshot"
 
     def test_domain_operations(self):
         from nexus_agent_platform.capabilities.nexus_query_planner import DOMAIN_SCHEMAS
@@ -412,7 +484,8 @@ class TestPlannerNexusSystem:
         })
         result = execute_plan(plan)
         assert result["status"] == "success"
-        assert result["capability_selected"] == "get_nexus_study_snapshot"
+        assert result["capability_selected"] == "get_nexus_study_overview"
+        assert result.get("data", {}).get("context_profile") == "compact_overview"
 
     def test_execute_find_gaps(self):
         from nexus_agent_platform.capabilities.nexus_query_planner import execute_plan, validate_plan
@@ -423,7 +496,8 @@ class TestPlannerNexusSystem:
         })
         result = execute_plan(plan)
         data = result.get("data", {})
-        assert data.get("domains", {}).get("gaps", {}).get("gap_count", 0) > 0
+        assert data.get("study_findings", {}).get("gap_count", 0) == 46
+        assert len(data.get("top_gaps", [])) == 10
 
     def test_format_nexus_system_result(self):
         from nexus_agent_platform.capabilities.nexus_query_planner import (

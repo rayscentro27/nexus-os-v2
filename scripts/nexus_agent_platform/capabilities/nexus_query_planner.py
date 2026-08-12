@@ -182,7 +182,12 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "stripe_live_mode_allowed": {"type": "boolean", "values": [True, False]},
         },
         "operations": ["overview", "lookup", "compare", "summarize", "explain", "find_gaps", "recommend"],
-        "capability": "get_nexus_study_snapshot",
+        "capability": "get_nexus_study_overview",
+        "detail_capabilities": {
+            "snapshot": "get_nexus_study_snapshot",
+            "gaps": "get_nexus_gap_summary",
+            "unknowns": "get_nexus_unknowns",
+        },
     },
 }
 
@@ -256,6 +261,8 @@ Examples of Nexus questions (and their domains):
 - "What did your study uncover?" → nexus_system
 - "Based on your Nexus study, how many gaps, contradictions, and unknowns did you identify?" → nexus_system
 - "What were the three unknowns from your study?" → nexus_system
+- "What did the study say about integrations?" → nexus_system
+- "What did the study say about offers?" → nexus_system
 - "How many offers did the study find operational versus planned?" → nexus_system
 - "How many integrations did you study, and how many were live?" → nexus_system
 - "Was verified execution telemetry available when the study snapshot was made?" → nexus_system
@@ -301,6 +308,7 @@ RULES:
 10. Use window "today" for today/since midnight, "last_hour" for last hour, "last_24_hours" for last 24 hours, and "latest" or "most_recent" for latest/most recent.
 11. For Telegram proof, distinguish worker_poll from telegram_update_run. A worker_poll proves the poll cycle ran; only telegram_update_run proves a Telegram update/message was actually handled.
 12. If a question combines configuration with execution telemetry, such as enabled processes with no verified run, use runtime_execution. The executor will provide the structural cross-reference.
+13. If the user asks what "the study" said, found, learned, uncovered, identified, or left unknown about Nexus topics such as gaps, contradictions, integrations, offers, architecture, or business model, use nexus_system. The study snapshot is historical structural evidence, not current execution telemetry.
 
 FILTER CONDITION RULES FOR PROCESSES:
 - If the user asks for a process configuration state, include a condition on configuration_state.
@@ -1106,13 +1114,22 @@ def _format_nexus_system_data(data: Dict, plan: Dict) -> List[str]:
 
     operation = plan.get("operation", "overview")
     domains = data.get("domains", {})
-    gaps_domain = domains.get("gaps", {}) if isinstance(domains, dict) else {}
-    unknowns_domain = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
-    contradictions = data.get("contradictions", [])
+    compact = data.get("context_profile") == "compact_overview"
+    if compact:
+        findings = data.get("study_findings", {})
+        gaps_domain = {"gap_count": findings.get("gap_count", 0), "gaps": data.get("top_gaps", [])}
+        unknowns_domain = {"unknown_count": findings.get("unknown_count", 0), "unknowns": data.get("unknowns", [])}
+        contradictions = data.get("contradiction_summary", {}).get("examples", [])
+        contradiction_count = findings.get("contradiction_count", data.get("contradiction_summary", {}).get("count", 0))
+    else:
+        gaps_domain = domains.get("gaps", {}) if isinstance(domains, dict) else {}
+        unknowns_domain = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
+        contradictions = data.get("contradictions", [])
+        contradiction_count = len(contradictions)
     lines.append(
         "Study counts: "
         f"gaps={gaps_domain.get('gap_count', 0)} "
-        f"contradictions={len(contradictions)} "
+        f"contradictions={contradiction_count} "
         f"unknowns={unknowns_domain.get('unknown_count', 0)}"
     )
 
@@ -1176,7 +1193,7 @@ def _format_nexus_system_data(data: Dict, plan: Dict) -> List[str]:
     if unknowns:
         lines.append("Unknowns:")
         for u in unknowns[:5]:
-            lines.append(f"  - {u.get('unknown_id', '?')}: {u.get('title', '?')}")
+            lines.append(f"  - {u.get('unknown_id', u.get('id', '?'))}: {u.get('title', '?')}")
 
     if operation == "recommend":
         if isinstance(data.get("recommendations"), list):
