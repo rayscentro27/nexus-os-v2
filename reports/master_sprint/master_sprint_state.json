@@ -1,0 +1,74 @@
+{
+  "starting_commit": "145f092",
+  "current_phase": "phase_report_and_next",
+  "completed_phases": [
+    "phase0_recovery_audit",
+    "phase1_certify_governed_loop"
+  ],
+  "phase0_recovery": {
+    "interrupted_work_found": false,
+    "commits_from_interrupted_sprint": "none — HEAD remained 145f092",
+    "partial_source_files": "none (only pre-existing Aug 6 dirty files: contracts/dispatcher.py, test_paths_and_process_status.py — unrelated)",
+    "runtime_artifacts_only": "schedule receipts, work order drafts, alpha intake — all gitignored or pre-existing runtime data",
+    "verdict": "governed loop MISSING — build cleanly from audit findings"
+  },
+  "phase1_governed_loop": {
+    "built": {
+      "governed_package": "scripts/nexus_agent_platform/governed/ — persistence, action_registry, approvals, work_orders, policy_gate, executors, recommendations, engine, resolution, actions_api, queue",
+      "shared_capabilities": "5 governed reads (get_available_actions, get_approval_status, get_work_order_status, get_work_order_result, get_recent_work_orders, get_work_queue) + 4 bounded intents (prepare_action_recommendation, create_approval_request, resolve_governed_approval, create_work_order_from_approval); NOVA_GOVERNED_INTENTS only for hermes_nova; NOVA_ALLOWED_WRITES remains frozenset()",
+      "planner_domain": "governed_action domain added to DOMAIN_SCHEMAS + SOURCE_REQUIREMENTS + execute_plan operation->detail_capability mapping (NO new _INTENT_PATTERNS — boundary test test_intent_patterns_not_expanded preserved)",
+      "nova_continuity": "Priority 2.25 governed approval continuity in _capability_gate — action-bound explicit approve/reject phrases resolve exactly-one pending approval per chat; ambiguity/non-explicit never resolve; creates work order but NEVER executes"
+    },
+    "executors": {
+      "system_health.run": "120s, calls _handle_system_health directly",
+      "repo_intelligence.scan": "180s, _main_inner",
+      "nexus_study.refresh": "300s, _run_study_pass + write_study_artifacts",
+      "runtime_report.generate": "120s, telemetry overview export",
+      "notes": "Only LOW risk + approval_required=True execute. MODERATE/HIGH/PROHIBITED never execute. Timeout bounded 1..3600."
+    },
+    "work_queue": "governed/queue.py — read-only priority view (risk then age), RUNNER_CHECKPOINT gate for picks, claim_next transitions to queued but does NOT execute; engine.execute_approved_work_order is the ONLY execution entry"
+  },
+  "current_task": "E2E + full suite green; update resume artifacts; commit+push checkpoint",
+  "completed_tasks": [
+    "recovery audit (git state, interrupted sprint diff, dirty files)",
+    "full audit of existing approval/work-order/executor/policy/telemetry surfaces (2 sub-agent audits)",
+    "audit decision: reuse verified_execution_telemetry + process registry runner commands; NO existing governed approval/executor/policy-gate exists",
+    "governed action registry + risk model",
+    "approval layer (contract, expiry, binding, single-use, rejection)",
+    "work order layer (state machine, idempotency, persistence, replay, stale)",
+    "policy gate",
+    "allowlisted executors (system_health.run, repo_intelligence.scan, nexus_study.refresh, runtime_report.generate)",
+    "telemetry correlation + audit trail",
+    "Nova governed-action capabilities + planner governed_action domain",
+    "Nova graph + conversation continuity",
+    "work queue + priority engine (governed/queue.py)",
+    "E2E tests: test_governed_ops.py — 24 tests covering full loop, reject, ambiguity, non-explicit, replay/idempotency, expiry, registry/risk/binding, telemetry/audit, security boundaries, work queue"
+  ],
+  "test_results": {
+    "governed_new": {"total": 24, "passed": 24, "failed": 0, "skipped": 0},
+    "supported_relevant": {
+      "test_nova*.py + test_nexus_study.py + test_shared_capabilities.py + test_governed_ops.py + test_nexus_query_planner.py": {"total": 450, "passed": 450, "failed": 0, "skipped": 0}
+    },
+    "full_scripts_suite": {
+      "total": 758,
+      "passed": 753,
+      "skipped": 3,
+      "failed": 2,
+      "pre_existing_failures": [
+        "nexus_agent_platform.tests.test_paths_and_process_status.TestFollowUpScheduling.test_schedule_report_with_prior_and_time — AttributeError: module 'nexus_agent_platform' has no attribute 'contracts' (importlib traversal; test lives in pre-existing Aug 6 dirty file)",
+        "nexus_agent_platform.tests.test_platform.TestLlmGatewayAdapter.test_fallback_completion_returns_error_message — same contracts import traversal AttributeError"
+      ],
+      "note": "Both failures reproduce on unmodified base via git stash (pre-existing env import issue, unrelated to governed work)"
+    }
+  },
+  "commits_created": [
+    "f5cd1c2 feat(ops): complete governed Nexus operating loop — pushed to origin/main"
+  ],
+  "blockers": [],
+  "remaining_tasks": [
+    "website/marketing/research/revenue phases still ahead (Revenue-ready website is highest business priority, ahead of governed ops per Master Build ordering)",
+    "live Telegram governed-action proof (RETEST_READY is acceptable)",
+    "final wrap-up report with NEXUS_MASTER_BUILD_RETEST_READY or PARTIAL status"
+  ],
+  "updated_at": "2026-08-11"
+}
