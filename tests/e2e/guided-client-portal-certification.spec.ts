@@ -46,13 +46,13 @@ test.describe('guided client portal certification', () => {
       await expect(dashboard.getByText(/Next best action/i)).toBeVisible()
       await expect(dashboard.getByRole('button', { name: /Continue where you left off/i })).toBeVisible()
       const primaryNav = page.locator('.wc-sideNav')
-      for (const label of ['Home', 'Credit', 'Business', 'Funding Readiness', 'Documents', 'Resources', 'Request Review']) {
+      for (const label of ['Home', 'Credit Review', 'Credit Improvement', 'Business Foundation', 'Funding Readiness', 'Funding Access', 'Documents', 'Messages', 'Resources', 'Billing']) {
         await expect(primaryNav.locator('.wc-navLabel').filter({ hasText: label })).toBeVisible()
       }
-      await expect(primaryNav.getByRole('button')).toHaveCount(7)
+      await expect(primaryNav.getByRole('button')).toHaveCount(10)
       await expect(primaryNav.locator('.wc-navLabel').filter({ hasText: /Credit Utilization|Business Bankability|Affiliates/i })).toHaveCount(0)
       await dashboard.getByRole('button', { name: /Continue where you left off/i }).click()
-      await expect(page).toHaveURL(/\/client\/(credit-profile|business-setup|business-bankability|funding-readiness|request-review)/)
+      await expect(page).toHaveURL(/\/client\/(credit-review|credit-improvement|business-foundation|funding-readiness|funding-access|documents|request-review|profile)/)
     })
 
     test('Credit stage opens with contextual inline upload coverage', async ({ page }) => {

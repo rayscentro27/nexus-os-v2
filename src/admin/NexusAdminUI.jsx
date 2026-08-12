@@ -31,6 +31,7 @@ import ErrorBoundary from '../components/ErrorBoundary'
 import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
 import TesterReadinessPanel from '../components/TesterReadinessPanel'
+import OutsourcedFulfillmentCenter from '../components/OutsourcedFulfillmentCenter'
 import TesterInvitationPanel from '../components/TesterInvitationPanel'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
@@ -87,6 +88,7 @@ const navGroups = [
     { id: 'research', label: 'Research Engine', icon: 'ScanSearch', status: '50', statusTone: 'blue' },
     { id: 'monetization', label: 'Monetization', icon: 'BadgeDollarSign', status: '9 offers', statusTone: 'green' },
     { id: 'revenue-activation', label: 'Revenue Activation', icon: 'BadgeDollarSign', status: 'Test', statusTone: 'amber' },
+    { id: 'fulfillment', label: 'Outsourced Fulfillment', icon: 'Send', status: 'Manual bridge', statusTone: 'blue' },
     { id: 'marketing', label: 'Marketing Drafts', icon: 'Megaphone', status: 'Draft', statusTone: 'amber' }
   ]},
   { label: 'System', items: [
@@ -115,6 +117,7 @@ const modeLabels = {
   funding: 'Funding Readiness',
   monetization: 'Monetization',
   'revenue-activation': 'Revenue Activation — Stripe Test Mode',
+  fulfillment: 'Outsourced Fulfillment — Manual CRJ Bridge',
   partners: 'Partner Offers',
   creative: 'Creative Studio',
   design: 'Design Library',
@@ -1496,6 +1499,7 @@ export default function NexusAdminUI({ email }) {
     funding: <ErrorBoundary panelName="Funding Readiness"><FundingReadinessPage /></ErrorBoundary>,
     monetization: <ErrorBoundary panelName="Monetization"><SimplePage title="Monetization" sub="9 Offers · Revenue Streams · Stripe Status · Approval-Gated"><MonetizationPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     'revenue-activation': <ErrorBoundary panelName="Revenue Activation"><SimplePage title="Revenue Activation — Test Mode" sub="Offers · Orders · Payment Verification · Fulfillment · Approval-Gated Delivery"><RevenueActivationPanel /></SimplePage></ErrorBoundary>,
+    fulfillment: <ErrorBoundary panelName="Outsourced Fulfillment"><SimplePage title="Outsourced Fulfillment" sub="CRJ / DisputeForMe Manual Controlled Bridge · No Automated API"><OutsourcedFulfillmentCenter /></SimplePage></ErrorBoundary>,
     partners: <ErrorBoundary panelName="Partner Offers"><PartnerOffersPage /></ErrorBoundary>,
     cli: <ErrorBoundary panelName="CLI Control"><CLIControlPage /></ErrorBoundary>,
     proof: <ErrorBoundary panelName="Proof Ledger"><ProofLedgerPage /></ErrorBoundary>,

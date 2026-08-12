@@ -277,13 +277,23 @@ describe('Phase 4 — WorldClassClientPortal integration', () => {
     expect(code).not.toContain('<FundingReadinessHeader')
   })
 
-  it('navigation includes the dedicated Recommendations route', () => {
+  it('primary navigation follows the five-stage journey and supporting pages', () => {
     const code = readFileSync(portalPath, 'utf8')
     const navMatch = code.match(/const navItems = \[([\s\S]*?)\]\s*\n/)
     expect(navMatch).toBeTruthy()
     const navContent = navMatch?.[1] || ''
     const itemCount = (navContent.match(/\[.*?\/client\//g) || []).length
-    expect(itemCount).toBe(8)
-    expect(navContent).toContain('/client/recommendations')
+    expect(itemCount).toBe(10)
+    expect(navContent).toContain('/client/credit-review')
+    expect(navContent).toContain('/client/credit-improvement')
+    expect(navContent).toContain('/client/business-foundation')
+    expect(navContent).toContain('/client/funding-readiness')
+    expect(navContent).toContain('/client/funding-access')
+  })
+
+  it('dedicated Recommendations route remains registered and routable', () => {
+    const code = readFileSync(portalPath, 'utf8')
+    expect(code).toContain("'/client/recommendations': { key: 'recommendations'")
+    expect(code).toContain('recommendations: <RecommendationsPanel')
   })
 })

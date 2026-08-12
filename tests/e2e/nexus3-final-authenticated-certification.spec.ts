@@ -9,16 +9,22 @@ const admin = { email: process.env.E2E_ADMIN_EMAIL, password: process.env.E2E_AD
 
 const clientRoutes = [
   ['/client/dashboard', 'wc-panel-home', /Funding Readiness Command Center/i],
-  ['/client/credit-profile', 'wc-panel-credit', /Credit Journey/i],
+  ['/client/credit-review', 'wc-panel-credit', /Credit Review/i],
+  ['/client/credit-profile', 'wc-panel-credit', /Credit Review/i],
+  ['/client/credit-improvement', 'wc-panel-improvement', /Credit Improvement/i],
   ['/client/credit-utilization', 'wc-panel-credit', /Credit Utilization/i],
-  ['/client/account-details', 'wc-panel-credit', /Account Details|Credit Journey/i],
-  ['/client/credit-repair-journey', 'wc-panel-repair', /Credit Repair/i],
+  ['/client/account-details', 'wc-panel-credit', /Account Details|Credit Review/i],
+  ['/client/credit-repair-journey', 'wc-panel-repair', /Credit Improvement/i],
+  ['/client/business-foundation', 'wc-panel-business', /Business Foundation|Business Journey/i],
   ['/client/business-journey', 'wc-panel-business', /Business Journey/i],
   ['/client/business-setup', 'wc-panel-business', /Business Setup/i],
   ['/client/business-bankability', 'wc-panel-business', /Business Bankability/i],
   ['/client/business-credit', 'wc-panel-business', /Business Credit/i],
   ['/client/documents', 'wc-panel-documents', /Central Document Vault/i],
   ['/client/funding-readiness', 'wc-panel-funding', /Funding Readiness/i],
+  ['/client/funding-access', 'wc-panel-funding-access', /Funding Access/i],
+  ['/client/billing', 'wc-panel-billing', /Billing & Payments/i],
+  ['/client/messages', 'wc-panel-messages', /Messages & Hermes/i],
   ['/client/recommendations', 'wc-panel-recommendations', /Funding Readiness Recommendations/i],
   ['/client/resources', 'wc-panel-resources', /Funding Readiness Resources/i],
   ['/client/request-review', 'wc-panel-review', /Readiness Review/i],
@@ -174,7 +180,7 @@ test.describe('Nexus 3 final authenticated certification', () => {
       const clientContext = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } })
       const clientPage = await clientContext.newPage()
       await loginClient(clientPage, personaA)
-      await verifyClientRoute(clientPage, '/client/credit-profile', 'wc-panel-credit', /Credit Journey/i)
+      await verifyClientRoute(clientPage, '/client/credit-review', 'wc-panel-credit', /Credit Review/i)
       await clientContext.close()
 
       const adminContext = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } })

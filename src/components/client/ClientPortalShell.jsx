@@ -18,21 +18,29 @@ export function usePortalLiveStatus() { return useContext(PortalLiveStatusContex
 
 export const journeySteps = [
   { path: '/client/dashboard', label: 'Dashboard', icon: Home },
+  { path: '/client/credit-review', label: 'Credit Review', icon: BadgeCheck },
+  { path: '/client/credit-improvement', label: 'Credit Improvement', icon: RotateCcw },
+  { path: '/client/business-foundation', label: 'Business Foundation', icon: Building2 },
+  { path: '/client/funding-readiness', label: 'Funding Readiness', icon: Wallet },
+  { path: '/client/funding-access', label: 'Funding Access', icon: Gauge },
+  { path: '/client/documents', label: 'Documents', icon: FileText },
+  { path: '/client/messages', label: 'Messages', icon: MessageSquare },
+  { path: '/client/resources', label: 'Resources', icon: Star },
+  { path: '/client/billing', label: 'Billing', icon: CreditCard },
+  // Legacy routes remain routable for existing certification flows and deep links.
   { path: '/client/profile', label: 'Profile & Info', icon: User },
   { path: '/client/credit-profile', label: 'Credit Journey', icon: BadgeCheck },
   { path: '/client/credit-utilization', label: 'Credit Utilization', icon: CreditCard },
   { path: '/client/account-details', label: 'Account Details', icon: FileSearch },
-  { path: '/client/documents', label: 'Documents', icon: FileText },
   { path: '/client/business-journey', label: 'Business Journey', icon: Building2 },
   { path: '/client/business-setup', label: 'Business Setup', icon: Building2 },
   { path: '/client/business-bankability', label: 'Business Bankability', icon: Landmark },
   { path: '/client/business-credit', label: 'Business Credit', icon: ChartNoAxesCombined },
-  { path: '/client/funding-readiness', label: 'Funding Readiness', icon: Wallet },
   { path: '/client/credit-repair-journey', label: 'Credit Repair', icon: RotateCcw },
   { path: '/client/dispute-review', label: 'Bureau Letter Builder', icon: FileSearch },
   { path: '/client/recommendations', label: 'Recommendations', icon: Lightbulb },
-  { path: '/client/resources', label: 'Resources', icon: Star },
   { path: '/client/request-review', label: 'Request Review', icon: MessageSquare },
+  { path: '/client/settings', label: 'Settings', icon: Settings },
 ]
 
 export const clientRoutes = journeySteps
@@ -103,7 +111,7 @@ export function ClientHeader({ path, onNavigate, onMenuToggle }) {
         </div>
       </div>
       <div className="client-header-right">
-        <span className="client-step-badge">Step {step}/10</span>
+        <span className="client-step-badge">Step {step}/{journeySteps.length}</span>
         <span className="client-membership-badge">{profile.membershipTier}</span>
         <button className="client-icon-btn" aria-label="Notifications" onClick={() => onNavigate('/client/resources')}><Bell size={18} /><em>2</em></button>
         <button className="client-icon-btn" aria-label="Messages" onClick={() => onNavigate('/client/resources')}><Mail size={18} /></button>
