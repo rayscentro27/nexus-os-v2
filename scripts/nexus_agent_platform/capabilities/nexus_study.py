@@ -41,6 +41,10 @@ _CLI_CAPABILITY_PATH = os.path.join(_REPO_ROOT, "configs", "cli_capability_regis
 
 # Process registry (dynamic)
 _PROCESS_REGISTRY_PATH = os.path.join(_REPO_ROOT, "data", "operations", "nexus_process_registry.json")
+_STUDY_ARTIFACT_DIR = os.path.join(_REPO_ROOT, "reports", "nova_study")
+_STUDY_SNAPSHOT_PATH = os.path.join(_STUDY_ARTIFACT_DIR, "nexus_study_snapshot.json")
+_STUDY_GAPS_PATH = os.path.join(_STUDY_ARTIFACT_DIR, "nexus_gaps.json")
+_STUDY_UNKNOWNS_PATH = os.path.join(_STUDY_ARTIFACT_DIR, "nexus_unknowns.json")
 
 
 def _safe_json_load(path: str) -> Optional[Any]:
@@ -52,6 +56,99 @@ def _safe_json_load(path: str) -> Optional[Any]:
             return json.load(f)
     except Exception:
         return None
+
+
+def _artifact_snapshot() -> Optional[Dict[str, Any]]:
+    """Return the latest generated study snapshot artifact if available."""
+    data = _safe_json_load(_STUDY_SNAPSHOT_PATH)
+    if isinstance(data, dict) and data.get("status") == "success":
+        data = dict(data)
+        data.setdefault("source_type", "study_snapshot_artifact")
+        data.setdefault("freshness", "generated_study_snapshot")
+        data.setdefault("source_ref", "reports/nova_study/nexus_study_snapshot.json")
+        return data
+    return None
+
+
+def _artifact_domain(domain: str) -> Optional[Dict[str, Any]]:
+    snapshot = _artifact_snapshot()
+    if not snapshot:
+        return None
+    domains = snapshot.get("domains", {})
+    data = domains.get(domain)
+    if not isinstance(data, dict):
+        return None
+    result = dict(data)
+    result.setdefault("source_type", data.get("source_type", "study_snapshot_artifact"))
+    result["source_ref"] = "reports/nova_study/nexus_study_snapshot.json"
+    result["source_commit"] = snapshot.get("source_commit")
+    result["generated_at"] = snapshot.get("generated_at")
+    result["freshness"] = "generated_study_snapshot"
+    return result
+
+
+def _artifact_file(path: str, source_ref: str) -> Optional[Dict[str, Any]]:
+    data = _safe_json_load(path)
+    if not isinstance(data, dict) or data.get("status") != "success":
+        return None
+    result = dict(data)
+    snapshot = _artifact_snapshot()
+    if snapshot:
+        result["source_commit"] = snapshot.get("source_commit")
+        result["generated_at"] = snapshot.get("generated_at")
+    result["source_ref"] = source_ref
+    result["freshness"] = "generated_study_snapshot"
+    return result
+
+
+def _with_current_runtime_reconciliation(snapshot: Dict[str, Any]) -> Dict[str, Any]:
+    """Attach current runtime status without mutating historical study facts."""
+    result = dict(snapshot)
+    domains = result.get("domains", {})
+    study_processes = domains.get("processes", {}) if isinstance(domains, dict) else {}
+    study_has_real = study_processes.get("has_real_execution")
+    try:
+        from nexus_agent_platform.runtime.execution_telemetry import query_runtime_telemetry
+
+        runtime = query_runtime_telemetry(operation="overview", window="last_24_hours", limit=5)
+        event_count = runtime.get("summary", {}).get("event_count", 0)
+        result["current_runtime_update"] = {
+            "source_type": "verified_execution_telemetry",
+            "freshness": "current_runtime",
+            "telemetry_available_now": event_count > 0,
+            "event_count_24h": event_count,
+            "coverage": runtime.get("coverage", {}),
+            "summary": runtime.get("summary", {}),
+            "latest_runs": runtime.get("runs", [])[:5],
+        }
+        result["study_current_reconciliation"] = {
+            "study_has_real_execution": study_has_real,
+            "current_has_verified_execution_telemetry": event_count > 0,
+            "changed_findings": (
+                [
+                    {
+                        "id": "NEXUS-U01",
+                        "title": "Which processes have verified real execution?",
+                        "study_state": "unknown / insufficient evidence",
+                        "current_state": "verified execution telemetry is now available",
+                        "status": "partially_resolved_by_current_runtime_telemetry",
+                    }
+                ]
+                if study_has_real is False and event_count > 0 else []
+            ),
+            "note": (
+                "The study snapshot is historical. Current runtime telemetry is reported separately "
+                "and must not overwrite the snapshot facts."
+            ),
+        }
+    except Exception as exc:
+        result["current_runtime_update"] = {
+            "source_type": "verified_execution_telemetry",
+            "freshness": "unavailable",
+            "telemetry_available_now": False,
+            "error_type": exc.__class__.__name__,
+        }
+    return result
 
 
 def _safe_file_exists(path: str) -> bool:
@@ -98,6 +195,10 @@ def _bounded_markdown_notes(path: str, max_lines: int = 40) -> List[str]:
 
 def get_architecture_summary() -> Dict[str, Any]:
     """Return a bounded architecture-level study of how Nexus is built."""
+    artifact = _artifact_domain("system_architecture")
+    if artifact:
+        return artifact
+
     from nexus_agent_platform.capabilities.nexus_knowledge import (
         NEXUS_SYSTEM, get_nexus_architecture,
     )
@@ -356,6 +457,10 @@ def get_client_workflow_summary() -> Dict[str, Any]:
 
 def get_business_model_summary() -> Dict[str, Any]:
     """Return a governed model of how Nexus is supposed to make money."""
+    artifact = _artifact_domain("business_model")
+    if artifact:
+        return artifact
+
     offers_data = _safe_json_load(_OFFER_REGISTRY_PATH)
     funnel = _safe_json_load(_REVENUE_FUNNEL_PATH)
     stripe_data = _safe_json_load(_STRIPE_PRODUCT_PATH)
@@ -409,6 +514,10 @@ def get_business_model_summary() -> Dict[str, Any]:
 
 def get_integration_inventory() -> Dict[str, Any]:
     """Return a bounded integration inventory from the connector registry."""
+    artifact = _artifact_domain("integrations")
+    if artifact:
+        return artifact
+
     connectors_data = _safe_json_load(_CONNECTOR_REGISTRY_PATH)
 
     connectors = []
@@ -659,6 +768,10 @@ def get_safe_report_index() -> Dict[str, Any]:
 
 def get_nexus_gap_summary() -> Dict[str, Any]:
     """Cross-source reconciliation into a structured gap model."""
+    artifact = _artifact_file(_STUDY_GAPS_PATH, "reports/nova_study/nexus_gaps.json")
+    if artifact:
+        return artifact
+
     from nexus_agent_platform.capabilities.nexus_knowledge import (
         _load_normalized_processes, TOOL_REGISTRY,
     )
@@ -775,6 +888,10 @@ def get_nexus_gap_summary() -> Dict[str, Any]:
 
 def get_nexus_unknowns() -> Dict[str, Any]:
     """Return structured unknowns — areas with insufficient evidence."""
+    artifact = _artifact_file(_STUDY_UNKNOWNS_PATH, "reports/nova_study/nexus_unknowns.json")
+    if artifact:
+        return artifact
+
     unknowns = [
         {
             "unknown_id": "NEXUS-U01",
@@ -830,6 +947,10 @@ _STUDY_DOMAIN_READERS = {
 
 def get_nexus_study_snapshot() -> Dict[str, Any]:
     """Assemble a bounded study snapshot across all study domains."""
+    artifact = _artifact_snapshot()
+    if artifact:
+        return _with_current_runtime_reconciliation(artifact)
+
     from nexus_agent_platform.capabilities.nexus_knowledge import get_nexus_overview
 
     overview = get_nexus_overview()

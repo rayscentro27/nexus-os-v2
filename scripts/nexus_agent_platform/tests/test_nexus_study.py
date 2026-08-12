@@ -306,6 +306,74 @@ class TestStudySecurity:
         assert prov.get("source") == "nexus_study_layer"
 
 
+class TestStudyArtifactRetrieval:
+    def test_snapshot_reads_generated_artifact_counts(self):
+        from nexus_agent_platform.capabilities.nexus_study import get_nexus_study_snapshot
+
+        snap = get_nexus_study_snapshot()
+        assert snap["source_commit"] == "550ae77"
+        assert snap["generated_at"] == "2026-08-12T00:28:35.654892+00:00"
+        assert snap["domains"]["gaps"]["gap_count"] == 46
+        assert len(snap.get("contradictions", [])) == 18
+        assert snap["domains"]["unknowns"]["unknown_count"] == 3
+
+    def test_gap_unknown_business_and_integration_artifacts(self):
+        from nexus_agent_platform.capabilities.nexus_study import (
+            get_business_model_summary,
+            get_integration_inventory,
+            get_nexus_gap_summary,
+            get_nexus_unknowns,
+        )
+
+        gaps = get_nexus_gap_summary()
+        unknowns = get_nexus_unknowns()
+        business = get_business_model_summary()
+        integrations = get_integration_inventory()
+
+        assert gaps["gap_count"] == 46
+        assert gaps["source_commit"] == "550ae77"
+        assert unknowns["unknown_count"] == 3
+        assert [u["unknown_id"] for u in unknowns["unknowns"]] == [
+            "NEXUS-U01", "NEXUS-U02", "NEXUS-U03",
+        ]
+        assert business["offers_count"] == 9
+        assert len(business["operational_revenue_paths"]) == 1
+        assert len(business["planned_revenue_paths"]) == 8
+        assert integrations["connector_count"] == 15
+        assert integrations["live_enabled_count"] == 3
+
+    def test_nexus_system_context_exposes_study_counts(self):
+        from nexus_agent_platform.agents.nova import _format_planner_context
+        from nexus_agent_platform.capabilities.nexus_study import get_nexus_study_snapshot
+
+        context = _format_planner_context({
+            "tool": "nexus_query_planner",
+            "query_type": "nexus_system",
+            "status": "success",
+            "data": get_nexus_study_snapshot(),
+            "coverage": {"structural": True},
+            "plan": {"domain": "nexus_system", "operation": "overview"},
+            "planner_mode": "model",
+            "capability_selected": "get_nexus_study_snapshot",
+            "source_requirement": "structural",
+            "provenance": {
+                "source_type": "study_snapshot_artifact",
+                "freshness": "generated_study_snapshot",
+                "source_commit": "550ae77",
+                "generated_at": "2026-08-12T00:28:35.654892+00:00",
+                "source_ref": "reports/nova_study/nexus_study_snapshot.json",
+            },
+        })
+
+        assert "gap_count: 46" in context
+        assert "contradiction_count: 18" in context
+        assert "unknown_count: 3" in context
+        assert "source_commit: 550ae77" in context
+        assert "NEXUS-U01" in context
+        assert "changed_findings" in context
+        assert "partially_resolved_by_current_runtime_telemetry" in context
+
+
 # ═══════════════════════════════════════════════════════════════
 # PLANNER — nexus_system domain
 # ═══════════════════════════════════════════════════════════════

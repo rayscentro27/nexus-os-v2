@@ -2739,6 +2739,8 @@ def _make_study_handler(capability: str, reader: Callable[..., Dict[str, Any]]) 
                     "handler": f"shared._handle_{capability}",
                     "access_boundary": "approved read capability only",
                     "source_commit": data.get("source_commit"),
+                    "generated_at": data.get("generated_at"),
+                    "source_ref": data.get("source_ref"),
                 },
             }
         except Exception as exc:

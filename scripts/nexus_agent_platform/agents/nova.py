@@ -519,7 +519,6 @@ _PROVENANCE_FOLLOWUP_PATTERNS = re.compile(
     r'(?:configuration|operational|runtime|structural)\s+(?:or|and)\s+(?:real|runtime|operational)|'
     r'source\s+classification|how\s+(?:is|are)\s+(?:that|those)\s+classified|'
     r'which\s+(?:category|level|type)\s+(?:is|are)\s+(?:that|those)|'
-    r'verified\s+execution\s+telemetry|execution\s+telemetry\s+(?:available|unavailable)|'
     r'(?:operational|configuration)\s+or\s+(?:real|runtime|verified))\b',
     re.IGNORECASE,
 )
@@ -1031,6 +1030,108 @@ def _format_planner_context(result: Dict[str, Any]) -> str:
         lines.append(f"has_any_real_execution: {str(data.get('has_any_real_execution', False)).lower()}")
         lines.append(f"telemetry_summary: {data.get('telemetry_summary', 'unknown')}")
         lines.append("")
+
+    elif domain == "nexus_system" and isinstance(data, dict):
+        system = data.get("system", {})
+        domains = data.get("domains", {})
+        gaps = domains.get("gaps", {}) if isinstance(domains, dict) else {}
+        unknowns = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
+        processes = domains.get("processes", {}) if isinstance(domains, dict) else {}
+        business = domains.get("business_model", {}) if isinstance(domains, dict) else {}
+        integrations = domains.get("integrations", {}) if isinstance(domains, dict) else {}
+        contradictions = data.get("contradictions", [])
+        current_runtime = data.get("current_runtime_update", {})
+        reconciliation = data.get("study_current_reconciliation", {})
+
+        gap_records = gaps.get("gaps", []) if isinstance(gaps, dict) else []
+        severity_counts: Dict[str, int] = {}
+        gap_domain_counts: Dict[str, int] = {}
+        for gap in gap_records:
+            severity_counts[str(gap.get("severity", "unknown"))] = severity_counts.get(str(gap.get("severity", "unknown")), 0) + 1
+            gap_domain_counts[str(gap.get("domain", "unknown"))] = gap_domain_counts.get(str(gap.get("domain", "unknown")), 0) + 1
+
+        lines.append("Study snapshot facts:")
+        lines.append(f"  source_ref: {data.get('source_ref', prov.get('source_ref', 'reports/nova_study/nexus_study_snapshot.json'))}")
+        lines.append(f"  source_commit: {data.get('source_commit', prov.get('source_commit'))}")
+        lines.append(f"  generated_at: {data.get('generated_at', prov.get('generated_at'))}")
+        lines.append(f"  system_name: {system.get('name', '?')}")
+        lines.append(f"  agent_count: {system.get('agent_count', '?')}")
+        lines.append(f"  process_count: {system.get('process_count', processes.get('total', '?'))}")
+        lines.append(f"  enabled_processes: {system.get('enabled_processes', processes.get('configuration_counts', {}).get('enabled', '?'))}")
+        lines.append(f"  process_configuration_counts: {processes.get('configuration_counts', {})}")
+        lines.append(f"  process_execution_mode_counts: {processes.get('mode_counts', {})}")
+        lines.append(f"  study_runtime_state_counts: {processes.get('runtime_counts', {})}")
+        lines.append(f"  study_has_real_execution: {str(processes.get('has_real_execution', False)).lower()}")
+        lines.append(f"  offer_count: {business.get('offers_count', '?')}")
+        lines.append(f"  operational_offer_count: {len(business.get('operational_revenue_paths', []))}")
+        lines.append(f"  planned_offer_count: {len(business.get('planned_revenue_paths', []))}")
+        lines.append(f"  integration_count: {integrations.get('connector_count', '?')}")
+        lines.append(f"  live_integration_count: {integrations.get('live_enabled_count', '?')}")
+        lines.append(f"  integration_status_counts: {integrations.get('status_counts', {})}")
+        lines.append(f"  gap_count: {gaps.get('gap_count', 0)}")
+        lines.append(f"  gap_severity_counts: {severity_counts}")
+        lines.append(f"  gap_domain_counts: {gap_domain_counts}")
+        lines.append(f"  contradiction_count: {len(contradictions)}")
+        lines.append(f"  unknown_count: {unknowns.get('unknown_count', 0)}")
+        lines.append("")
+
+        if gap_records:
+            lines.append("Study gap records (first 12, preserve ids/titles/evidence):")
+            for gap in gap_records[:12]:
+                lines.append(f"  - {gap.get('gap_id', '?')}: {gap.get('title', '?')}")
+                lines.append(f"      domain: {gap.get('domain', '?')}")
+                lines.append(f"      severity: {gap.get('severity', '?')}")
+                lines.append(f"      evidence: {gap.get('evidence', '?')}")
+            lines.append("")
+
+        if contradictions:
+            lines.append("Study contradictions (all records):")
+            for contradiction in contradictions:
+                lines.append(
+                    "  - "
+                    f"kind={contradiction.get('kind', '?')} "
+                    f"entity={contradiction.get('entity', '?')} "
+                    f"registry={contradiction.get('registry', '?')} "
+                    f"runtime={contradiction.get('runtime', '?')} "
+                    f"interpretation={contradiction.get('interpretation', '?')}"
+                )
+            lines.append("")
+
+        unknown_records = unknowns.get("unknowns", []) if isinstance(unknowns, dict) else []
+        if unknown_records:
+            lines.append("Study unknowns:")
+            for unknown in unknown_records:
+                lines.append(f"  - {unknown.get('unknown_id', '?')}: {unknown.get('title', '?')}")
+                lines.append(f"      domain: {unknown.get('domain', '?')}")
+                lines.append(f"      evidence_status: {unknown.get('evidence_status', '?')}")
+                lines.append(f"      recommended_step: {unknown.get('recommended_step', '?')}")
+            lines.append("")
+
+        if current_runtime:
+            lines.append("Current runtime telemetry update (separate from historical study snapshot):")
+            lines.append(f"  telemetry_available_now: {str(current_runtime.get('telemetry_available_now', False)).lower()}")
+            lines.append(f"  event_count_24h: {current_runtime.get('event_count_24h', 0)}")
+            lines.append(f"  current_summary: {current_runtime.get('summary', {})}")
+            lines.append(f"  current_coverage: {current_runtime.get('coverage', {})}")
+            lines.append("")
+
+        if reconciliation:
+            lines.append("Study/current reconciliation:")
+            lines.append(f"  study_has_real_execution: {str(reconciliation.get('study_has_real_execution', False)).lower()}")
+            lines.append(
+                "  current_has_verified_execution_telemetry: "
+                f"{str(reconciliation.get('current_has_verified_execution_telemetry', False)).lower()}"
+            )
+            changed = reconciliation.get("changed_findings", [])
+            if changed:
+                lines.append("  changed_findings:")
+                for item in changed:
+                    lines.append(f"    - {item.get('id', '?')}: {item.get('title', '?')}")
+                    lines.append(f"        study_state: {item.get('study_state', '?')}")
+                    lines.append(f"        current_state: {item.get('current_state', '?')}")
+                    lines.append(f"        status: {item.get('status', '?')}")
+            lines.append(f"  note: {reconciliation.get('note', '')}")
+            lines.append("")
 
     elif domain == "runtime_execution" and isinstance(data, dict):
         summary = data.get("summary", {})
@@ -3163,6 +3264,16 @@ def _build_context(state: AgentState) -> AgentState:
                     "Do not treat worker_poll as proof that user work or a Telegram message was processed; "
                     "Telegram message processing requires execution_type=telegram_update_run. "
                 )
+            study_instruction = ""
+            if capability_result.get("query_type") == "nexus_system":
+                study_instruction = (
+                    "For Nexus study questions, answer from the Study snapshot facts exactly. "
+                    "Do not invent gap, contradiction, unknown, integration, or offer categories. "
+                    "Preserve the study counts, unknown IDs, source_commit, and generated_at when relevant. "
+                    "Treat the study snapshot as historical; if current runtime telemetry is included, "
+                    "label it separately from the study snapshot. "
+                    "For stale or changed study findings, use the Study/current reconciliation block first. "
+                )
             user_content = (
                 f"{state.user_message}\n\n"
                 f"{planner_context}\n\n"
@@ -3179,6 +3290,7 @@ def _build_context(state: AgentState) -> AgentState:
                 f"If you state a category count and present the category as a list, include every matching record "
                 f"or explicitly say which names were omitted. "
                 f"{telemetry_instruction}"
+                f"{study_instruction}"
             )
         else:
             verified_context = _format_verified_context(capability_result)

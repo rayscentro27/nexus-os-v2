@@ -164,12 +164,21 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "capability": "get_nexus_overview",
     },
     "nexus_system": {
-        "description": "Nexus study — broad system discovery across architecture, agents, tools, processes, product, business model, integrations, and gaps",
+        "description": (
+            "Nexus study snapshot — study-derived findings from reports/nova_study, including what Nova learned, "
+            "gap counts, contradiction counts, unknowns, recommendations, integrations, offers, source_commit, "
+            "generated_at, and current-vs-study freshness reconciliation. Use this for questions about my study, "
+            "what I learned, study findings, gaps/contradictions/unknowns from the study, or concrete study numbers."
+        ),
         "fields": {
             "domain": {"type": "string", "values": "any"},
             "product_count": {"type": "integer", "values": "any"},
             "connector_count": {"type": "integer", "values": "any"},
             "gap_count": {"type": "integer", "values": "any"},
+            "contradiction_count": {"type": "integer", "values": "any"},
+            "unknown_count": {"type": "integer", "values": "any"},
+            "source_commit": {"type": "string", "values": "any"},
+            "generated_at": {"type": "datetime", "values": "any"},
             "stripe_live_mode_allowed": {"type": "boolean", "values": [True, False]},
         },
         "operations": ["overview", "lookup", "compare", "summarize", "explain", "find_gaps", "recommend"],
@@ -243,6 +252,16 @@ Examples of Nexus questions (and their domains):
 - "When did System Health Check last run?" → runtime_execution
 - "Which worker executed the most recent run?" → runtime_execution
 - "Which enabled processes have no verified run today?" → runtime_execution
+- "What did you learn about Nexus?" → nexus_system
+- "What did your study uncover?" → nexus_system
+- "Based on your Nexus study, how many gaps, contradictions, and unknowns did you identify?" → nexus_system
+- "What were the three unknowns from your study?" → nexus_system
+- "How many offers did the study find operational versus planned?" → nexus_system
+- "How many integrations did you study, and how many were live?" → nexus_system
+- "Was verified execution telemetry available when the study snapshot was made?" → nexus_system
+- "Is verified execution telemetry available now?" → runtime_execution
+- "What has changed since your study snapshot?" → nexus_system
+- "Which study findings are stale now?" → nexus_system
 - "What's the overview?" → overview
 - "Which of those are simulated?" → processes (follow-up filter)
 - "Is that configuration or operational state?" → provenance (follow-up clarification)
@@ -1082,9 +1101,20 @@ def _format_nexus_system_data(data: Dict, plan: Dict) -> List[str]:
     lines.append(f"System: {system.get('name', '?')}")
     lines.append(f"Purpose: {system.get('purpose', '?')}")
     lines.append(f"Agents: {system.get('agent_count', 0)} | Processes: {system.get('process_count', 0)} | Enabled: {system.get('enabled_processes', 0)}")
+    lines.append(f"Source commit: {data.get('source_commit', '?')}")
+    lines.append(f"Generated at: {data.get('generated_at', '?')}")
 
     operation = plan.get("operation", "overview")
     domains = data.get("domains", {})
+    gaps_domain = domains.get("gaps", {}) if isinstance(domains, dict) else {}
+    unknowns_domain = domains.get("unknowns", {}) if isinstance(domains, dict) else {}
+    contradictions = data.get("contradictions", [])
+    lines.append(
+        "Study counts: "
+        f"gaps={gaps_domain.get('gap_count', 0)} "
+        f"contradictions={len(contradictions)} "
+        f"unknowns={unknowns_domain.get('unknown_count', 0)}"
+    )
 
     if operation in ("overview", "summarize", "lookup", "explain"):
         # Bounded key facts per study domain
@@ -1137,13 +1167,16 @@ def _format_nexus_system_data(data: Dict, plan: Dict) -> List[str]:
 
     # Operation-specific blocks
     if operation == "find_gaps":
-        gaps = []
-        for d in domains.values():
-            if isinstance(d, dict) and d.get("gaps"):
-                gaps.extend(d["gaps"])
+        gaps = gaps_domain.get("gaps", []) if isinstance(gaps_domain, dict) else []
         lines.append(f"Identified gaps: {len(gaps)}")
         for g in gaps[:8]:
             lines.append(f"  - {g.get('gap_id', '?')} [{g.get('domain', '?')}] {g.get('title', '?')}")
+
+    unknowns = unknowns_domain.get("unknowns", []) if isinstance(unknowns_domain, dict) else []
+    if unknowns:
+        lines.append("Unknowns:")
+        for u in unknowns[:5]:
+            lines.append(f"  - {u.get('unknown_id', '?')}: {u.get('title', '?')}")
 
     if operation == "recommend":
         if isinstance(data.get("recommendations"), list):
