@@ -163,6 +163,18 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "operations": ["overview"],
         "capability": "get_nexus_overview",
     },
+    "nexus_system": {
+        "description": "Nexus study — broad system discovery across architecture, agents, tools, processes, product, business model, integrations, and gaps",
+        "fields": {
+            "domain": {"type": "string", "values": "any"},
+            "product_count": {"type": "integer", "values": "any"},
+            "connector_count": {"type": "integer", "values": "any"},
+            "gap_count": {"type": "integer", "values": "any"},
+            "stripe_live_mode_allowed": {"type": "boolean", "values": [True, False]},
+        },
+        "operations": ["overview", "lookup", "compare", "summarize", "explain", "find_gaps", "recommend"],
+        "capability": "get_nexus_study_snapshot",
+    },
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -172,6 +184,7 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
 ALLOWED_OPERATIONS = {
     "overview", "list", "filter", "count", "group_count",
     "lookup", "compare", "summarize", "provenance",
+    "explain", "find_gaps", "recommend",
 }
 
 ALLOWED_OPERATORS = {"eq", "neq", "in", "not_in", "contains", "exists"}
@@ -194,6 +207,7 @@ SOURCE_REQUIREMENTS = {
     "runtime_execution": "execution_telemetry",
     "incomplete_areas": "structural",
     "overview": "structural",
+    "nexus_system": "structural",
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -847,6 +861,8 @@ def format_plan_result(result: Dict[str, Any]) -> str:
         lines.extend(_format_incomplete_data(data))
     elif domain == "overview":
         lines.extend(_format_overview_data(data))
+    elif domain == "nexus_system":
+        lines.extend(_format_nexus_system_data(data, plan))
     else:
         lines.append(f"data: {json.dumps(data, default=str)[:500]}")
 
@@ -1056,4 +1072,87 @@ def _format_overview_data(data: Dict) -> List[str]:
     lines.append(f"System: {data.get('system_name', '?')} v{data.get('version', '?')}")
     lines.append(f"Agents: {data.get('agent_count', 0)}")
     lines.append(f"Processes: {data.get('process_count', 0)}")
+    return lines
+
+
+def _format_nexus_system_data(data: Dict, plan: Dict) -> List[str]:
+    """Format a bounded nexus_system study snapshot for Nova context."""
+    lines = []
+    system = data.get("system", {})
+    lines.append(f"System: {system.get('name', '?')}")
+    lines.append(f"Purpose: {system.get('purpose', '?')}")
+    lines.append(f"Agents: {system.get('agent_count', 0)} | Processes: {system.get('process_count', 0)} | Enabled: {system.get('enabled_processes', 0)}")
+
+    operation = plan.get("operation", "overview")
+    domains = data.get("domains", {})
+
+    if operation in ("overview", "summarize", "lookup", "explain"):
+        # Bounded key facts per study domain
+        summaries = {
+            "system_architecture": lambda d: (
+                f"Architecture: {d.get('architecture', '?')} | runtime: {d.get('runtime_model', '?')}"
+            ),
+            "agents": lambda d: (
+                f"Agents: {len(d.get('agents', []))} total"
+            ),
+            "tools": lambda d: (
+                f"Tools: total={d.get('total', 0)} counts={d.get('counts', {})}"
+            ),
+            "processes": lambda d: (
+                f"Processes: total={d.get('total', 0)} "
+                f"config={d.get('configuration_counts', {})} "
+                f"runtime={d.get('runtime_counts', {})} "
+                f"has_real_execution={str(d.get('has_real_execution', False)).lower()}"
+            ),
+            "product": lambda d: (
+                f"Products: {d.get('product_count', 0)} offers "
+                f"stripe={d.get('stripe', {}).get('mode', '?')}"
+            ),
+            "client_workflow": lambda d: (
+                f"Client journey: stages={d.get('funnel_stage_count', len(d.get('funnel_stages', [])))}"
+            ),
+            "business_model": lambda d: (
+                f"Business: {d.get('offers_count', 0)} offers | operational={len(d.get('operational_revenue_paths', []))} | "
+                f"planned={len(d.get('planned_revenue_paths', []))} | "
+                f"stripe_live={str(d.get('stripe_live_mode_allowed', '?')).lower()}"
+            ),
+            "integrations": lambda d: (
+                f"Integrations: {d.get('connector_count', 0)} connectors | "
+                f"live={d.get('live_enabled_count', 0)} | "
+                f"status={d.get('status_counts', {})}"
+            ),
+            "security": lambda d: (
+                f"Security: nova_reads={d.get('nova_read_capability_count', 0)} "
+                f"nova_writes={d.get('nova_write_capability_count', 0)} "
+                f"writes_frozen={str(d.get('nova_writes_frozen', '?')).lower()}"
+            ),
+        }
+        for domain_name, fmt in summaries.items():
+            d = domains.get(domain_name, {})
+            if isinstance(d, dict) and d.get("status") == "success":
+                try:
+                    lines.append(f"- {domain_name}: {fmt(d)}")
+                except Exception:
+                    lines.append(f"- {domain_name}: unavailable")
+
+    # Operation-specific blocks
+    if operation == "find_gaps":
+        gaps = []
+        for d in domains.values():
+            if isinstance(d, dict) and d.get("gaps"):
+                gaps.extend(d["gaps"])
+        lines.append(f"Identified gaps: {len(gaps)}")
+        for g in gaps[:8]:
+            lines.append(f"  - {g.get('gap_id', '?')} [{g.get('domain', '?')}] {g.get('title', '?')}")
+
+    if operation == "recommend":
+        if isinstance(data.get("recommendations"), list):
+            for rec in data["recommendations"][:8]:
+                lines.append(f"  - {rec.get('title', '?')}")
+
+    errors = data.get("errors", {})
+    if errors:
+        lines.append(f"Study errors: {', '.join(errors.keys())}")
+
+    lines.append(f"Source commit: {data.get('source_commit', 'unknown')}")
     return lines

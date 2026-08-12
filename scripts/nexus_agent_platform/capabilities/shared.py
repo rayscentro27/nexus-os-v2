@@ -35,6 +35,25 @@ from nexus_agent_platform.capabilities.nexus_knowledge import (
     get_incomplete_areas as _nk_get_incomplete_areas,
 )
 
+from nexus_agent_platform.capabilities.nexus_study import (
+    get_architecture_summary as _st_architecture_summary,
+    get_agent_inventory as _st_agent_inventory,
+    get_tool_inventory as _st_tool_inventory,
+    get_process_inventory as _st_process_inventory,
+    get_runtime_execution_summary as _st_runtime_execution_summary,
+    get_product_inventory as _st_product_inventory,
+    get_client_workflow_summary as _st_client_workflow_summary,
+    get_business_model_summary as _st_business_model_summary,
+    get_integration_inventory as _st_integration_inventory,
+    get_security_boundary_summary as _st_security_boundary_summary,
+    get_repo_system_map as _st_repo_system_map,
+    get_recent_system_changes as _st_recent_system_changes,
+    get_safe_report_index as _st_safe_report_index,
+    get_nexus_gap_summary as _st_nexus_gap_summary,
+    get_nexus_unknowns as _st_nexus_unknowns,
+    get_nexus_study_snapshot as _st_nexus_study_snapshot,
+)
+
 # ─── Agent Permission Profiles ─────────────────────────────
 # Code-enforced capability allowlists per agent.
 
@@ -71,6 +90,23 @@ NOVA_ALLOWED_READS = frozenset({
     "get_runtime_telemetry_health",
     "get_nexus_datetime",
     "get_incomplete_areas",
+    # Nexus Study Layer (governed read-only system discovery)
+    "get_architecture_summary",
+    "get_agent_inventory",
+    "get_tool_inventory",
+    "get_process_inventory",
+    "get_runtime_execution_summary",
+    "get_product_inventory",
+    "get_client_workflow_summary",
+    "get_business_model_summary",
+    "get_integration_inventory",
+    "get_security_boundary_summary",
+    "get_repo_system_map",
+    "get_recent_system_changes",
+    "get_safe_report_index",
+    "get_nexus_gap_summary",
+    "get_nexus_unknowns",
+    "get_nexus_study_snapshot",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -2649,6 +2685,86 @@ def _handle_incomplete_areas(
         }
 
 
+# ─── Nexus Study Handlers ───────────────────────────────────
+# Governed read-only system discovery. All reads bounded + provenance-tagged.
+# NO writes, NO arbitrary execution, NO credential/PII exposure.
+
+_STUDY_HANDLERS: Dict[str, Callable[[], Dict[str, Any]]] = {
+    "get_architecture_summary": _st_architecture_summary,
+    "get_agent_inventory": _st_agent_inventory,
+    "get_tool_inventory": _st_tool_inventory,
+    "get_process_inventory": _st_process_inventory,
+    "get_product_inventory": _st_product_inventory,
+    "get_client_workflow_summary": _st_client_workflow_summary,
+    "get_business_model_summary": _st_business_model_summary,
+    "get_integration_inventory": _st_integration_inventory,
+    "get_security_boundary_summary": _st_security_boundary_summary,
+    "get_repo_system_map": _st_repo_system_map,
+    "get_recent_system_changes": _st_recent_system_changes,
+    "get_safe_report_index": _st_safe_report_index,
+    "get_nexus_gap_summary": _st_nexus_gap_summary,
+    "get_nexus_unknowns": _st_nexus_unknowns,
+    "get_nexus_study_snapshot": _st_nexus_study_snapshot,
+}
+
+
+def _make_study_handler(capability: str, reader: Callable[..., Dict[str, Any]]) -> Callable:
+    """Build a standardized study handler that wraps a bounded reader."""
+    def _handle(
+        arguments: Optional[Dict[str, Any]] = None,
+        trace_id: str = "",
+    ) -> Dict[str, Any]:
+        try:
+            if capability == "get_recent_system_changes":
+                limit = int((arguments or {}).get("limit", 10))
+                data = reader(limit=limit)
+            else:
+                data = reader()
+            return {
+                "status": "success",
+                "capability": capability,
+                "source": "nexus_study_layer",
+                "source_type": data.get("source_type", "study_read"),
+                "freshness": data.get("freshness", "current_commit"),
+                "access_boundary": "approved read capability only",
+                "data": data,
+                "error": None,
+                "provenance": {
+                    "capability": capability,
+                    "status": "success",
+                    "source": "nexus_study_layer",
+                    "source_type": data.get("source_type", "study_read"),
+                    "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                    "freshness": data.get("freshness", "current_commit"),
+                    "handler": f"shared._handle_{capability}",
+                    "access_boundary": "approved read capability only",
+                    "source_commit": data.get("source_commit"),
+                },
+            }
+        except Exception as exc:
+            log.error("%s failed: %s", capability, exc)
+            return {
+                "status": "error",
+                "capability": capability,
+                "source": "nexus_study_layer",
+                "source_type": "study_read",
+                "freshness": "unknown",
+                "access_boundary": "approved read capability only",
+                "data": {},
+                "error": str(exc),
+                "provenance": {
+                    "capability": capability,
+                    "status": "error",
+                    "source": "nexus_study_layer",
+                    "source_type": "study_read",
+                    "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                    "freshness": "unknown",
+                    "handler": f"shared._handle_{capability}",
+                },
+            }
+    return _handle
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -2684,6 +2800,11 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_runtime_telemetry_health": lambda args, tid: _handle_runtime_telemetry_health(args, tid),
     "get_nexus_datetime": lambda args, tid: _handle_nexus_datetime(args, tid),
     "get_incomplete_areas": lambda args, tid: _handle_incomplete_areas(args, tid),
+    # Nexus Study Layer
+    **{
+        cap: _make_study_handler(cap, reader)
+        for cap, reader in _STUDY_HANDLERS.items()
+    },
 }
 
 _WRITE_CAPABILITIES: frozenset = frozenset()

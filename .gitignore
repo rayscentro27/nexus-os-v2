@@ -12,6 +12,7 @@ build/
 logs/
 outputs/
 reports/runtime/
+reports/nova_study/
 receipts/
 secrets/
 *.key

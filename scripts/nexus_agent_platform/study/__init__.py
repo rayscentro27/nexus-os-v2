@@ -1,0 +1,1 @@
+"""Bounded governed Nexus study runner — read-only system discovery."""
