@@ -109,9 +109,28 @@ NOVA_ALLOWED_READS = frozenset({
     "get_nexus_unknowns",
     "get_nexus_study_snapshot",
     "get_nexus_study_overview",
+    # Governed operating loop — narrow action/approval/work-order capabilities
+    "get_available_actions",
+    "get_approval_status",
+    "get_work_order_status",
+    "get_work_order_result",
+    "get_recent_work_orders",
+    "get_work_queue",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
+
+# Narrow governed-intent capabilities for Nova. These are NOT general writes:
+# they only create bounded, schema-conforming recommendation / approval records.
+# They are explicitly kept out of NOVA_ALLOWED_WRITES (which remains empty).
+NOVA_GOVERNED_INTENTS = frozenset({
+    "prepare_action_recommendation",
+    "create_approval_request",
+    "resolve_governed_approval",
+    "create_work_order_from_approval",
+})
+
+GOVERNED_INTENT_AGENT = "hermes_nova"
 
 HERMES_ALLOWED_READS = frozenset({
     "get_client_count",
@@ -2770,6 +2789,159 @@ def _make_study_handler(capability: str, reader: Callable[..., Dict[str, Any]]) 
     return _handle
 
 
+# ─── Governed Loop Handlers (narrow, bounded) ──────────────
+# These create only bounded recommendation/approval records or read governed
+# state. NO general writes. NO execution capability for Nova.
+
+_GOVERNED_READ_HANDLERS: Dict[str, Callable[..., Dict[str, Any]]] = {
+    "get_available_actions": lambda args, tid: _handle_get_available_actions(args, tid),
+    "get_approval_status": lambda args, tid: _handle_get_approval_status(args, tid),
+    "get_work_order_status": lambda args, tid: _handle_get_work_order_status(args, tid),
+    "get_work_order_result": lambda args, tid: _handle_get_work_order_result(args, tid),
+    "get_recent_work_orders": lambda args, tid: _handle_get_recent_work_orders(args, tid),
+    "get_work_queue": lambda args, tid: _handle_get_work_queue(args, tid),
+}
+
+_GOVERNED_INTENT_HANDLERS: Dict[str, Callable[..., Dict[str, Any]]] = {
+    "prepare_action_recommendation": lambda args, tid: _handle_prepare_recommendation(args, tid),
+    "create_approval_request": lambda args, tid: _handle_create_approval_request(args, tid),
+    "resolve_governed_approval": lambda args, tid: _handle_resolve_governed_approval(args, tid),
+    "create_work_order_from_approval": lambda args, tid: _handle_create_work_order_from_approval(args, tid),
+}
+
+
+def _governed_envelope(capability: str, fn: Callable[[], Dict[str, Any]], trace_id: str) -> Dict[str, Any]:
+    try:
+        data = fn()
+        return {
+            "status": data.get("status", "success"),
+            "capability": capability,
+            "source": "nexus_governed_layer",
+            "source_type": "governed_action",
+            "freshness": "live",
+            "access_boundary": "governed capability only",
+            "data": data,
+            "error": data.get("error"),
+            "provenance": {
+                "capability": capability,
+                "status": data.get("status", "success"),
+                "source": "nexus_governed_layer",
+                "source_type": "governed_action",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "trace_id": trace_id,
+                "handler": f"shared._handle_{capability}",
+            },
+        }
+    except Exception as exc:
+        log.error("%s failed: %s", capability, exc)
+        return {
+            "status": "error",
+            "capability": capability,
+            "source": "nexus_governed_layer",
+            "source_type": "governed_action",
+            "freshness": "unknown",
+            "access_boundary": "governed capability only",
+            "data": {},
+            "error": str(exc),
+            "provenance": {
+                "capability": capability,
+                "status": "error",
+                "source": "nexus_governed_layer",
+                "source_type": "governed_action",
+                "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                "trace_id": trace_id,
+                "handler": f"shared._handle_{capability}",
+            },
+        }
+
+
+def _handle_get_available_actions(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import get_available_actions
+    return _governed_envelope("get_available_actions", get_available_actions, trace_id)
+
+
+def _handle_get_approval_status(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import get_approval_status
+    aid = (arguments or {}).get("approval_id")
+    return _governed_envelope("get_approval_status", lambda: get_approval_status(aid), trace_id)
+
+
+def _handle_get_work_order_status(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import get_work_order_status
+    wo_id = (arguments or {}).get("work_order_id") or ""
+    return _governed_envelope("get_work_order_status", lambda: get_work_order_status(wo_id), trace_id)
+
+
+def _handle_get_work_order_result(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import get_work_order_result
+    wo_id = (arguments or {}).get("work_order_id") or ""
+    return _governed_envelope("get_work_order_result", lambda: get_work_order_result(wo_id), trace_id)
+
+
+def _handle_get_recent_work_orders(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import get_recent_work_orders
+    limit = int((arguments or {}).get("limit", 10))
+    status = (arguments or {}).get("status")
+    return _governed_envelope("get_recent_work_orders", lambda: get_recent_work_orders(limit=limit, status=status), trace_id)
+
+
+def _handle_get_work_queue(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import get_work_queue
+    limit = int((arguments or {}).get("limit", 50))
+    status = (arguments or {}).get("status")
+    return _governed_envelope("get_work_queue", lambda: get_work_queue(limit=limit, status=status), trace_id)
+
+
+def _handle_prepare_recommendation(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import prepare_action_recommendation
+    args = arguments or {}
+    return _governed_envelope("prepare_action_recommendation", lambda: prepare_action_recommendation(
+        title=str(args.get("title", "")),
+        problem=str(args.get("problem", "")),
+        recommended_action_id=args.get("recommended_action_id"),
+        reason=str(args.get("reason", "")),
+        evidence=args.get("evidence") or [],
+        expected_outcome=str(args.get("expected_outcome", "")),
+        risk_level=str(args.get("risk_level", "low")),
+        dependencies=args.get("dependencies"),
+        confidence=str(args.get("confidence", "medium")),
+        source=str(args.get("source", "hermes_nova")),
+    ), trace_id)
+
+
+def _handle_create_approval_request(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import create_approval_request
+    args = arguments or {}
+    return _governed_envelope("create_approval_request", lambda: create_approval_request(
+        action_id=str(args.get("action_id", "")),
+        action_summary=str(args.get("action_summary", "")),
+        input_summary=args.get("input_summary"),
+        recommendation_id=args.get("recommendation_id"),
+        evidence_refs=args.get("evidence_refs"),
+    ), trace_id)
+
+
+def _handle_resolve_governed_approval(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import resolve_governed_approval
+    args = arguments or {}
+    return _governed_envelope("resolve_governed_approval", lambda: resolve_governed_approval(
+        approval_id=str(args.get("approval_id", "")),
+        decision=str(args.get("decision", "")),
+        resolved_by=str(args.get("resolved_by", "ray")),
+    ), trace_id)
+
+
+def _handle_create_work_order_from_approval(arguments, trace_id):
+    from nexus_agent_platform.governed.actions_api import create_work_order_from_approval
+    args = arguments or {}
+    return _governed_envelope("create_work_order_from_approval", lambda: create_work_order_from_approval(
+        approval_id=str(args.get("approval_id", "")),
+        inputs=args.get("inputs"),
+        expected_outcome=str(args.get("expected_outcome", "")),
+        recommendation_id=args.get("recommendation_id"),
+    ), trace_id)
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -2810,6 +2982,9 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
         cap: _make_study_handler(cap, reader)
         for cap, reader in _STUDY_HANDLERS.items()
     },
+    # Governed operating loop (narrow reads + narrow intents)
+    **{cap: handler for cap, handler in _GOVERNED_READ_HANDLERS.items()},
+    **{cap: handler for cap, handler in _GOVERNED_INTENT_HANDLERS.items()},
 }
 
 _WRITE_CAPABILITIES: frozenset = frozenset()
@@ -2831,6 +3006,77 @@ def execute_shared_capability(
     """
     if not trace_id:
         trace_id = f"shared_{agent_id}_{capability}_{int(time.time())}"
+
+    # ── Governed intents: narrow record-creating capabilities ──
+    # These are NOT arbitrary writes. They only create bounded, schema-conforming
+    # recommendation / approval records, and only for the governed agent.
+    if capability in NOVA_GOVERNED_INTENTS:
+        if agent_id != GOVERNED_INTENT_AGENT:
+            return {
+                "status": "unauthorized",
+                "capability": capability,
+                "source": "permission_registry",
+                "source_type": "governed_action",
+                "freshness": "live",
+                "access_boundary": "governed capability only",
+                "data": {},
+                "error": f"Governed intents are only available to {GOVERNED_INTENT_AGENT}.",
+                "provenance": {
+                    "capability": capability,
+                    "status": "unauthorized",
+                    "source": "permission_registry",
+                    "source_type": "governed_action",
+                    "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                    "trace_id": trace_id,
+                },
+            }
+        handler = _GOVERNED_INTENT_HANDLERS.get(capability)
+        if handler is None:
+            return {
+                "status": "unavailable",
+                "capability": capability,
+                "source": "capability_registry",
+                "source_type": "governed_action",
+                "freshness": "live",
+                "access_boundary": "governed capability only",
+                "data": {},
+                "error": f"No governed intent handler registered for '{capability}'.",
+                "provenance": {
+                    "capability": capability,
+                    "status": "unavailable",
+                    "source": "capability_registry",
+                    "source_type": "governed_action",
+                    "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                    "trace_id": trace_id,
+                },
+            }
+        try:
+            result = handler(arguments, trace_id)
+            prov = result.get("provenance", {})
+            if trace_id:
+                prov["trace_id"] = trace_id
+                result["provenance"] = prov
+            return result
+        except Exception as exc:
+            log.error("Governed intent %s failed: %s", capability, exc)
+            return {
+                "status": "error",
+                "capability": capability,
+                "source": "nexus_governed_layer",
+                "source_type": "governed_action",
+                "freshness": "unknown",
+                "access_boundary": "governed capability only",
+                "data": {},
+                "error": str(exc),
+                "provenance": {
+                    "capability": capability,
+                    "status": "error",
+                    "source": "nexus_governed_layer",
+                    "source_type": "governed_action",
+                    "retrieved_at": datetime.now(timezone.utc).isoformat(),
+                    "trace_id": trace_id,
+                },
+            }
 
     is_write = capability in _WRITE_CAPABILITIES
 

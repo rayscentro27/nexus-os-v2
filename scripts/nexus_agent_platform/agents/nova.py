@@ -529,6 +529,36 @@ def _detect_provenance_followup(text: str) -> bool:
     return bool(_PROVENANCE_FOLLOWUP_PATTERNS.search(text))
 
 
+# Strong, action-bound approval phrases. Bare words like "yes" or "ok" are NOT
+# sufficient to resolve a governed approval — Nova must never auto-launch or
+# auto-approve on casual conversation.
+_STRONG_APPROVE_PATTERNS = re.compile(
+    r'\b(?:approve|approved|confirm|confirmed|yes\,?\s*run\s*it|yes\,?\s*please\s*run\s*it|'
+    r'run\s+it|execute\s+it|go\s+ahead|proceed|yes\s+run|execute\s+the\s+approved|'
+    r'run\s+the\s+approved|i\s+approve)\b',
+    re.I,
+)
+_STRONG_REJECT_PATTERNS = re.compile(
+    r'\b(?:reject|rejected|deny|denied|do\s+not\s+run|don\s*t\s+run|dont\s+run|'
+    r'cancel\s+approval|no\s+run)\b',
+    re.I,
+)
+
+
+def _detect_governed_approval_continuity(text: str) -> Optional[str]:
+    """Return 'approve' or 'reject' if Ray used an action-bound explicit phrase.
+
+    Returns None for bare assent/negation or unrelated messages. The actual
+    resolution still requires exactly one persisted pending approval scoped to
+    this chat — see governed/resolution.py.
+    """
+    if _STRONG_APPROVE_PATTERNS.search(text):
+        return "approve"
+    if _STRONG_REJECT_PATTERNS.search(text):
+        return "reject"
+    return None
+
+
 def _detect_write_request(text: str) -> Optional[Dict[str, Any]]:
     """Detect if the user is requesting a write operation.
 
@@ -3136,6 +3166,100 @@ def _capability_gate(state: AgentState) -> AgentState:
             "trace_id": trace_id,
         }
         return state
+
+    # ── Priority 2.25: Governed approval continuity ──
+    # Ray explicitly approved/rejected an action Nova recommended in this chat.
+    # Requires an action-bound phrase AND exactly one pending approval scoped to
+    # this chat. Ambiguity or casual assent never resolves anything.
+    governed_continuity = _detect_governed_approval_continuity(text)
+    if governed_continuity:
+        try:
+            from nexus_agent_platform.governed import resolution as governed_resolution
+            from nexus_agent_platform.governed.actions_api import create_work_order_from_approval
+
+            res = governed_resolution.resolve_approval_intent(
+                text,
+                chat_id=chat_id,
+                decision=governed_continuity,
+            )
+            if res.verdict == "resolved":
+                rendered = [
+                    f"{res.approval.get('approval_id')} — {res.approval.get('action_summary')} "
+                    f"(risk {res.approval.get('risk_level')})"
+                ]
+                if governed_continuity == "approve":
+                    try:
+                        wo_result = create_work_order_from_approval(res.approval["approval_id"])
+                        rendered.append(
+                            f"Approved. Work order {wo_result.get('work_order_id')} is queued and awaiting execution."
+                        )
+                    except Exception as woe:
+                        rendered.append(f"Approved, but the work order could not be queued: {woe}")
+                else:
+                    rendered.append("Rejected — no work order will be created.")
+                state.metadata["capability_gate"] = {
+                    "decision": "governed_approval_continuity",
+                    "capability": "resolve_governed_approval",
+                    "intent": governed_continuity,
+                    "approval_id": res.approval.get("approval_id"),
+                    "build_sha": BUILD_SHA,
+                    "trace_id": trace_id,
+                }
+                state.metadata["capability_result"] = {
+                    "tool": "nexus_governed_layer",
+                    "query_type": f"governed_{governed_continuity}",
+                    "status": "resolved",
+                    "data": {
+                        "approval_id": res.approval.get("approval_id"),
+                        "verdict": res.verdict,
+                        "resolution": res.resolution,
+                    },
+                    "provenance": {
+                        "capability": "resolve_governed_approval",
+                        "source_type": "governed_action",
+                        "source": "governed_resolution",
+                        "status": "resolved",
+                        "trace_id": trace_id,
+                    },
+                    "trace_id": trace_id,
+                }
+                save_provenance(chat_id, {
+                    "tool": "nexus_governed_layer",
+                    "domain": "governed_action",
+                    "operation": f"resolve_{governed_continuity}",
+                    "source_type": "governed_action",
+                    "status": "resolved",
+                    "approval_id": res.approval.get("approval_id"),
+                    "trace_id": trace_id,
+                })
+                state.metadata["governed_continuity"] = {
+                    "intent": governed_continuity,
+                    "approval_id": res.approval.get("approval_id"),
+                    "pending_detail": "; ".join(rendered),
+                }
+                state.assistant_response = " ".join(rendered)
+                return state
+            if res.verdict == "ambiguous":
+                state.metadata["capability_gate"] = {
+                    "decision": "governed_ambiguity",
+                    "capability": "resolve_governed_approval",
+                    "intent": governed_continuity,
+                    "build_sha": BUILD_SHA,
+                    "trace_id": trace_id,
+                }
+                state.metadata["capability_result"] = {
+                    "tool": "nexus_governed_layer",
+                    "query_type": f"governed_{governed_continuity}",
+                    "status": "ambiguous",
+                    "data": {"candidates": res.candidates},
+                    "trace_id": trace_id,
+                }
+                state.assistant_response = " ".join(governed_resolution.fmt_ambiguity(res.candidates).splitlines())
+                return state
+            # none_pending / not_explicit / invalid → fall through to planner/model.
+            # Non-explicit messages like "yes" or "ok" never resolve approvals.
+        except Exception as exc:
+            log.debug("Governed continuity skipped: %s", exc)
 
     # ── Priority 2.5: Semantic query planner ──
     # Try the schema-aware planner before keyword routing.

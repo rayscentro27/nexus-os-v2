@@ -38,3 +38,4 @@ _incoming/
 
 data/private/
 data/runtime/execution_telemetry/
+data/governed/

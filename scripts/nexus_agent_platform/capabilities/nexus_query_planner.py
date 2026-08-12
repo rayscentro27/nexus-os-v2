@@ -189,6 +189,35 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "unknowns": "get_nexus_unknowns",
         },
     },
+    "governed_action": {
+        "description": (
+            "Nexus governed operating loop — what Nova is allowed to safely recommend, approvals waiting "
+            "for Ray, work order states, results, and governed action history. Use for questions about what "
+            "actions Nova can perform, pending approvals, work order status, work order results, and recent "
+            "governed work. Do NOT use for arbitrary writes or execution intent."
+        ),
+        "fields": {
+            "action_id": {"type": "string", "values": "any"},
+            "executable": {"type": "boolean", "values": [True, False]},
+            "risk_level": {"type": "enum", "values": ["low", "moderate", "high", "prohibited"]},
+            "approval_status": {"type": "enum", "values": [
+                "pending", "approved", "rejected", "expired", "consumed", "cancelled",
+            ]},
+            "work_order_status": {"type": "enum", "values": [
+                "pending_approval", "approved", "queued", "running", "completed",
+                "blocked", "failed", "cancelled", "expired", "stale",
+            ]},
+            "pending_count": {"type": "integer", "values": "any"},
+        },
+        "operations": ["overview", "list", "count", "lookup", "status", "result", "history", "recommend"],
+        "capability": "get_available_actions",
+        "detail_capabilities": {
+            "approvals": "get_approval_status",
+            "work_orders": "get_recent_work_orders",
+            "queue": "get_work_queue",
+            "result": "get_work_order_result",
+        },
+    },
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -198,7 +227,7 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
 ALLOWED_OPERATIONS = {
     "overview", "list", "filter", "count", "group_count",
     "lookup", "compare", "summarize", "provenance",
-    "explain", "find_gaps", "recommend",
+    "explain", "find_gaps", "recommend", "status", "result", "history",
 }
 
 ALLOWED_OPERATORS = {"eq", "neq", "in", "not_in", "contains", "exists"}
@@ -222,6 +251,7 @@ SOURCE_REQUIREMENTS = {
     "incomplete_areas": "structural",
     "overview": "structural",
     "nexus_system": "structural",
+    "governed_action": "operational_state",
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -706,6 +736,21 @@ def execute_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
             "window": plan.get("window", "all"),
             "limit": 50,
         }
+    elif domain == "governed_action":
+        # Map governed operations to the narrow detail capability that serves them.
+        operation = plan.get("operation", "overview")
+        detail = schema.get("detail_capabilities", {})
+        if operation == "status":
+            capability = detail.get("approvals", capability)
+            capability_args = {"approval_id": ""}
+        elif operation == "result":
+            capability = detail.get("result", capability)
+            capability_args = {"work_order_id": ""}
+        elif operation == "history":
+            capability = detail.get("work_orders", capability)
+            capability_args = {"limit": 20, "status": None}
+        elif operation in ("list", "count", "overview"):
+            capability_args = {"limit": 20}
 
     try:
         try:
