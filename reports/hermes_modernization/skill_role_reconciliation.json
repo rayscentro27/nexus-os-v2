@@ -1,0 +1,402 @@
+{
+  "status": "complete",
+  "starting_head": "05f3ac7f4742220ddd922b5dd1e5017461556eee",
+  "audited_skills": 11,
+  "persistent_agents_after_reconciliation": [
+    "nexus_hermes",
+    "hermes_nova",
+    "alpha"
+  ],
+  "skills": [
+    {
+      "skill_name": "nexus-operator",
+      "purpose": "Governed Nexus operator skill for deterministic-first status, approvals, and safe execution routing.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["Hermes operator / chief-of-staff", "specialist profile: hermes_ceo"],
+      "existing_owner": ["Hermes"],
+      "existing_agent": ["nexus_hermes"],
+      "existing_module": [
+        "scripts/nexus_agent_platform/agents/hermes.py",
+        "scripts/nexus_agent_platform/capabilities/shared.py",
+        "scripts/nexus_agent_platform/capabilities/nexus_knowledge.py"
+      ],
+      "existing_tools": [
+        "nexus_capability_lookup",
+        "nexus_system_status",
+        "nexus_process_status",
+        "nexus_runtime_status",
+        "nexus_pending_approvals"
+      ],
+      "existing_memory": ["Hermes context store", "active context"],
+      "existing_routing": ["Hermes front brain", "CapabilityDispatcher", "governed read-only allowlists"],
+      "overlap_percentage_estimate": 90,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "low",
+      "recommended_action": "EXTEND_EXISTING",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "This is already Hermes' operator responsibility. Keep it as a wrapper over the existing operator identity and capability registry."
+    },
+    {
+      "skill_name": "nexus-research-director",
+      "purpose": "Research intake and evidence synthesis skill for governed Nexus discovery.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["Alpha research mode", "study layer", "research specialist"],
+      "existing_owner": ["Alpha"],
+      "existing_agent": ["alpha"],
+      "existing_module": [
+        "scripts/nexus_agent_platform/agents/alpha.py",
+        "scripts/nexus_agent_platform/capabilities/shared.py",
+        "scripts/nexus_agent_platform/capabilities/nexus_study.py"
+      ],
+      "existing_tools": [
+        "nexus_research_status",
+        "nexus_capability_lookup",
+        "nexus_system_status"
+      ],
+      "existing_memory": ["Alpha context", "recent research results", "study snapshot artifacts"],
+      "existing_routing": ["Alpha mode detection", "study snapshot reader", "bounded report index reads"],
+      "overlap_percentage_estimate": 85,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "medium",
+      "recommended_action": "WRAP_EXISTING",
+      "lowest_reliable_tier": "T1_CHEAP_AI",
+      "rationale": "The function already exists as Alpha's research identity plus the study layer. This should wrap Alpha rather than create a second research persona."
+    },
+    {
+      "skill_name": "nexus-opportunity-director",
+      "purpose": "Deterministic-first opportunity discovery and scoring skill.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["Alpha business-opportunity mode", "opportunity lab", "revenue hub"],
+      "existing_owner": ["Alpha", "Hermes opportunity modules"],
+      "existing_agent": ["alpha"],
+      "existing_module": [
+        "scripts/nexus_agent_platform/agents/alpha.py",
+        "scripts/nexus_agent_platform/capabilities/shared.py",
+        "reports/manual_publish/nexus_automation_control_center_latest.md"
+      ],
+      "existing_tools": [
+        "nexus_revenue_status",
+        "nexus_research_status",
+        "nexus_capability_lookup"
+      ],
+      "existing_memory": ["Alpha context", "opportunity reports", "revenue dashboards"],
+      "existing_routing": ["Alpha mode detection", "opportunity-focused automation categories"],
+      "overlap_percentage_estimate": 80,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "medium",
+      "recommended_action": "WRAP_EXISTING",
+      "lowest_reliable_tier": "T1_CHEAP_AI",
+      "rationale": "Opportunity discovery already exists across Alpha and the opportunity_lab taxonomy. Keep this as a bounded wrapper with deterministic scoring first."
+    },
+    {
+      "skill_name": "nexus-creative-director",
+      "purpose": "Research-first creative direction skill for Nexus concepts and assets.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["creative studio", "creative report artifacts", "content opportunity workflows"],
+      "existing_owner": ["Hermes / ops"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "reports/manual_publish/nexus_automation_control_center_latest.md",
+        "creative report artifacts"
+      ],
+      "existing_tools": [
+        "nexus_research_status",
+        "nexus_revenue_status",
+        "nexus_capability_lookup"
+      ],
+      "existing_memory": ["bounded report artifacts", "references / competitor notes"],
+      "existing_routing": ["manual publish reports", "creative studio taxonomy"],
+      "overlap_percentage_estimate": 70,
+      "routing_conflict": "low",
+      "authority_conflict": "low",
+      "token_duplication_risk": "medium",
+      "recommended_action": "KEEP_AS_NEW",
+      "lowest_reliable_tier": "T2_STANDARD_AI",
+      "rationale": "There is no dedicated persistent creative agent. Keep the skill as a bounded creative wrapper, but do not promote it to a new identity."
+    },
+    {
+      "skill_name": "nexus-marketing-director",
+      "purpose": "Governed marketing planning and status skill for Nexus.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["marketing specialist", "seo_marketing", "affiliate_marketing", "content_opportunity_lab"],
+      "existing_owner": ["Hermes / ops"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "configs/specialist_registry.json",
+        "configs/specialist_personality_profiles.json",
+        "reports/manual_publish/nexus_automation_control_center_latest.md"
+      ],
+      "existing_tools": [
+        "nexus_marketing_status",
+        "nexus_research_status",
+        "nexus_capability_lookup"
+      ],
+      "existing_memory": ["marketing reports", "content calendar artifacts", "specialist profiles"],
+      "existing_routing": ["marketing automation categories", "manual publish reports"],
+      "overlap_percentage_estimate": 85,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "medium-high",
+      "recommended_action": "MERGE_WITH_EXISTING",
+      "lowest_reliable_tier": "T1_CHEAP_AI",
+      "rationale": "Marketing already has specialist profiles and automation categories. Merge the new skill into that existing surface instead of adding another marketing identity."
+    },
+    {
+      "skill_name": "nexus-seo-director",
+      "purpose": "SEO opportunity and content planning skill for Nexus.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["seo_marketing automation", "content_opportunity_lab", "research_source_intake"],
+      "existing_owner": ["Hermes / ops"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "scripts/research/seo_keyword_scout.py",
+        "scripts/research/content_opportunity_lab.py",
+        "reports/manual_publish/nexus_automation_control_center_latest.md"
+      ],
+      "existing_tools": [
+        "nexus_research_status",
+        "nexus_opportunity_director",
+        "nexus_capability_lookup"
+      ],
+      "existing_memory": ["SEO reports", "keyword scores", "content opportunity artifacts"],
+      "existing_routing": ["seo_marketing taxonomy", "research-source intake"],
+      "overlap_percentage_estimate": 80,
+      "routing_conflict": "low-medium",
+      "authority_conflict": "low",
+      "token_duplication_risk": "low",
+      "recommended_action": "MERGE_WITH_EXISTING",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "SEO work is already represented by deterministic research/scoring scripts and automation categories. Keep the skill as a thin wrapper over those modules."
+    },
+    {
+      "skill_name": "nexus-credit-readiness",
+      "purpose": "Credit readiness review skill for governed Nexus client-scoped reads.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["credit specialist", "funding readiness capability", "client workflow review"],
+      "existing_owner": ["Credit specialist / Hermes"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "scripts/nexus_agent_platform/capabilities/shared.py",
+        "configs/specialist_registry.json",
+        "scripts/client_workflow/*"
+      ],
+      "existing_tools": [
+        "nexus_funding_readiness_summary",
+        "nexus_credit_summary",
+        "nexus_client_summary"
+      ],
+      "existing_memory": ["client workflow artifacts", "readiness artifacts", "specialist profiles"],
+      "existing_routing": ["client-scoped capability allowlist", "funding readiness logic"],
+      "overlap_percentage_estimate": 95,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "low",
+      "recommended_action": "EXTEND_EXISTING",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "Credit readiness is already a governed read concern in the shared capability layer. Keep the skill as a thin extension of the existing credit surface."
+    },
+    {
+      "skill_name": "nexus-credit-result-verification",
+      "purpose": "Verification skill for bounded credit-result evidence checks.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["credit report / case engine verification", "compliance classifier", "credit specialist review"],
+      "existing_owner": ["Credit specialist / client workflow"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "scripts/client_workflow/*",
+        "scripts/client_flow/*",
+        "scripts/compliance/classify_claim_risk.py",
+        "reports/credit_repair/*"
+      ],
+      "existing_tools": [
+        "nexus_credit_summary",
+        "nexus_client_summary",
+        "nexus_capability_lookup"
+      ],
+      "existing_memory": ["credit repair reports", "case engine reports", "compliance review artifacts"],
+      "existing_routing": ["credit repair workflow", "claim-risk classifier", "case engine reports"],
+      "overlap_percentage_estimate": 90,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "low",
+      "recommended_action": "MERGE_WITH_EXISTING",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "Verification already belongs to the credit workflow and compliance tooling. Keep the skill as a packaging layer only."
+    },
+    {
+      "skill_name": "nexus-business-foundation",
+      "purpose": "Business foundation review skill for bounded Nexus reads.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["funding specialist", "business bankability guidance", "business model summary"],
+      "existing_owner": ["Funding specialist / Hermes"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "scripts/nexus_agent_platform/capabilities/nexus_study.py",
+        "scripts/nexus_agent_platform/capabilities/shared.py",
+        "configs/offer_registry.json"
+      ],
+      "existing_tools": [
+        "nexus_business_foundation_summary",
+        "nexus_revenue_status",
+        "nexus_system_status"
+      ],
+      "existing_memory": ["business model summary", "offer registry", "funding / bankability artifacts"],
+      "existing_routing": ["business model read layer", "funding readiness / bankability taxonomy"],
+      "overlap_percentage_estimate": 80,
+      "routing_conflict": "low-medium",
+      "authority_conflict": "low",
+      "token_duplication_risk": "low",
+      "recommended_action": "WRAP_EXISTING",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "The underlying data already exists as deterministic summaries. This skill should wrap those summaries rather than create a new business identity."
+    },
+    {
+      "skill_name": "nexus-funding-readiness",
+      "purpose": "Funding readiness skill for bounded tenant-scoped Nexus reads.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["funding specialist", "get_funding_readiness", "client-scoped readiness summaries"],
+      "existing_owner": ["Funding specialist"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "scripts/nexus_agent_platform/capabilities/shared.py",
+        "configs/specialist_registry.json",
+        "client workflow / readiness artifacts"
+      ],
+      "existing_tools": [
+        "nexus_funding_readiness_summary",
+        "nexus_client_summary",
+        "nexus_credit_summary"
+      ],
+      "existing_memory": ["funding readiness artifacts", "client profile state", "specialist registry"],
+      "existing_routing": ["client-scoped readiness logic", "shared capability allowlists"],
+      "overlap_percentage_estimate": 95,
+      "routing_conflict": "medium",
+      "authority_conflict": "medium",
+      "token_duplication_risk": "low",
+      "recommended_action": "EXTEND_EXISTING",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "This is already a dedicated governed read capability. Keep the skill tied to the existing readiness path."
+    },
+    {
+      "skill_name": "nexus-crj-handoff",
+      "purpose": "CRJ handoff and governed evidence transfer skill.",
+      "persistent_identity_required": false,
+      "existing_equivalent": ["client success specialist", "credit workflow handoff", "funding/business summary handoff"],
+      "existing_owner": ["Client success / credit workflow"],
+      "existing_agent": ["none"],
+      "existing_module": [
+        "scripts/client_workflow/*",
+        "scripts/client_flow/*",
+        "reports/credit_repair/*",
+        "configs/specialist_registry.json"
+      ],
+      "existing_tools": [
+        "nexus_business_foundation_summary",
+        "nexus_revenue_status",
+        "nexus_capability_lookup"
+      ],
+      "existing_memory": ["credit repair artifacts", "client success artifacts", "handoff reports"],
+      "existing_routing": ["client success workflow", "credit repair workflow", "report packaging"],
+      "overlap_percentage_estimate": 75,
+      "routing_conflict": "low",
+      "authority_conflict": "low",
+      "token_duplication_risk": "medium",
+      "recommended_action": "REMOVE_DUPLICATE",
+      "lowest_reliable_tier": "T0_DETERMINISTIC",
+      "rationale": "This is packaging logic, not a distinct specialty identity. Fold it into the existing client-success / credit workflow handoff flow."
+    }
+  ],
+  "role_conflicts": [
+    "Hermes already owns operator-level orchestration; `nexus-operator` must not become a second operator identity.",
+    "Alpha already owns outside research and opportunity discovery; `nexus-research-director` and `nexus-opportunity-director` must wrap Alpha, not compete with it.",
+    "Marketing, SEO, and creative work already exist as bounded automation categories and specialist profiles; the new skills should stay as wrappers or merges, not new long-lived roles.",
+    "Credit, funding, business foundation, and CRJ handoff already exist in workflow/report form; the new skills must remain read-only and governed."
+  ],
+  "token_duplication_risks": [
+    "Repeated model synthesis over the same research context for research and opportunity questions.",
+    "Duplicate marketing/SEO planning when the control-center taxonomy already has SEO, affiliate, and content-opportunity categories.",
+    "Duplicate credit/funding narratives when deterministic summary capabilities already exist.",
+    "CRJ handoff turning into a second client-success layer instead of a packaging step."
+  ],
+  "loop_contract": {
+    "status": "designed",
+    "implemented": false,
+    "contract_fields": [
+      "loop_id",
+      "name",
+      "owner",
+      "trigger",
+      "goal",
+      "inputs",
+      "deterministic_precheck",
+      "delta_only",
+      "cache_enabled",
+      "dedupe_enabled",
+      "deterministic_steps",
+      "ai_steps",
+      "model_tier",
+      "max_ai_calls",
+      "max_input_tokens",
+      "max_output_tokens",
+      "estimated_token_budget",
+      "cost_ceiling",
+      "verifier",
+      "retry_policy",
+      "max_retries",
+      "stop_if_no_change",
+      "stop_conditions",
+      "approval_boundary",
+      "output",
+      "memory_write_mode",
+      "metrics"
+    ],
+    "metrics": [
+      "executions",
+      "zero_token_executions",
+      "ai_executions",
+      "tier1_calls",
+      "tier2_calls",
+      "tier3_calls",
+      "input_tokens",
+      "output_tokens",
+      "estimated_cost",
+      "successful_outputs",
+      "value_events",
+      "tokens_per_success",
+      "cost_per_success"
+    ],
+    "first_loops": [
+      {
+        "loop_id": "system_health_loop",
+        "name": "System Health Loop",
+        "owner": "Hermes",
+        "goal": "Detect operational drift with mostly zero-token execution.",
+        "model_tier": "T0_DETERMINISTIC",
+        "max_ai_calls": 0,
+        "stop_if_no_change": true
+      },
+      {
+        "loop_id": "opportunity_discovery_loop",
+        "name": "Opportunity Discovery Loop",
+        "owner": "Hermes / opportunity engine",
+        "goal": "Collect, dedupe, score, and selectively synthesize promising opportunities.",
+        "model_tier": "T1_CHEAP_AI",
+        "max_ai_calls": 1,
+        "stop_if_no_change": true
+      }
+    ]
+  },
+  "loop_contract_verdict": "PASS",
+  "broad_loop_implementation": "NOT STARTED",
+  "recommendation_summary": {
+    "KEEP_AS_NEW": ["nexus-creative-director"],
+    "EXTEND_EXISTING": ["nexus-operator", "nexus-credit-readiness", "nexus-funding-readiness"],
+    "WRAP_EXISTING": ["nexus-research-director", "nexus-opportunity-director", "nexus-business-foundation"],
+    "MERGE_WITH_EXISTING": ["nexus-marketing-director", "nexus-seo-director", "nexus-credit-result-verification"],
+    "REMOVE_DUPLICATE": ["nexus-crj-handoff"],
+    "DEFER": []
+  }
+}

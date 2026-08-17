@@ -1,6 +1,6 @@
 # Nexus Hermes Modernization — Summary
 
-**Status:** Phase 1A complete · Phase 1B isolated upstream Hermes compatibility lab proven · Phase 2 plugin boundary and initial skills added · Checkpoint 4 pending push
+**Status:** Phase 1A complete · Phase 1B isolated upstream Hermes compatibility lab proven · Phase 2 plugin boundary and initial skills added · Phase 3B skill / role reconciliation complete · Loop contract defined
 **Baseline HEAD:** `68b037d` · Client Portal V2: COMPLETE / PROTECTED
 
 ## What Phase 0 established
@@ -16,7 +16,7 @@
 - No deterministic process is classified REPLACE.
 
 ## Resume point
-Next: **Phase 4 - loop framework** after the governed Nexus-Hermes plugin and initial skill foundation are finalized. Phase 1B now has an isolated upstream Hermes lab at `scripts/nexus_agent_platform/hermes_lab/upstream_compatibility.py` and a report at `reports/hermes_modernization/upstream_compatibility.md`.
+Next: **Phase 4 - loop framework implementation** using the token-efficient contract defined in `reports/hermes_modernization/skill_role_reconciliation.md`. Phase 1B now has an isolated upstream Hermes lab at `scripts/nexus_agent_platform/hermes_lab/upstream_compatibility.py`, and the skill/role audit shows the new skills are wrappers over Hermes, Alpha, and existing read capabilities rather than new persistent identities.
 
 ## Protected invariants carried forward
 Client Portal V2, classic `/client`, Supabase/RLS, governance, approvals, work orders, model router, production Telegram, Alpha PII isolation, client vault separation, all KEEP_PYTHON processes.

@@ -1,6 +1,6 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-4",
+  "current_checkpoint": "checkpoint-5",
   "started_commit": "2aab745",
   "ended_commit": "PENDING",
   "status": "IN_PROGRESS",
@@ -49,6 +49,23 @@
         "AI_ASSISTED": 1,
         "disabled": 1
       }
+    },
+    "3b": {
+      "name": "AGENT_ROLE_SKILL_RECONCILIATION_AND_LOOP_CONTRACT",
+      "status": "COMPLETE",
+      "deliverables": [
+        "reports/hermes_modernization/skill_role_reconciliation.md",
+        "reports/hermes_modernization/skill_role_reconciliation.json"
+      ],
+      "classification_counts": {
+        "skills_audited": 11,
+        "KEEP_AS_NEW": 1,
+        "EXTEND_EXISTING": 3,
+        "WRAP_EXISTING": 3,
+        "MERGE_WITH_EXISTING": 3,
+        "REMOVE_DUPLICATE": 1,
+        "DEFER": 0
+      }
     }
   },
   "vertical_slice": {
@@ -64,14 +81,18 @@
       "creative_director_skill",
       "safe_opportunity_pilot",
       "mission_control_visibility",
-      "tests"
+      "tests",
+      "skill_role_reconciliation",
+      "loop_contract"
     ],
     "completed": [
       "audit",
       "python_capability_registry",
       "isolated_hermes_lab",
       "nexus_hermes_plugin",
-      "initial_skills"
+      "initial_skills",
+      "skill_role_reconciliation",
+      "loop_contract"
     ],
     "next": "loop_framework"
   },
@@ -80,6 +101,7 @@
     "checkpoint-2": "feat(hermes): add deterministic nexus capability registry",
     "checkpoint-3": "feat(hermes): add isolated upstream compatibility lab",
     "checkpoint-4": "feat(hermes): add governed nexus hermes plugin",
+    "checkpoint-5": "chore(hermes): reconcile nexus skills and existing agent roles",
     "beyond": [
       "feat(loops): add deterministic-first nexus loop framework",
       "feat(opportunities): add nexus opportunity engine foundation",
