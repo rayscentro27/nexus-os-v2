@@ -10,6 +10,11 @@ import { DashboardV2 } from './DashboardV2'
 import { CreditReviewV2 } from './CreditReviewV2'
 import { CreditImprovementV2 } from './CreditImprovementV2'
 import { DocumentsV2 } from './DocumentsV2'
+import { BusinessFoundationV2 } from './BusinessFoundationV2'
+import { FundingReadinessV2 } from './FundingReadinessV2'
+import { FundingAccessV2 } from './FundingAccessV2'
+import { ResourcesV2 } from './ResourcesV2'
+import { BillingV2 } from './BillingV2'
 import { PlaceholderV2 } from './PlaceholderV2'
 import type { V2ViewData } from '../types/v2-models'
 import { ROUTE_LABELS, navigateV2 } from '../utils/navigate'
@@ -24,6 +29,16 @@ export function renderV2Page(path: string, data: V2ViewData) {
       return <CreditImprovementV2 data={data} />
     case '/client-v2/documents':
       return <DocumentsV2 data={data} />
+    case '/client-v2/business-foundation':
+      return <BusinessFoundationV2 data={data} />
+    case '/client-v2/funding-readiness':
+      return <FundingReadinessV2 data={data} />
+    case '/client-v2/funding-access':
+      return <FundingAccessV2 data={data} />
+    case '/client-v2/resources':
+      return <ResourcesV2 data={data} />
+    case '/client-v2/billing':
+      return <BillingV2 data={data} />
     default:
       return <PlaceholderV2 path={path} />
   }
