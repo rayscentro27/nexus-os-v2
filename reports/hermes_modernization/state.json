@@ -1,6 +1,6 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-5",
+  "current_checkpoint": "checkpoint-6",
   "started_commit": "2aab745",
   "ended_commit": "PENDING",
   "status": "IN_PROGRESS",
@@ -66,6 +66,20 @@
         "REMOVE_DUPLICATE": 1,
         "DEFER": 0
       }
+    },
+    "4": {
+      "name": "LOOP_FRAMEWORK_RUNTIME",
+      "status": "PARTIAL",
+      "deliverables": [
+        "reports/hermes_modernization/loop_framework.md",
+        "reports/hermes_modernization/loop_benchmark.md"
+      ],
+      "classification_counts": {
+        "loops_implemented": 2,
+        "zero_token_paths_verified": 2,
+        "ai_positive_paths_verified": 1,
+        "focused_tests_passing": 8
+      }
     }
   },
   "vertical_slice": {
@@ -92,9 +106,10 @@
       "nexus_hermes_plugin",
       "initial_skills",
       "skill_role_reconciliation",
-      "loop_contract"
+      "loop_contract",
+      "loop_framework"
     ],
-    "next": "loop_framework"
+    "next": "opportunity_engine_data_model"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
@@ -102,6 +117,7 @@
     "checkpoint-3": "feat(hermes): add isolated upstream compatibility lab",
     "checkpoint-4": "feat(hermes): add governed nexus hermes plugin",
     "checkpoint-5": "chore(hermes): reconcile nexus skills and existing agent roles",
+    "checkpoint-6": "feat(loops): add token-efficient nexus loop runtime",
     "beyond": [
       "feat(loops): add deterministic-first nexus loop framework",
       "feat(opportunities): add nexus opportunity engine foundation",
