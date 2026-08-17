@@ -5,6 +5,8 @@ import NexusAdminUI from '../admin/NexusAdminUI';
 import ClientPortalRoot from '../pages/client/ClientPortalRoot';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
 import ClientPreviewPage from '../pages/client/ClientPreviewPage';
+import { ClientV2Gate } from '../client-v2/pages/ClientV2Root';
+import { ClientV2PreviewPage } from '../client-v2/pages/ClientV2PreviewPage';
 import UpdatePasswordPage from '../pages/UpdatePasswordPage';
 import AuthResetPage from '../pages/AuthResetPage';
 import {
@@ -145,6 +147,15 @@ export function App() {
   }
   if (path === '/client/preview') {
     return <ClientPreviewPage />;
+  }
+  if (path === '/client-v2/preview') {
+    return <ClientV2PreviewPage />;
+  }
+  if (path === '/client-v2/login') {
+    return <ClientLoginPage />;
+  }
+  if (path === '/client-v2' || path.startsWith('/client-v2/')) {
+    return <ClientV2Gate />;
   }
   if (path === '/client' || path.startsWith('/client/')) {
     return <ClientPortalGate />;

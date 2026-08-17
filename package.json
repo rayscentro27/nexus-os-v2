@@ -5,8 +5,9 @@
   "type": "module",
   "description": "Nexus OS v2 — Supabase-first operating system for Communication, Monetization, Automation.",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "tailwind:v2": "tailwindcss -c tailwind.v2.config.cjs -i src/client-v2/styles/v2-tailwind.src.css -o src/client-v2/styles/v2-tailwind.generated.css --minify",
+    "dev": "npm run tailwind:v2 && vite",
+    "build": "npm run tailwind:v2 && tsc --noEmit && vite build",
     "test": "vitest run --exclude 'tests/e2e/**'",
     "preview": "vite preview",
     "test:e2e": "playwright test",
@@ -30,7 +31,10 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.5.4",
     "playwright": "^1.61.1",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.5.4",
     "vite": "^5.4.2",
     "vitest": "^4.1.10"
