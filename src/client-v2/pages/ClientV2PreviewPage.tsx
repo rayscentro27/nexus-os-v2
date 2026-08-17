@@ -3,9 +3,7 @@ import '../styles/v2-tailwind.generated.css'
 import '../styles/v2-theme.css'
 import { useV2ClientData } from '../hooks/useV2ClientData'
 import { AppShellV2 } from '../layouts/AppShellV2'
-import { DashboardV2 } from './DashboardV2'
-import { PlaceholderV2 } from './PlaceholderV2'
-import { normalizePath } from './ClientV2Root'
+import { renderV2Page, normalizePath } from './ClientV2Root'
 import { ROUTE_LABELS, setV2NavigateHandler } from '../utils/navigate'
 
 export function ClientV2PreviewPage() {
@@ -40,7 +38,7 @@ export function ClientV2PreviewPage() {
         isDemo={data.isDemo}
         onNavigate={(p) => setPath(normalizePath(p))}
       >
-        {safePath === '/client-v2/dashboard' ? <DashboardV2 data={data} /> : <PlaceholderV2 path={safePath} />}
+        {renderV2Page(safePath, data)}
       </AppShellV2>
     </>
   )

@@ -23,6 +23,13 @@ export interface V2ProfileView {
   isDemo: boolean
 }
 
+export interface V2DocumentRequirement {
+  label: string
+  status: 'complete' | 'missing' | 'processing' | 'attention'
+  whyItMatters: string
+  impact: string
+}
+
 export interface V2DocumentView {
   required: string[]
   uploaded: string[]
@@ -31,6 +38,12 @@ export interface V2DocumentView {
   processingCount: number
   requiredCount: number
   uploadedCount: number
+  requirements: V2DocumentRequirement[]
+}
+
+export interface V2WorkflowStage {
+  label: string
+  state: 'complete' | 'in_progress' | 'pending' | 'blocked' | 'upcoming'
 }
 
 export interface V2CreditRepairView {
@@ -39,6 +52,11 @@ export interface V2CreditRepairView {
   draftLettersReady: number
   goclearReviewsPending: number
   nextActions: Array<Record<string, any>>
+  workflowStages: V2WorkflowStage[]
+  negativeItems: Array<Record<string, any>>
+  goclearReviewStatus: string
+  clientGuideRecommendation: string
+  monthlyProgress: number[]
 }
 
 export interface V2RailStage {

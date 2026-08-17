@@ -7,8 +7,27 @@ import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient'
 import { useV2ClientData } from '../hooks/useV2ClientData'
 import { AppShellV2 } from '../layouts/AppShellV2'
 import { DashboardV2 } from './DashboardV2'
+import { CreditReviewV2 } from './CreditReviewV2'
+import { CreditImprovementV2 } from './CreditImprovementV2'
+import { DocumentsV2 } from './DocumentsV2'
 import { PlaceholderV2 } from './PlaceholderV2'
+import type { V2ViewData } from '../types/v2-models'
 import { ROUTE_LABELS, navigateV2 } from '../utils/navigate'
+
+export function renderV2Page(path: string, data: V2ViewData) {
+  switch (path) {
+    case '/client-v2/dashboard':
+      return <DashboardV2 data={data} />
+    case '/client-v2/credit-review':
+      return <CreditReviewV2 data={data} />
+    case '/client-v2/credit-improvement':
+      return <CreditImprovementV2 data={data} />
+    case '/client-v2/documents':
+      return <DocumentsV2 data={data} />
+    default:
+      return <PlaceholderV2 path={path} />
+  }
+}
 
 export const normalizePath = (p: string) => {
   if (p === '/client-v2' || p === '/client-v2/') return '/client-v2/dashboard'
@@ -96,7 +115,7 @@ export function ClientV2Root() {
       isDemo={data.isDemo}
       onNavigate={navigateV2}
     >
-      {safePath === '/client-v2/dashboard' ? <DashboardV2 data={data} /> : <PlaceholderV2 path={safePath} />}
+      {renderV2Page(safePath, data)}
     </AppShellV2>
   )
 }

@@ -16,6 +16,7 @@ import { isSupabaseConfigured } from '../../lib/supabaseClient'
 import type {
   V2CreditRepairView,
   V2DataMode,
+  V2DocumentRequirement,
   V2DocumentView,
   V2FlowView,
   V2HermesView,
@@ -23,6 +24,7 @@ import type {
   V2RailStage,
   V2Scores,
   V2ViewData,
+  V2WorkflowStage,
 } from '../types/v2-models'
 
 interface NormalizedSource {
@@ -212,6 +214,12 @@ function deriveDocuments(readiness: GuidedFundingReadiness): V2DocumentView {
   const missing = requirements.filter((r) => r.status === 'missing' || r.status === 'attention').map((r) => r.label)
   const processing = requirements.filter((r) => r.status === 'processing').map((r) => r.label)
   const required = requirements.map((r) => r.label)
+  const detail: V2DocumentRequirement[] = requirements.map((r) => ({
+    label: r.label,
+    status: statusOf(r) === 'processing' ? 'processing' : r.status === 'attention' ? 'attention' : r.status === 'complete' ? 'complete' : 'missing',
+    whyItMatters: String(r.whyItMatters || ''),
+    impact: String((r as any)?.impact || ''),
+  }))
   return {
     required,
     uploaded,
@@ -220,24 +228,67 @@ function deriveDocuments(readiness: GuidedFundingReadiness): V2DocumentView {
     processingCount: processing.length,
     requiredCount: required.length,
     uploadedCount: uploaded.length,
+    requirements: detail,
   }
+}
+
+function deriveWorkflowStages(src: NormalizedSource, creditRepair: Record<string, any>): V2WorkflowStage[] {
+  const items = src.creditItems || []
+  const submitted = items.length > 0
+  const pendingReview = items.some((i) => /pending|review|needs/.test(`${i.goclear_review_status || ''} ${i.status || ''}`.toLowerCase()))
+  if (creditRepair?.workflowStages?.length) {
+    return creditRepair.workflowStages.map((row: [string, string]) => {
+      const raw = String(row[1] || '').toLowerCase()
+      const state: V2WorkflowStage['state'] =
+        raw === 'complete' ? 'complete' : raw === 'in_progress' ? 'in_progress' : raw === 'blocked' ? 'blocked' : raw === 'pending' ? 'pending' : 'upcoming'
+      return { label: String(row[0]), state }
+    })
+  }
+  return [
+    { label: 'Intake', state: submitted ? 'complete' : 'in_progress' },
+    { label: 'Report connected / uploaded', state: submitted ? 'complete' : 'pending' },
+    { label: 'Negative items identified', state: submitted ? 'complete' : 'pending' },
+    { label: 'Item classification', state: submitted ? 'complete' : 'pending' },
+    { label: 'Document request', state: pendingReview ? 'in_progress' : 'pending' },
+    { label: 'Draft letters prepared', state: 'upcoming' },
+    { label: 'GoClear review', state: pendingReview ? 'in_progress' : 'upcoming' },
+    { label: 'Client approval if needed', state: 'upcoming' },
+    { label: 'Manual send after approval', state: 'upcoming' },
+    { label: 'Track update', state: 'upcoming' },
+  ]
 }
 
 function deriveCreditRepair(src: NormalizedSource): V2CreditRepairView {
   const items = src.creditItems || []
   const underReview = items.filter((i) => /in_review|needs_documents|pending_review/.test(String(i.status || '').toLowerCase())).length
+  const creditRepair = clientPortalData.creditRepair || {}
   const progress =
     src.profile?.membership_tier === 'trial'
-      ? clientPortalData.creditRepair?.progressPercent || 0
+      ? creditRepair?.progressPercent || 0
       : items.length
         ? Math.round((items.filter((i) => /complete|sent|verified|removed|draft_ready/.test(String(i.status || '').toLowerCase())).length / items.length) * 100)
         : 0
+  const negativeItems = items.map((i) => ({
+    id: i.id,
+    title: i.title,
+    status: i.status,
+    risk_level: i.risk_level,
+    automation_level: i.automation_level,
+    goclear_review_status: i.goclear_review_status,
+    item_type: i.item_type || i.category || 'credit_repair',
+    utilization_pct: i.utilization_pct,
+  }))
   return {
     progressPercent: progress,
-    negativeItemsUnderReview: underReview,
-    draftLettersReady: clientPortalData.creditRepair?.draftLettersReady || items.filter((i) => String(i.status) === 'draft_ready').length,
-    goclearReviewsPending: clientPortalData.creditRepair?.goclearReviewsPending || items.filter((i) => /pending/.test(String(i.goclear_review_status || ''))).length,
+    negativeItemsUnderReview: underReview || (creditRepair?.negativeItemsUnderReview || 0),
+    draftLettersReady: creditRepair?.draftLettersReady || items.filter((i) => String(i.status) === 'draft_ready').length,
+    goclearReviewsPending: creditRepair?.goclearReviewsPending || items.filter((i) => /pending/.test(String(i.goclear_review_status || ''))).length,
     nextActions: src.tasks.filter((t) => /credit|repair/.test(String(t.task_type || ''))) || [],
+    workflowStages: deriveWorkflowStages(src, creditRepair),
+    negativeItems,
+    goclearReviewStatus: creditRepair?.goclearReviewStatus || (underReview ? `${underReview} items awaiting internal review` : 'No pending internal review'),
+    clientGuideRecommendation: creditRepair?.clientGuideRecommendation || 'Complete requested documentation first. GoClear must review any letter or dispute next step before it can be used.',
+    monthlyProgress: creditRepair?.monthlyProgress || [],
   }
 }
 
