@@ -1,0 +1,22 @@
+name: nexus-hermes-plugin
+version: 0.1.0
+description: "Read-only governed Nexus bridge for upstream Hermes, with deterministic capability lookup and status tools."
+author: Nexus Hermes modernization
+kind: standalone
+platforms:
+  - linux
+  - macos
+provides_tools:
+  - nexus_capability_lookup
+  - nexus_system_status
+  - nexus_process_status
+  - nexus_runtime_status
+  - nexus_research_status
+  - nexus_marketing_status
+  - nexus_revenue_status
+  - nexus_pending_approvals
+  - nexus_automation_health
+  - nexus_client_summary
+  - nexus_credit_summary
+  - nexus_business_foundation_summary
+  - nexus_funding_readiness_summary
