@@ -26,7 +26,7 @@ export function JourneyRailV2({ stages }: { stages: V2RailStage[] }) {
               </div>
             </button>
             <div className="mt-2 text-center px-0.5">
-              <div className={`text-[11.5px] font-semibold leading-tight truncate ${color}`}>{stage.shortLabel}</div>
+              <div className={`text-[11.5px] font-semibold leading-tight ${color} md:whitespace-nowrap`}>{stage.shortLabel}</div>
             </div>
           </div>
         )

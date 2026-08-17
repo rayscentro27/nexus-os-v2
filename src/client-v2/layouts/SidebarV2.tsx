@@ -45,7 +45,7 @@ export function SidebarV2({
 }) {
   const isActive = (path: string) => currentPath === path
   return (
-    <aside className="v2-sidebar w-[220px] shrink-0 h-screen sticky top-0 flex flex-col overflow-y-auto v2-thin-scroll">
+    <aside className="v2-sidebar w-full xl:w-[220px] xl:shrink-0 xl:h-screen xl:sticky xl:top-0 flex flex-col overflow-y-auto v2-thin-scroll">
       <div className="px-4 pt-5 pb-4 flex items-center gap-2.5">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-v2brand to-v2indigo flex items-center justify-center shadow-lg shadow-[#0A1329]/40">
           <Sparkles size={18} className="text-white" />

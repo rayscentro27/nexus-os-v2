@@ -20,12 +20,12 @@ export function AppShellV2({
 }) {
   return (
     <div className="v2-app min-h-screen">
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen flex-col xl:flex-row">
         <SidebarV2 profile={profile} railStages={railStages} currentPath={currentPath} onNavigate={onNavigate} />
-        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto v2-thin-scroll">
+        <div className="flex-1 flex flex-col min-w-0 xl:h-screen xl:overflow-y-auto v2-thin-scroll">
           <TopHeaderV2 currentPath={currentPath} isDemo={isDemo} />
-          <main className="flex-1 p-5">
-            <div className="space-y-4 max-w-[1200px]">{children}</div>
+          <main className="flex-1 min-w-0 p-5">
+            <div className="w-full min-w-0 space-y-4">{children}</div>
           </main>
         </div>
       </div>

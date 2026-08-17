@@ -48,7 +48,16 @@ export function DashboardV2({ data }: { data: V2ViewData }) {
   const firstName = profile?.name ? profile.name.replace(/\(.*?\)/g, '').trim().split(/\s+/)[0] : 'there'
 
   const pendingReview = flow.reviewStatus?.status === 'in_progress' || readiness.processingDocuments.length > 0
+  const readinessStatusLabel =
+    readiness.state === 'ready_to_review'
+      ? 'Ready for review'
+      : readiness.state.replace(/_/g, ' ')
 
+  const readinessStatusTone = readiness.state === 'ready_to_review'
+    ? 'emerald'
+    : readiness.state === 'insufficient_information'
+      ? 'red'
+      : 'amber'
   const healthItems: HealthItem[] = [
     {
       id: 'credit',
@@ -115,9 +124,87 @@ export function DashboardV2({ data }: { data: V2ViewData }) {
 
       <HealthStripV2 items={healthItems} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4">
+      <div className="v2-dashboard-shell w-full min-w-0 gap-4">
         <div className="space-y-4 min-w-0">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="v2-dashboard-primary w-full min-w-0 gap-4">
+            <CardV2 variant="feature" className="p-5">
+              <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-5 items-center">
+                <div className="flex items-center justify-center">
+                  <ReadinessArcV2 readiness={readiness} credit={scores.credit} business={scores.business} funding={scores.funding} />
+                </div>
+                <div className="min-w-0 space-y-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="v2-section-label">Funding readiness</div>
+                      <h3 className="mt-1 text-v2xl font-semibold leading-tight text-v2ink">
+                        {readinessStatusLabel}
+                      </h3>
+                      <p className="mt-1 text-[12.5px] leading-relaxed text-v2muted">
+                        {readiness.primaryBlocker
+                          ? readiness.primaryBlocker
+                          : 'The current posture is based on the credit, business, and document pillars already recorded in the client data layer.'}
+                      </p>
+                    </div>
+                    <StatusBadgeV2 tone={readinessStatusTone as 'emerald' | 'brand' | 'amber' | 'red'} dot>
+                      {Math.round(readiness.overallScore || scores.funding)}/100
+                    </StatusBadgeV2>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <div className="rounded-xl border border-v2line bg-[#FBFCFE] p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-v2muted">Credit</div>
+                      <div className="mt-1 text-v2lg font-semibold text-v2ink">{scores.credit}/100</div>
+                      <div className="mt-1 text-[12px] leading-relaxed text-v2muted">{flow.creditProfileStatus?.nextBestAction || 'Review your credit snapshot'}</div>
+                    </div>
+                    <div className="rounded-xl border border-v2line bg-[#FBFCFE] p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-v2muted">Business</div>
+                      <div className="mt-1 text-v2lg font-semibold text-v2ink">{scores.business}/100</div>
+                      <div className="mt-1 text-[12px] leading-relaxed text-v2muted">{flow.businessProfileStatus?.nextBestAction || 'Establish your business profile'}</div>
+                    </div>
+                    <div className="rounded-xl border border-v2line bg-[#FBFCFE] p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-v2muted">Funding</div>
+                      <div className="mt-1 text-v2lg font-semibold text-v2ink">{scores.funding}/100</div>
+                      <div className="mt-1 text-[12px] leading-relaxed text-v2muted">{readiness.processingDocuments.length > 0 ? 'Waiting on provider review' : `${readiness.outstandingRequirements.length} requirements remaining`}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <div className="rounded-xl border border-v2line bg-[#FBFCFE] p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-v2muted">Primary blocker</div>
+                      <div className="mt-1 text-[12.5px] leading-relaxed text-v2ink">
+                        {readiness.primaryBlocker || 'No primary blocker recorded.'}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-v2line bg-[#FBFCFE] p-3">
+                      <div className="text-[11px] font-semibold uppercase tracking-wider text-v2muted">Next action</div>
+                      <div className="mt-1 text-[12.5px] leading-relaxed text-v2ink">
+                        {readiness.nextBestAction || journey.nextBestAction}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className="v2-btn v2-btn--primary v2-btn--sm" onClick={() => navigateV2(readiness.nextBestActionRoute || journey.nextBestActionRoute)}>
+                      <Upload size={14} /> Upload document
+                    </button>
+                    <button type="button" className="v2-btn v2-btn--ghost v2-btn--sm" onClick={() => navigateV2('/client-v2/funding-access')}>
+                      Review funding access
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </CardV2>
+
+            <NextMoveCardV2
+              action={readiness.nextBestAction || journey.nextBestAction}
+              route={readiness.nextBestActionRoute || journey.nextBestActionRoute}
+              outstandingCount={readiness.outstandingRequirements.length}
+              waitingOnProvider={readiness.processingDocuments.length > 0}
+              providerLabel="GoClear Review Team"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
             <KpiTileV2
               label="Credit Profile"
               value={scores.credit}
@@ -173,14 +260,6 @@ export function DashboardV2({ data }: { data: V2ViewData }) {
             </div>
           </CardV2>
 
-          <NextMoveCardV2
-            action={readiness.nextBestAction || journey.nextBestAction}
-            route={readiness.nextBestActionRoute || journey.nextBestActionRoute}
-            outstandingCount={readiness.outstandingRequirements.length}
-            waitingOnProvider={readiness.processingDocuments.length > 0}
-            providerLabel="GoClear Review Team"
-          />
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <DocumentStatusCardV2 documents={documents} />
             <ActivityFeedV2 activities={activities} />
@@ -215,9 +294,6 @@ export function DashboardV2({ data }: { data: V2ViewData }) {
         </div>
 
         <aside className="space-y-4">
-          <CardV2 variant="feature">
-            <ReadinessArcV2 readiness={readiness} credit={scores.credit} business={scores.business} funding={scores.funding} />
-          </CardV2>
           <HermesPanelV2
             stageLabel={railStages.find((s) => s.state === 'current')?.shortLabel || profile?.advisorName || 'Funding readiness'}
             nextAction={readiness.nextBestAction || 'Your next step will appear here once reviewed.'}

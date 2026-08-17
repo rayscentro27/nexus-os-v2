@@ -116,6 +116,20 @@
   color: #FFFFFF;
 }
 
+.v2-dashboard-shell,
+.v2-dashboard-primary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+@media (max-width: 1279px) {
+  .v2-dashboard-shell,
+  .v2-dashboard-primary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---- Buttons ---- */
 .v2-btn {
   display: inline-flex;
