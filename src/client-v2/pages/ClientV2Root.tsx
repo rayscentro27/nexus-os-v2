@@ -78,7 +78,11 @@ export function ClientV2Gate() {
   const [clientOk, setClientOk] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (loading || !user) return
+    if (loading) return
+    if (!user) {
+      setClientOk(false)
+      return
+    }
     let cancelled = false
     ;(async () => {
       try {
@@ -99,7 +103,7 @@ export function ClientV2Gate() {
     }
   }, [user, loading])
 
-  if (loading || clientOk === null) {
+  if (loading || (user && clientOk === null)) {
     return (
       <div className="v2-app min-h-screen flex items-center justify-center">
         <div className="text-v2muted text-v2base">Preparing your portal…</div>
