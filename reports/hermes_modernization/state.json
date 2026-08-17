@@ -1,6 +1,6 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-2",
+  "current_checkpoint": "checkpoint-3",
   "started_commit": "2aab745",
   "ended_commit": "PENDING",
   "status": "IN_PROGRESS",
@@ -66,12 +66,13 @@
       "mission_control_visibility",
       "tests"
     ],
-    "completed": ["audit", "python_capability_registry"],
-    "next": "isolated_hermes_lab"
+    "completed": ["audit", "python_capability_registry", "isolated_hermes_lab"],
+    "next": "nexus_hermes_plugin"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
     "checkpoint-2": "feat(hermes): add deterministic nexus capability registry",
+    "checkpoint-3": "feat(hermes): add isolated upstream compatibility lab",
     "beyond": [
       "feat(hermes): add upstream lab plugin and skill foundation",
       "feat(loops): add deterministic-first nexus loop framework",
