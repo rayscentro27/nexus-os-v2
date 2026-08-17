@@ -1,0 +1,319 @@
+{
+  "schema": "nexus-hermes-modernization/process-classification",
+  "generated_at": "2026-08-17T00:00:00Z",
+  "baseline_commit": "2aab745",
+  "methodology": "Static code inspection of HEAD baseline. Classifications are advisory for Phase 1+; no code was changed.",
+  "classification_legend": {
+    "KEEP_PYTHON": "deterministic capability, keep as-is",
+    "WRAP_WITH_HERMES": "deterministic capability that a Hermes skill may invoke read-only, keep Python as executor",
+    "AI_ASSISTED": "inherently AI work, keep but bound scope",
+    "KEEP_LANGGRAPH": "graphed AI reasoning, keep",
+    "KEEP_TEMPORAL": "durable workflow, keep",
+    "SIMPLIFY": "reduce complexity without removing capability",
+    "REPLACE_ONLY_IF_PROVEN": "candidate for replacement only after proven parity",
+    "DEPRECATE_LATER": "superseded or stubbed, no active consumers"
+  },
+  "processes": {
+    "run_nexus_full_activation": {
+      "name": "Full activation orchestrator",
+      "path": "scripts/activation/run_nexus_full_activation.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Deterministic subprocess orchestrator; staging-only writes. Core daily go-to path.",
+      "ai_used": false,
+      "supabase_writes": "staging files only",
+      "render_safe": true
+    },
+    "run_daily_operating_cycle": {
+      "name": "Daily operating cycle (08:00)",
+      "path": "scripts/activation/run_daily_operating_cycle.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Runs the 25-command DAILY_COMMANDS from operating_cycle_common.py deterministically.",
+      "ai_used": false,
+      "supabase_writes": "no direct; subprocess only"
+    },
+    "run_evening_closeout_cycle": {
+      "name": "Evening closeout cycle (18:00)",
+      "path": "scripts/activation/run_evening_closeout_cycle.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Deterministic closeout; blocker matrix, checklist, revenue, review queue.",
+      "ai_used": false,
+      "supabase_writes": "no direct"
+    },
+    "nexus_runner": {
+      "name": "Agent job runner",
+      "path": "scripts/nexus_runner.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Claims/updates agent_jobs with heartbeats; allowlisted handler dispatch. Deterministic execution engine.",
+      "ai_used": false,
+      "supabase_writes": true
+    },
+    "run_social_publish_job": {
+      "name": "Social publish worker",
+      "path": "scripts/run_social_publish_job.py",
+      "classification": "REPLACE_ONLY_IF_PROVEN",
+      "rationale": "Facebook publisher, dry-run default, approval-gated. Keep until social publishing is proven safe; only then evaluate a Hermes-gated equivalent.",
+      "ai_used": false,
+      "supabase_writes": true,
+      "enabled": false
+    },
+    "nexus_telegram_bridge": {
+      "name": "Telegram operator console",
+      "path": "scripts/telegram/nexus_telegram_bridge.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Mobile operator console, search-API only, no chat-completion. Protected production path until Gateway parity.",
+      "ai_used": false,
+      "supabase_writes": true,
+      "enabled": true
+    },
+    "nova_telegram_worker": {
+      "name": "Nova Telegram worker",
+      "path": "scripts/nova/nova_telegram_worker.py",
+      "classification": "AI_ASSISTED",
+      "rationale": "Isolated conversational agent; deterministic pre-model gate, redaction allowlist, read-only Supabase. Keep as Hermes-family agent.",
+      "ai_used": true,
+      "supabase_writes": false,
+      "enabled": true
+    },
+    "alpha_telegram_worker": {
+      "name": "Alpha Telegram worker",
+      "path": "scripts/alpha/alpha_telegram_worker.py",
+      "classification": "AI_ASSISTED",
+      "rationale": "Alpha external-research ingestion; mission → intent → live research → synthesis. Keep isolated from client PII.",
+      "ai_used": true,
+      "supabase_writes": "via alpha_live_research",
+      "enabled": true
+    },
+    "alpha_live_research": {
+      "name": "Alpha live research bridge",
+      "path": "scripts/alpha/alpha_live_research.py",
+      "classification": "AI_ASSISTED",
+      "rationale": "Brave + YouTube + OpenRouter synthesis, deterministic fallback. The primary external-research feed. Keep; harden evidence provenance.",
+      "ai_used": true,
+      "supabase_writes": true
+    },
+    "nexus_oanda_practice_engine": {
+      "name": "OANDA practice trading engine",
+      "path": "scripts/trading/nexus_oanda_practice_engine.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Practice-only; deterministic risk/strategy logic; restricted to api-fxpractice. Do not convert to AI.",
+      "ai_used": false,
+      "supabase_writes": "evidence only"
+    },
+    "model_router": {
+      "name": "Model/provider policy router",
+      "path": "scripts/model_router.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Deterministic sensitivity→route decision layer. Exemplar of deterministic-first routing; the anchor for all model-tier work.",
+      "ai_used": false,
+      "supabase_writes": "model_route_decisions"
+    },
+    "governed_approvals": {
+      "name": "Governed approval engine",
+      "path": "scripts/nexus_agent_platform/governed/approvals.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Single-use, TTL, action-bound approvals. Security-critical; must not be replaced with an LLM.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "governed_policy_gate": {
+      "name": "Policy gate",
+      "path": "scripts/nexus_agent_platform/governed/policy_gate.py",
+      "classification": "WRAP_WITH_HERMES",
+      "rationale": "10 deterministic checks precede any execution. Hermes may consume it read-only via a read-only tool; never bypass.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "governed_action_registry": {
+      "name": "Action registry",
+      "path": "scripts/nexus_agent_platform/governed/action_registry.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "LOW-risk executable set + PROHIBITED list. Deterministic authority.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "governed_work_orders": {
+      "name": "Work-order state machine",
+      "path": "scripts/nexus_agent_platform/governed/work_orders.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "State machine with idempotency keys. Deterministic; do not move to LLM.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "capability_dispatcher": {
+      "name": "Capability dispatcher (contracts)",
+      "path": "scripts/nexus_agent_platform/contracts/dispatcher.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Signed capability dispatch with typed contracts. The correct integration point for a Hermes plugin.",
+      "ai_used": false,
+      "supabase_writes": "none directly"
+    },
+    "capabilities_registry": {
+      "name": "Per-agent capability registry",
+      "path": "scripts/nexus_agent_platform/capabilities/registry.py",
+      "classification": "WRAP_WITH_HERMES",
+      "rationale": "Static capability catalogs; expose read-only to the plugin so Hermes can discover Nexus capabilities deterministically.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "nexus_knowledge": {
+      "name": "Nexus knowledge registry",
+      "path": "scripts/nexus_agent_platform/capabilities/nexus_knowledge.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Structural knowledge + live state readers. Read-only, no credentials.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "nexus_query_planner": {
+      "name": "Nova semantic query planner",
+      "path": "scripts/nexus_agent_platform/capabilities/nexus_query_planner.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Deterministic plan → validate → execute with schema gates. Pre-model gate is a model-tier pattern to reuse.",
+      "ai_used": false,
+      "supabase_writes": false
+    },
+    "hermes_graph": {
+      "name": "Hermes LangGraph",
+      "path": "scripts/nexus_agent_platform/agents/hermes.py",
+      "classification": "KEEP_LANGGRAPH",
+      "rationale": "Conversational front brain + governed engine. Graph is the right abstraction for chat routing; keep behind flag with sync fallback.",
+      "ai_used": true
+    },
+    "alpha_graph": {
+      "name": "Alpha LangGraph",
+      "path": "scripts/nexus_agent_platform/agents/alpha.py",
+      "classification": "KEEP_LANGGRAPH",
+      "rationale": "Research decision graph; keep as the explicit research-reasoning surface.",
+      "ai_used": true
+    },
+    "nova_graph": {
+      "name": "Nova LangGraph",
+      "path": "scripts/nexus_agent_platform/agents/nova.py",
+      "classification": "KEEP_LANGGRAPH",
+      "rationale": "Isolated conversational graph with capability gate; keep isolated.",
+      "ai_used": true
+    },
+    "temporal_workflows": {
+      "name": "Temporal workflow layer",
+      "path": "scripts/nexus_agent_platform/workflows/temporal_workflows.py",
+      "classification": "KEEP_TEMPORAL",
+      "rationale": "Durable scheduled reports/email/recovery. Keep; do not replace with Hermes delegation.",
+      "ai_used": false
+    },
+    "litellm_gateway": {
+      "name": "LiteLLM model gateway adapter",
+      "path": "scripts/nexus_agent_platform/workflows/litellm_adapter.py",
+      "classification": "AI_ASSISTED",
+      "rationale": "Model-call adapter. Keep as the LLM transport; route through model_router.",
+      "ai_used": true
+    },
+    "supabase_schema": {
+      "name": "Supabase schema + RLS",
+      "path": "supabase/migrations",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Authoritative business truth; 114 RLS tables, 208 policies. Do not replace or weaken.",
+      "ai_used": false
+    },
+    "youtube_metadata_intake": {
+      "name": "YouTube API metadata intake",
+      "path": "scripts/research/run_youtube_api_metadata_intake.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Approved-metadata-only, quota-aware connector. Deterministic research feed.",
+      "ai_used": false,
+      "enabled": true
+    },
+    "youtube_transcript_import": {
+      "name": "YouTube transcript import",
+      "path": "scripts/research/run_youtube_transcript_import.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Approved local TXT ingestion; no media download. Keep deterministic.",
+      "ai_used": false,
+      "enabled": true
+    },
+    "research_source_scoring": {
+      "name": "Research source scout/scoring",
+      "path": "scripts/research/run_research_source_discovery.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Deterministic scoring under research_safety_policy; source registry is authority.",
+      "ai_used": false,
+      "enabled": true
+    },
+    "hermes_web_search": {
+      "name": "Hermes web-search harness",
+      "path": "scripts/hermes/hermes_web_search.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Provider-abstraction harness (brave/tavily/serpapi/searxng). Zero keys configured; needs env, not replacement.",
+      "ai_used": false,
+      "blocked_by_env": "no search API keys",
+      "enabled": false
+    },
+    "alpha_research_boundary": {
+      "name": "Alpha PII isolation contract",
+      "path": "scripts/nexus_agent_platform/agents/alpha.py",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Alpha must not receive client PII. Contract is code-enforced today (NOVA/Alpha allowlists). Preserve.",
+      "ai_used": false
+    },
+    "client_vault_contract": {
+      "name": "Client vault contract",
+      "path": "src/config/clientVaultContract.ts",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Mock-only, not_connected_by_design. Do not flip live without separate approval.",
+      "ai_used": false,
+      "active": false
+    },
+    "client_portal_v2": {
+      "name": "Client Portal V2",
+      "path": "src/client-v2/",
+      "classification": "KEEP_PYTHON",
+      "rationale": "PROTECTED complete layer. Do not redesign; only justified narrow integration.",
+      "ai_used": false,
+      "protected": true
+    },
+    "command_center_v1": {
+      "name": "Command Center (V1 panels)",
+      "path": "src/components/command-center/MissionControl.tsx",
+      "classification": "KEEP_PYTHON",
+      "rationale": "Existing admin panels are the integration target for Mission Control V2. Extend, do not rebuild.",
+      "ai_used": false
+    },
+    "run_nexus_daily_closeout": {
+      "name": "Daily closeout stub",
+      "path": "scripts/run_nexus_daily_closeout.py",
+      "classification": "DEPRECATE_LATER",
+      "rationale": "Superseded by run_evening_closeout_cycle.py.",
+      "ai_used": false,
+      "active": false
+    },
+    "run_nexus_research_cycle": {
+      "name": "Research cycle stub (disabled plist)",
+      "path": "scripts/run_nexus_research_cycle.py",
+      "classification": "DEPRECATE_LATER",
+      "rationale": "Disabled plist; superseded by schedule registry research entries.",
+      "ai_used": false,
+      "active": false
+    },
+    "run_nexus_operational_cycle": {
+      "name": "Legacy 2-hour operational cycle",
+      "path": "scripts/run_nexus_operational_cycle.py",
+      "classification": "SIMPLIFY",
+      "rationale": "Superseded by daily/evening cycles; keep available, avoid parallel expansion.",
+      "ai_used": false,
+      "active": false
+    }
+  },
+  "summary": {
+    "total_classified": 41,
+    "counts": {
+      "KEEP_PYTHON": 23,
+      "WRAP_WITH_HERMES": 2,
+      "AI_ASSISTED": 5,
+      "KEEP_LANGGRAPH": 3,
+      "KEEP_TEMPORAL": 1,
+      "SIMPLIFY": 1,
+      "REPLACE_ONLY_IF_PROVEN": 1,
+      "DEPRECATE_LATER": 2,
+      "protected/no-op": 3
+    },
+    "note": "No deterministic process is classified REPLACE. The vertical slice for Phase 1+ must AVOID touching any KEEP_PYTHON path."
+  }
+}

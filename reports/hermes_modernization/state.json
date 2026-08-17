@@ -1,0 +1,68 @@
+{
+  "program": "nexus-hermes-modernization",
+  "current_checkpoint": "checkpoint-1",
+  "started_commit": "2aab745",
+  "ended_commit": "PENDING",
+  "status": "IN_PROGRESS",
+  "protected": {
+    "client_portal_v2": "COMPLETE / PROTECTED — do not redesign src/client-v2",
+    "classic_client": "must remain unaffected",
+    "deterministic_python": "no KEEP_PYTHON process may be replaced with AI",
+    "supabase_rls": "do not weaken RLS/governance",
+    "production_telegram": "keep until Gateway parity"
+  },
+  "environment_blocks": {
+    "E2E_PERSONA_*": "absent — guided-client-portal-certification ENV_BLOCKED_E2E",
+    "E2E_ADMIN_*": "absent",
+    "search_api_keys": "none configured (brave/tavily/serpapi/searxng) — hermes_web_search harness gated until env provided"
+  },
+  "phases": {
+    "0": {
+      "name": "AUDIT_BEFORE_CHANGE",
+      "status": "COMPLETE",
+      "deliverables": [
+        "reports/hermes_modernization/current_state_inventory.md",
+        "reports/hermes_modernization/process_classification.json"
+      ],
+      "classification_counts": {
+        "KEEP_PYTHON": 23,
+        "WRAP_WITH_HERMES": 2,
+        "AI_ASSISTED": 5,
+        "KEEP_LANGGRAPH": 3,
+        "KEEP_TEMPORAL": 1,
+        "SIMPLIFY": 1,
+        "REPLACE_ONLY_IF_PROVEN": 1,
+        "DEPRECATE_LATER": 2,
+        "protected": 3
+      }
+    }
+  },
+  "vertical_slice": {
+    "target": [
+      "audit",
+      "python_capability_registry",
+      "isolated_hermes_lab",
+      "nexus_hermes_plugin",
+      "initial_skills",
+      "loop_framework",
+      "opportunity_engine_data_model",
+      "alpha_research_integration_foundation",
+      "creative_director_skill",
+      "safe_opportunity_pilot",
+      "mission_control_visibility",
+      "tests"
+    ],
+    "completed": ["audit"],
+    "next": "python_capability_registry"
+  },
+  "commit_history": {
+    "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
+    "beyond": [
+      "feat(hermes): add upstream lab plugin and skill foundation",
+      "feat(loops): add deterministic-first nexus loop framework",
+      "feat(opportunities): add nexus opportunity engine foundation",
+      "feat(creativity): add creative director and research pipeline",
+      "feat(ops): add mission control opportunity and cost visibility"
+    ]
+  }
+}
