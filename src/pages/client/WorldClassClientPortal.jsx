@@ -32,6 +32,7 @@ import creditRepairHero from '../../assets/nexus-3/credit/credit-repair-hero.png
 import creditRepairBanner from '../../assets/nexus-3/credit/credit-repair-hero-banner.png'
 import businessJourneyHero from '../../assets/nexus-3/business/business-journey-hero.png'
 import clydeHermesAgent from '../../assets/nexus-3/shared/clyde-hermes-agent.png'
+import { LayoutDashboard, FileSearch, RefreshCcw, Building2, Target, Rocket, FolderOpen, MessageSquare, BookOpen, CreditCard, Gauge } from 'lucide-react'
 import '../../styles/world-class-client-portal.css'
 
 const fallbackHero = '/assets/client-portal/nexus-funding-path-hero.png'
@@ -69,16 +70,16 @@ const pageMeta = {
 }
 
 const navItems = [
-  ['/client/dashboard', 'Home', '⌂'],
-  ['/client/credit-review', 'Credit Review', '〽'],
-  ['/client/credit-improvement', 'Credit Improvement', '↻'],
-  ['/client/business-foundation', 'Business Foundation', '♟'],
-  ['/client/funding-readiness', 'Funding Readiness', '⚑'],
-  ['/client/funding-access', 'Funding Access', '➤'],
-  ['/client/documents', 'Documents', '▤'],
-  ['/client/messages', 'Messages', '✉'],
-  ['/client/resources', 'Resources', '▥'],
-  ['/client/billing', 'Billing', '◈'],
+  ['/client/dashboard', 'Home', LayoutDashboard],
+  ['/client/credit-review', 'Credit Review', FileSearch],
+  ['/client/credit-improvement', 'Credit Improvement', RefreshCcw],
+  ['/client/business-foundation', 'Business Foundation', Building2],
+  ['/client/funding-readiness', 'Funding Readiness', Target],
+  ['/client/funding-access', 'Funding Access', Rocket],
+  ['/client/documents', 'Documents', FolderOpen],
+  ['/client/messages', 'Messages', MessageSquare],
+  ['/client/resources', 'Resources', BookOpen],
+  ['/client/billing', 'Billing', CreditCard],
 ]
 
 const creditTabs = [
@@ -448,6 +449,10 @@ function NextStepCard({ readiness, navigate }) {
   </div>
 }
 
+function KpiCard({ icon, label, value, unit, sub, onClick }) {
+  return <button type="button" className="wc-kpiCard" onClick={onClick}><span className="wc-kpiIcon">{icon}</span><span className="wc-kpiBody"><small>{label}</small><b>{value}{unit && <em>{unit}</em>}</b><span>{sub}</span></span></button>
+}
+
 function HomePanel({ scores, live, profileComplete, navigate, openUploadPanel, readiness, journey, existingDocuments, onUploaded }) {
   const uploaded = live?.documents?.uploadedDocuments?.length ?? 13
   const missing = live?.documents?.missingDocuments?.length ?? 3
@@ -456,25 +461,44 @@ function HomePanel({ scores, live, profileComplete, navigate, openUploadPanel, r
   const nextActions = generateNextBestActions({ scores, documents: documentRows, profileComplete, reviewPending: live?.tasks?.some?.(t => t.status === 'pending_admin_review') })
   const value = generateSubscriptionValueSummary({ scores, documents: documentRows, profileComplete, reviewPending: live?.tasks?.some?.(t => t.status === 'pending_admin_review') })
   const goals = getCustomerGoalOptions()
+  const accountCount = live?.systemReviews?.[0]?.accountsCount ?? live?.systemReviews?.[0]?.report_item_reviews?.length ?? live?.creditItems?.length ?? 0
+  const docs = getLiveDocuments(live)
+  const recentActivity = ((readiness?.readinessHistory && readiness.readinessHistory.length ? readiness.readinessHistory : value.workingOn.map(label => ({ label, status: 'observed', date: '' })))).slice(0, 3)
   const hermesNote = `Your current stage is ${CLIENT_FIVE_STAGES.find(s => s.path === readiness?.nextBestActionRoute)?.label || 'Credit Review'}. Clyde can explain what changed, what Nexus is working on, what the outsourced fulfillment provider is doing, or what we need from you next.`;
   return <section className="wc-panel wc-panel-home">
     <Hero eyebrow="Nexus 3.0" title="Funding Readiness Command Center" text="Track credit review, outsourced fulfillment, business foundation, and funding readiness in one guided journey." />
+    <div className="wc-dashboardGrid">
+      <div className="wc-dashMain">
+        <div className="wc-kpiRow">
+          <KpiCard icon={<Gauge size={22} />} label="Business Credit Score" value={scores.credit} unit="/100" sub="Credit readiness" onClick={() => navigate('/client/credit-review')} />
+          <KpiCard icon={<CreditCard size={22} />} label="Credit Accounts" value={accountCount} unit="" sub="Tracked in review" onClick={() => navigate('/client/credit-review')} />
+          <KpiCard icon={<Target size={22} />} label="Funding Readiness" value={scores.funding} unit="/100" sub="Tier 1 + Tier 2" onClick={() => navigate('/client/funding-readiness')} />
+          <KpiCard icon={<FolderOpen size={22} />} label="Documents" value={uploaded} sub={`${missing} missing`} onClick={() => navigate('/client/documents')} />
+        </div>
+        <JourneyStagePanel readiness={readiness} journey={journey} navigate={navigate} />
+        <div className="wc-homeBottom">
+          <div className="wc-card wc-homePanel"><SectionHead title="Document Status" action="Open vault →" onAction={() => navigate('/client/documents')} />{(docs.uploaded.slice(0, 2).length ? docs.uploaded.slice(0, 2) : ['Bank Statement', 'Pay Stub']).map((doc, i) => <ListItem key={`${doc}-${i}`} title={doc} text="Uploaded · categorized" />)}{docs.missing.slice(0, 2).map(doc => <ListItem key={doc} tone="orange" mark="!" title={doc} text="Missing · high impact" />)}</div>
+          <div className="wc-card wc-homePanel"><SectionHead title="Recent Activity" action={readiness?.readinessHistory?.length ? 'Live' : 'Snapshot'} />{recentActivity.map(item => <ListItem key={`${item.label}-${item.date}`} tone="blue" mark="•" title={item.label} text={`${String(item.status || '').replaceAll('_', ' ')}${item.date ? ` · ${item.date}` : ''}`} />)}</div>
+          <div className="wc-card wc-homePanel"><SectionHead title="At a Glance" action={`Overall ${readiness?.overallScore || 0}/100`} /><ListItem tone="green" mark="✓" title="Current stage" text={`${String(journey?.currentStage || 'credit_profile').replaceAll('_', ' ')} · ${String(readiness?.state || 'reviewing').replaceAll('_', ' ')}`} /><ListItem tone="blue" mark="1" title="Next best action" text={readiness?.nextBestAction || 'Complete the required documents.'} /><ListItem tone="purple" mark="R" title="Tier 1 / Tier 2" text={`Credit ${scores.credit} · Business ${scores.business} · Funding ${scores.funding}`} /></div>
+        </div>
+        <div className="wc-homeGrid">
+          <NextStepCard readiness={readiness} navigate={navigate} />
+          <div className="wc-card wc-recSteps"><SectionHead title="Next Best Action" action={nextActions[0]?.track} /><div className="wc-actionRow three">{nextActions.slice(0, 3).map((action, i) => <ActionCard key={action.title} icon={['☁', '♟', '⚑'][i]} title={action.title} text={action.description} button="Do This" onClick={() => /upload/i.test(action.title) ? openUploadPanel({ track: i === 2 ? 'business_funding' : 'credit_profile', pageContext: 'dashboard', suggestedCategory: /funding|bank|tax/i.test(action.title) ? 'funding_support' : 'credit_report', title: action.title, description: action.description }) : navigate(action.route)} />)}</div></div>
+        </div>
+        <div className="wc-card wc-goalStrip"><SectionHead title="Your Goal" action="Choose a focus" /><div>{goals.slice(0, 4).map(goal => <button key={goal.id} onClick={() => navigate(goal.id === 'get_business_funding' ? '/client/funding-readiness' : goal.id === 'build_business_profile' ? '/client/business-foundation' : '/client/credit-review')}>{goal.label}</button>)}</div></div>
+        <div className="wc-statusGrid wc-trackGrid">
+          {[flow.creditProfileStatus, flow.businessProfileStatus, flow.businessFundingStatus].map(track => <MiniCard key={track.label} icon={track.label === 'Credit Profile' ? <Gauge size={20} /> : track.label === 'Business Profile' ? <Building2 size={20} /> : <Target size={20} />} title={track.label} tag={`${track.percentComplete}%`} text={track.nextBestAction} button={track.primaryCTA} onClick={() => navigate(track.route)} />)}
+        </div>
+        <div className="wc-card wc-monthlyValue"><SectionHead title="Monthly Progress" action="Subscription value" /><ListItem tone="blue" mark="1" title="Nexus is working on" text={value.workingOn.join(', ')} /><ListItem tone="green" mark="✓" title="Completed this cycle" text={value.completedThisMonth.join(', ')} /><ListItem tone="orange" mark="!" title="Waiting on client" text={value.waitingOnClient.join(', ')} /><ListItem tone="blue" mark="2" title="Next cycle focus" text={value.nextMonthFocus} /></div>
+        <UploadLane title="Upload One Document" description={`${uploaded} uploaded documents, ${missing} missing. Clyde and Nexus use these to guide Credit Review, Credit Improvement, Business Foundation, and Funding Readiness.`} button="Upload Document" onUpload={() => openUploadPanel({ track: 'general', pageContext: 'dashboard', title: 'Upload One Document', description: 'Upload one document and Clyde will organize it for review.' })} onVault={() => navigate('/client/documents')} />
+      </div>
+      <div className="wc-dashSide">
+        <div className="wc-card wc-readyGauge"><SectionHead title="Funding Readiness" action="Score" /><Donut value={scores.funding} tone="blue" /><p className="wc-gaugeNote"><b className={`wc-${scores.funding >= 70 ? 'green' : 'orange'}Text`}>{scores.funding >= 80 ? 'Strong' : scores.funding >= 65 ? 'Moderate' : 'Action needed'}</b> · {String(readiness?.nextBestAction || 'Complete required documents').replaceAll('_', ' ')}</p><button onClick={() => navigate('/client/funding-readiness')}>Continue →</button></div>
+        <div className="wc-card wc-hermesHome"><div className="wc-bot"><img src={clydeHermesAgent} alt="Clyde advisor" /></div><h3>Clyde guidance</h3><p>{hermesNote}</p><button onClick={() => navigate('/client/messages')}>Ask Clyde</button><button onClick={() => openUploadPanel({ track: 'general', pageContext: 'dashboard', title: 'Upload One Document', description: 'Upload one document and Clyde will organize it.' })}>Upload document</button></div>
+        <ClientRevenueServiceCard navigate={navigate} />
+      </div>
+    </div>
     <ClientGuidedSurface routeKey="home" readiness={readiness} journey={journey} existingDocuments={existingDocuments} openUploadPanel={openUploadPanel} onUploaded={onUploaded} navigate={navigate} />
-    <ClientRevenueServiceCard navigate={navigate} />
-    <JourneyStagePanel readiness={readiness} journey={journey} navigate={navigate} />
-    <div className="wc-homeGrid">
-      <NextStepCard readiness={readiness} navigate={navigate} />
-      <div className="wc-card wc-hermesHome"><div className="wc-bot"><img src={clydeHermesAgent} alt="Clyde advisor" /></div><h3>Clyde guidance</h3><p>{hermesNote}</p><button onClick={() => navigate('/client/messages')}>Ask Clyde</button><button onClick={() => openUploadPanel({ track: 'general', pageContext: 'dashboard', title: 'Upload One Document', description: 'Upload one document and Clyde will organize it.' })}>Upload document</button></div>
-    </div>
-    <div className="wc-card wc-goalStrip"><SectionHead title="Your Goal" action="Choose a focus" /><div>{goals.slice(0, 4).map(goal => <button key={goal.id} onClick={() => navigate(goal.id === 'get_business_funding' ? '/client/funding-readiness' : goal.id === 'build_business_profile' ? '/client/business-foundation' : '/client/credit-review')}>{goal.label}</button>)}</div></div>
-    <div className="wc-statusGrid wc-trackGrid">
-      {[flow.creditProfileStatus, flow.businessProfileStatus, flow.businessFundingStatus].map(track => <MiniCard key={track.label} icon={track.label === 'Credit Profile' ? '〽' : track.label === 'Business Profile' ? '♟' : '⚑'} title={track.label} tag={`${track.percentComplete}%`} text={track.nextBestAction} button={track.primaryCTA} onClick={() => navigate(track.route)} />)}
-    </div>
-    <div className="wc-homeGrid">
-      <div className="wc-card wc-recSteps"><SectionHead title="Next Best Action" action={nextActions[0]?.track} /><div className="wc-actionRow three">{nextActions.slice(0, 3).map((action, i) => <ActionCard key={action.title} icon={['☁', '♟', '⚑'][i]} title={action.title} text={action.description} button="Do This" onClick={() => /upload/i.test(action.title) ? openUploadPanel({ track: i === 2 ? 'business_funding' : 'credit_profile', pageContext: 'dashboard', suggestedCategory: /funding|bank|tax/i.test(action.title) ? 'funding_support' : 'credit_report', title: action.title, description: action.description }) : navigate(action.route)} />)}</div></div>
-      <div className="wc-card wc-monthlyValue"><SectionHead title="Monthly Progress" action="Subscription value" /><ListItem tone="blue" mark="1" title="Nexus is working on" text={value.workingOn.join(', ')} /><ListItem tone="green" mark="✓" title="Completed this cycle" text={value.completedThisMonth.join(', ')} /><ListItem tone="orange" mark="!" title="Waiting on client" text={value.waitingOnClient.join(', ')} /><ListItem tone="blue" mark="2" title="Next cycle focus" text={value.nextMonthFocus} /></div>
-    </div>
-    <UploadLane title="Upload One Document" description={`${uploaded} uploaded documents, ${missing} missing. Clyde and Nexus use these to guide Credit Review, Credit Improvement, Business Foundation, and Funding Readiness.`} button="Upload Document" onUpload={() => openUploadPanel({ track: 'general', pageContext: 'dashboard', title: 'Upload One Document', description: 'Upload one document and Clyde will organize it for review.' })} onVault={() => navigate('/client/documents')} />
   </section>
 }
 
@@ -1169,7 +1193,7 @@ export default function WorldClassClientPortal({ path, onNavigate }) {
   }[meta.key]
 
   return <div className="wc-client-portal">
-    <aside className="wc-sidebar"><div className="wc-brandButton"><div className="wc-brandMark">N</div><div className="wc-brandText"><b>NEXUS</b><span>CLIENT PORTAL</span></div></div><nav className="wc-sideNav">{navItems.filter(([route]) => route !== '/client/recommendations').map(([route, label, icon]) => <button key={route} className={`wc-navLabel ${!showIcons && pageMeta[route]?.key === activeNavKey ? 'active' : ''}`} onClick={() => routeTo(route)}><span className="wc-navIcon">{icon}</span><span>{label}</span></button>)}</nav><button className={`wc-sideAction ${showIcons ? 'active' : ''}`} onClick={() => setShowIcons(true)}>View icon system →</button><div className="wc-help"><strong>Need help?</strong><p>Our team is here to support you.</p></div>{shouldShowInternalDataBadge && <div className="wc-live"><strong>●</strong> {liveStatusLabel}<p>as of today, 9:41 AM</p></div>}<button className="wc-signOut" onClick={() => forceAuthResetAndRedirect('/client/login')}>Sign Out</button></aside>
+    <aside className="wc-sidebar"><div className="wc-brandButton"><div className="wc-brandMark">N</div><div className="wc-brandText"><b>NEXUS</b><span>CLIENT PORTAL</span></div></div><nav className="wc-sideNav">{navItems.filter(([route]) => route !== '/client/recommendations').map(([route, label, Icon]) => <button key={route} className={`wc-navLabel ${!showIcons && pageMeta[route]?.key === activeNavKey ? 'active' : ''}`} onClick={() => routeTo(route)}><span className="wc-navIcon"><Icon size={18} strokeWidth={2} /></span><span>{label}</span></button>)}</nav><button className={`wc-sideAction ${showIcons ? 'active' : ''}`} onClick={() => setShowIcons(true)}>View icon system →</button><div className="wc-help"><strong>Need help?</strong><p>Our team is here to support you.</p></div>{shouldShowInternalDataBadge && <div className="wc-live"><strong>●</strong> {liveStatusLabel}<p>as of today, 9:41 AM</p></div>}<button className="wc-signOut" onClick={() => forceAuthResetAndRedirect('/client/login')}>Sign Out</button></aside>
     <main className="wc-main"><header className="wc-topbar"><div className="wc-pill">💎 {profile.membershipTier || 'Nexus Funding Readiness Membership'}</div><button className="wc-bell" disabled title="Notifications panel is coming soon. Ask Clyde or request GoClear review for help.">🔔<span>2</span></button><button className="wc-userPill" onClick={() => routeTo('/client/profile')}><div className="wc-avatar">👨🏻</div>{profile.name || 'Alex Morgan'}⌄</button><button className="wc-topSignOut" onClick={() => forceAuthResetAndRedirect('/client/login')}>Sign Out</button></header><div className="wc-pageHost">{panel}</div></main>
     <button type="button" className="wc-mobileHermesLauncher" onClick={() => setClydeOpen(true)} aria-label="Chat with Clyde">
       <img src={clydeHermesAgent} alt="" aria-hidden="true" />
