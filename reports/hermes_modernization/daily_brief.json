@@ -144,14 +144,14 @@
     "ai_execution_share": 0.0,
     "cost_status": "LOCAL_COMPUTE_ONLY",
     "deterministic_execution_share": 1.0,
-    "execution_records": 77,
+    "execution_records": 85,
     "input_tokens": 0,
     "local_compute_executions": 1,
     "output_tokens": 0,
     "provider_cost_usd": 0.0,
-    "successful_records": 77,
-    "value_events": 66,
-    "zero_token_executions": 66
+    "successful_records": 85,
+    "value_events": 74,
+    "zero_token_executions": 74
   },
   "creative_updates": {
     "selected_territory": "Scout Brief",
@@ -180,7 +180,7 @@
     "live_supabase_read": "NOT_AVAILABLE",
     "status": "MIXED_REPORT_AGES"
   },
-  "generated_at": "2026-08-18T16:44:02.968704+00:00",
+  "generated_at": "2026-08-18T17:11:35.387944+00:00",
   "highest_value_next_action": "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
   "learning_updates": {
     "approval_required": true,
@@ -232,7 +232,7 @@
       {
         "ai_calls": 0,
         "cost": 0.0,
-        "last_run": "2026-08-18T16:44:01.879313+00:00",
+        "last_run": "2026-08-18T17:11:32.746288+00:00",
         "loop_id": "open_source_scout_loop",
         "next_action": "Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.",
         "status": "NO_CHANGE",
@@ -245,7 +245,7 @@
       {
         "ai_calls": 0,
         "cost": 0.0,
-        "last_run": "2026-08-18T16:44:02.239202+00:00",
+        "last_run": "2026-08-18T17:11:33.610112+00:00",
         "loop_id": "research_intake_loop",
         "next_action": "Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.",
         "status": "NO_CHANGE",
@@ -258,21 +258,23 @@
       {
         "ai_calls": 0,
         "cost": 0.0,
-        "last_run": "2026-08-18T16:44:02.122625+00:00",
+        "last_run": "2026-08-18T17:11:33.355862+00:00",
         "loop_id": "revenue_opportunity_loop",
         "next_action": "Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.",
         "status": "NO_CHANGE",
         "value": {
           "confirmed_revenue": 0,
-          "estimated_revenue": 1409.0,
-          "opportunities_advanced": 3
+          "confirmed_revenue_usd": 0,
+          "estimated_revenue": 1312.0,
+          "estimated_value_usd": 1312.0,
+          "opportunities_advanced": 2
         },
         "verifier": "pass"
       },
       {
         "ai_calls": 0,
         "cost": 0.0,
-        "last_run": "2026-08-18T16:44:01.934481+00:00",
+        "last_run": "2026-08-18T17:11:33.124755+00:00",
         "loop_id": "seo_opportunity_loop",
         "next_action": "Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.",
         "status": "NO_CHANGE",
@@ -392,7 +394,7 @@
     "ai_calls": 0,
     "input_tokens": 0,
     "output_tokens": 0,
-    "zero_token_executions": 66
+    "zero_token_executions": 74
   },
   "top_priority": {
     "reason": "The revenue dashboard identifies this as the exact next money action; no live charge is asserted.",

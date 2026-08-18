@@ -265,7 +265,7 @@
       "reason": "deadline/eligibility source verification is not currently proven"
     }
   ],
-  "generated_at": "2026-08-18T16:44:02.296685+00:00",
+  "generated_at": "2026-08-18T17:11:33.697088+00:00",
   "governance": {
     "client_pii": "NOT_USED",
     "client_portal_changes": "NONE",
@@ -275,7 +275,8 @@
     "production_deployment": "DISABLED",
     "production_telegram_changes": "NONE",
     "provider_credits": "DISABLED",
-    "public_publishing": "DISABLED"
+    "public_publishing": "DISABLED",
+    "real_revenue_experiment_launched": false
   },
   "learning_telemetry": {
     "automatic_policy_mutation": false,
@@ -291,7 +292,29 @@
     ]
   },
   "mode": "bounded_internal_non_publishing",
-  "phase": "PHASE 14 \u2014 CONTROLLED BUSINESS LOOP EXPANSION",
+  "phase": "PHASE 14C \u2014 VALUE ACCOUNTING REPAIR + EXPERIMENT READINESS RECHECK",
+  "revenue_accounting_repair": {
+    "confirmed_revenue_usd": 0,
+    "duplicate_records_removed": 1,
+    "estimated_value_usd": 1312.0,
+    "live_discovered_revenue": false,
+    "semantic_dedupe": true,
+    "valuation_source": "PROOF_FIXTURE",
+    "verifier": {
+      "reason": "semantic identity, estimate-only valuation, and zero confirmed revenue verified",
+      "status": "pass"
+    }
+  },
+  "revenue_experiment_gate": {
+    "confirmed_revenue_usd": 0,
+    "estimated_value_usd": 1312.0,
+    "launch_status": "NOT_LAUNCHED",
+    "next_action": "Ray may authorize a separate bounded internal test plan; do not publish, contact, charge, or deploy.",
+    "reason": "Only report/proof-backed estimated value is available; confirmed revenue is $0 and external execution requires explicit Ray approval.",
+    "requires_ray_approval": true,
+    "selected_candidate": "readiness_review_97",
+    "status": "QUALIFIED_WITH_LIMITS"
+  },
   "runs": [
     {
       "contract": {
@@ -348,12 +371,15 @@
         "estimated_cost": 0.0,
         "evidence_hash": "74174c52099bebe51ba774ac048f80fcbcb26d56644e0d7e53bdd630928b904a",
         "input_tokens": 0,
+        "live_discovered_revenue": "UNKNOWN",
         "no_change": false,
         "output_tokens": 0,
         "result_hash": "a32d793b80c377d301d7da4a89ce5e50d3f1767892c4c88ec1b53c2e7114d535",
-        "run_id": "open_source_scout_loop_de3ebbd0d4194c999ec5b13aa96f5ee3",
+        "run_id": "open_source_scout_loop_ed2c4d4390b74aff840e875c2a56be73",
+        "semantic_dedupe_keys": [],
         "source_hash": "47d4a4f66164b08a93fc413d4dddfafec154f71bd8608d6bb5fd82841422165b",
         "status": "completed",
+        "valuation_source": "UNKNOWN",
         "value_classification": "ESTIMATED_VALUE",
         "value_events": 1,
         "value_metric": {
@@ -373,12 +399,15 @@
         "estimated_cost": 0.0,
         "evidence_hash": "74174c52099bebe51ba774ac048f80fcbcb26d56644e0d7e53bdd630928b904a",
         "input_tokens": 0,
+        "live_discovered_revenue": "UNKNOWN",
         "no_change": true,
         "output_tokens": 0,
         "result_hash": "a32d793b80c377d301d7da4a89ce5e50d3f1767892c4c88ec1b53c2e7114d535",
-        "run_id": "open_source_scout_loop_610847c45a4a4ef487f464291c5c0c1c",
+        "run_id": "open_source_scout_loop_2ddde5be7d9b4705b6f450759f400935",
+        "semantic_dedupe_keys": [],
         "source_hash": "47d4a4f66164b08a93fc413d4dddfafec154f71bd8608d6bb5fd82841422165b",
         "status": "completed",
+        "valuation_source": "UNKNOWN",
         "value_classification": "ESTIMATED_VALUE",
         "value_events": 1,
         "value_metric": {
@@ -454,12 +483,15 @@
         "estimated_cost": 0.0,
         "evidence_hash": "582dc8680b40a2e7bb01211f0ba8238519aa7d154a136b923611fb776927e565",
         "input_tokens": 0,
+        "live_discovered_revenue": "UNKNOWN",
         "no_change": false,
         "output_tokens": 0,
         "result_hash": "588439129ffeb255236ffb176434b7a5916df35e113f361ed4d282c41d181b76",
-        "run_id": "seo_opportunity_loop_ae5ebc82b1714c88b54c22672ab693eb",
+        "run_id": "seo_opportunity_loop_f65f2b4440b349eab1f3b703c8e91ff5",
+        "semantic_dedupe_keys": [],
         "source_hash": "3a4f68be4b9d7d471a249ee629a4e01fdaf5854b55aa551f575571a377e4b725",
         "status": "completed",
+        "valuation_source": "UNKNOWN",
         "value_classification": "ESTIMATED_VALUE",
         "value_events": 1,
         "value_metric": {
@@ -479,12 +511,15 @@
         "estimated_cost": 0.0,
         "evidence_hash": "582dc8680b40a2e7bb01211f0ba8238519aa7d154a136b923611fb776927e565",
         "input_tokens": 0,
+        "live_discovered_revenue": "UNKNOWN",
         "no_change": true,
         "output_tokens": 0,
         "result_hash": "588439129ffeb255236ffb176434b7a5916df35e113f361ed4d282c41d181b76",
-        "run_id": "seo_opportunity_loop_47a22717e1ba4767b4397e30157e47f5",
+        "run_id": "seo_opportunity_loop_2a16d45a305c48b3b6acb6803db887e5",
+        "semantic_dedupe_keys": [],
         "source_hash": "3a4f68be4b9d7d471a249ee629a4e01fdaf5854b55aa551f575571a377e4b725",
         "status": "completed",
+        "valuation_source": "UNKNOWN",
         "value_classification": "ESTIMATED_VALUE",
         "value_events": 1,
         "value_metric": {
@@ -556,25 +591,33 @@
       "run_1": {
         "ai_calls": 0,
         "delta_status": "CHANGED",
-        "duration_ms": 0,
+        "duration_ms": 1,
         "estimated_cost": 0.0,
         "evidence_hash": "c30ea132c5b357682be8a3cb937ca6196dc6a5ec0cc4c8cfa019cddc5ba68931",
         "input_tokens": 0,
+        "live_discovered_revenue": false,
         "no_change": false,
         "output_tokens": 0,
-        "result_hash": "08fdb0d1cef644cd5055f2d90fc61175cbea0bc844cdc8354dc557d8271d94d1",
-        "run_id": "revenue_opportunity_loop_18d620cd46774551a1b334a3cd6c266f",
+        "result_hash": "dd20f39b3af914c3ef730bae649b365f54768e9425e24f11859c2d45183fdc95",
+        "run_id": "revenue_opportunity_loop_81b9061a31494d2e9ea6d8f4b226cef6",
+        "semantic_dedupe_keys": [
+          "revenue:e9a58752469acf0768ae4e24",
+          "revenue:709f5e3574440e62c890a6fc"
+        ],
         "source_hash": "7df10d043d6f31ffe4e500bd05c22921f05b169ee86227c46ab2601eceadbe81",
         "status": "completed",
+        "valuation_source": "PROOF_FIXTURE",
         "value_classification": "ESTIMATED_VALUE_ONLY",
         "value_events": 1,
         "value_metric": {
           "confirmed_revenue": 0,
-          "estimated_revenue": 1409.0,
-          "opportunities_advanced": 3
+          "confirmed_revenue_usd": 0,
+          "estimated_revenue": 1312.0,
+          "estimated_value_usd": 1312.0,
+          "opportunities_advanced": 2
         },
         "verifier": {
-          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "reason": "semantic identity, estimate-only valuation, and zero confirmed revenue verified",
           "status": "pass"
         },
         "zero_token_execution": true
@@ -582,25 +625,33 @@
       "run_2": {
         "ai_calls": 0,
         "delta_status": "NO_CHANGE",
-        "duration_ms": 0,
+        "duration_ms": 1,
         "estimated_cost": 0.0,
         "evidence_hash": "c30ea132c5b357682be8a3cb937ca6196dc6a5ec0cc4c8cfa019cddc5ba68931",
         "input_tokens": 0,
+        "live_discovered_revenue": false,
         "no_change": true,
         "output_tokens": 0,
-        "result_hash": "08fdb0d1cef644cd5055f2d90fc61175cbea0bc844cdc8354dc557d8271d94d1",
-        "run_id": "revenue_opportunity_loop_3c5e05f1848047ad9dcd0c8775060427",
+        "result_hash": "dd20f39b3af914c3ef730bae649b365f54768e9425e24f11859c2d45183fdc95",
+        "run_id": "revenue_opportunity_loop_3c8e2245ecf448e5bac86acf181e97f2",
+        "semantic_dedupe_keys": [
+          "revenue:e9a58752469acf0768ae4e24",
+          "revenue:709f5e3574440e62c890a6fc"
+        ],
         "source_hash": "7df10d043d6f31ffe4e500bd05c22921f05b169ee86227c46ab2601eceadbe81",
         "status": "completed",
+        "valuation_source": "PROOF_FIXTURE",
         "value_classification": "ESTIMATED_VALUE_ONLY",
         "value_events": 1,
         "value_metric": {
           "confirmed_revenue": 0,
-          "estimated_revenue": 1409.0,
-          "opportunities_advanced": 3
+          "confirmed_revenue_usd": 0,
+          "estimated_revenue": 1312.0,
+          "estimated_value_usd": 1312.0,
+          "opportunities_advanced": 2
         },
         "verifier": {
-          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "reason": "semantic identity, estimate-only valuation, and zero confirmed revenue verified",
           "status": "pass"
         },
         "zero_token_execution": true
@@ -664,16 +715,19 @@
       "run_1": {
         "ai_calls": 0,
         "delta_status": "CHANGED",
-        "duration_ms": 0,
+        "duration_ms": 1,
         "estimated_cost": 0.0,
         "evidence_hash": "0fffb4d18e607115cf0c8056ddfc9ff30fec2852e21cb39290ad607fef5fdc14",
         "input_tokens": 0,
+        "live_discovered_revenue": "UNKNOWN",
         "no_change": false,
         "output_tokens": 0,
         "result_hash": "41d8aa1b94cae0378813a0395da7f162065f0adb2c384230d4f52b61861a0a8d",
-        "run_id": "research_intake_loop_d5d40d7dcf2042638b371c9cf5f85c48",
+        "run_id": "research_intake_loop_4eef650a14174c06b81c00dcabcc8df9",
+        "semantic_dedupe_keys": [],
         "source_hash": "969cdb804113f73a14f6921d52558535a86f0551c27a657734bece659397ddf3",
         "status": "completed",
+        "valuation_source": "UNKNOWN",
         "value_classification": "MEASURED_COUNT",
         "value_events": 1,
         "value_metric": {
@@ -693,12 +747,15 @@
         "estimated_cost": 0.0,
         "evidence_hash": "0fffb4d18e607115cf0c8056ddfc9ff30fec2852e21cb39290ad607fef5fdc14",
         "input_tokens": 0,
+        "live_discovered_revenue": "UNKNOWN",
         "no_change": true,
         "output_tokens": 0,
         "result_hash": "41d8aa1b94cae0378813a0395da7f162065f0adb2c384230d4f52b61861a0a8d",
-        "run_id": "research_intake_loop_38defd8243cd4f618ad7d9fd8943a76e",
+        "run_id": "research_intake_loop_df89b1270d54444abdc167ce2baa2537",
+        "semantic_dedupe_keys": [],
         "source_hash": "969cdb804113f73a14f6921d52558535a86f0551c27a657734bece659397ddf3",
         "status": "completed",
+        "valuation_source": "UNKNOWN",
         "value_classification": "MEASURED_COUNT",
         "value_events": 1,
         "value_metric": {

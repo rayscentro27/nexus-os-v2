@@ -1,7 +1,7 @@
 # Hermes Daily Brief — Phase 11
 
 - brief_id: `daily_brief_7bb3abdd6f16cba3`
-- generated_at: `2026-08-18T16:44:02.968704+00:00`
+- generated_at: `2026-08-18T17:11:35.387944+00:00`
 - status: **REPORT_BACKED_PARTIAL**
 - confidence: `MEDIUM`
 - freshness: `MIXED_REPORT_AGES`
@@ -25,15 +25,15 @@ The revenue dashboard identifies this as the exact next money action; no live ch
 - deterministic execution share: `1.0`
 - AI execution share: `0.0`
 - input/output tokens: `0` / `0`
-- AI calls: `0`; zero-token executions: `66`
+- AI calls: `0`; zero-token executions: `74`
 - provider cost USD: `$0.0`; local compute executions: `1`
-- value events: `66`; successful records: `77`
+- value events: `74`; successful records: `85`
 
 ## Business loops
 
 - `open_source_scout_loop`: `NO_CHANGE`; value `{'duplicate_work_avoided': 1, 'opportunities_created': 2}`; cost `$0.0`; AI calls `0`; verifier `pass`; next: Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.
 - `research_intake_loop`: `NO_CHANGE`; value `{'duplicate_work_avoided': 0, 'research_items_processed': 3}`; cost `$0.0`; AI calls `0`; verifier `pass`; next: Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.
-- `revenue_opportunity_loop`: `NO_CHANGE`; value `{'confirmed_revenue': 0, 'estimated_revenue': 1409.0, 'opportunities_advanced': 3}`; cost `$0.0`; AI calls `0`; verifier `pass`; next: Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.
+- `revenue_opportunity_loop`: `NO_CHANGE`; value `{'confirmed_revenue': 0, 'confirmed_revenue_usd': 0, 'estimated_revenue': 1312.0, 'estimated_value_usd': 1312.0, 'opportunities_advanced': 2}`; cost `$0.0`; AI calls `0`; verifier `pass`; next: Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.
 - `seo_opportunity_loop`: `NO_CHANGE`; value `{'duplicate_work_avoided': 1, 'qualified_keywords': 2}`; cost `$0.0`; AI calls `0`; verifier `pass`; next: Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.
 
 ## Decisions, blockers, and next actions

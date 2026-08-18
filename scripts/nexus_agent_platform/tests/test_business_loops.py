@@ -4,6 +4,10 @@ from nexus_agent_platform.loops.business import (
     REVENUE_OPPORTUNITY_LOOP,
     RESEARCH_INTAKE_LOOP,
     eligibility_matrix,
+    _revenue_collect,
+    _revenue_verifier,
+    revenue_experiment_selection_gate,
+    revenue_business_identity,
 )
 from nexus_agent_platform.loops.runtime import LoopRuntime, LoopStateStore
 
@@ -41,3 +45,30 @@ def test_only_four_business_loops_are_qualified():
     assert matrix["research_intake_loop"] == "QUALIFIED"
     assert matrix["affiliate_opportunity_loop"] == "DEFER"
     assert matrix["grant_opportunity_loop"] == "DEFER"
+
+
+def test_revenue_semantic_dedupe_repairs_fixture_value_and_preserves_estimate_boundary():
+    records = [
+        {"opportunity_id": "readiness_review_97", "title": "$97 Credit + Business Funding Readiness Review", "estimated_value": 97, "evidence_ref": "reports/runtime/money_opportunity_scoreboard_latest.json"},
+        {"opportunity_id": "crawl4ai_offer_value", "title": "Crawl4AI public research efficiency opportunity", "estimated_value": 1215, "evidence_ref": "reports/hermes_modernization/end_to_end_pilot.json"},
+        {"opportunity_id": "readiness_review_97_duplicate", "title": "$97 duplicate", "estimated_value": 97, "evidence_ref": "reports/runtime/money_opportunity_scoreboard_latest.json"},
+    ]
+    collected = _revenue_collect({"records": records, "mode": "bounded_internal_phase14_proof"}, None)
+    result = collected["deterministic_output"]
+    assert revenue_business_identity(records[0]) == revenue_business_identity(records[2])
+    assert result["deduped_work"] == 1
+    assert result["value_metric"]["estimated_value_usd"] == 1312.0
+    assert result["value_metric"]["confirmed_revenue_usd"] == 0
+    assert result["valuation_source"] == "PROOF_FIXTURE"
+    assert result["live_discovered_revenue"] is False
+    assert _revenue_verifier(result, collected, None)["status"] == "pass"
+
+
+def test_revenue_experiment_gate_does_not_launch_real_experiment():
+    collected = _revenue_collect({"records": [{"opportunity_id": "readiness_review_97", "title": "Readiness review", "estimated_value": 97, "evidence_ref": "fixture"}], "mode": "bounded_internal_phase14_proof"}, None)
+    result = collected["deterministic_output"]
+    verifier = _revenue_verifier(result, collected, None)
+    gate = revenue_experiment_selection_gate(result, verifier)
+    assert gate["status"] == "QUALIFIED_WITH_LIMITS"
+    assert gate["launch_status"] == "NOT_LAUNCHED"
+    assert gate["requires_ray_approval"] is True

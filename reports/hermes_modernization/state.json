@@ -6,9 +6,9 @@
     "research_intake_loop"
   ],
   "client_portal_changes": "NONE",
-  "current_checkpoint": "phase-14-controlled-business-loops",
+  "current_checkpoint": "phase-14c-value-accounting-repair",
   "current_phase": "PHASE 14 \u2014 CONTROLLED BUSINESS LOOP EXPANSION",
-  "next": "PHASE 14 \u2014 CONTROLLED BUSINESS LOOP EXPANSION \u2014 REVIEW PROOF AND TUNE BEFORE BROADENING",
+  "next": "PHASE 14 \u2014 CONTROLLED BUSINESS LOOP EXPANSION \u2014 REVIEW REVENUE GATE BEFORE ANY TEST",
   "nova_authority": "UNCHANGED",
   "persistent_agents": [
     "nexus_hermes",
@@ -18,10 +18,11 @@
   "phase13b_assessment_source": "reports/hermes_modernization/phase13b_assessment.json",
   "phase13b_status": "READINESS_GATE_GO_BOUNDED_PARTIAL",
   "phase14_business_loop_proof_source": "reports/hermes_modernization/phase14_business_loop_proof.json",
-  "phase14_status": "PROMISING_BOUNDED_PROOF",
+  "phase14_status": "VALUE_REPAIR_VERIFIED_EXPERIMENT_NOT_LAUNCHED",
   "production_routing": "UNCHANGED",
   "production_telegram_changes": "NONE",
   "program": "nexus-hermes-modernization",
+  "revenue_accounting_source": "reports/hermes_modernization/phase14_business_loop_proof.json",
   "status": "NEXUS_HERMES_OPPORTUNITY_ENGINE_PARTIAL",
   "worker_registry_source": "reports/hermes_modernization/ai_workforce_registry.json"
 }

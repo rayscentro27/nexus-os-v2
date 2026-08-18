@@ -20,6 +20,8 @@ from .business import (
     SELECTED_BUSINESS_LOOPS,
     eligibility_matrix,
     run_business_loop,
+    revenue_business_identity,
+    revenue_experiment_selection_gate,
 )
 
 __all__ = [
@@ -40,4 +42,6 @@ __all__ = [
     "SELECTED_BUSINESS_LOOPS",
     "eligibility_matrix",
     "run_business_loop",
+    "revenue_business_identity",
+    "revenue_experiment_selection_gate",
 ]
