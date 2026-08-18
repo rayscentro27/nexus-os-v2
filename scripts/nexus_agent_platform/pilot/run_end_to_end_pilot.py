@@ -48,6 +48,10 @@ def _write(name: str, value: object) -> None:
 
 
 def _worker_classification(worker: dict) -> str:
+    if worker.get("classification") in {"AVAILABLE", "INSTALLED_UNPROVEN", "AUTH_BLOCKED", "RATE_LIMITED", "NOT_INSTALLED", "UNAVAILABLE"}:
+        return str(worker["classification"])
+    if worker.get("status") in {"AVAILABLE", "INSTALLED_UNPROVEN", "AUTH_BLOCKED", "RATE_LIMITED", "NOT_INSTALLED", "UNAVAILABLE"}:
+        return str(worker["status"])
     reason = str(worker.get("availability_reason") or worker.get("reason") or "")
     if worker.get("available"):
         return "AVAILABLE"
@@ -177,8 +181,8 @@ def run() -> dict:
         "research": {"status": "PASS", "evidence_count": len(canonical["evidence"]), "duplicates_removed": research["duplicate_sources"], "source_records_collected": research["source_records_collected"], "ai_calls": research["metrics"]["ai_executions"], "references": research["provenance"]["selected_source_urls"], "evidence": canonical["evidence"]},
         "creative": {"status": "PASS", "brief": creative["brief"], "reference_summary": creative["market_reference_summary"], "territory_count": creative["territory_count"], "territories": creative["territories"], "selected_territory": creative["recommended_territory"]["concept_name"], "build_spec": build_spec},
         "workers": workers,
-        "real_worker_status": "BLOCKED" if not real_workers else "PASS",
-        "real_worker_blocker": "Codex/OpenCode auth not proven; MiMo probe unavailable; OpenHands not installed",
+        "real_worker_status": "BLOCKED" if builder["selected_worker"]["worker_id"] == "local_python" else "PASS",
+        "real_worker_blocker": "No bounded external execute adapter is registered; health-positive CLI workers remain probe-only",
         "worker_used": builder["selected_worker"]["worker_id"],
         "builder_status": "PARTIAL",
         "verification_status": builder["verification"]["status"].upper(),

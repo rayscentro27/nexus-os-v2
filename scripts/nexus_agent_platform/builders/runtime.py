@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -45,6 +46,19 @@ _COST_CLASS_ORDER = {
     "AI_TIER_2": 3,
     "AI_TIER_3": 4,
 }
+
+WORKER_STATUSES = (
+    "AVAILABLE",
+    "INSTALLED_UNPROVEN",
+    "AUTH_BLOCKED",
+    "RATE_LIMITED",
+    "NOT_INSTALLED",
+    "UNAVAILABLE",
+)
+
+_AUTH_ERROR_RE = re.compile(r"(unauthori[sz]ed|authentication|not authenticated|login required|invalid token|api key required|401)", re.I)
+_RATE_LIMIT_RE = re.compile(r"(rate.?limit|too many requests|429|quota exceeded|throttl)", re.I)
+_SENSITIVE_RE = re.compile(r"(?i)((?:api[_-]?key|access[_-]?token|auth(?:entication)?[_-]?token|secret|password)\s*[:=]\s*)([^\s,;]+)")
 
 
 def _utc_now() -> str:
@@ -91,6 +105,113 @@ def _safe_version(command: Sequence[str], timeout: int = 8) -> Dict[str, Any]:
         "stdout": (proc.stdout or "").strip(),
         "stderr": (proc.stderr or "").strip(),
         "duration_ms": int((time.monotonic() - started) * 1000),
+    }
+
+
+def _safe_probe(command: Sequence[str], timeout: int = 12) -> Dict[str, Any]:
+    """Run a provider health probe without returning command output."""
+    started = time.monotonic()
+    try:
+        proc = subprocess.run(command, capture_output=True, text=True, timeout=timeout, cwd=str(ROOT))
+        return {
+            "command": list(command[:2]),
+            "returncode": proc.returncode,
+            "stdout_present": bool((proc.stdout or "").strip()),
+            "stderr_present": bool((proc.stderr or "").strip()),
+            "stdout": (proc.stdout or "")[:1000],
+            "stderr": (proc.stderr or "")[:1000],
+            "timed_out": False,
+            "duration_ms": int((time.monotonic() - started) * 1000),
+        }
+    except subprocess.TimeoutExpired:
+        return {
+            "command": list(command[:2]),
+            "returncode": None,
+            "stdout_present": False,
+            "stderr_present": False,
+            "stdout": "",
+            "stderr": "",
+            "timed_out": True,
+            "duration_ms": int((time.monotonic() - started) * 1000),
+        }
+    except OSError as exc:
+        return {
+            "command": list(command[:2]),
+            "returncode": None,
+            "stdout_present": False,
+            "stderr_present": False,
+            "stdout": "",
+            "stderr": "",
+            "timed_out": False,
+            "os_error": type(exc).__name__,
+            "duration_ms": int((time.monotonic() - started) * 1000),
+        }
+
+
+def _probe_text(probe: Dict[str, Any]) -> str:
+    return f"{probe.get('stdout', '')}\n{probe.get('stderr', '')}"[:2000]
+
+
+def _redact_probe_text(value: str) -> str:
+    return _SENSITIVE_RE.sub(r"\1[REDACTED]", value)[:240]
+
+
+def _classify_cli_probe(*, installed: bool, version_probe: Dict[str, Any], execution_probe: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Classify only from observed evidence; never infer auth from version-only success."""
+    if not installed:
+        return {"classification": "NOT_INSTALLED", "reason": "binary missing", "probe_result": "not_run"}
+    if version_probe.get("timed_out"):
+        return {"classification": "UNAVAILABLE", "reason": "version probe timed out", "probe_result": "version_timeout"}
+    version_text = _probe_text(version_probe)
+    if _RATE_LIMIT_RE.search(version_text):
+        return {"classification": "RATE_LIMITED", "reason": "rate-limit evidence in version probe", "probe_result": "version_rate_limited"}
+    if _AUTH_ERROR_RE.search(version_text):
+        return {"classification": "AUTH_BLOCKED", "reason": "explicit authentication error in version probe", "probe_result": "version_auth_error"}
+    version_ok = version_probe.get("returncode") == 0
+    if execution_probe is None:
+        return {"classification": "UNAVAILABLE" if not version_ok else "INSTALLED_UNPROVEN", "reason": "version probe did not prove execution", "probe_result": "version_only"}
+    if execution_probe.get("timed_out"):
+        return {"classification": "UNAVAILABLE", "reason": "safe execution probe timed out", "probe_result": "execution_timeout"}
+    execution_text = _probe_text(execution_probe)
+    if _RATE_LIMIT_RE.search(execution_text):
+        return {"classification": "RATE_LIMITED", "reason": "explicit rate-limit evidence in execution probe", "probe_result": "execution_rate_limited"}
+    if _AUTH_ERROR_RE.search(execution_text):
+        return {"classification": "AUTH_BLOCKED", "reason": "explicit authentication error in execution probe", "probe_result": "execution_auth_error"}
+    if execution_probe.get("returncode") == 0:
+        return {"classification": "AVAILABLE", "reason": "version and harmless execution probes succeeded", "probe_result": "execution_success"}
+    return {"classification": "UNAVAILABLE" if not version_ok else "INSTALLED_UNPROVEN", "reason": "execution probe did not prove availability", "probe_result": "execution_failed"}
+
+
+def _provider_probe_command(name: str) -> Optional[List[str]]:
+    harmless = "Reply with exactly HEALTHCHECK_OK. Do not inspect, read, or modify files."
+    if name == "codex":
+        return [name, "exec", "--ephemeral", "--sandbox", "read-only", "--skip-git-repo-check", "--color", "never", harmless]
+    if name == "opencode":
+        return [name, "run", "--format", "json", harmless]
+    if name == "mimo":
+        return [name, "run", "--non-interactive", harmless]
+    return None
+
+
+def _probe_cli_worker(name: str, path: Optional[str], *, version_timeout: int = 8, execution_timeout: int = 12) -> Dict[str, Any]:
+    installed = path is not None
+    if not installed:
+        return {"installed": False, "version": "UNKNOWN", **_classify_cli_probe(installed=False, version_probe={}, execution_probe=None)}
+    try:
+        version_probe = _safe_version([name, "--version"], timeout=version_timeout)
+    except subprocess.TimeoutExpired:
+        version_probe = {"returncode": None, "stdout": "", "stderr": "", "timed_out": True}
+    version_text = (version_probe.get("stdout") or version_probe.get("stderr") or "").strip()
+    execution_probe = None
+    if version_probe.get("returncode") == 0 and _provider_probe_command(name):
+        execution_probe = _safe_probe(_provider_probe_command(name) or [], timeout=execution_timeout)
+    classification = _classify_cli_probe(installed=True, version_probe=version_probe, execution_probe=execution_probe)
+    return {
+        "installed": True,
+        "version": _redact_probe_text(version_text) or "UNKNOWN",
+        "version_probe": {"returncode": version_probe.get("returncode"), "timed_out": bool(version_probe.get("timed_out"))},
+        "execution_probe": ({"returncode": execution_probe.get("returncode"), "timed_out": bool(execution_probe.get("timed_out"))} if execution_probe else "not_run"),
+        **classification,
     }
 
 
@@ -242,6 +363,10 @@ class CodingWorker:
     def can_handle(self, task: BuildTaskSpec) -> bool:
         if not self.available:
             return False
+        # A health-positive CLI is not automatically an execution adapter. Keep
+        # provider invocation disabled until a bounded execute_fn is registered.
+        if self.worker_type == "cli" and self._execute_fn is None:
+            return False
         if task.visual_requirements and not self.supports_browser:
             return False
         if task.tests and not self.supports_tests:
@@ -325,20 +450,10 @@ class CodingWorker:
 
 def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: str) -> CodingWorker:
     path = shutil.which(name)
-    installed = path is not None
-    version = ""
-    available = False
-    reason = "not_installed"
-    if installed:
-        try:
-            probe = _safe_version([name, "--version"])
-            version = (probe.get("stdout") or probe.get("stderr") or "").strip()
-            if probe["returncode"] == 0:
-                reason = "installed_only_auth_not_proven"
-            else:
-                reason = "installed_only_version_probe_failed"
-        except Exception as exc:  # pragma: no cover - defensive
-            reason = f"probe_failed:{exc}"
+    health = _probe_cli_worker(name, path)
+    installed = bool(health["installed"])
+    available = health["classification"] == "AVAILABLE"
+    reason = str(health["reason"])
     return CodingWorker(
         worker_id=name,
         worker_type=worker_type,
@@ -358,8 +473,13 @@ def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: s
         health_probe=lambda: {
             "installed": installed,
             "available": available,
-            "version": version or "installed_only",
+            "status": health["classification"],
+            "classification": health["classification"],
+            "version": health["version"],
             "reason": reason,
+            "probe_result": health["probe_result"],
+            "version_probe": health["version_probe"],
+            "execution_probe": health["execution_probe"],
         },
     )
 

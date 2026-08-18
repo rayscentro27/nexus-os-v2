@@ -1,12 +1,10 @@
 {
   "client_portal_changes": "NONE",
-  "current_checkpoint": "phase-9",
-  "next": "PHASE 10 \u2014 MISSION CONTROL V2 VISIBILITY",
-  "persistent_agents": [
-    "nexus_hermes",
-    "hermes_nova",
-    "alpha"
-  ],
+  "current_checkpoint": "phase-10",
+  "mission_control_route": "/admin/command-center-v2",
+  "mission_control_source": "reports/hermes_modernization/end_to_end_pilot.json + data/runtime/nexus_loops/loop_state.json",
+  "next": "PHASE 10 — MISSION CONTROL V2 VISIBILITY",
+  "persistent_agents": ["nexus_hermes", "hermes_nova", "alpha"],
   "pilot_id": "phase9_crawl4ai_scout_brief_20260818",
   "pilot_opportunity_id": "unclecode_crawl4ai",
   "production_telegram_changes": "NONE",

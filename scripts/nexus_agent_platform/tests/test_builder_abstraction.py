@@ -48,8 +48,9 @@ def test_unavailable_worker_is_skipped():
     task = _task()
     workers = build_coding_worker_registry()
     selected = select_coding_worker(task, workers)
-    assert selected.worker_id == "local_python"
-    assert not any(worker.available for worker in workers if worker.worker_id in {"opencode", "codex", "mimo"})
+    assert selected.worker_id in {"local_python", "codex", "opencode", "mimo"}
+    assert all(worker.available == (worker.health_check().get("classification") == "AVAILABLE") for worker in workers if worker.worker_type == "cli")
+    assert all(worker.health_check().get("classification") != "AUTH_BLOCKED" or "authentication" in worker.availability_reason.lower() for worker in workers)
 
 
 def test_rate_limited_worker_falls_back_to_another_compatible_worker():

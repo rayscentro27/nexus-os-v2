@@ -84,7 +84,7 @@
         }
       ],
       "full_history": null,
-      "generated_at": "2026-08-18T14:21:16.846785+00:00",
+      "generated_at": "2026-08-18T14:43:13.596094+00:00",
       "history": null,
       "market_refs": [
         {
@@ -540,8 +540,8 @@
     ],
     "territory_count": 3
   },
-  "elapsed_time_ms": 11572,
-  "ending_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+  "elapsed_time_ms": 35348,
+  "ending_commit": "851d613b49188467b06abd9c75773b0ed76c4155",
   "ledger": {
     "ai_usage": {
       "input_tokens": 0,
@@ -552,8 +552,8 @@
       "tier3_calls": 0
     },
     "artifact_refs": [
-      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_spec.json",
-      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_summary.md"
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-w6xndec1/artifact/build_spec.json",
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-w6xndec1/artifact/build_summary.md"
     ],
     "attempts": [
       {
@@ -571,22 +571,22 @@
       "tier": "ZERO_MODEL_COST"
     },
     "display_name": "Local Python Builder",
-    "duration_ms": 25,
-    "ending_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+    "duration_ms": 39,
+    "ending_commit": "851d613b49188467b06abd9c75773b0ed76c4155",
     "files_changed": [
-      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_spec.json",
-      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_summary.md"
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-w6xndec1/artifact/build_spec.json",
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-w6xndec1/artifact/build_summary.md"
     ],
-    "finished_at": "2026-08-18T14:21:24.328262+00:00",
+    "finished_at": "2026-08-18T14:43:42.614072+00:00",
     "protected_path_violation": false,
     "retry_count": 0,
     "selected_worker_fallback": true,
     "selected_worker_reason": "local deterministic fallback",
-    "started_at": "2026-08-18T14:21:24.328165+00:00",
-    "starting_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+    "started_at": "2026-08-18T14:43:42.614034+00:00",
+    "starting_commit": "851d613b49188467b06abd9c75773b0ed76c4155",
     "status": "pass",
     "task_id": "build_75973c32170e",
-    "telemetry_run_id": "builder_abstraction_b7459af1b0f44ac681c90c7c316edd91",
+    "telemetry_run_id": "builder_abstraction_f88b2afc518d4450aa8332878a6af960",
     "tests_failed": 0,
     "tests_passed": 2,
     "tests_run": [
@@ -607,7 +607,7 @@
     },
     "worker_id": "local_python",
     "worker_report": {
-      "sandbox": "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o",
+      "sandbox": "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-w6xndec1",
       "summary": "Local deterministic builder created an isolated internal artifact."
     },
     "worker_type": "deterministic_python",
@@ -632,7 +632,7 @@
   ],
   "pilot_id": "phase9_crawl4ai_scout_brief_20260818",
   "protected_paths": "PASS",
-  "real_worker_blocker": "Codex/OpenCode auth not proven; MiMo probe unavailable; OpenHands not installed",
+  "real_worker_blocker": "No bounded external execute adapter is registered; health-positive CLI workers remain probe-only",
   "real_worker_status": "BLOCKED",
   "recommended_next_action": "PHASE 10 \u2014 MISSION CONTROL V2 VISIBILITY",
   "research": {
@@ -651,7 +651,7 @@
             "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
           ]
         },
-        "retrieved_at": "2026-08-18T14:21:16.842748+00:00",
+        "retrieved_at": "2026-08-18T14:43:13.594077+00:00",
         "source_id": "unclecode_crawl4ai",
         "source_type": "public_repo_intelligence",
         "summary": "unclecode/crawl4ai Controlled public web extraction for Alpha research and repo-intelligence workflows."
@@ -667,7 +667,7 @@
     "status": "PASS"
   },
   "result": "NEXUS_HERMES_OPPORTUNITY_ENGINE_PARTIAL",
-  "starting_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+  "starting_commit": "851d613b49188467b06abd9c75773b0ed76c4155",
   "tests": [
     "canonical opportunity reused",
     "duplicate evidence avoided",
@@ -699,18 +699,24 @@
   "worker_used": "local_python",
   "workers": [
     {
-      "availability_reason": "installed_only_auth_not_proven",
+      "availability_reason": "safe execution probe timed out",
       "available": false,
       "capabilities": [
         "repo_edit",
         "tests",
         "worktrees"
       ],
-      "classification": "AUTH_BLOCKED",
+      "classification": "UNAVAILABLE",
       "cost_class": "ZERO_MODEL_COST",
       "display_name": "OpenCode CLI",
+      "execution_probe": {
+        "returncode": null,
+        "timed_out": true
+      },
       "installed": true,
-      "reason": "installed_only_auth_not_proven",
+      "probe_result": "execution_timeout",
+      "reason": "safe execution probe timed out",
+      "status": "UNAVAILABLE",
       "supports_browser": false,
       "supports_images": false,
       "supports_repo_edit": true,
@@ -719,22 +725,32 @@
       "supports_tests": true,
       "supports_worktrees": true,
       "version": "1.18.18",
+      "version_probe": {
+        "returncode": 0,
+        "timed_out": false
+      },
       "worker_id": "opencode",
       "worker_type": "cli"
     },
     {
-      "availability_reason": "installed_only_auth_not_proven",
-      "available": false,
+      "availability_reason": "version and harmless execution probes succeeded",
+      "available": true,
       "capabilities": [
         "repo_edit",
         "tests",
         "worktrees"
       ],
-      "classification": "AUTH_BLOCKED",
+      "classification": "AVAILABLE",
       "cost_class": "ZERO_MODEL_COST",
       "display_name": "Codex CLI",
+      "execution_probe": {
+        "returncode": 0,
+        "timed_out": false
+      },
       "installed": true,
-      "reason": "installed_only_auth_not_proven",
+      "probe_result": "execution_success",
+      "reason": "version and harmless execution probes succeeded",
+      "status": "AVAILABLE",
       "supports_browser": false,
       "supports_images": false,
       "supports_repo_edit": true,
@@ -743,22 +759,32 @@
       "supports_tests": true,
       "supports_worktrees": true,
       "version": "codex-cli 0.147.0",
+      "version_probe": {
+        "returncode": 0,
+        "timed_out": false
+      },
       "worker_id": "codex",
       "worker_type": "cli"
     },
     {
-      "availability_reason": "installed_only_auth_not_proven",
+      "availability_reason": "execution probe did not prove availability",
       "available": false,
       "capabilities": [
         "repo_edit",
         "tests",
         "worktrees"
       ],
-      "classification": "AUTH_BLOCKED",
+      "classification": "INSTALLED_UNPROVEN",
       "cost_class": "LOW_EXTERNAL_COST",
       "display_name": "MiMo CLI",
+      "execution_probe": {
+        "returncode": 1,
+        "timed_out": false
+      },
       "installed": true,
-      "reason": "installed_only_auth_not_proven",
+      "probe_result": "execution_failed",
+      "reason": "execution probe did not prove availability",
+      "status": "INSTALLED_UNPROVEN",
       "supports_browser": false,
       "supports_images": false,
       "supports_repo_edit": true,
@@ -767,6 +793,10 @@
       "supports_tests": true,
       "supports_worktrees": true,
       "version": "0.1.12",
+      "version_probe": {
+        "returncode": 0,
+        "timed_out": false
+      },
       "worker_id": "mimo",
       "worker_type": "cli"
     },
