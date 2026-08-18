@@ -1,0 +1,332 @@
+{
+  "ai_execution_share": 0.0,
+  "approvals_needed": {
+    "approve_today_count": 12,
+    "decision": "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
+    "pending_loop_count": 2,
+    "ray_review_cards": 55
+  },
+  "blockers": [
+    {
+      "blocker": "Stripe Checkout completion",
+      "cause": "Browser test payment not completed",
+      "fix_attempted": "Test Checkout created and status tracked",
+      "next_action": "Approve manual test Checkout completion",
+      "result": "open_unpaid",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "Stripe PaymentIntent confirmation",
+      "cause": "Test payment method not approved",
+      "fix_attempted": "Test intent created and reusable",
+      "next_action": "Approve pm_card_visa test confirmation",
+      "result": "requires_payment_method",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "Resend",
+      "cause": "Key/account permission and .cc/.com sender mismatch",
+      "fix_attempted": "Read-only diagnosis and fix packet",
+      "next_action": "Verify goclearonline.com and replace/re-scope key",
+      "result": "HTTP 403",
+      "status": "blocked_by_missing_credential"
+    },
+    {
+      "blocker": "Persistent fake customer",
+      "cause": "Production write intentionally gated",
+      "fix_attempted": "RLS verified; insert/cleanup packets ready",
+      "next_action": "Approve explicit synthetic insert",
+      "result": "ready_for_Ray_approval",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "Frontend live data",
+      "cause": "Fake customer not persistently inserted",
+      "fix_attempted": "Flagged live-read service with fallback",
+      "next_action": "Enable after insert verification",
+      "result": "implementation_ready_flag_off",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "YouTube transcript",
+      "cause": "Approved TXT absent",
+      "fix_attempted": "Approved dropzone and import packet",
+      "next_action": "Add zbAmmnMh5ew.txt",
+      "result": "metadata_review_active",
+      "status": "blocked_by_missing_source"
+    },
+    {
+      "blocker": "NotebookLM import",
+      "cause": "No approved export file",
+      "fix_attempted": "Legacy adapter and dropzone recovered",
+      "next_action": "Add selected notebook export",
+      "result": "zero_sources",
+      "status": "blocked_by_missing_source"
+    },
+    {
+      "blocker": "Oanda practice verification",
+      "cause": "Practice environment not explicit",
+      "fix_attempted": "Read-only guard and plan",
+      "next_action": "Set OANDA_ENVIRONMENT=practice",
+      "result": "no API call",
+      "status": "blocked_by_missing_credential"
+    },
+    {
+      "blocker": "External builder execution adapter",
+      "next_action": "Register a separately approved bounded adapter.",
+      "status": "blocked"
+    }
+  ],
+  "brief_id": "daily_brief_7bb3abdd6f16cba3",
+  "builder_updates": {
+    "status": "PARTIAL",
+    "verification": "PASS",
+    "worker_used": "local_python",
+    "workers": [
+      {
+        "classification": "UNAVAILABLE",
+        "reason": "safe execution probe timed out",
+        "version": "1.18.18",
+        "worker_id": "opencode"
+      },
+      {
+        "classification": "AVAILABLE",
+        "reason": "version and harmless execution probes succeeded",
+        "version": "codex-cli 0.147.0",
+        "worker_id": "codex"
+      },
+      {
+        "classification": "INSTALLED_UNPROVEN",
+        "reason": "execution probe did not prove availability",
+        "version": "0.1.12",
+        "worker_id": "mimo"
+      },
+      {
+        "classification": "AVAILABLE",
+        "reason": "local deterministic fallback",
+        "version": "python3",
+        "worker_id": "local_python"
+      },
+      {
+        "classification": "NOT_INSTALLED",
+        "reason": "not proven available",
+        "version": "UNKNOWN",
+        "worker_id": "openhands"
+      }
+    ]
+  },
+  "client_attention": {
+    "external_contacted": false,
+    "highest_risk": {
+      "client_id": "c7",
+      "client_label": "Client G",
+      "current_stage": "funding_readiness_pending",
+      "days_stuck": 16,
+      "escalation_status": "ray",
+      "external_send": false,
+      "reminder_draft": "Reminder (draft, internal): Client G \u2014 complete the next step at 'funding_readiness_pending'.",
+      "revenue_risk_level": "critical"
+    },
+    "revenue_risk_clients": 3,
+    "source": "reports/runtime/client_reminder_revenue_risk_latest.json",
+    "status": "REPORT_BACKED_NOT_LIVE",
+    "stuck_clients": 5
+  },
+  "confidence": "MEDIUM",
+  "cost_summary": {
+    "ai_calls": 0,
+    "ai_execution_share": 0.0,
+    "cost_status": "LOCAL_COMPUTE_ONLY",
+    "deterministic_execution_share": 1.0,
+    "execution_records": 12,
+    "input_tokens": 0,
+    "local_compute_executions": 1,
+    "output_tokens": 0,
+    "provider_cost_usd": 0.0,
+    "successful_records": 12,
+    "value_events": 2,
+    "zero_token_executions": 9
+  },
+  "creative_updates": {
+    "selected_territory": "Scout Brief",
+    "status": "PASS",
+    "territory_count": 3
+  },
+  "decisions_needed": [
+    "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
+    "Review Ray approval queue before any external action."
+  ],
+  "deterministic_execution_share": 1.0,
+  "evidence_refs": [
+    "reports/hermes_modernization/end_to_end_pilot.json",
+    "reports/runtime/revenue_dashboard_latest.json",
+    "reports/runtime/money_opportunity_scoreboard_latest.json",
+    "reports/runtime/global_blocker_resolution_matrix_latest.json",
+    "reports/runtime/ray_review_queue_latest.json",
+    "data/runtime/nexus_loops/loop_state.json",
+    "data/runtime/nexus_loops/execution_ledger.jsonl",
+    "data/runtime/builder_execution_ledger/ledger.jsonl"
+  ],
+  "freshness": {
+    "latest_source_timestamp": "851d613b49188467b06abd9c75773b0ed76c4155",
+    "live_supabase_read": "NOT_AVAILABLE",
+    "status": "MIXED_REPORT_AGES"
+  },
+  "generated_at": "2026-08-18T15:02:46.971891+00:00",
+  "highest_value_next_action": "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
+  "loop_updates": {
+    "active_runs": 1,
+    "failed_runs": 0,
+    "last_updated_at": "2026-08-17T22:58:13.083527+00:00",
+    "pending_approvals": 2,
+    "system_health_loop": "success",
+    "system_status": "healthy"
+  },
+  "marketing_updates": {
+    "mode": "DRY_RUN",
+    "note": "Receipt says no underlying job was executed.",
+    "status": "simulated",
+    "value_proven": false
+  },
+  "money_opportunity": {
+    "approval_required": true,
+    "next_action": "Approve landing page concept + copy.",
+    "opportunity_id": "funding_readiness_landing",
+    "revenue_potential_score": 80,
+    "score": 58,
+    "source": "reports/runtime/money_opportunity_scoreboard_latest.json",
+    "title": "Landing page: 'Before You Apply for Business Funding, Check These 3 Things'"
+  },
+  "opportunity_updates": [
+    {
+      "base_score": 62,
+      "change": "UNKNOWN",
+      "change_reason": "No prior comparable canonical baseline is present in the Phase 9 record.",
+      "id": "unclecode_crawl4ai",
+      "next_action": "Run the bounded internal Scout Brief artifact pilot; do not publish.",
+      "status": "PILOT_PROPOSED",
+      "title": "Crawl4AI"
+    }
+  ],
+  "provider_health": {
+    "source": "reports/hermes_modernization/end_to_end_pilot.json",
+    "status": "REPORT_BACKED"
+  },
+  "recommended_actions": [
+    "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
+    "Keep the Crawl4AI opportunity at PILOT_PROPOSED until a separate authorization advances it.",
+    "Keep deterministic loops and investigate only stale or failed sources."
+  ],
+  "research_updates": {
+    "ai_calls": 0,
+    "duplicates_removed": 4,
+    "evidence_count": 1,
+    "status": "PASS"
+  },
+  "revenue_risks": [
+    {
+      "blocker": "Stripe Checkout completion",
+      "cause": "Browser test payment not completed",
+      "fix_attempted": "Test Checkout created and status tracked",
+      "next_action": "Approve manual test Checkout completion",
+      "result": "open_unpaid",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "Stripe PaymentIntent confirmation",
+      "cause": "Test payment method not approved",
+      "fix_attempted": "Test intent created and reusable",
+      "next_action": "Approve pm_card_visa test confirmation",
+      "result": "requires_payment_method",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "Resend",
+      "cause": "Key/account permission and .cc/.com sender mismatch",
+      "fix_attempted": "Read-only diagnosis and fix packet",
+      "next_action": "Verify goclearonline.com and replace/re-scope key",
+      "result": "HTTP 403",
+      "status": "blocked_by_missing_credential"
+    },
+    {
+      "blocker": "Persistent fake customer",
+      "cause": "Production write intentionally gated",
+      "fix_attempted": "RLS verified; insert/cleanup packets ready",
+      "next_action": "Approve explicit synthetic insert",
+      "result": "ready_for_Ray_approval",
+      "status": "blocked_by_approval"
+    },
+    {
+      "blocker": "Frontend live data",
+      "cause": "Fake customer not persistently inserted",
+      "fix_attempted": "Flagged live-read service with fallback",
+      "next_action": "Enable after insert verification",
+      "result": "implementation_ready_flag_off",
+      "status": "blocked_by_approval"
+    }
+  ],
+  "revenue_status": {
+    "blocked_revenue_usd": 97,
+    "confirmed_revenue_usd": 0,
+    "pending_test_revenue_usd": 97,
+    "possible_offer_value_usd": 1215,
+    "real_charge": false,
+    "source": "reports/runtime/revenue_dashboard_latest.json"
+  },
+  "scope": "internal_nexus_operator_report_backed",
+  "status": "REPORT_BACKED_PARTIAL",
+  "system_health": {
+    "blockers_total": 10,
+    "failed_runs": 0,
+    "scheduler": "scheduler_ui_ready",
+    "status": "healthy"
+  },
+  "token_summary": {
+    "ai_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "zero_token_executions": 9
+  },
+  "top_priority": {
+    "reason": "The revenue dashboard identifies this as the exact next money action; no live charge is asserted.",
+    "source": "reports/runtime/revenue_dashboard_latest.json",
+    "title": "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding."
+  },
+  "worker_health": [
+    {
+      "classification": "UNAVAILABLE",
+      "installed": true,
+      "probe_result": "execution_timeout",
+      "version": "1.18.18",
+      "worker_id": "opencode"
+    },
+    {
+      "classification": "AVAILABLE",
+      "installed": true,
+      "probe_result": "execution_success",
+      "version": "codex-cli 0.147.0",
+      "worker_id": "codex"
+    },
+    {
+      "classification": "INSTALLED_UNPROVEN",
+      "installed": true,
+      "probe_result": "execution_failed",
+      "version": "0.1.12",
+      "worker_id": "mimo"
+    },
+    {
+      "classification": "AVAILABLE",
+      "installed": true,
+      "probe_result": "UNKNOWN",
+      "version": "python3",
+      "worker_id": "local_python"
+    },
+    {
+      "classification": "NOT_INSTALLED",
+      "installed": false,
+      "probe_result": "UNKNOWN",
+      "version": "UNKNOWN",
+      "worker_id": "openhands"
+    }
+  ]
+}

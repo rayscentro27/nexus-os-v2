@@ -1,9 +1,11 @@
 {
   "client_portal_changes": "NONE",
-  "current_checkpoint": "phase-10",
+  "current_checkpoint": "phase-11",
+  "daily_brief_source": "reports/hermes_modernization/daily_brief.json",
+  "daily_brief_status": "REPORT_BACKED_PARTIAL",
   "mission_control_route": "/admin/command-center-v2",
   "mission_control_source": "reports/hermes_modernization/end_to_end_pilot.json + data/runtime/nexus_loops/loop_state.json",
-  "next": "PHASE 10 — MISSION CONTROL V2 VISIBILITY",
+  "next": "PHASE 11 — DAILY BRIEF + COST/VALUE INTELLIGENCE",
   "persistent_agents": ["nexus_hermes", "hermes_nova", "alpha"],
   "pilot_id": "phase9_crawl4ai_scout_brief_20260818",
   "pilot_opportunity_id": "unclecode_crawl4ai",

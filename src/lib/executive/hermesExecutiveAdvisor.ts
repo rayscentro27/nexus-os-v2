@@ -5,6 +5,7 @@ import { assembleBrainContext } from '../intelligence/contextAssembler';
 import { buildKnowledgeHealthSummary } from '../intelligence/knowledgeHealth';
 import { getIntelligenceRecord } from '../intelligence/intelligenceRegistry';
 import { evaluateBrainHandoff } from '../brains/brainHandoffs';
+import { renderHermesDailyBrief } from '../../data/hermesDailyBriefData';
 
 export type ExecutiveIntent =
   | 'executive_daily_brief'
@@ -99,7 +100,7 @@ export function answerExecutiveIntent(intent: ExecutiveIntent): string {
   ].join('\n- ');
 
   if (intent === 'executive_daily_brief') {
-    return `Executive daily brief:\n\nFacts:\n- ${evidence}\n\nInterpretation:\n- P0 protections are holding: live Stripe is deferred, live trading is blocked, Alpha Supabase access is prohibited, and repo intelligence is read-only.\n\nRecommendations:\n1. Confirm no external actions are being activated.\n2. Review Ray Review if live approval rows appear after authentication.\n3. Keep repo-intelligence decisions as research dispositions only.\n\nUnknowns:\n- Live Supabase counts require an authenticated admin session in the browser.\n\nBlocked data:\n- Live Stripe credentials and live webhook are intentionally not configured.`;
+    return renderHermesDailyBrief();
   }
 
   if (intent === 'capability_status') {
