@@ -97,6 +97,34 @@ def test_nova_denies_arbitrary_sql_and_supabase_writes_without_reporting_worker_
         assert "read-only" in result["message"].lower()
 
 
+def test_nova_live_operator_variants_use_canonical_awareness_before_planner():
+    from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _capability_gate
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    variants = {
+        "Nova, what is the current status of Nexus OS?": "SYSTEM_HEALTH",
+        "Nova, how many production clients do I currently have?": "CLIENT_COUNT",
+        "Nova, what opportunities are currently ACCEPT or WATCH?": "BUSINESS_OPPORTUNITIES",
+        "Nova, what research ran most recently?": "RESEARCH_HISTORY",
+        "Nova, what did Alpha find most recently?": "ALPHA_LATEST",
+        "Nova, when did the Revenue Opportunity loop last run?": "BUSINESS_LOOP_STATUS",
+        "Nova, how much have my AI operations cost today?": "AI_COST_SUMMARY",
+        "Nova, what coding workers are available?": "WORKFORCE_STATUS",
+        "Nova, what is my highest-value next action based on current Nexus data?": "DAILY_BRIEF",
+    }
+    for question, expected in variants.items():
+        assert _canonical_awareness_capability(question) == expected
+
+    state = AgentState(agent_id="hermes_nova", user_message=next(iter(variants)), metadata={"chat_id": 0})
+    with patch("nexus_agent_platform.agents.nova.plan_query", side_effect=AssertionError("planner must not run")), \
+         patch("nexus_agent_platform.capabilities.shared.execute_shared_capability", return_value={
+             "status": "OK", "data": {"verified": True}, "provenance": {"source_type": "current_runtime_ledger"},
+         }):
+        result = _capability_gate(state)
+    assert result.metadata["capability_gate"]["decision"] == "canonical_awareness"
+    assert result.metadata["capability_gate"]["capability"] == "SYSTEM_HEALTH"
+
+
 def test_workforce_and_loop_taxonomies_are_canonical_not_legacy_counts():
     from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
 

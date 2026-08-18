@@ -888,6 +888,48 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     return None
 
 
+def _canonical_awareness_capability(text: str) -> Optional[str]:
+    """Return the shared current-state capability before planner routing.
+
+    The schema planner is useful for broad governed queries, but it must not
+    override the exact operator contract with legacy study/process objects.
+    This narrow gate is read-only and deliberately covers only the canonical
+    awareness questions.
+    """
+    lower = text.lower().strip()
+    if "evidence" in lower and ("show" in lower or "used" in lower):
+        return "EVIDENCE_LOOKUP"
+    if "how many clients" in lower or "how many production clients" in lower or "production clients" in lower or "production client count" in lower or "client count" in lower or "number of clients" in lower:
+        return "CLIENT_COUNT"
+    if "current status of nexus os" in lower or "current nexus os status" in lower or "nexus os status" in lower or "system status" in lower:
+        return "SYSTEM_HEALTH"
+    if "alpha" in lower and ("latest" in lower or "most recent" in lower or "find" in lower):
+        return "ALPHA_LATEST"
+    if "blocker" in lower or "blocked" in lower or "needs attention" in lower:
+        return "BLOCKERS"
+    if "pending approval" in lower or "pending approvals" in lower or "approvals are pending" in lower or "what requires ray" in lower:
+        return "APPROVAL_QUEUE"
+    if "business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower:
+        return "BUSINESS_LOOP_STATUS"
+    if "accept" in lower and "watch" in lower and "opportun" in lower:
+        return "BUSINESS_OPPORTUNITIES"
+    if "research ran" in lower or ("most recently" in lower and "research" in lower):
+        return "RESEARCH_HISTORY"
+    if "payment gate" in lower or "status of stripe" in lower or "stripe status" in lower:
+        return "PAYMENT_GATE"
+    if "client journey gate" in lower or "journey gate" in lower:
+        return "CLIENT_JOURNEY_GATE"
+    if any(worker in lower for worker in ("codex", "opencode", "mimo", "kilo", "coding worker", "coding workers", "worker pool")) and any(word in lower for word in ("available", "status")):
+        return "WORKFORCE_STATUS"
+    if "ai cost" in lower or "ai operations cost" in lower or "token cost" in lower or "provider cost" in lower:
+        return "AI_COST_SUMMARY"
+    if any(phrase in lower for phrase in ("highest-value next action", "highest value next action", "plan for today", "money today", "daily brief")):
+        return "DAILY_BRIEF"
+    if ("governed access" in lower or "certified capabilities" in lower) and ("nexus os data" in lower or "supabase" in lower):
+        return "get_runtime_capabilities"
+    return None
+
+
 # ─── Nova-Owned Supabase Tool ──────────────────────────────
 
 def _nova_search_supabase(
@@ -3319,6 +3361,50 @@ def _capability_gate(state: AgentState) -> AgentState:
             # Non-explicit messages like "yes" or "ok" never resolve approvals.
         except Exception as exc:
             log.debug("Governed continuity skipped: %s", exc)
+
+    # Canonical current-state awareness must outrank the broad schema planner.
+    # Otherwise a question such as "what did Alpha find most recently?" can be
+    # answered from the historical study snapshot instead of the live ledger.
+    canonical_capability = _canonical_awareness_capability(text)
+    if canonical_capability:
+        from nexus_agent_platform.capabilities.shared import execute_shared_capability
+        try:
+            result = execute_shared_capability(
+                "hermes_nova",
+                canonical_capability,
+                {"query": text} if canonical_capability == "EVIDENCE_LOOKUP" else {},
+                trace_id=trace_id,
+            )
+        except Exception as exc:
+            result = {
+                "status": "ERROR",
+                "capability": canonical_capability,
+                "data": {},
+                "error": str(exc),
+                "warnings": [],
+                "provenance": {"capability": canonical_capability, "trace_id": trace_id},
+            }
+        state.metadata["capability_gate"] = {
+            "decision": "canonical_awareness",
+            "capability": canonical_capability,
+            "build_sha": BUILD_SHA,
+            "trace_id": trace_id,
+        }
+        state.metadata["capability_result"] = {
+            "tool": "nexus_shared_operational_read",
+            "query_type": canonical_capability,
+            "status": result.get("status", "unknown"),
+            "data": result.get("data", {}),
+            "provenance": result.get("provenance", {}),
+            "source_type": result.get("source_type"),
+            "source_path": result.get("source_path"),
+            "freshness": result.get("freshness"),
+            "warnings": result.get("warnings", []),
+            "errors": result.get("errors", []),
+            "trace_id": trace_id,
+        }
+        save_provenance(chat_id, state.metadata["capability_result"]["provenance"])
+        return state
 
     # ── Priority 2.5: Semantic query planner ──
     # Try the schema-aware planner before keyword routing.

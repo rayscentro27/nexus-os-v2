@@ -19,9 +19,24 @@ Temporal is also resolved: `temporalio` is declared in
 the existing Temporal worker is running. No package installation was performed.
 
 Automated operator certification remains Hermes **25/25** and Nova **25/25**;
-focused Phase 15C tests pass (**11 passed**). Session.table, source precedence,
+focused Phase 15C tests pass (**12 passed**). Session.table, source precedence,
 taxonomy, governance, payment, journey, AI cost, workforce, and grounded
 recommendation checks remain passing.
+
+## Live Nova regression and repair
+
+Ray's Telegram transcript exposed a real routing defect: Nova's schema query
+planner ran before the canonical awareness gate. It therefore returned legacy
+process/action objects and the August 12 study snapshot for current status,
+clients, opportunities, research, Alpha, loop history, worker taxonomy, and
+the highest-value action. The live worker was confirmed to use this checkout;
+the issue was routing precedence, not a stale deployment.
+
+The repair places the narrow canonical-awareness gate after write and approval
+guards but before planner execution. Internal rechecks for the nine affected
+question families now select the shared canonical capabilities and current
+source paths. A new live Telegram response is still required before marking
+the live path PASS.
 
 ## Remaining environmental blockers
 
