@@ -13,7 +13,7 @@ describe('Hermes Phase 11 Daily Brief', () => {
   it('renders worker health, unknowns, decisions, and next action', () => {
     const rendered = renderHermesDailyBrief();
     expect(rendered).toContain('codex: AVAILABLE');
-    expect(rendered).toContain('opencode: UNAVAILABLE');
+    expect(rendered).toContain('opencode: AVAILABLE');
     expect(rendered).toContain('mimo: INSTALLED_UNPROVEN');
     expect(rendered).toContain('trend UNKNOWN');
     expect(rendered).toContain('Ray decisions:');

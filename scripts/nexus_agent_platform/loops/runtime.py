@@ -321,6 +321,21 @@ class LoopSpec:
     ai_decider: Callable[[Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]]], Dict[str, Any]]
     ai_context_builder: Callable[[Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]]], Dict[str, Any]]
     memory_projection: Callable[[Dict[str, Any], Dict[str, Any], Optional[Dict[str, Any]]], Dict[str, Any]]
+    # Phase 14 business-loop contract metadata. Defaults preserve compatibility
+    # with the original system-health and opportunity specs.
+    schedule_or_event: str = "operator-triggered"
+    precheck_name: str = "deterministic_precheck"
+    verifier_name: str = "verifier"
+    success_condition: str = "verifier status PASS"
+    failure_condition: str = "verifier status FAIL"
+    value_metric: str = "value_events"
+    value_event: str = "verified output"
+    dedupe_key: str = "record hash"
+    state_key: str = "loop_id"
+    freshness_window: str = "UNKNOWN"
+    pause_condition: str = "repeated no-value verified runs"
+    kill_condition: str = "governance or verifier boundary failure"
+    next_eligible_run: str = "scheduler-defined"
 
 
 @dataclass
@@ -356,6 +371,7 @@ class LoopRunResult:
     memory_record: Dict[str, Any]
     ledger_record: Dict[str, Any]
     telemetry_run_id: str = ""
+    no_change: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -390,6 +406,7 @@ class LoopRunResult:
             "memory_record": self.memory_record,
             "ledger_record": self.ledger_record,
             "telemetry_run_id": self.telemetry_run_id,
+            "no_change": self.no_change,
         }
 
 
@@ -483,8 +500,10 @@ class LoopRuntime:
         cost_quote = resolve_cost_quote(tier="T0_DETERMINISTIC", input_tokens=0, output_tokens=0)
         ai_result: Dict[str, Any] = {}
         verifier_result: Dict[str, Any] = {"status": "not_run"}
+        no_change = False
 
         if spec.stop_if_no_change and previous_input_hash == input_hash:
+            no_change = True
             zero_token_execution = True
             deterministic_output = collected.get("deterministic_output", {})
             reduced = collected.get("reduced", deterministic_output)
@@ -612,9 +631,16 @@ class LoopRuntime:
             "input_hash": input_hash,
             "output_hash": _stable_hash(result),
             "material_hash": material_hash,
+            "delta_status": "NO_CHANGE" if no_change else "CHANGED",
             "completed_at": completed_at,
+            "duration_ms": duration_ms,
             "ai_used": ai_used,
             "ai_calls": ai_calls,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "estimated_cost": estimated_cost,
+            "provider_cost_usd": estimated_cost,
+            "verifier_status": verifier_result.get("status"),
             "zero_token_execution": zero_token_execution or not ai_used,
         })
         memory_record = json.loads(json.dumps(memory_record, sort_keys=True, default=str))
@@ -662,6 +688,7 @@ class LoopRuntime:
             "input_hash": input_hash,
             "output_hash": _stable_hash(result),
             "material_hash": material_hash,
+            "delta_status": "NO_CHANGE" if no_change else "CHANGED",
         }
         _append_jsonl(self.ledger_path, ledger_record)
 
@@ -714,6 +741,7 @@ class LoopRuntime:
             memory_record=memory_record,
             ledger_record=ledger_record,
             telemetry_run_id=telemetry_run_id,
+            no_change=no_change,
         )
 
 

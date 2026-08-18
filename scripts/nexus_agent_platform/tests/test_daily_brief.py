@@ -45,7 +45,7 @@ def test_daily_brief_exposes_worker_health_without_secrets():
     brief = build_daily_brief()
     classifications = {row["worker_id"]: row["classification"] for row in brief["worker_health"]}
     assert classifications["codex"] == "AVAILABLE"
-    assert classifications["opencode"] == "UNAVAILABLE"
+    assert classifications["opencode"] == "AVAILABLE"
     assert classifications["mimo"] == "INSTALLED_UNPROVEN"
     assert classifications["local_python"] == "AVAILABLE"
     assert classifications["openhands"] == "NOT_INSTALLED"

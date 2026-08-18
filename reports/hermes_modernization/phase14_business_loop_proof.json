@@ -1,0 +1,729 @@
+{
+  "contracts": [
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "open_source_scout_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "Open Source Scout Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Alpha",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Find changed public open-source candidates and prepare provenance-backed internal opportunities.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:open_source_scout_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "opportunities_created, duplicate_work_avoided",
+      "verifier": "deterministic provenance/value verifier"
+    },
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "seo_opportunity_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "SEO Opportunity Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Alpha",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Score fresh local/public keyword evidence into internal SEO opportunity candidates.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:seo_opportunity_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "qualified_keywords, duplicate_work_avoided",
+      "verifier": "deterministic provenance/value verifier"
+    },
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "revenue_opportunity_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "Revenue Opportunity Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Hermes",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Rank report-backed opportunities while separating estimated from confirmed revenue.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:revenue_opportunity_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "opportunities_advanced, estimated_revenue, confirmed_revenue",
+      "verifier": "deterministic provenance/value verifier"
+    },
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "research_intake_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "Research Intake Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Alpha",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Normalize and classify new research artifacts without replaying unchanged history.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:research_intake_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "research_items_processed, duplicate_work_avoided",
+      "verifier": "deterministic provenance/value verifier"
+    }
+  ],
+  "eligibility": [
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "open_source_scout_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "seo_opportunity_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED_WITH_LIMITS",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "revenue_opportunity_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "research_intake_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "affiliate_opportunity_loop",
+      "reason": "approved partner URLs and live attribution are unavailable; retain research-only surfaces"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "youtube_research_loop",
+      "reason": "approved transcript/source inputs are incomplete"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "competitor_monitoring_loop",
+      "reason": "no stable public-source change feed and verifier evidence"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "marketing_research_loop",
+      "reason": "publishing remains approval-gated and no distinct delta feed is required"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "funding_opportunity_loop",
+      "reason": "fresh external funding data and eligibility verifier unavailable"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "grant_opportunity_loop",
+      "reason": "deadline/eligibility source verification is not currently proven"
+    }
+  ],
+  "generated_at": "2026-08-18T16:44:02.296685+00:00",
+  "governance": {
+    "client_pii": "NOT_USED",
+    "client_portal_changes": "NONE",
+    "mass_outreach": "DISABLED",
+    "paid_actions": "DISABLED",
+    "phase12_promotion": "NOT_PERFORMED",
+    "production_deployment": "DISABLED",
+    "production_telegram_changes": "NONE",
+    "provider_credits": "DISABLED",
+    "public_publishing": "DISABLED"
+  },
+  "learning_telemetry": {
+    "automatic_policy_mutation": false,
+    "emitted": [
+      "no_change_runs",
+      "ai_calls",
+      "tokens",
+      "provider_cost",
+      "success_failure",
+      "retries",
+      "value_events",
+      "duplicate_work_avoided"
+    ]
+  },
+  "mode": "bounded_internal_non_publishing",
+  "phase": "PHASE 14 \u2014 CONTROLLED BUSINESS LOOP EXPANSION",
+  "runs": [
+    {
+      "contract": {
+        "ai_allowed": false,
+        "approval_boundary": "internal recommendation only; Ray approval required for external action",
+        "cost_budget_usd": 0.0,
+        "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+        "execution_steps": [
+          "read compact delta",
+          "normalize",
+          "dedupe",
+          "verify provenance",
+          "calculate value metric"
+        ],
+        "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+        "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+        "input_sources": [
+          "compact current records",
+          "existing report/evidence refs"
+        ],
+        "kill_condition": "protected-path, approval, or verifier violation",
+        "last_run": "see loop state",
+        "last_success": "see loop state",
+        "loop_id": "open_source_scout_loop",
+        "max_ai_calls": 0,
+        "max_retries": 0,
+        "name": "Open Source Scout Loop",
+        "next_eligible_run": "scheduler-defined",
+        "owner_agent": "Alpha",
+        "pause_condition": "repeated no-value runs or unresolved source blocker",
+        "precheck": "deterministic public/report-backed precheck",
+        "purpose": "Find changed public open-source candidates and prepare provenance-backed internal opportunities.",
+        "retry_policy": "bounded",
+        "schedule_or_event": "daily bounded scheduler or explicit internal event",
+        "state_key": "nexus_loop:open_source_scout_loop",
+        "success_condition": "structured result and verifier PASS",
+        "token_budget": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "trigger_type": "bounded internal schedule or event",
+        "value_event": "verified internal recommendation/research artifact",
+        "value_metric": "opportunities_created, duplicate_work_avoided",
+        "verifier": "deterministic provenance/value verifier"
+      },
+      "fixture_records": 3,
+      "loop_id": "open_source_scout_loop",
+      "ranking": "PROMISING",
+      "run_1": {
+        "ai_calls": 0,
+        "delta_status": "CHANGED",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "74174c52099bebe51ba774ac048f80fcbcb26d56644e0d7e53bdd630928b904a",
+        "input_tokens": 0,
+        "no_change": false,
+        "output_tokens": 0,
+        "result_hash": "a32d793b80c377d301d7da4a89ce5e50d3f1767892c4c88ec1b53c2e7114d535",
+        "run_id": "open_source_scout_loop_de3ebbd0d4194c999ec5b13aa96f5ee3",
+        "source_hash": "47d4a4f66164b08a93fc413d4dddfafec154f71bd8608d6bb5fd82841422165b",
+        "status": "completed",
+        "value_classification": "ESTIMATED_VALUE",
+        "value_events": 1,
+        "value_metric": {
+          "duplicate_work_avoided": 1,
+          "opportunities_created": 2
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "run_2": {
+        "ai_calls": 0,
+        "delta_status": "NO_CHANGE",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "74174c52099bebe51ba774ac048f80fcbcb26d56644e0d7e53bdd630928b904a",
+        "input_tokens": 0,
+        "no_change": true,
+        "output_tokens": 0,
+        "result_hash": "a32d793b80c377d301d7da4a89ce5e50d3f1767892c4c88ec1b53c2e7114d535",
+        "run_id": "open_source_scout_loop_610847c45a4a4ef487f464291c5c0c1c",
+        "source_hash": "47d4a4f66164b08a93fc413d4dddfafec154f71bd8608d6bb5fd82841422165b",
+        "status": "completed",
+        "value_classification": "ESTIMATED_VALUE",
+        "value_events": 1,
+        "value_metric": {
+          "duplicate_work_avoided": 1,
+          "opportunities_created": 2
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "second_run_required": {
+        "ai_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "provider_cost_usd": 0.0,
+        "status": "NO_CHANGE"
+      }
+    },
+    {
+      "contract": {
+        "ai_allowed": false,
+        "approval_boundary": "internal recommendation only; Ray approval required for external action",
+        "cost_budget_usd": 0.0,
+        "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+        "execution_steps": [
+          "read compact delta",
+          "normalize",
+          "dedupe",
+          "verify provenance",
+          "calculate value metric"
+        ],
+        "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+        "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+        "input_sources": [
+          "compact current records",
+          "existing report/evidence refs"
+        ],
+        "kill_condition": "protected-path, approval, or verifier violation",
+        "last_run": "see loop state",
+        "last_success": "see loop state",
+        "loop_id": "seo_opportunity_loop",
+        "max_ai_calls": 0,
+        "max_retries": 0,
+        "name": "SEO Opportunity Loop",
+        "next_eligible_run": "scheduler-defined",
+        "owner_agent": "Alpha",
+        "pause_condition": "repeated no-value runs or unresolved source blocker",
+        "precheck": "deterministic public/report-backed precheck",
+        "purpose": "Score fresh local/public keyword evidence into internal SEO opportunity candidates.",
+        "retry_policy": "bounded",
+        "schedule_or_event": "daily bounded scheduler or explicit internal event",
+        "state_key": "nexus_loop:seo_opportunity_loop",
+        "success_condition": "structured result and verifier PASS",
+        "token_budget": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "trigger_type": "bounded internal schedule or event",
+        "value_event": "verified internal recommendation/research artifact",
+        "value_metric": "qualified_keywords, duplicate_work_avoided",
+        "verifier": "deterministic provenance/value verifier"
+      },
+      "fixture_records": 3,
+      "loop_id": "seo_opportunity_loop",
+      "ranking": "PROMISING",
+      "run_1": {
+        "ai_calls": 0,
+        "delta_status": "CHANGED",
+        "duration_ms": 1,
+        "estimated_cost": 0.0,
+        "evidence_hash": "582dc8680b40a2e7bb01211f0ba8238519aa7d154a136b923611fb776927e565",
+        "input_tokens": 0,
+        "no_change": false,
+        "output_tokens": 0,
+        "result_hash": "588439129ffeb255236ffb176434b7a5916df35e113f361ed4d282c41d181b76",
+        "run_id": "seo_opportunity_loop_ae5ebc82b1714c88b54c22672ab693eb",
+        "source_hash": "3a4f68be4b9d7d471a249ee629a4e01fdaf5854b55aa551f575571a377e4b725",
+        "status": "completed",
+        "value_classification": "ESTIMATED_VALUE",
+        "value_events": 1,
+        "value_metric": {
+          "duplicate_work_avoided": 1,
+          "qualified_keywords": 2
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "run_2": {
+        "ai_calls": 0,
+        "delta_status": "NO_CHANGE",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "582dc8680b40a2e7bb01211f0ba8238519aa7d154a136b923611fb776927e565",
+        "input_tokens": 0,
+        "no_change": true,
+        "output_tokens": 0,
+        "result_hash": "588439129ffeb255236ffb176434b7a5916df35e113f361ed4d282c41d181b76",
+        "run_id": "seo_opportunity_loop_47a22717e1ba4767b4397e30157e47f5",
+        "source_hash": "3a4f68be4b9d7d471a249ee629a4e01fdaf5854b55aa551f575571a377e4b725",
+        "status": "completed",
+        "value_classification": "ESTIMATED_VALUE",
+        "value_events": 1,
+        "value_metric": {
+          "duplicate_work_avoided": 1,
+          "qualified_keywords": 2
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "second_run_required": {
+        "ai_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "provider_cost_usd": 0.0,
+        "status": "NO_CHANGE"
+      }
+    },
+    {
+      "contract": {
+        "ai_allowed": false,
+        "approval_boundary": "internal recommendation only; Ray approval required for external action",
+        "cost_budget_usd": 0.0,
+        "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+        "execution_steps": [
+          "read compact delta",
+          "normalize",
+          "dedupe",
+          "verify provenance",
+          "calculate value metric"
+        ],
+        "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+        "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+        "input_sources": [
+          "compact current records",
+          "existing report/evidence refs"
+        ],
+        "kill_condition": "protected-path, approval, or verifier violation",
+        "last_run": "see loop state",
+        "last_success": "see loop state",
+        "loop_id": "revenue_opportunity_loop",
+        "max_ai_calls": 0,
+        "max_retries": 0,
+        "name": "Revenue Opportunity Loop",
+        "next_eligible_run": "scheduler-defined",
+        "owner_agent": "Hermes",
+        "pause_condition": "repeated no-value runs or unresolved source blocker",
+        "precheck": "deterministic public/report-backed precheck",
+        "purpose": "Rank report-backed opportunities while separating estimated from confirmed revenue.",
+        "retry_policy": "bounded",
+        "schedule_or_event": "daily bounded scheduler or explicit internal event",
+        "state_key": "nexus_loop:revenue_opportunity_loop",
+        "success_condition": "structured result and verifier PASS",
+        "token_budget": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "trigger_type": "bounded internal schedule or event",
+        "value_event": "verified internal recommendation/research artifact",
+        "value_metric": "opportunities_advanced, estimated_revenue, confirmed_revenue",
+        "verifier": "deterministic provenance/value verifier"
+      },
+      "fixture_records": 3,
+      "loop_id": "revenue_opportunity_loop",
+      "ranking": "PROMISING",
+      "run_1": {
+        "ai_calls": 0,
+        "delta_status": "CHANGED",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "c30ea132c5b357682be8a3cb937ca6196dc6a5ec0cc4c8cfa019cddc5ba68931",
+        "input_tokens": 0,
+        "no_change": false,
+        "output_tokens": 0,
+        "result_hash": "08fdb0d1cef644cd5055f2d90fc61175cbea0bc844cdc8354dc557d8271d94d1",
+        "run_id": "revenue_opportunity_loop_18d620cd46774551a1b334a3cd6c266f",
+        "source_hash": "7df10d043d6f31ffe4e500bd05c22921f05b169ee86227c46ab2601eceadbe81",
+        "status": "completed",
+        "value_classification": "ESTIMATED_VALUE_ONLY",
+        "value_events": 1,
+        "value_metric": {
+          "confirmed_revenue": 0,
+          "estimated_revenue": 1409.0,
+          "opportunities_advanced": 3
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "run_2": {
+        "ai_calls": 0,
+        "delta_status": "NO_CHANGE",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "c30ea132c5b357682be8a3cb937ca6196dc6a5ec0cc4c8cfa019cddc5ba68931",
+        "input_tokens": 0,
+        "no_change": true,
+        "output_tokens": 0,
+        "result_hash": "08fdb0d1cef644cd5055f2d90fc61175cbea0bc844cdc8354dc557d8271d94d1",
+        "run_id": "revenue_opportunity_loop_3c5e05f1848047ad9dcd0c8775060427",
+        "source_hash": "7df10d043d6f31ffe4e500bd05c22921f05b169ee86227c46ab2601eceadbe81",
+        "status": "completed",
+        "value_classification": "ESTIMATED_VALUE_ONLY",
+        "value_events": 1,
+        "value_metric": {
+          "confirmed_revenue": 0,
+          "estimated_revenue": 1409.0,
+          "opportunities_advanced": 3
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "second_run_required": {
+        "ai_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "provider_cost_usd": 0.0,
+        "status": "NO_CHANGE"
+      }
+    },
+    {
+      "contract": {
+        "ai_allowed": false,
+        "approval_boundary": "internal recommendation only; Ray approval required for external action",
+        "cost_budget_usd": 0.0,
+        "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+        "execution_steps": [
+          "read compact delta",
+          "normalize",
+          "dedupe",
+          "verify provenance",
+          "calculate value metric"
+        ],
+        "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+        "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+        "input_sources": [
+          "compact current records",
+          "existing report/evidence refs"
+        ],
+        "kill_condition": "protected-path, approval, or verifier violation",
+        "last_run": "see loop state",
+        "last_success": "see loop state",
+        "loop_id": "research_intake_loop",
+        "max_ai_calls": 0,
+        "max_retries": 0,
+        "name": "Research Intake Loop",
+        "next_eligible_run": "scheduler-defined",
+        "owner_agent": "Alpha",
+        "pause_condition": "repeated no-value runs or unresolved source blocker",
+        "precheck": "deterministic public/report-backed precheck",
+        "purpose": "Normalize and classify new research artifacts without replaying unchanged history.",
+        "retry_policy": "bounded",
+        "schedule_or_event": "daily bounded scheduler or explicit internal event",
+        "state_key": "nexus_loop:research_intake_loop",
+        "success_condition": "structured result and verifier PASS",
+        "token_budget": {
+          "input": 0,
+          "output": 0,
+          "total": 0
+        },
+        "trigger_type": "bounded internal schedule or event",
+        "value_event": "verified internal recommendation/research artifact",
+        "value_metric": "research_items_processed, duplicate_work_avoided",
+        "verifier": "deterministic provenance/value verifier"
+      },
+      "fixture_records": 3,
+      "loop_id": "research_intake_loop",
+      "ranking": "PROMISING",
+      "run_1": {
+        "ai_calls": 0,
+        "delta_status": "CHANGED",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "0fffb4d18e607115cf0c8056ddfc9ff30fec2852e21cb39290ad607fef5fdc14",
+        "input_tokens": 0,
+        "no_change": false,
+        "output_tokens": 0,
+        "result_hash": "41d8aa1b94cae0378813a0395da7f162065f0adb2c384230d4f52b61861a0a8d",
+        "run_id": "research_intake_loop_d5d40d7dcf2042638b371c9cf5f85c48",
+        "source_hash": "969cdb804113f73a14f6921d52558535a86f0551c27a657734bece659397ddf3",
+        "status": "completed",
+        "value_classification": "MEASURED_COUNT",
+        "value_events": 1,
+        "value_metric": {
+          "duplicate_work_avoided": 0,
+          "research_items_processed": 3
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "run_2": {
+        "ai_calls": 0,
+        "delta_status": "NO_CHANGE",
+        "duration_ms": 0,
+        "estimated_cost": 0.0,
+        "evidence_hash": "0fffb4d18e607115cf0c8056ddfc9ff30fec2852e21cb39290ad607fef5fdc14",
+        "input_tokens": 0,
+        "no_change": true,
+        "output_tokens": 0,
+        "result_hash": "41d8aa1b94cae0378813a0395da7f162065f0adb2c384230d4f52b61861a0a8d",
+        "run_id": "research_intake_loop_38defd8243cd4f618ad7d9fd8943a76e",
+        "source_hash": "969cdb804113f73a14f6921d52558535a86f0551c27a657734bece659397ddf3",
+        "status": "completed",
+        "value_classification": "MEASURED_COUNT",
+        "value_events": 1,
+        "value_metric": {
+          "duplicate_work_avoided": 0,
+          "research_items_processed": 3
+        },
+        "verifier": {
+          "reason": "deterministic output, provenance hashes, and value metric verified",
+          "status": "pass"
+        },
+        "zero_token_execution": true
+      },
+      "second_run_required": {
+        "ai_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "provider_cost_usd": 0.0,
+        "status": "NO_CHANGE"
+      }
+    }
+  ],
+  "selected_loops": [
+    "open_source_scout_loop",
+    "seo_opportunity_loop",
+    "revenue_opportunity_loop",
+    "research_intake_loop"
+  ]
+}

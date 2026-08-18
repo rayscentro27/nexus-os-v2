@@ -129,6 +129,21 @@ def build_daily_brief() -> Dict[str, Any]:
     health_loop = ((loop_state.get("loops") or {}).get("system_health_loop") or {})
     last_loop = health_loop.get("last_run") or {}
     loop_summary = last_loop.get("summary") or {}
+    business_loop_rows = []
+    for loop_id, loop_record in ((loop_state.get("loops") or {}).items() if isinstance(loop_state, dict) else []):
+        if loop_id not in {"open_source_scout_loop", "seo_opportunity_loop", "revenue_opportunity_loop", "research_intake_loop"}:
+            continue
+        last_business = loop_record.get("last_run") or {}
+        business_loop_rows.append({
+            "loop_id": loop_id,
+            "status": last_business.get("delta_status", last_business.get("verifier_status", UNKNOWN)),
+            "last_run": last_business.get("completed_at", UNKNOWN),
+            "value": last_business.get("value_metric", UNKNOWN),
+            "cost": last_business.get("estimated_cost", UNKNOWN),
+            "ai_calls": last_business.get("ai_calls", UNKNOWN),
+            "verifier": last_business.get("verifier_status", UNKNOWN),
+            "next_action": "Wait for a material source delta or review the internal recommendation; Ray approval is required for external action.",
+        })
     workers = pilot.get("workers") or []
     workforce_workers = (sources["workforce"] or {}).get("workers") if isinstance(sources["workforce"], dict) else None
     worker_rows = workforce_workers or workers
@@ -204,6 +219,7 @@ def build_daily_brief() -> Dict[str, Any]:
             "failed_runs": loop_summary.get("failed_runs", UNKNOWN),
             "pending_approvals": loop_summary.get("pending_approvals", UNKNOWN),
             "last_updated_at": health_loop.get("last_updated_at", UNKNOWN),
+            "business_loops": business_loop_rows,
         },
         "marketing_updates": {
             "status": (sources["marketing"] or {}).get("status", UNKNOWN),
@@ -299,9 +315,11 @@ def render_daily_brief(brief: Dict[str, Any]) -> str:
         f"- provider cost USD: `${cost['provider_cost_usd']}`; local compute executions: `{cost['local_compute_executions']}`",
         f"- value events: `{cost['value_events']}`; successful records: `{cost['successful_records']}`",
         "",
-        "## Decisions, blockers, and next actions",
+        "## Business loops",
         "",
     ]
+    lines.extend(f"- `{row['loop_id']}`: `{row['status']}`; value `{row['value']}`; cost `${row['cost']}`; AI calls `{row['ai_calls']}`; verifier `{row['verifier']}`; next: {row['next_action']}" for row in brief["loop_updates"].get("business_loops", []))
+    lines.extend(["", "## Decisions, blockers, and next actions", ""])
     lines.extend(f"- decision: {item}" for item in brief["decisions_needed"])
     lines.extend(f"- blocker: {item.get('blocker', UNKNOWN)} — {item.get('next_action', UNKNOWN)}" for item in brief["blockers"][:5])
     lines.extend(f"- recommended: {item}" for item in brief["recommended_actions"])

@@ -31,6 +31,12 @@ describe('Hermes Mission Control V2', () => {
     expect(normalizeMissionControlWorkerStatus('invented_status')).toBe('UNKNOWN');
   });
 
+  it('surfaces the proven Phase 14 business loop records through the existing adapter', () => {
+    expect(hermesMissionControlData.loops.businessLoops).toHaveLength(4);
+    expect(hermesMissionControlData.loops.businessLoops.every((loop) => loop.verifier === 'pass')).toBe(true);
+    expect(hermesMissionControlData.loops.businessLoops.every((loop) => loop.status === 'NO_CHANGE')).toBe(true);
+  });
+
   it('keeps Mission Control read-only and client boundaries intact', () => {
     const ui = readFileSync('src/components/command-center/HermesMissionControlV2.tsx', 'utf8');
     const app = readFileSync('src/app/App.tsx', 'utf8');

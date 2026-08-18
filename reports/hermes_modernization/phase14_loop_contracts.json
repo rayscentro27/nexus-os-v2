@@ -1,0 +1,268 @@
+{
+  "contracts": [
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "open_source_scout_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "Open Source Scout Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Alpha",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Find changed public open-source candidates and prepare provenance-backed internal opportunities.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:open_source_scout_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "opportunities_created, duplicate_work_avoided",
+      "verifier": "deterministic provenance/value verifier"
+    },
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "seo_opportunity_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "SEO Opportunity Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Alpha",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Score fresh local/public keyword evidence into internal SEO opportunity candidates.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:seo_opportunity_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "qualified_keywords, duplicate_work_avoided",
+      "verifier": "deterministic provenance/value verifier"
+    },
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "revenue_opportunity_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "Revenue Opportunity Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Hermes",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Rank report-backed opportunities while separating estimated from confirmed revenue.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:revenue_opportunity_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "opportunities_advanced, estimated_revenue, confirmed_revenue",
+      "verifier": "deterministic provenance/value verifier"
+    },
+    {
+      "ai_allowed": false,
+      "approval_boundary": "internal recommendation only; Ray approval required for external action",
+      "cost_budget_usd": 0.0,
+      "dedupe_key": "source URL/repository/keyword/opportunity/artifact identity",
+      "execution_steps": [
+        "read compact delta",
+        "normalize",
+        "dedupe",
+        "verify provenance",
+        "calculate value metric"
+      ],
+      "failure_condition": "missing provenance, stale required evidence, or verifier FAIL",
+      "freshness_window": "source-provided; UNKNOWN blocks freshness-dependent records",
+      "input_sources": [
+        "compact current records",
+        "existing report/evidence refs"
+      ],
+      "kill_condition": "protected-path, approval, or verifier violation",
+      "last_run": "see loop state",
+      "last_success": "see loop state",
+      "loop_id": "research_intake_loop",
+      "max_ai_calls": 0,
+      "max_retries": 0,
+      "name": "Research Intake Loop",
+      "next_eligible_run": "scheduler-defined",
+      "owner_agent": "Alpha",
+      "pause_condition": "repeated no-value runs or unresolved source blocker",
+      "precheck": "deterministic public/report-backed precheck",
+      "purpose": "Normalize and classify new research artifacts without replaying unchanged history.",
+      "retry_policy": "bounded",
+      "schedule_or_event": "daily bounded scheduler or explicit internal event",
+      "state_key": "nexus_loop:research_intake_loop",
+      "success_condition": "structured result and verifier PASS",
+      "token_budget": {
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "trigger_type": "bounded internal schedule or event",
+      "value_event": "verified internal recommendation/research artifact",
+      "value_metric": "research_items_processed, duplicate_work_avoided",
+      "verifier": "deterministic provenance/value verifier"
+    }
+  ],
+  "eligibility": [
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "open_source_scout_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "seo_opportunity_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED_WITH_LIMITS",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "revenue_opportunity_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "approval_known": true,
+      "classification": "QUALIFIED",
+      "compact_state": true,
+      "deterministic_precheck": true,
+      "finish_condition": true,
+      "loop_id": "research_intake_loop",
+      "repeatable": true,
+      "tools_available": true,
+      "unchanged_zero_ai": true,
+      "value_gt_cost": true,
+      "value_measurable": true,
+      "verifier": true
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "affiliate_opportunity_loop",
+      "reason": "approved partner URLs and live attribution are unavailable; retain research-only surfaces"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "youtube_research_loop",
+      "reason": "approved transcript/source inputs are incomplete"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "competitor_monitoring_loop",
+      "reason": "no stable public-source change feed and verifier evidence"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "marketing_research_loop",
+      "reason": "publishing remains approval-gated and no distinct delta feed is required"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "funding_opportunity_loop",
+      "reason": "fresh external funding data and eligibility verifier unavailable"
+    },
+    {
+      "classification": "DEFER",
+      "loop_id": "grant_opportunity_loop",
+      "reason": "deadline/eligibility source verification is not currently proven"
+    }
+  ]
+}

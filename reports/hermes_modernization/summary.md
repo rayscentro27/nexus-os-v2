@@ -1,9 +1,9 @@
 # Hermes Modernization Summary
 
-Phase 13B continuation repaired the explicit OpenCode certification contract. OpenCode is **AVAILABLE** using `opencode/mimo-v2.5-free`; the successful operator-supplied probe returned `OPENCODE_PROBE_OK`. The local recheck timed out at 30 seconds and remains recorded without being mislabeled as authentication failure.
+Phase 14 activated four bounded internal research/recommendation loops: Open Source Scout, SEO Opportunity, Revenue Opportunity, and Research Intake. All use the existing LoopRuntime, T0 deterministic processing, delta-only state, dedupe, mandatory verification, compact hashes, and append-only ledgers.
 
-Hermes: 12 certified, 1 partial, 0 failed, 0 untested. Alpha: 11 certified, 1 partial, 0 failed, 0 untested. Certified historical task telemetry remains UNKNOWN; newly rerun deterministic tasks record zero AI calls, zero provider cost, and local compute.
+Two-run proof: each loop passed Run 1 and returned `NO_CHANGE` on identical Run 2 with 0 AI calls, 0 tokens, and $0 provider cost. Estimated value is kept separate from confirmed revenue; the revenue loop recorded $1,409 estimated value and $0 confirmed revenue from report-backed fixtures.
 
-The Phase 14 readiness gate is **GO** with bounded partials: Hermes H06 lacks a registered external CodingWorker execute adapter, and Alpha A01 lacks stable live web execution. No provider installation/login/credit purchase, production routing mutation, client portal change, Telegram change, Nova authority change, or Phase 12 promotion occurred.
+Affiliate, YouTube, competitor, marketing, funding, and grant loops remain DEFERRED because their source, attribution, freshness, or eligibility proofs are incomplete. No publishing, outreach, paid action, production deployment, client PII use, provider credit purchase, client portal change, Telegram change, or Phase 12 promotion occurred.
 
-Exact resume point: **PHASE 14 — CONTROLLED BUSINESS LOOP EXPANSION**.
+Exact resume point: **PHASE 14 — CONTROLLED BUSINESS LOOP EXPANSION — REVIEW PROOF AND TUNE BEFORE BROADENING**.

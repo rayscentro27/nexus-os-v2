@@ -1,6 +1,7 @@
 import pilot from '../../reports/hermes_modernization/end_to_end_pilot.json';
 import modernizationState from '../../reports/hermes_modernization/state.json';
 import loopState from '../../data/runtime/nexus_loops/loop_state.json';
+import workforceRegistry from '../../reports/hermes_modernization/ai_workforce_registry.json';
 
 export type MissionStatus = 'PASS' | 'PARTIAL' | 'BLOCKED' | 'UNKNOWN' | string;
 export const MISSION_WORKER_STATUSES = ['AVAILABLE', 'INSTALLED_UNPROVEN', 'AUTH_BLOCKED', 'RATE_LIMITED', 'NOT_INSTALLED', 'UNAVAILABLE'] as const;
@@ -35,12 +36,28 @@ const source = pilot as Pilot;
 const loop = (loopState as any).loops?.system_health_loop;
 const lastLoop = loop?.last_run;
 const systemSummary = lastLoop?.summary;
+const businessLoopIds = ['open_source_scout_loop', 'seo_opportunity_loop', 'revenue_opportunity_loop', 'research_intake_loop'];
+const businessLoops = businessLoopIds.map((id) => {
+  const record = (loopState as any).loops?.[id] ?? {};
+  const last = record.last_run ?? {};
+  return {
+    loopId: id,
+    status: last.delta_status === 'NO_CHANGE' ? 'NO_CHANGE' : (last.verifier_status === 'pass' ? 'PASS' : 'UNKNOWN'),
+    lastRun: last.completed_at ?? 'UNKNOWN',
+    value: last.value_metric ?? last.result?.value_metric ?? 'UNKNOWN',
+    cost: last.estimated_cost ?? 'UNKNOWN',
+    aiCalls: last.ai_calls ?? 'UNKNOWN',
+    verifier: last.verifier_status ?? 'UNKNOWN',
+    nextAction: last.delta_status === 'NO_CHANGE' ? 'Wait for a material source delta or next eligible schedule.' : 'Review the internal recommendation; Ray approval is required for external action.',
+  };
+});
+const registryWorkers = ((workforceRegistry as any).workers ?? []) as Array<Record<string, unknown>>;
 
 export const hermesMissionControlData = {
-  phase: 'PHASE 10 — MISSION CONTROL V2 VISIBILITY',
-  resumePoint: 'PHASE 10 — MISSION CONTROL V2 VISIBILITY',
+  phase: (modernizationState as any).current_phase ?? 'PHASE 14 — CONTROLLED BUSINESS LOOP EXPANSION',
+  resumePoint: (modernizationState as any).next ?? 'PHASE 14 — CONTROLLED BUSINESS LOOP EXPANSION',
   finalStatus: source.result,
-  sourceCommit: source.ending_commit,
+  sourceCommit: (modernizationState as any).source_commit ?? source.ending_commit ?? 'UNKNOWN',
   opportunity: source.opportunity,
   activeOpportunityCount: 1,
   research: source.research,
@@ -50,12 +67,10 @@ export const hermesMissionControlData = {
     taskId: source.creative.build_spec?.task_id ?? 'UNKNOWN',
     objective: source.creative.build_spec?.objective ?? 'UNKNOWN',
   },
-  workers: source.workers.map((worker) => ({
-    id: String(worker.worker_id ?? 'UNKNOWN'),
-    status: normalizeMissionControlWorkerStatus(worker.classification ?? worker.status),
-    installed: worker.installed === true,
-    reason: String(worker.availability_reason ?? 'UNKNOWN'),
-  })),
+  workers: ['opencode', 'codex', 'mimo', 'local_python', 'openhands'].map((id) => {
+    const worker = registryWorkers.find((row) => row.worker_id === id) ?? {};
+    return { id, status: normalizeMissionControlWorkerStatus(worker.classification ?? worker.status), installed: worker.installed === true, reason: String(worker.availability_reason ?? 'UNKNOWN') };
+  }),
   builder: {
     status: source.builder_status,
     workerUsed: source.worker_used,
@@ -84,6 +99,7 @@ export const hermesMissionControlData = {
     activeRuns: systemSummary?.active_runs ?? 'UNKNOWN',
     failedRuns: systemSummary?.failed_runs ?? 'UNKNOWN',
     lastUpdated: loop?.last_updated_at ?? 'UNKNOWN',
+    businessLoops,
   },
   modernizationState,
 } as const;
