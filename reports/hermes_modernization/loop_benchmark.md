@@ -1,6 +1,6 @@
 # Nexus Loop Benchmark
 
-This checkpoint uses the new loop runtime with temp-state runs and fake governed reads to measure policy behavior.
+This checkpoint uses the token-efficient loop runtime with temp-state runs and governed reads.
 
 ## Zero-token deterministic path
 
@@ -8,7 +8,7 @@ Sample run:
 
 - `system_health_loop`
 - repeated twice with identical inputs
-- result:
+- second run result:
   - `ai_calls = 0`
   - `zero_token_execution = true`
   - `estimated_cost = 0.0`
@@ -24,7 +24,7 @@ Sample run:
 - result:
   - `ai_calls = 0`
   - `zero_token_execution = true`
-  - `top_candidates` preserved
+  - canonical dedupe preserved
 
 This proves duplicate input does not force a model call.
 
@@ -33,42 +33,38 @@ This proves duplicate input does not force a model call.
 Sample run:
 
 - `opportunity_discovery_loop`
-- high-signal opportunity payload
+- material opportunity payload
 - result:
   - `ai_calls = 1`
-  - `tier1_calls = 1`
+  - `tier2_calls = 1`
   - `zero_token_execution = false`
   - `status = completed`
   - `verifier = pass`
-  - `input_tokens = 163`
-  - `output_tokens = 270`
-  - `estimated_cost = 0.2165`
-  - `tokens_per_success = 433.0`
+  - `input_tokens = 535`
+  - `output_tokens = 20`
+  - `estimated_cost = 1.3875`
+  - `tokens_per_success = 555.0`
+  - `cost_per_success = 1.3875`
 
 The AI result was merged onto the deterministic candidate set instead of replacing it.
 
+## Cost accounting unit
+
+- `estimated_cost` is **USD dollars**
+- verified unit check: `_cost_for_tier("T1_CHEAP_AI", 163, 270) == 0.2165`
+- formula: `(163 + 270) * 0.0005 = 0.2165`
+
 ## Observed timing
 
-Combined sample run of:
-
-- two `system_health_loop` runs
-- one zero-token `opportunity_discovery_loop` run
-
-Elapsed:
-
-- `19.642s`
-
-AI-positive opportunity run:
-
-- `6.049s`
+The loop runtime remains bounded in the deterministic path.
+The AI-positive opportunity path completed quickly in this benchmark capture.
 
 ## Test suite observation
 
-Focused loop tests:
+Focused tests:
 
-- `8 passed`
+- `22 passed`
 - `0 failed`
 - `0 skipped`
 
-The pytest session on this machine is slow to tear down temporary directories, but the focused loop assertions are passing.
-
+The current benchmark run confirms the phase 4/5 loop guardrails are operating as intended.

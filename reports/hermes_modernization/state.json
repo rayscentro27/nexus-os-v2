@@ -1,8 +1,8 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-6",
+  "current_checkpoint": "checkpoint-7",
   "started_commit": "2aab745",
-  "ended_commit": "PENDING",
+  "ended_commit": "3904cf2c9f5e01ec3c1cb8995ac42726d5888de3",
   "status": "IN_PROGRESS",
   "protected": {
     "client_portal_v2": "COMPLETE / PROTECTED — do not redesign src/client-v2",
@@ -69,7 +69,7 @@
     },
     "4": {
       "name": "LOOP_FRAMEWORK_RUNTIME",
-      "status": "PARTIAL",
+      "status": "COMPLETE",
       "deliverables": [
         "reports/hermes_modernization/loop_framework.md",
         "reports/hermes_modernization/loop_benchmark.md"
@@ -79,6 +79,22 @@
         "zero_token_paths_verified": 2,
         "ai_positive_paths_verified": 1,
         "focused_tests_passing": 8
+      }
+    },
+    "5": {
+      "name": "OPPORTUNITY_ENGINE_FOUNDATION",
+      "status": "PARTIAL",
+      "deliverables": [
+        "reports/hermes_modernization/opportunity_engine.md",
+        "reports/hermes_modernization/opportunity_engine_audit.md",
+        "reports/hermes_modernization/opportunity_pilot.md"
+      ],
+      "classification_counts": {
+        "canonical_model": "added",
+        "deterministic_scoring": "added",
+        "safe_pilot": "completed",
+        "focused_tests_passing": 22,
+        "cost_unit_verified": true
       }
     }
   },
@@ -107,9 +123,11 @@
       "initial_skills",
       "skill_role_reconciliation",
       "loop_contract",
-      "loop_framework"
+      "loop_framework",
+      "opportunity_engine_data_model",
+      "safe_opportunity_pilot"
     ],
-    "next": "opportunity_engine_data_model"
+    "next": "mission_control_visibility"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
@@ -118,9 +136,8 @@
     "checkpoint-4": "feat(hermes): add governed nexus hermes plugin",
     "checkpoint-5": "chore(hermes): reconcile nexus skills and existing agent roles",
     "checkpoint-6": "feat(loops): add token-efficient nexus loop runtime",
+    "checkpoint-7": "feat(opportunities): add deterministic-first opportunity engine foundation",
     "beyond": [
-      "feat(loops): add deterministic-first nexus loop framework",
-      "feat(opportunities): add nexus opportunity engine foundation",
       "feat(creativity): add creative director and research pipeline",
       "feat(ops): add mission control opportunity and cost visibility"
     ]

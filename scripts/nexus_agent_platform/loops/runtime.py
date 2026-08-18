@@ -23,6 +23,10 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 
 from nexus_agent_platform.capabilities.shared import execute_shared_capability
+from nexus_agent_platform.opportunities.engine import (
+    build_opportunity_discovery_packet,
+    merge_ai_result as merge_opportunity_ai_result,
+)
 from nexus_agent_platform.runtime.execution_telemetry import execution_run
 from nexus_agent_platform.runtime.paths import nexus_data_path
 
@@ -358,9 +362,7 @@ class LoopRuntime:
                     "input_hash": input_hash,
                 }) or {}
                 ai_used = True
-                result = dict(reduced)
-                result.update(ai_result)
-                output_text = json.dumps(result, sort_keys=True, default=str)
+                output_text = json.dumps(ai_result, sort_keys=True, default=str)
                 output_tokens = _approx_tokens(output_text)
                 if output_tokens > spec.max_output_tokens:
                     raise LoopExecutionError("output token budget exceeded")
@@ -369,6 +371,11 @@ class LoopRuntime:
                 estimated_cost = _cost_for_tier(tier, input_tokens, output_tokens)
                 if estimated_cost > spec.cost_ceiling:
                     raise LoopExecutionError("cost ceiling exceeded")
+                if spec.loop_id == "opportunity_discovery_loop":
+                    result = merge_opportunity_ai_result(reduced, ai_result)
+                else:
+                    result = dict(reduced)
+                    result.update(ai_result)
                 verifier_result = spec.verifier(result, collected, previous_state)
             else:
                 result = collected.get("deterministic_output", reduced or collected)
@@ -397,14 +404,20 @@ class LoopRuntime:
                     estimated_cost = _cost_for_tier(effective_tier, input_tokens, output_tokens)
                     if estimated_cost > spec.cost_ceiling:
                         raise LoopExecutionError("cost ceiling exceeded")
-                    result = dict(reduced)
-                    result.update(ai_result)
+                    if spec.loop_id == "opportunity_discovery_loop":
+                        result = merge_opportunity_ai_result(reduced, ai_result)
+                    else:
+                        result = dict(reduced)
+                        result.update(ai_result)
                     verifier_result = spec.verifier(result, collected, previous_state)
 
             result = ai_result if ai_used else collected.get("deterministic_output", reduced or collected)
             if ai_used:
-                result = dict(reduced)
-                result.update(ai_result)
+                if spec.loop_id == "opportunity_discovery_loop":
+                    result = merge_opportunity_ai_result(reduced, ai_result)
+                else:
+                    result = dict(reduced)
+                    result.update(ai_result)
 
         completed_at = _utc_now()
         duration_ms = round((time.monotonic() - start) * 1000)
@@ -627,7 +640,15 @@ def _opportunity_collect(trigger: Dict[str, Any], previous_state: Optional[Dict[
     opportunities = execute_shared_capability("hermes_nova", "get_opportunities", {}, trace_id="loop_opportunity")
     research = execute_shared_capability("hermes_nova", "get_recent_research", {"limit": trigger.get("research_limit", 5)}, trace_id="loop_opportunity")
     business = execute_shared_capability("hermes_nova", "get_business_model_summary", {}, trace_id="loop_opportunity")
-    collected = {
+    collected = build_opportunity_discovery_packet(
+        opportunities_payload=opportunities,
+        research_payload=research,
+        business_payload=business,
+        previous_state=previous_state,
+        trigger=trigger,
+    )
+    packet_snapshot = json.loads(json.dumps(collected, sort_keys=True, default=str))
+    collected.update({
         "deterministic_precheck": True,
         "state_version": 1,
         "trigger": trigger,
@@ -648,20 +669,19 @@ def _opportunity_collect(trigger: Dict[str, Any], previous_state: Optional[Dict[
                 "offers_count": business.get("offers_count", 0),
             },
         ],
-        "summary": {
-            "opportunity_total": opportunities.get("data", {}).get("total", 0),
-            "research_run_total": research.get("data", {}).get("runs", {}).get("total", 0),
-            "offer_total": business.get("offers_count", 0),
-        },
         "material": {
             "opportunities": opportunities,
             "research": research,
             "business": business,
         },
-    }
-    reduced = _opportunity_reduce(collected, previous_state)
-    collected["reduced"] = reduced
-    collected["deterministic_output"] = reduced
+        "summary": {
+            "opportunity_total": collected.get("summary", {}).get("opportunity_total", 0),
+            "research_run_total": collected.get("summary", {}).get("research_run_total", 0),
+            "offer_total": collected.get("summary", {}).get("offer_total", 0),
+        },
+        "reduced": packet_snapshot,
+        "deterministic_output": packet_snapshot,
+    })
     return collected
 
 
@@ -695,63 +715,35 @@ def _score_opportunities(items: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]
     return scored
 
 
-def _opportunity_reduce(collected: Dict[str, Any], previous_state: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    records = collected.get("records", [])
-    opportunity_record = next((record for record in records if record.get("source") == "opportunities"), {})
-    opportunity_records = opportunity_record.get("items", [])
-    deduped = _dedupe_records(_normalize_records(opportunity_records))
-    scored = _score_opportunities(deduped)
-    previous_scores = {
-        item.get("id"): item
-        for item in (previous_state.get("last_result", {}).get("top_candidates", []) if previous_state else [])
-    }
-    changed = []
-    for item in scored[:5]:
-        prev = previous_scores.get(item.get("id"))
-        if not prev or prev.get("score") != item.get("score") or prev.get("status") != item.get("status"):
-            changed.append(item)
-    return {
-        "status": "success",
-        "loop": "opportunity_discovery_loop",
-        "summary": collected.get("summary", {}),
-        "top_candidates": scored[:5],
-        "changed_candidates": changed,
-        "materiality": {
-            "new_candidates": len(changed),
-            "top_score": scored[0]["score"] if scored else 0,
-        },
-        "normalized_opportunities": deduped,
-    }
-
-
 def _opportunity_ai_decider(collected: Dict[str, Any], reduced: Dict[str, Any], previous_state: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     materiality = reduced.get("materiality", {})
     top_score = materiality.get("top_score", 0)
     new_candidates = materiality.get("new_candidates", 0)
-    use_ai = bool(new_candidates and top_score >= 40)
+    use_ai = bool(new_candidates and top_score >= 55)
     return {
         "use_ai": use_ai,
-        "requested_tier": "T1_CHEAP_AI" if use_ai else "T0_DETERMINISTIC",
+        "requested_tier": reduced.get("recommended_ai_tier", "T1_CHEAP_AI") if use_ai else "T0_DETERMINISTIC",
         "reason": "promising new opportunities detected" if use_ai else "no materially new opportunity evidence",
     }
 
 
 def _opportunity_ai_context(collected: Dict[str, Any], reduced: Dict[str, Any], previous_state: Optional[Dict[str, Any]]) -> Dict[str, Any]:
-    changed = reduced.get("changed_candidates", [])[:3]
+    context = reduced.get("ai_context", {})
     return {
         "loop_id": "opportunity_discovery_loop",
-        "summary": reduced.get("summary", {}),
-        "top_candidates": changed,
-        "previous_state": {
+        "summary": context.get("summary", reduced.get("summary", {})),
+        "top_candidates": context.get("top_candidates", [])[:3],
+        "changed_candidates": context.get("changed_candidates", [])[:3],
+        "previous_state": context.get("previous_state", {
             "last_input_hash": previous_state.get("last_input_hash") if previous_state else None,
             "last_output_hash": previous_state.get("last_output_hash") if previous_state else None,
             "last_result": previous_state.get("last_result", {}) if previous_state else {},
-        },
-        "instructions": [
+        }),
+        "instructions": context.get("instructions", [
             "Use only the compact delta.",
             "Do not restate the full history.",
             "Return a short synthesis, not a long essay.",
-        ],
+        ]),
     }
 
 
@@ -759,11 +751,13 @@ def _opportunity_memory_projection(result: Dict[str, Any], collected: Dict[str, 
     return {
         "status": result.get("status", "success"),
         "summary": result.get("summary", {}),
-        "top_candidates": result.get("top_candidates", [])[:5],
+        "canonical_opportunities": result.get("canonical_opportunities", [])[:5],
+        "canonical_record": result.get("canonical_record", {}),
         "materiality": result.get("materiality", {}),
         "last_result": {
             "summary": result.get("summary", {}),
-            "top_candidates": result.get("top_candidates", [])[:5],
+            "canonical_opportunities": result.get("canonical_opportunities", [])[:5],
+            "canonical_record": result.get("canonical_record", {}),
             "materiality": result.get("materiality", {}),
         },
         "loop_type": "opportunity_discovery",
@@ -774,12 +768,15 @@ def _opportunity_memory_projection(result: Dict[str, Any], collected: Dict[str, 
 def _opportunity_verifier(result: Dict[str, Any], collected: Dict[str, Any], previous_state: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     if not isinstance(result, dict):
         return {"status": "fail", "reason": "result must be structured"}
-    if "top_candidates" not in result:
-        return {"status": "fail", "reason": "top candidates missing"}
+    if "canonical_opportunities" not in result or "canonical_record" not in result:
+        return {"status": "fail", "reason": "canonical opportunity record missing"}
     if result.get("ai_summary"):
-        ids = {item.get("id") for item in result.get("top_candidates", []) if item.get("id")}
+        ids = {item.get("id") for item in result.get("canonical_opportunities", []) if item.get("id")}
         if not ids:
             return {"status": "fail", "reason": "AI summary returned without candidate ids"}
+        canonical = result.get("canonical_record", {})
+        if canonical.get("base_score") is None:
+            return {"status": "fail", "reason": "base score missing"}
     return {"status": "pass", "reason": "opportunity candidates verified"}
 
 
@@ -868,7 +865,7 @@ opportunity_discovery_loop_spec = LoopSpec(
     max_input_tokens=2048,
     max_output_tokens=1024,
     estimated_token_budget=3072,
-    cost_ceiling=0.25,
+    cost_ceiling=1.5,
     verifier=_opportunity_verifier,
     retry_policy="bounded",
     max_retries=1,

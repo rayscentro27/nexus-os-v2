@@ -137,8 +137,8 @@ def test_opportunity_duplicate_input_does_not_trigger_ai(monkeypatch, tmp_path):
 
     assert result.ai_calls == 0
     assert result.zero_token_execution is True
-    assert result.result["top_candidates"]
-    assert len(result.result["normalized_opportunities"]) == 2
+    assert result.result["canonical_opportunities"]
+    assert len(result.result["canonical_opportunities"]) == 2
     assert _ledger_lines(ledger_path)[-1]["ai_used"] is False
 
 
@@ -400,11 +400,11 @@ def test_execution_ledger_records_deterministic_vs_ai(monkeypatch, tmp_path):
             "data": {
                 "total": 2,
                 "items": [
-                    {"id": "opp_1", "title": "Growth", "status": "open", "revenue_potential": 5000},
-                    {"id": "opp_2", "title": "Scale", "status": "open", "revenue_potential": 1500},
-                ],
+                        {"id": "opp_1", "title": "Growth", "status": "open", "revenue_potential": 5000},
+                        {"id": "opp_2", "title": "Scale", "status": "open", "revenue_potential": 1500, "composite_score": 8.0, "priority": "high", "updated_at": "2026-08-17T00:00:00+00:00"},
+                    ],
+                },
             },
-        },
         "get_recent_research": {
             "status": "success",
             "source_type": "live_governed_read",
