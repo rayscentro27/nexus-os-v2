@@ -1,0 +1,387 @@
+{
+  "alpha": {
+    "average_cost": "UNKNOWN",
+    "average_tokens": "UNKNOWN",
+    "counts": {
+      "certified": 6,
+      "failed": 0,
+      "partial": 4,
+      "untested": 2
+    },
+    "overall": "PARTIAL",
+    "tasks": [
+      {
+        "evidence_refs": [
+          "scripts/reports/runtime/shadow_evaluation/shadow_eval_latest.json",
+          "reports/hermes_modernization/alpha_external_intelligence.md"
+        ],
+        "gap_classification": "ENVIRONMENT_BLOCK",
+        "reason": "Mode routing is proven, but live provider execution is not a stable certification source; existing Alpha reports explicitly keep external providers disabled or bounded.",
+        "status": "PARTIAL",
+        "task": "Web research",
+        "task_id": "A01",
+        "verifier": "mode-routing shadow evaluation"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/end_to_end_pilot.json",
+          "reports/hermes_modernization/alpha_external_intelligence.md"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Phase 9 public evidence records retain source IDs, URLs, timestamps, classifications, and provenance.",
+        "status": "CERTIFIED",
+        "task": "Source provenance",
+        "task_id": "A02",
+        "verifier": "evidence schema and pilot record"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/end_to_end_pilot.json",
+          "scripts/nexus_agent_platform/opportunities/engine.py"
+        ],
+        "gap_classification": "NONE",
+        "reason": "The public research pilot records KNOWN evidence and the canonical evidence contract restricts classifications.",
+        "status": "CERTIFIED",
+        "task": "Evidence classification",
+        "task_id": "A03",
+        "verifier": "Opportunity Engine evidence contract"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/end_to_end_pilot.json",
+          "reports/hermes_modernization/learning_proposals.json"
+        ],
+        "gap_classification": "NONE",
+        "reason": "The pilot collected 8 source records and removed 4 duplicates deterministically.",
+        "status": "CERTIFIED",
+        "task": "Research dedupe",
+        "task_id": "A04",
+        "verifier": "dedupe counts"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/alpha_external_intelligence_audit.md"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "No current executed competitive-research fixture with acceptance criteria and verifier result is recorded.",
+        "status": "UNTESTED",
+        "task": "Competitive research",
+        "task_id": "A05",
+        "verifier": "UNKNOWN"
+      },
+      {
+        "evidence_refs": [
+          "src/hermes/alpha/alphaSeoMoneyOpportunityEngine.ts",
+          "reports/hermes_modernization/alpha_external_intelligence_audit.md"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "SEO opportunity code exists, but current certification records do not contain a bounded SEO research result with downstream verification.",
+        "status": "PARTIAL",
+        "task": "SEO research",
+        "task_id": "A06",
+        "verifier": "UNKNOWN"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_alpha/alpha_phase_1_evaluation_summary.md",
+          "src/hermes/alpha/alphaEvaluationHarness.ts"
+        ],
+        "gap_classification": "ENVIRONMENT_BLOCK",
+        "reason": "The Alpha phase-one harness covers an affiliate category using mock/local fixtures only; live source research is not proven.",
+        "status": "PARTIAL",
+        "task": "Affiliate research",
+        "task_id": "A07",
+        "verifier": "mock harness"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/nexus_open_source_scout.md",
+          "reports/hermes_modernization/end_to_end_pilot.json"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Nexus-first audit, source collection, dedupe, classification, and Crawl4AI opportunity handoff are proven.",
+        "status": "CERTIFIED",
+        "task": "Open-source scouting",
+        "task_id": "A08",
+        "verifier": "Phase 9 pilot"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/end_to_end_pilot.json",
+          "scripts/nexus_agent_platform/opportunities/engine.py"
+        ],
+        "gap_classification": "NONE",
+        "reason": "The canonical opportunity candidate was produced from compact public evidence and scored without AI overwrite.",
+        "status": "CERTIFIED",
+        "task": "Opportunity discovery",
+        "task_id": "A09",
+        "verifier": "deterministic score and pilot state"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/alpha_external_intelligence.md",
+          "reports/hermes_modernization/end_to_end_pilot.json"
+        ],
+        "gap_classification": "NONE",
+        "reason": "The pilot records Alpha evidence as the Opportunity Engine input and Hermes-facing report source.",
+        "status": "CERTIFIED",
+        "task": "Research-to-Hermes handoff",
+        "task_id": "A10",
+        "verifier": "pilot evidence refs"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/learning_proposals.json",
+          "reports/hermes_modernization/alpha_external_intelligence_audit.md"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "Freshness metadata exists, but no dedicated stale-source execution fixture with a verifier result is recorded.",
+        "status": "PARTIAL",
+        "task": "Freshness detection",
+        "task_id": "A11",
+        "verifier": "UNKNOWN"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/alpha_external_intelligence_audit.md"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "No current Alpha contradiction fixture and resolution verifier is recorded.",
+        "status": "UNTESTED",
+        "task": "Contradictory-source handling",
+        "task_id": "A12",
+        "verifier": "UNKNOWN"
+      }
+    ],
+    "verifier_coverage": "5/12 task records have explicit deterministic/evaluation evidence; live provider coverage remains partial"
+  },
+  "crawl4ai": {
+    "cost": "UNKNOWN",
+    "decision": "DEFER",
+    "installed": false,
+    "pilot": "NOT_RUN",
+    "reason": "Alpha certification exposed no material page-extraction gap for the proven public-repo pilot; existing Alpha path and deterministic evidence were sufficient. Revisit only for a measured JS-rendering/structured-extraction failure."
+  },
+  "fallback_routing": {
+    "cases": [
+      "primary unavailable \u2192 next compatible certified worker if one exists",
+      "no secondary AI execute adapter \u2192 local deterministic worker for compatible deterministic task",
+      "worker self-report never bypasses verification"
+    ],
+    "status": "PASS"
+  },
+  "generated_at": "2026-08-18T16:06:12.587988+00:00",
+  "governance": {
+    "client_portal_changes": "NONE",
+    "nova_authority": "UNCHANGED",
+    "production_routing": "UNCHANGED",
+    "production_telegram_changes": "NONE",
+    "provider_installation": "NOT_PERFORMED",
+    "provider_login": "NOT_PERFORMED"
+  },
+  "hermes": {
+    "average_cost": "UNKNOWN",
+    "average_tokens": "UNKNOWN",
+    "counts": {
+      "certified": 6,
+      "failed": 0,
+      "partial": 5,
+      "untested": 2
+    },
+    "overall": "PARTIAL",
+    "tasks": [
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/daily_brief.json",
+          "tests/hermes_daily_brief.test.ts"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Daily Brief and executive-priority paths produce a bounded next action from report-backed state.",
+        "status": "CERTIFIED",
+        "task": "Daily operator planning",
+        "task_id": "H01",
+        "verifier": "Daily Brief contract test"
+      },
+      {
+        "evidence_refs": [
+          "reports/runtime/nexus_3_hermes_live_general_intelligence_certification.json",
+          "tests/hermes_route_dominance_repair.test.ts"
+        ],
+        "gap_classification": "NONE",
+        "reason": "System-health and failure-report paths are covered by existing runtime and conversation certification evidence.",
+        "status": "CERTIFIED",
+        "task": "System health interpretation",
+        "task_id": "H02",
+        "verifier": "general-intelligence certification"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/end_to_end_pilot.json",
+          "scripts/nexus_agent_platform/opportunities/engine.py"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "Canonical Opportunity Engine scoring is proven, but a dedicated Hermes task-family fixture for ranking and explaining a current opportunity is not recorded.",
+        "status": "PARTIAL",
+        "task": "Opportunity prioritization",
+        "task_id": "H03",
+        "verifier": "Opportunity Engine verifier only"
+      },
+      {
+        "evidence_refs": [
+          "reports/runtime/hermes_capability_certification.json",
+          "tests/hermes_general_intelligence_certification.test.ts"
+        ],
+        "gap_classification": "WORKFLOW_GAP",
+        "reason": "Governed task creation is certified, but binding an approved canonical opportunity to a work-order fixture is not separately proven.",
+        "status": "PARTIAL",
+        "task": "Approved opportunity to work order",
+        "task_id": "H04",
+        "verifier": "governed action tests"
+      },
+      {
+        "evidence_refs": [
+          "reports/runtime/hermes_capability_certification.json",
+          "tests/hermes_conversation_certification.test.ts"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Approval-gated actions and explicit task separation are covered by the governed capability and conversation records.",
+        "status": "CERTIFIED",
+        "task": "Approval routing",
+        "task_id": "H05",
+        "verifier": "approval/action separation"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/builder_abstraction.md",
+          "reports/hermes_modernization/end_to_end_pilot.json"
+        ],
+        "gap_classification": "MISSING_TOOL",
+        "reason": "The local deterministic builder and verification contract are proven; no bounded external CodingWorker execute adapter is registered.",
+        "status": "PARTIAL",
+        "task": "Builder delegation",
+        "task_id": "H06",
+        "verifier": "builder verification contract"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/builder_benchmark.md"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "No executed Hermes fixture evaluates a worker result, verification evidence, retry state, and next action as one task.",
+        "status": "UNTESTED",
+        "task": "Builder-result interpretation",
+        "task_id": "H07",
+        "verifier": "UNKNOWN"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/daily_brief.json",
+          "scripts/nexus_agent_platform/brief/daily_brief.py"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Daily Brief exposes confirmed, pending, blocked, token, cost, deterministic-share, and value-event facts without fabrication.",
+        "status": "CERTIFIED",
+        "task": "Cost/value interpretation",
+        "task_id": "H08",
+        "verifier": "Daily Brief Python tests"
+      },
+      {
+        "evidence_refs": [
+          "reports/runtime/nexus_3_hermes_live_general_intelligence_certification.json",
+          "src/lib/hermesCapabilityRegistry.ts"
+        ],
+        "gap_classification": "GOVERNANCE_BLOCK",
+        "reason": "Report-backed educational guidance exists, but client-dependent evidence is intentionally blocked and live client reads are not a certification source.",
+        "status": "PARTIAL",
+        "task": "Funding-readiness guidance",
+        "task_id": "H09",
+        "verifier": "status-honesty tests"
+      },
+      {
+        "evidence_refs": [
+          "src/lib/hermesCapabilityRegistry.ts",
+          "reports/runtime/hermes_capability_certification.json"
+        ],
+        "gap_classification": "MISSING_DATA",
+        "reason": "The business-foundation domain exists, but client-specific data access is outside this protected certification and no isolated operator fixture is recorded.",
+        "status": "PARTIAL",
+        "task": "Business-foundation guidance",
+        "task_id": "H10",
+        "verifier": "UNKNOWN"
+      },
+      {
+        "evidence_refs": [
+          "reports/runtime/nexus_3_hermes_production_certification.json",
+          "tests/hermes_general_intelligence_certification.test.ts"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Existing founder/conversation certification reports a 116-turn local acceptance run with action separation and status honesty gates.",
+        "status": "CERTIFIED",
+        "task": "Multi-step governed coordination",
+        "task_id": "H11",
+        "verifier": "conversation certification"
+      },
+      {
+        "evidence_refs": [
+          "src/lib/executive/hermesExecutiveAdvisor.ts",
+          "tests/hermes_daily_brief.test.ts"
+        ],
+        "gap_classification": "NONE",
+        "reason": "Hermes reads the canonical Daily Brief adapter and preserves UNKNOWN/NOT_AVAILABLE boundaries.",
+        "status": "CERTIFIED",
+        "task": "Daily Brief interpretation",
+        "task_id": "H12",
+        "verifier": "Daily Brief adapter test"
+      },
+      {
+        "evidence_refs": [
+          "reports/hermes_modernization/learning_proposals.json"
+        ],
+        "gap_classification": "TEST_NOT_EXECUTED",
+        "reason": "Phase 12 proposal records exist, but no Hermes task-family fixture proves explanation, approval boundary, and no-promotion behavior together.",
+        "status": "UNTESTED",
+        "task": "Learning-proposal interpretation",
+        "task_id": "H13",
+        "verifier": "UNKNOWN"
+      }
+    ],
+    "verifier_coverage": "6/13 task records have explicit verifier evidence; partial/untested records are not promoted"
+  },
+  "openhands": {
+    "cost": "UNKNOWN",
+    "decision": "DEFER",
+    "installed": false,
+    "reason": "Codex health proof plus local deterministic builder cover current repo exploration, bounded edits, tests, worktrees, and verification; no long-horizon sandbox gap is evidenced."
+  },
+  "phase": "PHASE 13B \u2014 CAPABILITY GAP REPAIR + WORKER REDUNDANCY",
+  "phase14_readiness": {
+    "decision": "NO-GO",
+    "reason": "Hermes and Alpha remain bounded partial; no secondary AI coding worker is AVAILABLE; several required task families are untested."
+  },
+  "secondary_ai_worker": {
+    "rationale": "No second AI coding worker has both harmless execution proof and a registered bounded execute adapter. Codex plus local deterministic fallback is currently sufficient for the proven internal artifact scope.",
+    "status": "NOT_AVAILABLE"
+  },
+  "workers": {
+    "codex": {
+      "reason": "current verified checkpoint execution proof",
+      "status": "AVAILABLE"
+    },
+    "kilo": {
+      "reason": "version 7.3.54 installed; no safe headless execution contract found locally",
+      "status": "INSTALLED_UNPROVEN"
+    },
+    "local_python": {
+      "reason": "deterministic isolated artifact execution and verification proven",
+      "status": "AVAILABLE"
+    },
+    "mimo": {
+      "reason": "provider-specific command exists in adapter, but prior bounded execution did not prove success and no auth error was observed",
+      "status": "INSTALLED_UNPROVEN"
+    },
+    "opencode": {
+      "reason": "bounded run timed out; exact cause unresolved between interactive prompt/process hang/model configuration/network",
+      "status": "UNAVAILABLE"
+    }
+  }
+}

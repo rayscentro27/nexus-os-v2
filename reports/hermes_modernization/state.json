@@ -1,17 +1,17 @@
 {
   "client_portal_changes": "NONE",
-  "current_checkpoint": "phase-13",
+  "current_checkpoint": "phase-13b",
   "daily_brief_source": "reports/hermes_modernization/daily_brief.json",
   "daily_brief_status": "REPORT_BACKED_PARTIAL",
   "learning_proposal_source": "reports/hermes_modernization/learning_proposals.json",
   "learning_proposal_status": "PROPOSAL_ONLY_NO_AUTONOMOUS_MUTATION",
-  "workforce_certification_source": "reports/hermes_modernization/workforce_certification.json",
-  "workforce_certification_status": "CERTIFICATION_PARTIAL_PROVIDER_ACTIONS_DEFERRED",
-  "next": "PHASE 13 — AI WORKFORCE CERTIFICATION + PROVIDER ONBOARDING",
+  "phase13b_assessment_source": "reports/hermes_modernization/phase13b_assessment.json",
+  "phase13b_status": "NO-GO",
+  "next": "PHASE 13B — CAPABILITY GAP REPAIR CONTINUED",
   "persistent_agents": ["nexus_hermes", "hermes_nova", "alpha"],
   "pilot_id": "phase9_crawl4ai_scout_brief_20260818",
   "pilot_opportunity_id": "unclecode_crawl4ai",
   "production_telegram_changes": "NONE",
   "program": "nexus-hermes-modernization",
-  "status": "PARTIAL"
+  "status": "NEXUS_HERMES_OPPORTUNITY_ENGINE_PARTIAL"
 }
