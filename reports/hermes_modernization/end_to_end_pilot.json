@@ -1,0 +1,806 @@
+{
+  "blockers": [
+    "No authenticated real coding worker was available."
+  ],
+  "builder_status": "PARTIAL",
+  "creative": {
+    "brief": {
+      "evidence_refs": [
+        {
+          "classification": "KNOWN",
+          "provenance": {
+            "nexus_audit": [
+              {
+                "authority_conflict": false,
+                "candidate_id": "markitdown",
+                "existing_agent": "Hermes",
+                "existing_memory": "none",
+                "existing_module": "scripts/credit/extract_credit_report_text.py; scripts/credit/parse_uploaded_credit_report.py",
+                "existing_owner": "knowledge",
+                "existing_routing": "study-only report routing",
+                "existing_tools": "bounded document parser and upload pipeline",
+                "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                "overlap_percentage_estimate": 75,
+                "recommended_action": "EXTEND_EXISTING",
+                "routing_conflict": false,
+                "token_duplication_risk": "medium"
+              },
+              {
+                "authority_conflict": false,
+                "candidate_id": "crawl4ai",
+                "existing_agent": "Alpha",
+                "existing_memory": "alpha research memory and report trail",
+                "existing_module": "src/hermes/alpha/alphaWebSearch.ts; src/hermes/alpha/alphaUrlReview.ts; scripts/alpha/alpha_live_research.py",
+                "existing_owner": "alpha",
+                "existing_routing": "alpha_live_research and URL-review routing",
+                "existing_tools": "alpha web search and URL review adapters",
+                "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                "overlap_percentage_estimate": 82,
+                "recommended_action": "WRAP",
+                "routing_conflict": false,
+                "token_duplication_risk": "medium"
+              },
+              {
+                "authority_conflict": false,
+                "candidate_id": "livekit_agents",
+                "existing_agent": "none",
+                "existing_memory": "none",
+                "existing_module": "none",
+                "existing_owner": "none",
+                "existing_routing": "none",
+                "existing_tools": "none",
+                "nexus_state": "NOT_PRESENT",
+                "overlap_percentage_estimate": 25,
+                "recommended_action": "WATCH",
+                "routing_conflict": false,
+                "token_duplication_risk": "low"
+              },
+              {
+                "authority_conflict": false,
+                "candidate_id": "pipecat",
+                "existing_agent": "none",
+                "existing_memory": "none",
+                "existing_module": "none",
+                "existing_owner": "none",
+                "existing_routing": "none",
+                "existing_tools": "none",
+                "nexus_state": "NOT_PRESENT",
+                "overlap_percentage_estimate": 22,
+                "recommended_action": "PILOT",
+                "routing_conflict": false,
+                "token_duplication_risk": "low"
+              }
+            ],
+            "source_urls": [
+              "https://github.com/unclecode/crawl4ai",
+              "https://github.com/unclecode/crawl4ai/releases",
+              "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+            ]
+          },
+          "retrieved_at": "2026-08-18T01:55:38.845156+00:00",
+          "source_id": "unclecode_crawl4ai",
+          "source_type": "public_repo_intelligence",
+          "summary": "Crawl4AI WRAP"
+        }
+      ],
+      "full_history": null,
+      "generated_at": "2026-08-18T14:21:16.846785+00:00",
+      "history": null,
+      "market_refs": [
+        {
+          "reference": "Creative Studio capability is already partial and read-only.",
+          "source": "src/lib/hermesCapabilityRegistry.ts",
+          "title": "Hermes capability registry"
+        },
+        {
+          "reference": "Draft-only marketing assets already exist.",
+          "source": "src/hermes/alpha/marketingAssetStudio.ts",
+          "title": "Alpha marketing asset studio"
+        },
+        {
+          "reference": "Public evidence path already proved Nexus-first audit and canonical handoff.",
+          "source": "reports/hermes_modernization/open_source_capability_audit.json",
+          "title": "Open-source scout proof"
+        }
+      ],
+      "opportunity": {
+        "category": "open_source",
+        "id": "unclecode_crawl4ai",
+        "problem": "Controlled public web extraction for Alpha research and repo-intelligence workflows.",
+        "recommended_next_action": "Wrap the public-extraction pattern around the existing Alpha research lane rather than introducing a new identity or install.",
+        "source_commit": "fc181b70b9dd3957fbd2091430e68cbd8dbd8c37",
+        "source_type": "public_repo_intelligence",
+        "target_customer": "Hermes / Alpha operators",
+        "title": "Crawl4AI"
+      },
+      "overused_patterns": [
+        "hero-first marketing fluff",
+        "stock-photo trust theater",
+        "unsupported performance claims"
+      ],
+      "previous_state": {
+        "last_recommendation": null,
+        "last_territory_hash": null
+      },
+      "source_commit": "fc181b70b9dd3957fbd2091430e68cbd8dbd8c37",
+      "whitespace": [
+        "evidence-first positioning",
+        "no public publishing promises",
+        "compact operator-facing layouts"
+      ]
+    },
+    "build_spec": {
+      "acceptance_criteria": [],
+      "allowed_paths": [
+        "reports/hermes_modernization/"
+      ],
+      "budget": {
+        "estimated_token_budget": 0,
+        "max_ai_calls": 0,
+        "model_tier": "T0_DETERMINISTIC"
+      },
+      "build_constraints": [
+        "no public publish",
+        "no paid spend",
+        "no client PII",
+        "read-only evidence only"
+      ],
+      "concept_name": "Scout Brief",
+      "content_blocks": [
+        "evidence summary",
+        "provenance rail",
+        "next-action module",
+        "approval boundary"
+      ],
+      "layout_direction": "hero summary plus a narrow evidence rail",
+      "modules": {
+        "primary_module": "Scout Brief",
+        "supporting_modules": [
+          "evidence rail",
+          "status strip",
+          "action row"
+        ]
+      },
+      "objective": "Editorial intelligence brief that summarizes what was found and why it matters.",
+      "protected_paths": [
+        "src/client-v2/",
+        "classic /client",
+        "production Telegram",
+        "Supabase RLS",
+        "production secrets",
+        "production agent identities"
+      ],
+      "security_constraints": [
+        "no public publish",
+        "no paid spend",
+        "no client PII",
+        "read-only evidence only"
+      ],
+      "target_audience": "operators who want a quick read before diving into details.",
+      "task_id": "build_75973c32170e",
+      "tests": [],
+      "timeout": 120,
+      "verification": {
+        "must_retain_differentiator": true,
+        "must_retain_evidence_refs": true,
+        "must_retain_target_audience": true
+      },
+      "visual_requirements": false
+    },
+    "reference_summary": [
+      {
+        "reference": "Creative Studio capability is already partial and read-only.",
+        "source": "src/lib/hermesCapabilityRegistry.ts",
+        "title": "Hermes capability registry"
+      },
+      {
+        "reference": "Draft-only marketing assets already exist.",
+        "source": "src/hermes/alpha/marketingAssetStudio.ts",
+        "title": "Alpha marketing asset studio"
+      },
+      {
+        "reference": "Public evidence path already proved Nexus-first audit and canonical handoff.",
+        "source": "reports/hermes_modernization/open_source_capability_audit.json",
+        "title": "Open-source scout proof"
+      }
+    ],
+    "selected_territory": "Scout Brief",
+    "status": "PASS",
+    "territories": [
+      {
+        "base_score": 125,
+        "brand_voice": "measured, terse, governed",
+        "concept_name": "Evidence Ledger",
+        "content_style": "fact blocks, provenance callouts, short conclusions",
+        "conversion_hypothesis": "Operators trust and reuse the workspace faster when proof is visible first.",
+        "creative_score": 125,
+        "credibility_mechanism": "source hashes, timestamps, and bounded citations",
+        "cta": "Open Evidence Trail",
+        "differentiator": "Provenance is visible on every block.",
+        "emotional_direction": "calm, exact, trustworthy",
+        "evidence_refs": [
+          {
+            "classification": "KNOWN",
+            "provenance": {
+              "nexus_audit": [
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "markitdown",
+                  "existing_agent": "Hermes",
+                  "existing_memory": "none",
+                  "existing_module": "scripts/credit/extract_credit_report_text.py; scripts/credit/parse_uploaded_credit_report.py",
+                  "existing_owner": "knowledge",
+                  "existing_routing": "study-only report routing",
+                  "existing_tools": "bounded document parser and upload pipeline",
+                  "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                  "overlap_percentage_estimate": 75,
+                  "recommended_action": "EXTEND_EXISTING",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "medium"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "crawl4ai",
+                  "existing_agent": "Alpha",
+                  "existing_memory": "alpha research memory and report trail",
+                  "existing_module": "src/hermes/alpha/alphaWebSearch.ts; src/hermes/alpha/alphaUrlReview.ts; scripts/alpha/alpha_live_research.py",
+                  "existing_owner": "alpha",
+                  "existing_routing": "alpha_live_research and URL-review routing",
+                  "existing_tools": "alpha web search and URL review adapters",
+                  "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                  "overlap_percentage_estimate": 82,
+                  "recommended_action": "WRAP",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "medium"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "livekit_agents",
+                  "existing_agent": "none",
+                  "existing_memory": "none",
+                  "existing_module": "none",
+                  "existing_owner": "none",
+                  "existing_routing": "none",
+                  "existing_tools": "none",
+                  "nexus_state": "NOT_PRESENT",
+                  "overlap_percentage_estimate": 25,
+                  "recommended_action": "WATCH",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "low"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "pipecat",
+                  "existing_agent": "none",
+                  "existing_memory": "none",
+                  "existing_module": "none",
+                  "existing_owner": "none",
+                  "existing_routing": "none",
+                  "existing_tools": "none",
+                  "nexus_state": "NOT_PRESENT",
+                  "overlap_percentage_estimate": 22,
+                  "recommended_action": "PILOT",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "low"
+                }
+              ],
+              "source_urls": [
+                "https://github.com/unclecode/crawl4ai",
+                "https://github.com/unclecode/crawl4ai/releases",
+                "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+              ]
+            },
+            "retrieved_at": "2026-08-18T01:55:38.845156+00:00",
+            "source_id": "unclecode_crawl4ai",
+            "source_type": "public_repo_intelligence",
+            "summary": "Crawl4AI WRAP"
+          },
+          {
+            "reference": "Creative Studio capability is already partial and read-only.",
+            "source": "src/lib/hermesCapabilityRegistry.ts",
+            "title": "Hermes capability registry"
+          },
+          {
+            "reference": "Draft-only marketing assets already exist.",
+            "source": "src/hermes/alpha/marketingAssetStudio.ts",
+            "title": "Alpha marketing asset studio"
+          }
+        ],
+        "execution_complexity": "medium",
+        "imagery_direction": "no hero imagery; evidence tiles and source chips only",
+        "layout_direction": "dense single-column with a strong evidence panel",
+        "positioning": "Proof-first internal workspace that reads like a ledger of verified facts.",
+        "primary_hook": "Verified evidence before interpretation.",
+        "primary_pain_desire": "They need confidence without ambiguity.",
+        "rationale": "Evidence Ledger is tuned for Crawl4AI with 3 evidence refs.",
+        "target_audience": "Hermes and Alpha operators who need traceable evidence.",
+        "typography_direction": "small headlines, strong numerals, compact labels",
+        "visual_direction": "ledger cards, thin rules, restrained accent color"
+      },
+      {
+        "base_score": 128,
+        "brand_voice": "editorial, concise, clear",
+        "concept_name": "Scout Brief",
+        "content_style": "brief paragraphs, bullets, callout summaries",
+        "conversion_hypothesis": "A short editorial format reduces friction for first-time review.",
+        "creative_score": 128,
+        "credibility_mechanism": "compact evidence summary and a one-step action path",
+        "cta": "Read the Scout Brief",
+        "differentiator": "Best for fast review without losing provenance.",
+        "emotional_direction": "curious, focused, informed",
+        "evidence_refs": [
+          {
+            "classification": "KNOWN",
+            "provenance": {
+              "nexus_audit": [
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "markitdown",
+                  "existing_agent": "Hermes",
+                  "existing_memory": "none",
+                  "existing_module": "scripts/credit/extract_credit_report_text.py; scripts/credit/parse_uploaded_credit_report.py",
+                  "existing_owner": "knowledge",
+                  "existing_routing": "study-only report routing",
+                  "existing_tools": "bounded document parser and upload pipeline",
+                  "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                  "overlap_percentage_estimate": 75,
+                  "recommended_action": "EXTEND_EXISTING",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "medium"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "crawl4ai",
+                  "existing_agent": "Alpha",
+                  "existing_memory": "alpha research memory and report trail",
+                  "existing_module": "src/hermes/alpha/alphaWebSearch.ts; src/hermes/alpha/alphaUrlReview.ts; scripts/alpha/alpha_live_research.py",
+                  "existing_owner": "alpha",
+                  "existing_routing": "alpha_live_research and URL-review routing",
+                  "existing_tools": "alpha web search and URL review adapters",
+                  "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                  "overlap_percentage_estimate": 82,
+                  "recommended_action": "WRAP",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "medium"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "livekit_agents",
+                  "existing_agent": "none",
+                  "existing_memory": "none",
+                  "existing_module": "none",
+                  "existing_owner": "none",
+                  "existing_routing": "none",
+                  "existing_tools": "none",
+                  "nexus_state": "NOT_PRESENT",
+                  "overlap_percentage_estimate": 25,
+                  "recommended_action": "WATCH",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "low"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "pipecat",
+                  "existing_agent": "none",
+                  "existing_memory": "none",
+                  "existing_module": "none",
+                  "existing_owner": "none",
+                  "existing_routing": "none",
+                  "existing_tools": "none",
+                  "nexus_state": "NOT_PRESENT",
+                  "overlap_percentage_estimate": 22,
+                  "recommended_action": "PILOT",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "low"
+                }
+              ],
+              "source_urls": [
+                "https://github.com/unclecode/crawl4ai",
+                "https://github.com/unclecode/crawl4ai/releases",
+                "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+              ]
+            },
+            "retrieved_at": "2026-08-18T01:55:38.845156+00:00",
+            "source_id": "unclecode_crawl4ai",
+            "source_type": "public_repo_intelligence",
+            "summary": "Crawl4AI WRAP"
+          },
+          {
+            "reference": "Creative Studio capability is already partial and read-only.",
+            "source": "src/lib/hermesCapabilityRegistry.ts",
+            "title": "Hermes capability registry"
+          },
+          {
+            "reference": "Draft-only marketing assets already exist.",
+            "source": "src/hermes/alpha/marketingAssetStudio.ts",
+            "title": "Alpha marketing asset studio"
+          }
+        ],
+        "execution_complexity": "low",
+        "imagery_direction": "small reference thumbnails and source icons only",
+        "layout_direction": "hero summary plus a narrow evidence rail",
+        "positioning": "Editorial intelligence brief that summarizes what was found and why it matters.",
+        "primary_hook": "What we found, what it means, what to do next.",
+        "primary_pain_desire": "They need a short, credible read with one obvious next step.",
+        "rationale": "Scout Brief is tuned for Crawl4AI with 3 evidence refs.",
+        "target_audience": "operators who want a quick read before diving into details.",
+        "typography_direction": "medium headlines, readable body, tight line length",
+        "visual_direction": "newsroom layout, boxed summary, clear hierarchy"
+      },
+      {
+        "base_score": 122,
+        "brand_voice": "directive, precise, utility-first",
+        "concept_name": "Control Tower",
+        "content_style": "module cards, state summaries, action rows",
+        "conversion_hypothesis": "A decision-first console reduces the time from review to action.",
+        "creative_score": 122,
+        "credibility_mechanism": "status indicators, live evidence counters, and bounded next actions",
+        "cta": "Open Control Tower",
+        "differentiator": "Designed for repeat use, not one-time consumption.",
+        "emotional_direction": "confident, operational, alert",
+        "evidence_refs": [
+          {
+            "classification": "KNOWN",
+            "provenance": {
+              "nexus_audit": [
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "markitdown",
+                  "existing_agent": "Hermes",
+                  "existing_memory": "none",
+                  "existing_module": "scripts/credit/extract_credit_report_text.py; scripts/credit/parse_uploaded_credit_report.py",
+                  "existing_owner": "knowledge",
+                  "existing_routing": "study-only report routing",
+                  "existing_tools": "bounded document parser and upload pipeline",
+                  "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                  "overlap_percentage_estimate": 75,
+                  "recommended_action": "EXTEND_EXISTING",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "medium"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "crawl4ai",
+                  "existing_agent": "Alpha",
+                  "existing_memory": "alpha research memory and report trail",
+                  "existing_module": "src/hermes/alpha/alphaWebSearch.ts; src/hermes/alpha/alphaUrlReview.ts; scripts/alpha/alpha_live_research.py",
+                  "existing_owner": "alpha",
+                  "existing_routing": "alpha_live_research and URL-review routing",
+                  "existing_tools": "alpha web search and URL review adapters",
+                  "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+                  "overlap_percentage_estimate": 82,
+                  "recommended_action": "WRAP",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "medium"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "livekit_agents",
+                  "existing_agent": "none",
+                  "existing_memory": "none",
+                  "existing_module": "none",
+                  "existing_owner": "none",
+                  "existing_routing": "none",
+                  "existing_tools": "none",
+                  "nexus_state": "NOT_PRESENT",
+                  "overlap_percentage_estimate": 25,
+                  "recommended_action": "WATCH",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "low"
+                },
+                {
+                  "authority_conflict": false,
+                  "candidate_id": "pipecat",
+                  "existing_agent": "none",
+                  "existing_memory": "none",
+                  "existing_module": "none",
+                  "existing_owner": "none",
+                  "existing_routing": "none",
+                  "existing_tools": "none",
+                  "nexus_state": "NOT_PRESENT",
+                  "overlap_percentage_estimate": 22,
+                  "recommended_action": "PILOT",
+                  "routing_conflict": false,
+                  "token_duplication_risk": "low"
+                }
+              ],
+              "source_urls": [
+                "https://github.com/unclecode/crawl4ai",
+                "https://github.com/unclecode/crawl4ai/releases",
+                "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+              ]
+            },
+            "retrieved_at": "2026-08-18T01:55:38.845156+00:00",
+            "source_id": "unclecode_crawl4ai",
+            "source_type": "public_repo_intelligence",
+            "summary": "Crawl4AI WRAP"
+          },
+          {
+            "reference": "Creative Studio capability is already partial and read-only.",
+            "source": "src/lib/hermesCapabilityRegistry.ts",
+            "title": "Hermes capability registry"
+          },
+          {
+            "reference": "Draft-only marketing assets already exist.",
+            "source": "src/hermes/alpha/marketingAssetStudio.ts",
+            "title": "Alpha marketing asset studio"
+          }
+        ],
+        "execution_complexity": "medium",
+        "imagery_direction": "status tiles and workflow icons rather than illustration",
+        "layout_direction": "two-pane grid with a dominant readiness module",
+        "positioning": "Operator console that turns creative evidence into decision-ready modules.",
+        "primary_hook": "Turn evidence into the next decision.",
+        "primary_pain_desire": "They need a fast scan of what changed and what is ready.",
+        "rationale": "Control Tower is tuned for Crawl4AI with 3 evidence refs.",
+        "target_audience": "power users who manage multiple bounded workflows.",
+        "typography_direction": "bold numerals, compact uppercase labels, minimal ornament",
+        "visual_direction": "dashboard panes, cards, status chips, strong contrast"
+      }
+    ],
+    "territory_count": 3
+  },
+  "elapsed_time_ms": 11572,
+  "ending_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+  "ledger": {
+    "ai_usage": {
+      "input_tokens": 0,
+      "model_calls": 0,
+      "output_tokens": 0,
+      "tier1_calls": 0,
+      "tier2_calls": 0,
+      "tier3_calls": 0
+    },
+    "artifact_refs": [
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_spec.json",
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_summary.md"
+    ],
+    "attempts": [
+      {
+        "attempt": 1,
+        "failure_delta": {},
+        "reason": "deterministic verification passed",
+        "status": "pass",
+        "worker_id": "local_python"
+      }
+    ],
+    "cost_provenance": {
+      "estimated_cost_usd": 0.0,
+      "model": "python",
+      "provider": "local_python",
+      "tier": "ZERO_MODEL_COST"
+    },
+    "display_name": "Local Python Builder",
+    "duration_ms": 25,
+    "ending_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+    "files_changed": [
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_spec.json",
+      "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o/artifact/build_summary.md"
+    ],
+    "finished_at": "2026-08-18T14:21:24.328262+00:00",
+    "protected_path_violation": false,
+    "retry_count": 0,
+    "selected_worker_fallback": true,
+    "selected_worker_reason": "local deterministic fallback",
+    "started_at": "2026-08-18T14:21:24.328165+00:00",
+    "starting_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+    "status": "pass",
+    "task_id": "build_75973c32170e",
+    "telemetry_run_id": "builder_abstraction_b7459af1b0f44ac681c90c7c316edd91",
+    "tests_failed": 0,
+    "tests_passed": 2,
+    "tests_run": [
+      "artifact schema validation",
+      "protected path check"
+    ],
+    "verification": {
+      "failure_delta": {},
+      "protected_path_violation": false,
+      "reason": "deterministic verification passed",
+      "retryable": false,
+      "status": "pass"
+    },
+    "visual_check": {
+      "required": false,
+      "status": "not_required",
+      "verified": false
+    },
+    "worker_id": "local_python",
+    "worker_report": {
+      "sandbox": "/var/folders/bc/d8ys4sx94p3ds1_9ybzkfd440000gn/T/nexus-builder-build_75973c32170e-b1vbyc0o",
+      "summary": "Local deterministic builder created an isolated internal artifact."
+    },
+    "worker_type": "deterministic_python",
+    "zero_token_execution": true
+  },
+  "opportunity": {
+    "base_score": 62,
+    "category": "open_source",
+    "confidence": 72,
+    "estimated_test_cost": 32,
+    "id": "unclecode_crawl4ai",
+    "recommended_next_action": "Run the bounded internal Scout Brief artifact pilot; do not publish.",
+    "risk": 38,
+    "status": "PILOT_PROPOSED",
+    "time_to_test": 22,
+    "title": "Crawl4AI"
+  },
+  "persistent_agents": [
+    "nexus_hermes",
+    "hermes_nova",
+    "alpha"
+  ],
+  "pilot_id": "phase9_crawl4ai_scout_brief_20260818",
+  "protected_paths": "PASS",
+  "real_worker_blocker": "Codex/OpenCode auth not proven; MiMo probe unavailable; OpenHands not installed",
+  "real_worker_status": "BLOCKED",
+  "recommended_next_action": "PHASE 10 \u2014 MISSION CONTROL V2 VISIBILITY",
+  "research": {
+    "ai_calls": 0,
+    "duplicates_removed": 4,
+    "evidence": [
+      {
+        "classification": "KNOWN",
+        "evidence_id": "evidence_d26f6cd8b2791d61",
+        "provenance": {
+          "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+          "project": "Crawl4AI",
+          "source_urls": [
+            "https://github.com/unclecode/crawl4ai",
+            "https://github.com/unclecode/crawl4ai/releases",
+            "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+          ]
+        },
+        "retrieved_at": "2026-08-18T14:21:16.842748+00:00",
+        "source_id": "unclecode_crawl4ai",
+        "source_type": "public_repo_intelligence",
+        "summary": "unclecode/crawl4ai Controlled public web extraction for Alpha research and repo-intelligence workflows."
+      }
+    ],
+    "evidence_count": 1,
+    "references": [
+      "https://github.com/unclecode/crawl4ai",
+      "https://github.com/unclecode/crawl4ai/releases",
+      "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+    ],
+    "source_records_collected": 8,
+    "status": "PASS"
+  },
+  "result": "NEXUS_HERMES_OPPORTUNITY_ENGINE_PARTIAL",
+  "starting_commit": "53ded6e4faaccd50c334952f55b7b46d11146ca0",
+  "tests": [
+    "canonical opportunity reused",
+    "duplicate evidence avoided",
+    "deterministic score stable",
+    "three distinct territories",
+    "structured build spec",
+    "unavailable workers skipped",
+    "auth blocked honestly",
+    "protected paths enforced",
+    "self-report verified",
+    "bounded retry",
+    "ledger complete",
+    "measurable artifact result",
+    "client portal untouched",
+    "production Telegram untouched"
+  ],
+  "tokens": {
+    "input": 0,
+    "local_compute_executions": 1,
+    "output": 0,
+    "provider_cost_usd": 0.0,
+    "t1_calls": 0,
+    "t2_calls": 0,
+    "t3_calls": 0,
+    "zero_token_operations": 9
+  },
+  "verification_status": "PASS",
+  "visual_check": "NOT REQUIRED",
+  "worker_used": "local_python",
+  "workers": [
+    {
+      "availability_reason": "installed_only_auth_not_proven",
+      "available": false,
+      "capabilities": [
+        "repo_edit",
+        "tests",
+        "worktrees"
+      ],
+      "classification": "AUTH_BLOCKED",
+      "cost_class": "ZERO_MODEL_COST",
+      "display_name": "OpenCode CLI",
+      "installed": true,
+      "reason": "installed_only_auth_not_proven",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_structured_output": false,
+      "supports_tests": true,
+      "supports_worktrees": true,
+      "version": "1.18.18",
+      "worker_id": "opencode",
+      "worker_type": "cli"
+    },
+    {
+      "availability_reason": "installed_only_auth_not_proven",
+      "available": false,
+      "capabilities": [
+        "repo_edit",
+        "tests",
+        "worktrees"
+      ],
+      "classification": "AUTH_BLOCKED",
+      "cost_class": "ZERO_MODEL_COST",
+      "display_name": "Codex CLI",
+      "installed": true,
+      "reason": "installed_only_auth_not_proven",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_structured_output": false,
+      "supports_tests": true,
+      "supports_worktrees": true,
+      "version": "codex-cli 0.147.0",
+      "worker_id": "codex",
+      "worker_type": "cli"
+    },
+    {
+      "availability_reason": "installed_only_auth_not_proven",
+      "available": false,
+      "capabilities": [
+        "repo_edit",
+        "tests",
+        "worktrees"
+      ],
+      "classification": "AUTH_BLOCKED",
+      "cost_class": "LOW_EXTERNAL_COST",
+      "display_name": "MiMo CLI",
+      "installed": true,
+      "reason": "installed_only_auth_not_proven",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_structured_output": false,
+      "supports_tests": true,
+      "supports_worktrees": true,
+      "version": "0.1.12",
+      "worker_id": "mimo",
+      "worker_type": "cli"
+    },
+    {
+      "availability_reason": "local deterministic fallback",
+      "available": true,
+      "capabilities": [
+        "repo_edit",
+        "tests",
+        "worktrees",
+        "structured_output"
+      ],
+      "classification": "AVAILABLE",
+      "cost_class": "ZERO_MODEL_COST",
+      "display_name": "Local Python Builder",
+      "installed": true,
+      "reason": "local deterministic fallback",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_structured_output": true,
+      "supports_tests": true,
+      "supports_worktrees": true,
+      "version": "python3",
+      "worker_id": "local_python",
+      "worker_type": "deterministic_python"
+    },
+    {
+      "availability_reason": "not proven available",
+      "available": false,
+      "classification": "NOT_INSTALLED",
+      "installed": false,
+      "worker_id": "openhands"
+    }
+  ]
+}
