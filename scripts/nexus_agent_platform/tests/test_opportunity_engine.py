@@ -25,7 +25,7 @@ from nexus_agent_platform.opportunities.engine import (
     score_opportunity_record,
     validate_opportunity_transition,
 )
-from nexus_agent_platform.loops.runtime import _cost_for_tier
+from nexus_agent_platform.loops.runtime import _cost_for_tier, resolve_cost_quote
 
 
 def _runtime(tmp_path: Path) -> tuple[LoopRuntime, Path, Path]:
@@ -286,7 +286,56 @@ def test_opportunity_loop_writes_canonical_record(monkeypatch, tmp_path):
 
 
 def test_cost_calculation_unit_is_verified():
-    assert _cost_for_tier("T1_CHEAP_AI", 163, 270) == 0.2165
+    assert _cost_for_tier("T1_CHEAP_AI", 163, 270) == 0.00018645
+
+
+def test_cost_conversion_uses_input_and_output_rates_separately():
+    quote = resolve_cost_quote(tier="T2_STANDARD_AI", input_tokens=535, output_tokens=20)
+    assert quote.input_rate_per_million_usd == 2.5
+    assert quote.output_rate_per_million_usd == 10.0
+    assert quote.estimated_input_cost_usd == 0.0013375
+    assert quote.estimated_output_cost_usd == 0.0002
+    assert quote.estimated_total_cost_usd == 0.0015375
+    assert quote.cost_status == "ESTIMATED_FROM_CONFIG"
+    assert quote.cost_source == "estimated"
+
+
+def test_local_model_cost_is_zero_provider_charge():
+    quote = resolve_cost_quote(
+        tier="T1_CHEAP_AI",
+        provider="ollama",
+        model="qwen2.5:0.5b",
+        input_tokens=1000,
+        output_tokens=1000,
+    )
+    assert quote.cost_status == "LOCAL_COMPUTE"
+    assert quote.estimated_total_cost_usd == 0.0
+    assert quote.input_rate_per_million_usd == 0.0
+    assert quote.output_rate_per_million_usd == 0.0
+
+
+def test_unknown_model_cost_is_marked_unknown():
+    quote = resolve_cost_quote(
+        tier="T1_CHEAP_AI",
+        provider="unknown_provider",
+        model="mystery-model",
+        input_tokens=1000,
+        output_tokens=1000,
+    )
+    assert quote.cost_status == "UNKNOWN"
+    assert quote.estimated_total_cost_usd is None
+    assert quote.input_rate_per_million_usd is None
+    assert quote.output_rate_per_million_usd is None
+
+
+def test_no_scale_error_with_million_token_input():
+    quote = resolve_cost_quote(
+        tier="T1_CHEAP_AI",
+        input_tokens=1_000_000,
+        output_tokens=1_000_000,
+    )
+    assert quote.estimated_total_cost_usd == 0.75
+    assert quote.estimated_total_cost_usd < 10
 
 
 def test_canonical_business_case_skeleton():

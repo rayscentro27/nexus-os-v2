@@ -1,8 +1,8 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-7",
+  "current_checkpoint": "checkpoint-8",
   "started_commit": "2aab745",
-  "ended_commit": "3904cf2c9f5e01ec3c1cb8995ac42726d5888de3",
+  "ended_commit": "bc2f622fa46fe37ae94565c5d208230798d4a3e9",
   "status": "IN_PROGRESS",
   "protected": {
     "client_portal_v2": "COMPLETE / PROTECTED — do not redesign src/client-v2",
@@ -83,18 +83,37 @@
     },
     "5": {
       "name": "OPPORTUNITY_ENGINE_FOUNDATION",
-      "status": "PARTIAL",
+      "status": "COMPLETE",
       "deliverables": [
         "reports/hermes_modernization/opportunity_engine.md",
         "reports/hermes_modernization/opportunity_engine_audit.md",
-        "reports/hermes_modernization/opportunity_pilot.md"
+        "reports/hermes_modernization/opportunity_pilot.md",
+        "reports/hermes_modernization/loop_benchmark.md"
       ],
       "classification_counts": {
         "canonical_model": "added",
         "deterministic_scoring": "added",
         "safe_pilot": "completed",
-        "focused_tests_passing": 22,
-        "cost_unit_verified": true
+        "focused_tests_passing": 26,
+        "cost_unit_verified": true,
+        "pricing_normalized_per_million": true
+      }
+    },
+    "6": {
+      "name": "ALPHA_EXTERNAL_INTELLIGENCE_AUDIT",
+      "status": "PARTIAL",
+      "deliverables": [
+        "reports/hermes_modernization/alpha_external_intelligence_audit.md",
+        "reports/hermes_modernization/nexus_open_source_scout.md"
+      ],
+      "classification_counts": {
+        "persistent_agent": "Alpha",
+        "keep": 7,
+        "extend": 5,
+        "wrap": 3,
+        "merge": 2,
+        "defer": 1,
+        "replace_only_if_proven": 0
       }
     }
   },
@@ -127,7 +146,7 @@
       "opportunity_engine_data_model",
       "safe_opportunity_pilot"
     ],
-    "next": "mission_control_visibility"
+    "next": "alpha_external_intelligence_pipeline"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
@@ -137,6 +156,7 @@
     "checkpoint-5": "chore(hermes): reconcile nexus skills and existing agent roles",
     "checkpoint-6": "feat(loops): add token-efficient nexus loop runtime",
     "checkpoint-7": "feat(opportunities): add deterministic-first opportunity engine foundation",
+    "checkpoint-8": "feat(alpha): audit external intelligence and normalize loop cost accounting",
     "beyond": [
       "feat(creativity): add creative director and research pipeline",
       "feat(ops): add mission control opportunity and cost visibility"

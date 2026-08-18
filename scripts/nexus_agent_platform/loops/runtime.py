@@ -38,16 +38,31 @@ TIER_ORDER = {
 }
 
 DEFAULT_LOOP_HISTORY = 20
-DEFAULT_TOKEN_TO_COST = {
-    "T0_DETERMINISTIC": 0.0,
-    "T1_CHEAP_AI": 0.0005,
-    "T2_STANDARD_AI": 0.0025,
-    "T3_PREMIUM_AI": 0.01,
+_MODEL_COST_POLICY_PATH = Path(__file__).resolve().parents[3] / "reports" / "hermes_model_cost_policy.json"
+_MODEL_COST_POLICY_CACHE: Dict[str, Any] = {}
+_TIER_DEFAULT_COST_MODELS = {
+    "T1_CHEAP_AI": {"provider": "openrouter", "model": "openai/gpt-4o-mini"},
+    "T2_STANDARD_AI": {"provider": "openrouter", "model": "openai/gpt-4o"},
+    "T3_PREMIUM_AI": {"provider": "openrouter", "model": "anthropic/claude-3.5-sonnet"},
 }
 
 
 class LoopExecutionError(RuntimeError):
     """Raised when a loop cannot be executed within policy."""
+
+
+@dataclass(frozen=True)
+class CostQuote:
+    provider: str
+    model: str
+    cost_status: str
+    cost_source: str
+    input_rate_per_million_usd: Optional[float]
+    output_rate_per_million_usd: Optional[float]
+    estimated_input_cost_usd: Optional[float]
+    estimated_output_cost_usd: Optional[float]
+    estimated_total_cost_usd: Optional[float]
+    note: str
 
 
 def _utc_now() -> str:
@@ -123,9 +138,149 @@ def _dedupe_records(records: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return deduped
 
 
+def _load_model_cost_policy() -> Dict[str, Any]:
+    if _MODEL_COST_POLICY_CACHE:
+        return _MODEL_COST_POLICY_CACHE
+    try:
+        _MODEL_COST_POLICY_CACHE.update(json.loads(_MODEL_COST_POLICY_PATH.read_text(encoding="utf-8")))
+    except Exception:
+        _MODEL_COST_POLICY_CACHE.update({})
+    return _MODEL_COST_POLICY_CACHE
+
+
+def _pricing_for_provider_model(provider: str, model: str) -> Optional[Dict[str, Any]]:
+    policy = _load_model_cost_policy()
+    for entry in policy.get("pricing", {}).get("known_models", []):
+        if entry.get("provider") == provider and entry.get("model") == model:
+            return entry
+    return None
+
+
+def _default_pricing_for_tier(tier: str) -> Optional[Dict[str, Any]]:
+    tier = tier or "T1_CHEAP_AI"
+    if tier == "T0_DETERMINISTIC":
+        return {
+            "provider": "none",
+            "model": "no_model",
+            "input_per_1m_usd": 0.0,
+            "output_per_1m_usd": 0.0,
+            "source": "no_model",
+            "cost_status": "ZERO_PROVIDER_TOKEN_CHARGE",
+        }
+    model_info = _TIER_DEFAULT_COST_MODELS.get(tier)
+    if not model_info:
+        return None
+    pricing = _pricing_for_provider_model(model_info["provider"], model_info["model"])
+    if pricing:
+        return {**pricing, "cost_status": "ESTIMATED_FROM_CONFIG"}
+    if model_info["provider"] == "ollama":
+        return {
+            "provider": model_info["provider"],
+            "model": model_info["model"],
+            "input_per_1m_usd": 0.0,
+            "output_per_1m_usd": 0.0,
+            "source": "local",
+            "cost_status": "LOCAL_COMPUTE",
+        }
+    return {
+        "provider": model_info["provider"],
+        "model": model_info["model"],
+        "input_per_1m_usd": None,
+        "output_per_1m_usd": None,
+        "source": "pricing_not_configured",
+        "cost_status": "UNKNOWN",
+    }
+
+
+def resolve_cost_quote(
+    *,
+    tier: str,
+    input_tokens: int,
+    output_tokens: int,
+    provider: Optional[str] = None,
+    model: Optional[str] = None,
+) -> CostQuote:
+    if provider and model:
+        if provider == "ollama":
+            return CostQuote(
+                provider=provider,
+                model=model,
+                cost_status="LOCAL_COMPUTE",
+                cost_source="local",
+                input_rate_per_million_usd=0.0,
+                output_rate_per_million_usd=0.0,
+                estimated_input_cost_usd=0.0,
+                estimated_output_cost_usd=0.0,
+                estimated_total_cost_usd=0.0,
+                note="Local Ollama model — no API token charge. Hardware electricity not estimated.",
+            )
+        pricing = _pricing_for_provider_model(provider, model)
+        if pricing:
+            cost_status = "ESTIMATED_FROM_CONFIG"
+            cost_source = str(pricing.get("source", "estimated"))
+        else:
+            pricing = {
+                "provider": provider,
+                "model": model,
+                "input_per_1m_usd": None,
+                "output_per_1m_usd": None,
+                "source": "pricing_not_configured",
+                "cost_status": "UNKNOWN",
+            }
+            cost_status = "UNKNOWN"
+            cost_source = "pricing_not_configured"
+    else:
+        pricing = _default_pricing_for_tier(tier)
+        if pricing is None:
+            pricing = {
+                "provider": "unknown",
+                "model": tier,
+                "input_per_1m_usd": None,
+                "output_per_1m_usd": None,
+                "source": "pricing_not_configured",
+                "cost_status": "UNKNOWN",
+            }
+        cost_status = str(pricing.get("cost_status", "UNKNOWN"))
+        cost_source = str(pricing.get("source", "pricing_not_configured"))
+
+    input_rate = pricing.get("input_per_1m_usd")
+    output_rate = pricing.get("output_per_1m_usd")
+    provider_name = str(pricing.get("provider", provider or "unknown"))
+    model_name = str(pricing.get("model", model or tier))
+    if input_rate is None or output_rate is None:
+        return CostQuote(
+            provider=provider_name,
+            model=model_name,
+            cost_status="UNKNOWN",
+            cost_source=cost_source,
+            input_rate_per_million_usd=None,
+            output_rate_per_million_usd=None,
+            estimated_input_cost_usd=None,
+            estimated_output_cost_usd=None,
+            estimated_total_cost_usd=None,
+            note="Pricing not configured. Provider billing is the source of truth.",
+        )
+
+    estimated_input_cost = (input_tokens / 1_000_000) * float(input_rate)
+    estimated_output_cost = (output_tokens / 1_000_000) * float(output_rate)
+    estimated_total_cost = estimated_input_cost + estimated_output_cost
+    return CostQuote(
+        provider=provider_name,
+        model=model_name,
+        cost_status=cost_status,
+        cost_source=cost_source,
+        input_rate_per_million_usd=float(input_rate),
+        output_rate_per_million_usd=float(output_rate),
+        estimated_input_cost_usd=round(estimated_input_cost, 8),
+        estimated_output_cost_usd=round(estimated_output_cost, 8),
+        estimated_total_cost_usd=round(estimated_total_cost, 8),
+        note=f"Pricing normalized to USD per 1,000,000 tokens from {cost_source}.",
+    )
+
+
 def _cost_for_tier(tier: str, input_tokens: int, output_tokens: int) -> float:
-    rate = DEFAULT_TOKEN_TO_COST.get(tier, DEFAULT_TOKEN_TO_COST["T1_CHEAP_AI"])
-    return round((input_tokens + output_tokens) * rate, 6)
+    quote = resolve_cost_quote(tier=tier, input_tokens=input_tokens, output_tokens=output_tokens)
+    return float(quote.estimated_total_cost_usd or 0.0)
 
 
 def _bounded_history(history: List[Dict[str, Any]], limit: int = DEFAULT_LOOP_HISTORY) -> List[Dict[str, Any]]:
@@ -181,13 +336,19 @@ class LoopRunResult:
     tier3_calls: int
     input_tokens: int
     output_tokens: int
-    estimated_cost: float
+    estimated_cost: Optional[float]
+    estimated_cost_status: str
+    estimated_cost_source: str
+    estimated_input_cost_usd: Optional[float]
+    estimated_output_cost_usd: Optional[float]
+    pricing_provider: str
+    pricing_model: str
     successful_outputs: int
     value_events: int
     deterministic_execution_share: float
     ai_execution_share: float
     tokens_per_success: float
-    cost_per_success: float
+    cost_per_success: Optional[float]
     deterministic_precheck: Dict[str, Any]
     reduced: Dict[str, Any]
     result: Dict[str, Any]
@@ -210,6 +371,12 @@ class LoopRunResult:
             "input_tokens": self.input_tokens,
             "output_tokens": self.output_tokens,
             "estimated_cost": self.estimated_cost,
+            "estimated_cost_status": self.estimated_cost_status,
+            "estimated_cost_source": self.estimated_cost_source,
+            "estimated_input_cost_usd": self.estimated_input_cost_usd,
+            "estimated_output_cost_usd": self.estimated_output_cost_usd,
+            "pricing_provider": self.pricing_provider,
+            "pricing_model": self.pricing_model,
             "successful_outputs": self.successful_outputs,
             "value_events": self.value_events,
             "deterministic_execution_share": self.deterministic_execution_share,
@@ -312,6 +479,8 @@ class LoopRuntime:
         tier3_calls = 0
         input_tokens = 0
         output_tokens = 0
+        effective_tier = spec.model_tier
+        cost_quote = resolve_cost_quote(tier="T0_DETERMINISTIC", input_tokens=0, output_tokens=0)
         ai_result: Dict[str, Any] = {}
         verifier_result: Dict[str, Any] = {"status": "not_run"}
 
@@ -368,8 +537,8 @@ class LoopRuntime:
                     raise LoopExecutionError("output token budget exceeded")
                 if input_tokens + output_tokens > spec.estimated_token_budget:
                     raise LoopExecutionError("estimated token budget exceeded")
-                estimated_cost = _cost_for_tier(tier, input_tokens, output_tokens)
-                if estimated_cost > spec.cost_ceiling:
+                cost_quote = resolve_cost_quote(tier=tier, input_tokens=input_tokens, output_tokens=output_tokens)
+                if cost_quote.estimated_total_cost_usd is not None and cost_quote.estimated_total_cost_usd > spec.cost_ceiling:
                     raise LoopExecutionError("cost ceiling exceeded")
                 if spec.loop_id == "opportunity_discovery_loop":
                     result = merge_opportunity_ai_result(reduced, ai_result)
@@ -401,8 +570,8 @@ class LoopRuntime:
                     output_tokens = _approx_tokens(json.dumps(ai_result, sort_keys=True, default=str))
                     if output_tokens > spec.max_output_tokens:
                         raise LoopExecutionError("output token budget exceeded")
-                    estimated_cost = _cost_for_tier(effective_tier, input_tokens, output_tokens)
-                    if estimated_cost > spec.cost_ceiling:
+                    cost_quote = resolve_cost_quote(tier=effective_tier, input_tokens=input_tokens, output_tokens=output_tokens)
+                    if cost_quote.estimated_total_cost_usd is not None and cost_quote.estimated_total_cost_usd > spec.cost_ceiling:
                         raise LoopExecutionError("cost ceiling exceeded")
                     if spec.loop_id == "opportunity_discovery_loop":
                         result = merge_opportunity_ai_result(reduced, ai_result)
@@ -423,13 +592,18 @@ class LoopRuntime:
         duration_ms = round((time.monotonic() - start) * 1000)
         successful_outputs = 1 if verifier_result.get("status") == "pass" else 0
         value_events = successful_outputs
-        estimated_cost = _cost_for_tier(effective_tier if ai_used else "T0_DETERMINISTIC", input_tokens, output_tokens)
+        cost_quote = resolve_cost_quote(
+            tier=effective_tier if ai_used else "T0_DETERMINISTIC",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+        estimated_cost = cost_quote.estimated_total_cost_usd
         if ai_used and ai_calls == 0:
             ai_calls = 1
         deterministic_share = 1.0 if not ai_used else 0.0
         ai_share = 0.0 if not ai_used else 1.0
         tokens_per_success = round((input_tokens + output_tokens) / successful_outputs, 3) if successful_outputs else 0.0
-        cost_per_success = round(estimated_cost / successful_outputs, 6) if successful_outputs else 0.0
+        cost_per_success = round(estimated_cost / successful_outputs, 8) if successful_outputs and estimated_cost is not None else None
 
         memory_record = spec.memory_projection(result, collected, previous_state)
         memory_record.update({
@@ -469,6 +643,12 @@ class LoopRuntime:
             "input_tokens": input_tokens,
             "output_tokens": output_tokens,
             "estimated_cost": estimated_cost,
+            "estimated_cost_status": cost_quote.cost_status,
+            "estimated_cost_source": cost_quote.cost_source,
+            "estimated_input_cost_usd": cost_quote.estimated_input_cost_usd,
+            "estimated_output_cost_usd": cost_quote.estimated_output_cost_usd,
+            "pricing_provider": cost_quote.provider,
+            "pricing_model": cost_quote.model,
             "successful_outputs": successful_outputs,
             "value_events": value_events,
             "tokens_per_success": tokens_per_success,
@@ -515,6 +695,12 @@ class LoopRuntime:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             estimated_cost=estimated_cost,
+            estimated_cost_status=cost_quote.cost_status,
+            estimated_cost_source=cost_quote.cost_source,
+            estimated_input_cost_usd=cost_quote.estimated_input_cost_usd,
+            estimated_output_cost_usd=cost_quote.estimated_output_cost_usd,
+            pricing_provider=cost_quote.provider,
+            pricing_model=cost_quote.model,
             successful_outputs=successful_outputs,
             value_events=value_events,
             deterministic_execution_share=deterministic_share,

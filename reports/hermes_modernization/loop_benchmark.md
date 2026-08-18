@@ -12,6 +12,9 @@ Sample run:
   - `ai_calls = 0`
   - `zero_token_execution = true`
   - `estimated_cost = 0.0`
+  - `estimated_cost_status = ZERO_PROVIDER_TOKEN_CHARGE`
+  - `pricing_provider = none`
+  - `pricing_model = no_model`
 
 The second identical run stayed on the deterministic path and did not invoke AI.
 
@@ -42,17 +45,30 @@ Sample run:
   - `verifier = pass`
   - `input_tokens = 535`
   - `output_tokens = 20`
-  - `estimated_cost = 1.3875`
+  - `estimated_cost = 0.0015375`
+  - `estimated_cost_status = ESTIMATED_FROM_CONFIG`
+  - `estimated_cost_source = estimated`
+  - `pricing_provider = openrouter`
+  - `pricing_model = openai/gpt-4o`
   - `tokens_per_success = 555.0`
-  - `cost_per_success = 1.3875`
+  - `cost_per_success = 0.0015375`
 
 The AI result was merged onto the deterministic candidate set instead of replacing it.
 
 ## Cost accounting unit
 
 - `estimated_cost` is **USD dollars**
-- verified unit check: `_cost_for_tier("T1_CHEAP_AI", 163, 270) == 0.2165`
-- formula: `(163 + 270) * 0.0005 = 0.2165`
+- formula is normalized per million tokens:
+  - `cost = (input_tokens / 1_000_000 * input_price_per_million) + (output_tokens / 1_000_000 * output_price_per_million)`
+- verified unit check:
+  - `T1_CHEAP_AI` via config: `_cost_for_tier("T1_CHEAP_AI", 163, 270) == 0.00018645`
+  - `T2_STANDARD_AI` via config: `0.0015375` for `535 input / 20 output`
+- local Ollama quote:
+  - `estimated_cost = 0.0`
+  - `estimated_cost_status = LOCAL_COMPUTE`
+- unknown model quote:
+  - `estimated_cost = null`
+  - `estimated_cost_status = UNKNOWN`
 
 ## Observed timing
 
