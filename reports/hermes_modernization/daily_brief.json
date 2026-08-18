@@ -84,34 +84,40 @@
     "worker_used": "local_python",
     "workers": [
       {
-        "classification": "UNAVAILABLE",
-        "reason": "safe execution probe timed out",
-        "version": "1.18.18",
-        "worker_id": "opencode"
-      },
-      {
         "classification": "AVAILABLE",
-        "reason": "version and harmless execution probes succeeded",
+        "reason": "safe execution probe timed out",
         "version": "codex-cli 0.147.0",
         "worker_id": "codex"
       },
       {
+        "classification": "UNAVAILABLE",
+        "reason": "version probe timed out",
+        "version": "1.18.18",
+        "worker_id": "opencode"
+      },
+      {
         "classification": "INSTALLED_UNPROVEN",
-        "reason": "execution probe did not prove availability",
+        "reason": "version probe timed out",
         "version": "0.1.12",
         "worker_id": "mimo"
       },
       {
-        "classification": "AVAILABLE",
-        "reason": "local deterministic fallback",
-        "version": "python3",
-        "worker_id": "local_python"
+        "classification": "INSTALLED_UNPROVEN",
+        "reason": "Kilo is installed locally, but no safe non-interactive execution contract or auth proof is available; do not add to CodingWorker registry.",
+        "version": "7.3.54",
+        "worker_id": "kilo"
       },
       {
         "classification": "NOT_INSTALLED",
-        "reason": "not proven available",
+        "reason": "binary not found on PATH",
         "version": "UNKNOWN",
         "worker_id": "openhands"
+      },
+      {
+        "classification": "AVAILABLE",
+        "reason": "isolated deterministic artifact execution and verification are proven",
+        "version": "python3",
+        "worker_id": "local_python"
       }
     ]
   },
@@ -138,12 +144,12 @@
     "ai_execution_share": 0.0,
     "cost_status": "LOCAL_COMPUTE_ONLY",
     "deterministic_execution_share": 1.0,
-    "execution_records": 12,
+    "execution_records": 13,
     "input_tokens": 0,
     "local_compute_executions": 1,
     "output_tokens": 0,
     "provider_cost_usd": 0.0,
-    "successful_records": 12,
+    "successful_records": 13,
     "value_events": 2,
     "zero_token_executions": 9
   },
@@ -166,14 +172,15 @@
     "data/runtime/nexus_loops/loop_state.json",
     "data/runtime/nexus_loops/execution_ledger.jsonl",
     "data/runtime/builder_execution_ledger/ledger.jsonl",
-    "reports/hermes_modernization/learning_proposals.json"
+    "reports/hermes_modernization/learning_proposals.json",
+    "reports/hermes_modernization/workforce_certification.json"
   ],
   "freshness": {
-    "latest_source_timestamp": "851d613b49188467b06abd9c75773b0ed76c4155",
+    "latest_source_timestamp": "ba5184282a75a5b64edb3295e801f0c5313fe275",
     "live_supabase_read": "NOT_AVAILABLE",
     "status": "MIXED_REPORT_AGES"
   },
-  "generated_at": "2026-08-18T15:26:30.164060+00:00",
+  "generated_at": "2026-08-18T15:43:17.385679+00:00",
   "highest_value_next_action": "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
   "learning_updates": {
     "approval_required": true,
@@ -339,39 +346,53 @@
   },
   "worker_health": [
     {
-      "classification": "UNAVAILABLE",
-      "installed": true,
-      "probe_result": "execution_timeout",
-      "version": "1.18.18",
-      "worker_id": "opencode"
-    },
-    {
       "classification": "AVAILABLE",
       "installed": true,
-      "probe_result": "execution_success",
+      "probe_result": "EXECUTION_VERIFIED",
       "version": "codex-cli 0.147.0",
       "worker_id": "codex"
     },
     {
+      "classification": "UNAVAILABLE",
+      "installed": true,
+      "probe_result": "EXECUTION_TIMEOUT",
+      "version": "1.18.18",
+      "worker_id": "opencode"
+    },
+    {
       "classification": "INSTALLED_UNPROVEN",
       "installed": true,
-      "probe_result": "execution_failed",
+      "probe_result": "EXECUTION_UNPROVEN",
       "version": "0.1.12",
       "worker_id": "mimo"
     },
     {
-      "classification": "AVAILABLE",
+      "classification": "INSTALLED_UNPROVEN",
       "installed": true,
-      "probe_result": "UNKNOWN",
-      "version": "python3",
-      "worker_id": "local_python"
+      "probe_result": "NOT_PROVEN",
+      "version": "7.3.54",
+      "worker_id": "kilo"
     },
     {
       "classification": "NOT_INSTALLED",
       "installed": false,
-      "probe_result": "UNKNOWN",
+      "probe_result": "NOT_RUN",
       "version": "UNKNOWN",
       "worker_id": "openhands"
+    },
+    {
+      "classification": "AVAILABLE",
+      "installed": true,
+      "probe_result": "EXECUTION_VERIFIED",
+      "version": "python3",
+      "worker_id": "local_python"
     }
-  ]
+  ],
+  "workforce_updates": {
+    "kilo_classification": "INSTALLED_UNPROVEN",
+    "kilo_decision": "DEFER",
+    "source": "reports/hermes_modernization/workforce_certification.json",
+    "status": "CERTIFICATION_PARTIAL_PROVIDER_ACTIONS_DEFERRED",
+    "worker_count": 6
+  }
 }

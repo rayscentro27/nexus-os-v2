@@ -80,6 +80,7 @@ def _load_sources() -> Dict[str, Any]:
         "loop_ledger": LOOP_DIR / "execution_ledger.jsonl",
         "builder_ledger": BUILDER_DIR / "ledger.jsonl",
         "learning": REPORT_DIR / "learning_proposals.json",
+        "workforce": REPORT_DIR / "workforce_certification.json",
     }
     loaded = {name: _read_json(path, {}) for name, path in paths.items() if name not in {"loop_ledger", "builder_ledger"}}
     loaded["loop_ledger"] = _read_jsonl(paths["loop_ledger"])
@@ -129,11 +130,13 @@ def build_daily_brief() -> Dict[str, Any]:
     last_loop = health_loop.get("last_run") or {}
     loop_summary = last_loop.get("summary") or {}
     workers = pilot.get("workers") or []
+    workforce_workers = (sources["workforce"] or {}).get("workers") if isinstance(sources["workforce"], dict) else None
+    worker_rows = workforce_workers or workers
     top_money = (scoreboard.get("scoreboard") or [{}])[0]
     revenue_next = revenue.get("exact_next_money_action", UNKNOWN)
     cost = _build_cost_summary(sources, pilot=pilot)
     paths = sources["paths"]
-    evidence_refs = [_source_ref(paths[name]) for name in ("pilot", "revenue", "money_scoreboard", "blockers", "approvals", "loop_state", "loop_ledger", "builder_ledger", "learning") if paths[name].exists()]
+    evidence_refs = [_source_ref(paths[name]) for name in ("pilot", "revenue", "money_scoreboard", "blockers", "approvals", "loop_state", "loop_ledger", "builder_ledger", "learning", "workforce") if paths[name].exists()]
     generated_at = _now()
     latest_source = _latest_timestamp([
         pilot.get("ending_commit"), revenue.get("generated_at"), blockers.get("generated_at"),
@@ -192,7 +195,7 @@ def build_daily_brief() -> Dict[str, Any]:
             "status": pilot.get("builder_status", UNKNOWN),
             "worker_used": pilot.get("worker_used", UNKNOWN),
             "verification": pilot.get("verification_status", UNKNOWN),
-            "workers": [{"worker_id": row.get("worker_id", UNKNOWN), "classification": row.get("classification", UNKNOWN), "version": row.get("version", UNKNOWN), "reason": row.get("availability_reason", UNKNOWN)} for row in workers],
+            "workers": [{"worker_id": row.get("worker_id", UNKNOWN), "classification": row.get("classification", UNKNOWN), "version": row.get("version", UNKNOWN), "reason": row.get("availability_reason", row.get("reason", UNKNOWN))} for row in worker_rows],
         },
         "loop_updates": {
             "system_health_loop": last_loop.get("status", UNKNOWN),
@@ -218,6 +221,13 @@ def build_daily_brief() -> Dict[str, Any]:
             ],
             "approval_required": ((sources["learning"] or {}).get("approval_policy") or {}).get("approval_required", UNKNOWN),
         },
+        "workforce_updates": {
+            "status": (sources["workforce"] or {}).get("status", UNKNOWN),
+            "worker_count": len(worker_rows),
+            "kilo_decision": ((sources["workforce"] or {}).get("kilo_recommendation") or {}).get("decision", UNKNOWN),
+            "kilo_classification": next((row.get("classification") for row in worker_rows if row.get("worker_id") == "kilo"), UNKNOWN),
+            "source": _source_ref(paths["workforce"]) if paths["workforce"].exists() else UNKNOWN,
+        },
         "client_attention": {
             "status": "REPORT_BACKED_NOT_LIVE" if client_attention else NOT_AVAILABLE,
             "stuck_clients": len(client_attention.get("stuck_clients", [])) if client_attention else UNKNOWN,
@@ -239,7 +249,7 @@ def build_daily_brief() -> Dict[str, Any]:
             "scheduler": (sources["scheduler"] or {}).get("status", UNKNOWN),
         },
         "provider_health": {"status": "REPORT_BACKED", "source": _source_ref(paths["pilot"])},
-        "worker_health": [{"worker_id": row.get("worker_id", UNKNOWN), "installed": row.get("installed", UNKNOWN), "classification": row.get("classification", UNKNOWN), "version": row.get("version", UNKNOWN), "probe_result": row.get("probe_result", UNKNOWN)} for row in workers],
+        "worker_health": [{"worker_id": row.get("worker_id", UNKNOWN), "installed": row.get("installed", UNKNOWN), "classification": row.get("classification", UNKNOWN), "version": row.get("version", UNKNOWN), "probe_result": row.get("execution_probe_status", row.get("probe_result", UNKNOWN))} for row in worker_rows],
         "cost_summary": cost,
         "token_summary": {key: cost[key] for key in ("input_tokens", "output_tokens", "ai_calls", "zero_token_executions")},
         "deterministic_execution_share": cost["deterministic_execution_share"],

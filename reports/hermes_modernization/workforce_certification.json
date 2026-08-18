@@ -1,0 +1,592 @@
+{
+  "agent_certifications": [
+    {
+      "auth_status": "NOT_APPLICABLE",
+      "availability_reason": "Compatibility lab is proven in isolation; not a production execution worker.",
+      "available": true,
+      "classification": "DEFERRED",
+      "display_name": "Isolated upstream Hermes lab",
+      "evidence_refs": [
+        "scripts/nexus_agent_platform/hermes_lab/upstream_compatibility.py",
+        "reports/hermes_modernization/upstream_compatibility.md"
+      ],
+      "execution_probe_status": "LAB_VERIFIED",
+      "installed": true,
+      "task_classes": [
+        "upstream compatibility study",
+        "bounded runtime experiments"
+      ],
+      "version": "local lab",
+      "worker_id": "hermes_upstream",
+      "worker_type": "agent_runtime"
+    },
+    {
+      "auth_status": "N/A",
+      "availability_reason": "Operator/orchestrator routing and governed report paths are proven.",
+      "available": true,
+      "classification": "AVAILABLE",
+      "display_name": "Nexus Hermes",
+      "evidence_refs": [
+        "scripts/nexus_agent_platform/agents/hermes.py",
+        "reports/hermes_modernization/daily_brief.json"
+      ],
+      "execution_probe_status": "GOVERNED_ROUTING_VERIFIED",
+      "installed": true,
+      "task_classes": [
+        "operator intelligence",
+        "approvals",
+        "opportunity orchestration",
+        "daily brief"
+      ],
+      "version": "repository runtime",
+      "worker_id": "nexus_hermes",
+      "worker_type": "persistent_agent"
+    },
+    {
+      "auth_status": "PUBLIC_RESEARCH_ONLY",
+      "availability_reason": "Public-information research and provenance foundation are proven; no client PII authority.",
+      "available": true,
+      "classification": "AVAILABLE",
+      "display_name": "Alpha external intelligence",
+      "evidence_refs": [
+        "scripts/alpha",
+        "reports/hermes_modernization/alpha_external_intelligence.md"
+      ],
+      "execution_probe_status": "RESEARCH_FOUNDATION_VERIFIED",
+      "installed": true,
+      "task_classes": [
+        "public research",
+        "source normalization",
+        "provenance",
+        "open-source scouting"
+      ],
+      "version": "repository runtime",
+      "worker_id": "alpha",
+      "worker_type": "persistent_agent"
+    },
+    {
+      "auth_status": "GOVERNED",
+      "availability_reason": "Separate governed recommendation/reasoning lane; not an autonomous promotion authority.",
+      "available": true,
+      "classification": "AVAILABLE",
+      "display_name": "Hermes Nova",
+      "evidence_refs": [
+        "scripts/nexus_agent_platform/agents/nova.py",
+        "scripts/nexus_agent_platform/governed/recommendations.py"
+      ],
+      "execution_probe_status": "RECOMMENDATION_BOUNDARY_VERIFIED",
+      "installed": true,
+      "task_classes": [
+        "reasoning",
+        "recommendations",
+        "knowledge evaluation"
+      ],
+      "version": "repository runtime",
+      "worker_id": "hermes_nova",
+      "worker_type": "persistent_agent"
+    }
+  ],
+  "allowed_classifications": [
+    "AUTH_BLOCKED",
+    "AVAILABLE",
+    "DEFERRED",
+    "DISABLED_BY_POLICY",
+    "INSTALLED_UNPROVEN",
+    "NOT_INSTALLED",
+    "RATE_LIMITED",
+    "UNAVAILABLE"
+  ],
+  "evidence_refs": [
+    "reports/hermes_modernization/end_to_end_pilot.json",
+    "reports/hermes_modernization/builder_abstraction.md",
+    "scripts/nexus_agent_platform/builders/runtime.py"
+  ],
+  "generated_at": "2026-08-18T15:43:16.867800+00:00",
+  "governance": {
+    "automatic_routing_mutation": "DISABLED",
+    "client_portal_changes": "NONE",
+    "production_telegram_changes": "NONE",
+    "provider_credit_purchase": "DISABLED",
+    "provider_login_mutation": "DISABLED",
+    "software_installation": "DISABLED"
+  },
+  "kilo_recommendation": {
+    "decision": "DEFER",
+    "install_action": "NOT_NEEDED",
+    "reason": "Installed, but no safe non-interactive execution/auth contract is proven. Existing Codex and local deterministic coverage provide sufficient current redundancy.",
+    "registry_action": "DO_NOT_REGISTER_AS_EXECUTABLE"
+  },
+  "onboarding_contract": [
+    "DISCOVER",
+    "INSTALLATION_CHECK",
+    "VERSION_CHECK",
+    "AUTH_PROBE",
+    "HARMLESS_EXECUTION_PROBE",
+    "CAPABILITY_DISCOVERY",
+    "COST_CLASSIFICATION",
+    "SAFETY_CLASSIFICATION",
+    "VERIFICATION_CONTRACT",
+    "REGISTRY_ENTRY",
+    "CERTIFICATION",
+    "AVAILABLE"
+  ],
+  "phase": "PHASE 13 \u2014 AI WORKFORCE CERTIFICATION + PROVIDER ONBOARDING",
+  "report_id": "workforce_certification_a5da04306a983dc4",
+  "routing_policy": {
+    "new_provider_requires_separate_certification": true,
+    "production_routing_changed": false,
+    "selection_requires_available_and_verified": true,
+    "unavailable_fallback": "local_python"
+  },
+  "status": "CERTIFICATION_PARTIAL_PROVIDER_ACTIONS_DEFERRED",
+  "workers": [
+    {
+      "adapter": {
+        "adapter_type": "codex_cli",
+        "auth_probe": "existing local Codex CLI session; no secret value read",
+        "binary_or_endpoint": "codex",
+        "capabilities": [
+          "repo_edit",
+          "shell",
+          "tests",
+          "structured_output",
+          "resume"
+        ],
+        "cost_class": "ZERO_MODEL_COST",
+        "execution_command": [
+          "codex",
+          "exec",
+          "--ephemeral",
+          "--sandbox",
+          "read-only",
+          "--skip-git-repo-check",
+          "--color",
+          "never",
+          "Reply with exactly HEALTHCHECK_OK. Do not inspect, read, or modify files."
+        ],
+        "execution_probe": "safe read-only ephemeral execution",
+        "models": [
+          "local-session-selected-model"
+        ],
+        "provider": "OpenAI Codex CLI",
+        "requires_api_key": false,
+        "secret_sources": [
+          "local Codex session"
+        ],
+        "supports_existing_login": true,
+        "timeout": 15,
+        "verification_requirements": [
+          "git diff",
+          "protected path check",
+          "tests",
+          "acceptance criteria"
+        ],
+        "version_command": [
+          "codex",
+          "--version"
+        ],
+        "worker_id": "codex"
+      },
+      "auth_status": "AUTHENTICATED_UNPROVEN",
+      "authentication_mechanism": "existing local Codex CLI session; no secret value read",
+      "availability_reason": "safe execution probe timed out",
+      "available": true,
+      "binary_or_endpoint": "codex",
+      "classification": "AVAILABLE",
+      "cost_class": "ZERO_MODEL_COST",
+      "display_name": "Codex",
+      "evidence_refs": [
+        "reports/hermes_modernization/end_to_end_pilot.json",
+        "reports/hermes_modernization/builder_abstraction.md"
+      ],
+      "execution_probe_status": "EXECUTION_VERIFIED",
+      "installed": true,
+      "models": [
+        "local-session-selected-model"
+      ],
+      "provider": "OpenAI Codex CLI",
+      "rate_limit_status": "CLEAR",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_long_running_tasks": false,
+      "supports_repo_edit": true,
+      "supports_resume": true,
+      "supports_sandbox_execution": true,
+      "supports_shell": true,
+      "supports_structured_output": true,
+      "supports_tests": true,
+      "supports_web_research": false,
+      "supports_worktrees": false,
+      "version": "codex-cli 0.147.0",
+      "worker_id": "codex",
+      "worker_type": "codex_cli"
+    },
+    {
+      "adapter": {
+        "adapter_type": "opencode_cli",
+        "auth_probe": "provider login/configuration state; no secret value read",
+        "binary_or_endpoint": "opencode",
+        "capabilities": [
+          "repo_edit",
+          "shell",
+          "tests",
+          "structured_output"
+        ],
+        "cost_class": "ZERO_MODEL_COST",
+        "execution_command": [
+          "opencode",
+          "run",
+          "--format",
+          "json",
+          "Reply with exactly HEALTHCHECK_OK. Do not inspect, read, or modify files."
+        ],
+        "execution_probe": "provider-specific non-interactive run",
+        "models": [
+          "provider session or configured environment"
+        ],
+        "provider": "OpenCode/provider-selected",
+        "requires_api_key": true,
+        "secret_sources": [
+          "provider session",
+          "environment configuration"
+        ],
+        "supports_existing_login": true,
+        "timeout": 15,
+        "verification_requirements": [
+          "git diff",
+          "protected path check",
+          "tests",
+          "acceptance criteria"
+        ],
+        "version_command": [
+          "opencode",
+          "--version"
+        ],
+        "worker_id": "opencode"
+      },
+      "auth_status": "UNPROVEN",
+      "authentication_mechanism": "provider login/configuration state; no secret value read",
+      "availability_reason": "version probe timed out",
+      "available": false,
+      "binary_or_endpoint": "opencode",
+      "classification": "UNAVAILABLE",
+      "cost_class": "ZERO_MODEL_COST",
+      "display_name": "Opencode",
+      "evidence_refs": [
+        "reports/hermes_modernization/end_to_end_pilot.json",
+        "reports/hermes_modernization/builder_abstraction.md"
+      ],
+      "execution_probe_status": "EXECUTION_TIMEOUT",
+      "installed": true,
+      "models": [
+        "provider session or configured environment"
+      ],
+      "provider": "OpenCode/provider-selected",
+      "rate_limit_status": "UNKNOWN",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_long_running_tasks": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_sandbox_execution": false,
+      "supports_shell": true,
+      "supports_structured_output": true,
+      "supports_tests": true,
+      "supports_web_research": false,
+      "supports_worktrees": false,
+      "version": "1.18.18",
+      "worker_id": "opencode",
+      "worker_type": "opencode_cli"
+    },
+    {
+      "adapter": {
+        "adapter_type": "mimo_cli",
+        "auth_probe": "MiMo local auth/config state; no secret value read",
+        "binary_or_endpoint": "mimo",
+        "capabilities": [
+          "repo_edit",
+          "shell",
+          "tests"
+        ],
+        "cost_class": "LOW_EXTERNAL_COST",
+        "execution_command": [
+          "mimo",
+          "run",
+          "--non-interactive",
+          "Reply with exactly HEALTHCHECK_OK. Do not inspect, read, or modify files."
+        ],
+        "execution_probe": "provider-specific non-interactive run",
+        "models": [
+          "configured provider session"
+        ],
+        "provider": "MiMo",
+        "requires_api_key": true,
+        "secret_sources": [
+          "provider session",
+          "environment configuration"
+        ],
+        "supports_existing_login": true,
+        "timeout": 15,
+        "verification_requirements": [
+          "git diff",
+          "protected path check",
+          "tests",
+          "acceptance criteria"
+        ],
+        "version_command": [
+          "mimo",
+          "--version"
+        ],
+        "worker_id": "mimo"
+      },
+      "auth_status": "UNPROVEN",
+      "authentication_mechanism": "MiMo local auth/config state; no secret value read",
+      "availability_reason": "version probe timed out",
+      "available": false,
+      "binary_or_endpoint": "mimo",
+      "classification": "INSTALLED_UNPROVEN",
+      "cost_class": "LOW_EXTERNAL_COST",
+      "display_name": "Mimo",
+      "evidence_refs": [
+        "reports/hermes_modernization/end_to_end_pilot.json",
+        "reports/hermes_modernization/builder_abstraction.md"
+      ],
+      "execution_probe_status": "EXECUTION_UNPROVEN",
+      "installed": true,
+      "models": [
+        "configured provider session"
+      ],
+      "provider": "MiMo",
+      "rate_limit_status": "UNKNOWN",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_long_running_tasks": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_sandbox_execution": false,
+      "supports_shell": true,
+      "supports_structured_output": false,
+      "supports_tests": true,
+      "supports_web_research": false,
+      "supports_worktrees": false,
+      "version": "0.1.12",
+      "worker_id": "mimo",
+      "worker_type": "mimo_cli"
+    },
+    {
+      "adapter": {
+        "adapter_type": "kilo_cli",
+        "auth_probe": "Kilo local auth/config state; no secret value read",
+        "binary_or_endpoint": "kilo",
+        "capabilities": [
+          "repo_edit",
+          "shell",
+          "tests",
+          "browser",
+          "images",
+          "worktrees"
+        ],
+        "cost_class": "UNKNOWN",
+        "execution_command": null,
+        "execution_probe": null,
+        "models": [
+          "provider-selected"
+        ],
+        "provider": "Kilo Code",
+        "requires_api_key": true,
+        "secret_sources": [
+          "Kilo local config"
+        ],
+        "supports_existing_login": true,
+        "timeout": 15,
+        "verification_requirements": [
+          "Kilo non-interactive execution contract",
+          "git diff",
+          "protected path check",
+          "tests"
+        ],
+        "version_command": [
+          "kilo",
+          "--version"
+        ],
+        "worker_id": "kilo"
+      },
+      "auth_status": "UNPROVEN",
+      "authentication_mechanism": "Kilo local auth/config state; no secret value read",
+      "availability_reason": "Kilo is installed locally, but no safe non-interactive execution contract or auth proof is available; do not add to CodingWorker registry.",
+      "available": false,
+      "binary_or_endpoint": "kilo",
+      "classification": "INSTALLED_UNPROVEN",
+      "cost_class": "UNKNOWN",
+      "display_name": "Kilo Code / Kilo CLI",
+      "evidence_refs": [
+        "/usr/local/Cellar/kilo/7.3.54",
+        "/Users/raymonddavis/.config/kilo/kilo.jsonc"
+      ],
+      "execution_probe_status": "NOT_PROVEN",
+      "installed": true,
+      "models": [
+        "provider-selected"
+      ],
+      "provider": "Kilo Code",
+      "rate_limit_status": "UNKNOWN",
+      "supports_browser": true,
+      "supports_images": true,
+      "supports_long_running_tasks": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_sandbox_execution": false,
+      "supports_shell": true,
+      "supports_structured_output": false,
+      "supports_tests": true,
+      "supports_web_research": true,
+      "supports_worktrees": true,
+      "version": "7.3.54",
+      "worker_id": "kilo",
+      "worker_type": "kilo_cli"
+    },
+    {
+      "adapter": {
+        "adapter_type": "openhands_cli_or_endpoint",
+        "auth_probe": "OpenHands auth state; no secret value read",
+        "binary_or_endpoint": "openhands",
+        "capabilities": [
+          "repo_edit",
+          "shell",
+          "tests",
+          "browser",
+          "images",
+          "worktrees",
+          "resume"
+        ],
+        "cost_class": "UNKNOWN",
+        "execution_command": null,
+        "execution_probe": null,
+        "models": [],
+        "provider": "OpenHands",
+        "requires_api_key": true,
+        "secret_sources": [
+          "provider configuration"
+        ],
+        "supports_existing_login": true,
+        "timeout": 15,
+        "verification_requirements": [
+          "sandbox execution",
+          "git diff",
+          "protected path check",
+          "tests"
+        ],
+        "version_command": [
+          "openhands",
+          "--version"
+        ],
+        "worker_id": "openhands"
+      },
+      "auth_status": "NOT_APPLICABLE",
+      "authentication_mechanism": "OpenHands auth state; no secret value read",
+      "availability_reason": "binary not found on PATH",
+      "available": false,
+      "binary_or_endpoint": "openhands",
+      "classification": "NOT_INSTALLED",
+      "cost_class": "UNKNOWN",
+      "display_name": "Openhands",
+      "evidence_refs": [
+        "reports/hermes_modernization/end_to_end_pilot.json",
+        "reports/hermes_modernization/builder_abstraction.md"
+      ],
+      "execution_probe_status": "NOT_RUN",
+      "installed": false,
+      "models": [],
+      "provider": "OpenHands",
+      "rate_limit_status": "UNKNOWN",
+      "supports_browser": true,
+      "supports_images": true,
+      "supports_long_running_tasks": false,
+      "supports_repo_edit": true,
+      "supports_resume": true,
+      "supports_sandbox_execution": false,
+      "supports_shell": true,
+      "supports_structured_output": false,
+      "supports_tests": true,
+      "supports_web_research": true,
+      "supports_worktrees": true,
+      "version": "UNKNOWN",
+      "worker_id": "openhands",
+      "worker_type": "openhands_cli_or_endpoint"
+    },
+    {
+      "adapter": {
+        "adapter_type": "internal_deterministic",
+        "auth_probe": "NOT_APPLICABLE",
+        "binary_or_endpoint": "python3",
+        "capabilities": [
+          "repo_edit",
+          "shell",
+          "tests",
+          "worktrees",
+          "structured_output"
+        ],
+        "cost_class": "ZERO_MODEL_COST",
+        "execution_command": [
+          "python3",
+          "-c",
+          "pass"
+        ],
+        "execution_probe": "isolated internal artifact execution",
+        "models": [
+          "python3"
+        ],
+        "provider": "local",
+        "requires_api_key": false,
+        "secret_sources": [],
+        "supports_existing_login": false,
+        "timeout": 15,
+        "verification_requirements": [
+          "artifact inspection",
+          "protected path check",
+          "tests",
+          "acceptance criteria"
+        ],
+        "version_command": [
+          "python3",
+          "--version"
+        ],
+        "worker_id": "local_python"
+      },
+      "auth_status": "NOT_APPLICABLE",
+      "authentication_mechanism": "NOT_APPLICABLE",
+      "availability_reason": "isolated deterministic artifact execution and verification are proven",
+      "available": true,
+      "binary_or_endpoint": "python3",
+      "classification": "AVAILABLE",
+      "cost_class": "ZERO_MODEL_COST",
+      "display_name": "Local deterministic worker",
+      "evidence_refs": [
+        "scripts/nexus_agent_platform/builders/runtime.py",
+        "reports/hermes_modernization/end_to_end_pilot.json",
+        "reports/hermes_modernization/builder_abstraction.md"
+      ],
+      "execution_probe_status": "EXECUTION_VERIFIED",
+      "installed": true,
+      "models": [
+        "python3"
+      ],
+      "provider": "local",
+      "rate_limit_status": "CLEAR",
+      "supports_browser": false,
+      "supports_images": false,
+      "supports_long_running_tasks": false,
+      "supports_repo_edit": true,
+      "supports_resume": false,
+      "supports_sandbox_execution": true,
+      "supports_shell": true,
+      "supports_structured_output": true,
+      "supports_tests": true,
+      "supports_web_research": false,
+      "supports_worktrees": true,
+      "version": "python3",
+      "worker_id": "local_python",
+      "worker_type": "internal_deterministic"
+    }
+  ]
+}

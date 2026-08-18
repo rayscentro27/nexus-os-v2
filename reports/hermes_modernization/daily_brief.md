@@ -1,7 +1,7 @@
 # Hermes Daily Brief — Phase 11
 
 - brief_id: `daily_brief_7bb3abdd6f16cba3`
-- generated_at: `2026-08-18T15:26:30.164060+00:00`
+- generated_at: `2026-08-18T15:43:17.385679+00:00`
 - status: **REPORT_BACKED_PARTIAL**
 - confidence: `MEDIUM`
 - freshness: `MIXED_REPORT_AGES`
@@ -27,7 +27,7 @@ The revenue dashboard identifies this as the exact next money action; no live ch
 - input/output tokens: `0` / `0`
 - AI calls: `0`; zero-token executions: `9`
 - provider cost USD: `$0.0`; local compute executions: `1`
-- value events: `2`; successful records: `12`
+- value events: `2`; successful records: `13`
 
 ## Decisions, blockers, and next actions
 
@@ -53,3 +53,4 @@ The revenue dashboard identifies this as the exact next money action; no live ch
 - `data/runtime/nexus_loops/execution_ledger.jsonl`
 - `data/runtime/builder_execution_ledger/ledger.jsonl`
 - `reports/hermes_modernization/learning_proposals.json`
+- `reports/hermes_modernization/workforce_certification.json`
