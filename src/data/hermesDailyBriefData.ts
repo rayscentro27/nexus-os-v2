@@ -22,6 +22,7 @@ export function renderHermesDailyBrief(brief: HermesDailyBriefReport = hermesDai
     `Creative: ${brief.creative_updates.selected_territory}; builder ${brief.builder_updates.status}; verification ${brief.builder_updates.verification}.`,
     `Workers: ${workers}.`,
     `Execution: deterministic share ${brief.deterministic_execution_share}; AI share ${brief.ai_execution_share}; zero-token executions ${cost.zero_token_executions}; provider cost $${cost.provider_cost_usd}.`,
+    `Learning: ${brief.learning_updates.observation_count} measured observations and ${brief.learning_updates.proposal_count} proposal candidates; automatic promotion is disabled.`,
     `Blocked: ${brief.blockers.map((item) => item.blocker).slice(0, 3).join('; ') || 'UNKNOWN'}.`,
     `Ray decisions: ${brief.decisions_needed.join('; ')}.`,
     `Next action: ${brief.highest_value_next_action}`,

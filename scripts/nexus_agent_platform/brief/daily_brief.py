@@ -79,6 +79,7 @@ def _load_sources() -> Dict[str, Any]:
         "loop_state": LOOP_DIR / "loop_state.json",
         "loop_ledger": LOOP_DIR / "execution_ledger.jsonl",
         "builder_ledger": BUILDER_DIR / "ledger.jsonl",
+        "learning": REPORT_DIR / "learning_proposals.json",
     }
     loaded = {name: _read_json(path, {}) for name, path in paths.items() if name not in {"loop_ledger", "builder_ledger"}}
     loaded["loop_ledger"] = _read_jsonl(paths["loop_ledger"])
@@ -132,7 +133,7 @@ def build_daily_brief() -> Dict[str, Any]:
     revenue_next = revenue.get("exact_next_money_action", UNKNOWN)
     cost = _build_cost_summary(sources, pilot=pilot)
     paths = sources["paths"]
-    evidence_refs = [_source_ref(paths[name]) for name in ("pilot", "revenue", "money_scoreboard", "blockers", "approvals", "loop_state", "loop_ledger", "builder_ledger") if paths[name].exists()]
+    evidence_refs = [_source_ref(paths[name]) for name in ("pilot", "revenue", "money_scoreboard", "blockers", "approvals", "loop_state", "loop_ledger", "builder_ledger", "learning") if paths[name].exists()]
     generated_at = _now()
     latest_source = _latest_timestamp([
         pilot.get("ending_commit"), revenue.get("generated_at"), blockers.get("generated_at"),
@@ -206,6 +207,16 @@ def build_daily_brief() -> Dict[str, Any]:
             "mode": ((sources["marketing"] or {}).get("details") or {}).get("mode", UNKNOWN),
             "value_proven": False,
             "note": "Receipt says no underlying job was executed.",
+        },
+        "learning_updates": {
+            "status": (sources["learning"] or {}).get("status", UNKNOWN),
+            "observation_count": (sources["learning"] or {}).get("observation_count", UNKNOWN),
+            "proposal_count": (sources["learning"] or {}).get("proposal_count", UNKNOWN),
+            "detectors": [
+                {"detector": item.get("detector", UNKNOWN), "result": item.get("result", UNKNOWN)}
+                for item in ((sources["learning"] or {}).get("detectors") or [])
+            ],
+            "approval_required": ((sources["learning"] or {}).get("approval_policy") or {}).get("approval_required", UNKNOWN),
         },
         "client_attention": {
             "status": "REPORT_BACKED_NOT_LIVE" if client_attention else NOT_AVAILABLE,

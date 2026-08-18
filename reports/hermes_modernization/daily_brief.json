@@ -165,15 +165,60 @@
     "reports/runtime/ray_review_queue_latest.json",
     "data/runtime/nexus_loops/loop_state.json",
     "data/runtime/nexus_loops/execution_ledger.jsonl",
-    "data/runtime/builder_execution_ledger/ledger.jsonl"
+    "data/runtime/builder_execution_ledger/ledger.jsonl",
+    "reports/hermes_modernization/learning_proposals.json"
   ],
   "freshness": {
     "latest_source_timestamp": "851d613b49188467b06abd9c75773b0ed76c4155",
     "live_supabase_read": "NOT_AVAILABLE",
     "status": "MIXED_REPORT_AGES"
   },
-  "generated_at": "2026-08-18T15:02:46.971891+00:00",
+  "generated_at": "2026-08-18T15:26:30.164060+00:00",
   "highest_value_next_action": "Approve and manually complete the $97 Stripe test Checkout, then verify synthetic onboarding.",
+  "learning_updates": {
+    "approval_required": true,
+    "detectors": [
+      {
+        "detector": "repeated_no_change_ai_use",
+        "result": "NO_PROPOSAL"
+      },
+      {
+        "detector": "excessive_model_tier",
+        "result": "NO_PROPOSAL"
+      },
+      {
+        "detector": "low_value_loop",
+        "result": "NO_PROPOSAL"
+      },
+      {
+        "detector": "retry_heavy_worker",
+        "result": "NO_PROPOSAL"
+      },
+      {
+        "detector": "duplicate_research_source",
+        "result": "STRUCTURED_PROPOSAL_CANDIDATE"
+      },
+      {
+        "detector": "stale_opportunity",
+        "result": "NO_PROPOSAL"
+      },
+      {
+        "detector": "high_tokens_per_success",
+        "result": "NO_PROPOSAL"
+      },
+      {
+        "detector": "deterministic_candidate",
+        "result": "STRUCTURED_PROPOSAL_CANDIDATE"
+      },
+      {
+        "detector": "worker_routing_candidate",
+        "result": "NO_PROPOSAL"
+      }
+    ],
+    "observation_count": 2,
+    "proposal_count": 2,
+    "status": "PROPOSAL_ONLY_NO_AUTONOMOUS_MUTATION"
+  },
   "loop_updates": {
     "active_runs": 1,
     "failed_runs": 0,

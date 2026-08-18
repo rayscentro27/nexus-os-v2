@@ -1,0 +1,381 @@
+{
+  "approval_policy": {
+    "approval_id": null,
+    "approval_required": true,
+    "auto_promote": false,
+    "auto_rewrite": false
+  },
+  "audit_disposition": {
+    "autonomous_mutation_and_promotion": "DEFER",
+    "daily_brief": "EXTEND",
+    "governed_recommendations_and_approvals": "WRAP",
+    "learning_observation_and_proposal_contract": "CREATE_NEW",
+    "phase9_outcome_record": "MERGE",
+    "runtime_and_builder_ledgers": "KEEP"
+  },
+  "detectors": [
+    {
+      "detector": "repeated_no_change_ai_use",
+      "reason": "No repeated AI outputs with sufficient runtime evidence.",
+      "result": "NO_PROPOSAL"
+    },
+    {
+      "detector": "excessive_model_tier",
+      "reason": "No repeated higher-tier executions with verified output and no measured value.",
+      "result": "NO_PROPOSAL"
+    },
+    {
+      "detector": "low_value_loop",
+      "reason": "No repeated successful loop with zero value events.",
+      "result": "NO_PROPOSAL"
+    },
+    {
+      "detector": "retry_heavy_worker",
+      "reason": "No worker has a measured retry rate at the proposal threshold.",
+      "result": "NO_PROPOSAL"
+    },
+    {
+      "detector": "duplicate_research_source",
+      "observation": {
+        "baseline_value": 0,
+        "confidence": "MEDIUM",
+        "created_at": "2026-08-18T15:25:54.573793+00:00",
+        "current_value": 0.5,
+        "delta": 0.5,
+        "evidence_classification": "MEASURED",
+        "freshness": "UNKNOWN",
+        "materiality": "MEDIUM",
+        "metric_name": "duplicate_rate",
+        "observation_id": "obs_69516b81453521f5",
+        "observed_at": "851d613b49188467b06abd9c75773b0ed76c4155",
+        "pattern_type": "HIGH_DUPLICATE_RATE",
+        "requires_ai_interpretation": false,
+        "sample_size": 8,
+        "source_freshness": "UNKNOWN",
+        "source_ref": "reports/hermes_modernization/end_to_end_pilot.json",
+        "source_type": "CANONICAL_STRUCTURED_STATE",
+        "target_id": "unclecode_crawl4ai",
+        "target_type": "RESEARCH_SOURCE",
+        "threshold": 0.5
+      },
+      "proposal": {
+        "approval_id": null,
+        "approval_required": true,
+        "baseline_metrics": {
+          "duplicate_rate": 0
+        },
+        "candidate_configuration": {
+          "dedupe": "source_hash_and_url_before_retrieval"
+        },
+        "candidate_metrics": {},
+        "comparison_result": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "created_at": "2026-08-18T15:25:54.574536+00:00",
+        "current_configuration": {
+          "dedupe": "current"
+        },
+        "evidence_refs": [
+          {
+            "source_ref": "reports/hermes_modernization/end_to_end_pilot.json",
+            "source_type": "CANONICAL_STRUCTURED_STATE"
+          }
+        ],
+        "expected_benefit": "Reduce duplicate evidence collection.",
+        "expected_cost_reduction": "Expected research compute reduction.",
+        "expected_quality_change": "Evidence coverage must not decline.",
+        "expected_reliability_change": "More stable compact evidence sets.",
+        "failure_criteria": [
+          "Unique evidence removed",
+          "Provenance becomes ambiguous"
+        ],
+        "hypothesis": "Pre-retrieval source dedupe may avoid repeated research work.",
+        "observation_ids": [
+          "obs_69516b81453521f5"
+        ],
+        "proposal_id": "prop_f88ca30cbdcf636e",
+        "proposal_type": "DEDUPE_POLICY_CHANGE",
+        "recommended_action": "Review and authorize a bounded sandbox test; do not promote automatically.",
+        "risk": "Over-aggressive dedupe may suppress a legitimate updated source.",
+        "rollback_plan": [
+          "Restore prior dedupe behavior"
+        ],
+        "sandbox_test_plan": [
+          "Replay the bounded evidence fixture with URL/hash dedupe."
+        ],
+        "status": "PROPOSED",
+        "success_criteria": [
+          "Duplicate rate below threshold",
+          "No loss of unique evidence"
+        ],
+        "target_id": "unclecode_crawl4ai",
+        "target_type": "RESEARCH_SOURCE"
+      },
+      "result": "STRUCTURED_PROPOSAL_CANDIDATE"
+    },
+    {
+      "detector": "stale_opportunity",
+      "reason": "No freshness timestamp is available for the canonical opportunity.",
+      "result": "NO_PROPOSAL"
+    },
+    {
+      "detector": "high_tokens_per_success",
+      "reason": "Insufficient token-bearing successful executions.",
+      "result": "NO_PROPOSAL"
+    },
+    {
+      "detector": "deterministic_candidate",
+      "observation": {
+        "baseline_value": 0,
+        "confidence": "MEDIUM",
+        "created_at": "2026-08-18T15:25:54.574670+00:00",
+        "current_value": 1.0,
+        "delta": 1.0,
+        "evidence_classification": "MEASURED",
+        "freshness": "FRESH",
+        "materiality": "MEDIUM",
+        "metric_name": "deterministic_success_share",
+        "observation_id": "obs_ed6112d9340052eb",
+        "observed_at": "2026-08-17T22:58:13.083527+00:00",
+        "pattern_type": "DETERMINISTIC_CANDIDATE",
+        "requires_ai_interpretation": false,
+        "sample_size": 2,
+        "source_freshness": "FRESH",
+        "source_ref": "data/runtime/nexus_loops/execution_ledger.jsonl",
+        "source_type": "RUNTIME_LEDGER",
+        "target_id": "system_health_loop",
+        "target_type": "LOOP",
+        "threshold": 0.8
+      },
+      "proposal": {
+        "approval_id": null,
+        "approval_required": true,
+        "baseline_metrics": {
+          "deterministic_success_share": 0
+        },
+        "candidate_configuration": {
+          "max_ai_calls": 0
+        },
+        "candidate_metrics": {},
+        "comparison_result": "UNKNOWN",
+        "confidence": "MEDIUM",
+        "created_at": "2026-08-18T15:25:54.574715+00:00",
+        "current_configuration": {
+          "max_ai_calls": "current"
+        },
+        "evidence_refs": [
+          {
+            "source_ref": "data/runtime/nexus_loops/execution_ledger.jsonl",
+            "source_type": "RUNTIME_LEDGER"
+          }
+        ],
+        "expected_benefit": "Keep the loop zero-token and deterministic.",
+        "expected_cost_reduction": "Avoid unnecessary AI calls.",
+        "expected_quality_change": "Current verifier evidence supports the bounded candidate.",
+        "expected_reliability_change": "Deterministic output is easier to reproduce.",
+        "failure_criteria": [
+          "Verifier failure on representative fixture",
+          "Ambiguous case is mishandled"
+        ],
+        "hypothesis": "Verified deterministic execution may be sufficient for this loop class.",
+        "observation_ids": [
+          "obs_ed6112d9340052eb"
+        ],
+        "proposal_id": "prop_0c09648726ba632a",
+        "proposal_type": "MAX_AI_CALLS_CHANGE",
+        "recommended_action": "Review and authorize a bounded sandbox test; do not promote automatically.",
+        "risk": "Future ambiguous inputs may need escalation.",
+        "rollback_plan": [
+          "Restore prior AI-call policy"
+        ],
+        "sandbox_test_plan": [
+          "Replay representative fixtures with deterministic-only routing and an escalation fixture."
+        ],
+        "status": "PROPOSED",
+        "success_criteria": [
+          "Verifier pass rate holds",
+          "No required escalation is suppressed"
+        ],
+        "target_id": "system_health_loop",
+        "target_type": "LOOP"
+      },
+      "result": "STRUCTURED_PROPOSAL_CANDIDATE"
+    },
+    {
+      "detector": "worker_routing_candidate",
+      "reason": "No task class has two workers with a measured success-rate gap.",
+      "result": "NO_PROPOSAL"
+    }
+  ],
+  "evidence_refs": [
+    "reports/hermes_modernization/end_to_end_pilot.json",
+    "reports/hermes_modernization/daily_brief.json",
+    "data/runtime/nexus_loops/execution_ledger.jsonl",
+    "data/runtime/builder_execution_ledger/ledger.jsonl"
+  ],
+  "generated_at": "2026-08-18T15:25:54.575371+00:00",
+  "next_phase_gate": "Ray must approve a bounded sandbox test before any candidate can enter TESTING.",
+  "observation_count": 2,
+  "observations": [
+    {
+      "baseline_value": 0,
+      "confidence": "MEDIUM",
+      "created_at": "2026-08-18T15:25:54.573793+00:00",
+      "current_value": 0.5,
+      "delta": 0.5,
+      "evidence_classification": "MEASURED",
+      "freshness": "UNKNOWN",
+      "materiality": "MEDIUM",
+      "metric_name": "duplicate_rate",
+      "observation_id": "obs_69516b81453521f5",
+      "observed_at": "851d613b49188467b06abd9c75773b0ed76c4155",
+      "pattern_type": "HIGH_DUPLICATE_RATE",
+      "requires_ai_interpretation": false,
+      "sample_size": 8,
+      "source_freshness": "UNKNOWN",
+      "source_ref": "reports/hermes_modernization/end_to_end_pilot.json",
+      "source_type": "CANONICAL_STRUCTURED_STATE",
+      "target_id": "unclecode_crawl4ai",
+      "target_type": "RESEARCH_SOURCE",
+      "threshold": 0.5
+    },
+    {
+      "baseline_value": 0,
+      "confidence": "MEDIUM",
+      "created_at": "2026-08-18T15:25:54.574670+00:00",
+      "current_value": 1.0,
+      "delta": 1.0,
+      "evidence_classification": "MEASURED",
+      "freshness": "FRESH",
+      "materiality": "MEDIUM",
+      "metric_name": "deterministic_success_share",
+      "observation_id": "obs_ed6112d9340052eb",
+      "observed_at": "2026-08-17T22:58:13.083527+00:00",
+      "pattern_type": "DETERMINISTIC_CANDIDATE",
+      "requires_ai_interpretation": false,
+      "sample_size": 2,
+      "source_freshness": "FRESH",
+      "source_ref": "data/runtime/nexus_loops/execution_ledger.jsonl",
+      "source_type": "RUNTIME_LEDGER",
+      "target_id": "system_health_loop",
+      "target_type": "LOOP",
+      "threshold": 0.8
+    }
+  ],
+  "phase": "PHASE 12 \u2014 GOVERNED LEARNING / IMPROVEMENT PROPOSAL ENGINE",
+  "proposal_count": 2,
+  "proposals": [
+    {
+      "approval_id": null,
+      "approval_required": true,
+      "baseline_metrics": {
+        "duplicate_rate": 0
+      },
+      "candidate_configuration": {
+        "dedupe": "source_hash_and_url_before_retrieval"
+      },
+      "candidate_metrics": {},
+      "comparison_result": "UNKNOWN",
+      "confidence": "MEDIUM",
+      "created_at": "2026-08-18T15:25:54.574536+00:00",
+      "current_configuration": {
+        "dedupe": "current"
+      },
+      "evidence_refs": [
+        {
+          "source_ref": "reports/hermes_modernization/end_to_end_pilot.json",
+          "source_type": "CANONICAL_STRUCTURED_STATE"
+        }
+      ],
+      "expected_benefit": "Reduce duplicate evidence collection.",
+      "expected_cost_reduction": "Expected research compute reduction.",
+      "expected_quality_change": "Evidence coverage must not decline.",
+      "expected_reliability_change": "More stable compact evidence sets.",
+      "failure_criteria": [
+        "Unique evidence removed",
+        "Provenance becomes ambiguous"
+      ],
+      "hypothesis": "Pre-retrieval source dedupe may avoid repeated research work.",
+      "observation_ids": [
+        "obs_69516b81453521f5"
+      ],
+      "proposal_id": "prop_f88ca30cbdcf636e",
+      "proposal_type": "DEDUPE_POLICY_CHANGE",
+      "recommended_action": "Review and authorize a bounded sandbox test; do not promote automatically.",
+      "risk": "Over-aggressive dedupe may suppress a legitimate updated source.",
+      "rollback_plan": [
+        "Restore prior dedupe behavior"
+      ],
+      "sandbox_test_plan": [
+        "Replay the bounded evidence fixture with URL/hash dedupe."
+      ],
+      "status": "PROPOSED",
+      "success_criteria": [
+        "Duplicate rate below threshold",
+        "No loss of unique evidence"
+      ],
+      "target_id": "unclecode_crawl4ai",
+      "target_type": "RESEARCH_SOURCE"
+    },
+    {
+      "approval_id": null,
+      "approval_required": true,
+      "baseline_metrics": {
+        "deterministic_success_share": 0
+      },
+      "candidate_configuration": {
+        "max_ai_calls": 0
+      },
+      "candidate_metrics": {},
+      "comparison_result": "UNKNOWN",
+      "confidence": "MEDIUM",
+      "created_at": "2026-08-18T15:25:54.574715+00:00",
+      "current_configuration": {
+        "max_ai_calls": "current"
+      },
+      "evidence_refs": [
+        {
+          "source_ref": "data/runtime/nexus_loops/execution_ledger.jsonl",
+          "source_type": "RUNTIME_LEDGER"
+        }
+      ],
+      "expected_benefit": "Keep the loop zero-token and deterministic.",
+      "expected_cost_reduction": "Avoid unnecessary AI calls.",
+      "expected_quality_change": "Current verifier evidence supports the bounded candidate.",
+      "expected_reliability_change": "Deterministic output is easier to reproduce.",
+      "failure_criteria": [
+        "Verifier failure on representative fixture",
+        "Ambiguous case is mishandled"
+      ],
+      "hypothesis": "Verified deterministic execution may be sufficient for this loop class.",
+      "observation_ids": [
+        "obs_ed6112d9340052eb"
+      ],
+      "proposal_id": "prop_0c09648726ba632a",
+      "proposal_type": "MAX_AI_CALLS_CHANGE",
+      "recommended_action": "Review and authorize a bounded sandbox test; do not promote automatically.",
+      "risk": "Future ambiguous inputs may need escalation.",
+      "rollback_plan": [
+        "Restore prior AI-call policy"
+      ],
+      "sandbox_test_plan": [
+        "Replay representative fixtures with deterministic-only routing and an escalation fixture."
+      ],
+      "status": "PROPOSED",
+      "success_criteria": [
+        "Verifier pass rate holds",
+        "No required escalation is suppressed"
+      ],
+      "target_id": "system_health_loop",
+      "target_type": "LOOP"
+    }
+  ],
+  "report_id": "learning_report_f515cf8ff4bc70d6",
+  "source_priority": [
+    "LIVE_RUNTIME_LEDGER",
+    "CANONICAL_STRUCTURED_STATE",
+    "GOVERNED_SUPABASE_DATA",
+    "GENERATED_STRUCTURED_REPORT",
+    "NARRATIVE_SUMMARY"
+  ],
+  "status": "PROPOSAL_ONLY_NO_AUTONOMOUS_MUTATION"
+}
