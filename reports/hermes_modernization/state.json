@@ -1,8 +1,8 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-10",
+  "current_checkpoint": "checkpoint-11",
   "started_commit": "2aab745",
-  "ended_commit": "7c7625e24f3f41b0b5f244e68c3165d9e507772f",
+  "ended_commit": "573de00",
   "status": "IN_PROGRESS",
   "protected": {
     "client_portal_v2": "COMPLETE / PROTECTED — do not redesign src/client-v2",
@@ -151,6 +151,23 @@
         "safe_pilot_zero_token": true,
         "build_spec_created": true
       }
+    },
+    "8": {
+      "name": "BUILDER_ABSTRACTION_AND_VERIFIED_EXECUTION_FOUNDATION",
+      "status": "COMPLETE",
+      "deliverables": [
+        "reports/hermes_modernization/builder_audit.md",
+        "reports/hermes_modernization/builder_abstraction.md",
+        "reports/hermes_modernization/builder_pilot.md",
+        "reports/hermes_modernization/builder_benchmark.md"
+      ],
+      "classification_counts": {
+        "coding_workers_audited": 4,
+        "deterministic_worker_selected": true,
+        "zero_token_proof": true,
+        "retry_policy_bounded": true,
+        "visual_verification_contract": true
+      }
     }
   },
   "vertical_slice": {
@@ -166,7 +183,7 @@
       "creative_director_skill",
       "creative_lab",
       "safe_opportunity_pilot",
-      "mission_control_visibility",
+      "safe_end_to_end_opportunity_pilot",
       "tests",
       "skill_role_reconciliation",
       "loop_contract"
@@ -184,7 +201,7 @@
       "safe_opportunity_pilot",
       "creative_lab"
     ],
-    "next": "mission_control_visibility"
+    "next": "safe_end_to_end_opportunity_pilot"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
@@ -197,6 +214,7 @@
     "checkpoint-8": "feat(alpha): audit external intelligence and normalize loop cost accounting",
     "checkpoint-9": "feat(alpha): prove deterministic external intelligence pipeline",
     "checkpoint-10": "feat(creativity): add evidence-driven nexus creative lab foundation",
+    "checkpoint-11": "feat(builders): add verified coding worker abstraction",
     "beyond": [
       "feat(ops): add mission control opportunity and cost visibility"
     ]
