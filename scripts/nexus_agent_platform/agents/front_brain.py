@@ -158,6 +158,15 @@ CERTIFIED_READS = {
             "Review history",
         ],
     },
+    "BUSINESS_LOOP_STATUS": {"description": "Current certified business-loop state, last run, verifier, and next action", "positive_examples": ["What is the status of my business loops?"], "negative_examples": []},
+    "BUSINESS_OPPORTUNITIES": {"description": "Current business opportunities classified as ACCEPT, WATCH, or REJECT", "positive_examples": ["Which opportunities are ACCEPT or WATCH?"], "negative_examples": []},
+    "RESEARCH_HISTORY": {"description": "Most recent bounded Alpha research session and query history", "positive_examples": ["What research ran most recently?"], "negative_examples": []},
+    "AI_COST_SUMMARY": {"description": "Current deterministic versus AI execution, tokens, and provider cost", "positive_examples": ["What is the current AI cost?"], "negative_examples": []},
+    "PAYMENT_GATE": {"description": "Current Stripe/payment readiness gate and safety status", "positive_examples": ["What is the current payment gate?", "What is the status of Stripe?"], "negative_examples": []},
+    "CLIENT_JOURNEY_GATE": {"description": "Current client journey and CRJ handoff gate", "positive_examples": ["What is the current client journey gate?"], "negative_examples": []},
+    "WORKFORCE_STATUS": {"description": "Current coding-worker availability and authentication classifications", "positive_examples": ["Is Codex currently available?", "What is OpenCode status?"], "negative_examples": []},
+    "EVIDENCE_LOOKUP": {"description": "Evidence references supporting a prior operational answer", "positive_examples": ["Show me the evidence you used for that answer."], "negative_examples": []},
+    "DAILY_BRIEF": {"description": "Current operator daily brief, priorities, blockers, and next actions", "positive_examples": ["What is the highest-value next action?", "What is the plan for today?"], "negative_examples": []},
 }
 
 CERTIFIED_ACTIONS = {
@@ -643,6 +652,10 @@ def classify_message(
     Returns a dict with: mode, capability, confidence, reason.
     Falls back to conversation mode on any error.
     """
+    deterministic = _deterministic_operational_intent(user_message)
+    if deterministic:
+        return deterministic
+
     ctx = active_context or {}
     catalog = _build_catalog_string()
     context_block = _build_context_block(ctx)
@@ -698,6 +711,26 @@ def classify_message(
             "reason": f"classification_error: {exc}",
         }
 
+
+def _deterministic_operational_intent(user_message: str) -> Optional[Dict[str, Any]]:
+    """Protect high-value operator questions from model routing drift."""
+    lower = user_message.lower().strip()
+    checks = (
+        (("evidence" in lower and ("show" in lower or "used" in lower)), "EVIDENCE_LOOKUP"),
+        (("business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower), "BUSINESS_LOOP_STATUS"),
+        (("accept" in lower and "watch" in lower and "opportun" in lower), "BUSINESS_OPPORTUNITIES"),
+        (("research ran" in lower or "most recently" in lower and "research" in lower), "RESEARCH_HISTORY"),
+        (("payment gate" in lower or "status of stripe" in lower or "stripe status" in lower), "PAYMENT_GATE"),
+        (("client journey gate" in lower or "journey gate" in lower), "CLIENT_JOURNEY_GATE"),
+        (("codex" in lower or "opencode" in lower or "mimo" in lower or "kilo" in lower) and ("available" in lower or "status" in lower), "WORKFORCE_STATUS"),
+        (("ai cost" in lower or "token cost" in lower or "provider cost" in lower), "AI_COST_SUMMARY"),
+        (("highest-value next action" in lower or "highest value next action" in lower or "plan for today" in lower or "money today" in lower or "daily brief" in lower), "DAILY_BRIEF"),
+        (("governed access" in lower or "certified capabilities" in lower) and ("nexus os data" in lower or "supabase" in lower), "get_runtime_capabilities"),
+    )
+    for matched, capability in checks:
+        if matched:
+            return {"mode": "operational_read", "capability": capability, "confidence": 1.0, "reason": "deterministic operator-question contract"}
+    return None
 
 def _fuzzy_match_capability(
     name: Optional[str], catalog: Dict[str, Any]
@@ -784,6 +817,13 @@ _READ_HANDLER_MAP: Dict[str, str] = {
     "pending_approvals": "nexus_agent_platform.agents.hermes:_get_pending_approvals",
 }
 
+_CANONICAL_SHARED_READS = {
+    "SYSTEM_HEALTH", "PROCESS_STATUS", "BUSINESS_LOOP_STATUS", "BUSINESS_OPPORTUNITIES",
+    "RESEARCH_HISTORY", "ALPHA_LATEST", "AI_COST_SUMMARY", "PAYMENT_GATE",
+    "CLIENT_JOURNEY_GATE", "APPROVAL_QUEUE", "BLOCKERS", "CLIENT_COUNT",
+    "WORKFORCE_STATUS", "EVIDENCE_LOOKUP", "DAILY_BRIEF",
+}
+
 _PROVENANCE_SOURCES = {
     "get_client_count": "supabase",
 }
@@ -809,8 +849,15 @@ def execute_operational_read(
     Returns the raw capability result dict with provenance metadata.
     """
     from datetime import datetime, timezone
+    query_start = datetime.now(timezone.utc)
+    trace_id = f"front_brain_{capability}_{query_start.strftime('%Y%m%d%H%M%S')}"
 
     if capability not in _READ_HANDLER_MAP:
+        if capability in _CANONICAL_SHARED_READS:
+            from nexus_agent_platform.capabilities.shared import execute_shared_capability
+            result = execute_shared_capability("nexus_hermes", capability, {}, trace_id=trace_id)
+            result.setdefault("capability", capability)
+            return result
         return {"status": "unavailable", "error": f"Unknown capability: {capability}"}
 
     handler_path = _READ_HANDLER_MAP[capability]
@@ -819,9 +866,6 @@ def execute_operational_read(
     except Exception as exc:
         log.error("Failed to import handler for %s: %s", capability, exc)
         return {"status": "unavailable", "error": f"Handler import failed: {exc}"}
-
-    query_start = datetime.now(timezone.utc)
-    trace_id = f"front_brain_{capability}_{query_start.strftime('%Y%m%d%H%M%S')}"
 
     try:
         raw_result = handler()
@@ -895,6 +939,9 @@ def synthesize_operational_response(
     data = result.get("data", {})
     error = result.get("error")
 
+    if status == "OK":
+        return _synthesize_canonical_operational_response(capability, result)
+
     if status == "unavailable":
         return f"I couldn't retrieve {capability.replace('_', ' ')}: {error or 'source unavailable'}"
 
@@ -934,6 +981,40 @@ def synthesize_operational_response(
     except Exception as exc:
         log.warning("Synthesis failed for %s: %s", capability, exc)
         return json.dumps(data, indent=2) if data else f"{capability} data retrieved."
+
+
+def _synthesize_canonical_operational_response(capability: str, result: Dict[str, Any]) -> str:
+    data = result.get("data", {})
+    prov = result.get("provenance", {})
+    source = prov.get("source_path", result.get("source_path", "UNKNOWN"))
+    freshness = result.get("freshness", "UNKNOWN")
+    if capability == "BUSINESS_LOOP_STATUS":
+        loops = data.get("loops", {})
+        lines = [f"Business loops: {len(loops)} current certified loops (source: {source}, freshness: {freshness})."]
+        for loop_id, item in loops.items():
+            lines.append(f"- {loop_id}: {item.get('delta_status', item.get('status', 'UNKNOWN'))}; last run {item.get('completed_at', item.get('last_run', 'UNKNOWN'))}; verifier {item.get('verifier', 'UNKNOWN')}; next {item.get('next_action', 'UNKNOWN')}")
+        return "\n".join(lines)
+    if capability == "BUSINESS_OPPORTUNITIES":
+        counts = data.get("by_decision", {})
+        return f"Business opportunities: ACCEPT {counts.get('ACCEPT', 0)}, WATCH {counts.get('WATCH', 0)}, REJECT {counts.get('REJECT', 0)}. Process actions and registry entries are excluded. Source: {source}."
+    if capability == "RESEARCH_HISTORY":
+        return f"Most recent research session: {data.get('state', 'UNKNOWN')} completed {data.get('completed_at', 'UNKNOWN')}; {data.get('sources_ok', 'UNKNOWN')} sources OK, {data.get('sources_failed', 'UNKNOWN')} failed. Source: {source}."
+    if capability == "PAYMENT_GATE":
+        return f"Payment gate: {data.get('gate', 'UNKNOWN')}. Stripe mode: {data.get('stripe_mode', 'UNKNOWN')}; live keys present: {data.get('live_key_present', 'UNKNOWN')}; no live revenue recorded: {data.get('no_live_revenue_recorded', 'UNKNOWN')}. Next: {data.get('next_action', 'UNKNOWN')}"
+    if capability == "CLIENT_JOURNEY_GATE":
+        journey = data.get('journey', {})
+        return f"Client journey gate: {data.get('gate', 'UNKNOWN')}. Current stage: {journey.get('current_stage', 'UNKNOWN')}; Ray approval required: {data.get('crj_bridge', {}).get('requires_ray_approval', 'UNKNOWN')}."
+    if capability == "WORKFORCE_STATUS":
+        workers = data.get('worker_pool', [])
+        return "Worker status: " + "; ".join(f"{w.get('worker_id', 'UNKNOWN')}={w.get('status', 'UNKNOWN')}" for w in workers)
+    if capability == "AI_COST_SUMMARY":
+        cost = data.get('cost_summary', {})
+        return f"AI cost: provider ${cost.get('provider_cost_usd', 'UNKNOWN')}; input tokens {cost.get('input_tokens', 'UNKNOWN')}; output tokens {cost.get('output_tokens', 'UNKNOWN')}; deterministic share {cost.get('deterministic_execution_share', 'UNKNOWN')}."
+    if capability == "DAILY_BRIEF":
+        return f"Daily Brief next action: {data.get('highest_value_next_action', 'UNKNOWN')}\nTop priority: {data.get('top_priority', 'UNKNOWN')}\nSource: {source}."
+    if capability == "EVIDENCE_LOOKUP":
+        return "Evidence references:\n" + "\n".join(f"- {ref}" for ref in data.get('refs', []))
+    return json.dumps(data, indent=2, default=str)
 
 
 def _synthesize_client_count(data: Dict[str, Any]) -> str:

@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE 15B AUDIT VERIFICATION",
+  "status": "PASS_WITH_UNVERIFIED_CLAIMS",
+  "artifact": "scripts/phase15b_audit/phase15b_audit.json",
+  "candidate_count": 75,
+  "placement_integrity": "PASS",
+  "score_integrity": "PASS",
+  "hardware_placement_verification": "PARTIAL",
+  "hardware_observed": "x86_64 macOS host with 8GB RAM; declared 2014 Intel Mac mini profile is not fully provenance-bound in the source artifact",
+  "free_server_claim_verification": "UNVERIFIED",
+  "free_server_claim_count": 51,
+  "reason": "Phase 15B rubric scores are not primary evidence of free hosted capacity or zero operational cost.",
+  "installation_performed": false,
+  "provider_mutation_performed": false
+}

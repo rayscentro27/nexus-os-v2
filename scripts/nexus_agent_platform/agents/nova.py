@@ -606,6 +606,30 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     """
     lower = text.lower().strip()
 
+    # High-value operator questions use the shared canonical awareness layer.
+    # These checks precede broad legacy keywords so "payment gate", worker
+    # health, and business-loop state cannot fall into generic advice.
+    if "evidence" in lower and ("show" in lower or "used" in lower):
+        return ("EVIDENCE_LOOKUP", {"query": text})
+    if "business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower:
+        return ("BUSINESS_LOOP_STATUS", {})
+    if "accept" in lower and "watch" in lower and "opportun" in lower:
+        return ("BUSINESS_OPPORTUNITIES", {})
+    if "research ran" in lower or ("most recently" in lower and "research" in lower):
+        return ("RESEARCH_HISTORY", {})
+    if "payment gate" in lower or "status of stripe" in lower or "stripe status" in lower:
+        return ("PAYMENT_GATE", {})
+    if "client journey gate" in lower or "journey gate" in lower:
+        return ("CLIENT_JOURNEY_GATE", {})
+    if any(worker in lower for worker in ("codex", "opencode", "mimo", "kilo")) and any(word in lower for word in ("available", "status")):
+        return ("WORKFORCE_STATUS", {})
+    if "ai cost" in lower or "token cost" in lower or "provider cost" in lower:
+        return ("AI_COST_SUMMARY", {})
+    if any(phrase in lower for phrase in ("highest-value next action", "highest value next action", "plan for today", "money today", "daily brief")):
+        return ("DAILY_BRIEF", {})
+    if ("governed access" in lower or "certified capabilities" in lower) and ("nexus os data" in lower or "supabase" in lower):
+        return ("get_runtime_capabilities", {})
+
     # ── Priority 3: Identity resolution (email present) ──
     email = _extract_email(text)
     if email:
@@ -1359,6 +1383,31 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         )
 
     data = result.get("data", {})
+
+    canonical_reads = {
+        "SYSTEM_HEALTH", "PROCESS_STATUS", "BUSINESS_LOOP_STATUS", "BUSINESS_OPPORTUNITIES",
+        "RESEARCH_HISTORY", "ALPHA_LATEST", "AI_COST_SUMMARY", "PAYMENT_GATE",
+        "CLIENT_JOURNEY_GATE", "APPROVAL_QUEUE", "BLOCKERS", "CLIENT_COUNT",
+        "WORKFORCE_STATUS", "EVIDENCE_LOOKUP", "DAILY_BRIEF",
+    }
+    if query_type in canonical_reads:
+        provenance_line = (
+            f"source_type: {prov.get('source_type', 'UNKNOWN')}\n"
+            f"source_path: {prov.get('source_path', 'UNKNOWN')}\n"
+            f"freshness: {prov.get('freshness', 'UNKNOWN')}\n"
+            f"authority_rank: {prov.get('authority_rank', 'UNKNOWN')}"
+        )
+        return (
+            "[VERIFIED NEXUS AWARENESS]\n"
+            f"capability: {query_type}\n"
+            f"status: {status}\n"
+            f"{provenance_line}\n"
+            f"facts_json: {json.dumps(data, sort_keys=True, default=str)}\n"
+            f"warnings: {json.dumps(result.get('warnings', []), default=str)}\n"
+            "[END VERIFIED NEXUS AWARENESS]\n"
+            "Use these facts as authoritative. If a field is UNKNOWN or the "
+            "status is not OK, say that plainly and do not fill the gap from memory."
+        )
 
     if query_type == "get_client_count":
         return (

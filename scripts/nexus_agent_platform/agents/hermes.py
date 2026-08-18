@@ -236,7 +236,7 @@ def _execute_by_mode(state: AgentState) -> AgentState:
             state.metadata["capability_result"] = result
 
             # Store report context for follow-up scheduling
-            if result.get("status") == "ok":
+            if result.get("status") in ("ok", "OK", "success"):
                 _store_report_context(state, capability, result.get("data", {}))
 
     elif mode == "governed_action":
@@ -492,21 +492,10 @@ _TESTER_SOURCES = ("tester_invitation", "static_import", "synthetic_certificatio
 
 
 def _supabase_client():
-    """Return a requests session configured for Supabase REST API, or None."""
+    """Return the canonical governed Supabase read client, or None."""
     try:
-        import requests as _req
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if not url or not key:
-            return None
-        session = _req.Session()
-        session.headers.update({
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Prefer": "count=exact",
-        })
-        session._supabase_url = url.rstrip("/")
-        return session
+        from nexus_agent_platform.capabilities.supabase_read_client import create_supabase_read_client
+        return create_supabase_read_client()
     except Exception:
         return None
 

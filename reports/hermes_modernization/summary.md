@@ -1,11 +1,13 @@
 # Hermes Modernization Summary
 
-Phase 14 activated four bounded internal research/recommendation loops: Open Source Scout, SEO Opportunity, Revenue Opportunity, and Research Intake. All use the existing LoopRuntime, T0 deterministic processing, delta-only state, dedupe, mandatory verification, compact hashes, and append-only ledgers.
+Phase 15C completed the shared governed Nexus-awareness layer for Nexus Hermes and Hermes Nova. Both now use the same structured read contracts for current system health, business loops, opportunities, Alpha research, costs, payment, journey, approvals, blockers, workforce, client count, and evidence.
 
-Two-run proof: each loop passed Run 1 and returned `NO_CHANGE` on identical Run 2 with 0 AI calls, 0 tokens, and $0 provider cost. Revenue accounting repair removed 1 semantic duplicate and corrected estimated value to **$1312.0**. Confirmed revenue remains **$0**. These are `PROOF_FIXTURE` fixture values, not live revenue.
+The `Session.table` defect was traced to a requests session being treated as a Supabase client. The shared read-only adapter now exposes the approved table-query contract and rejects unapproved tables. Exact operator-question routing is covered internally for Hermes and Nova.
 
-Revenue experiment gate: **QUALIFIED_WITH_LIMITS** with launch status **NOT_LAUNCHED**. No real experiment was launched; explicit Ray approval remains required.
+Current verified facts include four certified business loops, Codex and OpenCode available, provider cost $0 for the current deterministic report, confirmed revenue $0, payment gate blocked until Stripe keys are reconciled to test keys, and client journey gate NO-GO pending approval/readiness conditions. These are structured report-backed facts, not invented live claims.
 
-Affiliate, YouTube, competitor, marketing, funding, and grant loops remain DEFERRED because their source, attribution, freshness, or eligibility proofs are incomplete. No publishing, outreach, paid action, production deployment, client PII use, provider credit purchase, client portal change, Telegram change, or Phase 12 promotion occurred.
+Phase 15B audit verification passes artifact integrity, but hardware placement remains PARTIAL and 51 free-server rubric claims remain UNVERIFIED. No tools were installed or provisioned.
 
-Exact resume point: **PHASE 14 — CONTROLLED BUSINESS LOOP EXPANSION — REVIEW REVENUE GATE BEFORE ANY TEST**.
+Client portal changes: NONE. Production Telegram changes: NONE. Persistent agents remain `nexus_hermes`, `hermes_nova`, and `alpha`; Nova writes remain empty.
+
+Exact resume point: **PHASE 15C — SHARED NEXUS AWARENESS COMPLETION + AUDIT VERIFICATION COMPLETION**.

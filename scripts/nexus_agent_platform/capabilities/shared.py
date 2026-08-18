@@ -116,6 +116,12 @@ NOVA_ALLOWED_READS = frozenset({
     "get_work_order_result",
     "get_recent_work_orders",
     "get_work_queue",
+    # Canonical shared operational reads
+    "SYSTEM_HEALTH", "PROCESS_STATUS", "BUSINESS_LOOP_STATUS",
+    "BUSINESS_OPPORTUNITIES", "RESEARCH_HISTORY", "ALPHA_LATEST",
+    "AI_COST_SUMMARY", "PAYMENT_GATE", "CLIENT_JOURNEY_GATE",
+    "APPROVAL_QUEUE", "BLOCKERS", "CLIENT_COUNT", "WORKFORCE_STATUS",
+    "EVIDENCE_LOOKUP", "DAILY_BRIEF",
 })
 
 NOVA_ALLOWED_WRITES: frozenset = frozenset()
@@ -143,6 +149,11 @@ HERMES_ALLOWED_READS = frozenset({
     "opportunities",
     "trading_status",
     "pending_approvals",
+    "SYSTEM_HEALTH", "PROCESS_STATUS", "BUSINESS_LOOP_STATUS",
+    "BUSINESS_OPPORTUNITIES", "RESEARCH_HISTORY", "ALPHA_LATEST",
+    "AI_COST_SUMMARY", "PAYMENT_GATE", "CLIENT_JOURNEY_GATE",
+    "APPROVAL_QUEUE", "BLOCKERS", "CLIENT_COUNT", "WORKFORCE_STATUS",
+    "EVIDENCE_LOOKUP", "DAILY_BRIEF",
 })
 
 HERMES_ALLOWED_WRITES = frozenset({
@@ -210,23 +221,19 @@ _shared_session = None
 
 
 def _supabase_session():
-    """Return a shared requests session for Supabase REST API, or None."""
+    """Return the canonical governed read client, or None.
+
+    The name is retained for compatibility with existing exact REST readers;
+    the returned object is no longer a bare ``requests.Session``.
+    """
     global _shared_session
     if _shared_session is not None:
         return _shared_session
     try:
-        import requests as _req
-        url = os.getenv("SUPABASE_URL")
-        key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        if not url or not key:
+        from nexus_agent_platform.capabilities.supabase_read_client import create_supabase_read_client
+        session = create_supabase_read_client()
+        if session is None:
             return None
-        session = _req.Session()
-        session.headers.update({
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Prefer": "count=exact",
-        })
-        session._supabase_url = url.rstrip("/")
         _shared_session = session
         return session
     except Exception:
@@ -2942,6 +2949,17 @@ def _handle_create_work_order_from_approval(arguments, trace_id):
     ), trace_id)
 
 
+def _handle_canonical_operational_read(capability: str, arguments, trace_id: str):
+    """Execute one canonical shared current-state read."""
+    from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
+
+    result = read_operational_capability(capability, arguments or {})
+    result["capability"] = capability
+    result.setdefault("access_boundary", "governed read-only operational state")
+    result.setdefault("provenance", {})["trace_id"] = trace_id
+    return result
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -2986,6 +3004,19 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     **{cap: handler for cap, handler in _GOVERNED_READ_HANDLERS.items()},
     **{cap: handler for cap, handler in _GOVERNED_INTENT_HANDLERS.items()},
 }
+
+# Canonical current-state reads are deliberately registered after the legacy
+# aliases so both agents share one structured source/precedence implementation.
+_CAPABILITY_HANDLERS.update({
+    cap: (lambda args, tid, _cap=cap: _handle_canonical_operational_read(_cap, args, tid))
+    for cap in (
+        "SYSTEM_HEALTH", "PROCESS_STATUS", "BUSINESS_LOOP_STATUS",
+        "BUSINESS_OPPORTUNITIES", "RESEARCH_HISTORY", "ALPHA_LATEST",
+        "AI_COST_SUMMARY", "PAYMENT_GATE", "CLIENT_JOURNEY_GATE",
+        "APPROVAL_QUEUE", "BLOCKERS", "CLIENT_COUNT", "WORKFORCE_STATUS",
+        "EVIDENCE_LOOKUP", "DAILY_BRIEF",
+    )
+})
 
 _WRITE_CAPABILITIES: frozenset = frozenset()
 

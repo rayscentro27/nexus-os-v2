@@ -1,0 +1,13 @@
+{
+  "phase": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION + AUDIT VERIFICATION COMPLETION",
+  "status": "PARTIAL_WITH_GOVERNED_BLOCKERS",
+  "generated_at": "2026-08-18T22:01:28Z",
+  "shared_read_layer": {"status": "PASS", "module": "scripts/nexus_agent_platform/capabilities/operational_reads.py", "consumers": ["nexus_hermes", "hermes_nova"], "structured_envelope": true, "capabilities": ["SYSTEM_HEALTH", "PROCESS_STATUS", "BUSINESS_LOOP_STATUS", "BUSINESS_OPPORTUNITIES", "RESEARCH_HISTORY", "ALPHA_LATEST", "AI_COST_SUMMARY", "PAYMENT_GATE", "CLIENT_JOURNEY_GATE", "APPROVAL_QUEUE", "BLOCKERS", "CLIENT_COUNT", "WORKFORCE_STATUS", "EVIDENCE_LOOKUP", "DAILY_BRIEF"], "source_precedence": ["live governed state", "current structured runtime ledger", "current generated operational report", "recent historical report", "study snapshot", "static knowledge"]},
+  "session_table_regression": {"status": "PASS", "root_cause": "requests.Session was returned as a Supabase client and handlers called .table().select().execute().", "repair": "GovernedSupabaseReadClient is now the shared read-only adapter.", "affected_reads": ["PROCESS_STATUS", "RESEARCH_HISTORY", "BUSINESS_OPPORTUNITIES", "EVIDENCE_LOOKUP"]},
+  "operator_question_acceptance": {"status": "PASS", "internal_questions_routed": 10, "hermes_and_nova_share_contract": true, "telegram_spam_during_debugging": false},
+  "taxonomy": {"business_opportunities_exclude_process_actions": true, "business_loops_source": "reports/hermes_modernization/live_loop_results.json", "alpha_latest_excludes_study_snapshot": true},
+  "current_state_facts": {"business_loop_count": 4, "codex": "AVAILABLE", "opencode": "AVAILABLE", "provider_cost_usd": 0.0, "confirmed_revenue_usd": 0.0, "payment_gate": "BLOCKED_UNTIL_TEST_KEYS_RECONCILED", "client_journey_gate": "NO_GO", "nova_writes": "NONE"},
+  "phase15b_audit_verification": {"status": "PASS_WITH_UNVERIFIED_CLAIMS", "artifact": "scripts/phase15b_audit/phase15b_audit.json", "candidate_count": 75, "placement_integrity": "PASS", "score_integrity": "PASS", "hardware_placement": "PARTIAL", "free_server_claims": "UNVERIFIED", "free_server_claim_count": 51, "installation_performed": false, "provider_mutation_performed": false},
+  "protected_boundaries": {"client_portal_changes": "NONE", "production_telegram_changes": "NONE", "persistent_agents": ["nexus_hermes", "hermes_nova", "alpha"], "nova_allowed_writes": [], "new_tools_installed": false, "supabase_rls_changed": false, "production_routing_changed": false},
+  "exact_resume_point": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION + AUDIT VERIFICATION COMPLETION"
+}
