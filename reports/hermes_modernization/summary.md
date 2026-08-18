@@ -1,11 +1,9 @@
 # Hermes Modernization Summary
 
-Phase 13B is complete as a bounded gap assessment but the Phase 14 gate is `NO-GO`.
+Phase 13B continuation repaired the explicit OpenCode certification contract. OpenCode is **AVAILABLE** using `opencode/mimo-v2.5-free`; the successful operator-supplied probe returned `OPENCODE_PROBE_OK`. The local recheck timed out at 30 seconds and remains recorded without being mislabeled as authentication failure.
 
-Hermes: 6 certified, 5 partial, 0 failed, 2 untested. Alpha: 6 certified, 4 partial, 0 failed, 2 untested. These counts come from executed reports and existing verification records, not architecture inference. Average cost and average tokens are `UNKNOWN` because the certification records do not contain reliable per-task usage telemetry.
+Hermes: 12 certified, 1 partial, 0 failed, 0 untested. Alpha: 11 certified, 1 partial, 0 failed, 0 untested. Certified historical task telemetry remains UNKNOWN; newly rerun deterministic tasks record zero AI calls, zero provider cost, and local compute.
 
-Worker redundancy remains limited: Codex `AVAILABLE`, local deterministic worker `AVAILABLE`, MiMo `INSTALLED_UNPROVEN`, Kilo `INSTALLED_UNPROVEN`, OpenCode `UNAVAILABLE`, and OpenHands `NOT_INSTALLED`. No secondary AI coding worker has proven both harmless execution and a bounded registered execute adapter. Codex plus local fallback is currently sufficient for the proven internal artifact scope, so production routing was unchanged.
+The Phase 14 readiness gate is **GO** with bounded partials: Hermes H06 lacks a registered external CodingWorker execute adapter, and Alpha A01 lacks stable live web execution. No provider installation/login/credit purchase, production routing mutation, client portal change, Telegram change, Nova authority change, or Phase 12 promotion occurred.
 
-Crawl4AI is `DEFER`: Alpha certification exposed no measured material extraction gap requiring installation. OpenHands is `DEFER`: no long-horizon coding sandbox gap is evidenced. No software was installed, no provider login or credit purchase occurred, and no Phase 12 proposal was promoted.
-
-Exact resume point: **PHASE 13B — CAPABILITY GAP REPAIR CONTINUED**.
+Exact resume point: **PHASE 14 — CONTROLLED BUSINESS LOOP EXPANSION**.

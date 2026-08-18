@@ -2,6 +2,7 @@ import json
 
 from nexus_agent_platform.builders.runtime import (
     _classify_cli_probe,
+    _provider_probe_command,
     _probe_cli_worker,
 )
 
@@ -18,6 +19,20 @@ def test_version_only_success_is_not_available_or_auth_blocked():
 def test_successful_execution_probe_is_available():
     result = _classify_cli_probe(installed=True, version_probe=_probe(), execution_probe=_probe(stdout="HEALTHCHECK_OK"))
     assert result["classification"] == "AVAILABLE"
+
+
+def test_opencode_requires_explicit_model_and_marker():
+    command = _provider_probe_command("opencode")
+    assert command[0:2] == ["opencode", "run"]
+    assert command[command.index("--model") + 1] == "opencode/mimo-v2.5-free"
+    assert command[command.index("--format") + 1] == "json"
+    assert command[-1] == "Reply with exactly: OPENCODE_PROBE_OK"
+    success = _probe(stdout="{\"text\":\"OPENCODE_PROBE_OK\"}")
+    success.update({"marker_required": True, "marker_present": True})
+    assert _classify_cli_probe(installed=True, version_probe=_probe(), execution_probe=success)["classification"] == "AVAILABLE"
+    missing_marker = _probe(stdout="{\"text\":\"other\"}")
+    missing_marker.update({"marker_required": True, "marker_present": False})
+    assert _classify_cli_probe(installed=True, version_probe=_probe(), execution_probe=missing_marker)["classification"] == "INSTALLED_UNPROVEN"
 
 
 def test_explicit_auth_failure_is_auth_blocked():

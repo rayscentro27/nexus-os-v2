@@ -101,7 +101,7 @@
     "reports/hermes_modernization/builder_abstraction.md",
     "scripts/nexus_agent_platform/builders/runtime.py"
   ],
-  "generated_at": "2026-08-18T16:25:09.889666+00:00",
+  "generated_at": "2026-08-18T16:24:58.730236+00:00",
   "governance": {
     "automatic_routing_mutation": "DISABLED",
     "client_portal_changes": "NONE",

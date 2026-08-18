@@ -1,24 +1,12 @@
-# Worker Redundancy Benchmark — Phase 13B
+# Worker Redundancy Benchmark — Phase 13B Continuation
 
-## Current result
+- Primary: Codex `AVAILABLE`
+- Secondary: OpenCode `AVAILABLE`, model `opencode/mimo-v2.5-free`
+- Deterministic fallback: Local worker `AVAILABLE`
+- MiMo: `INSTALLED_UNPROVEN`
+- Kilo: `INSTALLED_UNPROVEN`
+- OpenHands: `NOT_INSTALLED`
 
-Secondary AI worker: `NOT_AVAILABLE`.
+Routing proof: Codex unavailable → OpenCode for a compatible certified task; Codex and OpenCode unavailable → local worker only for compatible deterministic tasks. Verification remains mandatory and worker self-report cannot produce PASS. Production routing was unchanged.
 
-| Worker | Current status | Evidence | Decision |
-|---|---|---|---|
-| Codex | `AVAILABLE` | current verified harmless execution checkpoint | primary health-positive worker |
-| MiMo | `INSTALLED_UNPROVEN` | provider-specific `mimo run --non-interactive` contract exists, but prior execution did not prove success | do not select |
-| Kilo | `INSTALLED_UNPROVEN` | version `7.3.54`; no safe headless execution command proven from local CLI/config | defer and do not register |
-| OpenCode | `UNAVAILABLE` | `opencode run --format json` bounded probe timed out | do not increase timeout blindly |
-| Local worker | `AVAILABLE` | isolated deterministic artifact + verification | compatible fallback |
-
-The current builder registry intentionally keeps health-positive external CLIs separate from executable adapters. Therefore the safe route is:
-
-```text
-certified primary unavailable
-  → next compatible certified execute adapter, if one exists
-  → local deterministic worker for compatible deterministic tasks
-  → otherwise blocked; verification cannot be bypassed
-```
-
-The fallback policy is covered by the existing builder abstraction tests. Production default routing was not changed.
+OpenCode telemetry: duration approximately 13 seconds, input/output/cache tokens UNKNOWN from supplied JSON evidence, provider cost $0. A local recheck timed out at 30 seconds; this did not override the successful explicit manual probe.

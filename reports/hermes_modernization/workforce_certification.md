@@ -7,7 +7,7 @@ Status: **CERTIFICATION_PARTIAL_PROVIDER_ACTIONS_DEFERRED**
 | Worker | Installed | Version | Auth | Execution | Classification | Cost |
 |---|---:|---|---|---|---|---|
 | Codex | true | codex-cli 0.147.0 | AUTHENTICATED_UNPROVEN | EXECUTION_VERIFIED | **AVAILABLE** | ZERO_MODEL_COST |
-| Opencode | true | 1.18.18 | UNPROVEN | EXECUTION_TIMEOUT | **UNAVAILABLE** | ZERO_MODEL_COST |
+| Opencode | true | 1.18.18 | AUTHENTICATED_UNPROVEN | EXECUTION_VERIFIED | **AVAILABLE** | ZERO_MODEL_COST |
 | Mimo | true | 0.1.12 | UNPROVEN | EXECUTION_UNPROVEN | **INSTALLED_UNPROVEN** | LOW_EXTERNAL_COST |
 | Kilo Code / Kilo CLI | true | 7.3.54 | UNPROVEN | NOT_PROVEN | **INSTALLED_UNPROVEN** | UNKNOWN |
 | Openhands | false | UNKNOWN | NOT_APPLICABLE | NOT_RUN | **NOT_INSTALLED** | UNKNOWN |

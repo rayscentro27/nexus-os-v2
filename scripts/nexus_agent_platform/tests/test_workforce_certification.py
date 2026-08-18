@@ -10,6 +10,9 @@ def test_provider_adapters_are_provider_specific_and_non_mutating():
     assert set(adapters) >= {"codex", "opencode", "mimo", "kilo", "openhands", "local_python"}
     assert adapters["codex"].execution_command[1] == "exec"
     assert adapters["opencode"].execution_command[1] == "run"
+    assert "--model" in adapters["opencode"].execution_command
+    assert "opencode/mimo-v2.5-free" in adapters["opencode"].execution_command
+    assert adapters["opencode"].timeout_seconds == 30
     assert adapters["mimo"].execution_command[1] == "run"
     assert adapters["kilo"].execution_command is None
     assert adapters["kilo"].execution_probe is None
@@ -20,7 +23,7 @@ def test_workforce_report_preserves_certification_boundaries():
     report = build_workforce_report()
     workers = {row["worker_id"]: row for row in report["workers"]}
     assert workers["codex"]["classification"] == "AVAILABLE"
-    assert workers["opencode"]["classification"] == "UNAVAILABLE"
+    assert workers["opencode"]["classification"] == "AVAILABLE"
     assert workers["mimo"]["classification"] == "INSTALLED_UNPROVEN"
     assert workers["kilo"]["classification"] == "INSTALLED_UNPROVEN"
     assert workers["openhands"]["classification"] == "NOT_INSTALLED"

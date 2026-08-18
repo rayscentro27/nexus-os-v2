@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import re
 import shutil
+import subprocess
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -23,6 +27,10 @@ CLASSIFICATIONS = {
     "AVAILABLE", "INSTALLED_UNPROVEN", "AUTH_BLOCKED", "RATE_LIMITED",
     "NOT_INSTALLED", "UNAVAILABLE", "DEFERRED", "DISABLED_BY_POLICY",
 }
+OPENCODE_MODEL = "opencode/mimo-v2.5-free"
+OPENCODE_MARKER = "OPENCODE_PROBE_OK"
+_AUTH_ERROR_RE = re.compile(r"(unauthori[sz]ed|authentication|not authenticated|login required|invalid token|api key required|401)", re.I)
+_RATE_LIMIT_RE = re.compile(r"(rate.?limit|too many requests|429|quota exceeded|throttl)", re.I)
 
 
 def _now() -> str:
@@ -38,6 +46,82 @@ def _read_json(path: Path, default: Any = None) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError, TypeError):
         return default
+
+
+def _redact(value: str) -> str:
+    return re.sub(r"(?i)((?:api[_-]?key|access[_-]?token|auth(?:entication)?[_-]?token|secret|password)\s*[:=]\s*)([^\s,;]+)", r"\1[REDACTED]", value)[:1000]
+
+
+def _usage_value(payload: Any, keys: set[str]) -> Optional[int]:
+    if isinstance(payload, dict):
+        for key, value in payload.items():
+            if key in keys and isinstance(value, (int, float)):
+                return int(value)
+            found = _usage_value(value, keys)
+            if found is not None:
+                return found
+    elif isinstance(payload, list):
+        for item in payload:
+            found = _usage_value(item, keys)
+            if found is not None:
+                return found
+    return None
+
+
+def run_opencode_probe(timeout_seconds: int = 30) -> Dict[str, Any]:
+    """Run the explicit harmless OpenCode contract without mutating the repo."""
+    command = ["opencode", "run", "--model", OPENCODE_MODEL, "--format", "json", "Reply with exactly: OPENCODE_PROBE_OK"]
+    started = time.monotonic()
+    timestamp = _now()
+    if not shutil.which("opencode"):
+        return {"worker_id": "opencode", "installed": False, "classification": "NOT_INSTALLED", "probe": "not_run", "probe_timestamp": timestamp, "model": OPENCODE_MODEL, "reason": "binary missing"}
+    proc = None
+    try:
+        proc = subprocess.Popen(command, cwd=str(ROOT), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
+        stdout, stderr = proc.communicate(timeout=timeout_seconds)
+        returncode, timed_out = proc.returncode, False
+    except subprocess.TimeoutExpired:
+        if proc is not None:
+            try:
+                os.killpg(proc.pid, 9)
+            except (OSError, ProcessLookupError):
+                pass
+        stdout, stderr, returncode, timed_out = "", "", None, True
+    except OSError as exc:
+        stdout, stderr, returncode, timed_out = "", type(exc).__name__, None, False
+    duration_ms = int((time.monotonic() - started) * 1000)
+    combined = f"{stdout}\n{stderr}"
+    marker_present = OPENCODE_MARKER in stdout
+    parsed: Any = None
+    for line in reversed([line.strip() for line in stdout.splitlines() if line.strip()]):
+        try:
+            parsed = json.loads(line)
+            break
+        except ValueError:
+            continue
+    if timed_out:
+        classification, reason, probe = "UNAVAILABLE", "explicit model execution probe timed out", "execution_timeout"
+    elif _RATE_LIMIT_RE.search(combined):
+        classification, reason, probe = "RATE_LIMITED", "explicit rate-limit evidence in execution probe", "execution_rate_limited"
+    elif _AUTH_ERROR_RE.search(combined):
+        classification, reason, probe = "AUTH_BLOCKED", "explicit authentication error in execution probe", "execution_auth_error"
+    elif returncode == 0 and marker_present:
+        classification, reason, probe = "AVAILABLE", "explicit model execution returned the required marker", "execution_success"
+    elif returncode == 0:
+        classification, reason, probe = "INSTALLED_UNPROVEN", "execution returned without the required marker", "execution_marker_missing"
+    else:
+        classification, reason, probe = "UNAVAILABLE", "explicit model execution failed without auth or rate-limit evidence", "execution_failed"
+    return {
+        "worker_id": "opencode", "installed": True, "classification": classification, "probe": probe,
+        "probe_timestamp": timestamp, "model": OPENCODE_MODEL, "duration_ms": duration_ms,
+        "returncode": returncode, "marker_present": marker_present,
+        "input_tokens": _usage_value(parsed, {"input_tokens", "inputTokens", "prompt_tokens", "promptTokens"}),
+        "output_tokens": _usage_value(parsed, {"output_tokens", "outputTokens", "completion_tokens", "completionTokens"}),
+        "cache_read_tokens": _usage_value(parsed, {"cache_read_tokens", "cacheReadTokens", "cache_read_input_tokens"}),
+        "cache_write_tokens": _usage_value(parsed, {"cache_write_tokens", "cacheWriteTokens"}),
+        "provider_cost_usd": _usage_value(parsed, {"provider_cost_usd", "cost_usd", "cost"}),
+        "stdout_preview": _redact(stdout), "stderr_preview": _redact(stderr), "reason": reason,
+    }
 
 
 @dataclass(frozen=True)
@@ -94,9 +178,9 @@ def build_provider_adapters() -> Dict[str, ProviderAdapter]:
         ),
         "opencode": ProviderAdapter(
             "opencode", "opencode_cli", "opencode", ["opencode", "--version"],
-            "provider login/configuration state; no secret value read", "provider-specific non-interactive run",
-            ["opencode", "run", "--format", "json", _prompt()], 15,
-            ["repo_edit", "shell", "tests", "structured_output"], "ZERO_MODEL_COST", "OpenCode/provider-selected", ["provider session or configured environment"], True, True, ["provider session", "environment configuration"], ["git diff", "protected path check", "tests", "acceptance criteria"],
+            "provider login/configuration state; no secret value read", "provider-specific non-interactive run with explicit model and marker",
+            ["opencode", "run", "--model", OPENCODE_MODEL, "--format", "json", "Reply with exactly: OPENCODE_PROBE_OK"], 30,
+            ["repo_edit", "shell", "tests", "structured_output"], "ZERO_MODEL_COST", "OpenCode/provider-selected", [OPENCODE_MODEL], True, True, ["provider session", "environment configuration"], ["git diff", "protected path check", "tests", "acceptance criteria"],
         ),
         "mimo": ProviderAdapter(
             "mimo", "mimo_cli", "mimo", ["mimo", "--version"],
@@ -171,6 +255,16 @@ def _recorded_workers(adapters: Dict[str, ProviderAdapter]) -> List[Dict[str, An
         "opencode": {"classification": "UNAVAILABLE", "version": "1.18.18", "installed": True, "probe": "EXECUTION_TIMEOUT", "reason": "current verified checkpoint: safe execution probe timed out"},
         "mimo": {"classification": "INSTALLED_UNPROVEN", "version": "0.1.12", "installed": True, "probe": "EXECUTION_UNPROVEN", "reason": "current verified checkpoint: execution did not prove availability"},
     }
+    explicit_probe = _read_json(REPORT_DIR / "opencode_probe_latest.json", {}) or {}
+    if explicit_probe.get("worker_id") == "opencode":
+        checkpoint["opencode"] = {
+            "classification": explicit_probe.get("classification", "INSTALLED_UNPROVEN"),
+            "version": "1.18.18",
+            "installed": bool(explicit_probe.get("installed", True)),
+            "probe": str(explicit_probe.get("probe", "NOT_PROVEN")).upper(),
+            "reason": explicit_probe.get("reason", "explicit provider probe record"),
+            "probe_telemetry": {key: explicit_probe.get(key) for key in ("model", "probe_timestamp", "duration_ms", "input_tokens", "output_tokens", "cache_read_tokens", "cache_write_tokens", "provider_cost_usd", "marker_present")},
+        }
     rows: List[Dict[str, Any]] = []
     for worker_id, adapter in adapters.items():
         if worker_id == "local_python":
@@ -189,7 +283,10 @@ def _recorded_workers(adapters: Dict[str, ProviderAdapter]) -> List[Dict[str, An
         version = str(old.get("version") or "UNKNOWN")
         auth_status = "AUTHENTICATED_UNPROVEN" if classification == "AVAILABLE" else ("AUTH_ERROR_PROVEN" if classification == "AUTH_BLOCKED" else "UNPROVEN")
         probe_status = "EXECUTION_VERIFIED" if classification == "AVAILABLE" else str(old.get("probe") or old.get("probe_result") or "NOT_PROVEN").upper()
-        rows.append(_worker_record(adapter, classification=classification if classification in CLASSIFICATIONS else "UNAVAILABLE", installed=installed or path_exists, version=version, auth_status=auth_status, probe_status=probe_status, available=classification == "AVAILABLE", reason=str(old.get("availability_reason") or old.get("reason") or "No current proof record."), evidence_refs=refs))
+        row = _worker_record(adapter, classification=classification if classification in CLASSIFICATIONS else "UNAVAILABLE", installed=installed or path_exists, version=version, auth_status=auth_status, probe_status=probe_status, available=classification == "AVAILABLE", reason=str(old.get("reason") or old.get("availability_reason") or "No current proof record."), evidence_refs=refs)
+        if old.get("probe_telemetry"):
+            row["probe_telemetry"] = old["probe_telemetry"]
+        rows.append(row)
     openhands = rows[[row["worker_id"] for row in rows].index("openhands")]
     openhands.update({"installed": False, "classification": "NOT_INSTALLED", "available": False, "version": "UNKNOWN", "auth_status": "NOT_APPLICABLE", "execution_probe_status": "NOT_RUN", "availability_reason": "binary not found on PATH"})
     return rows

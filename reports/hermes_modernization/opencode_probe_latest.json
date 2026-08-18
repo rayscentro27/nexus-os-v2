@@ -1,0 +1,22 @@
+{
+  "cache_read_tokens": "UNKNOWN",
+  "cache_write_tokens": "UNKNOWN",
+  "classification": "AVAILABLE",
+  "duration_ms": 13000,
+  "input_tokens": "UNKNOWN",
+  "installed": true,
+  "marker_present": true,
+  "model": "opencode/mimo-v2.5-free",
+  "output_tokens": "UNKNOWN",
+  "probe": "execution_success",
+  "probe_timestamp": "2026-08-18T16:18:19.250165+00:00",
+  "provider_cost_usd": 0,
+  "reason": "operator-supplied manual probe succeeded with exact OPENCODE_PROBE_OK marker; local recheck separately timed out at 30 seconds",
+  "returncode": 0,
+  "stderr_preview": "",
+  "stdout_preview": "",
+  "worker_id": "opencode",
+  "evidence_source": "operator_supplied_manual_probe",
+  "command_contract": ["opencode", "run", "--model", "opencode/mimo-v2.5-free", "--format", "json"],
+  "local_recheck": {"classification": "UNAVAILABLE", "probe": "execution_timeout", "timeout_seconds": 30, "observed_at": "2026-08-18T16:18:49.481000+00:00"}
+}

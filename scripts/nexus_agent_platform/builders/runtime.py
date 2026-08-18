@@ -59,6 +59,8 @@ WORKER_STATUSES = (
 _AUTH_ERROR_RE = re.compile(r"(unauthori[sz]ed|authentication|not authenticated|login required|invalid token|api key required|401)", re.I)
 _RATE_LIMIT_RE = re.compile(r"(rate.?limit|too many requests|429|quota exceeded|throttl)", re.I)
 _SENSITIVE_RE = re.compile(r"(?i)((?:api[_-]?key|access[_-]?token|auth(?:entication)?[_-]?token|secret|password)\s*[:=]\s*)([^\s,;]+)")
+OPENCODE_PROBE_MODEL = "opencode/mimo-v2.5-free"
+OPENCODE_PROBE_MARKER = "OPENCODE_PROBE_OK"
 
 
 def _utc_now() -> str:
@@ -178,6 +180,8 @@ def _classify_cli_probe(*, installed: bool, version_probe: Dict[str, Any], execu
     if _AUTH_ERROR_RE.search(execution_text):
         return {"classification": "AUTH_BLOCKED", "reason": "explicit authentication error in execution probe", "probe_result": "execution_auth_error"}
     if execution_probe.get("returncode") == 0:
+        if execution_probe.get("marker_required") and not execution_probe.get("marker_present"):
+            return {"classification": "INSTALLED_UNPROVEN", "reason": "execution returned successfully without the required provider marker", "probe_result": "execution_marker_missing"}
         return {"classification": "AVAILABLE", "reason": "version and harmless execution probes succeeded", "probe_result": "execution_success"}
     return {"classification": "UNAVAILABLE" if not version_ok else "INSTALLED_UNPROVEN", "reason": "execution probe did not prove availability", "probe_result": "execution_failed"}
 
@@ -187,7 +191,7 @@ def _provider_probe_command(name: str) -> Optional[List[str]]:
     if name == "codex":
         return [name, "exec", "--ephemeral", "--sandbox", "read-only", "--skip-git-repo-check", "--color", "never", harmless]
     if name == "opencode":
-        return [name, "run", "--format", "json", harmless]
+        return [name, "run", "--model", OPENCODE_PROBE_MODEL, "--format", "json", "Reply with exactly: OPENCODE_PROBE_OK"]
     if name == "mimo":
         return [name, "run", "--non-interactive", harmless]
     return None
@@ -205,12 +209,21 @@ def _probe_cli_worker(name: str, path: Optional[str], *, version_timeout: int = 
     execution_probe = None
     if version_probe.get("returncode") == 0 and _provider_probe_command(name):
         execution_probe = _safe_probe(_provider_probe_command(name) or [], timeout=execution_timeout)
+    if execution_probe is not None and name == "opencode":
+        execution_probe["marker_required"] = True
+        execution_probe["marker_present"] = OPENCODE_PROBE_MARKER in (execution_probe.get("stdout") or "")
+        execution_probe["model"] = OPENCODE_PROBE_MODEL
     classification = _classify_cli_probe(installed=True, version_probe=version_probe, execution_probe=execution_probe)
     return {
         "installed": True,
         "version": _redact_probe_text(version_text) or "UNKNOWN",
         "version_probe": {"returncode": version_probe.get("returncode"), "timed_out": bool(version_probe.get("timed_out"))},
-        "execution_probe": ({"returncode": execution_probe.get("returncode"), "timed_out": bool(execution_probe.get("timed_out"))} if execution_probe else "not_run"),
+        "execution_probe": ({
+            "returncode": execution_probe.get("returncode"),
+            "timed_out": bool(execution_probe.get("timed_out")),
+            "duration_ms": execution_probe.get("duration_ms"),
+            **({"model": execution_probe.get("model"), "marker_present": execution_probe.get("marker_present"), "marker_required": True} if name == "opencode" else {}),
+        } if execution_probe else "not_run"),
         **classification,
     }
 
@@ -450,7 +463,7 @@ class CodingWorker:
 
 def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: str) -> CodingWorker:
     path = shutil.which(name)
-    health = _probe_cli_worker(name, path)
+    health = _probe_cli_worker(name, path, execution_timeout=30 if name == "opencode" else 12)
     installed = bool(health["installed"])
     available = health["classification"] == "AVAILABLE"
     reason = str(health["reason"])
