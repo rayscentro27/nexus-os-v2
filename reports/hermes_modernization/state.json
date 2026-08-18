@@ -1,8 +1,8 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-9",
+  "current_checkpoint": "checkpoint-10",
   "started_commit": "2aab745",
-  "ended_commit": "a748860367e546735f6f2c083c2cf8424952be29",
+  "ended_commit": "7c7625e24f3f41b0b5f244e68c3165d9e507772f",
   "status": "IN_PROGRESS",
   "protected": {
     "client_portal_v2": "COMPLETE / PROTECTED — do not redesign src/client-v2",
@@ -132,6 +132,25 @@
         "ai_executions": 0,
         "opportunity_engine_input": true
       }
+    },
+    "7": {
+      "name": "CREATIVE_LAB_FOUNDATION",
+      "status": "COMPLETE",
+      "deliverables": [
+        "reports/hermes_modernization/creative_lab_audit.md",
+        "reports/hermes_modernization/creative_lab.md",
+        "reports/hermes_modernization/creative_pilot.md",
+        "reports/hermes_modernization/creative_benchmark.md"
+      ],
+      "classification_counts": {
+        "creative_surfaces_audited": 35,
+        "existing_reused": 36,
+        "extended": 6,
+        "new": 1,
+        "territories_generated": 3,
+        "safe_pilot_zero_token": true,
+        "build_spec_created": true
+      }
     }
   },
   "vertical_slice": {
@@ -145,6 +164,7 @@
       "opportunity_engine_data_model",
       "alpha_research_integration_foundation",
       "creative_director_skill",
+      "creative_lab",
       "safe_opportunity_pilot",
       "mission_control_visibility",
       "tests",
@@ -161,9 +181,10 @@
       "loop_contract",
       "loop_framework",
       "opportunity_engine_data_model",
-      "safe_opportunity_pilot"
+      "safe_opportunity_pilot",
+      "creative_lab"
     ],
-    "next": "creative_lab"
+    "next": "mission_control_visibility"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
@@ -175,8 +196,8 @@
     "checkpoint-7": "feat(opportunities): add deterministic-first opportunity engine foundation",
     "checkpoint-8": "feat(alpha): audit external intelligence and normalize loop cost accounting",
     "checkpoint-9": "feat(alpha): prove deterministic external intelligence pipeline",
+    "checkpoint-10": "feat(creativity): add evidence-driven nexus creative lab foundation",
     "beyond": [
-      "feat(creativity): add creative director and research pipeline",
       "feat(ops): add mission control opportunity and cost visibility"
     ]
   }
