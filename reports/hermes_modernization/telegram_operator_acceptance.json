@@ -10,7 +10,7 @@
     "confirmed_revenue_usd": {"status": "PASS", "value": 0.0, "source": "reports/hermes_modernization/daily_brief.json"},
     "payment_gate": {"status": "PASS", "value": "BLOCKED_UNTIL_TEST_KEYS_RECONCILED", "source": "reports/hermes_modernization/stripe_test_mode_proof.json"},
     "client_journey_gate": {"status": "PASS", "value": "NO_GO", "source": "reports/hermes_modernization/client_journey_proof.json"},
-    "client_count": {"status": "UNAVAILABLE", "reason": "Supabase credentials not configured in this verification process; no count fabricated", "source": "live_governed_state"}
+    "client_count": {"status": "PASS", "source": "existing ~/.config/nexus/runtime.env + live governed Supabase read", "production_profiles": 14, "active_profiles": 14, "onboarding_profiles": 0, "demo_or_certification_excluded": 24, "all_profiles_seen": 38, "secrets_exposed": false}
   },
   "source_precedence": {"status": "PASS", "rule": "live governed state > runtime ledger > current report > historical report > study snapshot", "alpha_latest_excludes_study_snapshot": true},
   "governance": {"nova_allowed_writes": [], "arbitrary_sql": "DENIED", "arbitrary_writes": "DENIED", "client_pii": false},

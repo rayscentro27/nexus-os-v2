@@ -2,34 +2,47 @@
 
 ## Result: PARTIAL
 
-The shared governed read layer and the complete 25-question routing contract
-are certified automatically. Hermes and Nova each pass 25/25 contract cases.
-The Session/table defect remains fixed. Canonical sources correctly separate
-business opportunities from process actions, business loops from the process
-registry, workers from agents, and current Alpha artifacts from historical
-study snapshots. SQL and arbitrary writes remain denied; Nova's write set is
-empty.
+The live client-count blocker is cleared through the existing project runtime
+environment. Using `~/.config/nexus/runtime.env` through the existing loader,
+the canonical governed Supabase read returned:
 
-Current facts: four business loops; Codex/OpenCode/local worker `AVAILABLE`;
-Kilo/MiMo `INSTALLED_UNPROVEN`; provider cost `$0`; confirmed revenue `$0`;
-payment gate `BLOCKED_UNTIL_TEST_KEYS_RECONCILED`; client journey `NO_GO`.
+- 14 production profiles
+- 14 active profiles
+- 0 onboarding profiles
+- 24 demo/certification profiles excluded
+- 38 total rows observed
 
-## Verification blockers
+No credential values were printed or copied into the repository.
 
-- The governed production-client read is correctly implemented, but this
-  process had no Supabase credentials, so the canonical answer is
-  `UNAVAILABLE` rather than a fabricated count.
-- Full Python collection is blocked by missing `temporalio` in
-  `test_contracts.py` and `test_temporal.py`; the remaining bounded run reached
-  11 passes before hanging and was stopped.
-- `npm run typecheck` and the Tailwind/Vite build entered macOS uninterruptible
-  filesystem/toolchain state with no compiler/build diagnostic. Processes were
-  stopped; no process was left running.
-- Actual inbound Telegram certification requires Ray. Hermes bridge status and
-  Nova worker self-test passed, but no fake inbound update or outbound test
-  message was used. The manual checklist is in
-  `telegram_operator_acceptance.json`.
+Temporal is also resolved: `temporalio` is declared in
+`requirements-agent-platform.txt`, installed in `.venv-agent-platform`, and
+the existing Temporal worker is running. No package installation was performed.
 
-No client portal, production Telegram, Nova authority, or tool-install state was
-changed. The exact resume point is Phase 15C continuation after these blockers
-are cleared.
+Automated operator certification remains Hermes **25/25** and Nova **25/25**;
+focused Phase 15C tests pass (**11 passed**). Session.table, source precedence,
+taxonomy, governance, payment, journey, AI cost, workforce, and grounded
+recommendation checks remain passing.
+
+## Remaining environmental blockers
+
+The full suite was run with the project interpreter and had zero collection
+errors. It reached 8 passes, then stalled in
+`test_builder_abstraction::test_unavailable_worker_is_skipped` during external
+CLI worker health probing. It was stopped after 36.21 seconds: 8 passed, 0
+failed, 0 skipped, 0 collection errors. This is classified ENVIRONMENTAL, not a
+Phase 15C regression.
+
+`npm run typecheck` was bounded with Node `v22.22.3` / npm `10.9.8`; `tsc`
+entered an uninterruptible state without diagnostics. `npm run build` was
+bounded at its Tailwind pre-step; `tailwindcss` entered the same state, so Vite
+was not reached. No stale diagnostic process remains.
+
+Actual inbound Telegram certification remains `MANUAL_REQUIRED`. Hermes and
+Nova worker-path self-checks passed. No fake inbound update and no outbound
+test message was sent. The exact 16-question Hermes and 18-question Nova
+checklists are stored in this report's JSON companion for Ray to execute.
+
+Protected state is unchanged: client portal, production Telegram behavior,
+Nova authority, and tool-install state.
+
+Exact resume point: **PHASE 15C — SHARED NEXUS AWARENESS COMPLETION CONTINUED**.

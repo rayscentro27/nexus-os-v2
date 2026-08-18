@@ -34,4 +34,7 @@
   "new_tools_installed": false,
   "phase15c_final_certification_source": "reports/hermes_modernization/phase15c_final_certification.json",
   "telegram_operator_acceptance_source": "reports/hermes_modernization/telegram_operator_acceptance.json"
+  ,"client_count_live_status": "PASS"
+  ,"client_count_live_source": "existing canonical runtime env + governed Supabase read"
+  ,"temporalio_status": "PASS_PROJECT_VENV"
 }
