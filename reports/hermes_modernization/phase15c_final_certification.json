@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION FINAL CERTIFICATION PASS",
+  "status": "PARTIAL",
+  "starting_head": "8023cc7e9a56f7b2a8b321b52002be6dec8ad844",
+  "ending_head": "8023cc7e9a56f7b2a8b321b52002be6dec8ad844",
+  "automated": {"hermes": {"passed": 25, "total": 25}, "nova": {"passed": 25, "total": 25}, "focused_pytest": "10 passed"},
+  "shared_read_layer": "PASS", "session_table": "PASS", "source_precedence": "PASS", "client_count": "PARTIAL_ENVIRONMENT_BLOCKED", "business_opportunities": "PASS", "business_loops": "PASS", "latest_research": "PASS", "alpha_latest": "PASS", "payment_gate": "PASS", "client_journey": "PASS", "ai_cost": "PASS", "workforce": "PASS", "hermes_governed_access": "PASS", "nova_governance": "PASS", "arbitrary_sql": "DENIED", "arbitrary_writes": "DENIED", "highest_value_action_grounding": "PASS_CONTRACT; LIVE_MANUAL_REQUIRED",
+  "full_suite": {"result": "ENVIRONMENT_BLOCKED", "collection_errors": 2, "collection_error": "ModuleNotFoundError: temporalio", "bounded_subset": "11 passed before filesystem/toolchain hang; stopped"},
+  "typecheck": {"result": "ENVIRONMENT_BLOCKED", "command": "npm run typecheck", "evidence": "tsc --noEmit entered macOS U/uninterruptible state with no diagnostic output; stopped"},
+  "build": {"result": "ENVIRONMENT_BLOCKED", "command": "npm run tailwind:v2 && npm exec -- vite build", "evidence": "tailwindcss entered macOS U/uninterruptible state; standalone vite build also produced no output before stop"},
+  "live_telegram": {"hermes": "MANUAL_REQUIRED", "nova": "MANUAL_REQUIRED", "safe_worker_checks": "PASS", "reason": "No fake inbound updates or outbound production messages used"},
+  "protected_paths": {"client_portal": "NONE", "production_telegram": "NONE", "nova_authority": "UNCHANGED", "new_tools_installed": "NONE"},
+  "blockers": ["Supabase credentials unavailable for live client-count read in this process", "temporalio dependency missing during full-suite collection", "macOS filesystem/toolchain uninterruptible hangs block typecheck/build and additional full-suite completion", "Ray inbound Telegram interaction required for live certification"],
+  "next_phase": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION CONTINUED"
+}

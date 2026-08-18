@@ -1,0 +1,19 @@
+{
+  "phase": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION",
+  "starting_head": "8023cc7e9a56f7b2a8b321b52002be6dec8ad844",
+  "ending_head": "8023cc7e9a56f7b2a8b321b52002be6dec8ad844",
+  "matrix": {"hermes": {"passed": 25, "total": 25, "result": "PASS_ROUTING_AND_CONTRACT"}, "nova": {"passed": 25, "total": 25, "result": "PASS_ROUTING_GOVERNANCE_AND_CONTRACT"}},
+  "canonical_facts": {
+    "business_loops": {"status": "PASS", "source": "reports/hermes_modernization/live_loop_results.json", "count": 4},
+    "workforce": {"status": "PASS", "source": "reports/hermes_modernization/live_runtime_status.json", "codex": "AVAILABLE", "opencode": "AVAILABLE", "local": "AVAILABLE", "kilo": "INSTALLED_UNPROVEN", "mimo": "INSTALLED_UNPROVEN"},
+    "provider_cost_usd": {"status": "PASS", "value": 0.0, "source": "reports/hermes_modernization/daily_brief.json"},
+    "confirmed_revenue_usd": {"status": "PASS", "value": 0.0, "source": "reports/hermes_modernization/daily_brief.json"},
+    "payment_gate": {"status": "PASS", "value": "BLOCKED_UNTIL_TEST_KEYS_RECONCILED", "source": "reports/hermes_modernization/stripe_test_mode_proof.json"},
+    "client_journey_gate": {"status": "PASS", "value": "NO_GO", "source": "reports/hermes_modernization/client_journey_proof.json"},
+    "client_count": {"status": "UNAVAILABLE", "reason": "Supabase credentials not configured in this verification process; no count fabricated", "source": "live_governed_state"}
+  },
+  "source_precedence": {"status": "PASS", "rule": "live governed state > runtime ledger > current report > historical report > study snapshot", "alpha_latest_excludes_study_snapshot": true},
+  "governance": {"nova_allowed_writes": [], "arbitrary_sql": "DENIED", "arbitrary_writes": "DENIED", "client_pii": false},
+  "live_path": {"hermes": "MANUAL_REQUIRED", "nova": "MANUAL_REQUIRED", "safe_worker_checks": {"hermes_bridge_status": "PASS", "nova_worker_test": "PASS"}, "reason": "Actual inbound Telegram certification requires Ray interaction; no fake update or outbound send was used.", "manual_checklist": ["Send current Nexus status to Hermes", "Send production client count to Hermes", "Send ACCEPT/WATCH opportunities to Hermes", "Send AI cost, payment gate, business loops, Codex, governed-access, highest-value-action, and evidence follow-up questions", "Repeat read-only subset with Nova", "Verify SQL and write refusals in Nova"]},
+  "protected_paths": {"client_portal": "NONE", "production_telegram": "NONE", "nova_authority": "UNCHANGED", "new_tools_installed": "NONE"}
+}

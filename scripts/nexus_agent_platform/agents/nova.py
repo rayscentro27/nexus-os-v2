@@ -571,7 +571,7 @@ def _detect_write_request(text: str) -> Optional[Dict[str, Any]]:
         r'\b(?:user|account|profile|record|client)\b',
         re.I,
     )
-    if write_patterns.search(text):
+    if write_patterns.search(text) or re.search(r'\b(?:arbitrary\s+sql|(?:modify|change|write|update|delete)\s+arbitrary\s+supabase|run\s+(?:raw\s+)?sql)\b', text, re.I):
         email = _extract_email(text)
         return {
             "requested_action": "create_test_user",
@@ -611,6 +611,16 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     # health, and business-loop state cannot fall into generic advice.
     if "evidence" in lower and ("show" in lower or "used" in lower):
         return ("EVIDENCE_LOOKUP", {"query": text})
+    if "how many clients" in lower or "production client count" in lower or "client count" in lower or "number of clients" in lower:
+        return ("CLIENT_COUNT", {})
+    if "current nexus os status" in lower or "nexus os status" in lower or "system status" in lower or "current system status" in lower:
+        return ("SYSTEM_HEALTH", {})
+    if "alpha" in lower and ("latest" in lower or "most recent" in lower or "find" in lower):
+        return ("ALPHA_LATEST", {})
+    if "blocker" in lower or "blocked" in lower or "needs attention" in lower:
+        return ("BLOCKERS", {})
+    if "pending approval" in lower or "pending approvals" in lower or "approvals are pending" in lower or "what requires ray" in lower:
+        return ("APPROVAL_QUEUE", {})
     if "business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower:
         return ("BUSINESS_LOOP_STATUS", {})
     if "accept" in lower and "watch" in lower and "opportun" in lower:
@@ -621,9 +631,9 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
         return ("PAYMENT_GATE", {})
     if "client journey gate" in lower or "journey gate" in lower:
         return ("CLIENT_JOURNEY_GATE", {})
-    if any(worker in lower for worker in ("codex", "opencode", "mimo", "kilo")) and any(word in lower for word in ("available", "status")):
+    if any(worker in lower for worker in ("codex", "opencode", "mimo", "kilo", "coding worker", "coding workers", "worker pool")) and any(word in lower for word in ("available", "status")):
         return ("WORKFORCE_STATUS", {})
-    if "ai cost" in lower or "token cost" in lower or "provider cost" in lower:
+    if "ai cost" in lower or "ai operations cost" in lower or "token cost" in lower or "provider cost" in lower:
         return ("AI_COST_SUMMARY", {})
     if any(phrase in lower for phrase in ("highest-value next action", "highest value next action", "plan for today", "money today", "daily brief")):
         return ("DAILY_BRIEF", {})

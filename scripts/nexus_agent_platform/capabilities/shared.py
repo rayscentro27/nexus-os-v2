@@ -200,7 +200,10 @@ _WRITE_USER_PATTERNS = re.compile(
 
 def detect_write_request(user_message: str) -> Optional[Dict[str, Any]]:
     """Detect if the user is requesting a write operation."""
-    if _WRITE_USER_PATTERNS.search(user_message):
+    if _WRITE_USER_PATTERNS.search(user_message) or re.search(
+        r'\b(?:arbitrary\s+sql|(?:modify|change|write|update|delete)\s+arbitrary\s+supabase|run\s+(?:raw\s+)?sql)\b',
+        user_message, re.IGNORECASE,
+    ):
         email_match = re.search(
             r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', user_message
         )

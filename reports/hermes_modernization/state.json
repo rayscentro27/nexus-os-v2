@@ -6,8 +6,8 @@
     "research_intake_loop"
   ],
   "client_portal_changes": "NONE",
-  "current_checkpoint": "phase-15c-shared-nexus-awareness-completion",
-  "current_phase": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION + AUDIT VERIFICATION COMPLETION",
+  "current_checkpoint": "phase-15c-final-certification-partial",
+  "current_phase": "PHASE 15C — SHARED NEXUS AWARENESS COMPLETION FINAL CERTIFICATION PASS",
   "next": "PHASE 15C \u2014 SHARED NEXUS AWARENESS COMPLETION + AUDIT VERIFICATION COMPLETION",
   "persistent_agents": [
     "nexus_hermes",
@@ -25,11 +25,13 @@
   "phase14_business_loop_proof_source": "reports/hermes_modernization/phase14_business_loop_proof.json",
   "phase14_status": "VALUE_REPAIR_VERIFIED_EXPERIMENT_NOT_LAUNCHED",
   "revenue_accounting_source": "reports/hermes_modernization/phase14_business_loop_proof.json",
-  "status": "PARTIAL_WITH_GOVERNED_BLOCKERS",
+  "status": "PARTIAL_WITH_ENVIRONMENT_AND_LIVE_CERTIFICATION_BLOCKERS",
   "shared_awareness_source": "reports/hermes_modernization/phase15c_awareness_completion.json",
-  "phase15c_status": "PASS_WITH_GOVERNED_BLOCKERS",
+  "phase15c_status": "PARTIAL_AUTOMATED_CONTRACT_PASS_LIVE_AND_TOOLCHAIN_BLOCKED",
   "payment_gate": "BLOCKED_UNTIL_TEST_KEYS_RECONCILED",
   "client_journey_gate": "NO_GO",
   "nova_allowed_writes": [],
-  "new_tools_installed": false
+  "new_tools_installed": false,
+  "phase15c_final_certification_source": "reports/hermes_modernization/phase15c_final_certification.json",
+  "telegram_operator_acceptance_source": "reports/hermes_modernization/telegram_operator_acceptance.json"
 }

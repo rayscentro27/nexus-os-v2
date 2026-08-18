@@ -10,4 +10,11 @@ Phase 15B audit verification passes artifact integrity, but hardware placement r
 
 Client portal changes: NONE. Production Telegram changes: NONE. Persistent agents remain `nexus_hermes`, `hermes_nova`, and `alpha`; Nova writes remain empty.
 
-Exact resume point: **PHASE 15C — SHARED NEXUS AWARENESS COMPLETION + AUDIT VERIFICATION COMPLETION**.
+Final certification is PARTIAL: the automated 25-question Hermes/Nova contract
+passes, but this process lacked Supabase credentials for the live client-count
+read; the full Python suite is blocked by missing `temporalio` and a later
+filesystem/toolchain hang; typecheck/build entered macOS uninterruptible state;
+and actual inbound Telegram certification requires Ray. No fake inbound update
+or outbound test message was used.
+
+Exact resume point: **PHASE 15C — SHARED NEXUS AWARENESS COMPLETION CONTINUED**.

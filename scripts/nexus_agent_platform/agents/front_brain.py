@@ -717,13 +717,18 @@ def _deterministic_operational_intent(user_message: str) -> Optional[Dict[str, A
     lower = user_message.lower().strip()
     checks = (
         (("evidence" in lower and ("show" in lower or "used" in lower)), "EVIDENCE_LOOKUP"),
+        (("how many clients" in lower or "production client count" in lower or "client count" in lower or "number of clients" in lower), "CLIENT_COUNT"),
+        (("current nexus os status" in lower or "nexus os status" in lower or "system status" in lower or "current system status" in lower), "SYSTEM_HEALTH"),
+        (("alpha" in lower and ("latest" in lower or "most recent" in lower or "find" in lower)), "ALPHA_LATEST"),
+        (("blocker" in lower or "blocked" in lower or "needs attention" in lower), "BLOCKERS"),
+        (("pending approval" in lower or "pending approvals" in lower or "approvals are pending" in lower or "what requires ray" in lower), "APPROVAL_QUEUE"),
         (("business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower), "BUSINESS_LOOP_STATUS"),
         (("accept" in lower and "watch" in lower and "opportun" in lower), "BUSINESS_OPPORTUNITIES"),
         (("research ran" in lower or "most recently" in lower and "research" in lower), "RESEARCH_HISTORY"),
         (("payment gate" in lower or "status of stripe" in lower or "stripe status" in lower), "PAYMENT_GATE"),
         (("client journey gate" in lower or "journey gate" in lower), "CLIENT_JOURNEY_GATE"),
-        (("codex" in lower or "opencode" in lower or "mimo" in lower or "kilo" in lower) and ("available" in lower or "status" in lower), "WORKFORCE_STATUS"),
-        (("ai cost" in lower or "token cost" in lower or "provider cost" in lower), "AI_COST_SUMMARY"),
+        ((("codex" in lower or "opencode" in lower or "mimo" in lower or "kilo" in lower or "coding worker" in lower or "coding workers" in lower or "worker pool" in lower) and ("available" in lower or "status" in lower)), "WORKFORCE_STATUS"),
+        (("ai cost" in lower or "ai operations cost" in lower or "token cost" in lower or "provider cost" in lower), "AI_COST_SUMMARY"),
         (("highest-value next action" in lower or "highest value next action" in lower or "plan for today" in lower or "money today" in lower or "daily brief" in lower), "DAILY_BRIEF"),
         (("governed access" in lower or "certified capabilities" in lower) and ("nexus os data" in lower or "supabase" in lower), "get_runtime_capabilities"),
     )
