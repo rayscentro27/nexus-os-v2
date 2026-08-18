@@ -1,8 +1,8 @@
 {
   "program": "nexus-hermes-modernization",
-  "current_checkpoint": "checkpoint-8",
+  "current_checkpoint": "checkpoint-9",
   "started_commit": "2aab745",
-  "ended_commit": "bc2f622fa46fe37ae94565c5d208230798d4a3e9",
+  "ended_commit": "a748860367e546735f6f2c083c2cf8424952be29",
   "status": "IN_PROGRESS",
   "protected": {
     "client_portal_v2": "COMPLETE / PROTECTED — do not redesign src/client-v2",
@@ -115,6 +115,23 @@
         "defer": 1,
         "replace_only_if_proven": 0
       }
+    },
+    "6b": {
+      "name": "ALPHA_EXTERNAL_INTELLIGENCE_PROOF",
+      "status": "COMPLETE",
+      "deliverables": [
+        "reports/hermes_modernization/alpha_external_intelligence.md",
+        "reports/hermes_modernization/open_source_capability_audit.md",
+        "reports/hermes_modernization/open_source_capability_audit.json",
+        "reports/hermes_modernization/research_benchmark.md"
+      ],
+      "classification_counts": {
+        "source_records_collected": 8,
+        "unique_candidates": 4,
+        "duplicate_sources_collapsed": 4,
+        "ai_executions": 0,
+        "opportunity_engine_input": true
+      }
     }
   },
   "vertical_slice": {
@@ -146,7 +163,7 @@
       "opportunity_engine_data_model",
       "safe_opportunity_pilot"
     ],
-    "next": "alpha_external_intelligence_pipeline"
+    "next": "creative_lab"
   },
   "commit_history": {
     "checkpoint-1": "chore(hermes): inventory nexus deterministic and ai capabilities",
@@ -157,6 +174,7 @@
     "checkpoint-6": "feat(loops): add token-efficient nexus loop runtime",
     "checkpoint-7": "feat(opportunities): add deterministic-first opportunity engine foundation",
     "checkpoint-8": "feat(alpha): audit external intelligence and normalize loop cost accounting",
+    "checkpoint-9": "feat(alpha): prove deterministic external intelligence pipeline",
     "beyond": [
       "feat(creativity): add creative director and research pipeline",
       "feat(ops): add mission control opportunity and cost visibility"

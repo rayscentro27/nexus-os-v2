@@ -1,0 +1,394 @@
+{
+  "generated_at": "2026-08-18T01:55:38.845156+00:00",
+  "status": "DETERMINISTIC_FIRST_RESEARCH_COMPLETE",
+  "nexus_audit": [
+    {
+      "candidate_id": "markitdown",
+      "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+      "existing_owner": "knowledge",
+      "existing_agent": "Hermes",
+      "existing_module": "scripts/credit/extract_credit_report_text.py; scripts/credit/parse_uploaded_credit_report.py",
+      "existing_tools": "bounded document parser and upload pipeline",
+      "existing_memory": "none",
+      "existing_routing": "study-only report routing",
+      "overlap_percentage_estimate": 75,
+      "routing_conflict": false,
+      "authority_conflict": false,
+      "token_duplication_risk": "medium",
+      "recommended_action": "EXTEND_EXISTING"
+    },
+    {
+      "candidate_id": "crawl4ai",
+      "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+      "existing_owner": "alpha",
+      "existing_agent": "Alpha",
+      "existing_module": "src/hermes/alpha/alphaWebSearch.ts; src/hermes/alpha/alphaUrlReview.ts; scripts/alpha/alpha_live_research.py",
+      "existing_tools": "alpha web search and URL review adapters",
+      "existing_memory": "alpha research memory and report trail",
+      "existing_routing": "alpha_live_research and URL-review routing",
+      "overlap_percentage_estimate": 82,
+      "routing_conflict": false,
+      "authority_conflict": false,
+      "token_duplication_risk": "medium",
+      "recommended_action": "WRAP"
+    },
+    {
+      "candidate_id": "livekit_agents",
+      "nexus_state": "NOT_PRESENT",
+      "existing_owner": "none",
+      "existing_agent": "none",
+      "existing_module": "none",
+      "existing_tools": "none",
+      "existing_memory": "none",
+      "existing_routing": "none",
+      "overlap_percentage_estimate": 25,
+      "routing_conflict": false,
+      "authority_conflict": false,
+      "token_duplication_risk": "low",
+      "recommended_action": "WATCH"
+    },
+    {
+      "candidate_id": "pipecat",
+      "nexus_state": "NOT_PRESENT",
+      "existing_owner": "none",
+      "existing_agent": "none",
+      "existing_module": "none",
+      "existing_tools": "none",
+      "existing_memory": "none",
+      "existing_routing": "none",
+      "overlap_percentage_estimate": 22,
+      "routing_conflict": false,
+      "authority_conflict": false,
+      "token_duplication_risk": "low",
+      "recommended_action": "PILOT"
+    }
+  ],
+  "candidate_summary": [
+    {
+      "project": "MarkItDown",
+      "repository": "microsoft/markitdown",
+      "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "release_activity": "version 0.1.7; latest release 3 weeks ago; 20 releases total",
+      "recommendation": "EXTEND_EXISTING",
+      "score": 66,
+      "source_urls": [
+        "https://github.com/microsoft/markitdown",
+        "https://github.com/microsoft/markitdown/releases",
+        "https://github.com/microsoft/markitdown/blob/main/LICENSE"
+      ]
+    },
+    {
+      "project": "Crawl4AI",
+      "repository": "unclecode/crawl4ai",
+      "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "release_activity": "v0.9.2 maintenance patch; latest release last month; 20 releases total",
+      "recommendation": "WRAP",
+      "score": 69,
+      "source_urls": [
+        "https://github.com/unclecode/crawl4ai",
+        "https://github.com/unclecode/crawl4ai/releases",
+        "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+      ]
+    },
+    {
+      "project": "LiveKit Agents",
+      "repository": "livekit/agents",
+      "nexus_state": "NOT_PRESENT",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "release_activity": "@livekit/agents 1.6.9 released 2026-08-07; active issue/PR stream",
+      "recommendation": "WATCH",
+      "score": 33,
+      "source_urls": [
+        "https://github.com/livekit/agents",
+        "https://github.com/livekit/agents/releases",
+        "https://github.com/livekit/agents/blob/main/LICENSE"
+      ]
+    },
+    {
+      "project": "Pipecat",
+      "repository": "pipecat-ai/pipecat",
+      "nexus_state": "NOT_PRESENT",
+      "license": "BSD-2-Clause",
+      "maintenance_status": "active",
+      "release_activity": "v1.7.0 released 2026-08-01; ongoing changelog updates and active ecosystem repos",
+      "recommendation": "PILOT",
+      "score": 31,
+      "source_urls": [
+        "https://github.com/pipecat-ai/pipecat",
+        "https://github.com/pipecat-ai/pipecat/releases",
+        "https://github.com/pipecat-ai/pipecat/blob/main/LICENSE"
+      ]
+    }
+  ],
+  "source_records_collected": 8,
+  "deduped_sources": 4,
+  "duplicate_sources": 4,
+  "metrics": {
+    "zero_token_research_executions": 1,
+    "ai_executions": 0,
+    "tier1_calls": 0,
+    "tier2_calls": 0,
+    "tier3_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "estimated_usd_cost": 0.0
+  },
+  "selected_candidate": {
+    "project": "Crawl4AI",
+    "repository": "unclecode/crawl4ai",
+    "category": "web_research",
+    "purpose": "Controlled public web extraction for Alpha research and repo-intelligence workflows.",
+    "license": "Apache-2.0",
+    "maintenance_status": "active",
+    "release_activity": "v0.9.2 maintenance patch; latest release last month; 20 releases total",
+    "api_mcp_support": "community MCP and Docker server references exist; not Nexus-approved",
+    "agent_friendliness": "high for bounded public-source extraction",
+    "integration_effort": "medium",
+    "maintenance_burden": "medium",
+    "potential_cost_displaced": "high",
+    "new_capability_gained": "public extraction and crawl hardening patterns for Alpha research",
+    "source_urls": [
+      "https://github.com/unclecode/crawl4ai",
+      "https://github.com/unclecode/crawl4ai/releases",
+      "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+    ],
+    "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+    "existing_owner": "alpha",
+    "existing_agent": "Alpha",
+    "existing_module": "src/hermes/alpha/alphaWebSearch.ts; src/hermes/alpha/alphaUrlReview.ts; scripts/alpha/alpha_live_research.py",
+    "existing_tools": "alpha web search and URL review adapters",
+    "existing_memory": "alpha research memory and report trail",
+    "existing_routing": "alpha_live_research and URL-review routing",
+    "existing_nexus_overlap": "Alpha URL review/search adapters",
+    "overlap_percentage_estimate": 82,
+    "routing_conflict": false,
+    "authority_conflict": false,
+    "token_duplication_risk": "medium",
+    "recommendation": "WRAP",
+    "recommendation_rationale": "Wrap the public-extraction pattern around the existing Alpha research lane rather than introducing a new identity or install.",
+    "public_release": "0.9.2",
+    "public_release_date": "2026-07-15",
+    "public_release_status": "active",
+    "public_activity_signal": "maintenance bug-fix release with visible current GitHub issue activity",
+    "search_demand": 74,
+    "social_signal": 52,
+    "competitive_signal": 66,
+    "commercial_intent": 70,
+    "revenue_model": "research efficiency and public evidence throughput",
+    "startup_cost": 32,
+    "ongoing_cost": 28,
+    "difficulty": 35,
+    "time_to_test": 22,
+    "risk": 38,
+    "confidence": 72,
+    "ai_needed": false,
+    "evidence_classification": "KNOWN",
+    "candidate_id": "unclecode_crawl4ai",
+    "source_id": "unclecode_crawl4ai::https://github.com/unclecode/crawl4ai",
+    "source_url": "https://github.com/unclecode/crawl4ai",
+    "content_hash": "a9d3d8fd9a27e811e1a6d231c7a80a4291c327ccacaeccb0ebea3afe7ed791b6",
+    "provenance": {
+      "source_urls": [
+        "https://github.com/unclecode/crawl4ai",
+        "https://github.com/unclecode/crawl4ai/releases",
+        "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+      ],
+      "audited_at": "2026-08-18T01:55:38.844668+00:00",
+      "source_type": "public_repo_intelligence",
+      "source_commit": "fc181b70b9dd3957fbd2091430e68cbd8dbd8c37"
+    },
+    "base_score": 69,
+    "opportunity_score": 69,
+    "ai_tier": "T2_STANDARD_AI",
+    "ai_tier_with_explicit_escalation": "T2_STANDARD_AI",
+    "score_breakdown": {
+      "license_bonus": 10,
+      "maintenance_bonus": 16,
+      "release_bonus": 10,
+      "overlap_bonus": 29,
+      "cost_bonus": 15,
+      "gain_bonus": 11,
+      "effort_penalty": 10,
+      "burden_penalty": 8,
+      "risk_penalty": 4
+    }
+  },
+  "compact_delta": {
+    "candidate_id": "unclecode_crawl4ai",
+    "project": "Crawl4AI",
+    "repository": "unclecode/crawl4ai",
+    "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+    "recommendation": "WRAP",
+    "content_hash": "a9d3d8fd9a27e811e1a6d231c7a80a4291c327ccacaeccb0ebea3afe7ed791b6",
+    "previous_candidate_hash": null,
+    "previous_recommendation": null,
+    "source_urls": [
+      "https://github.com/unclecode/crawl4ai",
+      "https://github.com/unclecode/crawl4ai/releases"
+    ]
+  },
+  "opportunity_input": {
+    "id": "unclecode_crawl4ai",
+    "title": "Crawl4AI",
+    "category": "open_source",
+    "problem": "Controlled public web extraction for Alpha research and repo-intelligence workflows.",
+    "target_customer": "Hermes / Alpha / Nexus operators",
+    "evidence": [
+      {
+        "evidence_id": "evidence_d26f6cd8b2791d61",
+        "source_id": "unclecode_crawl4ai",
+        "source_type": "public_repo_intelligence",
+        "classification": "KNOWN",
+        "summary": "unclecode/crawl4ai Controlled public web extraction for Alpha research and repo-intelligence workflows.",
+        "retrieved_at": "2026-08-18T01:55:38.844880+00:00",
+        "provenance": {
+          "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+          "project": "Crawl4AI",
+          "source_urls": [
+            "https://github.com/unclecode/crawl4ai",
+            "https://github.com/unclecode/crawl4ai/releases",
+            "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+          ]
+        }
+      }
+    ],
+    "search_demand": 74,
+    "social_signal": 52,
+    "competitive_signal": 66,
+    "commercial_intent": 70,
+    "revenue_model": "research efficiency and public evidence throughput",
+    "revenue_potential": 0,
+    "startup_cost": 32,
+    "ongoing_cost": 28,
+    "difficulty": 35,
+    "time_to_test": 22,
+    "risk": 38,
+    "confidence": 72,
+    "status": "DISCOVERED",
+    "recommended_next_action": "Wrap the public-extraction pattern around the existing Alpha research lane rather than introducing a new identity or install.",
+    "source": "alpha_open_source_scout",
+    "source_type": "public_repo_intelligence",
+    "retrieved_at": "2026-08-18T01:55:38.845024+00:00",
+    "provenance": {
+      "existing_owner": "alpha",
+      "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+      "source_urls": [
+        "https://github.com/unclecode/crawl4ai",
+        "https://github.com/unclecode/crawl4ai/releases",
+        "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+      ]
+    },
+    "tags": [
+      "web_research",
+      "Apache-2.0"
+    ],
+    "source_commit": "fc181b70b9dd3957fbd2091430e68cbd8dbd8c37",
+    "generated_at": "2026-08-18T01:55:38.845032+00:00",
+    "ai_rationale": "",
+    "base_score": 62,
+    "opportunity_score": 62,
+    "score_breakdown": {
+      "evidence_count": 5,
+      "search_demand": 9,
+      "social_signal": 3,
+      "competitive_signal": 3,
+      "commercial_intent": 11,
+      "revenue_potential": 0,
+      "confidence": 7,
+      "composite_score": 0,
+      "startup_cost": 7,
+      "ongoing_cost": 6,
+      "difficulty": 5,
+      "time_to_test": 6,
+      "recency": 0,
+      "priority": 0
+    },
+    "business_case": {
+      "problem": "Controlled public web extraction for Alpha research and repo-intelligence workflows.",
+      "target_customer": "Hermes / Alpha / Nexus operators",
+      "revenue_model": "research efficiency and public evidence throughput",
+      "revenue_potential": 0,
+      "cost_profile": {
+        "startup_cost": 32,
+        "ongoing_cost": 28
+      },
+      "validation_plan": [
+        "Confirm a real customer pain point.",
+        "Validate demand with public evidence.",
+        "Run the smallest safe test."
+      ],
+      "recommended_next_action": "Wrap the public-extraction pattern around the existing Alpha research lane rather than introducing a new identity or install."
+    }
+  },
+  "opportunity_business_case": {
+    "problem": "Controlled public web extraction for Alpha research and repo-intelligence workflows.",
+    "target_customer": "Hermes / Alpha / Nexus operators",
+    "revenue_model": "research efficiency and public evidence throughput",
+    "revenue_potential": 0,
+    "cost_profile": {
+      "startup_cost": 32,
+      "ongoing_cost": 28
+    },
+    "validation_plan": [
+      "Confirm a real customer pain point.",
+      "Validate demand with public evidence.",
+      "Run the smallest safe test."
+    ],
+    "recommended_next_action": "Wrap the public-extraction pattern around the existing Alpha research lane rather than introducing a new identity or install."
+  },
+  "provenance": {
+    "source_type": "public_repo_intelligence",
+    "source_commit": "fc181b70b9dd3957fbd2091430e68cbd8dbd8c37",
+    "selected_source_urls": [
+      "https://github.com/unclecode/crawl4ai",
+      "https://github.com/unclecode/crawl4ai/releases",
+      "https://github.com/unclecode/crawl4ai/blob/main/LICENSE"
+    ],
+    "duplicate_source_urls": [
+      "https://github.com/microsoft/markitdown",
+      "https://github.com/unclecode/crawl4ai",
+      "https://github.com/livekit/agents",
+      "https://github.com/pipecat-ai/pipecat"
+    ]
+  },
+  "timeline": [
+    "nexus_audit",
+    "collect_public_sources",
+    "normalize",
+    "dedupe",
+    "classify_evidence",
+    "score",
+    "opportunity_engine_input",
+    "report"
+  ],
+  "ai_context": {
+    "selected_candidate": {
+      "candidate_id": "unclecode_crawl4ai",
+      "project": "Crawl4AI",
+      "repository": "unclecode/crawl4ai",
+      "nexus_state": "EQUIVALENT_CAPABILITY_EXISTS",
+      "recommendation": "WRAP",
+      "content_hash": "a9d3d8fd9a27e811e1a6d231c7a80a4291c327ccacaeccb0ebea3afe7ed791b6",
+      "previous_candidate_hash": null,
+      "previous_recommendation": null,
+      "source_urls": [
+        "https://github.com/unclecode/crawl4ai",
+        "https://github.com/unclecode/crawl4ai/releases"
+      ]
+    },
+    "previous_state": {
+      "last_candidate_hash": null,
+      "last_recommendation": null
+    },
+    "instructions": [
+      "Use the compact delta only.",
+      "Do not include historical corpus text.",
+      "Preserve deterministic scores and evidence."
+    ]
+  }
+}
