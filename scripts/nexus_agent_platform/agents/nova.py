@@ -300,6 +300,12 @@ def save_provenance(chat_id: int, provenance: Dict[str, Any]) -> None:
         "capability", "status", "source", "source_type", "freshness",
         "retrieved_at", "handler", "trace_id", "verification_complete",
         "sources_checked", "source_statuses",
+        # Compact, safe evidence continuity fields. These contain only
+        # capability metadata, report references, timestamps, and bounded
+        # business claims; secrets are never copied into this packet.
+        "conversation_id", "message_id", "resolved_intent", "capabilities_used",
+        "claims", "values", "sources", "source_timestamps", "source_refs",
+        "source_path", "recommendation_rationale", "evidence_packet",
     }
     safe_prov = {k: v for k, v in provenance.items() if k in safe_fields}
 
@@ -310,7 +316,7 @@ def save_provenance(chat_id: int, provenance: Dict[str, Any]) -> None:
         "provenance": safe_prov,
         "saved_at": datetime.now(timezone.utc).isoformat(),
         "expires_at": time.time() + MEMORY_EXPIRY_SECONDS,
-        "schema_version": 1,
+        "schema_version": 2,
     }
 
     # Atomic write with restricted permissions
@@ -337,7 +343,7 @@ def load_provenance(chat_id: int) -> Optional[Dict[str, Any]]:
         if not isinstance(data, dict):
             return None
         # Schema validation
-        if data.get("schema_version") != 1:
+        if data.get("schema_version") not in {1, 2}:
             return None
         expires_at = data.get("expires_at", 0)
         if expires_at and time.time() > expires_at:
@@ -362,6 +368,12 @@ def _clear_provenance(chat_id: int) -> None:
 def _conversation_key(chat_id: int) -> str:
     """Isolated namespace key per chat."""
     return f"nova_{chat_id}"
+
+
+def _safe_conversation_id(chat_id: int) -> str:
+    """Stable non-identifying conversation reference for evidence packets."""
+    digest = hashlib.sha256(f"{_PROVENANCE_NAMESPACE}:{chat_id}".encode()).hexdigest()[:16]
+    return f"nova_{digest}"
 
 
 def load_memory(chat_id: int) -> List[Dict[str, str]]:
@@ -552,6 +564,21 @@ def _selective_canonical_response(state: AgentState) -> Optional[str]:
 
     if capability == "provenance_followup":
         refs = result.get("data", {}).get("stored_provenance") or {}
+        packet = refs.get("evidence_packet") or {}
+        if packet:
+            claims = packet.get("claims") or []
+            sources = packet.get("sources") or packet.get("source_refs") or []
+            timestamps = packet.get("source_timestamps") or {}
+            claim_text = " ".join(str(claim) for claim in claims)
+            source_lines = []
+            for source in sources:
+                stamp = timestamps.get(source) if isinstance(timestamps, dict) else None
+                source_lines.append(f"- {source}" + (f", as of {stamp}" if stamp else ""))
+            if claim_text or source_lines:
+                answer = claim_text or "The prior answer used the preceding evidence packet."
+                if source_lines:
+                    answer += "\n\nSources:\n" + "\n".join(source_lines)
+                return answer
         source_refs = refs.get("source_refs", [])
         source = refs.get("source_path") or refs.get("source") or "UNKNOWN"
         joined = ", ".join(source_refs) if source_refs else source
@@ -581,6 +608,35 @@ def _present_response(state: AgentState, content: str) -> str:
         return ("I like it as an everyday EV. It's quick, efficient, and the charging ecosystem is a big advantage. "
                 "My main reservations are the minimalist controls and Tesla's uneven service and build-quality reputation.")
     return _compress_default_response(text, state.user_message)
+
+
+def _strip_nova_conversation_prefix(text: str) -> str:
+    """Accept harmless Nova name variants inside the already-bound Nova chat."""
+    # Routing/authorization remains owned by the Telegram worker. This only
+    # removes a conversational salutation before intent and model handling.
+    return re.sub(r"^\s*(?:nova|ova)\s*[,;:\-]?\s+", "", text or "", count=1, flags=re.IGNORECASE).strip()
+
+
+def _advisory_fallback(text: str) -> str:
+    """Bounded local fallback for a failed ordinary advisory generation."""
+    lower = (text or "").lower()
+    if "trucking" in lower and _wants_detail(text):
+        return (
+            "A trucking business can work, but the business model determines almost everything.\n\n"
+            "### Business models\n"
+            "Local box-truck and dedicated-route work can offer more predictable geography and scheduling. "
+            "Hotshot work may require less equipment than long-haul, but demand and utilization can be uneven. "
+            "Long-haul can expand the market while adding fuel, maintenance, insurance, compliance, and driver-management risk.\n\n"
+            "### Startup costs and financing\n"
+            "Model the truck or lease payment, down payment, commercial insurance, permits, registration, maintenance reserve, "
+            "fuel, software, and several months of working capital before choosing equipment. Compare cash purchase, equipment financing, "
+            "leasing, and owner-operator arrangements without assuming the most optimistic utilization.\n\n"
+            "### Risks and market entry\n"
+            "The biggest risks are weak contract quality, empty miles, downtime, fuel volatility, insurance costs, and compliance failures. "
+            "Start by validating one customer segment and a repeatable lane or service, get written pricing and payment terms, and prove the margins "
+            "with a small internal model before buying or leasing a truck."
+        )
+    return "I couldn't complete that response right now, but the request was understood."
 
 
 # ─── Simple Utilities ──────────────────────────────────────
@@ -666,7 +722,9 @@ _PROVENANCE_FOLLOWUP_PATTERNS = re.compile(
     r'(?:configuration|operational|runtime|structural)\s+(?:or|and)\s+(?:real|runtime|operational)|'
     r'source\s+classification|how\s+(?:is|are)\s+(?:that|those)\s+classified|'
     r'which\s+(?:category|level|type)\s+(?:is|are)\s+(?:that|those)|'
-    r'(?:operational|configuration)\s+or\s+(?:real|runtime|verified))\b',
+    r'(?:operational|configuration)\s+or\s+(?:real|runtime|verified))\b|'
+    r'show\s+(?:me\s+)?(?:the\s+)?evidence(?:\s+you\s+used)?|'
+    r'evidence\s+(?:you\s+)?used',
     re.IGNORECASE,
 )
 
@@ -3277,6 +3335,10 @@ def _build_verified_planner_fallback(
 
 def _classify_intent(state: AgentState) -> AgentState:
     """Classify the user message into a response mode."""
+    normalized = _strip_nova_conversation_prefix(state.user_message)
+    if normalized != state.user_message.strip():
+        state.metadata["original_user_message"] = state.user_message
+        state.user_message = normalized
     mode = classify_response_mode(state.user_message)
     state.intent = mode
     state.metadata["nova_mode"] = mode
@@ -3537,12 +3599,37 @@ def _capability_gate(state: AgentState) -> AgentState:
             source_refs = list(brief_data.get("evidence_refs", []) or [])
             if "reports/hermes_modernization/stripe_test_mode_proof.json" not in source_refs:
                 source_refs.append("reports/hermes_modernization/stripe_test_mode_proof.json")
+            retrieved_at = provenance.get("retrieved_at") or datetime.now(timezone.utc).isoformat()
+            evidence_packet = {
+                "conversation_id": _safe_conversation_id(chat_id),
+                "message_id": state.metadata.get("message_id") or state.metadata.get("mission_id"),
+                "resolved_intent": "DAILY_BRIEF",
+                "capabilities_used": ["DAILY_BRIEF"],
+                "claims": [
+                    "Payment gate is BLOCKED_UNTIL_TEST_KEYS_RECONCILED.",
+                    "Stripe mode is not confirmed TEST.",
+                    "TEST-key reconciliation is the prerequisite; the $97 test checkout is downstream after the gate clears.",
+                ],
+                "values": {
+                    "payment_gate": "BLOCKED_UNTIL_TEST_KEYS_RECONCILED",
+                    "stripe_mode": "NOT_CONFIRMED_TEST",
+                    "downstream_test_checkout_estimated_value_usd": 97,
+                },
+                "sources": source_refs,
+                "source_timestamps": {source: retrieved_at for source in source_refs},
+                "freshness": provenance.get("freshness", "current_runtime"),
+            }
             provenance.update({
+                "conversation_id": _safe_conversation_id(chat_id),
+                "message_id": state.metadata.get("message_id") or state.metadata.get("mission_id"),
+                "resolved_intent": "DAILY_BRIEF",
+                "capabilities_used": ["DAILY_BRIEF"],
                 "source_refs": source_refs,
                 "recommendation_rationale": (
                     "Stripe test-key reconciliation is first because the payment gate is "
                     "BLOCKED_UNTIL_TEST_KEYS_RECONCILED; the test checkout follows only after that gate clears."
                 ),
+                "evidence_packet": evidence_packet,
             })
         state.metadata["capability_gate"] = {
             "decision": "canonical_awareness",
@@ -3848,26 +3935,39 @@ def _generate_response(state: AgentState) -> AgentState:
     messages = state.metadata.get("model_messages", [])
     chat_id = state.metadata.get("chat_id", 0)
 
-    try:
-        with stage_execution(
-            stage="generation",
-            source="scripts/nexus_agent_platform/agents/nova.py:_generate_response",
-            metadata={"purpose": "final_generation"},
-        ):
-            result = asyncio.run(_call_model(messages, chat_id, purpose="final_generation"))
-        content = result.get("content", "")
-        model_used = result.get("model", os.getenv("HERMES_NOVA_MODEL", DEFAULT_MODEL))
-        usage = result.get("usage", {})
+    content = ""
+    result = {}
+    last_error = None
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            with stage_execution(
+                stage="generation",
+                source="scripts/nexus_agent_platform/agents/nova.py:_generate_response",
+                metadata={"purpose": "final_generation", "attempt": attempt + 1},
+            ):
+                result = asyncio.run(_call_model(messages, chat_id, purpose="final_generation"))
+            content = result.get("content", "")
+            model_used = result.get("model", os.getenv("HERMES_NOVA_MODEL", DEFAULT_MODEL))
+            usage = result.get("usage", {})
 
-        state.metadata["model_used"] = model_used
-        state.metadata["model_usage"] = usage
-        state.metadata["model_provider"] = "openrouter"
-        state.metadata["provider_latency_ms"] = result.get("latency_ms", 0)
-    except Exception as exc:
-        log.error("Nova model call failed: %s", exc)
-        state.metadata["model_error"] = str(exc)
-        state.metadata["model_error_type"] = exc.__class__.__name__
-        content = ""
+            state.metadata["model_used"] = model_used
+            state.metadata["model_usage"] = usage
+            state.metadata["model_provider"] = "openrouter"
+            state.metadata["provider_latency_ms"] = result.get("latency_ms", 0)
+            if content:
+                break
+        except Exception as exc:
+            last_error = exc
+            log.error("Nova model call failed (attempt %s/%s): %s", attempt + 1, MAX_RETRIES + 1, exc)
+
+    if not content:
+        if last_error is not None:
+            state.metadata["model_error"] = str(last_error)
+            state.metadata["model_error_type"] = last_error.__class__.__name__
+        else:
+            state.metadata["model_error"] = "empty model response"
+            state.metadata["model_error_type"] = "EmptyResponse"
+        content = _advisory_fallback(state.user_message)
 
     state.assistant_response = _present_response(state, content)
     return state

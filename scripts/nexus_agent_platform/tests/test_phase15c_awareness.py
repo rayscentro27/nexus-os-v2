@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import importlib.util
 from unittest.mock import MagicMock, patch
 
 
@@ -189,6 +191,147 @@ def test_explicit_deep_dive_bypasses_default_compression():
     state = AgentState(agent_id="hermes_nova", user_message="Give me a detailed analysis of starting a trucking company including startup costs, risks, financing, business models, and market entry.", metadata={})
     detailed = "Pros:\nStartup costs\nRisks\nFinancing\nBusiness models\nMarket entry\nConclusion"
     assert _present_response(state, detailed) == detailed
+
+
+def test_grounded_recommendation_persists_message_bound_evidence_packet(tmp_path, monkeypatch):
+    from nexus_agent_platform.agents import nova
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    monkeypatch.setattr(nova, "PROVENANCE_DIR", str(tmp_path))
+    chat_id = 991001
+    state = AgentState(
+        agent_id="hermes_nova",
+        mission_id="nova_mission_1",
+        user_message="What is my highest-value next action based on current Nexus data?",
+        metadata={"chat_id": chat_id, "message_id": 77},
+    )
+    result = {
+        "status": "OK",
+        "data": {"evidence_refs": ["reports/hermes_modernization/daily_brief.json"]},
+        "provenance": {"freshness": "current_runtime", "retrieved_at": "2026-08-18T23:00:00+00:00"},
+    }
+    with patch("nexus_agent_platform.capabilities.shared.execute_shared_capability", return_value=result):
+        nova._capability_gate(state)
+
+    stored = nova.load_provenance(chat_id)
+    packet = stored["evidence_packet"]
+    assert packet["conversation_id"].startswith("nova_")
+    assert "991001" not in packet["conversation_id"]
+    assert packet["message_id"] == 77
+    assert "BLOCKED_UNTIL_TEST_KEYS_RECONCILED" in " ".join(packet["claims"])
+    assert packet["values"]["stripe_mode"] == "NOT_CONFIRMED_TEST"
+    assert any("stripe_test_mode_proof.json" in source for source in packet["sources"])
+    assert not any("secret" in str(value).lower() for value in packet.values())
+
+
+def test_evidence_followup_renders_prior_packet_without_fresh_lookup():
+    from nexus_agent_platform.agents.nova import _present_response
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    packet = {
+        "claims": [
+            "Payment gate is BLOCKED_UNTIL_TEST_KEYS_RECONCILED.",
+            "Stripe mode is not confirmed TEST.",
+            "TEST-key reconciliation is the prerequisite; the $97 test checkout is downstream after the gate clears.",
+        ],
+        "sources": ["reports/hermes_modernization/daily_brief.json", "reports/hermes_modernization/stripe_test_mode_proof.json"],
+        "source_timestamps": {"reports/hermes_modernization/daily_brief.json": "2026-08-18T23:00:00+00:00"},
+    }
+    state = AgentState(
+        agent_id="hermes_nova",
+        user_message="Nova, show me the evidence you used for that answer.",
+        metadata={"capability_result": {"query_type": "provenance_followup", "status": "success", "data": {"stored_provenance": {"evidence_packet": packet}}}},
+    )
+    answer = _present_response(state, "zero records")
+    assert "BLOCKED_UNTIL_TEST_KEYS_RECONCILED" in answer
+    assert "zero records" not in answer
+    assert "stripe_test_mode_proof.json" in answer
+
+
+def test_nova_prefix_variants_enable_deep_dive_conversation():
+    from nexus_agent_platform.agents.nova import _classify_intent, _present_response
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    prompt = "ova, give me a detailed analysis of starting a trucking company including startup costs, risks, financing, business models, and market entry."
+    state = AgentState(agent_id="hermes_nova", user_message=prompt, metadata={})
+    _classify_intent(state)
+    assert state.user_message.startswith("give me a detailed analysis")
+    assert state.metadata["nova_mode"] == "CONVERSATION"
+    detailed = "### Startup costs\n- truck\n- insurance\n\n### Risks\n- utilization"
+    assert _present_response(state, detailed) == detailed
+
+
+def test_deep_dive_generation_failure_uses_bounded_advisory_fallback():
+    from nexus_agent_platform.agents import nova
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    state = AgentState(
+        agent_id="hermes_nova",
+        user_message="Give me a detailed analysis of starting a trucking company including startup costs, risks, financing, business models, and market entry.",
+        metadata={"model_messages": [], "chat_id": 991002},
+    )
+    with patch.object(nova, "_call_model", side_effect=RuntimeError("temporary provider failure")):
+        result = nova._generate_response(state)
+    assert result.assistant_response
+    assert "Business models" in result.assistant_response
+    assert result.metadata["model_error_type"] == "RuntimeError"
+
+
+def test_production_telegram_entrypoint_keeps_evidence_and_accepts_ova_deep_dive(tmp_path, monkeypatch):
+    """Exercise the same worker dispatch path used by the Nova Telegram bot."""
+    from nexus_agent_platform.agents import nova
+
+    spec = importlib.util.spec_from_file_location("nova_worker_phase15c", "scripts/nova/nova_telegram_worker.py")
+    worker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(worker)
+
+    chat_id = 991003
+    monkeypatch.setattr(nova, "PROVENANCE_DIR", str(tmp_path / "provenance"))
+    monkeypatch.setattr(nova, "MEMORY_DIR", str(tmp_path / "memory"))
+    monkeypatch.setattr(worker, "NOVA_MISSIONS_DIR", str(tmp_path / "missions"))
+    monkeypatch.setattr(worker, "NOVA_RECEIPTS_DIR", str(tmp_path / "receipts"))
+    monkeypatch.setattr(worker, "_update_status_field", lambda *_args: None)
+    monkeypatch.setattr(worker, "_acquire_chat_lock", lambda _chat_id: "test-lock")
+    monkeypatch.setattr(worker, "_release_chat_lock", lambda _chat_id: None)
+    monkeypatch.setattr(worker, "is_authorized", lambda *_args: True)
+    monkeypatch.setattr(worker, "update_mission", lambda mission, status, extra=None: mission)
+    monkeypatch.setattr(worker, "write_receipt", lambda receipt: receipt)
+    monkeypatch.setattr(nova, "get_nova_otel", lambda: type("Otel", (), {"is_enabled": False})())
+    monkeypatch.setattr("nexus_agent_platform.flags.HERMES_NOVA_ENABLED", True)
+
+    mission_counter = iter(("m1", "m2", "m3"))
+    monkeypatch.setattr(worker, "create_mission", lambda *args: {"mission_id": next(mission_counter)})
+    delivered = []
+    monkeypatch.setattr(worker, "tg_send_message", lambda _chat, text: delivered.append(text) or [1])
+
+    nova._graph = None
+    graph = nova.get_nova_graph()
+    monkeypatch.setattr(nova, "get_nova_graph", lambda: graph)
+    monkeypatch.setattr(nova, "plan_query", lambda *args, **kwargs: {"domain": "none"})
+
+    async def model_response(*_args, **_kwargs):
+        return {"content": "### Business models\nStartup costs, risks, financing, and market entry.", "model": "test", "usage": {}}
+
+    daily = {
+        "status": "OK",
+        "data": {
+            "evidence_refs": ["reports/hermes_modernization/daily_brief.json"],
+            "blockers": [{"blocker": "Stripe payment gate", "cause": "runtime keys must be reconciled"}],
+        },
+        "provenance": {"freshness": "current_runtime", "retrieved_at": "2026-08-18T23:00:00+00:00"},
+    }
+    with patch.object(nova, "_call_model", side_effect=model_response), \
+         patch("nexus_agent_platform.capabilities.shared.execute_shared_capability", return_value=daily) as execute:
+        assert worker.process_message({"update_id": 100, "message": {"message_id": 10, "chat": {"id": chat_id}, "from": {"id": 1}, "text": "Nova, what is my highest-value next action based on current Nexus data?"}})
+        execute.reset_mock()
+        assert worker.process_message({"update_id": 101, "message": {"message_id": 11, "chat": {"id": chat_id}, "from": {"id": 1}, "text": "Nova, show me the evidence you used for that answer."}})
+        assert execute.call_count == 0
+        assert worker.process_message({"update_id": 102, "message": {"message_id": 12, "chat": {"id": chat_id}, "from": {"id": 1}, "text": "ova, give me a detailed analysis of starting a trucking company including startup costs, risks, financing, business models, and market entry."}})
+
+    assert "reconcile the Stripe runtime to TEST keys" in delivered[0]
+    assert "BLOCKED_UNTIL_TEST_KEYS_RECONCILED" in delivered[1]
+    assert "stripe_test_mode_proof.json" in delivered[1]
+    assert "Business models" in delivered[2]
 
 
 def test_business_opportunity_result_excludes_process_actions_and_supports_empty_shape():

@@ -463,6 +463,8 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             user_message=text,
             metadata={
                 "chat_id": chat_id,
+                "conversation_id": f"nova_{hashlib.sha256(str(chat_id).encode()).hexdigest()[:16]}",
+                "message_id": message.get("message_id") or update_id,
                 "user_id": user_id,
                 "username": username,
                 "source": "telegram",
