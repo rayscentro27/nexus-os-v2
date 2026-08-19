@@ -6,19 +6,22 @@
   <string>com.nexus.continuous-loop</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/bin/python3</string>
-    <string>/Users/raymonddavis/nexus-os-v2/scripts/activation/run_nexus_continuous_loop.py</string>
-    <string>--interval-minutes</string>
-    <string>30</string>
-    <string>--json</string>
-    <string>--safe-internal</string>
-    <string>--feedback-enabled</string>
-    <string>--heartbeat</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/ops/run_with_nexus_runtime_env.sh</string>
+    <string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string>
+    <string>-m</string>
+    <string>nexus_agent_platform.phase15.run_all</string>
   </array>
   <key>WorkingDirectory</key>
   <string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts</string>
+  </dict>
   <key>RunAtLoad</key>
-  <false/>
+  <true/>
+  <key>StartInterval</key>
+  <integer>3600</integer>
   <key>KeepAlive</key>
   <false/>
   <key>StandardOutPath</key>

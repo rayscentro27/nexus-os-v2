@@ -1,0 +1,40 @@
+{
+  "phase": "PHASE 16A",
+  "status": "RUNNING",
+  "started_at": "2026-08-19T02:25:04Z",
+  "expected_end_at": "2026-08-20T02:25:04Z",
+  "wall_clock_hours_required": 24,
+  "host": "local macOS host",
+  "git_commit": "747133984a8055070877d4c9ad669b3c690b210e",
+  "runtime_instance": "com.nexus.continuous-loop",
+  "scheduler": {
+    "label": "com.nexus.continuous-loop",
+    "cadence_seconds": 3600,
+    "run_at_load": true,
+    "manual_kick_used_for_contract_verification": true
+  },
+  "scope": [
+    "open_source_scout_loop",
+    "research_intake_loop",
+    "revenue_opportunity_loop",
+    "seo_opportunity_loop",
+    "morning_brief"
+  ],
+  "first_scheduled_dispatch": {
+    "status": "PASS",
+    "observed_at": "2026-08-19T02:24:16.051162+00:00",
+    "source": "launchd com.nexus.continuous-loop",
+    "loops_recorded": 4,
+    "provider_cost_usd": 0
+  },
+  "next_run_timestamps": {
+    "status": "PASS",
+    "source": "data/runtime/nexus_loops/loop_state.json",
+    "cadence_basis": "canonical launchd StartInterval=3600"
+  },
+  "delivery": {
+    "morning_brief": "NOT_CERTIFIED",
+    "reason": "No authenticated Telegram delivery receipt was observed during this coding session."
+  },
+  "completion_rule": "Do not mark COMPLETE_PASS until expected_end_at has passed and the ledger, verifier, scheduler continuity, cost, and delivery evidence are reviewed."
+}

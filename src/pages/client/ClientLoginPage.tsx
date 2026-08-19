@@ -42,7 +42,7 @@ export default function ClientLoginPage() {
       }
       setBusy(false);
     } else {
-      window.location.assign("/client/dashboard");
+      window.location.assign("/client/onboarding");
     }
   }
 

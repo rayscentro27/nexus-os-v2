@@ -3,16 +3,16 @@
   "canonical_repo_runtime": "scripts/nexus_agent_platform/phase15/run_all.py and scripts/nexus_agent_platform/phase15/live_loop_runner.py",
   "canonical_loop_authority": "LoopRuntime + LoopStateStore",
   "canonical_brief_authority": "scripts/nexus_agent_platform/brief/daily_brief.py",
-  "scheduler_authority": "NOT_CERTIFIED",
-  "scheduler_finding": "The expected com.nexus.phase15-bounded-runtime launchd label was not found in the inspected LaunchAgents directory. Multiple legacy Nexus launchd jobs are present, including a stale activation snapshot bridge and unrelated nexus-ai schedulers. No new scheduler was installed.",
+  "scheduler_authority": "com.nexus.continuous-loop",
+  "scheduler_finding": "The existing com.nexus.continuous-loop identity is now the single certified business-loop scheduler at 3600-second intervals. The stale activation snapshot and continuous-ops-daily authorities were booted out. Telegram workers and daily/evening reporting jobs were preserved.",
   "real_runtime_evidence": {
     "loop_state": "data/runtime/nexus_loops/loop_state.json",
     "execution_ledger": "data/runtime/nexus_loops/execution_ledger.jsonl",
     "latest_observed_business_runs_utc": "2026-08-18T18:25:56Z through 2026-08-18T18:26:30Z",
     "loops_observed": 4,
-    "scheduled_vs_manual": "UNKNOWN from current ledger fields",
-    "next_run_persistence": "PARTIAL — next_eligible_run is scheduler-defined rather than a persisted timestamp",
-    "runtime_survival": "UNKNOWN",
+    "scheduled_vs_manual": "PASS for first launchd dispatch; source is com.nexus.continuous-loop",
+    "next_run_persistence": "PASS — scheduled_for and next_run_at are persisted in loop state and ledger",
+    "runtime_survival": "RUNNING_WINDOW_PENDING",
     "reboot_reconciliation": "UNKNOWN"
   },
   "loop_processes": [
@@ -21,5 +21,5 @@
     {"loop_id": "revenue_opportunity_loop", "owner": "LoopRuntime", "source": "report-backed opportunity records", "ai_policy": "T0 first"},
     {"loop_id": "seo_opportunity_loop", "owner": "LoopRuntime", "source": "public SEO evidence", "ai_policy": "T0 first"}
   ],
-  "protected_invariants": ["no second scheduler installed", "no live Stripe charges", "no external client onboarded", "Nova read-only", "no Alpha client PII"]
+  "protected_invariants": ["no second scheduler installed", "no live Stripe charges", "no external client onboarded", "Nova read-only", "no Alpha client PII", "Telegram transport workers preserved"]
 }

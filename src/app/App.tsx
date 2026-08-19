@@ -4,6 +4,8 @@ import { AdminGuard } from '../components/auth/AdminGuard';
 import NexusAdminUI from '../admin/NexusAdminUI';
 import ClientPortalRoot from '../pages/client/ClientPortalRoot';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
+import ClientOnboardingPage from '../pages/client/ClientOnboardingPage';
+import { loadClientProfileIntake, checkProfileIntakeComplete } from '../lib/clientPortalDataAdapter';
 import ClientPreviewPage from '../pages/client/ClientPreviewPage';
 import { ClientV2Gate } from '../client-v2/pages/ClientV2Root';
 import { ClientV2PreviewPage } from '../client-v2/pages/ClientV2PreviewPage';
@@ -48,6 +50,7 @@ async function isUserAdmin(userId: string): Promise<boolean> {
 function ClientPortalGate() {
   const { user, loading } = useSession();
   const [clientOk, setClientOk] = useState<boolean | null>(null);
+  const [onboardingOk, setOnboardingOk] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -58,20 +61,32 @@ function ClientPortalGate() {
         if (cancelled) return;
         if (admin) { setClientOk(false); return; }
         const ctx = await resolveClientContextForCurrentUser();
-        if (!cancelled) setClientOk(!!ctx);
+        if (!ctx) {
+          if (!cancelled) { setClientOk(false); setOnboardingOk(false); }
+          return;
+        }
+        const intake = await loadClientProfileIntake(ctx);
+        if (!cancelled) {
+          setClientOk(true);
+          setOnboardingOk(checkProfileIntakeComplete(intake.data).complete);
+        }
       } catch {
-        if (!cancelled) setClientOk(false);
+        if (!cancelled) { setClientOk(false); setOnboardingOk(false); }
       }
     })();
     return () => { cancelled = true; };
   }, [user, loading]);
 
-  if (loading || clientOk === null) {
+  if (loading || clientOk === null || onboardingOk === null) {
     return <div className="authwrap"><div className="muted">Loading…</div></div>;
   }
   if (!user || !clientOk) {
     window.location.assign('/client/login');
     return <div className="authwrap"><div className="muted">Redirecting to login…</div></div>;
+  }
+  if (window.location.pathname === '/client/dashboard' && !onboardingOk) {
+    window.location.assign('/client/onboarding');
+    return <div className="authwrap"><div className="muted">Preparing your setup…</div></div>;
   }
   return <ClientPortalRoot />;
 }
@@ -144,6 +159,9 @@ export function App() {
   }
   if (path === '/client/login') {
     return <ClientLoginPage />;
+  }
+  if (path === '/client/onboarding') {
+    return <ClientOnboardingPage />;
   }
   if (path === '/client/preview') {
     return <ClientPreviewPage />;

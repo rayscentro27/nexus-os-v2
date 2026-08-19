@@ -643,6 +643,10 @@ class LoopRuntime:
             "verifier_status": verifier_result.get("status"),
             "zero_token_execution": zero_token_execution or not ai_used,
         })
+        if trigger.get("scheduled_for"):
+            memory_record["scheduled_for"] = trigger["scheduled_for"]
+        if trigger.get("next_run_at"):
+            memory_record["next_run_at"] = trigger["next_run_at"]
         memory_record = json.loads(json.dumps(memory_record, sort_keys=True, default=str))
         self.state_store.update_loop_state(spec.loop_id, memory_record)
 
@@ -690,6 +694,10 @@ class LoopRuntime:
             "material_hash": material_hash,
             "delta_status": "NO_CHANGE" if no_change else "CHANGED",
         }
+        if trigger.get("scheduled_for"):
+            ledger_record["scheduled_for"] = trigger["scheduled_for"]
+        if trigger.get("next_run_at"):
+            ledger_record["next_run_at"] = trigger["next_run_at"]
         _append_jsonl(self.ledger_path, ledger_record)
 
         telemetry_run_id = ""

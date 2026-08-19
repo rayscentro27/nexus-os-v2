@@ -14,14 +14,19 @@
 - Audited LoopRuntime, existing loop ledger, runtime activation, and Daily Brief sources.
 - Recorded real four-loop `NO_CHANGE` runtime evidence with verifier pass, zero AI calls, zero tokens, and $0 provider cost.
 - Corrected the canonical Daily Brief next-action aggregation so a blocked Stripe prerequisite outranks a downstream checkout.
+- Repaired first-login routing through the existing `client_profiles` intake contract; incomplete accounts now go to `/client/onboarding` before `/client/dashboard`.
+- Reused the existing `com.nexus.continuous-loop` launchd identity for the bounded Phase 15 runtime, booted out the stale activation snapshot and continuous-ops scheduler authorities, and preserved Telegram workers.
+- Recorded the first real launchd dispatch and persisted `scheduled_for` / `next_run_at` timestamps for all four certified loops.
+- Started a real 24-hour certification manifest; it is `RUNNING` and not yet a pass.
 
 ## Remaining blockers
 
 - Branded Supabase Auth email templates are not repository-owned or verified.
-- First-login onboarding routing/state machine is not implemented/proven in client-v2.
-- Browser proof against a clean authenticated real-data account is not complete.
-- Expected Phase 15 bounded scheduler label was not found; multiple legacy launchd authorities require Ray’s operational decision.
-- 24-hour unattended execution window and morning-brief delivery receipt are not complete.
+- Authenticated browser proof against a clean real-data account is not complete.
+- Supabase Auth email-template configuration remains a dashboard/manual task.
+- The 24-hour unattended execution window is running and cannot be certified until `2026-08-20T02:25:04Z`.
+- Morning-brief delivery receipt and Hermes/Nova morning-brief follow-up remain manual certification.
+- TypeScript/build remain blocked by the local toolchain/filesystem timeout.
 - Hermes/Nova morning-brief follow-up conversation remains manual certification.
 - Ray design-direction approval is required.
 
