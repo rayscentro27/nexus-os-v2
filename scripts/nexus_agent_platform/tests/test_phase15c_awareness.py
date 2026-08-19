@@ -137,6 +137,60 @@ def test_workforce_and_loop_taxonomies_are_canonical_not_legacy_counts():
     assert not any("process" in key for key in loops["data"]["loops"])
 
 
+def test_nova_default_presentation_is_concise_and_removes_report_scaffolding():
+    from nexus_agent_platform.agents.nova import _present_response
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    state = AgentState(agent_id="hermes_nova", user_message="What do you think about the Tesla Model 3?", metadata={})
+    answer = _present_response(state, """Pros:\n- quick and efficient\nCons:\n- minimalist controls\nConclusion: it is worth considering.\nFeel free to ask if you need more details.""")
+    assert len(answer.split()) < 70
+    assert not any(label in answer for label in ("Pros:", "Cons:", "Conclusion:", "Feel free to ask"))
+
+
+def test_simple_canonical_answers_are_selected_not_dumped():
+    from nexus_agent_platform.agents.nova import _present_response
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    cases = [
+        ("How many production clients do I have?", "CLIENT_COUNT", {"production_total": 14, "active": 14, "onboarding": 0, "tester_or_certification": 24}, "14 production clients"),
+        ("What opportunities are ACCEPT or WATCH?", "BUSINESS_OPPORTUNITIES", {"by_decision": {"ACCEPT": 27, "WATCH": 30}}, "27 ACCEPT and 30 WATCH"),
+        ("What coding workers are available?", "WORKFORCE_STATUS", {"worker_pool": [{"worker_id": "codex", "status": "AVAILABLE"}, {"worker_id": "opencode", "status": "AVAILABLE"}, {"worker_id": "local_python", "status": "AVAILABLE"}, {"worker_id": "kilo", "status": "INSTALLED_UNPROVEN"}, {"worker_id": "mimo", "status": "INSTALLED_UNPROVEN"}]}, "Codex, OpenCode, and Local Python are available"),
+    ]
+    for question, capability, data, expected in cases:
+        state = AgentState(agent_id="hermes_nova", user_message=question, metadata={"capability_result": {"query_type": capability, "status": "OK", "data": data}})
+        answer = _present_response(state, '{"huge": "raw report"}')
+        assert expected in answer
+        assert "raw report" not in answer
+
+
+def test_recommendation_is_prerequisite_aware_and_evidence_is_preserved():
+    from nexus_agent_platform.agents.nova import _present_response
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    daily = {
+        "query_type": "DAILY_BRIEF", "status": "OK",
+        "data": {"highest_value_next_action": "Approve and complete the $97 checkout", "blockers": [{"blocker": "Stripe Checkout completion", "cause": "runtime keys must be reconciled"}]},
+    }
+    state = AgentState(agent_id="hermes_nova", user_message="What is my highest-value next action based on current Nexus data?", metadata={"capability_result": daily})
+    answer = _present_response(state, "ignored model report")
+    assert "reconcile the Stripe runtime to TEST keys" in answer
+    assert "$97 test checkout comes after" in answer
+
+    evidence_state = AgentState(agent_id="hermes_nova", user_message="Show me the evidence you used.", metadata={"capability_result": {"query_type": "provenance_followup", "status": "success", "data": {"stored_provenance": {"source_refs": ["reports/hermes_modernization/daily_brief.json", "reports/hermes_modernization/stripe_test_mode_proof.json"], "recommendation_rationale": "Stripe test-key reconciliation is first because the payment gate is BLOCKED_UNTIL_TEST_KEYS_RECONCILED."}}}})
+    evidence = _present_response(evidence_state, "I don't have specific evidence.")
+    assert "daily_brief.json" in evidence and "stripe_test_mode_proof.json" in evidence
+    assert "I don't have specific evidence" not in evidence
+
+
+def test_explicit_deep_dive_bypasses_default_compression():
+    from nexus_agent_platform.agents.nova import _present_response
+    from nexus_agent_platform.adapters.state_adapter import AgentState
+
+    state = AgentState(agent_id="hermes_nova", user_message="Give me a detailed analysis of starting a trucking company including startup costs, risks, financing, business models, and market entry.", metadata={})
+    detailed = "Pros:\nStartup costs\nRisks\nFinancing\nBusiness models\nMarket entry\nConclusion"
+    assert _present_response(state, detailed) == detailed
+
+
 def test_business_opportunity_result_excludes_process_actions_and_supports_empty_shape():
     from nexus_agent_platform.capabilities.operational_reads import _business_opportunities
 

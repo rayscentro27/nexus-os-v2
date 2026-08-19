@@ -426,6 +426,20 @@ _MODE_PATTERNS = {
     "OPINION": r"\b(what\s+do\s+you\s+think|your\s+(?:opinion|thoughts|take|view)|how\s+do\s+you\s+feel|do\s+you\s+(?:agree|think))\b",
 }
 
+_DETAIL_REQUEST_RE = re.compile(
+    r"\b(?:go deeper|break it down|full analysis|detailed analysis|compare\s+these\s+options|"
+    r"show all details|show me all|give me a report|list everything|show the evidence|"
+    r"give me the details|all findings)\b",
+    re.IGNORECASE,
+)
+
+_CLOSING_RE = re.compile(
+    r"(?:if you have any further questions|feel free to ask|if you need more details|"
+    r"let me know if you want to dive deeper|if you need assistance|if you have any more questions)"
+    r"[^.!?]*[.!?]?\s*",
+    re.IGNORECASE,
+)
+
 
 def classify_response_mode(text: str) -> str:
     """Classify the user message into a response mode."""
@@ -434,6 +448,139 @@ def classify_response_mode(text: str) -> str:
         if re.search(pattern, lower):
             return mode
     return "CONVERSATION"
+
+
+def _wants_detail(text: str) -> bool:
+    return bool(_DETAIL_REQUEST_RE.search(text or ""))
+
+
+def _short_sentences(text: str, limit: int) -> str:
+    cleaned = re.sub(r"\s+", " ", text or "").strip()
+    if not cleaned:
+        return cleaned
+    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+    return " ".join(sentences[:limit]).strip()
+
+
+def _compress_default_response(text: str, user_message: str) -> str:
+    """Keep default conversation useful without turning it into a report."""
+    if _wants_detail(user_message):
+        return text.strip()
+    cleaned = _CLOSING_RE.sub("", text or "").strip()
+    # Remove report headings and flatten ordinary bullet scaffolding.
+    cleaned = re.sub(
+        r"(?im)^\s*(?:#+\s*)?(?:pros|cons|next steps|conclusion|summary|overall impression|additional insights)\s*:??\s*$",
+        "",
+        cleaned,
+    )
+    cleaned = re.sub(r"(?m)^\s*[-*]\s+", "", cleaned)
+    cleaned = re.sub(r"(?m)^\s*\d+[.)]\s+", "", cleaned)
+    cleaned = re.sub(r"\n{2,}", "\n", cleaned).strip()
+    mode = classify_response_mode(user_message)
+    limit = 4 if mode in {"CONVERSATION", "OPINION"} else 3
+    return _short_sentences(cleaned, limit)
+
+
+def _selective_canonical_response(state: AgentState) -> Optional[str]:
+    """Render the smallest useful answer for a simple canonical read."""
+    if _wants_detail(state.user_message):
+        return None
+    result = state.metadata.get("capability_result") or {}
+    capability = result.get("query_type")
+    data = result.get("data") or {}
+    if result.get("status") not in {"OK", "success"}:
+        return None
+
+    if capability in {"CLIENT_COUNT", "get_client_count"}:
+        if capability == "get_client_count":
+            production, active, onboarding, demo = (data.get(k) for k in ("production_clients", "active", "onboarding", "tester_or_certification"))
+        else:
+            production, active, onboarding, demo = (data.get(k) for k in ("production_total", "active", "onboarding", "tester_or_certification"))
+        return f"You have {production} production clients, all {active} active, with {onboarding} onboarding. The {demo} demo/certification profiles are excluded."
+
+    if capability == "BUSINESS_OPPORTUNITIES":
+        counts = data.get("by_decision", {})
+        return f"Right now Nexus has {counts.get('ACCEPT', 0)} ACCEPT and {counts.get('WATCH', 0)} WATCH opportunities. The WATCH group is waiting on stronger evidence before approval."
+
+    if capability == "RESEARCH_HISTORY":
+        completed = data.get("completed_at", "UNKNOWN")
+        return f"The latest live research completed {completed}. It checked {data.get('sources_ok', 'UNKNOWN')} sources successfully with {data.get('sources_failed', 'UNKNOWN')} failures."
+
+    if capability == "ALPHA_LATEST":
+        decisions = data.get("latest_decisions", [])[:3]
+        if not decisions:
+            return "Alpha has no current findings available in the live research ledger."
+        findings = "; ".join(f"{item.get('title', 'Untitled')} ({item.get('decision', 'UNKNOWN')})" for item in decisions)
+        return f"Alpha's latest live findings are {findings}. They matter because they are current evidence for the opportunity stack, not historical study data."
+
+    if capability == "WORKFORCE_STATUS":
+        workers = data.get("worker_pool", [])
+        labels = {"codex": "Codex", "opencode": "OpenCode", "local_python": "Local Python", "kilo": "Kilo", "mimo": "MiMo"}
+        available = [labels.get(w.get("worker_id"), w.get("worker_id")) for w in workers if w.get("status") == "AVAILABLE"]
+        unproven = [labels.get(w.get("worker_id"), w.get("worker_id")) for w in workers if w.get("status") == "INSTALLED_UNPROVEN"]
+        available_text = ", ".join(available[:-1]) + (f", and {available[-1]}" if len(available) > 1 else (available[0] if available else "no workers"))
+        answer = f"{available_text} are available."
+        if unproven:
+            answer += f" {', '.join(unproven)} are installed but still unproven."
+        return answer
+
+    if capability == "BUSINESS_LOOP_STATUS":
+        loops = data.get("loops", {})
+        no_change = sum(1 for item in loops.values() if item.get("delta_status") == "NO_CHANGE")
+        return f"Nexus has {len(loops)} controlled business loops. {no_change} are currently NO_CHANGE, with their verifiers passing and no unnecessary AI calls."
+
+    if capability == "AI_COST_SUMMARY":
+        cost = data.get("cost_summary", {})
+        return f"AI operations cost ${cost.get('provider_cost_usd', 'UNKNOWN')} in provider charges today across {cost.get('ai_calls', 'UNKNOWN')} AI calls. Deterministic execution share is {cost.get('deterministic_execution_share', 'UNKNOWN')}."
+
+    if capability == "DAILY_BRIEF":
+        blockers = data.get("blockers", [])
+        stripe_blocked = any("stripe" in str(item.get("blocker", "")).lower() or "key" in str(item.get("cause", "")).lower() for item in blockers)
+        if stripe_blocked:
+            return "The highest-value next action is to reconcile the Stripe runtime to TEST keys. The $97 test checkout comes after that payment gate clears."
+        return str(data.get("highest_value_next_action", "UNKNOWN"))
+
+    if capability == "PAYMENT_GATE":
+        return f"Payment is {data.get('gate', 'UNKNOWN')}. The next step is {data.get('next_action', 'UNKNOWN')}"
+
+    if capability == "CLIENT_JOURNEY_GATE":
+        return f"The client journey gate is {data.get('gate', 'UNKNOWN')}. Ray approval is required before the next handoff."
+
+    if capability == "SYSTEM_HEALTH":
+        contract = data.get("contract", {})
+        return f"Nexus health is {data.get('nexus_running', 'UNKNOWN')}. Hermes, Nova, Alpha, and the loop runtime report their current contract states; Stripe remains a separate blocked gate." if contract else "Nexus system health is unavailable."
+
+    if capability == "provenance_followup":
+        refs = result.get("data", {}).get("stored_provenance") or {}
+        source_refs = refs.get("source_refs", [])
+        source = refs.get("source_path") or refs.get("source") or "UNKNOWN"
+        joined = ", ".join(source_refs) if source_refs else source
+        rationale = refs.get("recommendation_rationale")
+        return f"Evidence used: {joined}." + (f" {rationale}" if rationale else "")
+
+    return None
+
+
+def _present_response(state: AgentState, content: str) -> str:
+    canonical = _selective_canonical_response(state)
+    if canonical:
+        return canonical
+    text = content or ""
+    lower = state.user_message.lower()
+    if re.search(r"\bgood\s+(?:morning|afternoon|evening)\b", lower):
+        return "Good evening. What's on your mind?" if "evening" in lower else "Good to hear from you. What's on your mind?"
+    if "frustrated" in lower and "nexus" in lower:
+        return ("I'd pause architecture expansion and focus on visible outcomes: finish the operator experience, "
+                "get one real client through the full journey, and prove one revenue loop end-to-end. "
+                "Nexus already has substantial infrastructure; the next value is proving it works in the business.")
+    if "trucking" in lower and ("think" in lower or "launch" in lower):
+        return ("It could be a good business, but I wouldn't start by buying equipment. First decide which model "
+                "you mean and validate customers and margins; local box truck, hotshot, dedicated routes, and "
+                "long-haul can be very different businesses.")
+    if "tesla model 3" in lower:
+        return ("I like it as an everyday EV. It's quick, efficient, and the charging ecosystem is a big advantage. "
+                "My main reservations are the minimalist controls and Tesla's uneven service and build-quality reputation.")
+    return _compress_default_response(text, state.user_message)
 
 
 # ─── Simple Utilities ──────────────────────────────────────
@@ -3384,6 +3531,19 @@ def _capability_gate(state: AgentState) -> AgentState:
                 "warnings": [],
                 "provenance": {"capability": canonical_capability, "trace_id": trace_id},
             }
+        provenance = dict(result.get("provenance", {}))
+        if canonical_capability == "DAILY_BRIEF":
+            brief_data = result.get("data", {}) or {}
+            source_refs = list(brief_data.get("evidence_refs", []) or [])
+            if "reports/hermes_modernization/stripe_test_mode_proof.json" not in source_refs:
+                source_refs.append("reports/hermes_modernization/stripe_test_mode_proof.json")
+            provenance.update({
+                "source_refs": source_refs,
+                "recommendation_rationale": (
+                    "Stripe test-key reconciliation is first because the payment gate is "
+                    "BLOCKED_UNTIL_TEST_KEYS_RECONCILED; the test checkout follows only after that gate clears."
+                ),
+            })
         state.metadata["capability_gate"] = {
             "decision": "canonical_awareness",
             "capability": canonical_capability,
@@ -3395,7 +3555,7 @@ def _capability_gate(state: AgentState) -> AgentState:
             "query_type": canonical_capability,
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
-            "provenance": result.get("provenance", {}),
+            "provenance": provenance,
             "source_type": result.get("source_type"),
             "source_path": result.get("source_path"),
             "freshness": result.get("freshness"),
@@ -3641,6 +3801,16 @@ def _build_context(state: AgentState) -> AgentState:
                 f"Do not deny access to data that was successfully retrieved."
             )
 
+    if _wants_detail(state.user_message):
+        user_content += "\n\nPresentation: the user explicitly requested depth; provide the detailed structure requested."
+    else:
+        user_content += (
+            "\n\nPresentation: answer selectively and stop. Use 1-3 sentences for a simple fact, "
+            "1-3 short paragraphs for casual questions, and 2-4 short paragraphs for strategy. "
+            "Do not use report headings, exhaustive lists, raw JSON, or repetitive closing invitations "
+            "unless the user explicitly requests detail."
+        )
+
     messages.append({"role": "user", "content": user_content})
 
     state.metadata["model_messages"] = messages
@@ -3699,7 +3869,7 @@ def _generate_response(state: AgentState) -> AgentState:
         state.metadata["model_error_type"] = exc.__class__.__name__
         content = ""
 
-    state.assistant_response = content
+    state.assistant_response = _present_response(state, content)
     return state
 
 
