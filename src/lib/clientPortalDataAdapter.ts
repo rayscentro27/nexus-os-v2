@@ -165,7 +165,7 @@ export async function loadClientTasks(clientId?: string): Promise<{ data: Client
         .eq('client_id', id);
 
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
@@ -185,7 +185,7 @@ export async function loadReadinessScores(clientId?: string): Promise<{ data: Re
         .eq('client_id', id);
 
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
@@ -232,7 +232,7 @@ export async function loadBusinessProfileRequirements(clientId?: string): Promis
         .select('*')
         .eq('client_id', id);
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
@@ -249,7 +249,7 @@ export async function loadFundingReadinessScores(clientId?: string): Promise<{ d
         .select('*')
         .eq('client_id', id);
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
@@ -266,7 +266,7 @@ export async function loadApprovedClientGuidance(clientId?: string): Promise<{ d
         .select('*')
         .eq('client_id', id);
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
@@ -282,7 +282,7 @@ export async function loadPartnerOffers(): Promise<{ data: PartnerOffer[]; sourc
         .select('*')
         .limit(50);
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }
@@ -299,7 +299,7 @@ export async function loadCreditWorkflowItems(clientId?: string): Promise<{ data
         .select('*')
         .eq('client_id', id);
       if (error) return { data: [], source: 'supabase' as const, error: error.message };
-      if (data && data.length > 0) return { data, source: 'supabase' as const };
+      return { data: data || [], source: 'supabase' as const };
     } catch (e) {
       return { data: [], source: 'supabase' as const, error: String(e) };
     }

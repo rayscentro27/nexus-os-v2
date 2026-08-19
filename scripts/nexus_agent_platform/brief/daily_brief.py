@@ -149,6 +149,18 @@ def build_daily_brief() -> Dict[str, Any]:
     worker_rows = workforce_workers or workers
     top_money = (scoreboard.get("scoreboard") or [{}])[0]
     revenue_next = revenue.get("exact_next_money_action", UNKNOWN)
+    # A blocked payment prerequisite must outrank its downstream checkout.
+    # Keep the brief actionable without presenting a blocked test payment as
+    # the immediate next move.
+    blocker_rows = blockers.get("blockers", []) if isinstance(blockers, dict) else []
+    if any(
+        "stripe" in str(row.get("blocker", "")).lower()
+        or "stripe" in str(row.get("cause", "")).lower()
+        or "key" in str(row.get("cause", "")).lower()
+        for row in blocker_rows
+        if isinstance(row, dict)
+    ):
+        revenue_next = "Reconcile the Stripe runtime to TEST keys before the downstream test checkout."
     cost = _build_cost_summary(sources, pilot=pilot)
     paths = sources["paths"]
     evidence_refs = [_source_ref(paths[name]) for name in ("pilot", "revenue", "money_scoreboard", "blockers", "approvals", "loop_state", "loop_ledger", "builder_ledger", "learning", "workforce") if paths[name].exists()]

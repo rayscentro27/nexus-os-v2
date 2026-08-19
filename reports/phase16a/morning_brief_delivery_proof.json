@@ -1,0 +1,9 @@
+{
+  "status": "NOT_CERTIFIED",
+  "canonical_delivery_path": "Existing Telegram/Hermes delivery surfaces are present; a Phase 16A morning-cycle delivery receipt was not found in this audit.",
+  "duplicate_guard": "UNKNOWN",
+  "brief_id": "phase16a_morning_brief_20260818",
+  "delivery_attempted_by_this_phase": false,
+  "reason": "Do not claim delivery without an actual scheduled delivery receipt. Ray must verify the configured morning cycle.",
+  "source_refs": ["scripts/nexus_agent_platform/brief/daily_brief.py", "scripts/nexus_agent_platform/phase15/runtime_activation.py"]
+}

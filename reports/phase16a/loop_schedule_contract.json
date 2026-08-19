@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "authority": "existing Phase 15 LoopRuntime and launchd audit",
+  "expected_scheduler": {"label": "com.nexus.phase15-bounded-runtime", "script": "scripts/nexus_agent_platform/phase15/run_all.py", "cadence": "bounded one-shot every 60 minutes", "observed_registered": false},
+  "loop_contract": {"precheck": "deterministic source read + delta/hash comparison", "execution": "bounded LoopRuntime invocation", "verification": "loop verifier before result acceptance", "normal_idle_states": ["NO_CHANGE", "NO_ELIGIBLE_WORK", "ZERO_OPPORTUNITIES", "DUPLICATE_ONLY", "SOURCE_UNCHANGED"], "retry_policy": "existing keep_running policy; verifier/governance failures escalate", "ai_policy": "T0 deterministic first; unchanged state uses zero AI calls"},
+  "persistence": {"state_file": "data/runtime/nexus_loops/loop_state.json", "ledger_file": "data/runtime/nexus_loops/execution_ledger.jsonl", "next_run": "PARTIAL — scheduler-defined in loop state, not timestamped"},
+  "certification_status": "PARTIAL — loop contract is proven, unattended scheduler ownership is not"
+}

@@ -363,13 +363,26 @@ export function useV2ClientData(route = '/client-v2/dashboard') {
     loadClientPortalLiveData()
       .then((data) => {
         if (cancelled) return
-        if (data?.profile) {
-          setLiveRaw(data as unknown as Record<string, any>)
-          setMode('live')
-        } else {
-          setLiveRaw(null)
-          setMode('demo')
-        }
+        // Once live Supabase mode is enabled, an empty successful result must
+        // remain an empty live view. Falling back to seeded demo data here can
+        // leak synthetic scores/tasks into a real client's first experience.
+        setLiveRaw((data || {
+          profile: null,
+          tasks: [],
+          scores: [],
+          documents: [],
+          businessProfile: [],
+          fundingScores: [],
+          guidance: [],
+          partnerOffers: [],
+          creditItems: [],
+          systemReviews: [],
+          strategyRecommendations: [],
+          strategyDecisions: [],
+          resolvedClientId: null,
+          resolvedTenantId: null,
+        }) as unknown as Record<string, any>)
+        setMode('live')
       })
       .catch((err: unknown) => {
         if (cancelled) return

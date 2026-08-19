@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-08-18T18:40:00-07:00",
+  "canonical_repo_runtime": "scripts/nexus_agent_platform/phase15/run_all.py and scripts/nexus_agent_platform/phase15/live_loop_runner.py",
+  "canonical_loop_authority": "LoopRuntime + LoopStateStore",
+  "canonical_brief_authority": "scripts/nexus_agent_platform/brief/daily_brief.py",
+  "scheduler_authority": "NOT_CERTIFIED",
+  "scheduler_finding": "The expected com.nexus.phase15-bounded-runtime launchd label was not found in the inspected LaunchAgents directory. Multiple legacy Nexus launchd jobs are present, including a stale activation snapshot bridge and unrelated nexus-ai schedulers. No new scheduler was installed.",
+  "real_runtime_evidence": {
+    "loop_state": "data/runtime/nexus_loops/loop_state.json",
+    "execution_ledger": "data/runtime/nexus_loops/execution_ledger.jsonl",
+    "latest_observed_business_runs_utc": "2026-08-18T18:25:56Z through 2026-08-18T18:26:30Z",
+    "loops_observed": 4,
+    "scheduled_vs_manual": "UNKNOWN from current ledger fields",
+    "next_run_persistence": "PARTIAL — next_eligible_run is scheduler-defined rather than a persisted timestamp",
+    "runtime_survival": "UNKNOWN",
+    "reboot_reconciliation": "UNKNOWN"
+  },
+  "loop_processes": [
+    {"loop_id": "open_source_scout_loop", "owner": "LoopRuntime", "source": "live source collector", "ai_policy": "T0 first"},
+    {"loop_id": "research_intake_loop", "owner": "LoopRuntime", "source": "live research intake", "ai_policy": "T0 first"},
+    {"loop_id": "revenue_opportunity_loop", "owner": "LoopRuntime", "source": "report-backed opportunity records", "ai_policy": "T0 first"},
+    {"loop_id": "seo_opportunity_loop", "owner": "LoopRuntime", "source": "public SEO evidence", "ai_policy": "T0 first"}
+  ],
+  "protected_invariants": ["no second scheduler installed", "no live Stripe charges", "no external client onboarded", "Nova read-only", "no Alpha client PII"]
+}

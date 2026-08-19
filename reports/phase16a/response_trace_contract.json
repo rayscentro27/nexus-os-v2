@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "status": "PARTIAL_REUSE_EXISTING_TELEMETRY",
+  "required_fields": ["message_id", "telegram_update_id", "conversation_id", "agent_id", "received_at", "responded_at", "user_text", "response_text", "resolved_intent", "capability_used", "response_mode", "safe_source_refs", "source_timestamps", "fallback_used", "error", "latency_ms", "git_commit"],
+  "existing_sources": ["reports/runtime/nova_telegram.log", "reports/telegram/receipts/nova", "scripts/nexus_agent_platform/runtime/execution_telemetry.py"],
+  "bounded_retention": "UNKNOWN",
+  "safe_source_policy": "source paths, timestamps, capability names, and bounded claims only; no tokens, credentials, or unnecessary client PII",
+  "gap": "A single shared Hermes/Nova response-trace contract was not proven from current artifacts. Do not claim complete trace certification."
+}

@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-08-18T18:40:00-07:00",
+  "scope": "current client-v2 and auth implementation audit; no external client onboarded",
+  "signup": {"status": "PARTIAL", "finding": "GoClear auth surfaces exist; confirmation email template configuration was not found in the repository and requires Supabase dashboard/runtime verification."},
+  "confirmation_email": {"status": "BLOCKED", "finding": "Current code handles confirmation errors but does not own the Supabase Auth confirmation template."},
+  "first_login": {"status": "FAIL", "finding": "ClientLoginPage redirects directly to /client/dashboard; no canonical onboarding_complete read or onboarding route is wired in ClientV2Root."},
+  "onboarding": {"status": "PARTIAL", "finding": "Profile intake helpers and upload surfaces exist, but a first-login state machine and dedicated client-v2 onboarding route are not proven."},
+  "dashboard": {"status": "PARTIAL", "finding": "Client-v2 has staged components and empty-capable live adapters, but the live flag is disabled by default and the default preview is synthetic."},
+  "clean_empty_state": {"status": "REPAIR_IN_PROGRESS", "finding": "Supabase list loaders previously fell back to synthetic tasks/scores on successful empty results; this phase removes those fallbacks for live reads."},
+  "data_isolation": {"status": "PARTIAL", "finding": "Queries are client_id scoped in the live adapter; a clean-account browser proof still requires an authenticated test account and live flag."},
+  "visual_quality": {"status": "PARTIAL", "finding": "Existing audit baseline is 35/100; client-v2 design system exists but no current rendered first-impression certification was completed in this session."},
+  "mobile": {"status": "UNKNOWN", "finding": "Responsive tokens/components exist; actual viewport screenshots remain required."},
+  "subjective_design_gate": "MANUAL_APPROVAL_REQUIRED",
+  "protected_invariants": ["no external client onboarded", "Stripe remains test-gated", "Nova authority unchanged", "no client PII sent to Alpha"]
+}
