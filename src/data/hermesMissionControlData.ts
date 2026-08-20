@@ -2,6 +2,7 @@ import pilot from '../../reports/hermes_modernization/end_to_end_pilot.json';
 import modernizationState from '../../reports/hermes_modernization/state.json';
 import loopState from '../../data/runtime/nexus_loops/loop_state.json';
 import workforceRegistry from '../../reports/hermes_modernization/ai_workforce_registry.json';
+import runtimeSnapshot from '../../public/runtime/hermes-current.json';
 
 export type MissionStatus = 'PASS' | 'PARTIAL' | 'BLOCKED' | 'UNKNOWN' | string;
 export const MISSION_WORKER_STATUSES = ['AVAILABLE', 'INSTALLED_UNPROVEN', 'AUTH_BLOCKED', 'RATE_LIMITED', 'NOT_INSTALLED', 'UNAVAILABLE'] as const;
@@ -101,6 +102,7 @@ export const hermesMissionControlData = {
     lastUpdated: loop?.last_updated_at ?? 'UNKNOWN',
     businessLoops,
   },
+  runtimeSnapshot,
   modernizationState,
 } as const;
 

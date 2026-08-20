@@ -12,4 +12,9 @@ set -a
 source "$RUNTIME_ENV"
 set +a
 
+# launchd may not preserve the plist PYTHONPATH through the environment
+# bootstrap shell. Keep the canonical repository package importable for the
+# bounded scheduler and the existing Hermes transport callers.
+export PYTHONPATH="/Users/raymonddavis/nexus-os-v2/scripts${PYTHONPATH:+:$PYTHONPATH}"
+
 exec "$@"

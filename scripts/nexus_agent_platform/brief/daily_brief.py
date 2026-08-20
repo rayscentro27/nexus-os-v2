@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -18,6 +19,8 @@ REPORT_DIR = ROOT / "reports" / "hermes_modernization"
 RUNTIME_DIR = ROOT / "reports" / "runtime"
 LOOP_DIR = ROOT / "data" / "runtime" / "nexus_loops"
 BUILDER_DIR = ROOT / "data" / "runtime" / "builder_execution_ledger"
+PHASE16A_DIR = ROOT / "reports" / "phase16a"
+BRIEF_GENERATION_LEDGER = PHASE16A_DIR / "morning_brief_generation_ledger.jsonl"
 
 UNKNOWN = "UNKNOWN"
 NOT_AVAILABLE = "NOT_AVAILABLE"
@@ -340,11 +343,38 @@ def render_daily_brief(brief: Dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def write_daily_brief_reports() -> Dict[str, Any]:
+def _append_generation_receipt(brief: Dict[str, Any], generation_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    PHASE16A_DIR.mkdir(parents=True, exist_ok=True)
+    context = generation_context or {"trigger": "direct_call"}
+    receipt = {
+        "generation_id": f"brief_generation_{_stable_id([brief.get('brief_id'), brief.get('generated_at'), context])}",
+        "brief_id": brief.get("brief_id"),
+        "generated_at": brief.get("generated_at"),
+        "trigger": context.get("trigger", "UNKNOWN"),
+        "scheduler": context.get("scheduler", "UNKNOWN"),
+        "scheduler_instance": context.get("scheduler_instance", "UNKNOWN"),
+        "artifact": "reports/hermes_modernization/daily_brief.json",
+        "source_refs": brief.get("evidence_refs", []),
+        "source_data_freshness": brief.get("freshness", {}),
+        "provider_cost_usd": (brief.get("cost_summary") or {}).get("provider_cost_usd"),
+        "status": brief.get("status", "UNKNOWN"),
+        "git_commit": (
+            subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=5).stdout.strip()
+            or "UNKNOWN"
+        ),
+        "generation_error": None,
+    }
+    with BRIEF_GENERATION_LEDGER.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(receipt, sort_keys=True) + "\n")
+    return receipt
+
+
+def write_daily_brief_reports(generation_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     brief = build_daily_brief()
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     (REPORT_DIR / "daily_brief.json").write_text(json.dumps(brief, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     (REPORT_DIR / "daily_brief.md").write_text(render_daily_brief(brief), encoding="utf-8")
+    brief["generation_receipt"] = _append_generation_receipt(brief, generation_context)
     return brief
 
 

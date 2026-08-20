@@ -10,6 +10,7 @@ from nexus_agent_platform.loops.business import (
     revenue_business_identity,
 )
 from nexus_agent_platform.loops.runtime import LoopRuntime, LoopStateStore
+import pytest
 
 
 def test_selected_business_loops_have_verifiers_and_zero_ai_policy():
@@ -35,6 +36,33 @@ def test_business_loop_second_identical_run_is_no_change(monkeypatch, tmp_path):
     assert second.input_tokens == 0
     assert second.output_tokens == 0
     assert second.estimated_cost == 0.0
+
+
+@pytest.mark.parametrize(
+    ("spec", "records"),
+    [
+        (OPEN_SOURCE_SCOUT_LOOP, [{"id": "repo-1", "repository": "org/repo", "title": "Repo", "source_url": "https://example.test/repo", "provenance": "fixture", "evidence_classification": "KNOWN"}]),
+        (RESEARCH_INTAKE_LOOP, [{"artifact_id": "artifact-1", "title": "Research", "source": "fixture", "source_hash": "source-1", "evidence_classification": "KNOWN"}]),
+        (REVENUE_OPPORTUNITY_LOOP, [{"opportunity_id": "offer-1", "title": "Offer", "estimated_value": 100, "evidence_ref": "fixture"}]),
+        (SEO_OPPORTUNITY_LOOP, [{"id": "keyword-1", "keyword": "nexus", "source": "fixture", "freshness": "FRESH", "score": 60}]),
+    ],
+)
+def test_business_loops_ignore_runtime_schedule_metadata_and_detect_material_delta(spec, records, tmp_path, monkeypatch):
+    monkeypatch.setenv("NEXUS_EXECUTION_TELEMETRY_PATH", str(tmp_path / f"{spec.loop_id}.telemetry.jsonl"))
+    runtime = LoopRuntime(LoopStateStore(tmp_path / f"{spec.loop_id}.state.json"), tmp_path / f"{spec.loop_id}.ledger.jsonl")
+    first = runtime.run(spec, {"records": records, "mode": "test", "scheduled_for": "2026-08-20T00:00:00Z", "next_run_at": "2026-08-20T01:00:00Z", "scheduler_instance": "one"})
+    second = runtime.run(spec, {"records": records, "mode": "test", "scheduled_for": "2026-08-20T02:00:00Z", "next_run_at": "2026-08-20T03:00:00Z", "scheduler_instance": "two", "heartbeat": "2026-08-20T02:00:01Z"})
+    changed_records = [dict(records[0], title=f"{records[0].get('title', 'item')} changed")]
+    third = runtime.run(spec, {"records": changed_records, "mode": "test", "scheduled_for": "2026-08-20T04:00:00Z", "next_run_at": "2026-08-20T05:00:00Z"})
+
+    assert first.ledger_record["delta_status"] == "CHANGED"
+    assert second.ledger_record["delta_status"] == "NO_CHANGE"
+    assert second.ledger_record["input_hash"] == first.ledger_record["input_hash"]
+    assert second.ledger_record["material_hash"] == first.ledger_record["material_hash"]
+    assert third.ledger_record["delta_status"] == "CHANGED"
+    assert third.ledger_record["input_hash"] != second.ledger_record["input_hash"]
+    assert third.ledger_record["retry_count"] == 0
+    assert third.ledger_record["uncontrolled_retry_detected"] is False
 
 
 def test_only_four_business_loops_are_qualified():

@@ -38,6 +38,22 @@ TIER_ORDER = {
 }
 
 DEFAULT_LOOP_HISTORY = 20
+RUNTIME_ONLY_TRIGGER_FIELDS = frozenset({
+    "scheduled_for",
+    "next_run_at",
+    "last_run",
+    "dispatch_timestamp",
+    "dispatch_at",
+    "scheduler_instance",
+    "heartbeat",
+    "updated_at",
+    "generated_at",
+    "execution_id",
+    "run_id",
+    "started_at",
+    "completed_at",
+    "timestamp",
+})
 _MODEL_COST_POLICY_PATH = Path(__file__).resolve().parents[3] / "reports" / "hermes_model_cost_policy.json"
 _MODEL_COST_POLICY_CACHE: Dict[str, Any] = {}
 _TIER_DEFAULT_COST_MODELS = {
@@ -136,6 +152,39 @@ def _dedupe_records(records: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
         seen.add(key)
         deduped.append(record)
     return deduped
+
+
+def _strip_runtime_metadata(value: Any) -> Any:
+    """Remove scheduler/execution metadata from a material trigger snapshot."""
+    if isinstance(value, dict):
+        return {
+            key: _strip_runtime_metadata(item)
+            for key, item in value.items()
+            if key not in RUNTIME_ONLY_TRIGGER_FIELDS and key != "records"
+        }
+    if isinstance(value, list):
+        return [_strip_runtime_metadata(item) for item in value]
+    return value
+
+
+def canonical_material_input(
+    trigger: Dict[str, Any],
+    records: Sequence[Dict[str, Any]],
+    summary: Dict[str, Any],
+    state_version: Any,
+) -> Dict[str, Any]:
+    """Build the business-content-only input used for change detection.
+
+    Scheduler timestamps and execution identifiers remain in runtime metadata
+    and ledger records, but cannot turn an unchanged business input into a
+    material delta.
+    """
+    return {
+        "trigger": _strip_runtime_metadata(trigger),
+        "records": list(records),
+        "summary": summary,
+        "state_version": state_version,
+    }
 
 
 def _load_model_cost_policy() -> Dict[str, Any]:
@@ -479,10 +528,12 @@ class LoopRuntime:
             normalized = _dedupe_records(normalized)
 
         current_material = {
-            "trigger": trigger,
-            "records": normalized,
-            "summary": collected.get("summary", {}),
-            "state_version": collected.get("state_version", 1),
+            **canonical_material_input(
+                trigger,
+                normalized,
+                collected.get("summary", {}),
+                collected.get("state_version", 1),
+            ),
         }
         input_hash = _stable_hash(current_material)
         material_hash = _stable_hash(collected.get("material", current_material))
@@ -501,6 +552,10 @@ class LoopRuntime:
         ai_result: Dict[str, Any] = {}
         verifier_result: Dict[str, Any] = {"status": "not_run"}
         no_change = False
+        retry_count = 0
+        retry_reason: Optional[str] = None
+        retry_class = "NONE"
+        uncontrolled_retry_detected = False
 
         if spec.stop_if_no_change and previous_input_hash == input_hash:
             no_change = True
@@ -573,6 +628,9 @@ class LoopRuntime:
                 retries = 0
                 while retries < spec.max_retries and verifier_result.get("status") != "pass":
                     retries += 1
+                    retry_count = retries
+                    retry_reason = verifier_result.get("reason") or "verifier_failure"
+                    retry_class = "VERIFIER_RETRY"
                     ai_calls += 1
                     if ai_calls > spec.max_ai_calls:
                         raise LoopExecutionError("max_ai_calls exceeded during retry")
@@ -642,6 +700,10 @@ class LoopRuntime:
             "provider_cost_usd": estimated_cost,
             "verifier_status": verifier_result.get("status"),
             "zero_token_execution": zero_token_execution or not ai_used,
+            "retry_count": retry_count,
+            "retry_reason": retry_reason,
+            "retry_class": retry_class,
+            "uncontrolled_retry_detected": uncontrolled_retry_detected,
         })
         if trigger.get("scheduled_for"):
             memory_record["scheduled_for"] = trigger["scheduled_for"]
@@ -693,6 +755,10 @@ class LoopRuntime:
             "output_hash": _stable_hash(result),
             "material_hash": material_hash,
             "delta_status": "NO_CHANGE" if no_change else "CHANGED",
+            "retry_count": retry_count,
+            "retry_reason": retry_reason,
+            "retry_class": retry_class,
+            "uncontrolled_retry_detected": uncontrolled_retry_detected,
         }
         if trigger.get("scheduled_for"):
             ledger_record["scheduled_for"] = trigger["scheduled_for"]
