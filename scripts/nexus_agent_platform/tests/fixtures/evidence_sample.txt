@@ -1,0 +1,4 @@
+# Nexus Evidence Fixture
+
+This deterministic, non-sensitive fixture proves local MarkItDown conversion,
+stable normalization, provenance, and duplicate detection.

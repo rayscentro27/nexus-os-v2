@@ -1,0 +1,8 @@
+# Isolated pilot environment; do not add to the certified core runtime.
+markitdown==0.1.7
+crawl4ai==0.9.2
+# Current Crawl4AI dependency resolution selected cryptography 50, which
+# required a local Rust/OpenSSL build on this Intel Mac. These compatible
+# binary-wheel pins keep the pilot reproducible without changing system Python.
+pyopenssl==26.1.0
+cryptography==46.0.3

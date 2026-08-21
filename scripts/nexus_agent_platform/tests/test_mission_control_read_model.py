@@ -57,3 +57,17 @@ def test_stale_core_and_corrupt_optional_state_fail_safe(tmp_path):
     assert model["system"]["core_runtime"]["status"] == "UNKNOWN"
     assert model["system"]["core_runtime"]["freshness"] == "UNKNOWN"
     assert model["system"]["overall_status"] == "DEGRADED"
+
+
+def test_evidence_ingestion_is_optional_and_visible_without_degrading_core(tmp_path):
+    now = datetime.now(timezone.utc)
+    seed_runtime(tmp_path, now)
+    write_json(tmp_path / "reports/runtime/nexus_evidence_ingestion_heartbeat_latest.json", {
+        "capability": "evidence_ingestion", "status": "DEGRADED", "last_result": "DEPENDENCY_UNAVAILABLE",
+        "last_adapter": "crawl4ai", "updated_at": now.isoformat(), "optional": True,
+        "core_health_dependency": False,
+    })
+    model = build_read_model(root=tmp_path, now=now, approval_rows=[], work_rows=[])
+    assert model["system"]["overall_status"] == "HEALTHY"
+    assert model["optional_integrations"]["evidence_ingestion"]["status"] == "DEGRADED"
+    assert model["freshness"]["evidence_ingestion"]["freshness"] == "CURRENT"
