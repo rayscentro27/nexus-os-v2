@@ -602,7 +602,7 @@ def telemetry_health(
 
 def _enforce_retention(path: Path, retention_days: int = DEFAULT_RETENTION_DAYS, max_bytes: int = DEFAULT_MAX_BYTES) -> None:
     try:
-        if not path.exists() or path.stat().st_size <= max_bytes:
+        if not path.exists() or path.stat().st_size <= max_bytes * 2:
             return
         cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
         kept = []

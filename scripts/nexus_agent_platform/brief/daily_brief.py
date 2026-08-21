@@ -346,6 +346,24 @@ def render_daily_brief(brief: Dict[str, Any]) -> str:
 def _append_generation_receipt(brief: Dict[str, Any], generation_context: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     PHASE16A_DIR.mkdir(parents=True, exist_ok=True)
     context = generation_context or {"trigger": "direct_call"}
+    git_commit = UNKNOWN
+    generation_error = None
+    try:
+        git_commit = (
+            subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=2,
+                check=True,
+            ).stdout.strip()
+            or UNKNOWN
+        )
+    except subprocess.TimeoutExpired:
+        generation_error = "optional_git_metadata_timeout"
+    except (OSError, subprocess.CalledProcessError):
+        generation_error = "optional_git_metadata_unavailable"
     receipt = {
         "generation_id": f"brief_generation_{_stable_id([brief.get('brief_id'), brief.get('generated_at'), context])}",
         "brief_id": brief.get("brief_id"),
@@ -358,11 +376,8 @@ def _append_generation_receipt(brief: Dict[str, Any], generation_context: Option
         "source_data_freshness": brief.get("freshness", {}),
         "provider_cost_usd": (brief.get("cost_summary") or {}).get("provider_cost_usd"),
         "status": brief.get("status", "UNKNOWN"),
-        "git_commit": (
-            subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, timeout=5).stdout.strip()
-            or "UNKNOWN"
-        ),
-        "generation_error": None,
+        "git_commit": git_commit,
+        "generation_error": generation_error,
     }
     with BRIEF_GENERATION_LEDGER.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(receipt, sort_keys=True) + "\n")
