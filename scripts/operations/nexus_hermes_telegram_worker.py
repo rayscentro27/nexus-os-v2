@@ -167,8 +167,11 @@ def build_context() -> Dict[str, Any]:
     pending = approvals.get_pending_approvals(requested_for="ray", include_self=True)
     orders = work_orders.list_work_orders(limit=100)
     priority = [o for o in orders if (o.get("inputs") or {}).get("priority") in {"P0", "P1"} and o.get("status") not in {"completed", "cancelled", "rejected"}]
+    live_runtime = load_json(ROOT / "reports/hermes_modernization/live_runtime_status.json", {})
+    core = live_runtime.get("core_autonomy_runtime", {}) if isinstance(live_runtime, dict) else {}
+    core_health = {"status": str(core.get("status", "UNAVAILABLE")), "last_run": live_runtime.get("generated_at") if isinstance(live_runtime, dict) else None, "source": "reports/hermes_modernization/live_runtime_status.json"}
     return {
-        "core_runtime": _health(ROOT / "reports/hermes_modernization/live_runtime_status.json", "core_autonomy_runtime", "status"),
+        "core_runtime": core_health,
         "active_operator": _health(ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json", "operator_health"),
         "recovery_check": _health(ROOT / "reports/runtime/nexus_recovery_check_heartbeat_latest.json", "run_status"),
         "pending_work_orders": len(orders), "pending_approvals": len(pending), "high_priority_items": len(priority), "last_updated": utc_now(),
