@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexus.active-operator-v2</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/ops/run_with_nexus_runtime_env.sh</string>
+    <string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/operations/nexus_active_operator_runner.py</string>
+    <string>--once</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PYTHONPATH</key>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts</string>
+    <key>NEXUS_OPERATOR_TRIGGER</key>
+    <string>launchd</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>StartInterval</key>
+  <integer>3600</integer>
+  <key>KeepAlive</key>
+  <false/>
+  <key>StandardOutPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2/reports/runtime/active_operator_launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/raymonddavis/nexus-os-v2/reports/runtime/active_operator_launchd_error.log</string>
+</dict>
+</plist>
