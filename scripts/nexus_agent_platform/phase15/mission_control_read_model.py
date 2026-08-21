@@ -115,6 +115,8 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
     hermes = read_json(hermes_path, {})
     evidence_path = root / "reports/runtime/nexus_evidence_ingestion_heartbeat_latest.json"
     evidence_run = read_json(evidence_path, {})
+    worker_path = root / "reports/runtime/nexus_remote_cpu_worker_heartbeat_latest.json"
+    worker_run = read_json(worker_path, {})
     registry_path = root / "data/operations/nexus_process_registry.json"
     registry = read_json(registry_path, [])
 
@@ -172,6 +174,17 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         }
     else:
         optional_view["evidence_ingestion"] = {"status": "NOT_ENABLED", "reason": "No evidence-ingestion heartbeat recorded"}
+    if worker_run:
+        optional_view["remote_cpu_worker"] = {
+            "status": str(worker_run.get("status", "UNKNOWN")).upper(),
+            "reason": "Optional provider-neutral compute worker; never a core-health dependency",
+            "last_updated": worker_run.get("last_seen"),
+            "provider": worker_run.get("provider"),
+            "worker_id": worker_run.get("worker_id"),
+            "capabilities": worker_run.get("capabilities", {}),
+        }
+    else:
+        optional_view["remote_cpu_worker"] = {"status": "NOT_CONFIGURED", "reason": "No remote worker heartbeat recorded"}
     model = {
         "generated_at": now.isoformat(), "source": "canonical Nexus runtime artifacts and governed stores", "read_only": True,
         "system": system, "attention": attention,
@@ -183,7 +196,7 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         "process_registry": {"enabled": sum(1 for row in registry if row.get("enabled")), "records": len(registry) if isinstance(registry, list) else 0, "source": str(registry_path.relative_to(root))},
         "safety": {"stripe_autonomy": "DISABLED", "arbitrary_shell": "UNAVAILABLE", "external_actions": "BLOCKED", "source": "canonical runtime authority state"},
         "optional_integrations": optional_view,
-        "freshness": {"core_runtime": system["core_runtime"]["freshness"], "active_operator": system["active_operator"]["freshness"], "recovery_check": system["recovery_check"]["freshness"], "hermes": system["hermes"]["freshness"], "scheduler": evidence(scheduler_path, scheduler_last, now, 3600), "evidence_ingestion": evidence(evidence_path, evidence_run.get("updated_at") or evidence_run.get("last_run"), now, 3600) if evidence_run else {"source": str(evidence_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}},
+        "freshness": {"core_runtime": system["core_runtime"]["freshness"], "active_operator": system["active_operator"]["freshness"], "recovery_check": system["recovery_check"]["freshness"], "hermes": system["hermes"]["freshness"], "scheduler": evidence(scheduler_path, scheduler_last, now, 3600), "evidence_ingestion": evidence(evidence_path, evidence_run.get("updated_at") or evidence_run.get("last_run"), now, 3600) if evidence_run else {"source": str(evidence_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "remote_cpu_worker": evidence(worker_path, worker_run.get("last_seen"), now, 300) if worker_run else {"source": str(worker_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}},
     }
     return model
 

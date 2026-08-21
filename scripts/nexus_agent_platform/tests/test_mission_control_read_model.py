@@ -71,3 +71,17 @@ def test_evidence_ingestion_is_optional_and_visible_without_degrading_core(tmp_p
     assert model["system"]["overall_status"] == "HEALTHY"
     assert model["optional_integrations"]["evidence_ingestion"]["status"] == "DEGRADED"
     assert model["freshness"]["evidence_ingestion"]["freshness"] == "CURRENT"
+
+
+def test_remote_worker_is_optional_and_visible_without_degrading_core(tmp_path):
+    now = datetime.now(timezone.utc)
+    seed_runtime(tmp_path, now)
+    write_json(tmp_path / "reports/runtime/nexus_remote_cpu_worker_heartbeat_latest.json", {
+        "worker_id": "worker-test", "provider": "test-provider", "status": "HEALTHY",
+        "last_seen": now.isoformat(), "capabilities": {"evidence_ingestion": ["crawl4ai"]},
+        "core_health_dependency": False,
+    })
+    model = build_read_model(root=tmp_path, now=now, approval_rows=[], work_rows=[])
+    assert model["system"]["overall_status"] == "HEALTHY"
+    assert model["optional_integrations"]["remote_cpu_worker"]["status"] == "HEALTHY"
+    assert model["freshness"]["remote_cpu_worker"]["freshness"] == "CURRENT"
