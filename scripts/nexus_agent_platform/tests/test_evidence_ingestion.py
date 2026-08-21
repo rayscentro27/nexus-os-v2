@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 
 from scripts.nexus_agent_platform.evidence_ingestion import (
-    build_job_envelope, ingest_file, ingest_url, material_hash, normalize_text, validate_public_url,
+    accept_remote_evidence_result, build_job_envelope, ingest_file, ingest_url, material_hash, normalize_text, validate_public_url,
 )
 
 
@@ -102,3 +102,39 @@ def test_errors_are_normalized_and_receipted(tmp_path):
     assert result["error"]["classification"] == "PRIVATE_NETWORK_BLOCKED"
     assert Path(result["receipt_ref"]).exists()
     assert "token" not in json.dumps(result).lower()
+
+
+def test_remote_result_is_validated_and_deduplicated_into_canonical_intake(tmp_path):
+    root, receipts, handoff = paths(tmp_path)
+    job = {
+        "schema_version": "nexus.remote-job.v1", "job_id": "job-remote-1",
+        "capability": "evidence_ingestion", "adapter": "crawl4ai",
+        "tenant_context": {"scope": "founder_admin", "tenant_id": None},
+    }
+    evidence = {
+        "schema_version": "nexus.evidence.v1", "evidence_id": "ev-remote-1", "job_id": job["job_id"],
+        "status": "SUCCESS", "receipt_id": "remote-receipt", "source": {"source_type": "public_url", "adapter": "crawl4ai"},
+        "integrity": {"source_hash": "source-hash", "material_hash": "material-hash", "duplicate_status": "NEW"},
+        "content": {"title": "Fixture", "normalized_text_or_markdown": "stable evidence"},
+        "safety": {"redaction_status": "NO_REDACTION_NEEDED"},
+        "execution": {"completed_at": "2026-01-01T00:00:00+00:00", "tenant_context": job["tenant_context"]},
+    }
+    remote = {"schema_version": "nexus.remote-result.v1", "job_id": job["job_id"], "capability": "evidence_ingestion",
+              "worker_id": "worker-1", "provider": "modal", "status": "SUCCESS", "started_at": "2026-01-01T00:00:00+00:00",
+              "completed_at": "2026-01-01T00:00:01+00:00", "tenant_context": job["tenant_context"], "evidence_result": evidence}
+    first = accept_remote_evidence_result(remote, job=job, root=root, receipt_dir=receipts, handoff=handoff)
+    second = accept_remote_evidence_result(remote, job=job, root=root, receipt_dir=receipts, handoff=handoff)
+    assert first["execution"]["worker_type"] == "REMOTE_CPU_WORKER"
+    assert second["status"] == "DUPLICATE"
+    assert Path(first["artifact_ref"]).exists()
+
+
+def test_remote_result_tenant_mismatch_is_rejected():
+    job = {"schema_version": "nexus.remote-job.v1", "job_id": "job-remote-2", "capability": "evidence_ingestion",
+           "adapter": "crawl4ai", "tenant_context": {"tenant_id": "a"}}
+    remote = {"schema_version": "nexus.remote-result.v1", "job_id": "job-remote-2", "capability": "evidence_ingestion",
+              "worker_id": "worker-1", "provider": "modal", "status": "SUCCESS", "started_at": "x", "completed_at": "y",
+              "tenant_context": {"tenant_id": "b"}}
+    import pytest
+    with pytest.raises(ValueError, match="tenant"):
+        accept_remote_evidence_result(remote, job=job)

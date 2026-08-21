@@ -389,6 +389,65 @@ def write_heartbeat(result: dict, *, path: Path = DEFAULT_HEARTBEAT) -> None:
     write_json(path, {"capability": "evidence_ingestion", "status": "HEALTHY" if result.get("status") in {"SUCCESS", "NO_CHANGE", "DUPLICATE"} else "DEGRADED", "last_run": result.get("execution", {}).get("completed_at"), "last_result": result.get("status"), "last_adapter": result.get("adapter") or result.get("source", {}).get("adapter"), "receipt_id": result.get("receipt_id"), "optional": True, "core_health_dependency": False, "external_action_performed": False, "updated_at": utc_now()})
 
 
+def accept_remote_evidence_result(remote_result: dict, *, job: dict, root: Path = DEFAULT_RUNTIME,
+                                  receipt_dir: Path = DEFAULT_RECEIPTS, handoff: Path = DEFAULT_HANDOFF) -> dict:
+    """Validate and persist a worker result into Nexus's canonical evidence path.
+
+    Remote artifacts are transport outputs, not canonical truth. This adapter
+    performs the final envelope/tenant/job checks and writes the accepted
+    evidence through the same artifact, receipt, and intake handoff primitives
+    used by local ingestion.
+    """
+    if not isinstance(remote_result, dict) or remote_result.get("schema_version") != "nexus.remote-result.v1":
+        raise ValueError("unsupported-remote-result-schema")
+    if remote_result.get("job_id") != job.get("job_id"):
+        raise ValueError("remote-result-job-mismatch")
+    if remote_result.get("capability") != job.get("capability") or job.get("adapter") != "crawl4ai":
+        raise ValueError("remote-result-capability-mismatch")
+    if remote_result.get("tenant_context") != job.get("tenant_context"):
+        raise ValueError("remote-result-tenant-mismatch")
+    evidence = remote_result.get("evidence_result")
+    if not isinstance(evidence, dict) or evidence.get("schema_version") != SCHEMA_VERSION:
+        raise ValueError("missing-canonical-evidence-result")
+    if evidence.get("job_id") != job.get("job_id"):
+        raise ValueError("evidence-job-mismatch")
+    if evidence.get("status") not in {"SUCCESS", "DUPLICATE", "NO_CHANGE"}:
+        raise ValueError("remote-evidence-not-successful")
+    integrity = evidence.get("integrity") or {}
+    if not integrity.get("source_hash") or not integrity.get("material_hash"):
+        raise ValueError("remote-evidence-missing-hashes")
+
+    accepted = json.loads(json.dumps(evidence))
+    accepted["execution"] = dict(accepted.get("execution") or {})
+    accepted["execution"]["worker_type"] = "REMOTE_CPU_WORKER"
+    accepted["execution"]["remote_provider"] = remote_result.get("provider")
+    accepted["execution"]["worker_id"] = remote_result.get("worker_id")
+    accepted["execution"]["requested_at"] = accepted["execution"].get("requested_at") or remote_result.get("started_at") or utc_now()
+    accepted["execution"]["started_at"] = accepted["execution"].get("started_at") or remote_result.get("started_at") or accepted["execution"]["requested_at"]
+    accepted["execution"]["completed_at"] = accepted["execution"].get("completed_at") or utc_now()
+    accepted["remote_receipt_ref"] = remote_result.get("receipt_ref")
+
+    existing = set()
+    artifact_dir = root / "artifacts"
+    if artifact_dir.exists():
+        for item in artifact_dir.glob("*.json"):
+            try:
+                old = json.loads(item.read_text(encoding="utf-8"))
+                old_hash = old.get("integrity", {}).get("material_hash")
+                if old_hash:
+                    existing.add(old_hash)
+            except (OSError, ValueError):
+                continue
+    if integrity["material_hash"] in existing:
+        accepted["status"] = "DUPLICATE"
+        accepted["integrity"]["duplicate_status"] = "DUPLICATE"
+    accepted["receipt_id"] = f"evidence-receipt-{uuid.uuid4().hex[:16]}"
+    refs = _write_artifact(accepted, root, receipt_dir, handoff)
+    accepted.update(refs)
+    write_heartbeat(accepted)
+    return accepted
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Run one bounded Nexus evidence-ingestion job")
     group = parser.add_mutually_exclusive_group(required=True); group.add_argument("--file"); group.add_argument("--url")
