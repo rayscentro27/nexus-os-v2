@@ -188,6 +188,24 @@ def status_response() -> str:
             "Alpha/Nova: not enabled\nStripe/live money: disabled for autonomous execution")
 
 
+def is_status_request(text: str) -> bool:
+    """Recognize bounded, unambiguous status questions only."""
+    normalized = re.sub(r"[?.!]+$", "", text.strip().lower())
+    normalized = re.sub(r"^(?:@?nexus|hermes)\s*[,\:\-]?\s*", "", normalized)
+    patterns = (
+        r"^(?:give me )?(?:the )?(?:current )?(?:nexus )?system status$",
+        r"^what(?: is|'s) (?:the )?(?:current )?(?:nexus )?system status$",
+        r"^what(?: is|'s) nexus status$",
+        r"^how is nexus doing$",
+        r"^what is running right now$",
+        r"^give me nexus status$",
+        r"^system status$",
+        r"^what(?: is|'s) the health of nexus$",
+        r"^what(?: is|'s) nexus health$",
+    )
+    return any(re.fullmatch(pattern, normalized) for pattern in patterns)
+
+
 def approval_response() -> str:
     pending = approvals.get_pending_approvals(requested_for="ray", include_self=True)
     if not pending:
@@ -231,7 +249,7 @@ def handle_command(text: str) -> tuple[str, Dict[str, Any]]:
     lowered = text.lower()
     if lowered in {"/start", "/help", "help"}:
         return "Nexus Hermes commands: /status, /approvals, /orders, /request <internal work>, /approve <approval_id>, /reject <approval_id>.", {"route": route, "outcome": "ANSWERED"}
-    if lowered in {"/status", "status", "what is happening with nexus", "refresh nexus status"}:
+    if lowered in {"/status", "status", "what is happening with nexus", "refresh nexus status"} or is_status_request(text):
         return status_response(), {"route": route, "outcome": "ANSWERED"}
     if lowered in {"/approvals", "approvals", "what approvals are waiting"}:
         return approval_response(), {"route": route, "outcome": "ANSWERED"}

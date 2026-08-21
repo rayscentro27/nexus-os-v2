@@ -17,6 +17,31 @@ def test_configured_status_and_optional_integrations_are_grounded(monkeypatch):
     assert metadata["outcome"] == "ANSWERED"
 
 
+def test_natural_language_status_variants_use_the_canonical_handler(monkeypatch):
+    calls = []
+    monkeypatch.setattr(hermes, "status_response", lambda: calls.append(True) or "CANONICAL STATUS")
+    variants = (
+        "Nexus, give me the current system status.",
+        "Nexus, what's the current system status?",
+        "What's Nexus status?",
+        "How is Nexus doing?",
+        "What is running right now?",
+        "Give me Nexus status.",
+        "System status.",
+        "What's the health of Nexus?",
+    )
+    for variant in variants:
+        response, metadata = hermes.handle_command(variant)
+        assert response == "CANONICAL STATUS"
+        assert metadata["outcome"] == "ANSWERED"
+    assert len(calls) == len(variants)
+
+
+def test_status_matcher_does_not_capture_unrelated_requests():
+    for text in ("give me a plan for today", "what is the status of the customer", "system status report draft", "how is Alpha doing?"):
+        assert hermes.is_status_request(text) is False
+
+
 def test_unauthorized_and_high_risk_commands_are_blocked():
     for command in ("charge the customer", "place a funded trade", "send an email to the client", "run shell command", "show me the runtime.env token"):
         response, metadata = hermes.handle_command(command)
