@@ -1,0 +1,249 @@
+{
+  "activity": {
+    "last_active_operator": {
+      "last_run": "2026-08-21T16:51:30.314286+00:00",
+      "run_id": "operator_08bee32c232f47d9935e2da39d5d0c02",
+      "status": "NO_ACTION_REQUIRED"
+    },
+    "last_continuous_loop": {
+      "completed_at": "2026-08-21T17:39:12.173368+00:00",
+      "delta_status": "NO_CHANGE",
+      "run_id": "research_intake_loop_fa541c96056f497489e0722beef263e3",
+      "scheduled_for": "2026-08-21T17:39:12.050314+00:00",
+      "started_at": "2026-08-21T17:39:12.171416+00:00"
+    },
+    "last_hermes_activity": {
+      "last_run": "2026-08-21T17:35:02.359341+00:00",
+      "status": "NO_UPDATES",
+      "updates_processed": 0
+    },
+    "last_recovery_check": {
+      "last_run": "2026-08-21T17:00:04.271005+00:00",
+      "run_id": "recovery_f904595b2a2b4a218b40848368540440",
+      "status": "NO_ACTION_REQUIRED"
+    },
+    "recent": [
+      {
+        "receipt_id": "hermes_tg_197233382_02fbe6d2843393c265f1caaa",
+        "source": "reports/telegram/hermes_operator_receipts/hermes_tg_197233382_02fbe6d2843393c265f1caaa.json",
+        "status": "ANSWERED",
+        "timestamp": "2026-08-21T17:24:46.683268+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "hermes_tg_197233381_ae4267a01f1269fbbf4824d2",
+        "source": "reports/telegram/hermes_operator_receipts/hermes_tg_197233381_ae4267a01f1269fbbf4824d2.json",
+        "status": "ANSWERED",
+        "timestamp": "2026-08-21T17:21:41.058927+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "hermes_tg_197233380_02fbe6d2843393c265f1caaa",
+        "source": "reports/telegram/hermes_operator_receipts/hermes_tg_197233380_02fbe6d2843393c265f1caaa.json",
+        "status": "ANSWERED",
+        "timestamp": "2026-08-21T17:20:38.695789+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "hermes_tg_197233379_02fbe6d2843393c265f1caaa",
+        "source": "reports/telegram/hermes_operator_receipts/hermes_tg_197233379_02fbe6d2843393c265f1caaa.json",
+        "status": "ANSWERED",
+        "timestamp": "2026-08-21T17:19:36.213006+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "recovery_receipt_recovery_f904595b2a2b4a218b40848368540440",
+        "source": "reports/runtime/nexus_recovery_check_receipts/recovery_recovery_f904595b2a2b4a218b40848368540440.json",
+        "status": "HEALTHY",
+        "timestamp": "2026-08-21T17:00:04.271005+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "recovery_receipt_recovery_4cc474e11db043f2aa4739b5937c1081",
+        "source": "reports/runtime/nexus_recovery_check_receipts/recovery_recovery_4cc474e11db043f2aa4739b5937c1081.json",
+        "status": "HEALTHY",
+        "timestamp": "2026-08-21T16:59:42.308647+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "operator_receipt_operator_08bee32c232f47d9935e2da39d5d0c02",
+        "source": "reports/runtime/nexus_active_operator_receipts/operator_operator_08bee32c232f47d9935e2da39d5d0c02.json",
+        "status": "NO_ACTION_REQUIRED",
+        "timestamp": "2026-08-21T16:51:30.314286+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "operator_receipt_operator_ef0884f92e134cdc962ec7ac28cd2291",
+        "source": "reports/runtime/nexus_active_operator_receipts/operator_operator_ef0884f92e134cdc962ec7ac28cd2291.json",
+        "status": "NO_ACTION_REQUIRED",
+        "timestamp": "2026-08-21T15:51:29.581628+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "operator_receipt_operator_f41f60b3dc6746e1b014201a3485fb56",
+        "source": "reports/runtime/nexus_active_operator_receipts/operator_operator_f41f60b3dc6746e1b014201a3485fb56.json",
+        "status": "NO_ACTION_REQUIRED",
+        "timestamp": "2026-08-21T15:50:21.981948+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "operator_receipt_operator_2df98fb4d5f44057aef2b120bc28a3d2",
+        "source": "reports/runtime/nexus_active_operator_receipts/operator_operator_2df98fb4d5f44057aef2b120bc28a3d2.json",
+        "status": "NO_ACTION_REQUIRED",
+        "timestamp": "2026-08-21T15:49:50.572373+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "rcpt_credit_business_funding_readiness_20260820T040548Z",
+        "source": "reports/runtime/nexus_active_operator_receipts/rcpt_credit_business_funding_readiness_20260820T040548Z.json",
+        "status": "simulated",
+        "timestamp": "2026-08-20T04:05:48.852154+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "rcpt_marketing_content_pipeline_20260820T040547Z",
+        "source": "reports/runtime/nexus_active_operator_receipts/rcpt_marketing_content_pipeline_20260820T040547Z.json",
+        "status": "simulated",
+        "timestamp": "2026-08-20T04:05:47.577558+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "rcpt_repo_intelligence_20260820T040545Z",
+        "source": "reports/runtime/nexus_active_operator_receipts/rcpt_repo_intelligence_20260820T040545Z.json",
+        "status": "simulated",
+        "timestamp": "2026-08-20T04:05:45.075192+00:00",
+        "work_order_id": null
+      },
+      {
+        "receipt_id": "rcpt_notebooklm_import_status_20260820T040543Z",
+        "source": "reports/runtime/nexus_active_operator_receipts/rcpt_notebooklm_import_status_20260820T040543Z.json",
+        "status": "simulated",
+        "timestamp": "2026-08-20T04:05:43.891802+00:00",
+        "work_order_id": null
+      }
+    ]
+  },
+  "approvals": [],
+  "attention": {
+    "errors": [],
+    "p0_work": 0,
+    "p1_work": 0,
+    "pending_approvals": 0,
+    "recovery_escalations": 0
+  },
+  "freshness": {
+    "active_operator": "CURRENT",
+    "core_runtime": "CURRENT",
+    "hermes": "CURRENT",
+    "recovery_check": "CURRENT",
+    "scheduler": {
+      "freshness": "CURRENT",
+      "last_updated": "2026-08-21T16:39:03.911242+00:00",
+      "source": "reports/phase16a/scheduler_health.json"
+    }
+  },
+  "generated_at": "2026-08-21T17:35:04.349851+00:00",
+  "needs_ray": {
+    "count": 0,
+    "items": [],
+    "p0_work": 0,
+    "p1_work": 0,
+    "pending_approvals": 0,
+    "recovery_escalations": 0
+  },
+  "optional_integrations": {
+    "alpha": {
+      "reason": "Alpha not registered",
+      "status": "NOT_ENABLED"
+    },
+    "hermes": {
+      "reason": "Hermes telegram bridge registered but not currently running; report surfaces fresh",
+      "status": "BOUNDED_DEGRADED"
+    },
+    "mission_control": {
+      "reason": "The Phase 13 workforce/Mission Control producer is not an active core scheduler component",
+      "status": "NOT_ENABLED"
+    },
+    "nova": {
+      "reason": "Nova telegram worker not registered",
+      "status": "NOT_ENABLED"
+    }
+  },
+  "process_registry": {
+    "enabled": 17,
+    "records": 19,
+    "source": "data/operations/nexus_process_registry.json"
+  },
+  "read_only": true,
+  "safety": {
+    "arbitrary_shell": "UNAVAILABLE",
+    "external_actions": "BLOCKED",
+    "source": "canonical runtime authority state",
+    "stripe_autonomy": "DISABLED"
+  },
+  "schedule": {
+    "active_operator": {
+      "cadence": "Hourly",
+      "next": "2026-08-21T17:51:30.314286+00:00",
+      "source": "reports/runtime/nexus_active_operator_heartbeat_latest.json"
+    },
+    "continuous_loop": {
+      "cadence": "Hourly",
+      "next": "2026-08-21T17:39:03.911242+00:00",
+      "source": "reports/phase16a/scheduler_health.json"
+    },
+    "hermes": {
+      "cadence": "Every 60 seconds",
+      "next": null,
+      "source": "reports/runtime/nexus_hermes_telegram_heartbeat_latest.json"
+    },
+    "recovery_check": {
+      "cadence": "Every 3 hours",
+      "next": "2026-08-21T20:00:04.271005+00:00",
+      "source": "reports/runtime/nexus_recovery_check_heartbeat_latest.json"
+    }
+  },
+  "source": "canonical Nexus runtime artifacts and governed stores",
+  "system": {
+    "active_operator": {
+      "freshness": "CURRENT",
+      "last_updated": "2026-08-21T16:51:30.314286+00:00",
+      "reason": "Bounded operator heartbeat",
+      "source": "reports/runtime/nexus_active_operator_heartbeat_latest.json",
+      "status": "HEALTHY"
+    },
+    "core_runtime": {
+      "freshness": "CURRENT",
+      "last_updated": "2026-08-21T16:39:01.935767+00:00",
+      "reason": "Phase 15 required core components",
+      "source": "reports/hermes_modernization/live_runtime_status.json",
+      "status": "HEALTHY"
+    },
+    "hermes": {
+      "freshness": "CURRENT",
+      "last_updated": "2026-08-21T17:35:02.359341+00:00",
+      "reason": "Telegram polling heartbeat",
+      "source": "reports/runtime/nexus_hermes_telegram_heartbeat_latest.json",
+      "status": "HEALTHY"
+    },
+    "overall_status": "HEALTHY",
+    "recovery_check": {
+      "freshness": "CURRENT",
+      "last_updated": "2026-08-21T17:00:04.271005+00:00",
+      "reason": "Governed recovery heartbeat",
+      "source": "reports/runtime/nexus_recovery_check_heartbeat_latest.json",
+      "status": "NO_ACTION_REQUIRED"
+    }
+  },
+  "work": {
+    "by_priority": {
+      "P0": 0,
+      "P1": 0,
+      "P2": 0,
+      "P3": 0,
+      "P4": 0
+    },
+    "open_work_orders": 0,
+    "recent_completed": []
+  }
+}

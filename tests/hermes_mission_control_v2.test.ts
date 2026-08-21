@@ -1,48 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { hermesMissionControlData, normalizeMissionControlWorkerStatus } from '../src/data/hermesMissionControlData';
+import snapshot from '../public/runtime/nexus-mission-control.json';
 
-describe('Hermes Mission Control V2', () => {
-  it('uses the proven Phase 9 opportunity and report-backed metrics', () => {
-    expect(hermesMissionControlData.opportunity.id).toBe('unclecode_crawl4ai');
-    expect(hermesMissionControlData.opportunity.status).toBe('PILOT_PROPOSED');
-    expect(hermesMissionControlData.activeOpportunityCount).toBe(1);
-    expect(hermesMissionControlData.research.evidence_count).toBe(1);
-    expect(hermesMissionControlData.research.duplicates_removed).toBe(4);
-    expect(hermesMissionControlData.creative.selected_territory).toBe('Scout Brief');
-    expect(hermesMissionControlData.buildSpec.status).toBe('PASS');
+describe('Mission Control canonical read model', () => {
+  it('aggregates the certified runtime stack without becoming an authority', () => {
+    expect(snapshot.read_only).toBe(true);
+    expect(snapshot.system.core_runtime.status).toBe('HEALTHY');
+    expect(snapshot.system.active_operator.status).toBe('HEALTHY');
+    expect(snapshot.system.recovery_check.status).toBe('NO_ACTION_REQUIRED');
+    expect(snapshot.system.hermes.status).toBe('HEALTHY');
+    expect(snapshot.activity.last_continuous_loop.delta_status).toBe('NO_CHANGE');
+    expect(snapshot.safety.stripe_autonomy).toBe('DISABLED');
+    expect(snapshot.safety.arbitrary_shell).toBe('UNAVAILABLE');
   });
 
-  it('exposes worker truth without attempting provider configuration', () => {
-    expect(hermesMissionControlData.workers.map((worker) => worker.id)).toEqual([
-      'opencode', 'codex', 'mimo', 'local_python', 'openhands',
-    ]);
-    expect(hermesMissionControlData.workers.find((worker) => worker.id === 'codex')?.status).toBe('AVAILABLE');
-    expect(hermesMissionControlData.workers.find((worker) => worker.id === 'local_python')?.status).toBe('AVAILABLE');
-    expect(hermesMissionControlData.workers.find((worker) => worker.id === 'openhands')?.status).toBe('NOT_INSTALLED');
+  it('keeps optional integrations separate from core health', () => {
+    expect(snapshot.system.overall_status).toBe('HEALTHY');
+    expect(snapshot.optional_integrations.alpha.status).toBe('NOT_ENABLED');
+    expect(snapshot.optional_integrations.nova.status).toBe('NOT_ENABLED');
   });
 
-  it('preserves every supported worker classification for the status surface', () => {
-    expect([
-      'AVAILABLE', 'INSTALLED_UNPROVEN', 'AUTH_BLOCKED', 'RATE_LIMITED', 'NOT_INSTALLED', 'UNAVAILABLE',
-    ].map(normalizeMissionControlWorkerStatus)).toEqual([
-      'AVAILABLE', 'INSTALLED_UNPROVEN', 'AUTH_BLOCKED', 'RATE_LIMITED', 'NOT_INSTALLED', 'UNAVAILABLE',
-    ]);
-    expect(normalizeMissionControlWorkerStatus('invented_status')).toBe('UNKNOWN');
+  it('does not expose secrets or client-sensitive fields', () => {
+    const text = readFileSync('public/runtime/nexus-mission-control.json', 'utf8');
+    expect(text).not.toMatch(/STRIPE_SECRET_KEY|TELEGRAM_BOT_TOKEN|runtime\.env|client_profiles/i);
+    expect(text).not.toMatch(/client_id|email|phone|ssn|account_number/i);
   });
 
-  it('surfaces the proven Phase 14 business loop records through the existing adapter', () => {
-    expect(hermesMissionControlData.loops.businessLoops).toHaveLength(4);
-    expect(hermesMissionControlData.loops.businessLoops.every((loop) => loop.verifier === 'pass')).toBe(true);
-    expect(hermesMissionControlData.loops.businessLoops.every((loop) => loop.status === 'NO_CHANGE')).toBe(true);
-  });
-
-  it('keeps Mission Control read-only and client boundaries intact', () => {
+  it('renders the canonical read-only surface', () => {
     const ui = readFileSync('src/components/command-center/HermesMissionControlV2.tsx', 'utf8');
-    const app = readFileSync('src/app/App.tsx', 'utf8');
     expect(ui).toContain('data-testid="hermes-mission-control-v2"');
-    expect(ui).toContain('No provider actions are available here.');
-    expect(app).toContain("'/admin/command-center-v2'");
-    expect(ui).not.toMatch(/supabase|client_profiles|insert\(|update\(|delete\(/i);
+    expect(ui).toContain('data-testid="mission-card-needs-ray"');
+    expect(ui).toContain('data-testid="mission-card-activity"');
+    expect(ui).not.toMatch(/insert\(|update\(|delete\(|sendMessage|launchctl/i);
   });
 });
