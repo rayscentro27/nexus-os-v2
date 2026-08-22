@@ -11,7 +11,7 @@ const STATE_LABELS = {
   ERROR: 'Error'
 }
 
-export default function VoicePushToTalk({ onTranscript }) {
+export default function VoicePushToTalk({ onTranscript, disabled = false }) {
   const recorderRef = useRef(null)
   const chunksRef = useRef([])
   const timerRef = useRef(null)
@@ -27,7 +27,7 @@ export default function VoicePushToTalk({ onTranscript }) {
   }, [])
 
   async function start() {
-    if (recorderRef.current?.state === 'recording' || state === 'REQUESTING_PERMISSION' || state === 'PROCESSING') return
+    if (disabled || recorderRef.current?.state === 'recording' || state === 'REQUESTING_PERMISSION' || state === 'PROCESSING') return
     setError('')
     setTranscript('')
     if (!endpoint) { setState('ERROR'); setError('Admin voice transport is not configured; local-only STT is not exposed to this browser.'); return }
@@ -72,7 +72,7 @@ export default function VoicePushToTalk({ onTranscript }) {
   }
 
   return <div className="nexus-voice-ptt" data-voice-state={state}>
-      <button type="button" className="hermes-chip nexus-voice-button" onPointerDown={start} onPointerUp={stop} onPointerCancel={stop} onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); start() } }} onKeyUp={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); stop() } }} aria-label="Press and hold to talk" aria-pressed={state === 'LISTENING'} disabled={state === 'PROCESSING' || state === 'REQUESTING_PERMISSION'}>
+      <button type="button" className="hermes-chip nexus-voice-button" onPointerDown={start} onPointerUp={stop} onPointerCancel={stop} onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); start() } }} onKeyUp={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); stop() } }} aria-label="Press and hold to talk" aria-pressed={state === 'LISTENING'} disabled={disabled || state === 'PROCESSING' || state === 'REQUESTING_PERMISSION'}>
         🎙️
       </button>
     <small className="nexus-voice-state" role="status">{STATE_LABELS[state] || ''}{state === 'LISTENING' ? ` ${(elapsed / 1000).toFixed(1)}s` : ''}</small>

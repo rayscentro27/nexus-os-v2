@@ -9,6 +9,7 @@ import { normalizeHermesWorkroomResponse, toHermesChatMessage } from '../lib/her
 import { runHermesModelFirstConversation } from '../lib/hermesModelFirst/hermesModelFirstController';
 import { answerOperationalQuestion, getBundledOperationalSnapshot, probeHermesModelHealth, probeSupabaseHealth } from '../lib/nexusOperationalTruth';
 import HermesMessageBubble from './HermesMessageBubble';
+import VoicePushToTalk from '../admin/VoicePushToTalk';
 
 const welcome = { id: 'welcome', role: 'hermes', text: 'I\'m Hermes, your internal Nexus operator and CEO advisor. I report actual Nexus state from connected tools and authoritative records, and I will say when a source is stale, unavailable, simulated, or not checked.' };
 
@@ -71,7 +72,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
 
   const send = useCallback(async (text = input) => {
     const clean = (text || '').trim();
-    if (!clean) return;
+    if (!clean || loading) return;
 
     const now = Date.now();
     const userMsg = { id: `${now}-ray`, role: 'ray', text: clean };
@@ -167,7 +168,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
       dataSource: 'local',
       safetyLevel: 'safe',
     });
-  }, [input, activePage, visibleItems, selectedItem, availableActions, messages]);
+  }, [input, loading, activePage, visibleItems, selectedItem, availableActions, messages]);
 
   const clearHistory = useCallback(() => {
     hermesStore.clearHistory();
@@ -188,7 +189,7 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
       if (action.type === 'PREPARE_SPECIALIST_HANDOFF') onSpecialistRequested?.(item);
       if (action.type === 'CREATE_TASK_REQUEST') onPlanCreated?.({ id: action.id, prompt: item.text, specialist: activeSpecialist, status: 'approval_required', actionType: action.type });
     }} />)}<div ref={end} /></div>
-    <div className="nxos-chat-compose"><textarea aria-label="Message Hermes" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } }} placeholder="Ask Hermes about Supabase, research, approvals, or anything…" /><button type="button" className="primary" disabled={loading} onClick={() => send()}>{loading ? 'Loading...' : 'Send'}</button></div>
+    <div className="nxos-chat-compose"><textarea aria-label="Message Hermes" value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); send(); } }} placeholder="Ask Hermes about Supabase, research, approvals, or anything…" /><VoicePushToTalk disabled={loading} onTranscript={(text) => send(text)} /><button type="button" className="primary" disabled={loading} onClick={() => send()}>{loading ? 'Loading...' : 'Send'}</button></div>
     <div className="nxos-quick-prompts"><span>Try asking</span>{['what did we do today?', 'give me the CEO version', 'can you check Supabase', 'what approvals are pending'].map((prompt) => <button type="button" key={prompt} onClick={() => send(prompt)}>{prompt}</button>)}</div>
     <div className="nxos-chat-actions"><button type="button" onClick={clearHistory}>Clear conversation</button></div>
   </section>;
