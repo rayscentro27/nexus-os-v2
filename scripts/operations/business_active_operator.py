@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from nexus_agent_platform.governed import persistence
 from nexus_agent_platform.growth_operations import growth_portfolio, list_growth_experiments
 from nexus_agent_platform.opportunities.engine import opportunity_portfolio
+from nexus_agent_platform.creative.studio import creative_portfolio
 
 BUSINESS_ATTENTION_SCHEMA = "nexus.business-attention.v1"
 BUSINESS_PRIORITY_POLICY = "nexus.business-priority.v1"
@@ -94,6 +95,15 @@ def discover_business_attention() -> Dict[str, Any]:
     except Exception as exc:
         sources["growth_operations"] = "UNAVAILABLE"
         errors.append(f"growth_operations:{type(exc).__name__}")
+
+    try:
+        creative = creative_portfolio()
+        sources["creative_studio"] = "CONNECTED"
+        for row in [item for item in persistence.read_records("creative_assets") if item.get("status") == "REVIEW_REQUIRED"][:10]:
+            findings.append(_finding(source_system="creative_studio", source_record_id=row.get("asset_id", "unknown"), category="creative_review", priority="P2", summary=f"Creative asset needs Ray review: {row.get('asset_type', 'asset')}", reason="internal asset is ready for review; public distribution remains blocked", truth_class="INTERNAL_DRAFT", freshness="CURRENT", recommended_action="business_attention.review", action_class="APPROVAL_REQUIRED", approval_required=True, evidence_refs=row.get("evidence_refs", []), state={"status": row.get("status"), "input_fingerprint": row.get("input_fingerprint")}))
+    except Exception as exc:
+        sources["creative_studio"] = "UNAVAILABLE"
+        errors.append(f"creative_studio:{type(exc).__name__}")
 
     findings.sort(key=lambda item: (PRIORITY_RANK[item["priority"]], item["finding_id"]))
     return {"schema_version": BUSINESS_ATTENTION_SCHEMA, "priority_policy": BUSINESS_PRIORITY_POLICY, "generated_at": _now(), "findings": findings, "sources": sources, "errors": errors, "top_priority": findings[0] if findings else None, "external_action_performed": False}
