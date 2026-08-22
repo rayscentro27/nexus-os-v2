@@ -61,3 +61,7 @@ The GoClear / Apex tab now has a NotebookLM-style Revenue Hub project-card works
 ## Next Recommendation
 
 Choose the first real safe source of revenue truth: form submissions, Stripe read-only reporting, affiliate dashboard export, or manually reviewed CSV.
+
+## Phase L truth layer
+
+Phase L preserves this historical foundation and adds the canonical read-only Revenue Truth Layer documented in `docs/operations/NEXUS_GOCLEAR_REVENUE_HUB_PHASE_L.md`. Missing actual revenue is `UNKNOWN / NOT_CONNECTED`, not `$0`; test and synthetic money remain separate from actual; and Opportunity Engine values remain pipeline/estimate data rather than revenue.

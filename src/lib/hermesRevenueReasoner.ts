@@ -5,6 +5,12 @@ export interface RevenueReasoningContext {
   supabaseTables?: string[];
   supabaseNote?: string;
   routeDecision?: RouteDecision;
+  revenueSnapshot?: {
+    actualRevenue: number | null;
+    actualTruthClass: 'ACTUAL' | 'UNKNOWN' | 'NOT_CONNECTED' | 'TEST' | 'SYNTHETIC';
+    opportunityPipelineCount?: number;
+    opportunityPipelineTruthClass?: string;
+  };
 }
 
 export function isRevenueStrategyQuestion(message: string): boolean {
@@ -14,6 +20,15 @@ export function isRevenueStrategyQuestion(message: string): boolean {
 
 export function answerRevenueStrategy(context: RevenueReasoningContext): { text: string; handler: string; source: string } {
   if (context.usedSupabase && context.routeDecision && !context.routeDecision.allowedContext.supabase) throw new Error('Revenue reasoner received forbidden Supabase context');
+  if (context.revenueSnapshot) {
+    const actual = context.revenueSnapshot.actualRevenue == null ? 'UNKNOWN / NOT_CONNECTED' : `$${context.revenueSnapshot.actualRevenue}`;
+    const pipeline = context.revenueSnapshot.opportunityPipelineCount ?? 0;
+    return {
+      text: `**Revenue truth:** actual revenue is ${actual} (${context.revenueSnapshot.actualTruthClass}). The Opportunity Engine currently has ${pipeline} pipeline item(s), classified as ${context.revenueSnapshot.opportunityPipelineTruthClass || 'PIPELINE'}; this is not revenue. Test and synthetic observations are excluded from actual revenue. No financial mutation was performed.`,
+      handler: 'revenue_truth_snapshot',
+      source: 'nexus.revenue-snapshot.v1',
+    };
+  }
   const sourceNote = context.usedSupabase
     ? `Authenticated reads succeeded for ${context.supabaseTables?.join(', ') || 'the opportunity tables'}, but the revenue math below still uses explicit offer-ladder assumptions because normalized unit economics were not returned to this reasoner.`
     : `No authenticated live opportunity rows were available for this answer, so these are explicit planning assumptions based on the known GoClear/Apex offer ladder.${context.supabaseNote ? ` ${context.supabaseNote}` : ''}`;

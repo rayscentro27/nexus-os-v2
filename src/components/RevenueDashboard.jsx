@@ -1,2 +1,26 @@
 import React from 'react';
-export default function RevenueDashboard() { return <div className="nxos-stack"><div className="nxos-metric-grid"><article><small>Confirmed revenue</small><strong>$0</strong></article><article><small>Pending test path</small><strong>$97</strong></article><article><small>Offers registered</small><strong>9</strong></article><article><small>Immediately actionable</small><strong>26</strong></article></div><section className="nxos-callout"><h2>Next money action</h2><p>Approve the persistent synthetic customer insert, verify `/client/dashboard`, and manually complete the existing Stripe test Checkout. This proves the journey; it does not collect real revenue.</p></section><section className="nxos-table-card"><h2>Offer readiness</h2>{['$97 Credit & Funding Readiness Review — test ready', '$297 Readiness Review Plus — draft', '$497 Funding Prep Sprint — draft', 'Monthly readiness subscription — gated', 'Grant opportunity scan — draft', 'Business credit setup checklist — ready for review', 'Trading education/demo research — gated', 'Affiliate pathway — review', 'Funding referral pathway — review'].map((item) => <div className="nxos-table-row" key={item}><strong>{item}</strong><span>Approval required</span></div>)}</section></div>; }
+
+const Metric = ({ label, value, truth }) => <article><small>{label}</small><strong>{value}</strong><span className="nxos-source-label">{truth}</span></article>;
+
+export default function RevenueDashboard() {
+  return <div className="nxos-stack">
+    <section className="nxos-callout"><strong>Revenue Truth Layer</strong><p>Actual, test, synthetic, pipeline, opportunity estimates, and unknown data are intentionally separated. No financial mutation is available from this view.</p></section>
+    <div className="nxos-metric-grid">
+      <Metric label="Actual revenue" value="UNKNOWN" truth="NOT_CONNECTED · not $0" />
+      <Metric label="Controlled test purchase" value="$97" truth="TEST · excluded from actual" />
+      <Metric label="Synthetic Persona D" value="UNKNOWN" truth="SYNTHETIC · certification only" />
+      <Metric label="Opportunity pipeline" value="See Phase K" truth="OPPORTUNITY_ESTIMATE · not revenue" />
+    </div>
+    <section className="nxos-table-card"><h2>Operating truth</h2>
+      {[
+        ['Leads / booked calls', 'UNKNOWN', 'NOT_CONNECTED'],
+        ['$97 purchases / upgrades', 'UNKNOWN', 'NOT_CONNECTED'],
+        ['MRR / active subscriptions', 'UNKNOWN', 'NOT_CONNECTED'],
+        ['Funding commissions earned', 'UNKNOWN', 'NOT_CONNECTED'],
+        ['Affiliate conversions / commissions', 'UNKNOWN', 'NOT_CONNECTED'],
+        ['Phase K opportunities needing Ray', 'CONNECTED', 'GOVERNED OPPORTUNITY STATE'],
+      ].map(([label, value, truth]) => <div className="nxos-table-row" key={label}><strong>{label}</strong><span>{value}</span><span>{truth}</span></div>)}
+    </section>
+    <section className="nxos-callout"><h2>Next governed action</h2><p>Review the pending Phase K opportunity decision and choose a bounded authoritative revenue source. A test checkout may certify the test path only; it cannot create production revenue.</p></section>
+  </div>;
+}

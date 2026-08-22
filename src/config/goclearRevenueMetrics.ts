@@ -16,6 +16,8 @@ export type GoClearMetricKey =
   | 'estimated_revenue_potential'
   | 'actual_revenue';
 
+export type GoClearTruthClass = 'ACTUAL' | 'TEST' | 'SYNTHETIC' | 'PIPELINE' | 'OPPORTUNITY_ESTIMATE' | 'FORECAST' | 'MANUAL_VERIFIED' | 'UNKNOWN' | 'NOT_CONNECTED';
+
 export type GoClearPipelineStage =
   | 'source_detected'
   | 'lead'
@@ -34,6 +36,8 @@ export interface GoClearRevenueMetric {
   conversion_stage: GoClearPipelineStage;
   estimated_revenue_potential: number | null;
   actual_revenue: number | null;
+  truth_class: GoClearTruthClass;
+  source_status: 'CONNECTED' | 'CONNECTED_TEST' | 'PARTIAL' | 'NOT_CONNECTED';
   proof_event_id?: string | null;
   source_department: string;
   updated_at: string;
