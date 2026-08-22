@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.opportunities.engine import opportunity_portfolio  # noqa: E402
 from nexus_agent_platform.governed import persistence  # noqa: E402
+from nexus_agent_platform.growth_operations import growth_portfolio  # noqa: E402
 
 OUTPUT_PATH = ROOT / "public/runtime/nexus-mission-control.json"
 PRIORITIES = ("P0", "P1", "P2", "P3", "P4")
@@ -245,6 +246,30 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
             optional_view["revenue_hub"] = {"status": "NOT_CONNECTED", "reason": "No canonical revenue snapshot recorded", "revenue_truth": "NOT_CONNECTED", "core_health_dependency": False}
     except Exception:
         optional_view["revenue_hub"] = {"status": "DEGRADED", "reason": "Revenue read model unavailable; core health unaffected", "revenue_truth": "UNKNOWN", "core_health_dependency": False}
+    try:
+        growth = growth_portfolio()
+        counts = growth.get("counts", {})
+        top = growth.get("top_growth_opportunity")
+        optional_view["growth_operations"] = {
+            "status": growth.get("status", "IDLE"),
+            "reason": "Optional draft-only SEO and growth operations; never a core-health dependency",
+            "active_experiments": growth.get("total", 0),
+            "needs_research": counts.get("NEEDS_RESEARCH", 0),
+            "needs_ray": counts.get("NEEDS_RAY_REVIEW", 0),
+            "ready_for_planning": counts.get("APPROVED_FOR_PLANNING", 0),
+            "measurement_pending": counts.get("MEASUREMENT_PENDING", 0),
+            "result_observed": counts.get("RESULT_OBSERVED", 0),
+            "stale": counts.get("STALE", 0),
+            "top_growth_opportunity": {"growth_id": top.get("growth_id"), "title": top.get("title")} if top else None,
+            "keyword_scout": "CONNECTED_MANUAL",
+            "search_console": growth.get("search_console", "NOT_CONNECTED"),
+            "analytics": growth.get("analytics", "NOT_CONNECTED"),
+            "measurement_source": growth.get("measurement_source", "NOT_CONNECTED"),
+            "freshness": "CURRENT" if growth.get("total") else "UNKNOWN",
+            "core_health_dependency": False,
+        }
+    except Exception:
+        optional_view["growth_operations"] = {"status": "DEGRADED", "reason": "Growth read model unavailable; core health unaffected", "core_health_dependency": False}
     model = {
         "generated_at": now.isoformat(), "source": "canonical Nexus runtime artifacts and governed stores", "read_only": True,
         "system": system, "attention": attention,
@@ -256,7 +281,7 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         "process_registry": {"enabled": sum(1 for row in registry if row.get("enabled")), "records": len(registry) if isinstance(registry, list) else 0, "source": str(registry_path.relative_to(root))},
         "safety": {"stripe_autonomy": "DISABLED", "arbitrary_shell": "UNAVAILABLE", "external_actions": "BLOCKED", "source": "canonical runtime authority state"},
         "optional_integrations": optional_view,
-        "freshness": {"core_runtime": system["core_runtime"]["freshness"], "active_operator": system["active_operator"]["freshness"], "recovery_check": system["recovery_check"]["freshness"], "hermes": system["hermes"]["freshness"], "scheduler": evidence(scheduler_path, scheduler_last, now, 3600), "evidence_ingestion": evidence(evidence_path, evidence_run.get("updated_at") or evidence_run.get("last_run"), now, 3600) if evidence_run else {"source": str(evidence_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "remote_cpu_worker": evidence(worker_path, worker_run.get("last_seen"), now, 300) if worker_run else {"source": str(worker_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "alpha": evidence(alpha_path, alpha_run.get("updated_at") or alpha_run.get("last_run"), now, 3600) if alpha_run else {"source": str(alpha_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "opportunity_engine": {"freshness": optional_view.get("opportunity_engine", {}).get("freshness", "UNKNOWN"), "source": "governed opportunities collection"}, "revenue_hub": {"freshness": optional_view.get("revenue_hub", {}).get("freshness", "UNKNOWN"), "source": "governed revenue snapshots collection"}},
+        "freshness": {"core_runtime": system["core_runtime"]["freshness"], "active_operator": system["active_operator"]["freshness"], "recovery_check": system["recovery_check"]["freshness"], "hermes": system["hermes"]["freshness"], "scheduler": evidence(scheduler_path, scheduler_last, now, 3600), "evidence_ingestion": evidence(evidence_path, evidence_run.get("updated_at") or evidence_run.get("last_run"), now, 3600) if evidence_run else {"source": str(evidence_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "remote_cpu_worker": evidence(worker_path, worker_run.get("last_seen"), now, 300) if worker_run else {"source": str(worker_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "alpha": evidence(alpha_path, alpha_run.get("updated_at") or alpha_run.get("last_run"), now, 3600) if alpha_run else {"source": str(alpha_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "opportunity_engine": {"freshness": optional_view.get("opportunity_engine", {}).get("freshness", "UNKNOWN"), "source": "governed opportunities collection"}, "revenue_hub": {"freshness": optional_view.get("revenue_hub", {}).get("freshness", "UNKNOWN"), "source": "governed revenue snapshots collection"}, "growth_operations": {"freshness": optional_view.get("growth_operations", {}).get("freshness", "UNKNOWN"), "source": "governed growth experiments collection"}},
     }
     return model
 

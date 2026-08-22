@@ -19,7 +19,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from nexus_agent_platform.runtime.paths import nexus_data_path
 
-COLLECTIONS = ("approvals", "work_orders", "recommendations", "audit", "queue", "opportunities", "revenue_observations", "revenue_snapshots")
+COLLECTIONS = ("approvals", "work_orders", "recommendations", "audit", "queue", "opportunities", "revenue_observations", "revenue_snapshots", "growth_experiments")
 
 
 def governed_data_dir() -> Path:
