@@ -20,6 +20,7 @@ from nexus_agent_platform.opportunities.engine import opportunity_portfolio  # n
 from nexus_agent_platform.governed import persistence  # noqa: E402
 from nexus_agent_platform.growth_operations import growth_portfolio  # noqa: E402
 from nexus_agent_platform.creative.studio import creative_portfolio  # noqa: E402
+from nexus_agent_platform.voice.local_stt import voice_status  # noqa: E402
 
 OUTPUT_PATH = ROOT / "public/runtime/nexus-mission-control.json"
 PRIORITIES = ("P0", "P1", "P2", "P3", "P4")
@@ -298,6 +299,10 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         }
     except Exception:
         optional_view["creative_studio"] = {"status": "DEGRADED", "reason": "Creative read model unavailable; core health unaffected", "core_health_dependency": False}
+    try:
+        optional_view["voice"] = {**voice_status(), "reason": "Optional private local STT; core health unaffected"}
+    except Exception:
+        optional_view["voice"] = {"status": "DEGRADED", "reason": "Voice read model unavailable; core health unaffected"}
     model = {
         "generated_at": now.isoformat(), "source": "canonical Nexus runtime artifacts and governed stores", "read_only": True,
         "system": system, "attention": attention,

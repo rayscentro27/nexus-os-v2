@@ -24,12 +24,14 @@ import HermesGlobalLauncher from '../components/HermesGlobalLauncher'
 import ReadinessReviewIntake from '../components/ReadinessReviewIntake'
 import ReadinessReviewAdmin from '../components/ReadinessReviewAdmin'
 import HermesInlineDrawer from '../components/HermesInlineDrawer'
+import VoicePushToTalk from './VoicePushToTalk'
 import SystemHealthPanel from '../components/SystemHealthPanel'
 import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
 import AccountSecurityPanel from '../components/AccountSecurityPanel'
 import ErrorBoundary from '../components/ErrorBoundary'
 import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
+import { HermesMissionControlV2 } from '../components/command-center/HermesMissionControlV2'
 import TesterReadinessPanel from '../components/TesterReadinessPanel'
 import OutsourcedFulfillmentCenter from '../components/OutsourcedFulfillmentCenter'
 import TesterInvitationPanel from '../components/TesterInvitationPanel'
@@ -67,6 +69,7 @@ const kindThumbIcon = {
 const navGroups = [
   { label: 'Executive', items: [
     { id: 'command', label: 'Command Center', icon: 'LayoutDashboard', status: 'Internal', statusTone: 'blue' },
+    { id: 'mission-control-v2', label: 'Mission Control V2', icon: 'Orbit', status: 'Phase 10', statusTone: 'amber' },
     { id: 'operations', label: 'Nexus Operations', icon: 'Orbit', status: 'Report-backed', statusTone: 'amber' },
     { id: 'health', label: 'System Health', icon: 'Activity', status: 'Probe required', statusTone: 'amber' },
     { id: 'rayreview', label: 'Ray Review', icon: 'CheckCircle2', status: '64', statusTone: 'green' },
@@ -101,6 +104,7 @@ const navGroups = [
 
 const modeLabels = {
   command: 'Executive Overview',
+  'mission-control-v2': 'Mission Control V2 — Hermes modernization visibility',
   operations: 'Nexus Internal Operations',
   subscription: 'Subscription Command Center',
   source: 'Source Intake & Review',
@@ -405,6 +409,12 @@ async function hermesAnswer(question) {
 function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', chips = [] }) {
   const [text, setText] = useState('')
   const [answer, setAnswer] = useState(runtime.hermesRecommendation)
+  const [voiceReady, setVoiceReady] = useState('')
+  async function handleVoiceTranscript(transcript) {
+    const result = await handleHermesMessage({ message: transcript, surface: 'specialist', currentRoute: window.location.hash })
+    setAnswer(result.text)
+    setVoiceReady(result.voiceReady?.plainAnswer || '')
+  }
   return (
     <section className="glass hermes-card">
       <div className="hermes-title"><span className="advisor-ring small" />{label} <em>• Online</em></div>
@@ -429,6 +439,8 @@ function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', c
         />
         <button type="submit" className="hermes-send" aria-label="Send"><Icon name="Send" size={18} /></button>
       </form>
+      <VoicePushToTalk onTranscript={handleVoiceTranscript} />
+      {voiceReady && <div className="nexus-voice-ready"><strong>Voice-ready response:</strong> {voiceReady}</div>}
     </section>
   )
 }
@@ -1443,11 +1455,11 @@ function Footer({ activePage }) {
   )
 }
 
-export default function NexusAdminUI({ email }) {
+export default function NexusAdminUI({ email, initialPage = 'command' }) {
   const validPages = new Set(navGroups.flatMap(group => group.items.map(item => item.id)))
   const readHash = () => {
     const value = window.location.hash.replace(/^#\/?/, '')
-    return validPages.has(value) ? value : 'command'
+    return validPages.has(value) ? value : initialPage
   }
   const [activePage, setActivePage] = useState(readHash)
   const [hermesDrawerOpen, setHermesDrawerOpen] = useState(false)
@@ -1467,6 +1479,7 @@ export default function NexusAdminUI({ email }) {
 
   const page = {
     command: <ErrorBoundary panelName="Command Center"><RestoredCommandCenter onNavigate={navigate} onAskHermes={askHermes} /></ErrorBoundary>,
+    'mission-control-v2': <ErrorBoundary panelName="Mission Control V2"><HermesMissionControlV2 /></ErrorBoundary>,
     operations: <ErrorBoundary panelName="Nexus Operations"><NexusOperationsPanel onNavigate={navigate} /></ErrorBoundary>,
     subscription: <ErrorBoundary panelName="Subscription Command Center"><SubscriptionCommandCenterPage /></ErrorBoundary>,
     creative: <ErrorBoundary panelName="Creative Studio"><Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" /></ErrorBoundary>,

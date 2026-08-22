@@ -75,3 +75,36 @@ details.nx-collapse[open] > summary { margin-bottom:6px; }
 .nx-badge.ok { color:var(--nx-green); background: rgba(103,212,122,.1); border-color: rgba(103,212,122,.25); }
 .nx-badge.warnb { color:var(--nx-amber); background: rgba(245,165,36,.1); border-color: rgba(245,165,36,.25); }
 .nx-badge.infob { color:var(--nx-blue); background: rgba(59,163,255,.1); border-color: rgba(59,163,255,.25); }
+
+/* Hermes modernization Mission Control V2. Read-only, report-backed admin view. */
+.hermes-mc-v2 { color: var(--text); }
+.hermes-mc-hero { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:18px; padding:20px; border:1px solid var(--border); border-radius:16px; background:linear-gradient(135deg,#111d38,#15152c); }
+.hermes-mc-eyebrow { color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.hermes-mc-hero h1 { margin:6px 0 5px; font-size:26px; }
+.hermes-mc-hero p { margin:0; color:var(--muted); max-width:720px; line-height:1.45; }
+.hermes-mc-hero-state { display:grid; gap:8px; min-width:220px; justify-items:end; color:var(--muted); font-size:11px; text-align:right; }
+.hermes-mc-overview { display:grid; grid-template-columns:repeat(6,minmax(120px,1fr)); gap:10px; margin-bottom:14px; }
+.hermes-mc-metric { min-width:0; padding:10px; border:1px solid var(--border); background:#0c1422; border-radius:10px; }
+.hermes-mc-metric span { display:block; color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.04em; }
+.hermes-mc-metric strong { display:block; margin-top:5px; font-size:14px; overflow-wrap:anywhere; }
+.hermes-mc-grid-v2 { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.hermes-mc-card { border:1px solid var(--border); border-radius:14px; background:linear-gradient(180deg,var(--panel),var(--panel2)); padding:16px; min-width:0; }
+.hermes-mc-card-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+.hermes-mc-card-head h3 { margin:0; font-size:14px; letter-spacing:.05em; }
+.hermes-mc-status { display:inline-flex; border:1px solid var(--border); border-radius:999px; padding:4px 8px; font-size:10px; font-weight:800; white-space:nowrap; }
+.hermes-mc-status.good { color:var(--ok); border-color:#1f6b51; background:#0f2a22; }
+.hermes-mc-status.warn { color:var(--warn); border-color:#6b561f; background:#2a230f; }
+.hermes-mc-status.info { color:var(--info); border-color:#2a3a6b; background:#0f162a; }
+.hermes-mc-answers { display:grid; gap:8px; }
+.hermes-mc-answers > div { display:grid; grid-template-columns:110px 1fr; gap:10px; font-size:12px; line-height:1.4; }
+.hermes-mc-answers b { color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.03em; }
+.hermes-mc-answers span { color:#cdd6ec; overflow-wrap:anywhere; }
+.hermes-mc-card-detail { margin-top:12px; }
+.hermes-mc-card-detail .hermes-mc-metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:8px; }
+.hermes-mc-worker-table { display:grid; gap:6px; }
+.hermes-mc-worker-row { display:grid; grid-template-columns:105px 110px 1fr; gap:8px; align-items:center; padding:7px 8px; background:#0c1422; border:1px solid var(--border); border-radius:8px; font-size:11px; }
+.hermes-mc-worker-row span:last-child { color:var(--muted); overflow-wrap:anywhere; }
+.hermes-mc-source { margin-top:14px; color:var(--muted); font-size:11px; line-height:1.5; }
+@media (max-width:1100px) { .hermes-mc-overview { grid-template-columns:repeat(3,minmax(120px,1fr)); } }
+@media (max-width:760px) { .hermes-mc-hero { display:grid; } .hermes-mc-hero-state { justify-items:start; text-align:left; } .hermes-mc-overview,.hermes-mc-grid-v2 { grid-template-columns:1fr; } .hermes-mc-answers > div { grid-template-columns:1fr; gap:2px; } .hermes-mc-worker-row { grid-template-columns:1fr; } }
+.nexus-voice-ptt{display:flex;flex-direction:column;gap:6px;margin-top:10px}.nexus-voice-button{width:max-content;touch-action:none}.nexus-voice-ptt small{color:var(--muted,#8b97a8);font-size:11px}.nexus-voice-transcript,.nexus-voice-ready{margin-top:6px;padding:8px 10px;border-left:2px solid #66d9ef;font-size:13px}.nexus-voice-error{margin-top:6px;color:#ff9a9a;font-size:12px}

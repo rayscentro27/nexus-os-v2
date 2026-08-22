@@ -124,6 +124,12 @@ const nexusTopics: Record<string, { topic: string; explain: string; why?: string
     explain: `Hermes currently uses local router-based reasoning (intent classification, entity resolution, page context) for all responses. A live model is not configured yet. The hermes-chat Edge Function supports three providers: OpenRouter, Gemini, and Ollama. OPENROUTER_API_KEY and VITE_HERMES_CHAT_ENABLED are present, but HERMES_MODEL and HERMES_FALLBACK_MODEL are missing.`,
     approval: `Enabling a live model requires: (1) setting HERMES_MODEL and HERMES_FALLBACK_MODEL in Supabase Edge Function secrets, (2) confirming the provider works, (3) testing with safe internal questions only. All model calls remain server-side and approval-gated.`,
     next: `Recommended path: set HERMES_MODEL=openrouter/auto and HERMES_FALLBACK_MODEL=openrouter/auto in Supabase Edge Function secrets, then test with a safe question.`
+  },
+  'voice': {
+    topic: 'Private Voice Input',
+    explain: `Private Voice Input is push-to-talk speech-to-text through the local whisper.cpp adapter. Phase Q does not add continuous listening, TTS, WebRTC, or a public microphone API.`,
+    safety: `Raw audio is temporary and deleted after transcription. Voice has the same authority as typed Hermes input; it cannot publish, send, charge, trade, or bypass Ray Review.`,
+    next: `The local STT path is available on the Mac Mini. Browser push-to-talk remains LOCAL_ONLY until an authenticated admin-to-Mac transport is configured.`
   }
 };
 

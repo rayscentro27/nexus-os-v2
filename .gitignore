@@ -39,3 +39,8 @@ _incoming/
 data/private/
 data/runtime/execution_telemetry/
 data/governed/
+
+# private voice runtime/model/audio (never commit binaries or recordings)
+tools/voice/runtime/
+tools/voice/models/
+tools/voice/audio/
