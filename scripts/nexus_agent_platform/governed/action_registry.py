@@ -133,6 +133,20 @@ ACTION_REGISTRY: Dict[str, Dict[str, Any]] = {
         "telemetry_process_id": "runtime_report",
         "enabled": True,
     },
+    "business_attention.review": {
+        "action_id": "business_attention.review",
+        "name": "Review Business Attention",
+        "description": "Review one bounded GoClear business-attention finding; no external action.",
+        "risk_level": Risk.LOW,
+        "approval_required": True,
+        "executor": "record_business_attention_review",
+        "input_schema": {"type": "object", "properties": {"finding_id": {"type": "string"}}, "required": ["finding_id"]},
+        "result_schema": {"type": "object", "properties": {"finding_id": {"type": "string"}, "decision": {"type": "string"}}},
+        "timeout_seconds": 60,
+        "idempotency_supported": True,
+        "telemetry_process_id": "business_attention_review",
+        "enabled": True,
+    },
 }
 
 # Documented, non-executable classes (for honest recommendation labelling).

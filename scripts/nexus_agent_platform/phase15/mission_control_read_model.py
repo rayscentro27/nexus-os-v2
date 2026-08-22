@@ -270,6 +270,24 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         }
     except Exception:
         optional_view["growth_operations"] = {"status": "DEGRADED", "reason": "Growth read model unavailable; core health unaffected", "core_health_dependency": False}
+    business_sources = active.get("business_sources") or {}
+    business_findings = active.get("business_findings", 0)
+    optional_view["business_operator"] = {
+        "status": "HEALTHY" if active.get("operator_health") == "HEALTHY" else ("DEGRADED" if active else "IDLE"),
+        "reason": "Existing hourly Active Operator with bounded GoClear business attention",
+        "last_run": active.get("last_run"),
+        "last_success": active.get("last_successful_run"),
+        "trigger_type": active.get("trigger_type", "unknown"),
+        "business_findings": business_findings,
+        "priority_counts": {priority: sum(1 for row in (active.get("business_priorities") or []) if row.get("priority") == priority) for priority in ("P0", "P1", "P2", "P3", "P4")},
+        "safe_internal_actions": active.get("safe_business_actions_executed", 0),
+        "work_orders_created": active.get("business_work_orders_created", 0),
+        "duplicates_suppressed": active.get("business_duplicates_suppressed", 0),
+        "needs_ray": sum(1 for row in (active.get("business_priorities") or []) if row.get("approval_required")),
+        "top_business_priority": active.get("top_business_priority"),
+        "source_status": business_sources,
+        "core_health_dependency": True,
+    }
     model = {
         "generated_at": now.isoformat(), "source": "canonical Nexus runtime artifacts and governed stores", "read_only": True,
         "system": system, "attention": attention,

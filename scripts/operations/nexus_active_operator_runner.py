@@ -28,17 +28,19 @@ sys.path.insert(0, str(ROOT / "scripts/operations"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
+from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 SCHEDULER_HEALTH_PATH = ROOT / "reports/phase16a/scheduler_health.json"
 HEARTBEAT_PATH = ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json"
 RUNNER_REPORT_PATH = ROOT / "reports/runtime/nexus_active_operator_runner_latest.md"
+BUSINESS_BRIEF_PATH = ROOT / "reports/runtime/nexus_active_operator_business_brief_latest.md"
 RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
 LOCK_PATH = ROOT / "data/runtime/nexus_active_operator.lock"
 CADENCE_SECONDS = 3600
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -148,11 +150,19 @@ def _existing_idempotency_keys() -> set[str]:
 
 
 def create_pending_work_order(finding: Dict[str, Any]) -> Dict[str, Any]:
-    key = "active_operator:" + hashlib.sha256(finding["finding_id"].encode()).hexdigest()[:24]
+    stable = f"{finding.get('dedupe_key', finding['finding_id'])}:{finding.get('material_fingerprint', '')}"
+    key = "active_operator:" + hashlib.sha256(stable.encode()).hexdigest()[:24]
+    action_id = finding.get("proposed_action") or finding.get("recommended_action") or "runtime_report.generate"
     if key in _existing_idempotency_keys():
         return {"status": "DUPLICATE_SUPPRESSED", "idempotency_key": key, "finding_id": finding["finding_id"]}
+    if action_id == "opportunity.review":
+        opportunity_id = finding.get("source_record_id") if finding.get("source_system") == "opportunity_engine" else finding.get("source_opportunity_id")
+        for pending in approvals.get_pending_approvals(requested_for="ray", include_self=True):
+            inputs = pending.get("input_summary") or {}
+            if opportunity_id and pending.get("action_id") == "opportunity.review" and inputs.get("opportunity_id") == opportunity_id:
+                return {"status": "DUPLICATE_SUPPRESSED", "idempotency_key": key, "finding_id": finding["finding_id"], "approval_id": pending.get("id")}
     approval = approvals.create_approval_request(
-        action_id="runtime_report.generate",
+        action_id=action_id,
         requested_by="active_operator",
         requested_for="ray",
         input_summary={"finding_id": finding["finding_id"], "priority": finding["priority"]},
@@ -161,7 +171,7 @@ def create_pending_work_order(finding: Dict[str, Any]) -> Dict[str, Any]:
     )
     order = work_orders.create_work_order(
         approval_id=approval["id"],
-        action_id="runtime_report.generate",
+        action_id=action_id,
         requested_by="active_operator",
         inputs=finding,
         expected_outcome="Internal report prepared for Ray review",
@@ -194,6 +204,12 @@ def _write_report(result: Dict[str, Any]) -> None:
         f"- errors: {len(result['errors'])}", "", "## Authority", "",
         "- external actions: blocked", "- Stripe/live money: unavailable to this process",
         "- arbitrary shell: unavailable", "", f"- next_scheduled_run: `{result['next_scheduled_run']}`",
+        "", "## Business", "",
+        f"- business findings: {len(result.get('business_findings', []))}",
+        f"- business priorities: {len(result.get('business_priorities', []))}",
+        f"- business safe actions: {len(result.get('business_safe_actions_executed', []))}",
+        f"- business work orders: {len(result.get('business_work_orders_created', []))}",
+        f"- business duplicates suppressed: {result.get('business_duplicates_suppressed', 0)}",
     ]
     RUNNER_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     RUNNER_REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -209,13 +225,26 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
         registry = load_json(REGISTRY_PATH, [])
         scheduler_health = load_json(SCHEDULER_HEALTH_PATH, {})
         findings = discover_attention(registry if isinstance(registry, list) else [], scheduler_health)
-        actions_considered = [item["proposed_action"] for item in findings]
+        business_result = discover_business_attention()
+        business_brief_path = ROOT / "reports/runtime/nexus_active_operator_business_brief_latest.md"
+        business_findings = business_result.get("findings", [])
+        for item in business_findings:
+            item["proposed_action"] = item.get("recommended_action", "business_attention.review")
+        dispatch_findings = sorted(findings + business_findings, key=lambda item: (PRIORITY_RANK.get(item.get("priority", "P4"), 4), item.get("finding_id", "")))
+        actions_considered = [item["proposed_action"] for item in dispatch_findings]
         actions_executed = ["read_operational_state", "write_heartbeat"]
+        business_safe_actions: List[str] = []
+        if not dry_run:
+            write_business_priority_brief(business_result, business_brief_path)
+            business_safe_actions.append("business_attention.generate")
+            actions_executed.append("business_attention.generate")
         approvals_requested: List[Dict[str, Any]] = []
         created: List[Dict[str, Any]] = []
         errors: List[str] = []
         duplicates = 0
-        for finding in findings:
+        business_created: List[Dict[str, Any]] = []
+        business_duplicates = 0
+        for finding in dispatch_findings:
             route = classify_action(finding["proposed_action"])
             if route == "AUTO_EXECUTE_INTERNAL_SAFE":
                 actions_executed.append(finding["proposed_action"])
@@ -227,8 +256,12 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
                         item = create_pending_work_order(finding)
                         if item["status"] == "DUPLICATE_SUPPRESSED":
                             duplicates += 1
+                            if finding in business_findings:
+                                business_duplicates += 1
                         else:
                             created.append(item)
+                            if finding in business_findings:
+                                business_created.append(item)
                             approvals_requested.append(item)
                     except Exception as exc:  # bounded per-finding failure
                         errors.append(f"{finding['finding_id']}: {type(exc).__name__}")
@@ -240,12 +273,20 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
         receipt_path = str((RECEIPT_DIR / f"operator_{run_id}.json").relative_to(ROOT))
         result = {
             "operator_run_id": run_id,
-            "status": "NO_ACTION_REQUIRED" if not findings else "COMPLETED_WITH_FINDINGS",
+            "status": "NO_ACTION_REQUIRED" if not dispatch_findings else "COMPLETED_WITH_FINDINGS",
             "started_at": started, "completed_at": completed,
             "actions_considered": actions_considered,
             "actions_executed": actions_executed if not dry_run else [],
             "approvals_requested": approvals_requested,
             "work_orders_created": created, "duplicates_suppressed": duplicates,
+            "business_findings": business_findings,
+            "business_priorities": business_findings[:5],
+            "business_sources": business_result.get("sources", {}),
+            "business_source_errors": business_result.get("errors", []),
+            "business_safe_actions_executed": business_safe_actions,
+            "business_work_orders_created": business_created,
+            "business_duplicates_suppressed": business_duplicates,
+            "business_brief_path": str(business_brief_path.relative_to(ROOT)),
             "errors": errors,
             "next_scheduled_run": (datetime.fromisoformat(completed) + timedelta(seconds=CADENCE_SECONDS)).isoformat(),
             "operator_health": "HEALTHY" if not errors else "DEGRADED",
@@ -261,6 +302,13 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
             "approvals_requested": len(approvals_requested), "errors": errors,
             "next_scheduled_run": result["next_scheduled_run"], "operator_health": result["operator_health"],
             "authority": result["authority"],
+            "business_findings": len(business_findings),
+            "business_priorities": business_findings[:5],
+            "business_sources": business_result.get("sources", {}),
+            "safe_business_actions_executed": len(business_safe_actions),
+            "business_work_orders_created": len(business_created),
+            "business_duplicates_suppressed": business_duplicates,
+            "top_business_priority": business_findings[0] if business_findings else None,
         }
         write_json(HEARTBEAT_PATH, heartbeat)
         _receipt(run_id, result)
