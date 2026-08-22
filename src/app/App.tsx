@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
-import { AdminLoginPage, AuthGate, useSession } from '../components/auth';
+import { useEffect } from 'react';
+import { AdminLoginPage, AuthGate } from '../components/auth';
 import { AdminGuard } from '../components/auth/AdminGuard';
 import NexusAdminUI from '../admin/NexusAdminUI';
-import ClientPortalRoot from '../pages/client/ClientPortalRoot';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
 import ClientOnboardingPage from '../pages/client/ClientOnboardingPage';
-import { loadClientProfileIntake, checkProfileIntakeComplete } from '../lib/clientPortalDataAdapter';
 import ClientPreviewPage from '../pages/client/ClientPreviewPage';
 import { ClientV2Gate } from '../client-v2/pages/ClientV2Root';
 import { ClientV2PreviewPage } from '../client-v2/pages/ClientV2PreviewPage';
@@ -21,75 +19,6 @@ import { CheckoutStatusPage, ServiceOfferPage, ServicePricingPage } from '../pag
 import TesterInvitePage from '../pages/tester/TesterInvitePage';
 import TesterAcceptPage from '../pages/tester/TesterAcceptPage';
 import TesterTasksPage from '../pages/tester/TesterTasksPage';
-import { resolveClientContextForCurrentUser } from '../lib/clientAuthContext';
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
-
-async function isUserAdmin(userId: string): Promise<boolean> {
-  if (!isSupabaseConfigured || !supabase) return false;
-  try {
-    const { data: adminRow } = await supabase
-      .from('admin_users')
-      .select('id')
-      .eq('id', userId)
-      .maybeSingle();
-    if (adminRow) return true;
-  } catch {}
-  try {
-    const { data: membership } = await supabase
-      .from('tenant_memberships')
-      .select('role')
-      .eq('user_id', userId)
-      .in('role', ['super_admin', 'admin', 'operator'])
-      .limit(1)
-      .maybeSingle();
-    if (membership) return true;
-  } catch {}
-  return false;
-}
-
-function ClientPortalGate() {
-  const { user, loading } = useSession();
-  const [clientOk, setClientOk] = useState<boolean | null>(null);
-  const [onboardingOk, setOnboardingOk] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (loading || !user) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const admin = await isUserAdmin(user.id);
-        if (cancelled) return;
-        if (admin) { setClientOk(false); return; }
-        const ctx = await resolveClientContextForCurrentUser();
-        if (!ctx) {
-          if (!cancelled) { setClientOk(false); setOnboardingOk(false); }
-          return;
-        }
-        const intake = await loadClientProfileIntake(ctx);
-        if (!cancelled) {
-          setClientOk(true);
-          setOnboardingOk(checkProfileIntakeComplete(intake.data).complete);
-        }
-      } catch {
-        if (!cancelled) { setClientOk(false); setOnboardingOk(false); }
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user, loading]);
-
-  if (loading || clientOk === null || onboardingOk === null) {
-    return <div className="authwrap"><div className="muted">Loading…</div></div>;
-  }
-  if (!user || !clientOk) {
-    window.location.assign('/client/login');
-    return <div className="authwrap"><div className="muted">Redirecting to login…</div></div>;
-  }
-  if (window.location.pathname === '/client/dashboard' && !onboardingOk) {
-    window.location.assign('/client/onboarding');
-    return <div className="authwrap"><div className="muted">Preparing your setup…</div></div>;
-  }
-  return <ClientPortalRoot />;
-}
 
 const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
 
@@ -175,18 +104,16 @@ export function App() {
   if (path === '/client-v2' || path.startsWith('/client-v2/')) {
     return <ClientV2Gate />;
   }
-  if (path === '/client' || path.startsWith('/client/')) {
-    return <ClientPortalGate />;
-  }
+  if (path === '/client' || path.startsWith('/client/')) return <ClientV2Gate />;
   if (isAdmin) {
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') {
-      return <NexusAdminUI email="local-ui-smoke@nexus.invalid" />;
+      return <NexusAdminUI email="local-ui-smoke@nexus.invalid" initialPage={path === '/admin/command-center-v2' ? 'mission-control-v2' : 'command'} />;
     }
     return (
       <AdminGuard>
         {() => (
           <AuthGate>
-            {(user) => <NexusAdminUI email={user.email} />}
+            {(user) => <NexusAdminUI email={user.email} initialPage={path === '/admin/command-center-v2' ? 'mission-control-v2' : 'command'} />}
           </AuthGate>
         )}
       </AdminGuard>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { isSafeHermesUiAction } from '../lib/hermesUiActions';
 import { isSafeWorkroomAction } from '../lib/hermes/hermesWorkroomResponse';
+import SafeMarkdown from './SafeMarkdown';
 
 function openSafeAction(action) {
   if (!isSafeHermesUiAction(action) || !action.href) return;
@@ -12,7 +13,7 @@ export default function HermesMessageBubble({ message, onDelegate, onAction }) {
   const workroomActions = Array.isArray(message.actions) ? message.actions.filter(isSafeWorkroomAction) : [];
   return <div className={`nxos-message ${message.role}`} data-hermes-mode={message.mode || ''} data-hermes-intent={message.intent || ''} data-hermes-strategy={message.responseStrategy || ''}>
     <strong>{message.role === 'ray' ? 'Ray' : 'Hermes'}</strong>
-    <p>{message.text}</p>
+    <SafeMarkdown className="hermes-message-text">{message.text}</SafeMarkdown>
     <div className="hermes-message-actions">
       {message.role === 'ray' && onDelegate && <button type="button" onClick={() => onDelegate(message)}>Delegate this</button>}
       {message.role === 'hermes' && <>

@@ -4,6 +4,7 @@ import { navigateV2 } from '../utils/navigate'
 import { PageHeaderV2 } from '../layouts/PageHeaderV2'
 import { CardV2, SectionHeaderV2, StatusBadgeV2, ProgressRingV2 } from '../components/primitives'
 import { HermesPanelV2 } from '../components/HermesPanelV2'
+import InlineDocumentUpload from '../../components/client/InlineDocumentUpload'
 
 const reqTone = (status: string): 'emerald' | 'amber' | 'brand' | 'red' =>
   status === 'complete'
@@ -77,6 +78,10 @@ export function CreditReviewV2({ data }: { data: V2ViewData }) {
               ))}
               {requirements.length === 0 && <li className="text-[12.5px] text-v2muted">No baseline requirements available yet.</li>}
             </ul>
+          </CardV2>
+          <CardV2>
+            <div className="flex items-center justify-between gap-3"><span className="text-v2base font-semibold text-v2ink">Upload credit report</span><span className="text-[11px] text-v2muted">Secure, client-scoped storage</span></div>
+            <InlineDocumentUpload compact category="credit_reports" label="Choose credit report" pageContext="client_v2_credit_review" track="credit_review" requirementKey="credit_report" />
           </CardV2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

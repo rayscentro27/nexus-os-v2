@@ -30,5 +30,27 @@
 .nxos-chat-compose .nexus-voice-state { position:absolute;top:calc(100% + 3px);right:0;z-index:3;color:#9fb5d0;font-size:10px;line-height:1.2;white-space:nowrap;pointer-events:none; }
 .nxos-chat-compose .nexus-voice-transcript,.nxos-chat-compose .nexus-voice-error { position:absolute;top:calc(100% + 20px);right:0;z-index:3;width:min(360px,calc(100vw - 40px));margin:0;padding:7px 9px;border-left:2px solid #66d9ef;border-radius:5px;background:#071226;box-shadow:0 8px 20px rgba(0,0,0,.25);font-size:11px;line-height:1.35; }
 .nxos-chat-compose .nexus-voice-error { color:#ff9a9a;border-left-color:#ff7878; }
+.nxos-chat-compose .nexus-voice-review { position:absolute;top:calc(100% + 20px);right:0;z-index:4;width:min(420px,calc(100vw - 40px));display:grid;gap:8px;padding:12px;border:1px solid #315176;border-radius:10px;background:#0a182a;box-shadow:0 12px 28px rgba(0,0,0,.32);font-size:11px;line-height:1.35; }
+.nxos-chat-compose .nexus-voice-review textarea { width:100%;min-height:64px;resize:vertical;background:#071226;border:1px solid #315176;color:#eaf1fb;border-radius:7px;padding:8px;font:inherit; }
+.nxos-chat-compose .nexus-voice-review-actions { display:flex;justify-content:flex-end;gap:7px; }
+.nxos-chat-compose .nexus-voice-review-actions button { min-width:0;padding:7px 10px;background:#10243c;color:#dbe9fa;border:1px solid #315176;border-radius:7px;cursor:pointer; }
+.nxos-chat-compose .nexus-voice-review-actions button.primary { background:#247bd3;border-color:#4aa2fa;color:#fff; }
+.nxos-chat-compose .nexus-voice-review-actions button:disabled { opacity:.55;cursor:not-allowed; }
+.nexus-safe-markdown { display:grid; gap:6px; line-height:1.5; }
+.nexus-safe-markdown p { margin:0; }
+.nexus-safe-markdown ul,.nexus-safe-markdown ol { margin:0; padding-left:20px; }
+.nexus-safe-markdown code { padding:1px 4px; border-radius:4px; background:#081525; color:#b7d8ff; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.92em; }
+.nova-workspace { display:grid; gap:16px; }
+.nova-workspace-header { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+.nova-workspace-header h2 { margin:0 0 6px; font-size:30px; }
+.nova-workspace-header p { margin:0; color:#91a5bf; }
+.nova-status-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.nova-status-grid article,.nova-next-step { background:#0d1a2c; border:1px solid #213650; border-radius:14px; padding:16px; }
+.nova-status-grid article { display:grid; gap:7px; }
+.nova-status-grid article svg { color:#61b2ff; }
+.nova-status-grid article span,.nova-next-step p { color:#91a5bf; font-size:13px; line-height:1.5; }
+.nova-status-grid article b { color:#83e6b0; font-size:11px; letter-spacing:.04em; }
+.nova-next-step a { display:inline-flex; align-items:center; gap:7px; color:#9cc9ff; font-weight:700; }
+@media (max-width: 780px) { .nova-workspace-header { flex-direction:column; }.nova-status-grid { grid-template-columns:1fr; } }
 @media (max-width: 1100px) { body { min-width: 0 !important; }.nxos-root { grid-template-columns:1fr; }.nxos-sidebar { position:fixed;left:-310px;width:290px;transition:left .2s; }.nxos-sidebar.is-open { left:0; }.nxos-menu { display:block;border:1px solid #294362;background:#0d1d31;color:white;border-radius:7px;padding:7px 10px; }.nxos-overlay { display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);border:0;z-index:45; }.nxos-topbar { padding:0 14px; }.nxos-user span { display:none; }.nxos-department { padding:18px; }.nxos-metric-grid { grid-template-columns:repeat(2,1fr); }.nxos-review-grid { grid-template-columns:1fr; }.nxos-report-layout,.nxos-workroom { grid-template-columns:1fr; }.nxos-report-layout > aside { max-height:300px; }.nxos-specialist-list { display:grid;grid-template-columns:repeat(2,1fr); }.nxos-specialist-list h3 { grid-column:1/-1; } }
 @media (max-width: 650px) { .nxos-user a { display:none; }.nxos-department > header { display:block; }.nxos-department > header .nxos-live { margin-top:12px; }.nxos-metric-grid,.nxos-two-col { grid-template-columns:1fr; }.nxos-table-row { grid-template-columns:1fr;gap:4px; }.nxos-review-card dl { grid-template-columns:1fr; }.nxos-chat-compose { grid-template-columns:1fr; }.nxos-specialist-list { grid-template-columns:1fr; } }

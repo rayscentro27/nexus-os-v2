@@ -1,7 +1,8 @@
-import { FileCheck2, FileClock, FileX2, Info, Upload } from 'lucide-react'
+import { FileCheck2, FileClock, FileX2, Info } from 'lucide-react'
 import type { V2ViewData } from '../types/v2-models'
 import { PageHeaderV2 } from '../layouts/PageHeaderV2'
 import { CardV2, SectionHeaderV2, StatusBadgeV2 } from '../components/primitives'
+import InlineDocumentUpload from '../../components/client/InlineDocumentUpload'
 
 export function DocumentsV2({ data }: { data: V2ViewData }) {
   const { documents } = data
@@ -103,9 +104,7 @@ export function DocumentsV2({ data }: { data: V2ViewData }) {
             </div>
             <DocumentList items={documents.missing.slice(0, 5)} empty="Nothing missing — great work." dot="v2-dot--red" />
           </CardV2>
-          <button type="button" className="v2-btn v2-btn--primary w-full justify-center" disabled>
-            <Upload size={15} /> Upload arriving next checkpoint
-          </button>
+          <InlineDocumentUpload compact label="Upload document" pageContext="client_v2_documents" track="documents" />
         </aside>
       </div>
     </div>

@@ -30,6 +30,7 @@ import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipel
 import AccountSecurityPanel from '../components/AccountSecurityPanel'
 import ErrorBoundary from '../components/ErrorBoundary'
 import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
+import NovaWorkspace from '../components/NovaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
 import { HermesMissionControlV2 } from '../components/command-center/HermesMissionControlV2'
 import TesterReadinessPanel from '../components/TesterReadinessPanel'
@@ -77,6 +78,7 @@ const navGroups = [
     { id: 'reports', label: 'Reports', icon: 'FileText', status: '13', statusTone: 'blue' }
   ]},
   { label: 'Hermes Alpha — Separate', items: [
+    { id: 'nova', label: 'Nova', icon: 'Bot', status: 'Strategy', statusTone: 'blue' },
     { id: 'alpha', label: 'Hermes Alpha', icon: 'Orbit', status: 'Research', statusTone: 'green' }
   ]},
   { label: 'Business', items: [
@@ -135,6 +137,7 @@ const modeLabels = {
   proof: 'Events / Proof Ledger',
   hermes: 'Hermes Advisor',
   alpha: 'Hermes Alpha — Live Research',
+  nova: 'Nova Strategic Adviser',
   feedback: 'Hermes Feedback',
   settings: 'Settings'
 }
@@ -1494,6 +1497,7 @@ export default function NexusAdminUI({ email, initialPage = 'command' }) {
     health: <ErrorBoundary panelName="System Health"><SimplePage title="System Health" sub="Click Any System for Evidence and Next Action"><SystemHealthPanel onNavigate={navigate} onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     hermes: <ErrorBoundary panelName="Hermes Workroom"><SimplePage title="Hermes Workroom" sub="CEO Advisor · Delegation · Specialist Rooms"><HermesWorkroom activePage={activePage} /></SimplePage></ErrorBoundary>,
     alpha: <ErrorBoundary panelName="Hermes Alpha Workspace"><SimplePage title="Hermes Alpha" sub="Direct Strategy Conversation · Local Memory · No Supabase"><HermesAlphaWorkspace onOpenReports={() => navigate('reports')} /></SimplePage></ErrorBoundary>,
+    nova: <ErrorBoundary panelName="Nova Workspace"><SimplePage title="Nova" sub="Strategic Adviser · Separate from Hermes · Telegram runtime certified"><NovaWorkspace /></SimplePage></ErrorBoundary>,
     rayreview: <ErrorBoundary panelName="Ray Review"><SimplePage title="Ray Review" sub="Decisions · Feedback · Safe Approval Receipts"><RayReviewCenter /></SimplePage></ErrorBoundary>,
     reports: <ErrorBoundary panelName="Reports"><SimplePage title="Reports" sub="Operating Evidence · Markdown Library"><ReportCenter onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,
     clients: <ErrorBoundary panelName="Clients"><SimplePage title="Clients" sub="Fake Customer Status · Onboarding Readiness · Ray Review"><ClientsPanel onAskHermes={askHermes} /></SimplePage></ErrorBoundary>,

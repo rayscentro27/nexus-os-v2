@@ -17,7 +17,7 @@ import { ResourcesV2 } from './ResourcesV2'
 import { BillingV2 } from './BillingV2'
 import { PlaceholderV2 } from './PlaceholderV2'
 import type { V2ViewData } from '../types/v2-models'
-import { ROUTE_LABELS, navigateV2 } from '../utils/navigate'
+import { ROUTE_LABELS, navigateV2, mapRouteToV2 } from '../utils/navigate'
 
 export function renderV2Page(path: string, data: V2ViewData) {
   switch (path) {
@@ -47,6 +47,7 @@ export function renderV2Page(path: string, data: V2ViewData) {
 export const normalizePath = (p: string) => {
   if (p === '/client-v2' || p === '/client-v2/') return '/client-v2/dashboard'
   if (p.startsWith('/client-v2/')) return p
+  if (p === '/client' || p.startsWith('/client/')) return mapRouteToV2(p)
   return '/client-v2/dashboard'
 }
 

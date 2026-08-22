@@ -25,12 +25,17 @@ describe('actual Hermes Workroom voice wiring', () => {
     expect(css).toMatch(/\.nxos-chat-compose \.nexus-voice-button/);
   });
 
-  it('keeps voice transcripts on the typed send path and avoids duplicate sends while loading', () => {
+  it('keeps voice transcripts in review until an explicit send and avoids duplicate sends while loading', () => {
     expect(panel).toMatch(/const send = useCallback/);
     expect(panel).toMatch(/if \(!clean \|\| loading\) return/);
     expect(panel).toMatch(/const userMsg = \{ id: `\$\{now\}-ray`, role: 'ray', text: clean \}/);
     expect(panel).toMatch(/setMessages\(current => \{/);
     expect(panel).toMatch(/onKeyDown=.*send\(\)/s);
+    expect(voice).toMatch(/Transcript ready/);
+    expect(voice).toMatch(/Edit transcript before sending/);
+    expect(voice).toMatch(/Send to Hermes/);
+    expect(voice).toMatch(/onTranscript\(clean\)/);
+    expect(voice).not.toMatch(/onTranscript\(payload\.text/);
     expect(voice).toMatch(/VITE_NEXUS_VOICE_ENDPOINT/);
     expect(voice).not.toMatch(/VITE_NEXUS_VOICE_TOKEN|NEXUS_VOICE_LOCAL_TOKEN/);
   });

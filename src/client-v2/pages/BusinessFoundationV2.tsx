@@ -4,6 +4,7 @@ import { navigateV2 } from '../utils/navigate'
 import { PageHeaderV2 } from '../layouts/PageHeaderV2'
 import { CardV2, ProgressRingV2, SectionHeaderV2, StatusBadgeV2 } from '../components/primitives'
 import { HermesPanelV2 } from '../components/HermesPanelV2'
+import InlineDocumentUpload from '../../components/client/InlineDocumentUpload'
 
 const reqTone = (status: string): 'emerald' | 'amber' | 'brand' | 'red' =>
   status === 'complete'
@@ -69,6 +70,10 @@ export function BusinessFoundationV2({ data }: { data: V2ViewData }) {
               ))}
               {foundation.length === 0 && <li className="py-4 text-[12.5px] text-v2muted">No foundation milestones yet.</li>}
             </ul>
+          </CardV2>
+          <CardV2>
+            <div className="flex items-center justify-between gap-3"><span className="text-v2base font-semibold text-v2ink">Add business document</span><span className="text-[11px] text-v2muted">EIN, formation, or banking evidence</span></div>
+            <InlineDocumentUpload compact category="business_formation" label="Choose business document" pageContext="client_v2_business_foundation" track="business_foundation" />
           </CardV2>
 
           <CardV2>

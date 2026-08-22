@@ -6,6 +6,7 @@ import { CardV2, SectionHeaderV2, StatusBadgeV2 } from '../components/primitives
 import { ReadinessArcV2 } from '../components/ReadinessArcV2'
 import { NextMoveCardV2 } from '../components/NextMoveCardV2'
 import { HermesPanelV2 } from '../components/HermesPanelV2'
+import InlineDocumentUpload from '../../components/client/InlineDocumentUpload'
 
 export function FundingReadinessV2({ data }: { data: V2ViewData }) {
   const { readiness, scores, hermes } = data
@@ -101,6 +102,10 @@ export function FundingReadinessV2({ data }: { data: V2ViewData }) {
               </p>
             </div>
           )}
+          <CardV2>
+            <div className="flex items-center justify-between gap-3"><span className="text-v2base font-semibold text-v2ink">Upload readiness evidence</span><span className="text-[11px] text-v2muted">Bank statements or revenue support</span></div>
+            <InlineDocumentUpload compact category="banking" label="Choose readiness document" pageContext="client_v2_funding_readiness" track="funding_readiness" />
+          </CardV2>
         </div>
 
         <aside className="space-y-4">

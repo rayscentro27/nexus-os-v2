@@ -52,7 +52,7 @@ const CATEGORY_LABELS = {
   unknown: 'Other',
 }
 
-export default function InlineDocumentUpload({ category, onUploaded, compact, label, className, pageContext = 'client_portal', track = 'general', requirementKey = '' }) {
+export default function InlineDocumentUpload({ category = '', onUploaded = () => {}, compact = false, label = '', className = '', pageContext = 'client_portal', track = 'general', requirementKey = '' }) {
   const [file, setFile] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)

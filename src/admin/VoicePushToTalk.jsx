@@ -6,8 +6,10 @@ const STATE_LABELS = {
   REQUESTING_PERMISSION: 'Microphone permission…',
   LISTENING: 'Listening…',
   PROCESSING: 'Processing…',
-  TRANSCRIBED: 'Transcript received',
-  DONE: 'Transcript received',
+  SENDING: 'Sending to Hermes…',
+  TRANSCRIPT_READY: 'Transcript ready for review',
+  TRANSCRIBED: 'Transcript ready for review',
+  DONE: 'Transcript ready for review',
   ERROR: 'Error'
 }
 
@@ -27,7 +29,7 @@ export default function VoicePushToTalk({ onTranscript, disabled = false }) {
   }, [])
 
   async function start() {
-    if (disabled || recorderRef.current?.state === 'recording' || state === 'REQUESTING_PERMISSION' || state === 'PROCESSING') return
+    if (disabled || recorderRef.current?.state === 'recording' || state === 'REQUESTING_PERMISSION' || state === 'PROCESSING' || state === 'TRANSCRIPT_READY' || state === 'SENDING') return
     setError('')
     setTranscript('')
     if (!endpoint) { setState('ERROR'); setError('Admin voice transport is not configured; local-only STT is not exposed to this browser.'); return }
@@ -50,9 +52,7 @@ export default function VoicePushToTalk({ onTranscript, disabled = false }) {
           const payload = await response.json()
           if (!response.ok) throw new Error(payload.error || 'voice-transcription-unavailable')
           setTranscript(payload.text || '')
-          setState('TRANSCRIBED')
-          if (payload.text && onTranscript) await onTranscript(payload.text, payload)
-          setState('DONE')
+          setState('TRANSCRIPT_READY')
         } catch (caught) { setState('ERROR'); setError(caught?.message || 'Voice transcription failed.') }
       }
       recorderRef.current = recorder
@@ -71,12 +71,39 @@ export default function VoicePushToTalk({ onTranscript, disabled = false }) {
     if (recorderRef.current?.state === 'recording') recorderRef.current.stop()
   }
 
+  async function sendReviewedTranscript() {
+    const clean = transcript.trim()
+    if (!clean || !onTranscript || state !== 'TRANSCRIPT_READY') return
+    setState('SENDING')
+    try {
+      await onTranscript(clean)
+      setState('DONE')
+    } catch (caught) {
+      setState('ERROR')
+      setError(caught?.message || 'Transcript could not be sent.')
+    }
+  }
+
+  function retry() {
+    setTranscript('')
+    setError('')
+    setState('IDLE')
+  }
+
   return <div className="nexus-voice-ptt" data-voice-state={state}>
-      <button type="button" className="hermes-chip nexus-voice-button" onPointerDown={start} onPointerUp={stop} onPointerCancel={stop} onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); start() } }} onKeyUp={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); stop() } }} aria-label="Press and hold to talk" aria-pressed={state === 'LISTENING'} disabled={disabled || state === 'PROCESSING' || state === 'REQUESTING_PERMISSION'}>
+      <button type="button" className="hermes-chip nexus-voice-button" onPointerDown={start} onPointerUp={stop} onPointerCancel={stop} onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); start() } }} onKeyUp={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); stop() } }} aria-label="Press and hold to talk" aria-pressed={state === 'LISTENING'} disabled={disabled || state === 'PROCESSING' || state === 'REQUESTING_PERMISSION' || state === 'SENDING'}>
         🎙️
       </button>
     <small className="nexus-voice-state" role="status">{STATE_LABELS[state] || ''}{state === 'LISTENING' ? ` ${(elapsed / 1000).toFixed(1)}s` : ''}</small>
-    {transcript && <div className="nexus-voice-transcript"><strong>Transcript:</strong> {transcript}</div>}
+    {transcript && state === 'TRANSCRIPT_READY' && <div className="nexus-voice-review" role="region" aria-label="Transcript review">
+      <strong>Transcript ready</strong>
+      <textarea aria-label="Edit transcript before sending" value={transcript} onChange={event => setTranscript(event.target.value)} rows={3} />
+      <div className="nexus-voice-review-actions">
+        <button type="button" onClick={retry}>Retry</button>
+        <button type="button" className="primary" onClick={sendReviewedTranscript} disabled={!transcript.trim()}>Send to Hermes</button>
+      </div>
+    </div>}
+    {transcript && state === 'DONE' && <div className="nexus-voice-transcript"><strong>Sent transcript:</strong> {transcript}</div>}
     {error && <div className="nexus-voice-error" role="status">{error}</div>}
   </div>
 }
