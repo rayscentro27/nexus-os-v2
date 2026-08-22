@@ -7,8 +7,31 @@ export interface HermesModeClassification {
   reason: string;
 }
 
+const ASSISTANT_NAMES = '(?:nexus|hermes)';
+const GREETING_PREFIX = '(?:good morning|morning|good afternoon|afternoon|good evening|evening|good night|night|hello|hi|hey|yo|sup|gm)';
+const CASUAL_PREFIX = '(?:how are you|what(?:\'s|s) up|thanks|thank you|okay|ok|got it|that makes sense|makes sense|i agree|are you there|you ready)';
+const OPERATIONAL_PREFIX = '(?:what|how|who|when|where|which|can|do|does|is|are|should|give me|tell me|show me|help me)';
+
+function removeVocativeNames(text: string): string {
+  let normalized = text;
+
+  // A leading assistant name is a vocative when the remainder begins like a
+  // conversational or operational request. Keep substantive phrases such as
+  // "Nexus architecture" intact.
+  normalized = normalized.replace(new RegExp(`^${ASSISTANT_NAMES}\\s+(?=${GREETING_PREFIX}|${CASUAL_PREFIX}|${OPERATIONAL_PREFIX})`), '');
+
+  // Handle "Good evening, Nexus, ..." and "Hello Hermes ..." without
+  // changing the original message stored by the Workroom.
+  normalized = normalized.replace(new RegExp(`^(${GREETING_PREFIX})\\s+${ASSISTANT_NAMES}(?=\\s|$)`), '$1');
+
+  // A trailing name is a vocative for known conversational/greeting forms,
+  // but not for substantive questions such as "What is Hermes?".
+  normalized = normalized.replace(new RegExp(`^(${GREETING_PREFIX}|${CASUAL_PREFIX}|what should .*|what needs .*|what are .* priorities|give me .* priorities)\\s+${ASSISTANT_NAMES}$`), '$1');
+  return normalized.replace(/\s+/g, ' ').trim();
+}
+
 export function normalizeHermesConversationText(message: string): string {
-  return message
+  const punctuationNormalized = String(message || '')
     .toLowerCase()
     .replace(/\bgo;od\b/g, 'good')
     .replace(/[’']/g, "'")
@@ -18,8 +41,10 @@ export function normalizeHermesConversationText(message: string): string {
     .replace(/\bdeparment\b/g, 'department')
     .replace(/\bdepartmant\b/g, 'department')
     .replace(/\bsystm\b/g, 'system')
+    .replace(/[^a-z0-9'\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  return removeVocativeNames(punctuationNormalized);
 }
 
 export function classifyHermesConversationMode(message: string, hasAdvisoryContext = false): HermesModeClassification {
@@ -45,11 +70,19 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'APPROVAL_REQUEST', intent: 'prepare_approval_request', confidence: 0.92, reason: 'Message explicitly asks for Ray Review or approval preparation.' };
   }
 
+  if (/^(?:do|handle|fix)\s+(?:that|it|the project|the client)$/.test(text)) {
+    return { mode: 'CLARIFICATION_REQUIRED', intent: 'missing_action_context', confidence: 0.28, reason: 'Vague action reference needs a specific target and governed context.' };
+  }
+
+  if (/^(?:publish|send)\b/.test(text)) {
+    return { mode: 'CLARIFICATION_REQUIRED', intent: 'ambiguous_external_action', confidence: 0.3, reason: 'External action needs a specific target, destination, and governed approval context.' };
+  }
+
   if (/\b(create|turn|make|prepare|assign|draft)\b.*\b(task|work request|governed work|work order)\b|\bassign this to\b/i.test(text)) {
     return { mode: 'TASK_REQUEST', intent: 'create_governed_work_request', confidence: 0.92, reason: 'Message explicitly asks to create or assign governed work.' };
   }
 
-  if (/^(good morning|morning|good afternoon|afternoon|good evening|evening|good night|night|hi|hello|hey|yo|sup|gm)(?: hermes| ray)?[.!? ]*$/.test(text)) {
+  if (/^(good morning|morning|good afternoon|afternoon|good evening|evening|good night|night|hi|hello|hey|yo|sup|gm)$/.test(text)) {
     return { mode: 'SOCIAL_GREETING', intent: /night/.test(text) ? 'farewell_or_light_check_in' : 'greeting_or_light_check_in', confidence: 0.98, reason: 'Obvious social greeting with no operational request.' };
   }
 
@@ -172,7 +205,7 @@ export function classifyHermesConversationMode(message: string, hasAdvisoryConte
     return { mode: 'EXECUTIVE_ADVICE', intent: 'revenue_action', confidence: 0.92, reason: 'Question asks for the best immediate revenue action.' };
   }
 
-  if (/\b(what should we focus on today|what should we work on first|what should we do first|what do we do first|what needs my attention|what needs attention|which project should we prioritize|where do we start|where should we start|pick the best one|pick the top priority|what is the priority|what is today'?s priority|give me today'?s plan|give me today'?s priorities|what should nexus handle first|top priority)\b/.test(text)) {
+  if (/\b(what should (?:i|we) focus on today|what should (?:i|we) work on today|what should (?:i|we) do today|what should we work on first|what should we do first|what do we do first|what needs my attention|what needs attention|what are (?:my|our|today'?s) priorities|give me (?:my|our|today'?s) priorities|give me a plan for today|what'?s the most important thing today|what'?s my highest priority|which project should we prioritize|where do we start|where should we start|pick the best one|pick the top priority|what is the priority|what is today'?s priority|give me today'?s plan|give me today'?s priorities|what should nexus handle first|top priority)\b/.test(text)) {
     return { mode: 'EXECUTIVE_ADVICE', intent: 'executive_priority', confidence: 0.91, reason: 'Question asks Hermes to recommend an operating priority.' };
   }
 

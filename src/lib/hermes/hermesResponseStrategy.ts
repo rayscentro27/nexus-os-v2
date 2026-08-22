@@ -27,6 +27,7 @@ import {
   runHermesTool,
   type HermesAnswerProvenance,
 } from './hermesGeneralTools';
+import { getTimeContext } from '../hermesTimeContext';
 
 const nowIso = () => new Date().toISOString();
 
@@ -106,11 +107,13 @@ export function buildDefaultExecutiveAdvisory(): HermesAdvisoryContext {
 
 function greetingResponse(message: string): string {
   const lower = message.toLowerCase().replace(/\bgo;od\b/g, 'good');
-  if (/\b(good night|^night)\b/.test(lower)) return 'Good night, Ray. We made solid progress today.';
-  if (/\b(good morning|^morning|\bgm\b)/.test(lower)) return 'Good morning, Ray. What are we focusing on first today?';
-  if (/\b(good afternoon|^afternoon)\b/.test(lower)) return 'Good afternoon, Ray. What needs your attention first?';
-  if (/\b(good evening|^evening)\b/.test(lower)) return 'Good evening, Ray. I’m ready when you are.';
-  return 'Hey Ray. What are we working on?';
+  const current = getTimeContext().timeOfDay;
+  const greeting = current === 'morning' ? 'Good morning' : current === 'afternoon' ? 'Good afternoon' : current === 'evening' ? 'Good evening' : 'Good night';
+  if (/\b(good night|^night)\b/.test(lower)) return `${greeting}, Ray. We made solid progress today.`;
+  if (/\b(good morning|^morning|\bgm\b)/.test(lower)) return `${greeting}, Ray. What are we focusing on first today?`;
+  if (/\b(good afternoon|^afternoon)\b/.test(lower)) return `${greeting}, Ray. What needs your attention first?`;
+  if (/\b(good evening|^evening)\b/.test(lower)) return `${greeting}, Ray. I’m ready when you are.`;
+  return `${greeting}, Ray. What are we working on?`;
 }
 
 function casualResponse(message: string): string {

@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { classifyHermesConversationMode } from '../src/lib/hermes/hermesModeClassifier';
 import { createHermesConversationSession } from '../src/lib/hermes/hermesMemoryResolver';
 import { runHermesConversation, resetHermesCanonicalConversationSession } from '../src/lib/hermes/hermesConversationEngine';
+import { getTimeContext } from '../src/lib/hermesTimeContext';
 
 describe('Hermes canonical conversation engine', () => {
   beforeEach(() => resetHermesCanonicalConversationSession());
@@ -20,8 +21,10 @@ describe('Hermes canonical conversation engine', () => {
 
   it('answers greetings naturally without operational menus', () => {
     const response = runHermesConversation({ message: 'good morning', actorRole: 'admin', channel: 'test' });
+    const time = getTimeContext();
+    const greeting = time.timeOfDay === 'morning' ? 'Good morning' : time.timeOfDay === 'afternoon' ? 'Good afternoon' : time.timeOfDay === 'evening' ? 'Good evening' : 'Good night';
     expect(response.mode).toBe('SOCIAL_GREETING');
-    expect(response.response).toMatch(/Good morning, Ray/);
+    expect(response.response).toContain(`${greeting}, Ray`);
     expect(response.response).not.toMatch(/Ray Review|system health|human tastes|lived experiences/i);
     expect(response.action).toBeNull();
   });
@@ -34,8 +37,10 @@ describe('Hermes canonical conversation engine', () => {
       pageId: 'client-credit-profile',
       pageContext: { heading: 'Credit Profile', status: 'blocked' },
     });
+    const time = getTimeContext();
+    const greeting = time.timeOfDay === 'morning' ? 'Good morning' : time.timeOfDay === 'afternoon' ? 'Good afternoon' : time.timeOfDay === 'evening' ? 'Good evening' : 'Good night';
     expect(response.mode).toBe('SOCIAL_GREETING');
-    expect(response.response).toMatch(/Good night, Ray/);
+    expect(response.response).toContain(`${greeting}, Ray`);
     expect(response.response).not.toMatch(/credit|blocked|menu/i);
   });
 

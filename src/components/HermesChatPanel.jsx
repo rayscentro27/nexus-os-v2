@@ -8,6 +8,7 @@ import { buildHermesOperatingContext } from '../lib/hermes/hermesOperatingContex
 import { normalizeHermesWorkroomResponse, toHermesChatMessage } from '../lib/hermes/hermesWorkroomResponse';
 import { runHermesModelFirstConversation } from '../lib/hermesModelFirst/hermesModelFirstController';
 import { answerOperationalQuestion, getBundledOperationalSnapshot, probeHermesModelHealth, probeSupabaseHealth } from '../lib/nexusOperationalTruth';
+import { classifyHermesConversationMode } from '../lib/hermes/hermesModeClassifier';
 import HermesMessageBubble from './HermesMessageBubble';
 import VoicePushToTalk from '../admin/VoicePushToTalk';
 
@@ -98,31 +99,47 @@ export default function HermesChatPanel({ activeSpecialist = 'Hermes CEO Advisor
           warnings: operational.provenance.unavailableSources,
         }, { messageId: `${now}-hermes` });
       } else {
+        const classification = classifyHermesConversationMode(clean);
+        const deterministicConversation = ['SOCIAL_GREETING', 'CASUAL_CONVERSATION', 'COMMAND', 'TASK_REQUEST', 'APPROVAL_REQUEST', 'EXECUTIVE_ADVICE', 'SYSTEM_STATUS'].includes(classification.mode)
+          || classification.intent === 'current_time_or_date';
         const operatingContext = buildHermesOperatingContext();
         const recentHistory = messages
           .filter((message) => message.role === 'ray' || message.role === 'hermes')
           .slice(-10)
           .map((message) => ({ role: message.role === 'hermes' ? 'assistant' : 'user', content: String(message.text || '').slice(0, 700) }));
         const pageContext = { pageId: activePage, sectionName: activePage, route: window.location.hash, visibleItems, selectedItem, availableActions, operatingContext };
-        const modelFirstResult = await runHermesModelFirstConversation({
-          message: clean,
-          actorRole: 'admin',
-          sessionId: hermesStore.getSessionId(),
-          recentHistory,
-          pageContext,
-        });
-        const brainResult = modelFirstResult.usedModelFirst && modelFirstResult.response
-          ? modelFirstResult.response
-          : runHermesConversation({
-              message: clean,
-              channel: 'full_workroom',
-              actorRole: 'admin',
-              pageId: activePage || undefined,
-              route: window.location.hash,
-              sessionId: hermesStore.getSessionId(),
-              pageContext,
-            });
-        hermesResponse = normalizeHermesWorkroomResponse(brainResult, { messageId: `${now}-hermes` });
+        if (deterministicConversation) {
+          const canonicalResult = runHermesConversation({
+            message: clean,
+            channel: 'full_workroom',
+            actorRole: 'admin',
+            pageId: activePage || undefined,
+            route: window.location.hash,
+            sessionId: hermesStore.getSessionId(),
+            pageContext,
+          });
+          hermesResponse = normalizeHermesWorkroomResponse(canonicalResult, { messageId: `${now}-hermes` });
+        } else {
+          const modelFirstResult = await runHermesModelFirstConversation({
+            message: clean,
+            actorRole: 'admin',
+            sessionId: hermesStore.getSessionId(),
+            recentHistory,
+            pageContext,
+          });
+          const modelResponse = modelFirstResult.usedModelFirst && modelFirstResult.response
+            ? modelFirstResult.response
+            : runHermesConversation({
+                message: clean,
+                channel: 'full_workroom',
+                actorRole: 'admin',
+                pageId: activePage || undefined,
+                route: window.location.hash,
+                sessionId: hermesStore.getSessionId(),
+                pageContext,
+              });
+          hermesResponse = normalizeHermesWorkroomResponse(modelResponse, { messageId: `${now}-hermes` });
+        }
       }
     } catch (err) {
       console.error('[HermesChatPanel] send error:', err);
