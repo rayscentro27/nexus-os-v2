@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterable, Optional
 from nexus_agent_platform.governed.persistence import (
     append_record, emit_audit_event, get_record, new_id, read_records,
 )
+from nexus_agent_platform.creative.intelligence import answer_creative_intelligence_question, creative_intelligence_portfolio
 
 CREATIVE_BRIEF_SCHEMA = "nexus.creative-brief.v1"
 CREATIVE_ASSET_SCHEMA = "nexus.creative-asset.v1"
@@ -140,11 +141,13 @@ def creative_portfolio() -> Dict[str, Any]:
     rows = read_records("creative_assets")
     gpu_rows = [r for r in rows if r.get("generator", {}).get("capability") == "creative.image_generate"]
     latest_gpu = gpu_rows[0] if gpu_rows else None
-    return {"status": "HEALTHY" if rows else "IDLE", "total": len(rows), "draft_count": sum(r.get("status") == "INTERNAL_DRAFT" for r in rows), "review_required_count": sum(r.get("status") == "REVIEW_REQUIRED" for r in rows), "approved_count": sum(r.get("status") == "APPROVED" for r in rows), "failed_count": sum(r.get("status") == "FAILED" for r in rows), "latest": rows[0] if rows else None, "remotion": "AVAILABLE" if any(r.get("render", {}).get("artifact_ref") for r in rows) else "NOT_AVAILABLE", "comfyui": COMFYUI_STATUS, "gpu": "IDLE" if not gpu_rows else "DEGRADED", "gpu_creative": {"status": "IDLE" if not gpu_rows else "DEGRADED", "provider": "modal", "last_asset_id": latest_gpu.get("asset_id") if latest_gpu else None, "last_model": (latest_gpu or {}).get("render", {}).get("model_id"), "last_workflow": (latest_gpu or {}).get("render", {}).get("workflow_id"), "public_actions": "BLOCKED"}, "public_actions": "BLOCKED"}
+    return {"status": "HEALTHY" if rows else "IDLE", "total": len(rows), "draft_count": sum(r.get("status") == "INTERNAL_DRAFT" for r in rows), "review_required_count": sum(r.get("status") == "REVIEW_REQUIRED" for r in rows), "approved_count": sum(r.get("status") == "APPROVED" for r in rows), "failed_count": sum(r.get("status") == "FAILED" for r in rows), "latest": rows[0] if rows else None, "remotion": "AVAILABLE" if any(r.get("render", {}).get("artifact_ref") for r in rows) else "NOT_AVAILABLE", "comfyui": COMFYUI_STATUS, "gpu": "IDLE" if not gpu_rows else "DEGRADED", "gpu_creative": {"status": "IDLE" if not gpu_rows else "DEGRADED", "provider": "modal", "last_asset_id": latest_gpu.get("asset_id") if latest_gpu else None, "last_model": (latest_gpu or {}).get("render", {}).get("model_id"), "last_workflow": (latest_gpu or {}).get("render", {}).get("workflow_id"), "public_actions": "BLOCKED"}, "creative_intelligence": creative_intelligence_portfolio(), "public_actions": "BLOCKED"}
 
 
 def answer_creative_question(question: str) -> Dict[str, Any]:
     q = question.lower(); portfolio = creative_portfolio(); rows = read_records("creative_assets")
+    if any(term in q for term in ("different", "directions", "original", "repetitive", "preference", "done this", "experiment")):
+        return {"creative_intelligence": answer_creative_intelligence_question(question), "portfolio": portfolio, "source": "creative_concepts"}
     if any(word in q for word in ("review", "ready", "asset")):
         return {"answer": "Creative Studio has internal assets awaiting review." if any(r.get("status") == "REVIEW_REQUIRED" for r in rows) else "No creative assets are currently awaiting review.", "portfolio": portfolio, "source": "creative_assets"}
     if "publish" in q or "published" in q:

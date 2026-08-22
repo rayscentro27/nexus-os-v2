@@ -16,6 +16,19 @@ from .lab import (
     score_creative_territory,
     validate_creative_claims,
 )
+from .intelligence import (
+    answer_creative_intelligence_question,
+    build_campaign_packet,
+    build_feedback,
+    build_preference_profile,
+    creative_intelligence_portfolio,
+    creative_signature,
+    evaluate_concept_set,
+    generate_concept_round,
+    persist_concept_round,
+    persist_feedback,
+    rank_with_preferences,
+)
 
 __all__ = [
     "CreativeBudget",
@@ -32,4 +45,15 @@ __all__ = [
     "run_creative_lab",
     "score_creative_territory",
     "validate_creative_claims",
+    "answer_creative_intelligence_question",
+    "build_campaign_packet",
+    "build_feedback",
+    "build_preference_profile",
+    "creative_intelligence_portfolio",
+    "creative_signature",
+    "evaluate_concept_set",
+    "generate_concept_round",
+    "persist_concept_round",
+    "persist_feedback",
+    "rank_with_preferences",
 ]
