@@ -25,6 +25,20 @@ ALL_RISKS = frozenset({Risk.LOW, Risk.MODERATE, Risk.HIGH, Risk.PROHIBITED})
 # PROHIBITED and HIGH classes exist as documented non-executable categories, not
 # as registered executor actions.
 ACTION_REGISTRY: Dict[str, Dict[str, Any]] = {
+    "opportunity.review": {
+        "action_id": "opportunity.review",
+        "name": "Review Governed Opportunity",
+        "description": "Record Ray's explicit review decision for one bounded opportunity.",
+        "risk_level": Risk.LOW,
+        "approval_required": True,
+        "executor": "record_opportunity_review",
+        "input_schema": {"type": "object", "properties": {"opportunity_id": {"type": "string"}}, "required": ["opportunity_id"]},
+        "result_schema": {"type": "object", "properties": {"opportunity_id": {"type": "string"}, "decision": {"type": "string"}}},
+        "timeout_seconds": 60,
+        "idempotency_supported": True,
+        "telemetry_process_id": "opportunity_review",
+        "enabled": True,
+    },
     "system_health.run": {
         "action_id": "system_health.run",
         "name": "Run System Health Check",
