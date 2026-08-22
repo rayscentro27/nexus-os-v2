@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react'
 
 const MAX_MS = 30000
 const endpoint = import.meta.env.VITE_NEXUS_VOICE_ENDPOINT || ''
-const token = import.meta.env.VITE_NEXUS_VOICE_TOKEN || ''
 
 export default function VoicePushToTalk({ onTranscript }) {
   const recorderRef = useRef(null)
@@ -38,8 +37,7 @@ export default function VoicePushToTalk({ onTranscript }) {
         try {
           const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' })
           const headers = { 'Content-Type': blob.type || 'audio/webm', 'X-Nexus-Voice-Session': `admin-${Date.now()}` }
-          if (token) headers['X-Nexus-Voice-Token'] = token
-          const response = await fetch(endpoint, { method: 'POST', headers, body: blob })
+          const response = await fetch(endpoint, { method: 'POST', headers, credentials: 'include', body: blob })
           const payload = await response.json()
           if (!response.ok) throw new Error(payload.error || 'voice-transcription-unavailable')
           setTranscript(payload.text || '')

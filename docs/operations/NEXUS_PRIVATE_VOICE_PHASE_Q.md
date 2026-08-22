@@ -72,10 +72,11 @@ localhost-only endpoint at `127.0.0.1:8789/v1/voice/transcribe` with a bounded
 body and optional `NEXUS_VOICE_LOCAL_TOKEN`. It exposes only
 `voice.transcribe`; it is not a generic file, shell, model, or RPC endpoint.
 
-No authenticated admin-portal-to-Mac Mini bridge was found in the existing
-infrastructure. The browser component therefore fails closed when
-`VITE_NEXUS_VOICE_ENDPOINT` is absent. It does not expose the Mac Mini or
-invent a tunnel. The certified transport state is:
+An existing `cloudflared` installation and unrelated tunnel configuration were
+found, but no authenticated admin-portal-to-Mac Mini voice route or Access
+application was configured. The browser component therefore fails closed
+when `VITE_NEXUS_VOICE_ENDPOINT` is absent. It does not attach to the
+unrelated tunnel or invent a tunnel. The certified transport state is:
 
 `ADMIN_TRANSPORT=LOCAL_ONLY`
 

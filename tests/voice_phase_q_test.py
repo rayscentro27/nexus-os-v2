@@ -10,6 +10,7 @@ from nexus_agent_platform.voice.local_stt import (  # noqa: E402
     validate_voice_request,
     voice_status,
 )
+from nexus_agent_platform.voice.local_server import VoiceLimiter  # noqa: E402
 
 
 def test_voice_request_is_bounded_and_consent_scoped():
@@ -35,3 +36,13 @@ def test_voice_runtime_status_is_optional_and_non_core():
     assert status["stt_provider"] == "whisper.cpp"
     assert status["raw_audio_retained"] is False
     assert status["core_health_dependency"] is False
+
+
+def test_voice_limiter_allows_one_active_request_and_bounds_session_rate():
+    limiter = VoiceLimiter(requests_per_minute=2)
+    assert limiter.allow("session-1") is True
+    assert limiter.acquire() is True
+    assert limiter.acquire() is False
+    limiter.release()
+    assert limiter.allow("session-1") is True
+    assert limiter.allow("session-1") is False
