@@ -16,6 +16,7 @@ from typing import Any, Dict, Optional
 VOICE_INPUT_SCHEMA = "nexus.voice-input.v1"
 TRANSCRIPT_SCHEMA = "nexus.voice-transcript.v1"
 AUDIO_MAX_DURATION_MS = 30_000
+AUDIO_DECODE_LIMIT_SECONDS = 31
 AUDIO_PREFERRED_DURATION_MS = 15_000
 AUDIO_MAX_BYTES = 10 * 1024 * 1024
 DEFAULT_MODEL = Path("tools/voice/models/ggml-base.en.bin")
@@ -73,7 +74,7 @@ def _normalize_to_wav(source: Path, target: Path) -> None:
     if source.suffix.lower() == ".wav":
         target.write_bytes(source.read_bytes())
         return
-    completed = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(source), "-ac", "1", "-ar", "16000", "-f", "wav", str(target)], capture_output=True, text=True, timeout=15, check=False)
+    completed = subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(source), "-t", str(AUDIO_DECODE_LIMIT_SECONDS), "-ac", "1", "-ar", "16000", "-f", "wav", str(target)], capture_output=True, text=True, timeout=15, check=False)
     if completed.returncode != 0: raise RuntimeError("audio-format-normalization-failed")
 
 
@@ -92,18 +93,22 @@ def transcribe_audio_file(audio_path: str | Path, request: Dict[str, Any], *, bi
     source = Path(audio_path)
     if not source.exists(): raise ValueError("audio-not-found")
     size = source.stat().st_size
-    duration = _duration_ms(source)
-    request = {**request, "duration_ms": duration if duration is not None else request.get("duration_ms", 0)}
-    valid, reason = validate_voice_request(request, audio_size=size)
+    # Client/container duration metadata is supplemental only. Validate the
+    # request shape and byte bound first, then use normalized WAV frames below
+    # as the authoritative duration for the transcript contract.
+    request_for_validation = {**request, "duration_ms": 0}
+    valid, reason = validate_voice_request(request_for_validation, audio_size=size)
     if not valid: raise ValueError(reason)
-    if duration is None: raise ValueError("audio-duration-unavailable")
-    if duration > AUDIO_MAX_DURATION_MS: raise ValueError("audio-duration-bounded")
     binary_path, model_path = _resolve(binary, DEFAULT_BINARY), _resolve(model, DEFAULT_MODEL)
     if not binary_path.exists() or not model_path.exists(): raise RuntimeError("whisper-runtime-not-configured")
     started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="nexus-voice-") as temp_dir:
         wav_path = Path(temp_dir) / "input.wav"
         _normalize_to_wav(source, wav_path)
+        duration = _wav_duration_ms(wav_path)
+        if duration is None: raise ValueError("audio-duration-unavailable")
+        if duration <= 0: raise ValueError("audio-duration-unavailable")
+        if duration > AUDIO_MAX_DURATION_MS: raise ValueError("audio-duration-bounded")
         command = [str(binary_path), "-m", str(model_path), "-f", str(wav_path), "-l", "en", "-nt", "-np", "-t", "2"]
         completed = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
         if completed.returncode != 0: raise RuntimeError("whisper-transcription-failed")
