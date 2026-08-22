@@ -31,7 +31,7 @@ The actual Hermes conversation render tree remains:
 | Opportunities and growth | Existing Opportunity Engine and Growth Operations surfaces |
 | Creative | Creative Studio and Creative Intelligence artifacts |
 | Research | Alpha research/evidence surfaces |
-| Nova | Existing Nova graph and certified Telegram runtime; browser adapter is not connected |
+| Nova | Existing Nova graph and certified Telegram runtime; Admin browser adapter uses a channel-scoped Nova memory namespace |
 | Client readiness | Existing client workflow, Supabase-scoped client data, readiness model |
 | Documents | Supabase Storage `client-documents` plus client-scoped metadata |
 
@@ -51,7 +51,9 @@ Admin continues using the existing Nexus operating CSS and Lucide React. Client 
 
 The certified final-file path remains: browser MediaRecorder → Cloudflare Access → tunnel → Mac localhost → bounded WebM normalization → local whisper.cpp. The composer now holds the final transcript in a review state. Ray can edit, retry, or explicitly send; the transcript does not enter Hermes on release.
 
-The current local service exposes final-file transcription only. Progressive private partial transcript streaming is therefore not claimed as complete in this cut; no browser cloud speech provider was introduced. A future private streaming endpoint may be added without changing the final-transcript fallback contract. Raw audio remains non-retained.
+The local service preserves the final-file route and adds a bounded cumulative WebM preview route. The browser sends snapshots no faster than the MediaRecorder cadence, the server permits one active preview with a bounded per-session request count, normalizes each snapshot to WAV, and runs local whisper.cpp. Preview text is advisory; release always runs the authoritative final route and Ray must review/edit/send explicitly. Preview failures fall back to the certified final-file path. No browser cloud speech provider was introduced and raw audio remains non-retained.
+
+The installed whisper.cpp runtime is version 1.9.1 and has no `whisper-stream` binary. Cumulative snapshots were selected as the smallest compatible private mechanism. The preview endpoint is exposed only through the existing healthy Cloudflare tunnel, with `nova.goclearonline.cc` separately protected by a Ray-only Access application. The Mac services remain bound to `127.0.0.1`.
 
 ## Client journey
 
@@ -69,18 +71,19 @@ Client-facing guidance remains the approved client boundary. Internal Hermes, No
 | Generic Hermes launcher/drawer | Keep as global access point; same Hermes engine |
 | Hermes Workroom | Canonical conversation surface |
 | Nova Telegram | Keep and preserve certification; no duplicate consumer |
+| Nova Admin placeholder | Replaced in place with a bounded Admin-only adapter to `get_nova_graph()`; no second graph |
 | Report markdown viewer | Keep, now uses safe allow-listed renderer |
 
 No legacy component was deleted before browser cutover evidence.
 
 ## Security and authority
 
-No `VITE_*` secret is introduced. Cloudflare, Telegram, OpenRouter, and local voice credentials remain server/runtime-only. Existing approval gates for publishing, sending, charging, funding applications, and trading remain unchanged. Voice is input only and gained no execution authority.
+No `VITE_*` secret is introduced; the only new browser value is the public `VITE_NEXUS_NOVA_ENDPOINT` URL. Cloudflare, Telegram, OpenRouter, and local voice credentials remain server/runtime-only. The Nova browser adapter rejects client-sensitive identifiers, accepts bounded strategic messages, and returns advice with `execution_authority=NONE`. Existing approval gates for publishing, sending, charging, funding applications, and trading remain unchanged. Voice is input only and gained no execution authority.
 
 ## Deployment and known limitations
 
-Build and focused tests must pass before production deployment. Browser certification must cover authenticated Admin and client routes at desktop and mobile widths. The current implementation is ready for a human voice UX test only after a private incremental transcript transport is available or the acceptance scope explicitly accepts the certified final-only fallback; TTS, WebRTC, realtime conversation, and avatars remain out of scope.
+Build and focused tests must pass before production deployment. Existing synthetic client browser evidence covers first-login onboarding, V2 journey routes, inline upload locations, and 375/390/tablet/desktop overflow checks. Local Nova graph and public Access boundary checks pass; the final browser Nova conversation still requires Ray's authenticated Access session. The final live microphone test remains a human gate because browser microphone behavior cannot be certified from synthetic HTTP alone. TTS, WebRTC, realtime conversation, and avatars remain out of scope.
 
 ## Future hooks
 
-The voice composer already has explicit `LISTENING`, `PROCESSING`, `TRANSCRIPT_READY`, `EDITING` (textarea interaction), `SENDING`, `DONE`, and `ERROR` semantics. Future private partial events can update the same draft without changing Hermes routing. TTS/avatar work must remain a separate approved phase.
+The voice composer has explicit `REQUESTING_PERMISSION`, `LISTENING`, `LIVE_PREVIEW`, `FINALIZING`, `TRANSCRIPT_READY`, `EDITING`, `SENDING`, `DONE`, and `ERROR` semantics. Future TTS/avatar work must remain a separate approved phase.

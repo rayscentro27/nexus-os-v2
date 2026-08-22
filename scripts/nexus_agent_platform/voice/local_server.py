@@ -46,6 +46,13 @@ class VoiceLimiter:
             self._active = max(0, self._active - 1)
 
 
+class PreviewLimiter(VoiceLimiter):
+    """Separate bounded limiter for cumulative live-preview snapshots."""
+
+    def __init__(self, requests_per_minute: int = 24) -> None:
+        super().__init__(requests_per_minute=requests_per_minute)
+
+
 class VoiceHandler(BaseHTTPRequestHandler):
     server_version = "NexusVoiceLocal/1"
 
@@ -76,12 +83,12 @@ class VoiceHandler(BaseHTTPRequestHandler):
         self.send_response(204)
         self._cors()
         self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Nexus-Voice-Session")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence")
         self.send_header("Access-Control-Max-Age", "300")
         self.end_headers()
 
     def do_POST(self) -> None:
-        if self.path != "/v1/voice/transcribe": self._send(404, {"error": "not-found"}); return
+        if self.path not in {"/v1/voice/transcribe", "/v1/voice/preview"}: self._send(404, {"error": "not-found"}); return
         origin = self.headers.get("Origin")
         if origin and origin not in self._allowed_origins(): self._send(403, {"error": "origin-not-allowed"}); return
         configured = os.environ.get("NEXUS_VOICE_LOCAL_TOKEN")
@@ -92,20 +99,23 @@ class VoiceHandler(BaseHTTPRequestHandler):
             self._send(400, {"error": "invalid-content-length"}); return
         if length <= 0 or length > 10 * 1024 * 1024: self._send(413, {"error": "audio-size-bounded"}); return
         session = self.headers.get("X-Nexus-Voice-Session", "local-session")
-        if not self.server.voice_limiter.allow(session): self._send(429, {"error": "voice-rate-limited"}); return
-        if not self.server.voice_limiter.acquire(): self._send(429, {"error": "voice-busy"}); return
+        limiter = self.server.preview_limiter if self.path == "/v1/voice/preview" else self.server.voice_limiter
+        if not limiter.allow(session): self._send(429, {"error": "voice-preview-rate-limited" if self.path.endswith("/preview") else "voice-rate-limited"}); return
+        if not limiter.acquire(): self._send(429, {"error": "voice-preview-busy" if self.path.endswith("/preview") else "voice-busy"}); return
         suffix = ".wav" if "wav" in self.headers.get("Content-Type", "") else ".webm"
         try:
             with tempfile.TemporaryDirectory(prefix="nexus-voice-upload-") as temp_dir:
                 path = Path(temp_dir) / f"input{suffix}"
                 path.write_bytes(self.rfile.read(length))
-                request = build_voice_request(session_id=session, source="ADMIN_PORTAL", audio_format=self.headers.get("Content-Type", "audio/webm"))
-                result = transcribe_audio_file(path, request)
+                preview = self.path.endswith("/preview")
+                request = build_voice_request(session_id=session, source="ADMIN_PORTAL_PREVIEW" if preview else "ADMIN_PORTAL", audio_format=self.headers.get("Content-Type", "audio/webm"))
+                result = transcribe_audio_file(path, request, whisper_timeout_seconds=15 if preview else 60)
+                if preview: result["preview"] = True
             self._send(200, result)
         except ValueError as exc: self._send(400, {"error": str(exc)})
         except Exception: self._send(503, {"error": "voice-transcription-unavailable"})
         finally:
-            self.server.voice_limiter.release()
+            limiter.release()
 
     def log_message(self, *_args) -> None:
         return
@@ -120,6 +130,7 @@ def main() -> int:
         raise SystemExit("voice server must remain bound to 127.0.0.1")
     server = ThreadingHTTPServer((args.host, args.port), VoiceHandler)
     server.voice_limiter = VoiceLimiter()
+    server.preview_limiter = PreviewLimiter()
     server.serve_forever()
     return 0
 

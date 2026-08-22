@@ -20,7 +20,7 @@ async function loginClient(page: Page, credentials: { email: string; password: s
   await page.getByLabel(/email/i).fill(credentials.email)
   await page.getByLabel(/password/i).fill(credentials.password)
   await page.getByRole('button', { name: /sign in/i }).click()
-  await expect(page).toHaveURL(/\/client\/(dashboard|documents|credit-profile)/, { timeout: 15_000 })
+  await expect(page).toHaveURL(/\/client\/(onboarding|dashboard|documents|credit-profile)/, { timeout: 15_000 })
   await page.goto(path)
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
   await expect(page.locator('.wc-client-portal')).toBeVisible({ timeout: 15_000 })

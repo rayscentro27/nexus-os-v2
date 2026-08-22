@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>Label</key><string>com.nexus.nova-admin</string>
+<key>ProgramArguments</key><array><string>/bin/zsh</string><string>/Users/raymonddavis/nexus-os-v2/scripts/ops/run_nova_admin_with_runtime_env.sh</string></array>
+<key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2</string>
+<key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>10</integer>
+<key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/nova_admin_launchd.log</string>
+<key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/nova_admin_launchd_error.log</string>
+<key>EnvironmentVariables</key><dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin</string></dict>
+</dict></plist>

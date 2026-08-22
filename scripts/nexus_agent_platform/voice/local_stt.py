@@ -44,7 +44,7 @@ def validate_voice_request(request: Dict[str, Any], *, audio_size: int = 0) -> t
     required = ("voice_request_id", "session_id", "source", "audio_format", "consent_state")
     if not isinstance(request, dict) or request.get("schema_version") != VOICE_INPUT_SCHEMA: return False, "unsupported-schema"
     if any(not request.get(key) for key in required): return False, "missing-voice-field"
-    if request.get("source") not in {"ADMIN_PORTAL", "LOCAL_TEST", "TELEGRAM_FUTURE"}: return False, "unsupported-source"
+    if request.get("source") not in {"ADMIN_PORTAL", "ADMIN_PORTAL_PREVIEW", "LOCAL_TEST", "TELEGRAM_FUTURE"}: return False, "unsupported-source"
     if request.get("consent_state") != "ADMIN_CONSENT": return False, "consent-required"
     if audio_size <= 0 or audio_size > AUDIO_MAX_BYTES: return False, "audio-size-bounded"
     if int(request.get("duration_ms") or 0) > AUDIO_MAX_DURATION_MS: return False, "audio-duration-bounded"
@@ -89,7 +89,7 @@ def _extract_transcript(stdout: str) -> str:
     return " ".join(lines).strip()
 
 
-def transcribe_audio_file(audio_path: str | Path, request: Dict[str, Any], *, binary: str | Path | None = None, model: str | Path | None = None) -> Dict[str, Any]:
+def transcribe_audio_file(audio_path: str | Path, request: Dict[str, Any], *, binary: str | Path | None = None, model: str | Path | None = None, whisper_timeout_seconds: int = 60) -> Dict[str, Any]:
     source = Path(audio_path)
     if not source.exists(): raise ValueError("audio-not-found")
     size = source.stat().st_size
@@ -110,7 +110,7 @@ def transcribe_audio_file(audio_path: str | Path, request: Dict[str, Any], *, bi
         if duration <= 0: raise ValueError("audio-duration-unavailable")
         if duration > AUDIO_MAX_DURATION_MS: raise ValueError("audio-duration-bounded")
         command = [str(binary_path), "-m", str(model_path), "-f", str(wav_path), "-l", "en", "-nt", "-np", "-t", "2"]
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
+        completed = subprocess.run(command, capture_output=True, text=True, timeout=whisper_timeout_seconds, check=False)
         if completed.returncode != 0: raise RuntimeError("whisper-transcription-failed")
         transcript = _extract_transcript(completed.stdout)
     if not transcript: raise ValueError("empty-transcript")
