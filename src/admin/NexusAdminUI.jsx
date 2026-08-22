@@ -437,9 +437,9 @@ function Hermes({ label = 'Hermes Advisor', prompt = 'Ask Hermes anything...', c
           placeholder={prompt}
           aria-label="Ask Hermes"
         />
+        <VoicePushToTalk onTranscript={handleVoiceTranscript} />
         <button type="submit" className="hermes-send" aria-label="Send"><Icon name="Send" size={18} /></button>
       </form>
-      <VoicePushToTalk onTranscript={handleVoiceTranscript} />
       {voiceReady && <div className="nexus-voice-ready"><strong>Voice-ready response:</strong> {voiceReady}</div>}
     </section>
   )

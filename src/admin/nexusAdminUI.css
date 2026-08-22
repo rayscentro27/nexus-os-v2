@@ -1726,6 +1726,53 @@ a {
   justify-content: center;
   flex: none;
 }
+.ask-row .nexus-voice-ptt {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+  margin: 0;
+}
+.ask-row .nexus-voice-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0;
+  touch-action: none;
+  cursor: pointer;
+}
+.ask-row .nexus-voice-button:disabled { cursor: wait; opacity: .72; }
+.ask-row .nexus-voice-state {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 3;
+  color: #9fb5d0;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ask-row .nexus-voice-transcript,
+.ask-row .nexus-voice-error {
+  position: absolute;
+  top: calc(100% + 20px);
+  right: 0;
+  z-index: 3;
+  width: min(360px, calc(100vw - 40px));
+  margin: 0;
+  padding: 7px 9px;
+  border-left: 2px solid #66d9ef;
+  border-radius: 5px;
+  background: #071226;
+  box-shadow: 0 8px 20px rgba(0,0,0,.25);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.ask-row .nexus-voice-error { color: #ff9a9a; border-left-color: #ff7878; }
 
 /* Disabled sidebar items */
 .nav-item.disabled {

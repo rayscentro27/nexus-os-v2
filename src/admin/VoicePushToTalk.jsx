@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react'
 
 const MAX_MS = 30000
 const endpoint = import.meta.env.VITE_NEXUS_VOICE_ENDPOINT || ''
+const STATE_LABELS = {
+  REQUESTING_PERMISSION: 'Microphone permission…',
+  LISTENING: 'Listening…',
+  PROCESSING: 'Processing…',
+  TRANSCRIBED: 'Transcript received',
+  DONE: 'Transcript received',
+  ERROR: 'Error'
+}
 
 export default function VoicePushToTalk({ onTranscript }) {
   const recorderRef = useRef(null)
@@ -19,6 +27,7 @@ export default function VoicePushToTalk({ onTranscript }) {
   }, [])
 
   async function start() {
+    if (recorderRef.current?.state === 'recording' || state === 'REQUESTING_PERMISSION' || state === 'PROCESSING') return
     setError('')
     setTranscript('')
     if (!endpoint) { setState('ERROR'); setError('Admin voice transport is not configured; local-only STT is not exposed to this browser.'); return }
@@ -63,10 +72,10 @@ export default function VoicePushToTalk({ onTranscript }) {
   }
 
   return <div className="nexus-voice-ptt" data-voice-state={state}>
-    <button type="button" className="hermes-chip nexus-voice-button" onPointerDown={start} onPointerUp={stop} onPointerCancel={stop} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') start() }} onKeyUp={event => { if (event.key === 'Enter' || event.key === ' ') stop() }} aria-label="Press and hold to talk" disabled={state === 'PROCESSING' || state === 'REQUESTING_PERMISSION'}>
-      🎙️ {state === 'LISTENING' ? `Listening ${(elapsed / 1000).toFixed(1)}s` : 'Press and hold to talk'}
-    </button>
-    <small>Push-to-talk • max 30 seconds • raw audio is not retained</small>
+      <button type="button" className="hermes-chip nexus-voice-button" onPointerDown={start} onPointerUp={stop} onPointerCancel={stop} onKeyDown={event => { if ((event.key === 'Enter' || event.key === ' ') && !event.repeat) { event.preventDefault(); start() } }} onKeyUp={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); stop() } }} aria-label="Press and hold to talk" aria-pressed={state === 'LISTENING'} disabled={state === 'PROCESSING' || state === 'REQUESTING_PERMISSION'}>
+        🎙️
+      </button>
+    <small className="nexus-voice-state" role="status">{STATE_LABELS[state] || ''}{state === 'LISTENING' ? ` ${(elapsed / 1000).toFixed(1)}s` : ''}</small>
     {transcript && <div className="nexus-voice-transcript"><strong>Transcript:</strong> {transcript}</div>}
     {error && <div className="nexus-voice-error" role="status">{error}</div>}
   </div>
