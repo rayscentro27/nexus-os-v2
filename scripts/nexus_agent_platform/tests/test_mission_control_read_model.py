@@ -85,3 +85,22 @@ def test_remote_worker_is_optional_and_visible_without_degrading_core(tmp_path):
     assert model["system"]["overall_status"] == "HEALTHY"
     assert model["optional_integrations"]["remote_cpu_worker"]["status"] == "HEALTHY"
     assert model["freshness"]["remote_cpu_worker"]["freshness"] == "CURRENT"
+
+
+def test_alpha_research_is_optional_and_exposes_last_job_without_degrading_core(tmp_path):
+    now = datetime.now(timezone.utc)
+    seed_runtime(tmp_path, now)
+    write_json(tmp_path / "reports/runtime/nexus_alpha_research_heartbeat_latest.json", {
+        "capability": "alpha_research", "status": "HEALTHY", "last_result": "COMPLETE",
+        "research_job_id": "alpha-research-1", "source_count": 3, "evidence_count": 3,
+        "receipt_id": "alpha-receipt-1", "browser_evidence_used": True,
+        "last_run": now.isoformat(), "updated_at": now.isoformat(), "optional": True,
+        "core_health_dependency": False,
+    })
+    model = build_read_model(root=tmp_path, now=now, approval_rows=[], work_rows=[])
+    assert model["system"]["overall_status"] == "HEALTHY"
+    assert model["optional_integrations"]["alpha"]["status"] == "HEALTHY"
+    assert model["optional_integrations"]["alpha"]["last_research_job"] == "alpha-research-1"
+    assert model["optional_integrations"]["alpha"]["receipt_id"] == "alpha-receipt-1"
+    assert model["optional_integrations"]["alpha"]["browser_evidence_used"] is True
+    assert model["freshness"]["alpha"]["freshness"] == "CURRENT"

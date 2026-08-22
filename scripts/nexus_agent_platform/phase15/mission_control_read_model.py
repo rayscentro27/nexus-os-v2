@@ -117,6 +117,8 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
     evidence_run = read_json(evidence_path, {})
     worker_path = root / "reports/runtime/nexus_remote_cpu_worker_heartbeat_latest.json"
     worker_run = read_json(worker_path, {})
+    alpha_path = root / "reports/runtime/nexus_alpha_research_heartbeat_latest.json"
+    alpha_run = read_json(alpha_path, {})
     registry_path = root / "data/operations/nexus_process_registry.json"
     registry = read_json(registry_path, [])
 
@@ -185,6 +187,21 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         }
     else:
         optional_view["remote_cpu_worker"] = {"status": "NOT_CONFIGURED", "reason": "No remote worker heartbeat recorded"}
+    if alpha_run:
+        optional_view["alpha"] = {
+            "status": str(alpha_run.get("status", "UNKNOWN")).upper(),
+            "reason": "Optional bounded evidence-first research intelligence; never a core-health dependency",
+            "last_updated": alpha_run.get("updated_at") or alpha_run.get("last_run"),
+            "last_result": alpha_run.get("last_result"),
+            "last_research_job": alpha_run.get("research_job_id"),
+            "last_success": alpha_run.get("last_success"),
+            "receipt_id": alpha_run.get("receipt_id"),
+            "source_count": alpha_run.get("source_count", 0),
+            "evidence_count": alpha_run.get("evidence_count", 0),
+            "browser_evidence_used": alpha_run.get("browser_evidence_used", False),
+            "freshness": alpha_run.get("freshness", {}),
+            "core_health_dependency": False,
+        }
     model = {
         "generated_at": now.isoformat(), "source": "canonical Nexus runtime artifacts and governed stores", "read_only": True,
         "system": system, "attention": attention,
@@ -196,7 +213,7 @@ def build_read_model(*, root: Path = ROOT, now: Optional[datetime] = None, appro
         "process_registry": {"enabled": sum(1 for row in registry if row.get("enabled")), "records": len(registry) if isinstance(registry, list) else 0, "source": str(registry_path.relative_to(root))},
         "safety": {"stripe_autonomy": "DISABLED", "arbitrary_shell": "UNAVAILABLE", "external_actions": "BLOCKED", "source": "canonical runtime authority state"},
         "optional_integrations": optional_view,
-        "freshness": {"core_runtime": system["core_runtime"]["freshness"], "active_operator": system["active_operator"]["freshness"], "recovery_check": system["recovery_check"]["freshness"], "hermes": system["hermes"]["freshness"], "scheduler": evidence(scheduler_path, scheduler_last, now, 3600), "evidence_ingestion": evidence(evidence_path, evidence_run.get("updated_at") or evidence_run.get("last_run"), now, 3600) if evidence_run else {"source": str(evidence_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "remote_cpu_worker": evidence(worker_path, worker_run.get("last_seen"), now, 300) if worker_run else {"source": str(worker_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}},
+        "freshness": {"core_runtime": system["core_runtime"]["freshness"], "active_operator": system["active_operator"]["freshness"], "recovery_check": system["recovery_check"]["freshness"], "hermes": system["hermes"]["freshness"], "scheduler": evidence(scheduler_path, scheduler_last, now, 3600), "evidence_ingestion": evidence(evidence_path, evidence_run.get("updated_at") or evidence_run.get("last_run"), now, 3600) if evidence_run else {"source": str(evidence_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "remote_cpu_worker": evidence(worker_path, worker_run.get("last_seen"), now, 300) if worker_run else {"source": str(worker_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}, "alpha": evidence(alpha_path, alpha_run.get("updated_at") or alpha_run.get("last_run"), now, 3600) if alpha_run else {"source": str(alpha_path.relative_to(root)), "last_updated": None, "freshness": "UNKNOWN"}},
     }
     return model
 

@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.nexus_agent_platform.providers.modal_provider import ModalRemoteWorkerProvider
+from scripts.nexus_agent_platform.providers.modal_provider import ModalRemoteWorkerProvider, provider_from_environment
 from scripts.nexus_agent_platform.remote_worker import build_remote_job, sign_request
 
 
@@ -62,3 +62,36 @@ def test_modal_submit_rejects_wrong_job_or_tenant(monkeypatch):
 def test_modal_cancel_is_explicitly_bounded():
     result = ModalRemoteWorkerProvider().cancel("job-1")
     assert result["status"] == "NOT_AVAILABLE"
+
+
+def test_native_factory_does_not_require_endpoint_url(monkeypatch):
+    monkeypatch.delenv("NEXUS_MODAL_WORKER_URL", raising=False)
+    monkeypatch.setenv("MODAL_PROFILE", "goclearonline")
+    monkeypatch.setenv("NEXUS_MODAL_APP", "nexus-remote-cpu-worker")
+    monkeypatch.setenv("NEXUS_REMOTE_WORKER_SHARED_SECRET", "test-secret")
+    provider = provider_from_environment()
+    assert provider.endpoint_url == ""
+    assert provider.profile == "goclearonline"
+    assert provider.app_name == "nexus-remote-cpu-worker"
+    assert provider.shared_secret == "test-secret"
+
+
+def test_endpoint_remains_optional_curl_compatibility(monkeypatch):
+    monkeypatch.setenv("NEXUS_MODAL_WORKER_URL", "https://example.modal.run")
+    provider = provider_from_environment()
+    assert provider.endpoint_url == "https://example.modal.run"
+
+
+def test_missing_secret_fails_only_when_signed_job_is_submitted(monkeypatch):
+    monkeypatch.delenv("NEXUS_REMOTE_WORKER_SHARED_SECRET", raising=False)
+    monkeypatch.delenv("NEXUS_MODAL_WORKER_URL", raising=False)
+    provider = provider_from_environment()
+    with pytest.raises(RuntimeError, match="SHARED_SECRET"):
+        provider.submit(_job())
+
+
+def test_curl_transport_requires_endpoint(monkeypatch):
+    monkeypatch.delenv("NEXUS_MODAL_WORKER_URL", raising=False)
+    provider = provider_from_environment()
+    with pytest.raises(RuntimeError, match="WORKER_URL"):
+        provider._curl("GET", "/health")

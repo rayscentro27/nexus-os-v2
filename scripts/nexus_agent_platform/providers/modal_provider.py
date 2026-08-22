@@ -43,6 +43,8 @@ class ModalRemoteWorkerProvider:
         return modal.Function.from_name(self.app_name, name)
 
     def _curl(self, method: str, path: str = "", payload: Optional[dict] = None) -> dict:
+        if not self.endpoint_url:
+            raise RuntimeError("NEXUS_MODAL_WORKER_URL is required for Modal curl compatibility transport")
         command = [self.modal_bin, "curl", "-X", method, self.endpoint_url + path,
                    "-H", "Content-Type: application/json"]
         if payload is not None:
@@ -89,11 +91,13 @@ class ModalRemoteWorkerProvider:
 
 
 def provider_from_environment() -> ModalRemoteWorkerProvider:
-    endpoint = os.environ.get("NEXUS_MODAL_WORKER_URL")
-    if not endpoint:
-        raise RuntimeError("NEXUS_MODAL_WORKER_URL is required")
+    # Native SDK transport uses the authenticated local Modal profile and
+    # Modal Function.from_name(). An endpoint is only needed by the optional
+    # curl compatibility transport; absence must not mask native capability.
+    endpoint = os.environ.get("NEXUS_MODAL_WORKER_URL", "")
     return ModalRemoteWorkerProvider(
         endpoint,
         modal_bin=os.environ.get("NEXUS_MODAL_BIN", "modal"),
         profile=os.environ.get("MODAL_PROFILE", "goclearonline"),
+        app_name=os.environ.get("NEXUS_MODAL_APP", "nexus-remote-cpu-worker"),
     )
