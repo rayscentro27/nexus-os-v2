@@ -35,6 +35,7 @@ MAX_REQUEST_BYTES = 128 * 1024
 MAX_CLOCK_SKEW_SECONDS = 300
 ALLOWED_CAPABILITIES = {
     "evidence_ingestion": {"crawl4ai", "markitdown"},
+    "creative.image_generate": {"comfyui"},
 }
 DENIED_CAPABILITIES = {
     "generic_shell", "arbitrary_python", "browser_agent", "computer_use",

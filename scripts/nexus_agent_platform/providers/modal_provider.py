@@ -26,13 +26,15 @@ class ModalRemoteWorkerProvider:
 
     def __init__(self, endpoint_url: str = "", *, modal_bin: str = "modal", timeout: int = 75,
                  profile: str = "goclearonline", shared_secret: str | None = None,
-                 app_name: str = "nexus-remote-cpu-worker"):
+                 app_name: str = "nexus-remote-cpu-worker",
+                 function_name: str = "submit_job"):
         self.endpoint_url = endpoint_url.rstrip("/")
         self.modal_bin = modal_bin
         self.timeout = timeout
         self.profile = profile
         self.shared_secret = shared_secret or os.environ.get("NEXUS_REMOTE_WORKER_SHARED_SECRET")
         self.app_name = app_name
+        self.function_name = function_name
 
     def _function(self, name: str):
         # Native Modal SDK calls use the authenticated local Modal profile. The
@@ -67,7 +69,7 @@ class ModalRemoteWorkerProvider:
         if not self.shared_secret:
             raise RuntimeError("NEXUS_REMOTE_WORKER_SHARED_SECRET is required for signed Modal jobs")
         timestamp = str(int(time.time()))
-        result = self._function("submit_job").remote(job, timestamp, sign_request(job, self.shared_secret, timestamp))
+        result = self._function(self.function_name).remote(job, timestamp, sign_request(job, self.shared_secret, timestamp))
         valid, reason = validate_result(result)
         if not valid:
             raise ValueError(f"invalid remote result: {reason}")
@@ -100,4 +102,5 @@ def provider_from_environment() -> ModalRemoteWorkerProvider:
         modal_bin=os.environ.get("NEXUS_MODAL_BIN", "modal"),
         profile=os.environ.get("MODAL_PROFILE", "goclearonline"),
         app_name=os.environ.get("NEXUS_MODAL_APP", "nexus-remote-cpu-worker"),
+        function_name=os.environ.get("NEXUS_MODAL_FUNCTION", "submit_job"),
     )

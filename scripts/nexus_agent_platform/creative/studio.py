@@ -138,7 +138,9 @@ def persist_creative_receipt(receipt: Dict[str, Any]) -> Dict[str, Any]:
 
 def creative_portfolio() -> Dict[str, Any]:
     rows = read_records("creative_assets")
-    return {"status": "HEALTHY" if rows else "IDLE", "total": len(rows), "draft_count": sum(r.get("status") == "INTERNAL_DRAFT" for r in rows), "review_required_count": sum(r.get("status") == "REVIEW_REQUIRED" for r in rows), "approved_count": sum(r.get("status") == "APPROVED" for r in rows), "failed_count": sum(r.get("status") == "FAILED" for r in rows), "latest": rows[0] if rows else None, "remotion": "AVAILABLE" if any(r.get("render", {}).get("artifact_ref") for r in rows) else "NOT_AVAILABLE", "comfyui": COMFYUI_STATUS, "gpu": "NOT_CONFIGURED", "public_actions": "BLOCKED"}
+    gpu_rows = [r for r in rows if r.get("generator", {}).get("capability") == "creative.image_generate"]
+    latest_gpu = gpu_rows[0] if gpu_rows else None
+    return {"status": "HEALTHY" if rows else "IDLE", "total": len(rows), "draft_count": sum(r.get("status") == "INTERNAL_DRAFT" for r in rows), "review_required_count": sum(r.get("status") == "REVIEW_REQUIRED" for r in rows), "approved_count": sum(r.get("status") == "APPROVED" for r in rows), "failed_count": sum(r.get("status") == "FAILED" for r in rows), "latest": rows[0] if rows else None, "remotion": "AVAILABLE" if any(r.get("render", {}).get("artifact_ref") for r in rows) else "NOT_AVAILABLE", "comfyui": COMFYUI_STATUS, "gpu": "IDLE" if not gpu_rows else "DEGRADED", "gpu_creative": {"status": "IDLE" if not gpu_rows else "DEGRADED", "provider": "modal", "last_asset_id": latest_gpu.get("asset_id") if latest_gpu else None, "last_model": (latest_gpu or {}).get("render", {}).get("model_id"), "last_workflow": (latest_gpu or {}).get("render", {}).get("workflow_id"), "public_actions": "BLOCKED"}, "public_actions": "BLOCKED"}
 
 
 def answer_creative_question(question: str) -> Dict[str, Any]:
