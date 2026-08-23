@@ -5,6 +5,7 @@ import { BUILD_METADATA } from './lib/buildMetadata';
 import './index.css';
 import './components/nexusUI.css';
 import './admin/nexusAdminUI.css';
+import './admin/nexusExperience2.css';
 import './styles/dashboard-layout-lock.css';
 import './styles/client-portal.css';
 import './styles/nexus-operating-ui.css';

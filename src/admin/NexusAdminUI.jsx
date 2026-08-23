@@ -1458,7 +1458,7 @@ function Footer({ activePage }) {
   )
 }
 
-export default function NexusAdminUI({ email, initialPage = 'command' }) {
+export function LegacyNexusAdminUI({ email, initialPage = 'command' }) {
   const validPages = new Set(navGroups.flatMap(group => group.items.map(item => item.id)))
   const readHash = () => {
     const value = window.location.hash.replace(/^#\/?/, '')
@@ -1539,3 +1539,7 @@ export default function NexusAdminUI({ email, initialPage = 'command' }) {
     </div>
   )
 }
+
+// The legacy shell remains available for rollback/deep-link compatibility while
+// the approved Nexus Experience 2.0 shell is the canonical production export.
+export { default } from './NexusExperienceAdmin'

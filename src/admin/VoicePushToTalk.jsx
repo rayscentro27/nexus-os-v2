@@ -8,7 +8,7 @@ const STATE_LABELS = {
   REQUESTING_PERMISSION: 'Microphone permission…', LISTENING: 'Listening…', LIVE_PREVIEW: 'Live preview…', FINALIZING: 'Processing…', TRANSCRIPT_READY: 'Transcript ready for review', EDITING: 'Editing transcript', SENDING: 'Sending to Hermes…', DONE: 'Transcript sent', ERROR: 'Error'
 }
 
-export default function VoicePushToTalk({ onTranscript, disabled = false }) {
+export default function VoicePushToTalk({ onTranscript, disabled = false, sendLabel = 'Send to Hermes' }) {
   const recorderRef = useRef(null), streamRef = useRef(null), chunksRef = useRef([]), timerRef = useRef(null)
   const startedRef = useRef(0), recordingRef = useRef(false), previewSequenceRef = useRef(0), acceptedPreviewRef = useRef(0)
   const previewInFlightRef = useRef(false), previewQueuedRef = useRef(false), previewAbortRef = useRef(null), sessionRef = useRef('')
@@ -72,7 +72,7 @@ export default function VoicePushToTalk({ onTranscript, disabled = false }) {
     <small className="nexus-voice-state" role="status">{STATE_LABELS[state] || ''}{recordingRef.current ? ` ${(elapsed / 1000).toFixed(1)}s` : ''}</small>
     {(state === 'LISTENING' || state === 'LIVE_PREVIEW') && <div className="nexus-voice-partial" role="status" aria-live="polite" aria-atomic="true">{partialTranscript || 'Listening…'}</div>}
     {previewNotice && recordingRef.current && <div className="nexus-voice-notice" role="status">{previewNotice}</div>}
-    {review && <div className="nexus-voice-review" role="region" aria-label="Transcript review"><strong>Transcript ready</strong><textarea aria-label="Edit transcript before sending" value={transcript} onFocus={() => setState('EDITING')} onChange={event => setTranscript(event.target.value)} rows={3} /><div className="nexus-voice-review-actions"><button type="button" onClick={retry}>Retry</button><button type="button" className="primary" onClick={sendReviewedTranscript} disabled={!transcript.trim()}>Send to Hermes</button></div></div>}
+    {review && <div className="nexus-voice-review" role="region" aria-label="Transcript review"><strong>Transcript ready</strong><textarea aria-label="Edit transcript before sending" value={transcript} onFocus={() => setState('EDITING')} onChange={event => setTranscript(event.target.value)} rows={3} /><div className="nexus-voice-review-actions"><button type="button" onClick={retry}>Retry</button><button type="button" className="primary" onClick={sendReviewedTranscript} disabled={!transcript.trim()}>{sendLabel}</button></div></div>}
     {state === 'DONE' && <div className="nexus-voice-transcript"><strong>Sent transcript:</strong> {transcript}</div>}
     {error && <div className="nexus-voice-error" role="status">{error}</div>}
   </div>
