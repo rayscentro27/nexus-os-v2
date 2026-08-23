@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import SafeMarkdown from './SafeMarkdown'
 import NexusUniversalComposer from './NexusUniversalComposer'
 import HermesAlphaWorkspace from './HermesAlphaWorkspace'
 import { respondAsAlpha } from '../hermes/alpha/hermesAlphaConversationEngine'
 import { sendThroughCanonicalHermes } from '../lib/hermes/hermesAdminConversationAdapter'
+import { containsSensitive } from '../lib/dataScopes'
 
 const NOVA_ENDPOINT = import.meta.env.VITE_NEXUS_NOVA_ENDPOINT || 'https://nova.goclearonline.cc/v1/nova/chat'
 const AGENT_META = {
@@ -15,14 +16,15 @@ const AGENT_META = {
 function storageKey(agent, id) { return `nexus-experience-chat:${agent}:${id}` }
 function newConversation(agent) { return { id: `${agent}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, agent, title: 'New conversation', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [] } }
 function loadConversation(agent, id) { try { const raw = localStorage.getItem(storageKey(agent, id)); return raw ? JSON.parse(raw) : null } catch { return null } }
-function saveConversation(conversation) { try { localStorage.setItem(storageKey(conversation.agent, conversation.id), JSON.stringify({ ...conversation, messages: conversation.messages.slice(-60) })) } catch { /* persistence is best-effort */ } }
+function saveConversation(conversation) { try { const safeMessages = conversation.messages.filter(message => !containsSensitive(String(message.text || ''))); localStorage.setItem(storageKey(conversation.agent, conversation.id), JSON.stringify({ ...conversation, messages: safeMessages.slice(-60) })) } catch { /* persistence is best-effort */ } }
 function listConversations(agent) { try { return Object.keys(localStorage).filter(key => key.startsWith(`nexus-experience-chat:${agent}:`)).map(key => JSON.parse(localStorage.getItem(key))).filter(Boolean).sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt))) } catch { return [] } }
 function titleFor(text) { return text.replace(/\s+/g, ' ').trim().slice(0, 48) || 'New conversation' }
 
-export default function NexusAgentConversation({ agent = 'hermes', conversationId = null, onConversationChange, context = null }) {
+export default function NexusAgentConversation({ agent = 'hermes', conversationId = null, initialPrompt = '', onConversationChange, context = null }) {
   const [conversation, setConversation] = useState(() => conversationId ? loadConversation(agent, conversationId) || newConversation(agent) : newConversation(agent))
   const [history, setHistory] = useState(() => listConversations(agent))
   const [thinking, setThinking] = useState(false)
+  const initialPromptRef = useRef('')
   const meta = AGENT_META[agent] || AGENT_META.hermes
 
   useEffect(() => {
@@ -59,6 +61,13 @@ export default function NexusAgentConversation({ agent = 'hermes', conversationI
       setConversation(current => ({ ...current, updatedAt: new Date().toISOString(), messages: [...current.messages, { role: 'error', text: error?.message || 'Agent unavailable.', createdAt: new Date().toISOString() }] }))
     } finally { setThinking(false) }
   }
+
+  useEffect(() => {
+    if (initialPrompt && initialPromptRef.current !== initialPrompt && conversation.messages.length === 0) {
+      initialPromptRef.current = initialPrompt
+      void send(initialPrompt)
+    }
+  }, [initialPrompt])
 
   if (agent === 'alpha' && false) return <HermesAlphaWorkspace />
   return <section className={`nx2-agent-thread nx2-agent-${meta.tone}`} data-testid={`${agent}-conversation`}>

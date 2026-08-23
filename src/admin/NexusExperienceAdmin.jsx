@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { Activity, ArrowRight, Bot, BriefcaseBusiness, CheckCircle2, ChevronRight, CircleAlert, FileText, FolderKanban, HeartPulse, Layers3, Menu, Network, Plus, Search, Settings2, Sparkles, Target, UsersRound, X } from 'lucide-react'
 import NexusAgentConversation from '../components/NexusAgentConversation'
+import NexusUniversalComposer from '../components/NexusUniversalComposer'
 import ClientsPanel from '../components/ClientsPanel'
 import CreditFundingPanel from '../components/CreditFundingPanel'
 import BusinessOpportunitiesPanel from '../components/BusinessOpportunitiesPanel'
@@ -53,11 +54,9 @@ function CommandPage({ onNavigate, onAsk }) {
     <div className="nx2-attention-grid"><Section title="Needs You" eyebrow="ATTENTION" action={<button className="nx2-text-action" onClick={() => onNavigate('work')}>Open Work <ArrowRight size={14} /></button>}><div className="nx2-attention-count">{executive.approvals.length || 'UNKNOWN'}</div><p className="nx2-muted">Ray Review, approvals, exceptions, and decisions appear here when their sources are available.</p><button className="nx2-outline-button" onClick={() => onNavigate('work')}>View Needs You</button></Section><Section title="Today" eyebrow="OPERATING CONTEXT"><ol className="nx2-priority-list">{priorities.map((item, index) => <li key={item.id}><b>{index + 1}</b><div><strong>{item.title}</strong><span>{item.summary}</span><small>{item.source}</small></div></li>)}</ol>{priorities.length === 0 && <EmptyState title="No priorities loaded" text="Operating Context returned no current priorities." />}</Section><Section title="Nexus status" eyebrow="TRUTH"><div className="nx2-stat-line"><span>System health</span>{statusPill(executive.systemHealth?.length ? 'Report-backed' : 'UNKNOWN', executive.systemHealth?.length ? 'green' : 'amber')}</div><div className="nx2-stat-line"><span>Revenue truth</span>{statusPill('UNKNOWN', 'amber')}</div><div className="nx2-stat-line"><span>Opportunities</span>{statusPill('Canonical source', 'blue')}</div><div className="nx2-stat-line"><span>Authority</span><b>Governed</b></div></Section></div>
     <Section title="Working now" eyebrow="NEXUS ACTIVITY" action={<button className="nx2-text-action" onClick={() => onNavigate('work')}>All work <ArrowRight size={14} /></button>}><div className="nx2-working-grid"><div><div className="nx2-agent-line"><span className="nx2-agent-dot hermes">N</span><div><strong>Nexus / Hermes</strong><small>Operating context · active when sourced</small></div>{statusPill('Available', 'blue')}</div></div><div><div className="nx2-agent-line"><span className="nx2-agent-dot alpha">A</span><div><strong>Alpha</strong><small>Research lane · local/evidence boundary</small></div>{statusPill('Available', 'green')}</div></div><div><div className="nx2-agent-line"><span className="nx2-agent-dot nova">N</span><div><strong>Nova</strong><small>Strategic browser transport</small></div>{statusPill('Connected', 'violet')}</div></div></div></Section>
     <Section title="Business" eyebrow="BUSINESS SNAPSHOT"><div className="nx2-business-grid"><button onClick={() => onNavigate('business')}><span>Revenue truth</span><strong>UNKNOWN</strong><small>Open Business</small></button><button onClick={() => onNavigate('business')}><span>Opportunities</span><strong>Canonical</strong><small>Open Business</small></button><button onClick={() => onNavigate('business')}><span>Clients</span><strong>Authenticated view</strong><small>Open Business</small></button></div></Section>
-    <div className="nx2-command-composer"><NexusAgentConversationLauncher onAsk={onAsk} /></div>
+    <div className="nx2-command-composer"><NexusUniversalComposer agent="hermes" context="Command brief" onSend={text => onAsk('hermes', text)} /></div>
   </div>
 }
-
-function NexusAgentConversationLauncher({ onAsk }) { return <button className="nx2-ask-bar" onClick={() => onAsk('hermes')}><span className="nx2-agent-orb hermes">N</span><span><strong>Ask Nexus</strong><small>What should happen next?</small></span><span className="nx2-ask-mic">◉</span><ArrowRight size={17} /></button> }
 
 function WorkPage({ onNavigate }) {
   const work = [
@@ -99,15 +98,16 @@ export default function NexusExperienceAdmin({ email, initialPage = 'command' })
     const hash = nextSubpage ? `${nextArea}-${nextSubpage}` : nextArea
     window.history.pushState({}, '', `/admin#${hash}`); window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-  function openAgent(agent, id = null) { setSelectedAgent(agent); setStoredAgent(agent); setArea('agents'); setSubpage(null); setConversationId(id); setMobileOpen(false); const target = id || `${agent}-${Date.now()}`; window.history.pushState({}, '', `/admin/agents/${agent}/chat/${target}`); }
+  const [pendingPrompt, setPendingPrompt] = useState('')
+  function openAgent(agent, id = null, initialPrompt = '') { setSelectedAgent(agent); setStoredAgent(agent); setArea('agents'); setSubpage(null); setConversationId(id); setPendingPrompt(initialPrompt); setMobileOpen(false); const target = id || `${agent}-${Date.now()}`; window.history.pushState({}, '', `/admin/agents/${agent}/chat/${target}`); }
   function onConversationChange(id, nextAgent) { if (nextAgent) { openAgent(nextAgent); return } setConversationId(id); window.history.replaceState({}, '', `/admin/agents/${selectedAgent}/chat/${id}`) }
-  function askAgent(agent = 'hermes') { openAgent(agent) }
+  function askAgent(agent = 'hermes', initialPrompt = '') { openAgent(agent, null, initialPrompt) }
   useEffect(() => { const sync = () => { const next = routeFromLocation(); setArea(next.area); setSelectedAgent(next.agent); setConversationId(next.conversationId); setSubpage(null) }; window.addEventListener('popstate', sync); window.addEventListener('hashchange', sync); return () => { window.removeEventListener('popstate', sync); window.removeEventListener('hashchange', sync) } }, [])
 
   let page
   if (area === 'command') page = <CommandPage onNavigate={navigate} onAsk={askAgent} />
   else if (area === 'work') page = subpage === 'detail' ? <WorkDetailPage onNavigate={navigate} /> : <WorkPage onNavigate={navigate} />
-  else if (area === 'agents') page = conversationId || window.location.pathname.includes('/agents/') ? <NexusAgentConversation agent={selectedAgent} conversationId={conversationId} onConversationChange={onConversationChange} context={null} /> : <AgentsPage onOpenAgent={askAgent} />
+  else if (area === 'agents') page = conversationId || window.location.pathname.includes('/agents/') ? <NexusAgentConversation agent={selectedAgent} conversationId={conversationId} initialPrompt={pendingPrompt} onConversationChange={onConversationChange} context="Current Admin surface" /> : <AgentsPage onOpenAgent={askAgent} />
   else if (area === 'business') page = <BusinessPage subpage={subpage} onNavigate={navigate} />
   else if (area === 'studio') page = <StudioPage subpage={subpage} onNavigate={navigate} />
   else page = <SystemPage subpage={subpage} email={email} onNavigate={navigate} />
