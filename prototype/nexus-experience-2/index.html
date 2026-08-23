@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexus Experience 2.0 — Product Design Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="prototype-banner"><span>DESIGN PROTOTYPE</span> Sample interface · no live data · no production connection</div>
+    <div class="app-shell" id="appShell">
+      <aside class="rail">
+        <div class="brand"><div class="brand-mark">N</div><div><strong>NEXUS</strong><small>Operating system</small></div></div>
+        <nav id="primaryNav" aria-label="Primary navigation">
+          <button class="nav-item active" data-area="command"><span>⌂</span>Command</button>
+          <button class="nav-item" data-area="work"><span>◈</span>Work <em>3</em></button>
+          <button class="nav-item" data-area="agents"><span>✦</span>Agents</button>
+          <button class="nav-item" data-area="business"><span>◫</span>Business</button>
+          <button class="nav-item" data-area="studio"><span>◒</span>Studio</button>
+          <button class="nav-item" data-area="system"><span>⌘</span>System</button>
+        </nav>
+        <div class="rail-footer"><div class="avatar">R</div><div><strong>Ray</strong><small>Founder mode</small></div></div>
+      </aside>
+      <main class="main-shell">
+        <header class="topbar">
+          <div><span class="eyebrow">NEXUS / <span id="crumb">COMMAND</span></span><h1 id="pageTitle">Command</h1></div>
+          <div class="top-actions"><select id="screenSelect" class="user-chip" aria-label="Prototype screen"><option value="command">Command</option><option value="work">Work / Needs You</option><option value="detail">Work Item Detail</option><option value="agents">Agents Hub</option><option value="hermes">Hermes Conversation</option><option value="nova">Nova Conversation</option><option value="alpha">Alpha Research</option><option value="business">Business Overview</option><option value="studio">Studio</option><option value="system">System / Mission Control</option><option value="welcome">Client Welcome</option><option value="home">Client Home</option><option value="credit">Credit Journey</option><option value="foundation">Business Foundation</option><option value="funding">Funding Readiness</option><option value="upload">Inline Document Upload</option><option value="recommendations">Recommendations</option></select><button class="icon-btn" title="Toggle phone preview" id="phoneToggle">▣</button><span class="sample-dot"></span><span class="sample-label">Sample state</span><button class="user-chip">Ray <span>⌄</span></button></div>
+        </header>
+        <section class="content" id="content" aria-live="polite"></section>
+      </main>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
