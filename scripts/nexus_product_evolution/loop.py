@@ -102,6 +102,7 @@ class ProductEvolutionLoop:
         stages: Mapping[Stage, Callable[[], Mapping[str, Any]]],
         critic: Callable[[MissionContract, List[Dict[str, Any]]], Mapping[str, Any]],
         repair: Optional[Callable[[Mapping[str, Any]], Mapping[str, Any]]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
     ) -> MissionResult:
         evidence: List[Dict[str, Any]] = []
         failures: List[Dict[str, Any]] = []
@@ -111,9 +112,17 @@ class ProductEvolutionLoop:
         last_critic: Dict[str, Any] = {}
 
         while cycles < contract.max_cycles:
+            if should_cancel and should_cancel():
+                evidence.append({"stage": "CANCEL", "cycle": cycles, "status": "CANCELLED", "created_at": _now()})
+                return self._write(self._result(mission_id, "CANCELLED", cycles, evidence, failures, last_critic), contract)
             cycles += 1
             cycle: Dict[str, Any] = {"cycle": cycles, "started_at": _now(), "stages": []}
             for stage in Stage:
+                if should_cancel and should_cancel():
+                    cycle["cancelled_at"] = _now()
+                    cycle["ended_at"] = _now()
+                    evidence.append(cycle)
+                    return self._write(self._result(mission_id, "CANCELLED", cycles, evidence, failures, last_critic), contract)
                 callback = stages.get(stage)
                 if callback is None:
                     continue

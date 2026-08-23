@@ -37,6 +37,11 @@ MAX_MESSAGE = 4000
 MAX_INPUT = 1000
 HTTP_TIMEOUT = 10
 
+try:
+    import certifi
+except ImportError:  # pragma: no cover - launchd fallback
+    certifi = None
+
 BLOCKED_PATTERNS = (
     r"\b(charge|refund|pay|payment|stripe|transfer|withdraw|deposit)\b",
     r"\b(funded?\s+trade|place\s+(a\s+)?trade|buy|sell|execute\s+trade)\b",
@@ -106,7 +111,11 @@ def telegram_call(token: str, method: str, params: Optional[Dict[str, Any]] = No
     body = urllib.parse.urlencode(params or {}).encode("utf-8")
     request = urllib.request.Request(API_BASE.format(token=token, method=method), data=body)
     try:
-        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT) as response:
+        context = None
+        if certifi is not None:
+            import ssl
+            context = ssl.create_default_context(cafile=certifi.where())
+        with urllib.request.urlopen(request, timeout=HTTP_TIMEOUT, context=context) as response:
             payload = json.loads(response.read().decode("utf-8"))
         return payload if isinstance(payload, dict) else {"ok": False, "description": "malformed_response"}
     except Exception as exc:
@@ -144,8 +153,19 @@ def message_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:24]
 
 
+def send_message(token: str, chat_id: int, text: str) -> Dict[str, Any]:
+    """Certified Hermes Telegram sender; returns safe delivery metadata."""
+    return telegram_call(token, "sendMessage", {"chat_id": chat_id, "text": text[:MAX_MESSAGE]})
+
+
 def classify(text: str) -> str:
     lowered = text.lower()
+    try:
+        from nexus_product_evolution.telegram_control import is_unsafe_product_evolution_request
+        if is_unsafe_product_evolution_request(text):
+            return "NOT_AUTHORIZED"
+    except Exception:
+        pass
     if any(re.search(pattern, lowered) for pattern in BLOCKED_PATTERNS):
         return "NOT_AUTHORIZED"
     if lowered.startswith(("/request ", "/work ", "create a work order", "turn this into a work order")):
@@ -247,6 +267,13 @@ def handle_command(text: str) -> tuple[str, Dict[str, Any]]:
     if route == "NOT_AUTHORIZED":
         return "I can’t perform that action. It is outside Hermes authority and remains blocked by Nexus safety policy.", {"route": route, "outcome": "BLOCKED"}
     lowered = text.lower()
+    try:
+        from nexus_product_evolution.telegram_control import handle_product_evolution_intake
+        evolution = handle_product_evolution_intake(text)
+        if evolution.get("handled"):
+            return evolution["response"], {"route": evolution.get("route"), "outcome": evolution.get("status"), "product_evolution": evolution}
+    except Exception as exc:
+        return "Product Evolution intake is temporarily unavailable; no mission was started.", {"route": "PRODUCT_EVOLUTION", "outcome": "BLOCKED", "error": type(exc).__name__}
     if lowered in {"/start", "/help", "help"}:
         return "Nexus Hermes commands: /status, /approvals, /orders, /request <internal work>, /approve <approval_id>, /reject <approval_id>.", {"route": route, "outcome": "ANSWERED"}
     if lowered in {"/status", "status", "what is happening with nexus", "refresh nexus status"} or is_status_request(text):
@@ -285,7 +312,7 @@ def _update_message(update: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 def _send(token: str, chat_id: int, text: str) -> bool:
-    result = telegram_call(token, "sendMessage", {"chat_id": chat_id, "text": text[:MAX_MESSAGE]})
+    result = send_message(token, chat_id, text)
     return bool(result.get("ok"))
 
 
@@ -334,12 +361,36 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
         text = message["text"]
         fingerprint = message_hash(text)
         response_text, metadata = handle_command(text)
+        evolution = metadata.get("product_evolution") if isinstance(metadata, dict) else None
+        if isinstance(evolution, dict) and evolution.get("status") == "CONTRACT_READY":
+            try:
+                from nexus_product_evolution.telegram_control import ProductEvolutionReporter, run_safe_mobile_reporting_mission
+                reporter = ProductEvolutionReporter(lambda body: send_message(token, chat_id, body))
+                contract_data = evolution.get("contract") or {}
+                if "status reporting" in text.lower() or "mobile reporting" in text.lower():
+                    from nexus_product_evolution.loop import MissionContract
+                    safe_result = run_safe_mobile_reporting_mission(MissionContract(**contract_data), reporter)
+                    response_text = safe_result["response"]
+                    metadata["product_evolution_result"] = safe_result["result"].status
+                    metadata["product_evolution_skip_reply"] = True
+                    deliveries = reporter.deliveries
+                    metadata["product_evolution_message_id"] = deliveries[-1].get("message_id") if deliveries else None
+                else:
+                    reporter.started((evolution.get("contract") or {}).get("goal", "Product experience improvement"))
+                    response_text = response_text + "\n\nStarted under the bounded Product Evolution policy."
+                    metadata["product_evolution_started"] = True
+            except Exception as exc:
+                response_text = "Product Evolution was not started because its bounded runner failed safely."
+                metadata["product_evolution_error"] = type(exc).__name__
         if metadata.get("outcome") == "BLOCKED":
             result["commands_blocked"] += 1
         if metadata.get("status") == "DUPLICATE_SUPPRESSED":
             result["duplicates_suppressed"] += 1
-        delivered = True if dry_run else _send(token, chat_id, response_text)
-        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "created_at": utc_now()}
+        if metadata.get("product_evolution_skip_reply"):
+            delivered = True
+        else:
+            delivered = True if dry_run else _send(token, chat_id, response_text)
+        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_telegram_message_id": metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "created_at": utc_now()}
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         write_json(RECEIPT_DIR / f"{receipt['receipt_id']}.json", receipt)
         result["receipts"].append(receipt["receipt_id"])

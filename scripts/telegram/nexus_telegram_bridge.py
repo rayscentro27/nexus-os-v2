@@ -3919,6 +3919,18 @@ def process_command(text, mission=None):
     # Not a slash command — try Platform graph first when enabled
     full_text = text.strip()
 
+    # Product Evolution is a bounded product-workflow request, not a general
+    # command. Keep the existing bridge/authorization boundary and let the
+    # reusable intake layer build the contract; execution remains governed by
+    # the Product Evolution runner.
+    try:
+        from nexus_product_evolution.telegram_control import handle_product_evolution_intake
+        evolution = handle_product_evolution_intake(full_text)
+        if evolution.get("handled"):
+            return evolution["response"]
+    except Exception:
+        return "Product Evolution intake is temporarily unavailable; no mission was started."
+
     # --- Diagnostic trace: routing entry ---
     _route_trace = {
         "worker_pid": os.getpid(),
