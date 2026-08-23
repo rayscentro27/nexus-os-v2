@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import SafeMarkdown from './SafeMarkdown'
 import NexusUniversalComposer from './NexusUniversalComposer'
-import { respondAsAlpha } from '../hermes/alpha/hermesAlphaConversationEngine'
-import { sendThroughCanonicalHermes } from '../lib/hermes/hermesAdminConversationAdapter'
 import { containsSensitive } from '../lib/dataScopes'
+import { sendAgentMessage, setActiveThread } from '../lib/nexusAgentDispatch'
 
 const NOVA_ENDPOINT = import.meta.env.VITE_NEXUS_NOVA_ENDPOINT || 'https://nova.goclearonline.cc/v1/nova/chat'
 const AGENT_META = {
@@ -38,14 +37,16 @@ export default function NexusAgentConversation({ agent = 'hermes', conversationI
     const restored = conversationId ? loadConversation(agent, conversationId) : null
     if (restored) setConversation(restored)
     else if (conversation.agent !== agent || (conversationId && conversation.id !== conversationId)) setConversation(newConversation(agent))
+    if (conversationId) setActiveThread(agent, conversationId)
     setChatFilter(agent)
     setHistory(listConversations())
   }, [agent, conversationId])
   useEffect(() => { if (conversation.id) { saveConversation(conversation); setHistory(listConversations()) } }, [conversation])
+  useEffect(() => { const onVoiceThreadUpdate = event => { const detail = event.detail || {}; if (detail.agent === agent && detail.conversationId === conversation.id) { const next = loadConversation(agent, conversation.id); if (next) setConversation(next); setHistory(listConversations()) } }; window.addEventListener('nexus:voice-thread-update', onVoiceThreadUpdate); return () => window.removeEventListener('nexus:voice-thread-update', onVoiceThreadUpdate) }, [agent, conversation.id])
   useEffect(() => { if (logRef.current && !thinking) logRef.current.scrollTop = logRef.current.scrollHeight }, [conversation.messages.length, thinking])
 
-  function openConversation(item) { setConversation(loadConversation(item.agent, item.id) || item); setRailOpen(false); onConversationChange?.(item.id, item.agent) }
-  function createChat() { const next = newConversation(agent); setConversation(next); setRailOpen(false); onConversationChange?.(next.id, agent) }
+  function openConversation(item) { setActiveThread(item.agent, item.id); setConversation(loadConversation(item.agent, item.id) || item); setRailOpen(false); onConversationChange?.(item.id, item.agent) }
+  function createChat() { const next = newConversation(agent); setActiveThread(agent, next.id); setConversation(next); setRailOpen(false); onConversationChange?.(next.id, agent) }
   function renameConversation(item) { const nextTitle = window.prompt('Rename conversation', item.title || 'Conversation')?.trim(); if (!nextTitle) return; const next = { ...item, title: nextTitle, updatedAt: new Date().toISOString() }; saveConversation(next); setHistory(listConversations()); if (item.id === conversation.id) setConversation(next) }
   function archiveConversation(item) { saveConversation({ ...item, archived: true, updatedAt: new Date().toISOString() }); setHistory(listConversations()); if (item.id === conversation.id) createChat() }
   function openInNewTab(item) { window.open(`/admin/agents/${item.agent}/chat/${item.id}`, '_blank', 'noopener,noreferrer') }
@@ -55,19 +56,8 @@ export default function NexusAgentConversation({ agent = 'hermes', conversationI
     const now = new Date().toISOString(); const user = { id: `${Date.now()}-user`, role: 'user', text, createdAt: now }
     setConversation(current => ({ ...current, title: current.messages.length ? current.title : titleFor(text), updatedAt: now, messages: [...current.messages, user] })); setThinking(true)
     try {
-      let response
-      if (agent === 'hermes') {
-        const recentHistory = conversation.messages.slice(-10).map(message => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.text }))
-        const result = await sendThroughCanonicalHermes({ message: text, sessionId: `nexus-${conversation.id}`, pageId: 'agents-hermes', route: window.location.href, recentHistory })
-        response = { role: 'assistant', text: result.text, meta: `${result.evidenceState || 'UNKNOWN'} · canonical Hermes`, response: result }
-      } else if (agent === 'nova') {
-        const result = await fetch(NOVA_ENDPOINT, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Nexus-Nova-Session': conversation.id }, body: JSON.stringify({ message: text, conversation_id: conversation.id, channel: 'admin_browser' }) })
-        const payload = await result.json(); if (!result.ok) throw new Error(payload.error || 'Nova browser transport unavailable')
-        response = { role: 'assistant', text: payload.text || 'Nova returned no response.', meta: `${payload.model || 'configured model'} · canonical Nova graph` }
-      } else {
-        const result = respondAsAlpha(text, 'General Conversation', Date.now())
-        response = { role: 'assistant', text: result.text, meta: `${result.provider || 'deterministic_local'} · canonical Alpha route` }
-      }
+      const recentHistory = conversation.messages.slice(-10).map(message => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.text }))
+      const response = await sendAgentMessage({ agent, conversationId: conversation.id, text, recentHistory })
       setConversation(current => ({ ...current, updatedAt: new Date().toISOString(), messages: [...current.messages, response] }))
     } catch (error) { setConversation(current => ({ ...current, updatedAt: new Date().toISOString(), messages: [...current.messages, { role: 'error', text: error?.message || 'Agent unavailable.', createdAt: new Date().toISOString() }] })) } finally { setThinking(false) }
   }

@@ -4,6 +4,7 @@ import fs from 'node:fs';
 const read = (path: string) => fs.readFileSync(path, 'utf8');
 const shell = read('src/admin/NexusExperienceAdmin.jsx');
 const conversation = read('src/components/NexusAgentConversation.jsx');
+const dispatch = read('src/lib/nexusAgentDispatch.ts');
 const composer = read('src/components/NexusUniversalComposer.jsx');
 
 describe('Nexus Experience 2.0 production shell', () => {
@@ -14,11 +15,11 @@ describe('Nexus Experience 2.0 production shell', () => {
   });
 
   it('keeps agent brains and destinations separate', () => {
-    expect(conversation).toContain('sendThroughCanonicalHermes');
-    expect(conversation).toContain('NOVA_ENDPOINT');
-    expect(conversation).toContain('respondAsAlpha');
-    expect(conversation).not.toContain('runHermesConversation');
-    expect(conversation).toContain('conversation_id: conversation.id');
+    expect(dispatch).toContain('sendThroughCanonicalHermes');
+    expect(dispatch).toContain('NOVA_ENDPOINT');
+    expect(dispatch).toContain('respondAsAlpha');
+    expect(dispatch).not.toContain('runHermesConversation');
+    expect(dispatch).toContain('conversation_id: conversationId');
   });
 
   it('uses per-conversation persistence and addressable routes', () => {
