@@ -38,6 +38,6 @@ describe('Nexus interaction UX correction', () => {
     expect(shell).toContain('data-testid="nx2-global-ask"');
     expect(shell).toContain('Ask Nexus');
     expect(shell).toContain('function globalContext()');
-    expect(shell).toContain('onAgentChange={next => { setSelectedAgent(next); setStoredAgent(next) }}');
+    expect(shell).toContain('onConversationChange={(id, next) => { if (next) { setSelectedAgent(next); setStoredAgent(next) } }}');
   });
 });
