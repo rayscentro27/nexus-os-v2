@@ -184,6 +184,13 @@ def mark_control(mission_id: str, action: str, evidence: str = "") -> Dict[str, 
         result = value.get("result") or {}
         if result.get("mission_id") != mission_id:
             continue
+        current_status = result.get("status")
+        if action == "cancel" and current_status in {"PASS", "FAIL", "CANCELLED"}:
+            result["control_result"] = "REJECTED_TERMINAL"
+            return result
+        if action == "resume" and current_status not in {"PARTIAL", "BLOCKED", "FAILED", "CANCELLED"}:
+            result["control_result"] = "REJECTED_NOT_RESUMABLE"
+            return result
         result["control"] = {"action": action, "evidence": _compact(evidence), "recorded_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()}
         value["result"] = result
         path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")

@@ -111,6 +111,11 @@ class ProductEvolutionLoop:
         status = "PASS"
         last_critic: Dict[str, Any] = {}
 
+        if should_cancel is None and self.receipt_dir is not None:
+            should_cancel = lambda: self._receipt_control(mission_id) == "cancel"
+        if self.receipt_dir is not None:
+            self._write(self._result(mission_id, "RUNNING", 0, [], [], {}), contract)
+
         while cycles < contract.max_cycles:
             if should_cancel and should_cancel():
                 evidence.append({"stage": "CANCEL", "cycle": cycles, "status": "CANCELLED", "created_at": _now()})
@@ -228,7 +233,26 @@ class ProductEvolutionLoop:
             return result
         self.receipt_dir.mkdir(parents=True, exist_ok=True)
         path = self.receipt_dir / f"{result.mission_id}.json"
-        payload = {"contract": asdict(contract), "result": asdict(result), "created_at": _now()}
+        prior_control = None
+        try:
+            prior = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+            prior_control = (prior.get("result") or {}).get("control")
+        except (OSError, ValueError, TypeError):
+            prior_control = None
+        result_payload = asdict(result)
+        if prior_control:
+            result_payload["control"] = prior_control
+        payload = {"contract": asdict(contract), "result": result_payload, "created_at": _now()}
         path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         result.receipt_path = str(path)
         return result
+
+    def _receipt_control(self, mission_id: str) -> Optional[str]:
+        if self.receipt_dir is None:
+            return None
+        path = self.receipt_dir / f"{mission_id}.json"
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+            return ((value.get("result") or {}).get("control") or {}).get("action")
+        except (OSError, ValueError, TypeError):
+            return None
