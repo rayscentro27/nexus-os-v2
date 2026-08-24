@@ -32,6 +32,7 @@ from nexus_agent_platform.phase15.runtime_observability import build_observabili
 from nexus_agent_platform.phase15.scheduler_health import begin_dispatch, complete_dispatch
 from nexus_agent_platform.phase15.mission_control_snapshot import refresh_mission_control_snapshot
 from nexus_agent_platform.phase15.stripe_proof import stripe_test_mode_proof
+from nexus_product_evolution.consumer import consume_queued_missions
 
 
 def _write_policy_doc() -> None:
@@ -137,6 +138,7 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
     results: Dict[str, Any] = {"phase": "PHASE 15 — LIVE INTERNAL OPERATIONS", "generated_at": utc_now()}
 
     _write_policy_doc()
+    results["product_evolution_dispatch"] = consume_queued_missions(scheduler_instance=str(scheduler_context.get("scheduler_instance", "UNKNOWN")))
 
     results["live_loops"] = run_live_loops()
     loop_report = results["live_loops"]

@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
 CONTEXT_TTL_SECONDS = 10 * 60
 MAX_TELEGRAM_RETRIES = 2
+MISSION_ID_PATTERN = r"\btelegram-[0-9]{8,}-[a-f0-9-]+\b"
 
 UNSAFE_PATTERNS = (
     r"\b(enabl\w*|remov\w*|bypass\w*|weaken\w*)\b.*\b(secur\w*|approval\w*|governance|auth|rls)\b",
@@ -41,6 +42,21 @@ def is_product_evolution_intent(text: str) -> bool:
     if any(re.search(pattern, lowered) for pattern in UNSAFE_PATTERNS):
         return False
     return bool(re.search(r"\b(product evolution|run product evolution|improve|evolve|make .{2,} easier|make .{2,} better|continue (?:the existing )?(?:voice|creative|client|admin)|resume (?:the existing )?(?:voice|creative|client|admin))\b", lowered))
+
+
+def explicit_no_create(text: str) -> bool:
+    lowered = _compact(text).lower()
+    return bool(re.search(r"\b(?:do not|don't) (?:create|start) (?:a )?(?:(?:new|another)\s+)?(?:mission|run)\b|\buse the existing mission\b|\bcheck this exact mission\b|\binspect the existing mission\b|\breport only\b|\bstatus only\b", lowered))
+
+
+def exact_mission_id(text: str) -> Optional[str]:
+    match = re.search(MISSION_ID_PATTERN, text, re.I)
+    return match.group(0) if match else None
+
+
+def diagnostic_intent(text: str) -> bool:
+    lowered = _compact(text).lower()
+    return bool(re.search(r"\b(?:why|what|when|where|how|did|has|is|are|check|inspect|report)\b", lowered) and re.search(r"\b(?:mission|product evolution|runtime|dispatcher|queued|picked|waiting|started|execution|status|state|blocked)\b", lowered))
 
 
 def is_unsafe_product_evolution_request(text: str) -> bool:
@@ -158,6 +174,19 @@ def _mission_status(record: Mapping[str, Any]) -> str:
     return str((record.get("result") or {}).get("status") or record.get("status") or "UNKNOWN")
 
 
+def _load_mission_by_id(mission_id: str) -> Optional[Dict[str, Any]]:
+    for path in _receipt_files():
+        if path.stem != mission_id:
+            continue
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return None
+        value["receipt_path"] = str(path)
+        return value
+    return None
+
+
 def resolve_mission(text: str) -> Optional[Dict[str, Any]]:
     """Resolve explicit ids, surfaces, and aliases without selecting unrelated work."""
     normalized = _compact(text).lower()
@@ -231,6 +260,41 @@ def blockers_text() -> str:
     return "\n".join(lines) if found else "Product Evolution blockers\n\nNo PARTIAL or BLOCKED Product Evolution missions recorded."
 
 
+def diagnostic_text(record: Mapping[str, Any]) -> str:
+    """Report persisted mission/runtime observations without inventing state."""
+    result = record.get("result") or {}
+    dispatch = result.get("dispatch") or {}
+    try:
+        scheduler = json.loads((ROOT / "reports/phase16a/scheduler_health.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        scheduler = {}
+    try:
+        active = json.loads((ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        active = {}
+    status = _mission_status(record)
+    lines = [
+        "Product Evolution mission diagnostic",
+        f"Mission ID: {_mission_id(record) or 'UNKNOWN'}",
+        f"Status: {status}",
+        f"Goal: {(record.get('contract') or {}).get('goal') or result.get('goal') or 'UNKNOWN'}",
+        f"Created at: {result.get('created_at') or record.get('created_at') or 'UNKNOWN'}",
+        f"Updated at: {result.get('updated_at') or 'UNKNOWN'}",
+        f"Current cycle: {result.get('cycle', result.get('cycles', 'UNKNOWN'))}",
+        f"Current stage: {result.get('current_stage') or 'UNKNOWN'}",
+        f"Queue state: {result.get('current_stage') or status}",
+        f"Runtime pickup state: {dispatch.get('pickup_state') or ('NOT_OBSERVED' if status == 'QUEUED' else 'OBSERVED')}",
+        f"Last dispatcher observation: {dispatch.get('last_dispatch_observation') or 'UNKNOWN'}",
+        f"Next eligible dispatch: {scheduler.get('next_dispatch') or 'UNKNOWN'}",
+        f"Blocker: {result.get('blocker') or 'NONE_RECORDED'}",
+        f"Human gate: {', '.join((record.get('contract') or {}).get('human_only_gates') or []) or 'NONE_RECORDED'}",
+        f"Parent/resume lineage: {result.get('parent_mission_id') or 'NONE_RECORDED'}",
+        f"Receipt: {record.get('receipt_path') or 'UNKNOWN'}",
+        f"Active Operator last run: {active.get('last_run') or 'UNKNOWN'}",
+    ]
+    return "\n".join(lines)
+
+
 def control_request(text: str) -> Optional[str]:
     lowered = _compact(text).lower()
     if re.search(r"\b(improve|evolve|run product evolution|make .{2,} easier|make .{2,} better)\b", lowered):
@@ -271,10 +335,61 @@ def mark_control(mission_id: str, action: str, evidence: str = "") -> Dict[str, 
     return {"status": "NOT_FOUND", "mission_id": mission_id}
 
 
-def handle_product_evolution_intake(text: str) -> Dict[str, Any]:
-    """Build a safe contract or return a truthful clarification/block."""
+def cancel_mission(mission_id: str, reason: str) -> Dict[str, Any]:
+    """Record a safe terminal cancellation without deleting receipt history."""
+    for path in _receipt_files():
+        if path.stem != mission_id:
+            continue
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return {"status": "NOT_FOUND", "mission_id": mission_id}
+        result = value.get("result") or {}
+        if _mission_status(value) in {"PASS", "FAIL", "CANCELLED"}:
+            return result
+        now = datetime.now(timezone.utc).isoformat()
+        result.update({"status": "CANCELLED", "current_stage": "CANCELLED", "blocker": reason, "updated_at": now, "control": {"action": "cancel", "reason": reason, "recorded_at": now}})
+        value["result"] = result
+        path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return result
+    return {"status": "NOT_FOUND", "mission_id": mission_id}
+
+
+def classify_product_evolution_request(text: str, *, context_mission_id: Optional[str] = None) -> str:
+    pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(context_mission_id)
+    if not pe_signal:
+        return "CLARIFICATION"
     if is_unsafe_product_evolution_request(text):
+        return "UNSAFE"
+    request = control_request(text)
+    if request == "status" and not re.search(r"\b(?:why|queued|picked|waiting|dispatcher|runtime)\b", text, re.I) and not explicit_no_create(text) and not exact_mission_id(text):
+        return "STATUS"
+    if request == "blocked":
+        return "BLOCKERS"
+    if diagnostic_intent(text) or explicit_no_create(text) or exact_mission_id(text):
+        return "DIAGNOSTIC"
+    if request == "cancel":
+        return "CANCEL"
+    if request == "resume":
+        return "RESUME"
+    if is_product_evolution_intent(text):
+        return "START_NEW_MISSION"
+    if context_mission_id and re.search(r"\b(?:picked|runtime|dispatcher|queued|waiting|started|execution)\b", text, re.I):
+        return "DIAGNOSTIC"
+    return "CLARIFICATION"
+
+
+def handle_product_evolution_intake(text: str, *, context_mission_id: Optional[str] = None) -> Dict[str, Any]:
+    """Build a safe contract or return a truthful clarification/block."""
+    classification = classify_product_evolution_request(text, context_mission_id=context_mission_id)
+    if classification == "UNSAFE":
         return {"handled": True, "status": "BLOCKED", "route": "PRODUCT_EVOLUTION", "response": "Product Evolution cannot change security, authority, payments, approvals, credentials, or client-data boundaries."}
+    if classification == "DIAGNOSTIC":
+        mission_id = exact_mission_id(text) or context_mission_id
+        resolved = _load_mission_by_id(mission_id) if mission_id else resolve_mission(text)
+        if not resolved:
+            return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_DIAGNOSTIC", "response": "Mission not found."}
+        return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_DIAGNOSTIC", "mission_id": _mission_id(resolved), "response": diagnostic_text(resolved)}
     request = control_request(text)
     if request == "status":
         return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_STATUS", "response": status_text()}
@@ -294,8 +409,8 @@ def handle_product_evolution_intake(text: str) -> Dict[str, Any]:
             gate = gates[0] if gates else "the next governed Product Evolution checkpoint"
             return {"handled": True, "status": "CONTROL_RECORDED", "route": "PRODUCT_EVOLUTION_CONTROL", "mission_id": mission_id, "response": f"Continuing the Product Evolution mission {mission_id} from its existing {_mission_status(resolved)} lineage. Current human gate: {gate}."}
         return {"handled": True, "status": "CONTROL_RECORDED", "route": "PRODUCT_EVOLUTION_CONTROL", "mission_id": mission_id, "response": f"Product Evolution mission {mission_id}: {request} recorded."}
-    if not is_product_evolution_intent(text):
-        return {"handled": False}
+    if classification != "START_NEW_MISSION":
+        return {"handled": True, "status": "CLARIFICATION", "route": "PRODUCT_EVOLUTION_CLARIFICATION", "response": "Do you want a new Product Evolution mission, or should I inspect an existing mission?"}
     contract = build_mission_contract(text)
     if re.search(r"status reporting|mobile reporting|mobile status", text, re.I):
         contract = build_mission_contract(text, max_cycles=2)

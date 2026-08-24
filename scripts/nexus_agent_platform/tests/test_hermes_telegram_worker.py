@@ -158,7 +158,53 @@ def test_required_short_voice_phrase_uses_the_same_resolver(tmp_path, monkeypatc
     evolution.RECEIPT_DIR.mkdir(parents=True)
     source = Path(__file__).resolve().parents[3] / "reports/product_evolution/voice-assistant-pilot.json"
     (evolution.RECEIPT_DIR / source.name).write_text(source.read_text())
+    creative = Path(__file__).resolve().parents[3] / "reports/product_evolution/creative-studio-pilot.json"
+    (evolution.RECEIPT_DIR / creative.name).write_text(creative.read_text())
     response, metadata = hermes.handle_command("Nexus, continue Voice.")
     assert metadata["route"] == "PRODUCT_EVOLUTION_CONTROL"
     assert metadata["mission_id"] == "voice-assistant-pilot"
     assert "microphone" in response.lower()
+
+
+def test_exact_real_diagnostic_can_never_create_a_mission(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    monkeypatch.setattr(hermes, "PRODUCT_EVOLUTION_CONTEXT_PATH", tmp_path / "context.json")
+    evolution.RECEIPT_DIR.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[3] / "reports/product_evolution/telegram-20260824172054-077bf5a7.json"
+    (evolution.RECEIPT_DIR / source.name).write_text(source.read_text())
+    text = "Nexus, why is Product Evolution mission telegram-20260824172054-077bf5a7 still queued? Check whether the existing governed Product Evolution runtime has picked it up, what the next dispatch time is, and whether anything is preventing execution. Do not create a new mission. Report the current dispatcher/runtime state for this exact mission."
+    response, metadata = hermes.handle_command(text, chat_id=42)
+    assert metadata["route"] == "PRODUCT_EVOLUTION_DIAGNOSTIC"
+    assert metadata["mission_id"] == "telegram-20260824172054-077bf5a7"
+    assert "Mission ID: telegram-20260824172054-077bf5a7" in response
+    assert len(list(evolution.RECEIPT_DIR.glob("*.json"))) == 1
+
+
+def test_diagnostic_aliases_and_context_never_create(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    monkeypatch.setattr(hermes, "PRODUCT_EVOLUTION_CONTEXT_PATH", tmp_path / "context.json")
+    evolution.RECEIPT_DIR.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[3] / "reports/product_evolution/voice-assistant-pilot.json"
+    (evolution.RECEIPT_DIR / source.name).write_text(source.read_text())
+    creative = Path(__file__).resolve().parents[3] / "reports/product_evolution/creative-studio-pilot.json"
+    (evolution.RECEIPT_DIR / creative.name).write_text(creative.read_text())
+    for text in ("Nexus, why is the Voice mission queued?", "Nexus, has the runtime picked it up?", "Nexus, check the Creative mission.", "Nexus, report only. Do not start another mission."):
+        response, metadata = hermes.handle_command(text, chat_id=77)
+        assert metadata["route"] == "PRODUCT_EVOLUTION_DIAGNOSTIC"
+        assert "Product Evolution mission diagnostic" in response
+    assert len(list(evolution.RECEIPT_DIR.glob("*.json"))) == 2
+
+
+def test_queue_consumer_claim_is_idempotent_and_truthful(tmp_path, monkeypatch):
+    from nexus_product_evolution.consumer import consume_queued_missions
+    monkeypatch.setattr("nexus_product_evolution.consumer.LOCK_PATH", tmp_path / "dispatch.lock")
+    receipt_dir = tmp_path / "product_evolution"
+    receipt_dir.mkdir(parents=True)
+    receipt = {"contract": {"goal": "bounded fixture"}, "result": {"mission_id": "telegram-20260824172054-077bf5a7", "status": "QUEUED", "current_stage": "QUEUED", "dispatch": {}}}
+    (receipt_dir / "telegram-20260824172054-077bf5a7.json").write_text(json.dumps(receipt))
+    first = consume_queued_missions(scheduler_instance="test", receipt_dir=receipt_dir)
+    second = consume_queued_missions(scheduler_instance="test", receipt_dir=receipt_dir)
+    assert first["claimed"][0]["status"] == "RUNNING"
+    assert first["blocked"][0]["reason"] == "EXECUTION_ADAPTER_MISSING"
+    assert second["claimed"] == []
+    assert json.loads((receipt_dir / "telegram-20260824172054-077bf5a7.json").read_text())["result"]["status"] == "BLOCKED"

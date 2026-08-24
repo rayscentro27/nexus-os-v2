@@ -184,6 +184,8 @@ def _context_key(chat_id: Optional[int]) -> str:
 
 
 def _load_chat_context(chat_id: Optional[int]) -> Dict[str, Any]:
+    if chat_id is None:
+        return {}
     value = load_json(PRODUCT_EVOLUTION_CONTEXT_PATH, {})
     if not isinstance(value, dict):
         return {}
@@ -197,11 +199,14 @@ def _load_chat_context(chat_id: Optional[int]) -> Dict[str, Any]:
     return item if 0 <= age <= PRODUCT_EVOLUTION_CONTEXT_TTL else {}
 
 
-def _save_chat_context(chat_id: Optional[int], route: str, topic: str = "product_evolution") -> None:
+def _save_chat_context(chat_id: Optional[int], route: str, topic: str = "product_evolution", mission_id: Optional[str] = None) -> None:
+    if chat_id is None:
+        return
     value = load_json(PRODUCT_EVOLUTION_CONTEXT_PATH, {})
     if not isinstance(value, dict):
         value = {}
-    value[_context_key(chat_id)] = {"last_route": route, "last_topic": topic, "last_updated": utc_now()}
+    prior = value.get(_context_key(chat_id)) if isinstance(value.get(_context_key(chat_id)), dict) else {}
+    value[_context_key(chat_id)] = {"last_route": route, "last_topic": topic, "last_updated": utc_now(), "last_mission_id": mission_id or prior.get("last_mission_id")}
     write_json(PRODUCT_EVOLUTION_CONTEXT_PATH, value)
 
 
@@ -296,14 +301,15 @@ def handle_command(text: str, *, chat_id: Optional[int] = None) -> tuple[str, Di
     route = classify(text)
     lowered = text.lower()
     try:
-        from nexus_product_evolution.telegram_control import control_request, handle_product_evolution_intake, is_product_evolution_intent, is_unsafe_product_evolution_request
+        from nexus_product_evolution.telegram_control import classify_product_evolution_request, handle_product_evolution_intake
         recent = _load_chat_context(chat_id)
         contextual_blocked = bool(re.fullmatch(r"(?:nexus[, :\-]*)?\s*what(?: is|'s) blocked\??", lowered.strip())) and recent.get("last_topic") == "product_evolution"
-        product_control_language = bool(re.search(r"\bproduct evolution\b|\bcreative studio\b|\bvoice product evolution\b|\bclient portal\b|\badmin navigation\b", lowered))
-        if (is_unsafe_product_evolution_request(text) and product_control_language) or is_product_evolution_intent(text) or control_request(text) is not None or contextual_blocked:
-            evolution = handle_product_evolution_intake(text if not contextual_blocked else "Product Evolution: what is blocked?")
+        contextual_diagnostic = bool(re.search(r"\b(?:picked|runtime|dispatcher|queued|waiting|started|execution)\b", lowered)) and recent.get("last_topic") == "product_evolution"
+        classification = classify_product_evolution_request(text, context_mission_id=recent.get("last_mission_id"))
+        if classification != "CLARIFICATION" or contextual_blocked or contextual_diagnostic:
+            evolution = handle_product_evolution_intake(text if not contextual_blocked else "Product Evolution: what is blocked?", context_mission_id=recent.get("last_mission_id"))
             if evolution.get("handled"):
-                _save_chat_context(chat_id, evolution.get("route", "PRODUCT_EVOLUTION"))
+                _save_chat_context(chat_id, evolution.get("route", "PRODUCT_EVOLUTION"), mission_id=evolution.get("mission_id"))
                 metadata = {"route": evolution.get("route"), "outcome": evolution.get("status"), "product_evolution": evolution}
                 if evolution.get("mission_id"):
                     metadata["mission_id"] = evolution["mission_id"]
@@ -419,6 +425,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                     registered = dispatch_product_evolution_mission(MissionContract(**contract_data))
                     response_text = f"🧠 Nexus Product Evolution started\n\nMission: {registered['mission_id']}\nGoal: {(evolution.get('contract') or {}).get('goal', 'Product experience improvement')}\n\nQueued for the existing governed Product Evolution runtime. I will only interrupt you for a true blocker."
                     metadata.update({"product_evolution_started": True, "mission_id": registered["mission_id"], "mission_status": registered["status"], "receipt_path": registered["receipt_path"]})
+                    _save_chat_context(chat_id, "PRODUCT_EVOLUTION", mission_id=registered["mission_id"])
             except Exception as exc:
                 response_text = "Product Evolution was not started because its bounded runner failed safely."
                 metadata["product_evolution_error"] = type(exc).__name__
