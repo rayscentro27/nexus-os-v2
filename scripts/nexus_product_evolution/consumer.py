@@ -14,6 +14,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
+from .adapters.registry import default_registry
+from .loop import MissionContract
+
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
 LOCK_PATH = ROOT / "data/runtime/product_evolution_dispatch.lock"
@@ -49,13 +52,27 @@ def _claim(path: Path, scheduler_instance: str) -> Dict[str, Any]:
     return {"mission_id": result.get("mission_id"), "status": "RUNNING", "claimed": True, "receipt_path": str(path)}
 
 
-def consume_queued_missions(*, scheduler_instance: str, receipt_dir: Path = RECEIPT_DIR) -> Dict[str, Any]:
-    """Claim each queued mission once during an existing governed dispatch.
+def resume_mission(mission_id: str, *, reason: str = "bounded execution adapter registered") -> Dict[str, Any]:
+    """Resume the same blocked receipt without creating a descendant mission."""
+    path = RECEIPT_DIR / f"{mission_id}.json"
+    if not path.exists():
+        return {"status": "NOT_FOUND", "mission_id": mission_id}
+    value = json.loads(path.read_text(encoding="utf-8"))
+    result = value.get("result") or {}
+    if result.get("status") not in {"BLOCKED", "PARTIAL"}:
+        return {"status": result.get("status"), "mission_id": mission_id}
+    now = _now()
+    history = list(result.get("execution_history") or [])
+    history.append({"at": now, "event": "RESUME", "prior_status": result.get("status"), "prior_blocker": result.get("blocker"), "reason": reason})
+    result.update({"status": "QUEUED", "current_stage": "RESUMED", "blocker": None, "updated_at": now, "execution_history": history})
+    dispatch = result.get("dispatch") or {}
+    result["dispatch"] = {**dispatch, "resume_requested_at": now, "resume_reason": reason}
+    _write(path, {**value, "result": result})
+    return {"status": "QUEUED", "mission_id": mission_id, "receipt_path": str(path)}
 
-    No arbitrary mission execution is inferred from a Telegram contract. A
-    claimed mission is marked BLOCKED until a bounded surface-specific adapter
-    is explicitly registered; this prevents silent indefinite RUNNING state.
-    """
+
+def consume_queued_missions(*, scheduler_instance: str, receipt_dir: Path = RECEIPT_DIR) -> Dict[str, Any]:
+    """Claim and execute each queued mission through an explicit adapter."""
     receipt_dir.mkdir(parents=True, exist_ok=True)
     claimed: List[Dict[str, Any]] = []
     blocked: List[Dict[str, Any]] = []
@@ -76,10 +93,29 @@ def consume_queued_missions(*, scheduler_instance: str, receipt_dir: Path = RECE
             value = json.loads(path.read_text(encoding="utf-8"))
             result = value.get("result") or {}
             now = _now()
-            result.update({"status": "BLOCKED", "current_stage": "DISPATCH_CLAIMED", "blocker": "EXECUTION_ADAPTER_MISSING", "updated_at": now})
+            history = list(result.get("execution_history") or [])
+            history.append({"at": now, "event": "CLAIM", "status": "RUNNING", "scheduler_instance": scheduler_instance})
+            try:
+                contract = MissionContract(**(value.get("contract") or {}))
+                adapter = default_registry().resolve(contract)
+            except (TypeError, ValueError):
+                contract = None
+                adapter = None
+            if adapter is None:
+                result.update({"status": "BLOCKED", "current_stage": "DISPATCH_CLAIMED", "blocker": "EXECUTION_ADAPTER_MISSING", "updated_at": now, "execution_history": history})
+                dispatch = result.get("dispatch") or {}
+                result["dispatch"] = {**dispatch, "last_dispatch_observation": "Claimed by canonical Phase 15 dispatcher; no bounded Product Evolution execution adapter is registered."}
+                _write(path, {**value, "result": result})
+                blocked.append({"mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": result["blocker"]})
+                continue
+            execution = adapter.execute(str(result.get("mission_id")), contract)
+            final_status = str(execution.get("status") or "FAIL")
+            history.append({"at": _now(), "event": "ADAPTER_EXECUTION", "adapter_id": adapter.adapter_id, "status": final_status, "blocker": execution.get("blocker")})
+            result.update({"status": final_status, "current_stage": "HUMAN_GATE" if final_status == "PARTIAL" else "COMPLETE", "blocker": execution.get("blocker"), "updated_at": _now(), "execution": execution, "execution_history": history})
             dispatch = result.get("dispatch") or {}
-            result["dispatch"] = {**dispatch, "last_dispatch_observation": "Claimed by canonical Phase 15 dispatcher; no bounded Product Evolution execution adapter is registered."}
+            result["dispatch"] = {**dispatch, "adapter_id": adapter.adapter_id, "last_dispatch_observation": "Adapter executed by canonical Phase 15 dispatcher."}
             _write(path, {**value, "result": result})
-            blocked.append({"mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": result["blocker"]})
+            if final_status in {"BLOCKED", "FAIL"}:
+                blocked.append({"mission_id": result.get("mission_id"), "status": final_status, "reason": execution.get("blocker") or "ADAPTER_EXECUTION_FAILED"})
         fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
     return {"consumer": "phase15_product_evolution_dispatch", "status": "COMPLETED", "claimed": claimed, "blocked": blocked}

@@ -461,7 +461,7 @@ class CodingWorker:
         return {"status": "not_supported", "worker_id": self.worker_id}
 
 
-def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: str) -> CodingWorker:
+def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: str, execute_fn: Optional[Callable[[BuildTaskSpec], Dict[str, Any]]] = None) -> CodingWorker:
     path = shutil.which(name)
     health = _probe_cli_worker(name, path, execution_timeout=30 if name == "opencode" else 12)
     installed = bool(health["installed"])
@@ -494,6 +494,7 @@ def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: s
             "version_probe": health["version_probe"],
             "execution_probe": health["execution_probe"],
         },
+        execute_fn=execute_fn,
     )
 
 
@@ -576,9 +577,13 @@ def _local_python_worker() -> CodingWorker:
 
 
 def build_coding_worker_registry() -> List[CodingWorker]:
+    # The Product Evolution bridge owns the fixed Codex invocation. Import it
+    # lazily so the provider-neutral Builder remains independently importable.
+    from nexus_product_evolution.adapters.builder_adapter import codex_execute
+
     workers = [
         _cli_worker("opencode", cost_class="ZERO_MODEL_COST", worker_type="cli", display_name="OpenCode CLI"),
-        _cli_worker("codex", cost_class="ZERO_MODEL_COST", worker_type="cli", display_name="Codex CLI"),
+        _cli_worker("codex", cost_class="ZERO_MODEL_COST", worker_type="cli", display_name="Codex CLI", execute_fn=codex_execute),
         _cli_worker("mimo", cost_class="LOW_EXTERNAL_COST", worker_type="cli", display_name="MiMo CLI"),
         _local_python_worker(),
     ]
