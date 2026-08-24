@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
+from datetime import datetime, timezone
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional
@@ -17,6 +19,7 @@ from .loop import FailureClass, MissionContract, ProductEvolutionLoop, Stage
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
+CONTEXT_TTL_SECONDS = 10 * 60
 MAX_TELEGRAM_RETRIES = 2
 
 UNSAFE_PATTERNS = (
@@ -37,7 +40,7 @@ def is_product_evolution_intent(text: str) -> bool:
     lowered = _compact(text).lower()
     if any(re.search(pattern, lowered) for pattern in UNSAFE_PATTERNS):
         return False
-    return bool(re.search(r"\b(product evolution|run product evolution|improve|evolve|make .{2,} easier|make .{2,} better)\b", lowered))
+    return bool(re.search(r"\b(product evolution|run product evolution|improve|evolve|make .{2,} easier|make .{2,} better|continue (?:the existing )?(?:voice|creative|client|admin)|resume (?:the existing )?(?:voice|creative|client|admin))\b", lowered))
 
 
 def is_unsafe_product_evolution_request(text: str) -> bool:
@@ -147,6 +150,50 @@ def mission_receipts(limit: int = 5) -> list[Dict[str, Any]]:
     return records
 
 
+def _mission_id(record: Mapping[str, Any]) -> str:
+    return str((record.get("result") or {}).get("mission_id") or record.get("mission_id") or "")
+
+
+def _mission_status(record: Mapping[str, Any]) -> str:
+    return str((record.get("result") or {}).get("status") or record.get("status") or "UNKNOWN")
+
+
+def resolve_mission(text: str) -> Optional[Dict[str, Any]]:
+    """Resolve explicit ids, surfaces, and aliases without selecting unrelated work."""
+    normalized = _compact(text).lower()
+    records = list(_receipt_files())
+    wanted_id = re.search(r"\b(?:mission|run)\s+([a-z0-9][a-z0-9_-]{2,})\b", normalized)
+    if wanted_id:
+        for path in records:
+            value = json.loads(path.read_text(encoding="utf-8"))
+            if _mission_id(value).lower() == wanted_id.group(1):
+                value["receipt_path"] = str(path)
+                return value
+    aliases = {
+        "voice": ("voice", "voice-assistant", "microphone", "wake"),
+        "creative": ("creative", "creative studio", "visual"),
+        "client": ("client", "portal", "onboarding"),
+        "admin": ("admin", "navigation"),
+    }
+    key = next((name for name in aliases if re.search(rf"\b{name}\b", normalized)), None)
+    candidates = []
+    for path in records:
+        try:
+            value = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            continue
+        if _mission_status(value) in {"PASS", "FAIL", "CANCELLED"} and not re.search(r"\b(?:continue|resume|stop|cancel)\b", normalized):
+            continue
+        contract = value.get("contract") or {}
+        haystack = f"{contract.get('goal', '')} {contract.get('user_visible_outcome', '')} {_mission_id(value)}".lower()
+        if key and any(alias in haystack for alias in aliases[key]):
+            value["receipt_path"] = str(path)
+            candidates.append(value)
+    if len(candidates) == 1:
+        return candidates[0]
+    return candidates[0] if candidates else None
+
+
 def status_text() -> str:
     records = mission_receipts()
     if not records:
@@ -159,12 +206,37 @@ def status_text() -> str:
     return "\n".join(lines)
 
 
+def blockers_text() -> str:
+    records = mission_receipts(limit=20)
+    lines = ["Product Evolution blockers"]
+    found = False
+    for record in records:
+        status = _mission_status(record)
+        if status not in {"PARTIAL", "BLOCKED"}:
+            continue
+        found = True
+        contract = record.get("contract") or {}
+        result = record.get("result") or {}
+        lines.append(f"\n{_mission_id(record) or contract.get('goal', 'Unknown surface')}: {status}")
+        failures = result.get("failures") or []
+        gates = contract.get("human_only_gates") or []
+        if failures:
+            for failure in failures[-3:]:
+                lines.append(f"- {failure.get('error') or failure.get('class') or 'Recorded blocker'}")
+        elif gates:
+            for gate in gates:
+                lines.append(f"- Human gate: {gate}")
+        else:
+            lines.append("- Blocker recorded in the mission receipt; details unavailable.")
+    return "\n".join(lines) if found else "Product Evolution blockers\n\nNo PARTIAL or BLOCKED Product Evolution missions recorded."
+
+
 def control_request(text: str) -> Optional[str]:
     lowered = _compact(text).lower()
     if re.search(r"\b(improve|evolve|run product evolution|make .{2,} easier|make .{2,} better)\b", lowered):
         return None
-    if re.search(r"\b(product evolution|creative studio|voice mission)\b", lowered) and re.search(r"\b(status|working on|finish|blocked|stop|cancel|continue|resume)\b", lowered):
-        return "status" if re.search(r"\b(status|working on|finish|blocked|why)", lowered) else "cancel" if re.search(r"\b(stop|cancel)", lowered) else "resume"
+    if re.search(r"\b(product evolution|creative(?: studio)?|voice|client portal|admin)\b", lowered) and re.search(r"\b(status|working on|doing|finish|blocked|stop|cancel|continue|resume)", lowered):
+        return "blocked" if re.search(r"\bblocked\b", lowered) else "status" if re.search(r"\b(status|working on|doing|finish|why)\b", lowered) else "cancel" if re.search(r"\b(stop|cancel)\b", lowered) else "resume"
     return None
 
 
@@ -192,6 +264,7 @@ def mark_control(mission_id: str, action: str, evidence: str = "") -> Dict[str, 
             result["control_result"] = "REJECTED_NOT_RESUMABLE"
             return result
         result["control"] = {"action": action, "evidence": _compact(evidence), "recorded_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()}
+        result["updated_at"] = datetime.now(timezone.utc).isoformat()
         value["result"] = result
         path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return result
@@ -205,21 +278,57 @@ def handle_product_evolution_intake(text: str) -> Dict[str, Any]:
     request = control_request(text)
     if request == "status":
         return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_STATUS", "response": status_text()}
+    if request == "blocked":
+        return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_BLOCKERS", "response": blockers_text()}
     if request in {"cancel", "resume"}:
-        mission_id = re.search(r"\b(?:mission|run)\s+([a-z0-9_-]+)\b", _compact(text), re.I)
-        mission_id = mission_id.group(1) if mission_id else _latest_mission_id()
+        resolved = resolve_mission(text)
+        mission_id = _mission_id(resolved) if resolved else None
         if not mission_id:
             return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_CONTROL", "response": f"No Product Evolution mission receipt is available to {request}."}
         result = mark_control(mission_id, request, "Telegram control request")
         if result.get("status") == "NOT_FOUND":
             return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_CONTROL", "response": f"Product Evolution mission {mission_id} was not found."}
-        return {"handled": True, "status": "CONTROL_RECORDED", "route": "PRODUCT_EVOLUTION_CONTROL", "response": f"Product Evolution mission {mission_id}: {request} recorded. Existing work is not undone automatically."}
+        if request == "resume":
+            contract = (resolved or {}).get("contract") or {}
+            gates = contract.get("human_only_gates") or []
+            gate = gates[0] if gates else "the next governed Product Evolution checkpoint"
+            return {"handled": True, "status": "CONTROL_RECORDED", "route": "PRODUCT_EVOLUTION_CONTROL", "mission_id": mission_id, "response": f"Continuing the Product Evolution mission {mission_id} from its existing {_mission_status(resolved)} lineage. Current human gate: {gate}."}
+        return {"handled": True, "status": "CONTROL_RECORDED", "route": "PRODUCT_EVOLUTION_CONTROL", "mission_id": mission_id, "response": f"Product Evolution mission {mission_id}: {request} recorded."}
     if not is_product_evolution_intent(text):
         return {"handled": False}
     contract = build_mission_contract(text)
-    if "status reporting" in text.lower() or "mobile reporting" in text.lower():
+    if re.search(r"status reporting|mobile reporting|mobile status", text, re.I):
         contract = build_mission_contract(text, max_cycles=2)
     return {"handled": True, "status": "CONTRACT_READY", "route": "PRODUCT_EVOLUTION", "contract": asdict(contract), "response": f"Product Evolution contract ready for {contract.goal}. Bounded cycles: {contract.max_cycles}. Existing governance, approvals, and agent boundaries remain unchanged."}
+
+
+def register_mission(contract: MissionContract, *, mission_id: Optional[str] = None, parent_mission_id: Optional[str] = None) -> Dict[str, Any]:
+    """Register a bounded mission in the existing receipt lineage for governed dispatch."""
+    mission_id = mission_id or f"telegram-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:8]}"
+    path = RECEIPT_DIR / f"{mission_id}.json"
+    now = datetime.now(timezone.utc).isoformat()
+    payload = {"contract": asdict(contract), "created_at": now, "result": {
+        "mission_id": mission_id, "status": "QUEUED", "surface": _surface(contract.goal), "goal": contract.goal,
+        "created_at": now, "updated_at": now, "cycle": 0, "current_stage": "QUEUED", "blocker": None,
+        "parent_mission_id": parent_mission_id, "receipt_refs": [], "stages": [], "failures": [], "critic": {}, "receipt_path": str(path),
+        "dispatch": {"requested_by": "hermes_telegram", "governed": True, "background": True},
+    }}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return {"mission_id": mission_id, "status": "QUEUED", "receipt_path": str(path)}
+
+
+def dispatch_product_evolution_mission(contract: MissionContract, *, mission_id: Optional[str] = None, parent_mission_id: Optional[str] = None) -> Dict[str, Any]:
+    """Bridge Telegram outcome into the existing governed/background runtime.
+
+    Registration is deliberately quick: the polling worker never owns the
+    long-running build. The receipt is the handoff consumed by the existing
+    operator/loop dispatch, and remains truthful until that dispatcher changes
+    the state to RUNNING.
+    """
+    registered = register_mission(contract, mission_id=mission_id, parent_mission_id=parent_mission_id)
+    registered["dispatch"] = "GOVERNED_BACKGROUND_QUEUED"
+    return registered
 
 
 def run_safe_mobile_reporting_mission(contract: MissionContract, reporter: ProductEvolutionReporter) -> Dict[str, Any]:

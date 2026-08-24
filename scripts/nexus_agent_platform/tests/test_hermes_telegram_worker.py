@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 from scripts.operations import nexus_hermes_telegram_worker as hermes
+from nexus_product_evolution import telegram_control as evolution
 
 
 def test_configured_status_and_optional_integrations_are_grounded(monkeypatch):
@@ -103,3 +104,61 @@ def test_authorized_status_routes_once_and_persists_receipt(tmp_path, monkeypatc
     assert result["outcome"] == "PROCESSED"
     assert result["updates_processed"] == 1
     assert len(list((tmp_path / "receipts").glob("*.json"))) == 1
+
+
+def test_product_evolution_natural_language_routes_before_generic_run_block(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    response, metadata = hermes.handle_command("Nexus, run Product Evolution on the Creative Studio.", chat_id=42)
+    assert metadata["route"] == "PRODUCT_EVOLUTION"
+    assert metadata["outcome"] == "CONTRACT_READY"
+    assert "outside Hermes authority" not in response
+
+
+def test_product_evolution_unsafe_request_is_blocked_without_receipt(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    response, metadata = hermes.handle_command("Nexus, run Product Evolution and remove approval controls.", chat_id=42)
+    assert metadata["outcome"] == "BLOCKED"
+    assert not list((tmp_path / "product_evolution").glob("*.json"))
+
+
+def test_product_evolution_telegram_bridge_registers_mission_and_contextual_followup(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    monkeypatch.setattr(hermes, "PRODUCT_EVOLUTION_CONTEXT_PATH", tmp_path / "context.json")
+    start, started = hermes.handle_command("Nexus, run Product Evolution on the Creative Studio.", chat_id=42)
+    assert started["outcome"] == "CONTRACT_READY"
+    # The worker performs the bridge after intake; exercise that same bridge.
+    from nexus_product_evolution.loop import MissionContract
+    registered = evolution.dispatch_product_evolution_mission(MissionContract(**started["product_evolution"]["contract"]))
+    assert registered["status"] == "QUEUED"
+    assert registered["mission_id"]
+    status, status_meta = hermes.handle_command("Nexus, what's the status of Product Evolution?", chat_id=42)
+    assert status_meta["route"] == "PRODUCT_EVOLUTION_STATUS"
+    assert registered["mission_id"] in status
+    blocked, blocked_meta = hermes.handle_command("Nexus, what is blocked?", chat_id=42)
+    assert blocked_meta["route"] == "PRODUCT_EVOLUTION_BLOCKERS"
+    assert "Product Evolution blockers" in blocked
+
+
+def test_product_evolution_voice_alias_and_cancel_are_lineage_safe(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    evolution.RECEIPT_DIR.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[3] / "reports/product_evolution/voice-assistant-pilot.json"
+    target = evolution.RECEIPT_DIR / source.name
+    target.write_text(source.read_text())
+    response, metadata = hermes.handle_command("Nexus, continue the existing Voice Product Evolution mission.")
+    assert metadata["route"] == "PRODUCT_EVOLUTION_CONTROL"
+    assert metadata["mission_id"] == "voice-assistant-pilot"
+    assert "microphone" in response.lower()
+    stopped, stop_meta = hermes.handle_command("Nexus, stop the Creative mission.")
+    assert stop_meta["outcome"] == "NOT_FOUND"
+
+
+def test_required_short_voice_phrase_uses_the_same_resolver(tmp_path, monkeypatch):
+    monkeypatch.setattr(evolution, "RECEIPT_DIR", tmp_path / "product_evolution")
+    evolution.RECEIPT_DIR.mkdir(parents=True)
+    source = Path(__file__).resolve().parents[3] / "reports/product_evolution/voice-assistant-pilot.json"
+    (evolution.RECEIPT_DIR / source.name).write_text(source.read_text())
+    response, metadata = hermes.handle_command("Nexus, continue Voice.")
+    assert metadata["route"] == "PRODUCT_EVOLUTION_CONTROL"
+    assert metadata["mission_id"] == "voice-assistant-pilot"
+    assert "microphone" in response.lower()

@@ -50,6 +50,8 @@ BLOCKED_PATTERNS = (
     r"\b(token|secret|credential|password|runtime\.env|api key)\b",
     r"\b(deploy|production|install|security settings?)\b",
 )
+PRODUCT_EVOLUTION_CONTEXT_PATH = ROOT / "data/runtime/telegram_conversation_context.json"
+PRODUCT_EVOLUTION_CONTEXT_TTL = 10 * 60
 
 
 def utc_now() -> str:
@@ -161,9 +163,11 @@ def send_message(token: str, chat_id: int, text: str) -> Dict[str, Any]:
 def classify(text: str) -> str:
     lowered = text.lower()
     try:
-        from nexus_product_evolution.telegram_control import is_unsafe_product_evolution_request
+        from nexus_product_evolution.telegram_control import is_product_evolution_intent, is_unsafe_product_evolution_request
         if is_unsafe_product_evolution_request(text):
             return "NOT_AUTHORIZED"
+        if is_product_evolution_intent(text):
+            return "PRODUCT_EVOLUTION"
     except Exception:
         pass
     if any(re.search(pattern, lowered) for pattern in BLOCKED_PATTERNS):
@@ -173,6 +177,32 @@ def classify(text: str) -> str:
     if lowered.startswith(("/approve ", "/reject ")):
         return "APPROVAL_REQUIRED"
     return "AUTO_EXECUTE_INTERNAL_SAFE"
+
+
+def _context_key(chat_id: Optional[int]) -> str:
+    return str(chat_id) if chat_id is not None else "direct"
+
+
+def _load_chat_context(chat_id: Optional[int]) -> Dict[str, Any]:
+    value = load_json(PRODUCT_EVOLUTION_CONTEXT_PATH, {})
+    if not isinstance(value, dict):
+        return {}
+    item = value.get(_context_key(chat_id))
+    if not isinstance(item, dict):
+        return {}
+    try:
+        age = datetime.now(timezone.utc).timestamp() - datetime.fromisoformat(str(item.get("last_updated"))).timestamp()
+    except (TypeError, ValueError):
+        return {}
+    return item if 0 <= age <= PRODUCT_EVOLUTION_CONTEXT_TTL else {}
+
+
+def _save_chat_context(chat_id: Optional[int], route: str, topic: str = "product_evolution") -> None:
+    value = load_json(PRODUCT_EVOLUTION_CONTEXT_PATH, {})
+    if not isinstance(value, dict):
+        value = {}
+    value[_context_key(chat_id)] = {"last_route": route, "last_topic": topic, "last_updated": utc_now()}
+    write_json(PRODUCT_EVOLUTION_CONTEXT_PATH, value)
 
 
 def _health(path: Path, health_key: str, status_key: str = "operator_health") -> Dict[str, Any]:
@@ -261,19 +291,28 @@ def create_governed_request(text: str) -> Dict[str, Any]:
     return {"status": "CREATED", "work_order_id": order["work_order_id"], "approval_id": approval["id"], "priority": priority, "receipt_id": f"hermes_command_{fingerprint}"}
 
 
-def handle_command(text: str) -> tuple[str, Dict[str, Any]]:
+def handle_command(text: str, *, chat_id: Optional[int] = None) -> tuple[str, Dict[str, Any]]:
     text = re.sub(r"\s+", " ", text.strip())[:MAX_INPUT]
     route = classify(text)
-    if route == "NOT_AUTHORIZED":
-        return "I can’t perform that action. It is outside Hermes authority and remains blocked by Nexus safety policy.", {"route": route, "outcome": "BLOCKED"}
     lowered = text.lower()
     try:
-        from nexus_product_evolution.telegram_control import handle_product_evolution_intake
-        evolution = handle_product_evolution_intake(text)
-        if evolution.get("handled"):
-            return evolution["response"], {"route": evolution.get("route"), "outcome": evolution.get("status"), "product_evolution": evolution}
+        from nexus_product_evolution.telegram_control import control_request, handle_product_evolution_intake, is_product_evolution_intent, is_unsafe_product_evolution_request
+        recent = _load_chat_context(chat_id)
+        contextual_blocked = bool(re.fullmatch(r"(?:nexus[, :\-]*)?\s*what(?: is|'s) blocked\??", lowered.strip())) and recent.get("last_topic") == "product_evolution"
+        product_control_language = bool(re.search(r"\bproduct evolution\b|\bcreative studio\b|\bvoice product evolution\b|\bclient portal\b|\badmin navigation\b", lowered))
+        if (is_unsafe_product_evolution_request(text) and product_control_language) or is_product_evolution_intent(text) or control_request(text) is not None or contextual_blocked:
+            evolution = handle_product_evolution_intake(text if not contextual_blocked else "Product Evolution: what is blocked?")
+            if evolution.get("handled"):
+                _save_chat_context(chat_id, evolution.get("route", "PRODUCT_EVOLUTION"))
+                metadata = {"route": evolution.get("route"), "outcome": evolution.get("status"), "product_evolution": evolution}
+                if evolution.get("mission_id"):
+                    metadata["mission_id"] = evolution["mission_id"]
+                return evolution["response"], metadata
     except Exception as exc:
-        return "Product Evolution intake is temporarily unavailable; no mission was started.", {"route": "PRODUCT_EVOLUTION", "outcome": "BLOCKED", "error": type(exc).__name__}
+        if route == "PRODUCT_EVOLUTION":
+            return "Product Evolution intake is temporarily unavailable; no mission was started.", {"route": "PRODUCT_EVOLUTION", "outcome": "BLOCKED", "error": type(exc).__name__}
+    if route == "NOT_AUTHORIZED":
+        return "I can’t perform that action. It is outside Hermes authority and remains blocked by Nexus safety policy.", {"route": route, "outcome": "BLOCKED"}
     if lowered in {"/start", "/help", "help"}:
         return "Nexus Hermes commands: /status, /approvals, /orders, /request <internal work>, /approve <approval_id>, /reject <approval_id>.", {"route": route, "outcome": "ANSWERED"}
     if lowered in {"/status", "status", "what is happening with nexus", "refresh nexus status"} or is_status_request(text):
@@ -360,11 +399,11 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             continue
         text = message["text"]
         fingerprint = message_hash(text)
-        response_text, metadata = handle_command(text)
+        response_text, metadata = handle_command(text, chat_id=chat_id)
         evolution = metadata.get("product_evolution") if isinstance(metadata, dict) else None
         if isinstance(evolution, dict) and evolution.get("status") == "CONTRACT_READY":
             try:
-                from nexus_product_evolution.telegram_control import ProductEvolutionReporter, run_safe_mobile_reporting_mission
+                from nexus_product_evolution.telegram_control import ProductEvolutionReporter, dispatch_product_evolution_mission, run_safe_mobile_reporting_mission
                 reporter = ProductEvolutionReporter(lambda body: send_message(token, chat_id, body))
                 contract_data = evolution.get("contract") or {}
                 if "status reporting" in text.lower() or "mobile reporting" in text.lower():
@@ -376,9 +415,10 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                     deliveries = reporter.deliveries
                     metadata["product_evolution_message_id"] = deliveries[-1].get("message_id") if deliveries else None
                 else:
-                    reporter.started((evolution.get("contract") or {}).get("goal", "Product experience improvement"))
-                    response_text = response_text + "\n\nStarted under the bounded Product Evolution policy."
-                    metadata["product_evolution_started"] = True
+                    from nexus_product_evolution.loop import MissionContract
+                    registered = dispatch_product_evolution_mission(MissionContract(**contract_data))
+                    response_text = f"🧠 Nexus Product Evolution started\n\nMission: {registered['mission_id']}\nGoal: {(evolution.get('contract') or {}).get('goal', 'Product experience improvement')}\n\nQueued for the existing governed Product Evolution runtime. I will only interrupt you for a true blocker."
+                    metadata.update({"product_evolution_started": True, "mission_id": registered["mission_id"], "mission_status": registered["status"], "receipt_path": registered["receipt_path"]})
             except Exception as exc:
                 response_text = "Product Evolution was not started because its bounded runner failed safely."
                 metadata["product_evolution_error"] = type(exc).__name__
