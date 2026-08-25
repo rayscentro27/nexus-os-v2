@@ -180,6 +180,15 @@ def parse_release_approval(text: str) -> Optional[dict[str, str]]:
     return {"release_id": release_id, "commit": sha.group(1).lower() if sha else "", "target": target.group(0).rstrip(".,)") if target else ""}
 
 
+def parse_release_retry_authorization(text: str) -> Optional[dict[str, str]]:
+    match = re.search(r"\bAUTHORIZE\s+RELEASE\s+RETRY\s+(rel-[a-z0-9-]+)\b", text, re.I)
+    if not match:
+        return None
+    sha = re.search(r"\b([0-9a-f]{40})\b", text, re.I)
+    target = re.search(r"https://[a-z0-9.-]+(?:/[^\s]*)?", text, re.I)
+    return {"release_id": match.group(1), "commit": sha.group(1).lower() if sha else "", "target": target.group(0).rstrip(".,)") if target else ""}
+
+
 def approve_release(result: Mapping[str, Any], *, release_id: str, commit: str, target: str, approved_by: str = "RAY") -> Dict[str, Any]:
     package = result.get("release") or {}
     if not package or package.get("approval_state") != "AWAITING_RAY":
@@ -213,6 +222,48 @@ def approval_valid(result: Mapping[str, Any], *, release_id: str, commit: str, t
     if package.get("approval_fingerprint") != _fingerprint(release_id, commit, target, package.get("changed_paths") or []):
         return False, "MATERIAL_RELEASE_CHANGE"
     return True, "VALID"
+
+
+def authorize_release_retry(result: Mapping[str, Any], *, release_id: str, commit: str, target: str, current_production_deploy: str, preflight_status: str, auth_status: str, rollback_executable: str, authorized_by: str = "RAY", now: Optional[datetime] = None) -> Dict[str, Any]:
+    """Authorize exactly one post-failure retry without changing the payload."""
+    package = result.get("release") or {}
+    if package.get("second_retry_authorization"):
+        return {"status": "REJECTED", "reason": "RETRY_AUTHORIZATION_REPLAY"}
+    if result.get("status") != "BLOCKED" or result.get("current_stage") != "BLOCKED":
+        return {"status": "REJECTED", "reason": "RELEASE_NOT_BLOCKED"}
+    if (release_id, commit, target) != (package.get("release_id"), package.get("release_candidate_commit"), package.get("target_url")):
+        return {"status": "REJECTED", "reason": "RETRY_RELEASE_BINDING_MISMATCH"}
+    if package.get("approval_state") != "APPROVED":
+        return {"status": "REJECTED", "reason": "APPROVAL_REQUIRED"}
+    if int(package.get("retry_count") or 0) != 1:
+        return {"status": "REJECTED", "reason": "SECOND_RETRY_REQUIRES_ONE_PRIOR_RETRY"}
+    if current_production_deploy != package.get("rollback_deploy_id"):
+        return {"status": "REJECTED", "reason": "PRODUCTION_STATE_MISMATCH"}
+    if preflight_status != "PASS":
+        return {"status": "REJECTED", "reason": "PREFLIGHT_REQUIRED"}
+    if auth_status != "PASS":
+        return {"status": "REJECTED", "reason": "NETLIFY_AUTH_REQUIRED"}
+    if rollback_executable != "PASS":
+        return {"status": "REJECTED", "reason": "ROLLBACK_REQUIRED"}
+    valid, reason = approval_valid(result, release_id=release_id, commit=commit, target=target, now=now)
+    if not valid:
+        return {"status": "REJECTED", "reason": reason}
+    recorded_at = (now or datetime.now(timezone.utc)).isoformat()
+    updated = dict(result)
+    package = dict(package)
+    package["second_retry_authorization"] = {
+        "status": "PENDING", "attempt_number": 2, "release_id": release_id,
+        "candidate_commit": commit, "target": target,
+        "current_production_deploy": current_production_deploy,
+        "known_blocker": result.get("blocker") or (package.get("deployment_result") or {}).get("reason") or "UNKNOWN",
+        "authorized_by": authorized_by, "authorized_at": recorded_at,
+        "expires_at": package.get("approval_expires_at"),
+    }
+    updated["release"] = package
+    updated["current_stage"] = "APPROVED_RELEASE_PENDING_DEPLOYMENT"
+    updated["status"] = "QUEUED"
+    updated = append_release_event(updated, "SECOND_RETRY_AUTHORIZED", release_id=release_id, candidate=commit, target=target, attempt_number=2, authorized_by=authorized_by, authorized_at=recorded_at)
+    return {"status": "AUTHORIZED", "result": updated, "release_id": release_id, "attempt_number": 2}
 
 
 def repair_approved_release_binding(result: Mapping[str, Any]) -> Dict[str, Any]:

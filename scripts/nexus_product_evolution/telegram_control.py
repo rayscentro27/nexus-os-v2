@@ -17,8 +17,9 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional
 
 from .loop import FailureClass, MissionContract, ProductEvolutionLoop, Stage
-from .deployment import deployment_response, inspect_deployment
-from .release import approve_release, create_release_candidate, parse_release_approval, prepare_release
+from .deployment import deployment_response, inspect_deployment, inspect_netlify_control_plane
+from .netlify_adapter import exact_sha_netlify_status, preflight_exact_sha
+from .release import approve_release, authorize_release_retry, create_release_candidate, parse_release_approval, parse_release_retry_authorization, prepare_release
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
@@ -583,11 +584,15 @@ def _deployment_operation(text: str) -> Optional[str]:
 
 def classify_product_evolution_request_metadata(text: str, *, context_mission_id: Optional[str] = None) -> Dict[str, Any]:
     """Classify requested action separately from subject matter."""
-    pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(context_mission_id) or bool(_deployment_operation(text)) or human_evidence_intent(text)
+    pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(exact_release_id(text)) or bool(context_mission_id) or bool(_deployment_operation(text)) or human_evidence_intent(text)
     mission_id = exact_mission_id(text) or context_mission_id
     metadata = {"subject": _surface(text), "operation": "CLARIFICATION", "mission_id": mission_id, "release_id": exact_release_id(text), "no_create": explicit_no_create(text), "human_evidence_outcome": _human_outcome(text)}
     if parse_release_approval(text):
         metadata["operation"] = "RELEASE_APPROVAL"
+        metadata["no_create"] = True
+        return metadata
+    if parse_release_retry_authorization(text):
+        metadata["operation"] = "RELEASE_RETRY_AUTHORIZATION"
         metadata["no_create"] = True
         return metadata
     if not pe_signal:
@@ -710,6 +715,22 @@ def handle_product_evolution_intake(text: str, *, context_mission_id: Optional[s
     classification = classify_product_evolution_request(text, context_mission_id=context_mission_id)
     if classification == "UNSAFE":
         return {"handled": True, "status": "BLOCKED", "route": "PRODUCT_EVOLUTION", "response": "Product Evolution cannot change security, authority, payments, approvals, credentials, or client-data boundaries."}
+    if classification == "RELEASE_RETRY_AUTHORIZATION":
+        request = parse_release_retry_authorization(text) or {}
+        resolved, resolution_error = _resolve_release_or_mission(text, context_mission_id)
+        if resolution_error or not resolved:
+            return {"handled": True, "status": "REJECTED", "route": "PRODUCT_EVOLUTION_RELEASE_RETRY_AUTHORIZATION", "reason": resolution_error or "RELEASE_NOT_FOUND", "response": resolution_error or "No existing Product Evolution release was found."}
+        result = resolved.get("result") or {}
+        package = result.get("release") or {}
+        auth = exact_sha_netlify_status()
+        preflight = preflight_exact_sha(request.get("commit", ""), request.get("target", ""))
+        netlify_truth = inspect_netlify_control_plane()
+        authorized = authorize_release_retry(result, release_id=request.get("release_id", ""), commit=request.get("commit", ""), target=request.get("target", ""), current_production_deploy=str(netlify_truth.get("published_deploy_id", "UNKNOWN")), preflight_status="PASS" if preflight.get("status") == "PASS" else "FAIL", auth_status="PASS" if auth.get("available") else "FAIL", rollback_executable=str(package.get("rollback_executable", "UNKNOWN")))
+        if authorized.get("status") != "AUTHORIZED":
+            return {"handled": True, "status": "REJECTED", "route": "PRODUCT_EVOLUTION_RELEASE_RETRY_AUTHORIZATION", "mission_id": _mission_id(resolved), "reason": authorized.get("reason"), "response": f"Release retry authorization rejected: {authorized.get('reason', 'invalid authorization')}"}
+        path = Path(str(resolved.get("receipt_path")))
+        _write_receipt(path, resolved, authorized["result"])
+        return {"handled": True, "status": "AUTHORIZED", "route": "PRODUCT_EVOLUTION_RELEASE_RETRY_AUTHORIZATION", "mission_id": _mission_id(resolved), "release_id": request.get("release_id"), "response": f"One bounded retry authorized for {request.get('release_id')} at the next canonical Phase 15 cycle. No deployment was performed."}
     if classification in {"RELEASE_INSPECTION", "DEPLOYMENT_INSPECTION", "DEPLOYMENT_RECONCILIATION"}:
         resolved, resolution_error = _resolve_release_or_mission(text, context_mission_id)
         if resolution_error:

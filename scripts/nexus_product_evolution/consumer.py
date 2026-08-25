@@ -62,7 +62,13 @@ def _dispatch_approved_release(path: Path, scheduler_instance: str, *, deploy_fn
     package = result.get("release") or {}
     if package.get("approval_state") != "APPROVED" or result.get("current_stage") != "APPROVED_RELEASE_PENDING_DEPLOYMENT":
         return {"claimed": False, "mission_id": result.get("mission_id"), "status": result.get("status")}
+    retry_count = int(package.get("retry_count") or 0)
+    retry_auth = package.get("second_retry_authorization") or {}
+    if retry_count >= 1 and retry_auth.get("status") != "PENDING":
+        return {"claimed": False, "mission_id": result.get("mission_id"), "status": result.get("status"), "reason": "RETRY_LIMIT_REACHED"}
     now = _now()
+    if retry_auth.get("status") == "PENDING":
+        package = {**package, "retry_count": retry_count + 1, "second_retry_authorization": {**retry_auth, "status": "CONSUMED", "consumed_at": now}}
     result = append_release_event(result, "RELEASE_DISPATCH_CLAIMED", release_id=package.get("release_id"), scheduler_instance=scheduler_instance)
     result["current_stage"] = "RELEASE_DISPATCH_CLAIMED"
     result["release"] = {**package, "dispatch_claimed_at": now, "dispatch_scheduler": scheduler_instance}

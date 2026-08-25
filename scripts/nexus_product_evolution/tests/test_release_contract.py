@@ -4,7 +4,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "scripts"))
 
-from nexus_product_evolution.release import approve_release, bounded_deploy, create_release_candidate, parse_release_approval, prepare_release, verify_or_rollback
+from nexus_product_evolution.release import approve_release, authorize_release_retry, bounded_deploy, create_release_candidate, parse_release_approval, parse_release_retry_authorization, prepare_release, repair_approved_release_binding, verify_or_rollback
 from nexus_product_evolution.telegram_control import classify_product_evolution_request
 
 
@@ -61,6 +61,34 @@ def test_approval_parser_and_verification_rollback():
 
 def test_telegram_release_approval_is_first_class():
     assert classify_product_evolution_request("APPROVE RELEASE rel-telegram-release-test-abcdef123456 0123456789abcdef0123456789abcdef01234567 https://goclearonline.cc") == "RELEASE_APPROVAL"
+
+
+def test_second_retry_requires_exact_ray_bound_authorization():
+    import subprocess
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    package = create_release_candidate({"result": _result()}, candidate_commit=commit)
+    package.update({"precheck_status": "PASS", "rollback_target": "deploy-known", "rollback_deploy_id": "deploy-known", "rollback_verified_url": "https://known-good.example", "rollback_executable": "PASS", "exact_sha_deploy_available": "PASS"})
+    approved = approve_release(prepare_release(_result(), package), release_id=package["release_id"], commit=commit, target=package["target_url"])
+    bound = repair_approved_release_binding(approved["result"])
+    blocked = dict(bound["result"])
+    blocked["release"] = {**blocked["release"], "retry_count": 1}
+    blocked.update({"status": "BLOCKED", "current_stage": "BLOCKED", "blocker": "NETLIFY_AUTH_UNAVAILABLE"})
+    authorized = authorize_release_retry(blocked, release_id=package["release_id"], commit=commit, target=package["target_url"], current_production_deploy="deploy-known", preflight_status="PASS", auth_status="PASS", rollback_executable="PASS", now=datetime.now(timezone.utc))
+    assert authorized["status"] == "AUTHORIZED"
+    assert authorized["result"]["release"]["second_retry_authorization"]["status"] == "PENDING"
+    replay = authorize_release_retry(authorized["result"], release_id=package["release_id"], commit=commit, target=package["target_url"], current_production_deploy="deploy-known", preflight_status="PASS", auth_status="PASS", rollback_executable="PASS")
+    assert replay["reason"] == "RETRY_AUTHORIZATION_REPLAY"
+    assert authorize_release_retry(blocked, release_id=package["release_id"], commit="0" * 40, target=package["target_url"], current_production_deploy="deploy-known", preflight_status="PASS", auth_status="PASS", rollback_executable="PASS")["reason"] == "RETRY_RELEASE_BINDING_MISMATCH"
+
+
+def test_second_retry_command_parser_is_exactly_bound():
+    text = "AUTHORIZE RELEASE RETRY rel-telegram-release-test-abcdef123456 " + "a" * 40 + " https://goclearonline.cc"
+    parsed = parse_release_retry_authorization(text)
+    assert parsed["release_id"] == "rel-telegram-release-test-abcdef123456"
+    assert parsed["commit"] == "a" * 40
+    assert parsed["target"] == "https://goclearonline.cc"
+    assert parse_release_retry_authorization("AUTHORIZE RELEASE RETRY rel-other-abcdef123456 " + "a" * 40 + " https://evil.example") is not None
+    assert classify_product_evolution_request(text) == "RELEASE_RETRY_AUTHORIZATION"
 
 
 def test_canonical_release_dispatch_claims_once(monkeypatch, tmp_path):

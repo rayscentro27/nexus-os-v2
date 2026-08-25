@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
-from .netlify_adapter import exact_sha_netlify_status
+from .netlify_adapter import _netlify_environment, _netlify_executable, exact_sha_netlify_status
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TARGET = "https://goclearonline.cc"
@@ -184,8 +184,9 @@ def inspect_netlify_control_plane() -> Dict[str, Any]:
         site = {}
     cli_site = {}
     try:
-        cli = subprocess.run(["netlify", "api", "getSite", "--data", json.dumps({"site_id": NETLIFY_SITE_ID})], cwd=ROOT, capture_output=True, text=True, timeout=20, check=False, env={**__import__("os").environ, "NETLIFY_CLI_TELEMETRY_DISABLED": "1", "CI": "1"})
-        if cli.returncode == 0:
+        cli_path = _netlify_executable()
+        cli = subprocess.run([cli_path, "api", "getSite", "--data", json.dumps({"site_id": NETLIFY_SITE_ID})], cwd=ROOT, capture_output=True, text=True, timeout=20, check=False, env=_netlify_environment()) if cli_path else None
+        if cli is not None and cli.returncode == 0:
             cli_site = json.loads(cli.stdout)
     except (OSError, ValueError, TypeError, subprocess.TimeoutExpired):
         cli_site = {}
