@@ -16,6 +16,7 @@ def refresh_mission_control_snapshot(*, scheduler_health_path: Path) -> Dict[str
     loop_state = load_json(DATA_RUNTIME / "nexus_loops" / "loop_state.json", {})
     brief = load_json(MODERNIZATION_DIR / "daily_brief.json", {})
     state = load_json(MODERNIZATION_DIR / "state.json", {})
+    portfolio = load_json(ROOT / "reports" / "phase16a" / "executive_portfolio_latest.json", {})
     loop_rows = {}
     for loop_id in LOOP_IDS:
         record = ((loop_state.get("loops") or {}).get(loop_id) or {}).get("last_run") or {}
@@ -50,6 +51,16 @@ def refresh_mission_control_snapshot(*, scheduler_health_path: Path) -> Dict[str
         "blockers": brief.get("blockers", [])[:8],
         "approvals": brief.get("approvals_needed", {}),
         "highest_value_next_action": brief.get("highest_value_next_action", "UNKNOWN"),
+        "executive_portfolio": {
+            "generated_at": portfolio.get("generated_at", "UNKNOWN"),
+            "active_objectives": [item for item in portfolio.get("objectives", []) if item.get("status") in {"READY", "ACTIVE", "RECOVERING"}],
+            "waiting_human": portfolio.get("plan", {}).get("waiting_human", []),
+            "blocked": portfolio.get("plan", {}).get("blocked", []),
+            "recovering": [item for item in portfolio.get("objectives", []) if item.get("status") == "RECOVERING"],
+            "portfolio_balance": portfolio.get("plan", {}).get("portfolio_balance", "UNKNOWN"),
+            "latest_cycle": portfolio.get("cycle_id", "UNKNOWN"),
+            "freshness": "UNKNOWN" if not portfolio else "PERSISTED",
+        },
         "git_commit": health.get("git_commit", "UNKNOWN"),
         "freshness": {
             "scheduler_health": health.get("updated_at", "UNKNOWN"),

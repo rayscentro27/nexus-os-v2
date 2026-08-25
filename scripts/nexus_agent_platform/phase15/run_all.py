@@ -33,6 +33,7 @@ from nexus_agent_platform.phase15.scheduler_health import begin_dispatch, comple
 from nexus_agent_platform.phase15.mission_control_snapshot import refresh_mission_control_snapshot
 from nexus_agent_platform.phase15.stripe_proof import stripe_test_mode_proof
 from nexus_product_evolution.consumer import consume_queued_missions
+from nexus_agent_platform.executive_portfolio import run_executive_portfolio_cycle
 
 
 def _write_policy_doc() -> None:
@@ -139,6 +140,9 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
 
     _write_policy_doc()
     results["product_evolution_dispatch"] = consume_queued_missions(scheduler_instance=str(scheduler_context.get("scheduler_instance", "UNKNOWN")))
+    # Executive Portfolio is a deterministic planning/read-model step above
+    # the existing loops; it does not execute workers or create a scheduler.
+    results["executive_portfolio"] = run_executive_portfolio_cycle(cycle_id=str(scheduler_context.get("scheduler_instance", "canonical-phase15")))
 
     results["live_loops"] = run_live_loops()
     loop_report = results["live_loops"]
