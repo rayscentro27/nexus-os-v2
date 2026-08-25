@@ -215,6 +215,29 @@ def approval_valid(result: Mapping[str, Any], *, release_id: str, commit: str, t
     return True, "VALID"
 
 
+def repair_approved_release_binding(result: Mapping[str, Any]) -> Dict[str, Any]:
+    """Bind a legacy approved package whose exact fingerprint was not persisted.
+
+    This is a repair of receipt completeness, not a new approval.  The caller
+    must still validate the exact release, candidate, target, TTL, and deploy
+    history before making the release eligible again.
+    """
+    package = dict(result.get("release") or {})
+    if package.get("approval_state") != "APPROVED":
+        return {"status": "REJECTED", "reason": "APPROVAL_REQUIRED"}
+    expected = _fingerprint(str(package.get("release_id")), str(package.get("release_candidate_commit")), str(package.get("target_url")), package.get("changed_paths") or [])
+    existing = package.get("approval_fingerprint")
+    if existing and existing != expected:
+        return {"status": "REJECTED", "reason": "MATERIAL_RELEASE_CHANGE"}
+    if existing == expected:
+        return {"status": "UNCHANGED", "result": dict(result)}
+    package["approval_fingerprint"] = expected
+    updated = dict(result)
+    updated["release"] = package
+    updated = append_release_event(updated, "RELEASE_APPROVAL_BINDING_REPAIRED", release_id=package.get("release_id"), candidate=package.get("release_candidate_commit"), target=package.get("target_url"), reason="LEGACY_APPROVAL_FINGERPRINT_MISSING")
+    return {"status": "REPAIRED", "result": updated}
+
+
 def bounded_deploy(result: Mapping[str, Any], *, release_id: str, commit: str, target: str, deploy_fn: Callable[[str, str], Mapping[str, Any]]) -> Dict[str, Any]:
     """Invoke only an injected fixed deployment adapter after exact approval."""
     valid, reason = approval_valid(result, release_id=release_id, commit=commit, target=target)

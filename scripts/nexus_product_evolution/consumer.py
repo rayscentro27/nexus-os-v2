@@ -18,7 +18,7 @@ from .adapters.registry import default_registry
 from .loop import MissionContract
 from .deployment import verify_release_markers
 from .netlify_adapter import deploy_exact_sha, rollback_exact_deploy
-from .release import append_release_event, bounded_deploy, verify_or_rollback
+from .release import append_release_event, approval_valid, bounded_deploy, repair_approved_release_binding, verify_or_rollback
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
@@ -84,6 +84,51 @@ def _dispatch_approved_release(path: Path, scheduler_instance: str, *, deploy_fn
     result["release"] = {**result.get("release", {}), "deployment_result": deployment, "verification_observed": observed}
     _write(path, {**value, "result": result})
     return {"claimed": True, "mission_id": result.get("mission_id"), "status": verified.get("status"), "checks": verified.get("checks")}
+
+
+def prepare_approved_release_retry(mission_id: str, *, release_id: str, candidate_commit: str, target: str, current_production_deploy: str, candidate_published: bool = False) -> Dict[str, Any]:
+    """Restore one unchanged, approved release to the canonical queue.
+
+    This function only repairs receipt binding and eligibility.  It never
+    invokes the consumer, deploy adapter, scheduler, or rollback adapter.
+    """
+    path = RECEIPT_DIR / f"{mission_id}.json"
+    if not path.exists():
+        return {"status": "NOT_FOUND", "mission_id": mission_id}
+    value = json.loads(path.read_text(encoding="utf-8"))
+    result = value.get("result") or {}
+    package = result.get("release") or {}
+    if (result.get("status"), result.get("current_stage")) != ("BLOCKED", "BLOCKED"):
+        return {"status": "NOT_ELIGIBLE", "reason": "RELEASE_NOT_BLOCKED"}
+    if (package.get("release_id"), package.get("release_candidate_commit"), package.get("target_url")) != (release_id, candidate_commit, target):
+        return {"status": "REJECTED", "reason": "RELEASE_BINDING_MISMATCH"}
+    if package.get("approval_state") != "APPROVED":
+        return {"status": "REJECTED", "reason": "APPROVAL_REQUIRED"}
+    if package.get("precheck_status") != "PASS" or package.get("rollback_executable") != "PASS":
+        return {"status": "BLOCKED", "reason": "RELEASE_PRECHECK_NOT_PASS"}
+    if candidate_published or current_production_deploy != "6a8afe4e3f3b97d82a138f28":
+        return {"status": "BLOCKED", "reason": "PRODUCTION_MUTATION_UNCERTAIN"}
+    events = list(result.get("execution_history") or [])
+    if any(item.get("event") in {"DEPLOYMENT_COMPLETE", "ROLLBACK_STARTED", "ROLLBACK_COMPLETE"} for item in events):
+        return {"status": "BLOCKED", "reason": "PRIOR_PRODUCTION_MUTATION"}
+    if int(package.get("retry_count") or 0) >= 1:
+        return {"status": "BLOCKED", "reason": "RETRY_LIMIT_REACHED"}
+    repaired = repair_approved_release_binding(result)
+    if repaired.get("status") not in {"REPAIRED", "UNCHANGED"}:
+        return repaired
+    result = repaired.get("result") or result
+    valid, reason = approval_valid(result, release_id=release_id, commit=candidate_commit, target=target)
+    if not valid:
+        return {"status": "BLOCKED", "reason": reason}
+    now = _now()
+    result = append_release_event(result, "RELEASE_RETRY_READY", release_id=release_id, candidate=candidate_commit, target=target, retry_count=1, reason="EXACT_SHA_ADAPTER_REPAIRED")
+    result["status"] = "PARTIAL"
+    result["current_stage"] = "APPROVED_RELEASE_PENDING_DEPLOYMENT"
+    result["blocker"] = None
+    result["release"] = {**(result.get("release") or {}), "retry_count": 1, "retry_ready_at": now, "deployment_result": {"status": "BLOCKED", "reason": "MATERIAL_RELEASE_CHANGE", "retry_repaired": True}}
+    result["dispatch"] = {**(result.get("dispatch") or {}), "pickup_state": "AWAITING_PHASE15", "retry_ready_at": now}
+    _write(path, {**value, "result": result})
+    return {"status": "RETRY_READY", "mission_id": mission_id, "release_id": release_id, "retry_count": 1, "current_stage": result["current_stage"], "receipt_path": str(path)}
 
 
 def resume_mission(mission_id: str, *, reason: str = "bounded execution adapter registered") -> Dict[str, Any]:

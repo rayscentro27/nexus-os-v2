@@ -82,3 +82,44 @@ def test_canonical_release_dispatch_claims_once(monkeypatch, tmp_path):
     assert first["status"] == "PASS"
     assert second["claimed"] is False
     assert deploy_calls == [(commit, package["target_url"])]
+
+
+def test_approved_release_retry_repairs_legacy_fingerprint_once(monkeypatch, tmp_path):
+    import json
+    from datetime import datetime, timedelta, timezone
+    from nexus_product_evolution import consumer
+    commit = "a" * 40
+    mission = "telegram-retry-test"
+    release_id = "rel-telegram-retry-test-abcdef123456"
+    receipt = tmp_path / f"{mission}.json"
+    now = datetime.now(timezone.utc)
+    receipt.write_text(json.dumps({"result": {
+        "mission_id": mission,
+        "status": "BLOCKED",
+        "current_stage": "BLOCKED",
+        "execution_history": [
+            {"event": "RELEASE_DISPATCH_CLAIMED"},
+            {"event": "DEPLOYMENT_STARTED"},
+        ],
+        "release": {
+            "release_id": release_id,
+            "release_candidate_commit": commit,
+            "target_url": "https://goclearonline.cc",
+            "approval_state": "APPROVED",
+            "approved_at": now.isoformat(),
+            "approval_expires_at": (now + timedelta(hours=1)).isoformat(),
+            "changed_paths": [],
+            "precheck_status": "PASS",
+            "rollback_executable": "PASS",
+            "deployment_result": {"status": "BLOCKED", "reason": "MATERIAL_RELEASE_CHANGE"},
+        },
+    }}), encoding="utf-8")
+    monkeypatch.setattr(consumer, "RECEIPT_DIR", tmp_path)
+    first = consumer.prepare_approved_release_retry(mission, release_id=release_id, candidate_commit=commit, target="https://goclearonline.cc", current_production_deploy="6a8afe4e3f3b97d82a138f28")
+    assert first["status"] == "RETRY_READY"
+    value = json.loads(receipt.read_text(encoding="utf-8"))["result"]
+    assert value["current_stage"] == "APPROVED_RELEASE_PENDING_DEPLOYMENT"
+    assert value["release"]["approval_fingerprint"]
+    assert any(item["event"] == "RELEASE_RETRY_READY" for item in value["execution_history"])
+    second = consumer.prepare_approved_release_retry(mission, release_id=release_id, candidate_commit=commit, target="https://goclearonline.cc", current_production_deploy="6a8afe4e3f3b97d82a138f28")
+    assert second["status"] == "NOT_ELIGIBLE"
