@@ -16,6 +16,9 @@ from typing import Any, Dict, List
 
 from .adapters.registry import default_registry
 from .loop import MissionContract
+from .deployment import verify_release_markers
+from .netlify_adapter import deploy_exact_sha, rollback_exact_deploy
+from .release import append_release_event, bounded_deploy, verify_or_rollback
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
@@ -50,6 +53,37 @@ def _claim(path: Path, scheduler_instance: str) -> Dict[str, Any]:
     })
     _write(path, {**value, "result": result})
     return {"mission_id": result.get("mission_id"), "status": "RUNNING", "claimed": True, "receipt_path": str(path)}
+
+
+def _dispatch_approved_release(path: Path, scheduler_instance: str, *, deploy_fn=deploy_exact_sha, verify_fn=verify_release_markers, rollback_fn=rollback_exact_deploy) -> Dict[str, Any]:
+    """Claim one approved release through the same canonical consumer lock."""
+    value = json.loads(path.read_text(encoding="utf-8"))
+    result = value.get("result") or {}
+    package = result.get("release") or {}
+    if package.get("approval_state") != "APPROVED" or result.get("current_stage") != "APPROVED_RELEASE_PENDING_DEPLOYMENT":
+        return {"claimed": False, "mission_id": result.get("mission_id"), "status": result.get("status")}
+    now = _now()
+    result = append_release_event(result, "RELEASE_DISPATCH_CLAIMED", release_id=package.get("release_id"), scheduler_instance=scheduler_instance)
+    result["current_stage"] = "RELEASE_DISPATCH_CLAIMED"
+    result["release"] = {**package, "dispatch_claimed_at": now, "dispatch_scheduler": scheduler_instance}
+    _write(path, {**value, "result": result})
+    result["current_stage"] = "DEPLOYING"
+    result = append_release_event(result, "DEPLOYMENT_STARTED", release_id=package.get("release_id"), commit=package.get("release_candidate_commit"), target=package.get("target_url"))
+    deployment = bounded_deploy(result, release_id=str(package.get("release_id")), commit=str(package.get("release_candidate_commit")), target=str(package.get("target_url")), deploy_fn=deploy_fn)
+    if deployment.get("status") != "DEPLOYED":
+        result["status"] = "BLOCKED"
+        result["current_stage"] = "BLOCKED"
+        result["blocker"] = deployment.get("reason") or (deployment.get("outcome") or {}).get("reason") or "DEPLOYMENT_BLOCKED"
+        result["release"] = {**result.get("release", {}), "deployment_result": deployment}
+        _write(path, {**value, "result": result})
+        return {"claimed": True, "mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": result["blocker"]}
+    result["current_stage"] = "PRODUCTION_VERIFY"
+    observed = verify_fn({**value, "result": result}, str(package.get("release_candidate_commit")), target=str(package.get("target_url")))
+    verified = verify_or_rollback(result, release_id=str(package.get("release_id")), expected_commit=str(package.get("release_candidate_commit")), observed=observed, rollback_fn=rollback_fn)
+    result = verified.get("result") or result
+    result["release"] = {**result.get("release", {}), "deployment_result": deployment, "verification_observed": observed}
+    _write(path, {**value, "result": result})
+    return {"claimed": True, "mission_id": result.get("mission_id"), "status": verified.get("status"), "checks": verified.get("checks")}
 
 
 def resume_mission(mission_id: str, *, reason: str = "bounded execution adapter registered") -> Dict[str, Any]:
@@ -117,5 +151,14 @@ def consume_queued_missions(*, scheduler_instance: str, receipt_dir: Path = RECE
             _write(path, {**value, "result": result})
             if final_status in {"BLOCKED", "FAIL"}:
                 blocked.append({"mission_id": result.get("mission_id"), "status": final_status, "reason": execution.get("blocker") or "ADAPTER_EXECUTION_FAILED"})
+        for path in sorted(receipt_dir.glob("*.json")):
+            try:
+                release_item = _dispatch_approved_release(path, scheduler_instance)
+            except (OSError, ValueError, TypeError):
+                continue
+            if release_item.get("claimed"):
+                claimed.append(release_item)
+                if release_item.get("status") == "BLOCKED":
+                    blocked.append({"mission_id": release_item.get("mission_id"), "status": "BLOCKED", "reason": release_item.get("reason", "RELEASE_BLOCKED")})
         fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
     return {"consumer": "phase15_product_evolution_dispatch", "status": "COMPLETED", "claimed": claimed, "blocked": blocked}

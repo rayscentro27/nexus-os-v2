@@ -48,6 +48,13 @@ def _protected_paths(paths: list[str]) -> list[str]:
     return [path for path in paths if path.startswith(PROTECTED_PREFIXES) or path.endswith((".pem", ".key", ".secret"))]
 
 
+def rollback_target_known(package: Mapping[str, Any]) -> bool:
+    """A rollback is concrete only when a provider artifact and URL are recorded."""
+    deploy_id = str(package.get("rollback_deploy_id") or "").upper()
+    verified_url = str(package.get("rollback_verified_url") or "").upper()
+    return bool(package.get("rollback_method")) and bool(deploy_id and deploy_id not in {"UNKNOWN", "HEAD", "MAIN", "LATEST"}) and bool(verified_url and verified_url != "UNKNOWN")
+
+
 def _fingerprint(release_id: str, commit: str, target: str, changed_paths: list[str]) -> str:
     body = json.dumps({"release_id": release_id, "commit": commit, "target": target, "changed_paths": changed_paths}, sort_keys=True).encode()
     return hashlib.sha256(body).hexdigest()
@@ -66,6 +73,11 @@ def create_release_candidate(record: Mapping[str, Any], *, candidate_commit: str
     protected = _protected_paths(paths)
     release_id = release_id_for(mission_id, candidate_commit) if FULL_SHA.fullmatch(candidate_commit) else f"rel-invalid-{uuid.uuid4().hex[:8]}"
     deployment = result.get("deployment") or {}
+    rollback_deploy_id = deployment.get("rollback_deploy_id") or deployment.get("current_deploy_id")
+    rollback_url = deployment.get("rollback_verified_url") or (deployment.get("production_markers") or {}).get("verified_url")
+    rollback_method = deployment.get("rollback_method") or "fixed Netlify provider artifact rollback; availability requires bounded Netlify authentication"
+    netlify_auth = bool(__import__("os").environ.get("NETLIFY_AUTH_TOKEN"))
+    exact_sha_method = "Netlify CLI direct upload from detached exact-SHA worktree (authentication unavailable)"
     builder = (result.get("execution") or {}).get("builder") or {}
     attempts = builder.get("attempts") or []
     builder_pass = any(str(item.get("status", "")).lower() == "pass" for item in attempts)
@@ -88,8 +100,12 @@ def create_release_candidate(record: Mapping[str, Any], *, candidate_commit: str
         "security_result": "PASS" if not protected else "FAIL",
         "deployment_truth_before": deployment.get("deployment_status", "UNKNOWN"),
         "production_commit_before": deployment.get("deployed_commit", "UNKNOWN"),
-        "rollback_target": deployment.get("deployed_commit", "UNKNOWN"),
-        "rollback_method": "fixed provider rollback adapter for the recorded previous artifact; no git reset or force-push",
+        "rollback_target": rollback_deploy_id or "UNKNOWN",
+        "rollback_deploy_id": rollback_deploy_id or "UNKNOWN",
+        "rollback_commit": deployment.get("rollback_commit") or deployment.get("deployed_commit", "UNKNOWN"),
+        "rollback_created_at": deployment.get("rollback_created_at", "UNKNOWN"),
+        "rollback_verified_url": rollback_url or "UNKNOWN",
+        "rollback_method": rollback_method,
         "production_verification_plan": ["HTTPS target and Admin route healthy", "exact build SHA marker matches approved SHA", "Voice notice and persistent-preview guard markers present", "old Voice marker absent", "CORS remains healthy"],
         "human_test_required": True,
         "approval_state": "AWAITING_RAY",
@@ -102,14 +118,27 @@ def create_release_candidate(record: Mapping[str, Any], *, candidate_commit: str
         "build_sha_marker": "PASS" if "COMMIT_REF" in vite_source and "VITE_BUILD_COMMIT" in build_metadata_source else "FAIL",
         "production_sha_verifiable_after_deployment": "YES" if "COMMIT_REF" in vite_source else "NO",
         "voice_source_marker": "PASS" if "persistentRef.current" in voice_source and "Private local VAD active" in voice_source else "FAIL",
-        "selected_bounded_method": "normal Git-connected Netlify deployment after explicit approval; fixed provider rollback if verification fails",
+        "selected_bounded_method": "fixed Netlify exact-SHA adapter from detached worktree; Git-connected main deploy is not an approved exact-SHA method",
+        "exact_sha_deploy_method": exact_sha_method,
+        "exact_sha_deploy_available": "PASS" if netlify_auth else "UNKNOWN",
+        "canonical_dispatch_wired": "PASS",
+        "production_current_deploy_known": "PASS" if rollback_deploy_id else "FAIL",
+        "main_push_mutates_production": deployment.get("main_push_mutates_production", "UNKNOWN"),
+        "auto_deploy_enabled": deployment.get("auto_deploy_enabled", "UNKNOWN"),
+        "rollback_executable": "PASS" if netlify_auth and rollback_target_known({"rollback_deploy_id": rollback_deploy_id, "rollback_verified_url": rollback_url, "rollback_method": rollback_method}) else "UNKNOWN",
         "target_bound": target in ALLOWED_TARGETS,
         "immutable_sha": bool(FULL_SHA.fullmatch(candidate_commit)) and _commit_exists(candidate_commit),
         "protected_path_check": "PASS" if not protected else "FAIL",
         "approval_fingerprint": _fingerprint(release_id, candidate_commit, target, paths),
         "created_at": _now(),
     }
-    package["precheck_status"] = "PASS" if package["immutable_sha"] and package["target_bound"] and package["protected_path_check"] == "PASS" and package["security_result"] == "PASS" else "FAIL"
+    package["precheck_status"] = "PASS" if all([
+        package["immutable_sha"], package["target_bound"], package["protected_path_check"] == "PASS",
+        package["security_result"] == "PASS", package["critic_result"].startswith("PASS"),
+        package["production_current_deploy_known"] == "PASS", rollback_target_known(package),
+        package["rollback_executable"] == "PASS", package["exact_sha_deploy_available"] == "PASS",
+        package["canonical_dispatch_wired"] == "PASS", package["main_push_mutates_production"] != "YES",
+    ]) else "FAIL"
     return package
 
 
@@ -182,6 +211,9 @@ def bounded_deploy(result: Mapping[str, Any], *, release_id: str, commit: str, t
     valid, reason = approval_valid(result, release_id=release_id, commit=commit, target=target)
     if not valid:
         return {"status": "BLOCKED", "reason": reason}
+    package = result.get("release") or {}
+    if not rollback_target_known(package):
+        return {"status": "BLOCKED", "reason": "ROLLBACK_TARGET_UNKNOWN"}
     started = append_release_event(result, "DEPLOYMENT_STARTED", release_id=release_id, commit=commit, target=target)
     try:
         outcome = dict(deploy_fn(commit, target))
@@ -203,9 +235,15 @@ def verify_or_rollback(result: Mapping[str, Any], *, release_id: str, expected_c
         updated = append_release_event(updated, "HUMAN_GATE_READY", release_id=release_id)
         return {"status": "PASS", "result": updated, "checks": checks}
     updated = append_release_event(updated, "PRODUCTION_VERIFY_FAIL", release_id=release_id, checks=checks)
+    rollback_target = str((result.get("release") or {}).get("rollback_target") or "")
+    if not rollback_target or rollback_target.upper() == "UNKNOWN" or rollback_target.upper() in {"HEAD", "MAIN", "LATEST"} or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:-]{5,}", rollback_target):
+        updated = append_release_event(updated, "ROLLBACK_BLOCKED", release_id=release_id, reason="ROLLBACK_TARGET_UNKNOWN_OR_MOVING")
+        updated["status"] = "BLOCKED"
+        updated["current_stage"] = "BLOCKED"
+        return {"status": "BLOCKED", "result": updated, "checks": checks, "rollback": {"status": "NOT_RUN", "reason": "ROLLBACK_TARGET_UNKNOWN_OR_MOVING"}}
     updated = append_release_event(updated, "ROLLBACK_STARTED", release_id=release_id)
     try:
-        rollback = dict(rollback_fn(str((result.get("release") or {}).get("rollback_target") or "UNKNOWN")))
+        rollback = dict(rollback_fn(rollback_target))
     except Exception as exc:
         rollback = {"status": "FAILED", "error": type(exc).__name__}
     updated["release"]["rollback_result"] = rollback

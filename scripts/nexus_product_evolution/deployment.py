@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import json
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any, Mapping, Optional
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TARGET = "https://goclearonline.cc"
+NETLIFY_SITE_ID = "e8b7a0c2-9278-4b4c-a9a0-b950bcd66583"
 VOICE_NOTICE = "Private local VAD active. One utterance at a time; persistent listening sends one final local STT request after silence."
 
 
@@ -40,6 +42,22 @@ def _fetch(url: str) -> tuple[int, Mapping[str, str], bytes]:
         return status, headers, body[:8 * 1024 * 1024]
     except Exception as exc:
         return 0, {"error": type(exc).__name__}, b""
+
+
+def _cors_options(path: str) -> tuple[int, Mapping[str, str]]:
+    try:
+        completed = subprocess.run(["/usr/bin/curl", "-sS", "-L", "--max-time", "15", "-X", "OPTIONS", "-D", "-", "-o", "/dev/null", "-H", "Origin: https://goclearonline.cc", "-H", "Access-Control-Request-Method: POST", "-H", "Access-Control-Request-Headers: content-type,x-nexus-voice-session,x-nexus-voice-preview-sequence", path], capture_output=True, timeout=20, check=False)
+        lines = completed.stdout.decode("iso-8859-1", "replace").splitlines()
+        status_line = next((line for line in lines if line.startswith("HTTP/")), "")
+        match = re.search(r"\s(\d{3})(?:\s|$)", status_line)
+        headers = {}
+        for line in lines[1:]:
+            if ":" in line:
+                key, value = line.split(":", 1)
+                headers[key.strip().lower()] = value.strip()
+        return (int(match.group(1)) if match else 0), headers
+    except Exception:
+        return 0, {}
 
 
 def _receipt_event(record: Mapping[str, Any], event: str, **fields: Any) -> Dict[str, Any]:
@@ -78,6 +96,9 @@ def inspect_deployment(record: Mapping[str, Any], *, target: str = DEFAULT_TARGE
         "wake_state_present": "WAKE_IDLE" in bundle,
         "generic_unversioned_metadata": "unversioned" in bundle and "unknown" in bundle,
     }
+    preview_cors_status, preview_cors_headers = _cors_options("https://voice.goclearonline.cc/v1/voice/preview")
+    transcribe_cors_status, transcribe_cors_headers = _cors_options("https://voice.goclearonline.cc/v1/voice/transcribe")
+    cors_ok = all(status == 204 for status in (preview_cors_status, transcribe_cors_status)) and all(headers.get("access-control-allow-origin") == "https://goclearonline.cc" for headers in (preview_cors_headers, transcribe_cors_headers))
     source_current = (ROOT / "src/admin/NexusWakeVoice.jsx").read_text(encoding="utf-8")
     latest_source = VOICE_NOTICE in source_current and "persistentRef.current" in source_current
     bundle_matches_expected = markers["build_commit_literal"] == expected and expected != "UNKNOWN"
@@ -106,6 +127,8 @@ def inspect_deployment(record: Mapping[str, Any], *, target: str = DEFAULT_TARGE
         "production_markers": markers,
         "latest_source_markers": {"voice_notice": VOICE_NOTICE in source_current, "persistent_preview_guard": "persistentRef.current" in source_current},
         "stale_production": "YES" if stale else ("NO" if deployment_status == "DEPLOYED" else "UNKNOWN"),
+        "cors_verification": "PASS" if cors_ok else ("FAIL" if preview_cors_status or transcribe_cors_status else "UNKNOWN"),
+        "cors_evidence": {"preview_status": preview_cors_status, "transcribe_status": transcribe_cors_status, "preview_allow_origin": preview_cors_headers.get("access-control-allow-origin", "UNKNOWN"), "transcribe_allow_origin": transcribe_cors_headers.get("access-control-allow-origin", "UNKNOWN")},
         "checked_at": datetime.now(timezone.utc).isoformat(),
         "mission_id": mission_id,
     }
@@ -130,3 +153,64 @@ def deployment_response(record: Mapping[str, Any], deployment: Mapping[str, Any]
             f"Deployment action: {action}\n"
             f"Production verification: {deployment.get('verification', 'UNKNOWN')}\n"
             "No new mission was created.")
+
+
+def verify_release_markers(record: Mapping[str, Any], expected_commit: str, *, target: str = DEFAULT_TARGET) -> Dict[str, Any]:
+    """Produce the bounded verification shape consumed by the release contract."""
+    inspected = inspect_deployment(record, target=target, requested_commit=expected_commit)
+    deployment = inspected.get("deployment") or {}
+    markers = deployment.get("production_markers") or {}
+    return {
+        "https": "PASS" if markers.get("admin_http_status") == 200 else "FAIL",
+        "admin": "PASS" if markers.get("asset_http_status") == 200 else "FAIL",
+        "production_commit": deployment.get("deployed_commit", "UNKNOWN"),
+        "voice_marker": "PASS" if markers.get("voice_notice_present") else "FAIL",
+        "persistent_preview_guard": "PASS" if markers.get("persistent_preview_guard_present") and markers.get("wake_state_present") else "FAIL",
+        "old_marker_absent": "PASS" if not markers.get("old_voice_notice_present", False) else "FAIL",
+        "cors": deployment.get("cors_verification", "UNKNOWN"),
+        "evidence": deployment,
+    }
+
+
+def inspect_netlify_control_plane() -> Dict[str, Any]:
+    """Read the public Netlify site/deploy metadata without credentials or mutation."""
+    site_status, _, site_bytes = _fetch(f"https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}")
+    deploy_status, _, deploy_bytes = _fetch(f"https://api.netlify.com/api/v1/sites/{NETLIFY_SITE_ID}/deploys?per_page=20")
+    try:
+        site = json.loads(site_bytes.decode("utf-8")) if site_bytes else {}
+    except (ValueError, TypeError):
+        site = {}
+    try:
+        deploys = json.loads(deploy_bytes.decode("utf-8")) if deploy_bytes else []
+    except (ValueError, TypeError):
+        deploys = []
+    published = site.get("published_deploy") or {}
+    safe_deploys = [{key: item.get(key) for key in ("id", "state", "branch", "commit_ref", "created_at", "published_at", "context", "title", "build_id", "deploy_ssl_url")} for item in deploys[:20] if isinstance(item, dict)]
+    main_deploys = [item for item in safe_deploys if item.get("branch") == "main" and item.get("context") == "production"]
+    auto_deploy = bool(site.get("repo_url") and any(item.get("commit_ref") for item in main_deploys))
+    latest = main_deploys[0] if main_deploys else {}
+    return {
+        "provider": "Netlify",
+        "site_id": site.get("id") or NETLIFY_SITE_ID,
+        "site_name": site.get("name", "UNKNOWN"),
+        "custom_domain": site.get("custom_domain", DEFAULT_TARGET),
+        "repo_url": site.get("repo_url", "UNKNOWN"),
+        "production_branch": published.get("branch") or "UNKNOWN",
+        "published_deploy_id": published.get("id", "UNKNOWN"),
+        "published_deploy_state": published.get("state", "UNKNOWN"),
+        "published_commit": published.get("commit_ref") or "UNKNOWN",
+        "published_created_at": published.get("created_at", "UNKNOWN"),
+        "published_url": published.get("deploy_ssl_url") or DEFAULT_TARGET,
+        "previous_known_good_deploy_id": published.get("id", "UNKNOWN"),
+        "previous_known_good_commit": published.get("commit_ref") or "UNKNOWN",
+        "previous_known_good_created_at": published.get("created_at", "UNKNOWN"),
+        "previous_known_good_url": published.get("deploy_ssl_url") or DEFAULT_TARGET,
+        "recent_deploys": safe_deploys,
+        "auto_deploy_enabled": "YES" if auto_deploy else "UNKNOWN",
+        "main_push_mutates_production": "YES" if auto_deploy else "UNKNOWN",
+        "git_pipeline_health": "FAIL" if latest.get("state") == "error" else ("PASS" if latest.get("state") == "ready" else "UNKNOWN"),
+        "normal_git_pipeline": "FAILED" if latest.get("state") == "error" else "UNKNOWN",
+        "api_read_status": site_status if site_status else deploy_status,
+        "auth_available": bool(__import__("os").environ.get("NETLIFY_AUTH_TOKEN")),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+    }
