@@ -263,6 +263,10 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
     else:
         scheduler_ran_after_retry = "UNKNOWN"
     deployment_attempted = bool(deployment_result) or bool(events.intersection({"DEPLOYMENT_STARTED", "DEPLOYMENT_COMPLETE", "DEPLOYMENT_BLOCKED"}))
+    retry_authorization = release.get("second_retry_authorization")
+    if not isinstance(retry_authorization, Mapping):
+        retry_authorization = {}
+    generic_resumed = any(item.get("event") == "ADAPTER_EXECUTION" and any(h.get("event") == "SECOND_RETRY_AUTHORIZED" and str(h.get("at", "")) <= str(item.get("at", "")) for h in history) for item in history)
     verification = release.get("verification_result") or "NOT_RUN"
     return {
         "mission_id": _mission_id(resolved),
@@ -296,6 +300,13 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
         "scheduler_last_run": scheduler_last_run,
         "consumer_last_run": consumer_last_run,
         "scheduler_ran_after_retry_ready": scheduler_ran_after_retry,
+        "second_retry_authorization": retry_authorization.get("status", "NONE"),
+        "second_retry_authorized_at": retry_authorization.get("authorized_at", "UNKNOWN"),
+        "second_retry_consumed_at": retry_authorization.get("consumed_at", "UNKNOWN"),
+        "second_retry_attempt_number": retry_authorization.get("attempt_number", "UNKNOWN"),
+        "second_retry_production_binding": retry_authorization.get("current_production_deploy", "UNKNOWN"),
+        "production_state_revalidated_at_dispatch": release.get("production_state_revalidated_at_dispatch", "UNKNOWN"),
+        "generic_mission_resumed": generic_resumed,
     }
 
 
@@ -330,6 +341,13 @@ def release_inspection_text(truth: Mapping[str, Any]) -> str:
         f"Scheduler last run: {truth.get('scheduler_last_run', 'UNKNOWN')}",
         f"Consumer last run: {truth.get('consumer_last_run', 'UNKNOWN')}",
         f"Scheduler ran after retry ready: {truth.get('scheduler_ran_after_retry_ready', 'UNKNOWN')}",
+        f"Second retry authorization: {truth.get('second_retry_authorization', 'NONE')}",
+        f"Second retry authorized at: {truth.get('second_retry_authorized_at', 'UNKNOWN')}",
+        f"Second retry consumed at: {truth.get('second_retry_consumed_at', 'UNKNOWN')}",
+        f"Second retry attempt: {truth.get('second_retry_attempt_number', 'UNKNOWN')}",
+        f"Production bound at authorization: {truth.get('second_retry_production_binding', 'UNKNOWN')}",
+        f"Production revalidated at dispatch: {truth.get('production_state_revalidated_at_dispatch', 'UNKNOWN')}",
+        f"Generic mission resumed: {'YES' if truth.get('generic_mission_resumed') else 'NO'}",
     ])
 
 

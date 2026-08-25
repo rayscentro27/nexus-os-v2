@@ -261,7 +261,8 @@ def authorize_release_retry(result: Mapping[str, Any], *, release_id: str, commi
     }
     updated["release"] = package
     updated["current_stage"] = "APPROVED_RELEASE_PENDING_DEPLOYMENT"
-    updated["status"] = "QUEUED"
+    # Release authorization is not a Product Evolution mission resume.
+    updated["status"] = "PARTIAL"
     updated = append_release_event(updated, "SECOND_RETRY_AUTHORIZED", release_id=release_id, candidate=commit, target=target, attempt_number=2, authorized_by=authorized_by, authorized_at=recorded_at)
     return {"status": "AUTHORIZED", "result": updated, "release_id": release_id, "attempt_number": 2}
 

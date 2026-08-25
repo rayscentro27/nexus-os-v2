@@ -91,6 +91,56 @@ def test_second_retry_command_parser_is_exactly_bound():
     assert classify_product_evolution_request(text) == "RELEASE_RETRY_AUTHORIZATION"
 
 
+def test_release_only_retry_cannot_be_claimed_as_generic_mission_and_is_consumed_once(tmp_path, monkeypatch):
+    import json
+    import subprocess
+    from nexus_product_evolution import consumer
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    package = create_release_candidate({"result": _result()}, candidate_commit=commit)
+    package.update({"precheck_status": "PASS", "rollback_target": "deploy-known", "rollback_deploy_id": "deploy-known", "rollback_verified_url": "https://known-good.example", "rollback_executable": "PASS", "exact_sha_deploy_available": "PASS"})
+    approved = approve_release(prepare_release(_result(), package), release_id=package["release_id"], commit=commit, target=package["target_url"])
+    bound = repair_approved_release_binding(approved["result"])
+    blocked = dict(bound["result"])
+    blocked.update({"status": "BLOCKED", "current_stage": "BLOCKED", "blocker": "NETLIFY_AUTH_UNAVAILABLE"})
+    blocked["release"] = {**blocked["release"], "retry_count": 1}
+    authorized = authorize_release_retry(blocked, release_id=package["release_id"], commit=commit, target=package["target_url"], current_production_deploy="deploy-known", preflight_status="PASS", auth_status="PASS", rollback_executable="PASS", now=datetime.now(timezone.utc))
+    receipt = tmp_path / "release.json"
+    receipt.write_text(json.dumps({"result": authorized["result"]}), encoding="utf-8")
+    generic = consumer._claim(receipt, "phase15-test")
+    assert generic["claimed"] is False
+    monkeypatch.setattr(consumer, "inspect_netlify_control_plane", lambda: {"published_deploy_id": "deploy-known", "published_commit": "UNKNOWN"})
+    deploy_calls = []
+    verify = lambda record, sha, target: {"https": "PASS", "admin": "PASS", "production_commit": sha, "voice_marker": "PASS", "persistent_preview_guard": "PASS", "old_marker_absent": "PASS", "cors": "PASS"}
+    first = consumer._dispatch_approved_release(receipt, "phase15-test", deploy_fn=lambda sha, target: (deploy_calls.append((sha, target)) or {"status": "PASS"}), verify_fn=verify, rollback_fn=lambda target: {"status": "PASS"})
+    assert first["claimed"] is True
+    saved = json.loads(receipt.read_text(encoding="utf-8"))["result"]
+    assert saved["release"]["retry_count"] == 2
+    assert saved["release"]["second_retry_authorization"]["status"] == "CONSUMED"
+    second = consumer._dispatch_approved_release(receipt, "phase15-test", deploy_fn=lambda *_: {"status": "PASS"}, verify_fn=verify, rollback_fn=lambda target: {"status": "PASS"})
+    assert second["claimed"] is False
+    assert len(deploy_calls) == 1
+
+
+def test_dispatch_blocks_when_production_changes_after_retry_authorization(tmp_path, monkeypatch):
+    import json
+    import subprocess
+    from nexus_product_evolution import consumer
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    package = create_release_candidate({"result": _result()}, candidate_commit=commit)
+    package.update({"precheck_status": "PASS", "rollback_target": "deploy-known", "rollback_deploy_id": "deploy-known", "rollback_verified_url": "https://known-good.example", "rollback_executable": "PASS", "exact_sha_deploy_available": "PASS"})
+    approved = approve_release(prepare_release(_result(), package), release_id=package["release_id"], commit=commit, target=package["target_url"])
+    bound = repair_approved_release_binding(approved["result"])
+    blocked = dict(bound["result"]); blocked.update({"status": "BLOCKED", "current_stage": "BLOCKED"}); blocked["release"] = {**blocked["release"], "retry_count": 1}
+    authorized = authorize_release_retry(blocked, release_id=package["release_id"], commit=commit, target=package["target_url"], current_production_deploy="deploy-known", preflight_status="PASS", auth_status="PASS", rollback_executable="PASS", now=datetime.now(timezone.utc))
+    receipt = tmp_path / "release.json"; receipt.write_text(json.dumps({"result": authorized["result"]}), encoding="utf-8")
+    monkeypatch.setattr(consumer, "inspect_netlify_control_plane", lambda: {"published_deploy_id": "new-deploy", "published_commit": "UNKNOWN"})
+    result = consumer._dispatch_approved_release(receipt, "phase15-test", deploy_fn=lambda *_: {"status": "PASS"})
+    assert result["claimed"] is False
+    saved = json.loads(receipt.read_text(encoding="utf-8"))["result"]
+    assert saved["blocker"] == "PRODUCTION_STATE_CHANGED_AFTER_RETRY_AUTHORIZATION"
+    assert saved["release"]["second_retry_authorization"]["status"] == "INVALIDATED"
+
+
 def test_canonical_release_dispatch_claims_once(monkeypatch, tmp_path):
     import json
     import subprocess

@@ -16,13 +16,14 @@ from typing import Any, Dict, List
 
 from .adapters.registry import default_registry
 from .loop import MissionContract
-from .deployment import verify_release_markers
+from .deployment import inspect_netlify_control_plane, verify_release_markers
 from .netlify_adapter import deploy_exact_sha, rollback_exact_deploy
 from .release import append_release_event, approval_valid, bounded_deploy, repair_approved_release_binding, verify_or_rollback
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
 LOCK_PATH = ROOT / "data/runtime/product_evolution_dispatch.lock"
+RELEASE_ONLY_STAGES = {"APPROVED_RELEASE_PENDING_DEPLOYMENT", "RELEASE_DISPATCH_CLAIMED", "DEPLOYING", "PRODUCTION_VERIFY"}
 
 
 def _now() -> str:
@@ -41,6 +42,8 @@ def _write(path: Path, value: Dict[str, Any]) -> None:
 def _claim(path: Path, scheduler_instance: str) -> Dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     result = value.get("result") or {}
+    if result.get("current_stage") in RELEASE_ONLY_STAGES:
+        return {"mission_id": result.get("mission_id"), "status": result.get("status"), "claimed": False, "reason": "RELEASE_ONLY_STATE"}
     if result.get("status") != "QUEUED":
         return {"mission_id": result.get("mission_id"), "status": result.get("status"), "claimed": False}
     now = _now()
@@ -68,7 +71,50 @@ def _dispatch_approved_release(path: Path, scheduler_instance: str, *, deploy_fn
         return {"claimed": False, "mission_id": result.get("mission_id"), "status": result.get("status"), "reason": "RETRY_LIMIT_REACHED"}
     now = _now()
     if retry_auth.get("status") == "PENDING":
-        package = {**package, "retry_count": retry_count + 1, "second_retry_authorization": {**retry_auth, "status": "CONSUMED", "consumed_at": now}}
+        valid, reason = approval_valid(result, release_id=str(package.get("release_id")), commit=str(package.get("release_candidate_commit")), target=str(package.get("target_url")))
+        if not valid:
+            result["status"] = "BLOCKED"
+            result["current_stage"] = "BLOCKED"
+            result["blocker"] = reason
+            _write(path, {**value, "result": result})
+            return {"claimed": False, "mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": reason}
+        expires = retry_auth.get("expires_at")
+        if not expires:
+            reason = "RETRY_AUTHORIZATION_EXPIRY_MISSING"
+        else:
+            try:
+                reason = "RETRY_AUTHORIZATION_EXPIRED" if datetime.fromisoformat(str(expires)) <= datetime.now(timezone.utc) else ""
+            except ValueError:
+                reason = "RETRY_AUTHORIZATION_EXPIRY_INVALID"
+        if reason:
+            result["status"] = "BLOCKED"
+            result["current_stage"] = "BLOCKED"
+            result["blocker"] = reason
+            result["release"] = {**package, "second_retry_authorization": {**retry_auth, "status": "INVALIDATED", "invalidated_at": now, "invalidation_reason": reason}}
+            result = append_release_event(result, "SECOND_RETRY_BLOCKED", release_id=package.get("release_id"), reason=reason)
+            _write(path, {**value, "result": result})
+            return {"claimed": False, "mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": reason}
+        try:
+            production = inspect_netlify_control_plane()
+        except Exception as exc:
+            production = {"published_deploy_id": "UNKNOWN", "published_commit": "UNKNOWN", "probe_error": type(exc).__name__}
+        published_deploy = str(production.get("published_deploy_id") or "UNKNOWN")
+        published_commit = str(production.get("published_commit") or "UNKNOWN")
+        bound_deploy = str(retry_auth.get("current_production_deploy") or "UNKNOWN")
+        candidate = str(package.get("release_candidate_commit") or "UNKNOWN")
+        revalidation = {"checked_at": now, "published_deploy_id": published_deploy, "published_commit": published_commit, "candidate_published": published_commit == candidate}
+        if published_deploy != bound_deploy or published_deploy == "UNKNOWN" or published_commit == candidate:
+            reason = "PRODUCTION_STATE_CHANGED_AFTER_RETRY_AUTHORIZATION" if published_deploy != bound_deploy or published_commit == candidate else "PRODUCTION_STATE_UNKNOWN_AFTER_RETRY_AUTHORIZATION"
+            result["status"] = "BLOCKED"
+            result["current_stage"] = "BLOCKED"
+            result["blocker"] = reason
+            result["release"] = {**package, "production_state_revalidated_at_dispatch": revalidation, "second_retry_authorization": {**retry_auth, "status": "INVALIDATED", "invalidated_at": now, "invalidation_reason": reason}}
+            result = append_release_event(result, "SECOND_RETRY_BLOCKED", release_id=package.get("release_id"), reason=reason, production_state=revalidation)
+            _write(path, {**value, "result": result})
+            return {"claimed": False, "mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": reason}
+        package = {**package, "retry_count": retry_count + 1, "production_state_revalidated_at_dispatch": revalidation, "second_retry_authorization": {**retry_auth, "status": "CONSUMED", "consumed_at": now}}
+        result["release"] = package
+        result = append_release_event(result, "SECOND_RETRY_CONSUMED", release_id=package.get("release_id"), attempt_number=2, consumed_at=now, production_state=revalidation)
     result = append_release_event(result, "RELEASE_DISPATCH_CLAIMED", release_id=package.get("release_id"), scheduler_instance=scheduler_instance)
     result["current_stage"] = "RELEASE_DISPATCH_CLAIMED"
     result["release"] = {**package, "dispatch_claimed_at": now, "dispatch_scheduler": scheduler_instance}
