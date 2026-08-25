@@ -1,6 +1,5 @@
 import pilot from '../../reports/hermes_modernization/end_to_end_pilot.json';
 import modernizationState from '../../reports/hermes_modernization/state.json';
-import loopState from '../../data/runtime/nexus_loops/loop_state.json';
 import workforceRegistry from '../../reports/hermes_modernization/ai_workforce_registry.json';
 import runtimeSnapshot from '../../public/runtime/hermes-current.json';
 
@@ -34,22 +33,23 @@ type Pilot = typeof pilot & {
 };
 
 const source = pilot as Pilot;
-const loop = (loopState as any).loops?.system_health_loop;
-const lastLoop = loop?.last_run;
-const systemSummary = lastLoop?.summary;
+// Phase 15 loop state is mutable operator runtime state, not a production
+// build input.  No governed live runtime source is available to this bundle,
+// so the production read model stays explicit about what it cannot know.
+const loop: any = undefined;
+const lastLoop: any = undefined;
+const systemSummary: any = undefined;
 const businessLoopIds = ['open_source_scout_loop', 'seo_opportunity_loop', 'revenue_opportunity_loop', 'research_intake_loop'];
 const businessLoops = businessLoopIds.map((id) => {
-  const record = (loopState as any).loops?.[id] ?? {};
-  const last = record.last_run ?? {};
   return {
     loopId: id,
-    status: last.delta_status === 'NO_CHANGE' ? 'NO_CHANGE' : (last.verifier_status === 'pass' ? 'PASS' : 'UNKNOWN'),
-    lastRun: last.completed_at ?? 'UNKNOWN',
-    value: last.value_metric ?? last.result?.value_metric ?? 'UNKNOWN',
-    cost: last.estimated_cost ?? 'UNKNOWN',
-    aiCalls: last.ai_calls ?? 'UNKNOWN',
-    verifier: last.verifier_status ?? 'UNKNOWN',
-    nextAction: last.delta_status === 'NO_CHANGE' ? 'Wait for a material source delta or next eligible schedule.' : 'Review the internal recommendation; Ray approval is required for external action.',
+    status: 'UNKNOWN',
+    lastRun: 'UNKNOWN',
+    value: 'UNKNOWN',
+    cost: 'UNKNOWN',
+    aiCalls: 'UNKNOWN',
+    verifier: 'UNKNOWN',
+    nextAction: 'Live operator runtime unavailable in production build.',
   };
 });
 const registryWorkers = ((workforceRegistry as any).workers ?? []) as Array<Record<string, unknown>>;
@@ -100,6 +100,7 @@ export const hermesMissionControlData = {
     activeRuns: systemSummary?.active_runs ?? 'UNKNOWN',
     failedRuns: systemSummary?.failed_runs ?? 'UNKNOWN',
     lastUpdated: loop?.last_updated_at ?? 'UNKNOWN',
+    truth: 'UNKNOWN — no live Phase 15 runtime source is bundled',
     businessLoops,
   },
   runtimeSnapshot,

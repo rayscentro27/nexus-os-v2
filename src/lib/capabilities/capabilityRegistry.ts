@@ -1,4 +1,4 @@
-import repoRegistry from '../../../reports/runtime/nexus_repo_intelligence_registry.json';
+import repoRegistry from '../../data/repoIntelligenceRegistry';
 import { getConnectorRegistry } from '../../hermes/nexus/nexusConnectorRegistry';
 import type {
   CapabilityActivationMode,

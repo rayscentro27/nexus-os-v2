@@ -1,4 +1,4 @@
-import repoRegistry from '../../../reports/runtime/nexus_repo_intelligence_registry.json';
+import repoRegistry from '../../data/repoIntelligenceRegistry';
 import { getConnectorRegistry, connectorSafetyInvariants } from '../../hermes/nexus/nexusConnectorRegistry';
 import { listTableDetailed, type TableQueryResult } from '../../services/db';
 import { getBrainProfiles } from '../brains/brainRegistry';
@@ -427,7 +427,7 @@ export async function loadExecutiveCommandCenterState(): Promise<ExecutiveComman
     metric('blocked_work', 'Blocked work', governedWork.filter((item) => item.lifecycle === 'BLOCKED' || item.lifecycle === 'FAILED').length, 'Governed execution', 'P0', sourceFromResult(tasksResult, 'task_requests')),
     metric('customer_records', 'Customer records', clientsResult.resultCount, clientsResult.status, 'P1', customerEvidence),
     metric('test_orders', 'Order records', ordersResult.resultCount, 'Test/live labeled revenue records', 'P2', revenueEvidence),
-    metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH')),
+    metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('UNKNOWN', 'No governed production repo-intelligence source', 'MEDIUM')),
     metric('capabilities', 'Capabilities governed', capabilityOS.total, `${capabilityOS.approvalGated} approval-gated`, 'P3', evidence('REPORT_BACKED', 'Capability OS registry', 'HIGH')),
     metric('knowledge_records', 'Knowledge records', knowledgeHealth.totalRecords, `${knowledgeHealth.pendingReviews} reviews pending`, 'P3', evidence('REPORT_BACKED', 'Knowledge Intelligence registry', 'HIGH')),
   ];
@@ -512,7 +512,7 @@ export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState
     metric('blocked_work', 'Blocked work', 'UNKNOWN', 'Requires authenticated admin session', 'P0', evidence('UNKNOWN', 'Supabase task_requests')),
     metric('customer_records', 'Customer records', 'UNKNOWN', 'Requires authenticated admin session', 'P1', evidence('UNKNOWN', 'Supabase client_profiles')),
     metric('stripe_mode', 'Stripe mode', 'TEST', 'Live deferred', 'P2', evidence('DEFERRED', 'Wave 1 Stripe policy', 'HIGH')),
-    metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH')),
+    metric('repo_candidates', 'Repo candidates', repoIntelligence.length, 'Read-only research lane', 'P4', evidence('UNKNOWN', 'No governed production repo-intelligence source', 'MEDIUM')),
     metric('capabilities', 'Capabilities governed', buildCapabilitySummary().total, 'Capability OS read model', 'P3', evidence('REPORT_BACKED', 'Capability OS registry', 'HIGH')),
     metric('knowledge_records', 'Knowledge records', knowledgeHealth.totalRecords, `${knowledgeHealth.pendingReviews} reviews pending`, 'P3', evidence('REPORT_BACKED', 'Knowledge Intelligence registry', 'HIGH')),
   ];
@@ -533,7 +533,7 @@ export function getExecutiveCommandCenterSnapshot(): ExecutiveCommandCenterState
       priority: 'P4',
       status: `${repoIntelligence.length} candidates`,
       route: 'reports',
-      evidence: evidence('REPORT_BACKED', 'reports/runtime/nexus_repo_intelligence_registry.json', 'HIGH'),
+      evidence: evidence('UNKNOWN', 'No governed production repo-intelligence source', 'MEDIUM'),
     },
     {
       id: 'open_system_health',
