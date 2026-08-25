@@ -8,6 +8,7 @@ credentials and never creates a polling loop.
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import uuid
 from datetime import datetime, timezone
@@ -187,6 +188,12 @@ def _load_mission_by_id(mission_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _write_receipt(path: Path, value: Mapping[str, Any], result: Mapping[str, Any]) -> None:
+    payload = dict(value)
+    payload["result"] = dict(result)
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
 def resolve_mission(text: str) -> Optional[Dict[str, Any]]:
     """Resolve explicit ids, surfaces, and aliases without selecting unrelated work."""
     normalized = _compact(text).lower()
@@ -295,6 +302,29 @@ def diagnostic_text(record: Mapping[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _delta_text(record: Mapping[str, Any]) -> str:
+    """Return only bounded activity recorded after the latest human gate."""
+    result = record.get("result") or {}
+    evidence = list(result.get("human_evidence") or [])
+    if not evidence:
+        return "Product Evolution delta\n\nNO PROGRESS\nNo human evidence timestamp is recorded yet."
+    since = max(str(item.get("recorded_at") or "") for item in evidence)
+    mission_id = _mission_id(record)
+    events = [item for item in result.get("execution_history") or [] if str(item.get("at") or "") > since]
+    execution = result.get("execution") or {}
+    if execution:
+        events.append({"event": "latest_execution", "at": result.get("updated_at"), "status": execution.get("status"), "adapter": (result.get("dispatch") or {}).get("adapter_id")})
+    if not events:
+        return f"Product Evolution delta\n\nMission: {mission_id}\nSince: {since}\nNO PROGRESS\nNo dispatcher, worker, test, critic, repair, or blocker activity has been recorded since the latest human evidence."
+    lines = ["Product Evolution delta", f"Mission: {mission_id}", f"Since: {since}"]
+    for event in events[-12:]:
+        lines.append(f"- {event.get('at') or 'time unknown'}: {event.get('event') or event.get('stage') or 'activity'} / {event.get('status') or event.get('adapter') or event.get('reason') or 'recorded'}")
+    lines.append(f"Current status: {_mission_status(record)}")
+    lines.append(f"Current stage: {result.get('current_stage') or 'UNKNOWN'}")
+    lines.append(f"Blocker: {result.get('blocker') or 'NONE_RECORDED'}")
+    return "\n".join(lines)
+
+
 def control_request(text: str) -> Optional[str]:
     lowered = _compact(text).lower()
     if re.search(r"\b(improve|evolve|run product evolution|make .{2,} easier|make .{2,} better)\b", lowered):
@@ -355,23 +385,97 @@ def cancel_mission(mission_id: str, reason: str) -> Dict[str, Any]:
     return {"status": "NOT_FOUND", "mission_id": mission_id}
 
 
+def _human_gate_type(text: str, record: Mapping[str, Any]) -> str:
+    lowered = text.lower()
+    if "voice" in lowered or "microphone" in lowered or "wake" in lowered:
+        return "VOICE_MICROPHONE"
+    if "visual" in lowered or "layout" in lowered or "creative" in lowered:
+        return "CREATIVE_VISUAL_REVIEW"
+    gates = (record.get("contract") or {}).get("human_only_gates") or []
+    return "HUMAN_GATE" if gates else "HUMAN_REVIEW"
+
+
+def _human_outcome(text: str) -> Optional[str]:
+    lowered = text.lower()
+    fail = bool(re.search(r"\b(?:fail(?:ed|s|ure)?|didn['’]?t pass|not pass(?:ed)?|doesn['’]?t work|429)\b", lowered))
+    passed = bool(re.search(r"\b(?:pass(?:ed|es)?|works?|working|approve(?:d|s)?|approved|success(?:ful|fully)?)\b", lowered))
+    if fail and passed:
+        # Explicit failure phrases outrank incidental words such as
+        # "previous ... completed" in a long Telegram report.
+        if re.search(r"\b(?:failed|didn['’]?t pass|not pass|429)\b", lowered):
+            return "FAIL"
+        return None
+    if fail:
+        return "FAIL"
+    if passed:
+        return "PASS"
+    return None
+
+
+def human_evidence_intent(text: str) -> bool:
+    lowered = _compact(text).lower()
+    has_gate_language = bool(re.search(r"\b(?:human|microphone|voice|wake|visual|layout|test|gate|evidence|approve|approval|review)\b", lowered))
+    has_action_language = bool(re.search(r"\b(?:record|update|resume|continue|tested|test|gate|evidence|approve|failed|passed|works?)\b", lowered))
+    return has_gate_language and has_action_language and _human_outcome(lowered) is not None
+
+
+def record_human_evidence(mission_id: str, text: str, *, source: str = "RAY_TELEGRAM", update_id: Optional[str] = None) -> Dict[str, Any]:
+    """Append one sanitized human-gate result and queue only on a new FAIL."""
+    for path in _receipt_files():
+        if path.stem != mission_id:
+            continue
+        value = json.loads(path.read_text(encoding="utf-8"))
+        result = value.get("result") or {}
+        outcome = _human_outcome(text)
+        if outcome is None:
+            return {"status": "AMBIGUOUS", "mission_id": mission_id}
+        summary = _compact(text)
+        gate_type = _human_gate_type(text, value)
+        evidence_hash = hashlib.sha256(json.dumps({"mission_id": mission_id, "gate_type": gate_type, "outcome": outcome, "summary": summary}, sort_keys=True).encode()).hexdigest()[:16]
+        existing = list(result.get("human_evidence") or [])
+        duplicate = next((item for item in existing if item.get("evidence_hash") == evidence_hash or (update_id and item.get("update_id") == str(update_id))), None)
+        if duplicate:
+            return {"status": "DUPLICATE", "mission_id": mission_id, "evidence": duplicate, "receipt_path": str(path)}
+        now = datetime.now(timezone.utc).isoformat()
+        previous_status = result.get("status")
+        previous_stage = result.get("current_stage")
+        evidence = {"recorded_at": now, "source": source, "gate_type": gate_type, "outcome": outcome, "summary": summary, "mission_id": mission_id, "previous_stage": previous_stage, "evidence_hash": evidence_hash}
+        if update_id is not None:
+            evidence["update_id"] = str(update_id)
+        existing.append(evidence)
+        history = list(result.get("execution_history") or [])
+        history.append({"at": now, "event": "HUMAN_EVIDENCE_RECORDED", "outcome": outcome, "gate_type": gate_type, "evidence_hash": evidence_hash, "previous_status": previous_status, "previous_stage": previous_stage})
+        result.update({"human_evidence": existing, "human_gate_result": outcome, "updated_at": now, "execution_history": history})
+        if outcome == "FAIL" and previous_status == "PARTIAL" and previous_stage == "HUMAN_GATE":
+            result.update({"status": "QUEUED", "current_stage": "RESUMED_AFTER_HUMAN_FAIL", "blocker": None})
+            result["dispatch"] = {**(result.get("dispatch") or {}), "resume_requested_at": now, "resume_reason": "HUMAN_GATE_FAILED", "pickup_state": "AWAITING_PHASE15"}
+            history.append({"at": now, "event": "RESUME_WITH_HUMAN_EVIDENCE", "reason": "HUMAN_GATE_FAILED", "status": "QUEUED", "previous_stage": previous_stage})
+        elif outcome == "PASS" and previous_stage == "HUMAN_GATE":
+            result.update({"status": "PARTIAL", "current_stage": "HUMAN_EVIDENCE_RECORDED", "blocker": None})
+        _write_receipt(path, value, result)
+        return {"status": "RECORDED", "mission_id": mission_id, "outcome": outcome, "evidence": evidence, "previous_status": previous_status, "previous_stage": previous_stage, "current_status": result.get("status"), "current_stage": result.get("current_stage"), "receipt_path": str(path)}
+    return {"status": "NOT_FOUND", "mission_id": mission_id}
+
+
 def classify_product_evolution_request(text: str, *, context_mission_id: Optional[str] = None) -> str:
     pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(context_mission_id)
     if not pe_signal:
         return "CLARIFICATION"
     if is_unsafe_product_evolution_request(text):
         return "UNSAFE"
+    if human_evidence_intent(text):
+        return "RESUME_WITH_HUMAN_EVIDENCE"
     request = control_request(text)
+    if request == "cancel":
+        return "CANCEL"
+    if request == "resume":
+        return "RESUME"
     if request == "status" and not re.search(r"\b(?:why|queued|picked|waiting|dispatcher|runtime)\b", text, re.I) and not explicit_no_create(text) and not exact_mission_id(text):
         return "STATUS"
     if request == "blocked":
         return "BLOCKERS"
     if diagnostic_intent(text) or explicit_no_create(text) or exact_mission_id(text):
         return "DIAGNOSTIC"
-    if request == "cancel":
-        return "CANCEL"
-    if request == "resume":
-        return "RESUME"
     if is_product_evolution_intent(text):
         return "START_NEW_MISSION"
     if context_mission_id and re.search(r"\b(?:picked|runtime|dispatcher|queued|waiting|started|execution)\b", text, re.I):
@@ -384,12 +488,31 @@ def handle_product_evolution_intake(text: str, *, context_mission_id: Optional[s
     classification = classify_product_evolution_request(text, context_mission_id=context_mission_id)
     if classification == "UNSAFE":
         return {"handled": True, "status": "BLOCKED", "route": "PRODUCT_EVOLUTION", "response": "Product Evolution cannot change security, authority, payments, approvals, credentials, or client-data boundaries."}
+    if classification == "RESUME_WITH_HUMAN_EVIDENCE":
+        mission_id = exact_mission_id(text) or context_mission_id
+        resolved = _load_mission_by_id(mission_id) if mission_id else resolve_mission(text)
+        if not resolved:
+            return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_HUMAN_EVIDENCE", "response": "No existing Product Evolution mission was found. I did not create a new mission."}
+        outcome = _human_outcome(text)
+        if outcome is None:
+            return {"handled": True, "status": "CLARIFICATION", "route": "PRODUCT_EVOLUTION_HUMAN_EVIDENCE", "mission_id": _mission_id(resolved), "response": "Was the human gate PASS or FAIL?"}
+        recorded = record_human_evidence(_mission_id(resolved), text)
+        if recorded.get("status") == "DUPLICATE":
+            return {"handled": True, "status": "ALREADY_RECORDED", "route": "PRODUCT_EVOLUTION_HUMAN_EVIDENCE", "mission_id": _mission_id(resolved), "evidence": recorded.get("evidence"), "response": f"Human {recorded['evidence'].get('gate_type', 'gate')} evidence was already recorded for mission {_mission_id(resolved)}. No duplicate resume was created."}
+        if recorded.get("status") != "RECORDED":
+            return {"handled": True, "status": recorded.get("status", "NOT_FOUND"), "route": "PRODUCT_EVOLUTION_HUMAN_EVIDENCE", "mission_id": _mission_id(resolved), "response": "Human evidence could not be recorded against the existing mission."}
+        if outcome == "FAIL":
+            response = (f"Human Voice test recorded: FAIL.\n\nMission: {_mission_id(resolved)}\nPrevious stage: {recorded['previous_stage']}\nCurrent status: {recorded['current_status']}\nResume reason: HUMAN_GATE_FAILED\nAdapter: {(resolved.get('result') or {}).get('dispatch', {}).get('adapter_id', 'VOICE_PRODUCT_EVOLUTION')}\nNext: canonical Phase 15 Product Evolution dispatch.\n\nNo new mission was created.")
+        else:
+            response = f"Human gate recorded: PASS.\n\nMission: {_mission_id(resolved)}\nCurrent status: {recorded['current_status']}\nCurrent stage: {recorded['current_stage']}\nNo repair was queued solely from this PASS; remaining automated criteria and gates must still pass."
+        return {"handled": True, "status": "EVIDENCE_RECORDED", "route": "PRODUCT_EVOLUTION_HUMAN_EVIDENCE", "mission_id": _mission_id(resolved), "evidence": recorded.get("evidence"), "response": response}
     if classification == "DIAGNOSTIC":
         mission_id = exact_mission_id(text) or context_mission_id
         resolved = _load_mission_by_id(mission_id) if mission_id else resolve_mission(text)
         if not resolved:
             return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_DIAGNOSTIC", "response": "Mission not found."}
-        return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_DIAGNOSTIC", "mission_id": _mission_id(resolved), "response": diagnostic_text(resolved)}
+        response = _delta_text(resolved) if re.search(r"\bdelta\b|what changed .*since .*test|what changed .*since .*evidence", text, re.I) else diagnostic_text(resolved)
+        return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_DIAGNOSTIC", "mission_id": _mission_id(resolved), "response": response}
     request = control_request(text)
     if request == "status":
         return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_STATUS", "response": status_text()}

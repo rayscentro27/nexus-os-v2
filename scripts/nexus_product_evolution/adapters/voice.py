@@ -97,7 +97,14 @@ def _post_synthetic(path: str, *, endpoint_path: str, content_type: str, base_ur
 
 def transport_diagnosis() -> Dict[str, Any]:
     preview_options, transcribe_options = _options(VOICE_PATHS[0]), _options(VOICE_PATHS[1])
-    result: Dict[str, Any] = {"preview_options": preview_options, "transcribe_options": transcribe_options, "production_origin": PRODUCTION_ORIGIN, "allowed_headers": VOICE_ALLOWED_HEADERS, "options_pass": _options_pass(preview_options) and _options_pass(transcribe_options), "preview_post": {"status": "NOT_RUN"}, "transcribe_post": {"status": "NOT_RUN"}, "local_preview_post": {"status": "NOT_RUN"}, "local_transcribe_post": {"status": "NOT_RUN"}, "whisper_reached": False, "synthetic_transcript": False, "raw_audio_retained": False}
+    source = (ROOT / "src/admin/NexusWakeVoice.jsx").read_text(encoding="utf-8")
+    wake_architecture = {
+        "mode": "VAD_ONE_SHOT_LOCAL_STT",
+        "persistent_preview_disabled": "persistentRef.current || !endpoint" in source,
+        "single_utterance_states": all(token in source for token in ("WAKE_IDLE", "CAPTURING", "FINALIZING", "ROUTING", "THINKING", "COOLDOWN")),
+        "cooldown_present": "COOLDOWN_MS" in source and "armCooldown" in source,
+    }
+    result: Dict[str, Any] = {"preview_options": preview_options, "transcribe_options": transcribe_options, "production_origin": PRODUCTION_ORIGIN, "allowed_headers": VOICE_ALLOWED_HEADERS, "wake_architecture": wake_architecture, "options_pass": _options_pass(preview_options) and _options_pass(transcribe_options), "preview_post": {"status": "NOT_RUN"}, "transcribe_post": {"status": "NOT_RUN"}, "local_preview_post": {"status": "NOT_RUN"}, "local_transcribe_post": {"status": "NOT_RUN"}, "whisper_reached": False, "synthetic_transcript": False, "raw_audio_retained": False}
     with tempfile.TemporaryDirectory(prefix="nexus-product-evolution-voice-") as temp_dir:
         audio = Path(temp_dir) / "synthetic.aiff"
         try:
@@ -114,7 +121,7 @@ def transport_diagnosis() -> Dict[str, Any]:
             result["synthetic_audio_error"] = str(exc)
     result["cloudflare_access_required"] = any(result[key].get("status") in {301, 302, 303, 307, 308} for key in ("preview_post", "transcribe_post"))
     result["local_transport_pass"] = bool(result["local_preview_post"].get("status") == 200 and result["local_transcribe_post"].get("status") == 200 and result["whisper_reached"] and result["synthetic_transcript"])
-    result["code_repair_needed"] = not bool(result["options_pass"] and result["local_transport_pass"])
+    result["code_repair_needed"] = not bool(result["options_pass"] and result["local_transport_pass"] and all(wake_architecture.values()))
     result["pass"] = bool(result["options_pass"] and result["local_transport_pass"] and not result["cloudflare_access_required"] and result["raw_audio_retained"] is False)
     return result
 
@@ -130,15 +137,24 @@ def execute_voice(mission_id: str, contract: MissionContract, adapter: ProductEv
     builder_result: Dict[str, Any] = {"status": "not_needed"}
     task_holder: Dict[str, Any] = {}
     bounded_contract = replace(contract, max_cycles=min(contract.max_cycles, adapter.max_cycles))
+    human_fail_evidence = None
+    receipt_path = ROOT / "reports/product_evolution" / f"{mission_id}.json"
+    try:
+        receipt_result = json.loads(receipt_path.read_text(encoding="utf-8")).get("result") or {}
+        evidence = list(receipt_result.get("human_evidence") or [])
+        if evidence and evidence[-1].get("outcome") == "FAIL":
+            human_fail_evidence = evidence[-1]
+    except (OSError, ValueError, TypeError):
+        human_fail_evidence = None
 
     def pass_stage(evidence: str):
         return lambda: {"status": "PASS", "evidence": evidence}
 
     def build_stage() -> Dict[str, Any]:
         nonlocal builder_result, transport
-        if not transport["code_repair_needed"]:
+        if not transport["code_repair_needed"] and not human_fail_evidence:
             return {"status": "PASS", "evidence": "Tracked Voice runtime and production-like transport satisfy the contract."}
-        task = mission_to_build_task(mission_id, contract, allowed_paths=adapter.allowed_paths, protected_paths=adapter.protected_paths, tests=adapter.test_commands, visual_requirements=adapter.visual_requirements, timeout_seconds=adapter.timeout_seconds, max_retries=min(bounded_contract.max_cycles - 1, adapter.max_cycles - 1), previous_failure={"transport": transport})
+        task = mission_to_build_task(mission_id, contract, allowed_paths=adapter.allowed_paths, protected_paths=adapter.protected_paths, tests=adapter.test_commands, visual_requirements=adapter.visual_requirements, timeout_seconds=adapter.timeout_seconds, max_retries=min(bounded_contract.max_cycles - 1, adapter.max_cycles - 1), previous_failure={"transport": transport, "human_failure": human_fail_evidence or {}})
         task_holder["task"] = task.to_dict()
         builder_result = run_bounded_codex_task(task)
         return {"status": "PASS" if builder_result.get("ok") else "BLOCKED", "evidence": "Bounded Codex Builder execution", "failure_class": FailureClass.IMPLEMENTATION_BUG.value, "error": builder_result.get("worker_error") or builder_result.get("verification", {}).get("reason")}
