@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
 CONTEXT_TTL_SECONDS = 10 * 60
 MAX_TELEGRAM_RETRIES = 2
-MISSION_ID_PATTERN = r"\btelegram-[0-9]{8,}-[a-f0-9-]+\b"
+MISSION_ID_PATTERN = r"\btelegram-[0-9]{8,}-[a-f0-9]{8}\b(?!-[a-f0-9]{12}\b)"
+RELEASE_ID_PATTERN = r"\brel-telegram-[0-9]{8,}-[a-f0-9]{8}-[a-f0-9]{12}\b"
 
 UNSAFE_PATTERNS = (
     r"\b(enabl\w*|remov\w*|bypass\w*|weaken\w*)\b.*\b(secur\w*|approval\w*|governance|auth|rls)\b",
@@ -54,6 +55,11 @@ def explicit_no_create(text: str) -> bool:
 
 def exact_mission_id(text: str) -> Optional[str]:
     match = re.search(MISSION_ID_PATTERN, text, re.I)
+    return match.group(0) if match else None
+
+
+def exact_release_id(text: str) -> Optional[str]:
+    match = re.search(RELEASE_ID_PATTERN, text, re.I)
     return match.group(0) if match else None
 
 
@@ -178,16 +184,86 @@ def _mission_status(record: Mapping[str, Any]) -> str:
 
 
 def _load_mission_by_id(mission_id: str) -> Optional[Dict[str, Any]]:
+    path = RECEIPT_DIR / f"{mission_id}.json"
+    if not path.exists():
+        return None
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return None
+    value["receipt_path"] = str(path)
+    return value
+    return None
+
+
+def _load_release_by_id(release_id: str) -> Optional[Dict[str, Any]]:
+    """Resolve an exact persisted release without fuzzy mission selection."""
     for path in _receipt_files():
-        if path.stem != mission_id:
-            continue
         try:
             value = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
-            return None
-        value["receipt_path"] = str(path)
-        return value
+            continue
+        release = (value.get("result") or {}).get("release") or {}
+        if release.get("release_id") == release_id:
+            value["receipt_path"] = str(path)
+            return value
     return None
+
+
+def _resolve_release_or_mission(text: str, context_mission_id: Optional[str] = None) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    release_id = exact_release_id(text)
+    mission_id = exact_mission_id(text) or context_mission_id
+    resolved = _load_release_by_id(release_id) if release_id else (_load_mission_by_id(mission_id) if mission_id else None)
+    if not resolved and mission_id and (RECEIPT_DIR / f"{mission_id}.json").exists():
+        return None, "RECEIPT_PARSE_ERROR"
+    if release_id and resolved and mission_id and _mission_id(resolved) != mission_id:
+        return None, "RELEASE_MISSION_ID_MISMATCH"
+    return resolved, None
+
+
+def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
+    """Build a read-only release/deployment truth view from persisted evidence."""
+    result = resolved.get("result") or {}
+    release = result.get("release") or {}
+    deployment = result.get("deployment") or {}
+    events = {str(item.get("event")) for item in result.get("execution_history") or []}
+    verification = release.get("verification_result") or "NOT_RUN"
+    return {
+        "mission_id": _mission_id(resolved),
+        "release_id": release.get("release_id", "UNKNOWN"),
+        "approval_state": release.get("approval_state", "UNKNOWN"),
+        "approved_by": release.get("approved_by"),
+        "approved_at": release.get("approved_at"),
+        "current_stage": result.get("current_stage", "UNKNOWN"),
+        "current_status": result.get("status", "UNKNOWN"),
+        "release_dispatch_claimed": "RELEASE_DISPATCH_CLAIMED" in events,
+        "deployment_occurred": "DEPLOYMENT_COMPLETE" in events or bool(release.get("deployment_completed_at")),
+        "production_deploy_id": release.get("production_deploy_id") or deployment.get("deployed_build_id") or deployment.get("current_deploy_id") or (deployment.get("netlify_control_plane") or {}).get("published_deploy_id") or "NONE",
+        "observed_production_sha": release.get("production_commit_after") or deployment.get("deployed_commit") or (deployment.get("netlify_control_plane") or {}).get("published_commit") or "UNKNOWN",
+        "production_verification": verification,
+        "production_verification_checks": release.get("verification_checks") or {},
+        "rollback_occurred": "ROLLBACK_STARTED" in events or bool(release.get("rollback_result")),
+        "human_gate": result.get("current_stage") == "HUMAN_GATE" or "HUMAN_GATE_READY" in events,
+    }
+
+
+def release_inspection_text(truth: Mapping[str, Any]) -> str:
+    checks = truth.get("production_verification_checks") or {}
+    return "\n".join([
+        "Product Evolution release inspection",
+        f"Release: {truth.get('release_id', 'UNKNOWN')}",
+        f"Mission: {truth.get('mission_id', 'UNKNOWN')}",
+        f"Approval: {truth.get('approval_state', 'UNKNOWN')}",
+        f"Mission stage: {truth.get('current_stage', 'UNKNOWN')}",
+        f"Release dispatch claimed: {'YES' if truth.get('release_dispatch_claimed') else 'NO'}",
+        f"Production deployment: {'YES' if truth.get('deployment_occurred') else 'NO'}",
+        f"Production deploy ID: {truth.get('production_deploy_id', 'NONE')}",
+        f"Observed production SHA: {truth.get('observed_production_sha', 'UNKNOWN')}",
+        f"Production verification: {truth.get('production_verification', 'NOT_RUN')}",
+        f"Verification checks: {json.dumps(checks, sort_keys=True)}",
+        f"Rollback: {'YES' if truth.get('rollback_occurred') else 'NO'}",
+        f"Human gate: {'YES' if truth.get('human_gate') else 'NO'}",
+    ])
 
 
 def _write_receipt(path: Path, value: Mapping[str, Any], result: Mapping[str, Any]) -> None:
@@ -426,10 +502,12 @@ def human_evidence_intent(text: str) -> bool:
 
 
 def _deployment_operation(text: str) -> Optional[str]:
-    lowered = _compact(text).lower()
-    reconciliation = bool(re.search(r"\b(?:deploy|release|reconcile|promote)\b", lowered) and re.search(r"\b(?:existing|tested|approved|origin/main|governance|production)\b", lowered))
+    lowered = re.sub(r"\s+", " ", text.strip()).lower()[:4000]
     inspection = bool(re.search(r"\b(?:inspect|identify|compare|verify|check|determine|what)\b", lowered) and re.search(r"\b(?:deployment|deployed|production|live|bundle|build|commit|netlify|release|origin/main)\b", lowered))
     inspection = inspection or bool(re.search(r"\b(?:is production stale|what version is|what commit is live|production deployment state)\b", lowered))
+    if inspection and (exact_release_id(text) or re.search(r"\binspect\s+(?:the\s+)?existing\s+release\b", lowered)):
+        return "RELEASE_INSPECTION"
+    reconciliation = bool(re.search(r"\b(?:deploy|reconcile|promote)\b\s+(?:the\s+)?(?:already[- ]tested|existing|tested|approved|candidate|release|commit)", lowered) and re.search(r"\b(?:governance|production|origin/main|existing|tested|approved)\b", lowered))
     if reconciliation:
         return "DEPLOYMENT_RECONCILIATION"
     if inspection:
@@ -441,7 +519,7 @@ def classify_product_evolution_request_metadata(text: str, *, context_mission_id
     """Classify requested action separately from subject matter."""
     pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(context_mission_id) or bool(_deployment_operation(text)) or human_evidence_intent(text)
     mission_id = exact_mission_id(text) or context_mission_id
-    metadata = {"subject": _surface(text), "operation": "CLARIFICATION", "mission_id": mission_id, "no_create": explicit_no_create(text), "human_evidence_outcome": _human_outcome(text)}
+    metadata = {"subject": _surface(text), "operation": "CLARIFICATION", "mission_id": mission_id, "release_id": exact_release_id(text), "no_create": explicit_no_create(text), "human_evidence_outcome": _human_outcome(text)}
     if parse_release_approval(text):
         metadata["operation"] = "RELEASE_APPROVAL"
         metadata["no_create"] = True
@@ -566,14 +644,16 @@ def handle_product_evolution_intake(text: str, *, context_mission_id: Optional[s
     classification = classify_product_evolution_request(text, context_mission_id=context_mission_id)
     if classification == "UNSAFE":
         return {"handled": True, "status": "BLOCKED", "route": "PRODUCT_EVOLUTION", "response": "Product Evolution cannot change security, authority, payments, approvals, credentials, or client-data boundaries."}
-    if classification in {"DEPLOYMENT_INSPECTION", "DEPLOYMENT_RECONCILIATION"}:
-        mission_id = exact_mission_id(text) or context_mission_id
-        resolved = _load_mission_by_id(mission_id) if mission_id else resolve_mission(text)
+    if classification in {"RELEASE_INSPECTION", "DEPLOYMENT_INSPECTION", "DEPLOYMENT_RECONCILIATION"}:
+        resolved, resolution_error = _resolve_release_or_mission(text, context_mission_id)
+        if resolution_error:
+            return {"handled": True, "status": "REJECTED", "route": "PRODUCT_EVOLUTION_RELEASE_INSPECTION", "reason": resolution_error, "response": resolution_error}
         if not resolved:
-            return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_DEPLOYMENT", "response": "No existing Product Evolution mission was found. I did not create a new mission."}
+            return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_RELEASE_INSPECTION", "response": "No existing Product Evolution release or mission was found. I did not create a new mission."}
+        if classification == "RELEASE_INSPECTION":
+            truth = release_inspection(resolved)
+            return {"handled": True, "status": "ANSWERED", "route": "PRODUCT_EVOLUTION_RELEASE_INSPECTION", "mission_id": truth["mission_id"], "release_id": truth["release_id"], "deployment": truth, "response": release_inspection_text(truth)}
         inspected = inspect_deployment(resolved)
-        path = Path(str(resolved.get("receipt_path")))
-        _write_receipt(path, resolved, inspected)
         action = "none"
         if classification == "DEPLOYMENT_RECONCILIATION":
             now = datetime.now(timezone.utc).isoformat()
