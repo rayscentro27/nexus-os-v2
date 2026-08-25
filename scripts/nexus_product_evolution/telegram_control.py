@@ -414,6 +414,9 @@ def _human_outcome(text: str) -> Optional[str]:
 
 def human_evidence_intent(text: str) -> bool:
     lowered = _compact(text).lower()
+    query_start = r"^(?:hey\s+)?(?:nexus|hermes)[,\s:-]*"
+    if re.search(query_start + r"(?:what(?:'s| is) the status|what changed|give me a delta|delta-only|why is)\b", lowered) and not re.search(r"\b(?:record|update .*evidence|resume .*evidence|continue .*evidence)\b", lowered):
+        return False
     has_gate_language = bool(re.search(r"\b(?:human|microphone|voice|wake|visual|layout|test|gate|evidence|approve|approval|review)\b", lowered))
     has_action_language = bool(re.search(r"\b(?:record|update|resume|continue|tested|test|gate|evidence|approve|failed|passed|works?)\b", lowered))
     return has_gate_language and has_action_language and _human_outcome(lowered) is not None
@@ -434,6 +437,8 @@ def record_human_evidence(mission_id: str, text: str, *, source: str = "RAY_TELE
         evidence_hash = hashlib.sha256(json.dumps({"mission_id": mission_id, "gate_type": gate_type, "outcome": outcome, "summary": summary}, sort_keys=True).encode()).hexdigest()[:16]
         existing = list(result.get("human_evidence") or [])
         duplicate = next((item for item in existing if item.get("evidence_hash") == evidence_hash or (update_id and item.get("update_id") == str(update_id))), None)
+        if not duplicate and result.get("status") in {"QUEUED", "RUNNING"} and any(item.get("gate_type") == gate_type and item.get("outcome") == outcome for item in existing):
+            duplicate = next(item for item in existing if item.get("gate_type") == gate_type and item.get("outcome") == outcome)
         if duplicate:
             return {"status": "DUPLICATE", "mission_id": mission_id, "evidence": duplicate, "receipt_path": str(path)}
         now = datetime.now(timezone.utc).isoformat()

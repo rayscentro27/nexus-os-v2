@@ -73,3 +73,14 @@ def test_status_exact_mission_remains_diagnostic(tmp_path, monkeypatch):
     result = control.handle_product_evolution_intake(f"Nexus, what's the status of mission {MISSION_ID}?")
     assert result["route"] == "PRODUCT_EVOLUTION_DIAGNOSTIC"
     assert result["mission_id"] == MISSION_ID
+
+
+def test_delta_query_with_failed_test_language_remains_diagnostic(tmp_path, monkeypatch):
+    monkeypatch.setattr(control, "RECEIPT_DIR", tmp_path / "product_evolution")
+    path = control.RECEIPT_DIR / f"{MISSION_ID}.json"
+    _receipt(path)
+    control.record_human_evidence(MISSION_ID, "Nexus, the Voice microphone test failed. Record this evidence and continue.")
+    result = control.handle_product_evolution_intake(f"Nexus, what changed on the Voice mission since my failed test? Mission {MISSION_ID}.")
+    assert result["route"] == "PRODUCT_EVOLUTION_DIAGNOSTIC"
+    assert "Product Evolution delta" in result["response"]
+    assert len(json.loads(path.read_text())["result"]["human_evidence"]) == 1

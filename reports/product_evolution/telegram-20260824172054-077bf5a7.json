@@ -51,23 +51,454 @@
     "blocker": null,
     "created_at": "2026-08-24T17:20:54.510490+00:00",
     "critic": {},
-    "current_stage": "HUMAN_GATE",
+    "current_stage": "RESUMED_AFTER_HUMAN_FAIL",
     "cycle": 0,
     "dispatch": {
       "adapter_id": "VOICE_PRODUCT_EVOLUTION",
       "background": true,
-      "claimed_at": "2026-08-24T22:21:50.417254+00:00",
+      "claimed_at": "2026-08-25T14:00:24.140599+00:00",
       "governed": true,
       "last_dispatch_observation": "Adapter executed by canonical Phase 15 dispatcher.",
-      "pickup_state": "PICKED_UP",
+      "pickup_state": "AWAITING_PHASE15",
       "requested_by": "hermes_telegram",
-      "resume_reason": "bounded Voice adapter revalidation after builder bridge hardening",
-      "resume_requested_at": "2026-08-24T22:21:50.391664+00:00",
-      "scheduler_instance": "phase15-voice-revalidation"
+      "resume_reason": "HUMAN_GATE_FAILED",
+      "resume_requested_at": "2026-08-25T14:02:41.823220+00:00",
+      "scheduler_instance": "phase15-human-gate-resume"
     },
     "execution": {
       "builder": {
-        "status": "not_needed"
+        "ai_calls": 0,
+        "ai_usage": {
+          "input_tokens": 0,
+          "model_calls": 0,
+          "output_tokens": 0,
+          "tier1_calls": 0,
+          "tier2_calls": 0,
+          "tier3_calls": 0
+        },
+        "attempts": [
+          {
+            "attempt": 1,
+            "failure_delta": {},
+            "reason": "deterministic verification passed",
+            "status": "pass",
+            "worker_id": "codex"
+          }
+        ],
+        "builder_audit": [
+          {
+            "classification": "WRAP",
+            "component": "scripts/runner_handlers/_base.py",
+            "reason": "Generic subprocess runner already supports bounded script execution."
+          },
+          {
+            "classification": "MERGE",
+            "component": "scripts/client_flow/common.py",
+            "reason": "Local-only builder/report helpers already write structured outputs."
+          },
+          {
+            "classification": "DEFER",
+            "component": "scripts/client_flow/run_client_portal_backend_build.py",
+            "reason": "Client portal build flow is protected and not part of this phase."
+          },
+          {
+            "classification": "WRAP",
+            "component": "scripts/creative/lab.py",
+            "reason": "Creative Lab already produces an approved build spec and pilot artifact."
+          },
+          {
+            "classification": "WRAP",
+            "component": "scripts/creative/run_creative_lab.py",
+            "reason": "Existing Creative Lab report driver can seed the safe builder proof."
+          },
+          {
+            "classification": "EXTEND",
+            "component": "scripts/nexus_agent_platform/runtime/execution_telemetry.py",
+            "reason": "Verified execution telemetry already records actual runtime boundaries."
+          },
+          {
+            "classification": "EXTEND",
+            "component": "scripts/nexus_agent_platform/loops/runtime.py",
+            "reason": "Loop runtime already enforces bounded retries and cost control patterns."
+          },
+          {
+            "classification": "MERGE",
+            "component": "scripts/nexus_agent_platform/hermes_lab/upstream_compatibility.py",
+            "reason": "Upstream lab sandboxing and subprocess probes are reusable here."
+          },
+          {
+            "classification": "WRAP",
+            "component": "src/lib/nexusSectionStatusRegistry.ts",
+            "reason": "CLI/tool availability inventory already exists and informs routing."
+          },
+          {
+            "classification": "WRAP",
+            "component": "reports/cli_tool_registry_latest.json",
+            "reason": "Read-only tool registry evidence already captures installed vs authorized state."
+          },
+          {
+            "classification": "MERGE",
+            "component": "scripts/runner_handlers/design_handlers.py",
+            "reason": "Deterministic script delegation pattern can be reused for builder orchestration."
+          },
+          {
+            "classification": "WRAP",
+            "component": "scripts/hermes/create_manual_model_packet.py",
+            "reason": "Manual packet pattern is useful for future worker handoffs, not execution."
+          },
+          {
+            "classification": "DEFER",
+            "component": "OpenHands integration",
+            "reason": "Not installed or proven on this machine."
+          },
+          {
+            "classification": "CREATE_NEW",
+            "component": "provider-neutral CodingWorker contract",
+            "reason": "This phase introduces the missing builder abstraction."
+          }
+        ],
+        "duration_ms": 93642,
+        "ending_commit": "1f46445099582cc078e974cbef1d0dad16c86176",
+        "ledger_path": "/Users/raymonddavis/nexus-os-v2/data/runtime/builder_execution_ledger/ledger.jsonl",
+        "ok": true,
+        "result": {
+          "ai_usage": {
+            "input_tokens": 0,
+            "model_calls": 0,
+            "output_tokens": 0,
+            "tier1_calls": 0,
+            "tier2_calls": 0,
+            "tier3_calls": 0
+          },
+          "artifact_refs": [],
+          "attempts": [
+            {
+              "attempt": 1,
+              "failure_delta": {},
+              "reason": "deterministic verification passed",
+              "status": "pass",
+              "worker_id": "codex"
+            }
+          ],
+          "cost_provenance": {
+            "estimated_cost_usd": 0.0,
+            "provider": "local_python",
+            "tier": "ZERO_MODEL_COST"
+          },
+          "display_name": "Codex CLI",
+          "duration_ms": 93642,
+          "ending_commit": "1f46445099582cc078e974cbef1d0dad16c86176",
+          "files_changed": [
+            "launchd/com.nexus.voice-local.plist"
+          ],
+          "finished_at": "2026-08-25T14:02:17.884691+00:00",
+          "protected_path_violation": false,
+          "retry_count": 0,
+          "selected_worker_fallback": false,
+          "selected_worker_reason": "version and harmless execution probes succeeded",
+          "started_at": "2026-08-25T14:02:17.884606+00:00",
+          "starting_commit": "1f46445099582cc078e974cbef1d0dad16c86176",
+          "status": "pass",
+          "task_id": "product_evolution_telegram-20260824172054-077bf5a7",
+          "tests_failed": 0,
+          "tests_passed": 0,
+          "tests_run": [
+            "python3 -m py_compile scripts/nexus_agent_platform/voice/local_server.py scripts/nexus_agent_platform/voice/local_stt.py"
+          ],
+          "verification": {
+            "failure_delta": {},
+            "protected_path_violation": false,
+            "reason": "deterministic verification passed",
+            "retryable": false,
+            "status": "pass"
+          },
+          "visual_check": {
+            "required": false,
+            "status": "not_required",
+            "verified": true
+          },
+          "worker_id": "codex",
+          "worker_report": {
+            "command": [
+              "codex",
+              "exec",
+              "--sandbox",
+              "workspace-write",
+              "--ephemeral"
+            ],
+            "duration_ms": 93063,
+            "returncode": 0,
+            "status_lines": 1
+          },
+          "worker_type": "cli",
+          "zero_token_execution": true
+        },
+        "retry_count": 0,
+        "selected_worker": {
+          "availability_reason": "version and harmless execution probes succeeded",
+          "available": true,
+          "capabilities": [
+            "repo_edit",
+            "tests",
+            "worktrees"
+          ],
+          "classification": "AVAILABLE",
+          "cost_class": "ZERO_MODEL_COST",
+          "display_name": "Codex CLI",
+          "fallback_used": false,
+          "installed": true,
+          "probe_result": "execution_success",
+          "reason": "version and harmless execution probes succeeded",
+          "supports_browser": false,
+          "supports_images": false,
+          "supports_repo_edit": true,
+          "supports_resume": false,
+          "supports_structured_output": false,
+          "supports_tests": true,
+          "supports_worktrees": true,
+          "version": "codex-cli 0.149.1",
+          "worker_id": "codex",
+          "worker_type": "cli"
+        },
+        "starting_commit": "1f46445099582cc078e974cbef1d0dad16c86176",
+        "status": "pass",
+        "task": {
+          "acceptance_criteria": [
+            "normal conversation uses at most one manual initiation action",
+            "private STT and raw-audio cleanup remain",
+            "correct agent routing and thread continuity",
+            "user-visible outcome is demonstrated",
+            "focused tests and browser evaluation pass",
+            "truthful unknown/not-connected states are preserved",
+            "existing governance and agent boundaries remain unchanged"
+          ],
+          "allowed_paths": [
+            "src/admin/NexusWakeVoice.jsx",
+            "src/admin/VoicePushToTalk.jsx",
+            "scripts/nexus_agent_platform/voice/local_server.py",
+            "scripts/nexus_agent_platform/voice/local_stt.py",
+            "scripts/ops/run_voice_local_with_runtime_env.sh",
+            "launchd/com.nexus.voice-local.plist",
+            "scripts/nexus_agent_platform/tests/",
+            "docs/operations/voice/"
+          ],
+          "approval_state": "governed_product_evolution",
+          "branch": "main",
+          "budget": {
+            "cost_ceiling": "$0 recurring unless explicitly approved",
+            "model_tier": "ZERO_MODEL_COST"
+          },
+          "max_retries": 2,
+          "metadata": {
+            "branch": "main",
+            "deployment_policy": "preview-first; production only under existing Nexus governance",
+            "human_gates": [
+              "human microphone test where Voice is involved",
+              "subjective visual approval where design is involved"
+            ],
+            "locked_systems": [
+              "Hermes",
+              "Active Operator",
+              "Mission Control",
+              "Approvals",
+              "Product Evolution Loop",
+              "Phase Q Voice",
+              "whisper.cpp"
+            ],
+            "mission_id": "telegram-20260824172054-077bf5a7",
+            "parent_mission_id": null,
+            "starting_commit": "1f46445099582cc078e974cbef1d0dad16c86176"
+          },
+          "objective": "run Product Evolution on the failed production Voice transport. Human testing confirms voice.goclearonline.cc reaches the local Nexus Voice server, but the Admin browser OPTIONS preflight is returning 403 before preview or transcribe. Audit the live NEXUS_VOICE_ALLOWED_ORIGINS and Voice launchd/runtime environment. Production Admin origin is exactly https://goclearonline.cc. Fix the secure transport so Voice Listening ON lets me say \u201cHey Nexus\u201d and receive a response without another micro",
+          "previous_failure_delta": {
+            "human_failure": {
+              "evidence_hash": "3a15698859ae0ec6",
+              "gate_type": "VOICE_MICROPHONE",
+              "mission_id": "telegram-20260824172054-077bf5a7",
+              "outcome": "FAIL",
+              "previous_stage": "HUMAN_GATE",
+              "recorded_at": "2026-08-25T14:00:14.135154+00:00",
+              "source": "RAY_TELEGRAM",
+              "summary": "Nexus, update and resume existing Product Evolution mission telegram-20260824172054-077bf5a7 with new human test evidence. Do not create a new mission. The previous HUMAN_GATE was completed and FAILED. Production Voice Listening now reaches the Voice service successfully: OPTIONS returns 204 and preview/transcribe can return 200, but persistent listening produces repeated 429 responses. This proves the previous human gate did not pass. Record this evidence against the existing mission, move it o"
+            },
+            "transport": {
+              "allowed_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
+              "cloudflare_access_required": true,
+              "code_repair_needed": false,
+              "local_preview_post": {
+                "payload": {
+                  "audio_retained": false,
+                  "confidence": null,
+                  "created_at": "2026-08-25T14:00:30.295385+00:00",
+                  "duration_ms": 2870,
+                  "external_action_performed": false,
+                  "language": "en",
+                  "model": "ggml-base.en.bin",
+                  "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+                  "model_version": "base.en",
+                  "preview": true,
+                  "processing_duration_ms": 4732,
+                  "schema_version": "nexus.voice-transcript.v1",
+                  "session_id": "product-evolution-synthetic",
+                  "stt_provider": "whisper.cpp",
+                  "text": "Hey Nexus, what should I focus on today?",
+                  "transcript_id": "transcript_2357607bc7784ad2b66dbedaf733dd1c",
+                  "voice_request_id": "voice_64fcde9525994dafa90ac64e3f057b00"
+                },
+                "status": 200
+              },
+              "local_transcribe_post": {
+                "payload": {
+                  "audio_retained": false,
+                  "confidence": null,
+                  "created_at": "2026-08-25T14:00:35.402163+00:00",
+                  "duration_ms": 2870,
+                  "external_action_performed": false,
+                  "language": "en",
+                  "model": "ggml-base.en.bin",
+                  "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+                  "model_version": "base.en",
+                  "processing_duration_ms": 5044,
+                  "schema_version": "nexus.voice-transcript.v1",
+                  "session_id": "product-evolution-synthetic",
+                  "stt_provider": "whisper.cpp",
+                  "text": "Hey Nexus, what should I focus on today?",
+                  "transcript_id": "transcript_b31eaa106a4746e081570a5b03ab7a67",
+                  "voice_request_id": "voice_0ce67cb2a91e43ec9fa7a13be895653b"
+                },
+                "status": 200
+              },
+              "local_transport_pass": true,
+              "options_pass": true,
+              "pass": false,
+              "preview_options": {
+                "allow_credentials": "true",
+                "allow_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
+                "allow_methods": "POST, OPTIONS",
+                "allow_origin": "https://goclearonline.cc",
+                "status": 204
+              },
+              "preview_post": {
+                "payload": {
+                  "raw_response": "<html>\n<head><title>302 Found</title></head>\n<body>\n<center><h1>302 Found</h1></center>\n<hr><center>cloudflare</center>\n</body>\n</html>\n"
+                },
+                "status": 302
+              },
+              "production_origin": "https://goclearonline.cc",
+              "raw_audio_retained": false,
+              "synthetic_transcript": true,
+              "transcribe_options": {
+                "allow_credentials": "true",
+                "allow_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
+                "allow_methods": "POST, OPTIONS",
+                "allow_origin": "https://goclearonline.cc",
+                "status": 204
+              },
+              "transcribe_post": {
+                "payload": {
+                  "raw_response": "<html>\n<head><title>302 Found</title></head>\n<body>\n<center><h1>302 Found</h1></center>\n<hr><center>cloudflare</center>\n</body>\n</html>\n"
+                },
+                "status": 302
+              },
+              "wake_architecture": {
+                "cooldown_present": true,
+                "mode": "VAD_ONE_SHOT_LOCAL_STT",
+                "persistent_preview_disabled": true,
+                "single_utterance_states": true
+              },
+              "whisper_reached": true
+            }
+          },
+          "protected_paths": [
+            "src/client-v2/",
+            "src/clientPortal/",
+            "supabase/",
+            "src/hermes/",
+            "scripts/nova/",
+            "scripts/alpha/",
+            "runtime.env",
+            ".env",
+            "secrets/",
+            "public/runtime/",
+            "production agent identities"
+          ],
+          "repo": "/Users/raymonddavis/nexus-os-v2",
+          "requirements": [
+            "Mission telegram-20260824172054-077bf5a7 must remain on its original receipt lineage.",
+            "Improve Voice within the stated outcome without creating a parallel Nexus system.",
+            "normal conversation uses at most one manual initiation action",
+            "private STT and raw-audio cleanup remain",
+            "correct agent routing and thread continuity",
+            "user-visible outcome is demonstrated",
+            "focused tests and browser evaluation pass",
+            "truthful unknown/not-connected states are preserved",
+            "existing governance and agent boundaries remain unchanged",
+            "no new authority",
+            "no client PII expansion",
+            "no arbitrary shell",
+            "no cloud speech"
+          ],
+          "retry_policy": "bounded",
+          "scope": [
+            "src/admin/NexusWakeVoice.jsx",
+            "src/admin/VoicePushToTalk.jsx",
+            "scripts/nexus_agent_platform/voice/local_server.py",
+            "scripts/nexus_agent_platform/voice/local_stt.py",
+            "scripts/ops/run_voice_local_with_runtime_env.sh",
+            "launchd/com.nexus.voice-local.plist",
+            "scripts/nexus_agent_platform/tests/",
+            "docs/operations/voice/"
+          ],
+          "security_constraints": [
+            "no new authority",
+            "no client PII expansion",
+            "no arbitrary shell",
+            "no cloud speech"
+          ],
+          "task_id": "product_evolution_telegram-20260824172054-077bf5a7",
+          "tests": [
+            "python3 -m py_compile scripts/nexus_agent_platform/voice/local_server.py scripts/nexus_agent_platform/voice/local_stt.py"
+          ],
+          "timeout_seconds": 900,
+          "title": "Product Evolution run Product Evolution on the failed production Voice transport. Human testing confirms voice.goclear",
+          "visual_requirements": false,
+          "worktree": "ISOLATED_WORKTREE_CREATED_AT_EXECUTION"
+        },
+        "verification": {
+          "failure_delta": {},
+          "protected_path_violation": false,
+          "reason": "deterministic verification passed",
+          "retryable": false,
+          "status": "pass"
+        },
+        "workers": [
+          {
+            "availability_reason": "version and harmless execution probes succeeded",
+            "available": true,
+            "capabilities": [
+              "repo_edit",
+              "tests",
+              "worktrees"
+            ],
+            "classification": "AVAILABLE",
+            "cost_class": "ZERO_MODEL_COST",
+            "display_name": "Codex CLI",
+            "installed": true,
+            "probe_result": "execution_success",
+            "reason": "version and harmless execution probes succeeded",
+            "supports_browser": false,
+            "supports_images": false,
+            "supports_repo_edit": true,
+            "supports_resume": false,
+            "supports_structured_output": false,
+            "supports_tests": true,
+            "supports_worktrees": true,
+            "version": "codex-cli 0.149.1",
+            "worker_id": "codex",
+            "worker_type": "cli"
+          }
+        ],
+        "zero_token_execution": true
       },
       "human_gate": "Open https://goclearonline.cc/admin, turn Voice Listening ON once, and say: Hey Nexus, what should I focus on today?",
       "result": {
@@ -114,13 +545,15 @@
             "status": "PASS"
           },
           {
-            "evidence": "Tracked Voice runtime and production-like transport satisfy the contract.",
+            "error": "deterministic verification passed",
+            "evidence": "Bounded Codex Builder execution",
+            "failure_class": "IMPLEMENTATION_BUG",
             "stage": "BUILD",
             "status": "PASS"
           },
           {
             "error": "Voice transport proof did not pass",
-            "evidence": "{\"allowed_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"cloudflare_access_required\": true, \"code_repair_needed\": false, \"local_preview_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-24T22:22:05.807509+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"preview\": true, \"processing_duration_ms\": 4514, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_3414b18c6f3c4e78bec5b6e35fd7c4d6\", \"voice_request_id\": \"voice_d900d2c2fd7443c586b5d6423d765064\"}, \"status\": 200}, \"local_transcribe_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-24T22:22:10.300888+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"processing_duration_ms\": 4472, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_35b3855804e74e51b26f040911473738\", \"voice_request_id\": \"voice_54dd4e54cb1b4dbea9c634ffada2ce03\"}, \"status\": 200}, \"local_transport_pass\": true, \"options_pass\": true, \"pass\": false, \"preview_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"preview_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"production_origin\": \"https://goclearonline.cc\", \"raw_audio_retained\": false, \"synthetic_transcript\": true, \"transcribe_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"transcribe_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"whisper_reached\": true}",
+            "evidence": "{\"allowed_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"cloudflare_access_required\": true, \"code_repair_needed\": false, \"local_preview_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-25T14:02:23.293810+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"preview\": true, \"processing_duration_ms\": 4729, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_b4994c20927d472990ea2f1a7b041c8e\", \"voice_request_id\": \"voice_e239becf55b142b0bd82e20d68e9db97\"}, \"status\": 200}, \"local_transcribe_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-25T14:02:27.952984+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"processing_duration_ms\": 4638, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_847d4b4aaea741738485560f3fe04782\", \"voice_request_id\": \"voice_349dd147445944c285bd93e0ec54dd83\"}, \"status\": 200}, \"local_transport_pass\": true, \"options_pass\": true, \"pass\": false, \"preview_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"preview_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"production_origin\": \"https://goclearonline.cc\", \"raw_audio_retained\": false, \"synthetic_transcript\": true, \"transcribe_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"transcribe_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"wake_architecture\": {\"cooldown_present\": true, \"mode\": \"VAD_ONE_SHOT_LOCAL_STT\", \"persistent_preview_disabled\": true, \"single_utterance_states\": true}, \"whisper_reached\": true}",
             "failure_class": "ENVIRONMENT_BLOCKER",
             "stage": "TEST",
             "status": "PASS"
@@ -171,7 +604,7 @@
               "summary": "CORS and local whisper transport passed; production POST requires the existing Cloudflare Access session, then Ray must perform the real microphone test"
             },
             "cycle": 1,
-            "ended_at": "2026-08-24T22:22:10.303648+00:00",
+            "ended_at": "2026-08-25T14:02:27.955724+00:00",
             "failure": {
               "class": "HUMAN_HARDWARE_TEST_REQUIRED",
               "error": "CORS and local whisper transport passed; production POST requires the existing Cloudflare Access session, then Ray must perform the real microphone test",
@@ -200,13 +633,15 @@
                 "status": "PASS"
               },
               {
-                "evidence": "Tracked Voice runtime and production-like transport satisfy the contract.",
+                "error": "deterministic verification passed",
+                "evidence": "Bounded Codex Builder execution",
+                "failure_class": "IMPLEMENTATION_BUG",
                 "stage": "BUILD",
                 "status": "PASS"
               },
               {
                 "error": "Voice transport proof did not pass",
-                "evidence": "{\"allowed_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"cloudflare_access_required\": true, \"code_repair_needed\": false, \"local_preview_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-24T22:22:05.807509+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"preview\": true, \"processing_duration_ms\": 4514, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_3414b18c6f3c4e78bec5b6e35fd7c4d6\", \"voice_request_id\": \"voice_d900d2c2fd7443c586b5d6423d765064\"}, \"status\": 200}, \"local_transcribe_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-24T22:22:10.300888+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"processing_duration_ms\": 4472, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_35b3855804e74e51b26f040911473738\", \"voice_request_id\": \"voice_54dd4e54cb1b4dbea9c634ffada2ce03\"}, \"status\": 200}, \"local_transport_pass\": true, \"options_pass\": true, \"pass\": false, \"preview_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"preview_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"production_origin\": \"https://goclearonline.cc\", \"raw_audio_retained\": false, \"synthetic_transcript\": true, \"transcribe_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"transcribe_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"whisper_reached\": true}",
+                "evidence": "{\"allowed_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"cloudflare_access_required\": true, \"code_repair_needed\": false, \"local_preview_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-25T14:02:23.293810+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"preview\": true, \"processing_duration_ms\": 4729, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_b4994c20927d472990ea2f1a7b041c8e\", \"voice_request_id\": \"voice_e239becf55b142b0bd82e20d68e9db97\"}, \"status\": 200}, \"local_transcribe_post\": {\"payload\": {\"audio_retained\": false, \"confidence\": null, \"created_at\": \"2026-08-25T14:02:27.952984+00:00\", \"duration_ms\": 2870, \"external_action_performed\": false, \"language\": \"en\", \"model\": \"ggml-base.en.bin\", \"model_hash\": \"a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002\", \"model_version\": \"base.en\", \"processing_duration_ms\": 4638, \"schema_version\": \"nexus.voice-transcript.v1\", \"session_id\": \"product-evolution-synthetic\", \"stt_provider\": \"whisper.cpp\", \"text\": \"Hey Nexus, what should I focus on today?\", \"transcript_id\": \"transcript_847d4b4aaea741738485560f3fe04782\", \"voice_request_id\": \"voice_349dd147445944c285bd93e0ec54dd83\"}, \"status\": 200}, \"local_transport_pass\": true, \"options_pass\": true, \"pass\": false, \"preview_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"preview_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"production_origin\": \"https://goclearonline.cc\", \"raw_audio_retained\": false, \"synthetic_transcript\": true, \"transcribe_options\": {\"allow_credentials\": \"true\", \"allow_headers\": \"Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence\", \"allow_methods\": \"POST, OPTIONS\", \"allow_origin\": \"https://goclearonline.cc\", \"status\": 204}, \"transcribe_post\": {\"payload\": {\"raw_response\": \"<html>\\n<head><title>302 Found</title></head>\\n<body>\\n<center><h1>302 Found</h1></center>\\n<hr><center>cloudflare</center>\\n</body>\\n</html>\\n\"}, \"status\": 302}, \"wake_architecture\": {\"cooldown_present\": true, \"mode\": \"VAD_ONE_SHOT_LOCAL_STT\", \"persistent_preview_disabled\": true, \"single_utterance_states\": true}, \"whisper_reached\": true}",
                 "failure_class": "ENVIRONMENT_BLOCKER",
                 "stage": "TEST",
                 "status": "PASS"
@@ -234,13 +669,214 @@
                 "status": "PASS"
               }
             ],
-            "started_at": "2026-08-24T22:22:00.664973+00:00"
+            "started_at": "2026-08-25T14:00:35.405796+00:00"
           }
         ],
         "status": "PARTIAL"
       },
       "status": "PARTIAL",
-      "task": null,
+      "task": {
+        "acceptance_criteria": [
+          "normal conversation uses at most one manual initiation action",
+          "private STT and raw-audio cleanup remain",
+          "correct agent routing and thread continuity",
+          "user-visible outcome is demonstrated",
+          "focused tests and browser evaluation pass",
+          "truthful unknown/not-connected states are preserved",
+          "existing governance and agent boundaries remain unchanged"
+        ],
+        "allowed_paths": [
+          "src/admin/NexusWakeVoice.jsx",
+          "src/admin/VoicePushToTalk.jsx",
+          "scripts/nexus_agent_platform/voice/local_server.py",
+          "scripts/nexus_agent_platform/voice/local_stt.py",
+          "scripts/ops/run_voice_local_with_runtime_env.sh",
+          "launchd/com.nexus.voice-local.plist",
+          "scripts/nexus_agent_platform/tests/",
+          "docs/operations/voice/"
+        ],
+        "approval_state": "governed_product_evolution",
+        "branch": "main",
+        "budget": {
+          "cost_ceiling": "$0 recurring unless explicitly approved",
+          "model_tier": "ZERO_MODEL_COST"
+        },
+        "max_retries": 2,
+        "metadata": {
+          "branch": "main",
+          "deployment_policy": "preview-first; production only under existing Nexus governance",
+          "human_gates": [
+            "human microphone test where Voice is involved",
+            "subjective visual approval where design is involved"
+          ],
+          "locked_systems": [
+            "Hermes",
+            "Active Operator",
+            "Mission Control",
+            "Approvals",
+            "Product Evolution Loop",
+            "Phase Q Voice",
+            "whisper.cpp"
+          ],
+          "mission_id": "telegram-20260824172054-077bf5a7",
+          "parent_mission_id": null,
+          "starting_commit": "1f46445099582cc078e974cbef1d0dad16c86176"
+        },
+        "objective": "run Product Evolution on the failed production Voice transport. Human testing confirms voice.goclearonline.cc reaches the local Nexus Voice server, but the Admin browser OPTIONS preflight is returning 403 before preview or transcribe. Audit the live NEXUS_VOICE_ALLOWED_ORIGINS and Voice launchd/runtime environment. Production Admin origin is exactly https://goclearonline.cc. Fix the secure transport so Voice Listening ON lets me say \u201cHey Nexus\u201d and receive a response without another micro",
+        "previous_failure_delta": {
+          "human_failure": {
+            "evidence_hash": "3a15698859ae0ec6",
+            "gate_type": "VOICE_MICROPHONE",
+            "mission_id": "telegram-20260824172054-077bf5a7",
+            "outcome": "FAIL",
+            "previous_stage": "HUMAN_GATE",
+            "recorded_at": "2026-08-25T14:00:14.135154+00:00",
+            "source": "RAY_TELEGRAM",
+            "summary": "Nexus, update and resume existing Product Evolution mission telegram-20260824172054-077bf5a7 with new human test evidence. Do not create a new mission. The previous HUMAN_GATE was completed and FAILED. Production Voice Listening now reaches the Voice service successfully: OPTIONS returns 204 and preview/transcribe can return 200, but persistent listening produces repeated 429 responses. This proves the previous human gate did not pass. Record this evidence against the existing mission, move it o"
+          },
+          "transport": {
+            "allowed_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
+            "cloudflare_access_required": true,
+            "code_repair_needed": false,
+            "local_preview_post": {
+              "payload": {
+                "audio_retained": false,
+                "confidence": null,
+                "created_at": "2026-08-25T14:00:30.295385+00:00",
+                "duration_ms": 2870,
+                "external_action_performed": false,
+                "language": "en",
+                "model": "ggml-base.en.bin",
+                "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+                "model_version": "base.en",
+                "preview": true,
+                "processing_duration_ms": 4732,
+                "schema_version": "nexus.voice-transcript.v1",
+                "session_id": "product-evolution-synthetic",
+                "stt_provider": "whisper.cpp",
+                "text": "Hey Nexus, what should I focus on today?",
+                "transcript_id": "transcript_2357607bc7784ad2b66dbedaf733dd1c",
+                "voice_request_id": "voice_64fcde9525994dafa90ac64e3f057b00"
+              },
+              "status": 200
+            },
+            "local_transcribe_post": {
+              "payload": {
+                "audio_retained": false,
+                "confidence": null,
+                "created_at": "2026-08-25T14:00:35.402163+00:00",
+                "duration_ms": 2870,
+                "external_action_performed": false,
+                "language": "en",
+                "model": "ggml-base.en.bin",
+                "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+                "model_version": "base.en",
+                "processing_duration_ms": 5044,
+                "schema_version": "nexus.voice-transcript.v1",
+                "session_id": "product-evolution-synthetic",
+                "stt_provider": "whisper.cpp",
+                "text": "Hey Nexus, what should I focus on today?",
+                "transcript_id": "transcript_b31eaa106a4746e081570a5b03ab7a67",
+                "voice_request_id": "voice_0ce67cb2a91e43ec9fa7a13be895653b"
+              },
+              "status": 200
+            },
+            "local_transport_pass": true,
+            "options_pass": true,
+            "pass": false,
+            "preview_options": {
+              "allow_credentials": "true",
+              "allow_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
+              "allow_methods": "POST, OPTIONS",
+              "allow_origin": "https://goclearonline.cc",
+              "status": 204
+            },
+            "preview_post": {
+              "payload": {
+                "raw_response": "<html>\n<head><title>302 Found</title></head>\n<body>\n<center><h1>302 Found</h1></center>\n<hr><center>cloudflare</center>\n</body>\n</html>\n"
+              },
+              "status": 302
+            },
+            "production_origin": "https://goclearonline.cc",
+            "raw_audio_retained": false,
+            "synthetic_transcript": true,
+            "transcribe_options": {
+              "allow_credentials": "true",
+              "allow_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
+              "allow_methods": "POST, OPTIONS",
+              "allow_origin": "https://goclearonline.cc",
+              "status": 204
+            },
+            "transcribe_post": {
+              "payload": {
+                "raw_response": "<html>\n<head><title>302 Found</title></head>\n<body>\n<center><h1>302 Found</h1></center>\n<hr><center>cloudflare</center>\n</body>\n</html>\n"
+              },
+              "status": 302
+            },
+            "wake_architecture": {
+              "cooldown_present": true,
+              "mode": "VAD_ONE_SHOT_LOCAL_STT",
+              "persistent_preview_disabled": true,
+              "single_utterance_states": true
+            },
+            "whisper_reached": true
+          }
+        },
+        "protected_paths": [
+          "src/client-v2/",
+          "src/clientPortal/",
+          "supabase/",
+          "src/hermes/",
+          "scripts/nova/",
+          "scripts/alpha/",
+          "runtime.env",
+          ".env",
+          "secrets/",
+          "public/runtime/",
+          "production agent identities"
+        ],
+        "repo": "/Users/raymonddavis/nexus-os-v2",
+        "requirements": [
+          "Mission telegram-20260824172054-077bf5a7 must remain on its original receipt lineage.",
+          "Improve Voice within the stated outcome without creating a parallel Nexus system.",
+          "normal conversation uses at most one manual initiation action",
+          "private STT and raw-audio cleanup remain",
+          "correct agent routing and thread continuity",
+          "user-visible outcome is demonstrated",
+          "focused tests and browser evaluation pass",
+          "truthful unknown/not-connected states are preserved",
+          "existing governance and agent boundaries remain unchanged",
+          "no new authority",
+          "no client PII expansion",
+          "no arbitrary shell",
+          "no cloud speech"
+        ],
+        "retry_policy": "bounded",
+        "scope": [
+          "src/admin/NexusWakeVoice.jsx",
+          "src/admin/VoicePushToTalk.jsx",
+          "scripts/nexus_agent_platform/voice/local_server.py",
+          "scripts/nexus_agent_platform/voice/local_stt.py",
+          "scripts/ops/run_voice_local_with_runtime_env.sh",
+          "launchd/com.nexus.voice-local.plist",
+          "scripts/nexus_agent_platform/tests/",
+          "docs/operations/voice/"
+        ],
+        "security_constraints": [
+          "no new authority",
+          "no client PII expansion",
+          "no arbitrary shell",
+          "no cloud speech"
+        ],
+        "task_id": "product_evolution_telegram-20260824172054-077bf5a7",
+        "tests": [
+          "python3 -m py_compile scripts/nexus_agent_platform/voice/local_server.py scripts/nexus_agent_platform/voice/local_stt.py"
+        ],
+        "timeout_seconds": 900,
+        "title": "Product Evolution run Product Evolution on the failed production Voice transport. Human testing confirms voice.goclear",
+        "visual_requirements": false,
+        "worktree": "ISOLATED_WORKTREE_CREATED_AT_EXECUTION"
+      },
       "transport": {
         "allowed_headers": "Content-Type, X-Nexus-Voice-Session, X-Nexus-Voice-Preview-Sequence",
         "cloudflare_access_required": true,
@@ -249,7 +885,7 @@
           "payload": {
             "audio_retained": false,
             "confidence": null,
-            "created_at": "2026-08-24T22:22:05.807509+00:00",
+            "created_at": "2026-08-25T14:02:23.293810+00:00",
             "duration_ms": 2870,
             "external_action_performed": false,
             "language": "en",
@@ -257,13 +893,13 @@
             "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
             "model_version": "base.en",
             "preview": true,
-            "processing_duration_ms": 4514,
+            "processing_duration_ms": 4729,
             "schema_version": "nexus.voice-transcript.v1",
             "session_id": "product-evolution-synthetic",
             "stt_provider": "whisper.cpp",
             "text": "Hey Nexus, what should I focus on today?",
-            "transcript_id": "transcript_3414b18c6f3c4e78bec5b6e35fd7c4d6",
-            "voice_request_id": "voice_d900d2c2fd7443c586b5d6423d765064"
+            "transcript_id": "transcript_b4994c20927d472990ea2f1a7b041c8e",
+            "voice_request_id": "voice_e239becf55b142b0bd82e20d68e9db97"
           },
           "status": 200
         },
@@ -271,20 +907,20 @@
           "payload": {
             "audio_retained": false,
             "confidence": null,
-            "created_at": "2026-08-24T22:22:10.300888+00:00",
+            "created_at": "2026-08-25T14:02:27.952984+00:00",
             "duration_ms": 2870,
             "external_action_performed": false,
             "language": "en",
             "model": "ggml-base.en.bin",
             "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
             "model_version": "base.en",
-            "processing_duration_ms": 4472,
+            "processing_duration_ms": 4638,
             "schema_version": "nexus.voice-transcript.v1",
             "session_id": "product-evolution-synthetic",
             "stt_provider": "whisper.cpp",
             "text": "Hey Nexus, what should I focus on today?",
-            "transcript_id": "transcript_35b3855804e74e51b26f040911473738",
-            "voice_request_id": "voice_54dd4e54cb1b4dbea9c634ffada2ce03"
+            "transcript_id": "transcript_847d4b4aaea741738485560f3fe04782",
+            "voice_request_id": "voice_349dd147445944c285bd93e0ec54dd83"
           },
           "status": 200
         },
@@ -319,6 +955,12 @@
             "raw_response": "<html>\n<head><title>302 Found</title></head>\n<body>\n<center><h1>302 Found</h1></center>\n<hr><center>cloudflare</center>\n</body>\n</html>\n"
           },
           "status": 302
+        },
+        "wake_architecture": {
+          "cooldown_present": true,
+          "mode": "VAD_ONE_SHOT_LOCAL_STT",
+          "persistent_preview_disabled": true,
+          "single_utterance_states": true
         },
         "whisper_reached": true
       }
@@ -363,17 +1005,85 @@
         "blocker": null,
         "event": "ADAPTER_EXECUTION",
         "status": "PARTIAL"
+      },
+      {
+        "at": "2026-08-25T14:00:14.135154+00:00",
+        "event": "HUMAN_EVIDENCE_RECORDED",
+        "evidence_hash": "3a15698859ae0ec6",
+        "gate_type": "VOICE_MICROPHONE",
+        "outcome": "FAIL",
+        "previous_stage": "HUMAN_GATE",
+        "previous_status": "PARTIAL"
+      },
+      {
+        "at": "2026-08-25T14:00:14.135154+00:00",
+        "event": "RESUME_WITH_HUMAN_EVIDENCE",
+        "previous_stage": "HUMAN_GATE",
+        "reason": "HUMAN_GATE_FAILED",
+        "status": "QUEUED"
+      },
+      {
+        "at": "2026-08-25T14:00:24.144368+00:00",
+        "event": "CLAIM",
+        "scheduler_instance": "phase15-human-gate-resume",
+        "status": "RUNNING"
+      },
+      {
+        "adapter_id": "VOICE_PRODUCT_EVOLUTION",
+        "at": "2026-08-25T14:02:27.955881+00:00",
+        "blocker": null,
+        "event": "ADAPTER_EXECUTION",
+        "status": "PARTIAL"
+      },
+      {
+        "at": "2026-08-25T14:02:41.823220+00:00",
+        "event": "HUMAN_EVIDENCE_RECORDED",
+        "evidence_hash": "ce9789167befb9b8",
+        "gate_type": "VOICE_MICROPHONE",
+        "outcome": "FAIL",
+        "previous_stage": "HUMAN_GATE",
+        "previous_status": "PARTIAL"
+      },
+      {
+        "at": "2026-08-25T14:02:41.823220+00:00",
+        "event": "RESUME_WITH_HUMAN_EVIDENCE",
+        "previous_stage": "HUMAN_GATE",
+        "reason": "HUMAN_GATE_FAILED",
+        "status": "QUEUED"
       }
     ],
     "failures": [],
     "goal": "run Product Evolution on the failed production Voice transport. Human testing confirms voice.goclearonline.cc reaches the local Nexus Voice server, but the Admin browser OPTIONS preflight is returning 403 before preview or transcribe. Audit the live NEXUS_VOICE_ALLOWED_ORIGINS and Voice launchd/runtime environment. Production Admin origin is exactly https://goclearonline.cc. Fix the secure transport so Voice Listening ON lets me say \u201cHey Nexus\u201d and receive a response without another micro",
+    "human_evidence": [
+      {
+        "evidence_hash": "3a15698859ae0ec6",
+        "gate_type": "VOICE_MICROPHONE",
+        "mission_id": "telegram-20260824172054-077bf5a7",
+        "outcome": "FAIL",
+        "previous_stage": "HUMAN_GATE",
+        "recorded_at": "2026-08-25T14:00:14.135154+00:00",
+        "source": "RAY_TELEGRAM",
+        "summary": "Nexus, update and resume existing Product Evolution mission telegram-20260824172054-077bf5a7 with new human test evidence. Do not create a new mission. The previous HUMAN_GATE was completed and FAILED. Production Voice Listening now reaches the Voice service successfully: OPTIONS returns 204 and preview/transcribe can return 200, but persistent listening produces repeated 429 responses. This proves the previous human gate did not pass. Record this evidence against the existing mission, move it o"
+      },
+      {
+        "evidence_hash": "ce9789167befb9b8",
+        "gate_type": "VOICE_MICROPHONE",
+        "mission_id": "telegram-20260824172054-077bf5a7",
+        "outcome": "FAIL",
+        "previous_stage": "HUMAN_GATE",
+        "recorded_at": "2026-08-25T14:02:41.823220+00:00",
+        "source": "RAY_TELEGRAM",
+        "summary": "Nexus, what changed on the Voice mission since my failed test? Mission telegram-20260824172054-077bf5a7."
+      }
+    ],
+    "human_gate_result": "FAIL",
     "mission_id": "telegram-20260824172054-077bf5a7",
     "parent_mission_id": null,
     "receipt_path": "/Users/raymonddavis/nexus-os-v2/reports/product_evolution/telegram-20260824172054-077bf5a7.json",
     "receipt_refs": [],
     "stages": [],
-    "status": "PARTIAL",
+    "status": "QUEUED",
     "surface": "Voice",
-    "updated_at": "2026-08-24T22:22:10.303734+00:00"
+    "updated_at": "2026-08-25T14:02:41.823220+00:00"
   }
 }
