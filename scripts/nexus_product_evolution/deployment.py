@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+from .netlify_adapter import exact_sha_netlify_status
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TARGET = "https://goclearonline.cc"
 NETLIFY_SITE_ID = "e8b7a0c2-9278-4b4c-a9a0-b950bcd66583"
@@ -180,6 +182,15 @@ def inspect_netlify_control_plane() -> Dict[str, Any]:
         site = json.loads(site_bytes.decode("utf-8")) if site_bytes else {}
     except (ValueError, TypeError):
         site = {}
+    cli_site = {}
+    try:
+        cli = subprocess.run(["netlify", "api", "getSite", "--data", json.dumps({"site_id": NETLIFY_SITE_ID})], cwd=ROOT, capture_output=True, text=True, timeout=20, check=False, env={**__import__("os").environ, "NETLIFY_CLI_TELEMETRY_DISABLED": "1", "CI": "1"})
+        if cli.returncode == 0:
+            cli_site = json.loads(cli.stdout)
+    except (OSError, ValueError, TypeError, subprocess.TimeoutExpired):
+        cli_site = {}
+    if cli_site:
+        site = {**site, **cli_site}
     try:
         deploys = json.loads(deploy_bytes.decode("utf-8")) if deploy_bytes else []
     except (ValueError, TypeError):
@@ -206,11 +217,12 @@ def inspect_netlify_control_plane() -> Dict[str, Any]:
         "previous_known_good_created_at": published.get("created_at", "UNKNOWN"),
         "previous_known_good_url": published.get("deploy_ssl_url") or DEFAULT_TARGET,
         "recent_deploys": safe_deploys,
-        "auto_deploy_enabled": "YES" if auto_deploy else "UNKNOWN",
-        "main_push_mutates_production": "YES" if auto_deploy else "UNKNOWN",
+        "auto_deploy_enabled": "NO" if (site.get("build_settings") or {}).get("stop_builds") is True else ("YES" if auto_deploy else "UNKNOWN"),
+        "builds_stopped": "YES" if (site.get("build_settings") or {}).get("stop_builds") is True else ("NO" if site.get("build_settings") else "UNKNOWN"),
+        "main_push_mutates_production": "NO" if (site.get("build_settings") or {}).get("stop_builds") is True else ("YES" if auto_deploy else "UNKNOWN"),
         "git_pipeline_health": "FAIL" if latest.get("state") == "error" else ("PASS" if latest.get("state") == "ready" else "UNKNOWN"),
         "normal_git_pipeline": "FAILED" if latest.get("state") == "error" else "UNKNOWN",
         "api_read_status": site_status if site_status else deploy_status,
-        "auth_available": bool(__import__("os").environ.get("NETLIFY_AUTH_TOKEN")),
+        "auth_available": bool(exact_sha_netlify_status().get("authenticated")),
         "checked_at": datetime.now(timezone.utc).isoformat(),
     }

@@ -16,6 +16,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional
 
+from .netlify_adapter import exact_sha_netlify_status
+
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TARGET = "https://goclearonline.cc"
 ALLOWED_TARGETS = {DEFAULT_TARGET}
@@ -73,10 +75,12 @@ def create_release_candidate(record: Mapping[str, Any], *, candidate_commit: str
     protected = _protected_paths(paths)
     release_id = release_id_for(mission_id, candidate_commit) if FULL_SHA.fullmatch(candidate_commit) else f"rel-invalid-{uuid.uuid4().hex[:8]}"
     deployment = result.get("deployment") or {}
+    artifact = result.get("release_artifact") or {}
     rollback_deploy_id = deployment.get("rollback_deploy_id") or deployment.get("current_deploy_id")
     rollback_url = deployment.get("rollback_verified_url") or (deployment.get("production_markers") or {}).get("verified_url")
     rollback_method = deployment.get("rollback_method") or "fixed Netlify provider artifact rollback; availability requires bounded Netlify authentication"
-    netlify_auth = bool(__import__("os").environ.get("NETLIFY_AUTH_TOKEN"))
+    netlify_status = exact_sha_netlify_status()
+    netlify_auth = bool(netlify_status.get("authenticated"))
     exact_sha_method = "Netlify CLI direct upload from detached exact-SHA worktree (authentication unavailable)"
     builder = (result.get("execution") or {}).get("builder") or {}
     attempts = builder.get("attempts") or []
@@ -118,9 +122,13 @@ def create_release_candidate(record: Mapping[str, Any], *, candidate_commit: str
         "build_sha_marker": "PASS" if "COMMIT_REF" in vite_source and "VITE_BUILD_COMMIT" in build_metadata_source else "FAIL",
         "production_sha_verifiable_after_deployment": "YES" if "COMMIT_REF" in vite_source else "NO",
         "voice_source_marker": "PASS" if "persistentRef.current" in voice_source and "Private local VAD active" in voice_source else "FAIL",
+        "artifact_build": artifact.get("build_status", "UNKNOWN"),
+        "artifact_hash": artifact.get("artifact_hash", "UNKNOWN"),
+        "artifact_build_error": artifact.get("build_error", "UNKNOWN"),
+        "artifact_secret_scan": artifact.get("secret_scan", "UNKNOWN"),
         "selected_bounded_method": "fixed Netlify exact-SHA adapter from detached worktree; Git-connected main deploy is not an approved exact-SHA method",
         "exact_sha_deploy_method": exact_sha_method,
-        "exact_sha_deploy_available": "PASS" if netlify_auth else "UNKNOWN",
+        "exact_sha_deploy_available": "PASS" if netlify_status.get("available") else "UNKNOWN",
         "canonical_dispatch_wired": "PASS",
         "production_current_deploy_known": "PASS" if rollback_deploy_id else "FAIL",
         "main_push_mutates_production": deployment.get("main_push_mutates_production", "UNKNOWN"),
@@ -138,6 +146,7 @@ def create_release_candidate(record: Mapping[str, Any], *, candidate_commit: str
         package["production_current_deploy_known"] == "PASS", rollback_target_known(package),
         package["rollback_executable"] == "PASS", package["exact_sha_deploy_available"] == "PASS",
         package["canonical_dispatch_wired"] == "PASS", package["main_push_mutates_production"] != "YES",
+        package["artifact_build"] == "PASS", package["artifact_hash"] not in {"", "UNKNOWN"}, package["artifact_secret_scan"] == "PASS",
     ]) else "FAIL"
     return package
 
