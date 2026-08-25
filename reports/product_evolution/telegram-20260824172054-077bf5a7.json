@@ -51,8 +51,48 @@
     "blocker": null,
     "created_at": "2026-08-24T17:20:54.510490+00:00",
     "critic": {},
-    "current_stage": "RESUMED_AFTER_HUMAN_FAIL",
+    "current_stage": "HUMAN_GATE",
     "cycle": 0,
+    "deployment": {
+      "checked_at": "2026-08-25T14:17:51.003696+00:00",
+      "deployed_at": "UNKNOWN",
+      "deployed_build_id": "UNKNOWN",
+      "deployed_commit": "UNKNOWN",
+      "deployment_status": "DEPLOYMENT_STALE",
+      "latest_source_markers": {
+        "persistent_preview_guard": true,
+        "voice_notice": true
+      },
+      "mission_id": "telegram-20260824172054-077bf5a7",
+      "origin_main_commit": "68771666ec03f61b2910f4e4b1a2f8a3733e3807",
+      "production_markers": {
+        "admin_http_status": 200,
+        "asset_http_status": 200,
+        "asset_url": "https://goclearonline.cc/assets/index-Bo4IdOu7.js",
+        "build_commit_literal": "UNKNOWN",
+        "build_metadata_present": true,
+        "cache_status": "34662",
+        "generic_unversioned_metadata": false,
+        "netlify_request_id": "01M0WMHP8WPF5WV28R4HF5VWG9",
+        "persistent_preview_guard_present": false,
+        "voice_notice_present": false,
+        "wake_state_present": false
+      },
+      "provider": "Netlify via Git-connected deployment",
+      "requested_commit": "68771666ec03f61b2910f4e4b1a2f8a3733e3807",
+      "source_of_truth": "netlify.toml + production HTML asset + production JavaScript bundle + Vite build metadata",
+      "stale_production": "YES",
+      "target": "https://goclearonline.cc",
+      "verification": "FAIL"
+    },
+    "deployment_events": [
+      {
+        "at": "2026-08-25T14:17:51.003696+00:00",
+        "event": "DEPLOYMENT_STALE",
+        "status": "DEPLOYMENT_STALE"
+      }
+    ],
+    "deployment_operation": "DEPLOYMENT_INSPECTION",
     "dispatch": {
       "adapter_id": "VOICE_PRODUCT_EVOLUTION",
       "background": true,
@@ -1050,6 +1090,29 @@
         "previous_stage": "HUMAN_GATE",
         "reason": "HUMAN_GATE_FAILED",
         "status": "QUEUED"
+      },
+      {
+        "at": "2026-08-25T14:17:50.406871+00:00",
+        "event": "HUMAN_EVIDENCE_RECLASSIFIED",
+        "evidence_hash": "ce9789167befb9b8",
+        "reason": "Earlier broad classifier treated a delta-only status query as new human evidence.",
+        "valid_human_evidence": false
+      },
+      {
+        "at": "2026-08-25T14:17:50.435395+00:00",
+        "event": "DEPLOYMENT_INSPECTION_STARTED",
+        "requested_commit": "68771666ec03f61b2910f4e4b1a2f8a3733e3807",
+        "target": "https://goclearonline.cc"
+      },
+      {
+        "at": "2026-08-25T14:17:51.003727+00:00",
+        "deployment_status": "DEPLOYMENT_STALE",
+        "event": "DEPLOYMENT_STALE",
+        "evidence": {
+          "asset_url": "https://goclearonline.cc/assets/index-Bo4IdOu7.js",
+          "target": "https://goclearonline.cc",
+          "verification": "FAIL"
+        }
       }
     ],
     "failures": [],
@@ -1076,14 +1139,24 @@
         "summary": "Nexus, what changed on the Voice mission since my failed test? Mission telegram-20260824172054-077bf5a7."
       }
     ],
+    "human_evidence_corrections": [
+      {
+        "corrected_at": "2026-08-25T14:17:50.406871+00:00",
+        "correction": "RECLASSIFIED_AS_OPERATIONAL_QUERY",
+        "evidence_hash": "ce9789167befb9b8",
+        "reason": "Earlier broad classifier treated a delta-only status query as new human evidence.",
+        "source": "SYSTEM",
+        "valid_human_evidence": false
+      }
+    ],
     "human_gate_result": "FAIL",
     "mission_id": "telegram-20260824172054-077bf5a7",
     "parent_mission_id": null,
     "receipt_path": "/Users/raymonddavis/nexus-os-v2/reports/product_evolution/telegram-20260824172054-077bf5a7.json",
     "receipt_refs": [],
     "stages": [],
-    "status": "QUEUED",
+    "status": "PARTIAL",
     "surface": "Voice",
-    "updated_at": "2026-08-25T14:02:41.823220+00:00"
+    "updated_at": "2026-08-25T14:17:51.003738+00:00"
   }
 }

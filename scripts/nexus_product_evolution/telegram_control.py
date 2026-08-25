@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional
 
 from .loop import FailureClass, MissionContract, ProductEvolutionLoop, Stage
+from .deployment import deployment_response, inspect_deployment
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
@@ -190,6 +191,7 @@ def _load_mission_by_id(mission_id: str) -> Optional[Dict[str, Any]]:
 
 def _write_receipt(path: Path, value: Mapping[str, Any], result: Mapping[str, Any]) -> None:
     payload = dict(value)
+    payload.pop("receipt_path", None)
     payload["result"] = dict(result)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -422,6 +424,54 @@ def human_evidence_intent(text: str) -> bool:
     return has_gate_language and has_action_language and _human_outcome(lowered) is not None
 
 
+def _deployment_operation(text: str) -> Optional[str]:
+    lowered = _compact(text).lower()
+    reconciliation = bool(re.search(r"\b(?:deploy|release|reconcile|promote)\b", lowered) and re.search(r"\b(?:existing|tested|approved|origin/main|governance|production)\b", lowered))
+    inspection = bool(re.search(r"\b(?:inspect|identify|compare|verify|check|determine|what)\b", lowered) and re.search(r"\b(?:deployment|deployed|production|live|bundle|build|commit|netlify|release|origin/main)\b", lowered))
+    inspection = inspection or bool(re.search(r"\b(?:is production stale|what version is|what commit is live|production deployment state)\b", lowered))
+    if reconciliation:
+        return "DEPLOYMENT_RECONCILIATION"
+    if inspection:
+        return "DEPLOYMENT_INSPECTION"
+    return None
+
+
+def classify_product_evolution_request_metadata(text: str, *, context_mission_id: Optional[str] = None) -> Dict[str, Any]:
+    """Classify requested action separately from subject matter."""
+    pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(context_mission_id) or bool(_deployment_operation(text)) or human_evidence_intent(text)
+    mission_id = exact_mission_id(text) or context_mission_id
+    metadata = {"subject": _surface(text), "operation": "CLARIFICATION", "mission_id": mission_id, "no_create": explicit_no_create(text), "human_evidence_outcome": _human_outcome(text)}
+    if not pe_signal:
+        return metadata
+    if is_unsafe_product_evolution_request(text):
+        metadata["operation"] = "UNSAFE"
+        return metadata
+    deployment = _deployment_operation(text)
+    if deployment:
+        metadata["operation"] = deployment
+        metadata["no_create"] = True
+        return metadata
+    if human_evidence_intent(text):
+        metadata["operation"] = "RESUME_WITH_HUMAN_EVIDENCE"
+        return metadata
+    request = control_request(text)
+    if request == "cancel":
+        metadata["operation"] = "CANCEL"
+    elif request == "resume":
+        metadata["operation"] = "RESUME"
+    elif request == "status" and not re.search(r"\b(?:why|queued|picked|waiting|dispatcher|runtime)\b", text, re.I) and not explicit_no_create(text) and not exact_mission_id(text):
+        metadata["operation"] = "STATUS"
+    elif request == "blocked":
+        metadata["operation"] = "BLOCKERS"
+    elif diagnostic_intent(text) or explicit_no_create(text) or exact_mission_id(text):
+        metadata["operation"] = "DIAGNOSTIC"
+    elif is_product_evolution_intent(text):
+        metadata["operation"] = "START_NEW_MISSION"
+    elif context_mission_id and re.search(r"\b(?:picked|runtime|dispatcher|queued|waiting|started|execution)\b", text, re.I):
+        metadata["operation"] = "DIAGNOSTIC"
+    return metadata
+
+
 def record_human_evidence(mission_id: str, text: str, *, source: str = "RAY_TELEGRAM", update_id: Optional[str] = None) -> Dict[str, Any]:
     """Append one sanitized human-gate result and queue only on a new FAIL."""
     for path in _receipt_files():
@@ -462,30 +512,32 @@ def record_human_evidence(mission_id: str, text: str, *, source: str = "RAY_TELE
     return {"status": "NOT_FOUND", "mission_id": mission_id}
 
 
+def correct_misclassified_human_evidence(mission_id: str, evidence_hash: str, reason: str) -> Dict[str, Any]:
+    """Append-only correction for evidence created by an older classifier."""
+    for path in _receipt_files():
+        if path.stem != mission_id:
+            continue
+        value = json.loads(path.read_text(encoding="utf-8"))
+        result = value.get("result") or {}
+        corrections = list(result.get("human_evidence_corrections") or [])
+        if any(item.get("evidence_hash") == evidence_hash for item in corrections):
+            return {"status": "ALREADY_CORRECTED", "mission_id": mission_id, "evidence_hash": evidence_hash}
+        evidence = next((item for item in result.get("human_evidence") or [] if item.get("evidence_hash") == evidence_hash), None)
+        if not evidence:
+            return {"status": "NOT_FOUND", "mission_id": mission_id, "evidence_hash": evidence_hash}
+        now = datetime.now(timezone.utc).isoformat()
+        corrections.append({"corrected_at": now, "source": "SYSTEM", "evidence_hash": evidence_hash, "valid_human_evidence": False, "correction": "RECLASSIFIED_AS_OPERATIONAL_QUERY", "reason": _compact(reason)})
+        history = list(result.get("execution_history") or [])
+        history.append({"at": now, "event": "HUMAN_EVIDENCE_RECLASSIFIED", "evidence_hash": evidence_hash, "valid_human_evidence": False, "reason": _compact(reason)})
+        # Restore the last verified automated outcome without deleting the old record.
+        result.update({"status": "PARTIAL", "current_stage": "HUMAN_GATE", "blocker": None, "human_evidence_corrections": corrections, "updated_at": now, "execution_history": history})
+        _write_receipt(path, value, result)
+        return {"status": "CORRECTED", "mission_id": mission_id, "evidence_hash": evidence_hash, "receipt_path": str(path)}
+    return {"status": "NOT_FOUND", "mission_id": mission_id, "evidence_hash": evidence_hash}
+
+
 def classify_product_evolution_request(text: str, *, context_mission_id: Optional[str] = None) -> str:
-    pe_signal = bool(re.search(r"\bproduct evolution\b|\bcreative(?: studio)?\b|\bvoice(?: mission| product evolution)?\b|\bclient portal\b|\badmin(?: navigation)?\b|" + MISSION_ID_PATTERN + r"|\bmission\b", text, re.I)) or bool(context_mission_id)
-    if not pe_signal:
-        return "CLARIFICATION"
-    if is_unsafe_product_evolution_request(text):
-        return "UNSAFE"
-    if human_evidence_intent(text):
-        return "RESUME_WITH_HUMAN_EVIDENCE"
-    request = control_request(text)
-    if request == "cancel":
-        return "CANCEL"
-    if request == "resume":
-        return "RESUME"
-    if request == "status" and not re.search(r"\b(?:why|queued|picked|waiting|dispatcher|runtime)\b", text, re.I) and not explicit_no_create(text) and not exact_mission_id(text):
-        return "STATUS"
-    if request == "blocked":
-        return "BLOCKERS"
-    if diagnostic_intent(text) or explicit_no_create(text) or exact_mission_id(text):
-        return "DIAGNOSTIC"
-    if is_product_evolution_intent(text):
-        return "START_NEW_MISSION"
-    if context_mission_id and re.search(r"\b(?:picked|runtime|dispatcher|queued|waiting|started|execution)\b", text, re.I):
-        return "DIAGNOSTIC"
-    return "CLARIFICATION"
+    return str(classify_product_evolution_request_metadata(text, context_mission_id=context_mission_id)["operation"])
 
 
 def handle_product_evolution_intake(text: str, *, context_mission_id: Optional[str] = None) -> Dict[str, Any]:
@@ -493,6 +545,22 @@ def handle_product_evolution_intake(text: str, *, context_mission_id: Optional[s
     classification = classify_product_evolution_request(text, context_mission_id=context_mission_id)
     if classification == "UNSAFE":
         return {"handled": True, "status": "BLOCKED", "route": "PRODUCT_EVOLUTION", "response": "Product Evolution cannot change security, authority, payments, approvals, credentials, or client-data boundaries."}
+    if classification in {"DEPLOYMENT_INSPECTION", "DEPLOYMENT_RECONCILIATION"}:
+        mission_id = exact_mission_id(text) or context_mission_id
+        resolved = _load_mission_by_id(mission_id) if mission_id else resolve_mission(text)
+        if not resolved:
+            return {"handled": True, "status": "NOT_FOUND", "route": "PRODUCT_EVOLUTION_DEPLOYMENT", "response": "No existing Product Evolution mission was found. I did not create a new mission."}
+        inspected = inspect_deployment(resolved)
+        path = Path(str(resolved.get("receipt_path")))
+        _write_receipt(path, resolved, inspected)
+        action = "none"
+        if classification == "DEPLOYMENT_RECONCILIATION":
+            now = datetime.now(timezone.utc).isoformat()
+            inspected["deployment_reconciliation"] = {"status": "BLOCKED", "reason": "Nexus production policy requires a separate human-approved Level 3 release; Product Evolution cannot deploy automatically.", "recorded_at": now}
+            inspected["execution_history"] = list(inspected.get("execution_history") or []) + [{"at": now, "event": "DEPLOYMENT_RECONCILIATION_BLOCKED", "reason": inspected["deployment_reconciliation"]["reason"]}]
+            _write_receipt(path, resolved, inspected)
+            action = "BLOCKED — human-approved production release required"
+        return {"handled": True, "status": "ANSWERED" if action == "none" else "BLOCKED", "route": "PRODUCT_EVOLUTION_DEPLOYMENT", "mission_id": _mission_id(resolved), "deployment": inspected.get("deployment"), "response": deployment_response(resolved, inspected.get("deployment") or {}, action=action)}
     if classification == "RESUME_WITH_HUMAN_EVIDENCE":
         mission_id = exact_mission_id(text) or context_mission_id
         resolved = _load_mission_by_id(mission_id) if mission_id else resolve_mission(text)
