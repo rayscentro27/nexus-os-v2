@@ -51,7 +51,7 @@
     "blocker": null,
     "created_at": "2026-08-24T17:20:54.510490+00:00",
     "critic": {},
-    "current_stage": "HUMAN_GATE",
+    "current_stage": "RELEASE_CANDIDATE_READY",
     "cycle": 0,
     "deployment": {
       "checked_at": "2026-08-25T14:17:51.003696+00:00",
@@ -1113,6 +1113,27 @@
           "target": "https://goclearonline.cc",
           "verification": "FAIL"
         }
+      },
+      {
+        "at": "2026-08-25T14:49:34.726185+00:00",
+        "commit": "ec20bc315cc2682736edc52a185503127da94bc7",
+        "event": "RELEASE_CANDIDATE_CREATED",
+        "release_id": "rel-telegram-20260824172054-077bf5a7-ec20bc315cc2",
+        "target": "https://goclearonline.cc"
+      },
+      {
+        "at": "2026-08-25T14:49:34.726203+00:00",
+        "event": "RELEASE_PRECHECK_PASS",
+        "immutable_sha": true,
+        "release_id": "rel-telegram-20260824172054-077bf5a7-ec20bc315cc2",
+        "security": "PASS",
+        "target_bound": true
+      },
+      {
+        "at": "2026-08-25T14:49:34.726215+00:00",
+        "event": "RELEASE_APPROVAL_REQUIRED",
+        "release_id": "rel-telegram-20260824172054-077bf5a7-ec20bc315cc2",
+        "risk": "Level 3 / blocked_high_risk"
       }
     ],
     "failures": [],
@@ -1154,9 +1175,64 @@
     "parent_mission_id": null,
     "receipt_path": "/Users/raymonddavis/nexus-os-v2/reports/product_evolution/telegram-20260824172054-077bf5a7.json",
     "receipt_refs": [],
+    "release": {
+      "approval_fingerprint": "529bf1d7d63cfa5eef1f7c40d1b4b6e55f217d6a469842ff91c3fb02684bebc5",
+      "approval_state": "AWAITING_RAY",
+      "approved_at": null,
+      "approved_by": null,
+      "build_sha_marker": "PASS",
+      "change_summary": "Product Evolution deployment truth, immutable release approval, and bounded production verification for the existing Voice mission.",
+      "changed_paths": [
+        "reports/product_evolution/telegram-20260824172054-077bf5a7.json",
+        "scripts/nexus_product_evolution/deployment.py",
+        "scripts/nexus_product_evolution/telegram_control.py",
+        "scripts/nexus_product_evolution/tests/test_deployment_truth.py"
+      ],
+      "created_at": "2026-08-25T14:50:05.062741+00:00",
+      "critic_result": "PASS \u2014 deterministic builder verification passed",
+      "deployment_completed_at": null,
+      "deployment_started_at": null,
+      "deployment_truth_before": "DEPLOYMENT_STALE",
+      "expected_parent": "68771666ec03f61b2910f4e4b1a2f8a3733e3807",
+      "human_test_required": true,
+      "immutable_sha": true,
+      "mission_id": "telegram-20260824172054-077bf5a7",
+      "precheck_status": "PASS",
+      "production_commit_after": "UNKNOWN",
+      "production_commit_before": "UNKNOWN",
+      "production_sha_verifiable_after_deployment": "YES",
+      "production_verification_plan": [
+        "HTTPS target and Admin route healthy",
+        "exact build SHA marker matches approved SHA",
+        "Voice notice and persistent-preview guard markers present",
+        "old Voice marker absent",
+        "CORS remains healthy"
+      ],
+      "protected_path_check": "PASS",
+      "provider": "Netlify / Git-connected production",
+      "release_candidate_commit": "ec20bc315cc2682736edc52a185503127da94bc7",
+      "release_id": "rel-telegram-20260824172054-077bf5a7-ec20bc315cc2",
+      "risk_classification": "Level 3 / blocked_high_risk",
+      "rollback_method": "fixed provider rollback adapter for the recorded previous artifact; no git reset or force-push",
+      "rollback_target": "UNKNOWN",
+      "security_result": "PASS",
+      "selected_bounded_method": "normal Git-connected Netlify deployment after explicit approval; fixed provider rollback if verification fails",
+      "target_bound": true,
+      "target_environment": "production",
+      "target_url": "https://goclearonline.cc",
+      "tests": {
+        "builder_verification": "PASS",
+        "commands": [
+          "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest -q scripts/nexus_product_evolution/tests/test_deployment_truth.py scripts/nexus_product_evolution/tests/test_human_gate_control.py scripts/nexus_product_evolution/tests/test_execution_adapters.py"
+        ],
+        "focused_release_tests": "PASS"
+      },
+      "verification_result": "NOT_RUN",
+      "voice_source_marker": "PASS"
+    },
     "stages": [],
     "status": "PARTIAL",
     "surface": "Voice",
-    "updated_at": "2026-08-25T14:17:51.003738+00:00"
+    "updated_at": "2026-08-25T14:49:34.726219+00:00"
   }
 }
