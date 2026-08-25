@@ -227,7 +227,12 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
     result = resolved.get("result") or {}
     release = result.get("release") or {}
     deployment = result.get("deployment") or {}
-    history = [item for item in result.get("execution_history") or [] if isinstance(item, Mapping)]
+    mission_history = [item for item in result.get("execution_history") or [] if isinstance(item, Mapping)]
+    current_release_id = str(release.get("release_id") or "")
+    history = [
+        item for item in mission_history
+        if not current_release_id or not item.get("release_id") or item.get("release_id") == current_release_id
+    ]
     events = {str(item.get("event")) for item in history}
     claims = [item for item in history if item.get("event") == "RELEASE_DISPATCH_CLAIMED"]
     retry_events = [item for item in history if item.get("event") == "RELEASE_RETRY_READY"]
@@ -282,6 +287,8 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
     return {
         "mission_id": _mission_id(resolved),
         "release_id": release.get("release_id", "UNKNOWN"),
+        "mission_event_count": len(mission_history),
+        "current_release_event_count": len(history),
         "approval_state": release.get("approval_state", "UNKNOWN"),
         "approved_by": release.get("approved_by"),
         "approved_at": release.get("approved_at"),

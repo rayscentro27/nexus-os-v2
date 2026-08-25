@@ -16,6 +16,32 @@ DEFAULT_TARGET = "https://goclearonline.cc"
 NETLIFY_SITE_ID = "e8b7a0c2-9278-4b4c-a9a0-b950bcd66583"
 VOICE_NOTICE = "Private local VAD active. One utterance at a time; persistent listening sends one final local STT request after silence."
 VOICE_RUNTIME_CONTRACT_MARKER = "NEXUS_VOICE_RUNTIME_CONTRACT|version=nexus.voice-wake-runtime.v2|persistent_rolling_preview=false|final_stt_after_silence=true|private_local_vad=true"
+UNKNOWN_VALUES = {"", "UNKNOWN", "NONE", "N/A", "NULL"}
+
+
+def _known_value(value: Any) -> bool:
+    return value is not None and str(value).strip().upper() not in UNKNOWN_VALUES
+
+
+def _parse_response_headers(raw: bytes) -> tuple[int, Mapping[str, str], bytes]:
+    """Parse the final response from curl's redirect-aware header stream."""
+    separators = [b"\r\n\r\n", b"\n\n"]
+    candidates = [(raw.rfind(separator), len(separator)) for separator in separators]
+    candidates = [(position, width) for position, width in candidates if position >= 0]
+    if not candidates:
+        return 0, {}, raw
+    position, width = max(candidates, key=lambda item: item[0])
+    header_start = raw.rfind(b"HTTP/", 0, position)
+    header_bytes = raw[header_start:position] if header_start >= 0 else raw[:position]
+    lines = header_bytes.decode("iso-8859-1", "replace").splitlines()
+    status_line = next((line for line in lines if line.startswith("HTTP/")), "")
+    match = re.search(r"\s(\d{3})(?:\s|$)", status_line)
+    headers: dict[str, str] = {}
+    for line in lines[1:]:
+        if ":" in line:
+            key, value = line.split(":", 1)
+            headers[key.strip().lower()] = value.strip()
+    return (int(match.group(1)) if match else 0), headers, raw[position + width:]
 
 
 def _git(*args: str) -> str:
@@ -27,21 +53,7 @@ def _fetch(url: str) -> tuple[int, Mapping[str, str], bytes]:
     try:
         completed = subprocess.run(["/usr/bin/curl", "-sS", "-L", "--max-time", "20", "-D", "-", url], capture_output=True, timeout=25, check=False)
         raw = completed.stdout
-        separator = raw.find(b"\r\n\r\n")
-        if separator < 0:
-            separator = raw.find(b"\n\n")
-            width = 2
-        else:
-            width = 4
-        header_bytes, body = (raw[:separator], raw[separator + width:]) if separator >= 0 else (b"", raw)
-        lines = header_bytes.decode("iso-8859-1", "replace").splitlines()
-        status_line = next((line for line in lines if line.startswith("HTTP/")), "")
-        status = int(re.search(r"\s(\d{3})(?:\s|$)", status_line).group(1)) if re.search(r"\s(\d{3})(?:\s|$)", status_line) else 0
-        headers = {}
-        for line in lines[1:]:
-            if ":" in line:
-                key, value = line.split(":", 1)
-                headers[key.strip().lower()] = value.strip()
+        status, headers, body = _parse_response_headers(raw)
         return status, headers, body[:8 * 1024 * 1024]
     except Exception as exc:
         return 0, {"error": type(exc).__name__}, b""
@@ -158,15 +170,8 @@ def _production_verification(expected_commit: str, target: str, expected_deploy_
 def _cors_options(path: str) -> tuple[int, Mapping[str, str]]:
     try:
         completed = subprocess.run(["/usr/bin/curl", "-sS", "-L", "--max-time", "15", "-X", "OPTIONS", "-D", "-", "-o", "/dev/null", "-H", "Origin: https://goclearonline.cc", "-H", "Access-Control-Request-Method: POST", "-H", "Access-Control-Request-Headers: content-type,x-nexus-voice-session,x-nexus-voice-preview-sequence", path], capture_output=True, timeout=20, check=False)
-        lines = completed.stdout.decode("iso-8859-1", "replace").splitlines()
-        status_line = next((line for line in lines if line.startswith("HTTP/")), "")
-        match = re.search(r"\s(\d{3})(?:\s|$)", status_line)
-        headers = {}
-        for line in lines[1:]:
-            if ":" in line:
-                key, value = line.split(":", 1)
-                headers[key.strip().lower()] = value.strip()
-        return (int(match.group(1)) if match else 0), headers
+        status, headers, _ = _parse_response_headers(completed.stdout)
+        return status, headers
     except Exception:
         return 0, {}
 
@@ -276,7 +281,7 @@ def verify_release_markers(record: Mapping[str, Any], expected_commit: str, *, t
     deployment_result = release.get("deployment_result") if isinstance(release.get("deployment_result"), Mapping) else {}
     outcome = deployment_outcome if isinstance(deployment_outcome, Mapping) else (deployment_result.get("outcome") if isinstance(deployment_result.get("outcome"), Mapping) else deployment_result)
     deploy_id = str(expected_deploy_id or outcome.get("deploy_id") or outcome.get("id") or "UNKNOWN")
-    candidate_url = str(outcome.get("deploy_ssl_url") or outcome.get("deploy_url") or "")
+    candidate_url = next((str(outcome.get(key)) for key in ("deploy_ssl_url", "ssl_url", "deploy_url", "url") if _known_value(outcome.get(key))), "")
     candidate = verify_candidate_artifact(candidate_url, expected_commit, target=target)
     if candidate.get("status") != "PASS":
         return {

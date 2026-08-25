@@ -38,6 +38,29 @@ def test_exact_identifiers_do_not_overlap():
 def test_ray_release_inspection_routes_read_only(monkeypatch):
     writes = []
     monkeypatch.setattr(control, "_write_receipt", lambda *args: writes.append(args))
+    fixture = {
+        "result": {
+            "mission_id": MISSION_ID,
+            "status": "BLOCKED",
+            "current_stage": "BLOCKED",
+            "execution_history": [
+                {"event": "RELEASE_RETRY_READY", "release_id": RELEASE_ID, "at": "2026-08-25T16:48:04+00:00"},
+                {"event": "RELEASE_DISPATCH_CLAIMED", "release_id": RELEASE_ID, "at": "2026-08-25T17:20:25+00:00"},
+                {"event": "DEPLOYMENT_COMPLETE", "release_id": RELEASE_ID, "at": "2026-08-25T17:20:30+00:00"},
+                {"event": "PRODUCTION_VERIFY_FAIL", "release_id": RELEASE_ID, "reason": "PRODUCTION_PERSISTENT_PREVIEW_GUARD_FAILED", "checks": {"persistent_preview_guard": False}, "at": "2026-08-25T17:20:31+00:00"},
+                {"event": "ROLLBACK_COMPLETE", "release_id": RELEASE_ID, "at": "2026-08-25T17:20:32+00:00"},
+            ],
+            "release": {
+                "release_id": RELEASE_ID, "approval_state": "APPROVED", "retry_count": 2,
+                "retry_ready_at": "2026-08-25T16:48:04+00:00",
+                "deployment_result": {"status": "DEPLOYED", "outcome": {"status": "PASS", "deploy_id": "candidate-deploy"}},
+                "rollback_result": {"status": "PASS", "deploy_id": "rollback-deploy"},
+                "production_deploy_id": "rollback-deploy", "production_commit_after": "UNKNOWN",
+                "verification_result": "FAIL", "candidate_currently_live": False,
+            },
+        }
+    }
+    monkeypatch.setattr(control, "_load_release_by_id", lambda _release_id: fixture)
     result = control.handle_product_evolution_intake(REAL_INSPECTION_MESSAGE)
     assert result["handled"] is True
     assert result["route"] == "PRODUCT_EVOLUTION_RELEASE_INSPECTION"
@@ -50,7 +73,7 @@ def test_ray_release_inspection_routes_read_only(monkeypatch):
     assert result["deployment"]["rollback_occurred"] is True
     assert result["deployment"]["human_gate"] is False
     assert result["deployment"]["retry_count"] == 2
-    assert result["deployment"]["release_dispatch_claim_count"] == 3
+    assert result["deployment"]["release_dispatch_claim_count"] == 1
     assert result["deployment"]["release_retry_ready"] is True
     assert result["deployment"]["blocker"] == "PRODUCTION_PERSISTENT_PREVIEW_GUARD_FAILED"
     assert result["deployment"]["deployment_result_status"] == "DEPLOYED"
@@ -114,3 +137,17 @@ def test_long_inspection_message_preserves_exact_ids():
     assert control.exact_mission_id(text) == MISSION_ID
     assert control.exact_release_id(text) == RELEASE_ID
     assert control.classify_product_evolution_request(text) == "RELEASE_INSPECTION"
+
+
+def test_release_inspection_scopes_events_to_current_release():
+    old = "rel-telegram-20260824172054-077bf5a7-oldoldoldold"
+    history = [
+        {"event": "RELEASE_RETRY_READY", "release_id": old, "at": "2026-08-25T10:00:00+00:00"},
+        {"event": "RELEASE_DISPATCH_CLAIMED", "release_id": old, "at": "2026-08-25T10:01:00+00:00"},
+        {"event": "RELEASE_CANDIDATE_CREATED", "release_id": RELEASE_ID, "at": "2026-08-25T11:00:00+00:00"},
+    ]
+    truth = control.release_inspection({"result": {"mission_id": MISSION_ID, "status": "PARTIAL", "current_stage": "RELEASE_CANDIDATE_READY", "execution_history": history, "release": {"release_id": RELEASE_ID, "retry_count": 0}}})
+    assert truth["mission_event_count"] == 3
+    assert truth["current_release_event_count"] == 1
+    assert truth["release_retry_ready"] is False
+    assert truth["release_dispatch_claim_count"] == 0

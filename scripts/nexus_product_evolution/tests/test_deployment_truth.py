@@ -58,3 +58,48 @@ def test_candidate_verification_does_not_require_minified_source_identifier(monk
     monkeypatch.setattr(deployment, "_cors_options", lambda *_: (204, {"access-control-allow-origin": "https://goclearonline.cc"}))
     result = deployment.verify_candidate_artifact("https://candidate", commit)
     assert result["status"] == "PASS"
+
+
+def test_unknown_ssl_url_falls_back_to_valid_deploy_url(monkeypatch):
+    commit = "c" * 40
+    marker = deployment.VOICE_RUNTIME_CONTRACT_MARKER
+    monkeypatch.setattr(deployment, "_fetch_application_bundles", lambda url: {
+        "http_status": 200,
+        "assets": [{"status": 200, "body": f"NEXUS_BUILD_COMMIT:{commit}|{marker}"}],
+    })
+    monkeypatch.setattr(deployment, "_cors_options", lambda *_: (204, {"access-control-allow-origin": "https://goclearonline.cc"}))
+    result = deployment.verify_release_markers(
+        {"result": {"release": {"deployment_result": {"outcome": {
+            "deploy_ssl_url": "UNKNOWN",
+            "deploy_url": "https://candidate.example",
+            "deploy_id": "candidate-deploy",
+        }}}}},
+        commit,
+    )
+    assert result["candidate_artifact"]["candidate_url"] == "https://candidate.example"
+    assert result["candidate_artifact"]["status"] == "PASS"
+
+
+def test_redirect_parser_uses_final_response_block(monkeypatch):
+    class Completed:
+        returncode = 0
+        stdout = (b"HTTP/1.1 302 Found\r\nLocation: https://final.example\r\n\r\n"
+                  b"HTTP/2 200 \r\nContent-Type: text/html\r\n\r\nFINAL_BODY")
+
+    monkeypatch.setattr(deployment.subprocess, "run", lambda *args, **kwargs: Completed())
+    status, headers, body = deployment._fetch("https://redirect.example")
+    assert status == 200
+    assert headers["content-type"] == "text/html"
+    assert body == b"FINAL_BODY"
+
+
+def test_cors_redirect_parser_uses_final_status_and_headers(monkeypatch):
+    class Completed:
+        returncode = 0
+        stdout = (b"HTTP/1.1 307 Temporary Redirect\r\nLocation: https://final.example\r\n\r\n"
+                  b"HTTP/2 204 \r\nAccess-Control-Allow-Origin: https://goclearonline.cc\r\n\r\n")
+
+    monkeypatch.setattr(deployment.subprocess, "run", lambda *args, **kwargs: Completed())
+    status, headers = deployment._cors_options("https://redirect.example")
+    assert status == 204
+    assert headers["access-control-allow-origin"] == "https://goclearonline.cc"

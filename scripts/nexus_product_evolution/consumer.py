@@ -20,6 +20,7 @@ from .loop import MissionContract
 from .deployment import inspect_netlify_control_plane, verify_release_markers
 from .netlify_adapter import deploy_exact_sha, rollback_exact_deploy
 from .release import append_release_event, approval_valid, bounded_deploy, repair_approved_release_binding, verify_or_rollback
+from .recovery import build_repair_contract, make_failure_receipt
 
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/product_evolution"
@@ -127,7 +128,29 @@ def _dispatch_approved_release(path: Path, scheduler_instance: str, *, deploy_fn
         result["status"] = "BLOCKED"
         result["current_stage"] = "BLOCKED"
         result["blocker"] = deployment.get("reason") or (deployment.get("outcome") or {}).get("reason") or "DEPLOYMENT_BLOCKED"
-        result["release"] = {**result.get("release", {}), "deployment_result": deployment}
+        failure = make_failure_receipt({
+            "failure_code": result["blocker"],
+            "phase": deployment.get("phase", "deployment"),
+            "release_id": package.get("release_id"),
+            "candidate_sha": package.get("release_candidate_commit"),
+            "candidate_deploy_id": (deployment.get("outcome") or {}).get("deploy_id", "UNKNOWN"),
+            "production_deploy_before": package.get("rollback_deploy_id", "UNKNOWN"),
+            "production_deploy_after": package.get("production_deploy_id", "UNKNOWN"),
+            "reversible": bool(package.get("rollback_executable") == "PASS"),
+            "evidence": {"deployment_status": deployment.get("status"), "reason": result["blocker"]},
+        })
+        repair_contract = build_repair_contract(failure)
+        result["release"] = {
+            **result.get("release", {}),
+            "deployment_result": deployment,
+            "failure_receipt": failure,
+            "recovery": {
+                "eligible": repair_contract is not None,
+                "status": "PENDING_INTERNAL_REPAIR" if repair_contract else "HUMAN_OR_GOVERNANCE_REQUIRED",
+                "failure_signature": failure.get("signature"),
+                "max_repair_cycles": repair_contract.max_repair_cycles if repair_contract else 0,
+            },
+        }
         _write(path, {**value, "result": result})
         return {"claimed": True, "mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": result["blocker"]}
     result["current_stage"] = "PRODUCTION_VERIFY"
