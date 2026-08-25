@@ -22,6 +22,20 @@ TARGET = "https://goclearonline.cc"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
+def _netlify_executable() -> str | None:
+    """Resolve the certified CLI even when launchd supplies a minimal PATH."""
+    candidates = (
+        Path.home() / ".nvm/versions/node/v22.22.3/bin/netlify",
+        Path.home() / ".npm-global/bin/netlify",
+        Path("/opt/homebrew/bin/netlify"),
+        Path("/usr/local/bin/netlify"),
+    )
+    for candidate in candidates:
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return shutil.which("netlify")
+
+
 def _safe_tail(value: str, limit: int = 1200) -> str:
     text = "\n".join(value.splitlines()[-20:])[-limit:]
     text = re.sub(r"(?i)(bearer\s+)\S+", r"\1[REDACTED]", text)
@@ -67,7 +81,12 @@ def _dist_contains(dist: Path, needle: str) -> bool:
 
 def _cleanup_worktree(worktree: Path) -> None:
     subprocess.run(["git", "worktree", "unlock", str(worktree)], cwd=ROOT, capture_output=True, timeout=30, check=False)
-    subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, timeout=30, check=False)
+    # npm can leave a large node_modules tree; cleanup is bounded but must not
+    # turn a successful exact-SHA preflight into an unhandled timeout.
+    try:
+        subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, timeout=300, check=False)
+    except subprocess.TimeoutExpired:
+        return
     shutil.rmtree(worktree, ignore_errors=True)
 
 
@@ -135,13 +154,16 @@ def exact_sha_netlify_status() -> Dict[str, Any]:
         cli_auth = any(bool((user.get("auth") or {}).get("token")) for user in (config.get("users") or {}).values() if isinstance(user, dict))
     except (OSError, ValueError, TypeError):
         cli_auth = False
+    cli = _netlify_executable()
+    authenticated = bool(os.environ.get("NETLIFY_AUTH_TOKEN")) or cli_auth
     return {
         "provider": "Netlify",
         "site_id": SITE_ID,
         "target": TARGET,
         "method": "fixed CLI upload from detached exact-SHA worktree",
-        "authenticated": bool(os.environ.get("NETLIFY_AUTH_TOKEN")) or cli_auth,
-        "available": (bool(os.environ.get("NETLIFY_AUTH_TOKEN")) or cli_auth) and shutil.which("netlify") is not None,
+        "authenticated": authenticated,
+        "cli_available": cli is not None,
+        "available": authenticated and cli is not None,
     }
 
 
@@ -154,17 +176,20 @@ def deploy_exact_sha(commit: str, target: str) -> Dict[str, Any]:
     status = exact_sha_netlify_status()
     if not status["available"]:
         return {"status": "BLOCKED", "reason": "NETLIFY_AUTH_UNAVAILABLE", "provider": "Netlify", "site_id": SITE_ID}
+    netlify = _netlify_executable()
+    if not netlify:
+        return {"status": "BLOCKED", "reason": "NETLIFY_CLI_UNAVAILABLE", "provider": "Netlify", "site_id": SITE_ID}
     prepared = _prepare_exact_sha(commit)
     if prepared.get("status") != "PASS":
         return prepared
     worktree = Path(str(prepared["worktree"]))
     try:
-        deploy = subprocess.run(["netlify", "deploy", "--prod", "--no-build", "--dir", str(worktree / "dist"), "--site", SITE_ID, "--json"], cwd=worktree, env={**_build_environment(commit), "NETLIFY_CLI_TELEMETRY_DISABLED": "1"}, capture_output=True, text=True, timeout=300, check=False)
+        deploy = subprocess.run([netlify, "deploy", "--prod", "--no-build", "--dir", str(worktree / "dist"), "--site", SITE_ID, "--json"], cwd=worktree, env={**_build_environment(commit), "NETLIFY_CLI_TELEMETRY_DISABLED": "1"}, capture_output=True, text=True, timeout=300, check=False)
         if deploy.returncode != 0:
             return {"status": "FAILED", "reason": "NETLIFY_DEPLOY_FAILED", "phase": "netlify_deploy", "return_code": deploy.returncode, "stderr_tail_redacted": _safe_tail(deploy.stderr)}
         return {"status": "PASS", "commit": commit, "target": target, "provider": "Netlify", "site_id": SITE_ID, "artifact_hash": prepared.get("artifact_hash"), "deploy_metadata": "REDACTED_SAFE_METADATA_ONLY"}
     finally:
-        subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, timeout=30, check=False)
+        subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, timeout=300, check=False)
         shutil.rmtree(worktree, ignore_errors=True)
 
 
@@ -174,8 +199,11 @@ def rollback_exact_deploy(deploy_id: str) -> Dict[str, Any]:
         return {"status": "BLOCKED", "reason": "ROLLBACK_DEPLOY_ID_REQUIRED"}
     if not exact_sha_netlify_status()["authenticated"]:
         return {"status": "BLOCKED", "reason": "NETLIFY_AUTH_UNAVAILABLE"}
+    netlify = _netlify_executable()
+    if not netlify:
+        return {"status": "BLOCKED", "reason": "NETLIFY_CLI_UNAVAILABLE"}
     try:
-        restore = subprocess.run(["netlify", "api", "restoreSiteDeploy", "--data", json.dumps({"site_id": SITE_ID, "deploy_id": deploy_id})], cwd=ROOT, capture_output=True, text=True, timeout=60, check=False, env={**os.environ, "NETLIFY_CLI_TELEMETRY_DISABLED": "1", "CI": "1"})
+        restore = subprocess.run([netlify, "api", "restoreSiteDeploy", "--data", json.dumps({"site_id": SITE_ID, "deploy_id": deploy_id})], cwd=ROOT, capture_output=True, text=True, timeout=60, check=False, env={**os.environ, "NETLIFY_CLI_TELEMETRY_DISABLED": "1", "CI": "1"})
     except subprocess.TimeoutExpired:
         return {"status": "FAILED", "reason": "NETLIFY_ROLLBACK_TIMEOUT", "deploy_id": deploy_id}
     if restore.returncode != 0:

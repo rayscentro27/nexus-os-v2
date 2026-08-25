@@ -226,7 +226,42 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
     result = resolved.get("result") or {}
     release = result.get("release") or {}
     deployment = result.get("deployment") or {}
-    events = {str(item.get("event")) for item in result.get("execution_history") or []}
+    history = [item for item in result.get("execution_history") or [] if isinstance(item, Mapping)]
+    events = {str(item.get("event")) for item in history}
+    claims = [item for item in history if item.get("event") == "RELEASE_DISPATCH_CLAIMED"]
+    retry_events = [item for item in history if item.get("event") == "RELEASE_RETRY_READY"]
+    retry_count = release.get("retry_count")
+    try:
+        retry_count = int(retry_count)
+    except (TypeError, ValueError):
+        retry_count = "UNKNOWN"
+    deployment_result = release.get("deployment_result")
+    if not isinstance(deployment_result, Mapping):
+        deployment_result = {}
+    outcome = deployment_result.get("outcome")
+    if not isinstance(outcome, Mapping):
+        outcome = {}
+    retry_ready_at = release.get("retry_ready_at") or (retry_events[-1].get("at") if retry_events else None)
+    claim_times = [str(item.get("at")) for item in claims if item.get("at")]
+    scheduler_last_run = "UNKNOWN"
+    scheduler_log = ROOT / "reports/runtime/continuous_loop_launchd.log"
+    try:
+        lines = scheduler_log.read_text(encoding="utf-8", errors="ignore").splitlines()[-200:]
+        generated = []
+        for line in lines:
+            match = re.search(r'"generated_at"\s*:\s*"([^"]+)"', line)
+            if match:
+                generated.append(match.group(1))
+        if generated:
+            scheduler_last_run = max(generated)
+    except OSError:
+        pass
+    consumer_last_run = max(claim_times) if claim_times else "UNKNOWN"
+    if retry_ready_at and scheduler_last_run != "UNKNOWN":
+        scheduler_ran_after_retry = "YES" if scheduler_last_run > str(retry_ready_at) else "NO"
+    else:
+        scheduler_ran_after_retry = "UNKNOWN"
+    deployment_attempted = bool(deployment_result) or bool(events.intersection({"DEPLOYMENT_STARTED", "DEPLOYMENT_COMPLETE", "DEPLOYMENT_BLOCKED"}))
     verification = release.get("verification_result") or "NOT_RUN"
     return {
         "mission_id": _mission_id(resolved),
@@ -234,9 +269,22 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
         "approval_state": release.get("approval_state", "UNKNOWN"),
         "approved_by": release.get("approved_by"),
         "approved_at": release.get("approved_at"),
+        "approval_expires_at": release.get("approval_expires_at"),
         "current_stage": result.get("current_stage", "UNKNOWN"),
         "current_status": result.get("status", "UNKNOWN"),
         "release_dispatch_claimed": "RELEASE_DISPATCH_CLAIMED" in events,
+        "release_dispatch_claim_count": len(claims),
+        "release_dispatch_claimed_at": max(claim_times) if claim_times else "UNKNOWN",
+        "release_retry_ready": bool(retry_events or release.get("retry_ready_at")),
+        "release_retry_ready_at": retry_ready_at or "UNKNOWN",
+        "retry_count": retry_count,
+        "retry_eligibility": "NO_RETRY_REMAINING" if retry_count == 1 else "UNKNOWN",
+        "blocker": result.get("blocker") or outcome.get("reason") or deployment_result.get("reason") or "NONE_RECORDED",
+        "deployment_attempted": deployment_attempted,
+        "deployment_result_status": deployment_result.get("status") or outcome.get("status") or "UNKNOWN",
+        "deployment_result_reason": deployment_result.get("reason") or outcome.get("reason") or "UNKNOWN",
+        "deployment_result_phase": deployment_result.get("phase") or outcome.get("phase") or "UNKNOWN",
+        "deployment_result_return_code": deployment_result.get("return_code") or outcome.get("return_code") or "UNKNOWN",
         "deployment_occurred": "DEPLOYMENT_COMPLETE" in events or bool(release.get("deployment_completed_at")),
         "production_deploy_id": release.get("production_deploy_id") or deployment.get("deployed_build_id") or deployment.get("current_deploy_id") or (deployment.get("netlify_control_plane") or {}).get("published_deploy_id") or "NONE",
         "observed_production_sha": release.get("production_commit_after") or deployment.get("deployed_commit") or (deployment.get("netlify_control_plane") or {}).get("published_commit") or "UNKNOWN",
@@ -244,6 +292,9 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
         "production_verification_checks": release.get("verification_checks") or {},
         "rollback_occurred": "ROLLBACK_STARTED" in events or bool(release.get("rollback_result")),
         "human_gate": result.get("current_stage") == "HUMAN_GATE" or "HUMAN_GATE_READY" in events,
+        "scheduler_last_run": scheduler_last_run,
+        "consumer_last_run": consumer_last_run,
+        "scheduler_ran_after_retry_ready": scheduler_ran_after_retry,
     }
 
 
@@ -254,8 +305,20 @@ def release_inspection_text(truth: Mapping[str, Any]) -> str:
         f"Release: {truth.get('release_id', 'UNKNOWN')}",
         f"Mission: {truth.get('mission_id', 'UNKNOWN')}",
         f"Approval: {truth.get('approval_state', 'UNKNOWN')}",
+        f"Approved at: {truth.get('approved_at', 'UNKNOWN')}",
+        f"Approval expires at: {truth.get('approval_expires_at', 'UNKNOWN')}",
+        f"Current status: {truth.get('current_status', 'UNKNOWN')}",
         f"Mission stage: {truth.get('current_stage', 'UNKNOWN')}",
+        f"Blocker: {truth.get('blocker', 'UNKNOWN')}",
+        f"Retry count: {truth.get('retry_count', 'UNKNOWN')}",
+        f"Retry eligibility: {truth.get('retry_eligibility', 'UNKNOWN')}",
+        f"RELEASE_RETRY_READY: {'YES' if truth.get('release_retry_ready') else 'NO'}",
+        f"RELEASE_RETRY_READY at: {truth.get('release_retry_ready_at', 'UNKNOWN')}",
         f"Release dispatch claimed: {'YES' if truth.get('release_dispatch_claimed') else 'NO'}",
+        f"Dispatch claim count: {truth.get('release_dispatch_claim_count', 'UNKNOWN')}",
+        f"Most recent dispatch claim: {truth.get('release_dispatch_claimed_at', 'UNKNOWN')}",
+        f"Deployment attempt: {'YES' if truth.get('deployment_attempted') else 'NO'}",
+        f"Deployment result: {truth.get('deployment_result_status', 'UNKNOWN')} / {truth.get('deployment_result_reason', 'UNKNOWN')} / {truth.get('deployment_result_phase', 'UNKNOWN')}",
         f"Production deployment: {'YES' if truth.get('deployment_occurred') else 'NO'}",
         f"Production deploy ID: {truth.get('production_deploy_id', 'NONE')}",
         f"Observed production SHA: {truth.get('observed_production_sha', 'UNKNOWN')}",
@@ -263,6 +326,9 @@ def release_inspection_text(truth: Mapping[str, Any]) -> str:
         f"Verification checks: {json.dumps(checks, sort_keys=True)}",
         f"Rollback: {'YES' if truth.get('rollback_occurred') else 'NO'}",
         f"Human gate: {'YES' if truth.get('human_gate') else 'NO'}",
+        f"Scheduler last run: {truth.get('scheduler_last_run', 'UNKNOWN')}",
+        f"Consumer last run: {truth.get('consumer_last_run', 'UNKNOWN')}",
+        f"Scheduler ran after retry ready: {truth.get('scheduler_ran_after_retry_ready', 'UNKNOWN')}",
     ])
 
 
