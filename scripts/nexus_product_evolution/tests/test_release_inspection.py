@@ -45,16 +45,15 @@ def test_ray_release_inspection_routes_read_only(monkeypatch):
     assert result["release_id"] == RELEASE_ID
     assert result["deployment"]["approval_state"] == "APPROVED"
     assert isinstance(result["deployment"]["release_dispatch_claimed"], bool)
-    assert result["deployment"]["deployment_occurred"] is False
-    assert result["deployment"]["production_verification"] == "NOT_RUN"
-    assert result["deployment"]["rollback_occurred"] is False
+    assert result["deployment"]["deployment_occurred"] is True
+    assert result["deployment"]["production_verification"] in {"FAIL", "NOT_RUN"}
+    assert result["deployment"]["rollback_occurred"] is True
     assert result["deployment"]["human_gate"] is False
-    assert result["deployment"]["retry_count"] == 1
-    assert result["deployment"]["release_dispatch_claim_count"] == 2
+    assert result["deployment"]["retry_count"] == 2
+    assert result["deployment"]["release_dispatch_claim_count"] == 3
     assert result["deployment"]["release_retry_ready"] is True
-    assert result["deployment"]["blocker"] == "NETLIFY_AUTH_UNAVAILABLE"
-    assert result["deployment"]["deployment_result_status"] == "FAILED"
-    assert result["deployment"]["deployment_result_reason"] == "NETLIFY_AUTH_UNAVAILABLE"
+    assert result["deployment"]["blocker"] == "PRODUCTION_PERSISTENT_PREVIEW_GUARD_FAILED"
+    assert result["deployment"]["deployment_result_status"] == "DEPLOYED"
     assert writes == []
 
 

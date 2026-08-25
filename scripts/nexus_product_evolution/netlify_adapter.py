@@ -134,6 +134,25 @@ def _dist_contains(dist: Path, needle: str) -> bool:
     return False
 
 
+def _safe_deploy_metadata(stdout: str, *, commit: str, artifact_hash: str) -> Dict[str, Any]:
+    """Retain only non-sensitive identity fields from Netlify's JSON result."""
+    try:
+        payload = json.loads(stdout)
+    except (TypeError, ValueError):
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return {
+        "deploy_id": payload.get("id") or payload.get("deploy_id") or "UNKNOWN",
+        "deploy_url": payload.get("deploy_url") or payload.get("url") or "UNKNOWN",
+        "deploy_ssl_url": payload.get("deploy_ssl_url") or payload.get("ssl_url") or "UNKNOWN",
+        "state": payload.get("state") or "UNKNOWN",
+        "site_id": payload.get("site_id") or SITE_ID,
+        "commit": commit,
+        "artifact_hash": artifact_hash,
+    }
+
+
 def _cleanup_worktree(worktree: Path) -> None:
     subprocess.run(["git", "worktree", "unlock", str(worktree)], cwd=ROOT, capture_output=True, timeout=30, check=False)
     # npm can leave a large node_modules tree; cleanup is bounded but must not
@@ -270,7 +289,8 @@ def deploy_exact_sha(commit: str, target: str) -> Dict[str, Any]:
         deploy = subprocess.run([netlify, "deploy", "--prod", "--no-build", "--dir", str(worktree / "dist"), "--site", SITE_ID, "--json"], cwd=worktree, env=_netlify_environment(), capture_output=True, text=True, timeout=300, check=False)
         if deploy.returncode != 0:
             return {"status": "FAILED", "reason": "NETLIFY_DEPLOY_FAILED", "phase": "netlify_deploy", "return_code": deploy.returncode, "stderr_tail_redacted": _safe_tail(deploy.stderr)}
-        return {"status": "PASS", "commit": commit, "target": target, "provider": "Netlify", "site_id": SITE_ID, "artifact_hash": prepared.get("artifact_hash"), "deploy_metadata": "REDACTED_SAFE_METADATA_ONLY"}
+        metadata = _safe_deploy_metadata(deploy.stdout, commit=commit, artifact_hash=str(prepared.get("artifact_hash") or "UNKNOWN"))
+        return {"status": "PASS", "commit": commit, "target": target, "provider": "Netlify", "site_id": SITE_ID, "artifact_hash": prepared.get("artifact_hash"), **metadata}
     finally:
         subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, timeout=300, check=False)
         shutil.rmtree(worktree, ignore_errors=True)

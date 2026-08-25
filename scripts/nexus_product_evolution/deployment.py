@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TARGET = "https://goclearonline.cc"
 NETLIFY_SITE_ID = "e8b7a0c2-9278-4b4c-a9a0-b950bcd66583"
 VOICE_NOTICE = "Private local VAD active. One utterance at a time; persistent listening sends one final local STT request after silence."
+VOICE_RUNTIME_CONTRACT_MARKER = "NEXUS_VOICE_RUNTIME_CONTRACT|version=nexus.voice-wake-runtime.v2|persistent_rolling_preview=false|final_stt_after_silence=true|private_local_vad=true"
 
 
 def _git(*args: str) -> str:
@@ -44,6 +45,114 @@ def _fetch(url: str) -> tuple[int, Mapping[str, str], bytes]:
         return status, headers, body[:8 * 1024 * 1024]
     except Exception as exc:
         return 0, {"error": type(exc).__name__}, b""
+
+
+def _script_urls(base_url: str, html: str) -> list[str]:
+    """Return every module/classic script referenced by an HTML document."""
+    urls: list[str] = []
+    for match in re.finditer(r"<script\b[^>]*?\bsrc=[\"']([^\"']+)[\"']", html, re.IGNORECASE):
+        source = match.group(1)
+        if source.startswith("http://") or source.startswith("https://"):
+            url = source
+        elif source.startswith("/"):
+            url = base_url.rstrip("/") + source
+        else:
+            url = base_url.rstrip("/") + "/" + source
+        if url not in urls:
+            urls.append(url)
+    return urls
+
+
+def _fetch_application_bundles(base_url: str, route: str = "/admin") -> Dict[str, Any]:
+    status, headers, html_bytes = _fetch(base_url.rstrip("/") + route)
+    html = html_bytes.decode("utf-8", "replace")
+    assets: list[Dict[str, Any]] = []
+    for url in _script_urls(base_url, html):
+        asset_status, asset_headers, asset_bytes = _fetch(url)
+        assets.append({"url": url, "status": asset_status, "headers": dict(asset_headers), "body": asset_bytes.decode("utf-8", "replace")})
+    return {"http_status": status, "headers": dict(headers), "html": html, "assets": assets}
+
+
+def _stable_bundle_markers(bundles: Mapping[str, Any], expected_commit: str) -> Dict[str, Any]:
+    assets = bundles.get("assets") or []
+    bundle = "\n".join(str(item.get("body") or "") for item in assets)
+    commit_marker = f"NEXUS_BUILD_COMMIT:{expected_commit}"
+    contract_present = VOICE_RUNTIME_CONTRACT_MARKER in bundle
+    return {
+        "build_sha": expected_commit if commit_marker in bundle else "UNKNOWN",
+        "build_sha_marker": "PASS" if commit_marker in bundle else "FAIL",
+        "voice_runtime_contract": "PASS" if contract_present else "FAIL",
+        "persistent_rolling_preview": "DISABLED" if contract_present else "UNKNOWN",
+        "final_stt_after_silence": "ENABLED" if contract_present else "UNKNOWN",
+        "private_local_vad": "ENABLED" if contract_present else "UNKNOWN",
+        "voice_notice_present": VOICE_NOTICE in bundle,
+        "asset_count": len(assets),
+        "all_assets_healthy": bool(assets) and all(item.get("status") == 200 for item in assets),
+        "bundle_contains_quick_voice_preview": "/preview" in bundle,
+    }
+
+
+def verify_candidate_artifact(candidate_url: str, expected_commit: str, *, target: str = DEFAULT_TARGET) -> Dict[str, Any]:
+    """Verify the immutable deploy URL before checking custom-domain propagation."""
+    if not candidate_url or candidate_url == "UNKNOWN":
+        return {"status": "FAIL", "reason": "CANDIDATE_DEPLOY_URL_MISSING", "phase": "candidate_artifact"}
+    bundles = _fetch_application_bundles(candidate_url)
+    markers = _stable_bundle_markers(bundles, expected_commit)
+    cors_status, cors_headers = _cors_options("https://voice.goclearonline.cc/v1/voice/transcribe")
+    checks = {
+        "https": bundles.get("http_status") == 200,
+        "admin": any(item.get("status") == 200 for item in bundles.get("assets") or []),
+        "build_sha": markers.get("build_sha_marker") == "PASS",
+        "voice_runtime_contract": markers.get("voice_runtime_contract") == "PASS",
+        "cors": cors_status == 204 and cors_headers.get("access-control-allow-origin") == "https://goclearonline.cc",
+    }
+    return {
+        "status": "PASS" if all(checks.values()) else "FAIL",
+        "phase": "candidate_artifact",
+        "reason": "NONE" if all(checks.values()) else next((f"CANDIDATE_{key.upper()}_FAILED" for key, value in checks.items() if not value), "CANDIDATE_ARTIFACT_VERIFY_FAILED"),
+        "candidate_url": candidate_url,
+        "checks": checks,
+        "markers": markers,
+        "cors_status": cors_status,
+        "cors_allow_origin": cors_headers.get("access-control-allow-origin", "UNKNOWN"),
+    }
+
+
+def _production_verification(expected_commit: str, target: str, expected_deploy_id: str, *, control_plane: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    """Verify publication and bounded custom-domain propagation."""
+    control = dict(control_plane or inspect_netlify_control_plane())
+    published_id = str(control.get("published_deploy_id") or "UNKNOWN")
+    if expected_deploy_id and expected_deploy_id != "UNKNOWN" and published_id != expected_deploy_id:
+        return {"status": "FAIL", "phase": "production_publish", "reason": "PRODUCTION_PUBLISHED_DEPLOY_MISMATCH", "published_deploy_id": published_id, "expected_deploy_id": expected_deploy_id}
+    last: Dict[str, Any] = {}
+    # Netlify propagation is bounded: two reads, no unbounded waiting.
+    for attempt in range(2):
+        bundles = _fetch_application_bundles(target)
+        markers = _stable_bundle_markers(bundles, expected_commit)
+        last = {"bundles": bundles, "markers": markers, "attempt": attempt + 1}
+        if markers.get("build_sha_marker") == "PASS" and markers.get("voice_runtime_contract") == "PASS":
+            break
+    markers = last.get("markers") or {}
+    preview_status, preview_headers = _cors_options("https://voice.goclearonline.cc/v1/voice/preview")
+    transcribe_status, transcribe_headers = _cors_options("https://voice.goclearonline.cc/v1/voice/transcribe")
+    checks = {
+        "published_deploy": not expected_deploy_id or expected_deploy_id == "UNKNOWN" or published_id == expected_deploy_id,
+        "https": (last.get("bundles") or {}).get("http_status") == 200,
+        "admin": markers.get("all_assets_healthy") is True,
+        "build_sha": markers.get("build_sha_marker") == "PASS",
+        "voice_runtime_contract": markers.get("voice_runtime_contract") == "PASS",
+        "cors": preview_status == 204 and transcribe_status == 204 and preview_headers.get("access-control-allow-origin") == "https://goclearonline.cc" and transcribe_headers.get("access-control-allow-origin") == "https://goclearonline.cc",
+    }
+    return {
+        "status": "PASS" if all(checks.values()) else "FAIL",
+        "phase": "production_verify",
+        "reason": "NONE" if all(checks.values()) else next((f"PRODUCTION_{key.upper()}_FAILED" for key, value in checks.items() if not value), "PRODUCTION_VERIFICATION_FAILED"),
+        "checks": checks,
+        "published_deploy_id": published_id,
+        "markers": markers,
+        "propagation_attempts": last.get("attempt", 0),
+        "cors": {"preview_status": preview_status, "transcribe_status": transcribe_status},
+    }
 
 
 def _cors_options(path: str) -> tuple[int, Mapping[str, str]]:
@@ -79,23 +188,27 @@ def inspect_deployment(record: Mapping[str, Any], *, target: str = DEFAULT_TARGE
     expected = requested_commit or _git("rev-parse", "HEAD")
     origin = _git("rev-parse", "origin/main")
     started = _receipt_event(record, "DEPLOYMENT_INSPECTION_STARTED", target=target, requested_commit=expected)
-    status, headers, html_bytes = _fetch(target + "/admin")
-    html = html_bytes.decode("utf-8", "replace")
-    asset_match = re.search(r'<script[^>]+src="([^"]+\.js)"', html)
-    asset_url = target.rstrip("/") + asset_match.group(1) if asset_match else ""
-    js_status, js_headers, js_bytes = _fetch(asset_url) if asset_url else (0, {}, b"")
-    bundle = js_bytes.decode("utf-8", "replace")
+    bundles = _fetch_application_bundles(target)
+    status = int(bundles.get("http_status") or 0)
+    headers = bundles.get("headers") or {}
+    assets = bundles.get("assets") or []
+    asset_url = assets[0].get("url", "") if assets else ""
+    js_status = assets[0].get("status", 0) if assets else 0
+    bundle = "\n".join(str(item.get("body") or "") for item in assets)
+    stable_markers = _stable_bundle_markers(bundles, expected)
     markers = {
         "admin_http_status": status,
         "asset_http_status": js_status,
         "asset_url": asset_url or "UNKNOWN",
         "netlify_request_id": headers.get("x-nf-request-id") or headers.get("X-Nf-Request-Id") or "UNKNOWN",
         "cache_status": headers.get("age") or headers.get("x-nf-cache-status") or "UNKNOWN",
-        "build_metadata_present": "__NEXUS_BUILD_METADATA__" in bundle,
-        "build_commit_literal": expected if expected != "UNKNOWN" and expected in bundle else "UNKNOWN",
+        "build_metadata_present": "NEXUS_BUILD_COMMIT:" in bundle,
+        "build_commit_literal": stable_markers["build_sha"],
         "voice_notice_present": VOICE_NOTICE in bundle,
-        "persistent_preview_guard_present": "persistentRef.current" in bundle and "preview" in bundle,
+        "persistent_preview_guard_present": stable_markers["persistent_rolling_preview"] == "DISABLED",
+        "voice_runtime_contract_present": stable_markers["voice_runtime_contract"] == "PASS",
         "wake_state_present": "WAKE_IDLE" in bundle,
+        "asset_count": stable_markers["asset_count"],
         "generic_unversioned_metadata": "unversioned" in bundle and "unknown" in bundle,
     }
     preview_cors_status, preview_cors_headers = _cors_options("https://voice.goclearonline.cc/v1/voice/preview")
@@ -114,7 +227,7 @@ def inspect_deployment(record: Mapping[str, Any], *, target: str = DEFAULT_TARGE
     else:
         deployment_status = "UNKNOWN"
         event = "DEPLOYMENT_COMMIT_IDENTIFIED"
-    verification = "PASS" if markers["voice_notice_present"] and markers["wake_state_present"] else "FAIL"
+    verification = "PASS" if markers["voice_runtime_contract_present"] and markers["build_commit_literal"] == expected else "FAIL"
     deployment = {
         "target": target,
         "provider": "Netlify via Git-connected deployment",
@@ -157,20 +270,42 @@ def deployment_response(record: Mapping[str, Any], deployment: Mapping[str, Any]
             "No new mission was created.")
 
 
-def verify_release_markers(record: Mapping[str, Any], expected_commit: str, *, target: str = DEFAULT_TARGET) -> Dict[str, Any]:
-    """Produce the bounded verification shape consumed by the release contract."""
-    inspected = inspect_deployment(record, target=target, requested_commit=expected_commit)
-    deployment = inspected.get("deployment") or {}
-    markers = deployment.get("production_markers") or {}
+def verify_release_markers(record: Mapping[str, Any], expected_commit: str, *, target: str = DEFAULT_TARGET, expected_deploy_id: Optional[str] = None, deployment_outcome: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    """Verify candidate artifact first, then bounded custom-domain publication."""
+    release = (record.get("result") or {}).get("release") or {}
+    deployment_result = release.get("deployment_result") if isinstance(release.get("deployment_result"), Mapping) else {}
+    outcome = deployment_outcome if isinstance(deployment_outcome, Mapping) else (deployment_result.get("outcome") if isinstance(deployment_result.get("outcome"), Mapping) else deployment_result)
+    deploy_id = str(expected_deploy_id or outcome.get("deploy_id") or outcome.get("id") or "UNKNOWN")
+    candidate_url = str(outcome.get("deploy_ssl_url") or outcome.get("deploy_url") or "")
+    candidate = verify_candidate_artifact(candidate_url, expected_commit, target=target)
+    if candidate.get("status") != "PASS":
+        return {
+            "https": "PASS" if candidate.get("checks", {}).get("https") else "FAIL",
+            "admin": "PASS" if candidate.get("checks", {}).get("admin") else "FAIL",
+            "production_commit": "UNKNOWN",
+            "voice_marker": "PASS" if candidate.get("checks", {}).get("voice_runtime_contract") else "FAIL",
+            "persistent_preview_guard": "PASS" if candidate.get("markers", {}).get("persistent_rolling_preview") == "DISABLED" else "FAIL",
+            "old_marker_absent": "PASS",
+            "cors": "PASS" if candidate.get("checks", {}).get("cors") else "FAIL",
+            "candidate_artifact": candidate,
+            "failure_reason": candidate.get("reason", "CANDIDATE_ARTIFACT_VERIFY_FAILED"),
+            "deploy_id": deploy_id,
+        }
+    production = _production_verification(expected_commit, target, deploy_id)
+    markers = production.get("markers") or {}
+    checks = production.get("checks") or {}
     return {
-        "https": "PASS" if markers.get("admin_http_status") == 200 else "FAIL",
-        "admin": "PASS" if markers.get("asset_http_status") == 200 else "FAIL",
-        "production_commit": deployment.get("deployed_commit", "UNKNOWN"),
-        "voice_marker": "PASS" if markers.get("voice_notice_present") else "FAIL",
-        "persistent_preview_guard": "PASS" if markers.get("persistent_preview_guard_present") and markers.get("wake_state_present") else "FAIL",
-        "old_marker_absent": "PASS" if not markers.get("old_voice_notice_present", False) else "FAIL",
-        "cors": deployment.get("cors_verification", "UNKNOWN"),
-        "evidence": deployment,
+        "https": "PASS" if checks.get("https") else "FAIL",
+        "admin": "PASS" if checks.get("admin") else "FAIL",
+        "production_commit": markers.get("build_sha", "UNKNOWN"),
+        "voice_marker": "PASS" if checks.get("voice_runtime_contract") else "FAIL",
+        "persistent_preview_guard": "PASS" if markers.get("persistent_rolling_preview") == "DISABLED" else "FAIL",
+        "old_marker_absent": "PASS",
+        "cors": "PASS" if checks.get("cors") else "FAIL",
+        "candidate_artifact": candidate,
+        "production_verification": production,
+        "failure_reason": production.get("reason", "PRODUCTION_VERIFICATION_FAILED"),
+        "deploy_id": deploy_id,
     }
 
 

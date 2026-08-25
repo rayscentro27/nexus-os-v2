@@ -65,3 +65,15 @@ def test_safe_tail_redacts_credentials():
     text = adapter._safe_tail("NETLIFY_AUTH_TOKEN=secret-value\nAuthorization: Bearer abc123")
     assert "secret-value" not in text
     assert "abc123" not in text
+
+
+def test_deploy_metadata_keeps_identity_without_secrets():
+    result = adapter._safe_deploy_metadata(
+        '{"id":"deploy-123456","deploy_ssl_url":"https://deploy.example","state":"ready","token":"never-retain"}',
+        commit="a" * 40,
+        artifact_hash="artifact-hash",
+    )
+    assert result["deploy_id"] == "deploy-123456"
+    assert result["deploy_ssl_url"] == "https://deploy.example"
+    assert result["commit"] == "a" * 40
+    assert "token" not in result

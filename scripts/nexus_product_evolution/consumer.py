@@ -10,6 +10,7 @@ import fcntl
 import json
 import os
 import tempfile
+import inspect
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
@@ -130,7 +131,24 @@ def _dispatch_approved_release(path: Path, scheduler_instance: str, *, deploy_fn
         _write(path, {**value, "result": result})
         return {"claimed": True, "mission_id": result.get("mission_id"), "status": "BLOCKED", "reason": result["blocker"]}
     result["current_stage"] = "PRODUCTION_VERIFY"
-    observed = verify_fn({**value, "result": result}, str(package.get("release_candidate_commit")), target=str(package.get("target_url")))
+    result["release"] = {
+        **(result.get("release") or {}),
+        "deployment_result": deployment,
+        "attempted_candidate_commit": package.get("release_candidate_commit"),
+    }
+    verify_kwargs = {
+        "expected_deploy_id": ((deployment.get("outcome") or {}).get("deploy_id") if isinstance(deployment.get("outcome"), dict) else None),
+        "deployment_outcome": deployment.get("outcome"),
+    }
+    try:
+        parameters = inspect.signature(verify_fn).parameters
+        supports_extended = any(parameter.kind is inspect.Parameter.VAR_KEYWORD for parameter in parameters.values()) or any(name in parameters for name in verify_kwargs)
+    except (TypeError, ValueError):
+        supports_extended = False
+    if supports_extended:
+        observed = verify_fn({**value, "result": result}, str(package.get("release_candidate_commit")), target=str(package.get("target_url")), **verify_kwargs)
+    else:
+        observed = verify_fn({**value, "result": result}, str(package.get("release_candidate_commit")), target=str(package.get("target_url")))
     verified = verify_or_rollback(result, release_id=str(package.get("release_id")), expected_commit=str(package.get("release_candidate_commit")), observed=observed, rollback_fn=rollback_fn)
     result = verified.get("result") or result
     result["release"] = {**result.get("release", {}), "deployment_result": deployment, "verification_observed": observed}

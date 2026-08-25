@@ -304,22 +304,42 @@ def bounded_deploy(result: Mapping[str, Any], *, release_id: str, commit: str, t
     except Exception as exc:
         outcome = {"status": "FAILED", "error": type(exc).__name__}
     if outcome.get("status") != "PASS":
-        return {"status": "FAILED", "result": append_release_event(started, "DEPLOYMENT_BLOCKED", release_id=release_id, reason=outcome.get("error", "deployment_failed")), "outcome": outcome}
-    return {"status": "DEPLOYED", "result": append_release_event(started, "DEPLOYMENT_COMPLETE", release_id=release_id, commit=commit), "outcome": outcome}
+        reason = outcome.get("reason") or outcome.get("error", "deployment_failed")
+        return {"status": "FAILED", "result": append_release_event(started, "DEPLOYMENT_BLOCKED", release_id=release_id, reason=reason), "outcome": outcome}
+    completed = append_release_event(started, "DEPLOYMENT_COMPLETE", release_id=release_id, commit=commit, deploy_id=outcome.get("deploy_id", "UNKNOWN"))
+    completed["release"] = {
+        **(completed.get("release") or {}),
+        "deployment_attempted": "YES",
+        "attempted_candidate_commit": commit,
+        "candidate_deploy_id": outcome.get("deploy_id", "UNKNOWN"),
+        "candidate_deploy_state": outcome.get("state", "UNKNOWN"),
+        "candidate_published": True,
+        "candidate_artifact_hash": outcome.get("artifact_hash", "UNKNOWN"),
+    }
+    return {"status": "DEPLOYED", "result": completed, "outcome": outcome}
 
 
 def verify_or_rollback(result: Mapping[str, Any], *, release_id: str, expected_commit: str, observed: Mapping[str, Any], rollback_fn: Callable[[str], Mapping[str, Any]]) -> Dict[str, Any]:
     checks = {"https": observed.get("https") == "PASS", "admin": observed.get("admin") == "PASS", "build_sha": observed.get("production_commit") == expected_commit, "voice_marker": observed.get("voice_marker") == "PASS", "persistent_preview_guard": observed.get("persistent_preview_guard") == "PASS", "old_marker_absent": observed.get("old_marker_absent") == "PASS", "cors": observed.get("cors") == "PASS"}
     updated = dict(result)
-    updated.setdefault("release", {})["verification_result"] = "PASS" if all(checks.values()) else "FAIL"
-    updated["release"]["production_commit_after"] = observed.get("production_commit", "UNKNOWN")
+    package = {**(updated.get("release") or {})}
+    package["verification_result"] = "PASS" if all(checks.values()) else "FAIL"
+    package["attempted_candidate_commit"] = expected_commit
+    package["candidate_currently_live"] = all(checks.values())
+    package["verification_checks"] = checks
+    package["production_commit_after"] = expected_commit if all(checks.values()) else "UNKNOWN"
+    updated["release"] = package
     if all(checks.values()):
         updated = append_release_event(updated, "PRODUCTION_VERIFY_PASS", release_id=release_id, checks=checks)
         updated["current_stage"] = "HUMAN_GATE"
+        updated["status"] = "PARTIAL"
+        updated["blocker"] = None
         updated = append_release_event(updated, "HUMAN_GATE_READY", release_id=release_id)
         return {"status": "PASS", "result": updated, "checks": checks}
-    updated = append_release_event(updated, "PRODUCTION_VERIFY_FAIL", release_id=release_id, checks=checks)
-    rollback_target = str((result.get("release") or {}).get("rollback_target") or "")
+    failure_reason = str(observed.get("failure_reason") or ((observed.get("production_verification") or {}).get("reason") if isinstance(observed.get("production_verification"), Mapping) else "") or "PRODUCTION_VERIFICATION_FAILED")
+    updated["blocker"] = failure_reason
+    updated = append_release_event(updated, "PRODUCTION_VERIFY_FAIL", release_id=release_id, checks=checks, reason=failure_reason)
+    rollback_target = str((updated.get("release") or {}).get("rollback_target") or "")
     if not rollback_target or rollback_target.upper() == "UNKNOWN" or rollback_target.upper() in {"HEAD", "MAIN", "LATEST"} or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:-]{5,}", rollback_target):
         updated = append_release_event(updated, "ROLLBACK_BLOCKED", release_id=release_id, reason="ROLLBACK_TARGET_UNKNOWN_OR_MOVING")
         updated["status"] = "BLOCKED"
@@ -330,7 +350,14 @@ def verify_or_rollback(result: Mapping[str, Any], *, release_id: str, expected_c
         rollback = dict(rollback_fn(rollback_target))
     except Exception as exc:
         rollback = {"status": "FAILED", "error": type(exc).__name__}
-    updated["release"]["rollback_result"] = rollback
+    package = {**(updated.get("release") or {})}
+    package["rollback_result"] = rollback
+    package["rollback_attempted"] = "YES"
+    package["rollback_target"] = rollback_target
+    package["candidate_currently_live"] = False
+    package["production_deploy_id"] = rollback_target if rollback.get("status") == "PASS" else "UNKNOWN"
+    package["production_commit_after"] = rollback.get("production_commit", "UNKNOWN") if rollback.get("status") == "PASS" else "UNKNOWN"
+    updated["release"] = package
     updated = append_release_event(updated, "ROLLBACK_COMPLETE" if rollback.get("status") == "PASS" else "ROLLBACK_FAILED", release_id=release_id)
     updated["status"] = "BLOCKED"
     updated["current_stage"] = "BLOCKED"

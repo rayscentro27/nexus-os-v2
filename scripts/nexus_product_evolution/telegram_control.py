@@ -268,6 +268,17 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
         retry_authorization = {}
     generic_resumed = any(item.get("event") == "ADAPTER_EXECUTION" and any(h.get("event") == "SECOND_RETRY_AUTHORIZED" and str(h.get("at", "")) <= str(item.get("at", "")) for h in history) for item in history)
     verification = release.get("verification_result") or "NOT_RUN"
+    latest_verify_fail = next((item for item in reversed(history) if item.get("event") == "PRODUCTION_VERIFY_FAIL"), None)
+    latest_verify_pass = next((item for item in reversed(history) if item.get("event") == "PRODUCTION_VERIFY_PASS"), None)
+    if latest_verify_fail:
+        verification = "FAIL"
+    elif latest_verify_pass:
+        verification = "PASS"
+    current_blocker = result.get("blocker") or outcome.get("reason") or deployment_result.get("reason") or "NONE_RECORDED"
+    if latest_verify_fail:
+        failed_checks = latest_verify_fail.get("checks") or {}
+        current_blocker = next((f"PRODUCTION_{key.upper()}_FAILED" for key, value in failed_checks.items() if value is False), latest_verify_fail.get("reason") or "PRODUCTION_VERIFICATION_FAILED")
+    candidate_deploy_id = release.get("candidate_deploy_id") or outcome.get("deploy_id") or "UNKNOWN"
     return {
         "mission_id": _mission_id(resolved),
         "release_id": release.get("release_id", "UNKNOWN"),
@@ -284,18 +295,24 @@ def release_inspection(resolved: Mapping[str, Any]) -> Dict[str, Any]:
         "release_retry_ready_at": retry_ready_at or "UNKNOWN",
         "retry_count": retry_count,
         "retry_eligibility": "NO_RETRY_REMAINING" if retry_count == 1 else "UNKNOWN",
-        "blocker": result.get("blocker") or outcome.get("reason") or deployment_result.get("reason") or "NONE_RECORDED",
+        "blocker": current_blocker,
         "deployment_attempted": deployment_attempted,
         "deployment_result_status": deployment_result.get("status") or outcome.get("status") or "UNKNOWN",
         "deployment_result_reason": deployment_result.get("reason") or outcome.get("reason") or "UNKNOWN",
         "deployment_result_phase": deployment_result.get("phase") or outcome.get("phase") or "UNKNOWN",
         "deployment_result_return_code": deployment_result.get("return_code") or outcome.get("return_code") or "UNKNOWN",
-        "deployment_occurred": "DEPLOYMENT_COMPLETE" in events or bool(release.get("deployment_completed_at")),
-        "production_deploy_id": release.get("production_deploy_id") or deployment.get("deployed_build_id") or deployment.get("current_deploy_id") or (deployment.get("netlify_control_plane") or {}).get("published_deploy_id") or "NONE",
+        "deployment_occurred": "DEPLOYMENT_COMPLETE" in events or bool(release.get("deployment_completed_at")) or candidate_deploy_id != "UNKNOWN" or outcome.get("status") == "PASS",
+        "candidate_deploy_id": candidate_deploy_id,
+        "candidate_deploy_state": release.get("candidate_deploy_state") or outcome.get("state") or "UNKNOWN",
+        "candidate_published": release.get("candidate_published", "UNKNOWN"),
+        "candidate_currently_live": release.get("candidate_currently_live", "UNKNOWN"),
+        "production_deploy_id": release.get("production_deploy_id") or deployment.get("current_deploy_id") or (deployment.get("netlify_control_plane") or {}).get("published_deploy_id") or "UNKNOWN",
         "observed_production_sha": release.get("production_commit_after") or deployment.get("deployed_commit") or (deployment.get("netlify_control_plane") or {}).get("published_commit") or "UNKNOWN",
         "production_verification": verification,
         "production_verification_checks": release.get("verification_checks") or {},
         "rollback_occurred": "ROLLBACK_STARTED" in events or bool(release.get("rollback_result")),
+        "rollback_target": (release.get("rollback_result") or {}).get("deploy_id") or release.get("rollback_target") or "UNKNOWN",
+        "rollback_result": (release.get("rollback_result") or {}).get("status", "NOT_RUN"),
         "human_gate": result.get("current_stage") == "HUMAN_GATE" or "HUMAN_GATE_READY" in events,
         "scheduler_last_run": scheduler_last_run,
         "consumer_last_run": consumer_last_run,
@@ -333,10 +350,13 @@ def release_inspection_text(truth: Mapping[str, Any]) -> str:
         f"Deployment result: {truth.get('deployment_result_status', 'UNKNOWN')} / {truth.get('deployment_result_reason', 'UNKNOWN')} / {truth.get('deployment_result_phase', 'UNKNOWN')}",
         f"Production deployment: {'YES' if truth.get('deployment_occurred') else 'NO'}",
         f"Production deploy ID: {truth.get('production_deploy_id', 'NONE')}",
+        f"Candidate deploy ID: {truth.get('candidate_deploy_id', 'UNKNOWN')}",
+        f"Candidate currently live: {truth.get('candidate_currently_live', 'UNKNOWN')}",
         f"Observed production SHA: {truth.get('observed_production_sha', 'UNKNOWN')}",
         f"Production verification: {truth.get('production_verification', 'NOT_RUN')}",
         f"Verification checks: {json.dumps(checks, sort_keys=True)}",
         f"Rollback: {'YES' if truth.get('rollback_occurred') else 'NO'}",
+        f"Rollback target: {truth.get('rollback_target', 'UNKNOWN')} / {truth.get('rollback_result', 'NOT_RUN')}",
         f"Human gate: {'YES' if truth.get('human_gate') else 'NO'}",
         f"Scheduler last run: {truth.get('scheduler_last_run', 'UNKNOWN')}",
         f"Consumer last run: {truth.get('consumer_last_run', 'UNKNOWN')}",

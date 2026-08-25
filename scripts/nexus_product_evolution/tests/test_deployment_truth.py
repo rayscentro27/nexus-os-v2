@@ -28,3 +28,33 @@ def test_inspection_records_stale_bundle_without_fabricating_commit(monkeypatch)
     assert inspected["deployment"]["stale_production"] == "YES"
     assert inspected["deployment"]["deployment_status"] == "DEPLOYMENT_STALE"
     assert any(item["event"] == "DEPLOYMENT_STALE" for item in inspected["execution_history"])
+
+
+def test_candidate_verification_uses_stable_contract_across_all_assets(monkeypatch):
+    commit = "a" * 40
+    marker = deployment.VOICE_RUNTIME_CONTRACT_MARKER
+    monkeypatch.setattr(deployment, "_fetch_application_bundles", lambda *_: {
+        "http_status": 200,
+        "assets": [
+            {"url": "https://candidate/assets/vendor.js", "status": 200, "body": "unrelated chunk"},
+            {"url": "https://candidate/assets/app.js", "status": 200, "body": f"NEXUS_BUILD_COMMIT:{commit}|{marker}"},
+        ],
+    })
+    monkeypatch.setattr(deployment, "_cors_options", lambda *_: (204, {"access-control-allow-origin": "https://goclearonline.cc"}))
+    result = deployment.verify_candidate_artifact("https://candidate", commit)
+    assert result["status"] == "PASS"
+    assert result["markers"]["build_sha"] == commit
+    assert result["markers"]["persistent_rolling_preview"] == "DISABLED"
+    assert result["markers"]["final_stt_after_silence"] == "ENABLED"
+    assert result["markers"]["private_local_vad"] == "ENABLED"
+
+
+def test_candidate_verification_does_not_require_minified_source_identifier(monkeypatch):
+    commit = "b" * 40
+    monkeypatch.setattr(deployment, "_fetch_application_bundles", lambda *_: {
+        "http_status": 200,
+        "assets": [{"status": 200, "body": f"NEXUS_BUILD_COMMIT:{commit}|{deployment.VOICE_RUNTIME_CONTRACT_MARKER}"}],
+    })
+    monkeypatch.setattr(deployment, "_cors_options", lambda *_: (204, {"access-control-allow-origin": "https://goclearonline.cc"}))
+    result = deployment.verify_candidate_artifact("https://candidate", commit)
+    assert result["status"] == "PASS"

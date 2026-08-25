@@ -201,3 +201,50 @@ def test_approved_release_retry_repairs_legacy_fingerprint_once(monkeypatch, tmp
     assert any(item["event"] == "RELEASE_RETRY_READY" for item in value["execution_history"])
     second = consumer.prepare_approved_release_retry(mission, release_id=release_id, candidate_commit=commit, target="https://goclearonline.cc", current_production_deploy="6a8afe4e3f3b97d82a138f28")
     assert second["status"] == "NOT_ELIGIBLE"
+
+
+def test_authenticated_deploy_verify_failure_rolls_back_without_stale_auth_blocker():
+    commit = "a" * 40
+    result = {
+        "status": "PARTIAL",
+        "current_stage": "PRODUCTION_VERIFY",
+        "blocker": None,
+        "release": {
+            "release_id": "rel-historical-test-abcdef123456",
+            "release_candidate_commit": commit,
+            "target_url": "https://goclearonline.cc",
+            "approval_state": "APPROVED",
+            "rollback_target": "known-good-deploy",
+            "deployment_result": {"status": "DEPLOYED", "outcome": {"status": "PASS", "deploy_id": "candidate-deploy", "artifact_hash": "artifact"}},
+        },
+    }
+    observed = {
+        "https": "PASS", "admin": "PASS", "production_commit": commit,
+        "voice_marker": "PASS", "persistent_preview_guard": "FAIL",
+        "old_marker_absent": "PASS", "cors": "PASS",
+        "failure_reason": "PRODUCTION_PERSISTENT_PREVIEW_GUARD_FAILED",
+    }
+    rollback_calls = []
+    outcome = verify_or_rollback(result, release_id=result["release"]["release_id"], expected_commit=commit, observed=observed, rollback_fn=lambda target: (rollback_calls.append(target) or {"status": "PASS", "deploy_id": target}))
+    saved = outcome["result"]
+    assert outcome["status"] == "BLOCKED"
+    assert saved["blocker"] == "PRODUCTION_PERSISTENT_PREVIEW_GUARD_FAILED"
+    assert saved["release"]["candidate_currently_live"] is False
+    assert saved["release"]["production_commit_after"] == "UNKNOWN"
+    assert saved["release"]["production_deploy_id"] == "known-good-deploy"
+    assert saved["release"]["rollback_result"]["status"] == "PASS"
+    assert rollback_calls == ["known-good-deploy"]
+
+
+def test_bounded_propagation_accepts_candidate_on_second_read(monkeypatch):
+    from nexus_product_evolution import deployment
+    commit = "c" * 40
+    marker = deployment.VOICE_RUNTIME_CONTRACT_MARKER
+    old = {"http_status": 200, "assets": [{"status": 200, "body": "NEXUS_BUILD_COMMIT:old"}]}
+    new = {"http_status": 200, "assets": [{"status": 200, "body": f"NEXUS_BUILD_COMMIT:{commit}|{marker}"}]}
+    reads = iter([old, new])
+    monkeypatch.setattr(deployment, "_fetch_application_bundles", lambda *_: next(reads))
+    monkeypatch.setattr(deployment, "_cors_options", lambda *_: (204, {"access-control-allow-origin": "https://goclearonline.cc"}))
+    result = deployment._production_verification(commit, "https://goclearonline.cc", "candidate-deploy", control_plane={"published_deploy_id": "candidate-deploy"})
+    assert result["status"] == "PASS"
+    assert result["propagation_attempts"] == 2
