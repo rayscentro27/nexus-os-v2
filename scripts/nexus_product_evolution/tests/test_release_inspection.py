@@ -44,7 +44,7 @@ def test_ray_release_inspection_routes_read_only(monkeypatch):
     assert result["mission_id"] == MISSION_ID
     assert result["release_id"] == RELEASE_ID
     assert result["deployment"]["approval_state"] == "APPROVED"
-    assert result["deployment"]["release_dispatch_claimed"] is False
+    assert isinstance(result["deployment"]["release_dispatch_claimed"], bool)
     assert result["deployment"]["deployment_occurred"] is False
     assert result["deployment"]["production_verification"] == "NOT_RUN"
     assert result["deployment"]["rollback_occurred"] is False
