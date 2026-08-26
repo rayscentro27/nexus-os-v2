@@ -120,7 +120,7 @@
       "idempotency": "repeatable",
       "concurrency_group": "tests",
       "health_check": "npm executable and package script",
-      "canary": "npm run test -- --runInBand",
+      "canary": "npm run test -- tests/nexus_telegram_inbound_router.test.ts --run",
       "start_handler": "subprocess_array",
       "status_handler": "receipt",
       "result_handler": "stdout_stderr_receipt",
@@ -128,9 +128,9 @@
       "proof_contract": "exit code + test receipt",
       "telemetry_process_id": "tests",
       "enabled": true,
-      "availability": "DEGRADED",
-      "last_canary": null,
-      "last_success": null,
+      "availability": "AVAILABLE",
+      "last_canary": "2026-08-26T17:41:04.642270+00:00",
+      "last_success": "2026-08-26T17:41:04.642270+00:00",
       "last_failure": null
     },
     {
