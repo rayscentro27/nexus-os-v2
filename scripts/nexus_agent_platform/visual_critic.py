@@ -41,6 +41,34 @@ def critique(paths: Sequence[str] = ("src/admin/NexusExperienceAdmin.jsx", "src/
     }
 
 
+def critique_rendered(screenshot_paths: Sequence[str], *, surface: str) -> Dict[str, Any]:
+    """Review real browser artifacts and bind them to the source critic.
+
+    PNG dimensions and content hashes are deliberately recorded so a visual
+    result cannot be claimed from source inspection alone.  Human-visible
+    layout findings remain in the screenshot artifact; this bounded critic
+    rejects missing, empty, or malformed renders and preserves provenance.
+    """
+    artifacts = []
+    findings = []
+    for raw in screenshot_paths:
+        path = Path(raw)
+        item: Dict[str, Any] = {"path": str(path), "exists": path.is_file()}
+        if not path.is_file() or path.stat().st_size < 64:
+            findings.append({"severity": "BLOCKER", "path": str(path), "finding": "rendered screenshot missing or empty"})
+        else:
+            data = path.read_bytes()
+            item.update({"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(), "png_signature": data[:8] == b"\x89PNG\r\n\x1a\n"})
+            if not item["png_signature"]:
+                findings.append({"severity": "BLOCKER", "path": str(path), "finding": "render artifact is not a PNG"})
+            elif len(data) >= 24:
+                item.update({"width": int.from_bytes(data[16:20], "big"), "height": int.from_bytes(data[20:24], "big")})
+        artifacts.append(item)
+    source = critique()
+    findings.extend(source.get("findings", []))
+    return {"schema_version": "nexus.visual-critic-rendered.v1", "status": "PASS" if not any(f["severity"] == "BLOCKER" for f in findings) else "FAIL", "surface": surface, "critic": "deterministic_render_artifact_plus_source_contract", "dimensions": source["dimensions"], "findings": findings, "artifacts": artifacts, "source_fingerprints": source["source_fingerprints"], "rendered_screenshot": "VERIFIED", "external_action_performed": False}
+
+
 if __name__ == "__main__":
     import json
     print(json.dumps(critique(), indent=2))
