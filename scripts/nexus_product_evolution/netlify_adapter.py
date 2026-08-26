@@ -63,7 +63,7 @@ def _build_environment(commit: str) -> Dict[str, str]:
         "VITE_BUILD_COMMIT": commit,
         "VITE_BUILD_BRANCH": "main",
         "VITE_BUILD_TIMESTAMP": commit,
-        "VITE_NEXUS_VOICE_ENDPOINT": "https://voice.goclearonline.cc/v1/voice/transcribe",
+        "VITE_NEXUS_VOICE_ENDPOINT": "/.netlify/functions/voice-relay",
     }
     # These are the browser's public Supabase connection values.  They are
     # intentionally allowlisted; service-role and other secret variables are
@@ -326,7 +326,7 @@ def deploy_exact_sha_canary(commit: str, target: str) -> Dict[str, Any]:
     worktree = Path(str(prepared["worktree"]))
     try:
         deploy = subprocess.run(
-            [netlify, "deploy", "--no-build", "--dir", str(worktree / "dist"), "--site", SITE_ID, "--json"],
+            [netlify, "deploy", "--no-build", "--dir", str(worktree / "dist"), "--functions", str(worktree / "netlify/functions"), "--site", SITE_ID, "--json"],
             cwd=worktree, env=_netlify_environment(), capture_output=True, text=True, timeout=300, check=False,
         )
         if deploy.returncode != 0:
