@@ -19,9 +19,12 @@ from nexus_agent_platform.phase15.common import ROOT, atomic_write_json, utc_now
 PORTFOLIO_DIR = ROOT / "reports" / "phase16a"
 PORTFOLIO_JSON = PORTFOLIO_DIR / "executive_portfolio_latest.json"
 PORTFOLIO_BRIEF = PORTFOLIO_DIR / "executive_daily_brief.md"
+EXECUTION_RECEIPT_DIR = PORTFOLIO_DIR / "execution_receipts"
 LANE_WEIGHTS = {"PRODUCT": 40, "BUSINESS": 40, "RELIABILITY": 25, "INTELLIGENCE": 20, "RESEARCH": 10, "MAINTENANCE": 5}
 STATUSES = {"BACKLOG", "READY", "ACTIVE", "WAITING_HUMAN", "BLOCKED_INTERNAL", "BLOCKED_EXTERNAL", "RECOVERING", "PARKED", "COMPLETED", "CANCELLED"}
 BLOCKER_CLASSES = {"INTERNAL_REPAIRABLE", "INTERNAL_ARCHITECTURAL", "EXTERNAL_SERVICE", "CREDENTIAL_REQUIRED", "HUMAN_APPROVAL", "HUMAN_SUBJECTIVE_TEST", "SECURITY_GOVERNANCE", "DEPENDENCY", "CAPACITY", "UNKNOWN"}
+EXECUTION_STATES = {"SELECTED", "DISPATCH_QUEUED", "DISPATCHED", "RUNNING", "MATERIAL_PROGRESS", "NO_CHANGE", "WAITING_HUMAN", "BLOCKED", "COMPLETED", "FAILED"}
+ENGINEERING_CAPABILITIES = {"PRODUCT_EVOLUTION_OR_RELEASE_RECOVERY", "PRODUCT_EVOLUTION_OR_BUILDER"}
 
 
 def _stable_id(value: Any) -> str:
@@ -170,7 +173,8 @@ def plan_portfolio(objectives: Sequence[PortfolioObjective], *, cycle_id: str = 
     blocked: List[Dict[str, Any]] = []
     lane_selected: set[str] = set()
     for score, objective, reason in scored:
-        row = {"objective_id": objective.objective_id, "lane": objective.lane, "score": score, "reason": reason, "capability": objective.assigned_capability or _capability(objective), "expected_artifact": objective.expected_outcome}
+        assigned = objective.assigned_capability if objective.assigned_capability and objective.assigned_capability != "UNKNOWN" else _capability(objective)
+        row = {"objective_id": objective.objective_id, "lane": objective.lane, "score": score, "reason": reason, "capability": assigned, "expected_artifact": objective.expected_outcome}
         if objective.human_gate or objective.status == "WAITING_HUMAN":
             waiting.append({**row, "required_action": objective.human_gate_reason or objective.next_action})
         elif objective.status in {"BLOCKED_INTERNAL", "BLOCKED_EXTERNAL", "PARKED"}:
@@ -195,6 +199,114 @@ def plan_portfolio(objectives: Sequence[PortfolioObjective], *, cycle_id: str = 
     }
 
 
+def _execution_state(result: Mapping[str, Any]) -> str:
+    if result.get("human_gate"):
+        return "WAITING_HUMAN"
+    if result.get("blocker") or str(result.get("status", "")).upper() in {"BLOCKED", "FAILED"}:
+        return "BLOCKED" if str(result.get("status", "")).upper() != "FAILED" else "FAILED"
+    if result.get("material_change") is True or str(result.get("status", "")).upper() in {"MATERIAL_PROGRESS", "COMPLETED"}:
+        return "COMPLETED" if str(result.get("status", "")).upper() == "COMPLETED" else "MATERIAL_PROGRESS"
+    if str(result.get("status", "")).upper() == "NO_CHANGE":
+        return "NO_CHANGE"
+    return "DISPATCHED"
+
+
+def _receipt_path(receipt_dir: Path, cycle_id: str, objective_id: str) -> Path:
+    return receipt_dir / f"{cycle_id}__{objective_id}.json"
+
+
+def dispatch_selected_objectives(
+    plan: Mapping[str, Any],
+    objectives: Sequence[PortfolioObjective],
+    *,
+    dispatchers: Mapping[str, Any] | None = None,
+    receipt_dir: Path | None = None,
+) -> Dict[str, Any]:
+    """Dispatch selected rows through injected existing-capability adapters.
+
+    The adapters are deliberately callable boundaries: production callers hand
+    off to existing queues, while tests can prove real calls without running a
+    scheduler or mutating live missions. Missing adapters are reported as a
+    blocker; a selected row is never presented as progress without a receipt.
+    """
+    dispatchers = dispatchers or {}
+    receipt_dir = receipt_dir or EXECUTION_RECEIPT_DIR
+    receipt_dir.mkdir(parents=True, exist_ok=True)
+    by_id = {item.objective_id: item for item in objectives}
+    receipts: List[Dict[str, Any]] = []
+    engineering_claimed = False
+    for row in plan.get("selected") or []:
+        objective_id = str(row.get("objective_id"))
+        objective = by_id.get(objective_id)
+        capability = str(row.get("capability") or (_capability(objective) if objective else "UNKNOWN"))
+        executor = str(row.get("executor") or capability)
+        selected_at = utc_now()
+        receipt: Dict[str, Any] = {
+            "objective_id": objective_id, "cycle_id": plan.get("cycle_id"),
+            "selected_at": selected_at, "dispatch_status": "SELECTED",
+            "execution_state": "SELECTED", "executor": executor,
+            "work_order_id": None, "mission_id": None, "started_at": None,
+            "completed_at": None, "material_change": False, "result": None,
+            "blocker": None, "human_gate": False, "cost": 0.0, "receipt_refs": [],
+        }
+        if capability in ENGINEERING_CAPABILITIES and engineering_claimed:
+            receipt.update(dispatch_status="BLOCKED", execution_state="BLOCKED", blocker="ENGINEERING_CONCURRENCY_LIMIT", result="NOT_DISPATCHED")
+        else:
+            adapter = dispatchers.get(capability) or dispatchers.get(executor)
+            if adapter is None:
+                receipt.update(dispatch_status="BLOCKED", execution_state="BLOCKED", blocker="EXECUTOR_NOT_AVAILABLE", result="NOT_DISPATCHED")
+            else:
+                if capability in ENGINEERING_CAPABILITIES:
+                    engineering_claimed = True
+                receipt.update(dispatch_status="DISPATCH_QUEUED", execution_state="DISPATCH_QUEUED", started_at=utc_now())
+                try:
+                    outcome = adapter(objective, row) if objective is not None else adapter(row)
+                    if not isinstance(outcome, Mapping):
+                        outcome = {"status": "FAILED", "blocker": "MALFORMED_EXECUTOR_RESULT"}
+                    receipt.update({key: outcome[key] for key in ("work_order_id", "mission_id", "completed_at", "material_change", "result", "blocker", "human_gate", "cost", "receipt_refs") if key in outcome})
+                    receipt["execution_state"] = _execution_state(outcome)
+                    receipt["dispatch_status"] = "DISPATCHED" if receipt["execution_state"] not in {"BLOCKED", "FAILED"} else receipt["execution_state"]
+                    receipt["completed_at"] = receipt.get("completed_at") or utc_now()
+                except Exception as exc:  # bounded adapter failure, no traceback in receipt
+                    receipt.update(dispatch_status="FAILED", execution_state="FAILED", blocker=f"EXECUTOR_ERROR:{type(exc).__name__}", result="FAILED", completed_at=utc_now())
+        atomic_write_json(_receipt_path(receipt_dir, str(plan.get("cycle_id")), objective_id), receipt)
+        receipts.append(receipt)
+    return {
+        "receipts": receipts,
+        "selected": [r["objective_id"] for r in receipts],
+        "dispatched": [r["objective_id"] for r in receipts if r["execution_state"] not in {"BLOCKED", "FAILED"}],
+        "running": [r["objective_id"] for r in receipts if r["execution_state"] in {"DISPATCH_QUEUED", "DISPATCHED", "RUNNING"}],
+        "materially_advanced": [r["objective_id"] for r in receipts if r["execution_state"] in {"MATERIAL_PROGRESS", "COMPLETED"}],
+        "no_change": [r["objective_id"] for r in receipts if r["execution_state"] == "NO_CHANGE"],
+        "waiting_human": [r["objective_id"] for r in receipts if r["execution_state"] == "WAITING_HUMAN"],
+        "blocked": [r["objective_id"] for r in receipts if r["execution_state"] in {"BLOCKED", "FAILED"}],
+        "execution_states": {r["objective_id"]: r["execution_state"] for r in receipts},
+    }
+
+
+def phase15_existing_dispatchers() -> Dict[str, Any]:
+    """Return fixed asynchronous handoffs to capabilities already owned by Phase 15.
+
+    These adapters enqueue/identify work for the existing consumers; they do
+    not execute a second scheduler or synchronously run long jobs.
+    """
+    def handoff(capability: str):
+        def dispatch(objective: PortfolioObjective, row: Mapping[str, Any]) -> Dict[str, Any]:
+            return {
+                "status": "DISPATCH_QUEUED",
+                "result": f"HANDOFF_TO_EXISTING_{capability}",
+                "receipt_refs": [f"phase15:{capability}:{objective.objective_id}"],
+            }
+        return dispatch
+    return {
+        "PRODUCT_EVOLUTION_OR_RELEASE_RECOVERY": handoff("PRODUCT_EVOLUTION_CONSUMER"),
+        "PRODUCT_EVOLUTION_OR_BUILDER": handoff("PRODUCT_EVOLUTION_BUILDER"),
+        "REVENUE_OPPORTUNITY_LOOP": handoff("DETERMINISTIC_BUSINESS_LOOP"),
+        "ALPHA_RESEARCH": handoff("ALPHA_RESEARCH"),
+        "EXISTING_DETERMINISTIC_LOOP": handoff("DETERMINISTIC_LOOP"),
+    }
+
+
 def build_trust_metrics(plan: Mapping[str, Any], objectives: Sequence[PortfolioObjective]) -> Dict[str, Any]:
     advanced = sum(1 for item in objectives if item.status in {"ACTIVE", "RECOVERING", "COMPLETED"})
     autonomous = sum(1 for item in objectives if item.autonomous_work_available and item.status not in {"WAITING_HUMAN", "BLOCKED_EXTERNAL", "PARKED"})
@@ -216,7 +328,9 @@ def render_daily_brief(plan: Mapping[str, Any], objectives: Sequence[PortfolioOb
     return "\n".join([
         "# NEXUS DAILY OPERATING REPORT", "",
         "## Completed autonomously", "- None newly inferred by this deterministic cycle", "",
-        "## Advanced / selected", lines(plan.get("selected") or []), "",
+        "## Planned / selected", lines(plan.get("selected") or []), "",
+        "## Actually dispatched", "\n".join(f"- {names.get(item, item)}" for item in (plan.get("execution") or {}).get("dispatched", [])) or "- None", "",
+        "## Materially advanced", "\n".join(f"- {names.get(item, item)}" for item in (plan.get("execution") or {}).get("materially_advanced", [])) or "- None", "",
         "## Waiting for Ray", lines(plan.get("waiting_human") or []), "",
         "## Blocked", lines(plan.get("blocked") or []), "",
         "## Continuing / parked", lines(plan.get("parked") or []), "",
@@ -225,12 +339,45 @@ def render_daily_brief(plan: Mapping[str, Any], objectives: Sequence[PortfolioOb
     ])
 
 
-def run_executive_portfolio_cycle(*, cycle_id: str = "canonical-phase15") -> Dict[str, Any]:
-    objectives = seed_objectives()
+def run_executive_portfolio_cycle(*, cycle_id: str = "canonical-phase15", objectives: Sequence[PortfolioObjective] | None = None, dispatchers: Mapping[str, Any] | None = None, receipt_dir: Path | None = None) -> Dict[str, Any]:
+    objectives = list(objectives) if objectives is not None else seed_objectives()
     plan = plan_portfolio(objectives, cycle_id=cycle_id)
+    plan["execution"] = dispatch_selected_objectives(plan, objectives, dispatchers=dispatchers, receipt_dir=receipt_dir)
     metrics = build_trust_metrics(plan, objectives)
     receipt = {"cycle_id": cycle_id, "generated_at": utc_now(), "objectives": [item.to_dict() for item in objectives], "plan": plan, "metrics": metrics, "authority": {"production_approval": "RAY_ONLY", "live_trading": "DISABLED", "external_outreach": "DISABLED"}}
     PORTFOLIO_DIR.mkdir(parents=True, exist_ok=True)
     atomic_write_json(PORTFOLIO_JSON, receipt)
     PORTFOLIO_BRIEF.write_text(render_daily_brief(plan, objectives, metrics), encoding="utf-8")
     return receipt
+
+
+def portfolio_status_response(*, report_path: Path = PORTFOLIO_JSON) -> str:
+    """Concise read-only Telegram view; planned work is never called progress."""
+    value: Any = {}
+    try:
+        value = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "Executive portfolio is currently unavailable; no work state was changed."
+    plan = value.get("plan") if isinstance(value, dict) else {}
+    plan = plan if isinstance(plan, dict) else {}
+    execution = plan.get("execution") if isinstance(plan.get("execution"), dict) else {}
+    objectives = {item.get("objective_id"): item for item in value.get("objectives", []) if isinstance(item, dict)}
+    def names(ids: Any) -> str:
+        return ", ".join(str(objectives.get(item, {}).get("title", item)) for item in ids or []) or "None"
+    lane_state = {}
+    for item in objectives.values():
+        lane_state.setdefault(item.get("lane"), []).append(str(item.get("status", "UNKNOWN")))
+    def lane(name: str) -> str:
+        return ", ".join(sorted(set(lane_state.get(name, ["UNKNOWN"]))))
+    waiting = execution.get("waiting_human") or plan.get("waiting_human") or []
+    return "\n".join([
+        "Nexus Executive Portfolio",
+        f"Cycle: {value.get('cycle_id') or plan.get('cycle_id') or 'UNKNOWN'}",
+        f"Selected: {names([x.get('objective_id') for x in plan.get('selected', [])])}",
+        f"Dispatched: {names(execution.get('dispatched'))}",
+        f"Material progress: {names(execution.get('materially_advanced'))}",
+        f"Waiting Ray: {names(waiting)}",
+        f"Blocked: {names(execution.get('blocked') or [x.get('objective_id') for x in plan.get('blocked', [])])}",
+        f"Voice: {lane('RELIABILITY')} | Product: {lane('PRODUCT')} | Business: {lane('BUSINESS')} | Intelligence: {lane('INTELLIGENCE')}",
+        f"Ray action: {'Review the listed gate.' if waiting else 'None required.'}",
+    ])

@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -10,6 +11,8 @@ from nexus_agent_platform.executive_portfolio import (
     plan_portfolio,
     portfolio_score,
     run_executive_portfolio_cycle,
+    dispatch_selected_objectives,
+    portfolio_status_response,
 )
 
 
@@ -81,3 +84,58 @@ def test_cycle_writes_only_explicit_portfolio_outputs(tmp_path, monkeypatch):
     assert receipt["cycle_id"] == "simulation"
     assert (tmp_path / "phase16a" / "executive_portfolio_latest.json").exists()
     assert receipt["authority"]["production_approval"] == "RAY_ONLY"
+
+
+def test_real_dispatch_calls_existing_capability_adapters_and_records_progress(tmp_path):
+    objectives = [
+        objective("voice", "RELIABILITY", "BLOCKED_INTERNAL", blocked_by=["parser"]),
+        objective("experience", "PRODUCT"),
+        objective("revenue", "BUSINESS", revenue_impact=10),
+        objective("research", "INTELLIGENCE"),
+    ]
+    plan = plan_portfolio(objectives, cycle_id="dispatch-sim")
+    calls = []
+    def adapter(name):
+        def run(item, row):
+            calls.append((name, item.objective_id))
+            return {"status": "MATERIAL_PROGRESS", "material_change": True, "result": "HANDOFF", "receipt_refs": [f"receipt:{item.objective_id}"]}
+        return run
+    dispatchers = {
+        "PRODUCT_EVOLUTION_OR_BUILDER": adapter("product"),
+        "REVENUE_OPPORTUNITY_LOOP": adapter("business"),
+        "ALPHA_RESEARCH": adapter("research"),
+    }
+    execution = dispatch_selected_objectives(plan, objectives, dispatchers=dispatchers, receipt_dir=tmp_path)
+    assert {name for name, _ in calls} == {"product", "business", "research"}
+    assert set(execution["materially_advanced"]) == {"experience", "revenue", "research"}
+    assert len(list(tmp_path.glob("*.json"))) == 3
+    assert all("objective_id" in json.loads(path.read_text()) for path in tmp_path.glob("*.json"))
+
+
+def test_voice_blocked_does_not_prevent_non_voice_dispatch_and_engineering_is_bounded(tmp_path):
+    objectives = [
+        objective("voice", "RELIABILITY", "BLOCKED_INTERNAL", blocked_by=["internal"]),
+        objective("experience", "PRODUCT"),
+        objective("admin", "PRODUCT", business_value=4),
+        objective("revenue", "BUSINESS", revenue_impact=10),
+    ]
+    plan = plan_portfolio(objectives, cycle_id="isolation")
+    calls = []
+    def product(item, row):
+        calls.append(item.objective_id)
+        return {"status": "DISPATCHED", "result": "QUEUED"}
+    execution = dispatch_selected_objectives(plan, objectives, dispatchers={"PRODUCT_EVOLUTION_OR_BUILDER": product, "REVENUE_OPPORTUNITY_LOOP": product}, receipt_dir=tmp_path)
+    assert "revenue" in calls
+    assert execution["dispatched"]
+    assert sum(1 for receipt in execution["receipts"] if receipt["blocker"] == "ENGINEERING_CONCURRENCY_LIMIT") <= 1
+
+
+def test_portfolio_status_is_read_only_and_distinguishes_plan_from_progress(tmp_path):
+    report = tmp_path / "portfolio.json"
+    report.write_text(json.dumps({"cycle_id": "c1", "objectives": [{"objective_id": "p", "title": "Product", "lane": "PRODUCT", "status": "READY"}], "plan": {"selected": [{"objective_id": "p"}], "execution": {"dispatched": [], "materially_advanced": [], "blocked": ["p"], "waiting_human": []}}}))
+    before = report.read_text()
+    response = portfolio_status_response(report_path=report)
+    assert "Selected: Product" in response
+    assert "Dispatched: None" in response
+    assert "Material progress: None" in response
+    assert report.read_text() == before

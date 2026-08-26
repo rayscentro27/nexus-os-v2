@@ -261,6 +261,20 @@ def is_status_request(text: str) -> bool:
     return any(re.fullmatch(pattern, normalized) for pattern in patterns)
 
 
+def is_portfolio_request(text: str) -> bool:
+    normalized = re.sub(r"[?.!]+$", "", text.strip().lower())
+    normalized = re.sub(r"^(?:@?nexus|hermes)\s*[,:\-]?\s*", "", normalized)
+    return normalized in {"/portfolio", "portfolio", "portfolio status", "executive portfolio status", "what is nexus working on"}
+
+
+def portfolio_response() -> str:
+    try:
+        from nexus_agent_platform.executive_portfolio import portfolio_status_response
+        return portfolio_status_response()
+    except Exception:
+        return "Executive portfolio is temporarily unavailable; no work state was changed."
+
+
 def approval_response() -> str:
     pending = approvals.get_pending_approvals(requested_for="ray", include_self=True)
     if not pending:
@@ -297,16 +311,23 @@ def create_governed_request(text: str) -> Dict[str, Any]:
 
 
 def handle_command(text: str, *, chat_id: Optional[int] = None) -> tuple[str, Dict[str, Any]]:
-    text = re.sub(r"\s+", " ", text.strip())[:MAX_INPUT]
+    text = re.sub(r"\s+", " ", text.strip())
+    if len(text) > MAX_INPUT:
+        return ("Message received but exceeds Hermes command limit. Use /portfolio, /status, /approvals, or send a shorter request.", {"route": "INPUT_TOO_LONG", "outcome": "REJECTED_INPUT_TOO_LONG", "input_too_long": True})
     route = classify(text)
     lowered = text.lower()
+    if is_portfolio_request(text):
+        return portfolio_response(), {"route": "EXECUTIVE_PORTFOLIO_READ", "outcome": "ANSWERED", "read_only": True}
     try:
         from nexus_product_evolution.telegram_control import classify_product_evolution_request, handle_product_evolution_intake
         recent = _load_chat_context(chat_id)
         contextual_blocked = bool(re.fullmatch(r"(?:nexus[, :\-]*)?\s*what(?: is|'s) blocked\??", lowered.strip())) and recent.get("last_topic") == "product_evolution"
         contextual_diagnostic = bool(re.search(r"\b(?:picked|runtime|dispatcher|queued|waiting|started|execution)\b", lowered)) and recent.get("last_topic") == "product_evolution"
         classification = classify_product_evolution_request(text, context_mission_id=recent.get("last_mission_id"))
-        if classification != "CLARIFICATION" or contextual_blocked or contextual_diagnostic:
+        # Explicit Hermes approval commands belong to the governed approval
+        # handler below; Product Evolution's natural-language classifier must
+        # not reinterpret the approval identifier as mission evidence.
+        if not lowered.startswith(("/approve ", "/reject ")) and (classification != "CLARIFICATION" or contextual_blocked or contextual_diagnostic):
             evolution = handle_product_evolution_intake(text if not contextual_blocked else "Product Evolution: what is blocked?", context_mission_id=recent.get("last_mission_id"))
             if evolution.get("handled"):
                 _save_chat_context(chat_id, evolution.get("route", "PRODUCT_EVOLUTION"), mission_id=evolution.get("mission_id"))
@@ -351,7 +372,7 @@ def _update_message(update: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not isinstance(message, dict) or (isinstance(sender, dict) and sender.get("is_bot")):
         return None
     text = message.get("text")
-    if not isinstance(text, str) or not text.strip() or len(text) > MAX_INPUT:
+    if not isinstance(text, str) or not text.strip():
         return None
     return message
 

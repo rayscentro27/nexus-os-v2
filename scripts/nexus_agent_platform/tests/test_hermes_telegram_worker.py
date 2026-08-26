@@ -43,6 +43,22 @@ def test_status_matcher_does_not_capture_unrelated_requests():
         assert hermes.is_status_request(text) is False
 
 
+def test_oversized_authorized_text_gets_bounded_response():
+    response, metadata = hermes.handle_command("x" * (hermes.MAX_INPUT + 1))
+    assert metadata["route"] == "INPUT_TOO_LONG"
+    assert metadata["input_too_long"] is True
+    assert "exceeds Hermes command limit" in response
+
+
+def test_portfolio_command_is_read_only(monkeypatch):
+    monkeypatch.setattr(hermes, "portfolio_response", lambda: "PORTFOLIO READ MODEL")
+    for command in ("/portfolio", "portfolio status", "executive portfolio status", "what is nexus working on"):
+        response, metadata = hermes.handle_command(command)
+        assert response == "PORTFOLIO READ MODEL"
+        assert metadata["route"] == "EXECUTIVE_PORTFOLIO_READ"
+        assert metadata["read_only"] is True
+
+
 def test_unauthorized_and_high_risk_commands_are_blocked():
     for command in ("charge the customer", "place a funded trade", "send an email to the client", "run shell command", "show me the runtime.env token"):
         response, metadata = hermes.handle_command(command)
@@ -104,6 +120,27 @@ def test_authorized_status_routes_once_and_persists_receipt(tmp_path, monkeypatc
     assert result["outcome"] == "PROCESSED"
     assert result["updates_processed"] == 1
     assert len(list((tmp_path / "receipts").glob("*.json"))) == 1
+
+
+def test_oversized_update_is_processed_once_and_offset_advances(tmp_path, monkeypatch):
+    monkeypatch.setattr(hermes, "load_runtime_env", lambda: {"TELEGRAM_BOT_TOKEN": "token", "TELEGRAM_CHAT_ID": "42"})
+    monkeypatch.setattr(hermes, "OFFSET_PATH", tmp_path / "offset.json")
+    monkeypatch.setattr(hermes, "RECEIPT_DIR", tmp_path / "receipts")
+    sent = []
+    def fake_api(token, method, params=None):
+        if method == "getMe":
+            return {"ok": True, "result": {"username": "NexusHermes27bot"}}
+        if method == "getUpdates":
+            return {"ok": True, "result": [{"update_id": 9, "message": {"from": {}, "chat": {"id": 42}, "text": "x" * (hermes.MAX_INPUT + 1)}}]}
+        if method == "sendMessage":
+            sent.append(params["text"])
+            return {"ok": True, "result": {"message_id": 1}}
+        raise AssertionError(method)
+    monkeypatch.setattr(hermes, "send_message", lambda token, chat_id, text: sent.append(text) or {"ok": True})
+    result = hermes.run_once(api=fake_api)
+    assert result["updates_processed"] == 1
+    assert sent and "exceeds Hermes command limit" in sent[0]
+    assert json.loads((tmp_path / "offset.json").read_text())["last_update_id"] == 9
 
 
 def test_product_evolution_natural_language_routes_before_generic_run_block(tmp_path, monkeypatch):
