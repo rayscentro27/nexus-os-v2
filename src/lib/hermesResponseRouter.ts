@@ -127,7 +127,7 @@ const nexusTopics: Record<string, { topic: string; explain: string; why?: string
   },
   'voice': {
     topic: 'Private Voice Input',
-    explain: `Private Voice Input is push-to-talk speech-to-text through the local whisper.cpp adapter. Phase Q does not add continuous listening, TTS, WebRTC, or a public microphone API.`,
+    explain: `Private Voice Input is push-to-talk speech-to-text through the local whisper.cpp adapter. Hermes replies may use browser-native bounded TTS when supported; no raw audio leaves the browser through the TTS path.`,
     safety: `Raw audio is temporary and deleted after transcription. Voice has the same authority as typed Hermes input; it cannot publish, send, charge, trade, or bypass Ray Review.`,
     next: `The local STT path is available on the Mac Mini. Browser push-to-talk remains LOCAL_ONLY until an authenticated admin-to-Mac transport is configured.`
   }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createThread, deriveThreadTitle, getActiveThread, isNewThreadCommand, loadThread, routeWakePhrase, saveThread, sendAgentMessage, setActiveThread, stripWakePhrase } from '../lib/nexusAgentDispatch'
+import { speakHermesResponse, stopHermesSpeech } from '../lib/hermesSpeechSynthesis'
 
 const endpoint = import.meta.env.VITE_NEXUS_VOICE_ENDPOINT || ''
 const MAX_MS = 30000
@@ -19,7 +20,7 @@ export default function NexusWakeVoice({ onDispatched }) {
   const chunksRef = useRef([]), startedRef = useRef(0), lastSoundRef = useRef(0), speakingRef = useRef(false), persistentRef = useRef(false), previewAtRef = useRef(0), sequenceRef = useRef(0), previewAbortRef = useRef(null), followUpRef = useRef(null), wakeStateRef = useRef('WAKE_IDLE')
   const [enabled, setEnabled] = useState(false), [capturing, setCapturing] = useState(false), [partial, setPartial] = useState(''), [status, setStatus] = useState(''), [notice, setNotice] = useState(''), [otherOwner, setOtherOwner] = useState(false)
 
-  useEffect(() => () => { stopCapture(); stopListening(); release(idRef.current) }, [])
+  useEffect(() => () => { stopHermesSpeech(); stopCapture(); stopListening(); release(idRef.current) }, [])
   useEffect(() => { const onStorage = event => { if (event.key === OWNER_KEY) setOtherOwner(ownerIsOther(idRef.current)) }; window.addEventListener('storage', onStorage); return () => window.removeEventListener('storage', onStorage) }, [])
 
   function setWakeState(next) { wakeStateRef.current = next }
@@ -58,6 +59,7 @@ export default function NexusWakeVoice({ onDispatched }) {
       const now = new Date().toISOString(); const user = { id: `${Date.now()}-voice`, role: 'user', text: body, createdAt: now }; const recentHistory = (thread.messages || []).slice(-10).map(item => ({ role: item.role === 'assistant' ? 'assistant' : 'user', content: item.text }))
       thread = { ...thread, title: thread.messages?.length ? thread.title : body.slice(0, 48), updatedAt: now, messages: [...(thread.messages || []), user] }; saveThread(thread)
       const reply = await sendAgentMessage({ agent, conversationId: id, text: body, recentHistory }); thread = { ...thread, updatedAt: new Date().toISOString(), messages: [...thread.messages, reply] }; saveThread(thread)
+      if (agent === 'hermes') speakHermesResponse(reply?.text || reply?.content || '')
       followUpRef.current = { agent, conversationId: id, expiresAt: Date.now() + 20000 }; window.dispatchEvent(new CustomEvent('nexus:voice-thread-update', { detail: { agent, conversationId: id } })); onDispatched?.({ agent, conversationId: id, text: body }); setStatus(`${agent === 'hermes' ? 'Nexus / Hermes' : agent[0].toUpperCase() + agent.slice(1)} responded`)
     } catch (error) { setStatus(error?.message || 'Voice error'); setNotice('Quick Voice failed; no external action was performed.') }
   }
