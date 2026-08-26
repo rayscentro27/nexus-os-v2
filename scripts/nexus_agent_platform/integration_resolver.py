@@ -13,13 +13,14 @@ from pathlib import Path
 from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parents[2]
+RUNTIME_ENV = Path.home() / ".config/nexus/runtime.env"
 
 IDENTITIES: dict[str, tuple[str, ...]] = {
     "credential.telegram.hermes.bot.v1": (
         "TELEGRAM_BOT_TOKEN", "NEXUS_TELEGRAM_BOT_TOKEN", "HERMES_TELEGRAM_BOT_TOKEN",
     ),
     "credential.telegram.hermes.chat.v1": (
-        "TELEGRAM_ALLOWED_CHAT_IDS", "NEXUS_TELEGRAM_ALLOWED_CHAT_IDS",
+        "TELEGRAM_ALLOWED_CHAT_IDS", "NEXUS_TELEGRAM_ALLOWED_CHAT_IDS", "TELEGRAM_CHAT_ID",
     ),
     "credential.cloudflare.voice.management.v1": (
         "CLOUDFLARE_API_TOKEN", "CF_API_TOKEN", "CLOUDFLARE_TOKEN",
@@ -32,6 +33,22 @@ IDENTITIES: dict[str, tuple[str, ...]] = {
     "credential.supabase.admin.v1": (
         "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY", "SUPABASE_URL",
     ),
+}
+
+COMPONENTS: dict[str, dict[str, tuple[str, ...]]] = {
+    "credential.cloudflare.voice.service_auth.v1": {
+        "client_id": ("CF_ACCESS_CLIENT_ID",),
+        "client_secret": ("CF_ACCESS_CLIENT_SECRET",),
+        "origin": ("VOICE_ACCESS_ORIGIN",),
+    },
+    "credential.telegram.hermes.bot.v1": {
+        "bot_token": ("TELEGRAM_BOT_TOKEN", "NEXUS_TELEGRAM_BOT_TOKEN", "HERMES_TELEGRAM_BOT_TOKEN"),
+        "authorized_chat_ids": ("TELEGRAM_ALLOWED_CHAT_IDS", "NEXUS_TELEGRAM_ALLOWED_CHAT_IDS", "TELEGRAM_CHAT_ID"),
+    },
+    "credential.supabase.admin.v1": {
+        "url": ("SUPABASE_URL", "VITE_SUPABASE_URL"),
+        "service_role_key": ("SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SERVICE_KEY"),
+    },
 }
 
 
@@ -78,8 +95,8 @@ def discover(identity: str, *, environ: Mapping[str, str] | None = None) -> Disc
     for alias in aliases:
         if env.get(alias):
             present.setdefault(alias, []).append("process")
-        for filename in (".env.local", ".env"):
-            path = ROOT / filename
+        for path, source_name in ((RUNTIME_ENV, "canonical_runtime_env"), (ROOT / ".env.local", ".env.local"), (ROOT / ".env", ".env")):
+            filename = source_name
             if _dotenv(path).get(alias):
                 present.setdefault(alias, []).append(filename)
     present_aliases = tuple(present)
@@ -95,7 +112,18 @@ def discover(identity: str, *, environ: Mapping[str, str] | None = None) -> Disc
 
 
 def resolve_all() -> dict[str, Any]:
-    return {identity: discover(identity).safe() for identity in IDENTITIES}
+    result = {identity: discover(identity).safe() for identity in IDENTITIES}
+    for identity, components in COMPONENTS.items():
+        resolved: dict[str, Any] = {}
+        complete = True
+        for component, aliases in components.items():
+            found = discover(identity)
+            chosen = [alias for alias in aliases if alias in found.present_aliases]
+            resolved[component] = {"aliases": list(aliases), "present_aliases": chosen, "status": "PRESENT" if chosen else "ABSENT"}
+            complete = complete and bool(chosen)
+        result[identity]["components"] = resolved
+        result[identity]["status"] = "COMPLETE" if complete else result[identity]["status"]
+    return result
 
 
 def safe_runtime_facts() -> dict[str, Any]:
