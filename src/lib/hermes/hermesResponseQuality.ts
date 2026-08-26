@@ -76,7 +76,7 @@ export function scoreHermesResponse(result: HermesConversationResult, fixture?: 
 
 export function getHermesCertificationCorpus(): HermesQualityFixture[] {
   const base: HermesQualityFixture[] = [
-    { id: 'greeting_good_morning', group: 'greetings', messages: ['good morning'], expectedModes: ['SOCIAL_GREETING'], requiresNoAction: true, requiredConcepts: [/Good morning, Ray/i], forbiddenConcepts: [/menu|approval|system health/i] },
+    { id: 'greeting_good_morning', group: 'greetings', messages: ['good morning'], expectedModes: ['SOCIAL_GREETING'], requiresNoAction: true, requiredConcepts: [/Good (morning|afternoon|evening|night), Ray/i], forbiddenConcepts: [/menu|approval|system health/i] },
     { id: 'greeting_good_night', group: 'historical', messages: ['good night'], expectedModes: ['SOCIAL_GREETING'], requiresNoAction: true, requiredConcepts: [/Good night, Ray/i], forbiddenConcepts: [/human tastes|lived experiences/i] },
     { id: 'casual_sleep', group: 'greetings', messages: ['how did you sleep'], expectedModes: ['CASUAL_CONVERSATION'], requiresNoAction: true, requiredConcepts: [/don.t sleep|ready/i], forbiddenConcepts: [/human tastes|lived experiences/i] },
     { id: 'executive_priority', group: 'executive_advice', messages: ['what should we work on first'], expectedModes: ['EXECUTIVE_ADVICE'], requiresNoAction: true, requiredConcepts: [/Hermes conversation certification|first/i] },
@@ -86,7 +86,7 @@ export function getHermesCertificationCorpus(): HermesQualityFixture[] {
     { id: 'status_stripe', group: 'status_honesty', messages: ['is Stripe live'], expectedModes: ['SYSTEM_STATUS'], requiresNoAction: true, requiredConcepts: [/test mode|deferred/i] },
     { id: 'status_trading', group: 'status_honesty', messages: ['is trading active'], expectedModes: ['SYSTEM_STATUS'], requiresNoAction: true, requiredConcepts: [/blocked by policy/i] },
     { id: 'status_alpha', group: 'status_honesty', messages: ['can Alpha see client data'], expectedModes: ['SYSTEM_STATUS'], requiresNoAction: true, requiredConcepts: [/No|not allowed|client PII/i] },
-    { id: 'page_context_conflict', group: 'page_context', messages: ['good morning'], expectedModes: ['SOCIAL_GREETING'], requiresNoAction: true, requiredConcepts: [/Good morning/i], forbiddenConcepts: [/credit page|funding page|system health menu/i] },
+    { id: 'page_context_conflict', group: 'page_context', messages: ['good morning'], expectedModes: ['SOCIAL_GREETING'], requiresNoAction: true, requiredConcepts: [/Good (morning|afternoon|evening|night)/i], forbiddenConcepts: [/credit page|funding page|system health menu/i] },
   ];
   const broad: HermesQualityFixture[] = broadCertificationMessages.map((item, index) => ({
     id: `wave_4a_4_${item.group}_${index}`,
