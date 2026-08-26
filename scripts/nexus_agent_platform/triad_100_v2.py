@@ -140,6 +140,8 @@ def run() -> dict[str, Any]:
             answer = _response(agent, item["prompt"])
             action = action_by_index.get(f"TRIAD-ACTION-{((index - 1) % len(actions)) + 1:02d}") if item["requires_action_receipt"] and agent == "hermes" else None
             responses.append({"scenario_id": item["scenario_id"], "category": item["category"], "agent": agent, "expected_behavior": item["expected_behavior_by_agent"][agent], "response": answer, "score": _score(answer, item["expected_behavior_by_agent"][agent], action=action)})
+            if agent != "hermes":
+                time.sleep(1.5)
     collaboration = _collaborate(questions)
     summary = {}
     for agent in ("hermes", "alpha", "nova"):
