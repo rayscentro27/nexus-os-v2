@@ -6,8 +6,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .capability_broker import run_capability
-from .coding_worker_supervisor import persist_campaign
+try:
+    from .capability_broker import run_capability
+    from .coding_worker_supervisor import persist_campaign
+except ImportError:  # direct governed script execution
+    from nexus_agent_platform.capability_broker import run_capability
+    from nexus_agent_platform.coding_worker_supervisor import persist_campaign
 
 ROOT = Path(__file__).resolve().parents[2]
 LEDGER = ROOT / "data/runtime/nexus_human_gate_ledger.json"
