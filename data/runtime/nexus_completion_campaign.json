@@ -2,7 +2,7 @@
   "active_jobs": [],
   "architecture_alternatives": [],
   "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
-  "checkpoint_sha": "35528f295ba8fa37d68df5f81de496619b567d6c",
+  "checkpoint_sha": "433eb6068a454175b6b01af71a0f240092dfba41",
   "completed_objectives": [
     "rate_limit_detection",
     "handoff_persistence",
@@ -10,13 +10,17 @@
     "local_failover_canary",
     "proof_diagnosis",
     "natural_cycle_watchdog",
-    "telegram_governed_routing"
+    "telegram_governed_routing",
+    "focused_executor_preflight",
+    "visual_critic_source_canary",
+    "phase15_natural_cycle"
   ],
   "completed_waves": [
     "WAVE_0_CODING_WORKER_FAILOVER_PARTIAL",
-    "WAVE_2_PROOF_WATCHDOG_INTEGRATION"
+    "WAVE_2_PROOF_WATCHDOG_INTEGRATION",
+    "WAVE_3_CAPABILITY_PREFLIGHT"
   ],
-  "current_objective": "capability_proof_and_experience_closure",
+  "current_objective": "post_natural_cycle_evidence_reconciliation",
   "current_wave": 3,
   "external_blockers": [
     "OpenCode provider execution timed out; MiMo/Kilo not certified"
@@ -25,15 +29,13 @@
     "tests.run_mutable_snapshot_contract_failures",
     "opencode_execution_timeout"
   ],
-  "last_updated": "2026-08-26T17:39:23.535392+00:00",
+  "last_updated": "2026-08-26T17:44:30.551772+00:00",
   "remaining_work": [
-    "prove_registered_capabilities",
-    "complete_self_repair_executor",
-    "visual_critic_browser_loop",
-    "voice_production_and_human_microphone",
+    "authenticated_visual_acceptance",
+    "voice_production_human_microphone",
     "avatar_tts",
-    "forex_research_os_evidence",
-    "admin_client_portal_authenticated_visual_acceptance",
+    "full_creative_critic_workflow",
+    "forex_integrity_report",
     "candidate_canary",
     "ray_production_approval",
     "production_verification",
