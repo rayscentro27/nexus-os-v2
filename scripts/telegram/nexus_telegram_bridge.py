@@ -3919,6 +3919,13 @@ def process_command(text, mission=None):
     # Not a slash command — try Platform graph first when enabled
     full_text = text.strip()
 
+    # Deterministic Nexus operator queries must win over generic workflow
+    # intake. Product Evolution is a later governed action lane; it must not
+    # swallow read-only status, research, or greeting requests.
+    pre_route_result = handle_nexus_pre_route(full_text, mission=mission)
+    if pre_route_result is not None:
+        return pre_route_result
+
     # Product Evolution is a bounded product-workflow request, not a general
     # command. Keep the existing bridge/authorization boundary and let the
     # reusable intake layer build the contract; execution remains governed by
@@ -3971,11 +3978,6 @@ def process_command(text, mission=None):
 
     # --- Legacy routing path ---
     _route_trace["path_attempted"] = "legacy_pre_route"
-    pre_route_result = handle_nexus_pre_route(full_text, mission=mission)
-    if pre_route_result is not None:
-        _route_trace["legacy_result"] = "handled_by_pre_route"
-        _write_routing_trace(_route_trace)
-        return pre_route_result
 
     if mission:
         update_mission(mission, "ROUTED", selected_intent="general_advisory", selected_tool="hermes_router", router_confidence=0.45)

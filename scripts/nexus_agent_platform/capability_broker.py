@@ -46,6 +46,10 @@ def capability_index(manifest: Optional[Dict[str, Any]] = None) -> Dict[str, Dic
 def _safe_env() -> Dict[str, str]:
     allowed = {"PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "CI", "NODE_ENV", "PYTHONPATH"}
     env = {key: value for key, value in os.environ.items() if key in allowed}
+    # Homebrew's current Python dylib is broken on this host; prefer the
+    # system interpreter for Python subprocesses while retaining the Node
+    # toolchain used by npm scripts.
+    env["PATH"] = "/usr/bin:/bin:" + env.get("PATH", "")
     env["NEXUS_ARBITRARY_SHELL"] = "PROHIBITED"
     return env
 
