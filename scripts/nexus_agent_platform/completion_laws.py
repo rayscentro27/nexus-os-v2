@@ -53,7 +53,7 @@ def evaluate_event(event: Dict[str, Any], *, hermes_delivery_verified: bool = Fa
 
 
 def build_executive_decision_brief(event: Dict[str, Any], decision: Dict[str, Any]) -> Dict[str, Any]:
-    return {"objective_id": event.get("objective_id", "UNKNOWN"), "state": decision.get("status"), "stage": event.get("stage", "UNKNOWN"), "what_failed": event.get("reason", "No failure reason recorded"), "decision_needed": decision.get("work", []), "ray_action": event.get("exact_ray_action", "NONE"), "evidence": list(event.get("proof_refs", [])), "safe_boundary": "No approval or production mutation is implied."}
+    return {"gate_id": event.get("gate_id"), "objective_id": event.get("objective_id", "UNKNOWN"), "state": decision.get("status"), "stage": event.get("stage", "UNKNOWN"), "what_happened": event.get("what_happened", event.get("reason", "No failure reason recorded")), "why_it_matters": event.get("why_it_matters", "Nexus requires an explicit decision at this gate."), "what_nexus_did": event.get("what_nexus_did", "Nexus preserved the checkpoint and continues independent work."), "decision_needed": decision.get("work", []), "ray_action": event.get("exact_ray_action", "NONE"), "evidence": list(event.get("proof_refs", [])), "safe_boundary": "No approval or production mutation is implied."}
 
 
 def close_exact_gate(event: Dict[str, Any], *, reply_gate_id: str, reply_decision: str) -> Dict[str, Any]:
@@ -66,11 +66,26 @@ def close_exact_gate(event: Dict[str, Any], *, reply_gate_id: str, reply_decisio
 def enforce_cycle_laws(events: Iterable[Dict[str, Any]], *, receipt_path: Optional[Path] = None, hermes_sender: Optional[Callable[[Dict[str, Any]], bool]] = None) -> Dict[str, Any]:
     decisions = []
     for event in events:
-        decision = evaluate_event(event, hermes_delivery_verified=False)
-        if decision.get("communication") in {"PROACTIVE_RAY_GATE", "HERMES_DELIVERED"} and hermes_sender:
-            delivered = bool(hermes_sender(decision["executive_decision_brief"]))
-            if not delivered: decision.update(status="COMMUNICATION_FAIL", communication="COMMUNICATION_FAIL", work=[*decision.get("work", []), "repair_hermes_delivery"])
-            else: decision["communication"] = "PROACTIVE_RAY_GATE"
+        status = str(event.get("status", "UNKNOWN")).upper()
+        requires_human = status == "WAITING_HUMAN" or int(event.get("risk_level", event.get("risk", 0)) or 0) >= 3 or str(event.get("authority_class", "")) == "CLASS_3"
+        # Delivery is an action, not a post-condition.  Invoke Hermes before
+        # evaluating the human gate so an undelivered gate can never become
+        # WAITING_HUMAN by accident.
+        delivery = None
+        if requires_human and hermes_sender:
+            provisional = evaluate_event(event, hermes_delivery_verified=True)
+            try:
+                delivery = hermes_sender(provisional["executive_decision_brief"])
+            except Exception as exc:  # transport failures become governed work
+                delivery = {"delivered": False, "error": type(exc).__name__}
+        delivered = bool(delivery.get("delivered")) if isinstance(delivery, dict) else bool(delivery)
+        decision = evaluate_event(event, hermes_delivery_verified=delivered)
+        if requires_human:
+            decision["delivery_receipt"] = delivery or {"delivered": False, "reason": "sender_not_configured"}
+        if requires_human and not delivered:
+            decision.update(status="COMMUNICATION_FAIL", communication="COMMUNICATION_FAIL", work=[*decision.get("work", []), "repair_hermes_delivery"])
+        elif requires_human:
+            decision["communication"] = "PROACTIVE_RAY_GATE" if int(event.get("risk_level", event.get("risk", 0)) or 0) >= 3 or str(event.get("authority_class", "")) == "CLASS_3" else "HERMES_DELIVERED"
         decisions.append(decision)
     receipt = {"schema_version": "nexus.completion-laws-receipt.v1", "status": "PASS", "terminal_partial_forbidden": True, "decisions": decisions, "created_at": _now()}
     if receipt_path:

@@ -25,14 +25,19 @@ def _known_value(value: Any) -> bool:
 
 def _parse_response_headers(raw: bytes) -> tuple[int, Mapping[str, str], bytes]:
     """Parse the final response from curl's redirect-aware header stream."""
-    separators = [b"\r\n\r\n", b"\n\n"]
-    candidates = [(raw.rfind(separator), len(separator)) for separator in separators]
+    # The response body is allowed to contain blank lines.  Searching for the
+    # last separator can therefore truncate a valid JavaScript bundle and
+    # create a false marker failure.  Anchor parsing at the final HTTP status
+    # line, then use the first header terminator after that line.
+    header_start = raw.rfind(b"HTTP/")
+    if header_start < 0:
+        return 0, {}, raw
+    candidates = [(raw.find(separator, header_start), len(separator)) for separator in (b"\r\n\r\n", b"\n\n")]
     candidates = [(position, width) for position, width in candidates if position >= 0]
     if not candidates:
-        return 0, {}, raw
-    position, width = max(candidates, key=lambda item: item[0])
-    header_start = raw.rfind(b"HTTP/", 0, position)
-    header_bytes = raw[header_start:position] if header_start >= 0 else raw[:position]
+        return 0, {}, raw[header_start:]
+    position, width = min(candidates, key=lambda item: item[0])
+    header_bytes = raw[header_start:position]
     lines = header_bytes.decode("iso-8859-1", "replace").splitlines()
     status_line = next((line for line in lines if line.startswith("HTTP/")), "")
     match = re.search(r"\s(\d{3})(?:\s|$)", status_line)

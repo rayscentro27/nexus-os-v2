@@ -40,6 +40,26 @@ from nexus_agent_platform.proof_watchdog import audit as proof_audit
 from nexus_agent_platform.completion_laws import enforce_cycle_laws
 
 
+def _phase15_hermes_sender(brief: Dict[str, Any]) -> Dict[str, Any]:
+    """Governed real Telegram sender used only when a cycle owes Ray a gate."""
+    from scripts.telegram.nexus_telegram_bridge import ALLOWED_CHAT_IDS, get_bot_token, telegram_send_message
+    token = get_bot_token()
+    if not token or not ALLOWED_CHAT_IDS:
+        return {"delivered": False, "reason": "telegram_transport_unavailable"}
+    text = "\n".join([
+        "NEXUS NEEDS RAY", "", f"What happened: {brief.get('what_happened', 'A governed gate is ready.')}",
+        f"Why it matters: {brief.get('why_it_matters', 'A decision is required to proceed.')}",
+        f"What Nexus did: {brief.get('what_nexus_did', 'The checkpoint is preserved.')}",
+        f"Your action: {brief.get('ray_action', 'Review the exact gate in Hermes.')}",
+        f"Gate: {brief.get('gate_id') or 'UNSPECIFIED'}", "Evidence: " + ", ".join(brief.get("evidence", []))
+    ])
+    receipts = []
+    for chat_id in sorted(ALLOWED_CHAT_IDS):
+        response = telegram_send_message(token, chat_id, text)
+        receipts.append({"chat_id_masked": str(chat_id)[0:2] + "***", "ok": bool(response and response.get("ok")), "message_id": (response or {}).get("result", {}).get("message_id") if isinstance(response, dict) else None})
+    return {"delivered": bool(receipts) and all(row["ok"] for row in receipts), "transport": "telegram", "receipts": receipts, "delivered_at": utc_now()}
+
+
 def _write_policy_doc() -> None:
     lines = [
         "# Nexus Keep-Running Policy — Phase 15",
@@ -198,6 +218,7 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
           "machine_solvable": True, "risk_level": 0}
          for row in results["proof_watchdog"].get("objectives", [])],
         receipt_path=Path("reports/runtime/completion_laws_latest.json"),
+        hermes_sender=_phase15_hermes_sender,
     )
     intake_artifacts = _intake_artifacts(loop_report)
     if intake_artifacts:

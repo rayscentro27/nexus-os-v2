@@ -296,6 +296,39 @@ def deploy_exact_sha(commit: str, target: str) -> Dict[str, Any]:
         shutil.rmtree(worktree, ignore_errors=True)
 
 
+def deploy_exact_sha_canary(commit: str, target: str) -> Dict[str, Any]:
+    """Upload an exact SHA to an isolated Netlify draft deploy.
+
+    The absence of ``--prod`` is intentional: this path creates a candidate
+    URL and cannot mutate the site's published deploy.
+    """
+    if not FULL_SHA.fullmatch(commit):
+        return {"status": "BLOCKED", "reason": "IMMUTABLE_FULL_SHA_REQUIRED"}
+    if target != TARGET:
+        return {"status": "BLOCKED", "reason": "TARGET_NOT_ALLOWLISTED"}
+    status = exact_sha_netlify_status()
+    if not status["available"]:
+        return {"status": "BLOCKED", "reason": "NETLIFY_AUTH_UNAVAILABLE", "provider": "Netlify", "site_id": SITE_ID}
+    netlify = _netlify_executable()
+    if not netlify:
+        return {"status": "BLOCKED", "reason": "NETLIFY_CLI_UNAVAILABLE"}
+    prepared = _prepare_exact_sha(commit)
+    if prepared.get("status") != "PASS":
+        return prepared
+    worktree = Path(str(prepared["worktree"]))
+    try:
+        deploy = subprocess.run(
+            [netlify, "deploy", "--no-build", "--dir", str(worktree / "dist"), "--site", SITE_ID, "--json"],
+            cwd=worktree, env=_netlify_environment(), capture_output=True, text=True, timeout=300, check=False,
+        )
+        if deploy.returncode != 0:
+            return {"status": "FAILED", "reason": "NETLIFY_CANARY_DEPLOY_FAILED", "phase": "netlify_canary_deploy", "return_code": deploy.returncode, "stderr_tail_redacted": _safe_tail(deploy.stderr)}
+        metadata = _safe_deploy_metadata(deploy.stdout, commit=commit, artifact_hash=str(prepared.get("artifact_hash") or "UNKNOWN"))
+        return {"status": "PASS", "deployment_target": "CANARY", "commit": commit, "target": target, "provider": "Netlify", "site_id": SITE_ID, "artifact_hash": prepared.get("artifact_hash"), **metadata}
+    finally:
+        _cleanup_worktree(worktree)
+
+
 def rollback_exact_deploy(deploy_id: str) -> Dict[str, Any]:
     """Restore one pre-recorded Netlify deploy through the fixed API method."""
     if not deploy_id or deploy_id.upper() in {"UNKNOWN", "HEAD", "MAIN", "LATEST"} or not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._:-]{5,}", deploy_id):

@@ -77,3 +77,11 @@ def test_deploy_metadata_keeps_identity_without_secrets():
     assert result["deploy_ssl_url"] == "https://deploy.example"
     assert result["commit"] == "a" * 40
     assert "token" not in result
+
+
+def test_canary_deploy_command_is_non_production():
+    source = (ROOT / "scripts/nexus_product_evolution/netlify_adapter.py").read_text(encoding="utf-8")
+    start = source.index("def deploy_exact_sha_canary")
+    body = source[start:]
+    assert '"--no-build", "--dir"' in body
+    assert '"--prod"' not in body
