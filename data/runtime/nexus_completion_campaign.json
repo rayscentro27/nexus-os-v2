@@ -2,7 +2,7 @@
   "active_jobs": [],
   "architecture_alternatives": [],
   "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
-  "checkpoint_sha": "433eb6068a454175b6b01af71a0f240092dfba41",
+  "checkpoint_sha": "b8b6be05d1712d67304ffe9c92085943bba74e77",
   "completed_objectives": [
     "rate_limit_detection",
     "handoff_persistence",
@@ -13,23 +13,27 @@
     "telegram_governed_routing",
     "focused_executor_preflight",
     "visual_critic_source_canary",
-    "phase15_natural_cycle"
+    "phase15_natural_cycle",
+    "creative_lab_real_sample",
+    "release_safety_contracts"
   ],
   "completed_waves": [
     "WAVE_0_CODING_WORKER_FAILOVER_PARTIAL",
     "WAVE_2_PROOF_WATCHDOG_INTEGRATION",
-    "WAVE_3_CAPABILITY_PREFLIGHT"
+    "WAVE_3_CAPABILITY_PREFLIGHT",
+    "WAVE_6_CREATIVE_SAMPLE"
   ],
-  "current_objective": "post_natural_cycle_evidence_reconciliation",
-  "current_wave": 3,
+  "current_objective": "authenticated_experience_and_production_gate",
+  "current_wave": 6,
   "external_blockers": [
-    "OpenCode provider execution timed out; MiMo/Kilo not certified"
+    "OpenCode provider execution timed out; MiMo/Kilo not certified",
+    "Netlify release authentication not proven"
   ],
   "failure_signatures": [
     "tests.run_mutable_snapshot_contract_failures",
     "opencode_execution_timeout"
   ],
-  "last_updated": "2026-08-26T17:44:30.551772+00:00",
+  "last_updated": "2026-08-26T17:47:06.241180+00:00",
   "remaining_work": [
     "authenticated_visual_acceptance",
     "voice_production_human_microphone",
