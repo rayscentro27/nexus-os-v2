@@ -1,65 +1,80 @@
 {
   "active_jobs": [],
-  "architecture_alternatives": [],
+  "architecture_alternatives": [
+    "same-origin governed Voice relay"
+  ],
   "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
-  "checkpoint_sha": "06cc88bda0405483cab9568b540752465fe7d75c",
+  "checkpoint_sha": "28250b5b0ed992b39af8b2bff9dcc27861271561",
   "completed_objectives": [
-    "rate_limit_detection",
-    "handoff_persistence",
-    "bounded_opencode_adapter",
-    "local_failover_canary",
-    "proof_diagnosis",
-    "natural_cycle_watchdog",
-    "telegram_governed_routing",
-    "focused_executor_preflight",
-    "visual_critic_source_canary",
-    "phase15_natural_cycle",
-    "creative_lab_real_sample",
-    "creative_critic_panel",
-    "release_safety_contracts",
-    "forex_practice_guard_self_test",
-    "browser_public_certification",
-    "tts_source_integration",
-    "post_tts_production_build"
+    "resume_consumer_post_gate",
+    "auto_resume_end_to_end",
+    "architecture_alternative_real_canary",
+    "triad_100_v2",
+    "triad_action_tests_20",
+    "triad_sequential_collaboration",
+    "regression_1646",
+    "voice_relay_contract",
+    "voice_canary_origin_contract",
+    "synthetic_accounts_server_side_repaired",
+    "candidate_28250b5_canary_deployed",
+    "candidate_public_routes_verified",
+    "candidate_authenticated_admin_login",
+    "candidate_authenticated_client_login_onboarding",
+    "candidate_rendered_visual_artifacts",
+    "candidate_regression_1646"
   ],
   "completed_waves": [
-    "WAVE_0_CODING_WORKER_FAILOVER_PARTIAL",
-    "WAVE_2_PROOF_WATCHDOG_INTEGRATION",
-    "WAVE_3_CAPABILITY_PREFLIGHT",
-    "WAVE_6_CREATIVE_SAMPLE",
-    "WAVE_8_FOREX_PRACTICE_SELF_TEST",
-    "WAVE_16_BUILD_AND_RELEASE_SAFETY"
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
   ],
-  "current_objective": "ray_and_external_release_gates",
-  "current_wave": 16,
+  "current_objective": "cloudflare_access_voice_relay_configuration",
+  "current_wave": 9,
   "external_blockers": [
-    "OpenCode provider execution timed out; MiMo/Kilo not certified",
-    "Netlify release authentication not proven"
+    "Cloudflare Access service-token configuration is absent: VOICE_ACCESS_ORIGIN, CF_ACCESS_CLIENT_ID, and CF_ACCESS_CLIENT_SECRET are not present; no governed Cloudflare API credentials are available locally"
   ],
   "failure_signatures": [
-    "tests.run_mutable_snapshot_contract_failures",
-    "opencode_execution_timeout"
+    "BLOCKED_CONFIG_VOICE_ACCESS",
+    "STALE_AUTHENTICATED_BROWSER_CONTRACT"
   ],
-  "last_updated": "2026-08-26T17:51:24.438882+00:00",
+  "last_updated": "2026-08-26T21:16:58.591325+00:00",
   "remaining_work": [
-    "Ray microphone test",
-    "authenticated Admin/Client Portal visual acceptance",
-    "Netlify candidate authentication",
-    "Ray exact production approval",
-    "exact candidate production deployment and verification",
-    "two unattended production burn-in windows"
+    "Configure Cloudflare Access service-token settings through the governed external provider path",
+    "Run Voice machine acceptance against the exact candidate",
+    "Create and deliver Ray Voice microphone gate through Hermes",
+    "Obtain exact Ray production approval for candidate rel-NEXUS_COMPLETION_DAY_2026_08_26-28250b5b0ed9",
+    "Deploy exact approved candidate to production",
+    "Verify exact production candidate and visible proof",
+    "Arm NEXUS_PRODUCTION_BURNIN_2026_08_26",
+    "Run mandatory morning report pipeline"
   ],
-  "repair_counts": {
-    "opencode_execution_timeout": 1,
-    "tests.run_mutable_snapshot_contract_failures": 0
-  },
-  "status": "WAITING_HUMAN",
+  "repair_counts": {"BLOCKED_CONFIG_VOICE_ACCESS": 1, "STALE_AUTHENTICATED_BROWSER_CONTRACT": 1},
+  "status": "BLOCKED_EXTERNAL",
   "true_gates": [
-    "Ray microphone test",
-    "Ray production approval",
-    "authenticated Admin/Client Portal acceptance"
+    "RAY_VOICE_MIC_ACCEPTANCE",
+    "RAY_PRODUCTION_APPROVAL"
   ],
-  "worker_assignments": {
-    "failover-b0d5d891": "local"
-  }
+  "worker_assignments": {},
+  "candidate": {
+    "candidate_id": "rel-NEXUS_COMPLETION_DAY_2026_08_26-28250b5b0ed9",
+    "candidate_sha": "28250b5b0ed992b39af8b2bff9dcc27861271561",
+    "canary_deploy_id": "6a8f5b8f0dedf1cfe5c421fc",
+    "canary_url": "https://6a8f5b8f0dedf1cfe5c421fc--nexusv20.netlify.app",
+    "artifact_hash": "a6e2ebdf6f3d622d62b45d1bb8f96bccbd6c05dc69349a1dc4df92773c17a479",
+    "canary_status": "PASS",
+    "production_status": "NOT_RUN"
+  },
+  "evidence": {
+    "triad_100_v2": "reports/runtime/nexus_triad_100_v2_latest.json",
+    "regression": {"tests": 1646, "passed": 1646, "failed": 0, "timeout_override": "30000ms"},
+    "admin_visual": "test-results/final-canary-admin-proof.png",
+    "client_visual": "test-results/final-canary-client-dashboard.png",
+    "voice_config": {"VOICE_ACCESS_ORIGIN": false, "CF_ACCESS_CLIENT_ID": false, "CF_ACCESS_CLIENT_SECRET": false}
+  },
+  "last_updated": "2026-08-26T22:00:00+00:00"
 }
