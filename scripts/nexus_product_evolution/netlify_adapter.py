@@ -54,7 +54,7 @@ def _safe_tail(value: str, limit: int = 1200) -> str:
 
 def _build_environment(commit: str) -> Dict[str, str]:
     """Minimal non-secret build environment; never inherit credential variables."""
-    return {
+    env = {
         "PATH": _tool_path(),
         "HOME": str(Path.home()),
         "CI": "1",
@@ -65,6 +65,14 @@ def _build_environment(commit: str) -> Dict[str, str]:
         "VITE_BUILD_TIMESTAMP": commit,
         "VITE_NEXUS_VOICE_ENDPOINT": "https://voice.goclearonline.cc/v1/voice/transcribe",
     }
+    # These are the browser's public Supabase connection values.  They are
+    # intentionally allowlisted; service-role and other secret variables are
+    # never copied into the detached build environment.
+    for key in ("VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"):
+        value = os.environ.get(key)
+        if value:
+            env[key] = value
+    return env
 
 
 def _netlify_environment() -> Dict[str, str]:
