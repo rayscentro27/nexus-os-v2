@@ -180,6 +180,18 @@ def write_e2e_env(values: dict[str, str]) -> None:
 def create_auth_user(base: str, key: str, account: dict[str, Any], email: str, password: str) -> str:
     existing = find_user(base, key, email)
     if existing:
+        # Credential drift is repaired through the server-only admin contract;
+        # never expose or log the generated password.
+        request(
+            base,
+            key,
+            f"/auth/v1/admin/users/{existing['id']}",
+            "PUT",
+            {"password": password, "email_confirm": True, "user_metadata": {
+                "synthetic": True, "certification_run": RUN_KEY,
+                "label": account["label"], "role": account["role"],
+            }},
+        )
         return str(existing["id"])
     created = request(
         base,

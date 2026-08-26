@@ -37,6 +37,7 @@ from nexus_agent_platform.executive_portfolio import phase15_existing_dispatcher
 from nexus_agent_platform.overnight_autonomy import build_completion_audit, refresh_campaign_lifecycle
 from nexus_agent_platform.proof_recovery import apply_recovery
 from nexus_agent_platform.proof_watchdog import audit as proof_audit
+from nexus_agent_platform.completion_laws import enforce_cycle_laws
 
 
 def _write_policy_doc() -> None:
@@ -191,6 +192,13 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
     results["live_research"] = run_live_research_session()
     results["executive_portfolio"] = reconcile_portfolio_execution(results["executive_portfolio"], product_evolution=results["product_evolution_dispatch"], live_loops=results["live_loops"], live_research=results["live_research"])
     results["proof_watchdog"] = _run_proof_watchdog(results["executive_portfolio"], scheduler_context=scheduler_context)
+    results["completion_laws"] = enforce_cycle_laws(
+        [{"status": row.get("status", "UNKNOWN"), "objective_id": row.get("objective_id"),
+          "stage": row.get("current_stage"), "proof_refs": row.get("receipt_refs", []),
+          "machine_solvable": True, "risk_level": 0}
+         for row in results["proof_watchdog"].get("objectives", [])],
+        receipt_path=Path("reports/runtime/completion_laws_latest.json"),
+    )
     intake_artifacts = _intake_artifacts(loop_report)
     if intake_artifacts:
         results["research_decisions"] = build_research_decisions(intake_artifacts)
