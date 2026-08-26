@@ -59,6 +59,26 @@ def test_portfolio_command_is_read_only(monkeypatch):
         assert metadata["read_only"] is True
 
 
+def test_ideas_morning_models_and_brain_commands_are_read_only(monkeypatch):
+    monkeypatch.setattr(hermes, "ideas_response", lambda: "IDEAS")
+    monkeypatch.setattr(hermes, "morning_response", lambda: "MORNING")
+    monkeypatch.setattr(hermes, "models_response", lambda: "MODELS")
+    monkeypatch.setattr(hermes, "brain_response", lambda: "BRAIN")
+    for command, expected, route in (("/ideas", "IDEAS", "IDEA_INBOX_READ"), ("/morning", "MORNING", "MORNING_REPORT_READ"), ("/models", "MODELS", "MODEL_CONTROL_READ"), ("/brain", "BRAIN", "HERMES_BRAIN_READ")):
+        response, metadata = hermes.handle_command(command)
+        assert response == expected
+        assert metadata["route"] == route
+        assert metadata["read_only"] is True
+
+
+def test_idea_capture_does_not_create_mission(monkeypatch, tmp_path):
+    from nexus_agent_platform import overnight_autonomy
+    monkeypatch.setattr(overnight_autonomy, "IDEA_PATH", tmp_path / "ideas.jsonl")
+    response, metadata = hermes.handle_command("IDEA: create a calm admin onboarding flow")
+    assert metadata["route"] == "IDEA_INBOX_CAPTURE"
+    assert "No execution started" in response
+
+
 def test_unauthorized_and_high_risk_commands_are_blocked():
     for command in ("charge the customer", "place a funded trade", "send an email to the client", "run shell command", "show me the runtime.env token"):
         response, metadata = hermes.handle_command(command)

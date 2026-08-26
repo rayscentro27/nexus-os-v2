@@ -34,6 +34,7 @@ from nexus_agent_platform.phase15.mission_control_snapshot import refresh_missio
 from nexus_agent_platform.phase15.stripe_proof import stripe_test_mode_proof
 from nexus_product_evolution.consumer import consume_queued_missions
 from nexus_agent_platform.executive_portfolio import phase15_existing_dispatchers, run_executive_portfolio_cycle
+from nexus_agent_platform.overnight_autonomy import build_completion_audit
 
 
 def _write_policy_doc() -> None:
@@ -143,6 +144,7 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
     # Executive Portfolio is a bounded handoff layer above existing loops; it
     # records dispatch receipts but does not execute workers or create a scheduler.
     results["executive_portfolio"] = run_executive_portfolio_cycle(cycle_id=str(scheduler_context.get("scheduler_instance", "canonical-phase15")), dispatchers=phase15_existing_dispatchers())
+    results["completion_audit"] = build_completion_audit()
 
     results["live_loops"] = run_live_loops()
     loop_report = results["live_loops"]

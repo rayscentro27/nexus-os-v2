@@ -275,6 +275,30 @@ def portfolio_response() -> str:
         return "Executive portfolio is temporarily unavailable; no work state was changed."
 
 
+def ideas_response() -> str:
+    from nexus_agent_platform.overnight_autonomy import list_ideas
+    value = list_ideas()
+    newest = value.get("newest") or []
+    lines = [f"Idea Inbox: {value['count']} captured | research-ready: {value['research_ready']} | promoted: {value['promoted']}"]
+    lines.extend(f"- {row.get('idea_id')}: {str(row.get('text', ''))[:120]} ({row.get('status')})" for row in newest)
+    return "\n".join(lines)
+
+
+def morning_response() -> str:
+    from nexus_agent_platform.overnight_autonomy import morning_report
+    return morning_report()
+
+
+def models_response() -> str:
+    from nexus_agent_platform.overnight_autonomy import MODEL_REGISTRY
+    return "Nexus Model Control\n" + "\n".join(f"- {role}: {'available' if info['enabled'] else 'not configured'} / {info['provider']}" for role, info in MODEL_REGISTRY.items()) + "\nCritic action authority: NONE"
+
+
+def brain_response() -> str:
+    from nexus_agent_platform.overnight_autonomy import campaign_status
+    return "Hermes brain decision stack: L0 input → L1 authority → L2 intent → L3 evidence → L4 model routing → L5 executor → L6 critic → L7 approval → L8 execution → L9 verification → L10 response.\nCampaign: " + str(campaign_status().get("status", "UNKNOWN"))
+
+
 def approval_response() -> str:
     pending = approvals.get_pending_approvals(requested_for="ray", include_self=True)
     if not pending:
@@ -318,6 +342,10 @@ def handle_command(text: str, *, chat_id: Optional[int] = None) -> tuple[str, Di
     lowered = text.lower()
     if is_portfolio_request(text):
         return portfolio_response(), {"route": "EXECUTIVE_PORTFOLIO_READ", "outcome": "ANSWERED", "read_only": True}
+    if re.match(r"^\s*(?:IDEA\s*:|idea\s+)", text, re.I):
+        from nexus_agent_platform.overnight_autonomy import capture_idea
+        idea = capture_idea(text)
+        return f"Idea saved: {idea['idea_id']}\nCategory: {idea['category']}\nPortfolio status: BACKLOG\nNo execution started.", {"route": "IDEA_INBOX_CAPTURE", "outcome": "CAPTURED", "idea_id": idea["idea_id"], "read_only": False}
     try:
         from nexus_product_evolution.telegram_control import classify_product_evolution_request, handle_product_evolution_intake
         recent = _load_chat_context(chat_id)
@@ -344,6 +372,14 @@ def handle_command(text: str, *, chat_id: Optional[int] = None) -> tuple[str, Di
         return "Nexus Hermes commands: /status, /approvals, /orders, /request <internal work>, /approve <approval_id>, /reject <approval_id>.", {"route": route, "outcome": "ANSWERED"}
     if lowered in {"/status", "status", "what is happening with nexus", "refresh nexus status"} or is_status_request(text):
         return status_response(), {"route": route, "outcome": "ANSWERED"}
+    if lowered in {"/ideas", "ideas", "idea inbox"}:
+        return ideas_response(), {"route": "IDEA_INBOX_READ", "outcome": "ANSWERED", "read_only": True}
+    if lowered in {"/morning", "morning", "morning report"}:
+        return morning_response(), {"route": "MORNING_REPORT_READ", "outcome": "ANSWERED", "read_only": True}
+    if lowered in {"/models", "models", "model control"}:
+        return models_response(), {"route": "MODEL_CONTROL_READ", "outcome": "ANSWERED", "read_only": True}
+    if lowered in {"/brain", "brain", "hermes brain"}:
+        return brain_response(), {"route": "HERMES_BRAIN_READ", "outcome": "ANSWERED", "read_only": True}
     if lowered in {"/approvals", "approvals", "what approvals are waiting"}:
         return approval_response(), {"route": route, "outcome": "ANSWERED"}
     if lowered in {"/orders", "work orders", "what needs my attention"}:

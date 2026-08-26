@@ -95,16 +95,21 @@ def get_pending_approvals(
     requested_for: str = "ray",
     include_self: bool = True,
 ) -> List[Dict[str, Any]]:
-    """List persisted pending approvals, newest first."""
+    """List non-expired pending approvals scoped to the requested principal.
+
+    ``include_self`` is retained for compatibility, but no longer broadens a
+    Ray query to every principal.  Callers that need an administrative view
+    must explicitly pass ``requested_for=None``.
+    """
     result = []
     seen: set = set()
     for record in persistence.read_records("approvals"):
         if record["id"] in seen:
             continue
         seen.add(record["id"])
-        if record.get("status") != "pending":
+        if record.get("status") != "pending" or approval_is_expired(record):
             continue
-        if include_self or requested_for == record.get("requested_for"):
+        if requested_for is None or requested_for == record.get("requested_for"):
             result.append(_mask_approval(record))
     return result
 
