@@ -209,7 +209,11 @@ def _prepare_exact_sha(commit: str) -> Dict[str, Any]:
             shutil.rmtree(worktree, ignore_errors=True)
             return {"status": "BLOCKED", "reason": "LOCKFILE_INPUT_NOT_TRACKED", "phase": "validation", "return_code": tracked.returncode}
         try:
-            add = subprocess.run(["git", "worktree", "add", "--detach", str(worktree), commit], cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
+            # This repository contains several thousand tracked files; a clean
+            # detached checkout can exceed 30 seconds on a cold filesystem.
+            # Keep the operation bounded, but allow the exact-SHA release gate
+            # enough time to complete its deterministic checkout.
+            add = subprocess.run(["git", "worktree", "add", "--detach", str(worktree), commit], cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
         except subprocess.TimeoutExpired:
             _cleanup_worktree(worktree)
             return {"status": "FAILED", "reason": "WORKTREE_CREATE_TIMEOUT", "phase": "worktree", "return_code": None}
