@@ -15,6 +15,7 @@ ROUTES = (
     (re.compile(r"\b(forex research|forex)\b", re.I), "forex.research"),
     (re.compile(r"\b(alpha|research)\b", re.I), "research.alpha"),
     (re.compile(r"\b(creative critic|creative intelligence)\b", re.I), "creative.intelligence"),
+    (re.compile(r"\b(visual critic|visual design)\b", re.I), "visual.critic"),
     (re.compile(r"\b(model control|models)\b", re.I), "model.router"),
 )
 

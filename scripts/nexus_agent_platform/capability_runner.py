@@ -34,6 +34,10 @@ def run(capability_id: str) -> dict:
     if capability_id == "creative.intelligence":
         from nexus_agent_platform.creative.intelligence import creative_intelligence_portfolio
         return {"status": "PASS", "evidence": creative_intelligence_portfolio()}
+    if capability_id == "visual.critic":
+        from nexus_agent_platform.visual_critic import critique
+        evidence = critique()
+        return {"status": evidence["status"], "evidence": evidence}
     if capability_id == "forex.research":
         import subprocess
         result = subprocess.run(["python3", "scripts/trading/build_trading_hermes_brief.py", "--json"], cwd=ROOT, capture_output=True, text=True, timeout=120, check=False)
