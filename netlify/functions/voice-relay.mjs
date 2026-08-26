@@ -1,16 +1,27 @@
 const ORIGIN = 'https://goclearonline.cc'
 const MAX_AUDIO_BYTES = 10 * 1024 * 1024
 const ALLOWED_TYPES = new Set(['audio/webm', 'audio/webm;codecs=opus', 'audio/wav', 'audio/x-wav', 'audio/aiff', 'audio/mpeg', 'application/octet-stream'])
+const CANARY_HOST = /^[a-z0-9][a-z0-9-]*--nexusv20\.netlify\.app$/
+
+function allowedOrigin(requestOrigin, event) {
+  if (requestOrigin === ORIGIN) return ORIGIN
+  const host = String(event.headers?.host || event.headers?.Host || '').toLowerCase()
+  const canaryOrigin = `https://${host}`
+  // The canary allowance is same-origin and constrained to this exact
+  // Nexus Netlify site namespace; arbitrary *.netlify.app origins are denied.
+  return CANARY_HOST.test(host) && requestOrigin === canaryOrigin ? canaryOrigin : null
+}
 
 const response = (statusCode, body, origin = ORIGIN) => ({ statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', vary: 'Origin' }, body: JSON.stringify(body) })
 
 export async function handler(event) {
   const requestOrigin = event.headers?.origin || event.headers?.Origin || ORIGIN
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: { 'access-control-allow-origin': requestOrigin === ORIGIN ? ORIGIN : 'null', 'access-control-allow-credentials': 'true', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'authorization, content-type, x-nexus-voice-session, x-nexus-voice-preview-sequence', 'access-control-max-age': '300', vary: 'Origin' }, body: '' }
-  if (requestOrigin !== ORIGIN) return response(403, { error: 'origin-not-allowed' }, 'null')
+  const responseOrigin = allowedOrigin(requestOrigin, event)
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: { 'access-control-allow-origin': responseOrigin || 'null', 'access-control-allow-credentials': 'true', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'authorization, content-type, x-nexus-voice-session, x-nexus-voice-preview-sequence', 'access-control-max-age': '300', vary: 'Origin' }, body: '' }
+  if (!responseOrigin) return response(403, { error: 'origin-not-allowed' }, 'null')
   if (event.httpMethod !== 'POST') return response(405, { error: 'method_not_allowed' })
   const auth = event.headers?.authorization || event.headers?.Authorization || ''
-  if (!/^Bearer\s+\S+$/i.test(auth)) return response(401, { error: 'authentication-required' })
+  if (!/^Bearer\s+\S+$/i.test(auth)) return response(401, { error: 'authentication-required' }, responseOrigin)
   const contentType = String(event.headers?.['content-type'] || event.headers?.['Content-Type'] || '').split(';')[0].toLowerCase()
   if (!ALLOWED_TYPES.has(contentType)) return response(415, { error: 'audio-type-not-allowed' })
   const encoded = event.body || ''
