@@ -49,7 +49,10 @@ def consume_resume_receipt(*, ledger_path: Path = LEDGER) -> dict[str, Any]:
     resume = gate["resume_receipt"]
     campaign = _read(ROOT / "data/runtime/nexus_completion_campaign.json")
     checkpoint = str(resume.get("checkpoint_sha") or campaign.get("checkpoint_sha") or "UNKNOWN")
-    next_objective = (campaign.get("remaining_work") or ["completion_audit"])[0]
+    closed_gate_id = str(gate.get("gate_id") or "")
+    remaining = [str(item) for item in (campaign.get("remaining_work") or [])]
+    remaining = [item for item in remaining if closed_gate_id not in item and "Ray ACK" not in item]
+    next_objective = remaining[0] if remaining else "completion_audit"
     execution_started = _now()
     receipt = run_capability("system.health", receipt_dir=RECEIPTS)
     downstream_id = receipt.get("receipt_id")
