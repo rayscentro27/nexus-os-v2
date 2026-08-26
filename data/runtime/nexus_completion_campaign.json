@@ -1,0 +1,20 @@
+{
+  "active_jobs": [],
+  "architecture_alternatives": [],
+  "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
+  "checkpoint_sha": "87aaedeb9e5dbc299709e8c3f38ade735732a00c",
+  "completed_objectives": [],
+  "completed_waves": [],
+  "current_objective": "coding_worker_failover",
+  "current_wave": 0,
+  "external_blockers": [],
+  "failure_signatures": [],
+  "last_updated": "2026-08-26T17:13:20.047800+00:00",
+  "remaining_work": [],
+  "repair_counts": {},
+  "status": "ACTIVE",
+  "true_gates": [],
+  "worker_assignments": {
+    "failover-b0d5d891": "local"
+  }
+}
