@@ -498,6 +498,44 @@ def _cli_worker(name: str, *, cost_class: str, worker_type: str, display_name: s
     )
 
 
+def _opencode_execute(task: BuildTaskSpec) -> Dict[str, Any]:
+    """Adapt the governed OpenCode contract to the Builder task interface.
+
+    OpenCode works in a detached worktree owned by the supervisor. Its output
+    is therefore a receipt until the governed Builder verifier explicitly
+    accepts it; no provider output is copied into the active source tree here.
+    """
+    from nexus_agent_platform.coding_worker_supervisor import CodingTask, OpenCodeExecuteAdapter
+
+    checkpoint = _repo_git("rev-parse", "HEAD")
+    bounded = CodingTask(
+        task_id=task.task_id,
+        objective_id=task.task_id,
+        prompt=task.objective,
+        allowed_paths=tuple(task.allowed_paths),
+        protected_paths=tuple(task.protected_paths),
+        acceptance=tuple(task.acceptance_criteria),
+        checkpoint_sha=checkpoint,
+    )
+    result = OpenCodeExecuteAdapter().execute(bounded)
+    if result.get("status") != "PASS":
+        return {"status": "failure", "worker_report": result, "retryable": True,
+                "failure_class": result.get("failure_class", "EXECUTION_FAILED"),
+                "artifact_refs": [], "files_changed": result.get("files_changed", [])}
+    return {
+        "status": "success",
+        "worker_report": result,
+        "artifact_refs": [],
+        "files_changed": result.get("files_changed", []),
+        "tests_run": ["isolated worktree path verification", "provider receipt verification"],
+        "tests_passed": 2,
+        "tests_failed": 0,
+        "protected_path_violation": bool(result.get("violations")),
+        "retryable": False,
+        "cost_provenance": {"tier": "ZERO_MODEL_COST", "provider": "opencode", "model": OPENCODE_PROBE_MODEL},
+    }
+
+
 def _local_python_worker() -> CodingWorker:
     def _execute(task: BuildTaskSpec) -> Dict[str, Any]:
         sandbox = Path(tempfile.mkdtemp(prefix=f"nexus-builder-{task.task_id}-"))
@@ -582,7 +620,7 @@ def build_coding_worker_registry() -> List[CodingWorker]:
     from nexus_product_evolution.adapters.builder_adapter import codex_execute
 
     workers = [
-        _cli_worker("opencode", cost_class="ZERO_MODEL_COST", worker_type="cli", display_name="OpenCode CLI"),
+        _cli_worker("opencode", cost_class="ZERO_MODEL_COST", worker_type="cli", display_name="OpenCode CLI", execute_fn=_opencode_execute),
         _cli_worker("codex", cost_class="ZERO_MODEL_COST", worker_type="cli", display_name="Codex CLI", execute_fn=codex_execute),
         _cli_worker("mimo", cost_class="LOW_EXTERNAL_COST", worker_type="cli", display_name="MiMo CLI"),
         _local_python_worker(),

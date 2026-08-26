@@ -2,12 +2,28 @@ import json
 
 from nexus_agent_platform.coding_worker_supervisor import (
     CodingTask,
+    OpenCodeExecuteAdapter,
     classify_failure,
     persist_campaign,
     persist_handoff,
     run_failover_canary,
     select_worker,
 )
+
+
+def test_opencode_adapter_executes_in_bounded_worktree_and_verifies_untracked_artifact(tmp_path, monkeypatch):
+    import nexus_agent_platform.coding_worker_supervisor as supervisor
+
+    runner = tmp_path / "opencode"
+    runner.write_text("#!/bin/sh\nmkdir -p reports/runtime\nprintf 'bounded-result\\n' > reports/runtime/adapter_canary.txt\n", encoding="utf-8")
+    runner.chmod(0o755)
+    task = CodingTask("adapter", "adapter", "create canary", ("reports/runtime/",), ("src/", "data/"), ("artifact exists",),
+                      supervisor.subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=supervisor.ROOT, text=True).strip())
+    result = OpenCodeExecuteAdapter().execute(task, runner=str(runner), timeout=10)
+    assert result["status"] == "PASS"
+    assert result["independent_verification"] is True
+    assert result["files_changed"] == ["reports/runtime/adapter_canary.txt"]
+    assert result["violations"] == []
 
 
 def test_rate_limit_requires_explicit_evidence():

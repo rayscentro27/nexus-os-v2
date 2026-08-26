@@ -41,6 +41,15 @@ def _safe_env() -> Dict[str, str]:
     return env
 
 
+def _redact_output(value: str) -> str:
+    """Keep provider receipts useful without persisting common secret values."""
+    return re.sub(
+        r"(?i)((?:api[_-]?key|access[_-]?token|auth(?:entication)?[_-]?token|secret|password)\s*[:=]\s*)[^\s,;]+",
+        r"\1[REDACTED]",
+        value or "",
+    )[-MAX_OUTPUT:]
+
+
 def classify_failure(output: str, returncode: Optional[int] = None) -> str:
     """Classify only when the output contains authoritative failure evidence."""
     if RATE_LIMIT_EVIDENCE.search(output or ""):
@@ -72,9 +81,33 @@ def _path_allowed(path: str, allowed: Sequence[str], protected: Sequence[str]) -
     return matches(allowed) and not matches(protected)
 
 
-def _changed_files(worktree: Path) -> list[str]:
+def _file_fingerprints(worktree: Path, roots: Sequence[str]) -> Dict[str, str]:
+    fingerprints: Dict[str, str] = {}
+    for root in roots:
+        base = worktree / root.rstrip("/")
+        if not base.exists():
+            continue
+        for path in base.rglob("*"):
+            if path.is_file() and ".git" not in path.parts:
+                relative = str(path.relative_to(worktree))
+                fingerprints[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return fingerprints
+
+
+def _changed_files(worktree: Path, before: Optional[Dict[str, str]] = None, roots: Sequence[str] = ()) -> list[str]:
     diff = subprocess.run(["git", "-C", str(worktree), "diff", "--name-only", "--no-renames"], capture_output=True, text=True, check=False)
-    return sorted(line.strip() for line in diff.stdout.splitlines() if line.strip())
+    status = subprocess.run(["git", "-C", str(worktree), "status", "--porcelain", "--untracked-files=all"], capture_output=True, text=True, check=False)
+    paths = set(line.strip() for line in diff.stdout.splitlines() if line.strip())
+    for line in status.stdout.splitlines():
+        if len(line) >= 4:
+            paths.add(line[3:].strip().split(" -> ", 1)[-1])
+    if before is not None:
+        after = _file_fingerprints(worktree, roots)
+        for path, fingerprint in after.items():
+            if path not in before or before[path] != fingerprint:
+                paths.add(path)
+        paths.update(path for path in before if path != "__roots__" and path not in after)
+    return sorted(path for path in paths if path != "__roots__")
 
 
 @dataclass(frozen=True)
@@ -109,11 +142,15 @@ class OpenCodeExecuteAdapter:
                   f"Acceptance: {list(task.acceptance)}\nCreate the requested artifact and stop.")
         command = [runner, "run", "--model", self.model, "--format", "json", prompt]
         try:
-            subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.checkpoint_sha], cwd=ROOT, capture_output=True, text=True, timeout=30, check=True)
+            # Large Nexus checkouts can take longer than a provider canary;
+            # keep this bounded but do not mistake checkout latency for a
+            # provider failure.
+            subprocess.run(["git", "worktree", "add", "--detach", str(worktree), task.checkpoint_sha], cwd=ROOT, capture_output=True, text=True, timeout=180, check=True)
             added = True
+            before = _file_fingerprints(worktree, task.allowed_paths)
             proc = subprocess.run(command, cwd=worktree, env=_safe_env(), capture_output=True, text=True, timeout=timeout, check=False)
             combined = f"{proc.stdout}\n{proc.stderr}"
-            changed = _changed_files(worktree)
+            changed = _changed_files(worktree, before, task.allowed_paths)
             violations = [path for path in changed if not _path_allowed(path, task.allowed_paths, task.protected_paths)]
             failure = classify_failure(combined, proc.returncode) if proc.returncode != 0 else None
             if violations:
@@ -123,7 +160,7 @@ class OpenCodeExecuteAdapter:
             return {"status": status, "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
                     "command": command[:4], "returncode": proc.returncode, "failure_class": failure,
                     "files_changed": changed, "violations": violations, "artifact_fingerprint": artifact_hash,
-                    "stdout": proc.stdout[-MAX_OUTPUT:], "stderr": proc.stderr[-MAX_OUTPUT:],
+                    "stdout": _redact_output(proc.stdout), "stderr": _redact_output(proc.stderr),
                     "independent_verification": status == "PASS" and not violations}
         except subprocess.TimeoutExpired as exc:
             output = str(exc)
@@ -133,10 +170,8 @@ class OpenCodeExecuteAdapter:
             return {"status": "FAIL", "worker_id": self.worker_id, "started_at": started, "finished_at": now(),
                     "failure_class": type(exc).__name__, "files_changed": [], "independent_verification": False}
         finally:
-            if added:
-                subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, text=True, check=False)
-            else:
-                shutil.rmtree(worktree, ignore_errors=True)
+            subprocess.run(["git", "worktree", "remove", "--force", str(worktree)], cwd=ROOT, capture_output=True, text=True, check=False)
+            shutil.rmtree(worktree, ignore_errors=True)
 
 
 def _write_json(path: Path, value: Dict[str, Any]) -> None:
