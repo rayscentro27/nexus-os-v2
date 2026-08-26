@@ -67,9 +67,22 @@ def _build_environment(commit: str) -> Dict[str, str]:
     }
     # These are the browser's public Supabase connection values.  They are
     # intentionally allowlisted; service-role and other secret variables are
-    # never copied into the detached build environment.
+    # never copied into the detached build environment.  Exact-SHA release
+    # worktrees do not inherit the operator's untracked dotenv files, so read
+    # only these two explicitly allowlisted values from the local dotenv
+    # sources when the process environment does not already provide them.
     for key in ("VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"):
         value = os.environ.get(key)
+        if not value:
+            for dotenv in (ROOT / ".env.local", ROOT / ".env"):
+                if not dotenv.is_file():
+                    continue
+                for line in dotenv.read_text(encoding="utf-8", errors="ignore").splitlines():
+                    if line.startswith(f"{key}="):
+                        value = line.split("=", 1)[1].strip().strip("\"'")
+                        break
+                if value:
+                    break
         if value:
             env[key] = value
     return env
