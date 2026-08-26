@@ -312,5 +312,8 @@ export default defineConfig({
   plugins: [nexusLocalBridges(), react()],
   define: Object.fromEntries(Object.entries(buildMetadata).map(([key,value]) => [`import.meta.env.${key}`, JSON.stringify(value)])),
   build: { outDir: 'dist' },
-  test: { exclude: ['tests/e2e/**', 'node_modules/**', '.netlify/**'] },
+  // Keep Vitest focused on Nexus-owned contracts. Vendored packages and the
+  // optional native whisper example contain their own incompatible test
+  // harnesses; discovering them makes the regression result non-actionable.
+  test: { exclude: ['tests/e2e/**', '**/node_modules/**', 'tools/voice/runtime/whisper.cpp/**', '.netlify/**'] },
 });

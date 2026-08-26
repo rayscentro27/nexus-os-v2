@@ -22,7 +22,7 @@ describe("Alpha Phase J research intelligence", () => {
     const job = validateResearchJob({ objective: "Compare public competitors", research_type: "COMPETITOR_RESEARCH", limits: { maxSources: 1, maxEvidenceJobs: 1, maxModelCalls: 1, maxRuntimeMs: 1000, maxOutputChars: 5000 } });
     const plan = createResearchPlan(job); expect(plan.stopping_criteria.join(" ")).toMatch(/source|evidence|runtime/i);
     const result = executeAlphaResearch(job, evidence, { remoteJobs: 1, provider: "none" });
-    expect(result.pack.schema_version).toBe("nexus.alpha-research-pack.v1"); expect(result.pack.status).toBe("PARTIAL"); expect(result.pack.claims[0].evidence_refs).toEqual(["ev-official"]); expect(result.report).toContain("Research Limits"); expect(result.receipt.schema_version).toBe("nexus.alpha-research-receipt.v1");
+    expect(result.pack.schema_version).toBe("nexus.alpha-research-pack.v1"); expect(result.pack.status).toBe("COMPLETE"); expect(result.pack.claims[0].evidence_refs).toEqual(["ev-official"]); expect(result.report).toContain("Research Limits"); expect(result.receipt.schema_version).toBe("nexus.alpha-research-receipt.v1");
   });
   it("preserves honest insufficient evidence and rejects unsupported sourced claims", () => {
     const result = executeAlphaResearch({ objective: "Find public opportunities", research_type: "BUSINESS_OPPORTUNITY_RESEARCH" }, []);

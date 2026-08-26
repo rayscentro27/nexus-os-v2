@@ -109,7 +109,7 @@ function greetingResponse(message: string): string {
   const lower = message.toLowerCase().replace(/\bgo;od\b/g, 'good');
   const current = getTimeContext().timeOfDay;
   const greeting = current === 'morning' ? 'Good morning' : current === 'afternoon' ? 'Good afternoon' : current === 'evening' ? 'Good evening' : 'Good night';
-  if (/\b(good night|^night)\b/.test(lower)) return `${greeting}, Ray. We made solid progress today.`;
+  if (/\b(good night|^night)\b/.test(lower)) return `${greeting}, Ray. Good night, Ray. We made solid progress today.`;
   if (/\b(good morning|^morning|\bgm\b)/.test(lower)) return `${greeting}, Ray. What are we focusing on first today?`;
   if (/\b(good afternoon|^afternoon)\b/.test(lower)) return `${greeting}, Ray. What needs your attention first?`;
   if (/\b(good evening|^evening)\b/.test(lower)) return `${greeting}, Ray. I’m ready when you are.`;

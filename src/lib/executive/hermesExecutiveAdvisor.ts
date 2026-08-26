@@ -100,7 +100,7 @@ export function answerExecutiveIntent(intent: ExecutiveIntent): string {
   ].join('\n- ');
 
   if (intent === 'executive_daily_brief') {
-    return renderHermesDailyBrief();
+    return `${renderHermesDailyBrief()}\n\nStatus note: live Stripe is deferred; current payment evidence remains test-mode only.`;
   }
 
   if (intent === 'capability_status') {

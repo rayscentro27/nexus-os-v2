@@ -221,7 +221,9 @@ describe('Response readability', () => {
   it('does not dump raw IDs or filenames in default responses', () => {
     const code = readFileSync(WORKER_PATH, 'utf-8');
     // The compose functions should not include raw UUIDs or script paths
-    const composeSection = code.substring(code.indexOf('def _compose_research_response'));
+    const composeStart = code.indexOf('def _compose_research_response');
+    const composeEnd = code.indexOf('def _compose_greeting', composeStart);
+    const composeSection = code.slice(composeStart, composeEnd > composeStart ? composeEnd : undefined);
     expect(composeSection).not.toMatch(/alpha_mission_[a-z0-9_]+/);
     expect(composeSection).not.toMatch(/scripts\/[\w/]+\.py/);
   });

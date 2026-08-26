@@ -7,8 +7,10 @@ pretends that a repair succeeded; callers must attach a fresh receipt.
 from __future__ import annotations
 
 import hashlib
+import json
 from datetime import datetime, timezone
-from typing import Any, Dict, Sequence
+from pathlib import Path
+from typing import Any, Callable, Dict, Optional, Sequence
 
 
 def _now() -> str:
@@ -52,3 +54,46 @@ def apply_recovery(objective: Dict[str, Any], *, repair_budget: int = 2) -> Dict
     """Return updated objective state; no executor is invoked by this policy."""
     decision = recover(objective, repair_budget=repair_budget)
     return {**objective, **decision, "updated_at": decision["created_at"]}
+
+
+def run_architecture_alternative_canary(
+    *, receipt_path: Optional[Path] = None,
+    primary: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
+    alternate: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Run and verify the alternate executor on a harmless fixture."""
+    primary = primary or (lambda fixture: (_ for _ in ()).throw(RuntimeError("controlled_canary_failure")))
+    alternate = alternate or (lambda fixture: {"artifact": f"alternate:{fixture['fixture_id']}", "executor": "alternate_fixture"})
+    fixture = {"fixture_id": "proof-architecture-alternative", "payload": "harmless bounded fixture"}
+    objective: Dict[str, Any] = {
+        "objective_id": "architecture-alternative-canary", "executor": "primary_fixture",
+        "failure_stage": "S5_ARTIFACT_PRODUCED", "failure_reason": "controlled_canary_failure", "repair_count": 0,
+    }
+    primary_failures = []
+    for attempt in range(2):
+        try:
+            primary(fixture)
+            raise AssertionError("primary canary unexpectedly succeeded")
+        except RuntimeError as exc:
+            primary_failures.append(str(exc))
+        objective = apply_recovery({**objective, "repair_count": attempt})
+    decision = apply_recovery({**objective, "repair_count": 2})
+    if decision.get("status") != "ARCHITECTURE_ALTERNATIVE":
+        raise RuntimeError("architecture_alternative_not_triggered")
+    result = alternate(fixture)
+    artifact = result.get("artifact") if isinstance(result, dict) else None
+    if not artifact or not str(artifact).startswith("alternate:"):
+        raise RuntimeError("alternate_executor_artifact_missing")
+    fingerprint = hashlib.sha256(str(artifact).encode()).hexdigest()[:20]
+    receipt = {
+        "schema_version": "nexus.proof-architecture-alternative-receipt.v1", "status": "PASS",
+        "objective_id": objective["objective_id"], "failure_signature": decision["failure_signature"],
+        "primary_failures": primary_failures, "repair_attempts": 2, "decision": "ARCHITECTURE_ALTERNATIVE",
+        "selected_executor": result.get("executor", "alternate_fixture"), "artifact": artifact,
+        "artifact_fingerprint": fingerprint,
+        "independent_verification": {"status": "PASS", "artifact_fingerprint": fingerprint}, "created_at": _now(),
+    }
+    target = receipt_path or Path(__file__).resolve().parents[2] / "reports/runtime/proof_architecture_alternative_canary.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    return receipt

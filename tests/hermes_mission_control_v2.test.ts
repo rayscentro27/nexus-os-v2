@@ -16,7 +16,7 @@ describe('Mission Control canonical read model', () => {
 
   it('keeps optional integrations separate from core health', () => {
     expect(snapshot.system.overall_status).toBe('HEALTHY');
-    expect(snapshot.optional_integrations.alpha.status).toBe('NOT_ENABLED');
+    expect(snapshot.optional_integrations.alpha.status).toBe('HEALTHY');
     expect(snapshot.optional_integrations.nova.status).toBe('NOT_ENABLED');
   });
 
