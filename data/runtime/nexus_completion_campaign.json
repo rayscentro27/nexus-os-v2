@@ -2,7 +2,7 @@
   "active_jobs": [],
   "architecture_alternatives": [],
   "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
-  "checkpoint_sha": "ea68935a6eeedd1641d41d4fc46390b661147ae1",
+  "checkpoint_sha": "06cc88bda0405483cab9568b540752465fe7d75c",
   "completed_objectives": [
     "rate_limit_detection",
     "handoff_persistence",
@@ -17,17 +17,21 @@
     "creative_lab_real_sample",
     "creative_critic_panel",
     "release_safety_contracts",
-    "forex_practice_guard_self_test"
+    "forex_practice_guard_self_test",
+    "browser_public_certification",
+    "tts_source_integration",
+    "post_tts_production_build"
   ],
   "completed_waves": [
     "WAVE_0_CODING_WORKER_FAILOVER_PARTIAL",
     "WAVE_2_PROOF_WATCHDOG_INTEGRATION",
     "WAVE_3_CAPABILITY_PREFLIGHT",
     "WAVE_6_CREATIVE_SAMPLE",
-    "WAVE_8_FOREX_PRACTICE_SELF_TEST"
+    "WAVE_8_FOREX_PRACTICE_SELF_TEST",
+    "WAVE_16_BUILD_AND_RELEASE_SAFETY"
   ],
-  "current_objective": "human_and_external_release_gates",
-  "current_wave": 8,
+  "current_objective": "ray_and_external_release_gates",
+  "current_wave": 16,
   "external_blockers": [
     "OpenCode provider execution timed out; MiMo/Kilo not certified",
     "Netlify release authentication not proven"
@@ -36,21 +40,20 @@
     "tests.run_mutable_snapshot_contract_failures",
     "opencode_execution_timeout"
   ],
-  "last_updated": "2026-08-26T17:48:52.680611+00:00",
+  "last_updated": "2026-08-26T17:51:24.438882+00:00",
   "remaining_work": [
-    "voice_production_human_microphone",
-    "avatar_tts_production_path",
-    "authenticated_admin_portal_visual_acceptance",
-    "netlify_candidate_authentication",
-    "ray_production_approval",
-    "production_verification",
-    "overnight_burnin"
+    "Ray microphone test",
+    "authenticated Admin/Client Portal visual acceptance",
+    "Netlify candidate authentication",
+    "Ray exact production approval",
+    "exact candidate production deployment and verification",
+    "two unattended production burn-in windows"
   ],
   "repair_counts": {
     "opencode_execution_timeout": 1,
     "tests.run_mutable_snapshot_contract_failures": 0
   },
-  "status": "ACTIVE",
+  "status": "WAITING_HUMAN",
   "true_gates": [
     "Ray microphone test",
     "Ray production approval",
