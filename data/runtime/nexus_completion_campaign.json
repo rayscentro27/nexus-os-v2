@@ -2,18 +2,53 @@
   "active_jobs": [],
   "architecture_alternatives": [],
   "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
-  "checkpoint_sha": "87aaedeb9e5dbc299709e8c3f38ade735732a00c",
-  "completed_objectives": [],
-  "completed_waves": [],
-  "current_objective": "coding_worker_failover",
-  "current_wave": 0,
-  "external_blockers": [],
-  "failure_signatures": [],
-  "last_updated": "2026-08-26T17:13:20.047800+00:00",
-  "remaining_work": [],
-  "repair_counts": {},
+  "checkpoint_sha": "35528f295ba8fa37d68df5f81de496619b567d6c",
+  "completed_objectives": [
+    "rate_limit_detection",
+    "handoff_persistence",
+    "bounded_opencode_adapter",
+    "local_failover_canary",
+    "proof_diagnosis",
+    "natural_cycle_watchdog",
+    "telegram_governed_routing"
+  ],
+  "completed_waves": [
+    "WAVE_0_CODING_WORKER_FAILOVER_PARTIAL",
+    "WAVE_2_PROOF_WATCHDOG_INTEGRATION"
+  ],
+  "current_objective": "capability_proof_and_experience_closure",
+  "current_wave": 3,
+  "external_blockers": [
+    "OpenCode provider execution timed out; MiMo/Kilo not certified"
+  ],
+  "failure_signatures": [
+    "tests.run_mutable_snapshot_contract_failures",
+    "opencode_execution_timeout"
+  ],
+  "last_updated": "2026-08-26T17:39:23.535392+00:00",
+  "remaining_work": [
+    "prove_registered_capabilities",
+    "complete_self_repair_executor",
+    "visual_critic_browser_loop",
+    "voice_production_and_human_microphone",
+    "avatar_tts",
+    "forex_research_os_evidence",
+    "admin_client_portal_authenticated_visual_acceptance",
+    "candidate_canary",
+    "ray_production_approval",
+    "production_verification",
+    "overnight_burnin"
+  ],
+  "repair_counts": {
+    "opencode_execution_timeout": 1,
+    "tests.run_mutable_snapshot_contract_failures": 0
+  },
   "status": "ACTIVE",
-  "true_gates": [],
+  "true_gates": [
+    "Ray microphone test",
+    "Ray production approval",
+    "authenticated Admin/Client Portal acceptance"
+  ],
   "worker_assignments": {
     "failover-b0d5d891": "local"
   }
