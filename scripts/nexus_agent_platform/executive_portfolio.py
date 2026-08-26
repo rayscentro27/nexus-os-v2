@@ -20,6 +20,7 @@ PORTFOLIO_DIR = ROOT / "reports" / "phase16a"
 PORTFOLIO_JSON = PORTFOLIO_DIR / "executive_portfolio_latest.json"
 PORTFOLIO_BRIEF = PORTFOLIO_DIR / "executive_daily_brief.md"
 EXECUTION_RECEIPT_DIR = PORTFOLIO_DIR / "execution_receipts"
+OBJECTIVE_STATE_PATH = PORTFOLIO_DIR / "objective_state.json"
 LANE_WEIGHTS = {"PRODUCT": 40, "BUSINESS": 40, "RELIABILITY": 25, "INTELLIGENCE": 20, "RESEARCH": 10, "MAINTENANCE": 5}
 STATUSES = {"BACKLOG", "READY", "ACTIVE", "WAITING_HUMAN", "BLOCKED_INTERNAL", "BLOCKED_EXTERNAL", "RECOVERING", "PARKED", "COMPLETED", "CANCELLED"}
 BLOCKER_CLASSES = {"INTERNAL_REPAIRABLE", "INTERNAL_ARCHITECTURAL", "EXTERNAL_SERVICE", "CREDENTIAL_REQUIRED", "HUMAN_APPROVAL", "HUMAN_SUBJECTIVE_TEST", "SECURITY_GOVERNANCE", "DEPENDENCY", "CAPACITY", "UNKNOWN"}
@@ -149,7 +150,7 @@ def seed_objectives(receipt_root: Path | None = None) -> List[PortfolioObjective
         voice_status, voice_stage = "BLOCKED_INTERNAL", "RECEIPT_UNKNOWN"
     now = _now()
     common = {"created_at": now, "updated_at": now}
-    return [
+    objectives = [
         PortfolioObjective("reliability.voice_release_recovery", "Voice autonomous release recovery", "RELIABILITY", "GoClear", "Voice release", "Repair and prepare the bounded Voice release without production mutation.", "A tested governed candidate or truthful blocker.", business_value=7, product_impact=8, urgency=8, risk=9, status=voice_status, current_stage=voice_stage, blocked_by=[blocker] if blocker else [], human_gate=voice_status == "WAITING_HUMAN", human_gate_reason="Ray approval or microphone test" if voice_status == "WAITING_HUMAN" else "", repair_cycles_used=0, next_action="WAIT_FOR_RAY" if voice_status == "WAITING_HUMAN" else "RECOVER", receipt_refs=[str(voice_receipt)], **common),
         PortfolioObjective("reliability.mission_control_freshness", "Mission Control freshness", "RELIABILITY", "Nexus", "Mission Control", "Keep portfolio and loop read models truthful and fresh.", "Fresh read model or explicit STALE/UNKNOWN evidence.", business_value=6, product_impact=7, urgency=6, status="READY", current_stage="READ_MODEL", next_action="AUDIT", **common),
         PortfolioObjective("product.experience_2", "Experience 2.0 final certification", "PRODUCT", "GoClear", "Experience 2.0", "Advance the next bounded product experience certification.", "Tested product increment ready for its true gate.", business_value=8, product_impact=9, urgency=7, status="READY", current_stage="BACKLOG", next_action="PLAN", **common),
@@ -165,6 +166,19 @@ def seed_objectives(receipt_root: Path | None = None) -> List[PortfolioObjective
         PortfolioObjective("reliability.hermes_approval_health", "Hermes decision and approval health", "RELIABILITY", "Nexus", "Hermes", "Certify authority, evidence, approval, execution, and response boundaries.", "Decision trace and approval audit evidence.", business_value=8, product_impact=7, urgency=7, status="READY", current_stage="AUDIT", next_action="AUDIT", **common),
         PortfolioObjective("maintenance.idea_inbox", "Idea Inbox", "MAINTENANCE", "Nexus", "Idea Inbox", "Capture Ray ideas without automatically creating engineering work.", "Deduplicated idea receipts available for later review.", business_value=5, product_impact=4, urgency=3, status="READY", current_stage="CAPTURE", next_action="CAPTURE", **common),
     ]
+    state_path = PORTFOLIO_DIR / "objective_state.json"
+    try:
+        persisted = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        persisted = {}
+    for item in objectives:
+        saved = persisted.get(item.objective_id, {}) if isinstance(persisted, dict) else {}
+        if not isinstance(saved, dict):
+            continue
+        for key in ("status", "current_stage", "repair_cycles_used", "actual_effort", "last_material_change", "next_action", "blocked_by", "human_gate", "human_gate_reason", "receipt_refs"):
+            if key in saved:
+                setattr(item, key, saved[key])
+    return objectives
 
 
 def plan_portfolio(objectives: Sequence[PortfolioObjective], *, cycle_id: str = "executive-cycle") -> Dict[str, Any]:
@@ -183,7 +197,10 @@ def plan_portfolio(objectives: Sequence[PortfolioObjective], *, cycle_id: str = 
         row = {"objective_id": objective.objective_id, "lane": objective.lane, "score": score, "reason": reason, "capability": assigned, "expected_artifact": objective.expected_outcome}
         if objective.human_gate or objective.status == "WAITING_HUMAN":
             waiting.append({**row, "required_action": objective.human_gate_reason or objective.next_action})
-        elif objective.status in {"BLOCKED_INTERNAL", "BLOCKED_EXTERNAL", "PARKED"}:
+        elif objective.status == "BLOCKED_INTERNAL" and objective.repair_cycles_used < objective.repair_budget:
+            selected.append(row)
+            lane_selected.add(objective.lane)
+        elif objective.status in {"BLOCKED_EXTERNAL", "PARKED"} or (objective.status == "BLOCKED_INTERNAL" and objective.repair_cycles_used >= objective.repair_budget):
             blocked.append({**row, "blocker": objective.blocked_by or [objective.next_action]})
         elif objective.status in {"READY", "RECOVERING", "ACTIVE"} and objective.autonomous_work_available and objective.lane not in lane_selected:
             selected.append(row)
@@ -214,6 +231,8 @@ def _execution_state(result: Mapping[str, Any]) -> str:
         return "COMPLETED" if str(result.get("status", "")).upper() == "COMPLETED" else "MATERIAL_PROGRESS"
     if str(result.get("status", "")).upper() == "NO_CHANGE":
         return "NO_CHANGE"
+    if str(result.get("status", "")).upper() in {"QUEUED", "DISPATCH_QUEUED"}:
+        return "DISPATCH_QUEUED"
     return "DISPATCHED"
 
 
@@ -227,6 +246,7 @@ def dispatch_selected_objectives(
     *,
     dispatchers: Mapping[str, Any] | None = None,
     receipt_dir: Path | None = None,
+    state_path: Path | None = None,
 ) -> Dict[str, Any]:
     """Dispatch selected rows through injected existing-capability adapters.
 
@@ -251,7 +271,7 @@ def dispatch_selected_objectives(
             "objective_id": objective_id, "cycle_id": plan.get("cycle_id"),
             "selected_at": selected_at, "dispatch_status": "SELECTED",
             "execution_state": "SELECTED", "executor": executor,
-            "work_order_id": None, "mission_id": None, "started_at": None,
+            "work_order_id": None, "mission_id": None, "downstream_id": None, "started_at": None,
             "completed_at": None, "material_change": False, "result": None,
             "blocker": None, "human_gate": False, "cost": 0.0, "receipt_refs": [],
         }
@@ -269,14 +289,26 @@ def dispatch_selected_objectives(
                     outcome = adapter(objective, row) if objective is not None else adapter(row)
                     if not isinstance(outcome, Mapping):
                         outcome = {"status": "FAILED", "blocker": "MALFORMED_EXECUTOR_RESULT"}
-                    receipt.update({key: outcome[key] for key in ("work_order_id", "mission_id", "completed_at", "material_change", "result", "blocker", "human_gate", "cost", "receipt_refs") if key in outcome})
+                    receipt.update({key: outcome[key] for key in ("work_order_id", "mission_id", "downstream_id", "completed_at", "material_change", "result", "blocker", "human_gate", "cost", "receipt_refs") if key in outcome})
                     receipt["execution_state"] = _execution_state(outcome)
-                    receipt["dispatch_status"] = "DISPATCHED" if receipt["execution_state"] not in {"BLOCKED", "FAILED"} else receipt["execution_state"]
+                    receipt["dispatch_status"] = receipt["execution_state"] if receipt["execution_state"] in {"BLOCKED", "FAILED", "DISPATCH_QUEUED"} else "DISPATCHED"
                     receipt["completed_at"] = receipt.get("completed_at") or utc_now()
                 except Exception as exc:  # bounded adapter failure, no traceback in receipt
                     receipt.update(dispatch_status="FAILED", execution_state="FAILED", blocker=f"EXECUTOR_ERROR:{type(exc).__name__}", result="FAILED", completed_at=utc_now())
         atomic_write_json(_receipt_path(receipt_dir, str(plan.get("cycle_id")), objective_id), receipt)
         receipts.append(receipt)
+    if state_path:
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        prior = {}
+        try:
+            prior = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            pass
+        for receipt in receipts:
+            item = dict(prior.get(receipt["objective_id"], {}))
+            item.update({"objective_id": receipt["objective_id"], "generation": item.get("generation", 1), "selected_at": receipt["selected_at"], "last_dispatch_at": receipt.get("started_at"), "last_dispatch_id": receipt.get("downstream_id") or receipt.get("mission_id") or receipt.get("work_order_id"), "downstream_ids": [x for x in (receipt.get("downstream_id"), receipt.get("mission_id"), receipt.get("work_order_id")) if x], "execution_state": receipt["execution_state"], "last_result": receipt.get("result"), "blocker": receipt.get("blocker"), "receipt_refs": receipt.get("receipt_refs", []), "last_reconciled_at": utc_now()})
+            prior[receipt["objective_id"]] = item
+        atomic_write_json(state_path, prior)
     return {
         "receipts": receipts,
         "selected": [r["objective_id"] for r in receipts],
@@ -291,25 +323,47 @@ def dispatch_selected_objectives(
 
 
 def phase15_existing_dispatchers() -> Dict[str, Any]:
-    """Return fixed asynchronous handoffs to capabilities already owned by Phase 15.
+    """Return real, bounded handoffs to the existing Phase 15 capabilities."""
+    def product_dispatch(objective: PortfolioObjective, row: Mapping[str, Any]) -> Dict[str, Any]:
+        from nexus_product_evolution.loop import MissionContract
+        from nexus_product_evolution.telegram_control import RECEIPT_DIR as mission_dir, register_mission
+        key = f"portfolio:{objective.objective_id}"
+        if objective.objective_id == "reliability.voice_release_recovery":
+            existing_voice = mission_dir / "telegram-20260824172054-077bf5a7.json"
+            if existing_voice.exists():
+                return {"status": "BLOCKED", "mission_id": "telegram-20260824172054-077bf5a7", "blocker": "EXISTING_VOICE_LINEAGE_REQUIRES_GOVERNED_RECOVERY", "result": "EXISTING_VOICE_LINEAGE_BOUND", "receipt_refs": [str(existing_voice)]}
+        for path in mission_dir.glob("*.json"):
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+                if (value.get("result") or {}).get("dispatch", {}).get("portfolio_idempotency_key") == key:
+                    return {"status": "DISPATCH_QUEUED", "mission_id": (value.get("result") or {}).get("mission_id"), "result": "EXISTING_PRODUCT_EVOLUTION_MISSION_REUSED", "receipt_refs": [str(path)]}
+            except (OSError, ValueError):
+                continue
+        contract = MissionContract(goal=objective.goal, user_visible_outcome=objective.expected_outcome, acceptance_criteria=[objective.expected_outcome], allowed_files=[], locked_systems=["production", "approval controls"], capability_candidates=[objective.assigned_capability or "Builder/Codex"], security_boundaries=["no production mutation", "Ray approval remains required"], human_only_gates=[objective.human_gate_reason] if objective.human_gate_reason else [])
+        registered = register_mission(contract)
+        path = Path(registered["receipt_path"])
+        value = json.loads(path.read_text(encoding="utf-8"))
+        value["result"]["dispatch"]["portfolio_objective_id"] = objective.objective_id
+        value["result"]["dispatch"]["portfolio_idempotency_key"] = key
+        path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        return {"status": "DISPATCH_QUEUED", "mission_id": registered["mission_id"], "result": "PRODUCT_EVOLUTION_MISSION_CREATED", "receipt_refs": [str(path)]}
 
-    These adapters enqueue/identify work for the existing consumers; they do
-    not execute a second scheduler or synchronously run long jobs.
-    """
-    def handoff(capability: str):
+    def request_dispatch(kind: str):
         def dispatch(objective: PortfolioObjective, row: Mapping[str, Any]) -> Dict[str, Any]:
-            return {
-                "status": "DISPATCH_QUEUED",
-                "result": f"HANDOFF_TO_EXISTING_{capability}",
-                "receipt_refs": [f"phase15:{capability}:{objective.objective_id}"],
-            }
+            request_id = f"portfolio-{_stable_id((objective.objective_id, kind))}"
+            path = ROOT / "data/runtime" / ("alpha_research" if kind == "ALPHA_RESEARCH" else "nexus_loops") / "portfolio_requests.jsonl"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            existing = path.read_text(encoding="utf-8") if path.exists() else ""
+            if request_id not in existing:
+                with path.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps({"request_id": request_id, "objective_id": objective.objective_id, "question": objective.goal, "required_artifact": objective.expected_outcome, "cost_budget": 0.0, "sensitivity": "internal", "idempotency_key": request_id, "created_at": utc_now()}) + "\n")
+            return {"status": "DISPATCH_QUEUED", "downstream_id": request_id, "result": "CANONICAL_REQUEST_PERSISTED", "receipt_refs": [str(path)]}
         return dispatch
     return {
-        "PRODUCT_EVOLUTION_OR_RELEASE_RECOVERY": handoff("PRODUCT_EVOLUTION_CONSUMER"),
-        "PRODUCT_EVOLUTION_OR_BUILDER": handoff("PRODUCT_EVOLUTION_BUILDER"),
-        "REVENUE_OPPORTUNITY_LOOP": handoff("DETERMINISTIC_BUSINESS_LOOP"),
-        "ALPHA_RESEARCH": handoff("ALPHA_RESEARCH"),
-        "EXISTING_DETERMINISTIC_LOOP": handoff("DETERMINISTIC_LOOP"),
+        "PRODUCT_EVOLUTION_OR_RELEASE_RECOVERY": product_dispatch,
+        "PRODUCT_EVOLUTION_OR_BUILDER": product_dispatch,
+        "REVENUE_OPPORTUNITY_LOOP": request_dispatch("REVENUE_OPPORTUNITY_LOOP"),
+        "ALPHA_RESEARCH": request_dispatch("ALPHA_RESEARCH"),
     }
 
 
@@ -324,6 +378,51 @@ def build_trust_metrics(plan: Mapping[str, Any], objectives: Sequence[PortfolioO
         "OBJECTIVE_MONOPOLY_RATE": round(1 / selected, 3) if selected == 1 else 0.0,
         "TRUST_LINE": "bounded_deterministic_portfolio_read_model",
     }
+
+
+def reconcile_portfolio_execution(portfolio_receipt: Mapping[str, Any], *, product_evolution: Mapping[str, Any] | None = None, live_loops: Mapping[str, Any] | None = None, live_research: Mapping[str, Any] | None = None) -> Dict[str, Any]:
+    """Read canonical downstream results and update only portfolio receipts."""
+    value = json.loads(json.dumps(portfolio_receipt, default=str))
+    execution = value.get("plan", {}).get("execution", {})
+    live_loops = live_loops or {}
+    loop_map = {"business.goclear_revenue": "revenue_opportunity_loop", "business.opportunity_loop": "seo_opportunity_loop"}
+    for receipt in execution.get("receipts", []):
+        mission_id = receipt.get("mission_id")
+        downstream = None
+        if mission_id:
+            path = ROOT / "reports/product_evolution" / f"{mission_id}.json"
+            try: downstream = json.loads(path.read_text(encoding="utf-8")).get("result", {})
+            except (OSError, ValueError): downstream = None
+        loop_id = loop_map.get(receipt.get("objective_id"))
+        loop_result = (live_loops.get("loops") or {}).get(loop_id) if loop_id else None
+        if isinstance(downstream, dict):
+            receipt["result"] = downstream.get("status") or downstream.get("current_stage")
+            receipt["blocker"] = downstream.get("blocker")
+            receipt["human_gate"] = downstream.get("current_stage") == "HUMAN_GATE"
+            receipt["execution_state"] = "WAITING_HUMAN" if receipt["human_gate"] else "BLOCKED" if receipt["blocker"] else "RUNNING" if downstream.get("status") in {"QUEUED", "RUNNING"} else "COMPLETED"
+            receipt["receipt_refs"] = list(dict.fromkeys([*receipt.get("receipt_refs", []), str(path)]))
+        elif isinstance(loop_result, dict):
+            receipt["downstream_id"] = loop_result.get("run_id") or receipt.get("downstream_id")
+            receipt["result"] = loop_result.get("status") or loop_result.get("delta_status")
+            receipt["material_change"] = loop_result.get("delta_status") == "CHANGED"
+            receipt["execution_state"] = "MATERIAL_PROGRESS" if receipt["material_change"] else "NO_CHANGE" if loop_result.get("delta_status") == "NO_CHANGE" else "COMPLETED"
+            receipt["receipt_refs"] = list(dict.fromkeys([*receipt.get("receipt_refs", []), "reports/hermes_modernization/live_loop_results.json"]))
+    execution["dispatched"] = [r["objective_id"] for r in execution.get("receipts", []) if r.get("execution_state") in {"DISPATCH_QUEUED", "DISPATCHED", "RUNNING", "MATERIAL_PROGRESS", "NO_CHANGE", "COMPLETED"} and (r.get("mission_id") or r.get("work_order_id") or r.get("downstream_id"))]
+    execution["running"] = [r["objective_id"] for r in execution.get("receipts", []) if r.get("execution_state") in {"DISPATCH_QUEUED", "DISPATCHED", "RUNNING"}]
+    execution["materially_advanced"] = [r["objective_id"] for r in execution.get("receipts", []) if r.get("execution_state") in {"MATERIAL_PROGRESS", "COMPLETED"} and r.get("material_change") is True]
+    execution["no_change"] = [r["objective_id"] for r in execution.get("receipts", []) if r.get("execution_state") == "NO_CHANGE"]
+    execution["blocked"] = [r["objective_id"] for r in execution.get("receipts", []) if r.get("execution_state") == "BLOCKED"]
+    value["plan"]["execution"] = execution
+    state_path = PORTFOLIO_DIR / "objective_state.json"
+    try: state = json.loads(state_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError): state = {}
+    for receipt in execution.get("receipts", []):
+        item = dict(state.get(receipt["objective_id"], {}))
+        item.update({"objective_id": receipt["objective_id"], "execution_state": receipt.get("execution_state"), "last_result": receipt.get("result"), "blocker": receipt.get("blocker"), "last_material_change": receipt.get("material_change"), "last_reconciled_at": utc_now(), "receipt_refs": receipt.get("receipt_refs", [])})
+        state[receipt["objective_id"]] = item
+    atomic_write_json(state_path, state)
+    atomic_write_json(PORTFOLIO_JSON, value)
+    return value
 
 
 def render_daily_brief(plan: Mapping[str, Any], objectives: Sequence[PortfolioObjective], metrics: Mapping[str, Any]) -> str:
@@ -345,10 +444,10 @@ def render_daily_brief(plan: Mapping[str, Any], objectives: Sequence[PortfolioOb
     ])
 
 
-def run_executive_portfolio_cycle(*, cycle_id: str = "canonical-phase15", objectives: Sequence[PortfolioObjective] | None = None, dispatchers: Mapping[str, Any] | None = None, receipt_dir: Path | None = None) -> Dict[str, Any]:
+def run_executive_portfolio_cycle(*, cycle_id: str = "canonical-phase15", objectives: Sequence[PortfolioObjective] | None = None, dispatchers: Mapping[str, Any] | None = None, receipt_dir: Path | None = None, state_path: Path | None = None) -> Dict[str, Any]:
     objectives = list(objectives) if objectives is not None else seed_objectives()
     plan = plan_portfolio(objectives, cycle_id=cycle_id)
-    plan["execution"] = dispatch_selected_objectives(plan, objectives, dispatchers=dispatchers, receipt_dir=receipt_dir)
+    plan["execution"] = dispatch_selected_objectives(plan, objectives, dispatchers=dispatchers, receipt_dir=receipt_dir, state_path=state_path or (PORTFOLIO_DIR / "objective_state.json"))
     metrics = build_trust_metrics(plan, objectives)
     receipt = {"cycle_id": cycle_id, "generated_at": utc_now(), "objectives": [item.to_dict() for item in objectives], "plan": plan, "metrics": metrics, "authority": {"production_approval": "RAY_ONLY", "live_trading": "DISABLED", "external_outreach": "DISABLED"}}
     PORTFOLIO_DIR.mkdir(parents=True, exist_ok=True)

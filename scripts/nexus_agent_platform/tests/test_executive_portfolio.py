@@ -42,7 +42,7 @@ def test_voice_blocker_does_not_monopolize_portfolio():
     ]
     plan = plan_portfolio(objectives, cycle_id="simulation")
     selected = {row["objective_id"] for row in plan["selected"]}
-    assert "voice" not in selected
+    assert "voice" in selected
     assert "experience" in selected or "revenue" in selected
     assert len(selected) >= 2
 
@@ -108,7 +108,7 @@ def test_real_dispatch_calls_existing_capability_adapters_and_records_progress(t
     execution = dispatch_selected_objectives(plan, objectives, dispatchers=dispatchers, receipt_dir=tmp_path)
     assert {name for name, _ in calls} == {"product", "business", "research"}
     assert set(execution["materially_advanced"]) == {"experience", "revenue", "research"}
-    assert len(list(tmp_path.glob("*.json"))) == 3
+    assert len(list(tmp_path.glob("*.json"))) == 4
     assert all("objective_id" in json.loads(path.read_text()) for path in tmp_path.glob("*.json"))
 
 
@@ -139,3 +139,20 @@ def test_portfolio_status_is_read_only_and_distinguishes_plan_from_progress(tmp_
     assert "Dispatched: None" in response
     assert "Material progress: None" in response
     assert report.read_text() == before
+
+
+def test_phase15_adapters_create_real_product_and_research_records(tmp_path, monkeypatch):
+    import nexus_agent_platform.executive_portfolio as portfolio
+    import nexus_product_evolution.telegram_control as control
+    monkeypatch.setattr(portfolio, "ROOT", tmp_path)
+    monkeypatch.setattr(portfolio, "PORTFOLIO_DIR", tmp_path / "phase16a")
+    monkeypatch.setattr(control, "RECEIPT_DIR", tmp_path / "product_evolution")
+    objectives = [objective("experience", "PRODUCT"), objective("forex", "INTELLIGENCE")]
+    plan = plan_portfolio(objectives, cycle_id="real-handoff")
+    execution = dispatch_selected_objectives(plan, objectives, dispatchers=portfolio.phase15_existing_dispatchers(), receipt_dir=tmp_path / "execution", state_path=tmp_path / "state.json")
+    product = next(row for row in execution["receipts"] if row["objective_id"] == "experience")
+    research = next(row for row in execution["receipts"] if row["objective_id"] == "forex")
+    assert product["mission_id"]
+    assert research["downstream_id"]
+    assert (tmp_path / "product_evolution" / f"{product['mission_id']}.json").exists()
+    assert (tmp_path / "data/runtime/alpha_research/portfolio_requests.jsonl").exists()

@@ -33,8 +33,8 @@ from nexus_agent_platform.phase15.scheduler_health import begin_dispatch, comple
 from nexus_agent_platform.phase15.mission_control_snapshot import refresh_mission_control_snapshot
 from nexus_agent_platform.phase15.stripe_proof import stripe_test_mode_proof
 from nexus_product_evolution.consumer import consume_queued_missions
-from nexus_agent_platform.executive_portfolio import phase15_existing_dispatchers, run_executive_portfolio_cycle
-from nexus_agent_platform.overnight_autonomy import build_completion_audit
+from nexus_agent_platform.executive_portfolio import phase15_existing_dispatchers, reconcile_portfolio_execution, run_executive_portfolio_cycle
+from nexus_agent_platform.overnight_autonomy import build_completion_audit, refresh_campaign_lifecycle
 
 
 def _write_policy_doc() -> None:
@@ -140,16 +140,18 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
     results: Dict[str, Any] = {"phase": "PHASE 15 — LIVE INTERNAL OPERATIONS", "generated_at": utc_now()}
 
     _write_policy_doc()
-    results["product_evolution_dispatch"] = consume_queued_missions(scheduler_instance=str(scheduler_context.get("scheduler_instance", "UNKNOWN")))
-    # Executive Portfolio is a bounded handoff layer above existing loops; it
-    # records dispatch receipts but does not execute workers or create a scheduler.
+    results["campaign_lifecycle"] = refresh_campaign_lifecycle()
+    # Portfolio creates real downstream records first; the existing consumer
+    # can then claim Product Evolution work in this same natural cycle.
     results["executive_portfolio"] = run_executive_portfolio_cycle(cycle_id=str(scheduler_context.get("scheduler_instance", "canonical-phase15")), dispatchers=phase15_existing_dispatchers())
+    results["product_evolution_dispatch"] = consume_queued_missions(scheduler_instance=str(scheduler_context.get("scheduler_instance", "UNKNOWN")))
     results["completion_audit"] = build_completion_audit()
 
     results["live_loops"] = run_live_loops()
     loop_report = results["live_loops"]
 
     results["live_research"] = run_live_research_session()
+    results["executive_portfolio"] = reconcile_portfolio_execution(results["executive_portfolio"], product_evolution=results["product_evolution_dispatch"], live_loops=results["live_loops"], live_research=results["live_research"])
     intake_artifacts = _intake_artifacts(loop_report)
     if intake_artifacts:
         results["research_decisions"] = build_research_decisions(intake_artifacts)

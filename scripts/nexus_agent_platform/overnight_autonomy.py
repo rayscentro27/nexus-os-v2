@@ -162,8 +162,51 @@ def arm_overnight_campaign(*, now: str | None = None) -> Dict[str, Any]:
     return campaign
 
 
+def audit_portfolio_dispatches(*, receipt_dir: Path = ROOT / "reports/phase16a/execution_receipts") -> Dict[str, Any]:
+    """Produce an evidence-only audit of portfolio dispatch claims."""
+    rows = []
+    for path in receipt_dir.glob("*.json") if receipt_dir.exists() else []:
+        row = _read_json(path, {})
+        if not isinstance(row, dict):
+            continue
+        downstream = row.get("mission_id") or row.get("work_order_id") or row.get("downstream_id")
+        rows.append({"objective_id": row.get("objective_id"), "selected_at": row.get("selected_at"), "reported_dispatch_state": row.get("dispatch_status"), "real_downstream_record_exists": bool(downstream), "downstream_type": "mission" if row.get("mission_id") else "work_order" if row.get("work_order_id") else "request" if row.get("downstream_id") else "NONE", "downstream_id": downstream, "executor_started": bool(row.get("started_at")), "executor_completed": bool(row.get("completed_at")), "result_receipt": bool(row.get("receipt_refs")), "material_change": bool(row.get("material_change")), "truthful_final_state": row.get("execution_state", "UNKNOWN"), "source_receipt": str(path)})
+    summary = {"generated_at": utc_now(), "rows": rows, "reported_dispatches": sum(row["reported_dispatch_state"] in {"DISPATCHED", "DISPATCH_QUEUED"} for row in rows), "real_downstream_records": sum(row["real_downstream_record_exists"] for row in rows), "synthetic_false_dispatches": sum(row["reported_dispatch_state"] == "DISPATCHED" and not row["real_downstream_record_exists"] for row in rows), "material_progress": sum(row["material_change"] for row in rows), "source": "persisted portfolio execution receipts only"}
+    path = ROOT / "reports/phase16a/overnight_dispatch_audit.json"
+    atomic_write_json(path, summary)
+    return summary
+
+
 def campaign_status() -> Dict[str, Any]:
     return _read_json(CAMPAIGN_PATH, {"status": "NOT_ARMED", "campaign_id": OVERNIGHT_ID})
+
+
+def refresh_campaign_lifecycle(*, now: datetime | None = None) -> Dict[str, Any]:
+    campaign = campaign_status()
+    if campaign.get("status") == "ARMED":
+        try:
+            end = datetime.fromisoformat(str(campaign.get("priority_window_end")))
+            current = now or datetime.now(end.tzinfo or timezone.utc)
+            if current >= end:
+                campaign = {**campaign, "status": "WINDOW_COMPLETE", "window_completed_at": current.isoformat()}
+                atomic_write_json(CAMPAIGN_PATH, campaign)
+        except (TypeError, ValueError):
+            pass
+    return campaign
+
+
+def arm_catchup_campaign(*, now: datetime | None = None) -> Dict[str, Any]:
+    local = now or datetime.now(ZoneInfo("America/Phoenix"))
+    end = local.replace(hour=18, minute=0, second=0, microsecond=0)
+    if local >= end:
+        end = end + timedelta(days=1)
+    prior = campaign_status()
+    history = list(prior.get("campaign_history") or [])
+    if prior.get("campaign_id") and prior.get("campaign_id") != "NEXUS_CATCHUP_2026_08_26":
+        history.append(prior)
+    campaign = {"campaign_id": "NEXUS_CATCHUP_2026_08_26", "status": "ARMED", "started_at": local.isoformat(), "priority_window_end": end.isoformat(), "scheduler": "EXISTING_PHASE15_ONLY", "manual_scheduler_trigger": "NO", "production_mutation": "NO", "objectives": ["reliability.voice_release_recovery", "product.experience_2", "business.goclear_revenue", "intelligence.forex_foundation", "intelligence.creative", "intelligence.model_control", "product.nexus_completion_audit", "reliability.mission_control_freshness", "product.goclear_creative_rebuild"], "evidence": "ARMED_ONLY; no work is fabricated", "campaign_history": history}
+    atomic_write_json(CAMPAIGN_PATH, campaign)
+    return campaign
 
 
 def build_completion_audit(*, root: Path = ROOT) -> Dict[str, Any]:
@@ -208,9 +251,19 @@ def morning_report(*, portfolio_path: Path = ROOT / "reports/phase16a/executive_
     ideas = list_ideas()
     audit = _read_json(CERT_DIR / "nexus_completion_audit_latest.json", {})
     summary = audit.get("summary", {})
-    return "\n".join(["NEXUS MORNING REPORT", "", f"Overnight window: {campaign_status().get('priority_window_end', 'UNKNOWN')}",
+    campaign = campaign_status()
+    receipts = []
+    receipt_dir = ROOT / "reports/phase16a/execution_receipts"
+    for path in receipt_dir.glob("*.json") if receipt_dir.exists() else []:
+        row = _read_json(path, {})
+        if isinstance(row, dict) and row.get("cycle_id"):
+            receipts.append(row)
+    dispatched = [row for row in receipts if row.get("mission_id") or row.get("work_order_id") or row.get("downstream_id")]
+    progress = [row for row in receipts if row.get("material_change") is True]
+    blocked = [row for row in receipts if row.get("execution_state") == "BLOCKED"]
+    return "\n".join(["NEXUS MORNING REPORT", "", f"Overnight window: {campaign.get('started_at', 'UNKNOWN')} → {campaign.get('priority_window_end', 'UNKNOWN')}", f"Natural downstream handoffs: {len(dispatched)} | material progress: {len(progress)} | blocked: {len(blocked)}",
         "", f"COMPLETED\n- {', '.join(execution.get('completed', [])) or 'None evidenced'}",
-        f"MATERIAL PROGRESS\n- {', '.join(execution.get('materially_advanced', [])) or 'None evidenced'}",
+        f"MATERIAL PROGRESS\n- {', '.join(execution.get('materially_advanced', [])) or ('Evidence receipts: ' + str(len(progress)) if progress else 'None evidenced')}",
         f"VOICE\n- See /portfolio; human microphone/release gate remains separate",
         "FOREX\n- Research-only objective remains governed", "CREATIVE 2.0\n- Research/architecture objective remains governed",
         "MODEL CONTROL\n- Deterministic routing architecture active", "EXPERIENCE 2.0\n- Evidence-dependent", "GOCLEAR\n- Internal revenue work remains enabled; outreach blocked",
