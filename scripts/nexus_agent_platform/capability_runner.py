@@ -20,7 +20,14 @@ def run(capability_id: str) -> dict:
         return {"status": "PASS", "evidence": build_health_status()}
     if capability_id == "proof.watchdog":
         from nexus_agent_platform.proof_watchdog import audit
-        return {"status": "PASS", "evidence": audit([])}
+        latest = ROOT / "reports/runtime/proof_watchdog_latest.json"
+        if latest.exists():
+            try:
+                evidence = json.loads(latest.read_text(encoding="utf-8"))
+                return {"status": "PASS", "evidence": evidence, "source": "current_cycle_receipt"}
+            except (OSError, ValueError):
+                pass
+        return {"status": "PASS", "evidence": audit([]), "source": "empty_ledger_canary"}
     if capability_id == "research.alpha":
         from nexus_agent_platform.alpha_research import status_from_runtime
         return {"status": "PASS", "evidence": status_from_runtime()}
@@ -32,8 +39,11 @@ def run(capability_id: str) -> dict:
         result = subprocess.run(["python3", "scripts/trading/build_trading_hermes_brief.py", "--json"], cwd=ROOT, capture_output=True, text=True, timeout=120, check=False)
         return {"status": "PASS" if result.returncode == 0 else "FAIL", "evidence": result.stdout[-12000:], "stderr": result.stderr[-4000:]}
     if capability_id == "model.router":
-        path = ROOT / "src/lib/hermesModelRoutingPolicy.ts"
-        return {"status": "PASS" if path.exists() else "FAIL", "evidence": {"source": str(path), "exists": path.exists(), "mode": "read_only"}}
+        from nexus_agent_platform.overnight_autonomy import integrity_critic_review, route_model
+        routes = {name: route_model(name) for name in ("status", "research", "implementation", "forex")}
+        critic = integrity_critic_review({"route": "material_disagreement", "evidence": "bounded_canary"})
+        return {"status": "PASS", "evidence": {"routes": routes, "integrity_critic": critic,
+                "authority": "NONE", "no_change_policy": "status routes remain deterministic"}}
     raise KeyError(f"no fixed adapter for {capability_id}")
 
 

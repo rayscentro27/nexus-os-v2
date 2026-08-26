@@ -70,6 +70,11 @@ try:
 except Exception:
     TEMPORAL_AVAILABLE = False
 
+try:
+    from nexus_agent_platform.hermes_operator import operate as operate_governed_capability
+except Exception:
+    operate_governed_capability = None
+
 from nexus_agent_platform.runtime.execution_telemetry import execution_run
 
 # Active context import
@@ -1467,6 +1472,23 @@ def classify_nexus_pre_intent(text):
 
 
 def handle_nexus_pre_route(text, mission=None):
+    # Route explicit operator requests through the canonical broker before the
+    # legacy advisory tools. The broker owns capability registration,
+    # approval policy, receipts, and the no-arbitrary-shell boundary.
+    if operate_governed_capability and re.search(r"\b(run|start|check|generate|launch)\b", text, re.I):
+        governed = operate_governed_capability(text, execute=True)
+        if governed.get("intent") == "execute":
+            receipt = governed.get("receipt") or {}
+            response = (f"Nexus governed capability: {governed.get('capability_id')}\n"
+                        f"Status: {governed.get('status', 'UNKNOWN')}\n"
+                        f"Receipt: {receipt.get('receipt_id', 'UNKNOWN')}\n"
+                        f"Evidence: {receipt.get('evidence_fingerprint', 'UNKNOWN')}\n"
+                        "Arbitrary shell: PROHIBITED")
+            if mission:
+                update_mission(mission, "ROUTED", selected_intent="governed_capability", selected_tool=governed.get("capability_id"))
+                update_mission(mission, "TOOL_COMPLETED", tool_ok=governed.get("status") == "PASS", tool_result_reference=receipt.get("receipt_id"))
+                update_mission(mission, "RESPONSE_COMPOSED")
+            return response
     intent, tool_name, confidence = classify_nexus_pre_intent(text)
     if not intent:
         return None
