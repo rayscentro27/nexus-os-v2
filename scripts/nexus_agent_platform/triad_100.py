@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -79,6 +80,11 @@ def run(output: Path = ROOT / "reports/runtime/nexus_triad_100_latest.json") -> 
         for agent in ("hermes", "alpha", "nova"):
             answer = _response(agent, item["prompt"])
             rows.append({**item, "agent": agent, "response": answer})
+            # Keep provider calls bounded and avoid converting a burst into a
+            # misleading capability failure. The receipts still preserve any
+            # genuine provider rate-limit/error result.
+            if agent != "hermes":
+                time.sleep(0.8)
     summary = {}
     for agent in ("hermes", "alpha", "nova"):
         selected = [r for r in rows if r["agent"] == agent]
@@ -89,7 +95,17 @@ def run(output: Path = ROOT / "reports/runtime/nexus_triad_100_latest.json") -> 
             cat_passed = sum(r["response"]["status"] == "PASS" for r in cat_rows)
             by_category[category] = {"passed": cat_passed, "total": len(cat_rows), "score_percent": round(cat_passed / len(cat_rows) * 100, 2)}
         summary[agent] = {"answered": passed, "total": len(selected), "score_percent": round(passed / len(selected) * 100, 2), "categories": by_category}
-    collaboration = {"status": "NOT_RUN", "score_percent": None, "scenario_ids": []}
+    collaboration_rows = []
+    hard = [item for item in scenarios() if item["category"] == "integrated_executive_scenarios"]
+    for item in hard:
+        alpha = _response("alpha", item["prompt"])
+        time.sleep(0.8)
+        nova = _response("nova", item["prompt"])
+        time.sleep(0.8)
+        hermes = _response("hermes", item["prompt"])
+        collaboration_rows.append({"scenario_id": item["scenario_id"], "prompt": item["prompt"], "alpha": alpha, "nova": nova, "hermes_reconciliation": hermes})
+    collaboration_passed = sum(all(row[agent]["status"] == "PASS" for agent in ("alpha", "nova", "hermes_reconciliation")) for row in collaboration_rows)
+    collaboration = {"status": "PASS" if collaboration_passed == len(collaboration_rows) else "FAIL", "score_percent": round(collaboration_passed / len(collaboration_rows) * 100, 2), "scenario_ids": [row["scenario_id"] for row in collaboration_rows], "responses": collaboration_rows}
     result = {"schema_version": "nexus.triad-100.v1", "status": "PASS" if all(v["score_percent"] >= 85 for v in summary.values()) else "FAIL", "scenario_count": len(scenarios()), "response_count": len(rows), "categories": {k: len(v) for k, v in CATEGORIES.items()}, "summary": summary, "collaboration": collaboration, "responses": rows, "generated_at": datetime.now(timezone.utc).isoformat(), "blind_rubric": "Scenarios contain prompts only; agent calls receive no expected-answer strings.", "scoring_note": "A response is not certified merely because it is non-empty; known error/help fallbacks fail the scenario."}
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
