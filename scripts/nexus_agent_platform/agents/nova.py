@@ -636,7 +636,28 @@ def _advisory_fallback(text: str) -> str:
             "Start by validating one customer segment and a repeatable lane or service, get written pricing and payment terms, and prove the margins "
             "with a small internal model before buying or leasing a truck."
         )
-    return "I couldn't complete that response right now, but the request was understood."
+    if any(term in lower for term in ("runtime", "right now", "system health", "process", "proof", "scheduler", "nexus doing")):
+        return (
+            "I cannot verify current Nexus runtime state from a model response alone. "
+            "Hermes must read the canonical telemetry and proof receipts before making a live-status claim. "
+            "I can critique the resulting evidence for gaps, stale timestamps, or unsupported conclusions."
+        )
+    if any(term in lower for term in ("research", "current", "source", "market", "voice architecture", "alternative")):
+        return (
+            "This requires fresh evidence. Alpha is the correct research owner; I should critique Alpha's sources, "
+            "assumptions, uncertainty, and alternatives after the evidence is returned. "
+            "No current claim should be made without those receipts."
+        )
+    if any(term in lower for term in ("funded", "arbitrary shell", "service secret", "destructive", "production")):
+        return (
+            "I would not authorize that as an unbounded action. Nexus must preserve the safety boundary, "
+            "use a governed capability or exact approval gate, and provide evidence before proceeding."
+        )
+    return (
+        "The model provider is unavailable for this turn. I will not invent an answer or evidence. "
+        "The safe next step is to preserve the request, identify the responsible Nexus capability, "
+        "and resume with a verified result or a bounded critique."
+    )
 
 
 # ─── Simple Utilities ──────────────────────────────────────
