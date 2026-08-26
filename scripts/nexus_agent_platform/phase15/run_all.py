@@ -35,6 +35,8 @@ from nexus_agent_platform.phase15.stripe_proof import stripe_test_mode_proof
 from nexus_product_evolution.consumer import consume_queued_missions
 from nexus_agent_platform.executive_portfolio import phase15_existing_dispatchers, reconcile_portfolio_execution, run_executive_portfolio_cycle
 from nexus_agent_platform.overnight_autonomy import build_completion_audit, refresh_campaign_lifecycle
+from nexus_agent_platform.proof_recovery import apply_recovery
+from nexus_agent_platform.proof_watchdog import audit as proof_audit
 
 
 def _write_policy_doc() -> None:
@@ -65,6 +67,42 @@ def _write_policy_doc() -> None:
 def _intake_artifacts(loop_report: Dict[str, Any]) -> List[Dict[str, Any]]:
     intake = loop_report.get("loops", {}).get("research_intake_loop", {})
     return intake.get("output_records", [])
+
+
+def _run_proof_watchdog(portfolio: Dict[str, Any], *, scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
+    """Emit current-cycle proof and bounded recovery decisions.
+
+    A recovery decision is not a repair success. The executor must attach a
+    fresh receipt before a later cycle can advance the objective stage.
+    """
+    rows = []
+    for item in portfolio.get("objectives", []):
+        if not isinstance(item, dict):
+            continue
+        execution = item.get("execution_state") or item.get("status") or "UNKNOWN"
+        health = execution if execution in {"ACTIVE", "DISPATCHED", "RUNNING", "RECOVERING"} else "UNKNOWN"
+        rows.append({
+            "objective_id": item.get("objective_id"),
+            "executor": item.get("lane") or item.get("owner") or "UNKNOWN",
+            "health": health,
+            "last_confirmed_stage": item.get("current_stage") or "S1_SELECTED",
+            "next_expected_stage": item.get("next_expected_stage"),
+            "proof_refs": item.get("receipt_refs") or [],
+            "failure_signature": item.get("failure_signature"),
+            "repair_cycles_used": item.get("repair_cycles_used", item.get("repair_count", 0)),
+        })
+    result = proof_audit(rows)
+    recovery = []
+    for row in result.get("objectives", []):
+        if row.get("health") == "STALLED":
+            source = next((candidate for candidate in rows if candidate.get("objective_id") == row.get("objective_id")), {})
+            recovery.append(apply_recovery({**source, **row}))
+    result["recovery_decisions"] = recovery
+    result["scheduler_instance"] = scheduler_context.get("scheduler_instance")
+    result["proof_contract"] = "fresh receipt required for every stage transition"
+    proof_path = Path("reports/runtime/proof_watchdog_latest.json")
+    atomic_write_json(proof_path, result)
+    return result
 
 
 def _update_state(health: Dict[str, Any], live_loops: Dict[str, Any], research: Dict[str, Any]) -> None:
@@ -152,6 +190,7 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
 
     results["live_research"] = run_live_research_session()
     results["executive_portfolio"] = reconcile_portfolio_execution(results["executive_portfolio"], product_evolution=results["product_evolution_dispatch"], live_loops=results["live_loops"], live_research=results["live_research"])
+    results["proof_watchdog"] = _run_proof_watchdog(results["executive_portfolio"], scheduler_context=scheduler_context)
     intake_artifacts = _intake_artifacts(loop_report)
     if intake_artifacts:
         results["research_decisions"] = build_research_decisions(intake_artifacts)
