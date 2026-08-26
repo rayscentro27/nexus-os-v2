@@ -53,7 +53,12 @@ def scenarios() -> list[dict[str, str]]:
 def _response(agent: str, prompt: str) -> dict[str, Any]:
     try:
         if agent == "hermes":
-            from scripts.telegram.nexus_telegram_bridge import hermes_direct_answer
+            try:
+                from scripts.telegram.nexus_telegram_bridge import hermes_direct_answer
+            except ModuleNotFoundError:
+                # Direct execution places ``scripts/nexus_agent_platform`` on
+                # sys.path; the governed bridge is still the same module.
+                from telegram.nexus_telegram_bridge import hermes_direct_answer
             text = hermes_direct_answer(prompt)
         else:
             module = __import__(f"nexus_agent_platform.agents.{agent}", fromlist=[f"get_{agent}_graph"])
