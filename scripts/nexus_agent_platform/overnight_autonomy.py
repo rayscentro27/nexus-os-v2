@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping
 
@@ -141,9 +142,11 @@ def list_ideas(limit: int = 5) -> Dict[str, Any]:
 def arm_overnight_campaign(*, now: str | None = None) -> Dict[str, Any]:
     started = now or utc_now()
     try:
-        end = (datetime.fromisoformat(started) + timedelta(hours=9)).isoformat()
+        local_now = datetime.now(ZoneInfo("America/Phoenix")) if now is None else datetime.fromisoformat(started).astimezone(ZoneInfo("America/Phoenix"))
+        next_morning = (local_now + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+        end = next_morning.isoformat()
     except ValueError:
-        end = "2026-08-26T15:00:00+00:00"
+        end = "2026-08-26T08:00:00-07:00"
     campaign = {"campaign_id": OVERNIGHT_ID, "status": "ARMED", "started_at": started,
                 "priority_window_end": end, "scheduler": "EXISTING_PHASE15_ONLY",
                 "manual_scheduler_trigger": "NO", "production_mutation": "NO",
