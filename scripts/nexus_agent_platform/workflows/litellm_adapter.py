@@ -121,8 +121,11 @@ class LlmGatewayAdapter:
                     "tool_calls": [],
                 }
         except Exception as exc:
+            # Do not return an error sentence as successful model content. The
+            # caller must be able to distinguish provider failure and invoke
+            # its governed deterministic advisory fallback.
             log.error("Fallback completion failed for %s: %s", self.agent_id, exc)
-            return {"content": "I encountered an error processing your request.", "model": model, "usage": {}, "tool_calls": []}
+            return {"content": "", "model": model, "usage": {}, "tool_calls": [], "error": type(exc).__name__}
 
     @property
     def is_enabled(self) -> bool:
