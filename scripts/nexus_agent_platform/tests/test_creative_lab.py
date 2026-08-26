@@ -17,11 +17,21 @@ from nexus_agent_platform.creative.lab import (
     recommended_creative_tier,
     validate_creative_claims,
 )
+from nexus_agent_platform.creative.intelligence import run_critic_panel
 from nexus_agent_platform.research.open_source_scout import build_open_source_scout_report
 
 
 def _opportunity():
     return build_open_source_scout_report()["opportunity_input"]
+
+
+def test_critic_panel_reconciles_creative_brand_and_compliance():
+    result = run_critic_panel([{"concept_id": "safe", "brief_fit": 84, "brand_fit": 82, "brand_voice": "measured", "signature_fingerprint": "x", "message": "Review evidence before choosing a next step."},
+                               {"concept_id": "risky", "brief_fit": 90, "brand_fit": 80, "signature_fingerprint": "y", "message": "Guaranteed instant approval."}])
+    assert result["status"] == "PASS"
+    assert result["review_count"] == 2
+    assert result["accepted_count"] == 1
+    assert result["reviews"][1]["compliance_critic"]["status"] == "FAIL"
 
 
 def test_fewer_than_three_territories_rejected():

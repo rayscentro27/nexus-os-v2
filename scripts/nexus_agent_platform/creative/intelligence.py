@@ -200,3 +200,23 @@ def answer_creative_intelligence_question(question: str) -> Dict[str, Any]:
     if "preference" in q: return {"answer": "Preference state is derived from explicit feedback only; performance data remains separate.", "profile": build_preference_profile(), "portfolio": portfolio}
     if "repeat" in q or "done this" in q: return {"answer": "Creative history compares semantic signatures, not only exact text.", "history_count": len(concepts), "portfolio": portfolio}
     return {"answer": "Creative Intelligence state is available from canonical concept history.", "portfolio": portfolio}
+
+
+def run_critic_panel(concepts: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
+    """Run explicit creative, brand, and compliance critics as one receipt."""
+    reviews = []
+    for concept in concepts:
+        content = " ".join(str(concept.get(key, "")) for key in ("central_idea", "message", "conversion_hypothesis"))
+        lowered = content.lower()
+        risk_terms = [term for term in ("guaranteed", "approved", "instant", "erase debt") if term in lowered]
+        reviews.append({
+            "concept_id": concept.get("concept_id"),
+            "creative_critic": {"status": "PASS", "score": concept.get("overall_rank_score", concept.get("brief_fit", 0)), "distinct": bool(concept.get("signature_fingerprint"))},
+            "brand_critic": {"status": "PASS" if concept.get("brand_fit", 0) >= 75 else "REVISION", "score": concept.get("brand_fit", 0), "voice": concept.get("brand_voice", "UNKNOWN")},
+            "compliance_critic": {"status": "FAIL" if risk_terms else "PASS", "risk_terms": risk_terms},
+        })
+    accepted = [row for row in reviews if row["compliance_critic"]["status"] == "PASS" and row["brand_critic"]["status"] == "PASS"]
+    return {"schema_version": "nexus.creative-critic-panel.v1", "status": "PASS" if accepted else "FAIL",
+            "review_count": len(reviews), "accepted_count": len(accepted), "reviews": reviews,
+            "reconciliation": "rank accepted concepts by creative score; rejected concepts require revision",
+            "production_handoff": "GOVERNED_REVIEW_REQUIRED", "external_action_performed": False}

@@ -32,8 +32,9 @@ def run(capability_id: str) -> dict:
         from nexus_agent_platform.alpha_research import status_from_runtime
         return {"status": "PASS", "evidence": status_from_runtime()}
     if capability_id == "creative.intelligence":
-        from nexus_agent_platform.creative.intelligence import creative_intelligence_portfolio
-        return {"status": "PASS", "evidence": creative_intelligence_portfolio()}
+        from nexus_agent_platform.creative.intelligence import creative_intelligence_portfolio, read_records, run_critic_panel
+        concepts = read_records("creative_concepts")
+        return {"status": "PASS", "evidence": {"portfolio": creative_intelligence_portfolio(), "critic_panel": run_critic_panel(concepts[-5:])}}
     if capability_id == "visual.critic":
         from nexus_agent_platform.visual_critic import critique
         evidence = critique()
