@@ -26,6 +26,7 @@ from typing import Any, Dict, Iterable, List, Optional
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
+from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
 OFFSET_PATH = ROOT / "data/runtime/telegram_last_update_id.json"
@@ -462,7 +463,12 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             continue
         text = message["text"]
         fingerprint = message_hash(text)
-        response_text, metadata = handle_command(text, chat_id=chat_id)
+        gate_result = route_response(text, sender=(lambda body: {"delivered": _send(token, chat_id, body)}))
+        if gate_result is not None:
+            response_text = gate_result.pop("response")
+            metadata = gate_result
+        else:
+            response_text, metadata = handle_command(text, chat_id=chat_id)
         evolution = metadata.get("product_evolution") if isinstance(metadata, dict) else None
         if isinstance(evolution, dict) and evolution.get("status") == "CONTRACT_READY":
             try:
@@ -490,7 +496,11 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             result["commands_blocked"] += 1
         if metadata.get("status") == "DUPLICATE_SUPPRESSED":
             result["duplicates_suppressed"] += 1
-        if metadata.get("product_evolution_skip_reply"):
+        if metadata.get("confirmation_delivered"):
+            # HumanGateResponseRouter already sent and recorded the executive
+            # confirmation through the same real Telegram transport.
+            delivered = True
+        elif metadata.get("product_evolution_skip_reply"):
             delivered = True
         else:
             delivered = True if dry_run else _send(token, chat_id, response_text)
