@@ -30,7 +30,7 @@
       "proof_contract": "receipt + current report",
       "telemetry_process_id": "system_health",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -62,7 +62,7 @@
       "proof_contract": "watchdog receipt",
       "telemetry_process_id": "proof_watchdog",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -95,7 +95,7 @@
       "proof_contract": "exit code + build receipt",
       "telemetry_process_id": "frontend_build",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -128,7 +128,7 @@
       "proof_contract": "exit code + test receipt",
       "telemetry_process_id": "tests",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "DEGRADED",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -160,7 +160,7 @@
       "proof_contract": "research artifact + verifier receipt",
       "telemetry_process_id": "alpha_research",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -192,7 +192,7 @@
       "proof_contract": "directions artifact + critic receipt",
       "telemetry_process_id": "creative_intelligence",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -224,7 +224,7 @@
       "proof_contract": "dataset provenance + verifier receipt",
       "telemetry_process_id": "forex_research",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null
@@ -256,7 +256,7 @@
       "proof_contract": "routing receipt",
       "telemetry_process_id": "model_router",
       "enabled": true,
-      "availability": "REGISTERED_UNPROVEN",
+      "availability": "AVAILABLE",
       "last_canary": null,
       "last_success": null,
       "last_failure": null

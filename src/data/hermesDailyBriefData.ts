@@ -38,9 +38,10 @@ export function renderHermesDailyBrief(brief: HermesDailyBriefReport = hermesDai
   return [
     'Hermes Daily Brief (report-backed):',
     '',
+    'Facts:',
     `Status: ${brief.status}; confidence: ${brief.confidence}; freshness: ${brief.freshness.status}.`,
     `Top priority: ${brief.top_priority.title}`,
-    `Money: confirmed revenue $${revenue.confirmed_revenue_usd}; pending test revenue $${revenue.pending_test_revenue_usd}; possible offer value $${revenue.possible_offer_value_usd}; blocked revenue $${revenue.blocked_revenue_usd}.`,
+    `Money: confirmed revenue $${revenue.confirmed_revenue_usd}; pending test revenue $${revenue.pending_test_revenue_usd} ($97 Stripe test Checkout); possible offer value $${revenue.possible_offer_value_usd}; blocked revenue $${revenue.blocked_revenue_usd}.`,
     `Opportunity: ${opportunity.title} is ${opportunity.status}; score ${opportunity.base_score}; trend ${opportunity.change}.`,
     `Creative: ${brief.creative_updates.selected_territory}; builder ${brief.builder_updates.status}; verification ${brief.builder_updates.verification}.`,
     `Workers: ${workers}.`,
@@ -49,7 +50,10 @@ export function renderHermesDailyBrief(brief: HermesDailyBriefReport = hermesDai
     `Workforce: ${brief.workforce_updates.worker_count} certified records; Kilo is ${brief.workforce_updates.kilo_classification} and onboarding decision is ${brief.workforce_updates.kilo_decision}.`,
     `Blocked: ${brief.blockers.map((item) => item.blocker).slice(0, 3).join('; ') || 'UNKNOWN'}.`,
     `Ray decisions: ${brief.decisions_needed.join('; ')}.`,
+    '',
+    'Recommendations:',
     `Next action: ${brief.highest_value_next_action}`,
+    'Keep live Stripe deferred and require Ray approval for consequential external actions.',
     `Live Supabase read: ${brief.freshness.live_supabase_read}.`,
   ].join('\n');
 }

@@ -1,0 +1,240 @@
+{
+  "active_jobs": [
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "daily_monitor",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "system_health",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "supabase_verification",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "command_center_health",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "client_portal_status",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "ray_review_queue",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "hermes_router",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "alpha_intake",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "research_intelligence",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "creative_quality_loop",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "work_orders",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "recovery",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "telegram_operator",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "stripe_test_paywall",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "client_portal_paywall_access",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "notebooklm_import_status",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "repo_intelligence",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "marketing_content_pipeline",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    },
+    {
+      "health": "STALE",
+      "heartbeat_age_seconds": null,
+      "job_id": null,
+      "owner": null,
+      "pid": null,
+      "process_id": "credit_business_funding_readiness",
+      "proof_refs": [],
+      "runtime_state": "UNKNOWN"
+    }
+  ],
+  "campaign": {
+    "campaign_id": "NEXUS_COMPLETION_DAY_2026_08_26",
+    "checkpoint_sha": "87aaedeb9e5dbc299709e8c3f38ade735732a00c",
+    "current_objective": "coding_worker_failover",
+    "current_wave": 0,
+    "status": "ACTIVE"
+  },
+  "generated_at": "2026-08-26T17:21:40.552925+00:00",
+  "morning_report": {
+    "source": "not generated by this read model",
+    "status": "UNKNOWN"
+  },
+  "preflight": {
+    "attempted": 8,
+    "failed": [
+      "tests.run"
+    ],
+    "ready_tonight": false,
+    "registered": 10,
+    "verified": 7
+  },
+  "proof": {
+    "coverage": 0.875,
+    "recovering": [],
+    "stalled": [],
+    "verified_no_change": "UNKNOWN",
+    "watchdog": "PASS"
+  },
+  "read_only": true,
+  "repairs": {
+    "automatic": [],
+    "waiting_ray": []
+  },
+  "safety": {
+    "arbitrary_shell": "PROHIBITED",
+    "external_actions": "GOVERNED",
+    "funded_trading": "PROHIBITED"
+  },
+  "schema_version": "nexus.live-telemetry.v1",
+  "source": "canonical_telemetry.build_telemetry",
+  "system": {
+    "last_natural_cycle": "UNKNOWN",
+    "next_expected_cycle": "UNKNOWN",
+    "overall_status": "DEGRADED",
+    "production_sha": "UNKNOWN"
+  }
+}
