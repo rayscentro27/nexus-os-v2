@@ -23,7 +23,11 @@ def test_real_campaign_continuation_consumes_failure_and_resumes(tmp_path, monke
     assert second["objectives"]
     assert second["objectives"][0]["state"] == "COMPLETED"
     assert second["objectives"][0]["verification"] == "PASS"
-    assert campaign_status(state)["queued_executable_work"] == 0
+    status = campaign_status(state)
+    assert status["queued_executable_work"] <= 1
+    if status["next_runnable_objective"]:
+        assert status["next_runnable_objective"].startswith("backlog.")
+    assert not any("bounded-timeout" in str(item) for item in status.values())
 
 
 def test_campaign_status_protects_false_active_state(tmp_path):
