@@ -54,6 +54,7 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
     state.setdefault("completed_objectives", [])
     state.setdefault("failure_dispositions", {})
     state.setdefault("cycle_number", 0)
+    state.setdefault("objective_queue_seeded", False)
     # Older campaign checkpoints predate the canonical objective queue. Once
     # the scheduler owns such a checkpoint, materialize one bounded,
     # machine-safe audit objective from the existing backlog. This prevents a
