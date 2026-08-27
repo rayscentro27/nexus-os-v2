@@ -1,0 +1,15 @@
+{
+  "requested_provider": "brave",
+  "brave_status": "PROVIDER_PAYMENT_REQUIRED",
+  "http_status": 402,
+  "alternate_configured": false,
+  "fallback_chain": [
+    "brave",
+    "tavily",
+    "serpapi",
+    "searxng",
+    "direct/local sources"
+  ],
+  "overall_status": "LIVE_RESEARCH_DEGRADED",
+  "false_live_claim_prevented": true
+}

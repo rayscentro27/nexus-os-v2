@@ -116,6 +116,13 @@ def _search_brave(query, max_results=MAX_RESULTS):
             "results": results,
             "notes": [],
         }
+    except urllib.error.HTTPError as e:
+        return {
+            "status": "provider_payment_required" if e.code == 402 else "error",
+            "provider": "brave", "query": query,
+            "checked_at": datetime.now(timezone.utc).isoformat(), "results": [],
+            "notes": [f"HTTP_{e.code}"],
+        }
     except Exception as e:
         return {
             "status": "error",
@@ -324,17 +331,24 @@ def web_search(query, max_results=MAX_RESULTS):
         "searxng": _search_searxng,
     }
 
+    attempted = []
     for name, env_key, available in providers:
         fn = search_fn.get(name)
         if fn:
             result = fn(query, max_results)
+            attempted.append({"provider": name, "status": result.get("status"), "notes": result.get("notes", [])})
             if result["status"] == "ok":
+                result["attempted_providers"] = attempted
                 _save_receipt(query, name, result["results"], "ok")
                 return result
             # If error, try next provider
 
     # All providers failed
     result = _fallback_not_configured(query)
+    result["attempted_providers"] = attempted
+    if any(item["status"] == "provider_payment_required" for item in attempted):
+        result["status"] = "provider_payment_required"
+        result["provider"] = "brave"
     _save_receipt(query, "none", [], "all_providers_failed", result["notes"])
     return result
 

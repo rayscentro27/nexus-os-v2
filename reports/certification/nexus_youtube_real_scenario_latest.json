@@ -1,0 +1,7 @@
+{
+  "status": "INPUT_REQUIRED",
+  "metadata_only_is_not_certification": true,
+  "canonical_fixture_discovered": "https://www.youtube.com/watch?v=zbAmmnMh5ew",
+  "ray_selected_url": false,
+  "media_downloaded": false
+}

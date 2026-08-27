@@ -1,0 +1,406 @@
+{
+  "schema_version": "nexus.forex-research.v1",
+  "run_id": "245623bc6cfef3cc1fd8",
+  "started_at": "2026-08-27T16:54:19.213100+00:00",
+  "completed_at": "2026-08-27T16:54:21.194970+00:00",
+  "goal": "forex_scan",
+  "operational_result": "NO_VALID_SETUP",
+  "market_health": {
+    "status": "FOREX_MARKET_HEALTHY",
+    "environment": "practice",
+    "endpoint": "https://api-fxpractice.oanda.com",
+    "account_http_status": 200,
+    "pricing_http_status": 200,
+    "account_access": true,
+    "pricing_access": true,
+    "instruments_requested": [
+      "EUR_USD",
+      "GBP_USD",
+      "USD_JPY"
+    ],
+    "instruments_available": [
+      "EUR_USD",
+      "GBP_USD",
+      "USD_JPY"
+    ],
+    "last_successful_data": "2026-08-27T16:54:19.530607+00:00",
+    "error": null,
+    "live_trading": false,
+    "auto_trading": false,
+    "paper_only": true,
+    "oanda_allow_live": false
+  },
+  "candles": [
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "EUR_USD",
+      "timeframe": "M5",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T16:45:00.000000000Z",
+      "oldest": "2026-08-27T06:55:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "EUR_USD",
+      "timeframe": "M15",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T16:30:00.000000000Z",
+      "oldest": "2026-08-26T11:00:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "EUR_USD",
+      "timeframe": "H1",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T15:00:00.000000000Z",
+      "oldest": "2026-08-20T17:00:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "GBP_USD",
+      "timeframe": "M5",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T16:45:00.000000000Z",
+      "oldest": "2026-08-27T06:55:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "GBP_USD",
+      "timeframe": "M15",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T16:30:00.000000000Z",
+      "oldest": "2026-08-26T11:00:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "GBP_USD",
+      "timeframe": "H1",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T15:00:00.000000000Z",
+      "oldest": "2026-08-20T17:00:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "USD_JPY",
+      "timeframe": "M5",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T16:45:00.000000000Z",
+      "oldest": "2026-08-27T06:55:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "USD_JPY",
+      "timeframe": "M15",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T16:30:00.000000000Z",
+      "oldest": "2026-08-26T11:00:00.000000000Z"
+    },
+    {
+      "ok": true,
+      "http_status": 200,
+      "error": null,
+      "instrument": "USD_JPY",
+      "timeframe": "H1",
+      "requested": 120,
+      "available": 120,
+      "complete": 119,
+      "newest": "2026-08-27T15:00:00.000000000Z",
+      "oldest": "2026-08-20T17:00:00.000000000Z"
+    }
+  ],
+  "evaluations": [
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "EUR_USD",
+      "timeframe": "M5",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T16:45:00.000000000Z",
+      "indicators": {
+        "sma10": 1.165225,
+        "sma30": 1.165105
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "EUR_USD",
+      "timeframe": "M15",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T16:30:00.000000000Z",
+      "indicators": {
+        "sma10": 1.1650779999999998,
+        "sma30": 1.1646763333333332
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "EUR_USD",
+      "timeframe": "H1",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T15:00:00.000000000Z",
+      "indicators": {
+        "sma10": 1.164713,
+        "sma30": 1.1652179999999999
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "GBP_USD",
+      "timeframe": "M5",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T16:45:00.000000000Z",
+      "indicators": {
+        "sma10": 1.359737,
+        "sma30": 1.3591106666666666
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "GBP_USD",
+      "timeframe": "M15",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T16:30:00.000000000Z",
+      "indicators": {
+        "sma10": 1.35912,
+        "sma30": 1.3584953333333334
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "GBP_USD",
+      "timeframe": "H1",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T15:00:00.000000000Z",
+      "indicators": {
+        "sma10": 1.358353,
+        "sma30": 1.3592433333333334
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "USD_JPY",
+      "timeframe": "M5",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T16:45:00.000000000Z",
+      "indicators": {
+        "sma10": 159.2691,
+        "sma30": 159.29836666666668
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "USD_JPY",
+      "timeframe": "M15",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T16:30:00.000000000Z",
+      "indicators": {
+        "sma10": 159.2991,
+        "sma30": 159.38823333333332
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    },
+    {
+      "result": "NO_VALID_SETUP",
+      "strategy_id": "nexus_range_observer_v1",
+      "strategy_version": "1",
+      "instrument": "USD_JPY",
+      "timeframe": "H1",
+      "source": "OANDA_PRACTICE",
+      "candle_timestamp": "2026-08-27T15:00:00.000000000Z",
+      "indicators": {
+        "sma10": 159.3818,
+        "sma30": 159.33146666666667
+      },
+      "conditions_evaluated": [
+        "complete_candle_warmup",
+        "sma10_sma30_observation",
+        "bounded_signal_gate"
+      ],
+      "conditions_passed": [
+        "complete_candle_warmup"
+      ],
+      "conditions_failed": [
+        "bounded_signal_gate"
+      ],
+      "signal": false,
+      "reason": "no_approved_setup; research-only scanner never forces a trade",
+      "consumer_ids": []
+    }
+  ],
+  "source_provenance": {
+    "provider": "OANDA",
+    "environment": "practice",
+    "fresh_at": "2026-08-27T16:54:21.194988+00:00",
+    "live_data": true
+  },
+  "brief_source_artifact": "/Users/raymonddavis/nexus-os-v2/reports/runtime/forex_research_latest.json",
+  "consumer_readback": "NOT_REQUIRED",
+  "consumer_ids": [],
+  "hot_path_ai_calls": 0,
+  "live_trading": false,
+  "auto_trading": false,
+  "paper_only": true,
+  "oanda_allow_live": false,
+  "second_run_comparison": {
+    "prior_result": "NO_VALID_SETUP",
+    "no_change_valid": true
+  }
+}

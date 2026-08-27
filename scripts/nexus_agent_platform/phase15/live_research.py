@@ -101,12 +101,12 @@ def run_live_research_session(max_queries: int = MAX_QUERIES) -> Dict[str, Any]:
                     if url not in accepted_urls:
                         accepted_urls.add(url)
                     query_records.append({"query": safe_query, "status": "ok", "source": status, "results": len(entries), "error": None})
-            elif status in {"not_configured", "error"}:
+            elif status in {"not_configured", "error", "provider_payment_required"}:
                 errors += 1
                 note = (result.get("notes") or [""])[0] if result.get("notes") else ""
                 if not blocker:
                     blocker.append(f"live web provider for query '{safe_query}' returned {status}: {note}")
-                query_records.append({"query": safe_query, "status": status, "source": status, "results": 0, "error": note})
+                query_records.append({"query": safe_query, "status": status, "source": result.get("provider", status), "attempted_providers": result.get("attempted_providers", []), "results": 0, "error": note})
     else:
         blocker.append("no search provider available; hermes_web_search not importable")
 

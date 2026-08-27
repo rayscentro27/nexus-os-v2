@@ -1,0 +1,11 @@
+{
+  "credential_id": "credential.google.workspace.prod.v1",
+  "status": "AUTHORIZATION_REQUIRED",
+  "oauth_client": "NOT_FOUND",
+  "refresh_capability": "NOT_FOUND",
+  "gmail_scope": "UNKNOWN",
+  "calendar_scope": "UNKNOWN",
+  "drive_scope": "UNKNOWN",
+  "mutations_performed": false,
+  "next_action": "Provide one governed Google OAuth client/consent flow; no event mutation attempted."
+}

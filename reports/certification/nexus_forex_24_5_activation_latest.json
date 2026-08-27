@@ -1,0 +1,10 @@
+{
+  "service": "com.nexus.forex-scanner",
+  "plist_validated": true,
+  "installed": false,
+  "loaded": false,
+  "process_alive": false,
+  "short_runtime_verified": false,
+  "multi_day_certification": "PENDING",
+  "reason": "foreground evidence captured; service activation intentionally not claimed until operator enables it"
+}

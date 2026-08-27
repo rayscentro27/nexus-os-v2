@@ -1,6 +1,6 @@
 """Canonical, redacted credential identity and health control plane."""
 from __future__ import annotations
-import json, os, re, subprocess, urllib.parse, urllib.request, urllib.error
+import json, os, re, subprocess, sys, urllib.parse, urllib.request, urllib.error
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -38,7 +38,26 @@ def _source_values() -> dict[str, dict[str, str]]:
     result = {"PROCESS_ENV": dict(os.environ)}
     result["CANONICAL_RUNTIME_ENV"] = _parse(RUNTIME_ENV)
     for path in ENV_FILES[1:]: result[f"LEGACY_ENV:{path}"] = _parse(path)
+    # Keychain values are intentionally represented as a source map only when
+    # explicitly requested by resolution; never serialize the returned value.
+    result["MACOS_KEYCHAIN"] = {}
     return result
+
+def _keychain_value(credential_id: str, component: str) -> str | None:
+    """Read one secret from macOS Keychain without ever returning it to reports."""
+    if sys.platform != "darwin":
+        return None
+    service = f"nexus/{credential_id}"
+    account = component
+    try:
+        result = subprocess.run(
+            ["security", "find-generic-password", "-s", service, "-a", account, "-w"],
+            capture_output=True, text=True, timeout=5, check=False,
+        )
+        value = result.stdout.strip()
+        return value if result.returncode == 0 and value else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
 
 def resolve(credential_id: str, *, environ: Mapping[str, str] | None = None) -> dict[str, Any]:
     entry = registry_entry(credential_id); sources = _source_values();
@@ -48,6 +67,10 @@ def resolve(credential_id: str, *, environ: Mapping[str, str] | None = None) -> 
         aliases = [canonical, *entry.get("legacy_aliases", {}).get(component, [])]
         found: list[dict[str, str]] = []
         for source, values in sources.items():
+            if source == "MACOS_KEYCHAIN":
+                if _keychain_value(credential_id, component):
+                    found.append({"source": source, "alias": canonical})
+                continue
             for alias in aliases:
                 if values.get(alias): found.append({"source": source.split(":", 1)[0], "alias": alias})
         found.sort(key=lambda row: (SOURCE_ORDER.index(row["source"]) if row["source"] in SOURCE_ORDER else 99, aliases.index(row["alias"])))
@@ -62,6 +85,12 @@ def apply_to_process(credential_id: str) -> dict[str, Any]:
         aliases = [canonical, *entry.get("legacy_aliases", {}).get(component, [])]
         for source in SOURCE_ORDER:
             values = sources.get(source, {})
+            if source == "MACOS_KEYCHAIN":
+                keychain_value = _keychain_value(credential_id, component)
+                if keychain_value:
+                    os.environ[canonical] = keychain_value
+                    for compatibility_alias in aliases[1:]: os.environ.setdefault(compatibility_alias, keychain_value)
+                    applied.append(component); break
             alias = next((candidate for candidate in aliases if values.get(candidate)), None)
             if alias:
                 os.environ[canonical] = values[alias]

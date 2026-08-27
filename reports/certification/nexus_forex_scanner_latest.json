@@ -1,0 +1,8 @@
+{
+  "service": "com.nexus.forex-scanner",
+  "foreground_scan": "NO_VALID_SETUP",
+  "heartbeat": "2026-08-27T16:54:21.194970+00:00",
+  "restart_safe_state": "data/runtime/forex_scanner_state.json",
+  "launchd_plist": "launchd/com.nexus.forex-scanner.plist",
+  "multi_day_certification": "PENDING"
+}

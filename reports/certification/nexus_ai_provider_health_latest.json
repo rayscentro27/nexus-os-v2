@@ -1,0 +1,17 @@
+{
+  "provider": "deterministic_fallback",
+  "status": "DETERMINISTIC_FALLBACK_USED",
+  "fallback_status": "UNAVAILABLE",
+  "network_api": false,
+  "cost_bearing": false,
+  "ollama": {
+    "provider": "ollama",
+    "local": true,
+    "status": "UNAVAILABLE",
+    "models": [],
+    "latency_ms": 9.76,
+    "error": "URLError",
+    "network_api": false,
+    "cost_bearing": false
+  }
+}

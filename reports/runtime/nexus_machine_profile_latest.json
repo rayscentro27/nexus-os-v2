@@ -17,7 +17,7 @@
   },
   "storage": {
     "total_bytes": 999995129856,
-    "free_bytes": 710859100160
+    "free_bytes": 710751588352
   },
   "tools": {
     "homebrew": {
@@ -34,7 +34,7 @@
     "npm": {
       "installed": true,
       "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/npm",
-      "version": null
+      "version": "10.9.8"
     },
     "git": {
       "installed": true,
@@ -54,12 +54,12 @@
     "ollama": {
       "installed": true,
       "path": "/usr/local/bin/ollama",
-      "version": null
+      "version": "Warning: could not connect to a running Ollama instance\nWarning: client version is 0.20.5"
     },
     "yt_dlp": {
       "installed": true,
       "path": "/usr/local/bin/yt-dlp",
-      "version": null
+      "version": "2026.03.03"
     },
     "ffmpeg": {
       "installed": true,
@@ -79,6 +79,12 @@
         "version": "3.9.6",
         "executable": "/Library/Developer/CommandLineTools/usr/bin/python3",
         "ssl": "LibreSSL 2.8.3",
+        "ssl_import": "HEALTHY"
+      },
+      {
+        "version": "3.14.5",
+        "executable": "/usr/local/opt/python@3.14/bin/python3.14",
+        "ssl": "OpenSSL 3.6.3 9 Jun 2026",
         "ssl_import": "HEALTHY"
       },
       {
@@ -129,18 +135,6 @@
     },
     "registered": "repository-governed adapters inspected"
   },
-  "generated_at": "2026-08-27T16:18:21.792609+00:00",
-  "private_identifiers_excluded": true,
-  "execution_target_examples": {
-    "live_research": {
-      "decision": "LOCAL_COMPATIBLE",
-      "runtime": "/Users/raymonddavis/.local/bin/python3.11",
-      "reason": "healthy SSL-capable interpreter selected from machine profile"
-    },
-    "voice": {
-      "decision": "LOCAL_COMPATIBLE",
-      "runtime": "/Users/raymonddavis/.local/bin/python3.11",
-      "reason": "no unmet machine requirement detected"
-    }
-  }
+  "generated_at": "2026-08-27T16:54:39.486601+00:00",
+  "private_identifiers_excluded": true
 }
