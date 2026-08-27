@@ -1,0 +1,183 @@
+{
+  "mission_id": "health-20260827T093001",
+  "loop_id": "health",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "status": "PASS",
+    "evidence": {
+      "phase": "PHASE 15 \u2014 LIVE INTERNAL OPERATIONS",
+      "generated_at": "2026-08-27T16:30:20.474340+00:00",
+      "nexus_running": "YES",
+      "core_autonomy_runtime": {
+        "status": "HEALTHY",
+        "required_components": {
+          "loop_runtime": {
+            "required": "HEALTHY",
+            "status": "HEALTHY",
+            "reason": "132 loop runs in the last 24h with 0 critical failures"
+          },
+          "worker_pool": {
+            "required": ">=1 AI worker AVAILABLE and local deterministic AVAILABLE",
+            "status": "PASS",
+            "reason": "[{\"available\": true, \"execution_probe\": \"EXECUTION_VERIFIED\", \"status\": \"AVAILABLE\", \"worker_id\": \"codex\"}, {\"available\": true, \"execution_probe\": \"EXECUTION_VERIFIED\", \"status\": \"AVAILABLE\", \"worker_id\": \"opencode\"}, {\"available\": true, \"execution_probe\": \"EXECUTION_VERIFIED\", \"status\": \"AVAILABLE\", \"worker_id\": \"local_python\"}, {\"available\": false, \"execution_probe\": \"EXECUTION_UNPROVEN\", \"status\": \"INSTALLED_UNPROVEN\", \"worker_id\": \"mimo\"}, {\"available\": false, \"execution_probe\": \"NOT_PROVEN\", \"status\": \"INSTALLED_UNPROVEN\", \"worker_id\": \"kilo\"}, {\"available\": false, \"execution_probe\": \"NOT_RUN\", \"status\": \"NOT_INSTALLED\", \"worker_id\": \"openhands\"}]"
+          }
+        },
+        "failures": []
+      },
+      "optional_integrations": {
+        "hermes": {
+          "required": "HEALTHY",
+          "status": "HEALTHY",
+          "reason": "Hermes operator runtime up: daily brief fresh and telegram bridge registered"
+        },
+        "alpha": {
+          "required": "HEALTHY or BOUNDED_DEGRADED with known reason",
+          "status": "NOT_ENABLED",
+          "reason": "Alpha not registered"
+        },
+        "nova": {
+          "required": "HEALTHY and isolated",
+          "status": "HEALTHY",
+          "reason": "Nova telegram worker registered; isolated governed reasoning lane, authority UNCHANGED"
+        },
+        "mission_control": {
+          "status": "NOT_ENABLED",
+          "freshness": "STALE",
+          "reason": "The Phase 13 workforce/Mission Control producer is not an active core scheduler component"
+        },
+        "daily_brief": {
+          "required": "FRESH",
+          "status": "FRESH",
+          "reason": "brief generated_at=2026-08-27T04:35:29.277950+00:00, age=42891.43571"
+        },
+        "active_operator": {
+          "status": "NOT_ENABLED",
+          "reason": "Active Operator is not part of the Phase 15 core autonomy contract"
+        }
+      },
+      "safety_authority": {
+        "stripe": {
+          "available": "LIVE_CREDENTIALS_AVAILABLE",
+          "autonomous_execution_authorized": false,
+          "state": "DISABLED",
+          "safety_gate": "PASS",
+          "reason": "Stripe autonomous execution is deny-by-default and requires an explicit authority record"
+        },
+        "status": "PASS"
+      },
+      "contract": {
+        "hermes": {
+          "required": "HEALTHY",
+          "status": "HEALTHY",
+          "reason": "Hermes operator runtime up: daily brief fresh and telegram bridge registered"
+        },
+        "alpha": {
+          "required": "HEALTHY or BOUNDED_DEGRADED with known reason",
+          "status": "DEGRADED",
+          "reason": "Alpha not registered"
+        },
+        "nova": {
+          "required": "HEALTHY and isolated",
+          "status": "HEALTHY",
+          "reason": "Nova telegram worker registered; isolated governed reasoning lane, authority UNCHANGED"
+        },
+        "loop_runtime": {
+          "required": "HEALTHY",
+          "status": "HEALTHY",
+          "reason": "132 loop runs in the last 24h with 0 critical failures"
+        },
+        "daily_brief": {
+          "required": "FRESH",
+          "status": "FRESH",
+          "reason": "brief generated_at=2026-08-27T04:35:29.277950+00:00, age=42891.43571"
+        },
+        "mission_control_source": {
+          "required": "FRESH",
+          "status": "STALE",
+          "reason": "{\"ai_workforce_registry.json\": 777921.98371, \"daily_brief.json\": 42891.430428, \"loop_state.json\": 42893.24289, \"state.json\": 42890.525359}"
+        },
+        "stripe_test_mode": {
+          "required": "DISABLED_FOR_AUTONOMY or TEST MODE CONFIRMED",
+          "status": "DISABLED_FOR_AUTONOMY",
+          "reason": "STRIPE_SECRET_KEY is a live key (sk_live_*) in the canonical runtime env VITE_STRIPE_PUBLISHABLE_KEY is live (pk_live_*); any frontend checkout would target live mode",
+          "critical": true
+        },
+        "worker_pool": {
+          "required": ">=1 AI worker AVAILABLE and local deterministic AVAILABLE",
+          "status": "PASS",
+          "reason": "[{\"available\": true, \"execution_probe\": \"EXECUTION_VERIFIED\", \"status\": \"AVAILABLE\", \"worker_id\": \"codex\"}, {\"available\": true, \"execution_probe\": \"EXECUTION_VERIFIED\", \"status\": \"AVAILABLE\", \"worker_id\": \"opencode\"}, {\"available\": true, \"execution_probe\": \"EXECUTION_VERIFIED\", \"status\": \"AVAILABLE\", \"worker_id\": \"local_python\"}, {\"available\": false, \"execution_probe\": \"EXECUTION_UNPROVEN\", \"status\": \"INSTALLED_UNPROVEN\", \"worker_id\": \"mimo\"}, {\"available\": false, \"execution_probe\": \"NOT_PROVEN\", \"status\": \"INSTALLED_UNPROVEN\", \"worker_id\": \"kilo\"}, {\"available\": false, \"execution_probe\": \"NOT_RUN\", \"status\": \"NOT_INSTALLED\", \"worker_id\": \"openhands\"}]"
+        },
+        "nova_authority": "UNCHANGED",
+        "stripe_mode": "TEST"
+      },
+      "worker_pool": [
+        {
+          "worker_id": "codex",
+          "status": "AVAILABLE",
+          "available": true,
+          "execution_probe": "EXECUTION_VERIFIED"
+        },
+        {
+          "worker_id": "opencode",
+          "status": "AVAILABLE",
+          "available": true,
+          "execution_probe": "EXECUTION_VERIFIED"
+        },
+        {
+          "worker_id": "local_python",
+          "status": "AVAILABLE",
+          "available": true,
+          "execution_probe": "EXECUTION_VERIFIED"
+        },
+        {
+          "worker_id": "mimo",
+          "status": "INSTALLED_UNPROVEN",
+          "available": false,
+          "execution_probe": "EXECUTION_UNPROVEN"
+        },
+        {
+          "worker_id": "kilo",
+          "status": "INSTALLED_UNPROVEN",
+          "available": false,
+          "execution_probe": "NOT_PROVEN"
+        },
+        {
+          "worker_id": "openhands",
+          "status": "NOT_INSTALLED",
+          "available": false,
+          "execution_probe": "NOT_RUN"
+        }
+      ],
+      "evidence": {
+        "hermes_launchd": true,
+        "alpha_launchd": false,
+        "nova_launchd": true,
+        "alpha_process_running": false,
+        "action_receipts_count": 216,
+        "daily_brief_age": 42891.43571,
+        "live_loop_report_age": 42893.237309,
+        "stripe_autonomous_execution_authorized": false
+      }
+    }
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "HEALTHY"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

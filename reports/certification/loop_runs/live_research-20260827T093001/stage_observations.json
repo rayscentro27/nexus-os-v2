@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "live_research.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:15.865588+00:00",
+    "completed_at": "2026-08-27T16:30:17.874499+00:00",
+    "executor": "phase15.live_research.run_live_research_session",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "MARKET_DATA_UNAVAILABLE",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/live_research.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/live_research.json"
+    ],
+    "duration": 2009,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

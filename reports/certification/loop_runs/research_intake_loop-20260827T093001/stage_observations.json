@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "research_intake_loop.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:23.614046+00:00",
+    "completed_at": "2026-08-27T16:30:23.648712+00:00",
+    "executor": "phase15.live_loop_runner",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "NEW_FINDING",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/research_intake_loop.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/research_intake_loop.json"
+    ],
+    "duration": 35,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

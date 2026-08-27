@@ -1,0 +1,6 @@
+{
+  "loop_id": "voice",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "actual_result": "TRANSCRIPT_CREATED",
+  "consumer_readback": "NOT_PROVEN"
+}

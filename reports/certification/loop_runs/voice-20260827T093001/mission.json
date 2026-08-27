@@ -1,0 +1,51 @@
+{
+  "mission_id": "voice-20260827T093001",
+  "loop_id": "voice",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "stt": {
+      "schema_version": "nexus.voice-transcript.v1",
+      "transcript_id": "transcript_56a1f01a05894027b5fdb9d8ddc5b763",
+      "voice_request_id": "voice_97cc134530454130a470ae4f4e9e399c",
+      "session_id": "manual-certification",
+      "text": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+      "language": "en",
+      "confidence": null,
+      "duration_ms": 11000,
+      "stt_provider": "whisper.cpp",
+      "model": "ggml-base.en.bin",
+      "model_version": "base.en",
+      "model_hash": "a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002",
+      "processing_duration_ms": 6703,
+      "audio_retained": false,
+      "created_at": "2026-08-27T16:30:07.904007+00:00",
+      "external_action_performed": false
+    },
+    "browser_wiring": {
+      "wake_component": true,
+      "hermes_dispatch": true,
+      "browser_tts": true
+    },
+    "tts_contract": "browser-native speechSynthesis"
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "TRANSCRIPT_CREATED"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

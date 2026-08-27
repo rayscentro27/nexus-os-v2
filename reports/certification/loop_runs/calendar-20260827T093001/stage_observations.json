@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "calendar.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:14.696727+00:00",
+    "completed_at": "2026-08-27T16:30:15.183776+00:00",
+    "executor": "calendar.provider.discovery",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "AUTHORIZATION_REQUIRED",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/calendar.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/calendar.json"
+    ],
+    "duration": 487,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "should_rerun": "YES",
+  "rerun_type": "SAME_GOAL_WITH_CORRECTIONS",
+  "reason": "repeat the same goal with consumer instrumentation",
+  "production_changed": false
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "forex.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:29:56.940913+00:00",
+    "completed_at": "2026-08-27T16:29:57.302888+00:00",
+    "executor": "capability_runner.py#forex.research",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "INSUFFICIENT_DATA",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T092956/forex.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T092956/forex.json"
+    ],
+    "duration": 362,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

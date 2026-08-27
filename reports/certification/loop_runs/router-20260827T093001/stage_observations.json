@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "router.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:21.910694+00:00",
+    "completed_at": "2026-08-27T16:30:22.535357+00:00",
+    "executor": "capability_runner.py#model.router",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "HEALTHY",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/router.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/router.json"
+    ],
+    "duration": 625,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

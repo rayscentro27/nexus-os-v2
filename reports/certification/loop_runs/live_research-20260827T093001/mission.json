@@ -1,0 +1,128 @@
+{
+  "mission_id": "live_research-20260827T093001",
+  "loop_id": "live_research",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "session": {
+      "phase": "PHASE 15 \u2014 BOUNDED LIVE RESEARCH SESSION",
+      "started_at": "2026-08-27T16:30:16.029166+00:00",
+      "completed_at": "2026-08-27T16:30:16.633190+00:00",
+      "state": "BOUNDED_DEGRADED",
+      "provider": {
+        "name": "brave",
+        "configured": true,
+        "blocker": "live web provider for query 'credit repair readiness checklist small business 2026' returned not_configured: No web search provider configured."
+      },
+      "governance": {
+        "no_client_pii": true,
+        "no_installation": true,
+        "no_publishing": true,
+        "bounded": true
+      },
+      "sources_searched": 2,
+      "sources_ok": 0,
+      "sources_failed": 2,
+      "query_records": [
+        {
+          "query": "credit repair readiness checklist small business 2026",
+          "status": "not_configured",
+          "source": "not_configured",
+          "results": 0,
+          "error": "No web search provider configured."
+        },
+        {
+          "query": "business credit building vendors 2026",
+          "status": "not_configured",
+          "source": "not_configured",
+          "results": 0,
+          "error": "No web search provider configured."
+        }
+      ],
+      "blockers": [
+        "live web provider for query 'credit repair readiness checklist small business 2026' returned not_configured: No web search provider configured."
+      ],
+      "freshness": "BLOCKED"
+    },
+    "decisions_source": "reports/hermes_modernization/live_research_decisions.json",
+    "opportunities_created": 0,
+    "watch_items": 0,
+    "rejections": 0,
+    "duplicates": 0,
+    "needs_more_evidence": 0,
+    "stale": 0,
+    "top_accepted": [
+      {
+        "candidate_id": "a0",
+        "title": "Item 0",
+        "reason": "candidate clears confidence, freshness, and business-fit thresholds"
+      },
+      {
+        "candidate_id": "a1",
+        "title": "Item 1",
+        "reason": "candidate clears confidence, freshness, and business-fit thresholds"
+      },
+      {
+        "candidate_id": "opportunity_aeeb574d234d3906",
+        "title": "Adapt: chandachewe10/loan-management-system",
+        "reason": "candidate clears confidence, freshness, and business-fit thresholds"
+      },
+      {
+        "candidate_id": "opportunity_cc013a94137fa7c4",
+        "title": "Adapt: credit-scoring topic",
+        "reason": "candidate clears confidence, freshness, and business-fit thresholds"
+      },
+      {
+        "candidate_id": "opportunity_9aa9121b536c2f04",
+        "title": "Adapt: moov-io/awesome-fintech",
+        "reason": "candidate clears confidence, freshness, and business-fit thresholds"
+      }
+    ],
+    "top_rejected": [
+      {
+        "candidate_id": "live:https://www.creditrepaircloud.com/blog/checklist-for-growing-a-credit-repair-business",
+        "title": "Checklist for Growing a Credit Repair Business",
+        "reason": "DUPLICATE"
+      },
+      {
+        "candidate_id": "live:https://www.firstcard.app/learn/repair-company-credit",
+        "title": "How to Repair Your Company Credit: A Complete Guide (2026) - Firstcard",
+        "reason": "DUPLICATE"
+      },
+      {
+        "candidate_id": "live:https://aofund.org/resource/small-business-credit-repair/",
+        "title": "Small Business Credit Repair - Accion Opportunity Fund",
+        "reason": "DUPLICATE"
+      },
+      {
+        "candidate_id": "live:https://www.creditcareco.com/post/ultimate-guide-to-credit-repair-in-2026",
+        "title": "Ultimate Guide to Credit Repair in 2026",
+        "reason": "DUPLICATE"
+      },
+      {
+        "candidate_id": "live:https://www.youtube.com/watch?v=lOdloy9RWqU",
+        "title": "Credit Repair Strategy That Actually Works In 2026 - YouTube",
+        "reason": "DUPLICATE"
+      }
+    ]
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "MARKET_DATA_UNAVAILABLE"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "mission_id": "proof-20260827T093001",
+  "loop_id": "proof",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "status": "PASS",
+    "evidence": {
+      "coverage": 1.0,
+      "generated_at": "2026-08-27T04:35:28.289706+00:00",
+      "objectives": [],
+      "proof_contract": "fresh receipt required for every stage transition",
+      "proof_watchdog": "PASS",
+      "recovery_decisions": [],
+      "scheduler_instance": "com.nexus.continuous-loop:a71f79af1c854bbbae605e50eec77359",
+      "schema_version": "nexus.proof-diagnosis.v1",
+      "stalled": 0
+    },
+    "source": "current_cycle_receipt"
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "HEALTHY"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

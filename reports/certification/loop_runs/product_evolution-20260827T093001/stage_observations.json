@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "product_evolution.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:22.536246+00:00",
+    "completed_at": "2026-08-27T16:30:23.349365+00:00",
+    "executor": "nexus_product_evolution.loop.ProductEvolutionLoop",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "ACTION_COMPLETED",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/product_evolution.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/product_evolution.json"
+    ],
+    "duration": 813,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

@@ -1,0 +1,262 @@
+{
+  "mission_id": "seo_opportunity_loop-20260827T093001",
+  "loop_id": "seo_opportunity_loop",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "loop_id": "seo_opportunity_loop",
+    "run_id": "seo_opportunity_loop_8e6cdc7f03544b1a81a2a6c41c253763",
+    "status": "completed",
+    "zero_token_execution": true,
+    "ai_used": false,
+    "ai_calls": 0,
+    "tier1_calls": 0,
+    "tier2_calls": 0,
+    "tier3_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "estimated_cost": 0.0,
+    "estimated_cost_status": "ZERO_PROVIDER_TOKEN_CHARGE",
+    "estimated_cost_source": "no_model",
+    "estimated_input_cost_usd": 0.0,
+    "estimated_output_cost_usd": 0.0,
+    "pricing_provider": "none",
+    "pricing_model": "no_model",
+    "successful_outputs": 1,
+    "value_events": 1,
+    "deterministic_execution_share": 1.0,
+    "ai_execution_share": 0.0,
+    "tokens_per_success": 0.0,
+    "cost_per_success": 0.0,
+    "deterministic_precheck": {
+      "deterministic_precheck": true,
+      "state_version": 1,
+      "records": [
+        {
+          "category": "credit_funding_readiness",
+          "freshness": "FRESH",
+          "id": "keyword-SEO keyword opportunity: best business credit vendors for ne",
+          "keyword": "best business credit vendors for new llc",
+          "owner_tab": "seo",
+          "record_age": "2026-06-29T17:09:27.068463+00:00",
+          "score": 77,
+          "source": "keyword://best business credit vendors for new LLC"
+        },
+        {
+          "category": "credit_funding_readiness",
+          "freshness": "FRESH",
+          "id": "keyword-SEO keyword opportunity: business line of credit requirement",
+          "keyword": "business line of credit requirements",
+          "owner_tab": "seo",
+          "record_age": "2026-06-29T17:09:27.068463+00:00",
+          "score": 53,
+          "source": "keyword://business line of credit requirements"
+        }
+      ],
+      "summary": {
+        "source": "local_seo_fixture",
+        "input_count": 2
+      },
+      "material": {
+        "source": "local_seo_fixture",
+        "source_hash": "90b22cedbffb9179ef888650151ef965f255ef693e0361254b67398f78e43828",
+        "evidence_hash": "3db8f2589ef7cf3cc019a623630763f30ad5e36b9c34087e27ca712d1c2e1b4c",
+        "record_count": 2
+      },
+      "source_hash": "90b22cedbffb9179ef888650151ef965f255ef693e0361254b67398f78e43828",
+      "evidence_hash": "3db8f2589ef7cf3cc019a623630763f30ad5e36b9c34087e27ca712d1c2e1b4c",
+      "deterministic_output": {
+        "status": "success",
+        "loop_id": "seo_opportunity_loop",
+        "qualified_keywords": [
+          {
+            "id": "keyword-SEO keyword opportunity: best business credit vendors for ne",
+            "keyword": "best business credit vendors for new llc",
+            "score": 77,
+            "source": "keyword://best business credit vendors for new LLC",
+            "freshness": "FRESH"
+          },
+          {
+            "id": "keyword-SEO keyword opportunity: business line of credit requirement",
+            "keyword": "business line of credit requirements",
+            "score": 53,
+            "source": "keyword://business line of credit requirements",
+            "freshness": "FRESH"
+          }
+        ],
+        "deduped_work": 0,
+        "value_metric": {
+          "qualified_keywords": 2,
+          "duplicate_work_avoided": 0
+        },
+        "value_classification": "ESTIMATED_VALUE",
+        "source_hash": "90b22cedbffb9179ef888650151ef965f255ef693e0361254b67398f78e43828",
+        "evidence_hash": "3db8f2589ef7cf3cc019a623630763f30ad5e36b9c34087e27ca712d1c2e1b4c"
+      }
+    },
+    "reduced": {
+      "status": "success",
+      "loop_id": "seo_opportunity_loop",
+      "qualified_keywords": [
+        {
+          "id": "keyword-SEO keyword opportunity: best business credit vendors for ne",
+          "keyword": "best business credit vendors for new llc",
+          "score": 77,
+          "source": "keyword://best business credit vendors for new LLC",
+          "freshness": "FRESH"
+        },
+        {
+          "id": "keyword-SEO keyword opportunity: business line of credit requirement",
+          "keyword": "business line of credit requirements",
+          "score": 53,
+          "source": "keyword://business line of credit requirements",
+          "freshness": "FRESH"
+        }
+      ],
+      "deduped_work": 0,
+      "value_metric": {
+        "qualified_keywords": 2,
+        "duplicate_work_avoided": 0
+      },
+      "value_classification": "ESTIMATED_VALUE",
+      "source_hash": "90b22cedbffb9179ef888650151ef965f255ef693e0361254b67398f78e43828",
+      "evidence_hash": "3db8f2589ef7cf3cc019a623630763f30ad5e36b9c34087e27ca712d1c2e1b4c"
+    },
+    "result": {
+      "status": "success",
+      "loop_id": "seo_opportunity_loop",
+      "qualified_keywords": [
+        {
+          "id": "keyword-SEO keyword opportunity: best business credit vendors for ne",
+          "keyword": "best business credit vendors for new llc",
+          "score": 77,
+          "source": "keyword://best business credit vendors for new LLC",
+          "freshness": "FRESH"
+        },
+        {
+          "id": "keyword-SEO keyword opportunity: business line of credit requirement",
+          "keyword": "business line of credit requirements",
+          "score": 53,
+          "source": "keyword://business line of credit requirements",
+          "freshness": "FRESH"
+        }
+      ],
+      "deduped_work": 0,
+      "value_metric": {
+        "qualified_keywords": 2,
+        "duplicate_work_avoided": 0
+      },
+      "value_classification": "ESTIMATED_VALUE",
+      "source_hash": "90b22cedbffb9179ef888650151ef965f255ef693e0361254b67398f78e43828",
+      "evidence_hash": "3db8f2589ef7cf3cc019a623630763f30ad5e36b9c34087e27ca712d1c2e1b4c"
+    },
+    "verifier": {
+      "status": "pass",
+      "reason": "deterministic output, provenance hashes, and value metric verified"
+    },
+    "memory_record": {
+      "ai_calls": 0,
+      "ai_used": false,
+      "completed_at": "2026-08-27T16:30:23.697948+00:00",
+      "deduped_work": 0,
+      "delta_status": "NO_CHANGE",
+      "duration_ms": 0,
+      "estimated_cost": 0.0,
+      "evidence_hash": "3db8f2589ef7cf3cc019a623630763f30ad5e36b9c34087e27ca712d1c2e1b4c",
+      "input_hash": "e9a8b14f11d434ef3d6fce1bae7bcc4a39d18bc0128ca300481c76a1e7706eb5",
+      "input_tokens": 0,
+      "last_processed_at": "2026-08-27T16:30:23.697967+00:00",
+      "last_success": "2026-08-27T16:30:23.697967+00:00",
+      "loop_id": "seo_opportunity_loop",
+      "material_hash": "015df430f383036f577cc2581167be10e591961b219bfeac4ef16484425971ef",
+      "next_eligible_run": "scheduler-defined",
+      "output_hash": "3a8c9feca1eb16742731165939567260c2c2694caf0a5e73c6d16985a1d16ad5",
+      "output_tokens": 0,
+      "provider_cost_usd": 0.0,
+      "result_hash": "3a8c9feca1eb16742731165939567260c2c2694caf0a5e73c6d16985a1d16ad5",
+      "retry_class": "NONE",
+      "retry_count": 0,
+      "retry_reason": null,
+      "run_id": "seo_opportunity_loop_8e6cdc7f03544b1a81a2a6c41c253763",
+      "source_hash": "90b22cedbffb9179ef888650151ef965f255ef693e0361254b67398f78e43828",
+      "status": "success",
+      "uncontrolled_retry_detected": false,
+      "value_classification": "ESTIMATED_VALUE",
+      "value_metric": {
+        "duplicate_work_avoided": 0,
+        "qualified_keywords": 2
+      },
+      "verifier_status": "pass",
+      "zero_token_execution": true
+    },
+    "ledger_record": {
+      "record_id": "ledger_5dfc06c8a9564814bdfc9c871b7f8b3c",
+      "loop_id": "seo_opportunity_loop",
+      "loop_name": "SEO Opportunity Loop",
+      "run_id": "seo_opportunity_loop_8e6cdc7f03544b1a81a2a6c41c253763",
+      "started_at": "2026-08-27T16:30:23.697681+00:00",
+      "completed_at": "2026-08-27T16:30:23.697948+00:00",
+      "duration_ms": 0,
+      "deterministic_precheck": true,
+      "delta_only": true,
+      "cache_enabled": true,
+      "dedupe_enabled": true,
+      "zero_token_execution": true,
+      "deterministic_execution_share": 1.0,
+      "ai_execution_share": 0.0,
+      "ai_used": false,
+      "ai_calls": 0,
+      "tier1_calls": 0,
+      "tier2_calls": 0,
+      "tier3_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "estimated_cost": 0.0,
+      "estimated_cost_status": "ZERO_PROVIDER_TOKEN_CHARGE",
+      "estimated_cost_source": "no_model",
+      "estimated_input_cost_usd": 0.0,
+      "estimated_output_cost_usd": 0.0,
+      "pricing_provider": "none",
+      "pricing_model": "no_model",
+      "successful_outputs": 1,
+      "value_events": 1,
+      "tokens_per_success": 0.0,
+      "cost_per_success": 0.0,
+      "model_tier": "T0_DETERMINISTIC",
+      "effective_tier": "T0_DETERMINISTIC",
+      "explicit_premium_escalation": false,
+      "verifier_status": "pass",
+      "verifier_reason": "deterministic output, provenance hashes, and value metric verified",
+      "result_status": "success",
+      "input_hash": "e9a8b14f11d434ef3d6fce1bae7bcc4a39d18bc0128ca300481c76a1e7706eb5",
+      "output_hash": "3a8c9feca1eb16742731165939567260c2c2694caf0a5e73c6d16985a1d16ad5",
+      "material_hash": "015df430f383036f577cc2581167be10e591961b219bfeac4ef16484425971ef",
+      "delta_status": "NO_CHANGE",
+      "retry_count": 0,
+      "retry_reason": null,
+      "retry_class": "NONE",
+      "uncontrolled_retry_detected": false
+    },
+    "telemetry_run_id": "seo_opportunity_loop_4fa6450500e041b5b76e782276a1678f",
+    "no_change": true
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "OPPORTUNITY_FOUND"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

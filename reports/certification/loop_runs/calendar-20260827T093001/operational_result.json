@@ -1,0 +1,6 @@
+{
+  "loop_id": "calendar",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "actual_result": "AUTHORIZATION_REQUIRED",
+  "consumer_readback": "NOT_PROVEN"
+}

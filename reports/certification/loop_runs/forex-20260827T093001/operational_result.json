@@ -1,0 +1,6 @@
+{
+  "loop_id": "forex",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "actual_result": "INSUFFICIENT_DATA",
+  "consumer_readback": "NOT_PROVEN"
+}

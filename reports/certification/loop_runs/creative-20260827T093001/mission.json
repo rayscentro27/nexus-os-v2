@@ -1,0 +1,138 @@
+{
+  "mission_id": "creative-20260827T093001",
+  "loop_id": "creative",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "status": "PASS",
+    "evidence": {
+      "portfolio": {
+        "status": "HEALTHY",
+        "concepts_generated": 6,
+        "distinct_concepts": 6,
+        "historical_concepts_indexed": 6,
+        "feedback_count": 1,
+        "preference_profile_confidence": 0.6,
+        "experimental_concepts": 2,
+        "model_assisted_ideation": "NOT_AVAILABLE",
+        "gpu": "DEFERRED",
+        "public_actions": "BLOCKED"
+      },
+      "critic_panel": {
+        "schema_version": "nexus.creative-critic-panel.v1",
+        "status": "PASS",
+        "review_count": 5,
+        "accepted_count": 5,
+        "reviews": [
+          {
+            "concept_id": "concept_c9b42a970fb4801f",
+            "creative_critic": {
+              "status": "PASS",
+              "score": 79,
+              "distinct": true
+            },
+            "brand_critic": {
+              "status": "PASS",
+              "score": 82,
+              "voice": "UNKNOWN"
+            },
+            "compliance_critic": {
+              "status": "PASS",
+              "risk_terms": []
+            }
+          },
+          {
+            "concept_id": "concept_0a80f2df19a62f66",
+            "creative_critic": {
+              "status": "PASS",
+              "score": 79,
+              "distinct": true
+            },
+            "brand_critic": {
+              "status": "PASS",
+              "score": 82,
+              "voice": "UNKNOWN"
+            },
+            "compliance_critic": {
+              "status": "PASS",
+              "risk_terms": []
+            }
+          },
+          {
+            "concept_id": "concept_2d21acb89bb370a4",
+            "creative_critic": {
+              "status": "PASS",
+              "score": 80,
+              "distinct": true
+            },
+            "brand_critic": {
+              "status": "PASS",
+              "score": 82,
+              "voice": "UNKNOWN"
+            },
+            "compliance_critic": {
+              "status": "PASS",
+              "risk_terms": []
+            }
+          },
+          {
+            "concept_id": "concept_71da5cdbbbae61f7",
+            "creative_critic": {
+              "status": "PASS",
+              "score": 80,
+              "distinct": true
+            },
+            "brand_critic": {
+              "status": "PASS",
+              "score": 82,
+              "voice": "UNKNOWN"
+            },
+            "compliance_critic": {
+              "status": "PASS",
+              "risk_terms": []
+            }
+          },
+          {
+            "concept_id": "concept_245e9235aca205ff",
+            "creative_critic": {
+              "status": "PASS",
+              "score": 80,
+              "distinct": true
+            },
+            "brand_critic": {
+              "status": "PASS",
+              "score": 82,
+              "voice": "UNKNOWN"
+            },
+            "compliance_critic": {
+              "status": "PASS",
+              "risk_terms": []
+            }
+          }
+        ],
+        "reconciliation": "rank accepted concepts by creative score; rejected concepts require revision",
+        "production_handoff": "GOVERNED_REVIEW_REQUIRED",
+        "external_action_performed": false
+      }
+    }
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "DOCUMENT_CREATED"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

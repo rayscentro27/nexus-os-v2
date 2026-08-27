@@ -1,0 +1,123 @@
+{
+  "mission_id": "product_evolution-20260827T093001",
+  "loop_id": "product_evolution",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "mission_created": true,
+    "consumer_claimed": true,
+    "adapter_resolved": true,
+    "execution_occurred": true,
+    "receipt_exists": true,
+    "result_reconciled": true,
+    "result": {
+      "mission_id": "manual-certification-product-evolution",
+      "status": "PASS",
+      "cycles": 1,
+      "stages": [
+        {
+          "status": "PASS",
+          "evidence": "certification:CONTRACT",
+          "stage": "CONTRACT"
+        },
+        {
+          "status": "PASS",
+          "evidence": "certification:RESEARCH",
+          "stage": "RESEARCH"
+        },
+        {
+          "status": "PASS",
+          "evidence": "certification:PLAN",
+          "stage": "PLAN"
+        },
+        {
+          "status": "PASS",
+          "evidence": "certification:BUILD",
+          "stage": "BUILD"
+        },
+        {
+          "status": "PASS",
+          "evidence": "certification:TEST",
+          "stage": "TEST"
+        },
+        {
+          "status": "PASS",
+          "evidence": "certification:VERIFY",
+          "stage": "VERIFY"
+        },
+        {
+          "stage": "CRITIC",
+          "cycle": 1,
+          "status": "PASS",
+          "acceptance_verified": true
+        },
+        {
+          "cycle": 1,
+          "started_at": "2026-08-27T16:30:22.908976+00:00",
+          "stages": [
+            {
+              "status": "PASS",
+              "evidence": "certification:CONTRACT",
+              "stage": "CONTRACT"
+            },
+            {
+              "status": "PASS",
+              "evidence": "certification:RESEARCH",
+              "stage": "RESEARCH"
+            },
+            {
+              "status": "PASS",
+              "evidence": "certification:PLAN",
+              "stage": "PLAN"
+            },
+            {
+              "status": "PASS",
+              "evidence": "certification:BUILD",
+              "stage": "BUILD"
+            },
+            {
+              "status": "PASS",
+              "evidence": "certification:TEST",
+              "stage": "TEST"
+            },
+            {
+              "status": "PASS",
+              "evidence": "certification:VERIFY",
+              "stage": "VERIFY"
+            }
+          ],
+          "critic": {
+            "status": "PASS",
+            "acceptance_verified": true
+          },
+          "ended_at": "2026-08-27T16:30:22.910988+00:00"
+        }
+      ],
+      "failures": [],
+      "critic": {
+        "status": "PASS",
+        "acceptance_verified": true
+      },
+      "receipt_path": "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/product_evolution_receipts/manual-certification-product-evolution.json"
+    }
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "ACTION_COMPLETED"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

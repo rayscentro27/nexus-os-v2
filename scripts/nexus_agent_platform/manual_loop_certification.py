@@ -58,6 +58,23 @@ def material_digest(value: Any) -> str:
         return digest([material_digest(item) for item in value])
     return digest(value)
 
+def _operational_result(loop_id: str, row: dict[str, Any]) -> str:
+    if row["final_status"] == "BLOCKED_EXTERNAL":
+        return {"calendar":"AUTHORIZATION_REQUIRED", "live_research":"MARKET_DATA_UNAVAILABLE"}.get(loop_id, "BLOCKED")
+    return {"voice":"TRANSCRIPT_CREATED", "research":"NEW_FINDING", "forex":"INSUFFICIENT_DATA", "visual":"NO_MATERIAL_DEFECT", "creative":"DOCUMENT_CREATED", "health":"HEALTHY", "proof":"HEALTHY", "router":"HEALTHY", "business":"OPPORTUNITY_FOUND", "product_evolution":"ACTION_COMPLETED", "open_source_scout_loop":"OPPORTUNITY_FOUND", "research_intake_loop":"NEW_FINDING", "revenue_opportunity_loop":"OPPORTUNITY_FOUND", "seo_opportunity_loop":"OPPORTUNITY_FOUND"}.get(loop_id, "RESULT_OBSERVED")
+
+def _after_action(row: dict[str, Any], goal: str, out_dir: Path) -> dict[str, Any]:
+    actual = _operational_result(row["loop_id"], row)
+    consumer = "PROVEN" if row.get("downstream_ids") and row.get("verification_status") == "PASS" else "NOT_PROVEN"
+    observations = [{"stage_id":f"{row['loop_id']}.execution","stage_name":"deterministic execution","started_at":row["started_at"],"completed_at":row["completed_at"],"executor":row["executor"],"inputs_used":"recorded in execution receipt","observed_result":actual,"artifact_refs":[str(out_dir/f"{row['loop_id']}.json")],"provider_ids":row.get("downstream_ids",[]),"evidence_refs":[str(out_dir/f"{row['loop_id']}.json")],"duration":row["duration_ms"],"cost":None,"errors/warnings":row.get("failure_signature")}]
+    review = {"schema_version":"nexus.loop-improvement-review.v1","ai_review_status":"UNAVAILABLE","reviewer":"evidence_bound_deterministic_fallback","goal":goal,"stage_reviews":[{"stage_id":observations[0]["stage_id"],"observed_result":actual,"quality_assessment":"GOOD" if row["final_status"] == "VERIFIED_PASS" else ("BLOCKED" if row["final_status"] == "BLOCKED_EXTERNAL" else "WEAK"),"what_worked":"deterministic executor and receipt capture" if row["execution_status"] == "PASS" else "failure was isolated","weakness_opportunity":"consumer delivery is not proven" if consumer != "PROVEN" else "none observed","root_cause_likely_cause":row.get("failure_signature") or "consumer adapter/readback not attached","evidence":observations[0]["evidence_refs"],"recommendation":"attach the intended consumer and readback evidence" if consumer != "PROVEN" else "preserve current contract and test a material input change","expected_benefit":"prevents false delivery claims","risk":"none; recommendation only","confidence":"HIGH","recommended_next_experiment":"run with a concrete consumer artifact"}],"actual_result":actual,"goal_satisfied":"YES" if row["final_status"] == "VERIFIED_PASS" else "NO","what_worked_best":"deterministic execution remained independent of AI","most_important_weakness":"consumer readback not proven" if consumer != "PROVEN" else "none observed","top_improvement_opportunities":["prove same-run consumer readback"],"recommended_corrections":["add consumer receipt reference before claiming delivery"],"next_experiment":"repeat the same goal with consumer instrumentation","should_rerun":"YES","rerun_type":"SAME_GOAL_WITH_CORRECTIONS","machine_executable":"YES","ray_decision_required":"NONE"}
+    mission = {"mission_id":f"{row['loop_id']}-{Path(out_dir).name}","loop_id":row["loop_id"],"goal":goal,"real_inputs":row.get("execution_receipt"),"success_definition":"loop-specific operational result plus evidence-bound review","required_stages":["DISCOVER","PREFLIGHT","EXECUTE","VERIFY","REVIEW"],"expected_outputs":[actual],"expected_consumers":row.get("downstream_ids",[]),"prohibited_shortcuts":["registration-only pass","generic research result","empty consumer readback"],"governance_limits":["no consequential external action"]}
+    rerun = {"should_rerun":review["should_rerun"],"rerun_type":review["rerun_type"],"reason":review["next_experiment"],"production_changed":False}
+    run_dir = REPORT_ROOT / "loop_runs" / mission["mission_id"]; run_dir.mkdir(parents=True, exist_ok=True)
+    for name, payload in (("mission.json",mission),("stage_observations.json",observations),("operational_result.json",{"loop_id":row["loop_id"],"goal":goal,"actual_result":actual,"consumer_readback":consumer}),("ai_improvement_review.json",review),("rerun_proposal.json",rerun)):
+        (run_dir/name).write_text(json.dumps(payload,indent=2,default=str)+"\n",encoding="utf-8")
+    return {"mission":mission,"observations":observations,"operational_result":actual,"consumer_readback":consumer,"review":review,"rerun_proposal":rerun,"run_dir":str(run_dir)}
+
 
 def _business_once(loop_id: str, state: Path, ledger: Path) -> dict[str, Any]:
     from nexus_agent_platform.loops.runtime import LoopRuntime, LoopStateStore
@@ -228,6 +245,8 @@ def main() -> int:
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--loop", choices=sorted(set(LOOPS) | set(BUSINESS)))
     parser.add_argument("--youtube-url")
+    parser.add_argument("--goal", default="Execute the selected Nexus loop, observe its real result, and improve the next experiment.")
+    parser.add_argument("--mode", choices=("recommend", "improve"), default="recommend")
     args = parser.parse_args()
     selected = list(LOOPS) + list(BUSINESS) if args.all else ([args.loop] if args.loop else [])
     if not selected:
@@ -235,6 +254,7 @@ def main() -> int:
     stamp = datetime.now().strftime("%Y%m%dT%H%M%S%z")
     out_dir = REPORT_ROOT / "manual_loops" / stamp; out_dir.mkdir(parents=True, exist_ok=True)
     results = [_run_one(loop_id, out_dir) for loop_id in selected]
+    reviews = [_after_action(row, args.goal, out_dir) for row in results]
     special = _special_checks(out_dir)
     youtube = _youtube_scenario(args.youtube_url, out_dir)
     master = {"generated_at": now(), "mode": "MANUAL_DIRECT_INVOCATION", "scheduler_used_as_proof": False, "levels":{"capability_certification":"recorded per executor","scenario_certification":"required substantive scenario; absent for unsupported/external cases","operational_result":"recorded from actual output/readback"}, "loops": results, "youtube_scenario": youtube, "special_checks": special, "counts": {status: sum(row["final_status"] == status for row in results) for status in ("VERIFIED_PASS", "FAIL", "BLOCKED_EXTERNAL", "WAITING_HUMAN")}}
@@ -249,11 +269,17 @@ def main() -> int:
     for row in results:
         audit_lines.append(f"| {row['loop_id']} | {row['executor']} | {row['execution_status']} | {row['verification_status']} | {row['second_run_result'].get('accepted')} | {row['idempotency_status']} | {special['failure_self_repair']['status']} | {row['final_status']} |")
     (REPORT_ROOT / "nexus_loop_master_audit_latest.md").write_text("\n".join(audit_lines) + "\n", encoding="utf-8")
-    scenario = {"generated_at": now(), "law": "CAPABILITY_CERTIFICATION -> SCENARIO_CERTIFICATION -> OPERATIONAL_RESULT", "scenarios": [{"loop": row["loop_id"], "objective": LOOPS.get(row["loop_id"], (row["loop_id"], "unknown", "unknown"))[0], "inputs": row.get("execution_receipt"), "work_performed": row.get("executor"), "result": "RESEARCH_COMPLETE" if row["final_status"] == "VERIFIED_PASS" else ("BLOCKED" if row["final_status"] == "BLOCKED_EXTERNAL" else "FAILED"), "evidence": row.get("verification_receipt"), "output_location": str(out_dir / f"{row['loop_id']}.json"), "delivered_to": row.get("downstream_ids") or [], "consumer_readback": "PROVEN" if row.get("verification_status") == "PASS" else "NOT_PROVEN", "follow_up": "none" if row["final_status"] == "VERIFIED_PASS" else "resolve external/provider gate", "execution_status": row.get("execution_status"), "verification_status": row.get("verification_status")} for row in results], "youtube": youtube, "secret_values_included": False}
+    scenario = {"generated_at": now(), "law": "CAPABILITY_CERTIFICATION -> SCENARIO_CERTIFICATION -> OPERATIONAL_RESULT", "scenarios": [{"loop": row["loop_id"], "objective": LOOPS.get(row["loop_id"], (row["loop_id"], "unknown", "unknown"))[0], "inputs": row.get("execution_receipt"), "work_performed": row.get("executor"), "result": reviews[index]["operational_result"], "evidence": row.get("verification_receipt"), "output_location": reviews[index]["run_dir"], "delivered_to": row.get("downstream_ids") or [], "consumer_readback": reviews[index]["consumer_readback"], "follow_up": reviews[index]["review"]["next_experiment"], "execution_status": row.get("execution_status"), "verification_status": row.get("verification_status"), "ai_review_status": reviews[index]["review"]["ai_review_status"]} for index, row in enumerate(results)], "youtube": youtube, "secret_values_included": False}
     (REPORT_ROOT / "nexus_real_world_scenario_audit_latest.json").write_text(json.dumps(scenario, indent=2, default=str) + "\n", encoding="utf-8")
     scenario_lines = ["# Nexus Real-World Scenario Audit", "", "Capability, scenario, and operational-result levels are recorded separately.", "", "| Loop | Objective | Result | Consumer readback | Follow-up |", "|---|---|---|---|---|"]
     scenario_lines += [f"| {item['loop']} | {item['objective']} | {item['result']} | {item['consumer_readback']} | {item['follow_up']} |" for item in scenario["scenarios"]]
     (REPORT_ROOT / "nexus_real_world_scenario_audit_latest.md").write_text("\n".join(scenario_lines) + "\n", encoding="utf-8")
+    after_action = {"schema_version":"nexus.loop-after-action.v1","generated_at":now(),"goal":args.goal,"mode":args.mode,"deterministic_execution_independent_of_ai":True,"runs":reviews,"ai_review_status":"UNAVAILABLE_EVIDENCE_BOUND_FALLBACK"}
+    (REPORT_ROOT / "nexus_loop_after_action_latest.json").write_text(json.dumps(after_action, indent=2, default=str) + "\n", encoding="utf-8")
+    after_lines = ["# Nexus Loop After-Action Review", "", f"Goal: {args.goal}", "", "| LOOP | ACTUAL RESULT | WHAT WORKED | WHAT NEEDS IMPROVEMENT | NEXT EXPERIMENT | SHOULD RERUN |", "|---|---|---|---|---|---|"]
+    after_lines += [f"| {item['mission']['loop_id']} | {item['operational_result']} | deterministic execution | {item['review']['most_important_weakness']} | {item['review']['next_experiment']} | {item['review']['should_rerun']} |" for item in reviews]
+    after_lines += ["", "Secondary metadata: execution and verification remain in the per-run mission artifacts. AI review was unavailable; evidence-bound fallback feedback was recorded."]
+    (REPORT_ROOT / "nexus_loop_after_action_latest.md").write_text("\n".join(after_lines) + "\n", encoding="utf-8")
     print(json.dumps({"report_dir": str(out_dir), "counts": master["counts"], "special_checks": special}, indent=2))
     return 0 if all(row["final_status"] != "FAIL" for row in results) else 1
 

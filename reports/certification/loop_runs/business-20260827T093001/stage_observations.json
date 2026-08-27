@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "business.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:18.299632+00:00",
+    "completed_at": "2026-08-27T16:30:20.080144+00:00",
+    "executor": "phase15.live_loop_runner",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "OPPORTUNITY_FOUND",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/business.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/business.json"
+    ],
+    "duration": 1780,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

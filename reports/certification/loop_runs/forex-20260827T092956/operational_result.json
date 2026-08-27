@@ -1,0 +1,6 @@
+{
+  "loop_id": "forex",
+  "goal": "Research EUR/USD and GBP/USD and determine whether any existing Nexus research strategy deserves deeper testing.",
+  "actual_result": "INSUFFICIENT_DATA",
+  "consumer_readback": "NOT_PROVEN"
+}

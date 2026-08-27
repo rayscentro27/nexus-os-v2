@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "voice.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:01.194545+00:00",
+    "completed_at": "2026-08-27T16:30:14.695117+00:00",
+    "executor": "voice.local_stt.transcribe_audio_file -> NexusWakeVoice -> sendAgentMessage -> speakHermesResponse",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "TRANSCRIPT_CREATED",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/voice.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/voice.json"
+    ],
+    "duration": 13500,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

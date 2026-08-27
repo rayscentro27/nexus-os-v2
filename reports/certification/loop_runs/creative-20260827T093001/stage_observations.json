@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "creative.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:20.203508+00:00",
+    "completed_at": "2026-08-27T16:30:20.443569+00:00",
+    "executor": "capability_runner.py#creative.intelligence",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "DOCUMENT_CREATED",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/creative.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/creative.json"
+    ],
+    "duration": 240,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

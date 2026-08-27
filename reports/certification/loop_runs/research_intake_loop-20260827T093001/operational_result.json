@@ -1,0 +1,6 @@
+{
+  "loop_id": "research_intake_loop",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "actual_result": "NEW_FINDING",
+  "consumer_readback": "NOT_PROVEN"
+}

@@ -1,0 +1,1250 @@
+{
+  "mission_id": "research_intake_loop-20260827T093001",
+  "loop_id": "research_intake_loop",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "loop_id": "research_intake_loop",
+    "run_id": "research_intake_loop_fd27fe4dc3d349329dc59ab81ebd94ad",
+    "status": "completed",
+    "zero_token_execution": true,
+    "ai_used": false,
+    "ai_calls": 0,
+    "tier1_calls": 0,
+    "tier2_calls": 0,
+    "tier3_calls": 0,
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "estimated_cost": 0.0,
+    "estimated_cost_status": "ZERO_PROVIDER_TOKEN_CHARGE",
+    "estimated_cost_source": "no_model",
+    "estimated_input_cost_usd": 0.0,
+    "estimated_output_cost_usd": 0.0,
+    "pricing_provider": "none",
+    "pricing_model": "no_model",
+    "successful_outputs": 1,
+    "value_events": 1,
+    "deterministic_execution_share": 1.0,
+    "ai_execution_share": 0.0,
+    "tokens_per_success": 0.0,
+    "cost_per_success": 0.0,
+    "deterministic_precheck": {
+      "deterministic_precheck": true,
+      "state_version": 1,
+      "records": [
+        {
+          "artifact_id": "opportunity_aeeb574d234d3906",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 73,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_aeeb574d234d3906",
+          "title": "Adapt: chandachewe10/loan-management-system"
+        },
+        {
+          "artifact_id": "opportunity_cc013a94137fa7c4",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 70,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_cc013a94137fa7c4",
+          "title": "Adapt: credit-scoring topic"
+        },
+        {
+          "artifact_id": "opportunity_9aa9121b536c2f04",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 70,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_9aa9121b536c2f04",
+          "title": "Adapt: moov-io/awesome-fintech"
+        },
+        {
+          "artifact_id": "opportunity_69b183e9ab196c6c",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 70,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_69b183e9ab196c6c",
+          "title": "Adapt: credit-management topic"
+        },
+        {
+          "artifact_id": "opportunity_8955ebd60324f305",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 69,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_8955ebd60324f305",
+          "title": "Adapt: Credit Plug"
+        },
+        {
+          "artifact_id": "opportunity_e8ab86d1c2780731",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 66,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e8ab86d1c2780731",
+          "title": "Adapt: Approved credit funding grants research lane"
+        },
+        {
+          "artifact_id": "opportunity_e80f1ea94c85f4a4",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 66,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e80f1ea94c85f4a4",
+          "title": "Adapt: credit-repair-tools topic"
+        },
+        {
+          "artifact_id": "opportunity_3e92fe617cba2da4",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 66,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_3e92fe617cba2da4",
+          "title": "Adapt: Wadprog/RepairCredit-"
+        },
+        {
+          "artifact_id": "opportunity_16e8f5b4f60cf642",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 66,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_16e8f5b4f60cf642",
+          "title": "Adapt: CREDITWORKER_WORKFLOW.md"
+        },
+        {
+          "artifact_id": "opportunity_38cf3b8e4de4f1ba",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_38cf3b8e4de4f1ba",
+          "title": "Adapt: FUNDING.yml"
+        },
+        {
+          "artifact_id": "opportunity_435e1cb034fdd33e",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_435e1cb034fdd33e",
+          "title": "Adapt: FUNDING.yml"
+        },
+        {
+          "artifact_id": "opportunity_f100c78031bb2c89",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f100c78031bb2c89",
+          "title": "Adapt: FUNDING.yml"
+        },
+        {
+          "artifact_id": "opportunity_b0876ce11c99b814",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_b0876ce11c99b814",
+          "title": "Adapt: FUNDING.yml"
+        },
+        {
+          "artifact_id": "opportunity_99a71cfff86f0a45",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_99a71cfff86f0a45",
+          "title": "Adapt: FUNDING.yml"
+        },
+        {
+          "artifact_id": "opportunity_6c2e202f1d91cf1f",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_6c2e202f1d91cf1f",
+          "title": "Adapt: credit_agent.py"
+        },
+        {
+          "artifact_id": "opportunity_e9442d026b7bd865",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e9442d026b7bd865",
+          "title": "Adapt: funding_agent.py"
+        },
+        {
+          "artifact_id": "opportunity_edc4b5ff97eeb232",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_edc4b5ff97eeb232",
+          "title": "Adapt: credit_funding_intelligence.py"
+        },
+        {
+          "artifact_id": "opportunity_173a10e7a7d1d3f0",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 64,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_173a10e7a7d1d3f0",
+          "title": "Adapt: CREDITWORKER_SECURITY_MODEL.md"
+        },
+        {
+          "artifact_id": "opportunity_cd424815f5754b8f",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 60,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_cd424815f5754b8f",
+          "title": "Adapt: Approved payments research lane"
+        },
+        {
+          "artifact_id": "opportunity_f2bb6839372b9069",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 58,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f2bb6839372b9069",
+          "title": "Adapt: Juspay Hyperswitch"
+        },
+        {
+          "artifact_id": "opportunity_0af4fee42663fc07",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 58,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_0af4fee42663fc07",
+          "title": "Adapt: BTCPay Server"
+        },
+        {
+          "artifact_id": "opportunity_fd24a54ef40193e4",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 58,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_fd24a54ef40193e4",
+          "title": "Adapt: Global Payments official samples"
+        },
+        {
+          "artifact_id": "opportunity_fcf8335656aef6e5",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 58,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_fcf8335656aef6e5",
+          "title": "Adapt: GitHub payment-gateway topic"
+        },
+        {
+          "artifact_id": "opportunity_f8e2a289ca239d25",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 58,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f8e2a289ca239d25",
+          "title": "Adapt: GitHub payment-links topic"
+        },
+        {
+          "artifact_id": "opportunity_f4187c82e871bf50",
+          "category": "research_opportunity",
+          "evidence_classification": "KNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-08-19T15:01:21.530782+00:00",
+          "score": 58,
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f4187c82e871bf50",
+          "title": "Adapt: GitHub point-of-sale topic"
+        },
+        {
+          "artifact_id": "rsc-Business Credit checklist and buyer intent keywords",
+          "category": "credit_funding_readiness",
+          "evidence_classification": "UNKNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-06-26T15:37:06.443011+00:00",
+          "score": 41,
+          "source": "https://example.com/research/business-credit/1",
+          "source_hash": "https://example.com/research/business-credit/1",
+          "title": "Business Credit checklist and buyer intent keywords"
+        },
+        {
+          "artifact_id": "rsc-Business Credit affiliate program research",
+          "category": "credit_funding_readiness",
+          "evidence_classification": "UNKNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-06-26T15:37:06.443011+00:00",
+          "score": 49,
+          "source": "https://example.com/research/business-credit/2",
+          "source_hash": "https://example.com/research/business-credit/2",
+          "title": "Business Credit affiliate program research"
+        },
+        {
+          "artifact_id": "rsc-Business Credit YouTube channel transcript review",
+          "category": "credit_funding_readiness",
+          "evidence_classification": "UNKNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-06-26T15:37:06.443011+00:00",
+          "score": 42,
+          "source": "https://example.com/research/business-credit/3",
+          "source_hash": "https://example.com/research/business-credit/3",
+          "title": "Business Credit YouTube channel transcript review"
+        },
+        {
+          "artifact_id": "rsc-Business Credit content monetization experiment",
+          "category": "credit_funding_readiness",
+          "evidence_classification": "UNKNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-06-26T15:37:06.443011+00:00",
+          "score": 38,
+          "source": "https://example.com/research/business-credit/4",
+          "source_hash": "https://example.com/research/business-credit/4",
+          "title": "Business Credit content monetization experiment"
+        },
+        {
+          "artifact_id": "rsc-Business Credit beginner guide opportunity",
+          "category": "credit_funding_readiness",
+          "evidence_classification": "UNKNOWN",
+          "freshness": "FRESH",
+          "record_age": "2026-06-26T15:37:06.443011+00:00",
+          "score": 41,
+          "source": "https://example.com/research/business-credit/5",
+          "source_hash": "https://example.com/research/business-credit/5",
+          "title": "Business Credit beginner guide opportunity"
+        }
+      ],
+      "summary": {
+        "source": "research_intake",
+        "input_count": 30
+      },
+      "material": {
+        "source": "research_intake",
+        "source_hash": "55c2cbc818c71e2fa787e2d58224f8a3ec4c83bea04a114e1f05392e9df76b88",
+        "evidence_hash": "43fe58a67e958ef027b93dd6398d6c7cf52bfcf3084cd211e7dcbc96fdcf82b3",
+        "record_count": 30
+      },
+      "source_hash": "55c2cbc818c71e2fa787e2d58224f8a3ec4c83bea04a114e1f05392e9df76b88",
+      "evidence_hash": "43fe58a67e958ef027b93dd6398d6c7cf52bfcf3084cd211e7dcbc96fdcf82b3",
+      "deterministic_output": {
+        "status": "success",
+        "loop_id": "research_intake_loop",
+        "artifacts": [
+          {
+            "artifact_id": "opportunity_aeeb574d234d3906",
+            "title": "Adapt: chandachewe10/loan-management-system",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_aeeb574d234d3906",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_cc013a94137fa7c4",
+            "title": "Adapt: credit-scoring topic",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_cc013a94137fa7c4",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_9aa9121b536c2f04",
+            "title": "Adapt: moov-io/awesome-fintech",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_9aa9121b536c2f04",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_69b183e9ab196c6c",
+            "title": "Adapt: credit-management topic",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_69b183e9ab196c6c",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_8955ebd60324f305",
+            "title": "Adapt: Credit Plug",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_8955ebd60324f305",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_e8ab86d1c2780731",
+            "title": "Adapt: Approved credit funding grants research lane",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_e8ab86d1c2780731",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_e80f1ea94c85f4a4",
+            "title": "Adapt: credit-repair-tools topic",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_e80f1ea94c85f4a4",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_3e92fe617cba2da4",
+            "title": "Adapt: Wadprog/RepairCredit-",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_3e92fe617cba2da4",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_16e8f5b4f60cf642",
+            "title": "Adapt: CREDITWORKER_WORKFLOW.md",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_16e8f5b4f60cf642",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_38cf3b8e4de4f1ba",
+            "title": "Adapt: FUNDING.yml",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_38cf3b8e4de4f1ba",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_435e1cb034fdd33e",
+            "title": "Adapt: FUNDING.yml",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_435e1cb034fdd33e",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_f100c78031bb2c89",
+            "title": "Adapt: FUNDING.yml",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_f100c78031bb2c89",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_b0876ce11c99b814",
+            "title": "Adapt: FUNDING.yml",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_b0876ce11c99b814",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_99a71cfff86f0a45",
+            "title": "Adapt: FUNDING.yml",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_99a71cfff86f0a45",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_6c2e202f1d91cf1f",
+            "title": "Adapt: credit_agent.py",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_6c2e202f1d91cf1f",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_e9442d026b7bd865",
+            "title": "Adapt: funding_agent.py",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_e9442d026b7bd865",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_edc4b5ff97eeb232",
+            "title": "Adapt: credit_funding_intelligence.py",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_edc4b5ff97eeb232",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_173a10e7a7d1d3f0",
+            "title": "Adapt: CREDITWORKER_SECURITY_MODEL.md",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_173a10e7a7d1d3f0",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_cd424815f5754b8f",
+            "title": "Adapt: Approved payments research lane",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_cd424815f5754b8f",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_f2bb6839372b9069",
+            "title": "Adapt: Juspay Hyperswitch",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_f2bb6839372b9069",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_0af4fee42663fc07",
+            "title": "Adapt: BTCPay Server",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_0af4fee42663fc07",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_fd24a54ef40193e4",
+            "title": "Adapt: Global Payments official samples",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_fd24a54ef40193e4",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_fcf8335656aef6e5",
+            "title": "Adapt: GitHub payment-gateway topic",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_fcf8335656aef6e5",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_f8e2a289ca239d25",
+            "title": "Adapt: GitHub payment-links topic",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_f8e2a289ca239d25",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "opportunity_f4187c82e871bf50",
+            "title": "Adapt: GitHub point-of-sale topic",
+            "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+            "source_hash": "opportunity_f4187c82e871bf50",
+            "evidence_classification": "KNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "rsc-Business Credit checklist and buyer intent keywords",
+            "title": "Business Credit checklist and buyer intent keywords",
+            "source": "https://example.com/research/business-credit/1",
+            "source_hash": "https://example.com/research/business-credit/1",
+            "evidence_classification": "UNKNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "rsc-Business Credit affiliate program research",
+            "title": "Business Credit affiliate program research",
+            "source": "https://example.com/research/business-credit/2",
+            "source_hash": "https://example.com/research/business-credit/2",
+            "evidence_classification": "UNKNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "rsc-Business Credit YouTube channel transcript review",
+            "title": "Business Credit YouTube channel transcript review",
+            "source": "https://example.com/research/business-credit/3",
+            "source_hash": "https://example.com/research/business-credit/3",
+            "evidence_classification": "UNKNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "rsc-Business Credit content monetization experiment",
+            "title": "Business Credit content monetization experiment",
+            "source": "https://example.com/research/business-credit/4",
+            "source_hash": "https://example.com/research/business-credit/4",
+            "evidence_classification": "UNKNOWN",
+            "normalized": true
+          },
+          {
+            "artifact_id": "rsc-Business Credit beginner guide opportunity",
+            "title": "Business Credit beginner guide opportunity",
+            "source": "https://example.com/research/business-credit/5",
+            "source_hash": "https://example.com/research/business-credit/5",
+            "evidence_classification": "UNKNOWN",
+            "normalized": true
+          }
+        ],
+        "deduped_work": 0,
+        "value_metric": {
+          "research_items_processed": 30,
+          "duplicate_work_avoided": 0
+        },
+        "value_classification": "MEASURED_COUNT",
+        "source_hash": "55c2cbc818c71e2fa787e2d58224f8a3ec4c83bea04a114e1f05392e9df76b88",
+        "evidence_hash": "43fe58a67e958ef027b93dd6398d6c7cf52bfcf3084cd211e7dcbc96fdcf82b3"
+      }
+    },
+    "reduced": {
+      "status": "success",
+      "loop_id": "research_intake_loop",
+      "artifacts": [
+        {
+          "artifact_id": "opportunity_aeeb574d234d3906",
+          "title": "Adapt: chandachewe10/loan-management-system",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_aeeb574d234d3906",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_cc013a94137fa7c4",
+          "title": "Adapt: credit-scoring topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_cc013a94137fa7c4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_9aa9121b536c2f04",
+          "title": "Adapt: moov-io/awesome-fintech",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_9aa9121b536c2f04",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_69b183e9ab196c6c",
+          "title": "Adapt: credit-management topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_69b183e9ab196c6c",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_8955ebd60324f305",
+          "title": "Adapt: Credit Plug",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_8955ebd60324f305",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_e8ab86d1c2780731",
+          "title": "Adapt: Approved credit funding grants research lane",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e8ab86d1c2780731",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_e80f1ea94c85f4a4",
+          "title": "Adapt: credit-repair-tools topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e80f1ea94c85f4a4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_3e92fe617cba2da4",
+          "title": "Adapt: Wadprog/RepairCredit-",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_3e92fe617cba2da4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_16e8f5b4f60cf642",
+          "title": "Adapt: CREDITWORKER_WORKFLOW.md",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_16e8f5b4f60cf642",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_38cf3b8e4de4f1ba",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_38cf3b8e4de4f1ba",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_435e1cb034fdd33e",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_435e1cb034fdd33e",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f100c78031bb2c89",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f100c78031bb2c89",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_b0876ce11c99b814",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_b0876ce11c99b814",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_99a71cfff86f0a45",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_99a71cfff86f0a45",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_6c2e202f1d91cf1f",
+          "title": "Adapt: credit_agent.py",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_6c2e202f1d91cf1f",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_e9442d026b7bd865",
+          "title": "Adapt: funding_agent.py",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e9442d026b7bd865",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_edc4b5ff97eeb232",
+          "title": "Adapt: credit_funding_intelligence.py",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_edc4b5ff97eeb232",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_173a10e7a7d1d3f0",
+          "title": "Adapt: CREDITWORKER_SECURITY_MODEL.md",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_173a10e7a7d1d3f0",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_cd424815f5754b8f",
+          "title": "Adapt: Approved payments research lane",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_cd424815f5754b8f",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f2bb6839372b9069",
+          "title": "Adapt: Juspay Hyperswitch",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f2bb6839372b9069",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_0af4fee42663fc07",
+          "title": "Adapt: BTCPay Server",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_0af4fee42663fc07",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_fd24a54ef40193e4",
+          "title": "Adapt: Global Payments official samples",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_fd24a54ef40193e4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_fcf8335656aef6e5",
+          "title": "Adapt: GitHub payment-gateway topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_fcf8335656aef6e5",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f8e2a289ca239d25",
+          "title": "Adapt: GitHub payment-links topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f8e2a289ca239d25",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f4187c82e871bf50",
+          "title": "Adapt: GitHub point-of-sale topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f4187c82e871bf50",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit checklist and buyer intent keywords",
+          "title": "Business Credit checklist and buyer intent keywords",
+          "source": "https://example.com/research/business-credit/1",
+          "source_hash": "https://example.com/research/business-credit/1",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit affiliate program research",
+          "title": "Business Credit affiliate program research",
+          "source": "https://example.com/research/business-credit/2",
+          "source_hash": "https://example.com/research/business-credit/2",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit YouTube channel transcript review",
+          "title": "Business Credit YouTube channel transcript review",
+          "source": "https://example.com/research/business-credit/3",
+          "source_hash": "https://example.com/research/business-credit/3",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit content monetization experiment",
+          "title": "Business Credit content monetization experiment",
+          "source": "https://example.com/research/business-credit/4",
+          "source_hash": "https://example.com/research/business-credit/4",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit beginner guide opportunity",
+          "title": "Business Credit beginner guide opportunity",
+          "source": "https://example.com/research/business-credit/5",
+          "source_hash": "https://example.com/research/business-credit/5",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        }
+      ],
+      "deduped_work": 0,
+      "value_metric": {
+        "research_items_processed": 30,
+        "duplicate_work_avoided": 0
+      },
+      "value_classification": "MEASURED_COUNT",
+      "source_hash": "55c2cbc818c71e2fa787e2d58224f8a3ec4c83bea04a114e1f05392e9df76b88",
+      "evidence_hash": "43fe58a67e958ef027b93dd6398d6c7cf52bfcf3084cd211e7dcbc96fdcf82b3"
+    },
+    "result": {
+      "status": "success",
+      "loop_id": "research_intake_loop",
+      "artifacts": [
+        {
+          "artifact_id": "opportunity_aeeb574d234d3906",
+          "title": "Adapt: chandachewe10/loan-management-system",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_aeeb574d234d3906",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_cc013a94137fa7c4",
+          "title": "Adapt: credit-scoring topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_cc013a94137fa7c4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_9aa9121b536c2f04",
+          "title": "Adapt: moov-io/awesome-fintech",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_9aa9121b536c2f04",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_69b183e9ab196c6c",
+          "title": "Adapt: credit-management topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_69b183e9ab196c6c",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_8955ebd60324f305",
+          "title": "Adapt: Credit Plug",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_8955ebd60324f305",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_e8ab86d1c2780731",
+          "title": "Adapt: Approved credit funding grants research lane",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e8ab86d1c2780731",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_e80f1ea94c85f4a4",
+          "title": "Adapt: credit-repair-tools topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e80f1ea94c85f4a4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_3e92fe617cba2da4",
+          "title": "Adapt: Wadprog/RepairCredit-",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_3e92fe617cba2da4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_16e8f5b4f60cf642",
+          "title": "Adapt: CREDITWORKER_WORKFLOW.md",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_16e8f5b4f60cf642",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_38cf3b8e4de4f1ba",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_38cf3b8e4de4f1ba",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_435e1cb034fdd33e",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_435e1cb034fdd33e",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f100c78031bb2c89",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f100c78031bb2c89",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_b0876ce11c99b814",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_b0876ce11c99b814",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_99a71cfff86f0a45",
+          "title": "Adapt: FUNDING.yml",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_99a71cfff86f0a45",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_6c2e202f1d91cf1f",
+          "title": "Adapt: credit_agent.py",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_6c2e202f1d91cf1f",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_e9442d026b7bd865",
+          "title": "Adapt: funding_agent.py",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_e9442d026b7bd865",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_edc4b5ff97eeb232",
+          "title": "Adapt: credit_funding_intelligence.py",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_edc4b5ff97eeb232",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_173a10e7a7d1d3f0",
+          "title": "Adapt: CREDITWORKER_SECURITY_MODEL.md",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_173a10e7a7d1d3f0",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_cd424815f5754b8f",
+          "title": "Adapt: Approved payments research lane",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_cd424815f5754b8f",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f2bb6839372b9069",
+          "title": "Adapt: Juspay Hyperswitch",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f2bb6839372b9069",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_0af4fee42663fc07",
+          "title": "Adapt: BTCPay Server",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_0af4fee42663fc07",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_fd24a54ef40193e4",
+          "title": "Adapt: Global Payments official samples",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_fd24a54ef40193e4",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_fcf8335656aef6e5",
+          "title": "Adapt: GitHub payment-gateway topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_fcf8335656aef6e5",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f8e2a289ca239d25",
+          "title": "Adapt: GitHub payment-links topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f8e2a289ca239d25",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "opportunity_f4187c82e871bf50",
+          "title": "Adapt: GitHub point-of-sale topic",
+          "source": "data/exports/notebooklm/research_bundles/final_daily_research_memory_latest.json",
+          "source_hash": "opportunity_f4187c82e871bf50",
+          "evidence_classification": "KNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit checklist and buyer intent keywords",
+          "title": "Business Credit checklist and buyer intent keywords",
+          "source": "https://example.com/research/business-credit/1",
+          "source_hash": "https://example.com/research/business-credit/1",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit affiliate program research",
+          "title": "Business Credit affiliate program research",
+          "source": "https://example.com/research/business-credit/2",
+          "source_hash": "https://example.com/research/business-credit/2",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit YouTube channel transcript review",
+          "title": "Business Credit YouTube channel transcript review",
+          "source": "https://example.com/research/business-credit/3",
+          "source_hash": "https://example.com/research/business-credit/3",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit content monetization experiment",
+          "title": "Business Credit content monetization experiment",
+          "source": "https://example.com/research/business-credit/4",
+          "source_hash": "https://example.com/research/business-credit/4",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        },
+        {
+          "artifact_id": "rsc-Business Credit beginner guide opportunity",
+          "title": "Business Credit beginner guide opportunity",
+          "source": "https://example.com/research/business-credit/5",
+          "source_hash": "https://example.com/research/business-credit/5",
+          "evidence_classification": "UNKNOWN",
+          "normalized": true
+        }
+      ],
+      "deduped_work": 0,
+      "value_metric": {
+        "research_items_processed": 30,
+        "duplicate_work_avoided": 0
+      },
+      "value_classification": "MEASURED_COUNT",
+      "source_hash": "55c2cbc818c71e2fa787e2d58224f8a3ec4c83bea04a114e1f05392e9df76b88",
+      "evidence_hash": "43fe58a67e958ef027b93dd6398d6c7cf52bfcf3084cd211e7dcbc96fdcf82b3"
+    },
+    "verifier": {
+      "status": "pass",
+      "reason": "deterministic output, provenance hashes, and value metric verified"
+    },
+    "memory_record": {
+      "ai_calls": 0,
+      "ai_used": false,
+      "completed_at": "2026-08-27T16:30:23.618723+00:00",
+      "deduped_work": 0,
+      "delta_status": "NO_CHANGE",
+      "duration_ms": 2,
+      "estimated_cost": 0.0,
+      "evidence_hash": "43fe58a67e958ef027b93dd6398d6c7cf52bfcf3084cd211e7dcbc96fdcf82b3",
+      "input_hash": "cef9a192cbe6b8ac0c4addd800b0b59e57923862c7ba048902c8bb52c41107df",
+      "input_tokens": 0,
+      "last_processed_at": "2026-08-27T16:30:23.618745+00:00",
+      "last_success": "2026-08-27T16:30:23.618745+00:00",
+      "loop_id": "research_intake_loop",
+      "material_hash": "6f9c56b52de10f3f67ec0e00ae3f97af6bc82af80315a6d6b882e1219a06bf1c",
+      "next_eligible_run": "scheduler-defined",
+      "output_hash": "ac5fb2c50ce965c7caf50d35cff959f55c325c4055b41efb6e6fa491750a9a93",
+      "output_tokens": 0,
+      "provider_cost_usd": 0.0,
+      "result_hash": "ac5fb2c50ce965c7caf50d35cff959f55c325c4055b41efb6e6fa491750a9a93",
+      "retry_class": "NONE",
+      "retry_count": 0,
+      "retry_reason": null,
+      "run_id": "research_intake_loop_fd27fe4dc3d349329dc59ab81ebd94ad",
+      "source_hash": "55c2cbc818c71e2fa787e2d58224f8a3ec4c83bea04a114e1f05392e9df76b88",
+      "status": "success",
+      "uncontrolled_retry_detected": false,
+      "value_classification": "MEASURED_COUNT",
+      "value_metric": {
+        "duplicate_work_avoided": 0,
+        "research_items_processed": 30
+      },
+      "verifier_status": "pass",
+      "zero_token_execution": true
+    },
+    "ledger_record": {
+      "record_id": "ledger_97e591c74909499a9e7e372f27552666",
+      "loop_id": "research_intake_loop",
+      "loop_name": "Research Intake Loop",
+      "run_id": "research_intake_loop_fd27fe4dc3d349329dc59ab81ebd94ad",
+      "started_at": "2026-08-27T16:30:23.616881+00:00",
+      "completed_at": "2026-08-27T16:30:23.618723+00:00",
+      "duration_ms": 2,
+      "deterministic_precheck": true,
+      "delta_only": true,
+      "cache_enabled": true,
+      "dedupe_enabled": true,
+      "zero_token_execution": true,
+      "deterministic_execution_share": 1.0,
+      "ai_execution_share": 0.0,
+      "ai_used": false,
+      "ai_calls": 0,
+      "tier1_calls": 0,
+      "tier2_calls": 0,
+      "tier3_calls": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "estimated_cost": 0.0,
+      "estimated_cost_status": "ZERO_PROVIDER_TOKEN_CHARGE",
+      "estimated_cost_source": "no_model",
+      "estimated_input_cost_usd": 0.0,
+      "estimated_output_cost_usd": 0.0,
+      "pricing_provider": "none",
+      "pricing_model": "no_model",
+      "successful_outputs": 1,
+      "value_events": 1,
+      "tokens_per_success": 0.0,
+      "cost_per_success": 0.0,
+      "model_tier": "T0_DETERMINISTIC",
+      "effective_tier": "T0_DETERMINISTIC",
+      "explicit_premium_escalation": false,
+      "verifier_status": "pass",
+      "verifier_reason": "deterministic output, provenance hashes, and value metric verified",
+      "result_status": "success",
+      "input_hash": "cef9a192cbe6b8ac0c4addd800b0b59e57923862c7ba048902c8bb52c41107df",
+      "output_hash": "ac5fb2c50ce965c7caf50d35cff959f55c325c4055b41efb6e6fa491750a9a93",
+      "material_hash": "6f9c56b52de10f3f67ec0e00ae3f97af6bc82af80315a6d6b882e1219a06bf1c",
+      "delta_status": "NO_CHANGE",
+      "retry_count": 0,
+      "retry_reason": null,
+      "retry_class": "NONE",
+      "uncontrolled_retry_detected": false
+    },
+    "telemetry_run_id": "research_intake_loop_75ad71a1d1bb4bbf8db75a7fc46af3d0",
+    "no_change": true
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "NEW_FINDING"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

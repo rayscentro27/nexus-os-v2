@@ -1,0 +1,39 @@
+{
+  "schema_version": "nexus.loop-improvement-review.v1",
+  "ai_review_status": "UNAVAILABLE",
+  "reviewer": "evidence_bound_deterministic_fallback",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "stage_reviews": [
+    {
+      "stage_id": "revenue_opportunity_loop.execution",
+      "observed_result": "OPPORTUNITY_FOUND",
+      "quality_assessment": "GOOD",
+      "what_worked": "deterministic executor and receipt capture",
+      "weakness_opportunity": "consumer delivery is not proven",
+      "root_cause_likely_cause": "consumer adapter/readback not attached",
+      "evidence": [
+        "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/revenue_opportunity_loop.json"
+      ],
+      "recommendation": "attach the intended consumer and readback evidence",
+      "expected_benefit": "prevents false delivery claims",
+      "risk": "none; recommendation only",
+      "confidence": "HIGH",
+      "recommended_next_experiment": "run with a concrete consumer artifact"
+    }
+  ],
+  "actual_result": "OPPORTUNITY_FOUND",
+  "goal_satisfied": "YES",
+  "what_worked_best": "deterministic execution remained independent of AI",
+  "most_important_weakness": "consumer readback not proven",
+  "top_improvement_opportunities": [
+    "prove same-run consumer readback"
+  ],
+  "recommended_corrections": [
+    "add consumer receipt reference before claiming delivery"
+  ],
+  "next_experiment": "repeat the same goal with consumer instrumentation",
+  "should_rerun": "YES",
+  "rerun_type": "SAME_GOAL_WITH_CORRECTIONS",
+  "machine_executable": "YES",
+  "ray_decision_required": "NONE"
+}

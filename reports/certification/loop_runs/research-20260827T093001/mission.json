@@ -1,0 +1,240 @@
+{
+  "mission_id": "research-20260827T093001",
+  "loop_id": "research",
+  "goal": "Execute the selected Nexus loop, observe its real result, and improve the next experiment.",
+  "real_inputs": {
+    "job": {
+      "schema_version": "nexus.alpha-research-job.v1",
+      "research_job_id": "manual-certification-20260827T163015856190Z",
+      "objective": "Identify one current repository reliability improvement from fresh certification evidence",
+      "research_type": "TECHNOLOGY_RESEARCH",
+      "business_context": {
+        "scope": "public_business_context"
+      },
+      "scope": {},
+      "constraints": {
+        "consequential_action": false,
+        "pii_allowed": false,
+        "external_publish": false
+      },
+      "source_policy": {
+        "public_only": true,
+        "evidence_first": true
+      },
+      "freshness_requirement": "CURRENT",
+      "limits": {
+        "max_sources": 10,
+        "max_evidence_jobs": 5,
+        "max_model_calls": 8,
+        "max_runtime_seconds": 120,
+        "max_output_chars": 100000
+      },
+      "cost_budget": {
+        "model_calls": 8,
+        "remote_cpu_jobs": 5
+      },
+      "requested_by": "manual-certification",
+      "tenant_context": {
+        "scope": "founder_admin",
+        "tenant_id": null
+      },
+      "created_at": "2026-08-27T16:30:15.856308+00:00"
+    },
+    "plan": {
+      "research_job_id": "manual-certification-20260827T163015856190Z",
+      "objective": "Identify one current repository reliability improvement from fresh certification evidence",
+      "key_questions": [
+        "What public evidence directly answers: Identify one current repository reliability improvement from fresh certification evidence?",
+        "Which claims are corroborated, disputed, or still unknown?",
+        "What is the evidence freshness and source quality?"
+      ],
+      "source_classes": [
+        "official/public primary sources",
+        "canonical Nexus evidence",
+        "high-quality secondary sources"
+      ],
+      "freshness_requirement": "CURRENT",
+      "stopping_conditions": [
+        "questions answered with bounded evidence",
+        "source limit reached",
+        "remaining gap cannot be safely resolved"
+      ],
+      "limits": {
+        "max_sources": 10,
+        "max_evidence_jobs": 5,
+        "max_model_calls": 8,
+        "max_runtime_seconds": 120,
+        "max_output_chars": 100000
+      }
+    },
+    "pack": {
+      "schema_version": "nexus.alpha-research-pack.v1",
+      "research_job_id": "manual-certification-20260827T163015856190Z",
+      "objective": "Identify one current repository reliability improvement from fresh certification evidence",
+      "status": "COMPLETE",
+      "executive_summary": "Bounded Alpha research completed with 1 accepted evidence source(s) and 1 supported claim(s).",
+      "plan": {
+        "research_job_id": "manual-certification-20260827T163015856190Z",
+        "objective": "Identify one current repository reliability improvement from fresh certification evidence",
+        "key_questions": [
+          "What public evidence directly answers: Identify one current repository reliability improvement from fresh certification evidence?",
+          "Which claims are corroborated, disputed, or still unknown?",
+          "What is the evidence freshness and source quality?"
+        ],
+        "source_classes": [
+          "official/public primary sources",
+          "canonical Nexus evidence",
+          "high-quality secondary sources"
+        ],
+        "freshness_requirement": "CURRENT",
+        "stopping_conditions": [
+          "questions answered with bounded evidence",
+          "source limit reached",
+          "remaining gap cannot be safely resolved"
+        ],
+        "limits": {
+          "max_sources": 10,
+          "max_evidence_jobs": 5,
+          "max_model_calls": 8,
+          "max_runtime_seconds": 120,
+          "max_output_chars": 100000
+        }
+      },
+      "findings": [
+        {
+          "claim": "The canonical manual loop harness is the highest-value reliability improvement evidenced by this run.",
+          "claim_type": "DERIVED_ANALYSIS",
+          "confidence": "HIGH",
+          "evidence_refs": [
+            "cert-evidence-20260827T163015856190Z"
+          ],
+          "source_count": 1,
+          "source_quality": "KNOWN",
+          "freshness": [
+            "UNKNOWN"
+          ],
+          "contradictions": [],
+          "notes": "",
+          "status": "SUPPORTED"
+        }
+      ],
+      "claims": [
+        {
+          "claim": "The canonical manual loop harness is the highest-value reliability improvement evidenced by this run.",
+          "claim_type": "DERIVED_ANALYSIS",
+          "confidence": "HIGH",
+          "evidence_refs": [
+            "cert-evidence-20260827T163015856190Z"
+          ],
+          "source_count": 1,
+          "source_quality": "KNOWN",
+          "freshness": [
+            "UNKNOWN"
+          ],
+          "contradictions": [],
+          "notes": "",
+          "status": "SUPPORTED"
+        }
+      ],
+      "opportunities": [],
+      "risks": [],
+      "unknowns": [],
+      "contradictions": [],
+      "sources": [
+        {
+          "evidence_id": "cert-evidence-20260827T163015856190Z",
+          "source_type": "repository_runtime",
+          "reference": "manual certification harness",
+          "title": null,
+          "source_hash": "1251ff6ebc316a0f019424e450e6d247f41a0a1168d6589f21e0603874cf64bd",
+          "material_hash": "b6fe6fa29e12f516133d3b07e00d16995512af3129d363216383582564f715b1",
+          "quality": "UNVERIFIED",
+          "retrieved_at": "2026-08-27T16:30:15.856451+00:00",
+          "freshness": "UNKNOWN",
+          "provenance": {}
+        }
+      ],
+      "evidence_refs": [
+        "cert-evidence-20260827T163015856190Z"
+      ],
+      "freshness": {
+        "requirement": "CURRENT",
+        "sources": [
+          "UNKNOWN"
+        ]
+      },
+      "cost_usage": {
+        "classification": "UNKNOWN",
+        "model_calls": 0,
+        "remote_cpu_jobs": 0
+      },
+      "created_at": "2026-08-27T16:30:15.856761+00:00"
+    },
+    "report": "# Alpha Research Report\n\n**Objective:** Identify one current repository reliability improvement from fresh certification evidence\n**Status:** COMPLETE\n\n## Executive Summary\nBounded Alpha research completed with 1 accepted evidence source(s) and 1 supported claim(s).\n\n## Key Findings\n- The canonical manual loop harness is the highest-value reliability improvement evidenced by this run. (HIGH; evidence: cert-evidence-20260827T163015856190Z)\n\n## Opportunities\n\n## Risks\n\n## Unknowns\n\n## Contradictions\n\n## Sources\n- manual certification harness \u2014 manual certification harness (UNVERIFIED, UNKNOWN)\n\n## Research Limits\nBounded public-evidence research. Recommendations are advisory; no external action was executed.\n",
+    "receipt": {
+      "schema_version": "nexus.alpha-research-receipt.v1",
+      "receipt_id": "alpha-receipt-963aac538c7140a7",
+      "research_job_id": "manual-certification-20260827T163015856190Z",
+      "objective": "Identify one current repository reliability improvement from fresh certification evidence",
+      "status": "COMPLETE",
+      "started_at": "2026-08-27T16:30:15.856609+00:00",
+      "completed_at": "2026-08-27T16:30:15.856827+00:00",
+      "source_count": 1,
+      "evidence_count": 1,
+      "model_usage": {
+        "classification": "UNKNOWN",
+        "model_calls": 0,
+        "remote_cpu_jobs": 0
+      },
+      "remote_worker_usage": {
+        "jobs": 0
+      },
+      "research_pack_ref": "alpha-pack:manual-certification-20260827T163015856190Z",
+      "report_ref": "alpha-report:13d2fc1cc187185eb948def63f7de65c21d1028a7e6c2ff5dad38cd299c844e1",
+      "opportunity_candidate_count": 0,
+      "error_classification": null
+    },
+    "heartbeat": {
+      "capability": "alpha_research",
+      "status": "HEALTHY",
+      "last_run": "2026-08-27T16:30:15.856827+00:00",
+      "last_success": "2026-08-27T16:30:15.856827+00:00",
+      "last_result": "COMPLETE",
+      "research_job_id": "manual-certification-20260827T163015856190Z",
+      "receipt_id": "alpha-receipt-963aac538c7140a7",
+      "source_count": 1,
+      "evidence_count": 1,
+      "browser_evidence_used": false,
+      "freshness": {
+        "requirement": "CURRENT",
+        "sources": [
+          "UNKNOWN"
+        ]
+      },
+      "optional": true,
+      "core_health_dependency": false,
+      "consequential_action_performed": false,
+      "updated_at": "2026-08-27T16:30:15.859770+00:00"
+    }
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "NEW_FINDING"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

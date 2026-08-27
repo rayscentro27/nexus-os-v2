@@ -1,0 +1,30 @@
+{
+  "mission_id": "forex-20260827T092956",
+  "loop_id": "forex",
+  "goal": "Research EUR/USD and GBP/USD and determine whether any existing Nexus research strategy deserves deeper testing.",
+  "real_inputs": {
+    "status": "PASS",
+    "evidence": "{\n  \"ok\": true,\n  \"generated_at\": \"2026-08-27T16:29:57.101681+00:00\",\n  \"status\": \"trading_hermes_brief_ready\",\n  \"admin_only\": true,\n  \"input_provenance\": {\n    \"source\": \"local Oanda practice/research configuration and synthetic tournament inputs\",\n    \"timestamp\": \"2026-08-27T16:29:57.101681+00:00\",\n    \"instruments\": [\n      \"EUR_USD\"\n    ],\n    \"timeframes\": [\n      \"research fixture / bounded daily context\"\n    ],\n    \"data_freshness\": \"FRESH_AT_RUN\",\n    \"network_market_data_requested\": false\n  },\n  \"research_analysis\": {\n    \"market_state\": \"research-only bounded snapshot; live market state not asserted\",\n    \"strategy_research\": \"compare practice/synthetic outcomes before any demo-order proposal\",\n    \"historical_backtest\": \"not run in this bounded brief; no performance claim made\",\n    \"risk_commentary\": \"spread, slippage, approval, and live/funded authority remain explicit risk gates\"\n  },\n  \"research_hash\": \"acb1363e9d8f3a96e665b2b26399df1969bc67bacf37ff296d42a32b6035d39e\",\n  \"recommendations_count\": 4,\n  \"recommendations\": [\n    \"Keep Oanda reads scheduled against the practice host only.\",\n    \"Use the synthetic tournament for strategy research, not performance claims.\",\n    \"Recurring demo orders require a new Ray approval.\",\n    \"Live/funded execution remains blocked.\"\n  ],\n  \"external_action_performed\": false,\n  \"funded_live_trading\": \"PROHIBITED\"\n}\n",
+    "stderr": ""
+  },
+  "success_definition": "loop-specific operational result plus evidence-bound review",
+  "required_stages": [
+    "DISCOVER",
+    "PREFLIGHT",
+    "EXECUTE",
+    "VERIFY",
+    "REVIEW"
+  ],
+  "expected_outputs": [
+    "INSUFFICIENT_DATA"
+  ],
+  "expected_consumers": [],
+  "prohibited_shortcuts": [
+    "registration-only pass",
+    "generic research result",
+    "empty consumer readback"
+  ],
+  "governance_limits": [
+    "no consequential external action"
+  ]
+}

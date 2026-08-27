@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "proof.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:21.763499+00:00",
+    "completed_at": "2026-08-27T16:30:21.910122+00:00",
+    "executor": "capability_runner.py#proof.watchdog",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "HEALTHY",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/proof.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/proof.json"
+    ],
+    "duration": 147,
+    "cost": null,
+    "errors/warnings": null
+  }
+]

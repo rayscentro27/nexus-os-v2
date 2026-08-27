@@ -1,0 +1,21 @@
+[
+  {
+    "stage_id": "seo_opportunity_loop.execution",
+    "stage_name": "deterministic execution",
+    "started_at": "2026-08-27T16:30:23.696983+00:00",
+    "completed_at": "2026-08-27T16:30:23.717054+00:00",
+    "executor": "phase15.live_loop_runner",
+    "inputs_used": "recorded in execution receipt",
+    "observed_result": "OPPORTUNITY_FOUND",
+    "artifact_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/seo_opportunity_loop.json"
+    ],
+    "provider_ids": [],
+    "evidence_refs": [
+      "/Users/raymonddavis/nexus-os-v2/reports/certification/manual_loops/20260827T093001/seo_opportunity_loop.json"
+    ],
+    "duration": 20,
+    "cost": null,
+    "errors/warnings": null
+  }
+]
