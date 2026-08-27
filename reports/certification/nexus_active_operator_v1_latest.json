@@ -34,7 +34,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532542+00:00",
+      "created_at": "2026-08-27T22:00:21.030165+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -58,7 +58,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532611+00:00",
+      "created_at": "2026-08-27T22:00:21.030297+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -82,7 +82,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532586+00:00",
+      "created_at": "2026-08-27T22:00:21.030239+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -106,7 +106,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532599+00:00",
+      "created_at": "2026-08-27T22:00:21.030269+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -130,7 +130,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532622+00:00",
+      "created_at": "2026-08-27T22:00:21.030325+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -154,7 +154,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532572+00:00",
+      "created_at": "2026-08-27T22:00:21.030207+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -178,7 +178,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "growth_review",
-      "created_at": "2026-08-27T21:49:55.416094+00:00",
+      "created_at": "2026-08-27T22:00:21.026707+00:00",
       "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -203,7 +203,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "opportunity_review",
-      "created_at": "2026-08-27T21:49:55.412780+00:00",
+      "created_at": "2026-08-27T22:00:21.025004+00:00",
       "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
       "evidence_refs": [
         "ev-bfabc471a6fe449ab069"
@@ -227,7 +227,7 @@
       "approval_required": false,
       "business_id": "goclear",
       "category": "growth_measurement_gap",
-      "created_at": "2026-08-27T21:49:55.416187+00:00",
+      "created_at": "2026-08-27T22:00:21.026757+00:00",
       "dedupe_key": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1",
       "evidence_refs": [],
       "external_action_performed": false,
@@ -249,7 +249,7 @@
       "approval_required": false,
       "business_id": "goclear",
       "category": "revenue_measurement_connection_gap",
-      "created_at": "2026-08-27T21:49:55.413942+00:00",
+      "created_at": "2026-08-27T22:00:21.025589+00:00",
       "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
       "evidence_refs": [],
       "external_action_performed": false,
@@ -271,7 +271,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "growth_research",
-      "created_at": "2026-08-27T21:49:55.416160+00:00",
+      "created_at": "2026-08-27T22:00:21.026742+00:00",
       "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
       "evidence_refs": [],
       "external_action_performed": false,
@@ -293,7 +293,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "opportunity_research",
-      "created_at": "2026-08-27T21:49:55.412833+00:00",
+      "created_at": "2026-08-27T22:00:21.025037+00:00",
       "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
       "evidence_refs": [],
       "external_action_performed": false,
@@ -317,7 +317,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532542+00:00",
+      "created_at": "2026-08-27T22:00:21.030165+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -341,7 +341,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532611+00:00",
+      "created_at": "2026-08-27T22:00:21.030297+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -365,7 +365,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532586+00:00",
+      "created_at": "2026-08-27T22:00:21.030239+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -389,7 +389,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532599+00:00",
+      "created_at": "2026-08-27T22:00:21.030269+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -413,7 +413,7 @@
       "approval_required": true,
       "business_id": "goclear",
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:55.532622+00:00",
+      "created_at": "2026-08-27T22:00:21.030325+00:00",
       "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
       "evidence_refs": [
         "ev-8874c37fddb5461287d2"
@@ -653,13 +653,13 @@
       "status": "READY"
     }
   },
-  "completed_at": "2026-08-27T21:49:59.097395+00:00",
+  "completed_at": "2026-08-27T22:00:24.825769+00:00",
   "dry_run": false,
   "duplicates_suppressed": 10,
   "errors": [],
   "escalations": [
     {
-      "created_at": "2026-08-27T21:49:58.793014+00:00",
+      "created_at": "2026-08-27T22:00:24.597672+00:00",
       "deferred_effect": "No external action is attempted; internal work remains queued.",
       "escalation_id": "esc_190075d45040a12dda6d",
       "external_action_performed": false,
@@ -670,7 +670,7 @@
       "work_order_id": "awo_190075d45040a12dda6d"
     },
     {
-      "created_at": "2026-08-27T21:49:58.793927+00:00",
+      "created_at": "2026-08-27T22:00:24.599577+00:00",
       "deferred_effect": "No external action is attempted; internal work remains queued.",
       "escalation_id": "esc_ca46b39c6f8905862187",
       "external_action_performed": false,
@@ -691,12 +691,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_read_operational_state",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_read_operational_state",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097634+00:00",
+      "timestamp": "2026-08-27T22:00:24.826013+00:00",
       "tool_action_id": "read_operational_state",
       "work_order_id": ""
     },
@@ -709,12 +709,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_write_heartbeat",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_write_heartbeat",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097648+00:00",
+      "timestamp": "2026-08-27T22:00:24.826024+00:00",
       "tool_action_id": "write_heartbeat",
       "work_order_id": ""
     },
@@ -727,12 +727,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_business_attention_generate",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_business_attention_generate",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097655+00:00",
+      "timestamp": "2026-08-27T22:00:24.826030+00:00",
       "tool_action_id": "business_attention.generate",
       "work_order_id": ""
     },
@@ -745,12 +745,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_measurement_gap_report",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_measurement_gap_report",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097659+00:00",
+      "timestamp": "2026-08-27T22:00:24.826035+00:00",
       "tool_action_id": "measurement_gap.report",
       "work_order_id": ""
     }
@@ -764,11 +764,11 @@
     "max_runtime_seconds": 300
   },
   "mode": "live",
-  "next_scheduled_run": "2026-08-27T22:49:59.097395+00:00",
+  "next_scheduled_run": "2026-08-27T23:00:24.825769+00:00",
   "operational_result": "INTERNAL_ATTENTION_IDENTIFIED",
   "operator_health": "HEALTHY",
-  "operator_run_id": "operator_9bebbf5bb5ce4625b05bc04cf6ce3f87",
-  "receipt_path": "reports/runtime/nexus_active_operator_receipts/operator_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87.json",
+  "operator_run_id": "operator_30df0d6aba6f45ab8652ea1e23a95e27",
+  "receipt_path": "reports/runtime/nexus_active_operator_receipts/operator_operator_30df0d6aba6f45ab8652ea1e23a95e27.json",
   "receipts": [
     {
       "authority_used": "INTERNAL_READ_ONLY",
@@ -779,12 +779,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_read_operational_state",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_read_operational_state",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097634+00:00",
+      "timestamp": "2026-08-27T22:00:24.826013+00:00",
       "tool_action_id": "read_operational_state",
       "work_order_id": ""
     },
@@ -797,12 +797,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_write_heartbeat",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_write_heartbeat",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097648+00:00",
+      "timestamp": "2026-08-27T22:00:24.826024+00:00",
       "tool_action_id": "write_heartbeat",
       "work_order_id": ""
     },
@@ -815,12 +815,12 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_business_attention_generate",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_business_attention_generate",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097655+00:00",
+      "timestamp": "2026-08-27T22:00:24.826030+00:00",
       "tool_action_id": "business_attention.generate",
       "work_order_id": ""
     },
@@ -833,19 +833,19 @@
       "files_artifacts_changed": [],
       "inputs_summary": "redacted deterministic runtime state",
       "next_action": "none",
-      "receipt_id": "receipt_operator_9bebbf5bb5ce4625b05bc04cf6ce3f87_measurement_gap_report",
+      "receipt_id": "receipt_operator_30df0d6aba6f45ab8652ea1e23a95e27_measurement_gap_report",
       "result": {
         "mode": "live",
         "status": "COMPLETED"
       },
-      "timestamp": "2026-08-27T21:49:59.097659+00:00",
+      "timestamp": "2026-08-27T22:00:24.826035+00:00",
       "tool_action_id": "measurement_gap.report",
       "work_order_id": ""
     }
   ],
   "safe_internal_execution": "PASS",
   "schema_version": "nexus.active-operator.v1",
-  "started_at": "2026-08-27T21:49:55.406497+00:00",
+  "started_at": "2026-08-27T22:00:21.022114+00:00",
   "state_snapshot": {
     "APPROVALS_REQUIRED": [
       {
@@ -854,7 +854,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792344+00:00",
+        "created_at": "2026-08-27T22:00:24.596973+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -862,7 +862,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792461+00:00",
+        "last_updated": "2026-08-27T22:00:24.597105+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -881,7 +881,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792503+00:00",
+        "created_at": "2026-08-27T22:00:24.597160+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -889,7 +889,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792516+00:00",
+        "last_updated": "2026-08-27T22:00:24.597176+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -908,7 +908,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792539+00:00",
+        "created_at": "2026-08-27T22:00:24.597203+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -916,7 +916,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792552+00:00",
+        "last_updated": "2026-08-27T22:00:24.597214+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -935,7 +935,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792567+00:00",
+        "created_at": "2026-08-27T22:00:24.597232+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -943,7 +943,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792580+00:00",
+        "last_updated": "2026-08-27T22:00:24.597241+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -962,7 +962,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792595+00:00",
+        "created_at": "2026-08-27T22:00:24.597257+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -970,7 +970,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792603+00:00",
+        "last_updated": "2026-08-27T22:00:24.597266+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -989,7 +989,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792620+00:00",
+        "created_at": "2026-08-27T22:00:24.597288+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -997,7 +997,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792629+00:00",
+        "last_updated": "2026-08-27T22:00:24.597298+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1016,7 +1016,7 @@
           "growth_review"
         ],
         "category": "growth_review",
-        "created_at": "2026-08-27T21:49:58.792643+00:00",
+        "created_at": "2026-08-27T22:00:24.597313+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
         "description": "growth experiment is evidence-backed but public work remains approval-gated",
@@ -1024,7 +1024,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792655+00:00",
+        "last_updated": "2026-08-27T22:00:24.597327+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1043,7 +1043,7 @@
           "opportunity_review"
         ],
         "category": "opportunity_review",
-        "created_at": "2026-08-27T21:49:58.792684+00:00",
+        "created_at": "2026-08-27T22:00:24.597345+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
         "description": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
@@ -1051,7 +1051,7 @@
           "ev-bfabc471a6fe449ab069"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792695+00:00",
+        "last_updated": "2026-08-27T22:00:24.597357+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1070,13 +1070,13 @@
           "growth_research"
         ],
         "category": "growth_research",
-        "created_at": "2026-08-27T21:49:58.792755+00:00",
+        "created_at": "2026-08-27T22:00:24.597427+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
         "description": "one or more growth experiments lack current evidence",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792767+00:00",
+        "last_updated": "2026-08-27T22:00:24.597442+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P4",
@@ -1095,13 +1095,13 @@
           "opportunity_research"
         ],
         "category": "opportunity_research",
-        "created_at": "2026-08-27T21:49:58.792780+00:00",
+        "created_at": "2026-08-27T22:00:24.597457+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
         "description": "canonical opportunity lacks sufficient current evidence",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792787+00:00",
+        "last_updated": "2026-08-27T22:00:24.597466+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P4",
@@ -1122,13 +1122,13 @@
           "meta.inbound"
         ],
         "category": "APPROVALS_REQUIRED",
-        "created_at": "2026-08-27T21:49:58.792817+00:00",
+        "created_at": "2026-08-27T22:00:24.597499+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "capability:meta.inbound:v1",
         "description": "webhook callback and signature verifier are not certified",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792829+00:00",
+        "last_updated": "2026-08-27T22:00:24.597513+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1147,13 +1147,13 @@
           "email.send"
         ],
         "category": "APPROVALS_REQUIRED",
-        "created_at": "2026-08-27T21:49:58.793714+00:00",
+        "created_at": "2026-08-27T22:00:24.599310+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "capability:email.send:v1",
         "description": "outbound email remains gated",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.793739+00:00",
+        "last_updated": "2026-08-27T22:00:24.599404+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1389,7 +1389,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792344+00:00",
+        "created_at": "2026-08-27T22:00:24.596973+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1397,7 +1397,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792461+00:00",
+        "last_updated": "2026-08-27T22:00:24.597105+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1416,7 +1416,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792503+00:00",
+        "created_at": "2026-08-27T22:00:24.597160+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1424,7 +1424,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792516+00:00",
+        "last_updated": "2026-08-27T22:00:24.597176+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1443,7 +1443,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792539+00:00",
+        "created_at": "2026-08-27T22:00:24.597203+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1451,7 +1451,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792552+00:00",
+        "last_updated": "2026-08-27T22:00:24.597214+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1470,7 +1470,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792567+00:00",
+        "created_at": "2026-08-27T22:00:24.597232+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1478,7 +1478,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792580+00:00",
+        "last_updated": "2026-08-27T22:00:24.597241+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1497,7 +1497,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792595+00:00",
+        "created_at": "2026-08-27T22:00:24.597257+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1505,7 +1505,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792603+00:00",
+        "last_updated": "2026-08-27T22:00:24.597266+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1524,7 +1524,7 @@
           "creative_review"
         ],
         "category": "creative_review",
-        "created_at": "2026-08-27T21:49:58.792620+00:00",
+        "created_at": "2026-08-27T22:00:24.597288+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
         "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1532,7 +1532,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792629+00:00",
+        "last_updated": "2026-08-27T22:00:24.597298+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1551,7 +1551,7 @@
           "growth_review"
         ],
         "category": "growth_review",
-        "created_at": "2026-08-27T21:49:58.792643+00:00",
+        "created_at": "2026-08-27T22:00:24.597313+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
         "description": "growth experiment is evidence-backed but public work remains approval-gated",
@@ -1559,7 +1559,7 @@
           "ev-8874c37fddb5461287d2"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792655+00:00",
+        "last_updated": "2026-08-27T22:00:24.597327+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1578,7 +1578,7 @@
           "opportunity_review"
         ],
         "category": "opportunity_review",
-        "created_at": "2026-08-27T21:49:58.792684+00:00",
+        "created_at": "2026-08-27T22:00:24.597345+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
         "description": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
@@ -1586,7 +1586,7 @@
           "ev-bfabc471a6fe449ab069"
         ],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792695+00:00",
+        "last_updated": "2026-08-27T22:00:24.597357+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1605,13 +1605,13 @@
           "growth_measurement_gap"
         ],
         "category": "growth_measurement_gap",
-        "created_at": "2026-08-27T21:49:58.792708+00:00",
+        "created_at": "2026-08-27T22:00:24.597373+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1",
         "description": "Search Console/Analytics are not connected; outcome remains UNKNOWN",
         "evidence_refs": [],
         "execution_mode": "INTERNAL_AUTONOMOUS",
-        "last_updated": "2026-08-27T21:49:58.792721+00:00",
+        "last_updated": "2026-08-27T22:00:24.597387+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P3",
@@ -1630,13 +1630,13 @@
           "system.health"
         ],
         "category": "revenue_measurement_connection_gap",
-        "created_at": "2026-08-27T21:49:58.792735+00:00",
+        "created_at": "2026-08-27T22:00:24.597404+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
         "description": "actual revenue and funnel observations are UNKNOWN/NOT_CONNECTED; UNKNOWN is not zero",
         "evidence_refs": [],
         "execution_mode": "INTERNAL_AUTONOMOUS",
-        "last_updated": "2026-08-27T21:49:58.792743+00:00",
+        "last_updated": "2026-08-27T22:00:24.597413+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P3",
@@ -1655,13 +1655,13 @@
           "growth_research"
         ],
         "category": "growth_research",
-        "created_at": "2026-08-27T21:49:58.792755+00:00",
+        "created_at": "2026-08-27T22:00:24.597427+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
         "description": "one or more growth experiments lack current evidence",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792767+00:00",
+        "last_updated": "2026-08-27T22:00:24.597442+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P4",
@@ -1680,13 +1680,13 @@
           "opportunity_research"
         ],
         "category": "opportunity_research",
-        "created_at": "2026-08-27T21:49:58.792780+00:00",
+        "created_at": "2026-08-27T22:00:24.597457+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
         "description": "canonical opportunity lacks sufficient current evidence",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792787+00:00",
+        "last_updated": "2026-08-27T22:00:24.597466+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P4",
@@ -1705,13 +1705,13 @@
           "meta.inbound"
         ],
         "category": "APPROVALS_REQUIRED",
-        "created_at": "2026-08-27T21:49:58.792817+00:00",
+        "created_at": "2026-08-27T22:00:24.597499+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "capability:meta.inbound:v1",
         "description": "webhook callback and signature verifier are not certified",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.792829+00:00",
+        "last_updated": "2026-08-27T22:00:24.597513+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1730,13 +1730,13 @@
           "email.send"
         ],
         "category": "APPROVALS_REQUIRED",
-        "created_at": "2026-08-27T21:49:58.793714+00:00",
+        "created_at": "2026-08-27T22:00:24.599310+00:00",
         "created_by": "active_operator_v1",
         "dedupe_key": "capability:email.send:v1",
         "description": "outbound email remains gated",
         "evidence_refs": [],
         "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-        "last_updated": "2026-08-27T21:49:58.793739+00:00",
+        "last_updated": "2026-08-27T22:00:24.599404+00:00",
         "owner": "active_operator",
         "prerequisites": [],
         "priority": "P2",
@@ -1761,7 +1761,7 @@
         "approval_required": true,
         "business_id": "goclear",
         "category": "growth_research",
-        "created_at": "2026-08-27T21:49:55.416160+00:00",
+        "created_at": "2026-08-27T22:00:21.026742+00:00",
         "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
         "evidence_refs": [],
         "external_action_performed": false,
@@ -1783,7 +1783,7 @@
         "approval_required": true,
         "business_id": "goclear",
         "category": "opportunity_research",
-        "created_at": "2026-08-27T21:49:55.412833+00:00",
+        "created_at": "2026-08-27T22:00:21.025037+00:00",
         "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
         "evidence_refs": [],
         "external_action_performed": false,
@@ -1807,7 +1807,7 @@
         "approval_required": false,
         "business_id": "goclear",
         "category": "revenue_measurement_connection_gap",
-        "created_at": "2026-08-27T21:49:55.413942+00:00",
+        "created_at": "2026-08-27T22:00:21.025589+00:00",
         "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
         "evidence_refs": [],
         "external_action_performed": false,
@@ -1853,7 +1853,7 @@
         "updated_at": "2026-08-27T21:37:11.747695+00:00"
       }
     },
-    "generated_at": "2026-08-27T21:49:55.406497+00:00",
+    "generated_at": "2026-08-27T22:00:21.022114+00:00",
     "schema_version": "nexus.active-operator-state.v1"
   },
   "status": "COMPLETED_WITH_FINDINGS",
@@ -1865,7 +1865,7 @@
         "creative_review"
       ],
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:58.792344+00:00",
+      "created_at": "2026-08-27T22:00:24.596973+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
       "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1873,7 +1873,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792461+00:00",
+      "last_updated": "2026-08-27T22:00:24.597105+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -1892,7 +1892,7 @@
         "creative_review"
       ],
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:58.792503+00:00",
+      "created_at": "2026-08-27T22:00:24.597160+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
       "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1900,7 +1900,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792516+00:00",
+      "last_updated": "2026-08-27T22:00:24.597176+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -1919,7 +1919,7 @@
         "creative_review"
       ],
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:58.792539+00:00",
+      "created_at": "2026-08-27T22:00:24.597203+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
       "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1927,7 +1927,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792552+00:00",
+      "last_updated": "2026-08-27T22:00:24.597214+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -1946,7 +1946,7 @@
         "creative_review"
       ],
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:58.792567+00:00",
+      "created_at": "2026-08-27T22:00:24.597232+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
       "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1954,7 +1954,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792580+00:00",
+      "last_updated": "2026-08-27T22:00:24.597241+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -1973,7 +1973,7 @@
         "creative_review"
       ],
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:58.792595+00:00",
+      "created_at": "2026-08-27T22:00:24.597257+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
       "description": "internal asset is ready for review; public distribution remains blocked",
@@ -1981,7 +1981,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792603+00:00",
+      "last_updated": "2026-08-27T22:00:24.597266+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -2000,7 +2000,7 @@
         "creative_review"
       ],
       "category": "creative_review",
-      "created_at": "2026-08-27T21:49:58.792620+00:00",
+      "created_at": "2026-08-27T22:00:24.597288+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
       "description": "internal asset is ready for review; public distribution remains blocked",
@@ -2008,7 +2008,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792629+00:00",
+      "last_updated": "2026-08-27T22:00:24.597298+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -2027,7 +2027,7 @@
         "growth_review"
       ],
       "category": "growth_review",
-      "created_at": "2026-08-27T21:49:58.792643+00:00",
+      "created_at": "2026-08-27T22:00:24.597313+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
       "description": "growth experiment is evidence-backed but public work remains approval-gated",
@@ -2035,7 +2035,7 @@
         "ev-8874c37fddb5461287d2"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792655+00:00",
+      "last_updated": "2026-08-27T22:00:24.597327+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -2054,7 +2054,7 @@
         "opportunity_review"
       ],
       "category": "opportunity_review",
-      "created_at": "2026-08-27T21:49:58.792684+00:00",
+      "created_at": "2026-08-27T22:00:24.597345+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
       "description": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
@@ -2062,7 +2062,7 @@
         "ev-bfabc471a6fe449ab069"
       ],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792695+00:00",
+      "last_updated": "2026-08-27T22:00:24.597357+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -2081,13 +2081,13 @@
         "growth_measurement_gap"
       ],
       "category": "growth_measurement_gap",
-      "created_at": "2026-08-27T21:49:58.792708+00:00",
+      "created_at": "2026-08-27T22:00:24.597373+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1",
       "description": "Search Console/Analytics are not connected; outcome remains UNKNOWN",
       "evidence_refs": [],
       "execution_mode": "INTERNAL_AUTONOMOUS",
-      "last_updated": "2026-08-27T21:49:58.792721+00:00",
+      "last_updated": "2026-08-27T22:00:24.597387+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P3",
@@ -2106,13 +2106,13 @@
         "system.health"
       ],
       "category": "revenue_measurement_connection_gap",
-      "created_at": "2026-08-27T21:49:58.792735+00:00",
+      "created_at": "2026-08-27T22:00:24.597404+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
       "description": "actual revenue and funnel observations are UNKNOWN/NOT_CONNECTED; UNKNOWN is not zero",
       "evidence_refs": [],
       "execution_mode": "INTERNAL_AUTONOMOUS",
-      "last_updated": "2026-08-27T21:49:58.792743+00:00",
+      "last_updated": "2026-08-27T22:00:24.597413+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P3",
@@ -2131,13 +2131,13 @@
         "growth_research"
       ],
       "category": "growth_research",
-      "created_at": "2026-08-27T21:49:58.792755+00:00",
+      "created_at": "2026-08-27T22:00:24.597427+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
       "description": "one or more growth experiments lack current evidence",
       "evidence_refs": [],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792767+00:00",
+      "last_updated": "2026-08-27T22:00:24.597442+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P4",
@@ -2156,13 +2156,13 @@
         "opportunity_research"
       ],
       "category": "opportunity_research",
-      "created_at": "2026-08-27T21:49:58.792780+00:00",
+      "created_at": "2026-08-27T22:00:24.597457+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
       "description": "canonical opportunity lacks sufficient current evidence",
       "evidence_refs": [],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792787+00:00",
+      "last_updated": "2026-08-27T22:00:24.597466+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P4",
@@ -2181,13 +2181,13 @@
         "meta.inbound"
       ],
       "category": "APPROVALS_REQUIRED",
-      "created_at": "2026-08-27T21:49:58.792817+00:00",
+      "created_at": "2026-08-27T22:00:24.597499+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "capability:meta.inbound:v1",
       "description": "webhook callback and signature verifier are not certified",
       "evidence_refs": [],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.792829+00:00",
+      "last_updated": "2026-08-27T22:00:24.597513+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",
@@ -2206,13 +2206,13 @@
         "email.send"
       ],
       "category": "APPROVALS_REQUIRED",
-      "created_at": "2026-08-27T21:49:58.793714+00:00",
+      "created_at": "2026-08-27T22:00:24.599310+00:00",
       "created_by": "active_operator_v1",
       "dedupe_key": "capability:email.send:v1",
       "description": "outbound email remains gated",
       "evidence_refs": [],
       "execution_mode": "HUMAN_APPROVAL_REQUIRED",
-      "last_updated": "2026-08-27T21:49:58.793739+00:00",
+      "last_updated": "2026-08-27T22:00:24.599404+00:00",
       "owner": "active_operator",
       "prerequisites": [],
       "priority": "P2",

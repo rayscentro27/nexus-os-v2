@@ -1,0 +1,58 @@
+{
+  "active_operator": {
+    "cadence_seconds": 3600,
+    "dry_run": "PASS",
+    "live_internal_cycle": "PASS",
+    "meta_inbound": "NOT_READY",
+    "meta_publish": "GATED",
+    "meta_read": "READY",
+    "multi_cycle": "PENDING",
+    "service": "com.nexus.active-operator-v2",
+    "voice_remote": "REMOTE_CONFIGURED"
+  },
+  "checkpoint": "ff337a750d1db5c9e7d155cbd875806c2bb36a19",
+  "external_mutations": 0,
+  "generated_at": "2026-08-27T22:00:05.465710+00:00",
+  "meta_ingestion": {
+    "dedupe": "NOT_PROVEN_PERSISTENTLY",
+    "deployed_callback": "NO",
+    "instagram_fixture": "PASS_VALIDATION_NORMALIZATION_ONLY",
+    "live_inbound_test": "HUMAN_MESSAGE_REQUIRED",
+    "messenger_fixture": "PASS_VALIDATION_NORMALIZATION_ONLY",
+    "supabase_adapter": "NOT_CONFIGURED"
+  },
+  "meta_provider": {
+    "app": "RESOLVED",
+    "callback": "/.netlify/functions/meta-webhook",
+    "facebook_page": "VISIBLE",
+    "graph_auth": "EXISTING_CERTIFIED",
+    "instagram": "ASSOCIATED",
+    "subscription": "EXISTING"
+  },
+  "meta_secrets": {
+    "app_secret": "MISSING",
+    "app_secret_action": "USER_ACTION_REQUIRED",
+    "verify_token": "MISSING",
+    "verify_token_action": "BLOCKED"
+  },
+  "meta_security": {
+    "invalid_signature_rejection": "PASS",
+    "signature_validation": "LOCAL_FIXTURE_PASS",
+    "verify_handshake": "NOT_DEPLOYABLE_WITHOUT_VERIFY_TOKEN"
+  },
+  "schema_version": "nexus.meta-voice-closure.v1",
+  "secrets_exposed": false,
+  "user_action_required": [
+    "Add the existing Meta App Secret and one Nexus-controlled webhook verify token to Netlify production server-side variables, then configure/deploy the callback and connect a governed Supabase persistence adapter.",
+    "Perform one authenticated Nexus Voice relay health request."
+  ],
+  "voice": {
+    "cf_access_auth": "REMOTE_CONFIGURED_UNTESTED",
+    "end_to_end_http": "NOT_RUN_AUTHENTICATED",
+    "netlify_configuration": "PASS",
+    "netlify_relay": "IMPLEMENTED",
+    "nexus_user_auth": "NOT_AVAILABLE_FOR_AUTOMATED_TEST",
+    "remote_health": "PARTIAL_AUTHENTICATED_USER_REQUIRED",
+    "voice_origin": "REMOTE_CONFIGURED"
+  }
+}
