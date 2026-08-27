@@ -105,9 +105,9 @@ def load_campaign(path: Path = CAMPAIGN_PATH, *, materialize_queue: bool = True)
     state.setdefault("objective_queue_seeded", False)
     state.setdefault("feature_backlog_seeded", False)
     materialize_backlog(state)
-    if materialize_queue and state.get("status") == "ACTIVE" and not state.get("objective_queue"):
-        next_item = next((item for item in state.get("backlog_items", []) if item.get("machine_executable") and item.get("status") in {"UNMATERIALIZED", "READY", "RESEARCHING", "RECOVERING", "VERIFYING"} and item.get("backlog_id") not in set(state.get("completed_backlog", []))), None)
-        if next_item:
+    if materialize_queue and state.get("status") == "ACTIVE" and (not state.get("synthetic_campaign") or not state.get("objective_queue")):
+        queued_ids = {str(x.get("backlog_id")) for x in state.get("objective_queue", []) if isinstance(x, dict)}
+        for next_item in (item for item in state.get("backlog_items", []) if item.get("machine_executable") and item.get("status") in {"UNMATERIALIZED", "READY", "RESEARCHING", "RECOVERING", "VERIFYING"} and item.get("backlog_id") not in set(state.get("completed_backlog", [])) and str(item.get("backlog_id")) not in queued_ids):
             verifying = next_item.get("status") == "VERIFYING"
             if not verifying:
                 next_item["status"] = "READY"
@@ -116,14 +116,18 @@ def load_campaign(path: Path = CAMPAIGN_PATH, *, materialize_queue: bool = True)
             objective_id = f"backlog.{next_item['backlog_id']}.verify.v{next_item.get('backlog_version', 1)}" if verifying else f"backlog.{next_item['backlog_id']}.v{next_item.get('backlog_version', 1)}"
             if objective_id not in next_item.get("objective_ids", []):
                 next_item.setdefault("objective_ids", []).append(objective_id)
-            capability = next_item.get("capability_requirements", [None])[0]
+            capability = (next_item.get("capability_requirements") or [None])[0]
+            objective = None
             if verifying:
                 criterion = (next_item.get("acceptance_criteria") or [{}])[0]
-                state["objective_queue"] = [{"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": "acceptance.verifier", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "registered acceptance verification", "criterion": criterion, "result_ref": (criterion.get("proof_refs") or [None])[-1], "verification_only": True}]
+                objective = {"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": "acceptance.verifier", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "registered acceptance verification", "criterion": criterion, "result_ref": (criterion.get("proof_refs") or [None])[-1], "verification_only": True}
             elif capability:
-                state["objective_queue"] = [{"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": capability, "dependency_domain": next_item["dependency_domain"], "expected_outcome": next_item["acceptance_criteria"][0]["description"], "acceptance_verified": False, "verification_only": False}]
+                objective = {"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": capability, "dependency_domain": next_item["dependency_domain"], "expected_outcome": next_item["acceptance_criteria"][0]["description"], "acceptance_verified": False, "verification_only": False}
             else:
-                state["objective_queue"] = [{"objective_id": f"capability-gap.{next_item['backlog_id']}.v1", "backlog_id": next_item["backlog_id"], "capability_id": "product.evolution.bridge", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "Product Evolution capability-gap handoff", "capability_gap": True, "acceptance_verified": False}]
+                objective = {"objective_id": f"capability-gap.{next_item['backlog_id']}.v1", "backlog_id": next_item["backlog_id"], "capability_id": "product.evolution.bridge", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "Product Evolution capability-gap handoff", "capability_gap": True, "acceptance_verified": False}
+            if objective:
+                state["objective_queue"].append(objective)
+                queued_ids.add(str(next_item.get("backlog_id")))
     return state
 
 
@@ -297,7 +301,12 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
     _save_state(state, state_path)
     receipt_dir = receipt_dir or (ROOT / "reports/runtime/campaign_execution" / str(cycle_no))
     results: List[Dict[str, Any]] = []
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+    # Certification campaigns deliberately serialize their tiny fixture set;
+    # production backlog uses bounded portfolio concurrency. This keeps the
+    # legacy test fixture from launching several report-generating subprocesses
+    # against the same runtime store.
+    worker_limit = 1 if state.get("synthetic_campaign") else max_workers
+    with ThreadPoolExecutor(max_workers=worker_limit) as pool:
         futures = [pool.submit(_execute_one, item, cycle_id=cycle_id, receipt_dir=receipt_dir) for item in runnable]
         for future in as_completed(futures):
             results.append(future.result())

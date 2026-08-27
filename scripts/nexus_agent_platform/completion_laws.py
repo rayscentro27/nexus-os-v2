@@ -34,7 +34,12 @@ def evaluate_event(event: Dict[str, Any], *, hermes_delivery_verified: bool = Fa
         result["diagnosis"] = "FIRST_FAILED_STAGE" if event.get("stage") else "FAILURE_EVIDENCE_REQUIRED"
         if machine:
             result["work"].append("create_recovery_work")
-            if not event.get("solution_known", True): result["work"].append("bounded_research")
+            # A repair hypothesis is not knowledge until it has supporting
+            # evidence and a successful compatible receipt.  Unknown is the
+            # safe default; every first failure therefore learns before repair.
+            knowledge = str(event.get("repair_knowledge_state") or ("PROVEN" if event.get("solution_known") is True and event.get("repair_evidence_refs") else "UNKNOWN"))
+            result["repair_knowledge_state"] = knowledge
+            if knowledge != "PROVEN": result["work"].append("bounded_research")
             if repeated >= 2:
                 result["work"].append("architecture_alternative")
                 result["diagnosis"] = "ARCHITECTURE_ALTERNATIVE"
