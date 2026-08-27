@@ -1,0 +1,13 @@
+{
+  "provider": "oracle_ollama_gemma",
+  "host": "161.153.40.41",
+  "user": "opc",
+  "ssh_key": "~/.ssh/oracle_vm",
+  "local_bind": "127.0.0.1:11435",
+  "remote_bind": "127.0.0.1:11434",
+  "model": "gemma3:4b",
+  "timeout_seconds": 20,
+  "max_retries": 1,
+  "allowed_statuses": ["MARKET_DATA_UNAVAILABLE", "MARKET_DATA_STALE", "MARKET_DATA_INSUFFICIENT", "NO_VALID_SETUP", "SIGNAL_CANDIDATE", "SIGNAL_REJECTED", "PRACTICE_EXECUTION_ELIGIBLE", "PRACTICE_ORDER_FILLED", "PRACTICE_ORDER_REJECTED", "TRADE_MONITORING", "TRADE_CLOSED"],
+  "authority": "ADVISORY_ONLY"
+}

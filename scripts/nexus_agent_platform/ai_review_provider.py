@@ -19,6 +19,12 @@ def ollama_health(base_url: str = "http://127.0.0.1:11434") -> dict[str, Any]:
         return {"provider": "ollama", "local": True, "status": "UNAVAILABLE", "models": [], "latency_ms": round((time.monotonic()-started)*1000, 2), "error": exc.__class__.__name__, "network_api": False, "cost_bearing": False}
 
 def select_review_provider() -> dict[str, Any]:
+    try:
+        from nexus_agent_platform.oracle_gemma_provider import health as oracle_health
+        oracle = oracle_health()
+        if oracle["status"] == "ORACLE_AI_READY": return oracle
+    except Exception:
+        oracle = {"status": "ORACLE_TUNNEL_UNAVAILABLE"}
     local = ollama_health()
     if local["status"] == "AVAILABLE": return local
-    return {"provider": "deterministic_fallback", "status": "DETERMINISTIC_FALLBACK_USED", "fallback_status": local["status"], "network_api": False, "cost_bearing": False, "ollama": local}
+    return {"provider": "deterministic_fallback", "status": "DETERMINISTIC_FALLBACK_USED", "fallback_status": local["status"], "network_api": False, "cost_bearing": False, "oracle": oracle, "ollama": local}

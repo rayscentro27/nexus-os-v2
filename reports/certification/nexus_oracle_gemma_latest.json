@@ -1,0 +1,59 @@
+{
+  "provider": {
+    "status": "ORACLE_AI_READY",
+    "provider": "oracle_ollama_gemma",
+    "model": "gemma3:4b",
+    "ollama_version": "0.21.2",
+    "models": [
+      "gemma3:4b",
+      "deepseek-v4-pro:cloud"
+    ],
+    "latency_ms": 215.91,
+    "endpoint": "http://127.0.0.1:11435",
+    "public_exposure": false,
+    "cost_bearing": false
+  },
+  "connectivity_expected": "NEXUS_ORACLE_AI_OK",
+  "connectivity": true,
+  "bounded_review": {
+    "status": "ORACLE_AI_READY",
+    "provider": "oracle_ollama_gemma",
+    "model": "gemma3:4b",
+    "latency_ms": 5750.12,
+    "validation": {
+      "valid": true,
+      "provider": "oracle_ollama_gemma",
+      "model": "gemma3:4b",
+      "review": {
+        "status": "NO_VALID_SETUP",
+        "risk": "LOW",
+        "recommendation": "Continue scanning.",
+        "evidence_refs": []
+      }
+    },
+    "raw_text": "{\"status\":\"NO_VALID_SETUP\",\"risk\":\"LOW\",\"recommendation\":\"Continue scanning.\",\"evidence_refs\":[]}",
+    "cost_bearing": false
+  },
+  "cost_guard": {
+    "status": "ORACLE_COST_HEALTHY",
+    "cost_usd": 0.0,
+    "fresh": true,
+    "policy": {
+      "target_monthly_cost_usd": 0.0,
+      "autonomous_provisioning": false,
+      "autonomous_resize": false,
+      "autonomous_paid_resource_creation": false,
+      "autonomous_billing_changes": false
+    },
+    "positive_cost_blocks_expansion": false,
+    "mutation_performed": false
+  },
+  "oracle_cost_native_alerts": "REPORTED_BY_OPERATOR_CONFIGURATION_NOT_QUERIED",
+  "oracle_cost_api": "NOT_CONFIGURED",
+  "autonomous_provisioning": false,
+  "public_ollama_exposure": false,
+  "forex_ai_dependency": false,
+  "live_trading": false,
+  "paper_only": true,
+  "reboot_certified": false
+}

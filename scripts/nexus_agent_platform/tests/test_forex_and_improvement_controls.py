@@ -32,5 +32,5 @@ def test_unsafe_improvement_is_rejected():
 
 def test_ai_selection_falls_back_without_blocking():
     result = select_review_provider()
-    assert result["provider"] in {"ollama", "deterministic_fallback"}
+    assert result["provider"] in {"oracle_ollama_gemma", "ollama", "deterministic_fallback"}
     assert "cost_bearing" in result

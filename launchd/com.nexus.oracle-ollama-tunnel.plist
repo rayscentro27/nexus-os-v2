@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.nexus.oracle-ollama-tunnel</string>
+  <key>ProgramArguments</key><array><string>/Users/raymonddavis/nexus-os-v2/scripts/ops/nexus_oracle_ollama_tunnel.sh</string></array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/><key>NetworkState</key><true/></dict>
+  <key>ThrottleInterval</key><integer>30</integer>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/oracle_ollama_tunnel.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/oracle_ollama_tunnel.err.log</string>
+</dict></plist>
