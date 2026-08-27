@@ -1,0 +1,35 @@
+{
+  "schema_version": "nexus.social-voice-model-reconciliation.v1",
+  "generated_at": "2026-08-27T21:23:57Z",
+  "checkpoint": {"start_sha": "2d6f8cfda452c9d8ef51bb1f087482875189454c", "changes_made": "report_only"},
+  "meta": {
+    "credential": "AVAILABLE",
+    "page_token": "PRESENT",
+    "page_read": "PASS",
+    "facebook_page_visible": true,
+    "instagram_business_association": true,
+    "webhook_handler": "MISSING_IN_REPOSITORY",
+    "webhook_subscription": "CONFIGURED",
+    "subscribed_fields": ["feed", "message_deliveries", "message_reads", "messages", "messaging_handovers", "messaging_optins", "messaging_postbacks", "messaging_referrals"],
+    "verify_token": "MISSING_LOCALLY",
+    "signature_verification": "NOT_IMPLEMENTED_IN_REPOSITORY",
+    "messenger_ingestion": "NOT_PROVEN",
+    "instagram_ingestion": "NOT_PROVEN",
+    "outbound_publishing": "GATED"
+  },
+  "telegram": {"credential": "AVAILABLE", "get_me": "PASS", "get_webhook_info": "PASS", "transport": "POLLING_READY", "worker_loaded": true, "pending_updates": 0},
+  "resend": {"credential": "PRESENT", "domains_read": "HTTP_403", "domain": "NOT_VERIFIED_BY_READ_PROBE", "sending_authority": "GATED"},
+  "voice": {"local_credential": "NOT_FOUND", "remote_status": "REMOTE_CONFIGURATION_RECONCILIATION_REQUIRED", "netlify_metadata": "NOT_PROVEN_COMMAND_TIMEOUT", "relay_exists": true, "access_headers_in_relay": true, "transport": "NOT_PROVEN"},
+  "youtube": {"api_key": "PRESENT", "metadata_api": "PASS", "fixture_items": 1, "research_ready": true},
+  "models": {
+    "oracle_gemma": "READY",
+    "groq": "MISSING",
+    "gemini": "MISSING",
+    "openrouter": {"credential": "AVAILABLE", "models_read": "PASS", "model_count": 417, "free_models_discovered": 21, "paid_call_made": false},
+    "openai": "INTENTIONALLY_NOT_REQUIRED",
+    "anthropic": "INTENTIONALLY_NOT_REQUIRED"
+  },
+  "persistence": {"supabase_social_schema": "PRESENT", "webhook_to_supabase_readback": "NOT_PROVEN", "fixture_connector_proof": "PASS", "external_sends": false},
+  "authority": {"read_ready": ["Facebook page", "Instagram association", "Telegram", "YouTube metadata", "OpenRouter models"], "inbound_ready": ["Telegram polling"], "outbound_gated": ["Facebook", "Instagram", "Telegram", "Email"], "auto_posting_enabled": false, "payment_authority_enabled": false, "live_trading": false},
+  "user_action_required": ["Provide/verify the existing Netlify production environment metadata path for Voice if Voice transport certification is required.", "Implement or deploy the governed Meta webhook callback and signature-verification route before claiming Messenger/Instagram ingestion readiness."]
+}
