@@ -60,7 +60,8 @@ def materialize_backlog(state: Dict[str, Any]) -> Dict[str, Any]:
     """Migrate loose campaign backlog into durable, identity-keyed records."""
     existing = {str(item.get("backlog_id")): dict(item) for item in state.get("backlog_items") or [] if isinstance(item, dict) and item.get("backlog_id")}
     historical = list(state.get("remaining_work") or [])
-    for backlog_id, title, criterion, domain, capability in BACKLOG_SPECS:
+    specs = () if state.get("synthetic_campaign") else BACKLOG_SPECS
+    for backlog_id, title, criterion, domain, capability in specs:
         if backlog_id in existing:
             continue
         historical_match = next((item for item in historical if title.lower().split()[0] in str(item).lower() or backlog_id.lower() in str(item).lower()), None)
@@ -143,8 +144,11 @@ def _execute_one(objective: Mapping[str, Any], *, cycle_id: str, receipt_dir: Pa
     ack = {"type": "receiver_ack", "campaign_id": CAMPAIGN_ID, "cycle_id": cycle_id, "objective_id": objective_id, "work_order_id": work_order_id, "dispatch_id": dispatch_id, "status": "PASS", "receiver": "campaign_execution_engine", "created_at": utc_now()}
     persistence.emit_audit_event(ack)
     work_orders.transition(work_order_id, "running", telemetry_run_id=dispatch_id)
-    if objective.get("force_failure"):
+    if objective.get("force_failure") or (objective.get("verification_only") and not objective.get("acceptance_verified")):
         raw = _failure_result(objective)
+        if objective.get("verification_only"):
+            raw["failure_signature"] = f"ACCEPTANCE_VERIFIER_MISSING:{objective.get('backlog_id', objective_id)}"
+            raw["error"] = "acceptance criterion requires a specialized verifier"
         terminal = "failed"
     else:
         raw = run_capability(capability, dict(objective.get("args") or {}), receipt_dir=receipt_dir)
@@ -204,9 +208,20 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
     cycle_no = int(state.get("cycle_number", 0)) + 1
     cycle_id = f"{scheduler_instance}:{cycle_no}"
     if objectives is not None:
+        if objectives and all(item.get("backlog_id") for item in objectives):
+            state["synthetic_campaign"] = True
+            requested_backlog_ids = {str(item["backlog_id"]) for item in objectives}
+            state["backlog_items"] = [item for item in state.get("backlog_items", []) if str(item.get("backlog_id")) in requested_backlog_ids]
         existing = {str(item.get("objective_id")): dict(item) for item in state.get("objective_queue") or [] if isinstance(item, dict)}
         existing.update({str(item.get("objective_id")): dict(item) for item in objectives})
         state["objective_queue"] = list(existing.values())
+        backlog = {str(item.get("backlog_id")): item for item in state.get("backlog_items", []) if item.get("backlog_id")}
+        for objective in objectives:
+            backlog_id = objective.get("backlog_id")
+            if not backlog_id or str(backlog_id) in backlog:
+                continue
+            backlog[str(backlog_id)] = {"backlog_id": str(backlog_id), "title": str(objective.get("title") or backlog_id), "acceptance_criteria": [{"criterion_id": f"{backlog_id}.acceptance", "description": str(objective.get("expected_outcome") or "verified result"), "required_evidence_types": ["capability_receipt", "verification_receipt"], "status": "PENDING", "proof_refs": [], "verifier": "nexus_acceptance_verifier", "last_verified_at": None, "failure_reason": None}], "capability_requirements": [str(objective.get("capability_id") or "")], "dependency_domain": _domain(objective), "authority_class": "CLASS_1", "machine_executable": True, "capability_available": not bool(objective.get("capability_gap")), "capability_gap": bool(objective.get("capability_gap")), "human_gate_required": False, "status": "READY", "diagnosis_state": "MATERIALIZED", "objective_ids": [str(objective.get("objective_id"))], "proof_refs": [], "failure_signature": None, "repair_count": 0, "backlog_version": 1, "created_at": utc_now(), "updated_at": utc_now()}
+        state["backlog_items"] = list(backlog.values())
     queue = [dict(item) for item in state.get("objective_queue") or [] if isinstance(item, dict)]
     # Only executable, dependency-free objectives are dispatched this cycle.
     runnable = [item for item in queue if not item.get("dependency_ids") and item.get("status", "READY") not in {"COMPLETED", "WAITING_HUMAN", "BLOCKED_EXTERNAL"}]
