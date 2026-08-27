@@ -258,6 +258,14 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
     state["failure_dispositions"].update({row["objective_id"]: "queued repair" for row in results if row.get("failure_event")})
     finished_or_recovering = set(completed) | {row["objective_id"] for row in results if row["state"] in {"RECOVERING", "VERIFYING"}}
     state["objective_queue"] = [item for item in state.get("objective_queue", []) if str(item.get("objective_id")) not in finished_or_recovering]
+    # VERIFYING is executable work: enqueue its verifier before this cycle is
+    # persisted, so no observer can see an orphan verification state.
+    for row in results:
+        if row["state"] != "VERIFYING" or not row.get("backlog_id"):
+            continue
+        verifier_id = f"backlog.{row['backlog_id']}.verify.v1"
+        if not any(str(item.get("objective_id")) == verifier_id for item in state["objective_queue"]):
+            state["objective_queue"].append({"objective_id": verifier_id, "backlog_id": row["backlog_id"], "capability_id": "proof.watchdog", "dependency_domain": row["domain"], "expected_outcome": "independent acceptance verification", "verification_only": True, "acceptance_verified": False})
     state["campaign_health"] = "RECOVERING" if state["recovering_objectives"] else "RUNNING" if state["objective_queue"] else "STALLED" if _machine_backlog(state) else "PASS"
     _save_state(state, state_path)
     cycle = {"schema_version": "nexus.campaign-execution-receipt.v1", "campaign_id": state["campaign_id"], "scheduler_instance": scheduler_instance, "cycle_id": cycle_id, "cycle_number": cycle_no, "objectives": results, "completion_law_decisions": decisions.get("decisions", []), "generated_work": generated, "active_executor_count": len([r for r in results if r["state"] == "RECOVERING"]), "queued_dispatch_count": len(generated), "campaign_health": state["campaign_health"], "next_runnable_objective": (state["objective_queue"] or [{}])[0].get("objective_id") if state["objective_queue"] else None, "created_at": utc_now()}
