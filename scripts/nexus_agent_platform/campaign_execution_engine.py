@@ -58,7 +58,7 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
     # the scheduler owns such a checkpoint, materialize one bounded,
     # machine-safe audit objective from the existing backlog. This prevents a
     # flag-only ACTIVE state while preserving human-gated release work.
-    if state.get("status") == "ACTIVE" and state.get("remaining_work") and not state.get("objective_queue"):
+    if state.get("status") == "ACTIVE" and state.get("remaining_work") and not state.get("objective_queue") and not state.get("objective_queue_seeded"):
         state["objective_queue"] = [{
             "objective_id": "campaign.next_bounded_completion_audit",
             "title": "Next bounded completion audit",
@@ -67,6 +67,7 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
             "expected_outcome": "fresh proof watchdog receipt",
             "test_only": True,
         }]
+        state["objective_queue_seeded"] = True
     return state
 
 
