@@ -1,0 +1,2310 @@
+{
+  "actions_considered": [
+    "business_attention.review",
+    "business_attention.review",
+    "business_attention.review",
+    "business_attention.review",
+    "business_attention.review",
+    "business_attention.review",
+    "opportunity.review",
+    "opportunity.review",
+    "measurement_gap.report",
+    "measurement_gap.report",
+    "research_refresh.request",
+    "research_refresh.request"
+  ],
+  "actions_executed": [
+    "read_operational_state",
+    "write_heartbeat",
+    "business_attention.generate",
+    "measurement_gap.report",
+    "measurement_gap.report"
+  ],
+  "approvals_requested": [],
+  "authority": {
+    "arbitrary_shell": "UNAVAILABLE",
+    "external_actions": "BLOCKED",
+    "stripe_autonomous_execution": "DISABLED"
+  },
+  "business_brief_path": "reports/runtime/nexus_active_operator_business_brief_latest.md",
+  "business_duplicates_suppressed": 10,
+  "business_findings": [
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664595+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1:a0d8c3ddb6fcece9b3e6b2d2",
+      "freshness": "CURRENT",
+      "material_fingerprint": "a0d8c3ddb6fcece9b3e6b2d2",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_5e631777a5c84a3d91b4ca2881126eb3",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: REMOTION_VIDEO",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664653+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1:6c96afc62759a891011e660b",
+      "freshness": "CURRENT",
+      "material_fingerprint": "6c96afc62759a891011e660b",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_7783a423669f4be887a63b1cecc7ec68",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: VIDEO_STORYBOARD",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664629+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1:e6d0c7acd0a3ad92aa32752a",
+      "freshness": "CURRENT",
+      "material_fingerprint": "e6d0c7acd0a3ad92aa32752a",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_8d49ec60da2946af939da64cbda6cef5",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: IMAGE_LAYOUT_SPEC",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664641+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1:e72b389e804695ab50f82a27",
+      "freshness": "CURRENT",
+      "material_fingerprint": "e72b389e804695ab50f82a27",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_94720bd436b8445fb6ab0cc26942c673",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: IMAGE_PROMPT",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664664+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1:5791446e11dca0c317863eab",
+      "freshness": "CURRENT",
+      "material_fingerprint": "5791446e11dca0c317863eab",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_eb90f2c4578a493993cb06936db0de27",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: LANDING_PAGE_COPY",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664615+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1:2817480c57de323421718214",
+      "freshness": "CURRENT",
+      "material_fingerprint": "2817480c57de323421718214",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_ee3436f2840f429d93e1cf7d27f6ebab",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: REMOTION_VIDEO",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "growth_review",
+      "created_at": "2026-08-27T21:35:42.662628+00:00",
+      "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1:3d7185dd60153cd5ea6f015a",
+      "freshness": "UNKNOWN",
+      "material_fingerprint": "3d7185dd60153cd5ea6f015a",
+      "priority": "P2",
+      "proposed_action": "opportunity.review",
+      "reason": "growth experiment is evidence-backed but public work remains approval-gated",
+      "recommended_action": "opportunity.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_opportunity_id": "opp_5700d95807d82a3bab55c23d",
+      "source_record_id": "growth_c774e2e42583448b844c4a97a80f5dcf",
+      "source_system": "growth_operations",
+      "summary": "Growth experiment needs Ray review: Evidence-backed business funding readiness content plan",
+      "truth_class": "EVIDENCE_BACKED"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "opportunity_review",
+      "created_at": "2026-08-27T21:35:42.660835+00:00",
+      "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
+      "evidence_refs": [
+        "ev-bfabc471a6fe449ab069"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1:44ae3ce42f5e9f0ff6752a88",
+      "freshness": "CURRENT",
+      "material_fingerprint": "44ae3ce42f5e9f0ff6752a88",
+      "priority": "P2",
+      "proposed_action": "opportunity.review",
+      "reason": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
+      "recommended_action": "opportunity.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "opp_5700d95807d82a3bab55c23d",
+      "source_system": "opportunity_engine",
+      "summary": "Opportunity needs Ray review: Credit & Funding Readiness Review",
+      "truth_class": "EVIDENCE_BACKED"
+    },
+    {
+      "action_class": "AUTO_EXECUTE_INTERNAL_SAFE",
+      "approval_required": false,
+      "business_id": "goclear",
+      "category": "growth_measurement_gap",
+      "created_at": "2026-08-27T21:35:42.662673+00:00",
+      "dedupe_key": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1",
+      "evidence_refs": [],
+      "external_action_performed": false,
+      "finding_id": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1:903b7009dc3cddd986b23dd9",
+      "freshness": "UNKNOWN",
+      "material_fingerprint": "903b7009dc3cddd986b23dd9",
+      "priority": "P3",
+      "proposed_action": "measurement_gap.report",
+      "reason": "Search Console/Analytics are not connected; outcome remains UNKNOWN",
+      "recommended_action": "measurement_gap.report",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "growth_measurement_connection",
+      "source_system": "growth_operations",
+      "summary": "Growth measurement is pending",
+      "truth_class": "UNKNOWN"
+    },
+    {
+      "action_class": "AUTO_EXECUTE_INTERNAL_SAFE",
+      "approval_required": false,
+      "business_id": "goclear",
+      "category": "revenue_measurement_connection_gap",
+      "created_at": "2026-08-27T21:35:42.661732+00:00",
+      "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
+      "evidence_refs": [],
+      "external_action_performed": false,
+      "finding_id": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1:ea3b66c65fbedf913d77113c",
+      "freshness": "CURRENT",
+      "material_fingerprint": "ea3b66c65fbedf913d77113c",
+      "priority": "P3",
+      "proposed_action": "measurement_gap.report",
+      "reason": "actual revenue and funnel observations are UNKNOWN/NOT_CONNECTED; UNKNOWN is not zero",
+      "recommended_action": "measurement_gap.report",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "revenue_measurement_connection",
+      "source_system": "revenue_hub",
+      "summary": "Revenue truth source is not connected",
+      "truth_class": "UNKNOWN"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "growth_research",
+      "created_at": "2026-08-27T21:35:42.662658+00:00",
+      "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
+      "evidence_refs": [],
+      "external_action_performed": false,
+      "finding_id": "business_operator:growth_operations:growth_research_queue:growth_research:v1:c930bb450ccddaee31dcc502",
+      "freshness": "UNKNOWN",
+      "material_fingerprint": "c930bb450ccddaee31dcc502",
+      "priority": "P4",
+      "proposed_action": "research_refresh.request",
+      "reason": "one or more growth experiments lack current evidence",
+      "recommended_action": "research_refresh.request",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "growth_research_queue",
+      "source_system": "growth_operations",
+      "summary": "Growth research queue needs attention",
+      "truth_class": "UNKNOWN"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "opportunity_research",
+      "created_at": "2026-08-27T21:35:42.660865+00:00",
+      "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
+      "evidence_refs": [],
+      "external_action_performed": false,
+      "finding_id": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1:b4bfb0f3cbdedf5902ba8024",
+      "freshness": "UNKNOWN",
+      "material_fingerprint": "b4bfb0f3cbdedf5902ba8024",
+      "priority": "P4",
+      "proposed_action": "research_refresh.request",
+      "reason": "canonical opportunity lacks sufficient current evidence",
+      "recommended_action": "research_refresh.request",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "opp_78a9dd25d0a38eab82c68cd7",
+      "source_system": "opportunity_engine",
+      "summary": "Opportunity needs research: Legacy curated funding affiliate idea",
+      "truth_class": "UNKNOWN"
+    }
+  ],
+  "business_priorities": [
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664595+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1:a0d8c3ddb6fcece9b3e6b2d2",
+      "freshness": "CURRENT",
+      "material_fingerprint": "a0d8c3ddb6fcece9b3e6b2d2",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_5e631777a5c84a3d91b4ca2881126eb3",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: REMOTION_VIDEO",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664653+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1:6c96afc62759a891011e660b",
+      "freshness": "CURRENT",
+      "material_fingerprint": "6c96afc62759a891011e660b",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_7783a423669f4be887a63b1cecc7ec68",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: VIDEO_STORYBOARD",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664629+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1:e6d0c7acd0a3ad92aa32752a",
+      "freshness": "CURRENT",
+      "material_fingerprint": "e6d0c7acd0a3ad92aa32752a",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_8d49ec60da2946af939da64cbda6cef5",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: IMAGE_LAYOUT_SPEC",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664641+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1:e72b389e804695ab50f82a27",
+      "freshness": "CURRENT",
+      "material_fingerprint": "e72b389e804695ab50f82a27",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_94720bd436b8445fb6ab0cc26942c673",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: IMAGE_PROMPT",
+      "truth_class": "INTERNAL_DRAFT"
+    },
+    {
+      "action_class": "APPROVAL_REQUIRED",
+      "approval_required": true,
+      "business_id": "goclear",
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664664+00:00",
+      "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "external_action_performed": false,
+      "finding_id": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1:5791446e11dca0c317863eab",
+      "freshness": "CURRENT",
+      "material_fingerprint": "5791446e11dca0c317863eab",
+      "priority": "P2",
+      "proposed_action": "business_attention.review",
+      "reason": "internal asset is ready for review; public distribution remains blocked",
+      "recommended_action": "business_attention.review",
+      "schema_version": "nexus.business-attention.v1",
+      "source_record_id": "asset_eb90f2c4578a493993cb06936db0de27",
+      "source_system": "creative_studio",
+      "summary": "Creative asset needs Ray review: LANDING_PAGE_COPY",
+      "truth_class": "INTERNAL_DRAFT"
+    }
+  ],
+  "business_safe_actions_executed": [
+    "business_attention.generate"
+  ],
+  "business_source_errors": [],
+  "business_sources": {
+    "creative_studio": "CONNECTED",
+    "growth_operations": "CONNECTED",
+    "opportunity_engine": "CONNECTED",
+    "revenue_hub": "CONNECTED"
+  },
+  "business_work_orders_created": [],
+  "canonical_work_order_duplicates_suppressed": 12,
+  "capabilities": {
+    "email.send": {
+      "authority": "NONE",
+      "block_reason": "Resend domain status is not certified and outbound send is gated",
+      "capability_id": "email.send",
+      "gated_actions": [
+        "email.send"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "forex.practice.execution": {
+      "authority": "PRACTICE_ONLY",
+      "capability_id": "forex.practice.execution",
+      "gated_actions": [
+        "forex.place_order"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "gemini.models": {
+      "authority": "ADVISORY_ONLY",
+      "capability_id": "gemini.models",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "OPTIONAL_MISSING"
+    },
+    "google.calendar.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "google.calendar.read",
+      "gated_actions": [
+        "calendar.mutate"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "google.calendar.read"
+      ],
+      "status": "READY"
+    },
+    "google.drive.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "google.drive.read",
+      "gated_actions": [
+        "drive.mutate"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "google.drive.read"
+      ],
+      "status": "READY"
+    },
+    "google.gmail.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "google.gmail.read",
+      "gated_actions": [
+        "email.send"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "google.gmail.read"
+      ],
+      "status": "READY"
+    },
+    "groq.models": {
+      "authority": "ADVISORY_ONLY",
+      "capability_id": "groq.models",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "OPTIONAL_MISSING"
+    },
+    "meta.inbound": {
+      "authority": "INGEST_ONLY",
+      "block_reason": "webhook callback and signature verifier are not certified",
+      "capability_id": "meta.inbound",
+      "gated_actions": [
+        "meta.inbound"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "NOT_READY"
+    },
+    "meta.publish": {
+      "authority": "NONE",
+      "block_reason": "outbound social publishing requires Ray approval",
+      "capability_id": "meta.publish",
+      "gated_actions": [
+        "meta.publish"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "meta.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "meta.read",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "meta.read"
+      ],
+      "status": "READY"
+    },
+    "netlify.release": {
+      "authority": "NONE",
+      "capability_id": "netlify.release",
+      "gated_actions": [
+        "netlify.release"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "oanda.practice.read": {
+      "authority": "PRACTICE_READ_ONLY",
+      "capability_id": "oanda.practice.read",
+      "gated_actions": [
+        "forex.place_order"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "forex.read"
+      ],
+      "status": "READY"
+    },
+    "oracle.gemma": {
+      "authority": "ADVISORY_ONLY",
+      "capability_id": "oracle.gemma",
+      "gated_actions": [
+        "execution.approve"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "research.synthesize"
+      ],
+      "status": "READY"
+    },
+    "payments": {
+      "authority": "NONE",
+      "capability_id": "payments",
+      "gated_actions": [
+        "payments"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "searxng.research": {
+      "authority": "READ_ONLY",
+      "capability_id": "searxng.research",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "research.refresh"
+      ],
+      "status": "READY"
+    },
+    "telegram.transport": {
+      "authority": "GOVERNED_OUTBOUND",
+      "capability_id": "telegram.transport",
+      "gated_actions": [
+        "telegram.send"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "telegram.read"
+      ],
+      "status": "READY"
+    },
+    "voice.local": {
+      "authority": "LOCAL_ONLY",
+      "capability_id": "voice.local",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "voice.read"
+      ],
+      "status": "READY"
+    },
+    "voice.remote": {
+      "authority": "REMOTE_UNPROVEN",
+      "capability_id": "voice.remote",
+      "gated_actions": [
+        "voice.remote"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "PARTIAL"
+    },
+    "youtube.metadata": {
+      "authority": "READ_ONLY",
+      "capability_id": "youtube.metadata",
+      "gated_actions": [
+        "youtube.publish"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "youtube.read"
+      ],
+      "status": "READY"
+    }
+  },
+  "completed_at": "2026-08-27T21:35:43.160462+00:00",
+  "dry_run": false,
+  "duplicates_suppressed": 10,
+  "errors": [],
+  "escalations": [
+    {
+      "created_at": "2026-08-27T21:35:42.665217+00:00",
+      "deferred_effect": "No external action is attempted; internal work remains queued.",
+      "escalation_id": "esc_190075d45040a12dda6d",
+      "external_action_performed": false,
+      "recommended_action": "meta.inbound",
+      "risk": "GATED",
+      "type": "CAPABILITY_NOT_CERTIFIED",
+      "what_is_needed": "webhook callback and signature verifier are not certified",
+      "work_order_id": "awo_190075d45040a12dda6d"
+    },
+    {
+      "created_at": "2026-08-27T21:35:42.759002+00:00",
+      "deferred_effect": "No external action is attempted; internal work remains queued.",
+      "escalation_id": "esc_ca46b39c6f8905862187",
+      "external_action_performed": false,
+      "recommended_action": "email.send",
+      "risk": "GATED",
+      "type": "CAPABILITY_NOT_CERTIFIED",
+      "what_is_needed": "outbound email remains gated",
+      "work_order_id": "awo_ca46b39c6f8905862187"
+    },
+    {
+      "created_at": "2026-08-27T21:35:42.881595+00:00",
+      "deferred_effect": "No external action is attempted; internal work remains queued.",
+      "escalation_id": "esc_731dd699d71c1670ae93",
+      "external_action_performed": false,
+      "recommended_action": "voice.remote",
+      "risk": "GATED",
+      "type": "CAPABILITY_NOT_CERTIFIED",
+      "what_is_needed": "remote Voice authentication is unproven",
+      "work_order_id": "awo_731dd699d71c1670ae93"
+    }
+  ],
+  "executions": [
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "read_operational_state",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_read_operational_state",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160671+00:00",
+      "tool_action_id": "read_operational_state",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "write_heartbeat",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_write_heartbeat",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160682+00:00",
+      "tool_action_id": "write_heartbeat",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "business_attention.generate",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_business_attention_generate",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160687+00:00",
+      "tool_action_id": "business_attention.generate",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "measurement_gap.report",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_measurement_gap_report",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160692+00:00",
+      "tool_action_id": "measurement_gap.report",
+      "work_order_id": ""
+    }
+  ],
+  "external_mutations": 0,
+  "heartbeat_path": "reports/runtime/nexus_active_operator_heartbeat_latest.json",
+  "limits": {
+    "max_executions": 8,
+    "max_new_work_orders": 12,
+    "max_research_tasks": 2,
+    "max_runtime_seconds": 300
+  },
+  "mode": "live",
+  "next_scheduled_run": "2026-08-27T22:35:43.160462+00:00",
+  "operational_result": "INTERNAL_ATTENTION_IDENTIFIED",
+  "operator_health": "HEALTHY",
+  "operator_run_id": "operator_75b8825ef21f4cdca27864604b40c2df",
+  "receipt_path": "reports/runtime/nexus_active_operator_receipts/operator_operator_75b8825ef21f4cdca27864604b40c2df.json",
+  "receipts": [
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "read_operational_state",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_read_operational_state",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160671+00:00",
+      "tool_action_id": "read_operational_state",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "write_heartbeat",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_write_heartbeat",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160682+00:00",
+      "tool_action_id": "write_heartbeat",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "business_attention.generate",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_business_attention_generate",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160687+00:00",
+      "tool_action_id": "business_attention.generate",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "measurement_gap.report",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_75b8825ef21f4cdca27864604b40c2df_measurement_gap_report",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-08-27T21:35:43.160692+00:00",
+      "tool_action_id": "measurement_gap.report",
+      "work_order_id": ""
+    }
+  ],
+  "safe_internal_execution": "PASS",
+  "schema_version": "nexus.active-operator.v1",
+  "started_at": "2026-08-27T21:35:42.657925+00:00",
+  "state_snapshot": {
+    "APPROVALS_REQUIRED": [
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.664980+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.664993+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: REMOTION_VIDEO",
+        "work_order_id": "awo_c32bbccd8fe8be5d0c66"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665010+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665017+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: VIDEO_STORYBOARD",
+        "work_order_id": "awo_ef6f6660d297b0df5a58"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665028+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665033+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: IMAGE_LAYOUT_SPEC",
+        "work_order_id": "awo_7a52896789960f3ded4a"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665041+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665046+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: IMAGE_PROMPT",
+        "work_order_id": "awo_80366c9486c6841f9ac3"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665053+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665058+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: LANDING_PAGE_COPY",
+        "work_order_id": "awo_c683bfe6374a3f299123"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665069+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665074+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: REMOTION_VIDEO",
+        "work_order_id": "awo_680580ddede3bc3ddb50"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "growth_review"
+        ],
+        "category": "growth_review",
+        "created_at": "2026-08-27T21:35:42.665080+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
+        "description": "growth experiment is evidence-backed but public work remains approval-gated",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665085+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "opportunity.review",
+        "risk_class": "LOW",
+        "source": "growth_operations",
+        "status": "WAITING_APPROVAL",
+        "title": "Growth experiment needs Ray review: Evidence-backed business funding readiness content plan",
+        "work_order_id": "awo_d1a96c5943fc5e3856b4"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "opportunity_review"
+        ],
+        "category": "opportunity_review",
+        "created_at": "2026-08-27T21:35:42.665093+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
+        "description": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
+        "evidence_refs": [
+          "ev-bfabc471a6fe449ab069"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665098+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "opportunity.review",
+        "risk_class": "LOW",
+        "source": "opportunity_engine",
+        "status": "WAITING_APPROVAL",
+        "title": "Opportunity needs Ray review: Credit & Funding Readiness Review",
+        "work_order_id": "awo_3bf0b9e4b6fb75b8260d"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "growth_research"
+        ],
+        "category": "growth_research",
+        "created_at": "2026-08-27T21:35:42.665128+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
+        "description": "one or more growth experiments lack current evidence",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665132+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P4",
+        "priority_score": 20,
+        "receipt_refs": [],
+        "recommended_action": "research_refresh.request",
+        "risk_class": "LOW",
+        "source": "growth_operations",
+        "status": "WAITING_APPROVAL",
+        "title": "Growth research queue needs attention",
+        "work_order_id": "awo_d2492f8a33caea5ffd09"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "opportunity_research"
+        ],
+        "category": "opportunity_research",
+        "created_at": "2026-08-27T21:35:42.665139+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
+        "description": "canonical opportunity lacks sufficient current evidence",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665143+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P4",
+        "priority_score": 20,
+        "receipt_refs": [],
+        "recommended_action": "research_refresh.request",
+        "risk_class": "LOW",
+        "source": "opportunity_engine",
+        "status": "WAITING_APPROVAL",
+        "title": "Opportunity needs research: Legacy curated funding affiliate idea",
+        "work_order_id": "awo_2f919ea85e5ca6c0aa61"
+      }
+    ],
+    "BLOCKED_WORK": [
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "meta.inbound"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-08-27T21:35:42.665152+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:meta.inbound:v1",
+        "description": "webhook callback and signature verifier are not certified",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665157+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "meta.inbound",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: meta.inbound",
+        "work_order_id": "awo_190075d45040a12dda6d"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "email.send"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-08-27T21:35:42.758823+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:email.send:v1",
+        "description": "outbound email remains gated",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.758848+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "email.send",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: email.send",
+        "work_order_id": "awo_ca46b39c6f8905862187"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "voice.remote"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-08-27T21:35:42.881449+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:voice.remote:v1",
+        "description": "remote Voice authentication is unproven",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.881474+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "voice.remote",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: voice.remote",
+        "work_order_id": "awo_731dd699d71c1670ae93"
+      }
+    ],
+    "CAPABILITY_STATE": {
+      "email.send": {
+        "authority": "NONE",
+        "block_reason": "Resend domain status is not certified and outbound send is gated",
+        "capability_id": "email.send",
+        "gated_actions": [
+          "email.send"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "forex.practice.execution": {
+        "authority": "PRACTICE_ONLY",
+        "capability_id": "forex.practice.execution",
+        "gated_actions": [
+          "forex.place_order"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "gemini.models": {
+        "authority": "ADVISORY_ONLY",
+        "capability_id": "gemini.models",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "OPTIONAL_MISSING"
+      },
+      "google.calendar.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "google.calendar.read",
+        "gated_actions": [
+          "calendar.mutate"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "google.calendar.read"
+        ],
+        "status": "READY"
+      },
+      "google.drive.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "google.drive.read",
+        "gated_actions": [
+          "drive.mutate"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "google.drive.read"
+        ],
+        "status": "READY"
+      },
+      "google.gmail.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "google.gmail.read",
+        "gated_actions": [
+          "email.send"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "google.gmail.read"
+        ],
+        "status": "READY"
+      },
+      "groq.models": {
+        "authority": "ADVISORY_ONLY",
+        "capability_id": "groq.models",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "OPTIONAL_MISSING"
+      },
+      "meta.inbound": {
+        "authority": "INGEST_ONLY",
+        "block_reason": "webhook callback and signature verifier are not certified",
+        "capability_id": "meta.inbound",
+        "gated_actions": [
+          "meta.inbound"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "NOT_READY"
+      },
+      "meta.publish": {
+        "authority": "NONE",
+        "block_reason": "outbound social publishing requires Ray approval",
+        "capability_id": "meta.publish",
+        "gated_actions": [
+          "meta.publish"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "meta.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "meta.read",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "meta.read"
+        ],
+        "status": "READY"
+      },
+      "netlify.release": {
+        "authority": "NONE",
+        "capability_id": "netlify.release",
+        "gated_actions": [
+          "netlify.release"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "oanda.practice.read": {
+        "authority": "PRACTICE_READ_ONLY",
+        "capability_id": "oanda.practice.read",
+        "gated_actions": [
+          "forex.place_order"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "forex.read"
+        ],
+        "status": "READY"
+      },
+      "oracle.gemma": {
+        "authority": "ADVISORY_ONLY",
+        "capability_id": "oracle.gemma",
+        "gated_actions": [
+          "execution.approve"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "research.synthesize"
+        ],
+        "status": "READY"
+      },
+      "payments": {
+        "authority": "NONE",
+        "capability_id": "payments",
+        "gated_actions": [
+          "payments"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "searxng.research": {
+        "authority": "READ_ONLY",
+        "capability_id": "searxng.research",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "research.refresh"
+        ],
+        "status": "READY"
+      },
+      "telegram.transport": {
+        "authority": "GOVERNED_OUTBOUND",
+        "capability_id": "telegram.transport",
+        "gated_actions": [
+          "telegram.send"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "telegram.read"
+        ],
+        "status": "READY"
+      },
+      "voice.local": {
+        "authority": "LOCAL_ONLY",
+        "capability_id": "voice.local",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "voice.read"
+        ],
+        "status": "READY"
+      },
+      "voice.remote": {
+        "authority": "REMOTE_UNPROVEN",
+        "capability_id": "voice.remote",
+        "gated_actions": [
+          "voice.remote"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "PARTIAL"
+      },
+      "youtube.metadata": {
+        "authority": "READ_ONLY",
+        "capability_id": "youtube.metadata",
+        "gated_actions": [
+          "youtube.publish"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "youtube.read"
+        ],
+        "status": "READY"
+      }
+    },
+    "CLIENT_OPERATIONS": [],
+    "COMMUNICATION_STATE": {
+      "email_send": "GATED",
+      "meta_inbound": "NOT_READY",
+      "telegram": "READY",
+      "voice_remote": "PARTIAL"
+    },
+    "CURRENT_WORK": [
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.664980+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.664993+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: REMOTION_VIDEO",
+        "work_order_id": "awo_c32bbccd8fe8be5d0c66"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665010+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665017+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: VIDEO_STORYBOARD",
+        "work_order_id": "awo_ef6f6660d297b0df5a58"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665028+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665033+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: IMAGE_LAYOUT_SPEC",
+        "work_order_id": "awo_7a52896789960f3ded4a"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665041+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665046+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: IMAGE_PROMPT",
+        "work_order_id": "awo_80366c9486c6841f9ac3"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665053+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665058+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: LANDING_PAGE_COPY",
+        "work_order_id": "awo_c683bfe6374a3f299123"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "creative_review"
+        ],
+        "category": "creative_review",
+        "created_at": "2026-08-27T21:35:42.665069+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
+        "description": "internal asset is ready for review; public distribution remains blocked",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665074+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "business_attention.review",
+        "risk_class": "LOW",
+        "source": "creative_studio",
+        "status": "WAITING_APPROVAL",
+        "title": "Creative asset needs Ray review: REMOTION_VIDEO",
+        "work_order_id": "awo_680580ddede3bc3ddb50"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "growth_review"
+        ],
+        "category": "growth_review",
+        "created_at": "2026-08-27T21:35:42.665080+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
+        "description": "growth experiment is evidence-backed but public work remains approval-gated",
+        "evidence_refs": [
+          "ev-8874c37fddb5461287d2"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665085+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "opportunity.review",
+        "risk_class": "LOW",
+        "source": "growth_operations",
+        "status": "WAITING_APPROVAL",
+        "title": "Growth experiment needs Ray review: Evidence-backed business funding readiness content plan",
+        "work_order_id": "awo_d1a96c5943fc5e3856b4"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "opportunity_review"
+        ],
+        "category": "opportunity_review",
+        "created_at": "2026-08-27T21:35:42.665093+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
+        "description": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
+        "evidence_refs": [
+          "ev-bfabc471a6fe449ab069"
+        ],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665098+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "opportunity.review",
+        "risk_class": "LOW",
+        "source": "opportunity_engine",
+        "status": "WAITING_APPROVAL",
+        "title": "Opportunity needs Ray review: Credit & Funding Readiness Review",
+        "work_order_id": "awo_3bf0b9e4b6fb75b8260d"
+      },
+      {
+        "authority_required": "AUTO_EXECUTE_INTERNAL_SAFE",
+        "capabilities_required": [
+          "growth_measurement_gap"
+        ],
+        "category": "growth_measurement_gap",
+        "created_at": "2026-08-27T21:35:42.665105+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1",
+        "description": "Search Console/Analytics are not connected; outcome remains UNKNOWN",
+        "evidence_refs": [],
+        "execution_mode": "INTERNAL_AUTONOMOUS",
+        "last_updated": "2026-08-27T21:35:42.665109+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P3",
+        "priority_score": 40,
+        "receipt_refs": [],
+        "recommended_action": "measurement_gap.report",
+        "risk_class": "LOW",
+        "source": "growth_operations",
+        "status": "READY",
+        "title": "Growth measurement is pending",
+        "work_order_id": "awo_72e6101f4bc58f764f65"
+      },
+      {
+        "authority_required": "AUTO_EXECUTE_INTERNAL_SAFE",
+        "capabilities_required": [
+          "system.health"
+        ],
+        "category": "revenue_measurement_connection_gap",
+        "created_at": "2026-08-27T21:35:42.665117+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
+        "description": "actual revenue and funnel observations are UNKNOWN/NOT_CONNECTED; UNKNOWN is not zero",
+        "evidence_refs": [],
+        "execution_mode": "INTERNAL_AUTONOMOUS",
+        "last_updated": "2026-08-27T21:35:42.665121+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P3",
+        "priority_score": 40,
+        "receipt_refs": [],
+        "recommended_action": "measurement_gap.report",
+        "risk_class": "LOW",
+        "source": "revenue_hub",
+        "status": "READY",
+        "title": "Revenue truth source is not connected",
+        "work_order_id": "awo_9d40ebbabcf49dc89b2e"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "growth_research"
+        ],
+        "category": "growth_research",
+        "created_at": "2026-08-27T21:35:42.665128+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
+        "description": "one or more growth experiments lack current evidence",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665132+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P4",
+        "priority_score": 20,
+        "receipt_refs": [],
+        "recommended_action": "research_refresh.request",
+        "risk_class": "LOW",
+        "source": "growth_operations",
+        "status": "WAITING_APPROVAL",
+        "title": "Growth research queue needs attention",
+        "work_order_id": "awo_d2492f8a33caea5ffd09"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "opportunity_research"
+        ],
+        "category": "opportunity_research",
+        "created_at": "2026-08-27T21:35:42.665139+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
+        "description": "canonical opportunity lacks sufficient current evidence",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665143+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P4",
+        "priority_score": 20,
+        "receipt_refs": [],
+        "recommended_action": "research_refresh.request",
+        "risk_class": "LOW",
+        "source": "opportunity_engine",
+        "status": "WAITING_APPROVAL",
+        "title": "Opportunity needs research: Legacy curated funding affiliate idea",
+        "work_order_id": "awo_2f919ea85e5ca6c0aa61"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "meta.inbound"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-08-27T21:35:42.665152+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:meta.inbound:v1",
+        "description": "webhook callback and signature verifier are not certified",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.665157+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "meta.inbound",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: meta.inbound",
+        "work_order_id": "awo_190075d45040a12dda6d"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "email.send"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-08-27T21:35:42.758823+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:email.send:v1",
+        "description": "outbound email remains gated",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.758848+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "email.send",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: email.send",
+        "work_order_id": "awo_ca46b39c6f8905862187"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "voice.remote"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-08-27T21:35:42.881449+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:voice.remote:v1",
+        "description": "remote Voice authentication is unproven",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-08-27T21:35:42.881474+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "voice.remote",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: voice.remote",
+        "work_order_id": "awo_731dd699d71c1670ae93"
+      }
+    ],
+    "FOREX_RESEARCH": {
+      "ai_calls": 0,
+      "status": "READY"
+    },
+    "RECENT_RECEIPTS": [],
+    "RESEARCH_OPPORTUNITIES": [
+      {
+        "action_class": "APPROVAL_REQUIRED",
+        "approval_required": true,
+        "business_id": "goclear",
+        "category": "growth_research",
+        "created_at": "2026-08-27T21:35:42.662658+00:00",
+        "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
+        "evidence_refs": [],
+        "external_action_performed": false,
+        "finding_id": "business_operator:growth_operations:growth_research_queue:growth_research:v1:c930bb450ccddaee31dcc502",
+        "freshness": "UNKNOWN",
+        "material_fingerprint": "c930bb450ccddaee31dcc502",
+        "priority": "P4",
+        "proposed_action": "research_refresh.request",
+        "reason": "one or more growth experiments lack current evidence",
+        "recommended_action": "research_refresh.request",
+        "schema_version": "nexus.business-attention.v1",
+        "source_record_id": "growth_research_queue",
+        "source_system": "growth_operations",
+        "summary": "Growth research queue needs attention",
+        "truth_class": "UNKNOWN"
+      },
+      {
+        "action_class": "APPROVAL_REQUIRED",
+        "approval_required": true,
+        "business_id": "goclear",
+        "category": "opportunity_research",
+        "created_at": "2026-08-27T21:35:42.660865+00:00",
+        "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
+        "evidence_refs": [],
+        "external_action_performed": false,
+        "finding_id": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1:b4bfb0f3cbdedf5902ba8024",
+        "freshness": "UNKNOWN",
+        "material_fingerprint": "b4bfb0f3cbdedf5902ba8024",
+        "priority": "P4",
+        "proposed_action": "research_refresh.request",
+        "reason": "canonical opportunity lacks sufficient current evidence",
+        "recommended_action": "research_refresh.request",
+        "schema_version": "nexus.business-attention.v1",
+        "source_record_id": "opp_78a9dd25d0a38eab82c68cd7",
+        "source_system": "opportunity_engine",
+        "summary": "Opportunity needs research: Legacy curated funding affiliate idea",
+        "truth_class": "UNKNOWN"
+      }
+    ],
+    "REVENUE_OPPORTUNITIES": [
+      {
+        "action_class": "AUTO_EXECUTE_INTERNAL_SAFE",
+        "approval_required": false,
+        "business_id": "goclear",
+        "category": "revenue_measurement_connection_gap",
+        "created_at": "2026-08-27T21:35:42.661732+00:00",
+        "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
+        "evidence_refs": [],
+        "external_action_performed": false,
+        "finding_id": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1:ea3b66c65fbedf913d77113c",
+        "freshness": "CURRENT",
+        "material_fingerprint": "ea3b66c65fbedf913d77113c",
+        "priority": "P3",
+        "proposed_action": "measurement_gap.report",
+        "reason": "actual revenue and funnel observations are UNKNOWN/NOT_CONNECTED; UNKNOWN is not zero",
+        "recommended_action": "measurement_gap.report",
+        "schema_version": "nexus.business-attention.v1",
+        "source_record_id": "revenue_measurement_connection",
+        "source_system": "revenue_hub",
+        "summary": "Revenue truth source is not connected",
+        "truth_class": "UNKNOWN"
+      }
+    ],
+    "STALE_WORK": [],
+    "SYSTEM_HEALTH": {
+      "scheduler": {
+        "cadence_seconds": 3600,
+        "duplicate_detected": false,
+        "failed_dispatches": 17,
+        "git_commit": "87356da754b0994f3e0a5e8b3d77e713a4a2092f",
+        "health_path": "reports/phase16a/scheduler_health.json",
+        "host": "Raymonds-Mac-mini.local",
+        "last_dispatch": "2026-08-27T20:36:44.258755+00:00",
+        "last_error": "[Errno 2] No such file or directory: 'npm'",
+        "last_exit_code": 1,
+        "last_heartbeat": "2026-08-27T20:36:46.148139+00:00",
+        "next_dispatch": "2026-08-27T21:36:46.148139+00:00",
+        "registered_loops": [
+          "open_source_scout_loop",
+          "research_intake_loop",
+          "revenue_opportunity_loop",
+          "seo_opportunity_loop"
+        ],
+        "scheduler_instance": "com.nexus.continuous-loop:fbdfa686fd1a4a468fc22f82715bf286",
+        "scheduler_label": "com.nexus.continuous-loop",
+        "started_at": "2026-08-20T13:35:05.316509+00:00",
+        "status": "FAIL",
+        "successful_dispatches": 185,
+        "updated_at": "2026-08-27T20:36:46.148139+00:00"
+      }
+    },
+    "generated_at": "2026-08-27T21:35:42.657925+00:00",
+    "schema_version": "nexus.active-operator-state.v1"
+  },
+  "status": "COMPLETED_WITH_FINDINGS",
+  "trigger_type": "launchd",
+  "work_orders": [
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "creative_review"
+      ],
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.664980+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:creative_studio:asset_5e631777a5c84a3d91b4ca2881126eb3:creative_review:v1",
+      "description": "internal asset is ready for review; public distribution remains blocked",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.664993+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "business_attention.review",
+      "risk_class": "LOW",
+      "source": "creative_studio",
+      "status": "WAITING_APPROVAL",
+      "title": "Creative asset needs Ray review: REMOTION_VIDEO",
+      "work_order_id": "awo_c32bbccd8fe8be5d0c66"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "creative_review"
+      ],
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.665010+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:creative_studio:asset_7783a423669f4be887a63b1cecc7ec68:creative_review:v1",
+      "description": "internal asset is ready for review; public distribution remains blocked",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665017+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "business_attention.review",
+      "risk_class": "LOW",
+      "source": "creative_studio",
+      "status": "WAITING_APPROVAL",
+      "title": "Creative asset needs Ray review: VIDEO_STORYBOARD",
+      "work_order_id": "awo_ef6f6660d297b0df5a58"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "creative_review"
+      ],
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.665028+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:creative_studio:asset_8d49ec60da2946af939da64cbda6cef5:creative_review:v1",
+      "description": "internal asset is ready for review; public distribution remains blocked",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665033+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "business_attention.review",
+      "risk_class": "LOW",
+      "source": "creative_studio",
+      "status": "WAITING_APPROVAL",
+      "title": "Creative asset needs Ray review: IMAGE_LAYOUT_SPEC",
+      "work_order_id": "awo_7a52896789960f3ded4a"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "creative_review"
+      ],
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.665041+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:creative_studio:asset_94720bd436b8445fb6ab0cc26942c673:creative_review:v1",
+      "description": "internal asset is ready for review; public distribution remains blocked",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665046+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "business_attention.review",
+      "risk_class": "LOW",
+      "source": "creative_studio",
+      "status": "WAITING_APPROVAL",
+      "title": "Creative asset needs Ray review: IMAGE_PROMPT",
+      "work_order_id": "awo_80366c9486c6841f9ac3"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "creative_review"
+      ],
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.665053+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:creative_studio:asset_eb90f2c4578a493993cb06936db0de27:creative_review:v1",
+      "description": "internal asset is ready for review; public distribution remains blocked",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665058+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "business_attention.review",
+      "risk_class": "LOW",
+      "source": "creative_studio",
+      "status": "WAITING_APPROVAL",
+      "title": "Creative asset needs Ray review: LANDING_PAGE_COPY",
+      "work_order_id": "awo_c683bfe6374a3f299123"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "creative_review"
+      ],
+      "category": "creative_review",
+      "created_at": "2026-08-27T21:35:42.665069+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:creative_studio:asset_ee3436f2840f429d93e1cf7d27f6ebab:creative_review:v1",
+      "description": "internal asset is ready for review; public distribution remains blocked",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665074+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "business_attention.review",
+      "risk_class": "LOW",
+      "source": "creative_studio",
+      "status": "WAITING_APPROVAL",
+      "title": "Creative asset needs Ray review: REMOTION_VIDEO",
+      "work_order_id": "awo_680580ddede3bc3ddb50"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "growth_review"
+      ],
+      "category": "growth_review",
+      "created_at": "2026-08-27T21:35:42.665080+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:growth_operations:growth_c774e2e42583448b844c4a97a80f5dcf:growth_review:v1",
+      "description": "growth experiment is evidence-backed but public work remains approval-gated",
+      "evidence_refs": [
+        "ev-8874c37fddb5461287d2"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665085+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "opportunity.review",
+      "risk_class": "LOW",
+      "source": "growth_operations",
+      "status": "WAITING_APPROVAL",
+      "title": "Growth experiment needs Ray review: Evidence-backed business funding readiness content plan",
+      "work_order_id": "awo_d1a96c5943fc5e3856b4"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "opportunity_review"
+      ],
+      "category": "opportunity_review",
+      "created_at": "2026-08-27T21:35:42.665093+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:opportunity_engine:opp_5700d95807d82a3bab55c23d:opportunity_review:v1",
+      "description": "canonical opportunity status is NEEDS_RAY_REVIEW; score=59",
+      "evidence_refs": [
+        "ev-bfabc471a6fe449ab069"
+      ],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665098+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "opportunity.review",
+      "risk_class": "LOW",
+      "source": "opportunity_engine",
+      "status": "WAITING_APPROVAL",
+      "title": "Opportunity needs Ray review: Credit & Funding Readiness Review",
+      "work_order_id": "awo_3bf0b9e4b6fb75b8260d"
+    },
+    {
+      "authority_required": "AUTO_EXECUTE_INTERNAL_SAFE",
+      "capabilities_required": [
+        "growth_measurement_gap"
+      ],
+      "category": "growth_measurement_gap",
+      "created_at": "2026-08-27T21:35:42.665105+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:growth_operations:growth_measurement_connection:growth_measurement_gap:v1",
+      "description": "Search Console/Analytics are not connected; outcome remains UNKNOWN",
+      "evidence_refs": [],
+      "execution_mode": "INTERNAL_AUTONOMOUS",
+      "last_updated": "2026-08-27T21:35:42.665109+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P3",
+      "priority_score": 40,
+      "receipt_refs": [],
+      "recommended_action": "measurement_gap.report",
+      "risk_class": "LOW",
+      "source": "growth_operations",
+      "status": "READY",
+      "title": "Growth measurement is pending",
+      "work_order_id": "awo_72e6101f4bc58f764f65"
+    },
+    {
+      "authority_required": "AUTO_EXECUTE_INTERNAL_SAFE",
+      "capabilities_required": [
+        "system.health"
+      ],
+      "category": "revenue_measurement_connection_gap",
+      "created_at": "2026-08-27T21:35:42.665117+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:revenue_hub:revenue_measurement_connection:revenue_measurement_connection_gap:v1",
+      "description": "actual revenue and funnel observations are UNKNOWN/NOT_CONNECTED; UNKNOWN is not zero",
+      "evidence_refs": [],
+      "execution_mode": "INTERNAL_AUTONOMOUS",
+      "last_updated": "2026-08-27T21:35:42.665121+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P3",
+      "priority_score": 40,
+      "receipt_refs": [],
+      "recommended_action": "measurement_gap.report",
+      "risk_class": "LOW",
+      "source": "revenue_hub",
+      "status": "READY",
+      "title": "Revenue truth source is not connected",
+      "work_order_id": "awo_9d40ebbabcf49dc89b2e"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "growth_research"
+      ],
+      "category": "growth_research",
+      "created_at": "2026-08-27T21:35:42.665128+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:growth_operations:growth_research_queue:growth_research:v1",
+      "description": "one or more growth experiments lack current evidence",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665132+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P4",
+      "priority_score": 20,
+      "receipt_refs": [],
+      "recommended_action": "research_refresh.request",
+      "risk_class": "LOW",
+      "source": "growth_operations",
+      "status": "WAITING_APPROVAL",
+      "title": "Growth research queue needs attention",
+      "work_order_id": "awo_d2492f8a33caea5ffd09"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "opportunity_research"
+      ],
+      "category": "opportunity_research",
+      "created_at": "2026-08-27T21:35:42.665139+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "business_operator:opportunity_engine:opp_78a9dd25d0a38eab82c68cd7:opportunity_research:v1",
+      "description": "canonical opportunity lacks sufficient current evidence",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665143+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P4",
+      "priority_score": 20,
+      "receipt_refs": [],
+      "recommended_action": "research_refresh.request",
+      "risk_class": "LOW",
+      "source": "opportunity_engine",
+      "status": "WAITING_APPROVAL",
+      "title": "Opportunity needs research: Legacy curated funding affiliate idea",
+      "work_order_id": "awo_2f919ea85e5ca6c0aa61"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "meta.inbound"
+      ],
+      "category": "APPROVALS_REQUIRED",
+      "created_at": "2026-08-27T21:35:42.665152+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "capability:meta.inbound:v1",
+      "description": "webhook callback and signature verifier are not certified",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.665157+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 45,
+      "receipt_refs": [],
+      "recommended_action": "meta.inbound",
+      "risk_class": "GATED",
+      "source": "active_operator",
+      "status": "BLOCKED",
+      "title": "Capability requires attention: meta.inbound",
+      "work_order_id": "awo_190075d45040a12dda6d"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "email.send"
+      ],
+      "category": "APPROVALS_REQUIRED",
+      "created_at": "2026-08-27T21:35:42.758823+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "capability:email.send:v1",
+      "description": "outbound email remains gated",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.758848+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 45,
+      "receipt_refs": [],
+      "recommended_action": "email.send",
+      "risk_class": "GATED",
+      "source": "active_operator",
+      "status": "BLOCKED",
+      "title": "Capability requires attention: email.send",
+      "work_order_id": "awo_ca46b39c6f8905862187"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "voice.remote"
+      ],
+      "category": "APPROVALS_REQUIRED",
+      "created_at": "2026-08-27T21:35:42.881449+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "capability:voice.remote:v1",
+      "description": "remote Voice authentication is unproven",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-08-27T21:35:42.881474+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 45,
+      "receipt_refs": [],
+      "recommended_action": "voice.remote",
+      "risk_class": "GATED",
+      "source": "active_operator",
+      "status": "BLOCKED",
+      "title": "Capability requires attention: voice.remote",
+      "work_order_id": "awo_731dd699d71c1670ae93"
+    }
+  ],
+  "work_orders_created": []
+}

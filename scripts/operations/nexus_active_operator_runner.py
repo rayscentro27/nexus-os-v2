@@ -36,8 +36,18 @@ HEARTBEAT_PATH = ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.
 RUNNER_REPORT_PATH = ROOT / "reports/runtime/nexus_active_operator_runner_latest.md"
 BUSINESS_BRIEF_PATH = ROOT / "reports/runtime/nexus_active_operator_business_brief_latest.md"
 RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
+ESCALATION_DIR = ROOT / "reports/runtime/nexus_active_operator_escalations"
+WORK_ORDER_STATE_PATH = ROOT / "data/runtime/active_operator_work_orders.json"
+OPERATOR_LATEST_PATH = ROOT / "reports/runtime/active_operator_latest.json"
+OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json"
+OPERATOR_REPORT_JSON_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.json"
+OPERATOR_REPORT_MD_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.md"
 LOCK_PATH = ROOT / "data/runtime/nexus_active_operator.lock"
 CADENCE_SECONDS = 3600
+MAX_NEW_WORK_ORDERS = 12
+MAX_EXECUTIONS = 8
+MAX_RESEARCH_TASKS = 2
+MAX_RUNTIME_SECONDS = 300
 
 SAFE_INTERNAL_ACTIONS = frozenset({
     "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report",
@@ -49,6 +59,28 @@ NOT_AUTHORIZED_ACTIONS = frozenset({
     "modify_production_database",
 })
 PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
+
+CAPABILITY_REGISTRY = {
+    "searxng.research": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["research.refresh"], "gated_actions": []},
+    "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
+    "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
+    "google.calendar.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.calendar.read"], "gated_actions": ["calendar.mutate"]},
+    "google.drive.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.drive.read"], "gated_actions": ["drive.mutate"]},
+    "telegram.transport": {"status": "READY", "authority": "GOVERNED_OUTBOUND", "safe_actions": ["telegram.read"], "gated_actions": ["telegram.send"]},
+    "youtube.metadata": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["youtube.read"], "gated_actions": ["youtube.publish"]},
+    "oanda.practice.read": {"status": "READY", "authority": "PRACTICE_READ_ONLY", "safe_actions": ["forex.read"], "gated_actions": ["forex.place_order"]},
+    "forex.practice.execution": {"status": "GATED", "authority": "PRACTICE_ONLY", "safe_actions": [], "gated_actions": ["forex.place_order"]},
+    "meta.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["meta.read"], "gated_actions": []},
+    "meta.inbound": {"status": "NOT_READY", "authority": "INGEST_ONLY", "safe_actions": [], "gated_actions": ["meta.inbound"], "block_reason": "webhook callback and signature verifier are not certified"},
+    "meta.publish": {"status": "GATED", "authority": "NONE", "safe_actions": [], "gated_actions": ["meta.publish"], "block_reason": "outbound social publishing requires Ray approval"},
+    "email.send": {"status": "GATED", "authority": "NONE", "safe_actions": [], "gated_actions": ["email.send"], "block_reason": "Resend domain status is not certified and outbound send is gated"},
+    "voice.local": {"status": "READY", "authority": "LOCAL_ONLY", "safe_actions": ["voice.read"], "gated_actions": []},
+    "voice.remote": {"status": "PARTIAL", "authority": "REMOTE_UNPROVEN", "safe_actions": [], "gated_actions": ["voice.remote"]},
+    "payments": {"status": "GATED", "authority": "NONE", "safe_actions": [], "gated_actions": ["payments"]},
+    "netlify.release": {"status": "GATED", "authority": "NONE", "safe_actions": [], "gated_actions": ["netlify.release"]},
+    "groq.models": {"status": "OPTIONAL_MISSING", "authority": "ADVISORY_ONLY", "safe_actions": [], "gated_actions": []},
+    "gemini.models": {"status": "OPTIONAL_MISSING", "authority": "ADVISORY_ONLY", "safe_actions": [], "gated_actions": []},
+}
 
 
 def utc_now() -> str:
@@ -111,6 +143,97 @@ def classify_action(action_id: str) -> str:
     if action_id in NOT_AUTHORIZED_ACTIONS:
         return "NOT_AUTHORIZED"
     return "APPROVAL_REQUIRED"
+
+
+def capability_snapshot() -> Dict[str, Dict[str, Any]]:
+    """Return the deterministic capability map used by every operator cycle."""
+    return {key: {**value, "capability_id": key, "last_verified": "existing_certification_or_runtime_state"}
+            for key, value in CAPABILITY_REGISTRY.items()}
+
+
+def priority_score(item: Dict[str, Any]) -> int:
+    """Stable, explainable score; lower priority rank remains authoritative."""
+    priority = PRIORITY_RANK.get(item.get("priority", "P4"), 4)
+    readiness = item.get("capability_ready", True)
+    return max(0, 100 - priority * 20 - (0 if readiness else 15))
+
+
+def _stable_work_order_id(dedupe_key: str) -> str:
+    return "awo_" + hashlib.sha256(dedupe_key.encode("utf-8")).hexdigest()[:20]
+
+
+def _load_operator_work_orders() -> List[Dict[str, Any]]:
+    value = load_json(ROOT / "data/runtime/active_operator_work_orders.json", [])
+    return value if isinstance(value, list) else []
+
+
+def _save_operator_work_orders(orders: List[Dict[str, Any]]) -> None:
+    write_json(ROOT / "data/runtime/active_operator_work_orders.json", orders)
+
+
+def _canonical_work_order(finding: Dict[str, Any], capability: str, *, blocked: bool = False) -> Dict[str, Any]:
+    dedupe = str(finding.get("dedupe_key") or finding.get("finding_id"))
+    return {
+        "work_order_id": _stable_work_order_id(dedupe), "created_at": utc_now(),
+        "source": finding.get("source_system", finding.get("source", "active_operator")),
+        "category": finding.get("category", "SYSTEM_HEALTH"),
+        "title": finding.get("summary", "Nexus internal work"),
+        "description": finding.get("reason", ""),
+        "priority": finding.get("priority", "P4"),
+        "status": "BLOCKED" if blocked else ("WAITING_APPROVAL" if finding.get("approval_required", True) else "READY"),
+        "authority_required": finding.get("action_class", "INTERNAL_AUTONOMOUS"),
+        "capabilities_required": [capability], "risk_class": "LOW" if not blocked else "GATED",
+        "dedupe_key": dedupe, "prerequisites": [],
+        "recommended_action": finding.get("proposed_action") or finding.get("recommended_action"),
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED" if finding.get("approval_required", True) else "INTERNAL_AUTONOMOUS",
+        "owner": "active_operator", "evidence_refs": finding.get("evidence_refs", []),
+        "created_by": "active_operator_v1", "last_updated": utc_now(), "receipt_refs": [],
+        "priority_score": priority_score({**finding, "capability_ready": not blocked}),
+    }
+
+
+def _record_escalation(order: Dict[str, Any]) -> Dict[str, Any]:
+    escalation_dir = ROOT / "reports/runtime/nexus_active_operator_escalations"
+    escalation_dir.mkdir(parents=True, exist_ok=True)
+    escalation = {
+        "escalation_id": "esc_" + hashlib.sha256(order["dedupe_key"].encode()).hexdigest()[:20],
+        "created_at": utc_now(), "type": "CAPABILITY_NOT_CERTIFIED" if order["status"] == "BLOCKED" else "APPROVAL_REQUIRED",
+        "work_order_id": order["work_order_id"], "what_is_needed": order["description"],
+        "recommended_action": order["recommended_action"], "risk": order["risk_class"],
+        "deferred_effect": "No external action is attempted; internal work remains queued.",
+        "external_action_performed": False,
+    }
+    write_json(escalation_dir / f"{escalation['escalation_id']}.json", escalation)
+    return escalation
+
+
+def _safe_receipt(run_id: str, action: str, result: Dict[str, Any], *, work_order_id: str = "") -> Dict[str, Any]:
+    return {"receipt_id": f"receipt_{run_id}_{action.replace('.', '_')}", "work_order_id": work_order_id,
+            "timestamp": utc_now(), "capability": action, "tool_action_id": action,
+            "inputs_summary": "redacted deterministic runtime state", "result": result,
+            "files_artifacts_changed": [], "external_side_effects": False,
+            "authority_used": "INTERNAL_READ_ONLY", "duration_ms": 0,
+            "error_classification": None, "next_action": "none"}
+
+
+def _write_v1_report(result: Dict[str, Any]) -> None:
+    report = {"schema_version": "nexus.active-operator.v1", **result}
+    write_json(ROOT / "reports/runtime/active_operator_latest.json", report)
+    write_json(ROOT / "reports/certification/nexus_active_operator_v1_latest.json", report)
+    lines = ["# Nexus Active Operator V1", "", f"- run: `{result['operator_run_id']}`",
+             f"- mode: `{result['mode']}`", f"- state snapshot: `{result['state_snapshot']['generated_at']}`",
+             f"- work orders: `{len(result['work_orders'])}`", f"- executions: `{len(result['executions'])}`",
+             f"- escalations: `{len(result['escalations'])}`", "", "## Authority", "",
+             "- external mutations: `0`", "- arbitrary shell: `UNAVAILABLE`",
+             "- payments: `DISABLED`", "- live trading: `false`", "- social publishing: `false`", "",
+             "## Capabilities", ""]
+    lines.extend(f"- `{key}`: **{value['status']}** ({value['authority']})" for key, value in result["capabilities"].items())
+    lines.extend(["", "## Result", "", f"- operational result: `{result['operational_result']}`",
+                  f"- duplicate work suppressed: `{result['duplicates_suppressed']}`",
+                  f"- safe internal execution: `{result['safe_internal_execution']}`", ""])
+    report_md_path = ROOT / "reports/certification/nexus_active_operator_v1_latest.md"
+    report_md_path.parent.mkdir(parents=True, exist_ok=True)
+    report_md_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -215,7 +338,7 @@ def _write_report(result: Dict[str, Any]) -> None:
     RUNNER_REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
+def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
     _sanitize_autonomy_environment()
     started = utc_now()
     run_id = f"operator_{uuid.uuid4().hex}"
@@ -231,6 +354,50 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
         for item in business_findings:
             item["proposed_action"] = item.get("recommended_action", "business_attention.review")
         dispatch_findings = sorted(findings + business_findings, key=lambda item: (PRIORITY_RANK.get(item.get("priority", "P4"), 4), item.get("finding_id", "")))
+        capabilities = capability_snapshot()
+        canonical_orders = _load_operator_work_orders()
+        known_dedupes = {str(item.get("dedupe_key")) for item in canonical_orders}
+        operator_orders: List[Dict[str, Any]] = []
+        operator_escalations: List[Dict[str, Any]] = []
+        canonical_duplicates = 0
+        for finding in dispatch_findings[:MAX_NEW_WORK_ORDERS]:
+            capability = str(finding.get("capability") or finding.get("category") or "operations").lower()
+            capability = {"operations": "system.health", "revenue_measurement_connection_gap": "system.health"}.get(capability, capability)
+            blocked = capability in {"meta.inbound", "voice.remote", "email.send", "payments"}
+            order = _canonical_work_order(finding, capability, blocked=blocked)
+            if order["dedupe_key"] not in known_dedupes:
+                canonical_orders.append(order)
+                known_dedupes.add(order["dedupe_key"])
+            else:
+                canonical_duplicates += 1
+            operator_orders.append(order)
+            if blocked:
+                operator_escalations.append(_record_escalation(order))
+        for capability, reason in (("meta.inbound", "webhook callback and signature verifier are not certified"),
+                                   ("email.send", "outbound email remains gated"),
+                                   ("voice.remote", "remote Voice authentication is unproven")):
+            finding = {"finding_id": f"capability:{capability}", "summary": f"Capability requires attention: {capability}",
+                       "reason": reason, "category": "APPROVALS_REQUIRED", "priority": "P2",
+                       "dedupe_key": f"capability:{capability}:v1", "approval_required": True,
+                       "action_class": "APPROVAL_REQUIRED", "proposed_action": capability}
+            order = _canonical_work_order(finding, capability, blocked=True)
+            if order["dedupe_key"] not in known_dedupes:
+                canonical_orders.append(order)
+                known_dedupes.add(order["dedupe_key"])
+            operator_orders.append(order)
+            operator_escalations.append(_record_escalation(order))
+        _save_operator_work_orders(canonical_orders)
+        state_snapshot = {
+            "schema_version": "nexus.active-operator-state.v1", "generated_at": started,
+            "SYSTEM_HEALTH": {"scheduler": scheduler_health},
+            "CURRENT_WORK": operator_orders, "BLOCKED_WORK": [x for x in operator_orders if x["status"] == "BLOCKED"],
+            "STALE_WORK": [], "RESEARCH_OPPORTUNITIES": [x for x in dispatch_findings if "research" in str(x.get("category", "")).lower()],
+            "CLIENT_OPERATIONS": [], "REVENUE_OPPORTUNITIES": [x for x in dispatch_findings if "revenue" in str(x.get("category", "")).lower()],
+            "FOREX_RESEARCH": {"status": capabilities["oanda.practice.read"]["status"], "ai_calls": 0},
+            "COMMUNICATION_STATE": {"meta_inbound": "NOT_READY", "email_send": "GATED", "telegram": "READY", "voice_remote": "PARTIAL"},
+            "CAPABILITY_STATE": capabilities, "APPROVALS_REQUIRED": [x for x in operator_orders if x["status"] == "WAITING_APPROVAL"],
+            "RECENT_RECEIPTS": [],
+        }
         actions_considered = [item["proposed_action"] for item in dispatch_findings]
         actions_executed = ["read_operational_state", "write_heartbeat"]
         business_safe_actions: List[str] = []
@@ -271,6 +438,8 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
         trigger_type = os.environ.get("NEXUS_OPERATOR_TRIGGER", "manual")
         heartbeat_path = str(HEARTBEAT_PATH.relative_to(ROOT))
         receipt_path = str((RECEIPT_DIR / f"operator_{run_id}.json").relative_to(ROOT))
+        safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
+                         for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]
         result = {
             "operator_run_id": run_id,
             "status": "NO_ACTION_REQUIRED" if not dispatch_findings else "COMPLETED_WITH_FINDINGS",
@@ -279,6 +448,7 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
             "actions_executed": actions_executed if not dry_run else [],
             "approvals_requested": approvals_requested,
             "work_orders_created": created, "duplicates_suppressed": duplicates,
+            "canonical_work_order_duplicates_suppressed": canonical_duplicates,
             "business_findings": business_findings,
             "business_priorities": business_findings[:5],
             "business_sources": business_result.get("sources", {}),
@@ -293,6 +463,12 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
             "authority": {"external_actions": "BLOCKED", "stripe_autonomous_execution": "DISABLED", "arbitrary_shell": "UNAVAILABLE"},
             "dry_run": dry_run, "trigger_type": trigger_type,
             "heartbeat_path": heartbeat_path, "receipt_path": receipt_path,
+            "mode": mode, "state_snapshot": state_snapshot, "capabilities": capabilities,
+            "work_orders": operator_orders, "escalations": operator_escalations,
+            "executions": safe_receipts[:MAX_EXECUTIONS], "receipts": safe_receipts[:MAX_EXECUTIONS],
+            "operational_result": "NO_ACTION_REQUIRED" if not dispatch_findings else "INTERNAL_ATTENTION_IDENTIFIED",
+            "safe_internal_execution": "PASS" if not errors else "DEGRADED",
+            "external_mutations": 0, "limits": {"max_new_work_orders": MAX_NEW_WORK_ORDERS, "max_executions": MAX_EXECUTIONS, "max_research_tasks": MAX_RESEARCH_TASKS, "max_runtime_seconds": MAX_RUNTIME_SECONDS},
         }
         heartbeat = {
             "operator_run_id": run_id, "last_run": completed,
@@ -311,6 +487,8 @@ def run_once(*, dry_run: bool = False) -> Dict[str, Any]:
             "top_business_priority": business_findings[0] if business_findings else None,
         }
         write_json(HEARTBEAT_PATH, heartbeat)
+        write_json(ROOT / "reports/runtime/active_operator_heartbeat.json", heartbeat)
+        _write_v1_report(result)
         _receipt(run_id, result)
         _write_report(result)
         process_registry_adapter.SPOOL_PATH = ROOT / "data/runtime/process_registry_spool.jsonl"
@@ -329,10 +507,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run one bounded Nexus Active Operator dispatch")
     parser.add_argument("--once", action="store_true", help="run one bounded dispatch")
     parser.add_argument("--dry-run", action="store_true", help="write no governed work orders")
+    parser.add_argument("--mode", choices=("dry-run", "live"), default=None, help="explicit bounded cycle mode")
     args = parser.parse_args()
     if not args.once and not args.dry_run:
         parser.error("--once or --dry-run is required")
-    print(json.dumps(run_once(dry_run=args.dry_run), indent=2, sort_keys=True))
+    dry_run = args.dry_run or args.mode == "dry-run"
+    print(json.dumps(run_once(dry_run=dry_run, mode="dry-run" if dry_run else (args.mode or "live")), indent=2, sort_keys=True))
     return 0
 
 
