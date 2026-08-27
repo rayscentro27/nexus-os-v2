@@ -4,7 +4,7 @@
   <key>Label</key><string>com.nexus.forex-scanner</string>
   <key>ProgramArguments</key><array>
     <string>/Users/raymonddavis/nexus-os-v2/scripts/ops/run_with_nexus_runtime_env.sh</string>
-    <string>/Users/raymonddavis/nexus-os-v2/.venv/bin/python</string>
+    <string>/Users/raymonddavis/.local/bin/python3.11</string>
     <string>/Users/raymonddavis/nexus-os-v2/scripts/trading/forex_research_scanner.py</string>
     <string>--scan</string>
   </array>
