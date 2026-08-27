@@ -1,0 +1,99 @@
+{
+  "schema_version": "nexus.searxng-installation.v1",
+  "generated_at": "2026-08-27T21:13:03.115334+00:00",
+  "deployment": {
+    "version": "1.0.0",
+    "service": "nexus-searxng.service",
+    "boot_enabled": true,
+    "active": true
+  },
+  "private_bind": {
+    "oracle": "127.0.0.1:8888",
+    "mac": "127.0.0.1:18888",
+    "public_exposure": false
+  },
+  "tunnel": {
+    "service": "com.nexus.searxng-tunnel",
+    "active": true,
+    "auto_reconnect": true,
+    "reboot_certified": false
+  },
+  "credential": {
+    "credential_id": "credential.searxng.web_search.prod.v1",
+    "source": "CANONICAL_RUNTIME_ENV",
+    "result": "AVAILABLE",
+    "authority": "READ_ONLY"
+  },
+  "adapter": {
+    "status": "PASS",
+    "provider": "searxng",
+    "query": "OpenAI",
+    "http": "200",
+    "json": true,
+    "result_count": 1,
+    "latency_ms": 206.95,
+    "results": [
+      {
+        "title": "OpenAI",
+        "url": "https://en.wikipedia.org/wiki/OpenAI",
+        "snippet": "American artificial intelligence company"
+      }
+    ],
+    "readback": "PROVEN"
+  },
+  "router": {
+    "primary": "searxng",
+    "fallbacks": [
+      "brave",
+      "tavily",
+      "serpapi"
+    ],
+    "brave_402_is_fallback": true,
+    "general_research_available": true
+  },
+  "gemma": {
+    "provider": "oracle_ollama_gemma",
+    "model": "gemma3:4b",
+    "health": {
+      "status": "ORACLE_AI_READY",
+      "ollama_version": "0.21.2",
+      "latency_ms": 65.17,
+      "public_exposure": false,
+      "cost_bearing": false
+    },
+    "synthesis": {
+      "status": "ORACLE_AI_READY",
+      "latency_ms": 10649.11,
+      "provider": "oracle_ollama_gemma",
+      "model": "gemma3:4b",
+      "cost_bearing": false
+    },
+    "authority": "ADVISORY_ONLY",
+    "consumer_readback": "PROVEN"
+  },
+  "resources": {
+    "oracle_ram": "22Gi visible; approximately 16Gi available after coexistence test",
+    "swap": "5Gi configured; 0 used",
+    "disk_free": "approximately 11Gi",
+    "searxng_rss": "approximately 69Mi at startup",
+    "gemma_coexistence": "SearXNG and Gemma both responsive"
+  },
+  "non_regression": {
+    "forex_hot_path_ai_calls": 0,
+    "oanda_practice": true,
+    "live_trading": false,
+    "paper_only": true,
+    "autonomy_core": "unchanged"
+  },
+  "security": {
+    "oci_firewall_mutated": false,
+    "public_port_opened": false,
+    "new_cloud_resource_created": false,
+    "secret_values_exposed": false
+  },
+  "cost": {
+    "new_paid_resources_required": false,
+    "new_paid_resources_created": false,
+    "future_cost_guarantee": false
+  }
+}

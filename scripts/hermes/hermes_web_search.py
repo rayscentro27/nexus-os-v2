@@ -3,10 +3,10 @@
 Hermes Web Search — Provider-abstracted safe web search layer.
 
 Supports multiple search providers in priority order:
-1. Brave Search (BRAVE_SEARCH_API_KEY)
-2. Tavily (TAVILY_API_KEY)
-3. SerpAPI (SERPAPI_API_KEY)
-4. SearXNG (ALPHA_SEARXNG_URL) — existing Alpha connector
+1. SearXNG (NEXUS_SEARXNG_WEB_SEARCH_BASE_URL) — private routine search
+2. Brave Search (BRAVE_SEARCH_API_KEY)
+3. Tavily (TAVILY_API_KEY)
+4. SerpAPI (SERPAPI_API_KEY)
 5. Safe fallback (no provider configured)
 
 Usage:
@@ -42,14 +42,15 @@ def _env(name):
 def _provider_priority():
     """Return ordered list of (name, env_key, available) tuples."""
     providers = []
+    searxng_url = _env("NEXUS_SEARXNG_WEB_SEARCH_BASE_URL") or _env("ALPHA_SEARXNG_URL")
+    if searxng_url:
+        providers.append(("searxng", "NEXUS_SEARXNG_WEB_SEARCH_BASE_URL", True))
     if _env("BRAVE_SEARCH_API_KEY"):
         providers.append(("brave", "BRAVE_SEARCH_API_KEY", True))
     if _env("TAVILY_API_KEY"):
         providers.append(("tavily", "TAVILY_API_KEY", True))
     if _env("SERPAPI_API_KEY"):
         providers.append(("serpapi", "SERPAPI_API_KEY", True))
-    if _env("ALPHA_SEARXNG_URL"):
-        providers.append(("searxng", "ALPHA_SEARXNG_URL", True))
     return providers
 
 
@@ -236,9 +237,9 @@ def _search_serpapi(query, max_results=MAX_RESULTS):
 # ── SearXNG Search (existing Alpha connector) ──────────
 
 def _search_searxng(query, max_results=MAX_RESULTS):
-    base = _env("ALPHA_SEARXNG_URL")
+    base = _env("NEXUS_SEARXNG_WEB_SEARCH_BASE_URL") or _env("ALPHA_SEARXNG_URL")
     if not base:
-        return {"status": "not_configured", "provider": "searxng", "results": [], "notes": ["ALPHA_SEARXNG_URL not set"]}
+        return {"status": "not_configured", "provider": "searxng", "results": [], "notes": ["NEXUS_SEARXNG_WEB_SEARCH_BASE_URL not set"]}
 
     try:
         params = urllib.parse.urlencode({"q": query, "format": "json"})
@@ -291,8 +292,8 @@ def _fallback_not_configured(query):
         missing.append("TAVILY_API_KEY")
     if not _env("SERPAPI_API_KEY"):
         missing.append("SERPAPI_API_KEY")
-    if not _env("ALPHA_SEARXNG_URL"):
-        missing.append("ALPHA_SEARXNG_URL")
+    if not (_env("NEXUS_SEARXNG_WEB_SEARCH_BASE_URL") or _env("ALPHA_SEARXNG_URL")):
+        missing.append("NEXUS_SEARXNG_WEB_SEARCH_BASE_URL")
 
     return {
         "status": "not_configured",

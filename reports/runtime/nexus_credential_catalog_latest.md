@@ -6,7 +6,7 @@ Redacted identity inventory; secret values are never written.
 |---|---|---|---|---|
 | credential.tavily.web_search.prod.v1 | tavily | api_key:MISSING | none | MISSING |
 | credential.serpapi.web_search.prod.v1 | serpapi | api_key:MISSING | none | MISSING |
-| credential.searxng.web_search.prod.v1 | searxng | base_url:MISSING | none | MISSING |
+| credential.searxng.web_search.prod.v1 | searxng | base_url:PRESENT | CANONICAL_RUNTIME_ENV | AVAILABLE |
 | credential.brave.web_search.prod.v1 | brave | api_key:PRESENT | CANONICAL_RUNTIME_ENV | AVAILABLE |
 | credential.google.workspace.prod.v1 | google | client_id:PRESENT, client_secret:PRESENT, refresh_token:PRESENT | MACOS_KEYCHAIN | AVAILABLE |
 | credential.google.youtube.prod.v1 | google | api_key:PRESENT | CANONICAL_RUNTIME_ENV | AVAILABLE |
