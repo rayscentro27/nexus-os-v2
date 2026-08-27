@@ -38,6 +38,7 @@ from nexus_agent_platform.overnight_autonomy import build_completion_audit, refr
 from nexus_agent_platform.proof_recovery import apply_recovery
 from nexus_agent_platform.proof_watchdog import audit as proof_audit
 from nexus_agent_platform.completion_laws import enforce_cycle_laws
+from nexus_agent_platform.campaign_execution_engine import consume_completion_law_work, run_campaign_cycle
 
 
 def _phase15_hermes_sender(brief: Dict[str, Any]) -> Dict[str, Any]:
@@ -198,6 +199,12 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
     ensure_sources_loaded()
     results: Dict[str, Any] = {"phase": "PHASE 15 — LIVE INTERNAL OPERATIONS", "generated_at": utc_now()}
 
+    # This is the canonical completion-campaign consumer.  It runs on the
+    # existing Phase15 invocation; directives are never left as metadata.
+    results["campaign_execution"] = run_campaign_cycle(
+        scheduler_instance=str(scheduler_context.get("scheduler_instance", "canonical-phase15"))
+    )
+
     _write_policy_doc()
     results["campaign_lifecycle"] = refresh_campaign_lifecycle()
     # Portfolio creates real downstream records first; the existing consumer
@@ -219,6 +226,10 @@ def _run_phase15(scheduler_context: Dict[str, Any]) -> Dict[str, Any]:
          for row in results["proof_watchdog"].get("objectives", [])],
         receipt_path=Path("reports/runtime/completion_laws_latest.json"),
         hermes_sender=_phase15_hermes_sender,
+    )
+    results["completion_law_work_consumption"] = consume_completion_law_work(
+        results["completion_laws"].get("decisions", []),
+        scheduler_instance=str(scheduler_context.get("scheduler_instance", "canonical-phase15")),
     )
     intake_artifacts = _intake_artifacts(loop_report)
     if intake_artifacts:
