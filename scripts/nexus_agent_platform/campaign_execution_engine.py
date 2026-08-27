@@ -79,6 +79,11 @@ def materialize_backlog(state: Dict[str, Any]) -> Dict[str, Any]:
         for criterion_record in item.get("acceptance_criteria") or []:
             if criterion_record.get("verifier") == "nexus_acceptance_verifier" and item.get("backlog_id") == "REAL_CONDITION_WATCH_END_TO_END":
                 criterion_record["verifier"] = "condition_watch.e2e.v1"
+            if item.get("backlog_id") != "REAL_CONDITION_WATCH_END_TO_END" and criterion_record.get("verifier") == "receipt_exists.v1":
+                # Receipt presence alone cannot certify a specialized
+                # acceptance contract. Leave it unresolved for Product
+                # Evolution to materialize the correct verifier.
+                criterion_record["verifier"] = None
         item["machine_executable"] = bool(item.get("machine_executable", True)) and not bool(item.get("human_gate_required"))
         item["capability_gap"] = bool(item.get("capability_gap")) and bool(item.get("machine_executable"))
     state["backlog_items"] = list(existing.values())
