@@ -6,7 +6,9 @@
     <string>/Users/raymonddavis/nexus-os-v2/scripts/ops/run_with_nexus_runtime_env.sh</string>
     <string>/Users/raymonddavis/.local/bin/python3.11</string>
     <string>/Users/raymonddavis/nexus-os-v2/scripts/trading/forex_research_scanner.py</string>
-    <string>--scan</string>
+    <string>--daemon</string>
+    <string>--interval-seconds</string>
+    <string>300</string>
   </array>
   <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2</string>
   <key>RunAtLoad</key><true/>

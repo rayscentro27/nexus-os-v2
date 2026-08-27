@@ -6,7 +6,7 @@ It turns the existing OANDA read client into a truthful candle-backed scan.
 """
 from __future__ import annotations
 
-import argparse, hashlib, json, sys
+import argparse, hashlib, json, sys, time, signal
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -85,7 +85,14 @@ def scan() -> dict[str, Any]:
     return payload
 
 def main() -> int:
-    p = argparse.ArgumentParser(); p.add_argument("--health", action="store_true"); p.add_argument("--scan", action="store_true"); p.add_argument("--json", action="store_true"); args = p.parse_args()
+    p = argparse.ArgumentParser(); p.add_argument("--health", action="store_true"); p.add_argument("--scan", action="store_true"); p.add_argument("--daemon", action="store_true"); p.add_argument("--interval-seconds", type=int, default=300); p.add_argument("--json", action="store_true"); args = p.parse_args()
+    if args.daemon:
+        stop = {"value": False}
+        signal.signal(signal.SIGTERM, lambda *_: stop.update(value=True)); signal.signal(signal.SIGINT, lambda *_: stop.update(value=True))
+        while not stop["value"]:
+            result = scan(); print(json.dumps({"heartbeat": result["completed_at"], "operational_result": result["operational_result"]}), flush=True)
+            time.sleep(max(30, args.interval_seconds))
+        return 0
     result = market_health() if args.health and not args.scan else scan()
     print(json.dumps(result, indent=2)); return 0 if result.get("status", result.get("operational_result")) not in {"AUTHENTICATION_FAILED", "MARKET_DATA_UNAVAILABLE"} else 1
 if __name__ == "__main__": raise SystemExit(main())
