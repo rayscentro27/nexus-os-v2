@@ -23,6 +23,10 @@ def validate_client_secrets(path: str | Path) -> dict[str, str]:
 def _configured() -> dict[str, str]:
     return {component: keychain_status(CREDENTIAL_ID, component) for component in ("client_id", "client_secret", "refresh_token")}
 
+def build_google_credentials(credentials_cls: Any, *, client_id: str, client_secret: str, refresh_token: str) -> Any:
+    """Construct refresh-only credentials; access tokens remain memory-only."""
+    return credentials_cls(token=None, refresh_token=refresh_token, token_uri="https://oauth2.googleapis.com/token", client_id=client_id, client_secret=client_secret, scopes=SCOPES)
+
 def authorize(client_secrets_file: str, *, replace: bool = False, open_browser: bool = True) -> dict[str, Any]:
     client = validate_client_secrets(client_secrets_file)
     existing = _configured()
@@ -41,16 +45,24 @@ def authorize(client_secrets_file: str, *, replace: bool = False, open_browser: 
 def certify_read_only() -> dict[str, Any]:
     state = _configured(); result = {"credential_id":CREDENTIAL_ID,"status":"GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED" if state["refresh_token"] != "CONFIGURED" else "GOOGLE_TOKEN_REFRESH_FAILED","oauth_client":"CONFIGURED" if state["client_id"] == state["client_secret"] == "CONFIGURED" else "NOT_FOUND","refresh_capability":state["refresh_token"],"granted_scopes":[],"calendar_read":"NOT_RUN","gmail_read":"NOT_RUN","drive_read":"NOT_RUN","mutations_performed":False,"secret_values_exposed":False,"oauth_publishing_mode":"TESTING_OR_EXTERNALLY_MANAGED"}
     if result["status"] != "GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED":
+        stage = "TOKEN_REFRESH"
         try:
             from google.oauth2.credentials import Credentials
             from google.auth.transport.requests import Request
-            creds=Credentials(_keychain_value(CREDENTIAL_ID,"refresh_token"), refresh_token=_keychain_value(CREDENTIAL_ID,"refresh_token"), token_uri="https://oauth2.googleapis.com/token", client_id=_keychain_value(CREDENTIAL_ID,"client_id"), client_secret=_keychain_value(CREDENTIAL_ID,"client_secret"), scopes=SCOPES)
-            creds.refresh(Request()); result["status"]="GOOGLE_WORKSPACE_READ_VERIFIED"; result["refresh_capability"]="CONFIGURED"
+            creds=build_google_credentials(Credentials, client_id=_keychain_value(CREDENTIAL_ID,"client_id"), client_secret=_keychain_value(CREDENTIAL_ID,"client_secret"), refresh_token=_keychain_value(CREDENTIAL_ID,"refresh_token"))
+            creds.refresh(Request()); result["status"]="GOOGLE_WORKSPACE_READ_VERIFIED"; result["refresh_capability"]="CONFIGURED"; result["granted_scopes"]=SCOPE_NAMES
             from googleapiclient.discovery import build
-            calendar=build("calendar","v3",credentials=creds,cache_discovery=False); calendar.calendarList().list(maxResults=1).execute(); result["calendar_read"]="PASS"
-            gmail=build("gmail","v1",credentials=creds,cache_discovery=False); gmail.users().getProfile(userId="me").execute(); result["gmail_read"]="PASS"
-            drive=build("drive","v3",credentials=creds,cache_discovery=False); drive.files().list(pageSize=1,fields="files(id,name)").execute(); result["drive_read"]="PASS"
-        except Exception as exc: result["error_type"]=exc.__class__.__name__; result["status"]="GOOGLE_TOKEN_REFRESH_FAILED"
+            # calendar.events is intentionally narrower than calendar.readonly;
+            # read the primary calendar's event collection rather than the
+            # calendar-list endpoint, which requires a broader scope.
+            stage = "CALENDAR_READ"; calendar=build("calendar","v3",credentials=creds,cache_discovery=False); calendar.events().list(calendarId="primary", maxResults=1, singleEvents=False).execute(); result["calendar_read"]="PASS"
+            stage = "GMAIL_READ"; gmail=build("gmail","v1",credentials=creds,cache_discovery=False); gmail.users().getProfile(userId="me").execute(); result["gmail_read"]="PASS"
+            stage = "DRIVE_READ"; drive=build("drive","v3",credentials=creds,cache_discovery=False); drive.files().list(pageSize=1,fields="files(id,name)").execute(); result["drive_read"]="PASS"
+        except Exception as exc:
+            result["error_type"]=exc.__class__.__name__; result["failed_stage"]=stage
+            response=getattr(exc,"resp",None); result["http_status"]=getattr(response,"status",None)
+            reason=getattr(exc,"reason",None); result["error_reason"] = str(reason)[:160] if reason else None
+            result["status"]="GOOGLE_SCOPE_MISMATCH" if getattr(response,"status",None)==403 else "GOOGLE_TOKEN_REFRESH_FAILED"
     return result
 
 def write_certification_report(result: dict[str, Any]) -> None:

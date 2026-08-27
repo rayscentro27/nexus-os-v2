@@ -1,12 +1,16 @@
 {
   "credential_id": "credential.google.workspace.prod.v1",
-  "status": "GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED",
-  "oauth_client": "NOT_FOUND",
-  "refresh_capability": "NOT_FOUND",
-  "granted_scopes": [],
-  "calendar_read": "NOT_RUN",
-  "gmail_read": "NOT_RUN",
-  "drive_read": "NOT_RUN",
+  "status": "GOOGLE_WORKSPACE_READ_VERIFIED",
+  "oauth_client": "CONFIGURED",
+  "refresh_capability": "CONFIGURED",
+  "granted_scopes": [
+    "gmail.readonly",
+    "calendar.events",
+    "drive.file"
+  ],
+  "calendar_read": "PASS",
+  "gmail_read": "PASS",
+  "drive_read": "PASS",
   "mutations_performed": false,
   "secret_values_exposed": false,
   "oauth_publishing_mode": "TESTING_OR_EXTERNALLY_MANAGED"

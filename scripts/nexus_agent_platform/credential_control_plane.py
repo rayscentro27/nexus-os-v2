@@ -59,6 +59,22 @@ def _keychain_value(credential_id: str, component: str) -> str | None:
     except (OSError, subprocess.TimeoutExpired):
         return None
 
+def keychain_status(credential_id: str, component: str) -> str:
+    return "CONFIGURED" if _keychain_value(credential_id, component) else "NOT_FOUND"
+
+def store_keychain(credential_id: str, component: str, value: str, *, replace: bool = False) -> dict[str, Any]:
+    """Store one component in Keychain; values never enter return data or logs."""
+    if not value: raise ValueError("empty_secret")
+    if sys.platform != "darwin": return {"stored": False, "status": "UNSUPPORTED_PLATFORM", "values_included": False}
+    if _keychain_value(credential_id, component) and not replace:
+        return {"stored": False, "status": "ALREADY_CONFIGURED", "values_included": False}
+    try:
+        service = f"nexus/{credential_id}"
+        proc = subprocess.run(["security", "add-generic-password", "-U", "-s", service, "-a", component, "-w", value], capture_output=True, text=True, timeout=5, check=False)
+        return {"stored": proc.returncode == 0, "status": "STORED" if proc.returncode == 0 else "STORE_FAILED", "values_included": False}
+    except (OSError, subprocess.TimeoutExpired):
+        return {"stored": False, "status": "STORE_FAILED", "values_included": False}
+
 def resolve(credential_id: str, *, environ: Mapping[str, str] | None = None) -> dict[str, Any]:
     entry = registry_entry(credential_id); sources = _source_values();
     if environ is not None: sources["PROCESS_ENV"] = dict(environ)
