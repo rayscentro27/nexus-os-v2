@@ -55,6 +55,7 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
     state.setdefault("failure_dispositions", {})
     state.setdefault("cycle_number", 0)
     state.setdefault("objective_queue_seeded", False)
+    state.setdefault("feature_backlog_seeded", False)
     # Older campaign checkpoints predate the canonical objective queue. Once
     # the scheduler owns such a checkpoint, materialize one bounded,
     # machine-safe audit objective from the existing backlog. This prevents a
@@ -69,6 +70,18 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
             "test_only": True,
         }]
         state["objective_queue_seeded"] = True
+    if state.get("status") == "ACTIVE" and state.get("remaining_work") and state.get("objective_queue_seeded") and not state.get("objective_queue") and not state.get("feature_backlog_seeded"):
+        # Resume only capabilities that are actually registered. Human gates,
+        # production promotion, and provider configuration remain untouched.
+        state["objective_queue"] = [
+            {"objective_id": "feature.completion_audit", "capability_id": "proof.watchdog", "dependency_domain": "LOCAL_ONLY", "expected_outcome": "fresh completion evidence"},
+            {"objective_id": "feature.alpha_research", "capability_id": "research.alpha", "dependency_domain": "MODEL_DEPENDENT", "expected_outcome": "bounded research receipt"},
+            {"objective_id": "feature.creative_intelligence", "capability_id": "creative.intelligence", "dependency_domain": "LOCAL_ONLY", "expected_outcome": "creative capability receipt"},
+            {"objective_id": "feature.forex_research", "capability_id": "forex.research", "dependency_domain": "LOCAL_ONLY", "expected_outcome": "research-only forex receipt"},
+            {"objective_id": "feature.model_router", "capability_id": "model.router", "dependency_domain": "MODEL_DEPENDENT", "expected_outcome": "model routing receipt"},
+            {"objective_id": "feature.visual_critic", "capability_id": "visual.critic", "dependency_domain": "VISUAL_DEPENDENT", "expected_outcome": "visual critic receipt"},
+        ]
+        state["feature_backlog_seeded"] = True
     return state
 
 
