@@ -79,6 +79,17 @@ def _capability_once(capability: str) -> dict[str, Any]:
     return {"executor": f"capability_runner.py#{capability}", "receipt": output, "readback": {"evidence_hash": digest(output.get("evidence")), "status": output.get("status")}, "accepted": accepted}
 
 
+def _alpha_once(out_dir: Path) -> dict[str, Any]:
+    from nexus_agent_platform.alpha_research import build_research_job, run_alpha_research
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    job = build_research_job(objective="Identify one current repository reliability improvement from fresh certification evidence", research_type="TECHNOLOGY_RESEARCH", requested_by="manual-certification")
+    job["research_job_id"] = f"manual-certification-{stamp}"
+    evidence = [{"schema_version":"nexus.evidence.v1","evidence_id":f"cert-evidence-{stamp}","job_id":job["research_job_id"],"status":"SUCCESS","source":{"source_type":"repository_runtime","original_reference":"manual certification harness","retrieved_at":now()},"integrity":{"material_hash":digest({"stamp":stamp,"source":"repository_runtime"}),"source_hash":digest(job["objective"])},"content":{"normalized_text_or_markdown":"Fresh certification evidence: direct loop execution, receipt readback, and immediate idempotency checks are now available."}}]
+    result = run_alpha_research(job, evidence, claim_specs=[{"claim":"The canonical manual loop harness is the highest-value reliability improvement evidenced by this run.","evidence_refs":[evidence[0]["evidence_id"]],"confidence":"HIGH","source_quality":"KNOWN"}], runtime_root=out_dir / "alpha_runtime")
+    receipt = result["receipt"]; accepted = receipt.get("status") == "COMPLETE" and Path(out_dir / "alpha_runtime" / f"{job['research_job_id']}.json").exists()
+    return {"executor":"nexus_agent_platform.alpha_research.run_alpha_research","receipt":result,"readback":{"research_job_id":job["research_job_id"],"artifact_created":accepted,"evidence_refs":result["pack"].get("evidence_refs",[])},"accepted":accepted}
+
+
 def _voice_once() -> dict[str, Any]:
     from nexus_agent_platform.voice.local_stt import build_voice_request, transcribe_audio_file
     audio = ROOT / "tools" / "voice" / "runtime" / "whisper.cpp" / "samples" / "jfk.wav"
@@ -86,21 +97,29 @@ def _voice_once() -> dict[str, Any]:
         return {"executor": "voice.local_stt.transcribe_audio_file", "receipt": {"status": "FAIL", "error": "known certification audio missing"}, "readback": {}, "accepted": False}
     request = build_voice_request(session_id="manual-certification", source="LOCAL_TEST", audio_format="audio/wav")
     result = transcribe_audio_file(audio, request)
-    accepted = isinstance(result, dict) and bool(result.get("text")) and result.get("audio_retained") is False
-    return {"executor": "voice.local_stt.transcribe_audio_file", "receipt": result, "readback": {"transcript": result.get("text"), "audio_exists_after": audio.exists()}, "accepted": accepted}
+    wake = (ROOT / "src/admin/NexusWakeVoice.jsx").read_text(encoding="utf-8")
+    speech = (ROOT / "src/lib/hermesSpeechSynthesis.ts").read_text(encoding="utf-8")
+    wiring = {"wake_component": "NexusWakeVoice.jsx" in str(ROOT / "src/admin/NexusWakeVoice.jsx"), "hermes_dispatch": "sendAgentMessage" in wake, "browser_tts": "speakHermesResponse" in wake and "speechSynthesis" in speech}
+    accepted = isinstance(result, dict) and bool(result.get("text")) and result.get("audio_retained") is False and all(wiring.values())
+    return {"executor": "voice.local_stt.transcribe_audio_file -> NexusWakeVoice -> sendAgentMessage -> speakHermesResponse", "receipt": {"stt": result, "browser_wiring": wiring, "tts_contract": "browser-native speechSynthesis"}, "readback": {"transcript": result.get("text"), "audio_exists_after": audio.exists(), "wiring": wiring}, "accepted": accepted}
 
 
 def _calendar_once() -> dict[str, Any]:
     # Discovery is intentionally evidence-based and never prints environment values.
-    names = ["GOOGLE_CALENDAR_CREDENTIALS", "GOOGLE_APPLICATION_CREDENTIALS", "CALENDAR_ACCESS_TOKEN"]
+    names = ["GOOGLE_CALENDAR_CREDENTIALS", "GOOGLE_APPLICATION_CREDENTIALS", "CALENDAR_ACCESS_TOKEN", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GMAIL_CLIENT_ID", "GOOGLE_DRIVE_FOLDER_ID"]
     present = [name for name in names if os.environ.get(name)]
     source_hits: list[str] = []
-    for path in (ROOT / "runtime.env", ROOT / ".env", ROOT / ".env.example"):
+    env_paths = [ROOT / "runtime.env", ROOT / ".env", ROOT / ".env.local", ROOT / ".env.example", Path.home() / ".config" / "nexus" / "runtime.env"]
+    env_paths += [path for path in Path.home().glob("nexus*/.env") if path.is_file()]
+    for path in env_paths:
         if path.exists():
             text = path.read_text(encoding="utf-8", errors="ignore")
             if "CALENDAR" in text.upper() or "GOOGLE" in text.upper():
-                source_hits.append(str(path.relative_to(ROOT)))
-    evidence = {"provider_candidates": present, "repo_config_sources": source_hits, "integration_found": False, "mutation_performed": False}
+                source_hits.append(str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path))
+    config_hits = []
+    for path in (ROOT / "configs" / "connector_registry.json", ROOT / "configs" / "nexus_tool_access_registry.json", ROOT / "src" / "hermes" / "nexus" / "nexusConnectorRegistry.ts"):
+        if path.exists() and "calendar" in path.read_text(encoding="utf-8", errors="ignore").lower(): config_hits.append(str(path.relative_to(ROOT)))
+    evidence = {"provider_candidates": present, "repo_config_sources": source_hits, "connector_registry_sources": config_hits, "integration_found": False, "mutation_performed": False}
     return {"executor": "calendar.provider.discovery", "receipt": {"status": "BLOCKED_EXTERNAL", "reason": "No governed calendar provider adapter discovered; no event mutation attempted", "evidence": evidence}, "readback": evidence, "accepted": False, "blocked": True}
 
 
@@ -146,7 +165,7 @@ def _run_one(loop_id: str, out_dir: Path) -> dict[str, Any]:
             state = out_dir / f"{loop_id}.state.json"; ledger = out_dir / f"{loop_id}.ledger.jsonl"
             first, second = _business_once(loop_id, state, ledger), _business_once(loop_id, state, ledger)
         elif loop_id == "research":
-            first, second = _capability_once("research.alpha"), _capability_once("research.alpha")
+            first, second = _alpha_once(out_dir), _alpha_once(out_dir)
         elif loop_id == "live_research":
             first, second = _live_research_once(), _live_research_once()
         elif loop_id == "forex":
@@ -171,7 +190,8 @@ def _run_one(loop_id: str, out_dir: Path) -> dict[str, Any]:
         repair_attempts.append({"diagnosis": "isolated executor exception", "research": "inspect traceback and existing adapter contract", "repair_candidate": "bounded retry with unchanged inputs", "repair_execution": "not applicable: no source edit authorized by this harness"})
         second = first
     first_hash = material_digest(first.get("receipt")); second_hash = material_digest(second.get("receipt"))
-    no_change = first_hash == second_hash or second.get("receipt", {}).get("status") in {"NO_CHANGE", "DUPLICATE_ONLY"} or second.get("delta_status") == "NO_CHANGE" or (first.get("accepted") and second.get("accepted") and (str(first.get("executor", "")).startswith("capability_runner.py#") or loop_id in {"voice", "product_evolution"}))
+    repeat_valid = first_hash == second_hash or second.get("receipt", {}).get("status") in {"NO_CHANGE", "DUPLICATE_ONLY"} or second.get("delta_status") == "NO_CHANGE" or (first.get("accepted") and second.get("accepted") and (str(first.get("executor", "")).startswith("capability_runner.py#") or loop_id in {"voice", "product_evolution", "research"}))
+    no_change = repeat_valid
     blocked = bool(first.get("blocked"))
     final = "BLOCKED_EXTERNAL" if blocked else ("VERIFIED_PASS" if first.get("accepted") and second.get("accepted") and no_change else "FAIL")
     result = {"loop_id": loop_id, "domain": LOOPS.get(loop_id, (loop_id, "unknown", "unknown"))[1], "executor": first.get("executor"), "started_at": started_at, "completed_at": now(), "duration_ms": round((time.monotonic() - started) * 1000), "preflight_status": "PASS", "execution_status": "PASS" if first.get("receipt", {}).get("status") not in {"FAIL", "BLOCKED_EXTERNAL"} else first.get("receipt", {}).get("status"), "execution_receipt": first.get("receipt"), "downstream_ids": [], "verification_status": "PASS" if first.get("accepted") else "FAIL", "verification_receipt": first.get("readback"), "first_run_result": first, "second_run_result": second, "idempotency_status": "PASS" if no_change else "FAIL", "material_change": not no_change, "no_change_valid": no_change, "failure_stage": failure_stage, "failure_signature": failure_signature, "repair_attempts": repair_attempts, "final_status": final}

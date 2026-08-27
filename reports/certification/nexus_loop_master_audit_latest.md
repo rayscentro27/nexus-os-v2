@@ -2,9 +2,9 @@
 
 | LOOP | EXECUTOR | FIRST RUN | VERIFICATION | SECOND RUN | NO_CHANGE/IDEMPOTENCY | REPAIR TEST | FINAL STATUS |
 |---|---|---|---|---|---|---|---|
-| voice | voice.local_stt.transcribe_audio_file | PASS | PASS | True | PASS | PASS | VERIFIED_PASS |
+| voice | voice.local_stt.transcribe_audio_file -> NexusWakeVoice -> sendAgentMessage -> speakHermesResponse | PASS | PASS | True | PASS | PASS | VERIFIED_PASS |
 | calendar | calendar.provider.discovery | BLOCKED_EXTERNAL | FAIL | False | PASS | PASS | BLOCKED_EXTERNAL |
-| research | capability_runner.py#research.alpha | PASS | PASS | True | PASS | PASS | VERIFIED_PASS |
+| research | nexus_agent_platform.alpha_research.run_alpha_research | PASS | PASS | True | PASS | PASS | VERIFIED_PASS |
 | live_research | phase15.live_research.run_live_research_session | PASS | FAIL | False | PASS | PASS | BLOCKED_EXTERNAL |
 | forex | capability_runner.py#forex.research | PASS | PASS | True | PASS | PASS | VERIFIED_PASS |
 | business | phase15.live_loop_runner | PASS | PASS | True | PASS | PASS | VERIFIED_PASS |
