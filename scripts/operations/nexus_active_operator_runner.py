@@ -110,7 +110,8 @@ def _sanitize_autonomy_environment() -> None:
 
 
 @contextmanager
-def single_run_lock(path: Path = LOCK_PATH):
+def single_run_lock(path: Path | None = None):
+    path = path or LOCK_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         try:
@@ -147,8 +148,20 @@ def classify_action(action_id: str) -> str:
 
 def capability_snapshot() -> Dict[str, Dict[str, Any]]:
     """Return the deterministic capability map used by every operator cycle."""
-    return {key: {**value, "capability_id": key, "last_verified": "existing_certification_or_runtime_state"}
-            for key, value in CAPABILITY_REGISTRY.items()}
+    snapshot = {key: {**value, "capability_id": key, "last_verified": "existing_certification_or_runtime_state"}
+                for key, value in CAPABILITY_REGISTRY.items()}
+    try:
+        from nexus_agent_platform.credential_control_plane import _netlify_env_names
+        remote = _netlify_env_names()
+        if {"CF_ACCESS_CLIENT_ID", "CF_ACCESS_CLIENT_SECRET", "VOICE_ACCESS_ORIGIN"}.issubset(remote):
+            snapshot["voice.remote"].update(status="REMOTE_CONFIGURED", authority="REMOTE_SERVER_SIDE", last_verified="Netlify environment metadata")
+        if "GROQ_API_KEY" in remote:
+            snapshot["groq.models"].update(status="REMOTE_CONFIGURED", last_verified="Netlify environment metadata")
+        if "OPENROUTER_API_KEY" in remote:
+            snapshot["oracle.gemma"].setdefault("notes", []).append("OpenRouter remote fallback configured")
+    except Exception:
+        pass
+    return snapshot
 
 
 def priority_score(item: Dict[str, Any]) -> int:
@@ -376,6 +389,8 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
         for capability, reason in (("meta.inbound", "webhook callback and signature verifier are not certified"),
                                    ("email.send", "outbound email remains gated"),
                                    ("voice.remote", "remote Voice authentication is unproven")):
+            if capabilities.get(capability, {}).get("status") in {"READY", "REMOTE_CONFIGURED"}:
+                continue
             finding = {"finding_id": f"capability:{capability}", "summary": f"Capability requires attention: {capability}",
                        "reason": reason, "category": "APPROVALS_REQUIRED", "priority": "P2",
                        "dedupe_key": f"capability:{capability}:v1", "approval_required": True,

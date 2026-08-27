@@ -115,11 +115,31 @@ def run_runtime_report_action(inputs: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def run_business_attention_review_action(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Record a bounded internal review acknowledgement; never publishes or sends."""
+    finding_id = str(inputs.get("finding_id") or "")
+    if not finding_id:
+        raise ValueError("finding_id is required")
+    return {"status": "completed", "finding_id": finding_id,
+            "decision": "INTERNAL_REVIEW_RECORDED", "external_action_performed": False}
+
+
+def run_opportunity_review_action(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Record a bounded opportunity review acknowledgement; no external action."""
+    opportunity_id = str(inputs.get("opportunity_id") or "")
+    if not opportunity_id:
+        raise ValueError("opportunity_id is required")
+    return {"status": "completed", "opportunity_id": opportunity_id,
+            "decision": "INTERNAL_REVIEW_RECORDED", "external_action_performed": False}
+
+
 ACTION_EXECUTORS: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]] = {
     "system_health.run": run_system_health_action,
     "repo_intelligence.scan": run_repo_intelligence_action,
     "nexus_study.refresh": run_nexus_study_refresh_action,
     "runtime_report.generate": run_runtime_report_action,
+    "business_attention.review": run_business_attention_review_action,
+    "opportunity.review": run_opportunity_review_action,
 }
 
 

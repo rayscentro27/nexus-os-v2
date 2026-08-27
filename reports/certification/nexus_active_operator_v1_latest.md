@@ -1,11 +1,11 @@
 # Nexus Active Operator V1
 
-- run: `operator_75b8825ef21f4cdca27864604b40c2df`
+- run: `operator_9bebbf5bb5ce4625b05bc04cf6ce3f87`
 - mode: `live`
-- state snapshot: `2026-08-27T21:35:42.657925+00:00`
-- work orders: `15`
+- state snapshot: `2026-08-27T21:49:55.406497+00:00`
+- work orders: `14`
 - executions: `4`
-- escalations: `3`
+- escalations: `2`
 
 ## Authority
 
@@ -31,10 +31,10 @@
 - `meta.publish`: **GATED** (NONE)
 - `email.send`: **GATED** (NONE)
 - `voice.local`: **READY** (LOCAL_ONLY)
-- `voice.remote`: **PARTIAL** (REMOTE_UNPROVEN)
+- `voice.remote`: **REMOTE_CONFIGURED** (REMOTE_SERVER_SIDE)
 - `payments`: **GATED** (NONE)
 - `netlify.release`: **GATED** (NONE)
-- `groq.models`: **OPTIONAL_MISSING** (ADVISORY_ONLY)
+- `groq.models`: **REMOTE_CONFIGURED** (ADVISORY_ONLY)
 - `gemini.models`: **OPTIONAL_MISSING** (ADVISORY_ONLY)
 
 ## Result

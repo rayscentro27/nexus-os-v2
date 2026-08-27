@@ -1,6 +1,7 @@
 """Canonical, redacted credential identity and health control plane."""
 from __future__ import annotations
-import json, os, re, subprocess, sys, urllib.parse, urllib.request, urllib.error
+import json, os, re, shutil, subprocess, sys, urllib.parse, urllib.request, urllib.error
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -23,6 +24,34 @@ def _parse(path: Path) -> dict[str, str]:
             if key.strip() and value: values[key.strip()] = value
     return values
 
+@lru_cache(maxsize=1)
+def _netlify_env_names() -> set[str]:
+    """Read Netlify environment metadata without returning any values."""
+    cli = shutil.which("netlify")
+    if not cli:
+        return set()
+    try:
+        proc = subprocess.run([cli, "env:list", "--json", "--context", "production"], cwd=ROOT, capture_output=True,
+                              text=True, timeout=8, check=False)
+        if proc.returncode != 0:
+            return set()
+        payload = json.loads(proc.stdout)
+    except (OSError, subprocess.TimeoutExpired, ValueError, TypeError):
+        return set()
+    names: set[str] = set()
+    if isinstance(payload, dict):
+        # Netlify CLI versions have emitted both {NAME: value} and
+        # {variables: [{key: NAME}]} shapes. Only keys/names are retained.
+        names.update(str(key) for key in payload if re.fullmatch(r"[A-Z][A-Z0-9_]+", str(key)))
+        variables = payload.get("variables")
+        if isinstance(variables, list):
+            for item in variables:
+                if isinstance(item, dict):
+                    name = item.get("key") or item.get("name")
+                    if isinstance(name, str) and re.fullmatch(r"[A-Z][A-Z0-9_]+", name):
+                        names.add(name)
+    return names
+
 def generate_credential_display_name(*, provider: str, purpose: str, environment: str, runtime: str = "macmini", major: int = 1, unique_id: str | None = None) -> str:
     if environment not in {"prod", "test", "dev", "practice", "canary"}: raise ValueError("invalid environment")
     normalized = lambda value: re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
@@ -41,6 +70,9 @@ def _source_values() -> dict[str, dict[str, str]]:
     # Keychain values are intentionally represented as a source map only when
     # explicitly requested by resolution; never serialize the returned value.
     result["MACOS_KEYCHAIN"] = {}
+    # Presence-only remote metadata. Values are never retained, serialized, or
+    # made available to provider adapters by this catalog process.
+    result["NETLIFY_ENV"] = {name: "[REMOTE_CONFIGURED]" for name in _netlify_env_names()}
     return result
 
 def _keychain_value(credential_id: str, component: str) -> str | None:
@@ -92,7 +124,9 @@ def resolve(credential_id: str, *, environ: Mapping[str, str] | None = None) -> 
         found.sort(key=lambda row: (SOURCE_ORDER.index(row["source"]) if row["source"] in SOURCE_ORDER else 99, aliases.index(row["alias"])))
         components[component] = {"canonical_alias": canonical, "accepted_aliases": aliases, "found": found, "selected": found[0] if found else None}
     present = all(item["selected"] for item in components.values())
-    return {"credential_id": credential_id, "provider": entry["provider"], "purpose": entry["purpose"], "environment": entry["environment"], "canonical_aliases": entry["canonical_aliases"], "legacy_aliases": entry.get("legacy_aliases", {}), "provider_display_name": entry["provider_display_name"], "components": components, "source_precedence": list(SOURCE_ORDER), "source_found": sorted({item["selected"]["source"] for item in components.values() if item["selected"]}), "authenticated": "UNKNOWN", "result": "AVAILABLE" if present else "MISSING", "values_included": False}
+    sources_found = sorted({item["selected"]["source"] for item in components.values() if item["selected"]})
+    classification = "AVAILABLE_REMOTE_NETLIFY" if present and sources_found == ["NETLIFY_ENV"] else ("AVAILABLE_LOCAL" if present else "MISSING")
+    return {"credential_id": credential_id, "provider": entry["provider"], "purpose": entry["purpose"], "environment": entry["environment"], "canonical_aliases": entry["canonical_aliases"], "legacy_aliases": entry.get("legacy_aliases", {}), "provider_display_name": entry["provider_display_name"], "components": components, "source_precedence": list(SOURCE_ORDER), "source_found": sources_found, "source_classification": classification, "authenticated": "UNKNOWN", "result": "AVAILABLE" if present else "MISSING", "values_included": False}
 
 def apply_to_process(credential_id: str) -> dict[str, Any]:
     """Map the selected legacy value into the canonical provider env name in memory only."""

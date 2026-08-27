@@ -1,0 +1,130 @@
+{
+  "communication_matrix": [
+    {
+      "authority": "GATED_OUTBOUND",
+      "capability": "Facebook Page API",
+      "credential_source": "existing certified provider/local control plane",
+      "inbound": "NOT_READY",
+      "outbound": "GATED",
+      "provider_auth": "READY",
+      "read": "READY"
+    },
+    {
+      "authority": "GATED_OUTBOUND",
+      "capability": "Instagram Business",
+      "credential_source": "existing Meta provider",
+      "inbound": "NOT_READY",
+      "outbound": "GATED",
+      "provider_auth": "ASSOCIATED",
+      "read": "READY"
+    },
+    {
+      "authority": "INGEST_ONLY",
+      "capability": "Meta Webhooks",
+      "credential_source": "server secret names not proven",
+      "inbound": "NOT_READY",
+      "outbound": "NONE",
+      "provider_auth": "AUTH_REQUIRED",
+      "read": "NOT_REQUIRED"
+    },
+    {
+      "authority": "GOVERNED",
+      "capability": "Telegram",
+      "credential_source": "existing certified credential",
+      "inbound": "READY",
+      "outbound": "GATED",
+      "provider_auth": "READY",
+      "read": "READY"
+    },
+    {
+      "authority": "READ_ONLY",
+      "capability": "YouTube",
+      "credential_source": "existing certified credential",
+      "inbound": "N/A",
+      "outbound": "GATED",
+      "provider_auth": "READY",
+      "read": "READY"
+    },
+    {
+      "authority": "GATED_OUTBOUND",
+      "capability": "Resend",
+      "credential_source": "local configured",
+      "inbound": "N/A",
+      "outbound": "GATED",
+      "provider_auth": "PARTIAL",
+      "read": "PARTIAL"
+    },
+    {
+      "authority": "REMOTE_TRANSPORT",
+      "capability": "Cloudflare Voice",
+      "credential_source": "REMOTE_NETLIFY",
+      "inbound": "N/A",
+      "outbound": "GATED",
+      "provider_auth": "CONFIGURED_UNTESTED",
+      "read": "PARTIAL"
+    }
+  ],
+  "credentials": {
+    "credential.cloudflare.voice_service.prod.v1": "AVAILABLE_REMOTE_NETLIFY",
+    "credential.groq.models.prod.v1": "AVAILABLE_REMOTE_NETLIFY",
+    "credential.openrouter.models.prod.v1": "AVAILABLE_REMOTE_NETLIFY"
+  },
+  "external_mutations": 0,
+  "generated_at": "2026-08-27T21:50:07.446569+00:00",
+  "meta": {
+    "app_secret_present": "NO_METADATA_EVIDENCE",
+    "callback_url": "/.netlify/functions/meta-webhook",
+    "current_handler_found": true,
+    "deployment": "NOT_PERFORMED",
+    "graph_auth": "EXISTING_CERTIFIED",
+    "historical_handler_found": false,
+    "persistence": "NOT_CONFIGURED",
+    "signature_validation": "IMPLEMENTED_LOCAL_FIXTURE_ONLY",
+    "verify_token_present": "NO_METADATA_EVIDENCE"
+  },
+  "meta_server_variable_names": [],
+  "netlify": {
+    "authenticated_site_status": "PASS",
+    "cli": true,
+    "site_id_present": true,
+    "site_url": "https://goclearonline.cc"
+  },
+  "remote_environment_presence": {
+    "CF_ACCESS_CLIENT_ID": {
+      "present": true,
+      "source": "NETLIFY_ENV",
+      "value_included": false
+    },
+    "CF_ACCESS_CLIENT_SECRET": {
+      "present": true,
+      "source": "NETLIFY_ENV",
+      "value_included": false
+    },
+    "GROQ_API_KEY": {
+      "present": true,
+      "source": "NETLIFY_ENV",
+      "value_included": false
+    },
+    "OPENROUTER_API_KEY": {
+      "present": true,
+      "source": "NETLIFY_ENV",
+      "value_included": false
+    },
+    "VOICE_ACCESS_ORIGIN": {
+      "present": true,
+      "source": "NETLIFY_ENV",
+      "value_included": false
+    }
+  },
+  "schema_version": "nexus.remote-integrations-reconciliation.v1",
+  "secrets_exposed": false,
+  "user_action_required": [
+    "Configure META_WEBHOOK_VERIFY_TOKEN and META_APP_SECRET server-side before deploying the inbound callback."
+  ],
+  "voice": {
+    "access_headers_implemented": true,
+    "netlify_configuration": "PASS",
+    "relay_present": true,
+    "remote_health": "NOT_RUN_AUTHENTICATED_USER_REQUIRED"
+  }
+}
