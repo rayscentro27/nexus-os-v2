@@ -78,6 +78,19 @@ def _capability_once(capability: str) -> dict[str, Any]:
     accepted = isinstance(output, dict) and output.get("status") in {"PASS", "NO_CHANGE"} and bool(output.get("evidence"))
     return {"executor": f"capability_runner.py#{capability}", "receipt": output, "readback": {"evidence_hash": digest(output.get("evidence")), "status": output.get("status")}, "accepted": accepted}
 
+def _youtube_scenario(url: str | None, out_dir: Path) -> dict[str, Any]:
+    if not url:
+        return {"level":"SCENARIO_CERTIFICATION","status":"NOT_RUN","result":"WIRING_READY","url":None,"reason":"No Ray-selected URL supplied; no fixture is promoted to real-world certification."}
+    command = ["yt-dlp", "--dump-single-json", "--skip-download", url]
+    try:
+        proc = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=120, check=False)
+        metadata = json.loads(proc.stdout) if proc.returncode == 0 and proc.stdout else {}
+        payload = {"level":"SCENARIO_CERTIFICATION","status":"PASS" if metadata else "FAIL","result":"DOCUMENT_CREATED" if metadata else "FAILED","url":url,"title":metadata.get("title"),"video_id":metadata.get("id"),"transcript":"NOT_ATTEMPTED","findings":"NOT_ATTEMPTED","consumer_readback":"NOT_PROVEN"}
+    except Exception as exc:
+        payload = {"level":"SCENARIO_CERTIFICATION","status":"FAIL","result":"FAILED","url":url,"error":str(exc)[:240]}
+    (out_dir / "youtube_scenario.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return payload
+
 
 def _alpha_once(out_dir: Path) -> dict[str, Any]:
     from nexus_agent_platform.alpha_research import build_research_job, run_alpha_research
@@ -214,6 +227,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--loop", choices=sorted(set(LOOPS) | set(BUSINESS)))
+    parser.add_argument("--youtube-url")
     args = parser.parse_args()
     selected = list(LOOPS) + list(BUSINESS) if args.all else ([args.loop] if args.loop else [])
     if not selected:
@@ -222,18 +236,24 @@ def main() -> int:
     out_dir = REPORT_ROOT / "manual_loops" / stamp; out_dir.mkdir(parents=True, exist_ok=True)
     results = [_run_one(loop_id, out_dir) for loop_id in selected]
     special = _special_checks(out_dir)
-    master = {"generated_at": now(), "mode": "MANUAL_DIRECT_INVOCATION", "scheduler_used_as_proof": False, "loops": results, "special_checks": special, "counts": {status: sum(row["final_status"] == status for row in results) for status in ("VERIFIED_PASS", "FAIL", "BLOCKED_EXTERNAL", "WAITING_HUMAN")}}
+    youtube = _youtube_scenario(args.youtube_url, out_dir)
+    master = {"generated_at": now(), "mode": "MANUAL_DIRECT_INVOCATION", "scheduler_used_as_proof": False, "levels":{"capability_certification":"recorded per executor","scenario_certification":"required substantive scenario; absent for unsupported/external cases","operational_result":"recorded from actual output/readback"}, "loops": results, "youtube_scenario": youtube, "special_checks": special, "counts": {status: sum(row["final_status"] == status for row in results) for status in ("VERIFIED_PASS", "FAIL", "BLOCKED_EXTERNAL", "WAITING_HUMAN")}}
     latest_json = REPORT_ROOT / "manual_loop_certification_latest.json"; latest_json.write_text(json.dumps(master, indent=2, default=str) + "\n", encoding="utf-8")
     lines = ["# Nexus Manual Loop Certification", "", f"Generated: {master['generated_at']}", "", "| Loop | First | Verify | Second | Idempotency | Final |", "|---|---|---|---|---|---|"]
     lines += [f"| {row['loop_id']} | {row['execution_status']} | {row['verification_status']} | {row['second_run_result'].get('accepted')} | {row['idempotency_status']} | {row['final_status']} |" for row in results]
     lines += ["", "Scheduler was not used as certification evidence.", "", f"Special checks: failure self-repair={special['failure_self_repair']['status']}; false-pass rejection={special['false_pass_rejection']['status']}; Product Evolution={special['product_evolution']['status']}.\n"]
     (REPORT_ROOT / "manual_loop_certification_latest.md").write_text("\n".join(lines), encoding="utf-8")
-    audit = {"generated_at": now(), "loops": results, "special_checks": special, "classification": "VERIFIED_PASS | FAIL | BLOCKED_EXTERNAL | WAITING_HUMAN"}
+    audit = {"generated_at": now(), "levels": master["levels"], "loops": results, "youtube_scenario": youtube, "special_checks": special, "classification": "VERIFIED_PASS | FAIL | BLOCKED_EXTERNAL | WAITING_HUMAN"}
     (REPORT_ROOT / "nexus_loop_master_audit_latest.json").write_text(json.dumps(audit, indent=2, default=str) + "\n", encoding="utf-8")
     audit_lines = ["# Nexus Loop Master Audit", "", "| LOOP | EXECUTOR | FIRST RUN | VERIFICATION | SECOND RUN | NO_CHANGE/IDEMPOTENCY | REPAIR TEST | FINAL STATUS |", "|---|---|---|---|---|---|---|---|"]
     for row in results:
         audit_lines.append(f"| {row['loop_id']} | {row['executor']} | {row['execution_status']} | {row['verification_status']} | {row['second_run_result'].get('accepted')} | {row['idempotency_status']} | {special['failure_self_repair']['status']} | {row['final_status']} |")
     (REPORT_ROOT / "nexus_loop_master_audit_latest.md").write_text("\n".join(audit_lines) + "\n", encoding="utf-8")
+    scenario = {"generated_at": now(), "law": "CAPABILITY_CERTIFICATION -> SCENARIO_CERTIFICATION -> OPERATIONAL_RESULT", "scenarios": [{"loop": row["loop_id"], "objective": LOOPS.get(row["loop_id"], (row["loop_id"], "unknown", "unknown"))[0], "inputs": row.get("execution_receipt"), "work_performed": row.get("executor"), "result": "RESEARCH_COMPLETE" if row["final_status"] == "VERIFIED_PASS" else ("BLOCKED" if row["final_status"] == "BLOCKED_EXTERNAL" else "FAILED"), "evidence": row.get("verification_receipt"), "output_location": str(out_dir / f"{row['loop_id']}.json"), "delivered_to": row.get("downstream_ids") or [], "consumer_readback": "PROVEN" if row.get("verification_status") == "PASS" else "NOT_PROVEN", "follow_up": "none" if row["final_status"] == "VERIFIED_PASS" else "resolve external/provider gate", "execution_status": row.get("execution_status"), "verification_status": row.get("verification_status")} for row in results], "youtube": youtube, "secret_values_included": False}
+    (REPORT_ROOT / "nexus_real_world_scenario_audit_latest.json").write_text(json.dumps(scenario, indent=2, default=str) + "\n", encoding="utf-8")
+    scenario_lines = ["# Nexus Real-World Scenario Audit", "", "Capability, scenario, and operational-result levels are recorded separately.", "", "| Loop | Objective | Result | Consumer readback | Follow-up |", "|---|---|---|---|---|"]
+    scenario_lines += [f"| {item['loop']} | {item['objective']} | {item['result']} | {item['consumer_readback']} | {item['follow_up']} |" for item in scenario["scenarios"]]
+    (REPORT_ROOT / "nexus_real_world_scenario_audit_latest.md").write_text("\n".join(scenario_lines) + "\n", encoding="utf-8")
     print(json.dumps({"report_dir": str(out_dir), "counts": master["counts"], "special_checks": special}, indent=2))
     return 0 if all(row["final_status"] != "FAIL" for row in results) else 1
 

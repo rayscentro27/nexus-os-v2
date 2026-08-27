@@ -1,0 +1,146 @@
+{
+  "host_class": "Mac Mini",
+  "os": {
+    "name": "Darwin",
+    "release": "21.6.0",
+    "version": "12.7.6",
+    "build": "21H1320"
+  },
+  "architecture": "x86_64",
+  "cpu": {
+    "model": "Intel(R) Core(TM) i5-4278U CPU @ 2.60GHz",
+    "physical_cores": "2",
+    "logical_cores": "4"
+  },
+  "ram": {
+    "total_bytes": "8589934592"
+  },
+  "storage": {
+    "total_bytes": 999995129856,
+    "free_bytes": 710859100160
+  },
+  "tools": {
+    "homebrew": {
+      "installed": true,
+      "path": "/usr/local/bin/brew",
+      "prefix": "/usr/local",
+      "version": "Homebrew 6.0.19"
+    },
+    "node": {
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/node",
+      "version": "v22.22.3"
+    },
+    "npm": {
+      "installed": true,
+      "path": "/Users/raymonddavis/.nvm/versions/node/v22.22.3/bin/npm",
+      "version": null
+    },
+    "git": {
+      "installed": true,
+      "path": "/usr/local/bin/git",
+      "version": "git version 2.53.0"
+    },
+    "clang": {
+      "installed": true,
+      "path": "/usr/bin/clang",
+      "version": "Apple clang version 14.0.0 (clang-1400.0.29.202)\nTarget: x86_64-apple-darwin21.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin"
+    },
+    "docker": {
+      "installed": true,
+      "path": "/usr/local/bin/docker",
+      "version": "Docker version 29.4.1, build 055a478"
+    },
+    "ollama": {
+      "installed": true,
+      "path": "/usr/local/bin/ollama",
+      "version": null
+    },
+    "yt_dlp": {
+      "installed": true,
+      "path": "/usr/local/bin/yt-dlp",
+      "version": null
+    },
+    "ffmpeg": {
+      "installed": true,
+      "path": "/usr/local/bin/ffmpeg",
+      "version": null
+    }
+  },
+  "python": {
+    "interpreters": [
+      {
+        "version": "3.11.15",
+        "executable": "/Users/raymonddavis/.local/bin/python3.11",
+        "ssl": "OpenSSL 3.5.5 27 Jan 2026",
+        "ssl_import": "HEALTHY"
+      },
+      {
+        "version": "3.9.6",
+        "executable": "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "ssl": "LibreSSL 2.8.3",
+        "ssl_import": "HEALTHY"
+      },
+      {
+        "version": "3.14.5",
+        "executable": "/usr/local/opt/python@3.14/bin/python3.14",
+        "ssl": "OpenSSL 3.6.3 9 Jun 2026",
+        "ssl_import": "HEALTHY"
+      },
+      {
+        "version": "3.14.5",
+        "executable": "/usr/local/opt/python@3.14/bin/python3.14",
+        "ssl": "OpenSSL 3.6.3 9 Jun 2026",
+        "ssl_import": "HEALTHY"
+      }
+    ]
+  },
+  "whisper": {
+    "binary": "/Users/raymonddavis/nexus-os-v2/tools/voice/runtime/whisper.cpp/build/bin/whisper-cli",
+    "binary_available": true,
+    "model": "/Users/raymonddavis/nexus-os-v2/tools/voice/models/ggml-base.en.bin",
+    "model_available": true
+  },
+  "gpu_metal": {
+    "metal_probe": "system_profiler SPDisplaysDataType"
+  },
+  "browser": {
+    "chrome": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "chromium": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "playwright_package": true
+  },
+  "network": {
+    "hostname": "redacted-local-host",
+    "loopback": "available"
+  },
+  "remote_compute": {
+    "modal": {
+      "installed": false,
+      "path": null,
+      "version": null
+    },
+    "registered": "repository-governed adapters inspected"
+  },
+  "generated_at": "2026-08-27T16:18:21.792609+00:00",
+  "private_identifiers_excluded": true,
+  "execution_target_examples": {
+    "live_research": {
+      "decision": "LOCAL_COMPATIBLE",
+      "runtime": "/Users/raymonddavis/.local/bin/python3.11",
+      "reason": "healthy SSL-capable interpreter selected from machine profile"
+    },
+    "voice": {
+      "decision": "LOCAL_COMPATIBLE",
+      "runtime": "/Users/raymonddavis/.local/bin/python3.11",
+      "reason": "no unmet machine requirement detected"
+    }
+  }
+}
