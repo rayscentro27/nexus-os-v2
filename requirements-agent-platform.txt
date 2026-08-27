@@ -23,3 +23,7 @@ requests>=2.31
 
 # Web search
 brave-search>=0.2
+
+# Governed Google Workspace desktop OAuth and read-only API certification
+google-auth-oauthlib>=1.2
+google-api-python-client>=2.0

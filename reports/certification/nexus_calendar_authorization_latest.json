@@ -1,11 +1,13 @@
 {
   "credential_id": "credential.google.workspace.prod.v1",
-  "status": "AUTHORIZATION_REQUIRED",
+  "status": "GOOGLE_REFRESH_TOKEN_NOT_CONFIGURED",
   "oauth_client": "NOT_FOUND",
   "refresh_capability": "NOT_FOUND",
-  "gmail_scope": "UNKNOWN",
-  "calendar_scope": "UNKNOWN",
-  "drive_scope": "UNKNOWN",
+  "granted_scopes": [],
+  "calendar_read": "NOT_RUN",
+  "gmail_read": "NOT_RUN",
+  "drive_read": "NOT_RUN",
   "mutations_performed": false,
-  "next_action": "Provide one governed Google OAuth client/consent flow; no event mutation attempted."
+  "secret_values_exposed": false,
+  "oauth_publishing_mode": "TESTING_OR_EXTERNALLY_MANAGED"
 }

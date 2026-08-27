@@ -5,6 +5,7 @@ from pathlib import Path
 from nexus_agent_platform.ai_review_provider import select_review_provider
 from nexus_agent_platform.credential_control_plane import catalog
 from nexus_agent_platform.machine_profile import collect
+from nexus_agent_platform.google_workspace import certify_read_only
 
 ROOT=Path(__file__).resolve().parents[2]; OUT=ROOT/'reports/certification'; RUNTIME=ROOT/'reports/runtime'
 def dump(name, value):
@@ -15,8 +16,8 @@ def main():
     (RUNTIME/'nexus_machine_profile_latest.json').write_text(json.dumps(machine,indent=2,default=str)+'\n')
     (RUNTIME/'nexus_machine_profile_latest.md').write_text('# Nexus Machine Profile\n\nRedacted hardware/runtime profile. Healthy Python: '+', '.join(x['executable'] for x in machine.get('python',{}).get('interpreters',[]) if x.get('ssl_import')=='HEALTHY')+'\n')
     dump('nexus_ai_provider_health_latest.json',ai); md('nexus_ai_provider_health_latest.md',f"# AI Provider Health\n\n- Ollama: {ai.get('ollama',ai).get('status')}\n- selected provider: {ai['provider']}\n- review status: {ai['status']}\n- cost-bearing API used: {ai.get('cost_bearing',False)}\n- deterministic execution dependency: none\n")
-    dump('nexus_calendar_authorization_latest.json',{'credential_id':'credential.google.workspace.prod.v1','status':'AUTHORIZATION_REQUIRED','oauth_client':'NOT_FOUND','refresh_capability':'NOT_FOUND','gmail_scope':'UNKNOWN','calendar_scope':'UNKNOWN','drive_scope':'UNKNOWN','mutations_performed':False,'next_action':'Provide one governed Google OAuth client/consent flow; no event mutation attempted.'})
-    md('nexus_calendar_authorization_latest.md','# Google Workspace / Calendar\n\n- status: AUTHORIZATION_REQUIRED\n- canonical identity: credential.google.workspace.prod.v1\n- OAuth client/refresh token: not discovered by the canonical control plane\n- Calendar/Drive mutations: none\n- Ray action: complete the one-time governed Google consent flow after a client is configured\n')
+    google=certify_read_only(); dump('nexus_calendar_authorization_latest.json',google)
+    md('nexus_calendar_authorization_latest.md','# Google Workspace / Calendar\n\n- status: '+str(google.get('status'))+'\n- canonical identity: credential.google.workspace.prod.v1\n- OAuth client: '+str(google.get('oauth_client'))+'\n- refresh capability: '+str(google.get('refresh_capability'))+'\n- Calendar/Gmail/Drive reads: '+str(google.get('calendar_read'))+'/'+str(google.get('gmail_read'))+'/'+str(google.get('drive_read'))+'\n- mutations: false\n- publishing mode: '+str(google.get('oauth_publishing_mode'))+'\n')
     dump('nexus_live_research_provider_latest.json',{'requested_provider':'brave','brave_status':'PROVIDER_PAYMENT_REQUIRED','http_status':402,'alternate_configured':False,'fallback_chain':['brave','tavily','serpapi','searxng','direct/local sources'],'overall_status':'LIVE_RESEARCH_DEGRADED','false_live_claim_prevented':True})
     md('nexus_live_research_provider_latest.md','# Live Research Provider\n\n- Brave: PROVIDER_PAYMENT_REQUIRED (HTTP 402)\n- Tavily/SerpAPI/SearXNG: identities registered; no configured credential found\n- overall: LIVE_RESEARCH_DEGRADED; no billing bypass or paid request made\n- next experiment: use an already-authorized alternate or a supplied public URL\n')
     yt={'status':'INPUT_REQUIRED','metadata_only_is_not_certification':True,'canonical_fixture_discovered':'https://www.youtube.com/watch?v=zbAmmnMh5ew','ray_selected_url':False,'media_downloaded':False}
