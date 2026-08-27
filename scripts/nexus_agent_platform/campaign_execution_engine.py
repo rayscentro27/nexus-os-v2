@@ -54,6 +54,19 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
     state.setdefault("completed_objectives", [])
     state.setdefault("failure_dispositions", {})
     state.setdefault("cycle_number", 0)
+    # Older campaign checkpoints predate the canonical objective queue. Once
+    # the scheduler owns such a checkpoint, materialize one bounded,
+    # machine-safe audit objective from the existing backlog. This prevents a
+    # flag-only ACTIVE state while preserving human-gated release work.
+    if state.get("status") == "ACTIVE" and state.get("remaining_work") and not state.get("objective_queue"):
+        state["objective_queue"] = [{
+            "objective_id": "campaign.next_bounded_completion_audit",
+            "title": "Next bounded completion audit",
+            "capability_id": "proof.watchdog",
+            "dependency_domain": "LOCAL_ONLY",
+            "expected_outcome": "fresh proof watchdog receipt",
+            "test_only": True,
+        }]
     return state
 
 
