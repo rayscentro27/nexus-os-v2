@@ -5,6 +5,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Callable
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,21 @@ def certify_starvation() -> dict:
     passed = "B" in result["completed_lanes"] and "C" in reverse["completed_lanes"]
     return {"status": "PASS" if passed else "FAIL", "blocked_lane_does_not_starve_portfolio": passed,
             "first": result, "reverse": reverse}
+
+
+def certify_runtime_broker() -> dict:
+    """Exercise the real governed capability broker for the independent lane."""
+    from .capability_broker import run_capability
+    receipts = Path(__file__).resolve().parents[2] / "reports/runtime/portfolio_parallelism"
+    result = run_portfolio([
+        Lane("LANE_A", "NETWORK_DEPENDENT", lambda: (_ for _ in ()).throw(TimeoutError("certification timeout"))),
+        Lane("LANE_B", "LOCAL_ONLY", lambda: run_capability("system.health", receipt_dir=receipts)),
+    ])
+    safe = result["lanes"].get("LANE_B", {})
+    return {"status": "PASS" if safe.get("state") == "PASS" and safe.get("receipt_id") else "FAIL",
+            "real_executor": "capability_broker.run_capability", "lane_a": result["lanes"].get("LANE_A"),
+            "lane_b": {key: safe.get(key) for key in ("state", "status", "receipt_id", "verification", "receiver_ack")},
+            "receipt_dir": str(receipts)}
 
 
 if __name__ == "__main__":
