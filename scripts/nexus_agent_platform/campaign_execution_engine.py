@@ -88,7 +88,7 @@ def load_campaign(path: Path = CAMPAIGN_PATH, *, materialize_queue: bool = True)
     # the scheduler owns such a checkpoint, materialize one bounded,
     # machine-safe audit objective from the existing backlog. This prevents a
     # flag-only ACTIVE state while preserving human-gated release work.
-    if materialize_queue and state.get("status") == "ACTIVE" and state.get("remaining_work") and not state.get("objective_queue") and not state.get("objective_queue_seeded"):
+    if materialize_queue and state.get("status") == "ACTIVE" and state.get("remaining_work") and not state.get("backlog_items") and not state.get("objective_queue") and not state.get("objective_queue_seeded"):
         state["objective_queue"] = [{
             "objective_id": "campaign.next_bounded_completion_audit",
             "title": "Next bounded completion audit",
@@ -98,7 +98,7 @@ def load_campaign(path: Path = CAMPAIGN_PATH, *, materialize_queue: bool = True)
             "test_only": True,
         }]
         state["objective_queue_seeded"] = True
-    if materialize_queue and state.get("status") == "ACTIVE" and state.get("remaining_work") and state.get("objective_queue_seeded") and not state.get("objective_queue") and not state.get("feature_backlog_seeded"):
+    if materialize_queue and state.get("status") == "ACTIVE" and state.get("remaining_work") and not state.get("backlog_items") and state.get("objective_queue_seeded") and not state.get("objective_queue") and not state.get("feature_backlog_seeded"):
         # Resume only capabilities that are actually registered. Human gates,
         # production promotion, and provider configuration remain untouched.
         state["objective_queue"] = [
