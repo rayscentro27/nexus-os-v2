@@ -82,11 +82,18 @@ def load_campaign(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
             {"objective_id": "feature.visual_critic", "capability_id": "visual.critic", "dependency_domain": "VISUAL_DEPENDENT", "expected_outcome": "visual critic receipt"},
         ]
         state["feature_backlog_seeded"] = True
+    if state.get("status") == "ACTIVE" and _machine_backlog(state) and state.get("feature_backlog_seeded") and not state.get("objective_queue"):
+        state["objective_queue"] = [{"objective_id": "campaign.recovery.machine_backlog_diagnosis", "title": "Diagnose next machine-executable campaign backlog item", "capability_id": "proof.watchdog", "dependency_domain": "LOCAL_ONLY", "expected_outcome": "fresh diagnosis/proof receipt", "diagnosis_target": _machine_backlog(state)[0], "test_only": True}]
     return state
 
 
 def _domain(objective: Mapping[str, Any]) -> str:
     return str(objective.get("dependency_domain") or objective.get("domain") or "INDEPENDENT")
+
+
+def _machine_backlog(state: Mapping[str, Any]) -> List[str]:
+    human_only = ("microphone", "production approval", "approval", "deploy exact approved")
+    return [str(item) for item in state.get("remaining_work") or [] if not any(token in str(item).lower() for token in human_only)]
 
 
 def _capability(objective: Mapping[str, Any]) -> str:
@@ -203,7 +210,7 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
     state["failure_dispositions"].update({row["objective_id"]: "queued repair" for row in results if row.get("failure_event")})
     finished_or_recovering = set(completed) | {row["objective_id"] for row in results if row["state"] == "RECOVERING"}
     state["objective_queue"] = [item for item in state.get("objective_queue", []) if str(item.get("objective_id")) not in finished_or_recovering]
-    state["campaign_health"] = "RECOVERING" if state["recovering_objectives"] else "RUNNING" if state["objective_queue"] else "PASS"
+    state["campaign_health"] = "RECOVERING" if state["recovering_objectives"] else "RUNNING" if state["objective_queue"] else "STALLED" if _machine_backlog(state) else "PASS"
     _save_state(state, state_path)
     cycle = {"schema_version": "nexus.campaign-execution-receipt.v1", "campaign_id": state["campaign_id"], "scheduler_instance": scheduler_instance, "cycle_id": cycle_id, "cycle_number": cycle_no, "objectives": results, "completion_law_decisions": decisions.get("decisions", []), "generated_work": generated, "active_executor_count": len([r for r in results if r["state"] == "RECOVERING"]), "queued_dispatch_count": len(generated), "campaign_health": state["campaign_health"], "next_runnable_objective": (state["objective_queue"] or [{}])[0].get("objective_id") if state["objective_queue"] else None, "created_at": utc_now()}
     _append_jsonl(ledger_path, cycle)
@@ -216,5 +223,5 @@ def campaign_status(path: Path = CAMPAIGN_PATH) -> Dict[str, Any]:
     queue = state.get("objective_queue") or []
     active = state.get("active_work_orders") or []
     recovering = state.get("recovering_objectives") or []
-    state["campaign_health"] = "RUNNING" if queue or active or recovering else state.get("campaign_health", "PASS")
+    state["campaign_health"] = "RUNNING" if queue or active or recovering else "STALLED" if _machine_backlog(state) else state.get("campaign_health", "PASS")
     return {"campaign_id": state.get("campaign_id"), "campaign_state": state.get("status"), "campaign_health": state["campaign_health"], "active_executors": len(active), "queued_executable_work": len(queue), "recovering_work": len(recovering), "next_runnable_objective": queue[0].get("objective_id") if queue and isinstance(queue[0], dict) else None}
