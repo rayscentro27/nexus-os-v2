@@ -56,7 +56,7 @@ def certify_read_only() -> dict[str, Any]:
 def write_certification_report(result: dict[str, Any]) -> None:
     out = ROOT / "reports/certification"; out.mkdir(parents=True, exist_ok=True)
     (out / "nexus_calendar_authorization_latest.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    (out / "nexus_calendar_authorization_latest.md").write_text("# Google Workspace Read-Only Certification\n\n" + "\n".join(f"- {key}: {value}" for key, value in result.items() if key not in {"granted_scopes"}) + "\n- granted_scopes: " + ", ".join(result.get("granted_scopes", [])) + "\n", encoding="utf-8")
+    (out / "nexus_calendar_authorization_latest.md").write_text("# Google Workspace Read-Only Certification\n\n" + "\n".join(f"- {key}: {value}" for key, value in result.items() if key not in {"granted_scopes"}) + "\n- granted_scopes: " + (", ".join(result.get("granted_scopes", [])) or "none") + "\n", encoding="utf-8")
 
 def main() -> int:
     p=argparse.ArgumentParser(); sub=p.add_subparsers(dest="command",required=True); a=sub.add_parser("authorize"); a.add_argument("--client-secrets-file",required=True); a.add_argument("--replace",action="store_true"); c=sub.add_parser("certify-read-only"); args=p.parse_args()

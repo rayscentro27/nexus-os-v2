@@ -10,4 +10,4 @@
 - mutations_performed: False
 - secret_values_exposed: False
 - oauth_publishing_mode: TESTING_OR_EXTERNALLY_MANAGED
-- granted_scopes: 
+- granted_scopes: none
