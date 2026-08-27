@@ -17,6 +17,7 @@ from nexus_agent_platform.capability_broker import run_capability
 from nexus_agent_platform.completion_laws import enforce_cycle_laws
 from nexus_agent_platform.governed import persistence, work_orders
 from nexus_agent_platform.phase15.common import ROOT, atomic_write_json, utc_now
+from nexus_agent_platform.acceptance_verifiers import resolve_verifier
 
 CAMPAIGN_ID = "NEXUS_COMPLETION_DAY_2026_08_26"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_completion_campaign.json"
@@ -65,7 +66,9 @@ def materialize_backlog(state: Dict[str, Any]) -> Dict[str, Any]:
         if backlog_id in existing:
             continue
         historical_match = next((item for item in historical if title.lower().split()[0] in str(item).lower() or backlog_id.lower() in str(item).lower()), None)
-        existing[backlog_id] = {"backlog_id": backlog_id, "title": title, "acceptance_criteria": [{"criterion_id": f"{backlog_id}.acceptance", "description": criterion, "required_evidence_types": ["capability_receipt", "verification_receipt"], "status": "PENDING", "proof_refs": [], "verifier": "nexus_acceptance_verifier", "last_verified_at": None, "failure_reason": None}], "capability_requirements": [capability] if capability else [], "dependency_domain": domain, "authority_class": "CLASS_1" if capability else "CLASS_3", "machine_executable": True, "capability_available": bool(capability), "capability_gap": not bool(capability), "human_gate_required": backlog_id in {"RAY_MICROPHONE_ACCEPTANCE", "PRODUCTION_APPROVAL"}, "status": "UNMATERIALIZED", "diagnosis_state": "NOT_STARTED", "objective_ids": [], "proof_refs": [], "failure_signature": None, "repair_count": 0, "backlog_version": 1, "historical_text": historical_match, "created_at": utc_now(), "updated_at": utc_now()}
+        human = backlog_id in {"RAY_MICROPHONE_ACCEPTANCE", "PRODUCTION_APPROVAL"}
+        verifier = "condition_watch.e2e.v1" if backlog_id == "REAL_CONDITION_WATCH_END_TO_END" else None
+        existing[backlog_id] = {"backlog_id": backlog_id, "title": title, "acceptance_criteria": [{"criterion_id": f"{backlog_id}.acceptance", "description": criterion, "required_evidence_types": ["capability_receipt", "verification_receipt"], "status": "PENDING", "proof_refs": [], "verifier": verifier, "last_verified_at": None, "failure_reason": None}], "capability_requirements": [capability] if capability else [], "dependency_domain": domain, "authority_class": "CLASS_1", "machine_executable": not human, "capability_available": bool(capability), "capability_gap": (not bool(capability)) and not human, "human_gate_required": human, "status": "UNMATERIALIZED", "diagnosis_state": "NOT_STARTED", "objective_ids": [], "proof_refs": [], "failure_signature": None, "repair_count": 0, "backlog_version": 1, "historical_text": historical_match, "created_at": utc_now(), "updated_at": utc_now()}
     for item in existing.values():
         item.setdefault("machine_executable", True)
         item.setdefault("capability_available", bool(item.get("capability_requirements")))
@@ -73,6 +76,11 @@ def materialize_backlog(state: Dict[str, Any]) -> Dict[str, Any]:
         item.setdefault("human_gate_required", item.get("backlog_id") in {"RAY_MICROPHONE_ACCEPTANCE", "PRODUCTION_APPROVAL"})
         if item.get("acceptance_criteria") and isinstance(item["acceptance_criteria"][0], str):
             item["acceptance_criteria"] = [{"criterion_id": f"{item['backlog_id']}.acceptance", "description": item["acceptance_criteria"][0], "required_evidence_types": ["capability_receipt", "verification_receipt"], "status": "PENDING", "proof_refs": [], "verifier": "nexus_acceptance_verifier", "last_verified_at": None, "failure_reason": None}]
+        for criterion_record in item.get("acceptance_criteria") or []:
+            if criterion_record.get("verifier") == "nexus_acceptance_verifier" and item.get("backlog_id") == "REAL_CONDITION_WATCH_END_TO_END":
+                criterion_record["verifier"] = "condition_watch.e2e.v1"
+        item["machine_executable"] = bool(item.get("machine_executable", True)) and not bool(item.get("human_gate_required"))
+        item["capability_gap"] = bool(item.get("capability_gap")) and bool(item.get("machine_executable"))
     state["backlog_items"] = list(existing.values())
     return state
 
@@ -96,17 +104,21 @@ def load_campaign(path: Path = CAMPAIGN_PATH, *, materialize_queue: bool = True)
         next_item = next((item for item in state.get("backlog_items", []) if item.get("machine_executable") and item.get("status") in {"UNMATERIALIZED", "READY", "RESEARCHING", "RECOVERING", "VERIFYING"} and item.get("backlog_id") not in set(state.get("completed_backlog", []))), None)
         if next_item:
             verifying = next_item.get("status") == "VERIFYING"
-            next_item["status"] = "READY"
+            if not verifying:
+                next_item["status"] = "READY"
             next_item["diagnosis_state"] = "MATERIALIZED"
             next_item["updated_at"] = utc_now()
             objective_id = f"backlog.{next_item['backlog_id']}.verify.v{next_item.get('backlog_version', 1)}" if verifying else f"backlog.{next_item['backlog_id']}.v{next_item.get('backlog_version', 1)}"
             if objective_id not in next_item.get("objective_ids", []):
                 next_item.setdefault("objective_ids", []).append(objective_id)
             capability = next_item.get("capability_requirements", [None])[0]
-            if capability:
-                state["objective_queue"] = [{"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": "proof.watchdog" if verifying else capability, "dependency_domain": next_item["dependency_domain"], "expected_outcome": next_item["acceptance_criteria"][0]["description"], "acceptance_verified": False, "verification_only": verifying}]
+            if verifying:
+                criterion = (next_item.get("acceptance_criteria") or [{}])[0]
+                state["objective_queue"] = [{"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": "acceptance.verifier", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "registered acceptance verification", "criterion": criterion, "result_ref": (criterion.get("proof_refs") or [None])[-1], "verification_only": True}]
+            elif capability:
+                state["objective_queue"] = [{"objective_id": objective_id, "backlog_id": next_item["backlog_id"], "capability_id": capability, "dependency_domain": next_item["dependency_domain"], "expected_outcome": next_item["acceptance_criteria"][0]["description"], "acceptance_verified": False, "verification_only": False}]
             else:
-                state["objective_queue"] = [{"objective_id": f"capability-gap.{next_item['backlog_id']}.v1", "backlog_id": next_item["backlog_id"], "capability_id": "proof.watchdog", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "capability gap discovery and Product Evolution handoff", "capability_gap": True, "acceptance_verified": False}]
+                state["objective_queue"] = [{"objective_id": f"capability-gap.{next_item['backlog_id']}.v1", "backlog_id": next_item["backlog_id"], "capability_id": "product.evolution.bridge", "dependency_domain": next_item["dependency_domain"], "expected_outcome": "Product Evolution capability-gap handoff", "capability_gap": True, "acceptance_verified": False}]
     return state
 
 
@@ -128,6 +140,28 @@ def _failure_result(objective: Mapping[str, Any]) -> Dict[str, Any]:
     return {"status": "FAIL", "failure_stage": "S4_EXECUTOR_STARTED", "failure_signature": str(objective.get("failure_signature") or "CERTIFICATION_BOUNDED_FAILURE"), "error": "bounded certification failure", "test_only": True}
 
 
+def _capability_gap_mission(objective: Mapping[str, Any]) -> Dict[str, Any]:
+    """Create the real PE handoff for a missing capability.
+
+    Importing lazily keeps the campaign engine below the existing PE consumer
+    boundary and ensures Phase15 remains the sole mission owner.
+    """
+    from nexus_product_evolution.loop import MissionContract
+    from nexus_product_evolution.telegram_control import register_mission
+    backlog_id = str(objective.get("backlog_id") or objective["objective_id"])
+    capability = str(objective.get("missing_capability") or objective.get("capability_id") or "unknown")
+    contract = MissionContract(
+        goal=f"Recover missing Nexus capability: {capability}",
+        user_visible_outcome=f"Register and certify {capability} for campaign backlog {backlog_id}.",
+        acceptance_criteria=["discover reusable implementation", "register minimum governed capability", "run bounded canary", "return reconciliation receipt"],
+        capability_candidates=[capability, "product.evolution"],
+        allowed_files=["scripts/", "configs/", "reports/runtime/"],
+        security_boundaries=["no arbitrary shell", "certification-only changes", "no production mutation"],
+        human_only_gates=[], max_cycles=3,
+    )
+    return register_mission(contract, mission_id=f"campaign-capability-gap-{backlog_id.lower()}")
+
+
 def _execute_one(objective: Mapping[str, Any], *, cycle_id: str, receipt_dir: Path) -> Dict[str, Any]:
     objective_id = str(objective["objective_id"])
     capability = _capability(objective)
@@ -144,24 +178,51 @@ def _execute_one(objective: Mapping[str, Any], *, cycle_id: str, receipt_dir: Pa
     ack = {"type": "receiver_ack", "campaign_id": CAMPAIGN_ID, "cycle_id": cycle_id, "objective_id": objective_id, "work_order_id": work_order_id, "dispatch_id": dispatch_id, "status": "PASS", "receiver": "campaign_execution_engine", "created_at": utc_now()}
     persistence.emit_audit_event(ack)
     work_orders.transition(work_order_id, "running", telemetry_run_id=dispatch_id)
-    if objective.get("force_failure") or (objective.get("verification_only") and not objective.get("acceptance_verified")):
+    verifier_result = None
+    if objective.get("verification_only"):
+        backlog = {"backlog_id": objective.get("backlog_id")}
+        criterion = objective.get("criterion") or {"criterion_id": f"{objective.get('backlog_id')}.acceptance", "verifier": objective.get("verifier")}
+        resolved = resolve_verifier(str(objective.get("backlog_id")), criterion)
+        if resolved is None:
+            raw = {"status": "FAIL", "failure_stage": "S6_VERIFICATION", "failure_signature": f"VERIFIER_CAPABILITY_GAP:{objective.get('backlog_id')}", "error": "no registered specialized acceptance verifier", "test_only": True}
+        else:
+            verifier_id, verifier = resolved
+            context = {"objective": objective, "backlog": backlog, "criterion": criterion, "result_ref": objective.get("result_ref"), "condition_watch_evidence": objective.get("condition_watch_evidence")}
+            verifier_result = verifier(context).as_dict()
+            raw = {"status": verifier_result["status"], "verification": verifier_result, "receipt_id": verifier_result["verification_receipt_id"], "test_only": True}
+        terminal = "completed" if raw.get("status") == "PASS" else "failed"
+    elif objective.get("capability_gap"):
+        raw = _capability_gap_mission(objective)
+        raw.update({"status": "PASS", "receipt_id": raw.get("mission_id"), "test_only": True, "handoff": "PRODUCT_EVOLUTION"})
+        terminal = "completed"
+    elif objective.get("force_failure"):
         raw = _failure_result(objective)
-        if objective.get("verification_only"):
-            raw["failure_signature"] = f"ACCEPTANCE_VERIFIER_MISSING:{objective.get('backlog_id', objective_id)}"
-            raw["error"] = "acceptance criterion requires a specialized verifier"
         terminal = "failed"
     else:
-        raw = run_capability(capability, dict(objective.get("args") or {}), receipt_dir=receipt_dir)
+        if objective.get("backlog_id") == "REAL_CONDITION_WATCH_END_TO_END":
+            from nexus_agent_platform.condition_watch import certify_real_synthetic_watch
+            raw = certify_real_synthetic_watch(send_notification=True)
+            raw["receipt_id"] = f"condition-watch-{uuid.uuid4().hex[:12]}"
+            receipt_dir.mkdir(parents=True, exist_ok=True)
+            atomic_write_json(receipt_dir / f"{raw['receipt_id']}.json", raw)
+        else:
+            raw = run_capability(capability, dict(objective.get("args") or {}), receipt_dir=receipt_dir)
         terminal = "completed" if raw.get("status") == "PASS" else "failed"
     result = work_orders.record_result(work_order_id, status=terminal, result=raw, error=None if terminal == "completed" else str(raw.get("error") or raw.get("status")), telemetry_run_id=dispatch_id)
     result_ref = str(receipt_dir / f"{raw.get('receipt_id')}.json") if raw.get("receipt_id") else None
+    if verifier_result:
+        receipt_dir.mkdir(parents=True, exist_ok=True)
+        verification_path = receipt_dir / f"{verifier_result['verification_receipt_id']}.json"
+        atomic_write_json(verification_path, verifier_result)
+        result_ref = str(verification_path)
     receipt_verified = terminal == "completed" and bool(result_ref and Path(result_ref).exists() and raw.get("status") == "PASS")
-    verified = receipt_verified and (not objective.get("backlog_id") or bool(objective.get("acceptance_verified")))
+    verified = bool(verifier_result and verifier_result.get("status") == "PASS") or (receipt_verified and not objective.get("backlog_id"))
     if terminal == "failed":
-        failure = {"status": "FAIL", "objective_id": objective_id, "stage": raw.get("failure_stage", "S4_EXECUTOR_STARTED"), "reason": raw.get("error", "bounded failure"), "failure_signature": raw.get("failure_signature"), "machine_solvable": True, "solution_known": True, "repair_count": int(objective.get("repair_count", 0))}
+        failure = {"status": "FAIL", "objective_id": objective_id, "stage": raw.get("failure_stage", "S4_EXECUTOR_STARTED"), "reason": raw.get("error", "bounded failure"), "failure_signature": raw.get("failure_signature"), "machine_solvable": True, "solution_known": raw.get("failure_signature", "").startswith("VERIFIER_CAPABILITY_GAP") is False, "repair_count": int(objective.get("repair_count", 0))}
     else:
         failure = None
-    return {"objective_id": objective_id, "backlog_id": objective.get("backlog_id"), "work_order_id": work_order_id, "dispatch_id": dispatch_id, "receiver_ack": "PASS", "execution": raw, "result_ref": result_ref, "verification": "PASS" if verified else "PASS_RECEIPT_ACCEPTANCE_PENDING" if terminal == "completed" and objective.get("backlog_id") else "FAIL", "state": "COMPLETED" if verified else "VERIFYING" if terminal == "completed" and objective.get("backlog_id") else "RECOVERING" if failure else "FAIL", "failure_event": failure, "domain": _domain(objective)}
+    pending_gap = bool(objective.get("capability_gap"))
+    return {"objective_id": objective_id, "backlog_id": objective.get("backlog_id"), "work_order_id": work_order_id, "dispatch_id": dispatch_id, "receiver_ack": "PASS", "execution": raw, "verification": "PASS" if verified else "PASS_RECEIPT_ACCEPTANCE_PENDING" if terminal == "completed" and objective.get("backlog_id") and not pending_gap else "FAIL", "state": "COMPLETED" if verified else "RECOVERING" if pending_gap or failure else "VERIFYING" if terminal == "completed" and objective.get("backlog_id") else "FAIL", "failure_event": failure, "domain": _domain(objective)}
 
 
 def consume_completion_law_work(decisions: Sequence[Mapping[str, Any]], *, scheduler_instance: str, state_path: Path = CAMPAIGN_PATH, ledger_path: Path = LEDGER_PATH, receipt_dir: Optional[Path] = None) -> Dict[str, Any]:
@@ -245,13 +306,18 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
         if row.get("backlog_id"):
             item = next((candidate for candidate in state.get("backlog_items", []) if candidate.get("backlog_id") == row["backlog_id"]), None)
             if item:
-                item["status"] = "PASS" if row["verification"] == "PASS" else "RECOVERING" if row.get("execution", {}).get("status") != "PASS" else "VERIFYING"
+                item["status"] = "PASS" if row["verification"] == "PASS" else "RECOVERING" if row.get("execution", {}).get("status") != "PASS" or str(row.get("objective_id", "")).startswith("capability-gap.") else "VERIFYING"
                 criterion = (item.get("acceptance_criteria") or [{}])[0]
                 criterion["status"] = "PASS" if row["verification"] == "PASS" else "EVIDENCE_PRESENT" if row.get("execution", {}).get("status") == "PASS" else "FAIL"
                 if row["verification"] == "PASS":
                     criterion["last_verified_at"] = utc_now()
                 item["proof_refs"] = list(dict.fromkeys([*item.get("proof_refs", []), *([row["result_ref"]] if row.get("result_ref") else [])]))
+                criterion["proof_refs"] = list(dict.fromkeys([*criterion.get("proof_refs", []), *([row["result_ref"]] if row.get("result_ref") else [])]))
                 item["updated_at"] = utc_now()
+                if str((row.get("failure_event") or {}).get("failure_signature") or "").startswith("VERIFIER_CAPABILITY_GAP"):
+                    gap = {"objective_id": f"capability-gap.verifier.{item['backlog_id']}.v1", "backlog_id": item["backlog_id"], "capability_id": "product.evolution.bridge", "missing_capability": str(criterion.get("verifier")), "capability_gap": True, "dependency_domain": item.get("dependency_domain", "INDEPENDENT"), "expected_outcome": "Product Evolution verifier capability handoff", "test_only": True}
+                    if not any(x.get("objective_id") == gap["objective_id"] for x in state["objective_queue"]):
+                        state["objective_queue"].append(gap)
     state["completed_objectives"] = completed
     state["active_work_orders"] = [row["work_order_id"] for row in results if row["state"] == "RECOVERING"]
     state["recovering_objectives"] = [row["objective_id"] for row in results if row["state"] == "RECOVERING"]
@@ -265,7 +331,9 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
             continue
         verifier_id = f"backlog.{row['backlog_id']}.verify.v1"
         if not any(str(item.get("objective_id")) == verifier_id for item in state["objective_queue"]):
-            state["objective_queue"].append({"objective_id": verifier_id, "backlog_id": row["backlog_id"], "capability_id": "proof.watchdog", "dependency_domain": row["domain"], "expected_outcome": "independent acceptance verification", "verification_only": True, "acceptance_verified": False})
+            item = next((candidate for candidate in state.get("backlog_items", []) if candidate.get("backlog_id") == row["backlog_id"]), {})
+            criterion = (item.get("acceptance_criteria") or [{}])[0]
+            state["objective_queue"].append({"objective_id": verifier_id, "backlog_id": row["backlog_id"], "capability_id": "acceptance.verifier", "dependency_domain": row["domain"], "expected_outcome": "independent acceptance verification", "criterion": criterion, "result_ref": (criterion.get("proof_refs") or [None])[-1], "verification_only": True})
     state["campaign_health"] = "RECOVERING" if state["recovering_objectives"] else "RUNNING" if state["objective_queue"] else "STALLED" if _machine_backlog(state) else "PASS"
     _save_state(state, state_path)
     cycle = {"schema_version": "nexus.campaign-execution-receipt.v1", "campaign_id": state["campaign_id"], "scheduler_instance": scheduler_instance, "cycle_id": cycle_id, "cycle_number": cycle_no, "objectives": results, "completion_law_decisions": decisions.get("decisions", []), "generated_work": generated, "active_executor_count": len([r for r in results if r["state"] == "RECOVERING"]), "queued_dispatch_count": len(generated), "campaign_health": state["campaign_health"], "next_runnable_objective": (state["objective_queue"] or [{}])[0].get("objective_id") if state["objective_queue"] else None, "created_at": utc_now()}
