@@ -16,12 +16,12 @@
     "start_sha": "3391c40f44d60154c5c116cb8cb0776074866f95",
     "verified_at": "2026-08-28T22:20:00Z",
     "source": "WP1-D_ACTIVATION_CODE_INTEGRATION",
-    "end_sha": "1c1281a02dbed37fbc49865e0efa1585258f6e8c"
+    "end_sha": "52d682cf871e8f7d708b132b991cfe9d705792ef"
   },
   "current_git_head": "HEAD",
   "current_git_head_resolution": "git rev-parse HEAD",
-  "last_completed_work_package_commit": "7de7b51c0b4927f7cc6e10dc4d264129b88a3356",
-  "last_commit": "1c1281a02dbed37fbc49865e0efa1585258f6e8c",
+  "last_completed_work_package_commit": "52d682cf871e8f7d708b132b991cfe9d705792ef",
+  "last_commit": "52d682cf871e8f7d708b132b991cfe9d705792ef",
   "last_test_summary": "WP1-D activation code integration complete: 26 focused adversarial tests pass; TruthKernel exact gate/action, expiry, replay, HOLD, malformed, and authorized-chat behavior is connected to the existing Telegram route. Real Telegram E2E is separately blocked because the worker is not loaded.",
   "human_gate": true,
   "human_gate_reason": "Real Telegram E2E requires starting/loading/changing supervision of com.nexus.telegram-hermes-v2, a separate service-state action not included in WP1-D-ACTIVATION approval.",
