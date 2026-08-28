@@ -5,12 +5,7 @@
   "completed_loops": [],
   "created_at": "2026-08-28T11:45:25.065782+00:00",
   "current_loop": "telegram_operator",
-  "current_repair": {
-    "reason": "NO_CERTIFIED_AI_ENGINEERING_WORKER",
-    "repair_id": "VOICE-001",
-    "state": "WAITING_WORKER",
-    "work_order_id": "wo_b5a3b90892804ec79164159997caf264"
-  },
+  "current_loop_blocker": "NONE",
   "current_stage": "01_REAL_TRIGGER",
   "human_waiting_loops": [],
   "inventory": [
@@ -415,7 +410,7 @@
     "stripe_test_paywall",
     "work_orders"
   ],
-  "next_action": "Ray must provide the real trigger for telegram_operator; no next loop will start automatically",
+  "next_action": "Waiting for/processing the real Telegram certification trigger.",
   "next_retry": null,
   "notification": {
     "channel": "telegram",
@@ -424,6 +419,14 @@
     "secret_values_included": false,
     "sent_at": "2026-08-28T11:46:42.420497+00:00"
   },
+  "outstanding_repairs": [
+    {
+      "reason": "NO_CERTIFIED_AI_ENGINEERING_WORKER",
+      "repair_id": "VOICE-001",
+      "state": "WAITING_WORKER",
+      "work_order_id": "wo_b5a3b90892804ec79164159997caf264"
+    }
+  ],
   "safety": {
     "active_operator_paused": true,
     "auto_social_publishing": false,
@@ -433,5 +436,5 @@
   "schema_version": "nexus.loop-certification-campaign.v1",
   "skipped_loops": [],
   "state": "ACTIVE_CERTIFICATION",
-  "updated_at": "2026-08-28T11:46:42.420808+00:00"
+  "updated_at": "2026-08-28T12:08:00.679278+00:00"
 }

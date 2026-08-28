@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
-from nexus_agent_platform.loop_certification_campaign import handle_control as handle_loop_certification_control  # noqa: E402
+from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, handle_control as handle_loop_certification_control, record_delivery  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
 OFFSET_PATH = ROOT / "data/runtime/telegram_last_update_id.json"
@@ -476,7 +476,7 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
     text = re.sub(r"\s+", " ", text.strip())
     if len(text) > MAX_INPUT:
         return ("Message received but exceeds Hermes command limit. Use /portfolio, /status, /approvals, or send a shorter request.", {"route": "INPUT_TOO_LONG", "outcome": "REJECTED_INPUT_TOO_LONG", "input_too_long": True})
-    campaign_control = handle_loop_certification_control(text)
+    campaign_control = handle_loop_certification_control(text, update_id=update_id, chat_id=chat_id)
     if campaign_control is not None:
         return campaign_control
     route = classify(text)
@@ -678,6 +678,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             or _repair_approval_command(text)
             or _natural_repair_command(text)
             or _repair_progress_request(text)
+            or campaign_control_intent(text)
         )
         gate_result = None if manual_control else route_response(text, sender=(lambda body: {"delivered": _send(token, chat_id, body)}))
         if gate_result is not None:
@@ -719,8 +720,16 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
         elif metadata.get("product_evolution_skip_reply"):
             delivered = True
         else:
-            delivered = True if dry_run else _send(token, chat_id, response_text)
-        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_telegram_message_id": metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "created_at": utc_now()}
+            if dry_run:
+                delivered = True
+                outgoing_message_id = None
+            else:
+                delivery = send_message(token, chat_id, response_text)
+                delivered = bool(delivery.get("ok"))
+                outgoing_message_id = (delivery.get("result") or {}).get("message_id") if delivered else None
+        if metadata.get("campaign_control_action") == "STATUS" and metadata.get("campaign_id"):
+            record_delivery(campaign_id=metadata["campaign_id"], update_id=uid, outgoing_message_id=outgoing_message_id, delivered=delivered)
+        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         write_json(RECEIPT_DIR / f"{receipt['receipt_id']}.json", receipt)
         result["receipts"].append(receipt["receipt_id"])
