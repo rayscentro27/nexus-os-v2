@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
-from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, handle_control as handle_loop_certification_control, record_delivery  # noqa: E402
+from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, completion_text, handle_control as handle_loop_certification_control, record_campaign_message, record_delivery  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
 OFFSET_PATH = ROOT / "data/runtime/telegram_last_update_id.json"
@@ -713,6 +713,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             result["commands_blocked"] += 1
         if metadata.get("status") == "DUPLICATE_SUPPRESSED":
             result["duplicates_suppressed"] += 1
+        outgoing_message_id = None
         if metadata.get("confirmation_delivered"):
             # HumanGateResponseRouter already sent and recorded the executive
             # confirmation through the same real Telegram transport.
@@ -727,8 +728,13 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                 delivery = send_message(token, chat_id, response_text)
                 delivered = bool(delivery.get("ok"))
                 outgoing_message_id = (delivery.get("result") or {}).get("message_id") if delivered else None
-        if metadata.get("campaign_control_action") == "STATUS" and metadata.get("campaign_id"):
-            record_delivery(campaign_id=metadata["campaign_id"], update_id=uid, outgoing_message_id=outgoing_message_id, delivered=delivered)
+        if metadata.get("campaign_control_action") == "STATUS" and metadata.get("campaign_id") and not dry_run:
+            certification = record_delivery(campaign_id=metadata["campaign_id"], update_id=uid, outgoing_message_id=outgoing_message_id, delivered=delivered)
+            if certification.get("last_delivery_newly_certified") and delivered:
+                completion = completion_text(metadata["campaign_id"])
+                completion_delivery = send_message(token, chat_id, completion)
+                completion_id = (completion_delivery.get("result") or {}).get("message_id") if completion_delivery.get("ok") else None
+                record_campaign_message(campaign_id=metadata["campaign_id"], loop_id=certification.get("current_loop"), incoming_update_id=uid, outgoing_message_id=completion_id, correlation_id=f"{metadata['campaign_id']}:{uid}", action="CERTIFICATION_COMPLETE", delivered=bool(completion_delivery.get("ok")))
         receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         write_json(RECEIPT_DIR / f"{receipt['receipt_id']}.json", receipt)

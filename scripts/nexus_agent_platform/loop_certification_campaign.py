@@ -23,7 +23,10 @@ RECEIPTS_PATH = ROOT / "reports/runtime/nexus_loop_certification_receipts.jsonl"
 WAITING_NEXT = "WAITING_NEXT_LOOP_APPROVAL"
 ACTIVE = "ACTIVE_CERTIFICATION"
 CAMPAIGN_SCHEMA = "nexus.loop-certification-campaign.v1"
-CAMPAIGN_ID_RE = r"LOOP-CERT-[0-9]{8}T[0-9]{6}Z"
+# Parsing accepts an explicit identifier token first; persisted-state
+# resolution below is the authority.  This prevents an unknown identifier
+# from becoming an ordinary conversational message.
+IDENTIFIER_RE = r"[A-Z0-9][A-Z0-9_-]{0,80}"
 
 
 def now() -> str:
@@ -133,14 +136,14 @@ def parse_campaign_command(text: str) -> dict[str, str] | None:
     """Parse explicit campaign controls, including their required IDs."""
     value = re.sub(r"\s+", " ", str(text).strip()).upper()
     patterns = (
-        (rf"^STATUS CAMPAIGN ({CAMPAIGN_ID_RE})$", "STATUS", "CAMPAIGN"),
-        (rf"^STATUS LOOP ([A-Z0-9_-]+)$", "STATUS", "LOOP"),
-        (rf"^RETRY LOOP ([A-Z0-9_-]+)$", "RETRY", "LOOP"),
-        (rf"^HOLD CAMPAIGN ({CAMPAIGN_ID_RE})$", "HOLD", "CAMPAIGN"),
-        (rf"^RESUME CAMPAIGN ({CAMPAIGN_ID_RE})$", "RESUME", "CAMPAIGN"),
-        (rf"^NEXT LOOP ({CAMPAIGN_ID_RE})$", "NEXT", "CAMPAIGN"),
-        (rf"^SKIP LOOP ([A-Z0-9_-]+) ({CAMPAIGN_ID_RE})$", "SKIP", "LOOP"),
-        (rf"^CANCEL CAMPAIGN ({CAMPAIGN_ID_RE})$", "CANCEL", "CAMPAIGN"),
+        (rf"^STATUS CAMPAIGN ({IDENTIFIER_RE})$", "STATUS", "CAMPAIGN"),
+        (rf"^STATUS LOOP ({IDENTIFIER_RE})$", "STATUS", "LOOP"),
+        (rf"^RETRY LOOP ({IDENTIFIER_RE})$", "RETRY", "LOOP"),
+        (rf"^HOLD CAMPAIGN ({IDENTIFIER_RE})$", "HOLD", "CAMPAIGN"),
+        (rf"^RESUME CAMPAIGN ({IDENTIFIER_RE})$", "RESUME", "CAMPAIGN"),
+        (rf"^NEXT LOOP ({IDENTIFIER_RE})$", "NEXT", "CAMPAIGN"),
+        (rf"^SKIP LOOP ({IDENTIFIER_RE}) ({IDENTIFIER_RE})$", "SKIP", "LOOP"),
+        (rf"^CANCEL CAMPAIGN ({IDENTIFIER_RE})$", "CANCEL", "CAMPAIGN"),
     )
     for pattern, action, object_type in patterns:
         match = re.fullmatch(pattern, value)
@@ -155,8 +158,14 @@ def parse_campaign_command(text: str) -> dict[str, str] | None:
 
 
 def campaign_control_intent(text: str) -> bool:
-    normalized = re.sub(r"\s+", " ", str(text).lower()).strip()
-    return parse_campaign_command(text) is not None or normalized in {"what are you working on", "what happened", "what do you need from me", "is it running", "campaign status", "status campaign", "how is the certification going", "what loop are you testing", "continue", "retry", "hold", "hold this loop", "skip this loop", "leave this blocked for now", "stop campaign", "move to the next loop"}
+    normalized = _normalize_natural(text)
+    return parse_campaign_command(text) is not None or normalized in {"what are you working on", "what happened", "what do you need from me", "is it running", "campaign status", "status campaign", "what is the campaign status", "how is the certification going", "do you need me", "what loop are you testing", "continue", "retry", "hold", "hold this loop", "skip this loop", "leave this blocked for now", "stop campaign", "move to the next loop"}
+
+
+def _normalize_natural(text: str) -> str:
+    value = str(text).strip().lower().replace("’", "'")
+    value = value.replace("what's", "what is").replace("what're", "what are")
+    return re.sub(r"[^a-z0-9_-]+", " ", value).strip()
 
 
 def _record_telegram_evidence(campaign: dict[str, Any], *, update_id: int | None, chat_id: int | None) -> dict[str, Any]:
@@ -170,25 +179,54 @@ def record_delivery(*, campaign_id: str, update_id: int, outgoing_message_id: in
     if campaign.get("campaign_id") != campaign_id:
         return {"status": "UNKNOWN_CAMPAIGN"}
     evidence = campaign.setdefault("current_loop_evidence", {})
-    evidence.update({"outgoing_message_id": outgoing_message_id, "delivered": bool(delivered), "receipt_verified": True, "telegram_visibility_tested": bool(delivered), "correlation_id": f"{campaign_id}:{update_id}", "updated_at": now()})
+    timestamp = now()
+    correlation_id = f"{campaign_id}:{update_id}"
+    evidence.update({"outgoing_message_id": outgoing_message_id, "delivered": bool(delivered), "receipt_verified": bool(delivered), "telegram_visibility_tested": bool(delivered), "correlation_id": correlation_id, "updated_at": timestamp})
+    messages = campaign.setdefault("campaign_messages", [])
+    messages.append({"campaign_id": campaign_id, "loop_id": campaign.get("current_loop"), "incoming_update_id": update_id, "outgoing_message_id": outgoing_message_id, "correlation_id": correlation_id, "route": "LOOP_CERTIFICATION_CONTROL", "action": "STATUS", "delivered": bool(delivered), "timestamp": timestamp})
     campaign["last_action"] = "real_telegram_control_processed"; campaign["updated_at"] = now()
     stages = campaign.setdefault("current_loop_stages", {})
     stages.update({"01_REAL_TRIGGER": "PASS", "02_INTAKE": "PASS", "03_CONTEXT_RESOLUTION": "PASS", "04_AUTHORITY_CHECK": "PASS", "09_REAL_EXECUTION": "PASS", "16_RECEIPT": "PASS" if delivered else "FAIL", "17_TELEGRAM_VISIBILITY": "PASS" if delivered else "FAIL", "05_ACCESS_RESOLUTION": "NOT_APPLICABLE", "06_CREDENTIAL_OR_SESSION_RESOLUTION": "NOT_APPLICABLE", "07_SCHEDULING": "NOT_APPLICABLE", "08_WORKER_OR_MODEL_SELECTION": "NOT_APPLICABLE", "10_EXTERNAL_INTEGRATION": "NOT_APPLICABLE", "11_RECOVERY": "NOT_APPLICABLE", "12_HUMAN_ESCALATION": "NOT_APPLICABLE", "13_RESUME": "NOT_APPLICABLE", "14_RESULT_VERIFICATION": "PASS", "15_EXTERNAL_EFFECT_VERIFICATION": "NOT_APPLICABLE", "18_COMPLETION": "PASS" if delivered else "FAIL"})
+    newly_certified = bool(delivered and campaign.get("state") == ACTIVE and campaign.get("current_loop") not in campaign.get("certified_loops", []))
     if delivered:
         campaign["current_loop"] = campaign.get("current_loop")
         campaign["completed_loops"] = sorted(set(campaign.get("completed_loops", [])) | {campaign.get("current_loop")})
         campaign["certified_loops"] = sorted(set(campaign.get("certified_loops", [])) | {campaign.get("current_loop")})
-        campaign["state"] = WAITING_NEXT; campaign["current_stage"] = "18_COMPLETION"; campaign["current_loop_blocker"] = "NONE"; campaign["next_action"] = "Ray must approve advancement with Move to the next loop"; campaign["certification_state"] = "REAL_WORLD_CERTIFIED"
+        campaign["state"] = WAITING_NEXT; campaign["current_stage"] = "18_COMPLETION"; campaign["current_loop_blocker"] = "NONE"; campaign["next_action"] = "Ray must approve advancement with Move to the next loop"; campaign["certification_state"] = "REAL_WORLD_CERTIFIED"; campaign["real_world_certified"] = True; campaign["certified_at"] = timestamp
+        registry = _read(CERT_REGISTRY_PATH, {})
+        for row in registry.get("loops", []) if isinstance(registry, dict) else []:
+            if row.get("campaign_id") == campaign_id and row.get("loop_id") == campaign.get("current_loop"):
+                row.update({"certification_state": "REAL_WORLD_CERTIFIED", "real_world_certified": True, "certified_at": timestamp, "real_trigger_tested": True, "context_tested": True, "authority_tested": True, "execution_tested": True, "receipt_verified": True, "telegram_visibility_tested": True})
+        if isinstance(registry, dict):
+            registry["campaign_id"] = campaign_id; registry["updated_at"] = timestamp; _write(CERT_REGISTRY_PATH, registry)
     _write(CAMPAIGN_PATH, campaign)
     _receipt("TELEGRAM_LOOP_EVIDENCE", campaign_id, loop_id=campaign.get("current_loop"), incoming_update_id=update_id, outgoing_message_id=outgoing_message_id, delivered=delivered)
+    campaign["last_delivery_newly_certified"] = newly_certified
     return campaign
+
+
+def record_campaign_message(*, campaign_id: str, loop_id: str | None, incoming_update_id: int, outgoing_message_id: int | None, correlation_id: str, action: str, delivered: bool) -> None:
+    """Persist a campaign-linked Telegram message without changing campaign state."""
+    campaign = load_campaign()
+    if campaign.get("campaign_id") != campaign_id:
+        return
+    campaign.setdefault("campaign_messages", []).append({"campaign_id": campaign_id, "loop_id": loop_id, "incoming_update_id": incoming_update_id, "outgoing_message_id": outgoing_message_id, "correlation_id": correlation_id, "route": "LOOP_CERTIFICATION_CONTROL", "action": action, "delivered": bool(delivered), "timestamp": now()})
+    campaign["updated_at"] = now()
+    _write(CAMPAIGN_PATH, campaign)
+
+
+def completion_text(campaign_id: str) -> str:
+    return ("Loop certification complete.\n\nLoop:\nTelegram Operator\n\nResult:\nREAL-WORLD CERTIFIED\n\n"
+            "What was proven:\nReal Telegram trigger received, authorized, routed to the campaign controller, "
+            "resolved against canonical campaign state, and correlated with a delivered response.\n\n"
+            "Next loop:\nNot started.\n\nReply:\nMove to the next loop\n\nor:\nHold")
 
 
 def handle_control(text: str, *, update_id: int | None = None, chat_id: int | None = None) -> tuple[str, dict[str, Any]] | None:
     campaign = load_campaign()
     if not campaign.get("campaign_id"):
         return None
-    normalized = re.sub(r"[^a-z0-9_-]+", " ", text.lower()).strip()
+    normalized = _normalize_natural(text)
     parsed = parse_campaign_command(text)
     if parsed:
         if parsed.get("campaign_id") and parsed["campaign_id"] != campaign.get("campaign_id"):
@@ -208,7 +246,7 @@ def handle_control(text: str, *, update_id: int | None = None, chat_id: int | No
             return ("The current loop must be completed or explicitly held before it can be skipped.", {"route": "LOOP_CERTIFICATION_GATE", "outcome": "NOT_READY"})
         else:
             return (status_text(), {"route": "LOOP_CERTIFICATION_CONTROL", "outcome": "NO_AUTO_EXECUTION", "campaign_id": campaign["campaign_id"]})
-    if normalized in {"what are you working on", "what happened", "what do you need from me", "is it running", "campaign status", "status campaign", "how is the certification going", "what loop are you testing"}:
+    if normalized in {"what are you working on", "what happened", "what do you need from me", "is it running", "campaign status", "status campaign", "what is the campaign status", "how is the certification going", "do you need me", "what loop are you testing"}:
         evidence = _record_telegram_evidence(campaign, update_id=update_id, chat_id=chat_id)
         return status_text(), {"route": "LOOP_CERTIFICATION_STATUS", "campaign_id": campaign["campaign_id"], "campaign_control_action": "STATUS", "campaign_incoming_update_id": update_id, "campaign_evidence": evidence}
     if normalized in {"hold", "hold this loop", "skip this loop", "leave this blocked for now", "stop campaign"}:
