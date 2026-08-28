@@ -100,10 +100,14 @@ def get_work_order(work_order_id: str) -> Optional[Dict[str, Any]]:
 
 def idempotency_key_executed(idempotency_key: str) -> bool:
     """Idempotency guard: has any work order already run with this key?"""
+    seen: set[str] = set()
     for record in persistence.read_records("work_orders"):
-        if record.get("idempotency_key") == idempotency_key:
-            if record.get("status") in ("completed", "running", "blocked", "failed"):
-                return True
+        key = record.get("idempotency_key")
+        if key in seen:
+            continue
+        seen.add(key)
+        if key == idempotency_key:
+            return record.get("status") in ("completed", "running", "blocked", "failed")
     return False
 
 

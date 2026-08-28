@@ -84,6 +84,11 @@ def _launch_existing_order(order: Dict[str, Any], run_id: str) -> Dict[str, Any]
         return {"status": "already_running", "work_order_id": order["work_order_id"], "state": "ENGINEERING", "worker_pid": current.get("worker_pid")}
     if current.get("state") in {"PATCH_READY", "TESTING", "PASS", "FAIL", "BLOCKED"}:
         return {"status": "already_started", "work_order_id": order["work_order_id"], "state": current.get("state")}
+    if order.get("status") == "failed" and str(order.get("error") or "") == "MissionContract.__init__() got an unexpected keyword argument 'mission_id'":
+        raw = persistence.get_record("work_orders", order["work_order_id"], key="work_order_id")
+        if raw:
+            order = {**raw, "status": "queued", "started_at": None, "completed_at": None, "error": None, "retry_reason": "bounded repair of executor contract defect"}
+            persistence.append_record("work_orders", order)
     if order.get("status") != "queued":
         return {"status": "blocked", "work_order_id": order["work_order_id"], "state": order.get("status"), "reason": "work_order_not_queued"}
     child_env = {key: value for key, value in os.environ.items() if key in SAFE_ENV_KEYS}
@@ -146,7 +151,6 @@ def _build_task(run_id: str):
     from nexus_product_evolution.adapters.builder_adapter import mission_to_build_task
     from nexus_product_evolution.loop import MissionContract
     contract = MissionContract(
-        mission_id=f"manual-repair-{REPAIR_ID.lower()}",
         goal="Repair the production Voice browser transport so it uses the same-origin governed Netlify relay.",
         user_visible_outcome="Voice requests use the server-side relay and never expose Cloudflare credentials.",
         acceptance_criteria=["transcribe and preview use /.netlify/functions/voice-relay", "no browser request targets voice.goclearonline.cc", "focused Voice transport tests pass"],
