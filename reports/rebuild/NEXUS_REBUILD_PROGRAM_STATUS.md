@@ -2,9 +2,9 @@
 
 PROGRAM_ID=NEXUS-V2-REBUILD-20260828
 PROGRAM_STATE=ACTIVE_BOOTSTRAP
-CURRENT_SPRINT=SPRINT_0
-CURRENT_WORK_PACKAGE=WP0-B
-LAST_VERIFIED_CHECKPOINT=CP-WP0F-001 at `d9eb7e6`
+CURRENT_SPRINT=SPRINT_1
+CURRENT_WORK_PACKAGE=WP1-C
+LAST_VERIFIED_CHECKPOINT=CP-WP1B-001 at `7de7b51c0b4927f7cc6e10dc4d264129b88a3356`
 ACTIVE_OPERATOR_PAUSED=YES
 
 ## Completed this checkpoint
@@ -23,7 +23,20 @@ ACTIVE_OPERATOR_PAUSED=YES
 - Safe canaries: daily monitor, Alpha scout, recovery dry-run, and repository research dry-run recorded as partial evidence only.
 - Next dependency-ready package: WP1-A operational truth kernel design.
 - WP1-A — Operational truth kernel: COMPLETED.
-- WP1-B — Golden process status/read-model proof: READY.
+- WP1-B — Truth kernel adversarial hardening and read model: COMPLETED.
+- WP1-C — Continuous process observability proof: READY; read-only inspection
+  found a fresh heartbeat artifact but no loaded Nexus Telegram launchd label,
+  so sustained continuous execution remains unproven.
+
+## WP1-B proof
+
+- 19 adversarial tests passed, including authority/dependency/side-effect/output
+  gates, simulation separation, dynamic freshness, requested-vs-started state,
+  continuous heartbeat logic, expired human gates, and SQLite foreign keys.
+- Hardened Daily Monitor run `run_c221db9db0de471681f39a8042ed3323` derived
+  `SUCCEEDED_VERIFIED` with fresh hashed outputs and zero observed mutations.
+- Read model independently reports `CURRENT_STATE=SUCCEEDED_VERIFIED`,
+  `FRESH=YES`, `RUNNING=NO`; it explicitly does not infer system health.
 
 ## Human gate
 
