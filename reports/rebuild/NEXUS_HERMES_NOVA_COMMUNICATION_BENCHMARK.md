@@ -25,10 +25,14 @@ separately from measured results.
 
 ## Baseline status
 
-`NOT_SCORED` — no new external conversation or voice test was run in this
-bootstrap package. Existing reports may be reviewed as historical context but
-cannot establish a fresh benchmark score. The target remains
-`HERMES_TARGET >= 9/10`; no score is fabricated.
+`LOCAL_PREFLIGHT_PASS` for six deterministic local advisor checks: casual
+response, approval explanation, empathy, partner tone, today-plan actionability,
+and non-command-only wording. The preflight was marked
+`engineering_preflight=true`, `campaign_evidence=false`, and performed no
+external action or report write. It is not a full live Hermes/Nova benchmark:
+follow-up awareness, status/error explanation, and voice readiness remain
+unscored. The target remains `HERMES_TARGET >= 9/10`; no overall score is
+fabricated.
 
 ## Next safe action
 
