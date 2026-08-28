@@ -47,3 +47,14 @@ def test_lease_is_single_owner(monkeypatch, tmp_path):
         assert "another repair" in str(exc)
     else:
         raise AssertionError("second repair acquired the active worker lease")
+
+
+def test_probe_timeout_is_not_busy_or_auth_blocked():
+    row = {"state": "PROBE_TIMEOUT", "adapter_exists": True, "repo_edit": True, "tests": True, "isolated_worktree": True}
+    assert not broker._eligible(row)
+    assert row["state"] not in {"BUSY", "AUTH_BLOCKED"}
+
+
+def test_only_certified_available_worker_is_eligible():
+    assert broker._eligible({"state": "AVAILABLE", "adapter_exists": True, "repo_edit": True, "tests": True, "isolated_worktree": True})
+    assert not broker._eligible({"state": "INSTALLED_UNPROVEN", "adapter_exists": True, "repo_edit": True, "tests": True, "isolated_worktree": True})

@@ -49,6 +49,8 @@ _COST_CLASS_ORDER = {
 
 WORKER_STATUSES = (
     "AVAILABLE",
+    "PROBE_TIMEOUT",
+    "AUTHENTICATED_BUT_AUTOMATION_UNPROVEN",
     "INSTALLED_UNPROVEN",
     "AUTH_BLOCKED",
     "RATE_LIMITED",
@@ -163,7 +165,7 @@ def _classify_cli_probe(*, installed: bool, version_probe: Dict[str, Any], execu
     if not installed:
         return {"classification": "NOT_INSTALLED", "reason": "binary missing", "probe_result": "not_run"}
     if version_probe.get("timed_out"):
-        return {"classification": "UNAVAILABLE", "reason": "version probe timed out", "probe_result": "version_timeout"}
+        return {"classification": "PROBE_TIMEOUT", "reason": "version probe timed out", "probe_result": "version_timeout"}
     version_text = _probe_text(version_probe)
     if _RATE_LIMIT_RE.search(version_text):
         return {"classification": "RATE_LIMITED", "reason": "rate-limit evidence in version probe", "probe_result": "version_rate_limited"}
@@ -173,7 +175,7 @@ def _classify_cli_probe(*, installed: bool, version_probe: Dict[str, Any], execu
     if execution_probe is None:
         return {"classification": "UNAVAILABLE" if not version_ok else "INSTALLED_UNPROVEN", "reason": "version probe did not prove execution", "probe_result": "version_only"}
     if execution_probe.get("timed_out"):
-        return {"classification": "UNAVAILABLE", "reason": "safe execution probe timed out", "probe_result": "execution_timeout"}
+        return {"classification": "PROBE_TIMEOUT", "reason": "safe execution probe timed out; authentication not determined", "probe_result": "execution_timeout"}
     execution_text = _probe_text(execution_probe)
     if _RATE_LIMIT_RE.search(execution_text):
         return {"classification": "RATE_LIMITED", "reason": "explicit rate-limit evidence in execution probe", "probe_result": "execution_rate_limited"}
@@ -183,7 +185,7 @@ def _classify_cli_probe(*, installed: bool, version_probe: Dict[str, Any], execu
         if execution_probe.get("marker_required") and not execution_probe.get("marker_present"):
             return {"classification": "INSTALLED_UNPROVEN", "reason": "execution returned successfully without the required provider marker", "probe_result": "execution_marker_missing"}
         return {"classification": "AVAILABLE", "reason": "version and harmless execution probes succeeded", "probe_result": "execution_success"}
-    return {"classification": "UNAVAILABLE" if not version_ok else "INSTALLED_UNPROVEN", "reason": "execution probe did not prove availability", "probe_result": "execution_failed"}
+    return {"classification": "EXECUTION_ERROR" if version_ok else "UNAVAILABLE", "reason": "execution probe did not prove availability", "probe_result": "execution_failed"}
 
 
 def _provider_probe_command(name: str) -> Optional[List[str]]:

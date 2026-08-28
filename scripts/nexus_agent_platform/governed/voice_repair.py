@@ -105,7 +105,7 @@ def _launch_existing_order(order: Dict[str, Any], run_id: str) -> Dict[str, Any]
     if os.environ.get("NEXUS_GOVERNED_DATA_DIR"):
         child_env["NEXUS_GOVERNED_DATA_DIR"] = os.environ["NEXUS_GOVERNED_DATA_DIR"]
     process = subprocess.Popen([sys.executable, "-m", "nexus_agent_platform.governed.voice_repair", "execute", order["work_order_id"]], cwd=ROOT, env=child_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-    _state(run_id, state="QUEUED", work_order_id=order["work_order_id"], approval_reference=f"manual:{REPAIR_ID}:{run_id}", authority_scope=[REPAIR_ID], executor=ACTION_ID, dispatcher="manual-approved-repair-dispatch", dispatcher_requested_at=persistence._now(), worker_pid=process.pid, mission_id="manual-repair-voice-001")
+    _state(run_id, state="QUEUED", work_order_id=order["work_order_id"], approval_reference=f"manual:{REPAIR_ID}:{run_id}", authority_scope=[REPAIR_ID], executor=ACTION_ID, dispatcher="manual-approved-repair-dispatch", dispatcher_requested_at=persistence._now(), worker_pid=process.pid, automatic_resume=True, retry_class="APPROVED_WORK_WAITING_CAPACITY", mission_id="manual-repair-voice-001")
     return {"status": "queued", "work_order_id": order["work_order_id"], "state": "QUEUED", "worker_pid": process.pid}
 
 
@@ -154,6 +154,21 @@ def start_voice_repair(run_id: str, *, chat_id: Optional[int] = None) -> Dict[st
     _state(run_id, state="QUEUED", work_order_id=order["work_order_id"], approval_reference=f"manual:{REPAIR_ID}:{run_id}", authority_scope=[REPAIR_ID], executor=ACTION_ID)
     queued = _launch_existing_order({**order, "status": "queued"}, run_id)
     return {**queued, "repair_id": REPAIR_ID, "run_id": run_id}
+
+
+def resume_waiting_worker(run_id: str = "MANUAL-E2E-20260827-2992") -> Dict[str, Any]:
+    """Bounded capacity retry for the same approved VOICE-001 order."""
+    if run_id != "MANUAL-E2E-20260827-2992":
+        return {"status": "blocked", "reason": "wrong_manual_certification_run"}
+    if _manual_approval(run_id) is None:
+        return {"status": "waiting_approval", "repair_id": REPAIR_ID, "run_id": run_id}
+    order = _existing_order(run_id)
+    state = _load(STATE_PATH, {}) or {}
+    if not order:
+        return {"status": "waiting_worker", "reason": "repair_work_order_not_found", "repair_id": REPAIR_ID}
+    if state.get("state") not in {"WAITING_WORKER", "WORKER_SELECTION", "QUEUED", "RECOVERING", "RETRY_BACKOFF"}:
+        return {"status": "not_eligible", "state": state.get("state"), "work_order_id": order.get("work_order_id")}
+    return {**_launch_existing_order(order, run_id), "repair_id": REPAIR_ID, "run_id": run_id, "automatic_resume": True}
 
 
 def _build_task(run_id: str):
@@ -206,6 +221,10 @@ def execute_voice_repair(run_id: str) -> Dict[str, Any]:
 
 
 def main() -> int:
+    if len(sys.argv) in {2, 3} and sys.argv[1] == "retry":
+        result = resume_waiting_worker(sys.argv[2] if len(sys.argv) == 3 else "MANUAL-E2E-20260827-2992")
+        print(json.dumps({k: v for k, v in result.items() if k not in {"stdout", "stderr"}}, sort_keys=True))
+        return 0 if result.get("status") not in {"blocked", "waiting_approval"} else 1
     if len(sys.argv) == 3 and sys.argv[1] == "execute":
         from nexus_agent_platform.governed.engine import execute_approved_work_order
         work_order_id = sys.argv[2]
@@ -214,7 +233,7 @@ def main() -> int:
             return 2
         run_id = str((order.get("inputs") or {}).get("run_id") or "")
         engineering_run_id = f"voice-eng-{uuid.uuid4().hex[:12]}"
-        _state(run_id, state="WORKER_SELECTION", work_order_id=work_order_id, executor="engineering_broker", runtime_pickup_state="OBSERVED", engineering_run_id=engineering_run_id, worker_pid=os.getpid(), pickup_observed_at=persistence._now(), mission_id="manual-repair-voice-001")
+        _state(run_id, state="WORKER_SELECTION", work_order_id=work_order_id, executor="engineering_broker", runtime_pickup_state="NOT_OBSERVED", engineering_run_id=engineering_run_id, worker_pid=os.getpid(), pickup_observed_at=None, mission_id="manual-repair-voice-001")
         result = execute_approved_work_order(work_order_id, resolved_by="ray")
         print(json.dumps({"work_order_id": work_order_id, "result": result.get("result"), "status": result.get("status")}, sort_keys=True))
         return 0 if result.get("status") == "completed" else 1
