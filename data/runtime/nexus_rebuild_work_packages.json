@@ -1,7 +1,7 @@
 {
   "schema_version": "nexus.rebuild-work-packages.v1",
   "program_id": "NEXUS-V2-REBUILD-20260828",
-  "updated_at": "2026-08-28T00:00:00Z",
+  "updated_at": "2026-08-28T20:42:00Z",
   "work_packages": [
     {
       "work_package_id": "PROGRAM_BOOTSTRAP",
@@ -15,7 +15,7 @@
       "expected_outputs": ["durable program state", "work package registry", "dashboard", "architecture contract"],
       "acceptance_criteria": ["state is valid JSON", "safety gates are explicit", "resume command is sufficient"],
       "verification_method": ["json parse", "git diff review", "secret scan"],
-      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "PENDING", "evidence": ["audit checkpoint 4c86137"], "blockers": [], "next_action": "Continue WP0-B"
+      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "ceefd9e", "evidence": ["audit checkpoint 4c86137", "ef0e6be metadata reconciliation"], "blockers": [], "next_action": "Continue WP0-B"
     },
     {
       "work_package_id": "WP0-A",
@@ -29,7 +29,7 @@
       "expected_outputs": ["feature matrix", "local-version limitation", "integration boundary"],
       "acceptance_criteria": ["official current sources recorded", "no runtime upgrade performed", "security boundary identified"],
       "verification_method": ["official source review", "local binary/config inspection"],
-      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "PENDING", "evidence": ["https://github.com/NousResearch/hermes-agent", "https://hermes-agent.nousresearch.com/docs"], "blockers": ["local installed version command did not yield a confirmed version in bounded inspection"], "next_action": "Use native Hermes features only after local version/config is confirmed"
+      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "ceefd9e", "evidence": ["https://github.com/NousResearch/hermes-agent", "https://hermes-agent.nousresearch.com/docs"], "blockers": ["local installed version command did not yield a confirmed version in bounded inspection"], "next_action": "Use native Hermes features only after local version/config is confirmed"
     },
     {
       "work_package_id": "WP0-B",
@@ -64,7 +64,7 @@
       "dependencies": ["PROGRAM_BOOTSTRAP", "4c86137"], "risk_level": "low", "human_authority_required": false,
       "allowed_paths": ["docs/architecture/", "reports/rebuild/"], "forbidden_actions": ["mass_migration", "new_external_authority"],
       "inputs": ["19-loop truth audit", "Nexus safety model"], "expected_outputs": ["loop contract", "Daily Operations sample"], "acceptance_criteria": ["trigger-to-completion lifecycle defined", "evidence and freshness are mandatory"], "verification_method": ["architecture review"],
-      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "PENDING", "evidence": ["docs/architecture/NEXUS_V2_REBUILD_ARCHITECTURE.md"], "blockers": [], "next_action": "Apply contract to golden loop only after Sprint 0"
+      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "ceefd9e", "evidence": ["docs/architecture/NEXUS_V2_REBUILD_ARCHITECTURE.md"], "blockers": [], "next_action": "Apply contract to golden loop only after Sprint 0"
     },
     {
       "work_package_id": "WP0-E",

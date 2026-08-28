@@ -4,7 +4,7 @@ PROGRAM_ID=NEXUS-V2-REBUILD-20260828
 PROGRAM_STATE=ACTIVE_BOOTSTRAP
 CURRENT_SPRINT=SPRINT_0
 CURRENT_WORK_PACKAGE=WP0-C
-LAST_VERIFIED_CHECKPOINT=CP-BOOTSTRAP-002 at `ceefd9e`
+LAST_VERIFIED_CHECKPOINT=CP-BOOTSTRAP-002 at `ef0e6be`
 ACTIVE_OPERATOR_PAUSED=YES
 
 ## Completed this checkpoint
@@ -16,7 +16,7 @@ ACTIVE_OPERATOR_PAUSED=YES
 ## Active and ready
 
 - WP0-B — Complete Python process census: IN_PROGRESS.
-- WP0-C — GitHub asset portfolio audit: READY.
+- WP0-C — GitHub asset portfolio audit: IN_PROGRESS.
 - WP0-E — Hermes/Nova communication benchmark: READY.
 
 ## Human gate

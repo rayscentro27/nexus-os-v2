@@ -39,6 +39,17 @@ repositories, native Hermes capabilities, mature open source, then custom
 implementation. Repository names and descriptions are discovery evidence only;
 they are not proof of working, tested, secure, or deployable assets.
 
+## Source-level observations
+
+Read-only manifests and README files were inspected for the six highest-value
+candidates. `nexuslive` is an AI Studio/Vite application with a Gemini key
+requirement; `nexus-mobile` is an Expo/React Native client with an explicit
+mock-data option; `AAAANexusCRM` is a private TypeScript/Vite financial-OS
+generation; `nexus-financial-os` is a two-file CRM repository with no useful
+language metadata; `site-boost-suite` and `credit-cascade-portal` are Lovable
+Vite applications. These observations identify overlap and risk, not working
+capability. No repository passed the bar for immediate import.
+
 ## Current WP0-C status
 
 **IN_PROGRESS.** The portfolio is inventoried at the repository-list level.
