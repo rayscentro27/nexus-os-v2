@@ -230,9 +230,10 @@ def observe_runtime_event(*, campaign_id: str, current_loop: str | None, incomin
     contract = certification_contract(current_loop)
     timestamp = now()
     correlation_id = f"{campaign_id}:{incoming_update_id}"
-    control_object = metadata.get("control_object")
+    event_metadata = {**metadata, "route": route}
+    control_object = event_metadata.get("control_object")
     if current_loop == "hermes_router":
-        observed = _hermes_router_evidence(metadata, response_text, update_id=incoming_update_id, delivered=delivered, outgoing_message_id=outgoing_message_id)
+        observed = _hermes_router_evidence(event_metadata, response_text, update_id=incoming_update_id, delivered=delivered, outgoing_message_id=outgoing_message_id)
     else:
         # Campaign status is observable but does not newly certify a loop.
         observed = {"TELEGRAM_CAMPAIGN_CONTROL_RECEIVED", "AUTHORIZED_CHAT", "CAMPAIGN_RESOLVED", "CAMPAIGN_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"} if metadata.get("campaign_control_action") == "STATUS" and delivered and outgoing_message_id is not None else set()
