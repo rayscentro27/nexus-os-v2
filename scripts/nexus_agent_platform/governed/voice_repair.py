@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -69,6 +70,31 @@ def _state(run_id: str, **changes: Any) -> Dict[str, Any]:
     return value
 
 
+def _process_alive(pid: Any) -> bool:
+    try:
+        os.kill(int(pid), 0)
+        return True
+    except (OSError, TypeError, ValueError):
+        return False
+
+
+def _launch_existing_order(order: Dict[str, Any], run_id: str) -> Dict[str, Any]:
+    current = _load(STATE_PATH, {})
+    if current.get("state") == "ENGINEERING" and _process_alive(current.get("worker_pid")):
+        return {"status": "already_running", "work_order_id": order["work_order_id"], "state": "ENGINEERING", "worker_pid": current.get("worker_pid")}
+    if current.get("state") in {"PATCH_READY", "TESTING", "PASS", "FAIL", "BLOCKED"}:
+        return {"status": "already_started", "work_order_id": order["work_order_id"], "state": current.get("state")}
+    if order.get("status") != "queued":
+        return {"status": "blocked", "work_order_id": order["work_order_id"], "state": order.get("status"), "reason": "work_order_not_queued"}
+    child_env = {key: value for key, value in os.environ.items() if key in SAFE_ENV_KEYS}
+    child_env["PYTHONPATH"] = str(ROOT / "scripts")
+    if os.environ.get("NEXUS_GOVERNED_DATA_DIR"):
+        child_env["NEXUS_GOVERNED_DATA_DIR"] = os.environ["NEXUS_GOVERNED_DATA_DIR"]
+    process = subprocess.Popen([sys.executable, "-m", "nexus_agent_platform.governed.voice_repair", "execute", order["work_order_id"]], cwd=ROOT, env=child_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    _state(run_id, state="QUEUED", work_order_id=order["work_order_id"], approval_reference=f"manual:{REPAIR_ID}:{run_id}", authority_scope=[REPAIR_ID], executor=ACTION_ID, dispatcher="manual-approved-repair-dispatch", dispatcher_requested_at=persistence._now(), worker_pid=process.pid, mission_id="manual-repair-voice-001")
+    return {"status": "queued", "work_order_id": order["work_order_id"], "state": "QUEUED", "worker_pid": process.pid}
+
+
 def _canonical_approval(run_id: str, manual: Dict[str, Any]) -> Dict[str, Any]:
     """Bridge the already-recorded human approval into the governed ledger."""
     existing = next((row for row in persistence.read_records("approvals")
@@ -100,7 +126,8 @@ def start_voice_repair(run_id: str, *, chat_id: Optional[int] = None) -> Dict[st
         return {"status": "waiting_approval", "repair_id": REPAIR_ID, "run_id": run_id}
     existing = _existing_order(run_id)
     if existing and existing.get("status") in {"queued", "running", "completed", "failed", "blocked"}:
-        return {"status": "already_started", "work_order_id": existing.get("work_order_id"), "state": existing.get("status"), "repair_id": REPAIR_ID}
+        resumed = _launch_existing_order(existing, run_id)
+        return {**resumed, "repair_id": REPAIR_ID}
     canonical = _canonical_approval(run_id, manual)
     order = work_orders.create_work_order(
         approval_id=canonical["id"], action_id=ACTION_ID,
@@ -109,14 +136,10 @@ def start_voice_repair(run_id: str, *, chat_id: Optional[int] = None) -> Dict[st
         expected_outcome="Patch the Voice browser transport to use the governed same-origin relay; pass bounded tests; stop before deployment.",
         idempotency_key=f"{IDEMPOTENCY_PREFIX}{run_id}", status="approved",
     )
-    work_orders.transition(order["work_order_id"], "queued")
+    work_orders.transition(order["work_order_id"], "queued", repair_id=REPAIR_ID, run_id=run_id, mission_id="manual-repair-voice-001")
     _state(run_id, state="QUEUED", work_order_id=order["work_order_id"], approval_reference=f"manual:{REPAIR_ID}:{run_id}", authority_scope=[REPAIR_ID], executor=ACTION_ID)
-    child_env = {key: value for key, value in os.environ.items() if key in {"PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "PYTHONPATH", "VIRTUAL_ENV"}}
-    child_env["PYTHONPATH"] = str(ROOT / "scripts")
-    if os.environ.get("NEXUS_GOVERNED_DATA_DIR"):
-        child_env["NEXUS_GOVERNED_DATA_DIR"] = os.environ["NEXUS_GOVERNED_DATA_DIR"]
-    subprocess.Popen([sys.executable, "-m", "nexus_agent_platform.governed.voice_repair", "execute", order["work_order_id"]], cwd=ROOT, env=child_env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-    return {"status": "started", "work_order_id": order["work_order_id"], "repair_id": REPAIR_ID, "run_id": run_id}
+    queued = _launch_existing_order({**order, "status": "queued"}, run_id)
+    return {**queued, "repair_id": REPAIR_ID, "run_id": run_id}
 
 
 def _build_task(run_id: str):
@@ -171,6 +194,9 @@ def main() -> int:
         order = work_orders.get_work_order(work_order_id)
         if not order:
             return 2
+        run_id = str((order.get("inputs") or {}).get("run_id") or "")
+        engineering_run_id = f"voice-eng-{uuid.uuid4().hex[:12]}"
+        _state(run_id, state="ENGINEERING", work_order_id=work_order_id, executor="codex", runtime_pickup_state="OBSERVED", engineering_run_id=engineering_run_id, worker_pid=os.getpid(), pickup_observed_at=persistence._now(), mission_id="manual-repair-voice-001")
         result = execute_approved_work_order(work_order_id, resolved_by="ray")
         print(json.dumps({"work_order_id": work_order_id, "result": result.get("result"), "status": result.get("status")}, sort_keys=True))
         return 0 if result.get("status") == "completed" else 1

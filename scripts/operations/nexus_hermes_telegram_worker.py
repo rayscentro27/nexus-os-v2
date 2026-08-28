@@ -398,7 +398,7 @@ def _natural_repair_command(text: str) -> Optional[Dict[str, str]]:
     if not run_id or report.get("status") not in {"WAITING_HUMAN_ACTION", "WAITING_APPROVAL"}:
         return None
     normalized = re.sub(r"[^a-z0-9_-]+", " ", text.lower()).strip()
-    if normalized not in {"nexus repair voice", "approve voice", "repair voice", "repair voice-001"}:
+    if normalized not in {"nexus repair voice", "approve voice", "repair voice", "repair voice-001", "can you start repair", "start repair", "start the repair", "continue the voice repair", "resume voice", "start voice-001", "start the voice repair"}:
         return None
     return {"repair_id": "VOICE-001", "run_id": run_id}
 
@@ -406,7 +406,7 @@ def _natural_repair_command(text: str) -> Optional[Dict[str, str]]:
 def _repair_progress_request(text: str) -> bool:
     normalized = re.sub(r"[^a-z0-9_-]+", " ", text.lower()).strip()
     words = set(normalized.split())
-    return "voice" in words and ("repair" in words or "voice-001" in words) and bool(words.intersection({"status", "happening", "doing", "done", "progress", "working"}))
+    return ("voice" in words or "voice-001" in words) and ("repair" in words or "voice-001" in words) and bool(words.intersection({"status", "happening", "doing", "done", "progress", "working", "dispatcher", "queued", "process", "mission"}))
 
 
 def _repair_progress_response() -> tuple[str, Dict[str, Any]]:
@@ -416,6 +416,22 @@ def _repair_progress_response() -> tuple[str, Dict[str, Any]]:
     return (f"VOICE-001\nState: {state.get('state', 'UNKNOWN')}\nWork order: {state.get('work_order_id', 'UNKNOWN')}\n"
             f"Current step: {state.get('executor', 'governed repair')}\nNo other repairs are executing.",
             {"route": "VOICE_REPAIR_STATUS", "outcome": "ANSWERED", "repair_id": "VOICE-001", "state": state.get("state")})
+
+
+def _repair_dispatch_diagnostic() -> tuple[str, Dict[str, Any]]:
+    state = load_json(ROOT / "reports/runtime/voice_repair_latest.json", {})
+    order = next((item for item in work_orders.list_work_orders(limit=1000) if item.get("work_order_id") == state.get("work_order_id")), None)
+    mission_path = ROOT / "reports/product_evolution/campaign-capability-gap-voice_full_machine_acceptance.json"
+    mission = load_json(mission_path, {})
+    mission_result = mission.get("result", {}) if isinstance(mission, dict) else {}
+    return (f"VOICE-001 dispatch diagnostic\n\nWork order: {state.get('work_order_id', 'NOT_FOUND')}\n"
+            f"Repair state: {state.get('state', 'UNKNOWN')}\nDispatcher: {state.get('dispatcher', 'manual-approved-repair-dispatch')}\n"
+            f"Worker pickup: {state.get('runtime_pickup_state', 'NOT_OBSERVED')}\nWorker PID: {state.get('worker_pid', 'UNKNOWN')}\n"
+            f"Engineering run: {state.get('engineering_run_id', 'NOT_OBSERVED')}\n"
+            f"Queue reason: {('awaiting immediate approved-repair pickup' if state.get('state') == 'QUEUED' else 'not queued')}\n"
+            f"Observed Product Evolution mission: {mission_result.get('mission_id', 'NOT_FOUND')}\n"
+            f"Mission linkage: {'YES' if mission_result.get('work_order_id') == state.get('work_order_id') else 'NO — generic capability-gap mission is not this repair'}\n"
+            f"Mission queue state: {mission_result.get('status', 'UNKNOWN')}\n", {"route": "VOICE_REPAIR_DISPATCH_DIAGNOSTIC", "outcome": "ANSWERED", "repair_id": "VOICE-001", "state": state.get("state"), "work_order_id": state.get("work_order_id")})
 
 
 def _record_repair_approval(command: Dict[str, str], *, chat_id: Optional[int], update_id: Optional[int]) -> Dict[str, Any]:
@@ -484,11 +500,12 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
         if natural_repair is not None:
             from nexus_agent_platform.governed.voice_repair import start_voice_repair
             result = start_voice_repair(repair_command["run_id"], chat_id=chat_id)
-            if result["status"] == "started":
-                return (f"VOICE-001 repair started.\n\nRun: {repair_command['run_id']}\nWork order: {result['work_order_id']}\n"
+            if result["status"] in {"started", "queued"}:
+                wording = "repair queued; immediate dispatcher pickup requested" if result["status"] == "queued" else "repair started"
+                return (f"VOICE-001 {wording}.\n\nRun: {repair_command['run_id']}\nWork order: {result['work_order_id']}\n"
                         "Scope: Repair production Voice routing through the governed Netlify relay.\n\n"
                         "Email and Meta remain unapproved.\nActive Operator remains paused.",
-                        {"route": "VOICE_REPAIR_START", "outcome": "STARTED", "repair_started": True, **result})
+                        {"route": "VOICE_REPAIR_START", "outcome": "STARTED" if result["status"] == "started" else "QUEUED", "repair_started": result["status"] == "started", "repair_queued": True, "wording": wording, **result})
             if result["status"] == "already_started":
                 return (f"VOICE-001 repair is already {result.get('state', 'active')}.\nWork order: {result.get('work_order_id')}\nNo duplicate execution started.", {"route": "VOICE_REPAIR_START", "outcome": "DUPLICATE_SUPPRESSED", **result})
             if result["status"] == "waiting_approval":
@@ -507,6 +524,8 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
             return "That repair approval was already recorded. No repair has executed.", {"route": "MANUAL_REPAIR_APPROVAL", "outcome": "DUPLICATE_SUPPRESSED", **result}
         return "Repair approval rejected. No Nexus state was changed.", {"route": "MANUAL_REPAIR_APPROVAL", "outcome": result["status"], **result}
     if _repair_progress_request(text):
+        if any(word in text.lower() for word in ("dispatcher", "process", "mission", "queued")):
+            return _repair_dispatch_diagnostic()
         return _repair_progress_response()
     if text == "CONTINUE ACTIVE OPERATOR REPAIR MANUAL-E2E-20260827-2992":
         report = load_json(MANUAL_CERT_REPORT_PATH, {})
