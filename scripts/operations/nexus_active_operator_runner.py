@@ -14,6 +14,7 @@ import fcntl
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import uuid
 from contextlib import contextmanager
@@ -31,6 +32,7 @@ import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
+CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
 SCHEDULER_HEALTH_PATH = ROOT / "reports/phase16a/scheduler_health.json"
 HEARTBEAT_PATH = ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json"
 RUNNER_REPORT_PATH = ROOT / "reports/runtime/nexus_active_operator_runner_latest.md"
@@ -108,6 +110,21 @@ def relative_or_absolute(path: Path) -> str:
         return str(path)
 
 
+def load_governed_supabase_environment() -> None:
+    """Load only server/browser Supabase settings for this bounded process."""
+    allowed = {"SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"}
+    for path in (ROOT / ".env", Path("/Users/raymonddavis/.config/nexus/runtime.env")):
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            key, separator, value = line.partition("=")
+            key = key.strip()
+            if separator and key in allowed and key not in os.environ:
+                os.environ[key] = value.strip().strip("\"'")
+
+
 def run_system_health_check(*, incoming_update_id: int, correlation_id: str, trigger: str = "telegram") -> Dict[str, Any]:
     """Run only the registered low-risk System Health Check process.
 
@@ -116,6 +133,7 @@ def run_system_health_check(*, incoming_update_id: int, correlation_id: str, tri
     """
     run_id = f"system_health_{uuid.uuid4().hex}"
     started = utc_now()
+    load_governed_supabase_environment()
     registry = load_json(REGISTRY_PATH, [])
     rows = registry if isinstance(registry, list) else registry.get("processes", []) if isinstance(registry, dict) else []
     process = next((row for row in rows if isinstance(row, dict) and row.get("process_id") == "system_health"), None)
@@ -149,25 +167,36 @@ def run_supabase_verification(*, incoming_update_id: int, correlation_id: str, t
     registry = load_json(REGISTRY_PATH, [])
     rows = registry if isinstance(registry, list) else registry.get("processes", []) if isinstance(registry, dict) else []
     process = next((row for row in rows if isinstance(row, dict) and row.get("process_id") == "supabase_verification"), None)
-    base = {"process_id": "supabase_verification", "run_id": run_id, "supabase_run_id": run_id, "incoming_update_id": incoming_update_id, "correlation_id": correlation_id, "trigger": trigger, "started_at": started, "read_only": True, "database_mutations": 0}
+    campaign = load_json(CAMPAIGN_PATH, {})
+    base = {"process_id": "supabase_verification", "run_id": run_id, "supabase_run_id": run_id, "campaign_id": campaign.get("campaign_id") if isinstance(campaign, dict) else None, "loop_id": "supabase_verification", "incoming_update_id": incoming_update_id, "correlation_id": correlation_id, "trigger": trigger, "started_at": started, "read_only": True, "database_mutations": 0}
     valid = process and process.get("enabled") is True and process.get("mode") == "ACTIVE_INTERNAL" and process.get("schedule_type") == "manual" and process.get("trigger") == "telegram /run supabase_verification or manual" and process.get("runner_path") == "scripts/operations/nexus_active_operator_runner.py" and process.get("report_path") == "reports/supabase/nexus_supabase_browser_verification_latest.md" and process.get("receipt_path") == "reports/runtime/nexus_active_operator_receipts/" and process.get("risk_level") == "low" and process.get("approval_required") is False and process.get("telegram_allowed") is True and "database_writes" in process.get("blocked_actions", [])
     if not valid:
         result = {**base, "execution_status": "FAILED", "completed_at": utc_now(), "overall_verification": "BLOCKED", "error": "canonical supabase_verification process is not enabled as low-risk ACTIVE_INTERNAL"}
     else:
-        server_read = {"verified": False, "table": "nexus_process_definitions", "rows_returned": 0, "read_only": True}
+        load_governed_supabase_environment()
+        server_read = {"verified": False, "table": "nexus_process_definitions", "columns": "process_key", "rows_returned": 0, "read_only": True}
         try:
             from nexus_agent_platform.capabilities.supabase_read_client import create_supabase_read_client
             client = create_supabase_read_client()
             if client is None:
                 server_read["error"] = "governed Supabase credentials unavailable"
             else:
-                response = client.table("nexus_process_definitions").select("process_id").limit(1).execute()
+                response = client.table("nexus_process_definitions").select("process_key").limit(1).execute()
                 server_read["verified"] = bool(response.ok)
                 server_read["rows_returned"] = len(response.data) if isinstance(response.data, list) else 0
                 if not response.ok: server_read["error"] = "governed read returned non-success"
         except Exception as exc:
             server_read["error"] = type(exc).__name__
-        frontend_files = [ROOT / "src/lib/supabaseClient.ts", ROOT / "dist/assets"]
+        browser_evidence_path = RECEIPT_DIR / f"supabase_browser_{run_id}.json"
+        browser_command = ["npm", "exec", "playwright", "test", "tests/e2e/supabase-real-world-certification.spec.ts", "--reporter=line"]
+        browser_env = {**os.environ, "SUPABASE_CERT_EVIDENCE_PATH": str(browser_evidence_path), "E2E_ENABLE_AUTHENTICATED": "true"}
+        try:
+            browser_run = subprocess.run(browser_command, cwd=ROOT, env=browser_env, capture_output=True, text=True, timeout=180, check=False)
+            browser_process_ok = browser_run.returncode == 0 and browser_evidence_path.exists()
+        except (OSError, subprocess.SubprocessError):
+            browser_process_ok = False
+        browser_evidence = load_json(browser_evidence_path, {}) if browser_process_ok else {}
+        frontend_files = [ROOT / "src", ROOT / "dist/assets"]
         exposure = False
         for path in frontend_files:
             if path.is_file(): candidates = [path]
@@ -181,9 +210,9 @@ def run_supabase_verification(*, incoming_update_id: int, correlation_id: str, t
                 if "SUPABASE_SERVICE_ROLE_KEY" in text or "service_role" in text.lower(): exposure = True
         browser_config = bool(os.getenv("VITE_SUPABASE_URL") and os.getenv("VITE_SUPABASE_ANON_KEY")) and not exposure
         completed = utc_now()
-        browser = {"safe_config_verified": browser_config, "no_service_role_frontend_exposure": not exposure, "authenticated_read_verified": False, "rls_isolation_verified": False, "status": "WAITING_BROWSER_SESSION"}
+        browser = {"safe_config_verified": browser_config, "no_service_role_frontend_exposure": not exposure, "authenticated_read_verified": browser_evidence.get("authenticated_session_verified") is True and browser_evidence.get("browser_supabase_read_verified") is True, "rls_isolation_verified": browser_evidence.get("rls_tenant_isolation_verified") is True, "own_scope_read": browser_evidence.get("own_scope_read", "NOT_PROVEN"), "cross_tenant_read": browser_evidence.get("cross_tenant_read", "NOT_PROVEN"), "admin_only_read": browser_evidence.get("admin_only_read", "NOT_PROVEN"), "status": "PASS" if browser_process_ok else "WAITING_BROWSER_SESSION"}
         overall = "VERIFIED" if server_read["verified"] and browser_config and browser["authenticated_read_verified"] and browser["rls_isolation_verified"] else "PARTIAL" if server_read["verified"] or browser_config else "BLOCKED"
-        result = {**base, "execution_status": "COMPLETED", "completed_at": completed, "server_read": server_read, "browser": browser, "overall_verification": overall, "report_path": str(SUPABASE_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"supabase_verification_{run_id}.json").relative_to(ROOT))}
+        result = {**base, "execution_status": "COMPLETED", "completed_at": completed, "server_read": server_read, "browser": browser, "overall_verification": overall, "evidence_refs": [f"supabase:run:{run_id}", f"supabase:report:{SUPABASE_REPORT_PATH.relative_to(ROOT)}", f"supabase:browser:{browser_evidence_path.relative_to(ROOT)}"], "report_path": str(SUPABASE_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"supabase_verification_{run_id}.json").relative_to(ROOT))}
     receipt_path = RECEIPT_DIR / f"supabase_verification_{run_id}.json"
     SUPABASE_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     report_lines = ["# Supabase Verification", "", f"Run: {run_id}", f"Correlation: {correlation_id}", f"Overall verification: {result.get('overall_verification', 'BLOCKED')}", "", f"Server governed read: {'PASS' if result.get('server_read', {}).get('verified') else 'FAIL'}", f"Browser configuration: {'PASS' if result.get('browser', {}).get('safe_config_verified') else 'FAIL'}", f"Service-role frontend exposure: {'FAIL' if result.get('browser', {}).get('no_service_role_frontend_exposure') is False else 'PASS'}", f"Authenticated browser read: {'PASS' if result.get('browser', {}).get('authenticated_read_verified') else 'NOT_PROVEN'}", f"RLS isolation: {'PASS' if result.get('browser', {}).get('rls_isolation_verified') else 'NOT_PROVEN'}", "Database writes: 0", "", "This bounded process performs governed reads only; service-role connectivity does not prove browser authentication or RLS isolation."]

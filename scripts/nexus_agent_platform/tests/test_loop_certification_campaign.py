@@ -139,3 +139,19 @@ def test_system_health_runner_writes_run_linked_artifacts_without_scheduler(tmp_
     report = json.loads((tmp_path / "health.json").read_text())
     receipt = json.loads(next((tmp_path / "receipts").glob("*.json")).read_text())
     assert report["run_id"] == receipt["run_id"] and receipt["incoming_update_id"] == 50
+
+
+def test_supabase_full_real_evidence_certifies_only_active_loop(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    value = campaign.load_campaign(); value["current_loop"] = "supabase_verification"; value["loop_order"] = ["supabase_verification"]; campaign._write(campaign.CAMPAIGN_PATH, value)
+    flags = {"process_id": "supabase_verification", "supabase_run_started": True, "server_read_verified": True, "browser_safe_config_verified": True, "no_service_role_frontend_exposure": True, "authenticated_session_verified": True, "browser_read_verified": True, "rls_isolation_verified": True, "supabase_run_completed": True, "canonical_report_written": True, "canonical_receipt_written": True, "read_only": True}
+    result = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="supabase_verification", incoming_update_id=70, route="SUPABASE_VERIFICATION_PROCESS", outcome="ANSWERED", metadata=flags, response_text="Supabase Verification completed", outgoing_message_id=71, delivered=True)
+    assert result["newly_certified"] is True
+    assert result["certified_loops"] == ["supabase_verification"]
+
+
+def test_supabase_failed_delivery_cannot_certify(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    value = campaign.load_campaign(); value["current_loop"] = "supabase_verification"; campaign._write(campaign.CAMPAIGN_PATH, value)
+    result = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="supabase_verification", incoming_update_id=72, route="SUPABASE_VERIFICATION_PROCESS", outcome="ANSWERED", metadata={"process_id": "supabase_verification", "supabase_run_started": True, "server_read_verified": True, "browser_safe_config_verified": True, "no_service_role_frontend_exposure": True, "authenticated_session_verified": True, "browser_read_verified": True, "rls_isolation_verified": True, "supabase_run_completed": True, "canonical_report_written": True, "canonical_receipt_written": True, "read_only": True}, response_text="verification", outgoing_message_id=None, delivered=False)
+    assert result["newly_certified"] is False

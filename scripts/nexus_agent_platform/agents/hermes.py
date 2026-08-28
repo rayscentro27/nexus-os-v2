@@ -429,12 +429,21 @@ def _execute_capability_legacy(state: AgentState) -> AgentState:
                     auth_ctx["is_ray"] = True
                     auth_ctx["is_admin"] = True
                 result = dispatch(taskspec, authenticated_context=auth_ctx, mission_context={"mission_id": state.mission_id or ""}, trace_id=state.mission_id or "")
-                if result.status == "ok":
-                    state.assistant_response = f"Report scheduled successfully.\n\n\u2022 Report: {prior.get('report_definition_id', 'system_status')}\n\u2022 Time: {time_info['display']} (Phoenix timezone)"
-                else:
-                    state.assistant_response = f"Failed to schedule report: {result.error}"
                 state.metadata["capability_used"] = "schedule_report"
                 state.metadata["prior_report_resolved"] = True
+                scheduled = result.status == "ok" and bool(result.data and result.data.get("scheduled"))
+                state.metadata["schedule_result"] = {"scheduled": scheduled}
+                if scheduled:
+                    state.assistant_response = f"Report scheduled successfully.\n\n\u2022 Report: {prior.get('report_definition_id', 'system_status')}\n\u2022 Time: {time_info['display']} (Phoenix timezone)"
+                else:
+                    state.assistant_response = f"Failed to schedule report: {result.error or result.data or 'unknown error'}"
+                    state.metadata["schedule_error"] = str(result.error or "dispatch did not confirm scheduling")
+                state.metadata["schedule"] = {
+                    "report_definition": prior.get("report_definition_id", "system_status"),
+                    "scheduled_time": time_info["scheduled_time"],
+                    "timezone": time_info["timezone"],
+                    "dispatch_status": str(result.status),
+                }
             else:
                 state.assistant_response = "What time should I run it? Default is 8:00 AM Phoenix time."
                 state.metadata["capability_used"] = "schedule_report"
@@ -762,10 +771,10 @@ def _get_process_failures() -> Dict[str, Any]:
         cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
 
         runs = client.table("nexus_process_runs").select(
-            "id,definition_id,status,last_run_at,error_message,duration_ms"
+            "id,process_id,status,started_at,completed_at,error_message"
         ).in_(
             "status", ["FAILED", "BLOCKED", "TIMED_OUT", "CANCELLED", "PARTIAL"]
-        ).gte("last_run_at", cutoff).order("last_run_at", desc=True).limit(30).execute()
+        ).gte("started_at", cutoff).order("started_at", desc=True).limit(30).execute()
 
         failures = runs.data or []
 
@@ -782,11 +791,10 @@ def _get_process_failures() -> Dict[str, Any]:
             "failures": [
                 {
                     "id": f.get("id"),
-                    "definition_id": f.get("definition_id"),
+                    "process_id": f.get("process_id"),
                     "status": f.get("status"),
-                    "last_run_at": f.get("last_run_at"),
+                    "started_at": f.get("started_at"),
                     "error": f.get("error_message"),
-                    "duration_ms": f.get("duration_ms"),
                 }
                 for f in failures[:10]
             ],
