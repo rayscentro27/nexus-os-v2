@@ -8,6 +8,7 @@ capacity/authentication failures as retryable worker conditions.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import tempfile
 import time
@@ -22,7 +23,10 @@ ROOT = Path(__file__).resolve().parents[3]
 POOL_PATH = ROOT / "reports/runtime/voice_repair_worker_pool_latest.json"
 LEASE_PATH = ROOT / "reports/runtime/voice_repair_worker_lease.json"
 HANDOFF_PATH = ROOT / "reports/runtime/voice_repair_handoffs.jsonl"
+RETRY_STATE_PATH = ROOT / "reports/runtime/voice_repair_retry_state.json"
 LEASE_STALE_SECONDS = 1800
+RETRY_INITIAL_SECONDS = 300
+RETRY_MAX_SECONDS = 3600
 
 
 def _now() -> str:
@@ -51,6 +55,54 @@ def _append(path: Path, value: Dict[str, Any]) -> None:
         fh.write(json.dumps(value, sort_keys=True) + "\n")
 
 
+def _pool_fingerprint(rows: list[Dict[str, Any]]) -> str:
+    """Hash only scheduling-relevant worker facts, never credentials/output."""
+    stable = [{key: row.get(key) for key in (
+        "worker", "installed", "adapter_exists", "state", "certified", "capacity",
+        "authenticated", "repo_edit", "tests", "isolated_worktree")}
+              for row in rows]
+    return hashlib.sha256(json.dumps(stable, sort_keys=True).encode("utf-8")).hexdigest()[:16]
+
+
+def record_worker_pool_state(rows: list[Dict[str, Any]]) -> Dict[str, Any]:
+    """Persist generation/backoff state without probing providers repeatedly."""
+    now = _now()
+    current = _read(RETRY_STATE_PATH)
+    fingerprint = _pool_fingerprint(rows)
+    changed = fingerprint != current.get("pool_fingerprint")
+    generation = int(current.get("worker_pool_generation") or 0) + (1 if changed else 0)
+    backoff = RETRY_INITIAL_SECONDS if changed else min(
+        RETRY_MAX_SECONDS, int(current.get("retry_backoff") or RETRY_INITIAL_SECONDS) * 2)
+    last_change = now if changed else (current.get("last_pool_change") or now)
+    # A pool change is an event-driven wakeup; unchanged pools use bounded backoff.
+    next_retry = now if changed else current.get("next_retry_at")
+    if not next_retry:
+        from datetime import timedelta
+        next_retry = (datetime.now(timezone.utc) + timedelta(seconds=backoff)).isoformat()
+    state = {"worker_pool_generation": generation, "pool_fingerprint": fingerprint,
+             "last_pool_change": last_change, "last_meaningful_probe": now,
+             "next_retry_at": next_retry, "retry_backoff": backoff,
+             "reason": "NO_CERTIFIED_AI_ENGINEERING_WORKER" if not any(_eligible(row) for row in rows) else "CERTIFIED_WORKER_AVAILABLE"}
+    _write(RETRY_STATE_PATH, state)
+    return state
+
+
+def retry_state_due(state: Dict[str, Any]) -> bool:
+    try:
+        return datetime.now(timezone.utc) >= datetime.fromisoformat(str(state.get("next_retry_at")))
+    except (TypeError, ValueError):
+        return True
+
+
+def schedule_next_retry(reason: str = "NO_CERTIFIED_AI_ENGINEERING_WORKER") -> Dict[str, Any]:
+    state = _read(RETRY_STATE_PATH)
+    from datetime import timedelta
+    backoff = min(RETRY_MAX_SECONDS, int(state.get("retry_backoff") or RETRY_INITIAL_SECONDS) * 2)
+    state.update({"retry_backoff": backoff, "next_retry_at": (datetime.now(timezone.utc) + timedelta(seconds=backoff)).isoformat(), "reason": reason})
+    _write(RETRY_STATE_PATH, state)
+    return state
+
+
 def worker_matrix(task: BuildTaskSpec) -> list[Dict[str, Any]]:
     # Discovery is intentionally separate from execution certification.  A
     # provider CLI may hang while its interactive session is busy; discovery
@@ -58,8 +110,9 @@ def worker_matrix(task: BuildTaskSpec) -> list[Dict[str, Any]]:
     # repair recovery loop indefinitely.
     import shutil
     rows = []
+    known_paths = {"mimo": Path.home() / ".mimocode/bin/mimo"}
     for worker_id, binary, adapter in (("codex", "codex", True), ("opencode", "opencode", True), ("kilo", "kilo", False), ("mimo", "mimo", False)):
-        path = shutil.which(binary)
+        path = shutil.which(binary) or (str(known_paths[worker_id]) if worker_id in known_paths and known_paths[worker_id].exists() else None)
         if not path:
             state, reason = "NOT_INSTALLED", "binary missing"
         else:
@@ -74,12 +127,13 @@ def worker_matrix(task: BuildTaskSpec) -> list[Dict[str, Any]]:
                  "authenticated": "NOT_APPLICABLE", "certified": True, "capacity": "AVAILABLE", "available": True,
                  "reason": "deterministic local builder; not eligible for AI Voice repair", "binary_path_present": True,
                  "capabilities": ["deterministic", "repo_edit", "tests", "worktrees"]})
-    _write(POOL_PATH, {"checked_at": _now(), "required": ["repo_edit", "tests", "isolated_worktree"], "workers": rows})
+    pool = record_worker_pool_state(rows)
+    _write(POOL_PATH, {"checked_at": _now(), "required": ["repo_edit", "tests", "isolated_worktree"], "workers": rows, **pool})
     return rows
 
 
 def _eligible(row: Dict[str, Any]) -> bool:
-    return row.get("state") == "AVAILABLE" and row.get("adapter_exists") and row.get("repo_edit") and row.get("tests") and row.get("isolated_worktree")
+    return row.get("worker") != "local" and row.get("state") == "AVAILABLE" and row.get("adapter_exists") and row.get("repo_edit") and row.get("tests") and row.get("isolated_worktree")
 
 
 def acquire_lease(*, repair_id: str, work_order_id: str, run_id: str, worker: str, engineering_run_id: str) -> Dict[str, Any]:
@@ -117,7 +171,10 @@ def run_voice_task(*, task: BuildTaskSpec, repair_id: str, work_order_id: str, r
     if selected is None:
         selected = next((row for row in rows if row["worker"] == "opencode" and _eligible(row)), None)
     if selected is None:
-        return {"_execution_status": "WAITING_WORKER", "state": "WAITING_WORKER", "failure": "NO_CERTIFIED_WORKER_AVAILABLE", "worker_matrix": rows}
+        selected = next((row for row in rows if row["worker"] == "mimo" and _eligible(row)), None)
+    if selected is None:
+        return {"_execution_status": "WAITING_WORKER", "state": "WAITING_WORKER", "failure": "NO_CERTIFIED_WORKER_AVAILABLE", "worker_matrix": rows,
+                "retry_state": schedule_next_retry()}
 
     worker = selected["worker"]
     lease = acquire_lease(repair_id=repair_id, work_order_id=work_order_id, run_id=run_id, worker=worker, engineering_run_id=engineering_run_id)

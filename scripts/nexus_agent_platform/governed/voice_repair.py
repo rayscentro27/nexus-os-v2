@@ -168,6 +168,17 @@ def resume_waiting_worker(run_id: str = "MANUAL-E2E-20260827-2992") -> Dict[str,
         return {"status": "waiting_worker", "reason": "repair_work_order_not_found", "repair_id": REPAIR_ID}
     if state.get("state") not in {"WAITING_WORKER", "WORKER_SELECTION", "QUEUED", "RECOVERING", "RETRY_BACKOFF"}:
         return {"status": "not_eligible", "state": state.get("state"), "work_order_id": order.get("work_order_id")}
+    # The recovery launchd job is intentionally more frequent than the worker
+    # retry budget.  Refresh cheap static discovery, but do not launch another
+    # child or repeat an expensive worker execution probe until the pool changes
+    # or the persisted bounded backoff expires.
+    from nexus_agent_platform.governed.engineering_broker import worker_matrix, retry_state_due
+    pool = worker_matrix(None)
+    retry = _load(ROOT / "reports/runtime/voice_repair_retry_state.json", {}) or {}
+    if not retry_state_due(retry):
+        return {"status": "not_due", "state": "WAITING_WORKER", "work_order_id": order.get("work_order_id"),
+                "worker_pool_generation": retry.get("worker_pool_generation"), "next_retry_at": retry.get("next_retry_at"),
+                "worker_matrix": pool, "automatic_resume": True}
     return {**_launch_existing_order(order, run_id), "repair_id": REPAIR_ID, "run_id": run_id, "automatic_resume": True}
 
 
@@ -202,7 +213,8 @@ def execute_voice_repair(run_id: str) -> Dict[str, Any]:
     _state(run_id, state="WORKER_SELECTION", work_order_id=order["work_order_id"], executor="engineering_broker", engineering_run_id=engineering_run_id)
     result = run_voice_task(task=task, repair_id=REPAIR_ID, work_order_id=order["work_order_id"], run_id=run_id, engineering_run_id=engineering_run_id, previous_worker=previous if previous in {"codex", "opencode"} else None)
     if result.get("_execution_status") == "WAITING_WORKER":
-        _state(run_id, state="WAITING_WORKER", failure=result.get("failure"), work_order_id=order["work_order_id"], worker_matrix=result.get("worker_matrix", []), runtime_pickup_state="NOT_OBSERVED")
+        retry = result.get("retry_state") or {}
+        _state(run_id, state="WAITING_WORKER", failure="NO_CERTIFIED_AI_ENGINEERING_WORKER", work_order_id=order["work_order_id"], worker_matrix=result.get("worker_matrix", []), runtime_pickup_state="NOT_OBSERVED", automatic_resume=True, retry_class="APPROVED_WORK_WAITING_CAPACITY", worker_pool_generation=retry.get("worker_pool_generation"), last_pool_check=retry.get("last_meaningful_probe"), next_retry_at=retry.get("next_retry_at"), retry_backoff=retry.get("retry_backoff"), last_stop_reason="NO_CERTIFIED_AI_ENGINEERING_WORKER", last_stop_category="WORKER_CAPACITY")
         return result
     worker = result.get("worker", "unknown")
     _state(run_id, state="ENGINEERING", work_order_id=order["work_order_id"], executor=worker, engineering_run_id=engineering_run_id, runtime_pickup_state="OBSERVED", pickup_observed_at=persistence._now())

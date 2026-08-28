@@ -1,0 +1,37 @@
+{
+  "ai_engineering_worker_state": "NO_CERTIFIED_AI_WORKER",
+  "checked_scope": "MIMO_ONLY_AFTER_OPENCODE_AND_KILO_PRIOR_EVIDENCE",
+  "mimo": {
+    "binary": "/Users/raymonddavis/.mimocode/bin/mimo",
+    "package_metadata": "@mimo-ai/plugin 0.1.5",
+    "headless_command": "mimo run <message>",
+    "authenticated": "YES_BY_EXISTING_LOCAL_SESSION",
+    "login_attempted": false,
+    "headless_execution": "EXECUTION_TIMEOUT",
+    "explicit_auth_error": false,
+    "certified": false,
+    "capacity": "EXECUTION_TIMEOUT",
+    "nexus_eligible": false,
+    "blocker": "bounded run produced no usable output or exit within 20 seconds"
+  },
+  "prior_workers": {
+    "opencode": "AUTHENTICATED_BUT_AUTOMATION_UNPROVEN",
+    "kilo": "AUTHENTICATED_BUT_AUTOMATION_UNPROVEN",
+    "codex": "CAPACITY_SEPARATE_AND_NOT_AVAILABLE_FOR_THIS_SLICE"
+  },
+  "voice_001": {
+    "repair_id": "VOICE-001",
+    "run_id": "MANUAL-E2E-20260827-2992",
+    "work_order_id": "wo_b5a3b90892804ec79164159997caf264",
+    "state": "WAITING_WORKER",
+    "automatic_resume": true,
+    "reason": "NO_CERTIFIED_AI_ENGINEERING_WORKER",
+    "deployment": "NOT_PERFORMED"
+  },
+  "safety": {
+    "active_operator_paused": true,
+    "new_work_order_created": false,
+    "production_deployment_performed": false,
+    "credentials_changed": false
+  }
+}
