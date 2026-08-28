@@ -14,7 +14,7 @@ def _seed(tmp_path, monkeypatch, state="ACTIVE"):
         "current_loop_blocker": "NONE", "current_loop_evidence": {},
         "current_loop_stages": {}, "completed_loops": [], "certified_loops": [],
         "human_waiting_loops": [], "loop_order": ["telegram_operator", "hermes_router"],
-        "inventory": [{"loop_id": "telegram_operator", "loop_name": "Telegram Operator"}],
+        "inventory": [{"loop_id": "telegram_operator", "loop_name": "Telegram Operator"}, {"loop_id": "hermes_router", "loop_name": "Hermes Router"}],
         "outstanding_repairs": [{"repair_id": "VOICE-001", "state": "WAITING_WORKER"}],
     }
     campaign._write(campaign.CAMPAIGN_PATH, value)
@@ -51,13 +51,37 @@ def test_natural_campaign_context_and_next_loop_gate(tmp_path, monkeypatch):
         assert "not complete" in denied
 
 
-def test_real_delivery_certifies_telegram_loop_and_registry(tmp_path, monkeypatch):
+def test_campaign_status_is_read_only_for_hermes_router(tmp_path, monkeypatch):
     campaign_id = _seed(tmp_path, monkeypatch)
-    result = campaign.record_delivery(campaign_id=campaign_id, update_id=123, outgoing_message_id=456, delivered=True)
-    assert result["last_delivery_newly_certified"] is True
+    value = campaign.load_campaign()
+    value["current_loop"] = "hermes_router"
+    campaign._write(campaign.CAMPAIGN_PATH, value)
+    response, metadata = hermes.handle_command(f"STATUS CAMPAIGN {campaign_id}")
+    assert metadata["campaign_control_action"] == "STATUS"
+    assert campaign.load_campaign()["certified_loops"] == []
+    assert "Hermes Router" not in response
+
+
+def test_real_router_event_satisfies_hermes_contract_and_registry(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    value = campaign.load_campaign()
+    value["current_loop"] = "hermes_router"
+    campaign._write(campaign.CAMPAIGN_PATH, value)
+    result = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="hermes_router", incoming_update_id=123, route="GOVERNED_REPAIR_CONTROL", outcome="ANSWERED", metadata={"control_object": {"object_type": "REPAIR", "object_id": "VOICE-001"}, "repair_id": "VOICE-001", "work_order_id": "wo_b5a3b90892804ec79164159997caf264", "state": "WAITING_WORKER", "read_only": True, "repair_executed": False}, response_text="VOICE-001\nState: WAITING_WORKER\nNo repair was executed by this status request.", outgoing_message_id=456, delivered=True)
+    assert result["newly_certified"] is True
     assert result["state"] == campaign.WAITING_NEXT
     registry = json.loads(campaign.CERT_REGISTRY_PATH.read_text())
     row = registry["loops"][0]
-    assert row["certification_state"] == "REAL_WORLD_CERTIFIED"
-    assert row["real_world_certified"] is True
-    assert json.loads(campaign.CAMPAIGN_PATH.read_text())["campaign_messages"][0]["outgoing_message_id"] == 456
+    assert row["certification_state"] == "NOT_TESTED"
+    router = registry["loops"][1]
+    assert router["certification_state"] == "REAL_WORLD_CERTIFIED"
+    assert router["incoming_update_id"] == 123
+    assert router["outgoing_message_id"] == 456
+
+
+def test_campaign_status_delivery_does_not_certify_hermes_router(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    value = campaign.load_campaign(); value["current_loop"] = "hermes_router"; campaign._write(campaign.CAMPAIGN_PATH, value)
+    result = campaign.record_delivery(campaign_id=campaign_id, update_id=123, outgoing_message_id=456, delivered=True)
+    assert result["newly_certified"] is False
+    assert campaign.load_campaign()["certified_loops"] == []

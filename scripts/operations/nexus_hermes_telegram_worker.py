@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
-from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, completion_text, handle_control as handle_loop_certification_control, record_campaign_message, record_delivery  # noqa: E402
+from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, completion_text, handle_control as handle_loop_certification_control, load_campaign, notification_already_sent, observe_runtime_event, record_campaign_message, record_notification  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
 OFFSET_PATH = ROOT / "data/runtime/telegram_last_update_id.json"
@@ -493,7 +493,7 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
         if re.search(r"\b(?:continue|resume|start|repair|status|state|why|who|working|happening|doing)\b", lowered):
             return (f"{repair_id}\nState: {state.get('state', 'UNKNOWN')}\nWork order: {control_object.get('work_order_id') or state.get('work_order_id', 'UNKNOWN')}\n"
                     f"Worker: {state.get('executor', 'NONE')}\nCurrent step: {state.get('failure') or state.get('runtime_pickup_state') or 'NONE'}\n"
-                    "No repair was executed by this status request.", {"route": "GOVERNED_REPAIR_CONTROL", "outcome": "ANSWERED", "repair_id": repair_id, "work_order_id": control_object.get("work_order_id"), "state": state.get("state")})
+                    "No repair was executed by this status request.", {"route": "GOVERNED_REPAIR_CONTROL", "outcome": "ANSWERED", "repair_id": repair_id, "work_order_id": control_object.get("work_order_id"), "state": state.get("state"), "worker": state.get("executor"), "current_step": state.get("failure") or state.get("runtime_pickup_state"), "control_object": control_object, "read_only": True, "repair_executed": False})
     manual_command = _manual_certification_command(text)
     if manual_command and manual_command["command"] == "CONTINUE_REPAIR":
         report = load_json(MANUAL_CERT_REPORT_PATH, {})
@@ -728,13 +728,17 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                 delivery = send_message(token, chat_id, response_text)
                 delivered = bool(delivery.get("ok"))
                 outgoing_message_id = (delivery.get("result") or {}).get("message_id") if delivered else None
-        if metadata.get("campaign_control_action") == "STATUS" and metadata.get("campaign_id") and not dry_run:
-            certification = record_delivery(campaign_id=metadata["campaign_id"], update_id=uid, outgoing_message_id=outgoing_message_id, delivered=delivered)
-            if certification.get("last_delivery_newly_certified") and delivered:
-                completion = completion_text(metadata["campaign_id"])
+        if not dry_run:
+            active_campaign = load_campaign()
+            certification = observe_runtime_event(campaign_id=active_campaign.get("campaign_id", ""), current_loop=active_campaign.get("current_loop"), incoming_update_id=uid, route=metadata.get("route", "UNKNOWN"), outcome=metadata.get("outcome"), metadata=metadata, response_text=response_text, outgoing_message_id=outgoing_message_id, delivered=delivered)
+            campaign_id = certification.get("campaign_id") or active_campaign.get("campaign_id")
+            state_key = f"{certification.get('current_loop')}:{certification.get('certified_at')}"
+            if certification.get("newly_certified") and delivered and campaign_id and not notification_already_sent(campaign_id=campaign_id, notification_type="LOOP_CERTIFICATION_COMPLETE", requested_action="WAIT_NEXT_LOOP_APPROVAL", state_key=state_key):
+                completion = completion_text(certification)
                 completion_delivery = send_message(token, chat_id, completion)
                 completion_id = (completion_delivery.get("result") or {}).get("message_id") if completion_delivery.get("ok") else None
-                record_campaign_message(campaign_id=metadata["campaign_id"], loop_id=certification.get("current_loop"), incoming_update_id=uid, outgoing_message_id=completion_id, correlation_id=f"{metadata['campaign_id']}:{uid}", action="CERTIFICATION_COMPLETE", delivered=bool(completion_delivery.get("ok")))
+                record_campaign_message(campaign_id=campaign_id, loop_id=certification.get("current_loop"), incoming_update_id=uid, outgoing_message_id=completion_id, correlation_id=f"{campaign_id}:{uid}", action="CERTIFICATION_COMPLETE", delivered=bool(completion_delivery.get("ok")))
+                record_notification(campaign_id=campaign_id, notification_type="LOOP_CERTIFICATION_COMPLETE", requested_action="WAIT_NEXT_LOOP_APPROVAL", state_key=state_key, delivered=bool(completion_delivery.get("ok")))
         receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         write_json(RECEIPT_DIR / f"{receipt['receipt_id']}.json", receipt)

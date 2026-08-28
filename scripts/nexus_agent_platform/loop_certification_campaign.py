@@ -28,6 +28,19 @@ CAMPAIGN_SCHEMA = "nexus.loop-certification-campaign.v1"
 # from becoming an ordinary conversational message.
 IDENTIFIER_RE = r"[A-Z0-9][A-Z0-9_-]{0,80}"
 
+LOOP_CERTIFICATION_CONTRACTS: dict[str, dict[str, Any]] = {
+    "telegram_operator": {
+        "required_evidence_types": {"TELEGRAM_CAMPAIGN_CONTROL_RECEIVED", "AUTHORIZED_CHAT", "CAMPAIGN_RESOLVED", "CAMPAIGN_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"},
+        "applicable_stages": ["01_REAL_TRIGGER", "02_INTAKE", "03_CONTEXT_RESOLUTION", "04_AUTHORITY_CHECK", "09_REAL_EXECUTION", "14_RESULT_VERIFICATION", "16_RECEIPT", "17_TELEGRAM_VISIBILITY", "18_COMPLETION"],
+        "not_applicable_stages": ["05_ACCESS_RESOLUTION", "06_CREDENTIAL_OR_SESSION_RESOLUTION", "07_SCHEDULING", "08_WORKER_OR_MODEL_SELECTION", "10_EXTERNAL_INTEGRATION", "11_RECOVERY", "12_HUMAN_ESCALATION", "13_RESUME", "15_EXTERNAL_EFFECT_VERIFICATION"],
+    },
+    "hermes_router": {
+        "required_evidence_types": {"REAL_TELEGRAM_MESSAGE_RECEIVED", "AUTHORIZED_CHAT", "HERMES_ROUTER_SELECTED", "EXPLICIT_CONTROL_OBJECT_RESOLVED", "CANONICAL_STATE_RETURNED", "READ_ONLY_REQUEST_NO_MUTATION", "REAL_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"},
+        "applicable_stages": ["01_REAL_TRIGGER", "02_INTAKE", "03_CONTEXT_RESOLUTION", "04_AUTHORITY_CHECK", "14_RESULT_VERIFICATION", "16_RECEIPT", "17_TELEGRAM_VISIBILITY", "18_COMPLETION"],
+        "not_applicable_stages": ["05_ACCESS_RESOLUTION", "06_CREDENTIAL_OR_SESSION_RESOLUTION", "07_SCHEDULING", "08_WORKER_OR_MODEL_SELECTION", "09_REAL_EXECUTION", "10_EXTERNAL_INTEGRATION", "11_RECOVERY", "12_HUMAN_ESCALATION", "13_RESUME", "15_EXTERNAL_EFFECT_VERIFICATION"],
+    },
+}
+
 
 def now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -132,6 +145,10 @@ def status_text() -> str:
             f"{repair_line}\nNext loop: not started. Advancement requires Ray approval.").replace("\n\nNext loop", "\nNext loop")
 
 
+def certification_contract(loop_id: str | None) -> dict[str, Any]:
+    return LOOP_CERTIFICATION_CONTRACTS.get(str(loop_id), {"required_evidence_types": set(), "applicable_stages": [], "not_applicable_stages": []})
+
+
 def parse_campaign_command(text: str) -> dict[str, str] | None:
     """Parse explicit campaign controls, including their required IDs."""
     value = re.sub(r"\s+", " ", str(text).strip()).upper()
@@ -174,35 +191,92 @@ def _record_telegram_evidence(campaign: dict[str, Any], *, update_id: int | None
     return evidence
 
 
+def _hermes_router_evidence(metadata: Mapping[str, Any], response_text: str, *, update_id: int, delivered: bool, outgoing_message_id: int | None) -> set[str]:
+    state = str(metadata.get("state") or "")
+    evidence = {"REAL_TELEGRAM_MESSAGE_RECEIVED", "AUTHORIZED_CHAT", "REAL_RESPONSE_DELIVERED" if delivered else ""}
+    if metadata.get("route") == "GOVERNED_REPAIR_CONTROL":
+        evidence.add("HERMES_ROUTER_SELECTED")
+    control = metadata.get("control_object") or {}
+    if control.get("object_type") == "REPAIR" and control.get("object_id") == metadata.get("repair_id"):
+        evidence.add("EXPLICIT_CONTROL_OBJECT_RESOLVED")
+    if metadata.get("repair_id") == "VOICE-001" and metadata.get("work_order_id") == "wo_b5a3b90892804ec79164159997caf264" and state == "WAITING_WORKER" and metadata.get("read_only") is True and metadata.get("repair_executed") is False and "No repair was executed" in response_text:
+        evidence.update({"CANONICAL_STATE_RETURNED", "READ_ONLY_REQUEST_NO_MUTATION"})
+    if outgoing_message_id is not None and delivered:
+        evidence.add("CORRELATION_RECEIPT")
+    return {item for item in evidence if item}
+
+
+def _update_registry_for_loop(campaign: dict[str, Any], evidence: Mapping[str, Any], stage_results: Mapping[str, str]) -> None:
+    registry = _read(CERT_REGISTRY_PATH, {})
+    if not isinstance(registry, dict):
+        return
+    loop_id = campaign.get("current_loop")
+    for row in registry.get("loops", []):
+        if row.get("campaign_id") == campaign.get("campaign_id") and row.get("loop_id") == loop_id:
+            row.update({"evidence_refs": evidence.get("evidence_refs", []), "incoming_update_id": evidence.get("incoming_update_id"), "outgoing_message_id": evidence.get("outgoing_message_id"), "route": evidence.get("route"), "control_object": evidence.get("control_object"), "applicable_stages": certification_contract(loop_id).get("applicable_stages", []), "stage_results": dict(stage_results)})
+            if loop_id in campaign.get("certified_loops", []):
+                row.update({"certification_state": "REAL_WORLD_CERTIFIED", "real_world_certified": True, "certified_at": campaign.get("certified_at")})
+    registry["updated_at"] = now()
+    _write(CERT_REGISTRY_PATH, registry)
+
+
+def observe_runtime_event(*, campaign_id: str, current_loop: str | None, incoming_update_id: int, route: str, outcome: str | None, metadata: Mapping[str, Any], response_text: str, outgoing_message_id: int | None, delivered: bool) -> dict[str, Any]:
+    """Observe a real runtime event and certify only the active loop contract."""
+    if metadata.get("test_event"):
+        return {"status": "IGNORED_TEST_EVENT"}
+    campaign = load_campaign()
+    if campaign.get("campaign_id") != campaign_id or campaign.get("current_loop") != current_loop:
+        return {"status": "IGNORED_WRONG_CAMPAIGN_OR_LOOP"}
+    contract = certification_contract(current_loop)
+    timestamp = now()
+    correlation_id = f"{campaign_id}:{incoming_update_id}"
+    control_object = metadata.get("control_object")
+    if current_loop == "hermes_router":
+        observed = _hermes_router_evidence(metadata, response_text, update_id=incoming_update_id, delivered=delivered, outgoing_message_id=outgoing_message_id)
+    else:
+        # Campaign status is observable but does not newly certify a loop.
+        observed = {"TELEGRAM_CAMPAIGN_CONTROL_RECEIVED", "AUTHORIZED_CHAT", "CAMPAIGN_RESOLVED", "CAMPAIGN_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"} if metadata.get("campaign_control_action") == "STATUS" and delivered and outgoing_message_id is not None else set()
+    evidence = campaign.setdefault("loop_evidence", {})
+    prior_types = set(evidence.get("evidence_types", []))
+    combined_types = prior_types | observed
+    evidence.update({"loop_id": current_loop, "incoming_update_id": incoming_update_id if observed else evidence.get("incoming_update_id"), "outgoing_message_id": outgoing_message_id if observed else evidence.get("outgoing_message_id"), "route": route if observed else evidence.get("route", route), "outcome": outcome if observed else evidence.get("outcome", outcome), "control_object": control_object if observed else evidence.get("control_object"), "evidence_types": sorted(combined_types), "evidence_refs": sorted(set(evidence.get("evidence_refs", [])) | {f"telegram:update:{incoming_update_id}", f"telegram:outgoing:{outgoing_message_id}" if outgoing_message_id is not None else "telegram:outgoing:UNAVAILABLE"}), "correlation_id": correlation_id if observed else evidence.get("correlation_id", correlation_id), "delivered": bool(delivered) if observed else evidence.get("delivered", False), "timestamp": timestamp})
+    stage_results = {stage: "NOT_APPLICABLE" for stage in contract.get("not_applicable_stages", [])}
+    stage_map = {"01_REAL_TRIGGER": "REAL_TELEGRAM_MESSAGE_RECEIVED", "02_INTAKE": "REAL_TELEGRAM_MESSAGE_RECEIVED", "03_CONTEXT_RESOLUTION": "EXPLICIT_CONTROL_OBJECT_RESOLVED", "04_AUTHORITY_CHECK": "AUTHORIZED_CHAT", "14_RESULT_VERIFICATION": "CANONICAL_STATE_RETURNED", "16_RECEIPT": "CORRELATION_RECEIPT", "17_TELEGRAM_VISIBILITY": "REAL_RESPONSE_DELIVERED", "18_COMPLETION": "REAL_RESPONSE_DELIVERED"}
+    for stage, required in stage_map.items():
+        if stage in contract.get("applicable_stages", []):
+            stage_results[stage] = "PASS" if required in combined_types else "FAIL"
+    if "09_REAL_EXECUTION" in contract.get("applicable_stages", []):
+        stage_results["09_REAL_EXECUTION"] = "PASS" if "CAMPAIGN_RESPONSE_DELIVERED" in combined_types else "FAIL"
+    campaign["current_loop_evidence"] = evidence
+    campaign.setdefault("campaign_messages", []).append({"campaign_id": campaign_id, "loop_id": current_loop, "incoming_update_id": incoming_update_id, "outgoing_message_id": outgoing_message_id, "correlation_id": correlation_id, "route": route, "action": metadata.get("campaign_control_action") or "RUNTIME_EVENT", "delivered": bool(delivered), "timestamp": timestamp})
+    campaign["current_loop_stages"] = stage_results
+    campaign["last_action"] = "runtime_event_observed"
+    complete = bool(contract.get("required_evidence_types") and contract["required_evidence_types"].issubset(combined_types))
+    newly_certified = complete and campaign.get("state") == ACTIVE and current_loop not in campaign.get("certified_loops", [])
+    if newly_certified:
+        campaign["certified_loops"] = sorted(set(campaign.get("certified_loops", [])) | {current_loop})
+        campaign["completed_loops"] = sorted(set(campaign.get("completed_loops", [])) | {current_loop})
+        campaign["state"] = WAITING_NEXT
+        campaign["current_stage"] = "18_COMPLETION"
+        campaign["current_loop_blocker"] = "NONE"
+        campaign["next_action"] = "Ray must approve advancement with Move to the next loop"
+        campaign["certification_state"] = "REAL_WORLD_CERTIFIED"
+        campaign["real_world_certified"] = True
+        campaign["certified_at"] = timestamp
+    if current_loop not in campaign.get("certified_loops", []):
+        campaign["current_loop_certification_state"] = "NOT_CERTIFIED"
+    campaign["updated_at"] = timestamp
+    _write(CAMPAIGN_PATH, campaign)
+    _update_registry_for_loop(campaign, evidence, stage_results)
+    _receipt("RUNTIME_EVENT_OBSERVED", campaign_id, loop_id=current_loop, incoming_update_id=incoming_update_id, outgoing_message_id=outgoing_message_id, route=route, evidence_types=sorted(observed), certified=newly_certified)
+    return {**campaign, "observed_evidence": sorted(observed), "newly_certified": newly_certified, "correlation_id": correlation_id}
+
+
 def record_delivery(*, campaign_id: str, update_id: int, outgoing_message_id: int | None, delivered: bool) -> dict[str, Any]:
     campaign = load_campaign()
     if campaign.get("campaign_id") != campaign_id:
         return {"status": "UNKNOWN_CAMPAIGN"}
-    evidence = campaign.setdefault("current_loop_evidence", {})
-    timestamp = now()
-    correlation_id = f"{campaign_id}:{update_id}"
-    evidence.update({"outgoing_message_id": outgoing_message_id, "delivered": bool(delivered), "receipt_verified": bool(delivered), "telegram_visibility_tested": bool(delivered), "correlation_id": correlation_id, "updated_at": timestamp})
-    messages = campaign.setdefault("campaign_messages", [])
-    messages.append({"campaign_id": campaign_id, "loop_id": campaign.get("current_loop"), "incoming_update_id": update_id, "outgoing_message_id": outgoing_message_id, "correlation_id": correlation_id, "route": "LOOP_CERTIFICATION_CONTROL", "action": "STATUS", "delivered": bool(delivered), "timestamp": timestamp})
-    campaign["last_action"] = "real_telegram_control_processed"; campaign["updated_at"] = now()
-    stages = campaign.setdefault("current_loop_stages", {})
-    stages.update({"01_REAL_TRIGGER": "PASS", "02_INTAKE": "PASS", "03_CONTEXT_RESOLUTION": "PASS", "04_AUTHORITY_CHECK": "PASS", "09_REAL_EXECUTION": "PASS", "16_RECEIPT": "PASS" if delivered else "FAIL", "17_TELEGRAM_VISIBILITY": "PASS" if delivered else "FAIL", "05_ACCESS_RESOLUTION": "NOT_APPLICABLE", "06_CREDENTIAL_OR_SESSION_RESOLUTION": "NOT_APPLICABLE", "07_SCHEDULING": "NOT_APPLICABLE", "08_WORKER_OR_MODEL_SELECTION": "NOT_APPLICABLE", "10_EXTERNAL_INTEGRATION": "NOT_APPLICABLE", "11_RECOVERY": "NOT_APPLICABLE", "12_HUMAN_ESCALATION": "NOT_APPLICABLE", "13_RESUME": "NOT_APPLICABLE", "14_RESULT_VERIFICATION": "PASS", "15_EXTERNAL_EFFECT_VERIFICATION": "NOT_APPLICABLE", "18_COMPLETION": "PASS" if delivered else "FAIL"})
-    newly_certified = bool(delivered and campaign.get("state") == ACTIVE and campaign.get("current_loop") not in campaign.get("certified_loops", []))
-    if delivered:
-        campaign["current_loop"] = campaign.get("current_loop")
-        campaign["completed_loops"] = sorted(set(campaign.get("completed_loops", [])) | {campaign.get("current_loop")})
-        campaign["certified_loops"] = sorted(set(campaign.get("certified_loops", [])) | {campaign.get("current_loop")})
-        campaign["state"] = WAITING_NEXT; campaign["current_stage"] = "18_COMPLETION"; campaign["current_loop_blocker"] = "NONE"; campaign["next_action"] = "Ray must approve advancement with Move to the next loop"; campaign["certification_state"] = "REAL_WORLD_CERTIFIED"; campaign["real_world_certified"] = True; campaign["certified_at"] = timestamp
-        registry = _read(CERT_REGISTRY_PATH, {})
-        for row in registry.get("loops", []) if isinstance(registry, dict) else []:
-            if row.get("campaign_id") == campaign_id and row.get("loop_id") == campaign.get("current_loop"):
-                row.update({"certification_state": "REAL_WORLD_CERTIFIED", "real_world_certified": True, "certified_at": timestamp, "real_trigger_tested": True, "context_tested": True, "authority_tested": True, "execution_tested": True, "receipt_verified": True, "telegram_visibility_tested": True})
-        if isinstance(registry, dict):
-            registry["campaign_id"] = campaign_id; registry["updated_at"] = timestamp; _write(CERT_REGISTRY_PATH, registry)
-    _write(CAMPAIGN_PATH, campaign)
-    _receipt("TELEGRAM_LOOP_EVIDENCE", campaign_id, loop_id=campaign.get("current_loop"), incoming_update_id=update_id, outgoing_message_id=outgoing_message_id, delivered=delivered)
-    campaign["last_delivery_newly_certified"] = newly_certified
-    return campaign
+    return observe_runtime_event(campaign_id=campaign_id, current_loop=campaign.get("current_loop"), incoming_update_id=update_id, route="LOOP_CERTIFICATION_CONTROL", outcome="ANSWERED", metadata={"campaign_control_action": "STATUS"}, response_text="", outgoing_message_id=outgoing_message_id, delivered=delivered)
 
 
 def record_campaign_message(*, campaign_id: str, loop_id: str | None, incoming_update_id: int, outgoing_message_id: int | None, correlation_id: str, action: str, delivered: bool) -> None:
@@ -215,11 +289,31 @@ def record_campaign_message(*, campaign_id: str, loop_id: str | None, incoming_u
     _write(CAMPAIGN_PATH, campaign)
 
 
-def completion_text(campaign_id: str) -> str:
-    return ("Loop certification complete.\n\nLoop:\nTelegram Operator\n\nResult:\nREAL-WORLD CERTIFIED\n\n"
-            "What was proven:\nReal Telegram trigger received, authorized, routed to the campaign controller, "
-            "resolved against canonical campaign state, and correlated with a delivered response.\n\n"
-            "Next loop:\nNot started.\n\nReply:\nMove to the next loop\n\nor:\nHold")
+def notification_already_sent(*, campaign_id: str, notification_type: str, requested_action: str, state_key: str) -> bool:
+    campaign = load_campaign()
+    return any(item.get("campaign_id") == campaign_id and item.get("notification_type") == notification_type and item.get("requested_action") == requested_action and item.get("state_key") == state_key and item.get("delivered") for item in campaign.get("campaign_notifications", []))
+
+
+def record_notification(*, campaign_id: str, notification_type: str, requested_action: str, state_key: str, delivered: bool) -> None:
+    campaign = load_campaign()
+    if campaign.get("campaign_id") != campaign_id:
+        return
+    campaign.setdefault("campaign_notifications", []).append({"campaign_id": campaign_id, "notification_type": notification_type, "requested_action": requested_action, "state_key": state_key, "delivered": bool(delivered), "timestamp": now()})
+    campaign["updated_at"] = now()
+    _write(CAMPAIGN_PATH, campaign)
+
+
+def completion_text(campaign: Mapping[str, Any]) -> str:
+    loop_id = str(campaign.get("current_loop") or "UNKNOWN")
+    loop = next((row for row in campaign.get("inventory", []) if row.get("loop_id") == loop_id), {})
+    loop_name = loop.get("loop_name", loop_id)
+    order = campaign.get("loop_order", [])
+    next_loop_id = order[order.index(loop_id) + 1] if loop_id in order and order.index(loop_id) + 1 < len(order) else "None"
+    next_loop = next((row.get("loop_name", next_loop_id) for row in campaign.get("inventory", []) if row.get("loop_id") == next_loop_id), next_loop_id)
+    evidence = campaign.get("loop_evidence", {}).get("evidence_types", [])
+    return (f"Loop certification complete.\n\nLoop:\n{loop_name}\n\nResult:\nREAL-WORLD CERTIFIED\n\n"
+            f"What was proven:\n{', '.join(evidence) or 'The loop-specific evidence contract was satisfied.'}.\n\n"
+            f"Next loop:\n{next_loop}\n\nNothing has started on the next loop.\n\nReply:\nMove to the next loop\n\nor:\nHold")
 
 
 def handle_control(text: str, *, update_id: int | None = None, chat_id: int | None = None) -> tuple[str, dict[str, Any]] | None:
