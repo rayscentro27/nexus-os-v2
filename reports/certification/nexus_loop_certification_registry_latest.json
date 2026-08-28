@@ -148,6 +148,17 @@
     },
     {
       "access_tested": false,
+      "applicable_stages": [
+        "01_REAL_TRIGGER",
+        "02_INTAKE",
+        "03_CONTEXT_RESOLUTION",
+        "04_AUTHORITY_CHECK",
+        "09_REAL_EXECUTION",
+        "14_RESULT_VERIFICATION",
+        "16_RECEIPT",
+        "17_TELEGRAM_VISIBILITY",
+        "18_COMPLETION"
+      ],
       "authority_tested": false,
       "campaign_id": "LOOP-CERT-20260828T114525Z",
       "certification_state": "NOT_TESTED",
@@ -172,6 +183,7 @@
       "owner": "Nexus",
       "purpose": "run system health check",
       "real_trigger_tested": false,
+      "real_world_certified": false,
       "receipt_verified": false,
       "recovery_capable": false,
       "recovery_tested": false,
@@ -741,5 +753,5 @@
     }
   ],
   "schema_version": "nexus.loop-certification-registry.v1",
-  "updated_at": "2026-08-28T13:53:31.460863+00:00"
+  "updated_at": "2026-08-28T14:06:34.472796+00:00"
 }

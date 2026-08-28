@@ -56,6 +56,17 @@
       "outgoing_message_id": 708,
       "route": "LOOP_CERTIFICATION_CONTROL",
       "timestamp": "2026-08-28T13:52:59.161375+00:00"
+    },
+    {
+      "action": "RUNTIME_EVENT",
+      "campaign_id": "LOOP-CERT-20260828T114525Z",
+      "correlation_id": "LOOP-CERT-20260828T114525Z:197233441",
+      "delivered": true,
+      "incoming_update_id": 197233441,
+      "loop_id": "system_health",
+      "outgoing_message_id": 710,
+      "route": "LOOP_CERTIFICATION_GATE",
+      "timestamp": "2026-08-28T13:57:51.991254+00:00"
     }
   ],
   "campaign_notifications": [
@@ -79,61 +90,11 @@
     "telegram_operator"
   ],
   "created_at": "2026-08-28T11:45:25.065782+00:00",
-  "current_loop": "hermes_router",
+  "current_loop": "system_health",
   "current_loop_blocker": "NONE",
   "current_loop_certification_state": "NOT_CERTIFIED",
-  "current_loop_evidence": {
-    "control_object": {
-      "handler": "GOVERNED_REPAIR_CONTROL",
-      "object_id": "VOICE-001",
-      "object_type": "REPAIR",
-      "repair_id": "VOICE-001",
-      "work_order_id": "wo_b5a3b90892804ec79164159997caf264"
-    },
-    "correlation_id": "LOOP-CERT-20260828T114525Z:197233440",
-    "delivered": true,
-    "evidence_refs": [
-      "telegram:outgoing:707",
-      "telegram:update:197233440"
-    ],
-    "evidence_types": [
-      "AUTHORIZED_CHAT",
-      "CANONICAL_STATE_RETURNED",
-      "CORRELATION_RECEIPT",
-      "EXPLICIT_CONTROL_OBJECT_RESOLVED",
-      "HERMES_ROUTER_SELECTED",
-      "READ_ONLY_REQUEST_NO_MUTATION",
-      "REAL_RESPONSE_DELIVERED",
-      "REAL_TELEGRAM_MESSAGE_RECEIVED"
-    ],
-    "incoming_update_id": 197233440,
-    "loop_id": "hermes_router",
-    "outcome": "ANSWERED",
-    "outgoing_message_id": 707,
-    "route": "GOVERNED_REPAIR_CONTROL",
-    "timestamp": "2026-08-28T13:52:57.907993+00:00"
-  },
-  "current_loop_stages": {
-    "01_REAL_TRIGGER": "PASS",
-    "02_INTAKE": "PASS",
-    "03_CONTEXT_RESOLUTION": "PASS",
-    "04_AUTHORITY_CHECK": "PASS",
-    "05_ACCESS_RESOLUTION": "NOT_APPLICABLE",
-    "06_CREDENTIAL_OR_SESSION_RESOLUTION": "NOT_APPLICABLE",
-    "07_SCHEDULING": "NOT_APPLICABLE",
-    "08_WORKER_OR_MODEL_SELECTION": "NOT_APPLICABLE",
-    "09_REAL_EXECUTION": "NOT_APPLICABLE",
-    "10_EXTERNAL_INTEGRATION": "NOT_APPLICABLE",
-    "11_RECOVERY": "NOT_APPLICABLE",
-    "12_HUMAN_ESCALATION": "NOT_APPLICABLE",
-    "13_RESUME": "NOT_APPLICABLE",
-    "14_RESULT_VERIFICATION": "PASS",
-    "15_EXTERNAL_EFFECT_VERIFICATION": "NOT_APPLICABLE",
-    "16_RECEIPT": "PASS",
-    "17_TELEGRAM_VISIBILITY": "PASS",
-    "18_COMPLETION": "PASS"
-  },
-  "current_stage": "18_COMPLETION",
+  "current_loop_stages": {},
+  "current_stage": "01_REAL_TRIGGER",
   "human_waiting_loops": [],
   "inventory": [
     {
@@ -516,37 +477,6 @@
     }
   ],
   "last_action": "runtime_event_observed",
-  "loop_evidence": {
-    "control_object": {
-      "handler": "GOVERNED_REPAIR_CONTROL",
-      "object_id": "VOICE-001",
-      "object_type": "REPAIR",
-      "repair_id": "VOICE-001",
-      "work_order_id": "wo_b5a3b90892804ec79164159997caf264"
-    },
-    "correlation_id": "LOOP-CERT-20260828T114525Z:197233440",
-    "delivered": true,
-    "evidence_refs": [
-      "telegram:outgoing:707",
-      "telegram:update:197233440"
-    ],
-    "evidence_types": [
-      "AUTHORIZED_CHAT",
-      "CANONICAL_STATE_RETURNED",
-      "CORRELATION_RECEIPT",
-      "EXPLICIT_CONTROL_OBJECT_RESOLVED",
-      "HERMES_ROUTER_SELECTED",
-      "READ_ONLY_REQUEST_NO_MUTATION",
-      "REAL_RESPONSE_DELIVERED",
-      "REAL_TELEGRAM_MESSAGE_RECEIVED"
-    ],
-    "incoming_update_id": 197233440,
-    "loop_id": "hermes_router",
-    "outcome": "ANSWERED",
-    "outgoing_message_id": 707,
-    "route": "GOVERNED_REPAIR_CONTROL",
-    "timestamp": "2026-08-28T13:52:57.907993+00:00"
-  },
   "loop_order": [
     "telegram_operator",
     "hermes_router",
@@ -568,7 +498,7 @@
     "stripe_test_paywall",
     "work_orders"
   ],
-  "next_action": "Ray must approve advancement with Move to the next loop",
+  "next_action": "perform the real trigger for the current loop",
   "next_retry": null,
   "notification": {
     "channel": "telegram",
@@ -594,6 +524,6 @@
   },
   "schema_version": "nexus.loop-certification-campaign.v1",
   "skipped_loops": [],
-  "state": "WAITING_NEXT_LOOP_APPROVAL",
-  "updated_at": "2026-08-28T13:52:59.418394+00:00"
+  "state": "ACTIVE_CERTIFICATION",
+  "updated_at": "2026-08-28T14:06:34.453335+00:00"
 }

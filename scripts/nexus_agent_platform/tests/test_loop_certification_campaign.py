@@ -2,6 +2,7 @@ import json
 
 from nexus_agent_platform import loop_certification_campaign as campaign
 from scripts.operations import nexus_hermes_telegram_worker as hermes
+from scripts.operations import nexus_active_operator_runner as active_runner
 
 
 def _seed(tmp_path, monkeypatch, state="ACTIVE"):
@@ -85,3 +86,56 @@ def test_campaign_status_delivery_does_not_certify_hermes_router(tmp_path, monke
     result = campaign.record_delivery(campaign_id=campaign_id, update_id=123, outgoing_message_id=456, delivered=True)
     assert result["newly_certified"] is False
     assert campaign.load_campaign()["certified_loops"] == []
+
+
+def test_system_health_contract_rejects_status_and_stale_artifacts(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    value = campaign.load_campaign(); value["current_loop"] = "system_health"; campaign._write(campaign.CAMPAIGN_PATH, value)
+    status = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="system_health", incoming_update_id=10, route="LOOP_CERTIFICATION_CONTROL", outcome="ANSWERED", metadata={"campaign_control_action": "STATUS"}, response_text="Campaign status", outgoing_message_id=11, delivered=True)
+    assert status["newly_certified"] is False
+    report = tmp_path / "health.json"; receipt = tmp_path / "receipt.json"
+    monkeypatch.setattr(campaign, "SYSTEM_HEALTH_REPORT_PATH", report)
+    report.write_text(json.dumps({"process_id": "system_health", "run_id": "old", "incoming_update_id": 1, "correlation_id": "old", "execution_status": "COMPLETED"}))
+    stale = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="system_health", incoming_update_id=12, route="SYSTEM_HEALTH_PROCESS", outcome="ANSWERED", metadata={"process_id": "system_health", "system_health_run_id": "old", "system_health_run_started": True, "canonical_report_written": True, "canonical_receipt_written": False, "canonical_receipt_path": str(receipt), "read_only": True, "external_side_effects": False}, response_text="health", outgoing_message_id=13, delivered=True)
+    assert stale["newly_certified"] is False
+    assert campaign.load_campaign()["certified_loops"] == ["telegram_operator"]
+
+
+def test_system_health_fresh_complete_artifacts_certify_only_active_loop(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    value = campaign.load_campaign(); value["current_loop"] = "system_health"; campaign._write(campaign.CAMPAIGN_PATH, value)
+    report = tmp_path / "health.json"; receipt = tmp_path / "receipt.json"
+    monkeypatch.setattr(campaign, "SYSTEM_HEALTH_REPORT_PATH", report)
+    run_id = "system_health_fresh"
+    correlation = f"{campaign_id}:20"
+    common = {"process_id": "system_health", "run_id": run_id, "incoming_update_id": 20, "correlation_id": correlation, "execution_status": "COMPLETED"}
+    report.write_text(json.dumps(common))
+    receipt.write_text(json.dumps({**common, "receipt_id": "receipt_fresh"}))
+    result = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="system_health", incoming_update_id=20, route="SYSTEM_HEALTH_PROCESS", outcome="ANSWERED", metadata={"process_id": "system_health", "system_health_run_id": run_id, "system_health_run_started": True, "canonical_report_written": True, "canonical_receipt_written": True, "canonical_receipt_path": str(receipt), "read_only": True, "external_side_effects": False}, response_text="System Health Check completed", outgoing_message_id=21, delivered=True)
+    assert result["newly_certified"] is True
+    assert result["certified_loops"] == ["system_health", "telegram_operator"]
+
+
+def test_system_health_test_event_cannot_mutate_campaign(tmp_path, monkeypatch):
+    campaign_id = _seed(tmp_path, monkeypatch)
+    before = campaign.CAMPAIGN_PATH.read_text()
+    result = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="telegram_operator", incoming_update_id=30, route="SYSTEM_HEALTH_PROCESS", outcome="ANSWERED", metadata={"test_event": True}, response_text="fixture", outgoing_message_id=31, delivered=True)
+    assert result["status"] == "IGNORED_TEST_EVENT"
+    assert campaign.CAMPAIGN_PATH.read_text() == before
+
+
+def test_system_health_runner_writes_run_linked_artifacts_without_scheduler(tmp_path, monkeypatch):
+    registry = [{"process_id": "system_health", "name": "System Health Check", "mode": "ACTIVE_INTERNAL", "enabled": True, "schedule_type": "manual", "trigger": "telegram /run system_health or manual", "runner_path": "scripts/operations/nexus_active_operator_runner.py", "report_path": "reports/runtime/nexus_system_health_latest.json", "receipt_path": "reports/runtime/nexus_active_operator_receipts/", "approval_required": False, "telegram_allowed": True, "risk_level": "low"}]
+    monkeypatch.setattr(active_runner, "REGISTRY_PATH", tmp_path / "registry.json")
+    monkeypatch.setattr(active_runner, "SYSTEM_HEALTH_REPORT_PATH", tmp_path / "health.json")
+    monkeypatch.setattr(active_runner, "RECEIPT_DIR", tmp_path / "receipts")
+    monkeypatch.setattr(active_runner, "LOCK_PATH", tmp_path / "lock")
+    active_runner.write_json(active_runner.REGISTRY_PATH, registry)
+    from nexus_agent_platform.capabilities import shared
+    monkeypatch.setattr(shared, "_handle_system_health", lambda trace_id: {"status": "partial", "data": {"overall_status": "degraded"}})
+    result = active_runner.run_system_health_check(incoming_update_id=50, correlation_id="campaign:50")
+    assert result["execution_status"] == "COMPLETED"
+    assert result["canonical_report_written"] is True and result["canonical_receipt_written"] is True
+    report = json.loads((tmp_path / "health.json").read_text())
+    receipt = json.loads(next((tmp_path / "receipts").glob("*.json")).read_text())
+    assert report["run_id"] == receipt["run_id"] and receipt["incoming_update_id"] == 50

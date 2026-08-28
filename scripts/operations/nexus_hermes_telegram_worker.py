@@ -26,6 +26,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "scripts/operations"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
@@ -64,6 +65,7 @@ MANUAL_CERT_COMMANDS = {
     "HOLD": re.compile(r"^HOLD (MANUAL-E2E-[0-9]{8}-[0-9]{4})$"),
 }
 REPAIR_APPROVAL = re.compile(r"^APPROVE REPAIR ([A-Z0-9][A-Z0-9_-]{2,40}) (MANUAL-E2E-[0-9]{8}-[0-9]{4})$")
+SYSTEM_HEALTH_COMMAND = re.compile(r"^/run\s+system_health$", re.I)
 
 
 def utc_now() -> str:
@@ -479,6 +481,16 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
     campaign_control = handle_loop_certification_control(text, update_id=update_id, chat_id=chat_id)
     if campaign_control is not None:
         return campaign_control
+    if SYSTEM_HEALTH_COMMAND.fullmatch(text):
+        from nexus_active_operator_runner import run_system_health_check
+        correlation_id = f"{load_campaign().get('campaign_id', 'NO_CAMPAIGN')}:{update_id or 'DIRECT'}"
+        result = run_system_health_check(incoming_update_id=int(update_id or 0), correlation_id=correlation_id, trigger="telegram")
+        completed = result.get("execution_status") == "COMPLETED"
+        overall = ((result.get("health_result") or {}).get("data") or {}).get("overall_status", "UNKNOWN")
+        response = (f"System Health Check {'completed' if completed else 'failed'}.\nOverall health: {overall}\n"
+                    f"Report: {result.get('canonical_report_path')}\nReceipt: {result.get('canonical_receipt_path')}\n"
+                    "No external action was performed.")
+        return response, {"route": "SYSTEM_HEALTH_PROCESS", "outcome": "ANSWERED" if completed else "BLOCKED", "process_id": "system_health", "system_health_run_id": result.get("run_id"), "system_health_run_started": bool(result.get("started_at")), "system_health_run_completed": completed, "canonical_report_written": result.get("canonical_report_written") is True, "canonical_receipt_written": result.get("canonical_receipt_written") is True, "canonical_report_path": result.get("canonical_report_path"), "canonical_receipt_path": result.get("canonical_receipt_path"), "read_only": True, "external_side_effects": False, "health_status": overall}
     route = classify(text)
     lowered = text.lower()
     control_object = resolve_control_object(text, _load_chat_context(chat_id))

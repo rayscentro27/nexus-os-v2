@@ -36,6 +36,7 @@ HEARTBEAT_PATH = ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.
 RUNNER_REPORT_PATH = ROOT / "reports/runtime/nexus_active_operator_runner_latest.md"
 BUSINESS_BRIEF_PATH = ROOT / "reports/runtime/nexus_active_operator_business_brief_latest.md"
 RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
+SYSTEM_HEALTH_REPORT_PATH = ROOT / "reports/runtime/nexus_system_health_latest.json"
 ESCALATION_DIR = ROOT / "reports/runtime/nexus_active_operator_escalations"
 WORK_ORDER_STATE_PATH = ROOT / "data/runtime/active_operator_work_orders.json"
 OPERATOR_LATEST_PATH = ROOT / "reports/runtime/active_operator_latest.json"
@@ -97,6 +98,40 @@ def load_json(path: Path, default: Any) -> Any:
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def run_system_health_check(*, incoming_update_id: int, correlation_id: str, trigger: str = "telegram") -> Dict[str, Any]:
+    """Run only the registered low-risk System Health Check process.
+
+    This is a manual, read-only entry point. It does not invoke the Active
+    Operator scheduler or discover/dispatch unrelated work.
+    """
+    run_id = f"system_health_{uuid.uuid4().hex}"
+    started = utc_now()
+    registry = load_json(REGISTRY_PATH, [])
+    rows = registry if isinstance(registry, list) else registry.get("processes", []) if isinstance(registry, dict) else []
+    process = next((row for row in rows if isinstance(row, dict) and row.get("process_id") == "system_health"), None)
+    base = {"process_id": "system_health", "run_id": run_id, "incoming_update_id": incoming_update_id, "correlation_id": correlation_id, "trigger": trigger, "started_at": started}
+    if (not process or not process.get("enabled") or process.get("mode") != "ACTIVE_INTERNAL" or process.get("schedule_type") != "manual" or process.get("trigger") != "telegram /run system_health or manual" or process.get("runner_path") != "scripts/operations/nexus_active_operator_runner.py" or process.get("report_path") != "reports/runtime/nexus_system_health_latest.json" or process.get("receipt_path") != "reports/runtime/nexus_active_operator_receipts/" or process.get("approval_required") is not False or process.get("telegram_allowed") is not True or process.get("risk_level") != "low"):
+        completed = utc_now()
+        failure = {**base, "completed_at": completed, "execution_status": "FAILED", "error": "canonical system_health process is not enabled as low-risk ACTIVE_INTERNAL"}
+        write_json(SYSTEM_HEALTH_REPORT_PATH, failure)
+        receipt = {"receipt_id": f"system_health_receipt_{run_id}", **failure, "report_path": str(SYSTEM_HEALTH_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"system_health_{run_id}.json").relative_to(ROOT)), "external_side_effects": False, "read_only": True}
+        write_json(RECEIPT_DIR / f"system_health_{run_id}.json", receipt)
+        return {**failure, "canonical_report_path": str(SYSTEM_HEALTH_REPORT_PATH), "canonical_receipt_path": str(RECEIPT_DIR / f"system_health_{run_id}.json"), "canonical_report_written": True, "canonical_receipt_written": True}
+    try:
+        from nexus_agent_platform.capabilities.shared import _handle_system_health
+        health = _handle_system_health(trace_id=correlation_id)
+        completed = utc_now()
+        result = {**base, "completed_at": completed, "execution_status": "COMPLETED", "health_status": health.get("status"), "health_result": health, "read_only": True, "external_side_effects": False}
+    except Exception as exc:
+        completed = utc_now()
+        result = {**base, "completed_at": completed, "execution_status": "FAILED", "error": type(exc).__name__, "read_only": True, "external_side_effects": False}
+    write_json(SYSTEM_HEALTH_REPORT_PATH, result)
+    receipt = {"receipt_id": f"system_health_receipt_{run_id}", **result, "report_path": str(SYSTEM_HEALTH_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"system_health_{run_id}.json").relative_to(ROOT))}
+    receipt_path = RECEIPT_DIR / f"system_health_{run_id}.json"
+    write_json(receipt_path, receipt)
+    return {**result, "canonical_report_path": str(SYSTEM_HEALTH_REPORT_PATH), "canonical_receipt_path": str(receipt_path), "canonical_report_written": True, "canonical_receipt_written": True}
 
 
 def _sanitize_autonomy_environment() -> None:
