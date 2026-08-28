@@ -29,7 +29,10 @@ ALLOWED_TRANSITIONS: Dict[str, frozenset] = {
     "pending_approval": frozenset({"approved", "pending_approval", "rejected", "expired", "cancelled"}),
     "approved": frozenset({"queued"}),
     "queued": frozenset({"queued", "running", "blocked", "cancelled"}),
-    "running": frozenset({"running", "completed", "failed"}),
+    # A running order may return to queued only for a bounded worker-capacity
+    # retry decided by the governed engine; ordinary callers still cannot
+    # bypass the approval lifecycle.
+    "running": frozenset({"running", "queued", "completed", "failed"}),
     "completed": frozenset(),
     "blocked": frozenset(),
     "failed": frozenset(),
@@ -124,6 +127,9 @@ def transition(work_order_id: str, to_status: str, **changes: Any) -> Dict[str, 
         updated["started_at"] = utc_now()
     if to_status == "completed" and updated.get("completed_at") is None:
         updated["completed_at"] = utc_now()
+    if to_status == "queued":
+        updated["started_at"] = None
+        updated["completed_at"] = None
     if to_status == "blocked":
         updated.pop("started_at", None)
     persistence.append_record("work_orders", updated)

@@ -157,6 +157,24 @@ def execute_approved_work_order(
             "error": error_message,
         }
 
+    # Worker capacity is not a repair failure and must remain retryable.  The
+    # executor returns this private machine contract only after its broker has
+    # found no eligible worker (or a selected worker became unavailable).
+    if result.get("_execution_status") == "WAITING_WORKER":
+        try:
+            wo.transition(work_order_id, "queued", result=result, error=None)
+        except ValueError:
+            wo.record_result(work_order_id, status="failed", error="invalid worker-capacity requeue transition")
+            return {"status": "failed", "work_order_id": work_order_id, "action_id": action_id,
+                    "executed": True, "blocked": False, "error": "invalid worker-capacity requeue transition"}
+        return {"status": "waiting_worker", "work_order_id": work_order_id, "action_id": action_id,
+                "executed": False, "blocked": False, "result": result}
+
+    if result.get("_execution_status") == "REPAIR_FAILED":
+        failed = wo.record_result(work_order_id, status="failed", result=result, error=result.get("failure"))
+        return {"status": "failed", "work_order_id": work_order_id, "action_id": action_id,
+                "executed": True, "blocked": False, "result": result, "order": failed}
+
     # ── Terminal success: consume single-use approval, record result ──
     approval_mod.mark_approval_consumed(approval_id)
     completed = wo.record_result(

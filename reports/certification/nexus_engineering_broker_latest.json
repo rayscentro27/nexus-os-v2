@@ -1,0 +1,24 @@
+{
+  "manual_run_id": "MANUAL-E2E-20260827-2992",
+  "repair_id": "VOICE-001",
+  "work_order_id": "wo_b5a3b90892804ec79164159997caf264",
+  "approval_preserved": true,
+  "previous_engineering_run": "voice-eng-6eb060cd707a",
+  "current_state": "WAITING_WORKER",
+  "runtime_pickup_state": "NOT_OBSERVED",
+  "worker_selection": "NO_CERTIFIED_WORKER_AVAILABLE",
+  "worker_matrix": [
+    {"worker": "codex", "state": "BUSY", "adapter_exists": true, "repo_edit": true, "tests": true, "isolated_worktree": true, "reason": "bounded probe timed out while host session is active"},
+    {"worker": "opencode", "state": "BUSY", "adapter_exists": true, "repo_edit": true, "tests": true, "isolated_worktree": true, "reason": "bounded version probe timed out"},
+    {"worker": "mimo", "state": "INSTALLED_UNPROVEN", "adapter_exists": false, "repo_edit": true, "tests": true, "isolated_worktree": true, "reason": "no bounded repository-edit adapter"},
+    {"worker": "local", "state": "AVAILABLE", "adapter_exists": true, "repo_edit": true, "tests": true, "isolated_worktree": true, "eligible_for_voice_repair": false, "reason": "deterministic artifact worker; not an approved coding-agent implementation"}
+  ],
+  "handoff_occurred": false,
+  "new_work_order_created": false,
+  "new_approval_required": false,
+  "deployment_performed": false,
+  "active_operator_paused": true,
+  "live_trading": false,
+  "email_001_executed": false,
+  "meta_001_executed": false
+}

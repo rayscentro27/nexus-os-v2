@@ -82,13 +82,22 @@ def _launch_existing_order(order: Dict[str, Any], run_id: str) -> Dict[str, Any]
     current = _load(STATE_PATH, {})
     if current.get("state") == "ENGINEERING" and _process_alive(current.get("worker_pid")):
         return {"status": "already_running", "work_order_id": order["work_order_id"], "state": "ENGINEERING", "worker_pid": current.get("worker_pid")}
-    if current.get("state") in {"PATCH_READY", "TESTING", "PASS", "FAIL", "BLOCKED"}:
+    if current.get("state") in {"PATCH_READY", "TESTING", "PASS", "BLOCKED"}:
         return {"status": "already_started", "work_order_id": order["work_order_id"], "state": current.get("state")}
-    if order.get("status") == "failed" and str(order.get("error") or "") == "MissionContract.__init__() got an unexpected keyword argument 'mission_id'":
+    result = order.get("result") or {}
+    capacity_failure = (str(order.get("error") or "") in {"UNAVAILABLE", "WORKER_CAPACITY", "NO_CERTIFIED_WORKER_AVAILABLE"}
+                        or (result.get("state") in {"FAIL", "WAITING_WORKER"} and result.get("failure") in {"UNAVAILABLE", "WORKER_CAPACITY", "NO_CERTIFIED_WORKER_AVAILABLE"})
+                        or current.get("failure") in {"UNAVAILABLE", "WORKER_CAPACITY", "NO_CERTIFIED_WORKER_AVAILABLE"})
+    if ((order.get("status") == "failed" and str(order.get("error") or "") == "MissionContract.__init__() got an unexpected keyword argument 'mission_id'")
+            or (order.get("status") in {"completed", "blocked"} and capacity_failure)
+            or (current.get("state") in {"FAIL", "WORKER_SELECTION", "WAITING_WORKER"} and capacity_failure)):
         raw = persistence.get_record("work_orders", order["work_order_id"], key="work_order_id")
         if raw:
-            order = {**raw, "status": "queued", "started_at": None, "completed_at": None, "error": None, "retry_reason": "bounded repair of executor contract defect"}
+            order = {**raw, "status": "queued", "started_at": None, "completed_at": None, "error": None, "result": None, "retry_reason": "worker-capacity retry; preserve prior failure in audit ledger"}
             persistence.append_record("work_orders", order)
+            approval = approvals.get_approval(raw.get("approval_id")) if raw.get("approval_id") else None
+            if approval and approval.get("status") == "consumed":
+                persistence.append_record("approvals", {**approval, "status": "approved", "resolved_at": persistence._now(), "resolved_by": "capacity_retry_reconciliation", "resolution": "prior worker-capacity outcome did not execute repair"})
     if order.get("status") != "queued":
         return {"status": "blocked", "work_order_id": order["work_order_id"], "state": order.get("status"), "reason": "work_order_not_queued"}
     child_env = {key: value for key, value in os.environ.items() if key in SAFE_ENV_KEYS}
@@ -168,28 +177,32 @@ def _build_task(run_id: str):
 
 def execute_voice_repair(run_id: str) -> Dict[str, Any]:
     """Executor body called only by the registered governed action."""
-    from nexus_agent_platform.governed.engine import execute_approved_work_order
-    # This function is reached through the canonical executor with inputs held
-    # by the work order. The CLI path resolves the order and delegates to engine.
     order = next((row for row in work_orders.list_work_orders(limit=1000) if row.get("action_id") == ACTION_ID and row.get("inputs", {}).get("run_id") == run_id), None)
     if not order:
         return {"state": "BLOCKED", "failure": "repair_work_order_not_found"}
     task = _build_task(run_id)
-    from nexus_product_evolution.adapters.builder_adapter import run_bounded_codex_task
-    _state(run_id, state="ENGINEERING", work_order_id=order["work_order_id"], executor="codex")
-    result = run_bounded_codex_task(task)
-    if result.get("status") != "pass":
-        _state(run_id, state="FAIL", failure=result.get("worker_error", result.get("status")), work_order_id=order["work_order_id"])
-        return {"state": "FAIL", "failure": result.get("worker_error", result.get("status")), "patch": "NOT_READY"}
+    from nexus_agent_platform.governed.engineering_broker import run_voice_task
+    previous = (_load(STATE_PATH, {}) or {}).get("executor")
+    engineering_run_id = (_load(STATE_PATH, {}) or {}).get("engineering_run_id") or f"voice-eng-{uuid.uuid4().hex[:12]}"
+    _state(run_id, state="WORKER_SELECTION", work_order_id=order["work_order_id"], executor="engineering_broker", engineering_run_id=engineering_run_id)
+    result = run_voice_task(task=task, repair_id=REPAIR_ID, work_order_id=order["work_order_id"], run_id=run_id, engineering_run_id=engineering_run_id, previous_worker=previous if previous in {"codex", "opencode"} else None)
+    if result.get("_execution_status") == "WAITING_WORKER":
+        _state(run_id, state="WAITING_WORKER", failure=result.get("failure"), work_order_id=order["work_order_id"], worker_matrix=result.get("worker_matrix", []), runtime_pickup_state="NOT_OBSERVED")
+        return result
+    worker = result.get("worker", "unknown")
+    _state(run_id, state="ENGINEERING", work_order_id=order["work_order_id"], executor=worker, engineering_run_id=engineering_run_id, runtime_pickup_state="OBSERVED", pickup_observed_at=persistence._now())
+    if result.get("_execution_status") == "REPAIR_FAILED":
+        _state(run_id, state="FAIL", failure=(result.get("worker_result") or {}).get("verification", {}).get("reason", "ENGINEERING_FAILED"), work_order_id=order["work_order_id"], worker_matrix=result.get("worker_matrix", []))
+        return {"state": "FAIL", "failure": "ENGINEERING_FAILED", "patch": "NOT_READY", "worker": worker}
     _state(run_id, state="TESTING", work_order_id=order["work_order_id"], patch="READY", test_result="RUNNING")
     test_env = {key: value for key, value in os.environ.items() if key in SAFE_ENV_KEYS}
     test_env["PYTHONPATH"] = str(ROOT / "scripts")
     test = subprocess.run([sys.executable, "-m", "pytest", "tests/voice_live_preview_test.py", "-q"], cwd=ROOT, env=test_env, capture_output=True, text=True, timeout=180, check=False)
     if test.returncode != 0:
         _state(run_id, state="FAIL", work_order_id=order["work_order_id"], patch="READY", test_result="FAIL")
-        return {"state": "FAIL", "patch": "READY", "test_result": "FAIL", "failure": "VOICE_FOCUSED_TESTS_FAILED"}
+        return {"_execution_status": "REPAIR_FAILED", "state": "FAIL", "patch": "READY", "test_result": "FAIL", "failure": "VOICE_FOCUSED_TESTS_FAILED", "worker": worker}
     _state(run_id, state="PATCH_READY", work_order_id=order["work_order_id"], patch="READY", test_result="PASS", deployment="REQUIRES_SEPARATE_APPROVAL", human_canary="WAITING")
-    return {"state": "PATCH_READY", "patch": "READY", "test_result": "PASS", "deployment": "REQUIRES_SEPARATE_APPROVAL", "human_canary": "WAITING"}
+    return {"_execution_status": "PATCH_READY", "state": "PATCH_READY", "patch": "READY", "test_result": "PASS", "deployment": "REQUIRES_SEPARATE_APPROVAL", "human_canary": "WAITING", "worker": worker}
 
 
 def main() -> int:
@@ -201,7 +214,7 @@ def main() -> int:
             return 2
         run_id = str((order.get("inputs") or {}).get("run_id") or "")
         engineering_run_id = f"voice-eng-{uuid.uuid4().hex[:12]}"
-        _state(run_id, state="ENGINEERING", work_order_id=work_order_id, executor="codex", runtime_pickup_state="OBSERVED", engineering_run_id=engineering_run_id, worker_pid=os.getpid(), pickup_observed_at=persistence._now(), mission_id="manual-repair-voice-001")
+        _state(run_id, state="WORKER_SELECTION", work_order_id=work_order_id, executor="engineering_broker", runtime_pickup_state="OBSERVED", engineering_run_id=engineering_run_id, worker_pid=os.getpid(), pickup_observed_at=persistence._now(), mission_id="manual-repair-voice-001")
         result = execute_approved_work_order(work_order_id, resolved_by="ray")
         print(json.dumps({"work_order_id": work_order_id, "result": result.get("result"), "status": result.get("status")}, sort_keys=True))
         return 0 if result.get("status") == "completed" else 1
