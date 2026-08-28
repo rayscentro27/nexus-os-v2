@@ -1,0 +1,83 @@
+{
+  "schema_version": "nexus.rebuild-work-packages.v1",
+  "program_id": "NEXUS-V2-REBUILD-20260828",
+  "updated_at": "2026-08-28T00:00:00Z",
+  "work_packages": [
+    {
+      "work_package_id": "PROGRAM_BOOTSTRAP",
+      "title": "Durable rebuild program bootstrap",
+      "sprint": "SPRINT_0",
+      "purpose": "Create resumable state, work package, checkpoint, receipt, and safety contracts.",
+      "dependencies": [], "risk_level": "low", "human_authority_required": false,
+      "allowed_paths": ["data/runtime/nexus_rebuild_program.json", "data/runtime/nexus_rebuild_work_packages.json", "reports/rebuild/", "reports/rebuild/nexus_rebuild_program_receipts.jsonl", "docs/architecture/NEXUS_V2_REBUILD_ARCHITECTURE.md"],
+      "forbidden_actions": ["production_deployment", "external_mutation", "credential_rotation", "hermes_upgrade"],
+      "inputs": ["4c86137 audit checkpoint", "current git HEAD", "existing safety state"],
+      "expected_outputs": ["durable program state", "work package registry", "dashboard", "architecture contract"],
+      "acceptance_criteria": ["state is valid JSON", "safety gates are explicit", "resume command is sufficient"],
+      "verification_method": ["json parse", "git diff review", "secret scan"],
+      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "PENDING", "evidence": ["audit checkpoint 4c86137"], "blockers": [], "next_action": "Continue WP0-B"
+    },
+    {
+      "work_package_id": "WP0-A",
+      "title": "Hermes current capability audit",
+      "sprint": "SPRINT_0",
+      "purpose": "Determine which native Nous Hermes Agent capabilities Nexus should use, wrap, extend, or avoid.",
+      "dependencies": ["PROGRAM_BOOTSTRAP"], "risk_level": "low", "human_authority_required": false,
+      "allowed_paths": ["docs/architecture/", "reports/rebuild/"],
+      "forbidden_actions": ["hermes_update", "install_runtime", "change_profile", "change_credentials"],
+      "inputs": ["official Nous Hermes Agent repository and documentation", "local hermes binary presence", "current Nexus worker paths"],
+      "expected_outputs": ["feature matrix", "local-version limitation", "integration boundary"],
+      "acceptance_criteria": ["official current sources recorded", "no runtime upgrade performed", "security boundary identified"],
+      "verification_method": ["official source review", "local binary/config inspection"],
+      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "PENDING", "evidence": ["https://github.com/NousResearch/hermes-agent", "https://hermes-agent.nousresearch.com/docs"], "blockers": ["local installed version command did not yield a confirmed version in bounded inspection"], "next_action": "Use native Hermes features only after local version/config is confirmed"
+    },
+    {
+      "work_package_id": "WP0-B",
+      "title": "Complete Python process census",
+      "sprint": "SPRINT_0",
+      "purpose": "Inventory meaningful Python processes and distinguish canonical executors from support, legacy, duplicate, stub, and broken code.",
+      "dependencies": ["PROGRAM_BOOTSTRAP"], "risk_level": "low", "human_authority_required": false,
+      "allowed_paths": ["reports/rebuild/", "data/runtime/nexus_rebuild_work_packages.json"],
+      "forbidden_actions": ["external_mutation", "service_restart", "production_deployment", "credential_change"],
+      "inputs": ["scripts/**/*.py", "launchd/*.plist", "existing audit reports"],
+      "expected_outputs": ["Python census", "safe canary inventory", "duplicate/legacy map"],
+      "acceptance_criteria": ["all meaningful executable candidates classified", "no file is operational solely because it exists"],
+      "verification_method": ["static inventory", "bounded safe canaries only", "receipt review"],
+      "status": "IN_PROGRESS", "started_at": "2026-08-28T00:00:00Z", "completed_at": null, "commit": null, "evidence": ["reports/rebuild/NEXUS_PYTHON_PROCESS_CENSUS.md", "828 Python files under scripts", "122 Python test files", "66 launchd plist declarations", "python3 -m compileall -q scripts: PASS"], "blockers": [], "next_action": "Inventory executable entrypoints and call relationships; run only individually bounded safe canaries"
+    },
+    {
+      "work_package_id": "WP0-C",
+      "title": "GitHub asset portfolio audit",
+      "sprint": "SPRINT_0",
+      "purpose": "Find reusable working assets before custom Nexus implementation.",
+      "dependencies": ["PROGRAM_BOOTSTRAP"], "risk_level": "low", "human_authority_required": false,
+      "allowed_paths": ["reports/rebuild/"], "forbidden_actions": ["clone_untrusted_code_into_runtime", "deploy", "credential_access"],
+      "inputs": ["accessible GitHub repositories", "repository metadata and code"], "expected_outputs": ["candidate matrix", "import/wrap/reference/archive decisions"],
+      "acceptance_criteria": ["Nexus and non-Nexus assets compared", "maintenance/security risk recorded"], "verification_method": ["GitHub metadata/code inspection"],
+      "status": "IN_PROGRESS", "started_at": "2026-08-28T20:31:58Z", "completed_at": null, "commit": null, "evidence": ["reports/rebuild/NEXUS_GITHUB_ASSET_PORTFOLIO_AUDIT.md", "read-only gh repo list for rayscentro27"], "blockers": [], "next_action": "Inspect candidate repository histories, tests, deployability, and reusable capabilities without importing code"
+    },
+    {
+      "work_package_id": "WP0-D",
+      "title": "Canonical loop definition",
+      "sprint": "SPRINT_0",
+      "purpose": "Define a formal loop contract and one Daily Operations example without mass migration.",
+      "dependencies": ["PROGRAM_BOOTSTRAP", "4c86137"], "risk_level": "low", "human_authority_required": false,
+      "allowed_paths": ["docs/architecture/", "reports/rebuild/"], "forbidden_actions": ["mass_migration", "new_external_authority"],
+      "inputs": ["19-loop truth audit", "Nexus safety model"], "expected_outputs": ["loop contract", "Daily Operations sample"], "acceptance_criteria": ["trigger-to-completion lifecycle defined", "evidence and freshness are mandatory"], "verification_method": ["architecture review"],
+      "status": "COMPLETED", "started_at": "2026-08-28T00:00:00Z", "completed_at": "2026-08-28T00:00:00Z", "commit": "PENDING", "evidence": ["docs/architecture/NEXUS_V2_REBUILD_ARCHITECTURE.md"], "blockers": [], "next_action": "Apply contract to golden loop only after Sprint 0"
+    },
+    {
+      "work_package_id": "WP0-E",
+      "title": "Hermes / Nova communication benchmark",
+      "sprint": "SPRINT_0",
+      "purpose": "Establish reproducible communication quality baseline without fabricating scores.",
+      "dependencies": ["WP0-A"], "risk_level": "low", "human_authority_required": false,
+      "allowed_paths": ["reports/rebuild/"], "forbidden_actions": ["external_message", "model/provider_upgrade"],
+      "inputs": ["reproducible operational question set", "existing response artifacts"], "expected_outputs": ["benchmark protocol", "scored evidence or explicit unscored dimensions"],
+      "acceptance_criteria": ["scores trace to reproducible evidence", "Ray subjective observations separated"], "verification_method": ["controlled local benchmark"],
+      "status": "READY", "started_at": null, "completed_at": null, "commit": null, "evidence": ["reports/rebuild/NEXUS_HERMES_NOVA_COMMUNICATION_BENCHMARK.md"], "blockers": [], "next_action": "Run reproducible benchmark only through a bounded safe local invocation; otherwise retain NOT_SCORED"
+    },
+    {"work_package_id":"WP1-A","title":"Operational truth kernel design","sprint":"SPRINT_1","purpose":"Design minimum process/run/evidence schema using the golden loop.","dependencies":["WP0-B","WP0-D"],"risk_level":"medium","human_authority_required":false,"allowed_paths":["docs/architecture/","data/runtime/"],"forbidden_actions":["mass_migrate_registry"],"inputs":["Sprint 0 outputs"],"expected_outputs":["schema proposal"],"acceptance_criteria":["fresh real evidence required"],"verification_method":["architecture review"],"status":"BLOCKED_ON_DEPENDENCIES","started_at":null,"completed_at":null,"commit":null,"evidence":[],"blockers":[],"next_action":"Wait for Sprint 0 outputs"},
+    {"work_package_id":"WP2-A_HERMES_UPGRADE_AUTHORIZATION","title":"Hermes upgrade preparation","sprint":"SPRINT_2","purpose":"Prepare, but do not execute, bounded Hermes upgrade.","dependencies":["WP0-A","WP1-A"],"risk_level":"high","human_authority_required":true,"allowed_paths":["docs/architecture/","reports/rebuild/"],"forbidden_actions":["upgrade","install","profile_change"],"inputs":["Hermes audit","operational truth minimum"],"expected_outputs":["upgrade readiness packet"],"acceptance_criteria":["explicit human approval required"],"verification_method":["Ray approval gate"],"status":"WAITING_HUMAN","started_at":null,"completed_at":null,"commit":null,"evidence":[],"blockers":["Hermes runtime change requires explicit approval"],"next_action":"Continue independent Sprint 0 work"}
+  ]
+}
