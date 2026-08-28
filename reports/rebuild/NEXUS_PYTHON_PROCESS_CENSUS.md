@@ -64,3 +64,15 @@ Build a generated candidate table from executable entrypoints, inspect their
 dispatch and side-effect boundaries, then run only individually bounded
 read-only/internal-safe canaries. Record command, inputs, output, validation,
 and receipt for each canary.
+
+The reduced canonical inventory is recorded in
+`reports/rebuild/NEXUS_PYTHON_EXECUTABLE_CANDIDATES.json`: 20 high-value
+executable candidates were selected from the 828-file census. It separates
+`RUN_ONCE`, `ON_DEMAND`, `SCHEDULED`, and `CONTINUOUS`, and records sustained
+execution separately from launchd configuration.
+
+The reduced canonical inventory is recorded in
+`reports/rebuild/NEXUS_PYTHON_EXECUTABLE_CANDIDATES.json`: 20 high-value
+executable candidates were selected from the 828-file census. It separates
+`RUN_ONCE`, `ON_DEMAND`, `SCHEDULED`, and `CONTINUOUS`, and records sustained
+execution separately from launchd configuration.

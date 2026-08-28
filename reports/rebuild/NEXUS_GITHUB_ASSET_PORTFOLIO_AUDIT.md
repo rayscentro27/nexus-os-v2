@@ -30,6 +30,50 @@ Read-only metadata confirmed during this checkpoint:
 
 These metadata facts establish candidate existence and recency only. They do
 not establish working, tested, deployable, secure, or reusable behavior.
+
+## History and deployability review
+
+Read-only recent commit and manifest review found:
+
+- `nexuslive`: AI Studio/Vite application with a Gemini-key requirement;
+  reference only, not a superior Nexus executor on current evidence.
+- `nexus-mobile`: Expo/React Native client with explicit mock-data mode;
+  potentially reusable UI, but live backend and production readiness are
+  unproven.
+- `AAAANexusCRM`: private TypeScript financial-OS generation with recent
+  capital/funding work; security, tests, deployment, and canonical data
+  ownership remain unproven.
+- `nexus-financial-os`: minimal two-file CRM repository with generic README;
+  archive/ignore candidate unless deeper history reveals otherwise.
+- `site-boost-suite`: Lovable/Vite site with recent canonical-URL reversions;
+  no superior operational SEO machinery proven.
+- `credit-cascade-portal`: Lovable/Vite portal with recent auth/theme work;
+  live data, RLS, tests, and deployability remain unproven.
+
+No candidate is classified as better than current Nexus. No code was imported,
+executed, or deployed.
+
+## History and deployability review
+
+Read-only recent commit and manifest review found:
+
+- `nexuslive`: AI Studio/Vite application with a Gemini-key requirement;
+  reference only, not a superior Nexus executor on current evidence.
+- `nexus-mobile`: Expo/React Native client with explicit mock-data mode;
+  potentially reusable UI, but live backend and production readiness are
+  unproven.
+- `AAAANexusCRM`: private TypeScript financial-OS generation with recent
+  capital/funding work; security, tests, deployment, and canonical data
+  ownership remain unproven.
+- `nexus-financial-os`: minimal two-file CRM repository with generic README;
+  archive/ignore candidate unless deeper history reveals otherwise.
+- `site-boost-suite`: Lovable/Vite site with recent canonical-URL reversions;
+  no superior operational SEO machinery proven.
+- `credit-cascade-portal`: Lovable/Vite portal with recent auth/theme work;
+  live data, RLS, tests, and deployability remain unproven.
+
+No candidate is classified as better than current Nexus. No code was imported,
+executed, or deployed.
 | `gala-rsvp-demo`, `phxweather`, `weather`, `nba-gpt-api` | Demo or domain-specific apps | REFERENCE / IGNORE PENDING PURPOSE | Not enough evidence of Nexus reuse value |
 
 ## Decision rule

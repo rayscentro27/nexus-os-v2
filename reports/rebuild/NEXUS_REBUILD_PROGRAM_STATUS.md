@@ -18,7 +18,9 @@ ACTIVE_OPERATOR_PAUSED=YES
 - WP0-F — Mac Mini runtime and credential location map: COMPLETED_WITH_LIMITS.
 - WP0-B — Complete Python process census: IN_PROGRESS.
 - WP0-C — GitHub asset portfolio audit: IN_PROGRESS.
-- WP0-E — Hermes/Nova communication benchmark: READY.
+- WP0-E — Hermes/Nova communication benchmark: COMPLETED_WITH_LIMITS.
+- Canonical candidate inventory: 20 high-value executable candidates selected from 828 Python files.
+- Safe canaries: daily monitor, Alpha scout, recovery dry-run, and repository research dry-run recorded as partial evidence only.
 
 ## Human gate
 
