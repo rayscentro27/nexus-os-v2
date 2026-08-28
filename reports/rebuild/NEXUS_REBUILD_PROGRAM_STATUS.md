@@ -22,6 +22,8 @@ ACTIVE_OPERATOR_PAUSED=YES
 - Canonical candidate inventory: 20 high-value executable candidates selected from 828 Python files.
 - Safe canaries: daily monitor, Alpha scout, recovery dry-run, and repository research dry-run recorded as partial evidence only.
 - Next dependency-ready package: WP1-A operational truth kernel design.
+- WP1-A — Operational truth kernel: COMPLETED.
+- WP1-B — Golden process status/read-model proof: READY.
 
 ## Human gate
 

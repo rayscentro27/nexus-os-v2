@@ -38,6 +38,7 @@ _incoming/
 
 data/private/
 data/runtime/execution_telemetry/
+data/runtime/nexus_operational_truth.db*
 data/governed/
 
 # private voice runtime/model/audio (never commit binaries or recordings)
