@@ -3,8 +3,8 @@
 PROGRAM_ID=NEXUS-V2-REBUILD-20260828
 PROGRAM_STATE=ACTIVE_BOOTSTRAP
 CURRENT_SPRINT=SPRINT_1
-CURRENT_WORK_PACKAGE=WP1-D-TELEGRAM-E2E
-LAST_VERIFIED_CHECKPOINT=CP-WP1DA-001 at `52d682cf871e8f7d708b132b991cfe9d705792ef`
+CURRENT_WORK_PACKAGE=WP2-A_HERMES_UPGRADE_AUTHORIZATION
+LAST_VERIFIED_CHECKPOINT=CP-WP1D-E2E-001 (pending checkpoint commit)
 ACTIVE_OPERATOR_PAUSED=YES
 
 ## Completed this checkpoint
@@ -32,8 +32,10 @@ ACTIVE_OPERATOR_PAUSED=YES
 - WP1-D-ACTIVATION — remote TruthKernel approval activation: WAITING_HUMAN.
 - WP1-D-ACTIVATION — code integration completed with limits; real E2E is
   separately blocked because the Telegram worker is not loaded.
-- WP1-D-TELEGRAM-E2E — WAITING_HUMAN for the exact worker service-state
-  change. The prior activation approval does not authorize that change.
+- WP1-D-TELEGRAM-E2E — COMPLETED; real approval was received and persisted,
+  response delivery was correlated, and replay was rejected.
+- WP2-A_HERMES_UPGRADE_AUTHORIZATION — WAITING_HUMAN for exact gate
+  `HG-WP2-A-HERMES-UPGRADE-20260828-01`; no upgrade has started.
 
 ## WP1-B proof
 
@@ -48,7 +50,7 @@ ACTIVE_OPERATOR_PAUSED=YES
 ## WP1-D boundary
 
 `TRUTHKERNEL_CONNECTED=YES`, `TELEGRAM_ROUTE_CONNECTED=YES`, and
-`REMOTE_APPROVAL_READY=YES` for the source path; `REAL_TELEGRAM_E2E=NO`.
+`REMOTE_APPROVAL_READY=YES`; `REAL_TELEGRAM_E2E=YES`.
 `REMOTE_RESUME_READY=NO`. Existing authorized
 chat filtering, exact gate lookup, and closed-gate replay suppression are
 available, but TruthKernel exact-action and expiry integration is not yet
