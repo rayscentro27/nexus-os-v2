@@ -424,6 +424,15 @@ class TruthKernel:
             row = db.execute("SELECT * FROM human_gates WHERE gate_id=?", (gate_id,)).fetchone()
         return dict(row) if row else None
 
+    def hold_human_gate(self, gate_id: str) -> bool:
+        """Close a pending gate without granting any authority."""
+        with self._connect() as db:
+            row = db.execute("SELECT status FROM human_gates WHERE gate_id=?", (gate_id,)).fetchone()
+            if not row or row[0] != "PENDING":
+                return False
+            db.execute("UPDATE human_gates SET status='HELD' WHERE gate_id=?", (gate_id,))
+            return True
+
     def record_human_gate_event(self, gate_id: str, *, action: str, outcome: str,
                                 actor: str | None, source: str, reason: str | None = None,
                                 run_id: str | None = None) -> str:

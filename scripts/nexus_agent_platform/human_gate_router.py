@@ -73,8 +73,10 @@ def _truth_kernel_gate_response(text: str, *, chat_id: Optional[int], authorized
     exact_action = str(gate.get("exact_action", ""))
     requested_action = f"{action} {gate_id}"
     if action == "HOLD":
-        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="HOLD_NOT_APPROVED", actor=actor, source="telegram_human_gate", reason="HOLD never grants authority", run_id=gate.get("run_id"))
-        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "HOLD_NOT_APPROVED", "gate_id": gate_id, "gate_event_id": event_id, "response": f"Gate {gate_id} is held. No approval or Nexus action was granted."}
+        held = kernel.hold_human_gate(gate_id)
+        outcome = "HELD" if held else "HOLD_NOT_APPROVED"
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome=outcome, actor=actor, source="telegram_human_gate", reason="HOLD never grants authority", run_id=gate.get("run_id"))
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": outcome, "gate_id": gate_id, "gate_event_id": event_id, "response": f"Gate {gate_id} is held. No approval or Nexus action was granted."}
     if exact_action != requested_action:
         event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="DENIED_WRONG_ACTION", actor=actor, source="telegram_human_gate", reason="exact action mismatch", run_id=gate.get("run_id"))
         return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "DENIED_WRONG_ACTION", "gate_id": gate_id, "gate_event_id": event_id, "response": "That gate requires a different exact action. No Nexus state was changed."}

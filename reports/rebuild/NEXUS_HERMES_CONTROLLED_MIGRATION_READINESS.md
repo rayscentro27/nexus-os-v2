@@ -1,77 +1,119 @@
-# WP2-A Hermes Controlled-Migration Readiness
+# WP2-A Hermes Controlled-Migration Readiness — Version Reconciled
 
-`READY_FOR_EXPLICIT_AUTHORIZATION — UPGRADE NOT EXECUTED`
+`PREPARATION_ONLY — NO UPGRADE EXECUTED`
 
-## Current runtime
+## Decision
 
-| Field | Verified value |
-|---|---|
-| CURRENT_HERMES_VERSION | `0.14.0` (`hermes-agent` package metadata) |
-| CURRENT_INSTALL_SOURCE | Existing local Hermes source installation under `~/.hermes/hermes-agent` with its virtual environment |
-| CURRENT_PROFILE_CONFIG | Existing `~/.hermes/config.yaml` and profile state under `~/.hermes/` (values not copied) |
-| CURRENT_TELEGRAM_INTEGRATION | Nexus wrapper `scripts/operations/nexus_hermes_telegram_worker.py`, launched by the existing user LaunchAgent, using `--once` and the canonical runtime environment |
-| CURRENT_PROVIDER_CONFIG | Existing Hermes config/model metadata under `~/.hermes/`; provider names/configuration are not copied into this public packet |
-| CURRENT_TRUTHKERNEL_INTEGRATION | Nexus Telegram route now connects exact human-gate responses to TruthKernel; Hermes upgrade has not been performed |
+The prior `0.17.0` target was selected because it was the release identified
+when the earlier readiness packet was prepared. Official upstream evidence now
+identifies `0.20.6` (`v2026.8.27`) as the stable release published 2026-08-27.
+No evidence requires an intermediate production install of 0.17.0. The selected
+strategy is therefore:
 
-## Proposed target and gate scope
+`MIGRATION_STRATEGY=DIRECT_0_14_TO_0_20_6`
 
-`TARGET_HERMES_VERSION=0.17.0`.
+The large release delta is handled by an isolated compatibility preflight and
+staged post-change verification, not by an unapproved intermediate runtime.
 
-This is the exact currently published upstream release selected for review,
-not a blind `latest` selector. Compatibility with the local profile, Python
-environment, Nexus wrapper, and launchd behavior must be proven in a staged
-preflight before installation. The target may not be changed under a generic
-approval.
+## Exact runtime and target
 
-`TARGET_INSTALL_SOURCE=upstream NousResearch hermes-agent v0.17.0 release,
-installed through the existing supported mechanism after explicit approval`.
+| Field | Value | Verification |
+|---|---|---|
+| CURRENT_HERMES_VERSION | `0.14.0` | local `hermes-agent` package metadata |
+| CURRENT_INSTALL_SOURCE | local source install with a dedicated virtualenv under `~/.hermes/` | local launcher and package inspection |
+| CURRENT_PROFILE_CONFIG | `~/.hermes/config.yaml` plus local profile/session state | local path inspection; values withheld |
+| CURRENT_TELEGRAM_INTEGRATION | Nexus one-shot wrapper and existing user LaunchAgent | launchd declaration and worker inspection |
+| CURRENT_PROVIDER_CONFIG | local Hermes config/auth sources | names/values withheld |
+| TARGET_HERMES_VERSION | `0.20.6` | official release |
+| TARGET_RELEASE_TAG | `v2026.8.27` | official release tag |
+| TARGET_INSTALL_MECHANISM | existing supported Hermes update/install mechanism, pinned to the exact release after approval | must be exercised in isolated preflight first |
 
-## Backup and rollback
+Official upstream release: [Hermes Agent v0.20.6](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.8.27).
+The earlier [v0.17.0 release](https://github.com/NousResearch/hermes-agent/releases/tag/v2026.6.19)
+is a substantial feature/refactor release, not a required migration checkpoint.
 
-- `BACKUP_CREATED=NO` — no upgrade is authorized yet, so no profile/config was
-  copied or altered during this preparation.
-- `BACKUP_LOCATION=planned local-only snapshot outside the repository of the
-  Hermes profile/config, virtual-environment/package metadata, and relevant
-  LaunchAgent declaration; exact path selected immediately before change`.
-- `ROLLBACK_COMMAND_OR_PROCEDURE=restore the verified pre-upgrade profile and
-  LaunchAgent declaration, restore the prior 0.14.0 environment, then run the
-  bounded Telegram/TruthKernel baseline checks`.
-- `ROLLBACK_VERIFIED_POSSIBLE=YES procedurally; not executed or destructive-tested`.
+## Compatibility preflight
 
-## Feature migration matrix
+| Area | Result | Boundary |
+|---|---|---|
+| macOS | `YES` | current host/runtime is macOS; target install still needs isolated execution |
+| Intel/x86_64 | `YES` | current host is x86_64; target dependency resolution must be verified before install |
+| Python | `PARTIAL` | current Hermes venv is Python 3.11; target dependency lock/install has not been run |
+| config.yaml | `UNVERIFIED` | target schema validation is required on a copied profile |
+| profiles/sessions/memory | `UNVERIFIED` | migration/read compatibility must be tested on a copied state set |
+| provider configuration | `PARTIAL` | wrapper boundary is known; target provider schema/auth loading is not yet installed-tested |
+| Telegram wrapper | `YES_FOR_BOUNDARY` | Nexus worker is external to Hermes package and has prior real E2E evidence; post-change smoke test required |
+| TruthKernel integration | `YES_BY_DESIGN` | read-only Nexus boundary; post-change integration test required |
+| installer/update | `PARTIAL` | official update path is known; exact source-install behavior must be pinned and tested |
+| rollback | `YES_PROCEDURALLY` | restore plan is defined; not executed before authorization |
 
-| Feature | Hermes already has it | Nexus use case | Decision | Nexus security wrapper | TruthKernel dependency | Python integration | Evidence required |
-|---|---|---|---|---|---|---|---|
-| Bot Mode | YES, documented/native surface | conversational operator gateway | WRAP | authorized identity, no unrestricted actions | read-only status/evidence | worker adapter | real gateway response and receipt |
-| Persistent sessions / memory | YES | context continuity | USE_AS_IS | PII/scope policy; no authority from memory | status remains kernel-owned | context adapters | session continuity test |
-| Messaging gateways | YES | Telegram/operator communication | WRAP | allowlist, route precedence, delivery receipt | correlation evidence | Telegram worker | real inbound/outbound correlation |
-| Skills | YES | reusable operator workflows | USE_AS_IS | skill allowlist and action policy | evidence before claims | Python tool boundary | bounded skill execution |
-| MCP | YES | controlled tools/connectors | WRAP | approved servers/tools, no secret expansion | evidence/authority gating | deterministic adapters | tool policy and receipt |
-| Browser/tools | YES | browser research/verification | WRAP | no production mutation by default | result verification | Python verification paths | safe read proof |
-| Routines | YES | future scheduling/interface | DO_NOT_ENABLE_YET | Active Operator remains paused | scheduler truth required | existing schedulers remain separate | supervised scheduler proof |
-| Provider routing | YES | model/provider selection | WRAP | no credential disclosure; fallback bounded | failures remain explicit | Python execution unaffected | provider/fallback benchmark |
-| Retry/fallback | YES | communication resilience | WRAP | bounded retry and idempotency | no duplicate evidence/action | receipt-aware wrapper | failure/recovery test |
-| Delegation/subagents | YES | approved reasoning/delegation | DO_NOT_ENABLE_YET | explicit authority and worker policy | gate/evidence required | Python remains executor | isolated delegation proof |
-| Voice | YES/native capability | future voice interface | DO_NOT_ENABLE_YET | separate microphone/transport gate | kernel evidence required | no Python authority transfer | real microphone/response E2E |
+No runtime was changed to produce these results. `UNVERIFIED` items are
+pre-upgrade acceptance conditions, not claims of compatibility.
 
-Hermes may own conversation, context, reasoning, research, planning,
-communication, and approved tool selection. Nexus retains authority, gates,
-work-order governance, safety policy, TruthKernel evidence, and deterministic
-Python execution.
+## Release delta review
 
-## Overlapping Nexus components
+| Delta | Relevant upstream change | Classification for Nexus |
+|---|---|---|
+| 0.14 → 0.17 | large core refactor; Bot API 10.1 rich Telegram formatting; profile builder/multi-profile; memory atomic operations; skills hub; background subagents; desktop/dashboard additions | `MIGRATION_RISK`, `REQUIRES_CONFIG_CHANGE` for copied-profile validation |
+| 0.14 → 0.17 | stronger native Bot Mode/session/skills/memory surfaces | `BENEFICIAL`; Nexus remains the authority wrapper |
+| 0.17 → 0.20.6 | stable patch release with consent-gated browsing, desktop Browser, managed SSH update, expanded remote MCP, caching/tool-search, keychain option, gateway-pausing updater behavior, cron incident handling, terminal env backends | `BENEFICIAL`, with `SECURITY_RISK`/`MIGRATION_RISK` requiring explicit feature gating |
+| 0.17 → 0.20.6 | newer models and runtime/config surface changes | `REQUIRES_CONFIG_CHANGE` only where isolated validation finds schema differences |
 
-| Component | Classification |
-|---|---|
-| `scripts/operations/nexus_hermes_telegram_worker.py` | WRAP_WITH_HERMES |
-| TruthKernel and human-gate route | KEEP |
-| deterministic Python monitors/connectors/executors | KEEP |
-| legacy generic conversational routing | LEGACY_CANDIDATE; review only after certification |
-| duplicate provider/model wrappers | UNKNOWN until feature-by-feature comparison |
+The 0.20.6 release describes itself as a stable tagged release for downstream
+consumers and documents the update path. New browsing, MCP, updater, keychain,
+cron, and remote features remain outside the approved activation scope unless
+independently proven and gated.
 
-Nothing is deleted, retired, or replaced in WP2-A.
+## Approved feature scope
 
-## Upgrade stages and communication proof
+| Feature | Decision | Nexus boundary |
+|---|---|---|
+| Bot Mode | `WRAP` | authorized identity, no unrestricted actions |
+| persistent sessions/memory | `USE_AS_IS` | scope controls; memory cannot grant authority |
+| messaging gateways | `WRAP` | allowlist, correlation, delivery receipt |
+| skills | `USE_AS_IS` | explicit allowlists and Python evidence |
+| MCP | `WRAP` | approved servers/tools only |
+| browser/tools | `WRAP` | read-only by default; result verification |
+| routines | `DO_NOT_ENABLE_YET` | Active Operator stays paused |
+| provider routing | `WRAP` | bounded fallback; no credential exposure |
+| retry/fallback | `WRAP` | idempotent, receipt-aware, bounded |
+| delegation/subagents | `DO_NOT_ENABLE_YET` | no worker authority expansion |
+| voice | `DO_NOT_ENABLE_YET` | separate microphone/transport E2E required |
+
+Hermes owns conversation, context, reasoning, research, planning,
+communication, and approved tool selection. Nexus owns authority, gates,
+policy, work-order governance, and consequential-action eligibility. TruthKernel
+owns verified state, evidence, freshness, result/side-effect verification, and
+receipts. Python owns deterministic execution. These boundaries are unchanged.
+
+## Backup and rollback plan
+
+`BACKUP_CREATED=NO` — no runtime backup was created during preparation.
+
+`BACKUP_CONTENTS=` current 0.14.0 package/venv metadata; `config.yaml`; profile,
+session, memory, skill, and provider metadata without secret values; relevant
+LaunchAgent declaration; Nexus Telegram wrapper baseline; TruthKernel Telegram
+baseline; checksummed manifest.
+
+`BACKUP_LOCATION=` protected local-only snapshot outside the repository, chosen
+immediately before an approved change.
+
+`BACKUP_VERIFICATION=` verify manifest/checksums, readable permissions, expected
+version 0.14.0, and presence of each required configuration class without
+printing values.
+
+`RESTORE_PROCEDURE=` stop only the approved Hermes service if required; restore
+the prior virtualenv/source pointer and profile/config snapshot; restore the
+LaunchAgent declaration if changed; run bounded Telegram/TruthKernel baseline
+checks.
+
+`ROLLBACK_TRIGGER=` failed startup, config/profile migration, Telegram gateway,
+TruthKernel boundary, security scan, or post-upgrade communication test.
+
+`POST_ROLLBACK_TEST=` package/version identity, config load, one-shot wrapper,
+authorized gate read-only behavior, delivery/correlation, and safety flags.
+
+## Controlled migration stages
 
 1. `STAGE_1_RUNTIME_UPGRADE`
 2. `STAGE_2_BASIC_STARTUP_CERTIFICATION`
@@ -81,11 +123,23 @@ Nothing is deleted, retired, or replaced in WP2-A.
 6. `STAGE_6_DUPLICATE_NEXUS_COMPONENT_REVIEW`
 7. `STAGE_7_POST_UPGRADE_CERTIFICATION`
 
-Each stage is independently gated and rollback-capable. The post-upgrade
-benchmark must answer: WHAT HAPPENED? WHAT IS TRUE NOW? WHAT HAPPENS NEXT?
-DO YOU NEED RAY? It must test understanding, continuity, TruthKernel-grounded
-status, follow-up awareness, error explanation, actionability, Telegram,
-provider fallback, and memory/session behavior.
+## Replacement gate
 
-`VOICE_E2E_REQUIRED=YES before any voice adoption claim`.
-`HERMES_UPGRADED=NO`.
+The superseded gate `HG-WP2-A-HERMES-UPGRADE-20260828-01` is `HELD` and must
+not be reused. The replacement exact gate is:
+
+`NEW_HERMES_GATE_ID=HG-WP2-A-HERMES-UPGRADE-20260828-02`
+
+It binds the current version `0.14.0`, target `0.20.6`, tag `v2026.8.27`,
+direct strategy, the feature matrix above, isolated preflight/config changes,
+backup and rollback procedure, unchanged security boundary, and the staged
+test plan. Approval authorizes only that exact migration; it does not authorize
+voice, routines, delegation, payments, trading, production deployment, client
+mutation, credential changes, or Active Operator.
+
+`HERMES_UPGRADED=NO`
+
+`ACTIVE_OPERATOR_PAUSED=YES`
+
+`REMOTE_APPROVAL_READY=YES`
+`WAITING_RAY=YES`

@@ -60,8 +60,8 @@ def test_truth_kernel_gate_wrong_action_hold_and_malformed_fail_closed(tmp_path:
     wrong = route_response("APPROVE HG-001 extra", chat_id=42, authorized_chat_ids={42}, truth_kernel_db_path=kernel.db_path)
     assert wrong["outcome"] == "DENIED_MALFORMED"
     held = route_response("HOLD HG-001", chat_id=42, authorized_chat_ids={42}, truth_kernel_db_path=kernel.db_path)
-    assert held["outcome"] == "HOLD_NOT_APPROVED"
-    assert kernel.get_human_gate("HG-001")["status"] == "PENDING"
+    assert held["outcome"] == "HELD"
+    assert kernel.get_human_gate("HG-001")["status"] == "HELD"
     malformed = route_response("APPROVE", chat_id=42, authorized_chat_ids={42}, truth_kernel_db_path=kernel.db_path)
     assert malformed["outcome"] == "DENIED_MALFORMED"
 

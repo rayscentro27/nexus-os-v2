@@ -2,72 +2,48 @@
 
 PROGRAM_ID=NEXUS-V2-REBUILD-20260828
 PROGRAM_STATE=ACTIVE_BOOTSTRAP
-CURRENT_SPRINT=SPRINT_1
+CURRENT_SPRINT=SPRINT_2
 CURRENT_WORK_PACKAGE=WP2-A_HERMES_UPGRADE_AUTHORIZATION
-LAST_VERIFIED_CHECKPOINT=CP-WP1D-E2E-001 at `47556370dfdeeb8797974f62c5aa33566b39fcf7`
 ACTIVE_OPERATOR_PAUSED=YES
 
-## Completed this checkpoint
+## Current checkpoint
 
-- PROGRAM_BOOTSTRAP: durable state, work-package registry, receipts, safety model.
-- WP0-A: current official Nous Hermes Agent capability audit, with local-version limitation recorded.
-- WP0-D: canonical loop contract and Daily Operations sample.
+Sprint 0 discovery and Sprint 1 truth-kernel work are complete. WP1-D
+Telegram E2E proved remote TruthKernel approval and replay rejection. The
+previous Hermes target gate was explicitly held and retired after upstream
+version reconciliation.
 
-## Active and ready
+WP2-A is now waiting on the new exact gate:
 
-- WP0-F — Mac Mini runtime and credential location map: COMPLETED_WITH_LIMITS.
-- WP0-B — Complete Python process census: COMPLETED_WITH_LIMITS.
-- WP0-C — GitHub asset portfolio audit: COMPLETED_WITH_LIMITS.
-- WP0-E — Hermes/Nova communication benchmark: COMPLETED_WITH_LIMITS.
-- Canonical candidate inventory: 20 high-value executable candidates selected from 828 Python files.
-- Safe canaries: daily monitor, Alpha scout, recovery dry-run, and repository research dry-run recorded as partial evidence only.
-- Next dependency-ready package: WP1-A operational truth kernel design.
-- WP1-A — Operational truth kernel: COMPLETED.
-- WP1-B — Truth kernel adversarial hardening and read model: COMPLETED.
-- WP1-C — Continuous process observability proof: COMPLETED_WITH_LIMITS; read-only inspection
-  found a fresh heartbeat artifact but no loaded Nexus Telegram launchd label,
-  so sustained continuous execution remains unproven.
-- WP1-D — Remote human gate and resume readiness: COMPLETED_WITH_LIMITS; the
-  existing Telegram route is reusable only partially and was not activated.
-- WP1-D-ACTIVATION — remote TruthKernel approval activation: WAITING_HUMAN.
-- WP1-D-ACTIVATION — code integration completed with limits; real E2E is
-  separately blocked because the Telegram worker is not loaded.
-- WP1-D-TELEGRAM-E2E — COMPLETED; real approval was received and persisted,
-  response delivery was correlated, and replay was rejected.
-- WP2-A_HERMES_UPGRADE_AUTHORIZATION — WAITING_HUMAN for exact gate
-  `HG-WP2-A-HERMES-UPGRADE-20260828-01`; no upgrade has started.
+`HG-WP2-A-HERMES-UPGRADE-20260828-02`
 
-## WP1-B proof
+No Hermes upgrade, installation, profile change, or feature activation has
+occurred.
 
-- 19 adversarial tests passed, including authority/dependency/side-effect/output
-  gates, simulation separation, dynamic freshness, requested-vs-started state,
-  continuous heartbeat logic, expired human gates, and SQLite foreign keys.
-- Hardened Daily Monitor run `run_c221db9db0de471681f39a8042ed3323` derived
-  `SUCCEEDED_VERIFIED` with fresh hashed outputs and zero observed mutations.
-- Read model independently reports `CURRENT_STATE=SUCCEEDED_VERIFIED`,
-  `FRESH=YES`, `RUNNING=NO`; it explicitly does not infer system health.
+## Version reconciliation
 
-## WP1-D boundary
+- Current local runtime: `hermes-agent 0.14.0`.
+- Official stable target: `0.20.6`, release tag `v2026.8.27`.
+- Strategy: `DIRECT_0_14_TO_0_20_6`, with isolated compatibility preflight and
+  staged verification before any live change.
+- The former `0.17.0` gate `HG-WP2-A-HERMES-UPGRADE-20260828-01` is `HELD`.
+- Definitive packet: [NEXUS_HERMES_CONTROLLED_MIGRATION_READINESS.md](NEXUS_HERMES_CONTROLLED_MIGRATION_READINESS.md).
 
-`TRUTHKERNEL_CONNECTED=YES`, `TELEGRAM_ROUTE_CONNECTED=YES`, and
-`REMOTE_APPROVAL_READY=YES`; `REAL_TELEGRAM_E2E=YES`.
-`REMOTE_RESUME_READY=NO`. Existing authorized
-chat filtering, exact gate lookup, and closed-gate replay suppression are
-available, but TruthKernel exact-action and expiry integration is not yet
-connected. Activating that path changes a security boundary and therefore is
-the current human gate. No Telegram notification was sent and no remote
-authority was activated.
+## State semantics
 
-## Human gate
-
-WP2-A Hermes runtime upgrade is `WAITING_HUMAN`. This does not block independent Sprint 0 discovery. No approval is requested in this checkpoint because no upgrade or consequential action is being taken.
+`last_completed_work_package_commit` remains the commit that completed the
+last completed package (`WP1-D-TELEGRAM-E2E`), while `current_git_head` is the
+repository revision at checkpoint time. The two fields are intentionally not
+interchangeable.
 
 ## Safety
 
-Active Operator remains paused. `live_trading=false`, `auto_trading=false`, `paper_only=true`. No external messages, payments, client mutations, deployments, credential changes, service restarts, Voice repair, Hermes upgrade, or autonomous Codex integration occurred.
+Active Operator remains paused. `live_trading=false`, `auto_trading=false`,
+`paper_only=true`. No credentials were changed, no backup was created yet, no
+external business action was authorized, and Hermes remains at 0.14.0.
 
 ## Resume
 
-Read `data/runtime/nexus_rebuild_program.json`, `data/runtime/nexus_rebuild_work_packages.json`, this dashboard, latest JSONL receipts, and current Git HEAD. Then continue the next READY or ACTIVE work package:
-
-`Resume Nexus rebuild from canonical program state. Continue until the next genuine human gate.`
+Read the canonical program/work-package state, this dashboard, the readiness
+packet, TruthKernel gate records, latest receipts, and current Git HEAD. Do
+not execute the upgrade until Ray explicitly approves the new exact gate.
