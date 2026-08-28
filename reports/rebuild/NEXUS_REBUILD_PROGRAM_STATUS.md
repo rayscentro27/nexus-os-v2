@@ -3,8 +3,8 @@
 PROGRAM_ID=NEXUS-V2-REBUILD-20260828
 PROGRAM_STATE=ACTIVE_BOOTSTRAP
 CURRENT_SPRINT=SPRINT_1
-CURRENT_WORK_PACKAGE=WP1-D-ACTIVATION
-LAST_VERIFIED_CHECKPOINT=CP-WP1D-001 (pending checkpoint commit)
+CURRENT_WORK_PACKAGE=WP1-D-TELEGRAM-E2E
+LAST_VERIFIED_CHECKPOINT=CP-WP1DA-001 (pending checkpoint commit)
 ACTIVE_OPERATOR_PAUSED=YES
 
 ## Completed this checkpoint
@@ -30,6 +30,10 @@ ACTIVE_OPERATOR_PAUSED=YES
 - WP1-D — Remote human gate and resume readiness: COMPLETED_WITH_LIMITS; the
   existing Telegram route is reusable only partially and was not activated.
 - WP1-D-ACTIVATION — remote TruthKernel approval activation: WAITING_HUMAN.
+- WP1-D-ACTIVATION — code integration completed with limits; real E2E is
+  separately blocked because the Telegram worker is not loaded.
+- WP1-D-TELEGRAM-E2E — WAITING_HUMAN for the exact worker service-state
+  change. The prior activation approval does not authorize that change.
 
 ## WP1-B proof
 
@@ -43,7 +47,9 @@ ACTIVE_OPERATOR_PAUSED=YES
 
 ## WP1-D boundary
 
-`REMOTE_APPROVAL_READY=NO` and `REMOTE_RESUME_READY=NO`. Existing authorized
+`TRUTHKERNEL_CONNECTED=YES`, `TELEGRAM_ROUTE_CONNECTED=YES`, and
+`REMOTE_APPROVAL_READY=YES` for the source path; `REAL_TELEGRAM_E2E=NO`.
+`REMOTE_RESUME_READY=NO`. Existing authorized
 chat filtering, exact gate lookup, and closed-gate replay suppression are
 available, but TruthKernel exact-action and expiry integration is not yet
 connected. Activating that path changes a security boundary and therefore is

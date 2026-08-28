@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from .completion_laws import close_exact_gate
+from .truth_kernel import DEFAULT_DB_PATH, TruthKernel
 
 ROOT = Path(__file__).resolve().parents[2]
 LEDGER_PATH = ROOT / "data/runtime/nexus_human_gate_ledger.json"
 RESPONSE = re.compile(r"^(ACK\s+TEST|PASS|FAIL|APPROVE|REJECT)\s+([A-Za-z0-9][A-Za-z0-9_.:-]{2,100})(?:\s+(.{1,240}))?$", re.I)
+TRUTH_GATE_RESPONSE = re.compile(r"^(APPROVE|HOLD)\s+([A-Za-z0-9][A-Za-z0-9_.:-]{2,100})$", re.I)
 
 
 def _now() -> str:
@@ -53,7 +55,46 @@ def parse_response(text: str) -> Optional[Dict[str, str]]:
     return {"action": action, "gate_id": gate_id, "explanation": explanation or ""}
 
 
-def route_response(text: str, *, sender: Optional[Callable[[str], Any]] = None, path: Path = LEDGER_PATH) -> Optional[Dict[str, Any]]:
+def _truth_kernel_gate_response(text: str, *, chat_id: Optional[int], authorized_chat_ids: set[int],
+                                db_path: Path) -> Dict[str, Any]:
+    match = TRUTH_GATE_RESPONSE.fullmatch(re.sub(r"\s+", " ", text.strip()))
+    if not match:
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "DENIED_MALFORMED", "response": "Malformed gate response. No Nexus state was changed."}
+    action, gate_id = match.group(1).upper(), match.group(2)
+    kernel = TruthKernel(db_path)
+    actor = str(chat_id) if chat_id is not None else None
+    if chat_id is None or chat_id not in authorized_chat_ids:
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="DENIED_UNAUTHORIZED_CHAT", actor=actor, source="telegram_human_gate")
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "DENIED_UNAUTHORIZED_CHAT", "gate_id": gate_id, "gate_event_id": event_id, "response": "This Telegram identity is not authorized for Nexus human gates. No Nexus state was changed."}
+    gate = kernel.get_human_gate(gate_id)
+    if not gate:
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="DENIED_UNKNOWN_GATE", actor=actor, source="telegram_human_gate")
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "DENIED_UNKNOWN_GATE", "gate_id": gate_id, "gate_event_id": event_id, "response": "I could not find that active Nexus gate. No Nexus state was changed."}
+    exact_action = str(gate.get("exact_action", ""))
+    requested_action = f"{action} {gate_id}"
+    if action == "HOLD":
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="HOLD_NOT_APPROVED", actor=actor, source="telegram_human_gate", reason="HOLD never grants authority", run_id=gate.get("run_id"))
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "HOLD_NOT_APPROVED", "gate_id": gate_id, "gate_event_id": event_id, "response": f"Gate {gate_id} is held. No approval or Nexus action was granted."}
+    if exact_action != requested_action:
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="DENIED_WRONG_ACTION", actor=actor, source="telegram_human_gate", reason="exact action mismatch", run_id=gate.get("run_id"))
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "DENIED_WRONG_ACTION", "gate_id": gate_id, "gate_event_id": event_id, "response": "That gate requires a different exact action. No Nexus state was changed."}
+    if gate.get("status") != "PENDING":
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="DENIED_REPLAY_OR_CLOSED", actor=actor, source="telegram_human_gate", reason=f"gate status is {gate.get('status')}", run_id=gate.get("run_id"))
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "DENIED_REPLAY_OR_CLOSED", "gate_id": gate_id, "gate_event_id": event_id, "response": "That gate is no longer pending. No approval was repeated."}
+    if kernel.approve_human_gate(gate_id, requested_action, approved_by=f"telegram:{actor}"):
+        event_id = kernel.record_human_gate_event(gate_id, action=action, outcome="APPROVED", actor=actor, source="telegram_human_gate", run_id=gate.get("run_id"))
+        return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": "APPROVED", "gate_id": gate_id, "gate_event_id": event_id, "authority_scope": [exact_action], "response": f"Gate {gate_id} approved. Authority is limited to its exact requested action."}
+    current = kernel.get_human_gate(gate_id) or {}
+    outcome = "DENIED_EXPIRED" if current.get("status") == "EXPIRED" else "DENIED_NOT_PENDING"
+    event_id = kernel.record_human_gate_event(gate_id, action=action, outcome=outcome, actor=actor, source="telegram_human_gate", reason="TruthKernel rejected approval", run_id=gate.get("run_id"))
+    return {"route": "TRUTH_KERNEL_HUMAN_GATE", "outcome": outcome, "gate_id": gate_id, "gate_event_id": event_id, "response": "TruthKernel rejected that gate approval. No Nexus state was changed."}
+
+
+def route_response(text: str, *, sender: Optional[Callable[[str], Any]] = None, path: Path = LEDGER_PATH,
+                  chat_id: Optional[int] = None, authorized_chat_ids: Optional[set[int]] = None,
+                  truth_kernel_db_path: Path = DEFAULT_DB_PATH) -> Optional[Dict[str, Any]]:
+    if authorized_chat_ids is not None and (TRUTH_GATE_RESPONSE.match(re.sub(r"\s+", " ", text.strip())) or re.match(r"^(?:APPROVE|HOLD)\b", text.strip(), re.I)):
+        return _truth_kernel_gate_response(text, chat_id=chat_id, authorized_chat_ids=authorized_chat_ids, db_path=Path(truth_kernel_db_path))
     parsed = parse_response(text)
     if not parsed:
         return None

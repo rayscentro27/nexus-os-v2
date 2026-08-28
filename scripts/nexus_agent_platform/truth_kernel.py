@@ -123,6 +123,17 @@ class TruthKernel:
                     approved_by TEXT,
                     approved_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS human_gate_events (
+                    event_id TEXT PRIMARY KEY,
+                    gate_id TEXT NOT NULL,
+                    run_id TEXT,
+                    action TEXT NOT NULL,
+                    outcome TEXT NOT NULL,
+                    actor_hash TEXT,
+                    source TEXT NOT NULL,
+                    received_at TEXT NOT NULL,
+                    reason TEXT
+                );
                 """
             )
             existing = {row[1] for row in db.execute("PRAGMA table_info(process_runs)").fetchall()}
@@ -407,6 +418,23 @@ class TruthKernel:
             db.execute("INSERT INTO human_gates VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                        (gate_id, run_id, work_package_id, exact_action, reason, risk, authority_requested, utc_now(), expires_at, "PENDING", None, None))
         return gate_id
+
+    def get_human_gate(self, gate_id: str) -> dict[str, Any] | None:
+        with self._connect() as db:
+            row = db.execute("SELECT * FROM human_gates WHERE gate_id=?", (gate_id,)).fetchone()
+        return dict(row) if row else None
+
+    def record_human_gate_event(self, gate_id: str, *, action: str, outcome: str,
+                                actor: str | None, source: str, reason: str | None = None,
+                                run_id: str | None = None) -> str:
+        event_id = f"gate_event_{uuid.uuid4().hex}"
+        actor_hash = hashlib.sha256(actor.encode()).hexdigest()[:16] if actor else None
+        with self._connect() as db:
+            db.execute(
+                "INSERT INTO human_gate_events VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (event_id, gate_id, run_id, action, outcome, actor_hash, source, utc_now(), reason),
+            )
+        return event_id
 
     def approve_human_gate(self, gate_id: str, action: str, *, approved_by: str,
                            now: str | None = None) -> bool:

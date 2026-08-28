@@ -699,7 +699,12 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             or _repair_progress_request(text)
             or campaign_control_intent(text)
         )
-        gate_result = None if manual_control else route_response(text, sender=(lambda body: {"delivered": _send(token, chat_id, body)}))
+        gate_result = None if manual_control else route_response(
+            text,
+            sender=(lambda body: {"delivered": _send(token, chat_id, body)}),
+            chat_id=chat_id,
+            authorized_chat_ids=allowed,
+        )
         if gate_result is not None:
             response_text = gate_result.pop("response")
             metadata = gate_result
