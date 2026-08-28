@@ -27,6 +27,7 @@ from typing import Any, Dict, Iterable, List, Optional
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
+from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
@@ -476,6 +477,19 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
         return ("Message received but exceeds Hermes command limit. Use /portfolio, /status, /approvals, or send a shorter request.", {"route": "INPUT_TOO_LONG", "outcome": "REJECTED_INPUT_TOO_LONG", "input_too_long": True})
     route = classify(text)
     lowered = text.lower()
+    control_object = resolve_control_object(text, _load_chat_context(chat_id))
+    if control_object.get("object_type") == "UNKNOWN_REPAIR":
+        return f"I could not find persisted repair {control_object['object_id']}. No repair or mission was created.", {"route": "GOVERNED_REPAIR_CONTROL", "outcome": "UNKNOWN_REPAIR", **control_object}
+    if control_object.get("object_type") == "REPAIR":
+        repair_id = control_object.get("object_id") or control_object.get("repair_id")
+        state = load_json(ROOT / "reports/runtime/voice_repair_latest.json", {}) if repair_id == "VOICE-001" else {}
+        if re.search(r"\b(?:deploy|production deployment|promote)\b", lowered):
+            return (f"{repair_id} is not deployed. Production deployment requires separate scoped approval; no deployment was performed.\n\n"
+                    "The existing repair lineage remains preserved.", {"route": "GOVERNED_REPAIR_DEPLOYMENT", "outcome": "WAITING_HUMAN", "repair_id": repair_id, "work_order_id": control_object.get("work_order_id"), "authority_scope": [repair_id], "deployment_authority": "SEPARATE_APPROVAL_REQUIRED"})
+        if re.search(r"\b(?:continue|resume|start|repair|status|state|why|who|working|happening|doing)\b", lowered):
+            return (f"{repair_id}\nState: {state.get('state', 'UNKNOWN')}\nWork order: {control_object.get('work_order_id') or state.get('work_order_id', 'UNKNOWN')}\n"
+                    f"Worker: {state.get('executor', 'NONE')}\nCurrent step: {state.get('failure') or state.get('runtime_pickup_state') or 'NONE'}\n"
+                    "No repair was executed by this status request.", {"route": "GOVERNED_REPAIR_CONTROL", "outcome": "ANSWERED", "repair_id": repair_id, "work_order_id": control_object.get("work_order_id"), "state": state.get("state")})
     manual_command = _manual_certification_command(text)
     if manual_command and manual_command["command"] == "CONTINUE_REPAIR":
         report = load_json(MANUAL_CERT_REPORT_PATH, {})

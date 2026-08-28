@@ -1,0 +1,18 @@
+{
+  "schema_version": "nexus.continuation-routing.v1",
+  "manual_run_id": "MANUAL-E2E-20260827-2992",
+  "repair_id": "VOICE-001",
+  "work_order_id": "wo_b5a3b90892804ec79164159997caf264",
+  "current_repair_state": "WAITING_WORKER",
+  "approval": "PRESERVED",
+  "deployment_authority": "SEPARATE_APPROVAL_REQUIRED",
+  "root_cause": "explicit repair identifiers were not resolved before Product Evolution fuzzy continuation routing",
+  "object_first_resolution": "IMPLEMENTED",
+  "precedence": ["repair", "work_order", "active_repair_context", "mission", "release", "workflow_context", "fuzzy_intent", "conversation"],
+  "product_evolution_regression": "PRESERVED",
+  "new_repair_created": false,
+  "new_work_order_created": false,
+  "new_mission_created": false,
+  "deployment_performed": false,
+  "values_included": false
+}
