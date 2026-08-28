@@ -16,12 +16,12 @@
     "start_sha": "3391c40f44d60154c5c116cb8cb0776074866f95",
     "verified_at": "2026-08-28T22:20:00Z",
     "source": "WP1-C_LIMIT_AND_WP1-D_READINESS",
-    "end_sha": "PENDING_CHECKPOINT"
+    "end_sha": "1c1281a02dbed37fbc49865e0efa1585258f6e8c"
   },
   "current_git_head": "HEAD",
   "current_git_head_resolution": "git rev-parse HEAD",
   "last_completed_work_package_commit": "7de7b51c0b4927f7cc6e10dc4d264129b88a3356",
-  "last_commit": "PENDING_CHECKPOINT",
+  "last_commit": "1c1281a02dbed37fbc49865e0efa1585258f6e8c",
   "last_test_summary": "WP1-C completed with limits: no already-running correlatable continuous Nexus process found. WP1-D readiness completed: existing Telegram gate route is reusable only partially; TruthKernel-backed remote approval activation and Hermes upgrade remain human-gated.",
   "human_gate": true,
   "human_gate_reason": "Activation of a TruthKernel-backed remote approval path changes the security boundary and requires explicit human authority; Hermes upgrade remains separately unauthorized.",
