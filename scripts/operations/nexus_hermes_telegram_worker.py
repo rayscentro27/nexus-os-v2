@@ -16,6 +16,7 @@ import os
 import re
 import sys
 import tempfile
+import subprocess
 import urllib.parse
 import urllib.request
 from contextlib import contextmanager
@@ -53,6 +54,14 @@ BLOCKED_PATTERNS = (
 )
 PRODUCT_EVOLUTION_CONTEXT_PATH = ROOT / "data/runtime/telegram_conversation_context.json"
 PRODUCT_EVOLUTION_CONTEXT_TTL = 10 * 60
+MANUAL_CERT_REPORT_PATH = ROOT / "reports/runtime/manual_e2e_latest.json"
+MANUAL_CERT_COMMANDS = {
+    "START": re.compile(r"^START MANUAL CERT (MANUAL-E2E-[0-9]{8}-[0-9]{4})$"),
+    "EMAIL": re.compile(r"^ALLOW EMAIL CANARY (MANUAL-E2E-[0-9]{8}-[0-9]{4})$"),
+    "CONTINUE_REPAIR": re.compile(r"^CONTINUE ACTIVE OPERATOR REPAIR (MANUAL-E2E-[0-9]{8}-[0-9]{4})$"),
+    "HOLD": re.compile(r"^HOLD (MANUAL-E2E-[0-9]{8}-[0-9]{4})$"),
+}
+REPAIR_APPROVAL = re.compile(r"^APPROVE REPAIR ([A-Z0-9][A-Z0-9_-]{2,40}) (MANUAL-E2E-[0-9]{8}-[0-9]{4})$")
 
 
 def utc_now() -> str:
@@ -226,12 +235,26 @@ def build_context() -> Dict[str, Any]:
     live_runtime = load_json(ROOT / "reports/hermes_modernization/live_runtime_status.json", {})
     core = live_runtime.get("core_autonomy_runtime", {}) if isinstance(live_runtime, dict) else {}
     core_health = {"status": str(core.get("status", "UNAVAILABLE")), "last_run": live_runtime.get("generated_at") if isinstance(live_runtime, dict) else None, "source": "reports/hermes_modernization/live_runtime_status.json"}
+    operator_state = _active_operator_runtime_state()
+    repair_state = load_json(ROOT / "reports/runtime/voice_repair_latest.json", {})
     return {
         "core_runtime": core_health,
-        "active_operator": _health(ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json", "operator_health"),
+        "active_operator": {**_health(ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json", "operator_health"), **operator_state},
+        "current_repair": repair_state.get("repair_id") if isinstance(repair_state, dict) and repair_state.get("state") not in {None, "PASS", "FAIL", "BLOCKED"} else "NONE",
         "recovery_check": _health(ROOT / "reports/runtime/nexus_recovery_check_heartbeat_latest.json", "run_status"),
         "pending_work_orders": len(orders), "pending_approvals": len(pending), "high_priority_items": len(priority), "last_updated": utc_now(),
     }
+
+
+def _active_operator_runtime_state() -> Dict[str, Any]:
+    """Read scheduler state separately from the operator's software health."""
+    service = "com.nexus.active-operator-v2"
+    try:
+        check = subprocess.run(["/bin/launchctl", "print", f"gui/{os.getuid()}/{service}"], capture_output=True, text=True, timeout=2, check=False)
+        loaded = check.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        loaded = False
+    return {"execution": "RUNNABLE" if loaded else "PAUSED", "scheduled": "YES" if loaded else "NO", "service": service if loaded else None}
 
 
 def status_response() -> str:
@@ -239,7 +262,10 @@ def status_response() -> str:
     core = context["core_runtime"]["status"]
     active = context["active_operator"]["status"]
     recovery = context["recovery_check"]["status"]
-    return (f"Nexus Hermes status\n\nCore runtime: {core}\nActive Operator: {active}\nRecovery Check: {recovery}\n"
+    return (f"Nexus Hermes status\n\nCore runtime: {core}\nActive Operator health: {active}\n"
+            f"Active Operator execution: {context['active_operator'].get('execution', 'UNKNOWN')}\n"
+            f"Active Operator scheduled: {context['active_operator'].get('scheduled', 'UNKNOWN')}\n"
+            f"Current repair: {context.get('current_repair', 'NONE')}\nRecovery Check: {recovery}\n"
             f"Pending approvals: {context['pending_approvals']}\nP0/P1 work orders: {context['high_priority_items']}\n"
             "Alpha/Nova: not enabled\nStripe/live money: disabled for autonomous execution")
 
@@ -256,6 +282,7 @@ def is_status_request(text: str) -> bool:
         r"^what is running right now$",
         r"^give me nexus status$",
         r"^system status$",
+        r"^(?:can you )?(?:please )?(?:provide|give me) (?:a )?(?:current )?system status(?: report)?$",
         r"^what(?: is|'s) the health of nexus$",
         r"^what(?: is|'s) nexus health$",
     )
@@ -322,6 +349,98 @@ def _safe_summary(text: str) -> str:
     return re.sub(r"(?i)(token|secret|password|api[_ ]?key|runtime\.env)\s*[:=]?\s*\S+", r"\1 [REDACTED]", summary)
 
 
+def _manual_certification_command(text: str) -> Optional[Dict[str, str]]:
+    """Recognize only exact, run-shaped manual certification commands."""
+    for command, pattern in MANUAL_CERT_COMMANDS.items():
+        match = pattern.fullmatch(text.strip())
+        if match:
+            return {"command": command, "run_id": match.group(1)}
+    return None
+
+
+def _record_manual_certification_approval(command: Dict[str, str], *, chat_id: Optional[int], update_id: Optional[int]) -> Dict[str, Any]:
+    """Record a real, exact approval against the currently active run only."""
+    report = load_json(MANUAL_CERT_REPORT_PATH, {})
+    run_id = command["run_id"]
+    if report.get("run_id") != run_id:
+        return {"status": "REJECTED_WRONG_RUN", "run_id": run_id}
+    key = f"{command['command']}:{run_id}"
+    approvals_state = report.setdefault("human_approvals", {})
+    existing = approvals_state.get(key)
+    if existing:
+        return {"status": "DUPLICATE_SUPPRESSED", "run_id": run_id, "approval_key": key}
+    approvals_state[key] = {
+        "status": "PASS",
+        "command": command["command"],
+        "run_id": run_id,
+        "update_id": update_id,
+        "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16] if chat_id is not None else None,
+        "received_at": utc_now(),
+    }
+    if command["command"] == "EMAIL":
+        report["email_canary_approval"] = "PASS"
+        report["approval_run_id_match"] = "PASS"
+        report["current_phase"] = "EMAIL_CANARY_EXECUTION"
+    elif command["command"] == "START":
+        report["ray_start_approval"] = "PASS"
+    write_json(MANUAL_CERT_REPORT_PATH, report)
+    return {"status": "PASS", "run_id": run_id, "approval_key": key}
+
+
+def _repair_approval_command(text: str) -> Optional[Dict[str, str]]:
+    match = REPAIR_APPROVAL.fullmatch(text.strip())
+    return {"repair_id": match.group(1), "run_id": match.group(2)} if match else None
+
+
+def _natural_repair_command(text: str) -> Optional[Dict[str, str]]:
+    report = load_json(MANUAL_CERT_REPORT_PATH, {})
+    run_id = report.get("run_id")
+    if not run_id or report.get("status") not in {"WAITING_HUMAN_ACTION", "WAITING_APPROVAL"}:
+        return None
+    normalized = re.sub(r"[^a-z0-9_-]+", " ", text.lower()).strip()
+    if normalized not in {"nexus repair voice", "approve voice", "repair voice", "repair voice-001"}:
+        return None
+    return {"repair_id": "VOICE-001", "run_id": run_id}
+
+
+def _repair_progress_request(text: str) -> bool:
+    normalized = re.sub(r"[^a-z0-9_-]+", " ", text.lower()).strip()
+    words = set(normalized.split())
+    return "voice" in words and ("repair" in words or "voice-001" in words) and bool(words.intersection({"status", "happening", "doing", "done", "progress", "working"}))
+
+
+def _repair_progress_response() -> tuple[str, Dict[str, Any]]:
+    state = load_json(ROOT / "reports/runtime/voice_repair_latest.json", {})
+    if not isinstance(state, dict) or not state.get("repair_id"):
+        return "No active Voice repair work order exists.", {"route": "VOICE_REPAIR_STATUS", "outcome": "NOT_FOUND"}
+    return (f"VOICE-001\nState: {state.get('state', 'UNKNOWN')}\nWork order: {state.get('work_order_id', 'UNKNOWN')}\n"
+            f"Current step: {state.get('executor', 'governed repair')}\nNo other repairs are executing.",
+            {"route": "VOICE_REPAIR_STATUS", "outcome": "ANSWERED", "repair_id": "VOICE-001", "state": state.get("state")})
+
+
+def _record_repair_approval(command: Dict[str, str], *, chat_id: Optional[int], update_id: Optional[int]) -> Dict[str, Any]:
+    report = load_json(MANUAL_CERT_REPORT_PATH, {})
+    run_id, repair_id = command["run_id"], command["repair_id"]
+    if report.get("run_id") != run_id:
+        return {"status": "REJECTED_WRONG_RUN", "run_id": run_id, "repair_id": repair_id}
+    candidates = report.get("repair_queue", [])
+    candidate = next((x for x in candidates if (x.get("repair_id") if isinstance(x, dict) else x) == repair_id), None)
+    if isinstance(candidate, str):
+        candidate = {"repair_id": candidate, "status": "WAITING_APPROVAL"}
+    if not candidate:
+        return {"status": "REJECTED_UNKNOWN_REPAIR", "run_id": run_id, "repair_id": repair_id}
+    if candidate.get("status") != "WAITING_APPROVAL":
+        return {"status": "REJECTED_REPAIR_NOT_WAITING", "run_id": run_id, "repair_id": repair_id}
+    key = f"{repair_id}:{run_id}"
+    approvals_state = report.setdefault("repair_approvals", {})
+    if key in approvals_state:
+        return {"status": "DUPLICATE_SUPPRESSED", "run_id": run_id, "repair_id": repair_id, "authority_scope": [repair_id]}
+    approvals_state[key] = {"status": "PASS", "run_id": run_id, "repair_id": repair_id, "authority_scope": [repair_id], "channel": "telegram", "update_id": update_id, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16] if chat_id is not None else None, "approved_at": utc_now()}
+    report["approved_repair_ids"] = sorted({*report.get("approved_repair_ids", []), repair_id})
+    write_json(MANUAL_CERT_REPORT_PATH, report)
+    return {"status": "PASS", "run_id": run_id, "repair_id": repair_id, "authority_scope": [repair_id]}
+
+
 def create_governed_request(text: str) -> Dict[str, Any]:
     fingerprint = message_hash(re.sub(r"\s+", " ", text).strip().lower())
     key = f"telegram:hermes:{fingerprint}"
@@ -335,12 +454,64 @@ def create_governed_request(text: str) -> Dict[str, Any]:
     return {"status": "CREATED", "work_order_id": order["work_order_id"], "approval_id": approval["id"], "priority": priority, "receipt_id": f"hermes_command_{fingerprint}"}
 
 
-def handle_command(text: str, *, chat_id: Optional[int] = None) -> tuple[str, Dict[str, Any]]:
+def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optional[int] = None) -> tuple[str, Dict[str, Any]]:
     text = re.sub(r"\s+", " ", text.strip())
     if len(text) > MAX_INPUT:
         return ("Message received but exceeds Hermes command limit. Use /portfolio, /status, /approvals, or send a shorter request.", {"route": "INPUT_TOO_LONG", "outcome": "REJECTED_INPUT_TOO_LONG", "input_too_long": True})
     route = classify(text)
     lowered = text.lower()
+    manual_command = _manual_certification_command(text)
+    if manual_command and manual_command["command"] == "CONTINUE_REPAIR":
+        report = load_json(MANUAL_CERT_REPORT_PATH, {})
+        pending = [
+            (x.get("repair_id") if isinstance(x, dict) else x)
+            for x in report.get("repair_queue", [])
+            if (x.get("status") == "WAITING_APPROVAL" if isinstance(x, dict) else True)
+        ]
+        return f"Which repair should I approve?\n\nPending: {', '.join(pending)}\n\nReply: APPROVE REPAIR <REPAIR_ID> {report.get('run_id', manual_command['run_id'])}", {"route": "MANUAL_REPAIR_SELECTION", "outcome": "SELECTION_REQUIRED", "authority_scope": []}
+    if manual_command:
+        result = _record_manual_certification_approval(manual_command, chat_id=chat_id, update_id=update_id)
+        if result["status"] == "PASS":
+            return "Manual certification approval recorded. No canary action executed yet.", {"route": "MANUAL_CERTIFICATION_APPROVAL", "outcome": "APPROVAL_RECORDED", **result}
+        if result["status"] == "DUPLICATE_SUPPRESSED":
+            return "Manual certification approval already recorded. No duplicate action executed.", {"route": "MANUAL_CERTIFICATION_APPROVAL", "outcome": "DUPLICATE_SUPPRESSED", **result}
+        return "Manual certification approval rejected because the run is not active.", {"route": "MANUAL_CERTIFICATION_APPROVAL", "outcome": result["status"], **result}
+    repair_command = _repair_approval_command(text)
+    natural_repair = _natural_repair_command(text)
+    if not repair_command:
+        repair_command = natural_repair
+    if repair_command:
+        if natural_repair is not None:
+            from nexus_agent_platform.governed.voice_repair import start_voice_repair
+            result = start_voice_repair(repair_command["run_id"], chat_id=chat_id)
+            if result["status"] == "started":
+                return (f"VOICE-001 repair started.\n\nRun: {repair_command['run_id']}\nWork order: {result['work_order_id']}\n"
+                        "Scope: Repair production Voice routing through the governed Netlify relay.\n\n"
+                        "Email and Meta remain unapproved.\nActive Operator remains paused.",
+                        {"route": "VOICE_REPAIR_START", "outcome": "STARTED", "repair_started": True, **result})
+            if result["status"] == "already_started":
+                return (f"VOICE-001 repair is already {result.get('state', 'active')}.\nWork order: {result.get('work_order_id')}\nNo duplicate execution started.", {"route": "VOICE_REPAIR_START", "outcome": "DUPLICATE_SUPPRESSED", **result})
+            if result["status"] == "waiting_approval":
+                return "VOICE-001 still requires approval. No repair started.", {"route": "VOICE_REPAIR_START", "outcome": "WAITING_APPROVAL", **result}
+        result = _record_repair_approval(repair_command, chat_id=chat_id, update_id=update_id)
+        if result["status"] == "PASS":
+            report = load_json(MANUAL_CERT_REPORT_PATH, {})
+            remaining = [
+                (x.get("repair_id") if isinstance(x, dict) else x)
+                for x in report.get("repair_queue", [])
+                if (x.get("status") == "WAITING_APPROVAL" if isinstance(x, dict) else x != repair_command["repair_id"])
+                and (x.get("repair_id") if isinstance(x, dict) else x) != repair_command["repair_id"]
+            ]
+            return f"Repair approval recorded.\n\nRun: {repair_command['run_id']}\nApproved: {repair_command['repair_id']}\nStill waiting approval: {', '.join(remaining) or 'none'}\n\nActive Operator remains paused.\nNo repair has executed.", {"route": "MANUAL_REPAIR_APPROVAL", "outcome": "APPROVAL_RECORDED", **result}
+        if result["status"] == "DUPLICATE_SUPPRESSED":
+            return "That repair approval was already recorded. No repair has executed.", {"route": "MANUAL_REPAIR_APPROVAL", "outcome": "DUPLICATE_SUPPRESSED", **result}
+        return "Repair approval rejected. No Nexus state was changed.", {"route": "MANUAL_REPAIR_APPROVAL", "outcome": result["status"], **result}
+    if _repair_progress_request(text):
+        return _repair_progress_response()
+    if text == "CONTINUE ACTIVE OPERATOR REPAIR MANUAL-E2E-20260827-2992":
+        report = load_json(MANUAL_CERT_REPORT_PATH, {})
+        pending = [x.get("repair_id") for x in report.get("repair_queue", []) if x.get("status") == "WAITING_APPROVAL"]
+        return f"Which repair should I approve?\n\nPending: {', '.join(pending)}\n\nReply: APPROVE REPAIR <REPAIR_ID> {report.get('run_id', 'MANUAL-E2E-20260827-2992')}", {"route": "MANUAL_REPAIR_SELECTION", "outcome": "SELECTION_REQUIRED", "authority_scope": []}
     if is_portfolio_request(text):
         return portfolio_response(), {"route": "EXECUTIVE_PORTFOLIO_READ", "outcome": "ANSWERED", "read_only": True}
     if re.match(r"^\s*(?:IDEA\s*:|idea\s+)", text, re.I):
@@ -463,12 +634,20 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             continue
         text = message["text"]
         fingerprint = message_hash(text)
-        gate_result = route_response(text, sender=(lambda body: {"delivered": _send(token, chat_id, body)}))
+        # Manual certification and repair-control phrases must reach their
+        # deterministic handler before generic conversational routing.
+        manual_control = bool(
+            _manual_certification_command(text)
+            or _repair_approval_command(text)
+            or _natural_repair_command(text)
+            or _repair_progress_request(text)
+        )
+        gate_result = None if manual_control else route_response(text, sender=(lambda body: {"delivered": _send(token, chat_id, body)}))
         if gate_result is not None:
             response_text = gate_result.pop("response")
             metadata = gate_result
         else:
-            response_text, metadata = handle_command(text, chat_id=chat_id)
+            response_text, metadata = handle_command(text, chat_id=chat_id, update_id=uid)
         evolution = metadata.get("product_evolution") if isinstance(metadata, dict) else None
         if isinstance(evolution, dict) and evolution.get("status") == "CONTRACT_READY":
             try:

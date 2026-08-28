@@ -133,6 +133,15 @@ def run_opportunity_review_action(inputs: Dict[str, Any]) -> Dict[str, Any]:
             "decision": "INTERNAL_REVIEW_RECORDED", "external_action_performed": False}
 
 
+def run_voice_engineering_repair(inputs: Dict[str, Any]) -> Dict[str, Any]:
+    """Run only the fixed, approved VOICE-001 engineering contract."""
+    from nexus_agent_platform.governed.voice_repair import execute_voice_repair
+
+    if inputs.get("repair_id") != "VOICE-001":
+        raise ValueError("only VOICE-001 is registered for engineering repair")
+    return execute_voice_repair(str(inputs.get("run_id") or ""))
+
+
 ACTION_EXECUTORS: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]] = {
     "system_health.run": run_system_health_action,
     "repo_intelligence.scan": run_repo_intelligence_action,
@@ -140,6 +149,7 @@ ACTION_EXECUTORS: Dict[str, Callable[[Dict[str, Any]], Dict[str, Any]]] = {
     "runtime_report.generate": run_runtime_report_action,
     "business_attention.review": run_business_attention_review_action,
     "opportunity.review": run_opportunity_review_action,
+    "engineering.repair.voice": run_voice_engineering_repair,
 }
 
 

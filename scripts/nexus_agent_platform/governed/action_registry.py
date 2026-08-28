@@ -147,6 +147,24 @@ ACTION_REGISTRY: Dict[str, Dict[str, Any]] = {
         "telemetry_process_id": "business_attention_review",
         "enabled": True,
     },
+    "engineering.repair.voice": {
+        "action_id": "engineering.repair.voice",
+        "name": "Bounded Voice Engineering Repair",
+        "description": "Run the explicitly approved VOICE-001 repair in an isolated coding worker; deployment remains separately gated.",
+        "risk_level": Risk.LOW,
+        "approval_required": True,
+        "executor": "run_voice_engineering_repair",
+        "input_schema": {
+            "type": "object",
+            "properties": {"repair_id": {"type": "string"}, "run_id": {"type": "string"}},
+            "required": ["repair_id", "run_id"],
+        },
+        "result_schema": {"type": "object", "properties": {"state": {"type": "string"}}},
+        "timeout_seconds": 900,
+        "idempotency_supported": True,
+        "telemetry_process_id": "voice_engineering_repair",
+        "enabled": True,
+    },
 }
 
 # Documented, non-executable classes (for honest recommendation labelling).
