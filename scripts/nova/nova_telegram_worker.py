@@ -46,6 +46,7 @@ NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
 from nexus_agent_platform.runtime.execution_telemetry import execution_run, stage_execution, telemetry_context
+from nexus_agent_platform.control_object_resolver import resolve_control_object
 
 # ─── SSL ────────────────────────────────────────────────
 
@@ -429,6 +430,29 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
 
         update_mission(mission, "AUTHORIZED")
         _update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
+
+        # Explicit governed objects are resolved deterministically before the
+        # conversational graph. This prevents Nova/Product Evolution fuzzy
+        # routing from hiding an existing repair behind a generic mission
+        # lookup. This read-only branch does not start engineering or create
+        # any new object.
+        control = resolve_control_object(text)
+        if control.get("object_type") in {"REPAIR", "UNKNOWN_REPAIR", "UNKNOWN_WORK_ORDER"}:
+            if control.get("object_type") == "REPAIR":
+                repair = __import__("nexus_agent_platform.control_object_resolver", fromlist=["get_repair"]).get_repair(control.get("object_id") or control.get("repair_id"))
+                response = (f"{repair['repair_id']}\nWork order: {repair.get('work_order_id', 'UNKNOWN')}\n"
+                            f"State: {repair.get('lifecycle_state', 'UNKNOWN')}\n"
+                            f"Access: {repair.get('access_state', 'UNKNOWN')}\n"
+                            "Deployment: not authorized\nNo engineering execution started.") if repair else "The persisted repair could not be resolved. No Nexus state was changed."
+                outcome = "GOVERNED_REPAIR_RESOLVED" if repair else "REPAIR_NOT_FOUND"
+            else:
+                response = f"I could not find persisted {control.get('object_type', 'object').lower()} {control.get('object_id', '')}. No repair or mission was created."
+                outcome = control.get("object_type")
+            update_mission(mission, "RESPONSE_COMPOSED", {"response_mode": "governed_object_resolution", "control_object": control.get("object_type"), "outcome": outcome})
+            msg_ids = tg_send_message(chat_id, response)
+            update_mission(mission, "COMPLETED" if msg_ids else "DELIVERY_FAILED", {"response_message_ids": msg_ids})
+            write_receipt({"type": "nova_governed_object_response", "object_type": control.get("object_type"), "object_id": control.get("object_id") or control.get("repair_id"), "outcome": outcome})
+            return True
 
         with stage_execution(
             stage="graph_setup",

@@ -1,0 +1,22 @@
+{
+  "schema_version": "nexus.repair-persistence.v1",
+  "manual_run_id": "MANUAL-E2E-20260827-2992",
+  "repair_id": "VOICE-001",
+  "work_order_id": "wo_b5a3b90892804ec79164159997caf264",
+  "canonical_resolver": "nexus_agent_platform.control_object_resolver.get_repair",
+  "canonical_store": "governed work_orders + approvals + repair runtime state",
+  "certification_report_authoritative": false,
+  "cwd_independent": true,
+  "live_worker": "com.nexus.telegram-hermes-nova",
+  "live_runner": "scripts/nova/nova_telegram_worker.py",
+  "live_code_current": true,
+  "current_state": "WAITING_WORKER",
+  "access_state": "AVAILABLE_REMOTE_NETLIFY",
+  "worker_state": "NO_CERTIFIED_WORKER_AVAILABLE",
+  "deployment_authority": "SEPARATE_APPROVAL_REQUIRED",
+  "new_repair_created": false,
+  "new_work_order_created": false,
+  "new_approval_created": false,
+  "deployment_performed": false,
+  "values_included": false
+}
