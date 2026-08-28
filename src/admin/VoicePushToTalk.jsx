@@ -2,8 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 
 const MAX_MS = 30000
 const PREVIEW_CADENCE_MS = 1200
-const endpoint = import.meta.env.VITE_NEXUS_VOICE_ENDPOINT || ''
-const previewEndpoint = endpoint.replace(/\/v1\/voice\/transcribe\/?$/, '/v1/voice/preview')
+// Cloudflare Access credentials belong to the Netlify server relay.  Keep the
+// browser transport same-origin so an environment variable can never point
+// the browser directly at the protected Voice origin.
+const endpoint = '/.netlify/functions/voice-relay'
+const previewEndpoint = `${endpoint}?mode=preview`
 const STATE_LABELS = {
   REQUESTING_PERMISSION: 'Microphone permission…', LISTENING: 'Listening…', LIVE_PREVIEW: 'Live preview…', FINALIZING: 'Processing…', TRANSCRIPT_READY: 'Transcript ready for review', EDITING: 'Editing transcript', SENDING: 'Sending to Hermes…', DONE: 'Transcript sent', ERROR: 'Error'
 }

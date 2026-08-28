@@ -2,7 +2,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { createThread, deriveThreadTitle, getActiveThread, isNewThreadCommand, loadThread, routeWakePhrase, saveThread, sendAgentMessage, setActiveThread, stripWakePhrase } from '../lib/nexusAgentDispatch'
 import { speakHermesResponse, stopHermesSpeech } from '../lib/hermesSpeechSynthesis'
 
-const endpoint = import.meta.env.VITE_NEXUS_VOICE_ENDPOINT || '/.netlify/functions/voice-relay'
+// Voice credentials are server-side Netlify configuration; browser requests
+// must always use the same-origin governed relay.
+const endpoint = '/.netlify/functions/voice-relay'
 const MAX_MS = 30000
 const SILENCE_MS = 1100
 const PREVIEW_MS = 1200
@@ -34,7 +36,7 @@ export default function NexusWakeVoice({ onDispatched }) {
     // records one bounded utterance and performs one final local STT call;
     // Quick Voice retains its explicit preview behavior.
     if (persistentRef.current || !endpoint || !blob.size) return
-    const previewEndpoint = endpoint.includes('voice-relay') ? `${endpoint}?mode=preview` : endpoint.replace(/\/v1\/voice\/transcribe\/?$/, '/v1/voice/preview')
+    const previewEndpoint = `${endpoint}?mode=preview`
     const controller = new AbortController(); previewAbortRef.current = controller
     try { const response = await fetch(previewEndpoint, { method: 'POST', credentials: 'include', headers: { 'Content-Type': blob.type || 'audio/webm', 'X-Nexus-Voice-Session': `wake-${idRef.current}`, 'X-Nexus-Voice-Preview-Sequence': String(sequence) }, body: blob, signal: controller.signal }); const payload = await response.json(); if (response.ok && payload.text && sequence >= sequenceRef.current) setPartial(payload.text) } catch { /* final transcription remains authoritative */ }
   }

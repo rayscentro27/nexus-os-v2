@@ -1,0 +1,33 @@
+{
+  "schema_version": "nexus.remote-access-resolution.v1",
+  "voice": {
+    "capability": "voice.transport",
+    "credential_state": "AVAILABLE_REMOTE_NETLIFY",
+    "execution_location": "NETLIFY_SERVER",
+    "relay": "/.netlify/functions/voice-relay",
+    "local_secret_required": false,
+    "direct_browser_origin_call": false,
+    "provider_health": "CONFIGURED_UNTESTED"
+  },
+  "groq": {
+    "capability": "model.groq",
+    "credential_state": "AVAILABLE_REMOTE_NETLIFY",
+    "execution_location": "NETLIFY_SERVER",
+    "relay": "/.netlify/functions/alpha-provider",
+    "local_secret_required": false,
+    "provider_health": "CONFIGURED_UNTESTED"
+  },
+  "openrouter": {
+    "capability": "model.openrouter",
+    "credential_state": "AVAILABLE_REMOTE_NETLIFY",
+    "execution_location": "NETLIFY_SERVER",
+    "relay": "/.netlify/functions/alpha-provider",
+    "local_secret_required": false,
+    "provider_health": "CONFIGURED_UNTESTED"
+  },
+  "google_workspace": {"credential_state": "AVAILABLE_LOCAL", "execution_location": "LOCAL", "non_regression": "PRESERVED"},
+  "values_included": false,
+  "production_deployment_performed": false,
+  "active_operator_paused": true,
+  "live_trading": false
+}
