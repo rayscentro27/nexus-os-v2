@@ -17,7 +17,7 @@ def run_daily_monitor_golden(db_path: str | Path) -> dict:
     kernel.record_authority_result(run_id, {"authorized": True, "scope": "internal_read_only", "mutations_allowed": False})
     kernel.record_dependency_result(run_id, {"available": True, "sources": ["process_registry", "local_runtime_artifacts"]})
     started = utc_now()
-    kernel._update_run(run_id, started_at=started)
+    kernel.mark_run_started(run_id, started_at=started)
     command = [sys.executable, str(ROOT / "scripts/operations/nexus_daily_monitor.py")]
     completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=30, check=False)
     report_json = ROOT / "reports/runtime/nexus_daily_monitor_latest.json"

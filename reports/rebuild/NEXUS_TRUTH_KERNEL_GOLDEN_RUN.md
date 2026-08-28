@@ -1,4 +1,4 @@
-# WP1-A Golden Process Proof — Daily Monitor
+# WP1-B Hardened Golden Process Proof — Daily Monitor
 
 ## Result
 
@@ -11,16 +11,22 @@ certification and not proof that every monitored subsystem is healthy.
 |---|---|
 | Process | `daily_monitor` |
 | Entrypoint | `scripts/operations/nexus_daily_monitor.py` |
-| Trigger | `MANUAL_SAFE_CANARY`, work package `WP1-A` |
+| Trigger | `MANUAL_SAFE_CANARY`, bounded engineering canary |
 | Authority | Internal read-only; mutations allowed: 0 |
 | Dependencies | Process registry and local runtime artifacts available |
-| Run | `run_9cbbe3e5deb349c7b8e78424639fd6c2` |
+| Run | `run_c221db9db0de471681f39a8042ed3323` |
 | Execution | Exit status `COMPLETED`, exit code `0` |
 | Output | Fresh JSON and Markdown monitor reports |
 | Output verification | Both artifacts existed and were SHA-256 hashed |
 | Freshness | PASS; report age approximately 0 seconds against 300-second contract |
 | Evidence | REAL execution-start and canonical-report evidence persisted |
 | Derived state | `SUCCEEDED_VERIFIED` |
+
+The run passed authority and dependency gates, required output existence and
+hash checks, artifact-linked REAL evidence, zero-mutation side-effect
+verification, and freshness at completion. Read-time status through
+`TruthKernel.get_process_status("daily_monitor")` independently returned
+`CURRENT_STATE=SUCCEEDED_VERIFIED`, `FRESH=YES`, and `RUNNING=NO`.
 
 ## Truth boundary proven
 

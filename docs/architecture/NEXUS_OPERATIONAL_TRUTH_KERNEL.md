@@ -1,4 +1,19 @@
-# Nexus V2 Operational Truth Kernel — WP1-A
+# Nexus V2 Operational Truth Kernel — WP1-B
+
+## WP1-B hardening
+
+The kernel is evidence-derived. A caller's `output_verified` boolean is only
+one input: authority, dependencies, required artifact existence and hashes,
+verified real evidence, freshness, and declared side effects must also pass.
+SQLite foreign keys are enabled on every connection. Requested runs remain
+`PENDING_EXECUTION` until `mark_run_started()` is called; a run row alone is
+not proof that execution is running.
+
+Freshness is recomputed at read time from the process freshness contract, so a
+historically verified run can become `STALE` without rewriting history.
+Continuous processes require observed heartbeat evidence; a loaded scheduler
+is not a heartbeat. Expired human gates cannot be approved, and approval is
+bound to the exact action recorded on that gate.
 
 ## Decision
 
@@ -63,6 +78,7 @@ and gate ID; approval for one gate cannot authorize another.
 
 - `register_process`
 - `start_run`
+- `mark_run_started`
 - `record_dependency_result`
 - `record_authority_result`
 - `record_output`
@@ -73,6 +89,12 @@ and gate ID; approval for one gate cannot authorize another.
 - `get_run`
 - `verify_freshness`
 - `create_human_gate` / `approve_human_gate`
+
+`get_process_status` is a read-only structured model exposing definition and
+current derived state, execution mode, latest requested/started/completed
+runs, real and verified run identifiers, dynamic freshness/age, authority and
+dependency results, output/side-effect verification, heartbeat status,
+warnings, and evidence.
 
 The Daily Monitor adapter is bounded, internal/read-only, and records the
 monitor’s execution/output truth separately from the monitor’s own findings.

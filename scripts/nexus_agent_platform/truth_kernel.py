@@ -13,7 +13,7 @@ import os
 import sqlite3
 import subprocess
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -47,6 +47,9 @@ class TruthKernel:
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.db_path)
         connection.row_factory = sqlite3.Row
+        # SQLite foreign keys are connection-local; enabling them only during
+        # schema creation would leave later evidence writes unenforced.
+        connection.execute("PRAGMA foreign_keys=ON")
         return connection
 
     def _init_db(self) -> None:
@@ -167,6 +170,20 @@ class TruthKernel:
             )
         return run_id
 
+    def mark_run_started(self, run_id: str, *, started_at: str | None = None,
+                         process_started_at: str | None = None) -> None:
+        """Transition a requested run into execution using a public API."""
+        run = self.get_run(run_id)
+        if not run:
+            raise KeyError(run_id)
+        if run["completed_at"] is not None:
+            raise ValueError("completed run cannot be started")
+        if run["started_at"] is not None:
+            return
+        started = started_at or utc_now()
+        self._update_run(run_id, started_at=started,
+                         process_started_at=process_started_at or started)
+
     def record_heartbeat(self, run_id: str, *, heartbeat_at: str | None = None,
                          cycle_count: int | None = None, successful_cycle_at: str | None = None) -> None:
         self._update_run(run_id, heartbeat_at=heartbeat_at or utc_now(), cycle_count=cycle_count,
@@ -211,14 +228,50 @@ class TruthKernel:
         run = self.get_run(run_id)
         if not run:
             raise KeyError(run_id)
-        hashes = self.record_output(run_id, output_artifacts)
+        definition = self.get_process_definition(run["process_id"]) or {}
+        artifacts = list(output_artifacts)
+        hashes = self.record_output(run_id, artifacts)
         evidence = self.get_evidence(run_id)
         real_verified = any(e["real_or_simulated"] == "REAL" and e["verification_status"] == "VERIFIED" for e in evidence)
-        output_verified = verification_result.get("output_verified") is True
+        required = definition.get("output_contract", {}).get("artifacts", [])
+        required_paths = {str(ROOT / p) if not Path(p).is_absolute() else str(Path(p)) for p in required}
+        supplied_paths = set(hashes)
+        required_present = all(path in supplied_paths for path in required_paths) if required_paths else True
+        output_evidence = any(
+            e["real_or_simulated"] == "REAL"
+            and e["verification_status"] == "VERIFIED"
+            and e["artifact"]
+            and (not required_paths or str(Path(e["artifact"])) in required_paths
+                 or str(ROOT / e["artifact"]) in required_paths)
+            and (not e["artifact_hash"] or e["artifact_hash"] in hashes.values())
+            for e in evidence
+        )
+        output_verified = verification_result.get("output_verified") is True and required_present and (output_evidence if required_paths else True)
         fresh = freshness_result.get("fresh") is True
-        verified = exit_code == 0 and output_verified and fresh and real_verified and verification_result.get("verification_failed") is not True
-        final_state = "SUCCEEDED_VERIFIED" if verified else ("FAILED" if exit_code != 0 or verification_result.get("verification_failed") is True else "SUCCEEDED_UNVERIFIED")
+        authority = json.loads(run["authority_result"] or "{}")
+        dependencies = json.loads(run["dependency_result"] or "{}")
+        authority_ok = authority.get("authorized") is True and not self._expired(authority.get("expires_at"))
+        dependency_ok = dependencies.get("available") is True and dependencies.get("failed") is not True
+        expected_effects = side_effect_expected or {}
+        observed_effects = side_effect_observed or {}
+        side_effect_verified = self._side_effects_verified(expected_effects, observed_effects)
         completed = completed_at or utc_now()
+        if run["started_at"] is None:
+            final_state = "PENDING_EXECUTION"
+        elif not authority_ok:
+            final_state = "BLOCKED_AUTHORITY"
+        elif not dependency_ok:
+            final_state = "BLOCKED_DEPENDENCY"
+        elif exit_code != 0 or verification_result.get("verification_failed") is True:
+            final_state = "FAILED"
+        elif not side_effect_verified:
+            final_state = "FAILED"
+        elif not output_verified or not real_verified:
+            final_state = "SUCCEEDED_UNVERIFIED"
+        elif not fresh:
+            final_state = "STALE"
+        else:
+            final_state = "SUCCEEDED_VERIFIED"
         self._update_run(run_id, completed_at=completed, exit_status=exit_status, exit_code=exit_code,
                          output_artifacts=_json(list(hashes)), output_hashes=_json(hashes),
                          side_effect_expected=_json(side_effect_expected or {}), side_effect_observed=_json(side_effect_observed or {}),
@@ -226,9 +279,31 @@ class TruthKernel:
                          recovery_used=int(recovery_used), final_state=final_state)
         return final_state
 
-    def verify_freshness(self, created_at: str, *, max_age_seconds: int) -> dict[str, Any]:
+    @staticmethod
+    def _expired(expires_at: str | None, *, now: str | None = None) -> bool:
+        if not expires_at:
+            return False
+        reference = datetime.fromisoformat(now) if now else datetime.now(timezone.utc)
+        return reference >= datetime.fromisoformat(expires_at)
+
+    @staticmethod
+    def _side_effects_verified(expected: dict[str, Any], observed: dict[str, Any]) -> bool:
+        if "mutations" in expected and observed.get("mutations") != expected["mutations"]:
+            return False
+        if "external_write" in expected:
+            if observed.get("external_write") != expected["external_write"]:
+                return False
+            if expected["external_write"] and observed.get("verified") is not True:
+                return False
+        if expected.get("database_mutations") is not None and observed.get("database_mutations") != expected["database_mutations"]:
+            return False
+        return True
+
+    def verify_freshness(self, created_at: str, *, max_age_seconds: int,
+                         now: str | None = None) -> dict[str, Any]:
         parsed = datetime.fromisoformat(created_at)
-        age = (datetime.now(timezone.utc) - parsed).total_seconds()
+        reference = datetime.fromisoformat(now) if now else datetime.now(timezone.utc)
+        age = (reference - parsed).total_seconds()
         return {"fresh": age <= max_age_seconds, "age_seconds": round(age, 3), "max_age_seconds": max_age_seconds}
 
     def derive_process_state(self, process_id: str, *, now: str | None = None) -> str:
@@ -243,24 +318,73 @@ class TruthKernel:
                 return "BLOCKED_DEPENDENCY"
             return "READY" if definition.get("enabled", True) else "NOT_CONFIGURED"
         latest = runs[0]
+        if latest["started_at"] is None and latest["completed_at"] is None:
+            return "PENDING_EXECUTION"
         if latest["completed_at"] is None:
+            if definition.get("execution_mode") == "CONTINUOUS":
+                return self._continuous_state(definition, latest, now=now)
             return "RUNNING"
         if latest["final_state"] == "FAILED":
             return "FAILED"
-        if latest["final_state"] != "SUCCEEDED_VERIFIED":
-            if latest["final_state"] == "SUCCEEDED_UNVERIFIED" and json.loads(latest["freshness_result"] or "{}").get("fresh") is False:
-                return "STALE"
+        if latest["final_state"] in {"BLOCKED_AUTHORITY", "BLOCKED_DEPENDENCY", "FAILED", "PENDING_EXECUTION"}:
+            return latest["final_state"]
+        if latest["final_state"] not in {"SUCCEEDED_VERIFIED", "STALE"}:
             return "SUCCEEDED_UNVERIFIED"
-        freshness = json.loads(latest["freshness_result"] or "{}")
+        freshness_contract = definition.get("freshness_contract", {})
+        limit = freshness_contract.get("max_age_seconds")
+        completed = latest["completed_at"] or latest["requested_at"]
+        if limit is not None:
+            freshness = self.verify_freshness(completed, max_age_seconds=int(limit), now=now)
+        else:
+            freshness = {"fresh": True}
         if freshness.get("fresh") is not True:
             return "STALE"
         return "SUCCEEDED_VERIFIED"
 
-    def get_process_status(self, process_id: str) -> dict[str, Any]:
+    def _continuous_state(self, definition: dict[str, Any], run: sqlite3.Row, *, now: str | None = None) -> str:
+        heartbeat = run["heartbeat_at"]
+        if not heartbeat:
+            return "STALE"
+        limit = int(run["heartbeat_interval_seconds"] or definition.get("heartbeat_interval_seconds") or 300)
+        freshness = self.verify_freshness(heartbeat, max_age_seconds=limit, now=now)
+        return "RUNNING" if freshness["fresh"] else "STALE"
+
+    def get_process_status(self, process_id: str, *, now: str | None = None) -> dict[str, Any]:
         definition = self.get_process_definition(process_id)
         runs = self._runs_for(process_id)
         latest = dict(runs[0]) if runs else None
-        return {"process_id": process_id, "state": self.derive_process_state(process_id), "definition": definition, "latest_run": latest}
+        current_state = self.derive_process_state(process_id, now=now)
+        real_runs = [r for r in runs if any(e["real_or_simulated"] == "REAL" for e in self.get_evidence(r["run_id"]))]
+        verified_runs = [r for r in real_runs if r["final_state"] == "SUCCEEDED_VERIFIED"]
+        latest_evidence = self.get_evidence(latest["run_id"]) if latest else []
+        freshness_limit = (definition or {}).get("freshness_contract", {}).get("max_age_seconds")
+        freshness = self.verify_freshness(latest["completed_at"], max_age_seconds=int(freshness_limit), now=now) if latest and latest["completed_at"] and freshness_limit else {"fresh": False, "age_seconds": None}
+        return {
+            "PROCESS_ID": process_id,
+            "DEFINITION_STATE": "CONFIGURED" if definition else "NOT_CONFIGURED",
+            "CURRENT_STATE": current_state,
+            "EXECUTION_MODE": (definition or {}).get("execution_mode"),
+            "EXPECTED_RUNNING": bool(latest["expected_running"]) if latest else bool((definition or {}).get("expected_running", False)),
+            "RUNNING": current_state == "RUNNING",
+            "LATEST_RUN_ID": latest["run_id"] if latest else None,
+            "LATEST_REAL_RUN_ID": real_runs[0]["run_id"] if real_runs else None,
+            "LATEST_VERIFIED_RUN_ID": verified_runs[0]["run_id"] if verified_runs else None,
+            "LATEST_RUN_STARTED_AT": latest["started_at"] if latest else None,
+            "LATEST_RUN_COMPLETED_AT": latest["completed_at"] if latest else None,
+            "FRESH": freshness.get("fresh") if latest and latest["completed_at"] else False,
+            "AGE_SECONDS": freshness.get("age_seconds"),
+            "FRESHNESS_LIMIT_SECONDS": freshness_limit,
+            "AUTHORITY": json.loads(latest["authority_result"] or "{}") if latest else {},
+            "DEPENDENCIES": json.loads(latest["dependency_result"] or "{}") if latest else {},
+            "OUTPUT_VERIFIED": json.loads(latest["verification_result"] or "{}").get("output_verified") is True if latest else False,
+            "SIDE_EFFECT_VERIFIED": self._side_effects_verified(json.loads(latest["side_effect_expected"] or "{}"), json.loads(latest["side_effect_observed"] or "{}")) if latest else False,
+            "HEARTBEAT_AT": latest["heartbeat_at"] if latest else None,
+            "HEARTBEAT_FRESH": self._continuous_state(definition, runs[0], now=now) == "RUNNING" if definition and runs and definition.get("execution_mode") == "CONTINUOUS" else None,
+            "WARNINGS": ["business health is not inferred from monitor execution success"] if process_id == "daily_monitor" else [],
+            "EVIDENCE": [{"evidence_id": e["evidence_id"], "type": e["evidence_type"], "realness": e["real_or_simulated"], "status": e["verification_status"]} for e in latest_evidence],
+            "definition": definition,
+            "latest_run": latest,
+        }
 
     def get_process_definition(self, process_id: str) -> dict[str, Any] | None:
         with self._connect() as db:
@@ -284,10 +408,14 @@ class TruthKernel:
                        (gate_id, run_id, work_package_id, exact_action, reason, risk, authority_requested, utc_now(), expires_at, "PENDING", None, None))
         return gate_id
 
-    def approve_human_gate(self, gate_id: str, action: str, *, approved_by: str) -> bool:
+    def approve_human_gate(self, gate_id: str, action: str, *, approved_by: str,
+                           now: str | None = None) -> bool:
         with self._connect() as db:
-            row = db.execute("SELECT exact_action, status FROM human_gates WHERE gate_id=?", (gate_id,)).fetchone()
+            row = db.execute("SELECT exact_action, status, expires_at FROM human_gates WHERE gate_id=?", (gate_id,)).fetchone()
             if not row or row[1] != "PENDING" or row[0] != action:
+                return False
+            if self._expired(row[2], now=now):
+                db.execute("UPDATE human_gates SET status='EXPIRED' WHERE gate_id=?", (gate_id,))
                 return False
             db.execute("UPDATE human_gates SET status='APPROVED', approved_by=?, approved_at=? WHERE gate_id=?", (approved_by, utc_now(), gate_id))
             return True
