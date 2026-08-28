@@ -66,6 +66,7 @@ MANUAL_CERT_COMMANDS = {
 }
 REPAIR_APPROVAL = re.compile(r"^APPROVE REPAIR ([A-Z0-9][A-Z0-9_-]{2,40}) (MANUAL-E2E-[0-9]{8}-[0-9]{4})$")
 SYSTEM_HEALTH_COMMAND = re.compile(r"^/run\s+system_health$", re.I)
+SUPABASE_VERIFICATION_COMMAND = re.compile(r"^/run\s+supabase_verification$", re.I)
 
 
 def utc_now() -> str:
@@ -491,6 +492,12 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
                     f"Report: {result.get('canonical_report_path')}\nReceipt: {result.get('canonical_receipt_path')}\n"
                     "No external action was performed.")
         return response, {"route": "SYSTEM_HEALTH_PROCESS", "outcome": "ANSWERED" if completed else "BLOCKED", "process_id": "system_health", "system_health_run_id": result.get("run_id"), "system_health_run_started": bool(result.get("started_at")), "system_health_run_completed": completed, "canonical_report_written": result.get("canonical_report_written") is True, "canonical_receipt_written": result.get("canonical_receipt_written") is True, "canonical_report_path": result.get("canonical_report_path"), "canonical_receipt_path": result.get("canonical_receipt_path"), "read_only": True, "external_side_effects": False, "health_status": overall}
+    if SUPABASE_VERIFICATION_COMMAND.fullmatch(text):
+        from nexus_active_operator_runner import run_supabase_verification
+        correlation_id = f"{load_campaign().get('campaign_id', 'NO_CAMPAIGN')}:{update_id or 'DIRECT'}"
+        result = run_supabase_verification(incoming_update_id=int(update_id or 0), correlation_id=correlation_id, trigger="telegram")
+        response = (f"Supabase Verification completed.\n\nServer governed read: {'PASS' if result.get('server_read', {}).get('verified') else 'FAIL'}\nBrowser configuration: {'PASS' if result.get('browser', {}).get('safe_config_verified') else 'FAIL'}\nAuthenticated browser read: {'PASS' if result.get('browser', {}).get('authenticated_read_verified') else 'NOT_PROVEN'}\nRLS isolation: {'PASS' if result.get('browser', {}).get('rls_isolation_verified') else 'NOT_PROVEN'}\nDatabase writes: 0\n\nOverall verification: {result.get('overall_verification', 'BLOCKED')}\nReport: {result.get('canonical_report_path')}\nReceipt: {result.get('canonical_receipt_path')}\n\nNo database mutation was performed.")
+        return response, {"route": "SUPABASE_VERIFICATION_PROCESS", "outcome": "ANSWERED" if result.get("execution_status") == "COMPLETED" else "BLOCKED", "process_id": "supabase_verification", "supabase_run_id": result.get("supabase_run_id"), "supabase_run_started": bool(result.get("started_at")), "supabase_run_completed": result.get("execution_status") == "COMPLETED", "server_read_verified": result.get("server_read", {}).get("verified") is True, "browser_safe_config_verified": result.get("browser", {}).get("safe_config_verified") is True, "no_service_role_frontend_exposure": result.get("browser", {}).get("no_service_role_frontend_exposure") is True, "browser_read_verified": result.get("browser", {}).get("authenticated_read_verified") is True, "authenticated_session_verified": result.get("browser", {}).get("authenticated_read_verified") is True, "rls_isolation_verified": result.get("browser", {}).get("rls_isolation_verified") is True, "canonical_report_written": result.get("canonical_report_written") is True, "canonical_receipt_written": result.get("canonical_receipt_written") is True, "canonical_report_path": result.get("canonical_report_path"), "canonical_receipt_path": result.get("canonical_receipt_path"), "read_only": True, "database_mutations": 0}
     route = classify(text)
     lowered = text.lower()
     control_object = resolve_control_object(text, _load_chat_context(chat_id))

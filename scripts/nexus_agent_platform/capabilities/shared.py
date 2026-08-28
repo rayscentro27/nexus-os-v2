@@ -10,11 +10,13 @@ No write access.  No raw SQL.  No credential exposure.
 from __future__ import annotations
 
 import logging
+import json
 import os
 import re
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 log = logging.getLogger(__name__)
@@ -847,7 +849,7 @@ def _handle_system_health_inner(
 ) -> Dict[str, Any]:
     query_start = datetime.now(timezone.utc)
     health_data: Dict[str, Any] = {
-        "overall_status": "unknown",
+        "overall_status": "UNKNOWN",
         "active_services": 0,
         "degraded_services": 0,
         "failed_services": 0,
@@ -859,41 +861,86 @@ def _handle_system_health_inner(
         "verification_complete": False,
     }
     source_errors: list = []
-    total_services = 0
+    process_states: list[dict[str, Any]] = []
+    now_utc = datetime.now(timezone.utc)
+    repo_root = Path(__file__).resolve().parents[3]
+
+    def age_seconds(value: Any) -> Optional[float]:
+        if not value:
+            return None
+        try:
+            stamp = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if stamp.tzinfo is None:
+                stamp = stamp.replace(tzinfo=timezone.utc)
+            return max(0.0, (now_utc - stamp).total_seconds())
+        except (TypeError, ValueError):
+            return None
+
+    def classify_process(process: Dict[str, Any]) -> str:
+        """Keep configured, execution, and freshness dimensions independent."""
+        process_id = str(process.get("process_id") or "unknown")
+        if process.get("configuration_state") != "enabled":
+            return "DISABLED_EXPECTED"
+        mode = str(process.get("execution_mode") or "UNKNOWN").upper()
+        last_status = str(process.get("runtime_state") or "NEVER_RUN").upper()
+        schedule = str(process.get("schedule") or "UNKNOWN").lower()
+        if "active_operator" in process_id:
+            return "PAUSED_EXPECTED" if mode in {"ACTIVE_INTERNAL", "ACTIVE_OPERATOR"} else "NOT_ENABLED"
+        if last_status in {"FAILED", "ERROR"}:
+            return "FAILED"
+        if last_status in {"BLOCKED", "WAITING_WORKER", "WAITING_APPROVAL"}:
+            return "BLOCKED"
+        if schedule in {"manual", "on_demand"}:
+            return "RUNNING_NOW" if last_status == "RUNNING" else "RECENTLY_COMPLETED" if last_status == "COMPLETED" else "CONFIGURED_ENABLED"
+        age = age_seconds(process.get("last_run"))
+        if last_status == "RUNNING":
+            return "RUNNING_NOW"
+        return "RECENTLY_COMPLETED" if age is not None and age <= 86400 and last_status == "COMPLETED" else "STALE" if age is not None else "UNKNOWN"
 
     # Source 1: Process registry (local JSON)
     source_1_ok = False
     try:
-        from nexus_agent_platform.agents.hermes import _get_system_status
-        raw = _get_system_status()
-        working = raw.get("working", "")
-        if "Unable to read" in working:
+        raw = _nk_get_process_registry_live()
+        if raw.get("status") != "success":
             health_data["source_statuses"]["process_registry"] = "unavailable"
-            source_errors.append(f"process_registry: {raw.get('needs_attention', 'unknown')}")
+            source_errors.append(f"process_registry: {raw.get('error', 'unavailable')}")
         else:
             health_data["sources_checked"].append("process_registry")
             health_data["source_statuses"]["process_registry"] = "success"
             source_1_ok = True
-            if "/" in working:
-                parts = working.split("/")
-                try:
-                    active = int(parts[0].strip())
-                    total = int(parts[1].split()[0].strip())
-                    health_data["active_services"] = active
-                    total_services = total
-                    # Non-running processes are unknown, NOT degraded
-                    # Degradation requires positive evidence (from failure_report or process_failures)
-                    health_data["unknown_services"] = max(0, total - active)
-                except (ValueError, IndexError):
-                    pass
-            detail = raw.get("detail", "")
-            if detail:
-                health_data["important_warnings"].extend(
-                    [line.strip() for line in detail.split("\n") if line.strip()]
-                )
+            for process in raw.get("processes", []):
+                state = classify_process(process)
+                process_states.append({"process_id": process.get("process_id"), "state": state, "mode": process.get("execution_mode"), "schedule_type": process.get("schedule"), "last_status": process.get("runtime_state"), "last_run_at": process.get("last_run")})
+                if state == "RUNNING_NOW":
+                    health_data["active_services"] += 1
+                elif state == "FAILED":
+                    health_data["failed_services"] += 1
+                elif state == "BLOCKED":
+                    health_data["degraded_services"] += 1
+                elif state == "STALE":
+                    health_data["degraded_services"] += 1
+                elif state == "UNKNOWN":
+                    health_data["unknown_services"] += 1
+            health_data["process_states"] = process_states
     except Exception as exc:
         health_data["source_statuses"]["process_registry"] = "error"
         source_errors.append(f"process_registry: {exc}")
+
+    # Active Operator is intentionally paused by campaign safety.  Its old
+    # heartbeat is provenance only; it is never treated as a live heartbeat.
+    heartbeat_path = repo_root / "reports/runtime/nexus_active_operator_heartbeat_latest.json"
+    heartbeat = {}
+    try:
+        heartbeat = json.loads(heartbeat_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        heartbeat = {}
+    heartbeat_age = age_seconds(heartbeat.get("last_run") or heartbeat.get("updated_at"))
+    health_data["active_operator"] = {
+        "state": "PAUSED_EXPECTED",
+        "heartbeat_fresh": False if heartbeat_age is None else heartbeat_age <= 300,
+        "heartbeat_age_seconds": heartbeat_age,
+        "heartbeat_is_telemetry_only": True,
+    }
 
     # Source 2: Failure report (local JSON)
     source_2_ok = False
@@ -948,16 +995,15 @@ def _handle_system_health_inner(
     total_sources = len(health_data["source_statuses"])
 
     if confirmed_sources == 0:
-        # No sources available — health is unknown, NOT degraded
-        health_data["overall_status"] = "unknown"
+        health_data["overall_status"] = "UNKNOWN"
     elif health_data["failed_services"] > 0:
-        health_data["overall_status"] = "degraded"
+        health_data["overall_status"] = "BLOCKED"
     elif health_data["degraded_services"] > 0:
-        health_data["overall_status"] = "degraded"
-    elif health_data["active_services"] > 0 and health_data["failed_services"] == 0:
-        health_data["overall_status"] = "healthy"
+        health_data["overall_status"] = "DEGRADED"
+    elif health_data["unknown_services"] > 0:
+        health_data["overall_status"] = "UNKNOWN"
     else:
-        health_data["overall_status"] = "unknown"
+        health_data["overall_status"] = "HEALTHY"
 
     health_data["verification_complete"] = (
         confirmed_sources == total_sources and total_sources > 0

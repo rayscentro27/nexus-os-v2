@@ -37,6 +37,7 @@ RUNNER_REPORT_PATH = ROOT / "reports/runtime/nexus_active_operator_runner_latest
 BUSINESS_BRIEF_PATH = ROOT / "reports/runtime/nexus_active_operator_business_brief_latest.md"
 RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
 SYSTEM_HEALTH_REPORT_PATH = ROOT / "reports/runtime/nexus_system_health_latest.json"
+SUPABASE_REPORT_PATH = ROOT / "reports/supabase/nexus_supabase_browser_verification_latest.md"
 ESCALATION_DIR = ROOT / "reports/runtime/nexus_active_operator_escalations"
 WORK_ORDER_STATE_PATH = ROOT / "data/runtime/active_operator_work_orders.json"
 OPERATOR_LATEST_PATH = ROOT / "reports/runtime/active_operator_latest.json"
@@ -100,6 +101,13 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def relative_or_absolute(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def run_system_health_check(*, incoming_update_id: int, correlation_id: str, trigger: str = "telegram") -> Dict[str, Any]:
     """Run only the registered low-risk System Health Check process.
 
@@ -116,7 +124,7 @@ def run_system_health_check(*, incoming_update_id: int, correlation_id: str, tri
         completed = utc_now()
         failure = {**base, "completed_at": completed, "execution_status": "FAILED", "error": "canonical system_health process is not enabled as low-risk ACTIVE_INTERNAL"}
         write_json(SYSTEM_HEALTH_REPORT_PATH, failure)
-        receipt = {"receipt_id": f"system_health_receipt_{run_id}", **failure, "report_path": str(SYSTEM_HEALTH_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"system_health_{run_id}.json").relative_to(ROOT)), "external_side_effects": False, "read_only": True}
+        receipt = {"receipt_id": f"system_health_receipt_{run_id}", **failure, "report_path": relative_or_absolute(SYSTEM_HEALTH_REPORT_PATH), "receipt_path": relative_or_absolute(RECEIPT_DIR / f"system_health_{run_id}.json"), "external_side_effects": False, "read_only": True}
         write_json(RECEIPT_DIR / f"system_health_{run_id}.json", receipt)
         return {**failure, "canonical_report_path": str(SYSTEM_HEALTH_REPORT_PATH), "canonical_receipt_path": str(RECEIPT_DIR / f"system_health_{run_id}.json"), "canonical_report_written": True, "canonical_receipt_written": True}
     try:
@@ -128,10 +136,62 @@ def run_system_health_check(*, incoming_update_id: int, correlation_id: str, tri
         completed = utc_now()
         result = {**base, "completed_at": completed, "execution_status": "FAILED", "error": type(exc).__name__, "read_only": True, "external_side_effects": False}
     write_json(SYSTEM_HEALTH_REPORT_PATH, result)
-    receipt = {"receipt_id": f"system_health_receipt_{run_id}", **result, "report_path": str(SYSTEM_HEALTH_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"system_health_{run_id}.json").relative_to(ROOT))}
+    receipt = {"receipt_id": f"system_health_receipt_{run_id}", **result, "report_path": relative_or_absolute(SYSTEM_HEALTH_REPORT_PATH), "receipt_path": relative_or_absolute(RECEIPT_DIR / f"system_health_{run_id}.json")}
     receipt_path = RECEIPT_DIR / f"system_health_{run_id}.json"
     write_json(receipt_path, receipt)
     return {**result, "canonical_report_path": str(SYSTEM_HEALTH_REPORT_PATH), "canonical_receipt_path": str(receipt_path), "canonical_report_written": True, "canonical_receipt_written": True}
+
+
+def run_supabase_verification(*, incoming_update_id: int, correlation_id: str, trigger: str = "telegram") -> Dict[str, Any]:
+    """Run the registered, manual, read-only Supabase verification only."""
+    run_id = f"supabase_verification_{uuid.uuid4().hex}"
+    started = utc_now()
+    registry = load_json(REGISTRY_PATH, [])
+    rows = registry if isinstance(registry, list) else registry.get("processes", []) if isinstance(registry, dict) else []
+    process = next((row for row in rows if isinstance(row, dict) and row.get("process_id") == "supabase_verification"), None)
+    base = {"process_id": "supabase_verification", "run_id": run_id, "supabase_run_id": run_id, "incoming_update_id": incoming_update_id, "correlation_id": correlation_id, "trigger": trigger, "started_at": started, "read_only": True, "database_mutations": 0}
+    valid = process and process.get("enabled") is True and process.get("mode") == "ACTIVE_INTERNAL" and process.get("schedule_type") == "manual" and process.get("trigger") == "telegram /run supabase_verification or manual" and process.get("runner_path") == "scripts/operations/nexus_active_operator_runner.py" and process.get("report_path") == "reports/supabase/nexus_supabase_browser_verification_latest.md" and process.get("receipt_path") == "reports/runtime/nexus_active_operator_receipts/" and process.get("risk_level") == "low" and process.get("approval_required") is False and process.get("telegram_allowed") is True and "database_writes" in process.get("blocked_actions", [])
+    if not valid:
+        result = {**base, "execution_status": "FAILED", "completed_at": utc_now(), "overall_verification": "BLOCKED", "error": "canonical supabase_verification process is not enabled as low-risk ACTIVE_INTERNAL"}
+    else:
+        server_read = {"verified": False, "table": "nexus_process_definitions", "rows_returned": 0, "read_only": True}
+        try:
+            from nexus_agent_platform.capabilities.supabase_read_client import create_supabase_read_client
+            client = create_supabase_read_client()
+            if client is None:
+                server_read["error"] = "governed Supabase credentials unavailable"
+            else:
+                response = client.table("nexus_process_definitions").select("process_id").limit(1).execute()
+                server_read["verified"] = bool(response.ok)
+                server_read["rows_returned"] = len(response.data) if isinstance(response.data, list) else 0
+                if not response.ok: server_read["error"] = "governed read returned non-success"
+        except Exception as exc:
+            server_read["error"] = type(exc).__name__
+        frontend_files = [ROOT / "src/lib/supabaseClient.ts", ROOT / "dist/assets"]
+        exposure = False
+        for path in frontend_files:
+            if path.is_file(): candidates = [path]
+            elif path.is_dir(): candidates = [item for item in path.rglob("*") if item.is_file()]
+            else: candidates = []
+            for item in candidates:
+                try:
+                    text = item.read_text(encoding="utf-8", errors="ignore")
+                except OSError:
+                    continue
+                if "SUPABASE_SERVICE_ROLE_KEY" in text or "service_role" in text.lower(): exposure = True
+        browser_config = bool(os.getenv("VITE_SUPABASE_URL") and os.getenv("VITE_SUPABASE_ANON_KEY")) and not exposure
+        completed = utc_now()
+        browser = {"safe_config_verified": browser_config, "no_service_role_frontend_exposure": not exposure, "authenticated_read_verified": False, "rls_isolation_verified": False, "status": "WAITING_BROWSER_SESSION"}
+        overall = "VERIFIED" if server_read["verified"] and browser_config and browser["authenticated_read_verified"] and browser["rls_isolation_verified"] else "PARTIAL" if server_read["verified"] or browser_config else "BLOCKED"
+        result = {**base, "execution_status": "COMPLETED", "completed_at": completed, "server_read": server_read, "browser": browser, "overall_verification": overall, "report_path": str(SUPABASE_REPORT_PATH.relative_to(ROOT)), "receipt_path": str((RECEIPT_DIR / f"supabase_verification_{run_id}.json").relative_to(ROOT))}
+    receipt_path = RECEIPT_DIR / f"supabase_verification_{run_id}.json"
+    SUPABASE_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    report_lines = ["# Supabase Verification", "", f"Run: {run_id}", f"Correlation: {correlation_id}", f"Overall verification: {result.get('overall_verification', 'BLOCKED')}", "", f"Server governed read: {'PASS' if result.get('server_read', {}).get('verified') else 'FAIL'}", f"Browser configuration: {'PASS' if result.get('browser', {}).get('safe_config_verified') else 'FAIL'}", f"Service-role frontend exposure: {'FAIL' if result.get('browser', {}).get('no_service_role_frontend_exposure') is False else 'PASS'}", f"Authenticated browser read: {'PASS' if result.get('browser', {}).get('authenticated_read_verified') else 'NOT_PROVEN'}", f"RLS isolation: {'PASS' if result.get('browser', {}).get('rls_isolation_verified') else 'NOT_PROVEN'}", "Database writes: 0", "", "This bounded process performs governed reads only; service-role connectivity does not prove browser authentication or RLS isolation."]
+    SUPABASE_REPORT_PATH.write_text("\n".join(report_lines) + "\n", encoding="utf-8")
+    result["canonical_report_written"] = True; result["canonical_receipt_written"] = True
+    result["report_path"] = relative_or_absolute(SUPABASE_REPORT_PATH); result["receipt_path"] = relative_or_absolute(receipt_path)
+    write_json(receipt_path, result)
+    return {**result, "canonical_report_path": str(SUPABASE_REPORT_PATH), "canonical_receipt_path": str(receipt_path)}
 
 
 def _sanitize_autonomy_environment() -> None:

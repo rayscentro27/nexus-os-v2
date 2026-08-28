@@ -21,6 +21,8 @@ CERT_REGISTRY_PATH = ROOT / "reports/certification/nexus_loop_certification_regi
 RECEIPTS_PATH = ROOT / "reports/runtime/nexus_loop_certification_receipts.jsonl"
 SYSTEM_HEALTH_REPORT_PATH = ROOT / "reports/runtime/nexus_system_health_latest.json"
 SYSTEM_HEALTH_RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
+SUPABASE_REPORT_PATH = ROOT / "reports/supabase/nexus_supabase_browser_verification_latest.md"
+SUPABASE_RECEIPT_DIR = ROOT / "reports/runtime/nexus_active_operator_receipts"
 
 WAITING_NEXT = "WAITING_NEXT_LOOP_APPROVAL"
 ACTIVE = "ACTIVE_CERTIFICATION"
@@ -48,6 +50,12 @@ LOOP_CERTIFICATION_CONTRACTS: dict[str, dict[str, Any]] = {
         "applicable_stages": ["01_REAL_TRIGGER", "02_INTAKE", "03_CONTEXT_RESOLUTION", "04_AUTHORITY_CHECK", "09_REAL_EXECUTION", "14_RESULT_VERIFICATION", "16_RECEIPT", "17_TELEGRAM_VISIBILITY", "18_COMPLETION"],
         "not_applicable_stages": ["05_ACCESS_RESOLUTION", "06_CREDENTIAL_OR_SESSION_RESOLUTION", "07_SCHEDULING", "08_WORKER_OR_MODEL_SELECTION", "10_EXTERNAL_INTEGRATION", "11_RECOVERY", "12_HUMAN_ESCALATION", "13_RESUME", "15_EXTERNAL_EFFECT_VERIFICATION"],
         "completion_summary": "A real authorized Telegram request triggered the canonical System Health Check, the registered internal runner completed, fresh canonical health report and receipt artifacts were produced and verified, and the result was delivered back through Telegram with correlation evidence.",
+    },
+    "supabase_verification": {
+        "required_evidence_types": {"REAL_TELEGRAM_MESSAGE_RECEIVED", "AUTHORIZED_CHAT", "SUPABASE_PROCESS_RESOLVED", "SUPABASE_RUN_STARTED", "SERVER_GOVERNED_READ_VERIFIED", "BROWSER_SAFE_CONFIG_VERIFIED", "NO_SERVICE_ROLE_FRONTEND_EXPOSURE", "BROWSER_SUPABASE_READ_VERIFIED", "AUTHENTICATED_SESSION_VERIFIED", "RLS_TENANT_ISOLATION_VERIFIED", "SUPABASE_RUN_COMPLETED", "CANONICAL_SUPABASE_REPORT_WRITTEN", "CANONICAL_SUPABASE_RECEIPT_WRITTEN", "READ_ONLY_NO_DATABASE_MUTATION", "REAL_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"},
+        "applicable_stages": ["01_REAL_TRIGGER", "02_INTAKE", "03_CONTEXT_RESOLUTION", "04_AUTHORITY_CHECK", "05_ACCESS_RESOLUTION", "06_CREDENTIAL_OR_SESSION_RESOLUTION", "09_REAL_EXECUTION", "10_EXTERNAL_INTEGRATION", "14_RESULT_VERIFICATION", "15_EXTERNAL_EFFECT_VERIFICATION", "16_RECEIPT", "17_TELEGRAM_VISIBILITY", "18_COMPLETION"],
+        "not_applicable_stages": ["07_SCHEDULING", "08_WORKER_OR_MODEL_SELECTION", "11_RECOVERY", "12_HUMAN_ESCALATION", "13_RESUME"],
+        "completion_summary": "A real authorized Telegram request ran the bounded Supabase verification, proved governed server connectivity and safe browser configuration without exposing a service-role secret, verified the authenticated browser read and tenant isolation, performed no writes, and returned a correlated receipt.",
     },
 }
 
@@ -239,6 +247,17 @@ def _system_health_evidence(metadata: Mapping[str, Any], *, incoming_update_id: 
     return evidence
 
 
+def _supabase_evidence(metadata: Mapping[str, Any], *, delivered: bool, outgoing_message_id: int | None) -> set[str]:
+    evidence = {"REAL_TELEGRAM_MESSAGE_RECEIVED", "AUTHORIZED_CHAT"}
+    if metadata.get("process_id") == "supabase_verification": evidence.add("SUPABASE_PROCESS_RESOLVED")
+    if metadata.get("supabase_run_started") is True: evidence.add("SUPABASE_RUN_STARTED")
+    for key, evidence_type in (("server_read_verified", "SERVER_GOVERNED_READ_VERIFIED"), ("browser_safe_config_verified", "BROWSER_SAFE_CONFIG_VERIFIED"), ("no_service_role_frontend_exposure", "NO_SERVICE_ROLE_FRONTEND_EXPOSURE"), ("browser_read_verified", "BROWSER_SUPABASE_READ_VERIFIED"), ("authenticated_session_verified", "AUTHENTICATED_SESSION_VERIFIED"), ("rls_isolation_verified", "RLS_TENANT_ISOLATION_VERIFIED"), ("supabase_run_completed", "SUPABASE_RUN_COMPLETED"), ("canonical_report_written", "CANONICAL_SUPABASE_REPORT_WRITTEN"), ("canonical_receipt_written", "CANONICAL_SUPABASE_RECEIPT_WRITTEN"), ("read_only", "READ_ONLY_NO_DATABASE_MUTATION")):
+        if metadata.get(key) is True: evidence.add(evidence_type)
+    if delivered and outgoing_message_id is not None:
+        evidence.update({"REAL_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"})
+    return evidence
+
+
 def _update_registry_for_loop(campaign: dict[str, Any], evidence: Mapping[str, Any], stage_results: Mapping[str, str]) -> None:
     registry = _read(CERT_REGISTRY_PATH, {})
     if not isinstance(registry, dict):
@@ -269,6 +288,8 @@ def observe_runtime_event(*, campaign_id: str, current_loop: str | None, incomin
         observed = _hermes_router_evidence(event_metadata, response_text, update_id=incoming_update_id, delivered=delivered, outgoing_message_id=outgoing_message_id)
     elif current_loop == "system_health":
         observed = _system_health_evidence(event_metadata, incoming_update_id=incoming_update_id, correlation_id=correlation_id, delivered=delivered, outgoing_message_id=outgoing_message_id)
+    elif current_loop == "supabase_verification":
+        observed = _supabase_evidence(event_metadata, delivered=delivered, outgoing_message_id=outgoing_message_id)
     else:
         # Campaign status is observable but does not newly certify a loop.
         observed = {"TELEGRAM_CAMPAIGN_CONTROL_RECEIVED", "AUTHORIZED_CHAT", "CAMPAIGN_RESOLVED", "CAMPAIGN_RESPONSE_DELIVERED", "CORRELATION_RECEIPT"} if metadata.get("campaign_control_action") == "STATUS" and delivered and outgoing_message_id is not None else set()
@@ -277,18 +298,19 @@ def observe_runtime_event(*, campaign_id: str, current_loop: str | None, incomin
     combined_types = prior_types | observed
     evidence.update({"contract_loop": current_loop, "loop_id": current_loop, "incoming_update_id": incoming_update_id if observed else evidence.get("incoming_update_id"), "outgoing_message_id": outgoing_message_id if observed else evidence.get("outgoing_message_id"), "route": route if observed else evidence.get("route", route), "outcome": outcome if observed else evidence.get("outcome", outcome), "control_object": control_object if observed else evidence.get("control_object"), "evidence_types": sorted(combined_types), "evidence_refs": sorted(set(evidence.get("evidence_refs", [])) | {f"telegram:update:{incoming_update_id}", f"telegram:outgoing:{outgoing_message_id}" if outgoing_message_id is not None else "telegram:outgoing:UNAVAILABLE"}), "correlation_id": correlation_id if observed else evidence.get("correlation_id", correlation_id), "delivered": bool(delivered) if observed else evidence.get("delivered", False), "timestamp": timestamp})
     stage_results = {stage: "NOT_APPLICABLE" for stage in contract.get("not_applicable_stages", [])}
-    stage_map = {"01_REAL_TRIGGER": "REAL_TELEGRAM_MESSAGE_RECEIVED", "02_INTAKE": "REAL_TELEGRAM_MESSAGE_RECEIVED", "03_CONTEXT_RESOLUTION": "EXPLICIT_CONTROL_OBJECT_RESOLVED", "04_AUTHORITY_CHECK": "AUTHORIZED_CHAT", "14_RESULT_VERIFICATION": "CANONICAL_STATE_RETURNED", "16_RECEIPT": "CORRELATION_RECEIPT", "17_TELEGRAM_VISIBILITY": "REAL_RESPONSE_DELIVERED", "18_COMPLETION": "REAL_RESPONSE_DELIVERED"}
+    stage_map = {"01_REAL_TRIGGER": "REAL_TELEGRAM_MESSAGE_RECEIVED", "02_INTAKE": "REAL_TELEGRAM_MESSAGE_RECEIVED", "03_CONTEXT_RESOLUTION": "SUPABASE_PROCESS_RESOLVED" if current_loop == "supabase_verification" else "EXPLICIT_CONTROL_OBJECT_RESOLVED", "04_AUTHORITY_CHECK": "AUTHORIZED_CHAT", "05_ACCESS_RESOLUTION": "SERVER_GOVERNED_READ_VERIFIED", "06_CREDENTIAL_OR_SESSION_RESOLUTION": "AUTHENTICATED_SESSION_VERIFIED", "10_EXTERNAL_INTEGRATION": "SERVER_GOVERNED_READ_VERIFIED", "14_RESULT_VERIFICATION": "CANONICAL_SUPABASE_REPORT_WRITTEN" if current_loop == "supabase_verification" else "CANONICAL_STATE_RETURNED", "15_EXTERNAL_EFFECT_VERIFICATION": "READ_ONLY_NO_DATABASE_MUTATION", "16_RECEIPT": "CORRELATION_RECEIPT", "17_TELEGRAM_VISIBILITY": "REAL_RESPONSE_DELIVERED", "18_COMPLETION": "REAL_RESPONSE_DELIVERED"}
     for stage, required in stage_map.items():
         if stage in contract.get("applicable_stages", []):
             stage_results[stage] = "PASS" if required in combined_types else "FAIL"
     if "09_REAL_EXECUTION" in contract.get("applicable_stages", []):
-        stage_results["09_REAL_EXECUTION"] = "PASS" if ("SYSTEM_HEALTH_RUN_COMPLETED" if current_loop == "system_health" else "CAMPAIGN_RESPONSE_DELIVERED") in combined_types else "FAIL"
+        required = "SYSTEM_HEALTH_RUN_COMPLETED" if current_loop == "system_health" else "SUPABASE_RUN_COMPLETED" if current_loop == "supabase_verification" else "CAMPAIGN_RESPONSE_DELIVERED"
+        stage_results["09_REAL_EXECUTION"] = "PASS" if required in combined_types else "FAIL"
     campaign["current_loop_evidence"] = evidence
     campaign.setdefault("campaign_messages", []).append({"campaign_id": campaign_id, "loop_id": current_loop, "incoming_update_id": incoming_update_id, "outgoing_message_id": outgoing_message_id, "correlation_id": correlation_id, "route": route, "action": metadata.get("campaign_control_action") or "RUNTIME_EVENT", "delivered": bool(delivered), "timestamp": timestamp})
     campaign["current_loop_stages"] = stage_results
     campaign["last_action"] = "runtime_event_observed"
     complete = bool(contract.get("required_evidence_types") and contract["required_evidence_types"].issubset(combined_types))
-    newly_certified = complete and campaign.get("state") == ACTIVE and current_loop not in campaign.get("certified_loops", [])
+    newly_certified = complete and campaign.get("state") in {ACTIVE, "ACTIVE"} and current_loop not in campaign.get("certified_loops", [])
     if newly_certified:
         campaign["certified_loops"] = sorted(set(campaign.get("certified_loops", [])) | {current_loop})
         campaign["completed_loops"] = sorted(set(campaign.get("completed_loops", [])) | {current_loop})

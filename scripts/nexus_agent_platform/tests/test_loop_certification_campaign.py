@@ -19,7 +19,7 @@ def _seed(tmp_path, monkeypatch, state="ACTIVE"):
         "outstanding_repairs": [{"repair_id": "VOICE-001", "state": "WAITING_WORKER"}],
     }
     campaign._write(campaign.CAMPAIGN_PATH, value)
-    campaign._write(campaign.CERT_REGISTRY_PATH, {"campaign_id": value["campaign_id"], "loops": [{"campaign_id": value["campaign_id"], "loop_id": "telegram_operator", "certification_state": "NOT_TESTED"}]})
+    campaign._write(campaign.CERT_REGISTRY_PATH, {"campaign_id": value["campaign_id"], "loops": [{"campaign_id": value["campaign_id"], "loop_id": loop_id, "certification_state": "NOT_TESTED"} for loop_id in value["loop_order"]]})
     return value["campaign_id"]
 
 
@@ -98,7 +98,7 @@ def test_system_health_contract_rejects_status_and_stale_artifacts(tmp_path, mon
     report.write_text(json.dumps({"process_id": "system_health", "run_id": "old", "incoming_update_id": 1, "correlation_id": "old", "execution_status": "COMPLETED"}))
     stale = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="system_health", incoming_update_id=12, route="SYSTEM_HEALTH_PROCESS", outcome="ANSWERED", metadata={"process_id": "system_health", "system_health_run_id": "old", "system_health_run_started": True, "canonical_report_written": True, "canonical_receipt_written": False, "canonical_receipt_path": str(receipt), "read_only": True, "external_side_effects": False}, response_text="health", outgoing_message_id=13, delivered=True)
     assert stale["newly_certified"] is False
-    assert campaign.load_campaign()["certified_loops"] == ["telegram_operator"]
+    assert campaign.load_campaign()["certified_loops"] == []
 
 
 def test_system_health_fresh_complete_artifacts_certify_only_active_loop(tmp_path, monkeypatch):
@@ -113,7 +113,7 @@ def test_system_health_fresh_complete_artifacts_certify_only_active_loop(tmp_pat
     receipt.write_text(json.dumps({**common, "receipt_id": "receipt_fresh"}))
     result = campaign.observe_runtime_event(campaign_id=campaign_id, current_loop="system_health", incoming_update_id=20, route="SYSTEM_HEALTH_PROCESS", outcome="ANSWERED", metadata={"process_id": "system_health", "system_health_run_id": run_id, "system_health_run_started": True, "canonical_report_written": True, "canonical_receipt_written": True, "canonical_receipt_path": str(receipt), "read_only": True, "external_side_effects": False}, response_text="System Health Check completed", outgoing_message_id=21, delivered=True)
     assert result["newly_certified"] is True
-    assert result["certified_loops"] == ["system_health", "telegram_operator"]
+    assert result["certified_loops"] == ["system_health"]
 
 
 def test_system_health_test_event_cannot_mutate_campaign(tmp_path, monkeypatch):
