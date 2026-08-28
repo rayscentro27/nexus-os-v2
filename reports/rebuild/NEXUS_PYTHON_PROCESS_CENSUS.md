@@ -41,11 +41,22 @@ purpose-appropriate runtime evidence.
 
 ## Safe-canary ledger
 
-No process canary was run in this package. The available bounded probes were
-not safely executable with the installed shell utilities, and the package
-does not authorize unbounded launches. This leaves the census **IN_PROGRESS**:
-static inventory is complete, runtime classification and call-graph evidence
-remain open.
+Two bounded internal/read-only canaries were run through their no-argument
+entrypoints with a five-second subprocess bound:
+
+- `scripts/operations/nexus_daily_monitor.py`: **PROVEN_WORKING_PARTIAL** for
+  diagnostic report generation. It produced a fresh runtime summary, but its
+  report also surfaced stale/missing telemetry, so this is not a health
+  certification.
+- `scripts/alpha/alpha_open_source_scout.py`: **PROVEN_WORKING_PARTIAL** for
+  candidate discovery. It returned `ok=true`, selected a candidate, and
+  reported zero AI executions. This proves bounded local discovery only, not
+  live Alpha business operation.
+
+No external mutation, worker restart, credential change, or campaign evidence
+was produced. The census remains **IN_PROGRESS**: static inventory and two
+canaries are recorded, while full runtime classification and call-graph
+evidence remain open.
 
 ## Required continuation
 
