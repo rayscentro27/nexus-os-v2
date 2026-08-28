@@ -16,12 +16,12 @@
     "start_sha": "3391c40f44d60154c5c116cb8cb0776074866f95",
     "verified_at": "2026-08-28T22:20:00Z",
     "source": "WP1-D_TELEGRAM_E2E_VERIFIED",
-    "end_sha": "PENDING_CHECKPOINT"
+    "end_sha": "47556370dfdeeb8797974f62c5aa33566b39fcf7"
   },
   "current_git_head": "HEAD",
   "current_git_head_resolution": "git rev-parse HEAD",
-  "last_completed_work_package_commit": "52d682cf871e8f7d708b132b991cfe9d705792ef",
-  "last_commit": "52d682cf871e8f7d708b132b991cfe9d705792ef",
+  "last_completed_work_package_commit": "47556370dfdeeb8797974f62c5aa33566b39fcf7",
+  "last_commit": "47556370dfdeeb8797974f62c5aa33566b39fcf7",
   "last_test_summary": "WP1-D Telegram E2E verified: real outbound gate message 721, inbound update 197233445, delivered approval response 723, persisted TruthKernel approval/event, and replay rejection. Current Hermes 0.14.0 to target 0.17.0 controlled-migration packet is prepared; no upgrade executed.",
   "human_gate": true,
   "human_gate_reason": "Hermes runtime migration requires explicit approval of exact current/target versions, install mechanism, feature scope, backup, rollback, and security boundary.",
