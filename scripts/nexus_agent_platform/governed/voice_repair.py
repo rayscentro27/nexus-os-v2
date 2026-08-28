@@ -190,6 +190,7 @@ def execute_voice_repair(run_id: str) -> Dict[str, Any]:
 
 def main() -> int:
     if len(sys.argv) == 3 and sys.argv[1] == "execute":
+        from nexus_agent_platform.governed.engine import execute_approved_work_order
         work_order_id = sys.argv[2]
         order = work_orders.get_work_order(work_order_id)
         if not order:
