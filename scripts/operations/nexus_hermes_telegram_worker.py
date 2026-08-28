@@ -29,6 +29,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
+from nexus_agent_platform.loop_certification_campaign import handle_control as handle_loop_certification_control  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
 OFFSET_PATH = ROOT / "data/runtime/telegram_last_update_id.json"
@@ -475,6 +476,9 @@ def handle_command(text: str, *, chat_id: Optional[int] = None, update_id: Optio
     text = re.sub(r"\s+", " ", text.strip())
     if len(text) > MAX_INPUT:
         return ("Message received but exceeds Hermes command limit. Use /portfolio, /status, /approvals, or send a shorter request.", {"route": "INPUT_TOO_LONG", "outcome": "REJECTED_INPUT_TOO_LONG", "input_too_long": True})
+    campaign_control = handle_loop_certification_control(text)
+    if campaign_control is not None:
+        return campaign_control
     route = classify(text)
     lowered = text.lower()
     control_object = resolve_control_object(text, _load_chat_context(chat_id))
