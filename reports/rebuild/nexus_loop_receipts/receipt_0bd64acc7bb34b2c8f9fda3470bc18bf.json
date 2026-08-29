@@ -1,0 +1,52 @@
+{
+  "authority_result": {
+    "class": "internal_read_only",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:16:10.561731+00:00",
+  "dependency_result": {
+    "dependencies": [
+      "TruthKernel",
+      "process registry"
+    ],
+    "status": "PASS"
+  },
+  "error": "executor_result_not_verified",
+  "exit_status": "FAIL_CLOSED",
+  "final_state": "FAILED",
+  "handoff_used": false,
+  "hermes_review": null,
+  "input_freshness": "PASS",
+  "input_source": "synthetic_phase0_migration",
+  "loop_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "model_name": "none",
+  "model_policy": "LOCAL_PRIVATE",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": null,
+  "output_hash": null,
+  "process_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "profile": "nexusworker",
+  "python_entrypoint": null,
+  "receipt_id": "receipt_0bd64acc7bb34b2c8f9fda3470bc18bf",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_e3267eabb0c6437dbd176b5ee95e5caa",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "status": "NOT_RUN_OR_NOT_PROVEN"
+  },
+  "skill_id": "system-operations",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:16:10.511127+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "status": "NOT_PROVEN"
+  },
+  "worker_id": "NEXUS_OPERATIONS_WORKER"
+}

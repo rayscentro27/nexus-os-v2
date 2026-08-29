@@ -1,0 +1,49 @@
+{
+  "authority_result": {
+    "class": "read_only",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:20:34.215717+00:00",
+  "dependency_result": {
+    "dependencies": [],
+    "status": "PASS"
+  },
+  "error": "executor_result_not_verified",
+  "exit_status": "FAIL_CLOSED",
+  "final_state": "FAILED",
+  "handoff_used": false,
+  "hermes_review": null,
+  "input_freshness": "PASS",
+  "input_source": "private_oracle_searxng",
+  "loop_id": "NEXUS_RESEARCH_INTELLIGENCE",
+  "model_name": "none",
+  "model_policy": "RESEARCH",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": null,
+  "output_hash": null,
+  "process_id": "NEXUS_RESEARCH_INTELLIGENCE",
+  "profile": "nexusworker",
+  "python_entrypoint": null,
+  "receipt_id": "receipt_a137afb90b764cf8993d9052552ad7c7",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_0641a839f73141d4a81f28481c71d9de",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "status": "NOT_RUN_OR_NOT_PROVEN"
+  },
+  "skill_id": "research-intelligence",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:20:33.589113+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "status": "NOT_PROVEN"
+  },
+  "worker_id": "NEXUS_RESEARCH_WORKER"
+}

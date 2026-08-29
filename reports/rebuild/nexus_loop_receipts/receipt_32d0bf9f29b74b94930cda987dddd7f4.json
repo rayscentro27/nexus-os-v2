@@ -1,0 +1,56 @@
+{
+  "authority_result": {
+    "class": "read_only",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:20:44.973930+00:00",
+  "dependency_result": {
+    "dependencies": [],
+    "status": "PASS"
+  },
+  "exit_status": "PASS",
+  "final_state": "SUCCEEDED_VERIFIED",
+  "handoff_used": false,
+  "hermes_review": {
+    "advisory": true,
+    "status": "NOT_REQUESTED"
+  },
+  "input_freshness": "PASS",
+  "input_source": "private_oracle_searxng",
+  "loop_id": "NEXUS_RESEARCH_INTELLIGENCE",
+  "model_name": "none",
+  "model_policy": "RESEARCH",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": {
+    "private": true,
+    "query": "Nexus synthetic certification",
+    "result_count": 19
+  },
+  "output_hash": "abf3d6811d7eacc2854c9b7b101b13e758125c470f0bbebd2e842d5f676e6897",
+  "process_id": "NEXUS_RESEARCH_INTELLIGENCE",
+  "profile": "nexusworker",
+  "python_entrypoint": "private SearXNG adapter",
+  "receipt_id": "receipt_32d0bf9f29b74b94930cda987dddd7f4",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_04aa8202fa8f43679c7d50beae83687b",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "client_pii": false,
+    "external": false
+  },
+  "skill_id": "research-intelligence",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:20:44.382373+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "output_verified": true,
+    "status": "PASS"
+  },
+  "worker_id": "NEXUS_RESEARCH_WORKER"
+}
