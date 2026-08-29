@@ -34,7 +34,11 @@ DEFINITIONS = {
 
 def _run_daily(_: Mapping[str, Any]) -> Mapping[str, Any]:
     completed = subprocess.run([sys.executable, "scripts/operations/nexus_daily_monitor.py"], cwd=ROOT, capture_output=True, text=True, timeout=45, check=False)
-    return {"status": "PASS" if completed.returncode == 0 else "FAIL", "entrypoint": "scripts/operations/nexus_daily_monitor.py", "artifact": ["reports/runtime/nexus_daily_monitor_latest.json"], "side_effect": {"external": False, "local_reports": True}}
+    if completed.returncode != 0:
+        return {"status": "FAIL", "entrypoint": "scripts/operations/nexus_daily_monitor.py", "side_effect": {"external": False}}
+    report = json.loads((ROOT / "reports/runtime/nexus_daily_monitor_latest.json").read_text(encoding="utf-8"))
+    payload = {"summary": "Daily operations report generated.", "metrics": {"processes_total": report.get("process_registry", {}).get("total"), "processes_enabled": report.get("process_registry", {}).get("enabled")}, "findings": {"reports_fresh": report.get("reports_freshness", {}).get("fresh_count"), "reports_stale": report.get("reports_freshness", {}).get("stale_count"), "stale_items": [x.get("name") for x in report.get("reports_freshness", {}).get("stale", [])], "blocked_actions": report.get("blocked_actions", {}).get("blocked", []), "next_actions": report.get("next_actions", [])}, "technical_details": {"supabase": report.get("supabase", {}), "build": report.get("build", {})}}
+    return {"status": "PASS", "entrypoint": "scripts/operations/nexus_daily_monitor.py", "artifact": payload, "output_hash": hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest(), "side_effect": {"external": False, "local_reports": True}}
 
 
 def _repo(_: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -43,13 +47,15 @@ def _repo(_: Mapping[str, Any]) -> Mapping[str, Any]:
     if head.returncode or status.returncode:
         return {"status": "FAIL", "entrypoint": "git read-only inspection"}
     digest = hashlib.sha256((head.stdout.strip() + "\n" + status.stdout).encode()).hexdigest()
-    return {"status": "PASS", "entrypoint": "git read-only inspection", "artifact": "repo-state-read-only", "output_hash": digest, "side_effect": {"external": False, "repository_mutation": False}}
+    changed = [line for line in status.stdout.splitlines() if line.strip()]
+    payload = {"repository": ROOT.name, "branch": subprocess.run(["git", "branch", "--show-current"], cwd=ROOT, capture_output=True, text=True, timeout=10, check=False).stdout.strip(), "head": head.stdout.strip(), "worktree_state": "CHANGES_PRESENT" if changed else "CLEAN", "recent_change": "current HEAD inspected", "changed_paths_count": len(changed), "changed_paths_sample": changed[:8], "test_status": "not run by read-only inspection", "known_blockers": [], "open_work": "review changed paths and run focused tests", "duplication_or_tech_debt": "not assessed by bounded status check", "runtime_impact": "none; read-only"}
+    return {"status": "PASS", "entrypoint": "git read-only inspection", "artifact": payload, "output_hash": hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest(), "side_effect": {"external": False, "repository_mutation": False}}
 
 
 def _research(context: Mapping[str, Any]) -> Mapping[str, Any]:
     question = str(context.get("question", "synthetic public research question"))
     if context.get("live_private_searxng"):
-        if not question or any(ch not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -_" for ch in question):
+        if not question or any(ord(ch) < 32 for ch in question):
             return {"status": "FAIL", "entrypoint": "private SearXNG adapter"}
         query = quote(question)
         remote_command = f"curl -fsS --max-time 10 'http://127.0.0.1:8888/search?q={query}&format=json'"
@@ -60,7 +66,9 @@ def _research(context: Mapping[str, Any]) -> Mapping[str, Any]:
             payload = json.loads(completed.stdout)
         except json.JSONDecodeError:
             return {"status": "FAIL", "entrypoint": "private SearXNG adapter"}
-        source = {"query": payload.get("query"), "result_count": len(payload.get("results", [])), "private": True}
+        results = payload.get("results", []) if isinstance(payload.get("results", []), list) else []
+        findings = [{"title": str(item.get("title", ""))[:180], "url": str(item.get("url", ""))[:240], "snippet": str(item.get("content", ""))[:300]} for item in results[:5] if isinstance(item, dict)]
+        source = {"query": payload.get("query"), "result_count": len(results), "findings": findings, "private": True}
         return {"status": "PASS" if source["query"] and source["result_count"] > 0 else "FAIL", "entrypoint": "private SearXNG adapter", "artifact": source, "output_hash": hashlib.sha256(json.dumps(source, sort_keys=True).encode()).hexdigest(), "side_effect": {"external": False, "client_pii": False}}
     source = {"source_id": "synthetic-source-1", "title": "Nexus bounded research fixture", "question": question, "public": True}
     return {"status": "PASS", "entrypoint": "bounded source-validation fixture", "artifact": source, "output_hash": hashlib.sha256(json.dumps(source, sort_keys=True).encode()).hexdigest(), "side_effect": {"external": False, "client_pii": False}}

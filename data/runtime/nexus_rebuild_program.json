@@ -182,6 +182,7 @@
   "wp5_live_telegram_poll": "HEALTHY_NO_UPDATES",
   "wp5_real_telegram_e2e": "NOT_PROVEN",
   "wp5_telegram_failure_recovery": "PASS_INDEPENDENT_SYNTHETIC",
+  "wp5_telegram_result_rendering": "PASS_BOUNDED_LOCAL",
   "wp5_truthkernel_approval_route_preserved": true,
   "wp5_active_operator": false,
   "wp3_nexus_authority_preserved": true,

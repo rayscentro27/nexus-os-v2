@@ -39,11 +39,12 @@ def _executor(_: Mapping[str, Any]) -> Mapping[str, Any]:
         return {"status": "FAIL", "entrypoint": ENTRYPOINT, "stderr": completed.stderr[-500:]}
     if any(not path.is_file() for path in OUTPUTS):
         return {"status": "FAIL", "entrypoint": ENTRYPOINT}
-    payload = json.loads(OUTPUTS[0].read_text(encoding="utf-8"))
-    if not isinstance(payload, dict) or not payload.get("generated_at"):
+    report = json.loads(OUTPUTS[0].read_text(encoding="utf-8"))
+    if not isinstance(report, dict) or not report.get("generated_at"):
         return {"status": "FAIL", "entrypoint": ENTRYPOINT}
     digest = hashlib.sha256(OUTPUTS[0].read_bytes()).hexdigest()
-    return {"status": "PASS", "entrypoint": ENTRYPOINT, "artifact": [str(p.relative_to(ROOT)) for p in OUTPUTS], "output_hash": digest, "side_effect": {"external": False, "local_reports": True}}
+    payload = {"summary": "Daily operations report generated.", "metrics": {"processes_total": report.get("process_registry", {}).get("total"), "processes_enabled": report.get("process_registry", {}).get("enabled")}, "findings": {"reports_fresh": report.get("reports_freshness", {}).get("fresh_count"), "reports_stale": report.get("reports_freshness", {}).get("stale_count"), "stale_items": [item.get("name") for item in report.get("reports_freshness", {}).get("stale", [])], "blocked_actions": report.get("blocked_actions", {}).get("blocked", []), "next_actions": report.get("next_actions", [])}, "technical_details": {"supabase": report.get("supabase", {}), "build": report.get("build", {})}}
+    return {"status": "PASS", "entrypoint": ENTRYPOINT, "artifact": payload, "output_hash": digest, "side_effect": {"external": False, "local_reports": True}}
 
 
 def run_daily_system_loop(context: Mapping[str, Any], *, reviewer=None, receipt_dir=None) -> LoopResult:

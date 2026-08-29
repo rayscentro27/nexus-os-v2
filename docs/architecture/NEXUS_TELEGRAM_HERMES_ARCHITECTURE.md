@@ -17,3 +17,6 @@ endpoint, unrestricted tool path, or TruthKernel mutation is granted.
 
 The former router remains in place as rollback compatibility until WP5 real
 Telegram certification proves the new route.
+
+Execution responses follow `execute → verify → extract → summarize → explain →
+next action`; internal receipt paths remain evidence rather than the answer.

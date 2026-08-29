@@ -158,7 +158,7 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["data/runtime/nexus_department_registry.json", "docs/architecture/NEXUS_DEPARTMENT_ARCHITECTURE.md", "docs/architecture/NEXUS_TELEGRAM_HERMES_ARCHITECTURE.md", "reports/rebuild/NEXUS_DEPARTMENT_SKILL_LOOP_MATRIX.md", "reports/rebuild/NEXUS_REPOSITORY_DEPARTMENT_CAPABILITY_MATRIX.md", "reports/rebuild/NEXUS_TELEGRAM_REAL_E2E_CERTIFICATION.md", "scripts/nexus_agent_platform/department_router.py", "reports/rebuild/nexus_loop_receipts/receipt_fc589044629b46eb8af03cbdf1607502.json", "reports/rebuild/nexus_loop_receipts/receipt_1f74217e493143f0a01c746a9b40a953.json", "reports/rebuild/nexus_loop_receipts/receipt_a5265cfceaa54c5f92fe1f546cb967b3.json", "reports/rebuild/nexus_loop_receipts/receipt_3e05763779cc4b31a68f76c43b349e7f.json"],
-      "blockers": ["Telegram API is healthy but no authorized Ray-authored inbound test updates were available; real Telegram E2E remains unproven. Direct lane-equivalent tests pass. Active Operator remains paused."],
+      "blockers": ["Telegram API is healthy but no authorized Ray-authored inbound test updates were available; real Telegram E2E remains unproven. Direct lane-equivalent and result-rendering tests pass. Active Operator remains paused."],
       "next_action": "Process bounded inbound Ray Telegram test updates for the six safe intent classes, then certify final route."
     }
   ]

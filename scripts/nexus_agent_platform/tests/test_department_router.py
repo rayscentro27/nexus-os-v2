@@ -44,6 +44,25 @@ def test_execution_lane_still_requires_registry_route():
     assert "No work was executed" in response
 
 
+def test_result_rendering_answers_the_question_without_receipt_path():
+    checks = (
+        ("Run the daily system operations check.", ("Nexus operations check", "KEY FINDINGS")),
+        ("Research OpenAI.", ("Research:", "KEY FINDINGS")),
+        ("Check the Nexus repository.", ("Repository intelligence:", "WORKTREE")),
+    )
+    for text, markers in checks:
+        response, metadata = execute(text)
+        assert metadata["outcome"] == "ANSWERED"
+        assert all(marker.lower() in response.lower() for marker in markers)
+        assert "receipt_path" not in response.lower()
+
+
+def test_review_state_query_reads_actual_queue_without_creating_work():
+    response, metadata = execute("What items currently need my review?")
+    assert metadata["lane"] == "READ_ONLY_STATE_LANE"
+    assert "Verified Nexus review state was checked" in response
+
+
 def test_department_registry_has_real_departments_and_shared_skill_mapping():
     registry = json.load(open("data/runtime/nexus_department_registry.json"))
     ids = {item["department_id"] for item in registry["departments"]}

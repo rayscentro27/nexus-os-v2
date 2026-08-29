@@ -44,7 +44,7 @@ def classify_intent(text: str) -> str:
     value = re.sub(r"[?.!]+$", "", text.strip().lower())
     if re.fullmatch(r"(?:hello|hi|hey)(?: nexus)?(?:[, :\-].*)?", value) or re.fullmatch(r"(?:good morning|good afternoon|good evening)(?: nexus)?", value) or re.search(r"\bhow are you(?: today)?\b", value):
         return "CONVERSATION"
-    if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now", "what is the current status of nexus", "what's working right now", "what is blocked", "what needs my attention", "is active operator running", "what happened with the last loop", "what is the health of hermes"} or re.fullmatch(r"(?:what is|what's) (?:the )?(?:current )?status of nexus", value):
+    if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now", "what is the current status of nexus", "what's working right now", "what is blocked", "what needs my attention", "what items currently need my review", "is active operator running", "what happened with the last loop", "what is the health of hermes"} or re.fullmatch(r"(?:what is|what's) (?:the )?(?:current )?status of nexus", value):
         return "STATE_QUERY"
     if value in {"who are you", "what can you do", "/help", "help"}:
         return "CONVERSATION"
@@ -72,10 +72,58 @@ def state_query_response(text: str) -> str:
     query = text.lower()
     if "who are you" in query or "what can you do" in query:
         return "I’m Nexus, the governed control-plane assistant. I can explain verified state, run approved bounded internal checks, research public topics, inspect the repository, and prepare review work. TruthKernel and Nexus remain authoritative; consequential actions stay gated."
+    if "review" in query:
+        queue = _load(ROOT / "reports/runtime/ray_review_queue_latest.json")
+        items = queue.get("approval_cards", []) if isinstance(queue, dict) else []
+        if not items:
+            return "You do not currently have any required review items.\n\nVerified Nexus review state was checked; no new review work was created."
+        lines = ["Ray review items", ""]
+        for item in items[:5]:
+            lines.extend([f"ITEM\n{item.get('title', item.get('id', 'Unidentified item'))}", f"WHY RAY IS NEEDED\n{item.get('why_it_matters', 'A governed decision is requested.')}", f"DECISION REQUIRED\n{item.get('exact_action_requested', 'Review the item and choose approve, reject, or defer.')}", f"RISK / CONSEQUENCE\n{item.get('risk', 'not reported')}", ""])
+        return "\n".join(lines).rstrip() + "\n\nVerified Nexus review state was checked; no action was taken."
     blocked = state.get("blocked_work_packages", [])
     active = state.get("active_work_packages", [])
     lines = ["Nexus current state", "", f"What is true now? {state.get('state', 'UNKNOWN')}.", f"What is working? Active work packages: {len(active)}; Hermes runtime and the bounded WP4 routing foundation are recorded as complete with limits.", f"What is blocked? {', '.join(blocked) if blocked else 'Nothing recorded.'}", f"What happens next? {state.get('next_action', 'Continue from the canonical checkpoint.')}", f"Do you need Ray? {'Yes for consequential authority or the outstanding Telegram E2E.' if safety.get('active_operator_paused', True) else 'No for this read-only query.'}"]
     return "\n".join(lines)
+
+
+def _verified_payload(receipt_path: str) -> dict[str, Any]:
+    try:
+        path = Path(receipt_path)
+        if not path.is_absolute():
+            path = ROOT / path
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+        value = receipt.get("output_artifact")
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: bool) -> str:
+    if not payload:
+        return "RESULT_INSUFFICIENT_FOR_SUMMARY\n\nThe verified loop completed, but its result did not contain enough structured detail to answer this request. No additional claim is being made.\n\nDo you need Ray? No for this rendering issue; the executor contract needs improvement."
+    if intent in {"SYSTEM_OPERATIONS", "SYSTEM_HEALTH"}:
+        findings = payload.get("findings", {})
+        stale = findings.get("stale_items") or []
+        return ("Nexus operations check\n\n"
+                f"SUMMARY\nNexus operations completed successfully. {payload.get('metrics', {}).get('processes_enabled', 'The enabled process count is')} of {payload.get('metrics', {}).get('processes_total', 'the known')} registered processes are enabled.\n\n"
+                "KEY FINDINGS\n"
+                f"• Reports fresh: {findings.get('reports_fresh', 'not reported')}; stale: {findings.get('reports_stale', 'not reported')}.\n"
+                f"• Stale items: {', '.join(stale[:5]) if stale else 'none reported'}.\n"
+                f"• Blocked actions: {', '.join(findings.get('blocked_actions', [])) if findings.get('blocked_actions') else 'none reported'}.\n\n"
+                "WHAT THIS MEANS\nThe check generated fresh operational evidence; Active Operator remains paused by policy.\n\n"
+                f"NEXT ACTION\n{'; '.join(findings.get('next_actions', [])[:2]) if findings.get('next_actions') else 'Continue monitoring fresh evidence.'}\n\n"
+                f"DO YOU NEED RAY? {'Yes for any consequential action.' if ray_required else 'No for this bounded check.'}\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+    if intent == "RESEARCH":
+        findings = payload.get("findings", [])
+        bullets = "\n".join(f"• {item.get('title') or 'Untitled source'} — {item.get('snippet') or 'No snippet available.'}" for item in findings[:3])
+        return (f"Research: {payload.get('query', 'requested topic')}\n\nSUMMARY\nThe bounded private research route returned {payload.get('result_count', 0)} source results.\n\nKEY FINDINGS\n{bullets or 'No source findings were available.'}\n\nWHY IT MATTERS\nThese are source leads for review, not verified business conclusions.\n\nNEXT ACTION\nReview the strongest sources and request a narrower follow-up if needed.\n\nDO YOU NEED RAY? No for this public, read-only research request.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+    if intent == "REPO_INTELLIGENCE":
+        return (f"Repository intelligence: {payload.get('repository', 'Nexus repository')}\n\nSUMMARY\nThe repository was inspected read-only at {payload.get('head', 'an unreported commit')}.\n\nKEY FINDINGS\n• Branch: {payload.get('branch') or 'detached/unreported'}; worktree: {payload.get('worktree_state', 'not reported')}.\n• Changed paths observed: {payload.get('changed_paths_count', 0)}.\n• Recent change: {payload.get('recent_change', 'not reported')}.\n\nWHAT THIS MEANS\nNo repository mutation occurred. The inspection identifies state for follow-up; it does not rewrite production code.\n\nNEXT ACTION\n{payload.get('open_work', 'Review the bounded findings and run focused tests where needed.')}\n\nDO YOU NEED RAY? No for this read-only inspection.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+    if intent == "RAY_REVIEW":
+        item = payload
+        return ("Ray review\n\nITEM\n" + str(item.get("what_happened", "No review item details were returned.")) + "\n\nWHY RAY IS NEEDED\n" + str(item.get("what_is_true_now", "Verified facts only.")) + "\n\nDECISION REQUIRED\n" + str(item.get("what_happens_next", "Review the bounded internal item.")) + "\n\nRISK / CONSEQUENCE\nNo external action was performed.\n\nRECOMMENDED ACTION\nReview the verified item; no approval is inferred.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+    return "The requested bounded work completed successfully. Verified Nexus receipt recorded."
 
 
 def _registry_valid(route: Mapping[str, str]) -> bool:
@@ -96,7 +144,7 @@ def resolve(text: str) -> dict[str, Any]:
     return {"intent_class": intent, "status": "RESOLVED", **route}
 
 
-def execute(text: str, *, input_source: str = "telegram") -> tuple[str, dict[str, Any]] | None:
+def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str, Any]] | None:
     # Preserve the older, separately certified system-health process handler
     # for its exact command while natural-language health requests use WP5
     # registry routing.
@@ -119,7 +167,7 @@ def execute(text: str, *, input_source: str = "telegram") -> tuple[str, dict[str
     context: dict[str, Any] = {"input_source": input_source}
     if resolved["intent_class"] == "RESEARCH":
         context["question"] = re.sub(r"\s+", " ", text).strip()[:240]
-        context["live_private_searxng"] = False
+        context["live_private_searxng"] = input_source == "telegram"
     if resolved["intent_class"] == "RAY_REVIEW":
         context.update({"what_happened": "Telegram requested a bounded internal review item", "what_is_true_now": "No external action was performed", "what_happens_next": "Review item remains governed", "do_you_need_ray": True})
     if resolved["intent_class"] == "FUNDING_READINESS":
@@ -140,9 +188,5 @@ def execute(text: str, *, input_source: str = "telegram") -> tuple[str, dict[str
     metadata = {"route": "NEXUS_DEPARTMENT_LOOP", "outcome": "ANSWERED" if result.final_state == "SUCCEEDED_VERIFIED" else "BLOCKED", "execution_status": result.final_state, "run_id": result.run_id, "receipt_id": result.receipt_id, "receipt_path": result.receipt_path, "capability_id": capability_by_loop.get(resolved["loop"]), "execution_target": "MAC_LOCAL" if resolved["loop"] not in {"NEXUS_RESEARCH_INTELLIGENCE"} else "HYBRID_MAC_ORACLE", "model_provider": "Nexus deterministic", "model_name": "none", **resolved}
     if result.error:
         metadata["error"] = result.error
-    response = (f"{resolved['intent_class']} — {result.final_state}.\n\n"
-                f"What happened? The {resolved['loop']} loop ran through {resolved['department']} / {resolved['skill']}.\n"
-                f"What is true now? The result is {result.final_state}; no authority was inferred from Hermes text.\n"
-                f"What happens next? Review the governed receipt: {result.receipt_path}.\n"
-                f"Do you need Ray? {'Yes, for any consequential action.' if resolved['authority'] != 'internal_read_only' else 'No for this bounded read-only result.'}")
+    response = _render_execution(resolved["intent_class"], _verified_payload(result.receipt_path), ray_required=resolved["authority"] != "internal_read_only")
     return response, metadata
