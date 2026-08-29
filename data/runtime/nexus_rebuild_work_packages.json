@@ -113,13 +113,13 @@
       "human_authority_required": true,
       "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
-      "status": "IN_PROGRESS_WITH_LIMITS",
+      "status": "COMPLETED_WITH_LIMITS",
       "started_at": "2026-08-29T14:45:00Z",
-      "completed_at": null,
-      "commit": null,
-      "evidence": ["reports/rebuild/NEXUS_CREDENTIAL_AUTHORITY_RECONCILIATION_20260829.md", "reports/rebuild/NEXUS_HERMES_TOOL_PROVIDER_COMPATIBILITY.md", "scripts/nexus_agent_platform/tests/test_credential_control_plane.py"],
-      "blockers": ["Oracle Ollama gemma3:4b remains incompatible with injected Kanban lifecycle tools; Groq remains HTTP 403. A zero-priced OpenRouter model is now certified for the bounded tool-worker route, but full Hermes review/golden-loop acceptance remains to be completed."],
-      "next_action": "Use the certified scoped OpenRouter tool-worker route to continue Hermes harness integration, Python executor certification, and the Daily/System Operations golden loop."
+      "completed_at": "2026-08-29T15:30:00Z",
+      "commit": "pending-checkpoint",
+      "evidence": ["reports/rebuild/NEXUS_HERMES_CAPABILITY_INTEGRATION.md", "reports/rebuild/NEXUS_HERMES_BOT_MODE_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_KANBAN_WORKER_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_HARNESS_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_TOOL_PROVIDER_COMPATIBILITY.md", "reports/rebuild/NEXUS_PYTHON_PROCESS_CERTIFICATION.md", "reports/rebuild/NEXUS_PYTHON_EXECUTOR_ALLOWLIST.json", "reports/rebuild/NEXUS_GOLDEN_LOOP_DAILY_SYSTEM_OPERATIONS.md", "reports/rebuild/NEXUS_GOLDEN_LOOP_FAILURE_RECOVERY.md", "reports/rebuild/NEXUS_HERMES_NEXUS_DUPLICATION_DISPOSITION.md", "reports/rebuild/nexus_golden_loop_receipts/receipt_0769d26ce6334e27b71ee4c2838ef6eb.json"],
+      "blockers": ["Oracle Ollama gemma3:4b remains reasoning-only for injected lifecycle tools; Groq remains HTTP 403. Optional multi-provider fallback and VM reboot recovery remain unproven, while the scoped OpenRouter tool-worker route, fixed Python executor, and Daily/System Operations golden loop are certified."],
+      "next_action": "Keep Active Operator paused; optional multi-provider fallback and VM reboot recovery remain outside the proven acceptance evidence."
     }
   ]
 }

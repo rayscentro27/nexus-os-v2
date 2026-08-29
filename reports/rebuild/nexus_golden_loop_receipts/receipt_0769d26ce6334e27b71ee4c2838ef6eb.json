@@ -1,0 +1,65 @@
+{
+  "authority_result": {
+    "class": "internal_read_only",
+    "hermes_write": false,
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T17:18:21.375649+00:00",
+  "dependency_result": {
+    "dependencies": [
+      "runtime reports",
+      "process registry"
+    ],
+    "status": "PASS"
+  },
+  "exit_code": 0,
+  "exit_status": "PASS",
+  "final_state": "SUCCEEDED_VERIFIED",
+  "git_sha": "HEAD",
+  "handoff_used": false,
+  "hermes_profile": "nexusopenrouter",
+  "hermes_review_result": {
+    "advisory": true,
+    "status": "PASS",
+    "summary": "bounded review of internal diagnostic; no external side effects"
+  },
+  "hermes_worker": "nexus-review-advisor",
+  "input_freshness": "PASS",
+  "input_source": "synthetic operational status",
+  "kanban_task_id": null,
+  "loop_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "model_name": "nvidia/nemotron-3.5-lightning:free",
+  "model_provider": "OpenRouter",
+  "output_artifact": [
+    "reports/runtime/nexus_daily_monitor_latest.json",
+    "reports/runtime/nexus_daily_monitor_latest.md"
+  ],
+  "output_hash": {
+    "reports/runtime/nexus_daily_monitor_latest.json": "87239e0ad9b11579b376055ebb0b6ce1cab04756769609f1de5573301102d49c",
+    "reports/runtime/nexus_daily_monitor_latest.md": "94f392ef47e8813012098c7bdc2f47ba393cdf807aec774b2f9f1eda5f5157b7"
+  },
+  "process_id": "wp3_daily_system_operations",
+  "python_entrypoint": "scripts/operations/nexus_daily_monitor.py",
+  "receipt_id": "receipt_0769d26ce6334e27b71ee4c2838ef6eb",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "wp3_e69eb56020e94b11bac794eaeb9ed7e2",
+  "schema_version": "nexus.golden-loop-receipt.v1",
+  "side_effect_expected": {
+    "external": false,
+    "local_reports": true
+  },
+  "side_effect_observed": {
+    "external": false,
+    "local_reports": true
+  },
+  "skills_used": [],
+  "started_at": "2026-08-29T17:18:10.048887+00:00",
+  "tools_used": [],
+  "trigger_id": "trigger_fce6db5f73b64b95a85f5dc0047e430f",
+  "trigger_time": "2026-08-29T17:18:10.048887+00:00",
+  "validation_result": {
+    "output_verified": true,
+    "status": "PASS"
+  }
+}

@@ -7,6 +7,10 @@ verified, and retains TruthKernel evidence.
 
 The Hermes review blocker received three materially distinct corrections:
 toolset minimization, isolated worker-provider routing, and bounded-token
-review requests. All failed without authority expansion. Per WP3 anti-loop
-policy, this signature is `INSTALLATION_OR_INTEGRATION_STALLED` until a
-compatible already-authorized tool-capable/provider route is available.
+review requests. The scoped OpenRouter route then completed the worker canary
+and the real golden loop. Existing fail-closed tests cover invalid context,
+malformed responses, bridge timeout/unavailable state, and executor failure;
+no failure path invents success or bypasses Nexus authority.
+
+A fresh synthetic reviewer-failure run also returned `FAIL_CLOSED` / `FAILED`
+and emitted a non-success receipt; it did not mark the run verified.

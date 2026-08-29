@@ -8,6 +8,9 @@ and bounded terminal/tool adapters. The Nexus integration boundary is:
 
 The Nexus wrapper cannot approve gates, enable payments or live trading, mutate
 client production without authority, or invoke arbitrary shell. The local
-Ollama route is certified for API reasoning without tools. Kanban worker
-execution remains blocked because its required lifecycle tools are rejected by
-the available local model and the existing alternate credential is not usable.
+Ollama route remains certified for private reasoning without tools. The scoped
+OpenRouter worker profile is certified for the required Kanban lifecycle tools;
+provider selection is task-scoped and does not replace the local reasoning
+route. A real Daily/System Operations run invoked the fixed Python executor,
+validated its artifacts, recorded TruthKernel evidence, and received an
+advisory Hermes review with final state `SUCCEEDED_VERIFIED`.

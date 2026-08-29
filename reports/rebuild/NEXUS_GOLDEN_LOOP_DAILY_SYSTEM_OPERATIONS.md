@@ -10,8 +10,9 @@ review. Hermes cannot write TruthKernel or authorize side effects.
 
 `PYTHON_EXECUTOR_ALLOWLIST_CREATED=YES`.
 `PYTHON_EXECUTOR_REAL_EXECUTION=PASS` for the local report generation.
-The end-to-end loop is currently `BLOCKED_REVIEW_PROVIDER_TIMEOUT`: three
-distinct bounded Hermes review attempts failed closed after the native Kanban
-provider compatibility issue saturated the same local route. No success is
-invented; failed receipts are preserved under
-`reports/rebuild/nexus_golden_loop_receipts/`.
+The end-to-end loop now has a real `SUCCEEDED_VERIFIED` receipt at
+`reports/rebuild/nexus_golden_loop_receipts/receipt_0769d26ce6334e27b71ee4c2838ef6eb.json`.
+The fixed Python executor generated and validated its local reports, and the
+scoped `nexusopenrouter` Hermes profile returned an advisory review. TruthKernel
+authority remained read-only to Hermes and no external side effect occurred.
+Earlier failed-closed receipts remain preserved under the same directory.

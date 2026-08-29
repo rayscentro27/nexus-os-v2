@@ -66,6 +66,9 @@ def run_golden_loop(
     *,
     reviewer: Callable[[dict[str, Any]], dict[str, Any]],
     timeout_seconds: int = 45,
+    hermes_profile: str = "default",
+    model_provider: str = "Oracle Ollama",
+    model_name: str = "gemma3:4b",
 ) -> dict[str, Any]:
     """Execute one real bounded loop and emit a complete receipt."""
     started = utc_now()
@@ -91,11 +94,11 @@ def run_golden_loop(
         "input_freshness": "PASS",
         "authority_result": authority,
         "dependency_result": dependency,
-        "hermes_profile": "default",
+        "hermes_profile": hermes_profile,
         "hermes_worker": "nexus-review-advisor",
         "kanban_task_id": None,
-        "model_provider": "Oracle Ollama",
-        "model_name": "gemma3:4b",
+        "model_provider": model_provider,
+        "model_name": model_name,
         "skills_used": [],
         "tools_used": [],
         "python_entrypoint": PYTHON_ENTRYPOINT,

@@ -10,8 +10,8 @@ no consequential capability is enabled merely because Hermes ships it.
 | conversations, sessions, memory, profiles | tagged API/CLI and persistence tests | USE_HERMES_NATIVE / WRAP_WITH_NEXUS | PASS |
 | skills / AgentSkills | bundled sync and skills API | WRAP_WITH_NEXUS | PASS |
 | gateway API, provider routing, fallback | gateway/API and config surfaces | WRAP_WITH_NEXUS | Ollama PASS; fallback blocked |
-| Bot Mode / gateway workers | native gateway and worker entrypoints | WRAP_WITH_NEXUS | blocked by model/tool compatibility |
-| Kanban / worker board | native SQLite board, dispatcher, claims, task lifecycle | WRAP_WITH_NEXUS | board/dispatch proven; model worker blocked |
+| Bot Mode / gateway workers | native gateway and worker entrypoints | WRAP_WITH_NEXUS | PASS with scoped OpenRouter tool-worker profile |
+| Kanban / worker board | native SQLite board, dispatcher, claims, task lifecycle | WRAP_WITH_NEXUS | bounded worker lifecycle, review handoff, and restart persistence PASS |
 | harness, terminal, execute_code | native CLI/tool backends | WRAP_WITH_NEXUS | restricted; no arbitrary shell |
 | MCP, browser, research, image, voice | native surfaces present | WRAP_WITH_NEXUS or BLOCKED_EXTERNAL_DEPENDENCY | disabled or credential-gated |
 | cron/routines, hooks, trajectory | native surfaces present | KEEP_NEXUS_VERSION / WRAP_WITH_NEXUS | disabled or receipt-governed |

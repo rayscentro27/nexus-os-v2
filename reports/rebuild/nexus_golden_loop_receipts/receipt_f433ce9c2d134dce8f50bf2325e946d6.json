@@ -1,0 +1,62 @@
+{
+  "authority_result": {
+    "class": "internal_read_only",
+    "hermes_write": false,
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T17:18:49.122522+00:00",
+  "dependency_result": {
+    "dependencies": [
+      "runtime reports",
+      "process registry"
+    ],
+    "status": "PASS"
+  },
+  "error": "KeyError",
+  "exit_code": 0,
+  "exit_status": "FAIL_CLOSED",
+  "final_state": "FAILED",
+  "git_sha": "HEAD",
+  "handoff_used": false,
+  "hermes_profile": "nexusopenrouter",
+  "hermes_review_result": {},
+  "hermes_worker": "nexus-review-advisor",
+  "input_freshness": "PASS",
+  "input_source": "synthetic operational status",
+  "kanban_task_id": null,
+  "loop_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "model_name": "nvidia/nemotron-3.5-lightning:free",
+  "model_provider": "OpenRouter",
+  "output_artifact": [
+    "reports/runtime/nexus_daily_monitor_latest.json",
+    "reports/runtime/nexus_daily_monitor_latest.md"
+  ],
+  "output_hash": {
+    "reports/runtime/nexus_daily_monitor_latest.json": "09b274e6cc7e42bf708462923599986c41ebe9f6d2fae1876d981d03bdc96d68",
+    "reports/runtime/nexus_daily_monitor_latest.md": "3854c3ea7389b87f7766092a0d6cb82c05c6481e4a3da7ed11b0fb77789c7864"
+  },
+  "process_id": "wp3_daily_system_operations",
+  "python_entrypoint": "scripts/operations/nexus_daily_monitor.py",
+  "receipt_id": "receipt_f433ce9c2d134dce8f50bf2325e946d6",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "wp3_083a08a1a4ba4b049f7f0f6950f13b41",
+  "schema_version": "nexus.golden-loop-receipt.v1",
+  "side_effect_expected": {
+    "external": false,
+    "local_reports": true
+  },
+  "side_effect_observed": {
+    "external": false,
+    "local_reports": true
+  },
+  "skills_used": [],
+  "started_at": "2026-08-29T17:17:05.928135+00:00",
+  "tools_used": [],
+  "trigger_id": "trigger_8e7af42c1dd04794afdb3d617909c8fb",
+  "trigger_time": "2026-08-29T17:17:05.928135+00:00",
+  "validation_result": {
+    "output_verified": true,
+    "status": "PASS"
+  }
+}
