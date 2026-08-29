@@ -133,13 +133,13 @@
       "allowed_paths": ["scripts/nexus_agent_platform/", "skills/nexus/", "docs/architecture/", "reports/rebuild/", "data/runtime/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
       "phase0": {"repository_discovery": true, "capability_registry": true, "resource_budgets": true, "deployment_cards": true, "duplicate_runtime_review": true},
-      "status": "WAITING_HUMAN",
-      "started_at": null,
+      "status": "IN_PROGRESS",
+      "started_at": "2026-08-29T18:08:00Z",
       "completed_at": null,
       "commit": null,
-      "evidence": [],
-      "blockers": ["Campaign gate is pending deterministic TruthKernel approval; Phase 0 reconciliation must complete before new capability implementation."],
-      "next_action": "Approve the exact WP4 campaign gate through the authorized TruthKernel route."
+      "evidence": ["reports/rebuild/NEXUS_PHASE0_REPOSITORY_CAPABILITY_RECONCILIATION.md", "reports/rebuild/NEXUS_MAC_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_ORACLE_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_CAPABILITY_DEPLOYMENT_CARDS.md", "data/runtime/nexus_capability_registry.json", "reports/rebuild/NEXUS_WP4_CAMPAIGN_GATE.md"],
+      "blockers": [],
+      "next_action": "Implement the reusable loop kernel and Nexus SKILL.md system using the reconciled capability registry."
     }
   ]
 }
