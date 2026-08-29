@@ -1,7 +1,7 @@
 {
   "schema_version": "nexus.rebuild-work-packages.v1",
   "program_id": "NEXUS-V2-REBUILD-20260828",
-  "updated_at": "2026-08-29T01:52:00Z",
+  "updated_at": "2026-08-29T02:12:00Z",
   "work_packages": [
     {
       "work_package_id": "PROGRAM_BOOTSTRAP",
@@ -95,13 +95,13 @@
       "human_authority_required": true,
       "allowed_paths": ["scripts/nexus_agent_platform/bridge/", "scripts/nexus_agent_platform/tests/test_oracle_hermes_bridge.py", "docs/architecture/", "reports/rebuild/", "data/runtime/nexus_rebuild_program.json", "data/runtime/nexus_rebuild_work_packages.json"],
       "forbidden_actions": ["public_endpoint", "cloud_provisioning", "vm_resize", "firewall_change", "credential_rotation", "paid_provider_activation", "TruthKernel_mutation_from_Hermes", "routines", "delegation", "voice", "active_operator"],
-      "status": "BLOCKED",
+      "status": "WAITING_HUMAN_GATE",
       "started_at": "2026-08-28T23:45:00Z",
       "completed_at": null,
       "commit": null,
-      "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "Oracle read-only SSH discovery", "private bridge unit tests"],
-      "blockers": ["DNF repair gate HG-WP2-B-ORACLE-DNF-REPAIR-20260829-01 was executed and rolled back after its malformed drop-in was ignored by systemd; SearXNG was restored healthy with private SQLite and the global loader override. Replacement gate HG-WP2-B-ORACLE-DNF-REPAIR-20260829-02 is pending; Podman installation remains ineligible until corrected repair and DNF health certification."],
-      "next_action": "Await approval of HG-WP2-B-ORACLE-DNF-REPAIR-20260829-02; do not execute repair, install Podman, or deploy Hermes."
+      "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "reports/rebuild/NEXUS_ORACLE_DNF_REPAIR_V2_PREPARATION_20260829.md", "Oracle DNF repair certified; global system SQLite and SearXNG-private SQLite isolated", "Podman 5.8.2 rootless certified; 14-package transaction", "official ARM64 image digest reverified", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "private bridge unit tests"],
+      "blockers": ["Hermes deployment requires approval of exact gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-03. Hermes remains undeployed; private bridge remains inactive."],
+      "next_action": "Await approval of HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-03; do not deploy Hermes or activate the bridge."
     }
   ]
 }
