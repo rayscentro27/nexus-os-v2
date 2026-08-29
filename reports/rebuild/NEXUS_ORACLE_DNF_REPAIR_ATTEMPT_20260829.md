@@ -2,7 +2,12 @@
 
 `DNF_REPAIR_GATE=HG-WP2-B-ORACLE-DNF-REPAIR-20260829-01`
 `DNF_REPAIR_GATE_VERIFIED=YES`
-`ORACLE_HOST_MODIFIED=NO`
+`HOST_MUTATION_ATTEMPTED=YES`
+`ROLLBACK_EXECUTED=YES`
+`ROLLBACK_RESULT=SUCCESS`
+`FINAL_HOST_STATE_RESTORED=YES`
+`PERSISTENT_NET_CHANGE=NO`
+`ORACLE_HOST_MODIFIED=NO (final state; a mutation was attempted and rolled back)`
 `PODMAN_INSTALLED=NO`
 `HERMES_INSTALLED=NO`
 
@@ -41,3 +46,7 @@ working state, but the DNF repair is not certified and the Podman gate is not
 eligible for execution.
 
 `NEXT_ACTION=obtain a new exact authorization for a corrected repair execution`
+
+The corrected pending gate is
+`HG-WP2-B-ORACLE-DNF-REPAIR-20260829-02`. No Oracle changes were made while
+preparing that gate.

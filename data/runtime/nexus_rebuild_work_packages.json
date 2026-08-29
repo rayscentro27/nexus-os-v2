@@ -1,7 +1,7 @@
 {
   "schema_version": "nexus.rebuild-work-packages.v1",
   "program_id": "NEXUS-V2-REBUILD-20260828",
-  "updated_at": "2026-08-29T01:35:00Z",
+  "updated_at": "2026-08-29T01:52:00Z",
   "work_packages": [
     {
       "work_package_id": "PROGRAM_BOOTSTRAP",
@@ -100,8 +100,8 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "Oracle read-only SSH discovery", "private bridge unit tests"],
-      "blockers": ["DNF repair gate was approved, but execution was rolled back because the first scoped SearXNG systemd drop-in was syntactically invalid; SearXNG was restored healthy with private SQLite and the global loader override. Podman installation remains ineligible until a corrected repair is authorized and DNF health is certified."],
-      "next_action": "Obtain a new exact authorization for the corrected SearXNG-only loader repair; do not install Podman or deploy Hermes."
+      "blockers": ["DNF repair gate HG-WP2-B-ORACLE-DNF-REPAIR-20260829-01 was executed and rolled back after its malformed drop-in was ignored by systemd; SearXNG was restored healthy with private SQLite and the global loader override. Replacement gate HG-WP2-B-ORACLE-DNF-REPAIR-20260829-02 is pending; Podman installation remains ineligible until corrected repair and DNF health certification."],
+      "next_action": "Await approval of HG-WP2-B-ORACLE-DNF-REPAIR-20260829-02; do not execute repair, install Podman, or deploy Hermes."
     }
   ]
 }
