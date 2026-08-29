@@ -1,7 +1,7 @@
 {
   "schema_version": "nexus.rebuild-work-packages.v1",
   "program_id": "NEXUS-V2-REBUILD-20260828",
-  "updated_at": "2026-08-29T02:32:00Z",
+  "updated_at": "2026-08-29T03:07:00Z",
   "work_packages": [
     {
       "work_package_id": "PROGRAM_BOOTSTRAP",
@@ -100,8 +100,8 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "reports/rebuild/NEXUS_ORACLE_DNF_REPAIR_V2_PREPARATION_20260829.md", "Oracle DNF repair certified; global system SQLite and SearXNG-private SQLite isolated", "Podman 5.8.2 rootless certified; 14-package transaction", "official ARM64 image digest reverified", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "private bridge unit tests"],
-      "blockers": ["Hermes deployment requires approval of exact gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-04. Gate ...03 was held after security reconciliation found its host-network and capability contract incomplete. Hermes remains undeployed; private bridge remains inactive."],
-      "next_action": "Await approval of HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-04; do not deploy Hermes or activate the bridge."
+      "blockers": ["Gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-04 created the pinned container but rootless start failed because the CPU cgroup controller is unavailable; the container was removed under rollback. Replacement gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-05 is pending. Hermes remains undeployed; private bridge remains inactive."],
+      "next_action": "Await approval of HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-05; do not deploy Hermes or activate the bridge."
     }
   ]
 }
