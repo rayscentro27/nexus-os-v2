@@ -156,6 +156,7 @@
   "wp4_credit_business_funding_loop": "PASS_SYNTHETIC_ONLY",
   "wp4_ray_review_loop": "PASS_INTERNAL_ITEM_CREATION",
   "wp4_failure_recovery_matrix": "PASS_FAIL_CLOSED",
+  "wp4_worker_skill_model_routing": "PASS_FAIL_CLOSED",
   "wp4_scope": "REUSABLE_LOOP_KERNEL_AND_NEXUS_SKILL_LIBRARY",
   "wp3_nexus_authority_preserved": true,
   "hermes_micro_gates_operationally_superseded": true,

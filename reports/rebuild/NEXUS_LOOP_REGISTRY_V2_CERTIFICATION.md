@@ -6,6 +6,7 @@ implementation, trigger, skill, workers, executor, authority class, autonomy,
 evidence, and blockers.
 
 Daily/System Operations is `CERTIFIED_INTERNAL` and has fresh v2-kernel
-execution evidence. System recovery, research, repository intelligence,
-funding, and Ray review are explicitly staged for bounded certification; their
-registry status remains non-certified until real execution evidence exists.
+execution evidence. System recovery, repository intelligence, research, and
+Ray review have fresh bounded receipts and are certified at their stated
+read-only/internal scope. Funding remains synthetic-only. No registry row is
+promoted from file existence alone.

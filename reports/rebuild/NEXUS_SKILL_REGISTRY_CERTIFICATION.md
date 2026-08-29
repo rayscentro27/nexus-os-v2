@@ -14,3 +14,7 @@ not promoted to operational status.
 `SKILL_RESOLUTION_PROVEN=YES`
 `SKILL_AUTHORITY_FAIL_CLOSED=YES`
 `SKILL_EXECUTOR_ALLOWLIST_ENFORCED=YES`
+
+Worker/profile/model/executor mappings are recorded in
+`data/runtime/nexus_worker_role_map.json` and enforced by the route resolver;
+37 focused WP4/WP3/TruthKernel/bridge tests pass.
