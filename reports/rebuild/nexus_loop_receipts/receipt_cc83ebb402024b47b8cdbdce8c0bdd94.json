@@ -1,0 +1,60 @@
+{
+  "authority_result": {
+    "class": "human_review",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:25:07.331110+00:00",
+  "dependency_result": {
+    "dependencies": [],
+    "status": "PASS"
+  },
+  "exit_status": "PASS",
+  "final_state": "SUCCEEDED_VERIFIED",
+  "handoff_used": false,
+  "hermes_review": {
+    "advisory": true,
+    "status": "PASS",
+    "summary": "Hermes advisory review passed"
+  },
+  "input_freshness": "PASS",
+  "input_source": "synthetic_wp4_review",
+  "loop_id": "NEXUS_RAY_REVIEW",
+  "model_name": "none",
+  "model_policy": "GENERAL_REASONING",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": {
+    "do_you_need_ray": true,
+    "external_action": false,
+    "review_required": true,
+    "what_happened": "bounded internal result",
+    "what_happens_next": "await exact decision",
+    "what_is_true_now": "verified facts only"
+  },
+  "output_hash": "60944704d280993a72d66539da7634e21e7bfeaba6737715fec29c5c213d811c",
+  "process_id": "NEXUS_RAY_REVIEW",
+  "profile": "nexusworker",
+  "python_entrypoint": "Nexus internal review item builder",
+  "receipt_id": "receipt_cc83ebb402024b47b8cdbdce8c0bdd94",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_474a09c20dbe4f95a577ab2bb80ff73e",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "internal_work_item"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "internal_work_item": true
+  },
+  "skill_id": "ray-review",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:24:57.949425+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "output_verified": true,
+    "status": "PASS"
+  },
+  "worker_id": "NEXUS_REVIEW_WORKER"
+}

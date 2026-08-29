@@ -1,0 +1,59 @@
+{
+  "authority_result": {
+    "class": "internal_review",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:24:57.948678+00:00",
+  "dependency_result": {
+    "dependencies": [],
+    "status": "PASS"
+  },
+  "exit_status": "PASS",
+  "final_state": "SUCCEEDED_VERIFIED",
+  "handoff_used": false,
+  "hermes_review": {
+    "advisory": true,
+    "status": "PASS",
+    "summary": "Hermes advisory review passed"
+  },
+  "input_freshness": "PASS",
+  "input_source": "synthetic_wp4_review",
+  "loop_id": "NEXUS_CREDIT_BUSINESS_FUNDING",
+  "model_name": "none",
+  "model_policy": "GENERAL_REASONING",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": {
+    "business_bankability": "REVIEW",
+    "credit_readiness": "REVIEW",
+    "funding_readiness": "NOT_PROVEN",
+    "subject": "synthetic",
+    "synthetic": true
+  },
+  "output_hash": "3afacc08f69bbce586aecaba6145307e2a3c5dfcc132e1cdf84a23c13fc32ef4",
+  "process_id": "NEXUS_CREDIT_BUSINESS_FUNDING",
+  "profile": "nexusworker",
+  "python_entrypoint": "bounded funding fixture analyzer",
+  "receipt_id": "receipt_ed5c17c20ca84600b42f8e9e7f2cf2b3",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_e3150e84558a4924ab0e0bd7f4160bb8",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "financial_action": false
+  },
+  "skill_id": "funding-readiness",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:24:50.695635+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "output_verified": true,
+    "status": "PASS"
+  },
+  "worker_id": "NEXUS_FUNDING_WORKER"
+}

@@ -1,0 +1,59 @@
+{
+  "authority_result": {
+    "class": "internal_read_only",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:24:15.729505+00:00",
+  "dependency_result": {
+    "dependencies": [
+      "TruthKernel",
+      "process registry"
+    ],
+    "status": "PASS"
+  },
+  "exit_status": "PASS",
+  "final_state": "SUCCEEDED_VERIFIED",
+  "handoff_used": false,
+  "hermes_review": {
+    "advisory": true,
+    "status": "PASS",
+    "summary": "Hermes advisory review passed"
+  },
+  "input_freshness": "PASS",
+  "input_source": "synthetic_wp4_review",
+  "loop_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "model_name": "none",
+  "model_policy": "LOCAL_PRIVATE",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": [
+    "reports/runtime/nexus_daily_monitor_latest.json",
+    "reports/runtime/nexus_daily_monitor_latest.md"
+  ],
+  "output_hash": "6616a710a06efa65a3ac4d32d04da14759811c199d660aaea6531400eab53f10",
+  "process_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "profile": "nexusworker",
+  "python_entrypoint": "scripts/operations/nexus_daily_monitor.py",
+  "receipt_id": "receipt_6f2cc6d2855746fcad7e251e15cdaaad",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_7e8aea98fec24c16a2a6f32167e1bef3",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "local_reports": true
+  },
+  "skill_id": "system-operations",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:24:06.976297+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "output_verified": true,
+    "status": "PASS"
+  },
+  "worker_id": "NEXUS_OPERATIONS_WORKER"
+}

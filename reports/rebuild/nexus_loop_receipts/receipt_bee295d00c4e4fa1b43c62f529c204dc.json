@@ -1,0 +1,49 @@
+{
+  "authority_result": {
+    "class": "internal_read_only",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:23:32.441059+00:00",
+  "dependency_result": {
+    "dependencies": [],
+    "status": "PASS"
+  },
+  "error": "review_not_verified",
+  "exit_status": "FAIL_CLOSED",
+  "final_state": "FAILED",
+  "handoff_used": false,
+  "hermes_review": null,
+  "input_freshness": "PASS",
+  "input_source": "synthetic_wp4_review",
+  "loop_id": "NEXUS_REPO_INTELLIGENCE",
+  "model_name": "none",
+  "model_policy": "CODE_ASSIST",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": "repo-state-read-only",
+  "output_hash": "bfa624179b3e4a0b6195e5390fc74c192222c390ed387d2b18a945d7ca9fb808",
+  "process_id": "NEXUS_REPO_INTELLIGENCE",
+  "profile": "nexusworker",
+  "python_entrypoint": "git read-only inspection",
+  "receipt_id": "receipt_bee295d00c4e4fa1b43c62f529c204dc",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_3b3b5150256845408f154ba760897921",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "status": "NOT_RUN_OR_NOT_PROVEN"
+  },
+  "skill_id": "repo-intelligence",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:23:32.353453+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "status": "NOT_PROVEN"
+  },
+  "worker_id": "NEXUS_RESEARCH_WORKER"
+}

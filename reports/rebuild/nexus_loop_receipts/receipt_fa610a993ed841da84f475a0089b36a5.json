@@ -1,0 +1,54 @@
+{
+  "authority_result": {
+    "class": "read_only",
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T18:23:32.352673+00:00",
+  "dependency_result": {
+    "dependencies": [],
+    "status": "PASS"
+  },
+  "error": "review_not_verified",
+  "exit_status": "FAIL_CLOSED",
+  "final_state": "FAILED",
+  "handoff_used": false,
+  "hermes_review": null,
+  "input_freshness": "PASS",
+  "input_source": "synthetic_wp4_review",
+  "loop_id": "NEXUS_RESEARCH_INTELLIGENCE",
+  "model_name": "none",
+  "model_policy": "RESEARCH",
+  "model_provider": "Nexus deterministic",
+  "output_artifact": {
+    "public": true,
+    "question": "bounded review",
+    "source_id": "synthetic-source-1",
+    "title": "Nexus bounded research fixture"
+  },
+  "output_hash": "92c91ad77afaec8803c56e28a31c2e3c1bf7c01605e39cc217796b56af4af867",
+  "process_id": "NEXUS_RESEARCH_INTELLIGENCE",
+  "profile": "nexusworker",
+  "python_entrypoint": "bounded source-validation fixture",
+  "receipt_id": "receipt_fa610a993ed841da84f475a0089b36a5",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "run_adf09ba79dda48c29b9aeabe8c50ec3c",
+  "schema_version": "nexus.loop-receipt.v2",
+  "side_effect_expected": {
+    "class": "local_reports"
+  },
+  "side_effect_observed": {
+    "external": false,
+    "status": "NOT_RUN_OR_NOT_PROVEN"
+  },
+  "skill_id": "research-intelligence",
+  "skill_version": "unknown",
+  "started_at": "2026-08-29T18:23:32.339683+00:00",
+  "trigger": {
+    "type": "on_demand"
+  },
+  "validation_result": {
+    "status": "NOT_PROVEN"
+  },
+  "worker_id": "NEXUS_RESEARCH_WORKER"
+}
