@@ -1,16 +1,28 @@
 import json
 
-from nexus_agent_platform.department_router import classify_intent, resolve
+from nexus_agent_platform.department_router import classify_intent, execute, resolve
+
+
+def test_conversation_and_state_queries_do_not_require_execution_routes():
+    for text in ("Hello Nexus", "How are you today?", "Good morning", "What can you do?"):
+        assert classify_intent(text) == "CONVERSATION"
+        response, metadata = execute(text)
+        assert metadata["lane"] == "CONVERSATIONAL_LANE"
+        assert "loop" not in metadata
+        assert "loop" not in response.lower()
+    for text in ("What is the current status of Nexus?", "What's working right now?", "What is blocked?", "What needs my attention?"):
+        assert classify_intent(text) == "STATE_QUERY"
+        response, metadata = execute(text)
+        assert metadata["lane"] == "READ_ONLY_STATE_LANE"
+        assert "What is true now?" in response
 
 
 def test_department_intents_resolve_through_canonical_registries():
     expected = {
-        "How is Nexus doing?": ("STATUS", "OPERATIONS", "NEXUS_DAILY_SYSTEM_OPERATIONS"),
         "Run the system operations check": ("SYSTEM_OPERATIONS", "OPERATIONS", "NEXUS_DAILY_SYSTEM_OPERATIONS"),
         "Research this company": ("RESEARCH", "RESEARCH_ALPHA", "NEXUS_RESEARCH_INTELLIGENCE"),
         "Check the repo": ("REPO_INTELLIGENCE", "SYSTEM_ENGINEERING", "NEXUS_REPO_INTELLIGENCE"),
         "What's blocking funding readiness?": ("FUNDING_READINESS", "CREDIT_BUSINESS_FUNDING", "NEXUS_CREDIT_BUSINESS_FUNDING"),
-        "What needs my attention?": ("RAY_REVIEW", "GOVERNANCE_REVIEW", "NEXUS_RAY_REVIEW"),
     }
     for text, (intent, department, loop) in expected.items():
         result = resolve(text)
@@ -24,6 +36,12 @@ def test_unknown_is_safe_and_approval_is_not_routed_as_operator_work():
     assert classify_intent("do something surprising") == "UNKNOWN"
     assert resolve("do something surprising")["status"] == "UNKNOWN_INTENT"
     assert classify_intent("APPROVE HG-WP5-HERMES-TELEGRAM-DEPARTMENT-ROUTING-20260829-01") == "UNKNOWN"
+
+
+def test_execution_lane_still_requires_registry_route():
+    response, metadata = execute("do something")
+    assert metadata["outcome"] == "BLOCKED"
+    assert "No work was executed" in response
 
 
 def test_department_registry_has_real_departments_and_shared_skill_mapping():

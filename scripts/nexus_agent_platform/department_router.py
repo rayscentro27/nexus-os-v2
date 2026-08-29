@@ -42,9 +42,11 @@ def _load(path: Path) -> Mapping[str, Any]:
 
 def classify_intent(text: str) -> str:
     value = re.sub(r"[?.!]+$", "", text.strip().lower())
-    if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now"}:
-        return "STATUS"
-    if value in {"hello", "hi", "hey", "/start", "/help", "help"}:
+    if re.fullmatch(r"(?:hello|hi|hey)(?: nexus)?(?:[, :\-].*)?", value) or re.fullmatch(r"(?:good morning|good afternoon|good evening)(?: nexus)?", value) or re.search(r"\bhow are you(?: today)?\b", value):
+        return "CONVERSATION"
+    if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now", "what is the current status of nexus", "what's working right now", "what is blocked", "what needs my attention", "is active operator running", "what happened with the last loop", "what is the health of hermes"} or re.fullmatch(r"(?:what is|what's) (?:the )?(?:current )?status of nexus", value):
+        return "STATE_QUERY"
+    if value in {"who are you", "what can you do", "/help", "help"}:
         return "CONVERSATION"
     if re.search(r"\b(system operations|daily operations|operations check|system check|today'?s operations)\b", value) or value in {"/run system_operations", "/run daily_operations"}:
         return "SYSTEM_OPERATIONS"
@@ -63,6 +65,19 @@ def classify_intent(text: str) -> str:
     return "UNKNOWN"
 
 
+def state_query_response(text: str) -> str:
+    """Produce a read-only summary from canonical program state."""
+    state = _load(ROOT / "data/runtime/nexus_rebuild_program.json")
+    safety = state.get("safety", {}) if isinstance(state.get("safety"), dict) else {}
+    query = text.lower()
+    if "who are you" in query or "what can you do" in query:
+        return "I’m Nexus, the governed control-plane assistant. I can explain verified state, run approved bounded internal checks, research public topics, inspect the repository, and prepare review work. TruthKernel and Nexus remain authoritative; consequential actions stay gated."
+    blocked = state.get("blocked_work_packages", [])
+    active = state.get("active_work_packages", [])
+    lines = ["Nexus current state", "", f"What is true now? {state.get('state', 'UNKNOWN')}.", f"What is working? Active work packages: {len(active)}; Hermes runtime and the bounded WP4 routing foundation are recorded as complete with limits.", f"What is blocked? {', '.join(blocked) if blocked else 'Nothing recorded.'}", f"What happens next? {state.get('next_action', 'Continue from the canonical checkpoint.')}", f"Do you need Ray? {'Yes for consequential authority or the outstanding Telegram E2E.' if safety.get('active_operator_paused', True) else 'No for this read-only query.'}"]
+    return "\n".join(lines)
+
+
 def _registry_valid(route: Mapping[str, str]) -> bool:
     loops = {x.get("loop_id") for x in _load(LOOP_PATH).get("loops", []) if isinstance(x, dict)}
     skills = {x.get("skill_id") for x in _load(SKILL_PATH).get("skills", []) if isinstance(x, dict)}
@@ -73,8 +88,8 @@ def _registry_valid(route: Mapping[str, str]) -> bool:
 
 def resolve(text: str) -> dict[str, Any]:
     intent = classify_intent(text)
-    if intent in {"CONVERSATION", "UNKNOWN"}:
-        return {"intent_class": intent, "status": "NO_EXECUTION" if intent == "CONVERSATION" else "UNKNOWN_INTENT"}
+    if intent in {"CONVERSATION", "UNKNOWN", "STATE_QUERY"}:
+        return {"intent_class": intent, "status": "NO_EXECUTION" if intent == "CONVERSATION" else "READ_ONLY_STATE" if intent == "STATE_QUERY" else "UNKNOWN_INTENT"}
     route = INTENT_MAP[intent]
     if not _registry_valid(route):
         return {"intent_class": intent, "status": "ROUTING_UNAVAILABLE", "error": "canonical registry mismatch"}
@@ -91,8 +106,10 @@ def execute(text: str, *, input_source: str = "telegram") -> tuple[str, dict[str
     # Status remains a read-model response handled by the established worker;
     # it should not launch a diagnostic process merely because it is routed to
     # the Operations department.
-    if resolved.get("intent_class") == "STATUS":
-        return None
+    if resolved.get("intent_class") == "STATE_QUERY":
+        return state_query_response(text), {"route": "NEXUS_READ_ONLY_STATE", "outcome": "ANSWERED", "lane": "READ_ONLY_STATE_LANE", **resolved}
+    if resolved.get("intent_class") == "CONVERSATION":
+        return "Nexus is here. I’m doing well and ready to help. I can explain verified state, answer questions, or run a bounded internal check when you explicitly ask me to.", {"route": "NEXUS_CONVERSATION", "outcome": "ANSWERED", "lane": "CONVERSATIONAL_LANE", **resolved}
     if resolved["status"] == "NO_EXECUTION":
         if resolved["intent_class"] == "CONVERSATION":
             return "Nexus is here. I can report status, run bounded system checks, research public topics, inspect the repository, or prepare governed review work.", {"route": "NEXUS_CONVERSATION", "outcome": "ANSWERED", **resolved}

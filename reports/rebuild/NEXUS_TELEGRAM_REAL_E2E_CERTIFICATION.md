@@ -10,4 +10,8 @@ and no update was consumed.
 
 The existing authorized Ray identity and TruthKernel approval route remain
 unchanged. A later bounded retry may run under the same campaign authority
-after authorized inbound test updates are available.
+after authorized inbound test updates are available. The routing defect found
+in the first two messages was corrected: greetings now use
+`CONVERSATIONAL_LANE`, and status requests use `READ_ONLY_STATE_LANE` without
+launching an executable loop. Direct bounded equivalent tests pass; real
+Telegram PASS remains unclaimed until inbound updates are observed.
