@@ -113,13 +113,13 @@
       "human_authority_required": true,
       "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
-      "status": "INSTALLATION_OR_INTEGRATION_STALLED",
+      "status": "IN_PROGRESS_WITH_LIMITS",
       "started_at": "2026-08-29T14:45:00Z",
       "completed_at": null,
       "commit": null,
-      "evidence": ["reports/rebuild/NEXUS_CREDENTIAL_AUTHORITY_RECONCILIATION_20260829.md", "scripts/nexus_agent_platform/tests/test_credential_control_plane.py"],
-      "blockers": ["Native Kanban workers require injected lifecycle tools that Oracle Ollama gemma3:4b rejects; isolated alternate Groq credential returned HTTP 403; three distinct Hermes advisory-review attempts failed closed at the bounded timeout. Credential authority is now reconciled and Google Workspace read-only certification passes, but no compatible already-authorized tool-capable Hermes provider is available. Python executor and TruthKernel receipt path are implemented and independently testable."],
-      "next_action": "Resume only after a compatible already-authorized tool-capable/provider route is available; then certify worker protocol, Hermes review, and complete the golden loop."
+      "evidence": ["reports/rebuild/NEXUS_CREDENTIAL_AUTHORITY_RECONCILIATION_20260829.md", "reports/rebuild/NEXUS_HERMES_TOOL_PROVIDER_COMPATIBILITY.md", "scripts/nexus_agent_platform/tests/test_credential_control_plane.py"],
+      "blockers": ["Oracle Ollama gemma3:4b remains incompatible with injected Kanban lifecycle tools; Groq remains HTTP 403. A zero-priced OpenRouter model is now certified for the bounded tool-worker route, but full Hermes review/golden-loop acceptance remains to be completed."],
+      "next_action": "Use the certified scoped OpenRouter tool-worker route to continue Hermes harness integration, Python executor certification, and the Daily/System Operations golden loop."
     }
   ]
 }
