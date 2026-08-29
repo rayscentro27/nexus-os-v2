@@ -42,9 +42,39 @@ SearXNG are `MUST_NOT_DISTURB=YES`.
 `NETWORK_HEADROOM=PASS_FOR_PRIVATE_SSH`; `SERVICE_CONFLICT_RISK=LOW_IF_LOOPBACK_AND_ISOLATED`.
 `ORACLE_HERMES_CAPACITY=PASS_WITH_LIMITS`.
 
+## Podman package preflight
+
+Read-only `dnf repoquery` selected standalone Podman from `ol9_appstream`:
+
+| Field | Result |
+|---|---|
+| Package | `podman` |
+| Candidate | `6:5.8.2-6.0.1.el9_8.aarch64` |
+| Repository | `ol9_appstream` |
+| Architecture | `aarch64` |
+| Resolved dependency candidates | 19 plus Podman |
+| Estimated download | 27.43 MiB bounded candidate set |
+| Estimated installed size | 93.83 MiB bounded candidate set |
+| Root free before | 10.57 GiB |
+| Root free after estimate | approximately 10.47 GiB |
+
+The non-root query could not run a privileged transaction simulation; no
+package installation was attempted. The dependency result includes candidates
+selected by `dnf` and is not a claim that every candidate will be newly
+installed. No Docker/Buildah/Skopeo bundle was selected. `aardvark-dns` was not
+independently required by the direct resolution output; `netavark`, `conmon`,
+`crun`, `container-selinux`, `slirp4netns`, and `fuse-overlayfs` appeared in
+the resolved candidates.
+
 The official NousResearch tag `v2026.8.27` was verified with `git ls-remote`.
 The peeled source commit is
 `5fc308a70719a83cccdbba4c0e39c23f5a8239d5` (annotated tag object
 `fcebd62163497e77e5de00d26d2ed86cb4ef8761`). Official documentation identifies
-the API server and supports Docker on x86_64 and aarch64. No exact official
-image digest was confirmed, so an unverified image will not be used.
+the API server and supports Docker on x86_64 and aarch64. The official Docker
+Hub manifest for `docker.io/nousresearch/hermes-agent:v2026.8.27` was queried
+read-only and returned manifest-list digest
+`sha256:e0df6adebddf29b91112aefc999d4aaf6846c9eb544faca5672a16a13590ff79` and
+ARM64 image digest
+`sha256:e3f4f0679f15556d5e09369cc36bf1074351b2d37bdd672dae593dfd07495180`.
+This proves an official pinned artifact exists; Hermes-on-Podman still
+requires real certification.

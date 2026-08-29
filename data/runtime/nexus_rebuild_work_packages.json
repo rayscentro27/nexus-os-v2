@@ -90,7 +90,7 @@
       "title": "Oracle Hermes 0.20.6 runtime and private Nexus bridge",
       "sprint": "SPRINT_2",
       "purpose": "Deploy and certify pinned Hermes 0.20.6 on the existing Oracle VM, then connect it to Mac-side Nexus through a private controlled bridge.",
-      "dependencies": ["WP2-A_HERMES_UPGRADE_AUTHORIZATION"],
+      "dependencies": ["WP0-A", "WP1-A", "WP1-B", "WP1-D"],
       "risk_level": "high",
       "human_authority_required": true,
       "allowed_paths": ["scripts/nexus_agent_platform/bridge/", "scripts/nexus_agent_platform/tests/test_oracle_hermes_bridge.py", "docs/architecture/", "reports/rebuild/", "data/runtime/nexus_rebuild_program.json", "data/runtime/nexus_rebuild_work_packages.json"],
@@ -100,8 +100,8 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "Oracle read-only SSH discovery", "private bridge unit tests"],
-      "blockers": ["HG-WP2-B-ORACLE-CONTAINER-RUNTIME-20260828-01: Docker/Podman absent; installation would require host-level packages/service changes and is stopped before installation."],
-      "next_action": "Await exact human approval for required Oracle container runtime installation."
+      "blockers": ["HG-WP2-B-ORACLE-PODMAN-INSTALL-20260828-02: exact Podman host installation gate is pending; no installation or Hermes deployment is authorized."],
+      "next_action": "Await exact human approval for HG-WP2-B-ORACLE-PODMAN-INSTALL-20260828-02."
     }
   ]
 }

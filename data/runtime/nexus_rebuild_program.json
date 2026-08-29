@@ -33,7 +33,12 @@
   "human_gate": true,
   "human_gate_reason": "Oracle deployment requires installing a container runtime or other host-level tooling. No sudo, package, service, firewall, or cloud change is authorized automatically. The approved Mac Hermes gate cannot authorize or be reused for the Oracle deployment.",
   "human_gate_requested_at": null,
-  "next_action": "Ray must approve HG-WP2-B-ORACLE-CONTAINER-RUNTIME-20260828-01 before host-level container tooling installation; then deploy only the pinned private Oracle Hermes runtime and certify it.",
+  "selected_oracle_runtime": "PODMAN",
+  "podman_candidate": "podman-6:5.8.2-6.0.1.el9_8.aarch64",
+  "podman_repository": "ol9_appstream",
+  "hermes_container_image": "docker.io/nousresearch/hermes-agent@sha256:e3f4f0679f15556d5e09369cc36bf1074351b2d37bdd672dae593dfd07495180",
+  "hermes_container_tag": "v2026.8.27",
+  "next_action": "Ray must approve HG-WP2-B-ORACLE-PODMAN-INSTALL-20260828-02 before installing the exact Podman package; then separately authorize and execute pinned private Hermes deployment.",
   "safety": {
     "active_operator_paused": true,
     "live_trading": false,
