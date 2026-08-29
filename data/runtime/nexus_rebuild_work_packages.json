@@ -140,6 +140,26 @@
       "evidence": ["reports/rebuild/NEXUS_PHASE0_REPOSITORY_CAPABILITY_RECONCILIATION.md", "reports/rebuild/NEXUS_MAC_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_ORACLE_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_CAPABILITY_DEPLOYMENT_CARDS.md", "data/runtime/nexus_capability_registry.json", "reports/rebuild/NEXUS_WP4_CAMPAIGN_GATE.md", "docs/architecture/NEXUS_LOOP_KERNEL_ARCHITECTURE.md", "docs/architecture/NEXUS_SKILLS_ARCHITECTURE.md", "data/runtime/nexus_skill_registry.json", "data/runtime/nexus_loop_registry_v2.json", "reports/rebuild/NEXUS_DAILY_SYSTEM_LOOP_V2_CERTIFICATION.md", "reports/rebuild/NEXUS_LOOP_FAILURE_RECOVERY_MATRIX.md", "reports/rebuild/NEXUS_LOOP_COMMUNICATION_CONTRACT.md", "reports/rebuild/nexus_loop_receipts/receipt_89f955b5bd5146da8e888cd3062f6d8b.json", "reports/rebuild/nexus_loop_receipts/receipt_606ee647dae64475b38370b824285f76.json", "reports/rebuild/nexus_loop_receipts/receipt_32d0bf9f29b74b94930cda987dddd7f4.json", "reports/rebuild/nexus_loop_receipts/receipt_7600d3685aa943cc8297e32b4a77f797.json", "reports/rebuild/nexus_loop_receipts/receipt_b3f963957106464c9b3c36fe1729c677.json", "reports/rebuild/nexus_loop_receipts/receipt_c3853d145bec413ca8220b7d278db15e.json"],
       "blockers": ["Funding loop is synthetic-only; client lifecycle, financial, external communication, and Active Operator actions remain separately governed. VM reboot recovery is outside WP4 evidence."],
       "next_action": "Keep Active Operator paused and preserve the certified bounded framework."
+    },
+    {
+      "work_package_id": "WP5_HERMES_TELEGRAM_DEPARTMENT_ROUTING",
+      "title": "Nexus department architecture and governed Telegram routing",
+      "sprint": "SPRINT_5",
+      "purpose": "Formalize departments and attach the existing authenticated Telegram operator surface to registry-driven Nexus department, loop, skill, capability, worker, and execution-target routing while preserving TruthKernel authority.",
+      "dependencies": ["WP4_NEXUS_LOOPS_SKILLS", "WP1-D-TELEGRAM-E2E"],
+      "risk_level": "high",
+      "human_authority_required": true,
+      "campaign_gate_id": "HG-WP5-HERMES-TELEGRAM-DEPARTMENT-ROUTING-20260829-01",
+      "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
+      "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
+      "scope": ["department_registry", "department_skill_loop_worker_capability_mapping", "repository_department_reconciliation", "registry_driven_telegram_operator_routing", "preserve_truthkernel_human_gate_approval_route", "bounded_real_telegram_e2e_for_conversation_status_system_operations_research_repo_intelligence_ray_review", "fail_closed_telegram_recovery", "telegram_receipts", "legacy_router_rollback"],
+      "status": "WAITING_HUMAN",
+      "started_at": null,
+      "completed_at": null,
+      "commit": null,
+      "evidence": [],
+      "blockers": ["Campaign gate is pending authorized Telegram approval."],
+      "next_action": "Approve the exact campaign gate through the authorized TruthKernel route; keep Active Operator paused."
     }
   ]
 }
