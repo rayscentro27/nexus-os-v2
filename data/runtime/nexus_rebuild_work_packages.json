@@ -117,8 +117,8 @@
       "started_at": "2026-08-29T14:45:00Z",
       "completed_at": null,
       "commit": null,
-      "evidence": [],
-      "blockers": ["Native Kanban workers require injected lifecycle tools that Oracle Ollama gemma3:4b rejects; isolated alternate Groq credential returned HTTP 403; three distinct Hermes advisory-review attempts failed closed at the bounded timeout. Python executor and TruthKernel receipt path are implemented and independently testable."],
+      "evidence": ["reports/rebuild/NEXUS_CREDENTIAL_AUTHORITY_RECONCILIATION_20260829.md", "scripts/nexus_agent_platform/tests/test_credential_control_plane.py"],
+      "blockers": ["Native Kanban workers require injected lifecycle tools that Oracle Ollama gemma3:4b rejects; isolated alternate Groq credential returned HTTP 403; three distinct Hermes advisory-review attempts failed closed at the bounded timeout. Credential authority is now reconciled and Google Workspace read-only certification passes, but no compatible already-authorized tool-capable Hermes provider is available. Python executor and TruthKernel receipt path are implemented and independently testable."],
       "next_action": "Resume only after a compatible already-authorized tool-capable/provider route is available; then certify worker protocol, Hermes review, and complete the golden loop."
     }
   ]

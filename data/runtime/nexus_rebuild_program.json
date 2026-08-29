@@ -95,6 +95,17 @@
   "hermes_nexus_authority_preserved": true,
   "hermes_active_operator": false,
   "hermes_external_feature_dependencies": "BLOCKED_EXTERNAL_DEPENDENCY",
+  "credential_authority_audit": {
+    "status": "RESTORED_CANONICAL_LOOKUP_CONFIRMED",
+    "keychain_service_convention": "nexus/<credential_id>",
+    "keychain_account_convention": "<component>",
+    "store_status_value_record_match": true,
+    "google_workspace_registry": "CONFIGURED_REDACTED",
+    "google_workspace_read_only_certification": "PASS",
+    "hermes_tool_provider_ready": "BLOCKED_PROVIDER_TOOL_COMPATIBILITY",
+    "kanban_worker_resumed": false,
+    "active_operator_ready": "READY_BUT_PAUSED"
+  },
   "wp3_campaign_gate_id": "HG-WP3-HERMES-CAPABILITY-PYTHON-LOOPS-20260829-01",
   "wp3_campaign_gate_status": "APPROVED",
   "wp3_campaign_prepared": true,

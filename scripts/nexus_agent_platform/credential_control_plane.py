@@ -75,12 +75,15 @@ def _source_values() -> dict[str, dict[str, str]]:
     result["NETLIFY_ENV"] = {name: "[REMOTE_CONFIGURED]" for name in _netlify_env_names()}
     return result
 
+def _keychain_record(credential_id: str, component: str) -> tuple[str, str]:
+    """Return the one canonical Keychain service/account identity."""
+    return f"nexus/{credential_id}", component
+
 def _keychain_value(credential_id: str, component: str) -> str | None:
     """Read one secret from macOS Keychain without ever returning it to reports."""
     if sys.platform != "darwin":
         return None
-    service = f"nexus/{credential_id}"
-    account = component
+    service, account = _keychain_record(credential_id, component)
     try:
         result = subprocess.run(
             ["security", "find-generic-password", "-s", service, "-a", account, "-w"],
@@ -101,8 +104,8 @@ def store_keychain(credential_id: str, component: str, value: str, *, replace: b
     if _keychain_value(credential_id, component) and not replace:
         return {"stored": False, "status": "ALREADY_CONFIGURED", "values_included": False}
     try:
-        service = f"nexus/{credential_id}"
-        proc = subprocess.run(["security", "add-generic-password", "-U", "-s", service, "-a", component, "-w", value], capture_output=True, text=True, timeout=5, check=False)
+        service, account = _keychain_record(credential_id, component)
+        proc = subprocess.run(["security", "add-generic-password", "-U", "-s", service, "-a", account, "-w", value], capture_output=True, text=True, timeout=5, check=False)
         return {"stored": proc.returncode == 0, "status": "STORED" if proc.returncode == 0 else "STORE_FAILED", "values_included": False}
     except (OSError, subprocess.TimeoutExpired):
         return {"stored": False, "status": "STORE_FAILED", "values_included": False}
