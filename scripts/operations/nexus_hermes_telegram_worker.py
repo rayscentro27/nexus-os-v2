@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT / "scripts/operations"))
 from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from nexus_agent_platform.control_object_resolver import resolve_control_object  # noqa: E402
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
+from nexus_agent_platform.department_router import execute as execute_department_route  # noqa: E402
 from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, completion_text, handle_control as handle_loop_certification_control, load_campaign, notification_already_sent, observe_runtime_event, record_campaign_message, record_notification  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
@@ -709,7 +710,11 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             response_text = gate_result.pop("response")
             metadata = gate_result
         else:
-            response_text, metadata = handle_command(text, chat_id=chat_id, update_id=uid)
+            department_result = None if len(text) > MAX_INPUT else execute_department_route(text)
+            if department_result is not None:
+                response_text, metadata = department_result
+            else:
+                response_text, metadata = handle_command(text, chat_id=chat_id, update_id=uid)
         evolution = metadata.get("product_evolution") if isinstance(metadata, dict) else None
         if isinstance(evolution, dict) and evolution.get("status") == "CONTRACT_READY":
             try:
@@ -763,7 +768,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                 completion_id = (completion_delivery.get("result") or {}).get("message_id") if completion_delivery.get("ok") else None
                 record_campaign_message(campaign_id=campaign_id, loop_id=certification.get("current_loop"), incoming_update_id=uid, outgoing_message_id=completion_id, correlation_id=f"{campaign_id}:{uid}", action="CERTIFICATION_COMPLETE", delivered=bool(completion_delivery.get("ok")))
                 record_notification(campaign_id=campaign_id, notification_type="LOOP_CERTIFICATION_COMPLETE", requested_action="WAIT_NEXT_LOOP_APPROVAL", state_key=state_key, delivered=bool(completion_delivery.get("ok")))
-        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
+        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "telegram_update_id": uid, "message_id": message.get("message_id"), "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "authorized_identity": True, "intent_class": metadata.get("intent_class"), "department_id": metadata.get("department"), "loop_id": metadata.get("loop"), "skill_id": metadata.get("skill"), "worker_id": metadata.get("worker"), "capability_id": metadata.get("capability_id"), "execution_target": metadata.get("execution_target"), "model_provider": metadata.get("model_provider"), "model_name": metadata.get("model_name"), "python_entrypoint_or_service": metadata.get("receipt_path") or metadata.get("process_id"), "authority_result": metadata.get("authority"), "run_id": metadata.get("run_id") or metadata.get("system_health_run_id"), "loop_receipt_id": metadata.get("receipt_id"), "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "final_state": metadata.get("execution_status") or metadata.get("outcome"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         write_json(RECEIPT_DIR / f"{receipt['receipt_id']}.json", receipt)
         result["receipts"].append(receipt["receipt_id"])

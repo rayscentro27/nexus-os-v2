@@ -1,6 +1,14 @@
 {
   "schema_version": "nexus.loop-registry.v2",
   "authority": "Nexus control plane / TruthKernel",
+  "department_routing": {
+    "NEXUS_DAILY_SYSTEM_OPERATIONS": "OPERATIONS",
+    "NEXUS_SYSTEM_HEALTH_RECOVERY": "OPERATIONS",
+    "NEXUS_RESEARCH_INTELLIGENCE": "RESEARCH_ALPHA",
+    "NEXUS_REPO_INTELLIGENCE": "SYSTEM_ENGINEERING",
+    "NEXUS_CREDIT_BUSINESS_FUNDING": "CREDIT_BUSINESS_FUNDING",
+    "NEXUS_RAY_REVIEW": "GOVERNANCE_REVIEW"
+  },
   "loops": [
     {"loop_id":"NEXUS_DAILY_SYSTEM_OPERATIONS","status":"CERTIFIED_INTERNAL","real_implementation":"scripts/nexus_agent_platform/loops/daily_system_operations.py via loops.kernel","trigger":"campaign or bounded on-demand","default_skill":"system-operations","workers":["NEXUS_OPERATIONS_WORKER","NEXUS_REVIEW_WORKER"],"executor":"daily_system_operations","authority_class":"internal_read_only","autonomy_level":"A2_AUTOMATIC_REVIEW","schedule":"on-demand","last_run":"receipt_6f2cc6d2855746fcad7e251e15cdaaad","last_verified_run":"receipt_6f2cc6d2855746fcad7e251e15cdaaad","evidence":["reports/rebuild/NEXUS_DAILY_SYSTEM_LOOP_V2_CERTIFICATION.md"],"blockers":[]},
     {"loop_id":"NEXUS_SYSTEM_HEALTH_RECOVERY","status":"CERTIFIED_READ_ONLY","real_implementation":"WP4 loop kernel with read-only diagnostics","trigger":"health degradation or stale heartbeat","default_skill":"system-recovery","workers":["NEXUS_OPERATIONS_WORKER","NEXUS_REVIEW_WORKER"],"executor":"daily_system_operations","authority_class":"internal_read_only","autonomy_level":"A1_AUTOMATIC_EXECUTION","schedule":"on-demand","last_run":"receipt_152fd1f8ac384d759ef4ebca611c5832","last_verified_run":"receipt_152fd1f8ac384d759ef4ebca611c5832","evidence":["reports/rebuild/nexus_loop_receipts/receipt_152fd1f8ac384d759ef4ebca611c5832.json"],"blockers":[]},

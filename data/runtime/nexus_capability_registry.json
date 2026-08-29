@@ -2,6 +2,16 @@
   "schema_version": "nexus.capability-registry.v1",
   "updated_at": "2026-08-29T18:30:00Z",
   "authority": "Nexus control plane / TruthKernel",
+  "department_usage": {
+    "truthkernel.authority": ["OPERATIONS", "RESEARCH_ALPHA", "CREDIT_BUSINESS_FUNDING", "CLIENT_LIFECYCLE", "MARKETING_CREATIVE", "GOVERNANCE_REVIEW", "SYSTEM_ENGINEERING"],
+    "hermes.reasoning": ["OPERATIONS", "RESEARCH_ALPHA", "CREDIT_BUSINESS_FUNDING", "CLIENT_LIFECYCLE", "MARKETING_CREATIVE", "GOVERNANCE_REVIEW", "SYSTEM_ENGINEERING"],
+    "hermes.kanban_workers": ["OPERATIONS", "GOVERNANCE_REVIEW"],
+    "python.daily_system_operations": ["OPERATIONS"],
+    "searxng.research": ["RESEARCH_ALPHA"],
+    "bridge.mac_oracle_hermes": ["RESEARCH_ALPHA", "SYSTEM_ENGINEERING"],
+    "external.messaging": ["GOVERNANCE_REVIEW"],
+    "financial.production_actions": ["CREDIT_BUSINESS_FUNDING"]
+  },
   "capabilities": [
     {"capability_id":"truthkernel.authority","purpose":"verified operational truth and gates","implementation_type":"NEXUS_NATIVE","source":"scripts/nexus_agent_platform/truth_kernel.py","current_implementation":"TruthKernel SQLite and receipts","status":"CERTIFIED_INTERNAL","call_interface":"TruthKernel API","authority_class":"authoritative","data_class":"sensitive operational","side_effect_class":"state receipt only","execution_target":"MAC_LOCAL","dependencies":[],"credential_classes":["Keychain where required"],"cost_class":"zero_cost","security_boundary":"Hermes read-only","skills_using":["ray-review","work-order-management"],"loops_using":["all governed loops"],"disposition":"KEEP_IN_PLACE","evidence":["WP1/WP3 TruthKernel tests"]},
     {"capability_id":"python.daily_system_operations","purpose":"bounded daily system diagnostics","implementation_type":"NEXUS_NATIVE","source":"scripts/operations/nexus_daily_monitor.py","current_implementation":"fixed certified executor","status":"CERTIFIED_INTERNAL","call_interface":"Nexus executor adapter","authority_class":"internal_read_only","data_class":"operational","side_effect_class":"local reports","execution_target":"MAC_LOCAL","dependencies":["TruthKernel"],"credential_classes":[],"cost_class":"zero_cost","security_boundary":"allowlisted entrypoint","skills_using":["system-operations"],"loops_using":["daily-system-operations"],"disposition":"KEEP_IN_PLACE","evidence":["NEXUS_PYTHON_EXECUTOR_ALLOWLIST.json"]},

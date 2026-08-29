@@ -1,6 +1,22 @@
 {
   "schema_version": "nexus.worker-role-map.v1",
   "authority": "Nexus control plane",
+  "department_assignments": {
+    "NEXUS_OPERATIONS_WORKER": "OPERATIONS",
+    "NEXUS_RESEARCH_WORKER": "RESEARCH_ALPHA",
+    "NEXUS_REVIEW_WORKER": "GOVERNANCE_REVIEW",
+    "NEXUS_CLIENT_LIFECYCLE_WORKER": "CLIENT_LIFECYCLE",
+    "NEXUS_FUNDING_WORKER": "CREDIT_BUSINESS_FUNDING",
+    "NEXUS_CONTENT_WORKER": "MARKETING_CREATIVE"
+  },
+  "wp5_role_contracts": {
+    "NEXUS_OPERATIONS_WORKER": {"primary_department": "OPERATIONS", "loops_allowed": ["NEXUS_DAILY_SYSTEM_OPERATIONS", "NEXUS_SYSTEM_HEALTH_RECOVERY"], "capabilities_allowed": ["truthkernel.authority", "python.daily_system_operations", "hermes.reasoning"], "execution_targets": ["MAC_LOCAL", "HYBRID_MAC_ORACLE"], "escalation_target": "NEXUS_REVIEW_WORKER"},
+    "NEXUS_RESEARCH_WORKER": {"primary_department": "RESEARCH_ALPHA", "loops_allowed": ["NEXUS_RESEARCH_INTELLIGENCE", "NEXUS_REPO_INTELLIGENCE"], "capabilities_allowed": ["searxng.research", "hermes.reasoning", "bridge.mac_oracle_hermes"], "execution_targets": ["HYBRID_MAC_ORACLE"], "escalation_target": "NEXUS_REVIEW_WORKER"},
+    "NEXUS_REVIEW_WORKER": {"primary_department": "GOVERNANCE_REVIEW", "loops_allowed": ["NEXUS_RAY_REVIEW"], "capabilities_allowed": ["truthkernel.authority", "hermes.reasoning", "hermes.kanban_workers"], "execution_targets": ["MAC_LOCAL", "HYBRID_MAC_ORACLE"], "escalation_target": "RAY"},
+    "NEXUS_CLIENT_LIFECYCLE_WORKER": {"primary_department": "CLIENT_LIFECYCLE", "loops_allowed": ["NEXUS_RAY_REVIEW"], "capabilities_allowed": ["truthkernel.authority", "hermes.reasoning"], "execution_targets": ["MAC_LOCAL"], "escalation_target": "NEXUS_REVIEW_WORKER"},
+    "NEXUS_FUNDING_WORKER": {"primary_department": "CREDIT_BUSINESS_FUNDING", "loops_allowed": ["NEXUS_CREDIT_BUSINESS_FUNDING", "NEXUS_RAY_REVIEW"], "capabilities_allowed": ["truthkernel.authority", "hermes.reasoning"], "execution_targets": ["MAC_LOCAL"], "escalation_target": "NEXUS_REVIEW_WORKER"},
+    "NEXUS_CONTENT_WORKER": {"primary_department": "MARKETING_CREATIVE", "loops_allowed": ["NEXUS_RAY_REVIEW"], "capabilities_allowed": ["truthkernel.authority", "hermes.reasoning"], "execution_targets": ["MAC_LOCAL", "HYBRID_MAC_ORACLE"], "escalation_target": "NEXUS_REVIEW_WORKER"}
+  },
   "workers": [
     {"worker_id":"NEXUS_OPERATIONS_WORKER","purpose":"bounded system operations and recovery checks","skills_allowed":["system-operations","system-recovery","python-executor","failure-recovery","work-order-management"],"profiles_allowed":["nexusworker"],"model_policy":"LOCAL_PRIVATE; TOOL_CAPABLE for lifecycle tools","executors_allowed":["daily_system_operations"],"authority_class":"internal_read_only","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]},
     {"worker_id":"NEXUS_RESEARCH_WORKER","purpose":"bounded public research and repository intelligence","skills_allowed":["research-intelligence","repo-intelligence","model-routing"],"profiles_allowed":["nexusworker","nexusopenrouter"],"model_policy":"RESEARCH; CODE_ASSIST","executors_allowed":[],"authority_class":"read_only","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]},

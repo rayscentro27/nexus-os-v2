@@ -153,13 +153,13 @@
       "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
       "scope": ["department_registry", "department_skill_loop_worker_capability_mapping", "repository_department_reconciliation", "registry_driven_telegram_operator_routing", "preserve_truthkernel_human_gate_approval_route", "bounded_real_telegram_e2e_for_conversation_status_system_operations_research_repo_intelligence_ray_review", "fail_closed_telegram_recovery", "telegram_receipts", "legacy_router_rollback"],
-      "status": "WAITING_HUMAN",
-      "started_at": null,
+      "status": "IN_PROGRESS",
+      "started_at": "2026-08-29T19:26:10Z",
       "completed_at": null,
       "commit": null,
-      "evidence": [],
-      "blockers": ["Campaign gate is pending authorized Telegram approval."],
-      "next_action": "Approve the exact campaign gate through the authorized TruthKernel route; keep Active Operator paused."
+      "evidence": ["data/runtime/nexus_department_registry.json", "docs/architecture/NEXUS_DEPARTMENT_ARCHITECTURE.md", "docs/architecture/NEXUS_TELEGRAM_HERMES_ARCHITECTURE.md", "reports/rebuild/NEXUS_DEPARTMENT_SKILL_LOOP_MATRIX.md", "reports/rebuild/NEXUS_REPOSITORY_DEPARTMENT_CAPABILITY_MATRIX.md", "reports/rebuild/NEXUS_TELEGRAM_REAL_E2E_CERTIFICATION.md", "scripts/nexus_agent_platform/department_router.py", "reports/rebuild/nexus_loop_receipts/receipt_fc589044629b46eb8af03cbdf1607502.json", "reports/rebuild/nexus_loop_receipts/receipt_1f74217e493143f0a01c746a9b40a953.json", "reports/rebuild/nexus_loop_receipts/receipt_a5265cfceaa54c5f92fe1f546cb967b3.json", "reports/rebuild/nexus_loop_receipts/receipt_3e05763779cc4b31a68f76c43b349e7f.json"],
+      "blockers": ["Live Telegram API returned TELEGRAM_API_UNAVAILABLE before updates were received; real Telegram E2E and final failure matrix remain unproven. Active Operator remains paused."],
+      "next_action": "Restore Telegram API availability, run bounded real safe-intent E2E, then certify failure recovery and final route."
     }
   ]
 }
