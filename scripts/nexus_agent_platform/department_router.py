@@ -105,24 +105,44 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
     if intent in {"SYSTEM_OPERATIONS", "SYSTEM_HEALTH"}:
         findings = payload.get("findings", {})
         stale = findings.get("stale_items") or []
+        metrics = payload.get("metrics", {})
+        services = findings.get("services", {})
         return ("Nexus operations check\n\n"
-                f"SUMMARY\nNexus operations completed successfully. {payload.get('metrics', {}).get('processes_enabled', 'The enabled process count is')} of {payload.get('metrics', {}).get('processes_total', 'the known')} registered processes are enabled.\n\n"
+                f"SUMMARY\n{payload.get('summary', 'Nexus operations evidence was collected.')} {metrics.get('processes_enabled', 'The enabled process count is')} of {metrics.get('processes_total', 'the known')} registered processes are enabled.\n\n"
                 "KEY FINDINGS\n"
                 f"• Reports fresh: {findings.get('reports_fresh', 'not reported')}; stale: {findings.get('reports_stale', 'not reported')}.\n"
                 f"• Stale items: {', '.join(stale[:5]) if stale else 'none reported'}.\n"
                 f"• Blocked actions: {', '.join(findings.get('blocked_actions', [])) if findings.get('blocked_actions') else 'none reported'}.\n\n"
+                f"• Services: {', '.join(f'{name} {value}' for name, value in services.items()) if services else 'No per-service health detail was present in this report.'}.\n\n"
                 "WHAT THIS MEANS\nThe check generated fresh operational evidence; Active Operator remains paused by policy.\n\n"
                 f"NEXT ACTION\n{'; '.join(findings.get('next_actions', [])[:2]) if findings.get('next_actions') else 'Continue monitoring fresh evidence.'}\n\n"
                 f"DO YOU NEED RAY? {'Yes for any consequential action.' if ray_required else 'No for this bounded check.'}\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     if intent == "RESEARCH":
         findings = payload.get("findings", [])
-        bullets = "\n".join(f"• {item.get('title') or 'Untitled source'} — {item.get('snippet') or 'No snippet available.'}" for item in findings[:3])
-        return (f"Research: {payload.get('query', 'requested topic')}\n\nSUMMARY\nThe bounded private research route returned {payload.get('result_count', 0)} source results.\n\nKEY FINDINGS\n{bullets or 'No source findings were available.'}\n\nWHY IT MATTERS\nThese are source leads for review, not verified business conclusions.\n\nNEXT ACTION\nReview the strongest sources and request a narrower follow-up if needed.\n\nDO YOU NEED RAY? No for this public, read-only research request.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+        key_findings = payload.get("key_findings") or [item.get("snippet") or item.get("title") for item in findings[:3]]
+        bullets = "\n".join(f"• {item}" for item in key_findings[:3])
+        sources = payload.get("sources_used") or [{"title": item.get("title"), "url": item.get("url")} for item in findings[:5]]
+        source_names = ", ".join(str(item.get("title", "untitled")) for item in sources[:3])
+        return (f"Research: {payload.get('query', 'requested topic')}\n\nEXECUTIVE SUMMARY\n{payload.get('executive_summary', 'The verified research result did not include an executive synthesis.')}\n\n"
+                f"KEY FINDINGS\n{bullets or 'No source findings were available.'}\n\nWHAT CHANGED\n{payload.get('what_changed', 'No source-backed change statement was provided.')}\n\n"
+                f"WHY IT MATTERS\n{payload.get('why_it_matters', 'These findings remain subject to source review.')}\n\n"
+                f"UNCERTAINTIES\n{'; '.join(payload.get('uncertainties', [])) or 'No additional uncertainty was reported.'}\n\n"
+                f"SOURCES USED\n{len(sources)} sources; examples: {source_names or 'none reported'}.\n\nNEXT ACTION\nReview the cited sources and request a narrower follow-up if a decision depends on publication-level detail.\n\nDO YOU NEED RAY? No for this public, read-only research request.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     if intent == "REPO_INTELLIGENCE":
-        return (f"Repository intelligence: {payload.get('repository', 'Nexus repository')}\n\nSUMMARY\nThe repository was inspected read-only at {payload.get('head', 'an unreported commit')}.\n\nKEY FINDINGS\n• Branch: {payload.get('branch') or 'detached/unreported'}; worktree: {payload.get('worktree_state', 'not reported')}.\n• Changed paths observed: {payload.get('changed_paths_count', 0)}.\n• Recent change: {payload.get('recent_change', 'not reported')}.\n\nWHAT THIS MEANS\nNo repository mutation occurred. The inspection identifies state for follow-up; it does not rewrite production code.\n\nNEXT ACTION\n{payload.get('open_work', 'Review the bounded findings and run focused tests where needed.')}\n\nDO YOU NEED RAY? No for this read-only inspection.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+        groups = payload.get("changed_path_groups", {})
+        group_text = ", ".join(f"{key}: {value}" for key, value in groups.items()) or "none"
+        verification = payload.get("verification", {})
+        pushed = payload.get("origin_relationship") == "UP_TO_DATE"
+        return (f"Nexus OS v2 repository — Repository intelligence:\n\nOVERALL STATUS\n{payload.get('summary', 'Repository status was inspected read-only.')}\n\nCURRENT CHECKPOINT\n"
+                f"• Branch: {payload.get('branch') or 'detached/unreported'}\n• HEAD: {payload.get('head_short') or str(payload.get('head', ''))[:7]} — {payload.get('head_message', 'not reported')}\n"
+                f"• Origin: {payload.get('origin_relationship', 'not reported')} (ahead {payload.get('ahead_count', 'n/a')}, behind {payload.get('behind_count', 'n/a')}); pushed checkpoint: {'yes' if pushed else 'not proven'}\n\n"
+                f"WORKTREE\n• {payload.get('worktree_state', 'not reported')}; modified {payload.get('modified_count', 0)}, untracked {payload.get('untracked_count', 0)}, staged {payload.get('staged_count', 0)}, unstaged {payload.get('unstaged_count', 0)}\n"
+                f"• Changed paths: {payload.get('changed_paths_count', 0)} ({group_text})\n• Expected campaign changes: {payload.get('expected_current_campaign_changes', 0)}; pre-existing/unrelated: {payload.get('pre_existing_unrelated_changes', 0)}; generated reports/runtime: {payload.get('generated_runtime_artifacts', 0)}\n\n"
+                f"VERIFICATION\n• Focused tests: {verification.get('focused_tests', 'not run by this read-only check')}\n• JSON validation: {verification.get('json_validation', 'not run by this read-only check')}\n• Secret scan: {verification.get('secret_scan', 'not run by this read-only check')}\n\n"
+                f"WHAT THIS MEANS\nNo repository mutation occurred. The worktree details distinguish current campaign/report artifacts from other local changes; potentially risky source changes counted: {payload.get('potentially_risky_source_changes', 0)}.\n\nNEXT ACTION\n{payload.get('open_work', 'Review the grouped changes and run relevant verification.')}\n\nDO YOU NEED RAY? No for this read-only inspection.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     if intent == "RAY_REVIEW":
         item = payload
-        return ("Ray review\n\nITEM\n" + str(item.get("what_happened", "No review item details were returned.")) + "\n\nWHY RAY IS NEEDED\n" + str(item.get("what_is_true_now", "Verified facts only.")) + "\n\nDECISION REQUIRED\n" + str(item.get("what_happens_next", "Review the bounded internal item.")) + "\n\nRISK / CONSEQUENCE\nNo external action was performed.\n\nRECOMMENDED ACTION\nReview the verified item; no approval is inferred.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+        return ("Ray review\n\nITEM\n" + str(item.get("what_happened", "No review item details were returned.")) + "\n\nWHY RAY IS NEEDED\n" + str(item.get("what_is_true_now", "Verified facts only.")) + "\n\nDECISION REQUIRED\n" + str(item.get("what_happens_next", "Review the bounded internal item.")) + "\n\nRISK / CONSEQUENCE\nNo external action was performed.\n\nRECOMMENDED DECISION\n" + str(item.get("recommended_decision", "Review the verified item; no approval is inferred.")) + "\n\nPRIORITY\n" + str(item.get("priority", "NORMAL")) + "\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     return "The requested bounded work completed successfully. Verified Nexus receipt recorded."
 
 

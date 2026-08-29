@@ -12,3 +12,7 @@ Independent certification passed for unauthorized identity rejection, replay
 suppression, unknown-intent safe handling, and Telegram-send failure handling
 using bounded synthetic updates. Live API health is PASS; live E2E remains
 unproven because no authorized inbound test updates were available.
+
+Result rendering also fails closed: if a verified loop lacks a structured
+payload, the response is `RESULT_INSUFFICIENT_FOR_SUMMARY` rather than a status
+claim or receipt-path dump.

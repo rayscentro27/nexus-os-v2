@@ -15,3 +15,9 @@ in the first two messages was corrected: greetings now use
 `CONVERSATIONAL_LANE`, and status requests use `READ_ONLY_STATE_LANE` without
 launching an executable loop. Direct bounded equivalent tests pass; real
 Telegram PASS remains unclaimed until inbound updates are observed.
+
+The result-depth contract is now covered by 9 focused local tests. The
+repository route returns an operator-level status report, research returns a
+structured synthesis when source data supports it, and system operations and
+Ray Review retain useful findings. These are implementation/equivalence proofs,
+not substitutes for a fresh authorized live inbound message.

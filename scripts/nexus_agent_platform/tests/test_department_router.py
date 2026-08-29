@@ -57,6 +57,22 @@ def test_result_rendering_answers_the_question_without_receipt_path():
         assert "receipt_path" not in response.lower()
 
 
+def test_repository_result_has_operator_level_status_contract():
+    response, metadata = execute("Check the Nexus repository.")
+    assert metadata["outcome"] == "ANSWERED"
+    for marker in ("CURRENT CHECKPOINT", "HEAD:", "Origin:", "ahead", "behind", "WORKTREE", "Changed paths", "Expected campaign changes", "VERIFICATION", "WHAT THIS MEANS", "NEXT ACTION"):
+        assert marker.lower() in response.lower()
+    assert "receipt_path" not in response.lower()
+
+
+def test_research_result_has_synthesis_contract():
+    response, metadata = execute("Research OpenAI.")
+    assert metadata["outcome"] == "ANSWERED"
+    for marker in ("EXECUTIVE SUMMARY", "KEY FINDINGS", "WHAT CHANGED", "WHY IT MATTERS", "UNCERTAINTIES", "SOURCES USED"):
+        assert marker.lower() in response.lower()
+    assert "receipt_path" not in response.lower()
+
+
 def test_review_state_query_reads_actual_queue_without_creating_work():
     response, metadata = execute("What items currently need my review?")
     assert metadata["lane"] == "READ_ONLY_STATE_LANE"
