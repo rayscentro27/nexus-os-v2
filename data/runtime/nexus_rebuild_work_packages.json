@@ -133,13 +133,13 @@
       "allowed_paths": ["scripts/nexus_agent_platform/", "skills/nexus/", "docs/architecture/", "reports/rebuild/", "data/runtime/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
       "phase0": {"repository_discovery": true, "capability_registry": true, "resource_budgets": true, "deployment_cards": true, "duplicate_runtime_review": true},
-      "status": "IN_PROGRESS",
+      "status": "COMPLETED_WITH_LIMITS",
       "started_at": "2026-08-29T18:08:00Z",
-      "completed_at": null,
-      "commit": null,
+      "completed_at": "2026-08-29T19:20:00Z",
+      "commit": "pending-checkpoint",
       "evidence": ["reports/rebuild/NEXUS_PHASE0_REPOSITORY_CAPABILITY_RECONCILIATION.md", "reports/rebuild/NEXUS_MAC_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_ORACLE_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_CAPABILITY_DEPLOYMENT_CARDS.md", "data/runtime/nexus_capability_registry.json", "reports/rebuild/NEXUS_WP4_CAMPAIGN_GATE.md", "docs/architecture/NEXUS_LOOP_KERNEL_ARCHITECTURE.md", "docs/architecture/NEXUS_SKILLS_ARCHITECTURE.md", "data/runtime/nexus_skill_registry.json", "data/runtime/nexus_loop_registry_v2.json", "reports/rebuild/NEXUS_DAILY_SYSTEM_LOOP_V2_CERTIFICATION.md", "reports/rebuild/NEXUS_LOOP_FAILURE_RECOVERY_MATRIX.md", "reports/rebuild/NEXUS_LOOP_COMMUNICATION_CONTRACT.md", "reports/rebuild/nexus_loop_receipts/receipt_89f955b5bd5146da8e888cd3062f6d8b.json", "reports/rebuild/nexus_loop_receipts/receipt_606ee647dae64475b38370b824285f76.json", "reports/rebuild/nexus_loop_receipts/receipt_32d0bf9f29b74b94930cda987dddd7f4.json", "reports/rebuild/nexus_loop_receipts/receipt_7600d3685aa943cc8297e32b4a77f797.json", "reports/rebuild/nexus_loop_receipts/receipt_b3f963957106464c9b3c36fe1729c677.json", "reports/rebuild/nexus_loop_receipts/receipt_c3853d145bec413ca8220b7d278db15e.json"],
-      "blockers": [],
-      "next_action": "Add Hermes advisory review to certified loop paths and complete the remaining bounded loop acceptance matrix; keep financial/client/external actions blocked."
+      "blockers": ["Funding loop is synthetic-only; client lifecycle, financial, external communication, and Active Operator actions remain separately governed. VM reboot recovery is outside WP4 evidence."],
+      "next_action": "Keep Active Operator paused and preserve the certified bounded framework."
     }
   ]
 }
