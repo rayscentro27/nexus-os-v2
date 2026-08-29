@@ -95,13 +95,13 @@
       "human_authority_required": true,
       "allowed_paths": ["scripts/nexus_agent_platform/bridge/", "scripts/nexus_agent_platform/tests/test_oracle_hermes_bridge.py", "docs/architecture/", "reports/rebuild/", "data/runtime/nexus_rebuild_program.json", "data/runtime/nexus_rebuild_work_packages.json"],
       "forbidden_actions": ["public_endpoint", "cloud_provisioning", "vm_resize", "firewall_change", "credential_rotation", "paid_provider_activation", "TruthKernel_mutation_from_Hermes", "routines", "delegation", "voice", "active_operator"],
-      "status": "WAITING_HUMAN_GATE",
+      "status": "COMPLETED_WITH_LIMITS",
       "started_at": "2026-08-28T23:45:00Z",
-      "completed_at": null,
-      "commit": null,
-      "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "reports/rebuild/NEXUS_ORACLE_DNF_REPAIR_V2_PREPARATION_20260829.md", "Oracle DNF repair certified; global system SQLite and SearXNG-private SQLite isolated", "Podman 5.8.2 rootless certified; 14-package transaction", "official ARM64 image digest reverified", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "private bridge unit tests"],
-      "blockers": ["Gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-05 reached API readiness, then Oracle systemd stopped the non-lingering user manager during session cleanup; the Podman scope stop timed out and systemd SIGKILLed it, producing exit 137. No host or cgroup OOM was observed. Narrow deployment gates 03–06 are historical or held and are operationally superseded by the single pending campaign gate HG-WP2-HERMES-FULL-INSTALL-INTEGRATION-20260829-01."],
-      "next_action": "Await one deterministic approval for HG-WP2-HERMES-FULL-INSTALL-INTEGRATION-20260829-01; then continue installation, runtime repair, feature activation under Nexus wrappers, persistence tests, and private Mac integration automatically. Do not activate Telegram E2E or consequential authority."
+      "completed_at": "2026-08-29T14:25:00Z",
+      "commit": "PENDING_CHECKPOINT",
+      "evidence": ["reports/rebuild/NEXUS_HERMES_FULL_INSTALLATION_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_FEATURE_INVENTORY.md", "reports/rebuild/NEXUS_HERMES_MAC_BRIDGE_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_RUNTIME_SECURITY_BOUNDARY.md", "Oracle Hermes 0.20.6 pinned ARM64 runtime certified", "authenticated loopback API and Oracle Ollama gemma3:4b reasoning certified", "sessions, built-in memory, profiles, skills, logout survival, and container restart persistence certified", "private Mac SSH loopback bridge and real synthetic Nexus request certified", "private bridge unit tests"],
+      "blockers": ["VM reboot recovery was not proven; real Telegram Oracle-Hermes E2E was explicitly excluded; optional external gateways and paid/credential-gated capabilities remain blocked or Nexus-controlled."],
+      "next_action": "Maintain the Quadlet runtime and private SSH bridge. Handle VM reboot recovery or Telegram E2E only under separate bounded authority/evidence. Keep Active Operator paused and consequential actions Nexus-gated."
     }
   ]
 }
