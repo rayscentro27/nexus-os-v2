@@ -1,0 +1,12 @@
+{
+  "schema_version": "nexus.worker-role-map.v1",
+  "authority": "Nexus control plane",
+  "workers": [
+    {"worker_id":"NEXUS_OPERATIONS_WORKER","purpose":"bounded system operations and recovery checks","skills_allowed":["system-operations","system-recovery","python-executor","failure-recovery","work-order-management"],"profiles_allowed":["nexusworker"],"model_policy":"LOCAL_PRIVATE; TOOL_CAPABLE for lifecycle tools","executors_allowed":["daily_system_operations"],"authority_class":"internal_read_only","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]},
+    {"worker_id":"NEXUS_RESEARCH_WORKER","purpose":"bounded public research and repository intelligence","skills_allowed":["research-intelligence","repo-intelligence","model-routing"],"profiles_allowed":["nexusworker","nexusopenrouter"],"model_policy":"RESEARCH; CODE_ASSIST","executors_allowed":[],"authority_class":"read_only","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]},
+    {"worker_id":"NEXUS_REVIEW_WORKER","purpose":"advisory review and authority escalation","skills_allowed":["ray-review","failure-recovery","work-order-management","model-routing"],"profiles_allowed":["nexusworker","nexusopenrouter"],"model_policy":"GENERAL_REASONING; TOOL_CAPABLE","executors_allowed":[],"authority_class":"human_review","max_concurrency":1,"handoff_targets":["NEXUS_OPERATIONS_WORKER","NEXUS_RESEARCH_WORKER"]},
+    {"worker_id":"NEXUS_CLIENT_LIFECYCLE_WORKER","purpose":"synthetic client lifecycle analysis only","skills_allowed":["client-lifecycle","ray-review"],"profiles_allowed":["nexusworker"],"model_policy":"GENERAL_REASONING","executors_allowed":[],"authority_class":"human_authority_required","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]},
+    {"worker_id":"NEXUS_FUNDING_WORKER","purpose":"synthetic credit, bankability, and funding analysis","skills_allowed":["credit-readiness","business-bankability","funding-readiness","ray-review"],"profiles_allowed":["nexusworker"],"model_policy":"GENERAL_REASONING","executors_allowed":[],"authority_class":"internal_review","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]},
+    {"worker_id":"NEXUS_CONTENT_WORKER","purpose":"internal content drafting without publication","skills_allowed":["marketing-content-draft","ray-review"],"profiles_allowed":["nexusopenrouter"],"model_policy":"GENERAL_REASONING","executors_allowed":[],"authority_class":"internal_review","max_concurrency":1,"handoff_targets":["NEXUS_REVIEW_WORKER"]}
+  ]
+}

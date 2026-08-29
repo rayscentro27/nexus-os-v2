@@ -137,9 +137,9 @@
       "started_at": "2026-08-29T18:08:00Z",
       "completed_at": null,
       "commit": null,
-      "evidence": ["reports/rebuild/NEXUS_PHASE0_REPOSITORY_CAPABILITY_RECONCILIATION.md", "reports/rebuild/NEXUS_MAC_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_ORACLE_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_CAPABILITY_DEPLOYMENT_CARDS.md", "data/runtime/nexus_capability_registry.json", "reports/rebuild/NEXUS_WP4_CAMPAIGN_GATE.md"],
+      "evidence": ["reports/rebuild/NEXUS_PHASE0_REPOSITORY_CAPABILITY_RECONCILIATION.md", "reports/rebuild/NEXUS_MAC_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_ORACLE_RESOURCE_BUDGET.md", "reports/rebuild/NEXUS_CAPABILITY_DEPLOYMENT_CARDS.md", "data/runtime/nexus_capability_registry.json", "reports/rebuild/NEXUS_WP4_CAMPAIGN_GATE.md", "docs/architecture/NEXUS_LOOP_KERNEL_ARCHITECTURE.md", "docs/architecture/NEXUS_SKILLS_ARCHITECTURE.md", "data/runtime/nexus_skill_registry.json", "data/runtime/nexus_loop_registry_v2.json", "reports/rebuild/NEXUS_DAILY_SYSTEM_LOOP_V2_CERTIFICATION.md"],
       "blockers": [],
-      "next_action": "Implement the reusable loop kernel and Nexus SKILL.md system using the reconciled capability registry."
+      "next_action": "Build and certify bounded system-recovery, research-intelligence, repository-intelligence, funding, and Ray-review loop canaries using the reusable kernel."
     }
   ]
 }
