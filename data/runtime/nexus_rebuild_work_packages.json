@@ -100,8 +100,8 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "Oracle read-only SSH discovery", "private bridge unit tests"],
-      "blockers": ["Approved gate verified, but exact privileged DNF transaction preview segfaulted twice, including with plugins disabled; Podman installation stopped fail-closed before any package change."],
-      "next_action": "Prepare a separately bounded dnf/package-manager diagnostic gate; do not broaden the Podman gate or install until a transaction preview succeeds."
+      "blockers": ["DNF diagnosis identified a global SearXNG private-SQLite loader conflict; HG-WP2-B-ORACLE-DNF-REPAIR-20260829-01 is pending. Podman installation remains ineligible until repair and DNF health certification."],
+      "next_action": "Await exact approval for HG-WP2-B-ORACLE-DNF-REPAIR-20260829-01; do not install Podman or deploy Hermes."
     }
   ]
 }
