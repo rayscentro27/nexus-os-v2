@@ -20,6 +20,8 @@ def test_success_is_correlated_and_advisory():
     assert response.request_id in seen["headers"]["X-Nexus-Request-Id"]
     assert response.warnings == ["ADVISORY_ONLY"]
     assert seen["path"] == "/v1/chat/completions"
+    assert seen["payload"]["max_tokens"] == 256
+    assert seen["payload"]["temperature"] == 0
 
 
 def test_timeout_or_transport_failure_fails_closed():

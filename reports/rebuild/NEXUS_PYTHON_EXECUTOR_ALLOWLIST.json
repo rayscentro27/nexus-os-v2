@@ -1,0 +1,20 @@
+{
+  "schema_version": "nexus.python-executor-allowlist.v1",
+  "authority": "Nexus control plane",
+  "arbitrary_shell": "PROHIBITED",
+  "executors": [
+    {
+      "executor": "daily_system_operations",
+      "entrypoint": "scripts/operations/nexus_daily_monitor.py",
+      "hermes_worker_allowed": true,
+      "input_schema": {"type": "synthetic_or_local_operational_context", "pii_allowed": false},
+      "output_schema": {"artifacts": ["reports/runtime/nexus_daily_monitor_latest.json", "reports/runtime/nexus_daily_monitor_latest.md"]},
+      "authority_class": "internal_read_only",
+      "timeout_seconds": 45,
+      "retry_policy": "one bounded retry only after new evidence",
+      "side_effect_class": "local_diagnostic_reports",
+      "receipt_required": true,
+      "disposition": "PROVEN_OPERATIONAL_INTERNAL_ONLY"
+    }
+  ]
+}

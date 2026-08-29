@@ -31,6 +31,7 @@ class BridgeRequest:
     caller: str = "nexus"
     allowed_capabilities: tuple[str, ...] = ()
     timeout_seconds: float = 30.0
+    max_tokens: int = 256
     data_classification: str = "INTERNAL"
     pii_allowed: bool = False
     request_id: str = field(default_factory=lambda: f"nexus-hermes-{uuid.uuid4().hex}")
@@ -41,6 +42,8 @@ class BridgeRequest:
             raise BridgeError("invalid request: type, purpose, and caller are required")
         if self.timeout_seconds <= 0 or self.timeout_seconds > 120:
             raise BridgeError("invalid request timeout")
+        if self.max_tokens <= 0 or self.max_tokens > 1024:
+            raise BridgeError("invalid max_tokens")
         if self.pii_allowed:
             raise BridgeError("PII is denied by the initial bridge contract")
         if _contains_obvious_pii(self.safe_context):
@@ -125,6 +128,8 @@ class OracleHermesBridge:
                     {"role": "user", "content": json.dumps(asdict(request), sort_keys=True)},
                 ],
                 "stream": False,
+                "max_tokens": request.max_tokens,
+                "temperature": 0,
             }
             raw = self._transport("POST", "/v1/chat/completions", payload,
                                   self._headers(request.request_id), request.timeout_seconds)

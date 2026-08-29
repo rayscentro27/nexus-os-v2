@@ -1,0 +1,50 @@
+{
+  "authority_result": {
+    "class": "internal_read_only",
+    "hermes_write": false,
+    "status": "PASS"
+  },
+  "completed_at": "2026-08-29T15:07:08.854089+00:00",
+  "dependency_result": {
+    "dependencies": [
+      "runtime reports",
+      "process registry"
+    ],
+    "status": "PASS"
+  },
+  "error": "RuntimeError",
+  "exit_code": 0,
+  "exit_status": "FAIL_CLOSED",
+  "final_state": "FAILED",
+  "git_sha": "HEAD",
+  "handoff_used": false,
+  "hermes_profile": "default",
+  "hermes_review_result": {},
+  "hermes_worker": "nexus-review-advisor",
+  "input_freshness": "PASS",
+  "input_source": "synthetic operational status",
+  "kanban_task_id": null,
+  "loop_id": "NEXUS_DAILY_SYSTEM_OPERATIONS",
+  "model_name": "gemma3:4b",
+  "model_provider": "Oracle Ollama",
+  "output_artifact": [],
+  "output_hash": {},
+  "process_id": "wp3_daily_system_operations",
+  "python_entrypoint": "scripts/operations/nexus_daily_monitor.py",
+  "receipt_id": "receipt_6023abeb341241d3accf4d019a996d0f",
+  "recovery_used": false,
+  "retry_used": false,
+  "run_id": "wp3_3ed69762e5574f70b87bfde0471a418b",
+  "schema_version": "nexus.golden-loop-receipt.v1",
+  "side_effect_expected": {
+    "external": false,
+    "local_reports": true
+  },
+  "side_effect_observed": {},
+  "skills_used": [],
+  "started_at": "2026-08-29T15:05:08.310219+00:00",
+  "tools_used": [],
+  "trigger_id": "trigger_c546c8e70faf4c5e9321ba0d903d832e",
+  "trigger_time": "2026-08-29T15:05:08.310219+00:00",
+  "validation_result": {}
+}

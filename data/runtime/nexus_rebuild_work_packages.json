@@ -113,13 +113,13 @@
       "human_authority_required": true,
       "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
-      "status": "WAITING_HUMAN_GATE",
-      "started_at": null,
+      "status": "INSTALLATION_OR_INTEGRATION_STALLED",
+      "started_at": "2026-08-29T14:45:00Z",
       "completed_at": null,
       "commit": null,
       "evidence": [],
-      "blockers": ["Awaiting exact deterministic approval of HG-WP3-HERMES-CAPABILITY-PYTHON-LOOPS-20260829-01."],
-      "next_action": "After campaign approval, inspect Hermes 0.20.6 capabilities, certify bounded Python candidates, integrate Nexus wrappers, and build the Daily/System Operations golden loop."
+      "blockers": ["Native Kanban workers require injected lifecycle tools that Oracle Ollama gemma3:4b rejects; isolated alternate Groq credential returned HTTP 403; three distinct Hermes advisory-review attempts failed closed at the bounded timeout. Python executor and TruthKernel receipt path are implemented and independently testable."],
+      "next_action": "Resume only after a compatible already-authorized tool-capable/provider route is available; then certify worker protocol, Hermes review, and complete the golden loop."
     }
   ]
 }
