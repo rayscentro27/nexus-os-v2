@@ -121,5 +121,25 @@
       "blockers": ["Oracle Ollama gemma3:4b remains reasoning-only for injected lifecycle tools; Groq remains HTTP 403. Optional multi-provider fallback and VM reboot recovery remain unproven, while the scoped OpenRouter tool-worker route, fixed Python executor, and Daily/System Operations golden loop are certified."],
       "next_action": "Keep Active Operator paused; optional multi-provider fallback and VM reboot recovery remain outside the proven acceptance evidence."
     }
+    ,{
+      "work_package_id": "WP4_NEXUS_LOOPS_SKILLS",
+      "title": "Reusable Nexus loop framework and governed Hermes-compatible skill library",
+      "sprint": "SPRINT_4",
+      "purpose": "Reconcile existing repositories, services, capabilities, and resources; then build a reusable TruthKernel-backed loop kernel, Nexus SKILL.md architecture, capability resolver, and governed internal loops.",
+      "dependencies": ["WP3_HERMES_CAPABILITY_PYTHON_LOOPS"],
+      "risk_level": "high",
+      "human_authority_required": true,
+      "campaign_gate_id": "HG-WP4-NEXUS-LOOPS-SKILLS-20260829-01",
+      "allowed_paths": ["scripts/nexus_agent_platform/", "skills/nexus/", "docs/architecture/", "reports/rebuild/", "data/runtime/"],
+      "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
+      "phase0": {"repository_discovery": true, "capability_registry": true, "resource_budgets": true, "deployment_cards": true, "duplicate_runtime_review": true},
+      "status": "WAITING_HUMAN",
+      "started_at": null,
+      "completed_at": null,
+      "commit": null,
+      "evidence": [],
+      "blockers": ["Campaign gate is pending deterministic TruthKernel approval; Phase 0 reconciliation must complete before new capability implementation."],
+      "next_action": "Approve the exact WP4 campaign gate through the authorized TruthKernel route."
+    }
   ]
 }
