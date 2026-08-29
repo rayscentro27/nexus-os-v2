@@ -1,6 +1,8 @@
 # Oracle Hermes Deployment — 2026-08-28
 
-`DEPLOYMENT_STATUS=STOPPED_AT_PREREQUISITE_GATE`
+`DEPLOYMENT_STATUS=STOPPED_DNF_TRANSACTION_PREVIEW_FAILURE`
+`PODMAN_GATE_VERIFIED=YES`
+`ORACLE_HOST_MODIFIED=NO`
 
 Target: `HERMES_VERSION=0.20.6`, `TAG=v2026.8.27`, peeled commit
 `5fc308a70719a83cccdbba4c0e39c23f5a8239d5`.
@@ -18,6 +20,12 @@ restart proof yet.
 `ORACLE_RUNTIME_SUPPORTED=YES`
 `HERMES_ON_PODMAN=REQUIRES_REAL_CERTIFICATION`
 `CONTAINER_RUNTIME_INSTALL_REQUIRED=YES`
+`TRANSACTION_PREVIEW=FAILED_DNF_SEGMENTATION_FAULT_EXIT_139`
+
+The approved exact Podman gate was verified, but the privileged transaction
+preview segfaulted twice before producing a transaction, first normally and
+again with DNF plugins disabled. No installation command was executed after
+the failure. A successful preview is required before package modification.
 
 The predecessor `HG-WP2-B-ORACLE-CONTAINER-RUNTIME-20260828-01` is `HELD` and
 must not be reused. Exact replacement gate:

@@ -100,8 +100,8 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "Oracle read-only SSH discovery", "private bridge unit tests"],
-      "blockers": ["HG-WP2-B-ORACLE-PODMAN-INSTALL-20260828-02: exact Podman host installation gate is pending; no installation or Hermes deployment is authorized."],
-      "next_action": "Await exact human approval for HG-WP2-B-ORACLE-PODMAN-INSTALL-20260828-02."
+      "blockers": ["Approved gate verified, but exact privileged DNF transaction preview segfaulted twice, including with plugins disabled; Podman installation stopped fail-closed before any package change."],
+      "next_action": "Prepare a separately bounded dnf/package-manager diagnostic gate; do not broaden the Podman gate or install until a transaction preview succeeds."
     }
   ]
 }
