@@ -100,8 +100,8 @@
       "completed_at": null,
       "commit": null,
       "evidence": ["reports/rebuild/NEXUS_ORACLE_HERMES_DISCOVERY.md", "reports/rebuild/NEXUS_ORACLE_HERMES_DEPLOYMENT.md", "reports/rebuild/NEXUS_ORACLE_HERMES_BRIDGE_CERTIFICATION.md", "reports/rebuild/NEXUS_ORACLE_DNF_REPAIR_V2_PREPARATION_20260829.md", "Oracle DNF repair certified; global system SQLite and SearXNG-private SQLite isolated", "Podman 5.8.2 rootless certified; 14-package transaction", "official ARM64 image digest reverified", "official tag v2026.8.27 peeled commit 5fc308a70719a83cccdbba4c0e39c23f5a8239d5", "private bridge unit tests"],
-      "blockers": ["Gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-05 reached API readiness, then Oracle systemd stopped the non-lingering user manager during session cleanup; the Podman scope stop timed out and systemd SIGKILLed it, producing exit 137. No host or cgroup OOM was observed. Hermes runtime certification and private bridge remain blocked pending approval of exact replacement gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-06."],
-      "next_action": "Await exact replacement gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-06 approval; it adds only persistent rootless user-manager lifecycle protection. Do not reuse gate 05 or activate the bridge."
+      "blockers": ["Gate HG-WP2-B-ORACLE-HERMES-DEPLOY-20260829-05 reached API readiness, then Oracle systemd stopped the non-lingering user manager during session cleanup; the Podman scope stop timed out and systemd SIGKILLed it, producing exit 137. No host or cgroup OOM was observed. Narrow deployment gates 03–06 are historical or held and are operationally superseded by the single pending campaign gate HG-WP2-HERMES-FULL-INSTALL-INTEGRATION-20260829-01."],
+      "next_action": "Await one deterministic approval for HG-WP2-HERMES-FULL-INSTALL-INTEGRATION-20260829-01; then continue installation, runtime repair, feature activation under Nexus wrappers, persistence tests, and private Mac integration automatically. Do not activate Telegram E2E or consequential authority."
     }
   ]
 }
