@@ -102,6 +102,24 @@
       "evidence": ["reports/rebuild/NEXUS_HERMES_FULL_INSTALLATION_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_FEATURE_INVENTORY.md", "reports/rebuild/NEXUS_HERMES_MAC_BRIDGE_CERTIFICATION.md", "reports/rebuild/NEXUS_HERMES_RUNTIME_SECURITY_BOUNDARY.md", "Oracle Hermes 0.20.6 pinned ARM64 runtime certified", "authenticated loopback API and Oracle Ollama gemma3:4b reasoning certified", "sessions, built-in memory, profiles, skills, logout survival, and container restart persistence certified", "private Mac SSH loopback bridge and real synthetic Nexus request certified", "private bridge unit tests"],
       "blockers": ["VM reboot recovery was not proven; real Telegram Oracle-Hermes E2E was explicitly excluded; optional external gateways and paid/credential-gated capabilities remain blocked or Nexus-controlled."],
       "next_action": "Maintain the Quadlet runtime and private SSH bridge. Handle VM reboot recovery or Telegram E2E only under separate bounded authority/evidence. Keep Active Operator paused and consequential actions Nexus-gated."
+    },
+    {
+      "work_package_id": "WP3_HERMES_CAPABILITY_PYTHON_LOOPS",
+      "title": "Hermes capability integration, certified Python executors, and golden Nexus loops",
+      "sprint": "SPRINT_3",
+      "purpose": "Use the installed Hermes 0.20.6 runtime to integrate governed capabilities, certify the Nexus Python execution layer, and build one genuine Daily/System Operations loop.",
+      "dependencies": ["WP2-B_ORACLE_HERMES_RUNTIME_AND_NEXUS_BRIDGE", "WP1-A", "WP1-B", "WP1-D-ACTIVATION"],
+      "risk_level": "high",
+      "human_authority_required": true,
+      "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
+      "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
+      "status": "WAITING_HUMAN_GATE",
+      "started_at": null,
+      "completed_at": null,
+      "commit": null,
+      "evidence": [],
+      "blockers": ["Awaiting exact deterministic approval of HG-WP3-HERMES-CAPABILITY-PYTHON-LOOPS-20260829-01."],
+      "next_action": "After campaign approval, inspect Hermes 0.20.6 capabilities, certify bounded Python candidates, integrate Nexus wrappers, and build the Daily/System Operations golden loop."
     }
   ]
 }
