@@ -21,3 +21,15 @@ repository route returns an operator-level status report, research returns a
 structured synthesis when source data supports it, and system operations and
 Ray Review retain useful findings. These are implementation/equivalence proofs,
 not substitutes for a fresh authorized live inbound message.
+
+Topology reconciliation found that the real Ray status message was consumed by
+the loaded `com.nexus.telegram-hermes-v2` launchd job (the canonical WP5
+consumer). The manual poll subsequently saw no updates because the shared
+getUpdates stream had already advanced through update `197233475`. Its durable
+receipt records authorized identity, `STATE_QUERY`, `NEXUS_READ_ONLY_STATE`,
+inbound message `782`, delivery success, and response message `783`.
+
+The loaded Nova job is a separate bot/token stream and is not a competing
+consumer for the Nexus Hermes bot. Legacy operator/Hermes plist files are
+present on disk but are not loaded. Telegram reports no webhook configured;
+the canonical Nexus stream uses polling.

@@ -139,7 +139,15 @@ def test_authorized_status_routes_once_and_persists_receipt(tmp_path, monkeypatc
     result = hermes.run_once(dry_run=True, api=fake_api)
     assert result["outcome"] == "PROCESSED"
     assert result["updates_processed"] == 1
+    receipt = json.loads(next((tmp_path / "receipts").glob("*.json")).read_text())
     assert len(list((tmp_path / "receipts").glob("*.json"))) == 1
+    assert receipt["consumer_id"] == "com.nexus.telegram-hermes-v2"
+    assert receipt["authorized_sender_match"] is True
+    assert receipt["authorized_chat_match"] is True
+    assert receipt["lane"] == "READ_ONLY_STATE_LANE"
+    assert receipt["offset_before"] == 0
+    assert receipt["offset_after"] == 3
+    assert receipt["route_version"] == "WP5_THREE_LANE_V2"
 
 
 def test_oversized_update_is_processed_once_and_offset_advances(tmp_path, monkeypatch):

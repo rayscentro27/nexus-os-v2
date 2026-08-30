@@ -16,3 +16,8 @@ unproven because no authorized inbound test updates were available.
 Result rendering also fails closed: if a verified loop lacks a structured
 payload, the response is `RESULT_INSUFFICIENT_FOR_SUMMARY` rather than a status
 claim or receipt-path dump.
+
+The canonical Telegram receipt contract now also persists consumer identity,
+route version, lane, authorized sender/chat matches, receive/send timestamps,
+offsets, and processing result. This allows certification from durable evidence
+after the polling stream has advanced, without starting a competing poller.

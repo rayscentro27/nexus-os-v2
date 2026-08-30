@@ -690,6 +690,8 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             result["unauthorized_rejected"] += 1
             continue
         text = message["text"]
+        received_at = utc_now()
+        offset_before = last_id
         fingerprint = message_hash(text)
         # Manual certification and repair-control phrases must reach their
         # deterministic handler before generic conversational routing.
@@ -710,7 +712,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
             response_text = gate_result.pop("response")
             metadata = gate_result
         else:
-            department_result = None if len(text) > MAX_INPUT else execute_department_route(text)
+            department_result = None if len(text) > MAX_INPUT else execute_department_route(text, input_source="telegram")
             if department_result is not None:
                 response_text, metadata = department_result
             else:
@@ -743,6 +745,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
         if metadata.get("status") == "DUPLICATE_SUPPRESSED":
             result["duplicates_suppressed"] += 1
         outgoing_message_id = None
+        outbound_sent_at = None
         if metadata.get("confirmation_delivered"):
             # HumanGateResponseRouter already sent and recorded the executive
             # confirmation through the same real Telegram transport.
@@ -757,6 +760,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                 delivery = send_message(token, chat_id, response_text)
                 delivered = bool(delivery.get("ok"))
                 outgoing_message_id = (delivery.get("result") or {}).get("message_id") if delivered else None
+                outbound_sent_at = utc_now() if delivered else None
         if not dry_run:
             active_campaign = load_campaign()
             certification = observe_runtime_event(campaign_id=active_campaign.get("campaign_id", ""), current_loop=active_campaign.get("current_loop"), incoming_update_id=uid, route=metadata.get("route", "UNKNOWN"), outcome=metadata.get("outcome"), metadata=metadata, response_text=response_text, outgoing_message_id=outgoing_message_id, delivered=delivered)
@@ -768,7 +772,7 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
                 completion_id = (completion_delivery.get("result") or {}).get("message_id") if completion_delivery.get("ok") else None
                 record_campaign_message(campaign_id=campaign_id, loop_id=certification.get("current_loop"), incoming_update_id=uid, outgoing_message_id=completion_id, correlation_id=f"{campaign_id}:{uid}", action="CERTIFICATION_COMPLETE", delivered=bool(completion_delivery.get("ok")))
                 record_notification(campaign_id=campaign_id, notification_type="LOOP_CERTIFICATION_COMPLETE", requested_action="WAIT_NEXT_LOOP_APPROVAL", state_key=state_key, delivered=bool(completion_delivery.get("ok")))
-        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "telegram_update_id": uid, "message_id": message.get("message_id"), "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "authorized_identity": True, "intent_class": metadata.get("intent_class"), "department_id": metadata.get("department"), "loop_id": metadata.get("loop"), "skill_id": metadata.get("skill"), "worker_id": metadata.get("worker"), "capability_id": metadata.get("capability_id"), "execution_target": metadata.get("execution_target"), "model_provider": metadata.get("model_provider"), "model_name": metadata.get("model_name"), "python_entrypoint_or_service": metadata.get("receipt_path") or metadata.get("process_id"), "authority_result": metadata.get("authority"), "run_id": metadata.get("run_id") or metadata.get("system_health_run_id"), "loop_receipt_id": metadata.get("receipt_id"), "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "response_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "final_state": metadata.get("execution_status") or metadata.get("outcome"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
+        receipt = {"receipt_id": f"hermes_tg_{uid}_{fingerprint}", "update_id": uid, "telegram_update_id": uid, "message_id": message.get("message_id"), "message_fingerprint": fingerprint, "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16], "authorized_identity": True, "authorized_sender_match": True, "authorized_chat_match": True, "received_at": received_at, "consumer_id": "com.nexus.telegram-hermes-v2", "route_version": "WP5_THREE_LANE_V2", "offset_before": offset_before, "offset_after": max_id, "intent_class": metadata.get("intent_class"), "lane": metadata.get("lane") or ("APPROVAL_LANE" if metadata.get("route") == "TRUTH_KERNEL_HUMAN_GATE" else "EXECUTION_LANE" if metadata.get("route") == "NEXUS_DEPARTMENT_LOOP" else "CONVERSATIONAL_OR_STATE_LANE"), "department_id": metadata.get("department"), "loop_id": metadata.get("loop"), "skill_id": metadata.get("skill"), "worker_id": metadata.get("worker"), "capability_id": metadata.get("capability_id"), "execution_target": metadata.get("execution_target"), "model_provider": metadata.get("model_provider"), "model_name": metadata.get("model_name"), "python_entrypoint_or_service": metadata.get("receipt_path") or metadata.get("process_id"), "authority_result": metadata.get("authority"), "run_id": metadata.get("run_id") or metadata.get("system_health_run_id"), "loop_receipt_id": metadata.get("receipt_id"), "processing_result": metadata.get("outcome"), "outcome": metadata.get("outcome"), "route": metadata.get("route"), "delivered": delivered, "outbound_sent_at": outbound_sent_at, "response_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "response_telegram_message_id": outgoing_message_id or metadata.get("product_evolution_message_id"), "created_work_order_id": metadata.get("work_order_id"), "approval_id": metadata.get("approval_id"), "campaign_id": metadata.get("campaign_id"), "final_state": metadata.get("execution_status") or metadata.get("outcome"), "correlation_id": f"{metadata.get('campaign_id')}:{uid}" if metadata.get("campaign_id") else None, "created_at": utc_now()}
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         write_json(RECEIPT_DIR / f"{receipt['receipt_id']}.json", receipt)
         result["receipts"].append(receipt["receipt_id"])
