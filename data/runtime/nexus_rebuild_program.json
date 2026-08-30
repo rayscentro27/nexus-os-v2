@@ -253,6 +253,18 @@
   "wp6_active_operator_primary_source_retrieval": "NOT_PROVEN",
   "wp6_active_operator_interval_after_certification": 900,
   "wp6_active_operator_stability_phase": "ACTIVE",
+  "wp6_5_campaign_gate_id": "HG-WP6.5-CURRENT-LOOP-REAL-WORLD-CERTIFICATION-20260830-01",
+  "wp6_5_campaign_gate_status": "APPROVED",
+  "wp6_5_campaign_state": "CERTIFICATION_IN_PROGRESS",
+  "wp6_5_loop_real_world_dispositions": {
+    "NEXUS_DAILY_SYSTEM_OPERATIONS": "NOT_PROVEN",
+    "NEXUS_SYSTEM_HEALTH_RECOVERY": "NOT_PROVEN",
+    "NEXUS_RESEARCH_INTELLIGENCE": "REAL_WORLD_CERTIFIED_BOUNDED",
+    "NEXUS_REPO_INTELLIGENCE": "NOT_PROVEN",
+    "NEXUS_CREDIT_BUSINESS_FUNDING": "BLOCKED_AUTHORITY",
+    "NEXUS_RAY_REVIEW": "NOT_PROVEN"
+  },
+  "wp6_5_evidence_report": "reports/rebuild/NEXUS_WP6_5_CURRENT_LOOP_REAL_WORLD_CERTIFICATION.md",
   "next_action": "Continue passive observation at 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle.",
   "safety": {
     "active_operator_paused": true,
