@@ -65,6 +65,7 @@ NOVA_ALLOWED_READS = frozenset({
     "get_client_count",
     "resolve_user_identity_by_email",
     "general_search",
+    "public_web_search",
     "get_system_health",
     "get_pending_approvals",
     "get_recent_research",
@@ -810,6 +811,29 @@ def _handle_general_search(
             "search_terms": search_terms[:3],
         },
     }
+
+
+def _handle_public_web_search(arguments: Optional[Dict[str, Any]] = None,
+                              trace_id: str = "") -> Dict[str, Any]:
+    """Use the existing bounded provider chain for public read-only search."""
+    query = str((arguments or {}).get("query", "")).strip()
+    if not query:
+        return {"status": "error", "capability": "public_web_search", "data": {}, "error": "query-required", "provenance": {"capability": "public_web_search", "trace_id": trace_id}}
+    try:
+        from nexus_agent_platform.phase15.live_research import _load_web_search
+        web_search, blocker = _load_web_search()
+        if web_search is None:
+            return {"status": "unavailable", "capability": "public_web_search", "data": {"results": []}, "error": blocker or "no-approved-provider", "provenance": {"capability": "public_web_search", "source_type": "public_web", "freshness": "unknown", "trace_id": trace_id}}
+        result = web_search(query, max_results=6)
+        return {
+            "status": "success" if result.get("status") == "ok" else result.get("status", "unavailable"),
+            "capability": "public_web_search",
+            "data": {"query": query, "provider": result.get("provider", "unknown"), "results": result.get("results", [])[:6], "attempted_providers": result.get("attempted_providers", [])},
+            "error": None if result.get("status") == "ok" else (result.get("notes") or ["public-search-failed"])[0],
+            "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "provider": result.get("provider", "unknown"), "freshness": "live", "trace_id": trace_id},
+        }
+    except Exception as exc:
+        return {"status": "error", "capability": "public_web_search", "data": {"results": []}, "error": str(exc), "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "freshness": "unknown", "trace_id": trace_id}}
 
 
 # ─── Shared Handler: System Health ──────────────────────────
@@ -3055,6 +3079,7 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_client_count": lambda args, tid: _handle_client_count(args, tid),
     "resolve_user_identity_by_email": lambda args, tid: _handle_identity_resolution(args, tid),
     "general_search": lambda args, tid: _handle_general_search(args, tid),
+    "public_web_search": lambda args, tid: _handle_public_web_search(args, tid),
     "get_system_health": lambda args, tid: _handle_system_health(args, tid),
     "get_pending_approvals": lambda args, tid: _handle_pending_approvals(args, tid),
     "get_recent_research": lambda args, tid: _handle_recent_research(args, tid),

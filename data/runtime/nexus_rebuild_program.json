@@ -327,6 +327,10 @@
     "truth_capability_map_status": "IMPLEMENTED_BOUNDED_WAITING_REAL_TELEGRAM_RETEST",
     "domain_source_policy_campaign_id": "HG-WP6.5-NOVA-DOMAIN-AWARE-TRUTH-AND-RESEARCH-20260830-01",
     "domain_source_policy_status": "IMPLEMENTED_BOUNDED_WAITING_REAL_TELEGRAM_RETEST",
+    "live_truth_quarantine_campaign_id": "HG-WP6.5-NOVA-LIVE-TRUTH-RESEARCH-BUSINESS-PARTNER-AND-REPORT-QUARANTINE-20260830-01",
+    "live_truth_quarantine_status": "IMPLEMENTED_BOUNDED_WAITING_REAL_TELEGRAM_RETEST",
+    "nova_public_web_search": "IMPLEMENTED_BOUNDED",
+    "nova_report_quarantine": "IMPLEMENTED",
     "nova_nexus_not_universal_source": true,
     "nova_truth_view": "IMPLEMENTED_PROVENANCE_PRESERVING_READ_ADAPTER",
     "nova_capability_maps": [

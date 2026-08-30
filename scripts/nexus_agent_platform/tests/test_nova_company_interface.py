@@ -168,3 +168,21 @@ def test_outside_world_question_does_not_select_nexus_canonical_read(monkeypatch
     result = _capability_gate(state)
     assert "NEXUS_OPERATIONS" not in result.metadata["question_domains"]
     assert not calls
+
+
+def test_legacy_report_is_quarantined_from_current_truth():
+    from nexus_agent_platform.report_quarantine import classify_report
+    assessment = classify_report("reports/hermes_modernization/daily_brief.json", {"status": "healthy"})
+    assert assessment["provenance"] == "LEGACY_UNKNOWN"
+    assert assessment["current_truth_eligible"] is False
+    assert assessment["historical_reference_allowed"] is True
+
+
+def test_public_research_selects_public_web_not_nexus(monkeypatch):
+    from nexus_agent_platform.agents.nova import _capability_gate
+    calls = []
+    monkeypatch.setattr("nexus_agent_platform.capabilities.shared.execute_shared_capability", lambda *a, **k: calls.append(a[1]) or {"status": "success", "data": {"results": []}, "provenance": {}})
+    state = AgentState(agent_id="hermes_nova", user_message="Research whether an AI automation agency can make $10,000 a month.", metadata={"chat_id": 0})
+    result = _capability_gate(state)
+    assert result.metadata["question_domains"]
+    assert calls == ["public_web_search"]

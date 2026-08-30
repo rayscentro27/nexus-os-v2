@@ -3760,6 +3760,12 @@ def _capability_gate(state: AgentState) -> AgentState:
     if domains and "NEXUS_OPERATIONS" not in domains and "CLIENT_DATA" not in domains and "INTERNAL_COMPANY_BUSINESS" not in domains:
         canonical_capability = None
 
+    # Public/current research uses the existing bounded web provider chain,
+    # never Nexus operational state as a substitute. Search is acquisition;
+    # page retrieval and verification remain separate capabilities/evidence.
+    if any(domain in domains for domain in ("PUBLIC_BUSINESS_RESEARCH", "PUBLIC_COMPANY_RESEARCH", "WEBSITE_ANALYSIS", "PUBLIC_CURRENT_INFORMATION")) and any(term in text.lower() for term in ("research", "find", "current", "verify", "online", "website", "youtube", "affiliate", "company")):
+        canonical_capability = "public_web_search"
+
     # Canonical current-state awareness must outrank the broad schema planner.
     # Otherwise a question such as "what did Alpha find most recently?" can be
     # answered from the historical study snapshot instead of the live ledger.

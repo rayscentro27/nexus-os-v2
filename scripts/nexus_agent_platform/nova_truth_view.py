@@ -31,6 +31,7 @@ def _claim(domain: str, value: Any, source: str, source_type: str,
 def read_truth_domains(*domains: str) -> Dict[str, Any]:
     """Read selected current domains through existing approved adapters."""
     from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
+    from nexus_agent_platform.report_quarantine import classify_report
 
     requested = tuple(domains) or ("NEXUS_RUNTIME", "SYSTEM_HEALTH", "RAY_REVIEW", "RESEARCH")
     aliases = {
@@ -50,15 +51,17 @@ def read_truth_domains(*domains: str) -> Dict[str, Any]:
         reads[domain] = result
         data = result.get("data", {}) if isinstance(result, dict) else {}
         status = result.get("status", "UNAVAILABLE") if isinstance(result, dict) else "UNAVAILABLE"
+        assessment = classify_report(result.get("source_path", "UNKNOWN"), data)
+        eligible = status == "OK" and assessment["current_truth_eligible"]
         claims.append(_claim(
             domain,
-            data if status == "OK" else {"status": "UNKNOWN", "reason": "Canonical read unavailable."},
+            data if eligible else {"status": "UNKNOWN", "reason": assessment["reason"]},
             result.get("source_path", "UNKNOWN"),
             result.get("source_type", "UNKNOWN"),
             result.get("as_of", "UNKNOWN"),
             result.get("freshness", "UNKNOWN"),
-            certification="REAL_WORLD_CERTIFIED_BOUNDED" if status == "OK" else "NOT_PROVEN",
-            confidence="HIGH" if status == "OK" else "LOW",
+            certification="REAL_WORLD_CERTIFIED_BOUNDED" if eligible else "NOT_PROVEN",
+            confidence="HIGH" if eligible else "LOW",
         ))
     return {
         "view": "NOVA_TRUTH_VIEW",
