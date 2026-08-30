@@ -273,6 +273,18 @@
   "wp6_5_telegram_fresh_retest_required": true,
   "wp6_5_telegram_round2_repair_state": "REPAIRED_WAITING_FRESH_REAL_RETEST",
   "wp6_5_telegram_round2_defects_repaired": ["NATURAL_RAY_REVIEW_INTENT", "NAMED_SERVICE_STATE_PAYLOAD", "STALE_NEXT_ACTION_SUPPRESSION", "HEALTH_STATE_SEPARATION", "REPO_OPERATIONAL_CONSEQUENCES"],
+  "wp6_5_intelligence_synthesis_campaign": {
+    "campaign_id": "HG-WP6.5-HERMES-EVIDENCE-SYNTHESIS-INTEGRATION-20260830-01",
+    "baseline": "f6a555e",
+    "state": "PHASE_A_IMPLEMENTED_WAITING_FRESH_REAL_TELEGRAM_RETEST",
+    "evidence_broker": "IMPLEMENTED_DETERMINISTIC_SCOPED",
+    "claim_validation": "IMPLEMENTED_DETERMINISTIC",
+    "langgraph_path": "EXISTING_REUSED_FLAG_GATED",
+    "authority_preserved": true,
+    "active_operator_changed": false,
+    "live_telegram_retest_required": true,
+    "report": "reports/rebuild/NEXUS_HERMES_EVIDENCE_SYNTHESIS_IMPLEMENTATION.md"
+  },
   "next_action": "Continue passive observation at 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle.",
   "safety": {
     "active_operator_paused": true,

@@ -40,6 +40,10 @@ class AgentState:
     search_results: List[Dict[str, Any]] = field(default_factory=list)
     research_synthesis: str = ""
 
+    # --- Verified evidence / synthesis boundary ---
+    evidence_payload: Dict[str, Any] = field(default_factory=dict)
+    claim_validation: Dict[str, Any] = field(default_factory=dict)
+
     # --- Capability / tools ---
     tool_calls: List[Dict[str, Any]] = field(default_factory=list)
     tool_results: List[Dict[str, Any]] = field(default_factory=list)
@@ -70,6 +74,8 @@ class AgentState:
             "active_context": dict(self.active_context),
             "search_results": list(self.search_results),
             "research_synthesis": self.research_synthesis,
+            "evidence_payload": dict(self.evidence_payload),
+            "claim_validation": dict(self.claim_validation),
             "tool_calls": list(self.tool_calls),
             "tool_results": list(self.tool_results),
             "slots": dict(self.slots),
@@ -105,6 +111,8 @@ class AgentState:
             active_context: Dict[str, Any]
             search_results: List[Dict[str, Any]]
             research_synthesis: str
+            evidence_payload: Dict[str, Any]
+            claim_validation: Dict[str, Any]
             tool_calls: List[Dict[str, Any]]
             tool_results: List[Dict[str, Any]]
             slots: Dict[str, Any]

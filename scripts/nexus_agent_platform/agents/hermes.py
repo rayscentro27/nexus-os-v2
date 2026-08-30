@@ -230,7 +230,16 @@ def _execute_by_mode(state: AgentState) -> AgentState:
             state.metadata["capability_used"] = "operational_read_no_capability"
         else:
             result = execute_operational_read(capability, state.user_message, auth_ctx)
+            from nexus_agent_platform.evidence_broker import project_evidence, evidence_summary
+            state.evidence_payload = project_evidence(state.user_message, capability, result)
+            state.metadata["evidence_summary"] = evidence_summary(state.evidence_payload)
             response = synthesize_operational_response(capability, result, state.user_message)
+            from nexus_agent_platform.claim_validator import validate_response
+            state.claim_validation = validate_response(response, state.evidence_payload)
+            state.metadata["claim_validation"] = state.claim_validation
+            if not state.claim_validation["valid"]:
+                response = "I could not safely state that conclusion from the verified evidence available. " + \
+                    "; ".join(state.claim_validation["violations"])
             state.assistant_response = response
             state.metadata["capability_used"] = capability
             state.metadata["capability_result"] = result
