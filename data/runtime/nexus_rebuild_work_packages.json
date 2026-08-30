@@ -161,5 +161,25 @@
       "blockers": ["Conversational response is intentionally a deterministic bounded Nexus handler; Hermes-runtime conversational E2E is not proven. Active Operator remains paused."],
       "next_action": "Preserve the certified three-lane Telegram route; Hermes-runtime conversation integration is a future improvement if required."
     }
+    ,{
+      "work_package_id": "WP6_ACTIVE_OPERATOR_BOUNDED_REAL_WORLD_PILOT",
+      "title": "Bounded Active Operator real-world pilot",
+      "sprint": "SPRINT_6",
+      "purpose": "Prove real OS-scheduled bounded internal cycles with deterministic authority, receipts, singleton protection, failure recovery, and no consequential external actions.",
+      "dependencies": ["WP5_HERMES_TELEGRAM_DEPARTMENT_ROUTING"],
+      "risk_level": "high",
+      "human_authority_required": true,
+      "campaign_gate_id": "HG-WP6-ACTIVE-OPERATOR-BOUNDED-REAL-WORLD-PILOT-20260830-01",
+      "allowed_paths": ["scripts/operations/", "scripts/nexus_agent_platform/", "ops/launchd/", "reports/rebuild/", "reports/runtime/", "data/runtime/"],
+      "forbidden_actions": ["payments", "live_trading", "client_production_mutation", "external_outreach", "public_endpoint", "firewall_change", "cloud_provisioning", "credential_change", "unrestricted_shell", "unrestricted_code_modification", "git_force_push", "privileged_container", "active_operator_self_expansion", "authority_self_modification"],
+      "scope": ["bounded_internal_active_operator", "five_minute_os_schedule", "safe_internal_loops", "real_cycle_receipts", "singleton_lock", "kill_switch", "bounded_failure_recovery", "internal_telegram_reporting"],
+      "status": "WAITING_FOR_APPROVAL",
+      "started_at": "2026-08-30T13:43:31Z",
+      "completed_at": null,
+      "commit": "PENDING_CHECKPOINT",
+      "evidence": ["ops/launchd/com.nexus.active-operator-v2.plist", "scripts/operations/nexus_active_operator_runner.py", "scripts/nexus_agent_platform/phase15/run_all.py", "reports/rebuild/NEXUS_ACTIVE_OPERATOR_REAL_WORLD_PILOT.md"],
+      "blockers": ["Campaign gate is pending deterministic TruthKernel approval. Active Operator remains paused and no scheduler was activated."],
+      "next_action": "Approve the exact WP6 campaign gate through the authorized TruthKernel route."
+    }
   ]
 }
