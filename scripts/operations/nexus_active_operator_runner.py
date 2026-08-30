@@ -47,11 +47,12 @@ OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json
 OPERATOR_REPORT_JSON_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.json"
 OPERATOR_REPORT_MD_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.md"
 LOCK_PATH = ROOT / "data/runtime/nexus_active_operator.lock"
-CADENCE_SECONDS = 3600
-MAX_NEW_WORK_ORDERS = 12
-MAX_EXECUTIONS = 8
-MAX_RESEARCH_TASKS = 2
-MAX_RUNTIME_SECONDS = 300
+KILL_SWITCH_PATH = ROOT / "data/runtime/active_operator_control.json"
+CADENCE_SECONDS = 300
+MAX_NEW_WORK_ORDERS = 3
+MAX_EXECUTIONS = 3
+MAX_RESEARCH_TASKS = 1
+MAX_RUNTIME_SECONDS = 600
 
 SAFE_INTERNAL_ACTIONS = frozenset({
     "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report",
@@ -231,6 +232,12 @@ def _sanitize_autonomy_environment() -> None:
         "STRIPE_LIVE_WEBHOOK_SECRET", "VITE_STRIPE_PUBLISHABLE_KEY", "VITE_STRIPE_SECRET_KEY",
     ):
         os.environ.pop(key, None)
+
+
+def kill_switch_enabled() -> bool:
+    """Read the deterministic operator switch; missing/corrupt state fails closed."""
+    control = load_json(KILL_SWITCH_PATH, {})
+    return isinstance(control, dict) and control.get("active_operator_enabled") is True and control.get("mode") == "BOUNDED_INTERNAL_ONLY"
 
 
 @contextmanager
@@ -479,13 +486,28 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
     _sanitize_autonomy_environment()
     started = utc_now()
     run_id = f"operator_{uuid.uuid4().hex}"
+    if not dry_run and not kill_switch_enabled():
+        completed = utc_now()
+        result = {"operator_run_id": run_id, "status": "KILL_SWITCH_OFF", "started_at": started,
+                  "completed_at": completed, "decision": "NO_ACTION", "trigger_type": os.environ.get("NEXUS_OPERATOR_TRIGGER", "manual"),
+                  "authority": {"external_actions": "BLOCKED", "arbitrary_shell": "UNAVAILABLE"},
+                  "external_mutations": 0, "dry_run": False, "cycle_receipt": True, "kill_switch": "OFF"}
+        _receipt(run_id, result)
+        write_json(HEARTBEAT_PATH, {"operator_run_id": run_id, "last_run": completed, "run_status": result["status"],
+                                    "operator_health": "PAUSED", "decision": "NO_ACTION", "kill_switch": "OFF"})
+        return result
     with single_run_lock() as acquired:
         if not acquired:
             return {"operator_run_id": run_id, "status": "SKIPPED_OVERLAP", "started_at": started, "completed_at": utc_now()}
         registry = load_json(REGISTRY_PATH, [])
         scheduler_health = load_json(SCHEDULER_HEALTH_PATH, {})
         findings = discover_attention(registry if isinstance(registry, list) else [], scheduler_health)
-        business_result = discover_business_attention()
+        # WP6 pilot keeps the cycle bounded to the certified operational
+        # registry. Business read-model scans are opt-in and cannot lengthen
+        # the pilot's no-action path unexpectedly.
+        business_result = discover_business_attention() if os.environ.get("NEXUS_OPERATOR_ENABLE_BUSINESS_SCAN") == "1" else {
+            "findings": [], "sources": {"business_attention": "DISABLED_FOR_BOUNDED_PILOT"}, "errors": []
+        }
         business_brief_path = ROOT / "reports/runtime/nexus_active_operator_business_brief_latest.md"
         business_findings = business_result.get("findings", [])
         for item in business_findings:
@@ -601,6 +623,9 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
             "operator_health": "HEALTHY" if not errors else "DEGRADED",
             "authority": {"external_actions": "BLOCKED", "stripe_autonomous_execution": "DISABLED", "arbitrary_shell": "UNAVAILABLE"},
             "dry_run": dry_run, "trigger_type": trigger_type,
+            "decision": "ACTION" if dispatch_findings else "NO_ACTION",
+            "kill_switch": "ON" if (dry_run or kill_switch_enabled()) else "OFF",
+            "cycle_receipt": True,
             "heartbeat_path": heartbeat_path, "receipt_path": receipt_path,
             "mode": mode, "state_snapshot": state_snapshot, "capabilities": capabilities,
             "work_orders": operator_orders, "escalations": operator_escalations,

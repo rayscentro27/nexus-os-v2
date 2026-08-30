@@ -1,0 +1,6 @@
+{
+  "active_operator_enabled": true,
+  "mode": "BOUNDED_INTERNAL_ONLY",
+  "emergency_disable": "set active_operator_enabled to false and reload the launchd job",
+  "updated_at": "2026-08-30T14:05:00Z"
+}
