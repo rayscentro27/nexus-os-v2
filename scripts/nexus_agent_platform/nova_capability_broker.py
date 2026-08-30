@@ -3,6 +3,12 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
+from nexus_agent_platform.nova_intelligence_model import (
+    ACTION_BOUNDARIES,
+    REASONING_ABILITIES,
+    knowledge_resource_catalog,
+)
+
 CAPABILITIES: Dict[str, Dict[str, Any]] = {
     "GENERAL_REASONING": {"health": "local", "cost_class": "included", "read_or_write": "read", "privacy_scope": "conversation", "authority_scope": "none", "fallbacks": []},
     "PUBLIC_WEB_SEARCH": {"health": "provider-dependent", "cost_class": "free-first", "read_or_write": "read", "privacy_scope": "public-only", "authority_scope": "none", "fallbacks": ["Alpha", "general reasoning"]},
@@ -17,7 +23,14 @@ CAPABILITIES: Dict[str, Dict[str, Any]] = {
 
 
 def capability_catalog() -> Dict[str, Any]:
-    return {"capabilities": CAPABILITIES, "broker_role": "describe_only", "execution_authority": "shared_capability_boundary"}
+    return {
+        "capabilities": CAPABILITIES,
+        "knowledge_resources": knowledge_resource_catalog(),
+        "reasoning_abilities": list(REASONING_ABILITIES),
+        "action_boundaries": ACTION_BOUNDARIES,
+        "broker_role": "describe_only",
+        "execution_authority": "shared_capability_boundary",
+    }
 
 
 MODEL_CAPABILITY_MARKER = "nova_capability_request"
