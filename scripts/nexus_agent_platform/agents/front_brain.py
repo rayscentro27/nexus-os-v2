@@ -158,6 +158,16 @@ CERTIFIED_READS = {
             "Review history",
         ],
     },
+    "repo_intelligence": {
+        "description": "Read-only analysis of current repository history, changes, and operational impact",
+        "positive_examples": ["What recent changes affected reliability?", "Analyze the current repository"],
+        "negative_examples": ["Modify the repository", "Deploy the repository"],
+    },
+    "system_health": {
+        "description": "Current health, degradation, failure, and safe recovery needs for Nexus services",
+        "positive_examples": ["Is Nexus healthy enough to proceed?", "What is degraded or failing?"],
+        "negative_examples": ["Run a general operations summary"],
+    },
     "BUSINESS_LOOP_STATUS": {"description": "Current certified business-loop state, last run, verifier, and next action", "positive_examples": ["What is the status of my business loops?"], "negative_examples": []},
     "BUSINESS_OPPORTUNITIES": {"description": "Current business opportunities classified as ACCEPT, WATCH, or REJECT", "positive_examples": ["Which opportunities are ACCEPT or WATCH?"], "negative_examples": []},
     "RESEARCH_HISTORY": {"description": "Most recent bounded Alpha research session and query history", "positive_examples": ["What research ran most recently?"], "negative_examples": []},

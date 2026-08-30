@@ -176,8 +176,33 @@ def _registry_valid(route: Mapping[str, str]) -> bool:
 
 def resolve(text: str) -> dict[str, Any]:
     intent = classify_intent(text)
+    # Semantic reads/advice are allowed to reach the existing Hermes front
+    # brain when deterministic command classification has no exact match.
+    # The front brain may select only catalogued reads; registry validation
+    # remains the final eligibility check.
+    if intent == "UNKNOWN":
+        try:
+            from nexus_agent_platform.agents.front_brain import classify_message
+            decision = classify_message(text, {})
+            mode = decision.get("mode")
+            capability = decision.get("capability")
+            semantic_map = {
+                "get_system_status": "STATUS",
+                "system_health": "SYSTEM_HEALTH",
+                "pending_approvals": "RAY_REVIEW",
+                "repo_intelligence": "REPO_INTELLIGENCE",
+            }
+            if mode in {"conversation", "advisory"} and not capability:
+                return {"intent_class": "SEMANTIC_ADVISORY", "status": "NO_EXECUTION", "reason": "front_brain_advisory"}
+            if mode == "operational_read" and capability in semantic_map:
+                intent = semantic_map[capability]
+        except Exception:
+            # Semantic failure is fail-closed; no arbitrary route is selected.
+            pass
     if intent in {"CONVERSATION", "UNKNOWN", "STATE_QUERY"}:
         return {"intent_class": intent, "status": "NO_EXECUTION" if intent == "CONVERSATION" else "READ_ONLY_STATE" if intent == "STATE_QUERY" else "UNKNOWN_INTENT"}
+    if intent == "SEMANTIC_ADVISORY":
+        return {"intent_class": intent, "status": "NO_EXECUTION", "reason": "front_brain_advisory"}
     route = INTENT_MAP[intent]
     if not _registry_valid(route):
         return {"intent_class": intent, "status": "ROUTING_UNAVAILABLE", "error": "canonical registry mismatch"}
@@ -201,6 +226,8 @@ def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str
     if resolved["status"] == "NO_EXECUTION":
         if resolved["intent_class"] == "CONVERSATION":
             return "Nexus is here. I can report status, run bounded system checks, research public topics, inspect the repository, or prepare governed review work.", {"route": "NEXUS_CONVERSATION", "outcome": "ANSWERED", **resolved}
+        if resolved["intent_class"] == "SEMANTIC_ADVISORY":
+            return "I understand this as a request for explanation or recommendation. I can answer it conversationally, but I will not claim a live operational result without a certified evidence source.", {"route": "NEXUS_SEMANTIC_ADVISORY", "outcome": "ANSWERED", "lane": "CONVERSATIONAL_LANE", **resolved}
         return None
     if resolved["status"] != "RESOLVED":
         return "I could not resolve that request to a certified Nexus department and loop. No work was executed.", {"route": "NEXUS_ROUTING", "outcome": "BLOCKED", **resolved}
