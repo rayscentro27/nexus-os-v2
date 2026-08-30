@@ -179,7 +179,7 @@
       "commit": "PENDING_CHECKPOINT",
       "evidence": ["ops/launchd/com.nexus.active-operator-v2.plist", "scripts/operations/nexus_active_operator_runner.py", "scripts/nexus_agent_platform/phase15/run_all.py", "reports/rebuild/NEXUS_ACTIVE_OPERATOR_REAL_WORLD_PILOT.md"],
       "blockers": [],
-      "next_action": "Continue passive observation of genuine OS-scheduled cycles; do not manually trigger the operator."
+      "next_action": "Continue passive observation at the 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle."
     }
   ]
 }

@@ -24,6 +24,7 @@ def _sandbox(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "RECEIPT_DIR", root / "reports/runtime/receipts")
     monkeypatch.setattr(runner, "LOCK_PATH", root / "data/runtime/operator.lock")
     monkeypatch.setattr(runner, "KILL_SWITCH_PATH", root / "data/runtime/control.json")
+    monkeypatch.setattr(runner, "RESEARCH_QUEUE_PATH", root / "data/runtime/alpha_research/portfolio_requests.jsonl")
     (root / "data/runtime").mkdir(parents=True, exist_ok=True)
     (root / "data/runtime/control.json").write_text('{"active_operator_enabled": true, "mode": "BOUNDED_INTERNAL_ONLY"}')
     monkeypatch.setattr(process_registry_adapter, "SPOOL_PATH", root / "data/runtime/spool.jsonl")
@@ -100,5 +101,5 @@ def test_canonical_v2_plist_is_a_launchd_dictionary():
     plist = plistlib.loads((root / "ops/launchd/com.nexus.active-operator-v2.plist").read_bytes())
     assert plist["Label"] == "com.nexus.active-operator-v2"
     assert plist["ProgramArguments"][-1] == "--once"
-    assert plist["StartInterval"] == 300
+    assert plist["StartInterval"] == 900
     assert plist["RunAtLoad"] is False

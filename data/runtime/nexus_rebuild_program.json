@@ -245,7 +245,9 @@
   "wp6_active_operator_last_cycle": "2026-08-30T14:09:32.702662+00:00",
   "wp6_active_operator_last_decision": "NO_ACTION",
   "wp6_active_operator_last_receipt": "reports/runtime/nexus_active_operator_receipts/operator_operator_0ce601c2dfd14fda80a64318ac426845.json",
-  "next_action": "Continue passive observation of genuine OS-scheduled cycles; do not manually trigger the operator.",
+  "wp6_active_operator_interval_after_certification": 900,
+  "wp6_active_operator_stability_phase": "ACTIVE",
+  "next_action": "Continue passive observation at 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle.",
   "safety": {
     "active_operator_paused": true,
     "live_trading": false,

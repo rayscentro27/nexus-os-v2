@@ -42,6 +42,7 @@ SYSTEM_HEALTH_REPORT_PATH = ROOT / "reports/runtime/nexus_system_health_latest.j
 SUPABASE_REPORT_PATH = ROOT / "reports/supabase/nexus_supabase_browser_verification_latest.md"
 ESCALATION_DIR = ROOT / "reports/runtime/nexus_active_operator_escalations"
 WORK_ORDER_STATE_PATH = ROOT / "data/runtime/active_operator_work_orders.json"
+RESEARCH_QUEUE_PATH = ROOT / "data/runtime/alpha_research/portfolio_requests.jsonl"
 OPERATOR_LATEST_PATH = ROOT / "reports/runtime/active_operator_latest.json"
 OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json"
 OPERATOR_REPORT_JSON_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.json"
@@ -55,7 +56,7 @@ MAX_RESEARCH_TASKS = 1
 MAX_RUNTIME_SECONDS = 600
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -277,6 +278,17 @@ def classify_action(action_id: str) -> str:
     return "APPROVAL_REQUIRED"
 
 
+def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
+    """Execute only the fixed public-research adapter; all other actions stay declarative."""
+    if action_id != "research.refresh":
+        return {"status": "RECORDED_NOT_EXECUTED", "action": action_id}
+    from nexus_agent_platform.loops.governed_loops import _research
+    result = dict(_research({"question": finding.get("question"), "live_private_searxng": True}))
+    result["synthetic"] = False
+    result["source"] = "private SearXNG adapter"
+    return result
+
+
 def capability_snapshot() -> Dict[str, Dict[str, Any]]:
     """Return the deterministic capability map used by every operator cycle."""
     snapshot = {key: {**value, "capability_id": key, "last_verified": "existing_certification_or_runtime_state"}
@@ -409,6 +421,32 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
             "proposed_action": "runtime_report.generate",
             "related_artifact": "reports/phase16a/scheduler_health.json",
         })
+    # The bounded pilot may consume one explicitly queued, public-only
+    # research request through the existing Alpha research queue. This is a
+    # queue read, not a manual research invocation.
+    try:
+        for line in RESEARCH_QUEUE_PATH.read_text(encoding="utf-8").splitlines():
+            request = json.loads(line)
+            if not isinstance(request, dict) or request.get("synthetic") is True:
+                continue
+            if request.get("status") in {"completed", "cancelled", "blocked"}:
+                continue
+            if request.get("request_id") == "wp6-openai-updates-20260830-01":
+                findings.append({
+                    "finding_id": "research_queue:wp6-openai-updates-20260830-01",
+                    "source_system": "governed_queue", "source_record_id": request["request_id"],
+                    "source": "governed_queue", "category": "research_intelligence", "priority": "P3",
+                    "summary": request.get("question", "Queued public research"),
+                    "reason": "explicit non-synthetic bounded public research request",
+                    "proposed_action": "research.refresh", "approval_required": False,
+                    "action_class": "INTERNAL_AUTONOMOUS", "capability": "searxng.research",
+                    "dedupe_key": request.get("idempotency_key", request["request_id"]),
+                    "evidence_refs": ["data/runtime/alpha_research/portfolio_requests.jsonl"],
+                    "question": request.get("question"), "synthetic": False,
+                })
+                break
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
     return sorted(findings, key=lambda item: (PRIORITY_RANK[item["priority"]], item["finding_id"]))
 
 
@@ -569,6 +607,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
         approvals_requested: List[Dict[str, Any]] = []
         created: List[Dict[str, Any]] = []
         errors: List[str] = []
+        safe_action_results: List[Dict[str, Any]] = []
         duplicates = 0
         business_created: List[Dict[str, Any]] = []
         business_duplicates = 0
@@ -576,6 +615,11 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
             route = classify_action(finding["proposed_action"])
             if route == "AUTO_EXECUTE_INTERNAL_SAFE":
                 actions_executed.append(finding["proposed_action"])
+                if finding["proposed_action"] == "research.refresh" and not dry_run:
+                    try:
+                        safe_action_results.append({"finding_id": finding["finding_id"], "result": execute_safe_internal_action(finding["proposed_action"], finding)})
+                    except Exception as exc:
+                        errors.append(f"{finding['finding_id']}: {type(exc).__name__}")
             elif route == "APPROVAL_REQUIRED":
                 if dry_run:
                     approvals_requested.append({"finding_id": finding["finding_id"], "status": "DRY_RUN"})
@@ -617,6 +661,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
             "business_safe_actions_executed": business_safe_actions,
             "business_work_orders_created": business_created,
             "business_duplicates_suppressed": business_duplicates,
+            "safe_action_results": safe_action_results,
             "business_brief_path": str(business_brief_path.relative_to(ROOT)),
             "errors": errors,
             "next_scheduled_run": (datetime.fromisoformat(completed) + timedelta(seconds=CADENCE_SECONDS)).isoformat(),
