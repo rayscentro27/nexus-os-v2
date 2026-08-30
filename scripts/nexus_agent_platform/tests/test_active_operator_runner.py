@@ -21,6 +21,7 @@ def _sandbox(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "REGISTRY_PATH", root / "data/operations/nexus_process_registry.json")
     monkeypatch.setattr(runner, "SCHEDULER_HEALTH_PATH", root / "reports/phase16a/scheduler_health.json")
     monkeypatch.setattr(runner, "HEARTBEAT_PATH", root / "reports/runtime/heartbeat.json")
+    monkeypatch.setattr(runner, "OPERATOR_HEARTBEAT_PATH", root / "reports/runtime/operator_heartbeat.json")
     monkeypatch.setattr(runner, "RUNNER_REPORT_PATH", root / "reports/runtime/report.md")
     monkeypatch.setattr(runner, "RECEIPT_DIR", root / "reports/runtime/receipts")
     monkeypatch.setattr(runner, "LOCK_PATH", root / "data/runtime/operator.lock")
