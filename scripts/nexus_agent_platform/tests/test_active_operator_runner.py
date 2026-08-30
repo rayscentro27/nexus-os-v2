@@ -1,6 +1,7 @@
 import json
 import fcntl
 import plistlib
+import time
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -23,6 +24,7 @@ def _sandbox(monkeypatch, tmp_path):
     monkeypatch.setattr(runner, "RUNNER_REPORT_PATH", root / "reports/runtime/report.md")
     monkeypatch.setattr(runner, "RECEIPT_DIR", root / "reports/runtime/receipts")
     monkeypatch.setattr(runner, "LOCK_PATH", root / "data/runtime/operator.lock")
+    monkeypatch.setattr(runner, "PROGRESS_PATH", root / "reports/runtime/progress.json")
     monkeypatch.setattr(runner, "KILL_SWITCH_PATH", root / "data/runtime/control.json")
     monkeypatch.setattr(runner, "RESEARCH_QUEUE_PATH", root / "data/runtime/alpha_research/portfolio_requests.jsonl")
     monkeypatch.setattr(runner, "WORK_ITEM_STATE_PATH", root / "data/runtime/work_item_state.json")
@@ -95,6 +97,45 @@ def test_corrupt_inputs_fail_safe_to_no_action(monkeypatch, tmp_path):
     result = runner.run_once()
     assert result["status"] == "NO_ACTION_REQUIRED"
     assert result["authority"]["external_actions"] == "BLOCKED"
+
+
+def test_cycle_timeout_writes_terminal_receipt_and_releases_lock(monkeypatch, tmp_path):
+    root = _sandbox(monkeypatch, tmp_path)
+    (root / "data/operations/nexus_process_registry.json").write_text("[]")
+    (root / "reports/phase16a/scheduler_health.json").write_text('{"status":"HEALTHY"}')
+    monkeypatch.setattr(runner, "MAX_RUNTIME_SECONDS", 0.02)
+
+    def slow_discovery(*args, **kwargs):
+        time.sleep(0.2)
+        return []
+
+    monkeypatch.setattr(runner, "discover_attention", slow_discovery)
+    result = runner.run_once()
+
+    assert result["terminal_state"] == "TIMED_OUT"
+    assert result["error_class"] == "CYCLE_TIMEOUT"
+    assert result["retry_eligibility"] == "BOUNDED_RETRY_ELIGIBLE"
+    receipt = root / "reports/runtime/receipts" / f"operator_{result['operator_run_id']}.json"
+    assert receipt.exists()
+    assert json.loads(receipt.read_text())["terminal_state"] == "TIMED_OUT"
+    assert json.loads((root / "reports/runtime/heartbeat.json").read_text())["run_status"] == "TIMED_OUT"
+    with runner.single_run_lock(root / "data/runtime/operator.lock") as acquired:
+        assert acquired is True
+
+
+def test_timeout_marks_running_item_failed_and_retryable(monkeypatch, tmp_path):
+    root = _sandbox(monkeypatch, tmp_path)
+    item_state = root / "data/runtime/work_item_state.json"
+    item_state.write_text(json.dumps({"research-1": {"lifecycle_state": "RUNNING", "attempt_count": 1}}))
+    monkeypatch.setattr(runner, "_CYCLE_CONTEXT", {"operator_run_id": "operator-timeout", "stage": "EXECUTING", "work_item_id": "research-1"})
+    monkeypatch.setattr(runner, "MAX_RUNTIME_SECONDS", 600)
+
+    result = runner._timeout_result(run_id="operator-timeout", started_at="2026-08-30T00:00:00+00:00", dry_run=False, mode="live")
+    state = json.loads(item_state.read_text())["research-1"]
+    assert result["terminal_state"] == "TIMED_OUT"
+    assert state["lifecycle_state"] == "FAILED"
+    assert state["retry_eligible"] is True
+    assert state["completed_at"] is None
 
 
 def test_canonical_v2_plist_is_a_launchd_dictionary():

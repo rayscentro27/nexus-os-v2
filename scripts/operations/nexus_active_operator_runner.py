@@ -14,6 +14,7 @@ import fcntl
 import hashlib
 import json
 import os
+import signal
 import subprocess
 import sys
 import uuid
@@ -49,12 +50,20 @@ OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json
 OPERATOR_REPORT_JSON_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.json"
 OPERATOR_REPORT_MD_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.md"
 LOCK_PATH = ROOT / "data/runtime/nexus_active_operator.lock"
+PROGRESS_PATH = ROOT / "reports/runtime/nexus_active_operator_progress.json"
 KILL_SWITCH_PATH = ROOT / "data/runtime/active_operator_control.json"
 CADENCE_SECONDS = 300
 MAX_NEW_WORK_ORDERS = 3
 MAX_EXECUTIONS = 3
 MAX_RESEARCH_TASKS = 1
 MAX_RUNTIME_SECONDS = 600
+
+
+class ActiveOperatorTimeout(RuntimeError):
+    """Raised only by the bounded live-cycle deadline."""
+
+
+_CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
     "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh",
@@ -104,6 +113,20 @@ def load_json(path: Path, default: Any) -> Any:
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _record_progress(stage: str, **values: Any) -> None:
+    """Persist sparse stage evidence so a stalled cycle remains diagnosable."""
+    _CYCLE_CONTEXT.update({"stage": stage, **values})
+    try:
+        write_json(PROGRESS_PATH, {"schema_version": "nexus.active-operator-progress.v1", **_CYCLE_CONTEXT, "updated_at": utc_now()})
+    except OSError:
+        # Progress must never broaden authority or hide the terminal timeout.
+        pass
+
+
+def _deadline_handler(signum: int, frame: Any) -> None:
+    raise ActiveOperatorTimeout("active operator cycle deadline exceeded")
 
 
 def relative_or_absolute(path: Path) -> str:
@@ -568,10 +591,15 @@ def _write_report(result: Dict[str, Any]) -> None:
     RUNNER_REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
+def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
     _sanitize_autonomy_environment()
     started = utc_now()
     run_id = f"operator_{uuid.uuid4().hex}"
+    _CYCLE_CONTEXT.clear()
+    _CYCLE_CONTEXT.update({"operator_run_id": run_id, "started_at": started,
+                           "trigger": os.environ.get("NEXUS_OPERATOR_TRIGGER", "manual"),
+                           "max_runtime_seconds": MAX_RUNTIME_SECONDS})
+    _record_progress("STARTING")
     if not dry_run and not kill_switch_enabled():
         completed = utc_now()
         result = {"operator_run_id": run_id, "status": "KILL_SWITCH_OFF", "started_at": started,
@@ -585,8 +613,11 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
     with single_run_lock() as acquired:
         if not acquired:
             return {"operator_run_id": run_id, "status": "SKIPPED_OVERLAP", "started_at": started, "completed_at": utc_now()}
+        _record_progress("LOCK_ACQUIRED")
+        _record_progress("STATE_LOADING")
         registry = load_json(REGISTRY_PATH, [])
         scheduler_health = load_json(SCHEDULER_HEALTH_PATH, {})
+        _record_progress("WORK_DISCOVERY")
         findings = discover_attention(registry if isinstance(registry, list) else [], scheduler_health)
         # WP6 pilot keeps the cycle bounded to the certified operational
         # registry. Business read-model scans are opt-in and cannot lengthen
@@ -599,6 +630,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
         for item in business_findings:
             item["proposed_action"] = item.get("recommended_action", "business_attention.review")
         dispatch_findings = sorted(findings + business_findings, key=lambda item: (PRIORITY_RANK.get(item.get("priority", "P4"), 4), item.get("finding_id", "")))
+        _record_progress("WORK_SELECTED", work_item_id=(dispatch_findings[0].get("source_record_id") if dispatch_findings else None))
         capabilities = capability_snapshot()
         canonical_orders = _load_operator_work_orders()
         known_dedupes = {str(item.get("dedupe_key")) for item in canonical_orders}
@@ -669,6 +701,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
                         continue
                 actions_executed.append(finding["proposed_action"])
                 if finding["proposed_action"] == "research.refresh" and not dry_run:
+                    _record_progress("EXECUTING", work_item_id=finding.get("source_record_id"))
                     try:
                         safe_action_results.append({"finding_id": finding["finding_id"], "result": execute_safe_internal_action(finding["proposed_action"], finding)})
                     except Exception as exc:
@@ -693,6 +726,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
             else:
                 errors.append(f"{finding['finding_id']}: NOT_AUTHORIZED")
         completed = utc_now()
+        _record_progress("VALIDATING")
         trigger_type = os.environ.get("NEXUS_OPERATOR_TRIGGER", "manual")
         heartbeat_path = str(HEARTBEAT_PATH.relative_to(ROOT))
         receipt_path = str((RECEIPT_DIR / f"operator_{run_id}.json").relative_to(ROOT))
@@ -702,6 +736,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
                 item["work_item_state"] = _complete_work_item(
                     next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {}),
                     run_id, run_id, research_result, receipt_path)
+        _record_progress("PERSISTING")
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]
         result = {
@@ -754,6 +789,7 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
             "business_duplicates_suppressed": business_duplicates,
             "top_business_priority": business_findings[0] if business_findings else None,
         }
+        _record_progress("RECEIPT_WRITING")
         write_json(HEARTBEAT_PATH, heartbeat)
         write_json(ROOT / "reports/runtime/active_operator_heartbeat.json", heartbeat)
         _write_v1_report(result)
@@ -768,7 +804,66 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
             items_attempted=len(findings), items_succeeded=len(created), items_failed=len(errors),
             metadata={"dry_run": dry_run, "external_action_performed": False, "remote_registry_updated": False},
         )
+        _record_progress("COMPLETE", completed_at=completed)
         return result
+
+
+def _timeout_result(*, run_id: str, started_at: str, dry_run: bool, mode: str) -> Dict[str, Any]:
+    """Persist a terminal timeout without claiming successful work."""
+    timed_out_at = utc_now()
+    context = dict(_CYCLE_CONTEXT)
+    work_item_id = context.get("work_item_id")
+    if work_item_id:
+        state = _load_work_item_state()
+        current = state.get(str(work_item_id), {})
+        if current.get("lifecycle_state") == "RUNNING":
+            state[str(work_item_id)] = {**current, "lifecycle_state": "FAILED",
+                                        "completed_at": None, "validation_status": "FAIL",
+                                        "last_error": "ACTIVE_OPERATOR_TIMEOUT",
+                                        "retry_eligible": True}
+            _save_work_item_state(state)
+    result = {
+        "operator_run_id": run_id, "status": "TIMED_OUT", "terminal_state": "TIMED_OUT",
+        "started_at": started_at, "deadline_at": (datetime.fromisoformat(started_at) + timedelta(seconds=MAX_RUNTIME_SECONDS)).isoformat(),
+        "timed_out_at": timed_out_at, "configured_max_runtime_seconds": MAX_RUNTIME_SECONDS,
+        "current_stage": context.get("stage", "UNKNOWN"), "current_work_item_id": work_item_id,
+        "attempt_id": run_id, "retry_eligibility": "BOUNDED_RETRY_ELIGIBLE",
+        "lock_release_status": "RELEASED_BY_CONTEXT_EXIT", "error_class": "CYCLE_TIMEOUT",
+        "validation_status": "FAIL", "external_side_effects": False,
+        "forbidden_action_counts": {"payments": 0, "live_trading": 0, "client_production_mutations": 0, "external_messages": 0},
+        "decision": "FAILED", "trigger_type": os.environ.get("NEXUS_OPERATOR_TRIGGER", "manual"),
+        "dry_run": dry_run, "mode": mode, "cycle_receipt": True,
+    }
+    _record_progress("TIMED_OUT", timed_out_at=timed_out_at, terminal_state="TIMED_OUT")
+    receipt_path = _receipt(run_id, result)
+    result["receipt_path"] = relative_or_absolute(receipt_path)
+    heartbeat = {"operator_run_id": run_id, "last_run": timed_out_at, "run_status": "TIMED_OUT",
+                 "operator_health": "DEGRADED", "error_class": "CYCLE_TIMEOUT",
+                 "current_stage": context.get("stage", "UNKNOWN"), "receipt_path": result["receipt_path"],
+                 "next_scheduled_run": (datetime.fromisoformat(timed_out_at) + timedelta(seconds=CADENCE_SECONDS)).isoformat()}
+    write_json(HEARTBEAT_PATH, heartbeat)
+    write_json(OPERATOR_HEARTBEAT_PATH, heartbeat)
+    return result
+
+
+def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
+    """Run one cycle with a hard wall-clock deadline in the parent process."""
+    started_at = utc_now()
+    run_id = f"operator_{uuid.uuid4().hex}"
+    previous = signal.getsignal(signal.SIGALRM)
+    signal.signal(signal.SIGALRM, _deadline_handler)
+    signal.setitimer(signal.ITIMER_REAL, MAX_RUNTIME_SECONDS if not dry_run else 0)
+    try:
+        # Keep the implementation's run id and deadline context coherent.
+        result = _run_once_impl(dry_run=dry_run, mode=mode)
+        return result
+    except ActiveOperatorTimeout:
+        return _timeout_result(run_id=_CYCLE_CONTEXT.get("operator_run_id", run_id),
+                               started_at=_CYCLE_CONTEXT.get("started_at", started_at),
+                               dry_run=dry_run, mode=mode)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
 
 
 def main() -> int:
@@ -780,8 +875,9 @@ def main() -> int:
     if not args.once and not args.dry_run:
         parser.error("--once or --dry-run is required")
     dry_run = args.dry_run or args.mode == "dry-run"
-    print(json.dumps(run_once(dry_run=dry_run, mode="dry-run" if dry_run else (args.mode or "live")), indent=2, sort_keys=True))
-    return 0
+    result = run_once(dry_run=dry_run, mode="dry-run" if dry_run else (args.mode or "live"))
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 75 if result.get("terminal_state") == "TIMED_OUT" else 0
 
 
 if __name__ == "__main__":
