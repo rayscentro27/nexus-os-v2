@@ -1,0 +1,17 @@
+{
+  "wp6-openai-updates-20260830-01": {
+    "work_item_id": "wp6-openai-updates-20260830-01",
+    "lifecycle_state": "COMPLETE",
+    "claimed_at": "2026-08-30T14:50:30.346852+00:00",
+    "started_at": "2026-08-30T14:50:30.346852+00:00",
+    "completed_at": "2026-08-30T15:05:33.960155+00:00",
+    "selected_cycle_id": "operator_operator_f6b34323790e465fac557b61fff36b5d",
+    "execution_id": "historical_duplicate_execution_preserved",
+    "validation_status": "PASS_HISTORICAL_EVIDENCE",
+    "result_hash": "aa0ca0bbd77940b18537541f7ea8118cab6a03a36c3589b4459949492b98cdc5",
+    "receipt_reference": "reports/runtime/nexus_active_operator_receipts/operator_operator_f6b34323790e465fac557b61fff36b5d.json",
+    "attempt_count": 2,
+    "idempotency_key": "wp6-openai-updates-20260830-01",
+    "historical_duplicate_preserved": true
+  }
+}

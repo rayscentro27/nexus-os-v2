@@ -43,6 +43,7 @@ SUPABASE_REPORT_PATH = ROOT / "reports/supabase/nexus_supabase_browser_verificat
 ESCALATION_DIR = ROOT / "reports/runtime/nexus_active_operator_escalations"
 WORK_ORDER_STATE_PATH = ROOT / "data/runtime/active_operator_work_orders.json"
 RESEARCH_QUEUE_PATH = ROOT / "data/runtime/alpha_research/portfolio_requests.jsonl"
+WORK_ITEM_STATE_PATH = ROOT / "data/runtime/active_operator_work_item_state.json"
 OPERATOR_LATEST_PATH = ROOT / "reports/runtime/active_operator_latest.json"
 OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json"
 OPERATOR_REPORT_JSON_PATH = ROOT / "reports/certification/nexus_active_operator_v1_latest.json"
@@ -327,6 +328,49 @@ def _save_operator_work_orders(orders: List[Dict[str, Any]]) -> None:
     write_json(ROOT / "data/runtime/active_operator_work_orders.json", orders)
 
 
+def _load_work_item_state() -> Dict[str, Dict[str, Any]]:
+    value = load_json(WORK_ITEM_STATE_PATH, {})
+    return value if isinstance(value, dict) else {}
+
+
+def _save_work_item_state(value: Dict[str, Dict[str, Any]]) -> None:
+    write_json(WORK_ITEM_STATE_PATH, value)
+
+
+def _claim_work_item(finding: Dict[str, Any], cycle_id: str) -> tuple[bool, Dict[str, Any]]:
+    item_id = str(finding.get("source_record_id") or finding.get("finding_id"))
+    state = _load_work_item_state()
+    current = state.get(item_id, {})
+    if current.get("lifecycle_state") in {"CLAIMED", "RUNNING", "SUCCEEDED_VERIFIED", "COMPLETE"}:
+        return False, current
+    now = utc_now()
+    claimed = {**current, "work_item_id": item_id, "lifecycle_state": "RUNNING",
+               "claimed_at": current.get("claimed_at") or now, "started_at": now,
+               "selected_cycle_id": cycle_id, "attempt_count": int(current.get("attempt_count", 0)) + 1,
+               "idempotency_key": finding.get("dedupe_key") or item_id}
+    state[item_id] = claimed
+    _save_work_item_state(state)
+    return True, claimed
+
+
+def _complete_work_item(finding: Dict[str, Any], cycle_id: str, execution_id: str,
+                        result: Dict[str, Any], receipt_ref: str) -> Dict[str, Any]:
+    item_id = str(finding.get("source_record_id") or finding.get("finding_id"))
+    state = _load_work_item_state()
+    current = state.get(item_id, {})
+    artifact = result.get("artifact") if isinstance(result, dict) else {}
+    completed = {**current, "work_item_id": item_id, "lifecycle_state": "COMPLETE",
+                 "completed_at": utc_now(), "selected_cycle_id": cycle_id,
+                 "execution_id": execution_id, "result_artifact": artifact,
+                 "validation_status": "PASS" if result.get("status") == "PASS" else "FAIL",
+                 "result_hash": result.get("output_hash"), "receipt_reference": receipt_ref,
+                 "attempt_count": int(current.get("attempt_count", 0)),
+                 "idempotency_key": current.get("idempotency_key") or item_id}
+    state[item_id] = completed
+    _save_work_item_state(state)
+    return completed
+
+
 def _canonical_work_order(finding: Dict[str, Any], capability: str, *, blocked: bool = False) -> Dict[str, Any]:
     dedupe = str(finding.get("dedupe_key") or finding.get("finding_id"))
     return {
@@ -425,22 +469,26 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
     # research request through the existing Alpha research queue. This is a
     # queue read, not a manual research invocation.
     try:
+        item_state = _load_work_item_state()
         for line in RESEARCH_QUEUE_PATH.read_text(encoding="utf-8").splitlines():
             request = json.loads(line)
             if not isinstance(request, dict) or request.get("synthetic") is True:
                 continue
             if request.get("status") in {"completed", "cancelled", "blocked"}:
                 continue
-            if request.get("request_id") == "wp6-openai-updates-20260830-01":
+            request_id = str(request.get("request_id") or "")
+            if not request_id or item_state.get(request_id, {}).get("lifecycle_state") in {"CLAIMED", "RUNNING", "SUCCEEDED_VERIFIED", "COMPLETE"}:
+                continue
+            if request.get("source") == "governed_queue":
                 findings.append({
-                    "finding_id": "research_queue:wp6-openai-updates-20260830-01",
-                    "source_system": "governed_queue", "source_record_id": request["request_id"],
+                    "finding_id": f"research_queue:{request_id}",
+                    "source_system": "governed_queue", "source_record_id": request_id,
                     "source": "governed_queue", "category": "research_intelligence", "priority": "P3",
                     "summary": request.get("question", "Queued public research"),
                     "reason": "explicit non-synthetic bounded public research request",
                     "proposed_action": "research.refresh", "approval_required": False,
                     "action_class": "INTERNAL_AUTONOMOUS", "capability": "searxng.research",
-                    "dedupe_key": request.get("idempotency_key", request["request_id"]),
+                    "dedupe_key": request.get("idempotency_key", request_id),
                     "evidence_refs": ["data/runtime/alpha_research/portfolio_requests.jsonl"],
                     "question": request.get("question"), "synthetic": False,
                 })
@@ -614,6 +662,11 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
         for finding in dispatch_findings:
             route = classify_action(finding["proposed_action"])
             if route == "AUTO_EXECUTE_INTERNAL_SAFE":
+                if finding["proposed_action"] == "research.refresh" and not dry_run:
+                    claimed, prior = _claim_work_item(finding, run_id)
+                    if not claimed:
+                        duplicates += 1
+                        continue
                 actions_executed.append(finding["proposed_action"])
                 if finding["proposed_action"] == "research.refresh" and not dry_run:
                     try:
@@ -643,6 +696,12 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
         trigger_type = os.environ.get("NEXUS_OPERATOR_TRIGGER", "manual")
         heartbeat_path = str(HEARTBEAT_PATH.relative_to(ROOT))
         receipt_path = str((RECEIPT_DIR / f"operator_{run_id}.json").relative_to(ROOT))
+        for item in safe_action_results:
+            research_result = item.get("result", {})
+            if research_result.get("status") == "PASS":
+                item["work_item_state"] = _complete_work_item(
+                    next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {}),
+                    run_id, run_id, research_result, receipt_path)
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]
         result = {

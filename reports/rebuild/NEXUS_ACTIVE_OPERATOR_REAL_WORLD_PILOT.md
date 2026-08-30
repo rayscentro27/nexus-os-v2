@@ -38,14 +38,20 @@ run counter; durable receipts preserve the six-cycle proof.
 
 ## Research amendment
 
-Exactly one non-synthetic public research request was added to the governed
-Alpha research queue. It has not been manually invoked or marked complete.
-The bounded runner now reads this queue and may select it only on a future
-OS-scheduled cycle.
+The first request exposed a lifecycle defect: successful execution wrote only
+the cycle receipt and left the item `READY`, causing two scheduled executions.
+Both receipts remain preserved. The item is now reconciled from that evidence
+as historical `COMPLETE` with `attempt_count=2`; this reconciliation is not
+counted as fresh certification.
+
+The repaired lifecycle persists claim, running, completion, validation, hash,
+receipt, execution, and idempotency fields. A new non-synthetic request,
+`wp6-openai-updates-official-20260830-01`, is queued for official OpenAI-owned
+source research and has not been invoked or completed manually.
 
 ## Limits
 
-- A real action cycle is not yet proven; no eligible item was selected during
-  the six-cycle 5-minute threshold window.
-- The next stability cycle is intentionally not manually triggered.
+- Fresh exactly-once action certification is pending the next natural
+  15-minute scheduled cycle and one subsequent exclusion cycle.
+- The scheduler is not manually triggered.
 - VM reboot recovery and sustained long-duration operation remain unproven.
