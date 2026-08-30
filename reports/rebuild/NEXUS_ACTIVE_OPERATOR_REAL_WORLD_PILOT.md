@@ -1,15 +1,17 @@
 # WP6 Active Operator bounded real-world pilot
 
-## State
+## Current state
 
 Campaign gate: `HG-WP6-ACTIVE-OPERATOR-BOUNDED-REAL-WORLD-PILOT-20260830-01`
 
-Gate status: `PENDING`
+TruthKernel status: `APPROVED`; durable approval event recorded.
 
-Active Operator status: `PAUSED`
+Mode: `BOUNDED_INTERNAL_ONLY`; deterministic switch enabled.
 
-No scheduler activation, cycle start, host service change, or autonomous work
-was performed during preparation.
+Canonical scheduler: `com.nexus.active-operator-v2` via launchd.
+Current interval: 900 seconds (15-minute bounded stability phase).
+No payments, trades, client-production mutations, unapproved external
+messages, or deployments were performed.
 
 ## Audited implementation
 
@@ -22,16 +24,28 @@ was performed during preparation.
 - Existing safety profile blocks payments, live trading, client production
   mutation, external outreach, arbitrary shell, and authority self-modification.
 
-## Proposed bounded pilot contract
+## Real scheduled evidence
 
-The pending campaign authorizes only a five-minute OS schedule for bounded
-internal work, one concurrent cycle, a ten-minute cycle limit, at most three
-work items, at most one heavy research task, deterministic kill-switch and
-singleton checks, durable cycle receipts, and internal reporting when needed.
-External consequential actions remain zero-authorized. Active Operator must
-remain paused until the exact TruthKernel gate is approved.
+Six OS-scheduled cycles were observed between 14:09:32 and 14:34:39 UTC on
+2026-08-30. All six had `NEXUS_OPERATOR_TRIGGER=launchd`, no dry-run flag,
+exit code 0, durable runtime receipts, and no external mutations. All six
+were `NO_ACTION` cycles. No Codex or manual cycle trigger was used.
 
-## Real-world evidence
+The six receipts are retained under
+`reports/runtime/nexus_active_operator_receipts/` and are the authoritative
+cycle evidence. The post-threshold scheduler reload reset launchd's in-memory
+run counter; durable receipts preserve the six-cycle proof.
 
-No real scheduled cycles exist yet. Unit, manual, dry-run, and synthetic
-evidence will not count toward the six-cycle certification requirement.
+## Research amendment
+
+Exactly one non-synthetic public research request was added to the governed
+Alpha research queue. It has not been manually invoked or marked complete.
+The bounded runner now reads this queue and may select it only on a future
+OS-scheduled cycle.
+
+## Limits
+
+- A real action cycle is not yet proven; no eligible item was selected during
+  the six-cycle 5-minute threshold window.
+- The next stability cycle is intentionally not manually triggered.
+- VM reboot recovery and sustained long-duration operation remain unproven.
