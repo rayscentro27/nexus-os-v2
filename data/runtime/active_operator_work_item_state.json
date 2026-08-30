@@ -1,17 +1,96 @@
 {
   "wp6-openai-updates-20260830-01": {
-    "work_item_id": "wp6-openai-updates-20260830-01",
-    "lifecycle_state": "COMPLETE",
-    "claimed_at": "2026-08-30T14:50:30.346852+00:00",
-    "started_at": "2026-08-30T14:50:30.346852+00:00",
-    "completed_at": "2026-08-30T15:05:33.960155+00:00",
-    "selected_cycle_id": "operator_operator_f6b34323790e465fac557b61fff36b5d",
-    "execution_id": "historical_duplicate_execution_preserved",
-    "validation_status": "PASS_HISTORICAL_EVIDENCE",
-    "result_hash": "aa0ca0bbd77940b18537541f7ea8118cab6a03a36c3589b4459949492b98cdc5",
-    "receipt_reference": "reports/runtime/nexus_active_operator_receipts/operator_operator_f6b34323790e465fac557b61fff36b5d.json",
     "attempt_count": 2,
+    "claimed_at": "2026-08-30T14:50:30.346852+00:00",
+    "completed_at": "2026-08-30T15:05:33.960155+00:00",
+    "execution_id": "historical_duplicate_execution_preserved",
+    "historical_duplicate_preserved": true,
     "idempotency_key": "wp6-openai-updates-20260830-01",
-    "historical_duplicate_preserved": true
+    "lifecycle_state": "COMPLETE",
+    "receipt_reference": "reports/runtime/nexus_active_operator_receipts/operator_operator_f6b34323790e465fac557b61fff36b5d.json",
+    "result_hash": "aa0ca0bbd77940b18537541f7ea8118cab6a03a36c3589b4459949492b98cdc5",
+    "selected_cycle_id": "operator_operator_f6b34323790e465fac557b61fff36b5d",
+    "started_at": "2026-08-30T14:50:30.346852+00:00",
+    "validation_status": "PASS_HISTORICAL_EVIDENCE",
+    "work_item_id": "wp6-openai-updates-20260830-01"
+  },
+  "wp6-openai-updates-official-20260830-01": {
+    "attempt_count": 1,
+    "claimed_at": "2026-08-30T15:20:35.024494+00:00",
+    "completed_at": "2026-08-30T15:20:37.014575+00:00",
+    "execution_id": "operator_ac688d528d5046d6a7ce865112168110",
+    "idempotency_key": "wp6-openai-updates-official-20260830-01",
+    "lifecycle_state": "COMPLETE",
+    "receipt_reference": "reports/runtime/nexus_active_operator_receipts/operator_operator_ac688d528d5046d6a7ce865112168110.json",
+    "result_artifact": {
+      "executive_summary": "The private research search returned 19 public source results for Research the latest official OpenAI product announcements from OpenAI-owned sources and summarize the three most important updates with source URLs..",
+      "findings": [
+        {
+          "snippet": "Scheduling a webhook-triggered copy also requires Allow event-triggered scheduled tasks , access to Work , and the recipient\u2019s own approved connected app. ... Scheduled tasks in ChatGPT . Original source ... OpenAI introduces Jalape\u00f1o, its first custom inference chip, highlighting faster responses, ",
+          "title": "OpenAI Release Notes - August 2026 Latest Updates - Releasebot",
+          "url": "https://releasebot.io/updates/openai"
+        },
+        {
+          "snippet": "We\u2019re rolling out an update to ... that\u2026\u201d). Original source ... OpenAI Models announces the removal of GPT-5.1 in ChatGPT, auto-migrating conversations to GPT-5.3 Instant, GPT-5.4 Thinking, or GPT-5.4 Pro....",
+          "title": "OpenAI Models Updates by OpenAI - August 2026 - Releasebot",
+          "url": "https://releasebot.io/updates/openai/openai-models"
+        },
+        {
+          "snippet": "Stay up to speed on the rapid advancement of AI technology and the benefits it offers to humanity.",
+          "title": "OpenAI Newsroom | Product | OpenAI",
+          "url": "https://openai.com/news/product-releases/"
+        },
+        {
+          "snippet": "In our ChatGPT dictation evaluations, word error rate\u2014a standard measure of transcription accuracy\u2014was at least 10% lower for top languages tested than with the previous production model. As of June 26, 2026, GPT-4.5 is no longer available in ChatGPT, including for custom GPTs. Existing conversation",
+          "title": "ChatGPT \u2014 Release Notes | OpenAI Help Center",
+          "url": "https://help.openai.com/en/articles/6825453-chatgpt-release-notes"
+        },
+        {
+          "snippet": "Original source ... ChatGPT adds Codex and ChatGPT feature updates, including custom Site URL changes without redeploying, Apple Messages support on Apple silicon Macs, wider Computer History availability, read-only Codex chat sharing, and synced pinned chats across desktop and iOS. Choose a new URL",
+          "title": "ChatGPT Updates by OpenAI - August 2026 - Releasebot",
+          "url": "https://releasebot.io/updates/openai/chatgpt"
+        }
+      ],
+      "key_findings": [
+        "Scheduling a webhook-triggered copy also requires Allow event-triggered scheduled tasks , access to Work , and the recipient\u2019s own approved connected app. ... Scheduled tasks in ChatGPT . Original source ... OpenAI introduces Jalape\u00f1o, its first custom inference chip, highlighting faster responses, ",
+        "We\u2019re rolling out an update to ... that\u2026\u201d). Original source ... OpenAI Models announces the removal of GPT-5.1 in ChatGPT, auto-migrating conversations to GPT-5.3 Instant, GPT-5.4 Thinking, or GPT-5.4 Pro....",
+        "Stay up to speed on the rapid advancement of AI technology and the benefits it offers to humanity."
+      ],
+      "private": true,
+      "query": "Research the latest official OpenAI product announcements from OpenAI-owned sources and summarize the three most important updates with source URLs.",
+      "result_count": 19,
+      "sources_used": [
+        {
+          "title": "OpenAI Release Notes - August 2026 Latest Updates - Releasebot",
+          "url": "https://releasebot.io/updates/openai"
+        },
+        {
+          "title": "OpenAI Models Updates by OpenAI - August 2026 - Releasebot",
+          "url": "https://releasebot.io/updates/openai/openai-models"
+        },
+        {
+          "title": "OpenAI Newsroom | Product | OpenAI",
+          "url": "https://openai.com/news/product-releases/"
+        },
+        {
+          "title": "ChatGPT \u2014 Release Notes | OpenAI Help Center",
+          "url": "https://help.openai.com/en/articles/6825453-chatgpt-release-notes"
+        },
+        {
+          "title": "ChatGPT Updates by OpenAI - August 2026 - Releasebot",
+          "url": "https://releasebot.io/updates/openai/chatgpt"
+        }
+      ],
+      "uncertainties": [
+        "Search snippets may omit context; open the cited sources for publication-level verification."
+      ],
+      "what_changed": "The retrieved source set was refreshed for this request; no change is asserted without source evidence.",
+      "why_it_matters": "These sources provide current public evidence for a bounded follow-up review."
+    },
+    "result_hash": "972d5eb8dd3cd9f3403c4c3b321498231d3aa9031d5bacee14317adbc127a92a",
+    "selected_cycle_id": "operator_ac688d528d5046d6a7ce865112168110",
+    "started_at": "2026-08-30T15:20:35.024494+00:00",
+    "validation_status": "PASS",
+    "work_item_id": "wp6-openai-updates-official-20260830-01"
   }
 }

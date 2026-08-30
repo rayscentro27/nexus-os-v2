@@ -49,9 +49,20 @@ receipt, execution, and idempotency fields. A new non-synthetic request,
 `wp6-openai-updates-official-20260830-01`, is queued for official OpenAI-owned
 source research and has not been invoked or completed manually.
 
+## Post-repair certification
+
+The repaired fresh item `wp6-openai-updates-official-20260830-01` was selected
+by launchd at 15:20:35 UTC, executed once through the Research Alpha route,
+validated with 19 live SearXNG results, and persisted as `COMPLETE`. The next
+launchd cycle at 15:35:38 UTC produced `NO_ACTION` and did not select it again.
+This proves exactly-once work-item execution and next-cycle exclusion for the
+fresh item.
+
+Live web acquisition is proven. Primary-source page retrieval and primary-source
+verification are not proven: the adapter consumes search-result snippets,
+including third-party aggregators, even when an OpenAI-owned URL appears.
+
 ## Limits
 
-- Fresh exactly-once action certification is pending the next natural
-  15-minute scheduled cycle and one subsequent exclusion cycle.
-- The scheduler is not manually triggered.
+- The scheduler was not manually triggered.
 - VM reboot recovery and sustained long-duration operation remain unproven.
