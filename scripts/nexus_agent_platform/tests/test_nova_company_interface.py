@@ -7,6 +7,7 @@ from nexus_agent_platform.nova_company_context import build_company_context, con
 from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _present_response, classify_company_question, _capability_gate
 from nexus_agent_platform.adapters.state_adapter import AgentState
 from nexus_agent_platform.nexus_command_acknowledgement import acknowledge_command, submit_nexus_request
+from nexus_agent_platform.alpha_research import submit_alpha_request
 
 
 def test_company_context_prompt_is_bounded_and_non_authoritative():
@@ -73,6 +74,24 @@ def test_nova_can_submit_intake_without_executing(monkeypatch, tmp_path):
     assert ack["receipt"]
 
 
+def test_nova_can_submit_bounded_alpha_intake_without_execution(monkeypatch, tmp_path):
+    monkeypatch.setenv("NEXUS_GOVERNED_DATA_DIR", str(tmp_path))
+    ack = submit_alpha_request(objective="Compare public onboarding alternatives", referent="onboarding")
+    assert ack["state"] == "RECEIVED"
+    assert ack["authority_status"] == "PENDING_ALPHA_ASSIGNMENT"
+    assert ack["execution_performed"] is False
+    assert ack["receipt"]
+
+
+def test_failed_public_dependency_is_service_specific():
+    from nexus_agent_platform.capabilities.shared import _handle_public_web_search
+    result = _handle_public_web_search({"query": "public company research"})
+    # Environment may have no provider in development, but the envelope must
+    # not turn a web failure into a claim that Nexus or all reasoning is down.
+    assert result["capability"] == "public_web_search"
+    assert result["provenance"].get("service") == "public_web_search" or result["status"] == "success"
+
+
 def test_company_context_does_not_promote_stale_brief_recommendations():
     context = build_company_context()
     if not context["data_quality"]["daily_brief_current"]:
@@ -130,7 +149,7 @@ def test_contextual_free_research_uses_approved_search(monkeypatch, tmp_path):
     state = AgentState(agent_id="hermes_nova", user_message="Is there a free way to research this further?", metadata={"chat_id": 42})
     result = _capability_gate(state)
     assert result.metadata["capability_gate"]["decision"] == "free_first_research"
-    assert calls and calls[0][0] == "general_search"
+    assert calls and calls[0][0] == "public_web_search"
     assert "Opportunity A" in calls[0][1]["query"]
 
 

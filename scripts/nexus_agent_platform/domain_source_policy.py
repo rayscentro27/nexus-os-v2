@@ -23,6 +23,8 @@ DOMAIN_SOURCE_POLICY: Dict[str, Dict[str, Any]] = {
     "INTERNAL_COMPANY_BUSINESS": {"primary": ["Supabase/company records", "current reports"], "secondary": ["public research", "Alpha"], "invalid_default": ["stale daily brief alone"]},
     "DELEGATION_REQUEST": {"primary": ["Nexus or Alpha governed intake"], "secondary": [], "invalid_default": ["direct execution by Nova"]},
     "OPERATIONAL_ACTION": {"primary": ["Nexus authority path"], "secondary": ["TruthKernel approval ledger"], "invalid_default": ["Nova direct mutation"]},
+    "PUBLIC_CURRENT_INFORMATION": {"primary": ["current public web", "primary sources"], "secondary": ["independent reporting", "Alpha"], "invalid_default": ["Nexus runtime"]},
+    "CREATIVE_BRAINSTORMING": {"primary": ["Nova reasoning"], "secondary": ["company context when relevant"], "invalid_default": ["Nexus operational state"]},
 }
 
 
@@ -51,6 +53,8 @@ def classify_domain(text: str) -> List[str]:
         add("PUBLIC_BUSINESS_RESEARCH")
     if any(x in lower for x in ("tesla", "company strategy", "stock", "industry")):
         add("PUBLIC_COMPANY_RESEARCH")
+    if any(x in lower for x in ("current events", "what happened in the world", "latest news", "today's news")):
+        add("PUBLIC_CURRENT_INFORMATION")
     if any(x in lower for x in ("profit", "revenue", "cost", "economics", "$")):
         add("FINANCIAL_ECONOMICS")
     if any(x in lower for x in ("llc", "what is", "how do", "benefits of")):

@@ -48,6 +48,27 @@ class AlphaResearchError(ValueError):
     """Expected, safe-to-display research contract failure."""
 
 
+def submit_alpha_request(*, objective: str, research_type: str = "MARKET_RESEARCH",
+                         requested_by: str = "hermes_nova", referent: str = "") -> dict:
+    """Persist bounded Alpha intake; the Alpha worker performs execution."""
+    from nexus_agent_platform.governed import persistence
+    job = build_research_job(objective=objective, research_type=research_type,
+                             requested_by=requested_by)
+    record = {
+        "request_id": persistence.new_id("alpha_req"),
+        "research_job_id": job["research_job_id"], "objective": job["objective"],
+        "research_type": job["research_type"], "requested_by": requested_by,
+        "referent": normalize_text(str(referent or ""))[:500],
+        "state": "RECEIVED", "authority_status": "PENDING_ALPHA_ASSIGNMENT",
+        "execution_performed": False, "cost_budget": job["cost_budget"], "created_at": _now(),
+    }
+    persistence.append_record("queue", record)
+    audit = persistence.emit_audit_event({"type": "alpha_request_received",
+        "request_id": record["request_id"], "research_job_id": record["research_job_id"],
+        "requested_by": requested_by, "execution_performed": False})
+    return {**record, "receipt": audit["event_id"]}
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 

@@ -10,6 +10,13 @@ from typing import Any, Dict
 def classify_report(path: str, data: Any = None) -> Dict[str, Any]:
     name = str(path or "UNKNOWN").lower()
     text = str(data if isinstance(data, dict) else "").lower()
+    if isinstance(data, dict) and str(data.get("source_type", "")).lower() in {
+        "live_governed_state", "current_runtime_ledger", "live_database",
+        "live_receipt", "live_heartbeat", "live_artifact_index", "live_research_artifact",
+    }:
+        return {"provenance": "REAL_CURRENT", "current_truth_eligible": True,
+                "historical_reference_allowed": True,
+                "reason": "Explicit live canonical source metadata."}
     if any(x in name for x in ("fixture", "synthetic", "simulation", "dry_run", "test_")) or any(x in text for x in ("safe_synthetic", "synthetic_only", "fixture-driven", "dry_run")):
         provenance = "SYNTHETIC" if "synthetic" in name or "synthetic" in text else "FIXTURE"
         return {"provenance": provenance, "current_truth_eligible": False, "historical_reference_allowed": True, "reason": "Synthetic or fixture evidence cannot establish current truth."}

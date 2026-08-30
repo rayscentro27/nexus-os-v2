@@ -138,6 +138,7 @@ NOVA_GOVERNED_INTENTS = frozenset({
     "resolve_governed_approval",
     "create_work_order_from_approval",
     "submit_nexus_request",
+    "submit_alpha_request",
 })
 
 GOVERNED_INTENT_AGENT = "hermes_nova"
@@ -823,17 +824,17 @@ def _handle_public_web_search(arguments: Optional[Dict[str, Any]] = None,
         from nexus_agent_platform.phase15.live_research import _load_web_search
         web_search, blocker = _load_web_search()
         if web_search is None:
-            return {"status": "unavailable", "capability": "public_web_search", "data": {"results": []}, "error": blocker or "no-approved-provider", "provenance": {"capability": "public_web_search", "source_type": "public_web", "freshness": "unknown", "trace_id": trace_id}}
+            return {"status": "unavailable", "capability": "public_web_search", "data": {"results": []}, "error": blocker or "no-approved-provider", "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "freshness": "unknown", "trace_id": trace_id, "service": "public_web_search", "alternative_available": True, "retryable": True, "cost": "free_or_approved_provider_only"}}
         result = web_search(query, max_results=6)
         return {
             "status": "success" if result.get("status") == "ok" else result.get("status", "unavailable"),
             "capability": "public_web_search",
             "data": {"query": query, "provider": result.get("provider", "unknown"), "results": result.get("results", [])[:6], "attempted_providers": result.get("attempted_providers", [])},
             "error": None if result.get("status") == "ok" else (result.get("notes") or ["public-search-failed"])[0],
-            "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "provider": result.get("provider", "unknown"), "freshness": "live", "trace_id": trace_id},
+            "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "provider": result.get("provider", "unknown"), "freshness": "live", "trace_id": trace_id, "service": "public_web_search", "alternative_available": bool(result.get("attempted_providers")), "retryable": True, "cost": "free_or_approved_provider_only"},
         }
     except Exception as exc:
-        return {"status": "error", "capability": "public_web_search", "data": {"results": []}, "error": str(exc), "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "freshness": "unknown", "trace_id": trace_id}}
+        return {"status": "error", "capability": "public_web_search", "data": {"results": []}, "error": str(exc), "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "freshness": "unknown", "trace_id": trace_id, "service": "public_web_search", "alternative_available": True, "retryable": True, "cost": "free_or_approved_provider_only"}}
 
 
 # ─── Shared Handler: System Health ──────────────────────────
@@ -2917,6 +2918,7 @@ _GOVERNED_INTENT_HANDLERS: Dict[str, Callable[..., Dict[str, Any]]] = {
     "resolve_governed_approval": lambda args, tid: _handle_resolve_governed_approval(args, tid),
     "create_work_order_from_approval": lambda args, tid: _handle_create_work_order_from_approval(args, tid),
     "submit_nexus_request": lambda args, tid: _handle_submit_nexus_request(args, tid),
+    "submit_alpha_request": lambda args, tid: _handle_submit_alpha_request(args, tid),
 }
 
 
@@ -3058,6 +3060,17 @@ def _handle_submit_nexus_request(arguments, trace_id):
     return _governed_envelope("submit_nexus_request", lambda: submit_nexus_request(
         summary=str(args.get("summary", "")),
         source=str(args.get("source", "hermes_nova")),
+        referent=str(args.get("referent", "")),
+    ), trace_id)
+
+
+def _handle_submit_alpha_request(arguments, trace_id):
+    from nexus_agent_platform.alpha_research import submit_alpha_request
+    args = arguments or {}
+    return _governed_envelope("submit_alpha_request", lambda: submit_alpha_request(
+        objective=str(args.get("objective", "")),
+        research_type=str(args.get("research_type", "MARKET_RESEARCH")),
+        requested_by=str(args.get("requested_by", "hermes_nova")),
         referent=str(args.get("referent", "")),
     ), trace_id)
 

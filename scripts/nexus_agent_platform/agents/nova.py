@@ -114,11 +114,16 @@ Operational and company access (bounded by tool policy):
 - Use authorized reads and approved public web/research tools when they are
   sufficient. Prefer free/private paths; do not incur unknown or unapproved
   cost.
+- Approved governed read-only capabilities remain available for current facts;
+  read-only does not mean conversationally unable to research or delegate.
 - You may submit a bounded request to Nexus when Ray asks you to delegate. A
   submission is not execution: Nexus and TruthKernel independently validate
   authority, approval, eligibility, execution, and receipts.
 - Keep privacy, evidence, cost, and authority controls at the tool boundary;
   do not turn them into a refusal to converse or reason.
+- A failed Nexus or web dependency is service-specific: do not treat degraded
+  Nexus telemetry as proof that public research or ordinary reasoning is unavailable.
+  Try another approved read path before explaining a limitation.
 - Available reads: client counts, identity lookups by exact email, client profiles,
   funding readiness, system health, pending approvals, recent research,
   opportunities, operational summaries, runtime capability status, and general
@@ -3703,6 +3708,27 @@ def _capability_gate(state: AgentState) -> AgentState:
                 state.assistant_response = "I couldn't submit that safely because the governed Nexus request path was unavailable. Nothing was executed."
             return state
 
+    # Alpha handoff is bounded intake, not research execution.  Keep the
+    # request conversational: Nova resolves the topic, Alpha owns research.
+    if re.search(r"\b(?:have|ask|let)\s+(?:alpha|research)\s+(?:investigate|research|look\s+into|check|review)\b", text, re.I):
+        history = load_memory(chat_id)
+        prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
+        objective = re.sub(r"^.*?\b(?:investigate|research|look\s+into|check|review)\b\s*", "", text, flags=re.I).strip(" .") or text
+        if prior and re.search(r"\b(?:this|that|it|the idea|the one)\b", text, re.I):
+            objective = f"{objective}\nContext from prior answer: {prior[:1200]}"
+        from nexus_agent_platform.capabilities.shared import execute_shared_capability
+        delegation = execute_shared_capability("hermes_nova", "submit_alpha_request", {
+            "objective": objective, "referent": prior, "requested_by": "hermes_nova",
+        }, trace_id=trace_id)
+        state.metadata["capability_gate"] = {"decision": "bounded_alpha_delegation", "capability": "submit_alpha_request", "build_sha": BUILD_SHA, "trace_id": trace_id}
+        state.metadata["capability_result"] = {"tool": "alpha_governed_layer", "query_type": "bounded_alpha_delegation", "status": delegation.get("status", "unknown"), "data": delegation.get("data", delegation), "provenance": delegation.get("provenance", {}), "trace_id": trace_id}
+        if delegation.get("status") == "success":
+            data = delegation.get("data", {})
+            state.assistant_response = f"I sent that to Research. Alpha received it as {data.get('request_id', 'a bounded research request')}; no research has been claimed complete yet."
+        else:
+            state.assistant_response = "I couldn't submit that research request through the approved intake, so nothing was started."
+        return state
+
     # A contextual request for more research uses the existing approved search
     # capability first. It is deliberately read-only and carries the prior
     # assistant turn only as a research topic, never as authority or fact.
@@ -3712,12 +3738,12 @@ def _capability_gate(state: AgentState) -> AgentState:
         if prior:
             from nexus_agent_platform.capabilities.shared import execute_shared_capability
             result = execute_shared_capability(
-                "hermes_nova", "general_search",
+                "hermes_nova", "public_web_search",
                 {"query": f"{text}\nContext topic: {prior[:1200]}"}, trace_id=trace_id,
             )
             state.metadata["capability_gate"] = {
                 "decision": "free_first_research",
-                "capability": "general_search",
+                "capability": "public_web_search",
                 "question_type": question_type,
                 "build_sha": BUILD_SHA,
                 "trace_id": trace_id,
