@@ -44,6 +44,20 @@ and system health was routed to the daily operations path.
 `FRESH_TELEGRAM_RETEST_REQUIRED=YES`. No Telegram poll, injected update, or
 manual production route invocation was used for certification in this repair.
 
+## Round 2 repair
+
+The next real responses exposed five remaining defects. Review questions now
+recognize natural “which/what items require review” wording and resolve to the
+governed Ray Review route. Daily Operations now uses the canonical daily adapter
+and reports named Hermes, Ollama, SearXNG, TruthKernel, Active Operator, and
+Mac/Oracle bridge states from explicit evidence. Generic stale next actions are
+suppressed. System Health retains a distinct health route and reports named
+service states separately from legacy process-registry telemetry. Repository
+findings now explain operational consequences based on the actual changed paths.
+
+This remains a development checkpoint only. The four new real Telegram
+responses are required before any communication or loop certification changes.
+
 ## Security and boundaries
 
 TruthKernel remains authoritative. No credentials were printed or changed, no

@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from .kernel import LoopDefinition, LoopResult, run_loop
+from .governed_loops import _daily_payload
 
 ROOT = Path(__file__).resolve().parents[3]
 ENTRYPOINT = "scripts/operations/nexus_daily_monitor.py"
@@ -43,7 +44,7 @@ def _executor(_: Mapping[str, Any]) -> Mapping[str, Any]:
     if not isinstance(report, dict) or not report.get("generated_at"):
         return {"status": "FAIL", "entrypoint": ENTRYPOINT}
     digest = hashlib.sha256(OUTPUTS[0].read_bytes()).hexdigest()
-    payload = {"summary": "Daily operations report generated.", "metrics": {"processes_total": report.get("process_registry", {}).get("total"), "processes_enabled": report.get("process_registry", {}).get("enabled")}, "findings": {"reports_fresh": report.get("reports_freshness", {}).get("fresh_count"), "reports_stale": report.get("reports_freshness", {}).get("stale_count"), "stale_items": [item.get("name") for item in report.get("reports_freshness", {}).get("stale", [])], "blocked_actions": report.get("blocked_actions", {}).get("blocked", []), "next_actions": report.get("next_actions", [])}, "technical_details": {"supabase": report.get("supabase", {}), "build": report.get("build", {})}}
+    payload = _daily_payload(report)
     return {"status": "PASS", "entrypoint": ENTRYPOINT, "artifact": payload, "output_hash": digest, "side_effect": {"external": False, "local_reports": True}}
 
 

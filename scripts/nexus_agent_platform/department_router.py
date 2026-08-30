@@ -48,7 +48,7 @@ def classify_intent(text: str) -> str:
         return "STATE_QUERY"
     if value in {"who are you", "what can you do", "/help", "help"}:
         return "CONVERSATION"
-    if value == "/run system_health" or re.search(r"\b(system health|health check|health recovery)\b", value):
+    if value == "/run system_health" or re.search(r"\b(system health|health check|health recovery|degraded|unhealthy|failed service|recovery needs)\b", value):
         return "SYSTEM_HEALTH"
     if re.search(r"\b(system operations|daily operations|operations check|system check|today'?s operations)\b", value) or value in {"/run system_operations", "/run daily_operations"}:
         return "SYSTEM_OPERATIONS"
@@ -58,7 +58,7 @@ def classify_intent(text: str) -> str:
         return "REPO_INTELLIGENCE"
     if re.search(r"\b(funding readiness|funding|bankability|credit readiness)\b", value):
         return "FUNDING_READINESS"
-    if re.search(r"\b(review item|ray review|items? currently need my review|prioritize.*review|what needs my review)\b", value):
+    if re.search(r"\b(review item|ray review|what needs my review|(?:what|which).*(?:need|require|requiring).*(?:review|approval)|prioritize.*review)\b", value):
         return "RAY_REVIEW"
     if value.startswith(("/request ", "/work ", "create a work order", "turn this into a work order")):
         return "WORK_ORDER"
@@ -106,10 +106,10 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
         if intent == "SYSTEM_HEALTH":
             health = payload.get("health", {})
             services = payload.get("services", {})
+            service_lines = ", ".join(f"{name}: {value}" for name, value in services.items()) or "No named service evidence was available."
             return ("Nexus system health\n\n"
                     f"OVERALL STATUS\n{payload.get('overall_status', health.get('overall_status', 'UNKNOWN'))}\n\n"
-                    f"CURRENT FINDINGS\n• Services confirmed active: {health.get('active_services', 0)}\n• Degraded: {health.get('degraded_services', 0)}\n• Failed: {health.get('failed_services', 0)}\n• Unknown: {health.get('unknown_services', 0)}\n"
-                    f"• Service detail: {', '.join(f'{name} {value}' for name, value in services.items()) or 'not available'}\n\n"
+                    f"CURRENT FINDINGS\n• Named services: {service_lines}\n• Supporting telemetry: active {health.get('active_services', 0)}, degraded {health.get('degraded_services', 0)}, failed {health.get('failed_services', 0)}, unknown {health.get('unknown_services', 0)}\n\n"
                     f"WHAT THIS MEANS\n{payload.get('summary', 'Health evidence was collected.')} Recovery was {'not needed because the observed state is healthy.' if payload.get('recovery', {}).get('execution') == 'NOT_NEEDED' else 'not automatically executed.'}\n\n"
                     f"NEXT ACTION\n{'; '.join(payload.get('health', {}).get('warnings', [])[:2]) or 'Continue observing live health evidence.'}\n\n"
                     f"DO YOU NEED RAY? {'Yes for consequential recovery.' if ray_required else 'No; this was a read-only health check.'}\n\nEVIDENCE\nVerified Nexus receipt recorded.")

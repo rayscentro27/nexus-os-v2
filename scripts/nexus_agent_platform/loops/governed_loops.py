@@ -49,6 +49,22 @@ def _operator_snapshot() -> dict[str, Any]:
             "mode": "BOUNDED_INTERNAL_ONLY", "policy": "external actions blocked"}
 
 
+def _named_service_snapshot() -> dict[str, Any]:
+    """Resolve named services from explicit current evidence only."""
+    try:
+        program = json.loads((ROOT / "data/runtime/nexus_rebuild_program.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        program = {}
+    return {
+        "Hermes": "HEALTHY" if program.get("hermes_running") and program.get("hermes_runtime_state") == "RUNNING_VERIFIED_INTERNAL" else "UNKNOWN",
+        "Ollama": "HEALTHY" if program.get("hermes_ollama_reasoning") == "PASS" else "UNKNOWN",
+        "SearXNG": "HEALTHY" if program.get("current_searxng_loader_isolation_persistent") else "UNKNOWN",
+        "TruthKernel": "RUNNING_UNVERIFIED" if (ROOT / "data/runtime/nexus_operational_truth.db").exists() else "UNKNOWN",
+        "Active Operator": "HEALTHY" if _operator_snapshot().get("health") == "HEALTHY" else "UNKNOWN",
+        "Mac/Oracle bridge": "HEALTHY" if program.get("hermes_nexus_mac_bridge") == "PASS" else "UNKNOWN",
+    }
+
+
 def _service_health_snapshot() -> dict[str, Any]:
     """Read the shared live health capability without treating old registry rows as health."""
     try:
@@ -84,7 +100,7 @@ def _daily_payload(report: Mapping[str, Any]) -> dict[str, Any]:
             "reports_stale": report.get("reports_freshness", {}).get("stale_count"),
             "stale_items": [x.get("name") for x in report.get("reports_freshness", {}).get("stale", [])],
             "blocked_actions": report.get("blocked_actions", {}).get("blocked", []),
-            "next_actions": [], "services": health.get("services", {}),
+            "next_actions": [], "services": _named_service_snapshot(),
             "health": health, "operator": operator,
         },
         "technical_details": {"supabase": report.get("supabase", {}), "build": report.get("build", {})},
@@ -104,9 +120,10 @@ def _run_daily(_: Mapping[str, Any]) -> Mapping[str, Any]:
 
 def _run_health(_: Mapping[str, Any]) -> Mapping[str, Any]:
     health = _service_health_snapshot()
+    named_services = _named_service_snapshot()
     payload = {"summary": "Nexus health was checked from live governed telemetry.",
                "status": "PASS", "overall_status": health.get("overall_status", "UNKNOWN"),
-               "health": health, "services": health.get("services", {}),
+               "health": health, "services": named_services,
                "findings": {"degraded": health.get("degraded_services", 0),
                             "failed": health.get("failed_services", 0),
                             "unknown": health.get("unknown_services", 0),
@@ -190,8 +207,15 @@ def _repo(context: Mapping[str, Any]) -> Mapping[str, Any]:
                 continue
             full, short, message = parts
             paths = git("diff-tree", "--no-commit-id", "--name-only", "-r", full)
-            recent.append({"commit": short, "message": message, "paths": paths.stdout.splitlines()[:8],
-                           "why_it_matters": "This change is in the Active Operator/runtime evidence path.",
+            path_list = paths.stdout.splitlines()[:8]
+            if any("runner" in p or "timeout" in message.lower() for p in path_list):
+                consequence = "It bounds a cycle and preserves a durable failure path instead of allowing an invisible hung run."
+            elif any("launchd" in p or "plist" in p for p in path_list):
+                consequence = "It controls OS scheduling of the bounded operator, affecting unattended execution and overlap risk."
+            else:
+                consequence = "It records the certification checkpoint and evidence boundary without expanding runtime authority."
+            recent.append({"commit": short, "message": message, "paths": path_list,
+                           "why_it_matters": consequence,
                            "real_world_proven": "PROVEN_BY_RUNTIME_EVIDENCE" if "active_operator" in paths.stdout else "NOT_OPERATIONAL_PROOF",
                            "evidence": "current Git history and path-scoped diff evidence"})
     if not recent:

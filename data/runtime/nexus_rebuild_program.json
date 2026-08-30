@@ -271,6 +271,8 @@
   "wp6_5_telegram_routing_defects_repaired": ["RAY_REVIEW_STATE_QUERY_PRECEDENCE", "SYSTEM_HEALTH_ROUTE_SEPARATION"],
   "wp6_5_telegram_result_rendering_defects_repaired": ["DAILY_LIVE_HEALTH_DETAILS", "REPO_QUESTION_SPECIFIC_ANALYSIS", "RAY_REVIEW_QUEUE_SUMMARY"],
   "wp6_5_telegram_fresh_retest_required": true,
+  "wp6_5_telegram_round2_repair_state": "REPAIRED_WAITING_FRESH_REAL_RETEST",
+  "wp6_5_telegram_round2_defects_repaired": ["NATURAL_RAY_REVIEW_INTENT", "NAMED_SERVICE_STATE_PAYLOAD", "STALE_NEXT_ACTION_SUPPRESSION", "HEALTH_STATE_SEPARATION", "REPO_OPERATIONAL_CONSEQUENCES"],
   "next_action": "Continue passive observation at 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle.",
   "safety": {
     "active_operator_paused": true,

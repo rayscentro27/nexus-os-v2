@@ -81,6 +81,34 @@ def test_review_state_query_reads_actual_queue_without_creating_work():
     assert "Verified Nexus receipt recorded" in response
 
 
+def test_review_request_variants_use_governed_review_route():
+    for text in ("Which items currently require my review?", "What approvals need my review?", "Prioritize the items that need my review"):
+        result = resolve(text)
+        assert result["intent_class"] == "RAY_REVIEW"
+        assert result["department"] == "GOVERNANCE_REVIEW"
+        assert result["loop"] == "NEXUS_RAY_REVIEW"
+
+
+def test_operations_and_health_are_distinct_lanes():
+    assert classify_intent("Run the daily system operations check") == "SYSTEM_OPERATIONS"
+    assert classify_intent("Check for degraded services and recovery needs") == "SYSTEM_HEALTH"
+
+
+def test_current_operator_and_named_service_evidence_are_rendered():
+    response, metadata = execute("Run the daily system operations check")
+    assert metadata["outcome"] == "ANSWERED"
+    for service in ("Hermes", "Ollama", "SearXNG", "TruthKernel", "Active Operator", "Mac/Oracle bridge"):
+        assert service in response
+    assert "Verify Supabase via browser DevTools" not in response
+
+
+def test_repo_analysis_has_operational_consequence_language():
+    response, metadata = execute("Inspect the current nexus-os-v2 repository and identify recent changes affecting Active Operator stability")
+    assert metadata["outcome"] == "ANSWERED"
+    assert "WHY IT MATTERS" in response
+    assert "This change is in the Active Operator/runtime evidence path." not in response
+
+
 def test_department_registry_has_real_departments_and_shared_skill_mapping():
     registry = json.load(open("data/runtime/nexus_department_registry.json"))
     ids = {item["department_id"] for item in registry["departments"]}
