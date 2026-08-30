@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
 from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _present_response
 from nexus_agent_platform.adapters.state_adapter import AgentState
-from nexus_agent_platform.nexus_command_acknowledgement import acknowledge_command
+from nexus_agent_platform.nexus_command_acknowledgement import acknowledge_command, submit_nexus_request
 
 
 def test_company_context_prompt_is_bounded_and_non_authoritative():
@@ -62,6 +62,15 @@ def test_delegation_language_is_bounded_to_prior_context():
     # No prior context means the ambiguous referent cannot create a request.
     result = _capability_gate(state)
     assert result.metadata.get("capability_gate", {}).get("decision") != "bounded_delegation"
+
+
+def test_nova_can_submit_intake_without_executing(monkeypatch, tmp_path):
+    monkeypatch.setenv("NEXUS_GOVERNED_DATA_DIR", str(tmp_path))
+    ack = submit_nexus_request(summary="Review the safe internal recommendation", referent="Prior recommendation")
+    assert ack["status"] == "RECEIVED"
+    assert ack["authority_status"] == "PENDING_NEXUS_VALIDATION"
+    assert ack["current_state"] == "RECEIVED"
+    assert ack["receipt"]
 
 
 def test_company_context_does_not_promote_stale_brief_recommendations():

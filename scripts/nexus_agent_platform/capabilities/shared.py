@@ -136,6 +136,7 @@ NOVA_GOVERNED_INTENTS = frozenset({
     "create_approval_request",
     "resolve_governed_approval",
     "create_work_order_from_approval",
+    "submit_nexus_request",
 })
 
 GOVERNED_INTENT_AGENT = "hermes_nova"
@@ -2871,6 +2872,7 @@ _GOVERNED_INTENT_HANDLERS: Dict[str, Callable[..., Dict[str, Any]]] = {
     "create_approval_request": lambda args, tid: _handle_create_approval_request(args, tid),
     "resolve_governed_approval": lambda args, tid: _handle_resolve_governed_approval(args, tid),
     "create_work_order_from_approval": lambda args, tid: _handle_create_work_order_from_approval(args, tid),
+    "submit_nexus_request": lambda args, tid: _handle_submit_nexus_request(args, tid),
 }
 
 
@@ -3003,6 +3005,16 @@ def _handle_create_work_order_from_approval(arguments, trace_id):
         inputs=args.get("inputs"),
         expected_outcome=str(args.get("expected_outcome", "")),
         recommendation_id=args.get("recommendation_id"),
+    ), trace_id)
+
+
+def _handle_submit_nexus_request(arguments, trace_id):
+    from nexus_agent_platform.nexus_command_acknowledgement import submit_nexus_request
+    args = arguments or {}
+    return _governed_envelope("submit_nexus_request", lambda: submit_nexus_request(
+        summary=str(args.get("summary", "")),
+        source=str(args.get("source", "hermes_nova")),
+        referent=str(args.get("referent", "")),
     ), trace_id)
 
 

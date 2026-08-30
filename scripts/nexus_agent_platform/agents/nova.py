@@ -108,8 +108,17 @@ Business context:
 - When Ray asks how to make money, default to his actual businesses and systems
   unless he explicitly asks for unrelated personal side-hutle ideas.
 
-Operational data access (governed read-only):
-- You have approved governed read-only access to specific operational data.
+Operational and company access (bounded by tool policy):
+- You are Ray's conversational business partner and company interface. You may
+  converse, reason, challenge assumptions, research, and recommend freely.
+- Use authorized reads and approved public web/research tools when they are
+  sufficient. Prefer free/private paths; do not incur unknown or unapproved
+  cost.
+- You may submit a bounded request to Nexus when Ray asks you to delegate. A
+  submission is not execution: Nexus and TruthKernel independently validate
+  authority, approval, eligibility, execution, and receipts.
+- Keep privacy, evidence, cost, and authority controls at the tool boundary;
+  do not turn them into a refusal to converse or reason.
 - Available reads: client counts, identity lookups by exact email, client profiles,
   funding readiness, system health, pending approvals, recent research,
   opportunities, operational summaries, runtime capability status, and general
@@ -125,7 +134,9 @@ Operational data access (governed read-only):
 - You CAN get a combined operational summary.
 - You CAN check what systems and capabilities you have access to.
 - You CAN search approved operational records by keyword.
-- You CANNOT create, update, delete, or alter any records.
+- You CANNOT directly create, update, delete, or alter operational/company
+  records, and you cannot directly execute Nexus operations. You may submit a
+  bounded request through the governed Nexus intake path.
 - You CANNOT execute arbitrary SQL or browse all user data.
 - You CANNOT access Oanda, Temporal, or other Nexus systems.
 
@@ -3617,22 +3628,17 @@ def _capability_gate(state: AgentState) -> AgentState:
         if prior:
             from nexus_agent_platform.capabilities.shared import execute_shared_capability
             delegation = execute_shared_capability(
-                "hermes_nova", "prepare_action_recommendation", {
-                    "title": "Nova delegated request for Nexus review",
-                    "problem": text,
-                    "recommended_action_id": None,
-                    "reason": "Ray referred to the preceding Nova recommendation; Nexus must determine the governed next step.",
-                    "evidence": [{"type": "CONTEXT", "summary": prior[:500]}],
-                    "expected_outcome": "Nexus reviews and assigns the request if an approved capability exists.",
-                    "risk_level": "low",
-                    "confidence": "medium",
+                "hermes_nova", "submit_nexus_request", {
+                    "summary": text,
+                    "referent": prior,
                     "source": "hermes_nova",
                 }, trace_id=trace_id,
             )
-            state.metadata["capability_gate"] = {"decision": "bounded_delegation", "capability": "prepare_action_recommendation", "build_sha": BUILD_SHA, "trace_id": trace_id}
+            state.metadata["capability_gate"] = {"decision": "bounded_delegation", "capability": "submit_nexus_request", "build_sha": BUILD_SHA, "trace_id": trace_id}
             state.metadata["capability_result"] = {"tool": "nexus_governed_layer", "query_type": "bounded_delegation", "status": delegation.get("status", "unknown"), "data": delegation.get("data", delegation), "provenance": delegation.get("provenance", {}), "trace_id": trace_id}
             if delegation.get("status") == "success":
-                state.assistant_response = "I sent the preceding recommendation into Nexus's governed review path. It has not been executed; Nexus must validate and assign the next step first."
+                request_id = (delegation.get("data") or {}).get("request_id") or delegation.get("request_id") or "the request"
+                state.assistant_response = f"I sent that to Nexus as {request_id}. Nexus received it, but nothing has been executed; Nexus must validate and assign the next step first."
             else:
                 state.assistant_response = "I couldn't submit that safely because the governed Nexus request path was unavailable. Nothing was executed."
             return state

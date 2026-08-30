@@ -37,3 +37,13 @@ not execute work or grant Nova write authority.
 
 `136` focused tests pass. This is development evidence only. Fresh real
 Telegram retesting is required for live certification of the six behaviors.
+
+## Freedom/delegation boundary repair
+
+Nova's conversational charter is intentionally broad. Privacy, cost, and
+TruthKernel rules remain enforced at the data/tool/authority boundaries, not as
+a general conversational refusal. The new `submit_nexus_request` capability
+writes a bounded Nexus intake/audit record with `RECEIVED` and
+`PENDING_NEXUS_VALIDATION`; it does not create an approved work order, execute
+an operation, or grant authority. Direct operational mutation remains outside
+Nova's permissions.
