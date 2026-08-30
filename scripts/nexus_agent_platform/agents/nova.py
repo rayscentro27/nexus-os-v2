@@ -281,6 +281,19 @@ MEMORY_DIR = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "runtime", "nova_memory"
 )
 MEMORY_EXPIRY_SECONDS = 3600  # 1 hour
+MEMORY_ARCHIVE_DIR = os.path.join(
+    os.path.dirname(__file__), "..", "..", "data", "runtime", "nova_memory_archive"
+)
+
+_STALE_CAPABILITY_BELIEF_PATTERNS = (
+    r"\bcan(?:not|'t)\s+(?:access|browse|search|use)\b.*\b(?:internet|web|website|external|nexus|gmail|google|calendar)\b",
+    r"\bcan(?:not|'t)\s+(?:send|schedule)\b.*\b(?:email|gmail|calendar|appointment)\b",
+    r"\b(?:haven't|have not)\s+been\s+able\s+to\b.*\b(?:access|browse|search|check|send|schedule)\b.*\b(?:internet|web|website|external|nexus|gmail|google|calendar|email)\b",
+    r"\b(?:don't|do not)\s+have\s+(?:access|the capability)\b.*\b(?:internet|web|external|nexus|gmail|google|calendar|email)\b",
+    r"\b(?:no|without)\s+(?:direct\s+)?access\s+to\b.*\b(?:internet|web|website|external|nexus|gmail|google|calendar|email)\b",
+    r"\bnexus\s+(?:does not|doesn't)\s+have\b.*\b(?:gmail|google|calendar|email)\b",
+    r"\b(?:all processes are simulated|19 processes|17 enabled|no real automation)\b",
+)
 
 # ─── Provenance Store ──────────────────────────────────────
 # Persists provenance across --once worker lifecycle for follow-up queries.
@@ -401,6 +414,13 @@ def load_memory(chat_id: int) -> List[Dict[str, str]]:
             data = json.load(f)
         if not isinstance(data, dict):
             return []
+        has_stale_beliefs = any(
+            str(message.get("role", "")).lower() == "assistant"
+            and _contains_stale_capability_belief(message.get("content", ""))
+            for message in data.get("messages", [])
+        )
+        if data.get("active_memory_schema") != 3 or has_stale_beliefs:
+            data = _quarantine_stale_capability_beliefs(chat_id, data, path)
         messages = data.get("messages", [])
         expires_at = data.get("expires_at", 0)
         if expires_at and time.time() > expires_at:
@@ -408,6 +428,60 @@ def load_memory(chat_id: int) -> List[Dict[str, str]]:
         return messages[-MEMORY_MAX_TURNS * 2:]
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
         return []
+
+
+def _contains_stale_capability_belief(content: str) -> bool:
+    text = str(content or "").lower()
+    return any(re.search(pattern, text, re.IGNORECASE | re.DOTALL) for pattern in _STALE_CAPABILITY_BELIEF_PATTERNS)
+
+
+def _quarantine_stale_capability_beliefs(
+    chat_id: int, data: Dict[str, Any], path: str
+) -> Dict[str, Any]:
+    """Archive the old session and keep stale capability assertions out of prompts."""
+    now = datetime.now(timezone.utc)
+    archive_dir = Path(MEMORY_ARCHIVE_DIR)
+    archive_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    archive_path = archive_dir / f"{_conversation_key(chat_id)}_{now.strftime('%Y%m%dT%H%M%SZ')}.json"
+    archive_payload = dict(data)
+    archive_payload.update({
+        "classification": "HISTORICAL_SESSION",
+        "current_capability_truth_eligible": False,
+        "archived_at": now.isoformat(),
+        "archive_reason": "stale_capability_beliefs_removed_from_active_context",
+    })
+    with archive_path.open("w", encoding="utf-8") as fh:
+        json.dump(archive_payload, fh, indent=2)
+    os.chmod(archive_path, 0o600)
+
+    clean_messages: List[Dict[str, str]] = []
+    removed = 0
+    for message in data.get("messages", []):
+        if str(message.get("role", "")).lower() == "assistant" and _contains_stale_capability_belief(message.get("content", "")):
+            removed += 1
+            continue
+        clean_messages.append(message)
+    trimmed = clean_messages[-MEMORY_MAX_TURNS * 2:]
+    migrated = {
+        "chat_id": chat_id,
+        "messages": trimmed,
+        "updated_at": now.isoformat(),
+        "expires_at": time.time() + MEMORY_EXPIRY_SECONDS,
+        "turn_count": len(trimmed) // 2,
+        "active_memory_schema": 3,
+        "capability_state": "QUERY_ON_DEMAND",
+        "stale_capability_beliefs_quarantined": removed,
+        "historical_session_archive": str(archive_path),
+    }
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(migrated, fh, indent=2)
+    os.chmod(path, 0o600)
+    return migrated
+
+
+def session_id(chat_id: int) -> str:
+    """Return a non-identifying stable session reference for runtime metadata."""
+    return _safe_conversation_id(chat_id)
 
 
 def save_memory(chat_id: int, messages: List[Dict[str, str]]) -> None:

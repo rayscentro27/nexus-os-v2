@@ -348,6 +348,39 @@ def write_receipt(receipt_data):
         json.dump(receipt_data, f, indent=2)
     return receipt_data
 
+
+def _capability_receipt(result, update_id, conversation_id, final_response_id=None):
+    """Return secret-free capability execution facts for the Nova receipt."""
+    metadata = getattr(result, "metadata", {}) or {}
+    selected = metadata.get("model_selected_capability") or {}
+    capability_result = metadata.get("capability_result") or {}
+    provenance = capability_result.get("provenance") or {}
+    capability = selected.get("capability") or capability_result.get("query_type") or capability_result.get("capability")
+    if not capability:
+        return None
+    status = capability_result.get("status") or provenance.get("status") or "unknown"
+    is_truth = str(capability).lower() in {"get_live_capability_status", "capability_status"}
+    return {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "session_id": conversation_id,
+        "telegram_update_id": update_id,
+        "capability": capability,
+        "requested_by_model": bool(selected),
+        "boundary_validation": "validated" if selected.get("status") == "validated" else metadata.get("capability_gate", {}).get("decision", "not_model_requested"),
+        "provider": provenance.get("provider") or provenance.get("service") or capability_result.get("planner_provider"),
+        "execution_attempted": bool(metadata.get("capability_invocation_attempted") or capability_result),
+        "execution_status": status,
+        "failure_reason": capability_result.get("error") or capability_result.get("errors") or provenance.get("error"),
+        "fallback_selected": metadata.get("fallback_used", False),
+        "result_returned_to_model": bool(capability_result),
+        "final_response_id": final_response_id,
+        "capability_truth_called": is_truth,
+        "capability_truth_result": status if is_truth else None,
+        "capability_truth_source": (provenance.get("source") or provenance.get("source_type")) if is_truth else None,
+        "capability_truth_freshness": provenance.get("freshness") if is_truth else None,
+        "model_received": bool(capability_result),
+    }
+
 # ─── Single-Delivery Lock ───────────────────────────────
 
 def _acquire_chat_lock(chat_id):
@@ -495,7 +528,7 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
         ):
             from nexus_agent_platform.agents.nova import (
-                get_nova_graph, get_nova_otel, reset_memory, AGENT_ID,
+                get_nova_graph, get_nova_otel, reset_memory, AGENT_ID, session_id,
             )
             from nexus_agent_platform.adapters.state_adapter import AgentState
             from nexus_agent_platform.flags import HERMES_NOVA_ENABLED
@@ -523,7 +556,7 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             user_message=text,
             metadata={
                 "chat_id": chat_id,
-                "conversation_id": f"nova_{hashlib.sha256(str(chat_id).encode()).hexdigest()[:16]}",
+                "conversation_id": session_id(chat_id),
                 "message_id": message.get("message_id") or update_id,
                 "user_id": user_id,
                 "username": username,
@@ -600,6 +633,10 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                     "outgoing_message_ids": msg_ids,
                     "correlation_id": mission.get("correlation_id"),
                     "model_calls": 1,
+                    "capability_telemetry": _capability_receipt(
+                        result, update_id, result.metadata.get("conversation_id", session_id(chat_id)),
+                        msg_ids[0] if msg_ids else None,
+                    ),
                 })
                 _log(f"Nova delivered: mission={mission['mission_id']} latency={latency_ms}ms")
             else:
