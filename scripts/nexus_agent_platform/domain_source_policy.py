@@ -49,7 +49,7 @@ def classify_domain(text: str) -> List[str]:
         add("INTERNAL_COMPANY_BUSINESS")
     if any(x in lower for x in ("website", "site", "company online", "what this company does")):
         add("WEBSITE_ANALYSIS")
-    if any(x in lower for x in ("youtube", "affiliate", "make $", "make money", "market", "competitor", "agency")):
+    if any(x in lower for x in ("youtube", "affiliate", "make $", "make money", "market", "competitor", "agency", "research this further", "free way to research", "look into this")):
         add("PUBLIC_BUSINESS_RESEARCH")
     if any(x in lower for x in ("tesla", "company strategy", "stock", "industry")):
         add("PUBLIC_COMPANY_RESEARCH")

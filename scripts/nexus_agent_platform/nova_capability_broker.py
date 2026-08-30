@@ -1,0 +1,32 @@
+"""Compact capability catalog and model-led information plan for Nova."""
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+CAPABILITIES: Dict[str, Dict[str, Any]] = {
+    "GENERAL_REASONING": {"health": "local", "cost_class": "included", "read_or_write": "read", "privacy_scope": "conversation", "authority_scope": "none", "fallbacks": []},
+    "PUBLIC_WEB_SEARCH": {"health": "provider-dependent", "cost_class": "free-first", "read_or_write": "read", "privacy_scope": "public-only", "authority_scope": "none", "fallbacks": ["Alpha", "general reasoning"]},
+    "PUBLIC_WEB_RETRIEVAL": {"health": "Alpha/provider-dependent", "cost_class": "free-first", "read_or_write": "read", "privacy_scope": "public-only", "authority_scope": "none", "fallbacks": ["search snippets with limits"]},
+    "ALPHA_RESEARCH": {"health": "bounded/partial", "cost_class": "free-first", "read_or_write": "delegated", "privacy_scope": "public-or-approved-internal", "authority_scope": "governed intake", "fallbacks": ["public web"]},
+    "COMPANY_DATA": {"health": "source-dependent", "cost_class": "included", "read_or_write": "read", "privacy_scope": "approved company data", "authority_scope": "read allowlist", "fallbacks": ["verified artifact"]},
+    "NEXUS_LIVE_TRUTH": {"health": "runtime-dependent", "cost_class": "included", "read_or_write": "read", "privacy_scope": "Nexus state", "authority_scope": "TruthKernel", "fallbacks": ["explicit UNKNOWN"]},
+    "NEXUS_OPERATION_REQUEST": {"health": "governed intake", "cost_class": "included", "read_or_write": "submit-only", "privacy_scope": "approved request", "authority_scope": "Nexus validates", "fallbacks": ["explain blocked"]},
+    "REPORT_ARTIFACT_READ": {"health": "provenance-dependent", "cost_class": "included", "read_or_write": "read", "privacy_scope": "approved artifacts", "authority_scope": "truth validation", "fallbacks": ["historical-only"]},
+}
+
+
+def capability_catalog() -> Dict[str, Any]:
+    return {"capabilities": CAPABILITIES, "broker_role": "describe_only", "execution_authority": "shared_capability_boundary"}
+
+
+def build_information_plan(question: str, domains: List[str]) -> Dict[str, Any]:
+    public = {"PUBLIC_BUSINESS_RESEARCH", "PUBLIC_COMPANY_RESEARCH", "PUBLIC_CURRENT_INFORMATION", "WEBSITE_ANALYSIS"}
+    internal = {"NEXUS_OPERATIONS", "CLIENT_DATA", "INTERNAL_COMPANY_BUSINESS", "INTERNAL_RESEARCH_ALPHA"}
+    resources: List[str] = ["GENERAL_REASONING"]
+    if public & set(domains):
+        resources += ["PUBLIC_WEB_SEARCH", "PUBLIC_WEB_RETRIEVAL"]
+    if "INTERNAL_RESEARCH_ALPHA" in domains:
+        resources.append("ALPHA_RESEARCH")
+    if internal & set(domains):
+        resources += ["COMPANY_DATA", "NEXUS_LIVE_TRUTH"]
+    return {"question": question[:500], "domains": domains, "initial_view_before_retrieval": True, "information_needed": resources, "tool_selection": "MODEL_LED_AFTER_UNDERSTANDING", "broker": "DESCRIPTIVE_ONLY"}

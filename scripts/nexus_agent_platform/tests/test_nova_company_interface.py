@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
-from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _present_response, classify_company_question, _capability_gate
+from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _present_response, classify_company_question, _capability_gate, _pre_model_boundary
 from nexus_agent_platform.adapters.state_adapter import AgentState
 from nexus_agent_platform.nexus_command_acknowledgement import acknowledge_command, submit_nexus_request
 from nexus_agent_platform.alpha_research import submit_alpha_request
@@ -58,10 +58,10 @@ def test_semantic_company_domains_choose_canonical_reads():
 
 
 def test_delegation_language_is_bounded_to_prior_context():
-    from nexus_agent_platform.agents.nova import _capability_gate
+    from nexus_agent_platform.agents.nova import _pre_model_boundary
     state = AgentState(agent_id="hermes_nova", user_message="Okay, send that over to Nexus", metadata={"chat_id": 0})
     # No prior context means the ambiguous referent cannot create a request.
-    result = _capability_gate(state)
+    result = _pre_model_boundary(state)
     assert result.metadata.get("capability_gate", {}).get("decision") != "bounded_delegation"
 
 
@@ -147,10 +147,10 @@ def test_contextual_free_research_uses_approved_search(monkeypatch, tmp_path):
 
     monkeypatch.setattr("nexus_agent_platform.capabilities.shared.execute_shared_capability", fake_execute)
     state = AgentState(agent_id="hermes_nova", user_message="Is there a free way to research this further?", metadata={"chat_id": 42})
-    result = _capability_gate(state)
-    assert result.metadata["capability_gate"]["decision"] == "free_first_research"
-    assert calls and calls[0][0] == "public_web_search"
-    assert "Opportunity A" in calls[0][1]["query"]
+    result = _pre_model_boundary(state)
+    assert result.metadata["capability_gate"]["decision"] == "model_first"
+    assert not calls
+    assert "PUBLIC_WEB_SEARCH" in result.metadata["information_plan"]["information_needed"]
 
 
 def test_truth_view_preserves_provenance_and_is_not_a_second_store(monkeypatch):
@@ -177,6 +177,31 @@ def test_domain_policy_selects_sources_by_subject_not_verification_alone():
     public = source_plan("Can an AI automation agency realistically make $10,000 a month?")
     assert "PUBLIC_BUSINESS_RESEARCH" in public["domains"]
     assert public["nexus_relevant"] is False
+
+
+def test_model_first_plan_does_not_force_public_tool(monkeypatch):
+    from nexus_agent_platform.agents.nova import _pre_model_boundary
+    state = AgentState(agent_id="hermes_nova", user_message="Look into Tesla's current strategy and tell me what you think", metadata={"chat_id": 0})
+    result = _pre_model_boundary(state)
+    assert result.metadata["pre_model_route"] == "model_first"
+    assert result.metadata["capability_gate"]["decision"] == "model_first"
+    assert "PUBLIC_WEB_SEARCH" in result.metadata["information_plan"]["information_needed"]
+
+
+def test_capability_broker_is_descriptive_and_domain_aware():
+    from nexus_agent_platform.nova_capability_broker import build_information_plan, capability_catalog
+    plan = build_information_plan("Research whether an AI agency is viable", ["PUBLIC_BUSINESS_RESEARCH"])
+    assert plan["tool_selection"] == "MODEL_LED_AFTER_UNDERSTANDING"
+    assert "PUBLIC_WEB_SEARCH" in plan["information_needed"]
+    assert capability_catalog()["broker_role"] == "describe_only"
+
+
+def test_factual_nexus_read_keeps_governed_boundary(monkeypatch):
+    from nexus_agent_platform.agents.nova import _pre_model_boundary
+    monkeypatch.setattr("nexus_agent_platform.agents.nova._capability_gate", lambda state: state)
+    state = AgentState(agent_id="hermes_nova", user_message="How is Nexus doing right now?", metadata={"chat_id": 0})
+    result = _pre_model_boundary(state)
+    assert result.metadata["pre_model_route"] == "governed_or_factual_read"
 
 
 def test_outside_world_question_does_not_select_nexus_canonical_read(monkeypatch):

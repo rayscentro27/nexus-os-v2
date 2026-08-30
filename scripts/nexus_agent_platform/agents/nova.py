@@ -4020,6 +4020,36 @@ def _capability_gate(state: AgentState) -> AgentState:
     return state
 
 
+def _pre_model_boundary(state: AgentState) -> AgentState:
+    """Minimal pre-model boundary: utilities and explicit governed actions only."""
+    state = _classify_intent(state)
+    state = _handle_utility(state)
+    if state.assistant_response:
+        return state
+    state.metadata["question_type"] = classify_company_question(state.user_message)
+    domains = state.metadata.get("question_domains", classify_question_domains(state.user_message))
+    from nexus_agent_platform.nova_capability_broker import build_information_plan
+    state.metadata["information_plan"] = build_information_plan(state.user_message, domains)
+    state.metadata["capability_catalog"] = "descriptive_only"
+    lower = state.user_message.lower()
+    strict = bool(
+        _detect_write_request(state.user_message)
+        or _detect_governed_approval_continuity(state.user_message)
+        or re.search(r"\b(?:send|pass|hand|route)\s+(?:that|it|this).*\bnexus\b|\bhave\s+(?:nexus|alpha|research)\s+(?:handle|investigate|research|review)\b", lower)
+    )
+    factual_company = state.metadata.get("question_type") == "FACTUAL" and bool(
+        set(domains) & {"NEXUS_OPERATIONS", "CLIENT_DATA", "INTERNAL_RESEARCH_ALPHA", "INTERNAL_COMPANY_BUSINESS"}
+    )
+    if strict or factual_company:
+        state = _capability_gate(state)
+        state.metadata["pre_model_route"] = "governed_or_factual_read"
+    else:
+        state.metadata["capability_gate"] = {"decision": "model_first", "capability": None, "build_sha": BUILD_SHA}
+        state.metadata["capability_result"] = None
+        state.metadata["pre_model_route"] = "model_first"
+    return state
+
+
 def _build_context(state: AgentState) -> AgentState:
     """Build the model context with SOUL, conversation history, and verified operational data."""
     started = time.monotonic()
@@ -4032,6 +4062,13 @@ def _build_context(state: AgentState) -> AgentState:
 
     # Build messages for the model
     messages = [{"role": "system", "content": SOUL}]
+
+    from nexus_agent_platform.nova_capability_broker import capability_catalog
+    information_plan = state.metadata.get("information_plan")
+    user_content = state.user_message
+    if information_plan:
+        user_content += "\n\nInformation plan (Nova chooses resources after understanding; broker does not force a tool):\n"
+        user_content += json.dumps({"plan": information_plan, "catalog": capability_catalog()}, sort_keys=True)
 
     # Company context is a bounded read-only view over canonical reports and
     # runtime state. It is injected only for company/Nexus questions; ordinary
@@ -4050,7 +4087,6 @@ def _build_context(state: AgentState) -> AgentState:
         messages.append(msg)
 
     # Build the user message, potentially with verified operational data
-    user_content = state.user_message
     if user_company_context:
         user_content += (
             "\n\nBounded company context (context only, not factual authority):\n"
@@ -4338,22 +4374,18 @@ def build_nova_graph() -> GraphAdapter:
     register_executor(_planner_executor)
 
     graph = GraphAdapter(agent_id=AGENT_ID)
-    graph.add_node("classify_intent", _classify_intent)
-    graph.add_node("handle_utility", _handle_utility)
-    graph.add_node("capability_gate", _capability_gate)
+    graph.add_node("pre_model_boundary", _pre_model_boundary)
     graph.add_node("build_context", _build_context)
     graph.add_node("generate_response", _generate_response)
     graph.add_node("validate_output", _validate_output)
     graph.add_node("compose_output", _compose_output)
 
-    graph.add_edge("classify_intent", "handle_utility")
-    graph.add_edge("handle_utility", "capability_gate")
-    graph.add_edge("capability_gate", "build_context")
+    graph.add_edge("pre_model_boundary", "build_context")
     graph.add_edge("build_context", "generate_response")
     graph.add_edge("generate_response", "validate_output")
     graph.add_edge("validate_output", "compose_output")
 
-    graph.set_entry_point("classify_intent")
+    graph.set_entry_point("pre_model_boundary")
     graph.set_finish_point("compose_output")
     return graph.compile()
 

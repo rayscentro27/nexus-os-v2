@@ -277,14 +277,14 @@ class TestGraphStructure:
     def test_all_nodes_registered(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        expected = ["classify_intent", "handle_utility", "capability_gate", "build_context",
-                    "generate_response", "validate_output", "compose_output"]
+        expected = ["pre_model_boundary", "build_context", "generate_response",
+                    "validate_output", "compose_output"]
         assert list(graph._node_fns.keys()) == expected
 
     def test_entry_and_finish_points(self):
         from nexus_agent_platform.agents.nova import get_nova_graph
         graph = get_nova_graph()
-        assert graph._entry_point == "classify_intent"
+        assert graph._entry_point == "pre_model_boundary"
 
     def test_agent_id(self):
         from nexus_agent_platform.agents.nova import AGENT_ID
