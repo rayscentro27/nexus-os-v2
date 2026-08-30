@@ -3301,7 +3301,11 @@ def _build_fallback_response(error_reason: str, user_message: str) -> str:
     if error_reason in ("provider_exception", "leaked_secret"):
         return "I had trouble generating a response. Let me try again — could you rephrase?"
     if error_reason in ("false_tool_claim", "false_nexus_claim"):
-        return "I don't have access to those systems. I'm Nova — I'm here to talk, not operate tools."
+        return (
+            "Nova couldn't complete that specific read from the current approved source. "
+            "I won't guess or claim that the system is unavailable; the safe next step "
+            "is to retry the bounded read or use the latest verified report."
+        )
     if error_reason == "system_prompt_leak":
         return "Let me rephrase that more naturally. What else would you like to know?"
     if error_reason == "capability_menu":

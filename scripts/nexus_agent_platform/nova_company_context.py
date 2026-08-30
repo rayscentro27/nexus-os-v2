@@ -69,11 +69,13 @@ def build_company_context() -> Dict[str, Any]:
     # allowed to stand in for current operational or research truth.
     try:
         from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
+        from nexus_agent_platform.nova_truth_view import capability_discovery
         nexus_read = read_operational_capability("SYSTEM_HEALTH")
         alpha_read = read_operational_capability("ALPHA_LATEST")
     except Exception as exc:
         nexus_read = {"status": "UNAVAILABLE", "errors": [str(exc)], "data": {}}
         alpha_read = {"status": "UNAVAILABLE", "errors": [str(exc)], "data": {}}
+        capability_discovery = lambda: {}
     canonical_operations = nexus_read.get("data", {}) if nexus_read.get("status") == "OK" else {"status": "UNKNOWN", "reason": "Canonical Nexus health read unavailable."}
     canonical_research = alpha_read.get("data", {}) if alpha_read.get("status") == "OK" else {"status": "UNKNOWN", "reason": "Canonical Alpha research read unavailable."}
     safety = program.get("safety") if isinstance(program.get("safety"), dict) else {}
@@ -110,6 +112,7 @@ def build_company_context() -> Dict[str, Any]:
         "recommended_priorities": brief.get("recommended_actions", []) if brief_is_current else [],
         "sources": [str(path.relative_to(ROOT)) for path in (program_path, operator_path) if path.exists()] + ([str(brief_path.relative_to(ROOT))] if brief_is_current else []) + [nexus_read.get("source_path", "UNKNOWN"), alpha_read.get("source_path", "UNKNOWN")],
         "authority": "CONTEXT_ONLY_TRUTHKERNEL_REVALIDATES",
+        "capability_discovery": capability_discovery(),
         "data_quality": {"daily_brief_current": brief_is_current, "daily_brief_timestamp": brief_timestamp, "review_source": "governed.approvals"},
     }
 

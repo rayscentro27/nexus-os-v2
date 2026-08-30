@@ -132,3 +132,19 @@ def test_contextual_free_research_uses_approved_search(monkeypatch, tmp_path):
     assert result.metadata["capability_gate"]["decision"] == "free_first_research"
     assert calls and calls[0][0] == "general_search"
     assert "Opportunity A" in calls[0][1]["query"]
+
+
+def test_truth_view_preserves_provenance_and_is_not_a_second_store(monkeypatch):
+    from nexus_agent_platform import nova_truth_view
+    monkeypatch.setattr(nova_truth_view, "read_operational_capability", None, raising=False)
+    # The adapter imports the reader locally; smoke-test its public contract
+    # through a controlled module replacement.
+    import nexus_agent_platform.capabilities.operational_reads as reads
+    monkeypatch.setattr(reads, "read_operational_capability", lambda capability, arguments=None: {
+        "status": "OK", "data": {"capability": capability}, "source_path": "current.json",
+        "source_type": "current_runtime_ledger", "as_of": "2026-08-30T00:00:00Z", "freshness": "FRESH",
+    })
+    result = nova_truth_view.read_truth_domains("NEXUS_RUNTIME")
+    assert result["authority"] == "NEXUS_TRUTHKERNEL_CANONICAL_READS"
+    assert result["independent_truth_store"] is False
+    assert result["claims"][0]["source"] == "current.json"
