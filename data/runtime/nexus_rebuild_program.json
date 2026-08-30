@@ -297,6 +297,21 @@
     "live_telegram_retest_required": true,
     "report": "reports/rebuild/NEXUS_HERMES_CANONICAL_REASONING_PATH_REPAIR.md"
   },
+  "wp6_5_nova_company_interface_campaign": {
+    "campaign_id": "HG-WP6.5-NOVA-COMPANY-INTERFACE-NEXUS-COMMAND-AND-CAPABILITY-RECONCILIATION-20260830-01",
+    "baseline": "7909043",
+    "state": "IMPLEMENTED_BOUNDED_WAITING_REAL_TELEGRAM_E2E",
+    "nova_role": "HUMAN_FACING_COMPANY_INTERFACE",
+    "nexus_role": "AUTHORITY_COMMAND_EXECUTION_RECEIPTS",
+    "alpha_role": "RESEARCH_VERIFICATION_ECONOMICS_INTELLIGENCE",
+    "company_context": "READ_ONLY_VIEW_OVER_EXISTING_CANONICAL_SOURCES",
+    "command_acknowledgement": "IMPLEMENTED_TYPED_CONTRACT",
+    "authority_preserved": true,
+    "new_frameworks_installed": false,
+    "active_operator_changed": false,
+    "real_telegram_e2e_ready": true,
+    "report": "reports/rebuild/NOVA_COMPANY_INTERFACE_IMPLEMENTATION.md"
+  },
   "next_action": "Continue passive observation at 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle.",
   "safety": {
     "active_operator_paused": true,

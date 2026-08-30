@@ -846,7 +846,7 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if "blocker" in lower or "blocked" in lower or "needs attention" in lower:
         return ("BLOCKERS", {})
     if "pending approval" in lower or "pending approvals" in lower or "approvals are pending" in lower or "what requires ray" in lower:
-        return ("APPROVAL_QUEUE", {})
+        return ("get_pending_approvals", {})
     if "business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower:
         return ("BUSINESS_LOOP_STATUS", {})
     if "accept" in lower and "watch" in lower and "opportun" in lower:
@@ -1134,7 +1134,9 @@ def _canonical_awareness_capability(text: str) -> Optional[str]:
     if "blocker" in lower or "blocked" in lower or "needs attention" in lower:
         return "BLOCKERS"
     if "pending approval" in lower or "pending approvals" in lower or "approvals are pending" in lower or "what requires ray" in lower:
-        return "APPROVAL_QUEUE"
+        # Use the canonical shared read identifier; APPROVAL_QUEUE remains a
+        # legacy planner alias but is not the execution capability name.
+        return "get_pending_approvals"
     if "business loop" in lower or "business loops" in lower or "opportunity loop" in lower or "loop last run" in lower:
         return "BUSINESS_LOOP_STATUS"
     if "accept" in lower and "watch" in lower and "opportun" in lower:
@@ -3834,12 +3836,30 @@ def _build_context(state: AgentState) -> AgentState:
     # Build messages for the model
     messages = [{"role": "system", "content": SOUL}]
 
+    # Company context is a bounded read-only view over canonical reports and
+    # runtime state. It is injected only for company/Nexus questions; ordinary
+    # conversation remains lightweight and does not receive operational data.
+    company_terms = ("nexus", "company", "business", "ray", "research", "report", "client", "what happened", "today")
+    if any(term in state.user_message.lower() for term in company_terms):
+        from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
+        company_context = build_company_context()
+        state.metadata["company_context"] = company_context
+        user_company_context = context_for_prompt(company_context)
+    else:
+        user_company_context = ""
+
     # Add conversation history (bounded)
     for msg in history[-MEMORY_MAX_TURNS * 2:]:
         messages.append(msg)
 
     # Build the user message, potentially with verified operational data
     user_content = state.user_message
+    if user_company_context:
+        user_content += (
+            "\n\nBounded company context (context only, not factual authority):\n"
+            + user_company_context
+            + "\nRevalidate consequential operational claims through the governed capability result."
+        )
 
     capability_result = state.metadata.get("capability_result")
     if capability_result:
