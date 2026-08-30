@@ -40,3 +40,13 @@ REPO_INTELLIGENCE, and RAY_REVIEW. Each has an authorized sender, canonical
 WP5 route, successful delivery, and one processing receipt. A conversation-lane
 receipt is not present, so conversation communication quality remains
 NOT_PROVEN and WP5 remains in progress pending one bounded conversation test.
+
+The remaining conversation event is now certified from the canonical durable
+receipt: update `197233476`, inbound message `784`, outbound response `785`,
+authorized sender, `com.nexus.telegram-hermes-v2`,
+`CONVERSATIONAL_LANE`, offset advancement, and successful delivery. The answer
+was natural and bounded, required no execution loop, and made no system-state
+claim. Its source was the deterministic Nexus conversation handler rather than
+the Hermes runtime (`MODEL_PROVIDER=none`, `MODEL_NAME=none`). Thus Telegram
+communication certification is complete with limits; Hermes-runtime
+conversational E2E remains explicitly NOT_PROVEN.

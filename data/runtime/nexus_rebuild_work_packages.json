@@ -153,13 +153,13 @@
       "allowed_paths": ["scripts/nexus_agent_platform/", "scripts/operations/", "docs/architecture/", "reports/rebuild/", "data/runtime/", "launchd/"],
       "forbidden_actions": ["public_endpoint", "firewall_change", "oci_ingress_change", "cloud_provisioning", "paid_service_activation", "new_unknown_credentials", "credential_rotation", "privileged_container", "broad_host_filesystem_access", "podman_socket", "TruthKernel_authority_transfer", "live_trading", "payments", "client_production_mutation", "unrestricted_production_outreach", "active_operator"],
       "scope": ["department_registry", "department_skill_loop_worker_capability_mapping", "repository_department_reconciliation", "registry_driven_telegram_operator_routing", "preserve_truthkernel_human_gate_approval_route", "bounded_real_telegram_e2e_for_conversation_status_system_operations_research_repo_intelligence_ray_review", "fail_closed_telegram_recovery", "telegram_receipts", "legacy_router_rollback"],
-      "status": "IN_PROGRESS",
+      "status": "COMPLETED_WITH_LIMITS",
       "started_at": "2026-08-29T19:26:10Z",
-      "completed_at": null,
-      "commit": null,
+      "completed_at": "2026-08-30T13:45:00Z",
+      "commit": "PENDING_CHECKPOINT",
       "evidence": ["data/runtime/nexus_department_registry.json", "docs/architecture/NEXUS_DEPARTMENT_ARCHITECTURE.md", "docs/architecture/NEXUS_TELEGRAM_HERMES_ARCHITECTURE.md", "reports/rebuild/NEXUS_DEPARTMENT_SKILL_LOOP_MATRIX.md", "reports/rebuild/NEXUS_REPOSITORY_DEPARTMENT_CAPABILITY_MATRIX.md", "reports/rebuild/NEXUS_TELEGRAM_REAL_E2E_CERTIFICATION.md", "scripts/nexus_agent_platform/department_router.py", "reports/rebuild/nexus_loop_receipts/receipt_fc589044629b46eb8af03cbdf1607502.json", "reports/rebuild/nexus_loop_receipts/receipt_1f74217e493143f0a01c746a9b40a953.json", "reports/rebuild/nexus_loop_receipts/receipt_a5265cfceaa54c5f92fe1f546cb967b3.json", "reports/rebuild/nexus_loop_receipts/receipt_3e05763779cc4b31a68f76c43b349e7f.json"],
-      "blockers": ["Conversation-lane live certification remains unproven because no durable conversation receipt exists. Five post-renderer live intents are certified from the canonical consumer: state query, system operations, research, repo intelligence, and Ray Review. Active Operator remains paused."],
-      "next_action": "Process one fresh authorized Ray conversation message through the canonical consumer; do not run a competing poll."
+      "blockers": ["Conversational response is intentionally a deterministic bounded Nexus handler; Hermes-runtime conversational E2E is not proven. Active Operator remains paused."],
+      "next_action": "Preserve the certified three-lane Telegram route; Hermes-runtime conversation integration is a future improvement if required."
     }
   ]
 }
