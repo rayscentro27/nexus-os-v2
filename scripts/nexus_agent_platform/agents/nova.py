@@ -594,7 +594,10 @@ def _present_response(state: AgentState, content: str) -> str:
         return canonical
     text = content or ""
     lower = state.user_message.lower()
-    if re.search(r"\bgood\s+(?:morning|afternoon|evening)\b", lower):
+    # A salutation is not a complete request when substantive company text
+    # follows it. Preserve the model/evidence answer for compound messages.
+    substantive = re.sub(r"^\s*(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))(?:\s+nova)?[\s,;:!-]*", "", lower, count=1)
+    if re.search(r"\bgood\s+(?:morning|afternoon|evening)\b", lower) and not re.search(r"\b(?:what|how|is|are|did|which|anything|tell|give|check|run|review|research|send)\b", substantive):
         return "Good evening. What's on your mind?" if "evening" in lower else "Good to hear from you. What's on your mind?"
     if "frustrated" in lower and "nexus" in lower:
         return ("I'd pause architecture expansion and focus on visible outcomes: finish the operator experience, "
@@ -1123,6 +1126,16 @@ def _canonical_awareness_capability(text: str) -> Optional[str]:
     awareness questions.
     """
     lower = text.lower().strip()
+    # Domain-first semantic cues keep the company context aligned with the
+    # question. These are bounded read classifications, not execution grants.
+    if "research" in lower and any(word in lower for word in ("find", "found", "recent", "latest", "attention", "interesting", "worth")):
+        return "get_recent_research"
+    if (any(word in lower for word in ("review", "decision", "approval")) and any(word in lower for word in ("waiting", "need", "requires", "attention", "first", "me"))) or "waiting on me" in lower:
+        return "get_pending_approvals"
+    if "nexus" in lower and any(word in lower for word in ("doing", "healthy", "running", "state", "right now", "move forward")):
+        return "get_system_health"
+    if any(phrase in lower for phrase in ("what happened overnight", "what happened", "catch me up", "what do i need to know")):
+        return "get_operational_summary"
     if "evidence" in lower and ("show" in lower or "used" in lower):
         return "EVIDENCE_LOOKUP"
     if "how many clients" in lower or "how many production clients" in lower or "production clients" in lower or "production client count" in lower or "client count" in lower or "number of clients" in lower:
@@ -3593,6 +3606,36 @@ def _capability_gate(state: AgentState) -> AgentState:
             # Non-explicit messages like "yes" or "ok" never resolve approvals.
         except Exception as exc:
             log.debug("Governed continuity skipped: %s", exc)
+
+    # Conversational delegation is a bounded submission, not execution. It
+    # requires a prior turn so "that" has a real referent, then creates only a
+    # governed recommendation record. Nexus remains responsible for approval,
+    # eligibility, queueing, execution, and receipts.
+    if re.search(r"\b(?:send|pass|hand|route)\s+(?:that|it|this)(?:\s+over)?\s+to\s+nexus\b|\bhave\s+nexus\s+handle\s+(?:that|it|this)\b", text, re.I):
+        history = load_memory(chat_id)
+        prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
+        if prior:
+            from nexus_agent_platform.capabilities.shared import execute_shared_capability
+            delegation = execute_shared_capability(
+                "hermes_nova", "prepare_action_recommendation", {
+                    "title": "Nova delegated request for Nexus review",
+                    "problem": text,
+                    "recommended_action_id": None,
+                    "reason": "Ray referred to the preceding Nova recommendation; Nexus must determine the governed next step.",
+                    "evidence": [{"type": "CONTEXT", "summary": prior[:500]}],
+                    "expected_outcome": "Nexus reviews and assigns the request if an approved capability exists.",
+                    "risk_level": "low",
+                    "confidence": "medium",
+                    "source": "hermes_nova",
+                }, trace_id=trace_id,
+            )
+            state.metadata["capability_gate"] = {"decision": "bounded_delegation", "capability": "prepare_action_recommendation", "build_sha": BUILD_SHA, "trace_id": trace_id}
+            state.metadata["capability_result"] = {"tool": "nexus_governed_layer", "query_type": "bounded_delegation", "status": delegation.get("status", "unknown"), "data": delegation.get("data", delegation), "provenance": delegation.get("provenance", {}), "trace_id": trace_id}
+            if delegation.get("status") == "success":
+                state.assistant_response = "I sent the preceding recommendation into Nexus's governed review path. It has not been executed; Nexus must validate and assign the next step first."
+            else:
+                state.assistant_response = "I couldn't submit that safely because the governed Nexus request path was unavailable. Nothing was executed."
+            return state
 
     # Canonical current-state awareness must outrank the broad schema planner.
     # Otherwise a question such as "what did Alpha find most recently?" can be

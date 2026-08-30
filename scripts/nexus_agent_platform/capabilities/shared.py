@@ -1054,11 +1054,19 @@ def _handle_pending_approvals(
     trace_id: str = "",
 ) -> Dict[str, Any]:
     """Read pending approvals from the canonical review queue."""
-    from nexus_agent_platform.agents.hermes import _get_pending_approvals
+    # The legacy report-backed dashboard can contain historical/test cards and
+    # is not authoritative for current Ray decisions. Use the governed
+    # approval ledger; keep the report only as a separate historical artifact.
+    from nexus_agent_platform.governed.approvals import get_pending_approvals
 
     query_start = datetime.now(timezone.utc)
     try:
-        raw = _get_pending_approvals()
+        raw_items = get_pending_approvals(requested_for="ray", include_self=False)
+        raw = {
+            "status": "success",
+            "pending_count": len(raw_items),
+            "items": raw_items,
+        }
     except Exception as exc:
         query_end = datetime.now(timezone.utc)
         return {
@@ -1128,7 +1136,7 @@ def _handle_pending_approvals(
             "query_end": query_end.isoformat(),
             "freshness": "live",
             "trace_id": trace_id,
-            "handler": "hermes._get_pending_approvals",
+            "handler": "governed.approvals.get_pending_approvals",
             "access_boundary": "approved read capability only",
         },
     }
