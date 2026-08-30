@@ -19,6 +19,19 @@ def capability_catalog() -> Dict[str, Any]:
     return {"capabilities": CAPABILITIES, "broker_role": "describe_only", "execution_authority": "shared_capability_boundary"}
 
 
+MODEL_CAPABILITY_MARKER = "nova_capability_request"
+
+
+def validate_model_request(request: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate a model-selected request without choosing a resource for it."""
+    name = str(request.get("capability", "")).upper()
+    aliases = {"PUBLIC_WEB_SEARCH": "public_web_search", "PUBLIC_WEB_RETRIEVAL": "public_web_retrieval", "ALPHA_RESEARCH": "submit_alpha_request"}
+    if name not in aliases:
+        return {"status": "rejected", "error": "capability-not-allowlisted", "capability": name}
+    arguments = request.get("arguments") if isinstance(request.get("arguments"), dict) else {}
+    return {"status": "validated", "capability": aliases[name], "requested_capability": name, "arguments": arguments, "cost_class": CAPABILITIES.get(name, {}).get("cost_class", "unknown"), "read_only": name != "ALPHA_RESEARCH"}
+
+
 def build_information_plan(question: str, domains: List[str]) -> Dict[str, Any]:
     public = {"PUBLIC_BUSINESS_RESEARCH", "PUBLIC_COMPANY_RESEARCH", "PUBLIC_CURRENT_INFORMATION", "WEBSITE_ANALYSIS"}
     internal = {"NEXUS_OPERATIONS", "CLIENT_DATA", "INTERNAL_COMPANY_BUSINESS", "INTERNAL_RESEARCH_ALPHA"}

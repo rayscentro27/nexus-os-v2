@@ -51,6 +51,11 @@ def _provider_priority():
         providers.append(("tavily", "TAVILY_API_KEY", True))
     if _env("SERPAPI_API_KEY"):
         providers.append(("serpapi", "SERPAPI_API_KEY", True))
+    # Credential-free bounded fallback.  This is a search adapter, not a new
+    # framework; it keeps a dead private provider or paid 402 from becoming a
+    # global inability to research.
+    providers.append(("duckduckgo_html", "none", True))
+    providers.append(("bing_html", "none", True))
     return providers
 
 
@@ -269,6 +274,7 @@ def _search_searxng(query, max_results=MAX_RESULTS):
             "results": results,
             "notes": [],
         }
+
     except Exception as e:
         return {
             "status": "error",
@@ -278,6 +284,43 @@ def _search_searxng(query, max_results=MAX_RESULTS):
             "results": [],
             "notes": [_redact_error(e)],
         }
+
+
+def _search_duckduckgo_html(query, max_results=MAX_RESULTS):
+    """Bounded credential-free public search fallback (HTML, no API spend)."""
+    try:
+        params = urllib.parse.urlencode({"q": query})
+        url = f"https://html.duckduckgo.com/html/?{params}"
+        req = urllib.request.Request(url, headers={"User-Agent": "NexusHermes/1.0", "Accept": "text/html"})
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+            html = resp.read(300_000).decode("utf-8", errors="replace")
+        # Keep parsing dependency-free and return only public result metadata.
+        import re
+        links = re.findall(r'<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.I | re.S)
+        snippets = re.findall(r'<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>(.*?)</a>', html, re.I | re.S)
+        def clean(value):
+            return re.sub(r"<[^>]+>|\s+", " ", value).strip()
+        results = []
+        for index, (url_value, title) in enumerate(links[:max_results]):
+            results.append({"title": clean(title)[:200], "url": url_value, "snippet": clean(snippets[index])[:500] if index < len(snippets) else "", "source": "duckduckgo_html"})
+        return {"status": "ok" if results else "no_results", "provider": "duckduckgo_html", "query": query, "checked_at": datetime.now(timezone.utc).isoformat(), "results": results, "notes": [] if results else ["No HTML result links returned"]}
+    except Exception as exc:
+        return {"status": "error", "provider": "duckduckgo_html", "query": query, "checked_at": datetime.now(timezone.utc).isoformat(), "results": [], "notes": [_redact_error(exc)]}
+
+
+def _search_bing_html(query, max_results=MAX_RESULTS):
+    """Bounded public HTML fallback used only when configured providers fail."""
+    try:
+        params = urllib.parse.urlencode({"q": query})
+        req = urllib.request.Request(f"https://www.bing.com/search?{params}", headers={"User-Agent": "NexusHermes/1.0", "Accept": "text/html"})
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=SSL_CTX) as resp:
+            html = resp.read(300_000).decode("utf-8", errors="replace")
+        import re
+        rows = re.findall(r'<li class="b_algo".*?<h2[^>]*><a[^>]+href="([^"]+)"[^>]*>(.*?)</a>.*?</li>', html, re.I | re.S)
+        results = [{"title": re.sub(r"<[^>]+>|\s+", " ", title).strip()[:200], "url": url.replace("&amp;", "&"), "snippet": "", "source": "bing_html"} for url, title in rows[:max_results]]
+        return {"status": "ok" if results else "no_results", "provider": "bing_html", "query": query, "checked_at": datetime.now(timezone.utc).isoformat(), "results": results, "notes": [] if results else ["No HTML result links returned"]}
+    except Exception as exc:
+        return {"status": "error", "provider": "bing_html", "query": query, "checked_at": datetime.now(timezone.utc).isoformat(), "results": [], "notes": [_redact_error(exc)]}
 
 
 # ── Safe Fallback ──────────────────────────────────────
@@ -330,6 +373,8 @@ def web_search(query, max_results=MAX_RESULTS):
         "tavily": _search_tavily,
         "serpapi": _search_serpapi,
         "searxng": _search_searxng,
+        "duckduckgo_html": _search_duckduckgo_html,
+        "bing_html": _search_bing_html,
     }
 
     attempted = []

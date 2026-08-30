@@ -15,6 +15,8 @@ import os
 import re
 import time
 import uuid
+import ssl
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
@@ -66,6 +68,7 @@ NOVA_ALLOWED_READS = frozenset({
     "resolve_user_identity_by_email",
     "general_search",
     "public_web_search",
+    "public_web_retrieval",
     "get_system_health",
     "get_pending_approvals",
     "get_recent_research",
@@ -835,6 +838,22 @@ def _handle_public_web_search(arguments: Optional[Dict[str, Any]] = None,
         }
     except Exception as exc:
         return {"status": "error", "capability": "public_web_search", "data": {"results": []}, "error": str(exc), "provenance": {"capability": "public_web_search", "source_type": "LIVE_WEB_SEARCH", "freshness": "unknown", "trace_id": trace_id, "service": "public_web_search", "alternative_available": True, "retryable": True, "cost": "free_or_approved_provider_only"}}
+
+
+def _handle_public_web_retrieval(arguments: Optional[Dict[str, Any]] = None, trace_id: str = "") -> Dict[str, Any]:
+    """Read one public page through the existing bounded HTTP helper."""
+    url = str((arguments or {}).get("url", "")).strip()
+    if not re.match(r"^https?://", url, re.I):
+        return {"status": "error", "capability": "public_web_retrieval", "data": {}, "error": "http-url-required", "provenance": {"capability": "public_web_retrieval", "trace_id": trace_id}}
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "NexusHermes/1.0", "Accept": "text/html"})
+        with urllib.request.urlopen(request, timeout=15, context=ssl._create_unverified_context()) as response:
+            body = response.read(200_000).decode("utf-8", errors="replace")
+        result = {"status": "ok", "http_status": getattr(response, "status", 200), "text": body}
+    except Exception as exc:
+        result = {"status": "error", "error": str(exc), "text": ""}
+    ok = result.get("status") == "ok"
+    return {"status": "success" if ok else "error", "capability": "public_web_retrieval", "data": {"url": url, "content": result.get("text", "")[:200000], "http_status": result.get("http_status")}, "error": None if ok else result.get("error", "retrieval-failed"), "provenance": {"capability": "public_web_retrieval", "source_type": "LIVE_WEB_RETRIEVAL", "url": url, "freshness": "live", "trace_id": trace_id, "read_only": True}}
 
 
 # ─── Shared Handler: System Health ──────────────────────────
@@ -3065,8 +3084,12 @@ def _handle_submit_nexus_request(arguments, trace_id):
 
 
 def _handle_submit_alpha_request(arguments, trace_id):
-    from nexus_agent_platform.alpha_research import submit_alpha_request
+    from nexus_agent_platform.alpha_research import submit_alpha_request, execute_alpha_request
     args = arguments or {}
+    if args.get("execute") is True:
+        return _governed_envelope("submit_alpha_request", lambda: execute_alpha_request(
+            objective=str(args.get("objective", "")), research_type=str(args.get("research_type", "MARKET_RESEARCH")),
+            requested_by=str(args.get("requested_by", "hermes_nova")), referent=str(args.get("referent", ""))), trace_id)
     return _governed_envelope("submit_alpha_request", lambda: submit_alpha_request(
         objective=str(args.get("objective", "")),
         research_type=str(args.get("research_type", "MARKET_RESEARCH")),
@@ -3093,6 +3116,7 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "resolve_user_identity_by_email": lambda args, tid: _handle_identity_resolution(args, tid),
     "general_search": lambda args, tid: _handle_general_search(args, tid),
     "public_web_search": lambda args, tid: _handle_public_web_search(args, tid),
+    "public_web_retrieval": lambda args, tid: _handle_public_web_retrieval(args, tid),
     "get_system_health": lambda args, tid: _handle_system_health(args, tid),
     "get_pending_approvals": lambda args, tid: _handle_pending_approvals(args, tid),
     "get_recent_research": lambda args, tid: _handle_recent_research(args, tid),

@@ -69,6 +69,39 @@ def submit_alpha_request(*, objective: str, research_type: str = "MARKET_RESEARC
     return {**record, "receipt": audit["event_id"]}
 
 
+def execute_alpha_request(*, objective: str, research_type: str = "MARKET_RESEARCH",
+                          requested_by: str = "hermes_nova", referent: str = "",
+                          runtime_root: Optional[Path] = None) -> dict:
+    """Execute one bounded public Alpha request using the existing search path.
+
+    This is deliberately read-only and report-producing.  It is the execution
+    half of the governed Alpha handoff; it does not publish, spend, or mutate
+    company/client state.
+    """
+    from nexus_agent_platform.phase15 import live_research
+    _load_web_search = live_research._load_web_search
+    search, blocker = _load_web_search()
+    if search is None:
+        return {"status": "BLOCKED", "reason": blocker or "search-adapter-unavailable", "executed": False}
+    query = normalize_text(objective)[:500]
+    found = search(query, max_results=6)
+    if found.get("status") != "ok" or not found.get("results"):
+        return {"status": "BLOCKED", "reason": (found.get("notes") or ["no-research-results"])[0], "provider": found.get("provider"), "executed": False}
+    job = build_research_job(objective=query, research_type=research_type, requested_by=requested_by)
+    evidence = []
+    for index, item in enumerate(found["results"][:job["limits"]["max_sources"]]):
+        ref = str(item.get("url") or "")
+        evidence.append({
+            "schema_version": "nexus.evidence.v1", "evidence_id": f"alpha-search-{job['research_job_id']}-{index}",
+            "status": "SUCCESS", "source": {"source_type": "PUBLIC_SEARCH_RESULT", "original_reference": ref, "retrieved_at": _now()},
+            "integrity": {"material_hash": hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest()},
+            "content": {"normalized_text_or_markdown": json.dumps(item, sort_keys=True)},
+        })
+    result = run_alpha_research(job, evidence, cost_usage={"classification": "FREE_SEARCH", "model_calls": 0, "remote_cpu_jobs": 0}, runtime_root=runtime_root)
+    result["execution"] = {"executed": True, "provider": found.get("provider"), "result_count": len(found["results"]), "referent": referent}
+    return result
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 

@@ -857,9 +857,9 @@ def _semantic_capability_gate(text: str) -> Optional[Tuple[str, Dict[str, Any]]]
     if "evidence" in lower and ("show" in lower or "used" in lower):
         return ("EVIDENCE_LOOKUP", {"query": text})
     if "how many clients" in lower or "production client count" in lower or "client count" in lower or "number of clients" in lower:
-        return ("CLIENT_COUNT", {})
+        return ("get_client_count", {})
     if "current nexus os status" in lower or "nexus os status" in lower or "system status" in lower or "current system status" in lower:
-        return ("SYSTEM_HEALTH", {})
+        return ("get_system_health", {})
     if "alpha" in lower and ("latest" in lower or "most recent" in lower or "find" in lower):
         return ("ALPHA_LATEST", {})
     if "blocker" in lower or "blocked" in lower or "needs attention" in lower:
@@ -4069,6 +4069,14 @@ def _build_context(state: AgentState) -> AgentState:
     if information_plan:
         user_content += "\n\nInformation plan (Nova chooses resources after understanding; broker does not force a tool):\n"
         user_content += json.dumps({"plan": information_plan, "catalog": capability_catalog()}, sort_keys=True)
+        user_content += (
+            "\n\nCapability execution protocol (use only when current evidence is needed): "
+            "after thinking, you may request exactly one bounded capability by returning ONLY "
+            "a JSON object of the form {\"nova_capability_request\":{\"capability\": "
+            "\"PUBLIC_WEB_SEARCH\"|\"PUBLIC_WEB_RETRIEVAL\"|\"ALPHA_RESEARCH\", "
+            "\"arguments\":{...}}}. Do not use this for ordinary conversation. "
+            "The system will execute the allowlisted request and give the result back for your final answer."
+        )
 
     # Company context is a bounded read-only view over canonical reports and
     # runtime state. It is injected only for company/Nexus questions; ordinary
@@ -4243,8 +4251,69 @@ def _generate_response(state: AgentState) -> AgentState:
             state.metadata["model_error_type"] = "EmptyResponse"
         content = _advisory_fallback(state.user_message)
 
+    # Keep tool execution inside the existing generation stage.  This is not a
+    # new reasoning layer: the model decides whether a capability is needed,
+    # the broker validates it, and one bounded result is returned for synthesis.
+    request = _extract_model_capability_request(content)
+    if request:
+        from nexus_agent_platform.nova_capability_broker import validate_model_request
+        from nexus_agent_platform.capabilities.shared import execute_shared_capability
+        checked = validate_model_request(request)
+        if checked.get("status") == "validated":
+            capability_result = execute_shared_capability(
+                AGENT_ID, checked["capability"], checked.get("arguments", {}),
+                conversation_id=str(chat_id), trace_id=f"nova_model_{int(time.time())}",
+            )
+            state.metadata["model_selected_capability"] = checked
+            state.metadata["capability_invocation_attempted"] = True
+            state.metadata["capability_result"] = {
+                "tool": checked["capability"],
+                "query_type": "model_selected_capability",
+                "status": capability_result.get("status", "unknown"),
+                "data": capability_result.get("data", {}),
+                "error": capability_result.get("error"),
+                "provenance": capability_result.get("provenance", {}),
+            }
+            followup = list(messages)
+            followup.append({"role": "assistant", "content": content})
+            followup.append({
+                "role": "user", "content": (
+                    "Capability result (structured, bounded, and not authoritative beyond its provenance):\n"
+                    + json.dumps(state.metadata["capability_result"], sort_keys=True, default=str)
+                    + "\nNow answer the original question in plain language. If the capability failed, explain the specific limitation and use any supported alternative; do not claim the work or fact succeeded."
+                ),
+            })
+            try:
+                with stage_execution(stage="generation", source="scripts/nexus_agent_platform/agents/nova.py:_generate_response", metadata={"purpose": "capability_followup"}):
+                    second = asyncio.run(_call_model(followup, chat_id, purpose="capability_followup"))
+                if second.get("content"):
+                    content = second["content"]
+                    state.metadata["capability_followup"] = True
+            except Exception as exc:
+                state.metadata["capability_followup_error"] = exc.__class__.__name__
+        else:
+            state.metadata["capability_invocation_attempted"] = False
+            state.metadata["capability_result"] = {"status": "rejected", "error": checked.get("error"), "provenance": {"authority": "shared_capability_boundary"}}
     state.assistant_response = _present_response(state, content)
     return state
+
+
+def _extract_model_capability_request(content: str) -> Optional[Dict[str, Any]]:
+    """Extract the strict, optional model-to-broker request envelope."""
+    if not content:
+        return None
+    candidates = [content.strip()]
+    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.I | re.S)
+    if fenced:
+        candidates.insert(0, fenced.group(1))
+    for candidate in candidates:
+        try:
+            value = json.loads(candidate)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(value, dict) and isinstance(value.get("nova_capability_request"), dict):
+            return value["nova_capability_request"]
+    return None
 
 
 def _validate_output(state: AgentState) -> AgentState:
