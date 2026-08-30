@@ -4073,7 +4073,7 @@ def _build_context(state: AgentState) -> AgentState:
             "\n\nCapability execution protocol (use only when current evidence is needed): "
             "after thinking, you may request exactly one bounded capability by returning ONLY "
             "a JSON object of the form {\"nova_capability_request\":{\"capability\": "
-            "\"PUBLIC_WEB_SEARCH\"|\"PUBLIC_WEB_RETRIEVAL\"|\"ALPHA_RESEARCH\", "
+            "\"PUBLIC_WEB_SEARCH\"|\"PUBLIC_WEB_RETRIEVAL\"|\"ALPHA_RESEARCH\"|\"CAPABILITY_STATUS\", "
             "\"arguments\":{...}}}. Do not use this for ordinary conversation. "
             "The system will execute the allowlisted request and give the result back for your final answer."
         )
@@ -4306,6 +4306,21 @@ def _extract_model_capability_request(content: str) -> Optional[Dict[str, Any]]:
     fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.I | re.S)
     if fenced:
         candidates.insert(0, fenced.group(1))
+    # Models sometimes wrap the protocol object in a sentence. Decode the
+    # first valid JSON object containing our marker without accepting arbitrary
+    # JSON as a tool call.
+    marker = content.find("nova_capability_request")
+    if marker >= 0:
+        decoder = json.JSONDecoder()
+        start = content.rfind("{", 0, marker + 1)
+        while start >= 0:
+            try:
+                value, _ = decoder.raw_decode(content[start:])
+                if isinstance(value, dict) and isinstance(value.get("nova_capability_request"), dict):
+                    return value["nova_capability_request"]
+            except (TypeError, ValueError):
+                pass
+            start = content.rfind("{", 0, start)
     for candidate in candidates:
         try:
             value = json.loads(candidate)

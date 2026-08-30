@@ -69,6 +69,7 @@ NOVA_ALLOWED_READS = frozenset({
     "general_search",
     "public_web_search",
     "public_web_retrieval",
+    "get_live_capability_status",
     "get_system_health",
     "get_pending_approvals",
     "get_recent_research",
@@ -854,6 +855,23 @@ def _handle_public_web_retrieval(arguments: Optional[Dict[str, Any]] = None, tra
         result = {"status": "error", "error": str(exc), "text": ""}
     ok = result.get("status") == "ok"
     return {"status": "success" if ok else "error", "capability": "public_web_retrieval", "data": {"url": url, "content": result.get("text", "")[:200000], "http_status": result.get("http_status")}, "error": None if ok else result.get("error", "retrieval-failed"), "provenance": {"capability": "public_web_retrieval", "source_type": "LIVE_WEB_RETRIEVAL", "url": url, "freshness": "live", "trace_id": trace_id, "read_only": True}}
+
+
+def _handle_live_capability_status(arguments: Optional[Dict[str, Any]] = None, trace_id: str = "") -> Dict[str, Any]:
+    """Return implementation/configuration/callability without claiming execution."""
+    from nexus_agent_platform.flags import status as flag_status
+    from nexus_agent_platform.google_workspace import _configured
+    google = _configured()
+    rows = {
+        "public_web_search": {"implemented": True, "configured": True, "authenticated": "PROVIDER_DEPENDENT", "available_now": True, "execution_mode": "read", "authority_required": "NO", "failure_reason": None},
+        "public_web_retrieval": {"implemented": True, "configured": True, "authenticated": "NOT_REQUIRED", "available_now": True, "execution_mode": "read", "authority_required": "NO", "failure_reason": None},
+        "alpha_research": {"implemented": True, "configured": True, "authenticated": "NOT_REQUIRED", "available_now": True, "execution_mode": "bounded_advisory", "authority_required": "GOVERNED_INTAKE", "failure_reason": None},
+        "email_send": {"implemented": True, "configured": True, "authenticated": "GATED", "available_now": False, "execution_mode": "governed_send", "authority_required": "APPROVAL", "failure_reason": "Outbound email remains gated; Nova has no direct write permission."},
+        "calendar_event_create": {"implemented": True, "configured": google.get("refresh_token") == "CONFIGURED", "authenticated": google.get("refresh_token", "NOT_CONFIGURED"), "available_now": False, "execution_mode": "governed_mutation", "authority_required": "APPROVAL", "failure_reason": "No callable Nova event-creation adapter is exposed."},
+    }
+    requested = str((arguments or {}).get("capability", "")).strip().lower()
+    data = {requested: rows[requested]} if requested in rows else rows
+    return {"status": "success", "capability": "get_live_capability_status", "data": {"capabilities": data, "feature_flags": {k: v for k, v in flag_status().items() if "NOVA" in k or "WEB" in k or "ALPHA" in k}, "google_workspace": {"client_id": google.get("client_id"), "client_secret": google.get("client_secret"), "refresh_token": google.get("refresh_token")}}, "error": None, "provenance": {"capability": "get_live_capability_status", "source_type": "LIVE_CAPABILITY_REGISTRY", "freshness": "live", "trace_id": trace_id, "secret_values_included": False}}
 
 
 # ─── Shared Handler: System Health ──────────────────────────
@@ -3117,6 +3135,7 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "general_search": lambda args, tid: _handle_general_search(args, tid),
     "public_web_search": lambda args, tid: _handle_public_web_search(args, tid),
     "public_web_retrieval": lambda args, tid: _handle_public_web_retrieval(args, tid),
+    "get_live_capability_status": lambda args, tid: _handle_live_capability_status(args, tid),
     "get_system_health": lambda args, tid: _handle_system_health(args, tid),
     "get_pending_approvals": lambda args, tid: _handle_pending_approvals(args, tid),
     "get_recent_research": lambda args, tid: _handle_recent_research(args, tid),

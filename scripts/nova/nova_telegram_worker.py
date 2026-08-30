@@ -46,7 +46,14 @@ NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
 
 from nexus_agent_platform.runtime.execution_telemetry import execution_run, stage_execution, telemetry_context
-from nexus_agent_platform.control_object_resolver import resolve_control_object
+from nexus_agent_platform.control_object_resolver import (
+    format_repair_status,
+    get_repair,
+    is_operational_control_intent,
+    load_control_context,
+    resolve_control_object,
+    save_control_context,
+)
 
 # ─── SSL ────────────────────────────────────────────────
 
@@ -205,6 +212,27 @@ def _chunk_message(text):
 
     return chunks
 
+
+def _response_integrity(response, response_type="conversation"):
+    """Reject untyped internal scalars/raw structures before Telegram delivery."""
+    value = str(response or "").strip()
+    if not value:
+        return None, "empty_response"
+    # Internal capability envelopes are never user-facing, even when a model
+    # or an older runtime returns one wrapped in prose. The graph should
+    # intercept these; this final guard prevents accidental Telegram leakage.
+    if "nova_capability_request" in value:
+        return None, "raw_capability_request"
+    if response_type != "user_numeric_answer" and re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", value):
+        return None, "bare_internal_scalar"
+    if response_type != "user_json_answer" and value[:1] in {"{", "["}:
+        try:
+            json.loads(value)
+            return None, "raw_internal_json"
+        except ValueError:
+            pass
+    return value, None
+
 # ─── Offset Management ─────────────────────────────────
 
 def load_offset():
@@ -286,6 +314,7 @@ def create_mission(update_id, chat_id, user_id, text):
         "response_message_ids": [],
         "validation_error": None,
         "fallback_used": False,
+        "correlation_id": f"tg-{update_id}-{hashlib.sha256(f'{chat_id}:{update_id}'.encode()).hexdigest()[:12]}",
     }
     os.makedirs(NOVA_MISSIONS_DIR, exist_ok=True)
     path = os.path.join(NOVA_MISSIONS_DIR, f"{mission_id}.json")
@@ -436,22 +465,29 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         # routing from hiding an existing repair behind a generic mission
         # lookup. This read-only branch does not start engineering or create
         # any new object.
-        control = resolve_control_object(text)
-        if control.get("object_type") in {"REPAIR", "UNKNOWN_REPAIR", "UNKNOWN_WORK_ORDER"}:
+        control_context = load_control_context(chat_id)
+        control = resolve_control_object(text, control_context)
+        if is_operational_control_intent(text, control):
             if control.get("object_type") == "REPAIR":
-                repair = __import__("nexus_agent_platform.control_object_resolver", fromlist=["get_repair"]).get_repair(control.get("object_id") or control.get("repair_id"))
-                response = (f"{repair['repair_id']}\nWork order: {repair.get('work_order_id', 'UNKNOWN')}\n"
-                            f"State: {repair.get('lifecycle_state', 'UNKNOWN')}\n"
-                            f"Access: {repair.get('access_state', 'UNKNOWN')}\n"
-                            "Deployment: not authorized\nNo engineering execution started.") if repair else "The persisted repair could not be resolved. No Nexus state was changed."
+                repair = get_repair(control.get("object_id") or control.get("repair_id"))
+                response = format_repair_status(repair) if repair else "I couldn't retrieve the current Nexus state. The persisted repair was not found. No Nexus state was changed."
                 outcome = "GOVERNED_REPAIR_RESOLVED" if repair else "REPAIR_NOT_FOUND"
-            else:
+                if repair:
+                    save_control_context(chat_id, {**control, "repair_id": repair.get("repair_id"), "work_order_id": repair.get("work_order_id"), "run_id": repair.get("run_id")})
+            elif control.get("object_type") in {"UNKNOWN_REPAIR", "UNKNOWN_WORK_ORDER"}:
                 response = f"I could not find persisted {control.get('object_type', 'object').lower()} {control.get('object_id', '')}. No repair or mission was created."
                 outcome = control.get("object_type")
+            else:
+                response = "I couldn't retrieve the current Nexus state. No state was changed."
+                outcome = "OPERATIONAL_STATE_UNAVAILABLE"
+            response, blocked_reason = _response_integrity(response, "operational_status")
+            if response is None:
+                response = "I couldn't produce a valid Nexus status response. No state was changed."
+                outcome = "RESPONSE_INTEGRITY_BLOCKED"
             update_mission(mission, "RESPONSE_COMPOSED", {"response_mode": "governed_object_resolution", "control_object": control.get("object_type"), "outcome": outcome})
             msg_ids = tg_send_message(chat_id, response)
             update_mission(mission, "COMPLETED" if msg_ids else "DELIVERY_FAILED", {"response_message_ids": msg_ids})
-            write_receipt({"type": "nova_governed_object_response", "object_type": control.get("object_type"), "object_id": control.get("object_id") or control.get("repair_id"), "outcome": outcome})
+            write_receipt({"type": "nova_governed_object_response", "object_type": control.get("object_type"), "object_id": control.get("object_id") or control.get("repair_id"), "outcome": outcome, "model_calls": 0, "correlation_id": mission.get("correlation_id"), "incoming_update_id": update_id, "outgoing_message_ids": msg_ids, "integrity_blocked": blocked_reason})
             return True
 
         with stage_execution(
@@ -505,7 +541,11 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             result = graph.invoke(state)
         latency_ms = round((time.monotonic() - t0) * 1000, 1)
 
-        response = result.assistant_response or ""
+        response, blocked_reason = _response_integrity(result.assistant_response or "", result.metadata.get("response_type", "conversation"))
+        if response is None:
+            _log(f"Response integrity blocked: update={update_id} reason={blocked_reason}")
+            write_receipt({"type": "nova_response_integrity_blocked", "incoming_update_id": update_id, "correlation_id": mission.get("correlation_id"), "reason": blocked_reason, "model_calls": 1})
+            response = "I couldn't produce a meaningful response to that request. Please try again."
 
         if result.metadata.get("reset_requested"):
             reset_memory(chat_id)
@@ -556,6 +596,10 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                     "model": result.metadata.get("model_used"),
                     "latency_ms": latency_ms,
                     "turns": result.metadata.get("conversation_turns", 0),
+                    "incoming_update_id": update_id,
+                    "outgoing_message_ids": msg_ids,
+                    "correlation_id": mission.get("correlation_id"),
+                    "model_calls": 1,
                 })
                 _log(f"Nova delivered: mission={mission['mission_id']} latency={latency_ms}ms")
             else:

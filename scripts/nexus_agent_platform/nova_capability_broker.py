@@ -11,6 +11,7 @@ CAPABILITIES: Dict[str, Dict[str, Any]] = {
     "COMPANY_DATA": {"health": "source-dependent", "cost_class": "included", "read_or_write": "read", "privacy_scope": "approved company data", "authority_scope": "read allowlist", "fallbacks": ["verified artifact"]},
     "NEXUS_LIVE_TRUTH": {"health": "runtime-dependent", "cost_class": "included", "read_or_write": "read", "privacy_scope": "Nexus state", "authority_scope": "TruthKernel", "fallbacks": ["explicit UNKNOWN"]},
     "NEXUS_OPERATION_REQUEST": {"health": "governed intake", "cost_class": "included", "read_or_write": "submit-only", "privacy_scope": "approved request", "authority_scope": "Nexus validates", "fallbacks": ["explain blocked"]},
+    "CAPABILITY_STATUS": {"health": "live-read", "cost_class": "included", "read_or_write": "read", "privacy_scope": "capability metadata", "authority_scope": "read allowlist", "fallbacks": []},
     "REPORT_ARTIFACT_READ": {"health": "provenance-dependent", "cost_class": "included", "read_or_write": "read", "privacy_scope": "approved artifacts", "authority_scope": "truth validation", "fallbacks": ["historical-only"]},
 }
 
@@ -25,7 +26,7 @@ MODEL_CAPABILITY_MARKER = "nova_capability_request"
 def validate_model_request(request: Dict[str, Any]) -> Dict[str, Any]:
     """Validate a model-selected request without choosing a resource for it."""
     name = str(request.get("capability", "")).upper()
-    aliases = {"PUBLIC_WEB_SEARCH": "public_web_search", "PUBLIC_WEB_RETRIEVAL": "public_web_retrieval", "ALPHA_RESEARCH": "submit_alpha_request"}
+    aliases = {"PUBLIC_WEB_SEARCH": "public_web_search", "PUBLIC_WEB_RETRIEVAL": "public_web_retrieval", "ALPHA_RESEARCH": "submit_alpha_request", "CAPABILITY_STATUS": "get_live_capability_status"}
     if name not in aliases:
         return {"status": "rejected", "error": "capability-not-allowlisted", "capability": name}
     arguments = request.get("arguments") if isinstance(request.get("arguments"), dict) else {}
