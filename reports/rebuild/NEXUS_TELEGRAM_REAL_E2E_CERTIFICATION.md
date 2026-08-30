@@ -33,3 +33,10 @@ The loaded Nova job is a separate bot/token stream and is not a competing
 consumer for the Nexus Hermes bot. Legacy operator/Hermes plist files are
 present on disk but are not loaded. Telegram reports no webhook configured;
 the canonical Nexus stream uses polling.
+
+Post-renderer durable receipts certify five live intent classes through the
+canonical consumer: STATE_QUERY, SYSTEM_OPERATIONS, RESEARCH,
+REPO_INTELLIGENCE, and RAY_REVIEW. Each has an authorized sender, canonical
+WP5 route, successful delivery, and one processing receipt. A conversation-lane
+receipt is not present, so conversation communication quality remains
+NOT_PROVEN and WP5 remains in progress pending one bounded conversation test.
