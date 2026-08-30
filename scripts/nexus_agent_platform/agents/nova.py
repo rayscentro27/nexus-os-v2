@@ -1182,6 +1182,53 @@ def _canonical_awareness_capability(text: str) -> Optional[str]:
     return None
 
 
+def classify_company_question(text: str) -> str:
+    """Classify the user's information need before selecting a company read.
+
+    This is intentionally a small semantic safety boundary, not a second
+    router.  It prevents advisory questions (for example, improving
+    onboarding) from being reduced to a nearby factual counter while keeping
+    current-state questions on the deterministic evidence path.
+    """
+    lower = re.sub(r"\s+", " ", (text or "").lower()).strip()
+    if not lower:
+        return "GENERAL_CONVERSATION"
+    if _detect_write_request(lower):
+        return "OPERATIONAL"
+    if any(phrase in lower for phrase in ("what do you think about", "tell me what you think about", "what's your opinion on")):
+        return "GENERAL_CONVERSATION"
+    research = any(word in lower for word in ("research", "competitor", "competitors", "sources", "investigate", "find out"))
+    operational = any(word in lower for word in ("send", "submit", "delegate", "run", "restart", "approve", "execute", "handle this"))
+    factual = any(phrase in lower for phrase in (
+        "how many", "what is the count", "is nexus", "how is nexus",
+        "what is running", "what happened", "what did research find",
+        "which items are waiting", "what is the current status",
+    ))
+    advisory = any(phrase in lower for phrase in (
+        "what do you think", "do you think", "how could", "how can we",
+        "better way", "should we", "what should we", "recommend",
+        "worth pursuing", "focus on today", "improve", "strategy",
+        "what matters most", "is there a better",
+    ))
+    analytical = any(phrase in lower for phrase in (
+        "why ", "compare ", "tradeoff", "what caused", "what would",
+        "explain", "what changed", "does it make sense",
+    ))
+    if operational:
+        return "OPERATIONAL"
+    if research:
+        return "RESEARCH"
+    if advisory:
+        return "ADVISORY"
+    if analytical:
+        return "ANALYTICAL"
+    if factual:
+        return "FACTUAL"
+    if any(word in lower for word in ("hello", "hi ", "good morning", "good afternoon", "how are you")):
+        return "GENERAL_CONVERSATION"
+    return "GENERAL_CONVERSATION"
+
+
 # ─── Nova-Owned Supabase Tool ──────────────────────────────
 
 def _nova_search_supabase(
@@ -3468,6 +3515,8 @@ def _capability_gate(state: AgentState) -> AgentState:
     text = state.user_message
     chat_id = state.metadata.get("chat_id", 0)
     trace_id = f"nova_gate_{chat_id}_{int(time.time())}"
+    question_type = classify_company_question(text)
+    state.metadata["question_type"] = question_type
 
     # ── Priority 1: Provenance follow-up ──
     if _detect_provenance_followup(text):
@@ -3643,10 +3692,59 @@ def _capability_gate(state: AgentState) -> AgentState:
                 state.assistant_response = "I couldn't submit that safely because the governed Nexus request path was unavailable. Nothing was executed."
             return state
 
+    # A contextual request for more research uses the existing approved search
+    # capability first. It is deliberately read-only and carries the prior
+    # assistant turn only as a research topic, never as authority or fact.
+    if question_type == "RESEARCH" and any(term in text.lower() for term in ("free way", "research this further", "look into this", "check this further")):
+        history = load_memory(chat_id)
+        prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
+        if prior:
+            from nexus_agent_platform.capabilities.shared import execute_shared_capability
+            result = execute_shared_capability(
+                "hermes_nova", "general_search",
+                {"query": f"{text}\nContext topic: {prior[:1200]}"}, trace_id=trace_id,
+            )
+            state.metadata["capability_gate"] = {
+                "decision": "free_first_research",
+                "capability": "general_search",
+                "question_type": question_type,
+                "build_sha": BUILD_SHA,
+                "trace_id": trace_id,
+            }
+            state.metadata["capability_result"] = {
+                "tool": "approved_free_search",
+                "query_type": "free_first_research",
+                "status": result.get("status", "unknown"),
+                "data": result.get("data", {}),
+                "provenance": result.get("provenance", {}),
+                "trace_id": trace_id,
+            }
+            return state
+
+    # Advisory and analytical questions need reasoning, not a nearby counter.
+    # A narrow operational-summary exception gives "what should we focus on"
+    # current company evidence without allowing onboarding/strategy advice to
+    # fall through to client-count or schema-planner lookup logic.
+    if question_type in {"ADVISORY", "ANALYTICAL"}:
+        lower = text.lower()
+        if any(term in lower for term in ("focus on today", "what happened", "catch me up", "morning brief")):
+            canonical_capability = "get_operational_summary"
+        else:
+            state.metadata["capability_gate"] = {
+                "decision": "reasoning_first",
+                "capability": None,
+                "question_type": question_type,
+                "build_sha": BUILD_SHA,
+                "trace_id": trace_id,
+            }
+            state.metadata["capability_result"] = None
+            return state
+    else:
+        canonical_capability = _canonical_awareness_capability(text)
+
     # Canonical current-state awareness must outrank the broad schema planner.
     # Otherwise a question such as "what did Alpha find most recently?" can be
     # answered from the historical study snapshot instead of the live ledger.
-    canonical_capability = _canonical_awareness_capability(text)
     if canonical_capability:
         from nexus_agent_platform.capabilities.shared import execute_shared_capability
         try:
@@ -3888,8 +3986,8 @@ def _build_context(state: AgentState) -> AgentState:
     # Company context is a bounded read-only view over canonical reports and
     # runtime state. It is injected only for company/Nexus questions; ordinary
     # conversation remains lightweight and does not receive operational data.
-    company_terms = ("nexus", "company", "business", "ray", "research", "report", "client", "what happened", "today")
-    if any(term in state.user_message.lower() for term in company_terms):
+    company_terms = ("nexus", "company", "business", "ray", "research", "report", "client", "what happened", "today", "focus", "onboarding", "worth pursuing", "overnight")
+    if any(term in state.user_message.lower() for term in company_terms) or state.metadata.get("question_type") in {"ADVISORY", "ANALYTICAL", "RESEARCH", "OPERATIONAL"}:
         from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
         company_context = build_company_context()
         state.metadata["company_context"] = company_context

@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
-from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _present_response
+from nexus_agent_platform.agents.nova import _canonical_awareness_capability, _present_response, classify_company_question, _capability_gate
 from nexus_agent_platform.adapters.state_adapter import AgentState
 from nexus_agent_platform.nexus_command_acknowledgement import acknowledge_command, submit_nexus_request
 
@@ -78,3 +78,57 @@ def test_company_context_does_not_promote_stale_brief_recommendations():
     if not context["data_quality"]["daily_brief_current"]:
         assert context["recommended_priorities"] == []
         assert context["business"]["top_priority"] == {}
+
+
+def test_question_types_separate_fact_advice_research_and_conversation():
+    assert classify_company_question("How many clients are onboarding?") == "FACTUAL"
+    assert classify_company_question("Do you think there is a better way to improve onboarding?") == "ADVISORY"
+    assert classify_company_question("Did Research find anything worth pursuing?") == "RESEARCH"
+    assert classify_company_question("What do you think about Tesla?") == "GENERAL_CONVERSATION"
+
+
+def test_advisory_onboarding_does_not_select_client_count():
+    state = AgentState(
+        agent_id="hermes_nova",
+        user_message="Do you think there is a better way to improve our client onboarding?",
+        metadata={"chat_id": 0},
+    )
+    result = _capability_gate(state)
+    gate = result.metadata.get("capability_gate", {})
+    assert result.metadata.get("question_type") == "ADVISORY"
+    assert gate.get("decision") == "reasoning_first"
+    assert gate.get("capability") is None
+
+
+def test_advisory_focus_today_uses_current_operational_context(monkeypatch):
+    calls = []
+
+    def fake_execute(agent_id, capability, arguments=None, **kwargs):
+        calls.append(capability)
+        return {"status": "success", "data": {}, "provenance": {}}
+
+    monkeypatch.setattr("nexus_agent_platform.capabilities.shared.execute_shared_capability", fake_execute)
+    state = AgentState(agent_id="hermes_nova", user_message="What do you think we should focus on today?", metadata={"chat_id": 0})
+    result = _capability_gate(state)
+    assert result.metadata.get("question_type") == "ADVISORY"
+    assert calls == ["get_operational_summary"]
+
+
+def test_contextual_free_research_uses_approved_search(monkeypatch, tmp_path):
+    monkeypatch.setenv("NOVA_MEMORY_DIR", str(tmp_path))
+    from nexus_agent_platform.agents import nova
+    monkeypatch.setattr(nova, "load_memory", lambda chat_id: [
+        {"role": "assistant", "content": "Opportunity A may reduce onboarding friction."},
+    ])
+    calls = []
+
+    def fake_execute(agent_id, capability, arguments=None, **kwargs):
+        calls.append((capability, arguments))
+        return {"status": "success", "data": {"results": []}, "provenance": {}}
+
+    monkeypatch.setattr("nexus_agent_platform.capabilities.shared.execute_shared_capability", fake_execute)
+    state = AgentState(agent_id="hermes_nova", user_message="Is there a free way to research this further?", metadata={"chat_id": 42})
+    result = _capability_gate(state)
+    assert result.metadata["capability_gate"]["decision"] == "free_first_research"
+    assert calls and calls[0][0] == "general_search"
+    assert "Opportunity A" in calls[0][1]["query"]

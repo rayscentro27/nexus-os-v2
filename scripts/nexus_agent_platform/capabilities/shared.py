@@ -1150,10 +1150,30 @@ def _handle_recent_research(
     trace_id: str = "",
 ) -> Dict[str, Any]:
     """Read recent research runs and results from canonical source."""
-    from nexus_agent_platform.agents.hermes import _get_research_history
+    # Prefer the canonical Alpha decision artifact.  The older Hermes history
+    # adapter is retained only as a fallback for installations that have not
+    # produced the structured Alpha ledger yet.
+    from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
 
     query_start = datetime.now(timezone.utc)
     try:
+        canonical = read_operational_capability("ALPHA_LATEST", arguments or {})
+        if canonical.get("status") == "OK":
+            return {
+                "status": "success",
+                "capability": "get_recent_research",
+                "source": canonical.get("source_path"),
+                "source_type": canonical.get("source_type", "current_structured_report"),
+                "freshness": canonical.get("freshness", "UNKNOWN"),
+                "access_boundary": "approved read capability only",
+                "data": canonical.get("data", {}),
+                "error": None,
+                "provenance": {**canonical.get("provenance", {}), "capability": "get_recent_research", "trace_id": trace_id},
+            }
+        # Keep compatibility with the legacy source, but make its fallback
+        # explicit in provenance rather than presenting it as Alpha current
+        # state.
+        from nexus_agent_platform.agents.hermes import _get_research_history
         raw = _get_research_history()
     except Exception as exc:
         query_end = datetime.now(timezone.utc)

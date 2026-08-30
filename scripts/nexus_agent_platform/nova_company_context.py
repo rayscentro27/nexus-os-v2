@@ -64,6 +64,18 @@ def build_company_context() -> Dict[str, Any]:
     brief_age = _age_seconds(brief_timestamp)
     brief_is_current = brief_age is not None and brief_age <= 48 * 60 * 60
     review_items = _governed_review_items()
+    # Prefer the canonical structured readers for live Nexus and Alpha state.
+    # The daily brief remains useful as a dated briefing source, but it is not
+    # allowed to stand in for current operational or research truth.
+    try:
+        from nexus_agent_platform.capabilities.operational_reads import read_operational_capability
+        nexus_read = read_operational_capability("SYSTEM_HEALTH")
+        alpha_read = read_operational_capability("ALPHA_LATEST")
+    except Exception as exc:
+        nexus_read = {"status": "UNAVAILABLE", "errors": [str(exc)], "data": {}}
+        alpha_read = {"status": "UNAVAILABLE", "errors": [str(exc)], "data": {}}
+    canonical_operations = nexus_read.get("data", {}) if nexus_read.get("status") == "OK" else {"status": "UNKNOWN", "reason": "Canonical Nexus health read unavailable."}
+    canonical_research = alpha_read.get("data", {}) if alpha_read.get("status") == "OK" else {"status": "UNKNOWN", "reason": "Canonical Alpha research read unavailable."}
     safety = program.get("safety") if isinstance(program.get("safety"), dict) else {}
     return {
         "context_type": "NOVA_COMPANY_CONTEXT_VIEW",
@@ -81,8 +93,8 @@ def build_company_context() -> Dict[str, Any]:
         },
         "overnight_activity": brief.get("loop_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."},
         "what_changed": brief.get("opportunity_updates", []) if brief_is_current else [],
-        "research": brief.get("research_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale; use current research artifacts."},
-        "operations": brief.get("system_health", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale; use current runtime evidence."},
+        "research": {"canonical_alpha": canonical_research, "brief": brief.get("research_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
+        "operations": {"canonical_nexus": canonical_operations, "brief": brief.get("system_health", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
         "business": {
             "top_priority": brief.get("top_priority", {}) if brief_is_current else {},
             "revenue_status": brief.get("revenue_status", {}) if brief_is_current else {},
@@ -96,7 +108,7 @@ def build_company_context() -> Dict[str, Any]:
         "blockers": brief.get("blockers", []) if brief_is_current else [{"reason": "Daily brief stale; current blockers not established."}],
         "unknown": [{"daily_brief_age_seconds": brief_age, "daily_brief_timestamp": brief_timestamp}, "Current company context is a bounded view; revalidate consequential facts."],
         "recommended_priorities": brief.get("recommended_actions", []) if brief_is_current else [],
-        "sources": [str(path.relative_to(ROOT)) for path in (program_path, operator_path) if path.exists()] + ([str(brief_path.relative_to(ROOT))] if brief_is_current else []),
+        "sources": [str(path.relative_to(ROOT)) for path in (program_path, operator_path) if path.exists()] + ([str(brief_path.relative_to(ROOT))] if brief_is_current else []) + [nexus_read.get("source_path", "UNKNOWN"), alpha_read.get("source_path", "UNKNOWN")],
         "authority": "CONTEXT_ONLY_TRUTHKERNEL_REVALIDATES",
         "data_quality": {"daily_brief_current": brief_is_current, "daily_brief_timestamp": brief_timestamp, "review_source": "governed.approvals"},
     }
