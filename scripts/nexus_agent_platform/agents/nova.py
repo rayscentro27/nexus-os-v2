@@ -1229,6 +1229,12 @@ def classify_company_question(text: str) -> str:
     return "GENERAL_CONVERSATION"
 
 
+def classify_question_domains(text: str) -> List[str]:
+    """Expose domain-aware source selection without granting capabilities."""
+    from nexus_agent_platform.domain_source_policy import classify_domain
+    return classify_domain(text)
+
+
 # ─── Nova-Owned Supabase Tool ──────────────────────────────
 
 def _nova_search_supabase(
@@ -3521,6 +3527,7 @@ def _capability_gate(state: AgentState) -> AgentState:
     trace_id = f"nova_gate_{chat_id}_{int(time.time())}"
     question_type = classify_company_question(text)
     state.metadata["question_type"] = question_type
+    state.metadata["question_domains"] = classify_question_domains(text)
 
     # ── Priority 1: Provenance follow-up ──
     if _detect_provenance_followup(text):
@@ -3745,6 +3752,13 @@ def _capability_gate(state: AgentState) -> AgentState:
             return state
     else:
         canonical_capability = _canonical_awareness_capability(text)
+
+    # Nexus is not the default evidence source for outside-world questions.
+    # Keep those requests on Nova's conversation/research path unless the user
+    # explicitly combines them with Nexus-controlled facts.
+    domains = state.metadata.get("question_domains", [])
+    if domains and "NEXUS_OPERATIONS" not in domains and "CLIENT_DATA" not in domains and "INTERNAL_COMPANY_BUSINESS" not in domains:
+        canonical_capability = None
 
     # Canonical current-state awareness must outrank the broad schema planner.
     # Otherwise a question such as "what did Alpha find most recently?" can be

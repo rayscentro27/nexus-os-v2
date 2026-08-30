@@ -325,6 +325,9 @@
     "alpha_artifact_preferred_for_research_reads": true,
     "truth_capability_map_campaign_id": "HG-WP6.5-NOVA-TRUTH-CAPABILITY-MAP-AND-RESTRICTION-AUDIT-20260830-01",
     "truth_capability_map_status": "IMPLEMENTED_BOUNDED_WAITING_REAL_TELEGRAM_RETEST",
+    "domain_source_policy_campaign_id": "HG-WP6.5-NOVA-DOMAIN-AWARE-TRUTH-AND-RESEARCH-20260830-01",
+    "domain_source_policy_status": "IMPLEMENTED_BOUNDED_WAITING_REAL_TELEGRAM_RETEST",
+    "nova_nexus_not_universal_source": true,
     "nova_truth_view": "IMPLEMENTED_PROVENANCE_PRESERVING_READ_ADAPTER",
     "nova_capability_maps": [
       "docs/architecture/NOVA_NEXUS_OS_CAPABILITY_MAP.md",

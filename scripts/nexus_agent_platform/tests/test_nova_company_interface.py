@@ -148,3 +148,23 @@ def test_truth_view_preserves_provenance_and_is_not_a_second_store(monkeypatch):
     assert result["authority"] == "NEXUS_TRUTHKERNEL_CANONICAL_READS"
     assert result["independent_truth_store"] is False
     assert result["claims"][0]["source"] == "current.json"
+
+
+def test_domain_policy_selects_sources_by_subject_not_verification_alone():
+    from nexus_agent_platform.domain_source_policy import classify_domain, source_plan
+    assert "NEXUS_OPERATIONS" in classify_domain("Is Active Operator running?")
+    assert "CLIENT_DATA" in classify_domain("How many real clients do we have?")
+    assert "INTERNAL_RESEARCH_ALPHA" in classify_domain("What did Research find last night?")
+    public = source_plan("Can an AI automation agency realistically make $10,000 a month?")
+    assert "PUBLIC_BUSINESS_RESEARCH" in public["domains"]
+    assert public["nexus_relevant"] is False
+
+
+def test_outside_world_question_does_not_select_nexus_canonical_read(monkeypatch):
+    from nexus_agent_platform.agents.nova import _capability_gate
+    calls = []
+    monkeypatch.setattr("nexus_agent_platform.capabilities.shared.execute_shared_capability", lambda *a, **k: calls.append(a[1]) or {"status": "success", "data": {}, "provenance": {}})
+    state = AgentState(agent_id="hermes_nova", user_message="What are the benefits of an LLC?", metadata={"chat_id": 0})
+    result = _capability_gate(state)
+    assert "NEXUS_OPERATIONS" not in result.metadata["question_domains"]
+    assert not calls
