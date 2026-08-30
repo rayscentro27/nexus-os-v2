@@ -44,21 +44,21 @@ def classify_intent(text: str) -> str:
     value = re.sub(r"[?.!]+$", "", text.strip().lower())
     if re.fullmatch(r"(?:hello|hi|hey)(?: nexus)?(?:[, :\-].*)?", value) or re.fullmatch(r"(?:good morning|good afternoon|good evening)(?: nexus)?", value) or re.search(r"\bhow are you(?: today)?\b", value):
         return "CONVERSATION"
-    if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now", "what is the current status of nexus", "what's working right now", "what is blocked", "what needs my attention", "what items currently need my review", "is active operator running", "what happened with the last loop", "what is the health of hermes"} or re.fullmatch(r"(?:what is|what's) (?:the )?(?:current )?status of nexus", value):
+    if value in {"/status", "status", "how is nexus doing", "what is nexus status", "what's nexus status", "what is running right now", "what is the current status of nexus", "what's working right now", "what is blocked", "what needs my attention", "is active operator running", "what happened with the last loop", "what is the health of hermes"} or re.fullmatch(r"(?:what is|what's) (?:the )?(?:current )?status of nexus", value):
         return "STATE_QUERY"
     if value in {"who are you", "what can you do", "/help", "help"}:
         return "CONVERSATION"
-    if re.search(r"\b(system operations|daily operations|operations check|system check|today'?s operations)\b", value) or value in {"/run system_operations", "/run daily_operations"}:
-        return "SYSTEM_OPERATIONS"
     if value == "/run system_health" or re.search(r"\b(system health|health check|health recovery)\b", value):
         return "SYSTEM_HEALTH"
+    if re.search(r"\b(system operations|daily operations|operations check|system check|today'?s operations)\b", value) or value in {"/run system_operations", "/run daily_operations"}:
+        return "SYSTEM_OPERATIONS"
     if re.search(r"\b(research|look up|investigate)\b", value) and not re.search(r"\brepo", value):
         return "RESEARCH"
     if re.search(r"\b(repo|repository|git status|codebase)\b", value):
         return "REPO_INTELLIGENCE"
     if re.search(r"\b(funding readiness|funding|bankability|credit readiness)\b", value):
         return "FUNDING_READINESS"
-    if re.search(r"\b(review item|ray review|needs my attention|what needs my attention)\b", value):
+    if re.search(r"\b(review item|ray review|items? currently need my review|prioritize.*review|what needs my review)\b", value):
         return "RAY_REVIEW"
     if value.startswith(("/request ", "/work ", "create a work order", "turn this into a work order")):
         return "WORK_ORDER"
@@ -103,6 +103,16 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
     if not payload:
         return "RESULT_INSUFFICIENT_FOR_SUMMARY\n\nThe verified loop completed, but its result did not contain enough structured detail to answer this request. No additional claim is being made.\n\nDo you need Ray? No for this rendering issue; the executor contract needs improvement."
     if intent in {"SYSTEM_OPERATIONS", "SYSTEM_HEALTH"}:
+        if intent == "SYSTEM_HEALTH":
+            health = payload.get("health", {})
+            services = payload.get("services", {})
+            return ("Nexus system health\n\n"
+                    f"OVERALL STATUS\n{payload.get('overall_status', health.get('overall_status', 'UNKNOWN'))}\n\n"
+                    f"CURRENT FINDINGS\n• Services confirmed active: {health.get('active_services', 0)}\n• Degraded: {health.get('degraded_services', 0)}\n• Failed: {health.get('failed_services', 0)}\n• Unknown: {health.get('unknown_services', 0)}\n"
+                    f"• Service detail: {', '.join(f'{name} {value}' for name, value in services.items()) or 'not available'}\n\n"
+                    f"WHAT THIS MEANS\n{payload.get('summary', 'Health evidence was collected.')} Recovery was {'not needed because the observed state is healthy.' if payload.get('recovery', {}).get('execution') == 'NOT_NEEDED' else 'not automatically executed.'}\n\n"
+                    f"NEXT ACTION\n{'; '.join(payload.get('health', {}).get('warnings', [])[:2]) or 'Continue observing live health evidence.'}\n\n"
+                    f"DO YOU NEED RAY? {'Yes for consequential recovery.' if ray_required else 'No; this was a read-only health check.'}\n\nEVIDENCE\nVerified Nexus receipt recorded.")
         findings = payload.get("findings", {})
         stale = findings.get("stale_items") or []
         metrics = payload.get("metrics", {})
@@ -113,8 +123,9 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
                 f"• Reports fresh: {findings.get('reports_fresh', 'not reported')}; stale: {findings.get('reports_stale', 'not reported')}.\n"
                 f"• Stale items: {', '.join(stale[:5]) if stale else 'none reported'}.\n"
                 f"• Blocked actions: {', '.join(findings.get('blocked_actions', [])) if findings.get('blocked_actions') else 'none reported'}.\n\n"
-                f"• Services: {', '.join(f'{name} {value}' for name, value in services.items()) if services else 'No per-service health detail was present in this report.'}.\n\n"
-                "WHAT THIS MEANS\nThe check generated fresh operational evidence; Active Operator remains paused by policy.\n\n"
+                f"• Services: {', '.join(f'{name} {value}' for name, value in services.items()) if services else 'No per-service health detail was present in this report.'}.\n"
+                f"• Active Operator: {findings.get('operator', {}).get('state', 'UNKNOWN')} ({findings.get('operator', {}).get('mode', 'unknown policy')}); last run {findings.get('operator', {}).get('last_run', 'not reported')}.\n\n"
+                f"WHAT THIS MEANS\n{payload.get('summary', 'Fresh operational evidence was collected.')} The service classifications above are based on current telemetry; stale reports are not treated as live service health.\n\n"
                 f"NEXT ACTION\n{'; '.join(findings.get('next_actions', [])[:2]) if findings.get('next_actions') else 'Continue monitoring fresh evidence.'}\n\n"
                 f"DO YOU NEED RAY? {'Yes for any consequential action.' if ray_required else 'No for this bounded check.'}\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     if intent == "RESEARCH":
@@ -133,7 +144,9 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
         group_text = ", ".join(f"{key}: {value}" for key, value in groups.items()) or "none"
         verification = payload.get("verification", {})
         pushed = payload.get("origin_relationship") == "UP_TO_DATE"
-        return (f"Nexus OS v2 repository — Repository intelligence:\n\nOVERALL STATUS\n{payload.get('summary', 'Repository status was inspected read-only.')}\n\nCURRENT CHECKPOINT\n"
+        changes = payload.get("active_operator_changes", [])
+        change_text = "\n\n".join(f"TOP CHANGE {i}\n• {item.get('commit')}: {item.get('message')}\n• WHAT CHANGED: {', '.join(item.get('paths', [])) or 'path details unavailable'}\n• WHY IT MATTERS: {item.get('why_it_matters')}\n• REAL-WORLD PROVEN: {item.get('real_world_proven')}\n• EVIDENCE: {item.get('evidence')}" for i, item in enumerate(changes[:3], 1))
+        return (f"Nexus OS v2 repository — Repository intelligence:\n\nOVERALL STATUS\n{payload.get('summary', 'Repository status was inspected read-only.')}\n\nACTIVE OPERATOR STABILITY CHANGES\n{change_text}\n\nCURRENT CHECKPOINT\n"
                 f"• Branch: {payload.get('branch') or 'detached/unreported'}\n• HEAD: {payload.get('head_short') or str(payload.get('head', ''))[:7]} — {payload.get('head_message', 'not reported')}\n"
                 f"• Origin: {payload.get('origin_relationship', 'not reported')} (ahead {payload.get('ahead_count', 'n/a')}, behind {payload.get('behind_count', 'n/a')}); pushed checkpoint: {'yes' if pushed else 'not proven'}\n\n"
                 f"WORKTREE\n• {payload.get('worktree_state', 'not reported')}; modified {payload.get('modified_count', 0)}, untracked {payload.get('untracked_count', 0)}, staged {payload.get('staged_count', 0)}, unstaged {payload.get('unstaged_count', 0)}\n"
@@ -142,7 +155,14 @@ def _render_execution(intent: str, payload: dict[str, Any], *, ray_required: boo
                 f"WHAT THIS MEANS\nNo repository mutation occurred. The worktree details distinguish current campaign/report artifacts from other local changes; potentially risky source changes counted: {payload.get('potentially_risky_source_changes', 0)}.\n\nNEXT ACTION\n{payload.get('open_work', 'Review the grouped changes and run relevant verification.')}\n\nDO YOU NEED RAY? No for this read-only inspection.\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     if intent == "RAY_REVIEW":
         item = payload
-        return ("Ray review\n\nITEM\n" + str(item.get("what_happened", "No review item details were returned.")) + "\n\nWHY RAY IS NEEDED\n" + str(item.get("what_is_true_now", "Verified facts only.")) + "\n\nDECISION REQUIRED\n" + str(item.get("what_happens_next", "Review the bounded internal item.")) + "\n\nRISK / CONSEQUENCE\nNo external action was performed.\n\nRECOMMENDED DECISION\n" + str(item.get("recommended_decision", "Review the verified item; no approval is inferred.")) + "\n\nPRIORITY\n" + str(item.get("priority", "NORMAL")) + "\n\nEVIDENCE\nVerified Nexus receipt recorded.")
+        rows = item.get("review_items", [])
+        if not rows:
+            return "Ray review\n\nYou do not currently have any required review items.\n\nEVIDENCE\nVerified Nexus receipt recorded."
+        rendered = []
+        for i, row in enumerate(rows[:5], 1):
+            rendered.append(f"ITEM {i}\n{row.get('item')}\n\nPRIORITY\n{row.get('priority')}\n\nWHY RAY IS NEEDED\n{row.get('why_ray_needed')}\n\nRECOMMENDED DECISION\n{row.get('recommendation')}\n\nBLOCKER / CONSEQUENCE\n{row.get('consequence')}")
+        return (f"Ray review\n\n{item.get('summary')}\n\n" + "\n\n".join(rendered) +
+                f"\n\nWHAT TO REVIEW FIRST\n{rows[0].get('item')}\n\nEVIDENCE\nVerified Nexus receipt recorded.")
     return "The requested bounded work completed successfully. Verified Nexus receipt recorded."
 
 
@@ -185,8 +205,9 @@ def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str
     if resolved["status"] != "RESOLVED":
         return "I could not resolve that request to a certified Nexus department and loop. No work was executed.", {"route": "NEXUS_ROUTING", "outcome": "BLOCKED", **resolved}
     context: dict[str, Any] = {"input_source": input_source}
-    if resolved["intent_class"] == "RESEARCH":
+    if resolved["intent_class"] in {"RESEARCH", "REPO_INTELLIGENCE"}:
         context["question"] = re.sub(r"\s+", " ", text).strip()[:240]
+    if resolved["intent_class"] == "RESEARCH":
         context["live_private_searxng"] = input_source == "telegram"
     if resolved["intent_class"] == "RAY_REVIEW":
         context.update({"what_happened": "Telegram requested a bounded internal review item", "what_is_true_now": "No external action was performed", "what_happens_next": "Review item remains governed", "do_you_need_ray": True})
@@ -205,7 +226,7 @@ def execute(text: str, *, input_source: str = "internal") -> tuple[str, dict[str
         "NEXUS_CREDIT_BUSINESS_FUNDING": "truthkernel.authority",
         "NEXUS_RAY_REVIEW": "truthkernel.authority",
     }
-    metadata = {"route": "NEXUS_DEPARTMENT_LOOP", "outcome": "ANSWERED" if result.final_state == "SUCCEEDED_VERIFIED" else "BLOCKED", "execution_status": result.final_state, "run_id": result.run_id, "receipt_id": result.receipt_id, "receipt_path": result.receipt_path, "capability_id": capability_by_loop.get(resolved["loop"]), "execution_target": "MAC_LOCAL" if resolved["loop"] not in {"NEXUS_RESEARCH_INTELLIGENCE"} else "HYBRID_MAC_ORACLE", "model_provider": "Nexus deterministic", "model_name": "none", **resolved}
+    metadata = {"route": "NEXUS_DEPARTMENT_LOOP", "lane": "EXECUTION_LANE", "outcome": "ANSWERED" if result.final_state == "SUCCEEDED_VERIFIED" else "BLOCKED", "execution_status": result.final_state, "run_id": result.run_id, "receipt_id": result.receipt_id, "receipt_path": result.receipt_path, "capability_id": capability_by_loop.get(resolved["loop"]), "execution_target": "MAC_LOCAL" if resolved["loop"] not in {"NEXUS_RESEARCH_INTELLIGENCE"} else "HYBRID_MAC_ORACLE", "model_provider": "Nexus deterministic", "model_name": "none", **resolved}
     if result.error:
         metadata["error"] = result.error
     response = _render_execution(resolved["intent_class"], _verified_payload(result.receipt_path), ray_required=resolved["authority"] != "internal_read_only")

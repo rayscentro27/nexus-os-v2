@@ -75,8 +75,10 @@ def test_research_result_has_synthesis_contract():
 
 def test_review_state_query_reads_actual_queue_without_creating_work():
     response, metadata = execute("What items currently need my review?")
-    assert metadata["lane"] == "READ_ONLY_STATE_LANE"
-    assert "Verified Nexus review state was checked" in response
+    assert classify_intent("What items currently need my review?") == "RAY_REVIEW"
+    assert metadata["lane"] == "EXECUTION_LANE"
+    assert "WHAT TO REVIEW FIRST" in response
+    assert "Verified Nexus receipt recorded" in response
 
 
 def test_department_registry_has_real_departments_and_shared_skill_mapping():

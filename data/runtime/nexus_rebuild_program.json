@@ -265,6 +265,12 @@
     "NEXUS_RAY_REVIEW": "NOT_PROVEN"
   },
   "wp6_5_evidence_report": "reports/rebuild/NEXUS_WP6_5_CURRENT_LOOP_REAL_WORLD_CERTIFICATION.md",
+  "wp6_5_telegram_repair_state": "REPAIRED_WAITING_FRESH_REAL_RETEST",
+  "wp6_5_telegram_repair_report": "reports/rebuild/NEXUS_WP6_5_TELEGRAM_INTEGRATION_REPAIR.md",
+  "wp6_5_telegram_failed_evidence_preserved": true,
+  "wp6_5_telegram_routing_defects_repaired": ["RAY_REVIEW_STATE_QUERY_PRECEDENCE", "SYSTEM_HEALTH_ROUTE_SEPARATION"],
+  "wp6_5_telegram_result_rendering_defects_repaired": ["DAILY_LIVE_HEALTH_DETAILS", "REPO_QUESTION_SPECIFIC_ANALYSIS", "RAY_REVIEW_QUEUE_SUMMARY"],
+  "wp6_5_telegram_fresh_retest_required": true,
   "next_action": "Continue passive observation at 15-minute stability interval; queued research must be selected only by the next OS-scheduled cycle.",
   "safety": {
     "active_operator_paused": true,

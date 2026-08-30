@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from collections import Counter
@@ -33,16 +34,92 @@ DEFINITIONS = {
 }
 
 
+def _operator_snapshot() -> dict[str, Any]:
+    path = ROOT / "reports/runtime/nexus_active_operator_heartbeat_latest.json"
+    try:
+        heartbeat = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        heartbeat = {}
+    health = str(heartbeat.get("operator_health", "UNKNOWN")).upper()
+    run_status = str(heartbeat.get("run_status", "UNKNOWN")).upper()
+    state = "RUNNING" if health == "HEALTHY" else "DEGRADED" if health else "UNKNOWN"
+    return {"state": state, "health": health, "run_status": run_status,
+            "last_run": heartbeat.get("last_run"),
+            "last_successful_run": heartbeat.get("last_successful_run"),
+            "mode": "BOUNDED_INTERNAL_ONLY", "policy": "external actions blocked"}
+
+
+def _service_health_snapshot() -> dict[str, Any]:
+    """Read the shared live health capability without treating old registry rows as health."""
+    try:
+        from nexus_agent_platform.capabilities.shared import _handle_system_health_inner
+        raw = _handle_system_health_inner({}, trace_id="governed-loop")
+        data = raw.get("data", {}) if isinstance(raw, dict) else {}
+    except Exception as exc:  # health reporting must preserve uncertainty
+        return {"overall_status": "UNKNOWN", "error": type(exc).__name__, "services": {}}
+    services = {}
+    for item in data.get("process_states", []):
+        if isinstance(item, dict) and item.get("process_id"):
+            services[str(item["process_id"])] = str(item.get("state", "UNKNOWN"))
+    return {"overall_status": data.get("overall_status", "UNKNOWN"),
+            "active_services": data.get("active_services", 0),
+            "degraded_services": data.get("degraded_services", 0),
+            "failed_services": data.get("failed_services", 0),
+            "unknown_services": data.get("unknown_services", 0),
+            "services": services, "warnings": data.get("important_warnings", []),
+            "sources_checked": data.get("sources_checked", []),
+            "verification_complete": data.get("verification_complete", False)}
+
+
+def _daily_payload(report: Mapping[str, Any]) -> dict[str, Any]:
+    health = _service_health_snapshot()
+    operator = _operator_snapshot()
+    return {
+        "summary": "Nexus operations were inspected from fresh local runtime evidence.",
+        "status": "PASS",
+        "metrics": {"processes_total": report.get("process_registry", {}).get("total"),
+                    "processes_enabled": report.get("process_registry", {}).get("enabled")},
+        "findings": {
+            "reports_fresh": report.get("reports_freshness", {}).get("fresh_count"),
+            "reports_stale": report.get("reports_freshness", {}).get("stale_count"),
+            "stale_items": [x.get("name") for x in report.get("reports_freshness", {}).get("stale", [])],
+            "blocked_actions": report.get("blocked_actions", {}).get("blocked", []),
+            "next_actions": [], "services": health.get("services", {}),
+            "health": health, "operator": operator,
+        },
+        "technical_details": {"supabase": report.get("supabase", {}), "build": report.get("build", {})},
+        "blockers": health.get("warnings", []),
+        "recommendations": ["Refresh only stale internal evidence before relying on it."],
+    }
+
+
 def _run_daily(_: Mapping[str, Any]) -> Mapping[str, Any]:
     completed = subprocess.run([sys.executable, "scripts/operations/nexus_daily_monitor.py"], cwd=ROOT, capture_output=True, text=True, timeout=45, check=False)
     if completed.returncode != 0:
         return {"status": "FAIL", "entrypoint": "scripts/operations/nexus_daily_monitor.py", "side_effect": {"external": False}}
     report = json.loads((ROOT / "reports/runtime/nexus_daily_monitor_latest.json").read_text(encoding="utf-8"))
-    payload = {"summary": "Daily operations report generated.", "metrics": {"processes_total": report.get("process_registry", {}).get("total"), "processes_enabled": report.get("process_registry", {}).get("enabled")}, "findings": {"reports_fresh": report.get("reports_freshness", {}).get("fresh_count"), "reports_stale": report.get("reports_freshness", {}).get("stale_count"), "stale_items": [x.get("name") for x in report.get("reports_freshness", {}).get("stale", [])], "blocked_actions": report.get("blocked_actions", {}).get("blocked", []), "next_actions": report.get("next_actions", [])}, "technical_details": {"supabase": report.get("supabase", {}), "build": report.get("build", {})}}
+    payload = _daily_payload(report)
     return {"status": "PASS", "entrypoint": "scripts/operations/nexus_daily_monitor.py", "artifact": payload, "output_hash": hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest(), "side_effect": {"external": False, "local_reports": True}}
 
 
-def _repo(_: Mapping[str, Any]) -> Mapping[str, Any]:
+def _run_health(_: Mapping[str, Any]) -> Mapping[str, Any]:
+    health = _service_health_snapshot()
+    payload = {"summary": "Nexus health was checked from live governed telemetry.",
+               "status": "PASS", "overall_status": health.get("overall_status", "UNKNOWN"),
+               "health": health, "services": health.get("services", {}),
+               "findings": {"degraded": health.get("degraded_services", 0),
+                            "failed": health.get("failed_services", 0),
+                            "unknown": health.get("unknown_services", 0),
+                            "warnings": health.get("warnings", []),
+                            "sources_checked": health.get("sources_checked", [])},
+               "recovery": {"execution": "NOT_NEEDED" if health.get("overall_status") == "HEALTHY" else "NOT_AUTOMATICALLY_EXECUTED",
+                            "real_world_recovery": "NOT_PROVEN"}}
+    return {"status": "PASS", "entrypoint": "shared._handle_system_health_inner", "artifact": payload,
+            "output_hash": hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest(),
+            "side_effect": {"external": False, "read_only": True}}
+
+
+def _repo(context: Mapping[str, Any]) -> Mapping[str, Any]:
     def git(*args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, timeout=10, check=False)
 
@@ -104,6 +181,23 @@ def _repo(_: Mapping[str, Any]) -> Mapping[str, Any]:
         if len(parts) == 2:
             ahead, behind = int(parts[0]), int(parts[1])
     origin_relationship = "NO_UPSTREAM_CONFIGURED" if upstream.returncode else ("AHEAD" if ahead and ahead > 0 and not behind else "BEHIND" if behind and behind > 0 and not ahead else "UP_TO_DATE")
+    recent = []
+    if re.search(r"active operator|stability|timeout|scheduler|launchd", str(context.get("question", "")), re.I):
+        log = git("log", "-3", "--format=%H%x09%h%x09%s", "--", "scripts/operations/nexus_active_operator_runner.py", "ops/launchd/com.nexus.active-operator-v2.plist", "reports/rebuild")
+        for row in log.stdout.splitlines():
+            parts = row.split("\t", 2)
+            if len(parts) != 3:
+                continue
+            full, short, message = parts
+            paths = git("diff-tree", "--no-commit-id", "--name-only", "-r", full)
+            recent.append({"commit": short, "message": message, "paths": paths.stdout.splitlines()[:8],
+                           "why_it_matters": "This change is in the Active Operator/runtime evidence path.",
+                           "real_world_proven": "PROVEN_BY_RUNTIME_EVIDENCE" if "active_operator" in paths.stdout else "NOT_OPERATIONAL_PROOF",
+                           "evidence": "current Git history and path-scoped diff evidence"})
+    if not recent:
+        recent.append({"commit": head.stdout.strip()[:7], "message": subject.stdout.strip(), "paths": [],
+                       "why_it_matters": "Latest repository checkpoint.", "real_world_proven": "NOT_PROVEN",
+                       "evidence": "current Git HEAD"})
     payload = {
         "summary": f"{ROOT.name} is {'healthy with local changes' if changed else 'clean'} at the current checkpoint.",
         "status": "PASS",
@@ -117,9 +211,11 @@ def _repo(_: Mapping[str, Any]) -> Mapping[str, Any]:
         "changed_path_summary": {key: values[:5] for key, values in group_paths.items()},
         "expected_current_campaign_changes": expected, "pre_existing_unrelated_changes": preexisting,
         "generated_runtime_artifacts": generated, "potentially_risky_source_changes": risky,
-        "recent_change": subject.stdout.strip(), "test_status": "not run by read-only inspection",
+        "recent_change": subject.stdout.strip(), "active_operator_changes": recent[:3],
+        "open_work": "Review the three evidence-backed Active Operator changes above." if len(recent) > 1 else "No separate Active Operator change set was found in the current history.",
+        "test_status": "not run by read-only inspection",
         "verification": {"focused_tests": "not run by read-only inspection", "json_validation": "not run by read-only inspection", "secret_scan": "not run by read-only inspection"},
-        "known_blockers": [], "open_work": "Review grouped changes and run the relevant verification suite.",
+        "known_blockers": [],
         "recommendations": ["Keep campaign checkpoint separate from unrelated worktree changes."],
         "runtime_impact": "none; read-only"
     }
@@ -170,15 +266,31 @@ def _funding(context: Mapping[str, Any]) -> Mapping[str, Any]:
 
 
 def _ray_review(context: Mapping[str, Any]) -> Mapping[str, Any]:
-    item = {"summary": "A bounded internal review item was prepared.", "status": "PASS", "review_required": True,
-            "what_happened": context.get("what_happened", "bounded internal result"), "what_is_true_now": context.get("what_is_true_now", "verified facts only"),
-            "what_happens_next": context.get("what_happens_next", "await exact decision"), "do_you_need_ray": True,
-            "recommended_decision": "Review the item and approve, reject, or defer only through the governed route.", "priority": "NORMAL",
+    queue_path = ROOT / "reports/runtime/ray_review_queue_latest.json"
+    try:
+        queue = json.loads(queue_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        queue = {}
+    cards = queue.get("approval_cards", []) if isinstance(queue, dict) else []
+    rank = {"high": 0, "medium": 1, "low": 2, "normal": 3}
+    cards = sorted([x for x in cards if isinstance(x, dict)], key=lambda x: rank.get(str(x.get("risk", "normal")).lower(), 3))
+    items = [{"item": x.get("title", x.get("id", "Unidentified item")),
+              "priority": str(x.get("risk", "normal")).upper(),
+              "why_ray_needed": x.get("why_it_matters", "A governed decision is requested."),
+              "recommendation": x.get("exact_action_requested", "Review through the governed route."),
+              "consequence": x.get("expected_outcome", "The item remains blocked until reviewed."),
+              "id": x.get("id")} for x in cards]
+    item = {"summary": f"{len(items)} governed item(s) currently require Ray review.", "status": "PASS", "review_required": bool(items),
+            "review_items": items, "first_item": items[0] if items else None,
+            "what_happened": "The current Ray Review queue was read without executing approval.",
+            "what_is_true_now": f"{len(items)} item(s) are awaiting a Ray decision." if items else "No required review items are currently recorded.",
+            "what_happens_next": "Review the highest-priority item first." if items else "No review action is needed.", "do_you_need_ray": bool(items),
+            "recommended_decision": items[0]["recommendation"] if items else "No decision is currently required.", "priority": items[0]["priority"] if items else "NONE",
             "external_action": False}
     return {"status": "PASS", "entrypoint": "Nexus internal review item builder", "artifact": item, "output_hash": hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest(), "side_effect": {"external": False, "internal_work_item": True}}
 
 
-EXECUTORS = {"NEXUS_SYSTEM_HEALTH_RECOVERY": _run_daily, "NEXUS_RESEARCH_INTELLIGENCE": _research, "NEXUS_REPO_INTELLIGENCE": _repo, "NEXUS_CREDIT_BUSINESS_FUNDING": _funding, "NEXUS_RAY_REVIEW": _ray_review}
+EXECUTORS = {"NEXUS_SYSTEM_HEALTH_RECOVERY": _run_health, "NEXUS_RESEARCH_INTELLIGENCE": _research, "NEXUS_REPO_INTELLIGENCE": _repo, "NEXUS_CREDIT_BUSINESS_FUNDING": _funding, "NEXUS_RAY_REVIEW": _ray_review}
 
 
 def run_governed_loop(loop_id: str, context: Mapping[str, Any], *, reviewer=None, receipt_dir: Path | None = None) -> LoopResult:
