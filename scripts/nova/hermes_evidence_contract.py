@@ -19,13 +19,21 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
     resources: List[str] = []
     if re.search(r"\b(nexus|using nexus|check nexus)\b", text):
         resources.append("NEXUS")
-    if re.search(r"\b(web|internet|online|outside information|current|latest|right now|today)\b", text):
+    volatile_subject_request = bool(re.search(
+        r"\b(?:what|how)\s+(?:is|are)\s+[a-z][\w.-]*(?:\s+[a-z][\w.-]*){0,3}\s+"
+        r"(?:doing|up to|changing|happening)\s+right now\b",
+        text,
+    ))
+    # Decision urgency is not automatically a request for external research.
+    # Explicit web/current/latest/this-week language remains a resource
+    # obligation; “right now” and “today” can simply express advice urgency.
+    if re.search(r"\b(web|internet|online|outside information|current|latest|this week)\b", text) or volatile_subject_request:
         resources.append("PUBLIC_WEB")
     alpha_request = re.search(r"\b(research|researcher|alpha)\b", text)
     reuse_alpha = re.search(r"\bwhat did research find\b|\bresearch findings?\b", text) and not re.search(r"\b(challenge|research this|independently)\b", text)
     if alpha_request and not reuse_alpha:
         resources.append("ALPHA")
-    current = bool(re.search(r"\b(current|latest|right now|today|this week)\b", text))
+    current = bool(re.search(r"\b(current|latest|this week)\b", text) or volatile_subject_request)
     comparison = re.search(r"\bcompare\s+(.+?)(?:[.?]|$)", text, re.I)
     candidate_set: List[str] = []
     if comparison:
@@ -39,7 +47,9 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
         "fresh_execution_required": current or bool(resources),
         "reuse_only": bool(reuse_alpha),
         "candidate_set": candidate_set,
-        "reasoning_first": bool(candidate_set and not resources),
+        # No named resource obligation means the native model reasons first;
+        # optional research remains available when the model finds it material.
+        "reasoning_first": bool(not resources),
     }
 
 
@@ -151,14 +161,18 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
     # but cannot upgrade it to current or verified without direct evidence or
     # an explicitly linked current result.
     current_assertion = bool(re.search(
-        r"\b(current(?:ly)?|latest|right now|verified|confirmed|evidence (?:shows|indicates))\b",
+        r"\b(?:currently|latest|verified|confirmed|evidence (?:shows|indicates)|"
+        r"current\s+(?:trends?|market|conditions?|demand|data|evidence)|"
+        r"(?:surging|growing demand|increasing demand|market demand|"
+        r"significant interest|ideal time|market is on the rise))\b",
         text,
     ))
     qualification = re.search(
         r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|"
         r"currentness_not_proven|status remains unverified|no results|timeout|timed out|"
         r"limited (?:results|evidence)|partial (?:evidence|verification)|"
-        r"lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current",
+        r"lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|"
+        r"weak|uncertain|not enough|need(?:s)? to verify|cannot confirm|not definitive|no reliable",
         text,
     )
     linked_current = any(
@@ -182,10 +196,22 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)
         if not qualified_unknown and not re.search(r"affiliate|referral|partner program", page_text, re.I):
             unsupported.append("affiliate_program_status")
-    if re.search(r"\b(current|latest|right now|today)\b", objective) and not retrieved:
-        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text):
+    if re.search(r"\b(current|latest)\b", objective) and not retrieved:
+        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|weak|uncertain|not enough|need(?:s)? to verify|cannot confirm|not definitive|no reliable", text):
             unsupported.append("current_external_evidence")
-    elif re.search(r"\b(current|latest|right now|today)\b", objective):
-        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text):
+    elif re.search(r"\b(current|latest)\b", objective):
+        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|weak|uncertain|not enough|need(?:s)? to verify|cannot confirm|not definitive|no reliable", text):
             unsupported.append("currentness_not_proven")
+    executed = set(state.get("executed_resources", []))
+    if "PUBLIC_WEB_RETRIEVAL" in executed and re.search(
+        r"\b(?:need|needs|required|have)\s+(?:to\s+)?(?:retrieve|review|inspect)|"
+        r"\b(?:url|page|source)s?\b.{0,120}\b(?:need|needs|required)\b.{0,40}\bretriev",
+        text,
+    ):
+        unsupported.append("retrieval_state_mismatch")
+    if "PUBLIC_WEB_RETRIEVAL" not in executed and re.search(
+        r"\b(?:i|we)\s+(?:retrieved|reviewed|inspected|verified)\s+(?:the\s+)?(?:page|pages|source|sources)\b",
+        text,
+    ):
+        unsupported.append("retrieval_state_mismatch")
     return {"valid": not unsupported, "unsupported_claims": list(dict.fromkeys(unsupported))}

@@ -129,6 +129,12 @@ def _shadow_resource_guidance() -> str:
         "choice before any optional challenge delegation. "
         "After retrieval, distinguish source facts from your interpretation, "
         "and make a concrete recommendation when Ray asks for one. For normal "
+        "business prioritization without an explicitly named external subject or "
+        "resource, reason first; urgency words such as right now do not by "
+        "themselves require web research. For a named volatile subject such as a "
+        "company, product, or market and a question about what it is doing right "
+        "now, use public web search and retrieval when needed to support the "
+        "current factual portion. "
         "conversation, answer first, keep paragraphs compact, prefer short "
         "bullets, and avoid schema headings or wide tables; preserve formal "
         "structure when Ray explicitly asks for a report or audit. If an "
@@ -147,6 +153,88 @@ def _json_object(value: Any) -> Dict[str, Any]:
         except (TypeError, ValueError):
             return {}
     return {}
+
+
+def _tool_execution_state(tool_rows: list[Dict[str, Any]]) -> Dict[str, Any]:
+    """Build compact authoritative execution state for final synthesis."""
+    counts: Dict[str, int] = {}
+    statuses: Dict[str, list[str]] = {}
+    currentness: Dict[str, list[str]] = {}
+    for row in tool_rows:
+        name = str(row.get("name") or row.get("tool_name") or "unknown")
+        counts[name] = counts.get(name, 0) + 1
+        payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+        if payload.get("status"):
+            statuses.setdefault(name, []).append(str(payload["status"]))
+        if payload.get("currentness"):
+            currentness.setdefault(name, []).append(str(payload["currentness"]))
+    return {
+        "search_executed": "public_web_search_shadow" in counts,
+        "retrieval_executed": "public_web_retrieval_shadow" in counts,
+        "nexus_executed": "nexus_read_shadow" in counts,
+        "alpha_executed": "alpha_challenge_shadow" in counts,
+        "tool_call_counts": counts,
+        "tool_statuses": statuses,
+        "tool_currentness": currentness,
+        "retrieval_status": "COMPLETED" if "public_web_retrieval_shadow" in counts else "NOT_EXECUTED",
+    }
+
+
+def _final_presentation_prompt(prompt: str, draft: str, tool_state: Dict[str, Any], claim_state: Dict[str, Any]) -> str:
+    currentness_values = [
+        value
+        for values in (tool_state.get("tool_currentness") or {}).values()
+        for value in values
+    ]
+    currentness_rule = (
+        "At least one retrieved source is marked CURRENT; keep current factual claims bounded to that evidence."
+        if "CURRENT" in {str(value).upper() for value in currentness_values}
+        else "No retrieved source is marked CURRENT; do not state current trends, growing demand, surging markets, or verified recent facts. Recast them as a qualified hypothesis or say the evidence is not current enough."
+    )
+    alpha_rule = (
+        "Alpha was executed. Open by stating plainly whether you still agree with the prior recommendation. "
+        "Then explain only the one or two findings that changed, confirmed, or failed to strengthen your view. "
+        "Do not reproduce Alpha's objective, status, key findings, risks, recommendations, or next steps as sections; "
+        "do not substitute a generic monetization plan for the decision about the prior recommendation. "
+        "Do not say Alpha confirmed or validated a recommendation unless its result explicitly supports that; "
+        "unverified or empty findings must be described as failing to strengthen the case."
+        if tool_state.get("alpha_executed")
+        else ""
+    )
+    return (
+        "[FINAL NOVA PRESENTATION — USER-FACING PROSE ONLY]\n"
+        "Nova owns the final answer. Tools provide evidence, Alpha provides "
+        "research, Nexus provides state, and web provides outside information; "
+        "none of them owns the response. Rewrite the draft as your own answer to "
+        "the original objective. Do not quote, dump, or imitate a tool/Alpha "
+        "report. Answer first, give your choice or view early, explain the two to "
+        "four reasons that matter most, state meaningful uncertainty, and offer a "
+        "next move only when useful; do not end with a question or offer unless "
+        "the user cannot act on the answer without clarification. Use two to five compact paragraphs or one "
+        "opening paragraph plus at most four short bullets. Do not use VERIFIED, "
+        "BLOCKERS, RECOMMENDATION, NEXT ACTION, OBJECTIVE, STATUS, KEY FINDINGS, "
+        "BUSINESS OPPORTUNITY ANALYSIS, EVIDENCE OVERVIEW, or ALPHA RESEARCH "
+        "FINDINGS as default headings. If the user explicitly requested a formal "
+        "report, audit, status, certification, or detailed evidence review, "
+        "structured headings remain allowed. Otherwise keep it mobile-friendly.\n"
+        "The execution state below is authoritative and outranks planning text or "
+        "prior context. If retrieval is COMPLETED, never say URLs/pages still "
+        "need retrieval. If retrieval is NOT_EXECUTED, do not imply a page was "
+        "reviewed. If evidence is weak or unknown, say so naturally. Do not "
+        "introduce current/latest/trend claims without current evidence; recast "
+        "them as judgment or qualify them. If no retrieved source is marked "
+        "CURRENT, do not use market-demand or growth language as fact. When Alpha is executed, explain what "
+        "its findings change in your own recommendation; do not present Alpha's "
+        "objective/status/findings/recommendations as the answer. Preserve the "
+        "original objective and concrete recommendation. Output only the final "
+        "answer.\n\n"
+        f"CURRENTNESS RULE:\n{currentness_rule}\n\n"
+        f"ALPHA DECISION-OWNERSHIP RULE:\n{alpha_rule or 'Alpha was not executed; answer from the available evidence and your own judgment.'}\n\n"
+        f"ORIGINAL OBJECTIVE:\n{prompt[:3000]}\n\n"
+        f"AUTHORITATIVE CURRENT-TURN TOOL STATE:\n{json.dumps(tool_state, sort_keys=True, default=str)}\n\n"
+        f"EVIDENCE AND CLAIM STATE:\n{json.dumps(claim_state, sort_keys=True, default=str)}\n\n"
+        f"DRAFT TO REWRITE:\n{draft[:12000]}"
+    )
 
 
 def _current_shadow_context(state: Dict[str, Any]) -> str:
@@ -626,6 +714,88 @@ def run_shadow(
                     if isinstance(final_synthesis, dict):
                         all_messages.extend(final_synthesis.get("messages", []))
                         result = final_synthesis
+
+    # Hermes' native draft is an internal reasoning artifact. Give Nova one
+    # final, tool-disabled model pass so the response owner is explicit and
+    # structured evidence cannot become Telegram prose by inheritance. The
+    # model still decides whether the user asked for a formal report; this is
+    # presentation guidance, not phrase-specific routing or a canned answer.
+    if isinstance(result, dict):
+        final_rows = _tool_messages(all_messages)
+        final_state = evidence_state(prompt, final_rows, prior_records)
+        final_state["page_payloads"] = [row["payload"] for row in final_rows if row.get("name") == "public_web_retrieval_shadow"]
+        draft = str(result.get("final_response", ""))
+        final_state["claim_validation"] = claim_feedback(prompt, draft, final_state)
+        presentation_state = {
+            "required_resources": final_state.get("required_resources", []),
+            "executed_resources": final_state.get("executed_resources", []),
+            "missing_resources": final_state.get("missing_resources", []),
+            "currentness": final_state.get("currentness"),
+            "source_quality": final_state.get("source_quality", []),
+            "supported_claims": final_state.get("supported_claims", [])[-8:],
+            "partial_claims": final_state.get("partial_claims", [])[-8:],
+            "claim_validation": final_state["claim_validation"],
+        }
+        presentation_agent = AIAgent(
+            model=chosen_model,
+            provider="openrouter",
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+            enabled_toolsets=[],
+            session_id=active_session,
+            ephemeral_system_prompt=_nova_soul(),
+            load_soul_identity=False,
+            save_trajectories=False,
+            quiet_mode=True,
+            max_iterations=1,
+            platform="nova-shadow-final-presentation",
+        )
+        presentation_started = time.monotonic()
+        presented = presentation_agent.run_conversation(
+            _final_presentation_prompt(prompt, draft, _tool_execution_state(final_rows), presentation_state),
+            task_id=turn_id + "-presentation",
+        )
+        model_calls.append(round((time.monotonic() - presentation_started) * 1000, 1))
+        if isinstance(presented, dict) and presented.get("final_response"):
+            all_messages.extend(presented.get("messages", []))
+            result["final_response"] = presented["final_response"]
+            final_claim = claim_feedback(prompt, str(result["final_response"]), final_state)
+            # A final no-tool repair keeps user-facing evidence language honest
+            # without reopening resource selection or changing the answer.
+            if not final_claim.get("valid", True):
+                correction_started = time.monotonic()
+                corrected = presentation_agent.run_conversation(
+                    _final_presentation_prompt(
+                        prompt,
+                        str(result["final_response"]),
+                        _tool_execution_state(final_rows),
+                        {**presentation_state, "claim_validation": {"valid": False, "unsupported_claims": final_claim.get("unsupported_claims", [])}},
+                    ) + "\nCorrect every listed claim-state issue before answering.",
+                    task_id=turn_id + "-presentation-correction",
+                )
+                model_calls.append(round((time.monotonic() - correction_started) * 1000, 1))
+                if isinstance(corrected, dict) and corrected.get("final_response"):
+                    all_messages.extend(corrected.get("messages", []))
+                    result["final_response"] = corrected["final_response"]
+                    corrected_claim = claim_feedback(prompt, str(result["final_response"]), final_state)
+                    # Give the presentation model one bounded opportunity to
+                    # repair its own repair. This remains tool-disabled and
+                    # cannot alter resource selection or execution state.
+                    if not corrected_claim.get("valid", True):
+                        second_correction_started = time.monotonic()
+                        corrected_again = presentation_agent.run_conversation(
+                            _final_presentation_prompt(
+                                prompt,
+                                str(result["final_response"]),
+                                _tool_execution_state(final_rows),
+                                {**presentation_state, "claim_validation": corrected_claim},
+                            ) + "\nThe previous rewrite still failed validation. Remove every unsupported current, growth, market-demand, retrieval-state, or evidence claim listed above. Return only a concise answer.",
+                            task_id=turn_id + "-presentation-correction-final",
+                        )
+                        model_calls.append(round((time.monotonic() - second_correction_started) * 1000, 1))
+                        if isinstance(corrected_again, dict) and corrected_again.get("final_response"):
+                            all_messages.extend(corrected_again.get("messages", []))
+                            result["final_response"] = corrected_again["final_response"]
     shadow_state.update({"last_turn_id": turn_id, "last_prompt": prompt[:500], "updated_at": datetime.now(timezone.utc).isoformat()})
     if isinstance(result, dict):
         messages = all_messages
