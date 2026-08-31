@@ -1,8 +1,9 @@
-"""Isolated Hermes-native Nova shadow runner.
+"""Isolated Hermes-native Nova runner.
 
-This module is deliberately not imported by the live Telegram worker.  It
-keeps Nova's current identity but lets Hermes 0.20.6 own generic model/tool
-continuation for development comparison only.
+The canonical Telegram worker invokes this through the Hermes-supported
+interpreter. The same runner supports silent certification shadow execution
+and user-visible primary execution; the worker remains the sole Telegram
+delivery owner.
 """
 
 from __future__ import annotations
@@ -39,11 +40,11 @@ SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
 
-def _require_shadow() -> None:
-    if os.getenv(SHADOW_FLAG, "false").lower() != "true":
-        raise RuntimeError("Hermes Nova shadow is disabled; set NOVA_HERMES_NATIVE_SHADOW=true")
-    if os.getenv(PRIMARY_FLAG, "false").lower() == "true":
-        raise RuntimeError("Hermes Nova primary cutover is intentionally not enabled")
+def _require_runtime() -> None:
+    shadow = os.getenv(SHADOW_FLAG, "false").lower() == "true"
+    primary = os.getenv(PRIMARY_FLAG, "false").lower() == "true"
+    if shadow == primary:
+        raise RuntimeError("exactly one Hermes Nova runtime mode must be enabled")
 
 
 def _load_hermes():
@@ -369,7 +370,7 @@ def run_shadow(
     enabled_toolsets: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """Run one bounded, non-primary Hermes-native Nova turn."""
-    _require_shadow()
+    _require_runtime()
     _load_approved_provider_env()
     AIAgent = _load_hermes()
     _register_bounded_nexus_tools()

@@ -44,6 +44,9 @@ NOVA_ERROR_LOG = os.path.join(REPO_ROOT, "reports", "runtime", "nova_telegram_er
 NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "nova")
 NOVA_AB_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "ab_certification")
 AB_CERTIFICATION_FLAG = "NOVA_TELEGRAM_AB_CERTIFICATION"
+PRIMARY_RUNTIME_FLAG = "NOVA_PRIMARY_RUNTIME"
+PRIMARY_RUNTIME_CUSTOM = "custom"
+PRIMARY_RUNTIME_HERMES = "hermes"
 HERMES_SHADOW_SCRIPT = os.path.join(REPO_ROOT, "scripts", "nova", "nova_hermes_shadow.py")
 HERMES_SHADOW_PYTHON = os.path.expanduser("~/.hermes/hermes-agent/venv/bin/python")
 HERMES_SHADOW_TIMEOUT = int(os.getenv("NOVA_HERMES_SHADOW_TIMEOUT_SECONDS", "180"))
@@ -107,6 +110,14 @@ def get_env():
             if k and v and k not in os.environ:
                 os.environ[k] = v
     return _ENV
+
+
+def _primary_runtime():
+    """Return the explicitly selected primary runtime, failing closed."""
+    value = get_env().get(PRIMARY_RUNTIME_FLAG, PRIMARY_RUNTIME_CUSTOM).strip().lower()
+    if value not in {PRIMARY_RUNTIME_CUSTOM, PRIMARY_RUNTIME_HERMES}:
+        raise RuntimeError(f"invalid {PRIMARY_RUNTIME_FLAG}={value!r}")
+    return value
 
 # ─── Logging ────────────────────────────────────────────
 
@@ -474,6 +485,67 @@ def _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=None, prima
     return shadow
 
 
+def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
+    """Run the certified Hermes core for primary delivery."""
+    run_id = f"hermes-primary-{update_id}"
+    started = time.monotonic()
+    session = f"nova-telegram-primary-{chat_id}"
+    record = {"run_id": run_id, "primary_run_id": primary_run_id or run_id,
+              "session_id": session, "update_id": update_id,
+              "message_id": message.get("message_id") or update_id,
+              "runtime": "hermes", "telegram_send_count": 0, "error": None}
+    try:
+        if not os.path.isfile(HERMES_SHADOW_SCRIPT):
+            raise RuntimeError("hermes_runner_missing")
+        if not os.path.isfile(HERMES_SHADOW_PYTHON) or not os.access(HERMES_SHADOW_PYTHON, os.X_OK):
+            raise RuntimeError("hermes_interpreter_missing")
+        child_env = {
+            "HOME": os.path.expanduser("~"), "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "NOVA_RUNTIME_ENV": RUNTIME_ENV, "NOVA_HERMES_NATIVE_SHADOW": "false",
+            "NOVA_HERMES_NATIVE_PRIMARY": "true", "PYTHONUNBUFFERED": "1",
+            "NOVA_PRIMARY_SESSION_ID": session, "NOVA_SHADOW_UPDATE_ID": str(update_id),
+            "NOVA_SHADOW_MESSAGE_ID": str(message.get("message_id") or update_id),
+        }
+        for key in ("NOVA_SHADOW_FORCE_SEARXNG_FAILURE", "NOVA_SHADOW_FORCE_ALPHA_FAILURE"):
+            if os.environ.get(key):
+                child_env[key] = os.environ[key]
+        completed = subprocess.run(
+            [HERMES_SHADOW_PYTHON, HERMES_SHADOW_SCRIPT, text, "--session-id", session],
+            cwd=REPO_ROOT, env=child_env, capture_output=True, text=True,
+            timeout=HERMES_SHADOW_TIMEOUT, check=False,
+        )
+        if completed.returncode != 0:
+            raise RuntimeError(_ab_safe_text(completed.stderr or "hermes_primary_failed", 500))
+        result = None
+        for line in reversed(completed.stdout.splitlines()):
+            try:
+                candidate = json.loads(line)
+                if isinstance(candidate, dict):
+                    result = candidate
+                    break
+            except json.JSONDecodeError:
+                continue
+        if not result:
+            raise RuntimeError("hermes_primary_result_not_object")
+        messages = result.get("messages", [])
+        record.update({
+            "response": _ab_safe_text(result.get("final_response")),
+            "model": result.get("model", get_env().get("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")),
+            "tools_executed": [m.get("name") or m.get("tool_name") for m in messages if m.get("role") == "tool"],
+            "runtime_init": True, "model_init": True,
+            "completed": bool(result.get("completed")),
+            "turn_contract": result.get("turn_contract"),
+            "evidence_state": result.get("evidence_state"),
+            "claim_validation": result.get("claim_validation"),
+        })
+    except Exception as exc:
+        record.update({"response": None, "tools_executed": [], "runtime_init": False,
+                       "model_init": False, "completed": False,
+                       "error": type(exc).__name__ + ": " + str(exc)[:500]})
+    record["latency_ms"] = round((time.monotonic() - started) * 1000, 1)
+    return record
+
+
 def _complete_shadow_ab(shadow_record, primary_result=None, primary_response=None, primary_latency_ms=None):
     """Attach the eventual primary outcome to a pre-branch shadow receipt."""
     if not shadow_record:
@@ -643,10 +715,57 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         update_mission(mission, "AUTHORIZED")
         _update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
 
+        primary_runtime = _primary_runtime()
+
         # In certification mode the shadow observes every authorized request
         # before any primary-only terminal branch (including governed object
         # resolution). It has no Telegram delivery path.
-        ab_record = _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+        ab_record = None
+        if primary_runtime == PRIMARY_RUNTIME_CUSTOM:
+            ab_record = _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+
+        if primary_runtime == PRIMARY_RUNTIME_HERMES:
+            hermes_record = _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+            response, blocked_reason = _response_integrity(hermes_record.get("response") or "", "conversation")
+            if response is None:
+                update_mission(mission, "DELIVERY_FAILED", {
+                    "response_mode": "hermes_primary",
+                    "model_used": hermes_record.get("model"),
+                    "hermes_error": hermes_record.get("error") or blocked_reason,
+                })
+                return True
+            update_mission(mission, "RESPONSE_COMPOSED", {
+                "response_mode": "hermes_primary",
+                "model_used": hermes_record.get("model"),
+                "hermes_primary_run_id": hermes_record.get("run_id"),
+            })
+            with stage_execution(
+                stage="telegram_send",
+                source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
+                metadata={"mission_id": mission["mission_id"], "runtime": "hermes_primary"},
+            ):
+                msg_ids = tg_send_message(chat_id, response)
+            hermes_record["telegram_send_count"] = len(msg_ids)
+            write_receipt({
+                "type": "nova_hermes_primary_response",
+                "incoming_update_id": update_id,
+                "outgoing_message_ids": msg_ids,
+                "correlation_id": mission.get("correlation_id"),
+                "primary_run_id": primary_run_id,
+                "hermes_run_id": hermes_record.get("run_id"),
+                "session_id": hermes_record.get("session_id"),
+                "model": hermes_record.get("model"),
+                "latency_ms": hermes_record.get("latency_ms"),
+                "tools_executed": hermes_record.get("tools_executed", []),
+                "response": _ab_safe_text(response),
+                "error": hermes_record.get("error"),
+                "runtime_init": hermes_record.get("runtime_init"),
+                "model_init": hermes_record.get("model_init"),
+            })
+            update_mission(mission, "COMPLETED" if msg_ids else "DELIVERY_FAILED", {
+                "response_message_ids": msg_ids,
+            })
+            return True
 
         # Explicit governed objects are resolved deterministically before the
         # conversational graph. This prevents Nova/Product Evolution fuzzy
