@@ -87,8 +87,88 @@ def _save_shadow_state(session_id: str, state: Dict[str, Any]) -> None:
     _state_path(session_id).write_text(json.dumps(state, sort_keys=True) + "\n")
 
 
+def _shadow_resource_guidance() -> str:
+    """Positive, model-facing evidence guidance for the native tools.
+
+    Search is intentionally discovery-only.  The model decides whether the
+    returned evidence is sufficient; this text gives it the distinction it
+    needs without adding a pre-model router or phrase rule.
+    """
+    return (
+        "\n\n[SHADOW RESOURCE GUIDANCE]\n"
+        "You own the question and choose resources after understanding it. "
+        "If Ray explicitly asks you to use named resources, honor that request "
+        "by calling each applicable resource and synthesize their results in "
+        "the same reasoning turn; do not substitute Alpha or Nexus for another "
+        "named resource. "
+        "public_web_search_shadow discovers candidate sources; its snippets "
+        "are discovery evidence, not verification. When the answer depends on "
+        "terms, pricing, eligibility, features, current company actions, or "
+        "other details, inspect the candidates and call "
+        "public_web_retrieval_shadow for the relevant source pages before "
+        "concluding. For a simple fact, do not use a resource unnecessarily. "
+        "For a self-contained conversational hypothetical, use the supplied "
+        "context first and research only if missing evidence would materially "
+        "change the answer; do not delegate a self-contained hypothetical just "
+        "because it concerns business. "
+        "After retrieval, distinguish source facts from your interpretation, "
+        "and make a concrete recommendation when Ray asks for one.\n"
+    )
+
+
+def _json_object(value: Any) -> Dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        except (TypeError, ValueError):
+            return {}
+    return {}
+
+
+def _current_shadow_context(state: Dict[str, Any]) -> str:
+    """Return a compact, volatile index for follow-up referent resolution."""
+    resources = state.get("resource_results") or []
+    if not isinstance(resources, list):
+        resources = []
+    recent = resources[-6:]
+    lines = [
+        "\n\n[CURRENT SHADOW CONTEXT — volatile, not historical memory]",
+        "Use this index for follow-ups. The latest result linked to the current turn outranks older results.",
+    ]
+    if state.get("last_recommendation"):
+        lines.append("CURRENT_RECOMMENDATION=" + str(state["last_recommendation"])[:1800])
+    if state.get("active_request"):
+        lines.append("ACTIVE_REQUEST=" + str(state["active_request"])[:500])
+    turns = state.get("recent_turns") or []
+    for turn in turns[-6:]:
+        if isinstance(turn, dict):
+            lines.append("CONVERSATION_TURN=" + json.dumps({
+                "user": str(turn.get("user", ""))[:700],
+                "assistant": str(turn.get("assistant", ""))[:1400],
+            }, ensure_ascii=False))
+    for row in recent:
+        if isinstance(row, dict):
+            lines.append(
+                "RESOURCE_RESULT=" + json.dumps({
+                    "capability": row.get("capability"),
+                    "request_id": row.get("request_id"),
+                    "result_id": row.get("result_id"),
+                    "completed_at": row.get("completed_at"),
+                    "current_for_turn": row.get("current_for_turn", False),
+                }, sort_keys=True)
+            )
+    if len(lines) == 2:
+        lines.append("No linked resource result exists yet; do not imply that research happened.")
+    return "\n".join(lines) + "\n"
+
+
 def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
     """Use existing free/private adapters, deliberately excluding Brave."""
+    if str(REPO_ROOT / "scripts") not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
     from hermes.hermes_web_search import _search_bing_html, _search_duckduckgo_html, _search_searxng
     attempts = []
     for provider, fn in (("searxng", _search_searxng), ("duckduckgo_html", _search_duckduckgo_html), ("bing_html", _search_bing_html)):
@@ -98,10 +178,19 @@ def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
             result["attempted_providers"] = attempts
             result["cost_class"] = "free_private_no_new_spend"
             result["shadow_provider_chain"] = True
+            result["evidence_role"] = "discovery_only"
+            result["retrieval_recommended"] = bool(result.get("results"))
+            result["retrieval_guidance"] = (
+                "Search results identify candidates only. Retrieve one or more candidate URLs "
+                "before relying on claims that require page detail or current verification."
+                if result.get("results") else "No candidate URLs were returned."
+            )
             return result
     return {"status": "all_free_providers_failed", "provider": "none", "query": query,
             "results": [], "attempted_providers": attempts,
-            "cost_class": "free_private_no_new_spend"}
+            "cost_class": "free_private_no_new_spend", "evidence_role": "discovery_only",
+            "retrieval_recommended": False,
+            "retrieval_guidance": "No candidate URLs were returned; use another authorized source or explain the uncertainty."}
 
 
 def _resolve_public_url(url: str) -> str:
@@ -128,6 +217,10 @@ def _retrieve_public_page(url: str, max_chars: int = 50000) -> Dict[str, Any]:
         text = re.sub(r"<script[^>]*>.*?</script>|<style[^>]*>.*?</style>", " ", text, flags=re.I | re.S)
         text = re.sub(r"<[^>]+>", " ", text)
         text = re.sub(r"\s+", " ", text).strip()[:max_chars]
+        if not text:
+            return {"status": "no_content", "url": final_url, "requested_url": url,
+                    "content_type": content_type, "content": "", "content_length": 0,
+                    "source_type": "LIVE_PUBLIC_PAGE", "error": "empty_page"}
         return {"status": "ok", "url": final_url, "requested_url": url,
                 "content_type": content_type, "content": text,
                 "content_length": len(text), "source_type": "LIVE_PUBLIC_PAGE",
@@ -145,6 +238,11 @@ def _register_bounded_nexus_tools() -> None:
     arbitrary SQL.  Existing Nexus capability boundaries remain authoritative.
     """
     scripts_root = REPO_ROOT / "scripts"
+    # Hermes' registry is a top-level package.  Ensure its checkout is on the
+    # import path before registering tools; the shadow runner may be invoked
+    # directly from the repository rather than through the Hermes CLI.
+    if str(HERMES_ROOT) not in sys.path:
+        sys.path.insert(0, str(HERMES_ROOT))
     if str(scripts_root) not in sys.path:
         sys.path.insert(0, str(scripts_root))
     from tools.registry import registry  # type: ignore
@@ -152,26 +250,26 @@ def _register_bounded_nexus_tools() -> None:
 
     nexus_schema = {
         "name": "nexus_read_shadow",
-        "description": "Read an authorized Nexus capability/status resource; never mutate Nexus.",
+        "description": "Read an authorized Nexus capability/status resource when the question asks about Nexus or how Nexus could help; return the real capability/status evidence. This is a read only resource and never mutates Nexus.",
         "parameters": {"type": "object", "properties": {
             "resource": {"type": "string", "enum": ["NEXUS_CAPABILITY_MAP", "NEXUS_LIVE_TRUTH"]}
         }, "required": ["resource"]},
     }
     alpha_schema = {
         "name": "alpha_challenge_shadow",
-        "description": "Request a bounded Alpha challenge/research review; no operational execution.",
+        "description": "Request a bounded Alpha challenge/research review when deeper independent research is useful or explicitly requested; no operational execution.",
         "parameters": {"type": "object", "properties": {
             "objective": {"type": "string", "minLength": 10}
         }, "required": ["objective"]},
     }
     web_search_schema = {
         "name": "public_web_search_shadow",
-        "description": "Search current public information using approved free/private providers; Brave is excluded.",
+        "description": "Discover current public sources using approved free/private providers; results are discovery evidence only. After inspecting candidates, retrieve relevant source pages when claims require terms, pricing, eligibility, features, or current company details. Brave is excluded.",
         "parameters": {"type": "object", "properties": {"query": {"type": "string", "minLength": 3}, "limit": {"type": "integer", "minimum": 1, "maximum": 6}}, "required": ["query"]},
     }
     web_retrieval_schema = {
         "name": "public_web_retrieval_shadow",
-        "description": "Read a public result URL through bounded HTTP retrieval and return source content/provenance.",
+        "description": "Read a candidate public result URL through bounded HTTP retrieval. Use this after search when snippets are insufficient for verification or detailed/current claims; return source content and provenance.",
         "parameters": {"type": "object", "properties": {"url": {"type": "string", "format": "uri"}}, "required": ["url"]},
     }
 
@@ -215,18 +313,24 @@ def run_shadow(
     """Run one bounded, non-primary Hermes-native Nova turn."""
     _require_shadow()
     _load_approved_provider_env()
-    _register_bounded_nexus_tools()
     AIAgent = _load_hermes()
+    _register_bounded_nexus_tools()
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
     toolsets = enabled_toolsets or ["shadow_web", "nexus", "research", "delegation"]
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     shadow_state = _load_shadow_state(active_session)
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
+    shadow_state["active_request"] = prompt[:1000]
+    for row in shadow_state.get("resource_results", []) or []:
+        if isinstance(row, dict):
+            row["current_for_turn"] = False
     correlation_context = (
         "\n\n[SHADOW CORRELATION — internal]\n"
         f"turn_id={turn_id}; session_id={active_session}. Volatile tool results must be linked to this turn. "
-        "When a user refers to a recommendation or Research result, use the current conversational referent and its linked request/result, never an unrelated older artifact."
+        "When a user refers to a recommendation or Research result, use the current conversational referent and its linked request/result, never an unrelated older artifact. "
+        "A tool result is evidence for this turn only when it is returned in this turn's native tool exchange."
     )
+    current_context = _current_shadow_context(shadow_state)
     agent = AIAgent(
         model=chosen_model,
         provider="openrouter",
@@ -234,7 +338,7 @@ def run_shadow(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         enabled_toolsets=toolsets,
         session_id=active_session,
-        ephemeral_system_prompt=_nova_soul() + correlation_context,
+        ephemeral_system_prompt=_nova_soul() + _shadow_resource_guidance() + current_context + correlation_context,
         load_soul_identity=False,
         save_trajectories=False,
         quiet_mode=True,
@@ -244,11 +348,46 @@ def run_shadow(
     result = agent.run_conversation(prompt, task_id=turn_id)
     shadow_state.update({"last_turn_id": turn_id, "last_prompt": prompt[:500], "updated_at": datetime.now(timezone.utc).isoformat()})
     if isinstance(result, dict):
-        tools_seen = [m.get("name") for m in result.get("messages", []) if m.get("role") == "tool"]
+        messages = result.get("messages", [])
+        tools_seen = [m.get("name") for m in messages if m.get("role") == "tool"]
         shadow_state["last_tools"] = tools_seen
-        if "alpha_challenge_shadow" in tools_seen:
-            shadow_state["last_alpha_result_id"] = "alpha-result-" + uuid.uuid4().hex[:12]
-            shadow_state["last_alpha_request_id"] = "alpha-request-" + uuid.uuid4().hex[:12]
+        records = shadow_state.setdefault("resource_results", [])
+        for message in messages:
+            if message.get("role") != "tool":
+                continue
+            payload = _json_object(message.get("content"))
+            if not payload:
+                continue
+            capability = message.get("name") or message.get("tool_name") or "unknown"
+            request_id = payload.get("request_id") or payload.get("alpha_request_id") or payload.get("research_job_id")
+            result_id = payload.get("result_id") or payload.get("artifact_id") or payload.get("receipt_id")
+            if capability == "alpha_challenge_shadow":
+                request_id = request_id or payload.get("job_id")
+                result_id = result_id or payload.get("artifact_id") or payload.get("receipt_id")
+            record = {
+                "capability": capability,
+                "request_id": request_id,
+                "result_id": result_id,
+                "completed_at": payload.get("completed_at") or payload.get("created_at") or datetime.now(timezone.utc).isoformat(),
+                "current_for_turn": True,
+                "status": payload.get("status"),
+            }
+            records.append(record)
+            if capability == "alpha_challenge_shadow":
+                shadow_state["last_alpha_result_id"] = result_id
+                shadow_state["last_alpha_request_id"] = request_id
+        # Keep the sidecar as an index, not a second evidence store.
+        shadow_state["resource_results"] = records[-20:]
+        for message in reversed(messages):
+            if message.get("role") == "assistant" and message.get("content"):
+                assistant_text = str(message["content"])[-3000:]
+                shadow_state["last_response"] = assistant_text
+                if any(word in assistant_text.lower() for word in ("recommend", "i would choose", "best option")):
+                    shadow_state["last_recommendation"] = assistant_text
+                break
+        turns = shadow_state.setdefault("recent_turns", [])
+        turns.append({"user": prompt[:1000], "assistant": shadow_state.get("last_response", "")})
+        shadow_state["recent_turns"] = turns[-8:]
     _save_shadow_state(active_session, shadow_state)
     if isinstance(result, dict):
         return result
