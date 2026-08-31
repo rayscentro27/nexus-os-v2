@@ -28,6 +28,39 @@ def test_simple_conversation_has_no_resource_obligation():
     assert turn_requirements("What color is the sky?")["required_resources"] == []
 
 
+def test_advice_urgency_does_not_force_web_research():
+    contract = turn_requirements("What should I focus on to make money right now?")
+    assert contract["required_resources"] == []
+    assert contract["reasoning_first"] is True
+
+
+def test_named_volatile_subject_requires_current_web_evidence():
+    contract = turn_requirements("What is Tesla doing right now, and what do you think?")
+    assert contract["required_resources"] == ["PUBLIC_WEB"]
+    assert contract["fresh_execution_required"] is True
+
+
+def test_unsupported_growth_language_is_not_current_evidence():
+    prompt = "Check Nexus and current outside information and choose a business opportunity."
+    state = evidence_state(prompt, [])
+    feedback = claim_feedback(prompt, "Current trends show growing demand and significant interest.", state)
+    assert feedback["valid"] is False
+    assert "currentness_not_proven" in feedback["unsupported_claims"]
+
+
+def test_completed_retrieval_rejects_stale_planning_language():
+    prompt = "Check current outside information and choose a business opportunity."
+    messages = [{
+        "name": "public_web_retrieval_shadow",
+        "payload": {"status": "ok", "currentness": "RECENT_BUT_NOT_CURRENT", "content": "Evidence."},
+    }]
+    state = evidence_state(prompt, messages)
+    state["page_payloads"] = [messages[0]["payload"]]
+    feedback = claim_feedback(prompt, "The URLs still need to be retrieved before I can assess this.", state)
+    assert feedback["valid"] is False
+    assert "retrieval_state_mismatch" in feedback["unsupported_claims"]
+
+
 def test_turn_objective_is_preserved_and_multi_resource_needs_synthesis():
     prompt = "Using Nexus and current outside information, choose a plan."
     contract = turn_requirements(prompt)
