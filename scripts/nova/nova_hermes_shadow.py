@@ -34,6 +34,7 @@ from hermes_evidence_contract import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HERMES_ROOT = Path(os.getenv("NOVA_HERMES_ROOT", str(Path.home() / ".hermes/hermes-agent")))
+NOVA_HERMES_HOME = Path(os.getenv("NOVA_HERMES_HOME", str(REPO_ROOT / "config" / "hermes" / "nova-profile")))
 SHADOW_FLAG = "NOVA_HERMES_NATIVE_SHADOW"
 PRIMARY_FLAG = "NOVA_HERMES_NATIVE_PRIMARY"
 SHADOW_STATE_DIR = REPO_ROOT / "data" / "runtime" / "nova_hermes_shadow_sessions"
@@ -501,6 +502,12 @@ def _register_bounded_nexus_tools() -> None:
                       description=web_search_schema["description"], max_result_size_chars=50000)
     registry.register("public_web_retrieval_shadow", "shadow_web", web_retrieval_schema, public_web_retrieval,
                       description=web_retrieval_schema["description"], max_result_size_chars=50000)
+    # The Nova adapters are registered dynamically, so expose their toolsets
+    # to Hermes' supported resolver just as a discovered plugin/MCP server
+    # would. This keeps the dedicated profile's tool surface identical to the
+    # certified Nova surface without inheriting global tool configuration.
+    for toolset_name in ("nexus", "research", "shadow_web"):
+        registry.register_toolset_alias(toolset_name, toolset_name)
 
 
 def run_shadow(
@@ -516,6 +523,9 @@ def run_shadow(
     _require_runtime()
     phase_timings["runtime_validation_ms"] = round((time.monotonic() - started_at) * 1000, 1)
     _load_approved_provider_env()
+    # Nova runs in an invocation-scoped Hermes home. This prevents the global
+    # operator SOUL and memory from entering the primary conversation prompt.
+    os.environ["HERMES_HOME"] = str(NOVA_HERMES_HOME)
     hermes_load_started = time.monotonic()
     AIAgent = _load_hermes()
     phase_timings["hermes_init_ms"] = round((time.monotonic() - hermes_load_started) * 1000, 1)
@@ -558,16 +568,6 @@ def run_shadow(
             "Use native tools for those resources in this turn. Prior conversation "
             "is context, not a substitute for a required current read.\n"
         )
-    if turn_contract.get("reasoning_first"):
-        turn_contract_guidance += (
-            "\n\n[REASONING-FIRST OBJECT PRESERVATION]\n"
-            "This is a self-contained comparison. Preserve the supplied candidate "
-            "objects and reason over them before any optional delegation. The "
-            "candidate set is: " + ", ".join(turn_contract["candidate_set"]) + ". "
-            "If an optional resource is later useful, its objective must discuss "
-            "these same candidates and its result is additive evidence; it must "
-            "not replace the candidate set or become the answer.\n"
-        )
     current_context = _current_shadow_context(shadow_state)
     immutable_objective = (
         "\n\n[IMMUTABLE TURN OBJECTIVE]\n"
@@ -584,8 +584,10 @@ def run_shadow(
         if turn.get("assistant"):
             conversation_history.append({"role": "assistant", "content": str(turn["assistant"])[:5000]})
     native_conversation = not turn_contract["required_resources"]
+    # The dedicated Hermes profile owns ordinary conversation. Nova-specific
+    # guidance is added only when resource-backed execution needs it.
     ephemeral_prompt = (
-        "You are a conversational assistant. Answer the user's question directly and naturally using the conversation history. Treat opinions as opinions and do not invent current facts."
+        None
         if native_conversation
         else _nova_soul() + _shadow_resource_guidance() + current_context + immutable_objective + correlation_context
     )
@@ -598,6 +600,7 @@ def run_shadow(
         session_id=active_session,
         ephemeral_system_prompt=ephemeral_prompt,
         load_soul_identity=False,
+        skip_memory=True,
         save_trajectories=False,
         quiet_mode=True,
         max_iterations=8,
@@ -790,6 +793,7 @@ def run_shadow(
             session_id=active_session,
             ephemeral_system_prompt=_nova_soul(),
             load_soul_identity=False,
+            skip_memory=True,
             save_trajectories=False,
             quiet_mode=True,
             max_iterations=1,

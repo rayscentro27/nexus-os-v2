@@ -649,6 +649,7 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
             raise RuntimeError("hermes_interpreter_missing")
         child_env = {
             "HOME": os.path.expanduser("~"), "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+            "HERMES_HOME": os.getenv("NOVA_HERMES_HOME", os.path.join(REPO_ROOT, "config", "hermes", "nova-profile")),
             "NOVA_RUNTIME_ENV": RUNTIME_ENV, "NOVA_HERMES_NATIVE_SHADOW": "false",
             "NOVA_HERMES_NATIVE_PRIMARY": "true", "PYTHONUNBUFFERED": "1",
             "NOVA_PRIMARY_SESSION_ID": session, "NOVA_SHADOW_UPDATE_ID": str(update_id),
