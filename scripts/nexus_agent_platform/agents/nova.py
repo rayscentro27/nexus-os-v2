@@ -3803,17 +3803,21 @@ def _capability_gate(state: AgentState) -> AgentState:
         history = load_memory(chat_id)
         prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
         objective = re.sub(r"^.*?\b(?:investigate|research|look\s+into|check|review)\b\s*", "", text, flags=re.I).strip(" .") or text
-        if prior and re.search(r"\b(?:this|that|it|the idea|the one)\b", text, re.I):
+        if prior and re.search(r"\b(?:this|that|it|the idea|the one|your recommendation)\b", text, re.I):
             objective = f"{objective}\nContext from prior answer: {prior[:1200]}"
         from nexus_agent_platform.capabilities.shared import execute_shared_capability
         delegation = execute_shared_capability("hermes_nova", "submit_alpha_request", {
-            "objective": objective, "referent": prior, "requested_by": "hermes_nova",
+            "objective": objective, "referent": prior, "requested_by": "hermes_nova", "execute": True,
         }, trace_id=trace_id)
         state.metadata["capability_gate"] = {"decision": "bounded_alpha_delegation", "capability": "submit_alpha_request", "build_sha": BUILD_SHA, "trace_id": trace_id}
         state.metadata["capability_result"] = {"tool": "alpha_governed_layer", "query_type": "bounded_alpha_delegation", "status": delegation.get("status", "unknown"), "data": delegation.get("data", delegation), "provenance": delegation.get("provenance", {}), "trace_id": trace_id}
         if delegation.get("status") == "success":
             data = delegation.get("data", {})
-            state.assistant_response = f"I sent that to Research. Alpha received it as {data.get('request_id', 'a bounded research request')}; no research has been claimed complete yet."
+            execution = data.get("execution") or delegation.get("execution") or {}
+            if execution.get("executed") is True:
+                state.assistant_response = f"Research completed a bounded review of that recommendation. I’ll compare its findings with my original view before recommending the next step."
+            else:
+                state.assistant_response = f"I sent that to Research. Alpha received it as {data.get('request_id', 'a bounded research request')}; no research has been claimed complete yet."
         else:
             state.assistant_response = "I couldn't submit that research request through the approved intake, so nothing was started."
         return state
@@ -4162,7 +4166,7 @@ def _build_context(state: AgentState) -> AgentState:
             "\n\nCapability execution protocol (use only when current evidence is needed): "
             "after thinking, you may request exactly one bounded capability by returning ONLY "
             "a JSON object of the form {\"nova_capability_request\":{\"capability\": "
-            "\"PUBLIC_WEB_SEARCH\"|\"PUBLIC_WEB_RETRIEVAL\"|\"ALPHA_RESEARCH\"|\"CAPABILITY_STATUS\", "
+                "\"PUBLIC_WEB_SEARCH\"|\"PUBLIC_WEB_RETRIEVAL\"|\"ALPHA_RESEARCH\"|\"CAPABILITY_STATUS\"|\"NEXUS_READ\"|\"NEXUS_CAPABILITY_MAP\", "
             "\"arguments\":{...}}}. Do not use this for ordinary conversation. "
             "The system will execute the allowlisted request and give the result back for your final answer."
         )
