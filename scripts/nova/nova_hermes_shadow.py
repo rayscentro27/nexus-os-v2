@@ -188,7 +188,10 @@ def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
     from hermes.hermes_web_search import _search_bing_html, _search_duckduckgo_html, _search_searxng
     attempts = []
     for provider, fn in (("searxng", _search_searxng), ("duckduckgo_html", _search_duckduckgo_html), ("bing_html", _search_bing_html)):
-        result = fn(query, limit)
+        if provider == "searxng" and os.getenv("NOVA_SHADOW_FORCE_SEARXNG_FAILURE", "false").lower() == "true":
+            result = {"status": "error", "results": [], "notes": ["forced bounded preflight failure"]}
+        else:
+            result = fn(query, limit)
         attempts.append({"provider": provider, "status": result.get("status"), "notes": result.get("notes", [])})
         if result.get("status") == "ok" and result.get("results"):
             result["attempted_providers"] = attempts
@@ -311,6 +314,16 @@ def _register_bounded_nexus_tools() -> None:
         return json.dumps(result, sort_keys=True, default=str)
 
     def alpha_challenge(args: Dict[str, Any], **kwargs: Any) -> str:
+        if os.getenv("NOVA_SHADOW_FORCE_ALPHA_FAILURE", "false").lower() == "true":
+            request_id = "alpha_req_" + uuid.uuid4().hex
+            return json.dumps({
+                "status": "FAILED",
+                "error": "forced bounded preflight failure",
+                "correlation": {
+                    "alpha_request_id": request_id,
+                    "alpha_job_id": "alpha-job-failed-" + request_id[-12:],
+                },
+            })
         result = execute_shared_capability(
             "hermes_nova", "submit_alpha_request", {"objective": args["objective"], "execute": True, "requested_by": "hermes_nova"},
             conversation_id="shadow", trace_id="hermes_native_shadow",
@@ -369,6 +382,7 @@ def run_shadow(
             toolsets = [name for name in toolsets if name != "research"]
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     shadow_state = _load_shadow_state(active_session)
+    prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
@@ -392,6 +406,12 @@ def run_shadow(
             "is context, not a substitute for a required current read.\n"
         )
     current_context = _current_shadow_context(shadow_state)
+    immutable_objective = (
+        "\n\n[IMMUTABLE TURN OBJECTIVE]\n"
+        "The original user objective for this turn is: " + turn_contract["turn_objective"] + "\n"
+        "Tool calls may collect evidence, but they must not replace or change this objective. "
+        "The final response must answer the original objective.\n"
+    )
     conversation_history = []
     for turn in (shadow_state.get("recent_turns") or [])[-8:]:
         if not isinstance(turn, dict):
@@ -407,7 +427,7 @@ def run_shadow(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         enabled_toolsets=toolsets,
         session_id=active_session,
-        ephemeral_system_prompt=_nova_soul() + _shadow_resource_guidance() + current_context + correlation_context,
+        ephemeral_system_prompt=_nova_soul() + _shadow_resource_guidance() + current_context + immutable_objective + correlation_context,
         load_soul_identity=False,
         save_trajectories=False,
         quiet_mode=True,
@@ -436,7 +456,7 @@ def run_shadow(
     # If an explicit current-turn resource was omitted, let Hermes continue the
     # same session and request the missing native tools. This is an execution
     # contract, not a question router or a canned answer path.
-    first_state = evidence_state(prompt, _tool_messages(all_messages))
+    first_state = evidence_state(prompt, _tool_messages(all_messages), prior_records)
     first_state["page_payloads"] = [row["payload"] for row in _tool_messages(all_messages) if row.get("name") == "public_web_retrieval_shadow"]
     first_state["claim_validation"] = claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
     if first_state.get("missing_resources") or first_state.get("synthesis_required") or not first_state["claim_validation"].get("valid", True):
@@ -447,7 +467,13 @@ def run_shadow(
                 "The current objective requires a combined answer. The required "
                 "Nexus and public-web evidence must appear in the final reasoning; "
                 "any Alpha result is supplementary. Do not call another tool in "
-                "this continuation unless a required resource is still missing.\n"
+                "this continuation unless a required resource is still missing. "
+                "State an actual choice, why it wins, the concrete Nexus advantage, "
+                "the outside-market signal, the fastest validation test, an honest "
+                "cost range, a revenue hypothesis, the biggest risk, confidence, "
+                "and what evidence would change your mind. If a field cannot be "
+                "supported, label it unknown or qualify it rather than inventing "
+                "precision.\n"
             )
         if first_state["claim_validation"].get("unsupported_claims"):
             continuation += (
@@ -494,12 +520,18 @@ def run_shadow(
                 result_id = result_id or payload.get("artifact_id") or payload.get("receipt_id")
             record = {
                 "capability": capability,
+                "resource": {"nexus_read_shadow": "NEXUS", "public_web_search_shadow": "PUBLIC_WEB", "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL", "alpha_challenge_shadow": "ALPHA"}.get(capability, capability),
+                "source_turn_id": turn_id,
                 "request_id": request_id,
                 "result_id": result_id,
                 "job_id": job_id,
                 "artifact_id": artifact_id,
                 "objective": data.get("objective") or job.get("objective"),
                 "completed_at": payload.get("completed_at") or payload.get("created_at") or datetime.now(timezone.utc).isoformat(),
+                "retrieved_at": payload.get("retrieved_at") or payload.get("checked_at") or payload.get("completed_at") or datetime.now(timezone.utc).isoformat(),
+                "currentness": payload.get("currentness") or payload.get("freshness") or "UNKNOWN",
+                "relevance": "current_turn_execution",
+                "valid_for_current_turn": True,
                 "current_for_turn": True,
                 "status": payload.get("status"),
             }
@@ -520,7 +552,17 @@ def run_shadow(
         turns.append({"user": prompt[:1000], "assistant": shadow_state.get("last_response", "")})
         shadow_state["recent_turns"] = turns[-8:]
         tool_rows = _tool_messages(messages)
-        state_contract = evidence_state(prompt, tool_rows)
+        state_contract = evidence_state(prompt, tool_rows, prior_records)
+        if not tool_rows and prior_records and not turn_contract.get("required_resources"):
+            # A follow-up may reuse evidence, but only through its structured
+            # receipt linkage. Conversation text alone is not provenance.
+            for row in prior_records[-8:]:
+                row["valid_for_current_turn"] = True
+                row["relevance"] = "prior_turn_followup"
+            state_contract["reused_evidence"] = [
+                {k: row.get(k) for k in ("source_turn_id", "resource", "capability", "request_id", "result_id", "artifact_id", "retrieved_at", "currentness", "relevance", "valid_for_current_turn")}
+                for row in prior_records[-8:]
+            ]
         state_contract["page_payloads"] = [row["payload"] for row in tool_rows if row.get("name") == "public_web_retrieval_shadow"]
         draft = shadow_state.get("last_response", "")
         state_contract["claim_validation"] = claim_feedback(prompt, draft, state_contract)

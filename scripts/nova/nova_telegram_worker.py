@@ -415,6 +415,12 @@ def _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=None, prima
             "NOVA_SHADOW_UPDATE_ID": str(update_id),
             "NOVA_SHADOW_MESSAGE_ID": str(message.get("message_id") or update_id),
         }
+        # Development-only bounded fault injection is inherited by the
+        # already-isolated shadow process. It is intentionally opt-in and has
+        # no effect in normal certification runs.
+        for key in ("NOVA_SHADOW_FORCE_SEARXNG_FAILURE", "NOVA_SHADOW_FORCE_ALPHA_FAILURE"):
+            if os.environ.get(key):
+                child_env[key] = os.environ[key]
         completed = subprocess.run(
             [HERMES_SHADOW_PYTHON, HERMES_SHADOW_SCRIPT, text, "--session-id", session],
             cwd=REPO_ROOT,

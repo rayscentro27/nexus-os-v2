@@ -28,6 +28,7 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
     current = bool(re.search(r"\b(current|latest|right now|today|this week)\b", text))
     return {
         "objective": (prompt or "")[:1000],
+        "turn_objective": (prompt or "")[:2000],
         "required_resources": list(dict.fromkeys(resources)),
         "fresh_execution_required": current or bool(resources),
         "reuse_only": bool(reuse_alpha),
@@ -72,7 +73,7 @@ def currentness(source_date: str | None, retrieved_at: str | None, *, required: 
     return "CURRENT" if age_days <= 14 else "RECENT_BUT_NOT_CURRENT"
 
 
-def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]], prior_records: Iterable[Dict[str, Any]] = ()) -> Dict[str, Any]:
     messages = list(tool_messages)
     requirements = turn_requirements(prompt)
     executed = executed_resources(messages)
@@ -105,7 +106,14 @@ def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]]) -> Dict
         "partial_claims": partial,
         "source_quality": sorted({x.get("source_quality") for x in supported if x.get("source_quality")}),
         "currentness": "UNKNOWN" if requirements["fresh_execution_required"] and not supported else "AVAILABLE",
-        "synthesis_required": len(requirements["required_resources"]) > 1 and "ALPHA" in executed,
+        # Any explicitly multi-resource objective needs a final synthesis pass;
+        # Alpha is optional and must not be the condition that activates this
+        # contract.
+        "synthesis_required": len(requirements["required_resources"]) > 1,
+        "reused_evidence": [
+            {k: row.get(k) for k in ("source_turn_id", "resource", "capability", "request_id", "result_id", "artifact_id", "retrieved_at", "currentness", "relevance", "valid_for_current_turn")}
+            for row in prior_records if row.get("valid_for_current_turn")
+        ],
     }
 
 
