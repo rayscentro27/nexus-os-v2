@@ -212,7 +212,8 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
             and item.get("support") in {"DIRECT_PAGE_CONTENT", "DIRECT_RESULT"}
             for item in state.get("supported_claims", [])
         )
-        if not exact_target_supported and not re.search(r"(?:target|goal|hypothesis|estimate|my judgment|i would use)", text):
+        target_framing = re.search(r"(?:initial|test|validation)\s+(?:target|goal)|(?:target|goal)\s+for\s+(?:a\s+)?test|my\s+(?:target|goal)|i(?:'d| would)\s+use", text)
+        if not exact_target_supported and (not target_framing or re.search(r"(?:potential|consistent\s+income|revenue\s+stream|can\s+create|could\s+generate|reach(?:ing)?\s+the\s+target)", text)):
             unsupported.append("aspirational_target_attribution")
     alpha_items = [item for item in state.get("supported_claims", []) if item.get("claim") == "alpha_challenge_shadow"]
     alpha_has_findings = any(bool(item.get("supported_findings")) for item in alpha_items)
