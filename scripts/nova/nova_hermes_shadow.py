@@ -374,12 +374,18 @@ def run_shadow(
     AIAgent = _load_hermes()
     _register_bounded_nexus_tools()
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
-    toolsets = enabled_toolsets or ["shadow_web", "nexus", "research", "delegation"]
+    toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "nexus", "research", "delegation"]
     if turn_contract := turn_requirements(prompt):
         if turn_contract.get("reuse_only"):
             # A result-retrieval follow-up uses the linked result in context;
             # Alpha remains available for an explicit new challenge.
             toolsets = [name for name in toolsets if name != "research"]
+        if turn_contract.get("reasoning_first"):
+            # A self-contained object comparison is completed by the model
+            # before optional resources are exposed. This is a generic
+            # reason-first contract, not a candidate-specific router; callers
+            # can still request current evidence explicitly.
+            toolsets = []
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     shadow_state = _load_shadow_state(active_session)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
@@ -404,6 +410,16 @@ def run_shadow(
             "consulted for this task: " + ", ".join(turn_contract["required_resources"]) + ". "
             "Use native tools for those resources in this turn. Prior conversation "
             "is context, not a substitute for a required current read.\n"
+        )
+    if turn_contract.get("reasoning_first"):
+        turn_contract_guidance += (
+            "\n\n[REASONING-FIRST OBJECT PRESERVATION]\n"
+            "This is a self-contained comparison. Preserve the supplied candidate "
+            "objects and reason over them before any optional delegation. The "
+            "candidate set is: " + ", ".join(turn_contract["candidate_set"]) + ". "
+            "If an optional resource is later useful, its objective must discuss "
+            "these same candidates and its result is additive evidence; it must "
+            "not replace the candidate set or become the answer.\n"
         )
     current_context = _current_shadow_context(shadow_state)
     immutable_objective = (
@@ -459,7 +475,21 @@ def run_shadow(
     first_state = evidence_state(prompt, _tool_messages(all_messages), prior_records)
     first_state["page_payloads"] = [row["payload"] for row in _tool_messages(all_messages) if row.get("name") == "public_web_retrieval_shadow"]
     first_state["claim_validation"] = claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
-    if first_state.get("missing_resources") or first_state.get("synthesis_required") or not first_state["claim_validation"].get("valid", True):
+    draft_text = str(result.get("final_response", "")) if isinstance(result, dict) else ""
+    synthesis_terms_missing = []
+    if first_state.get("synthesis_required"):
+        lower_draft = draft_text.lower()
+        for label, patterns in {
+            "actual_choice": ("recommend", "choose", "would test", "pick"),
+            "cost_range": ("cost", "budget", "$"),
+            "revenue_hypothesis": ("revenue", "earn", "income", "monetiz"),
+            "biggest_risk": ("risk", "downside", "blocker"),
+            "confidence": ("confidence", "uncertain", "moderate", "low confidence"),
+            "what_would_change_my_mind": ("change my mind", "what would change", "reconsider"),
+        }.items():
+            if not any(term in lower_draft for term in patterns):
+                synthesis_terms_missing.append(label)
+    if first_state.get("missing_resources") or first_state.get("synthesis_required") or synthesis_terms_missing or not first_state["claim_validation"].get("valid", True):
         continuation = continuation_guidance(first_state)
         if first_state.get("synthesis_required"):
             continuation += (
@@ -475,6 +505,17 @@ def run_shadow(
                 "supported, label it unknown or qualify it rather than inventing "
                 "precision.\n"
             )
+            if synthesis_terms_missing:
+                continuation += "The draft is missing these synthesis fields: " + ", ".join(synthesis_terms_missing) + ". Fill them from the evidence and label unsupported fields as unknown; do not omit the decision.\n"
+            continuation += "Evidence state for this turn (not a new objective): " + json.dumps({
+                "required_resources": first_state.get("required_resources"),
+                "executed_resources": first_state.get("executed_resources"),
+                "missing_resources": first_state.get("missing_resources"),
+                "source_quality": first_state.get("source_quality"),
+                "currentness": first_state.get("currentness"),
+                "supported_claims": first_state.get("supported_claims", [])[-8:],
+                "partial_claims": first_state.get("partial_claims", [])[-8:],
+            }, default=str) + "\n"
         if first_state["claim_validation"].get("unsupported_claims"):
             continuation += (
                 "\n[CLAIM SUPPORT FEEDBACK]\n"
@@ -490,6 +531,54 @@ def run_shadow(
         if isinstance(follow_up, dict):
             all_messages.extend(follow_up.get("messages", []))
             result = follow_up
+            # Validate the revised draft once more. If it still uses strong
+            # currentness language over undated/partial evidence, give the
+            # model one bounded correction opportunity rather than accepting
+            # the claim or turning the resource gap into a refusal.
+            revised_rows = _tool_messages(all_messages)
+            revised_state = evidence_state(prompt, revised_rows, prior_records)
+            revised_state["page_payloads"] = [row["payload"] for row in revised_rows if row.get("name") == "public_web_retrieval_shadow"]
+            revised_claim = claim_feedback(prompt, str(result.get("final_response", "")), revised_state)
+            if not revised_claim.get("valid", True):
+                correction = (
+                    "\n[FINAL PROVENANCE CORRECTION]\n"
+                    "The revised answer still makes an unsupported evidence claim: "
+                    + ", ".join(revised_claim.get("unsupported_claims", []))
+                    + ". Keep the useful recommendation, but explicitly say that "
+                    "the outside evidence is partial, undated, or otherwise not "
+                    "strongly current, lower confidence accordingly, and separate "
+                    "verified facts from your working hypothesis. Do not say current, "
+                    "verified, or confirmed unless the returned evidence supports it.\n"
+                )
+                final_correction = agent.run_conversation(
+                    "For the original user request: " + prompt[:2000] + correction,
+                    task_id=turn_id + "-provenance",
+                )
+                if isinstance(final_correction, dict):
+                    all_messages.extend(final_correction.get("messages", []))
+                    result = final_correction
+            if first_state.get("synthesis_required"):
+                final_text = str(result.get("final_response", ""))
+                final_lower = final_text.lower()
+                required_synthesis_terms = {
+                    "actual_choice": ("recommend", "choose", "would test", "pick"),
+                    "cost_range": ("cost", "budget", "$"),
+                    "revenue_hypothesis": ("revenue", "earn", "income", "monetiz"),
+                    "biggest_risk": ("risk", "downside", "blocker"),
+                    "confidence": ("confidence", "uncertain", "moderate", "low confidence"),
+                    "what_would_change_my_mind": ("change my mind", "what would change", "reconsider"),
+                }
+                final_missing = [label for label, terms in required_synthesis_terms.items() if not any(term in final_lower for term in terms)]
+                if final_missing:
+                    final_synthesis = agent.run_conversation(
+                        "For the original user request: " + prompt[:2000] +
+                        "\n[SYNTHESIS COMPLETION]\nThe final draft still omits: " + ", ".join(final_missing) +
+                        ". Provide one clear working choice and fill every requested field using the returned Nexus and outside evidence. Mark weak or missing outside evidence explicitly and reduce confidence; do not claim verification that did not occur.",
+                        task_id=turn_id + "-synthesis",
+                    )
+                    if isinstance(final_synthesis, dict):
+                        all_messages.extend(final_synthesis.get("messages", []))
+                        result = final_synthesis
     shadow_state.update({"last_turn_id": turn_id, "last_prompt": prompt[:500], "updated_at": datetime.now(timezone.utc).isoformat()})
     if isinstance(result, dict):
         messages = all_messages

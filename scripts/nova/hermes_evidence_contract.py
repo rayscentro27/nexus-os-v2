@@ -26,12 +26,20 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
     if alpha_request and not reuse_alpha:
         resources.append("ALPHA")
     current = bool(re.search(r"\b(current|latest|right now|today|this week)\b", text))
+    comparison = re.search(r"\bcompare\s+(.+?)(?:[.?]|$)", text, re.I)
+    candidate_set: List[str] = []
+    if comparison:
+        candidate_text = comparison.group(1)
+        candidate_text = re.sub(r"\s+and\s+", ",", candidate_text, flags=re.I)
+        candidate_set = [item.strip(" ,") for item in candidate_text.split(",") if item.strip(" ,")]
     return {
         "objective": (prompt or "")[:1000],
         "turn_objective": (prompt or "")[:2000],
         "required_resources": list(dict.fromkeys(resources)),
         "fresh_execution_required": current or bool(resources),
         "reuse_only": bool(reuse_alpha),
+        "candidate_set": candidate_set,
+        "reasoning_first": bool(candidate_set and not resources),
     }
 
 
@@ -140,13 +148,13 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
     retrieved = [x for x in state.get("supported_claims", []) if x.get("support") == "DIRECT_PAGE_CONTENT"]
     if re.search(r"\baffiliate|referral|partner program", objective) and re.search(r"affiliate program|referral program", text):
         page_text = " ".join(str(x.get("content", "")) for x in state.get("page_payloads", []))
-        qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified", text)
+        qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)
         if not qualified_unknown and not re.search(r"affiliate|referral|partner program", page_text, re.I):
             unsupported.append("affiliate_program_status")
     if re.search(r"\b(current|latest|right now|today)\b", objective) and not retrieved:
-        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out", text):
+        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text):
             unsupported.append("current_external_evidence")
     elif re.search(r"\b(current|latest|right now|today)\b", objective):
-        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out", text):
+        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text):
             unsupported.append("currentness_not_proven")
     return {"valid": not unsupported, "unsupported_claims": unsupported}
