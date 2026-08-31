@@ -63,6 +63,8 @@ def executed_resources(tool_messages: Iterable[Dict[str, Any]]) -> List[str]:
             "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL",
             "alpha_challenge_shadow": "ALPHA",
         }.get(name)
+        if name.startswith("mcp__nexus_mcp__nexus_get_"):
+            resource = "NEXUS"
         if resource and resource not in result:
             result.append(resource)
     return result
@@ -107,7 +109,7 @@ def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]], prior_r
             url = payload.get("url") or payload.get("requested_url")
             item = {"claim": "retrieved page content", "url": url, "support": "DIRECT_PAGE_CONTENT" if payload.get("content_length", 0) else "UNKNOWN", "source_quality": source_quality(url or ""), "retrieved_at": payload.get("retrieved_at"), "source_date": payload.get("source_date"), "currentness": payload.get("currentness") or "UNKNOWN"}
             (supported if item["support"] == "DIRECT_PAGE_CONTENT" else partial).append(item)
-        elif name in {"nexus_read_shadow", "alpha_challenge_shadow"}:
+        elif name in {"nexus_read_shadow", "alpha_challenge_shadow"} or name.startswith("mcp__nexus_mcp__nexus_get_"):
             status = payload.get("status")
             item = {"claim": name, "support": "DIRECT_RESULT" if status else "UNKNOWN", "result_id": payload.get("result_id")}
             if name == "alpha_challenge_shadow":

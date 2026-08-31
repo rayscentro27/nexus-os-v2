@@ -148,12 +148,41 @@ def _shadow_resource_guidance() -> str:
 def _json_object(value: Any) -> Dict[str, Any]:
     if isinstance(value, dict):
         return value
+    if isinstance(value, list):
+        # MCP tool results arrive as content parts (normally one text part).
+        # Parse the structured JSON part and keep the wire envelope out of the
+        # evidence layer.
+        for part in value:
+            if isinstance(part, dict) and part.get("type") == "text":
+                parsed = _json_object(part.get("text"))
+                if parsed:
+                    return parsed
+        return {}
     if isinstance(value, str):
         try:
             parsed = json.loads(value)
             return parsed if isinstance(parsed, dict) else {}
         except (TypeError, ValueError):
-            return {}
+            # Hermes wraps MCP text results in an untrusted-data envelope.
+            # Decode only the JSON object carried by that envelope, preferring
+            # structuredContent and otherwise the JSON result string.
+            start = value.find("{")
+            if start < 0:
+                return {}
+            try:
+                wrapped, _ = json.JSONDecoder().raw_decode(value[start:])
+            except (TypeError, ValueError):
+                return {}
+            if isinstance(wrapped, dict) and isinstance(wrapped.get("structuredContent"), dict):
+                return wrapped["structuredContent"]
+            result = wrapped.get("result") if isinstance(wrapped, dict) else None
+            if isinstance(result, str):
+                try:
+                    parsed = json.loads(result)
+                    return parsed if isinstance(parsed, dict) else {}
+                except (TypeError, ValueError):
+                    return {}
+            return wrapped if isinstance(wrapped, dict) else {}
     return {}
 
 
@@ -173,7 +202,7 @@ def _tool_execution_state(tool_rows: list[Dict[str, Any]]) -> Dict[str, Any]:
     return {
         "search_executed": "public_web_search_shadow" in counts,
         "retrieval_executed": "public_web_retrieval_shadow" in counts,
-        "nexus_executed": "nexus_read_shadow" in counts,
+        "nexus_executed": "nexus_read_shadow" in counts or any(name.startswith("mcp__nexus_mcp__nexus_get_") for name in counts),
         "alpha_executed": "alpha_challenge_shadow" in counts,
         "tool_call_counts": counts,
         "tool_statuses": statuses,
@@ -380,10 +409,12 @@ def _retrieve_public_page(url: str, max_chars: int = 50000) -> Dict[str, Any]:
 
 
 def _register_bounded_nexus_tools() -> None:
-    """Register read/delegation adapters in the Hermes process only.
+    """Register the non-Nexus Nova adapters in the Hermes process only.
 
-    These names are intentionally shadow-specific and expose no mutation or
-    arbitrary SQL.  Existing Nexus capability boundaries remain authoritative.
+    Nexus operational reads are provided by the profile-local ``nexus_mcp``
+    server.  The historical ``nexus_read_shadow`` adapter is retained only as
+    an explicit compatibility escape hatch for old fixtures and is not
+    registered in normal Nova execution.
     """
     scripts_root = REPO_ROOT / "scripts"
     # Hermes' registry is a top-level package.  Ensure its checkout is on the
@@ -396,13 +427,6 @@ def _register_bounded_nexus_tools() -> None:
     from tools.registry import registry  # type: ignore
     from nexus_agent_platform.capabilities.shared import execute_shared_capability
 
-    nexus_schema = {
-        "name": "nexus_read_shadow",
-        "description": "Read an authorized Nexus capability/status resource when the question asks about Nexus or how Nexus could help; return the real capability/status evidence. This is a read only resource and never mutates Nexus.",
-        "parameters": {"type": "object", "properties": {
-            "resource": {"type": "string", "enum": ["NEXUS_CAPABILITY_MAP", "NEXUS_LIVE_TRUTH"]}
-        }, "required": ["resource"]},
-    }
     alpha_schema = {
         "name": "alpha_challenge_shadow",
         "description": "Request a bounded Alpha challenge/research review when Ray explicitly asks for independent research or when missing evidence materially prevents the answer; for a self-contained comparison with a supplied candidate set, reason and choose first instead of delegating. No operational execution.",
@@ -420,13 +444,6 @@ def _register_bounded_nexus_tools() -> None:
         "description": "Read a candidate public result URL through bounded HTTP retrieval. Use this after search when snippets are insufficient for verification or detailed/current claims; return source content and provenance.",
         "parameters": {"type": "object", "properties": {"url": {"type": "string", "format": "uri"}}, "required": ["url"]},
     }
-
-    def nexus_read(args: Dict[str, Any], **_: Any) -> str:
-        result = execute_shared_capability(
-            "hermes_nova", "get_capability_registry" if args["resource"] == "NEXUS_CAPABILITY_MAP" else "get_runtime_capabilities", {},
-            conversation_id="shadow", trace_id="hermes_native_shadow",
-        )
-        return json.dumps(result, sort_keys=True, default=str)
 
     def alpha_challenge(args: Dict[str, Any], **kwargs: Any) -> str:
         if os.getenv("NOVA_SHADOW_FORCE_ALPHA_FAILURE", "false").lower() == "true":
@@ -494,8 +511,24 @@ def _register_bounded_nexus_tools() -> None:
         retrieval_cache[url] = value
         return value
 
-    registry.register("nexus_read_shadow", "nexus", nexus_schema, nexus_read,
-                      description=nexus_schema["description"], max_result_size_chars=50000)
+    if os.getenv("NOVA_ENABLE_LEGACY_SHADOW_NEXUS", "false").lower() == "true":
+        # Compatibility-only path; production Nova uses nexus_mcp from the
+        # dedicated profile and must not silently fall back to summaries.
+        legacy_schema = {
+            "name": "nexus_read_shadow",
+            "description": "Legacy compatibility read; not the primary Nexus operational interface.",
+            "parameters": {"type": "object", "properties": {
+                "resource": {"type": "string", "enum": ["NEXUS_CAPABILITY_MAP", "NEXUS_LIVE_TRUTH"]}
+            }, "required": ["resource"]},
+        }
+        def legacy_nexus_read(args: Dict[str, Any], **_: Any) -> str:
+            result = execute_shared_capability(
+                "hermes_nova", "get_capability_registry" if args["resource"] == "NEXUS_CAPABILITY_MAP" else "get_runtime_capabilities", {},
+                conversation_id="shadow", trace_id="hermes_legacy_shadow",
+            )
+            return json.dumps(result, sort_keys=True, default=str)
+        registry.register("nexus_read_shadow", "nexus", legacy_schema, legacy_nexus_read,
+                          description=legacy_schema["description"], max_result_size_chars=50000)
     registry.register("alpha_challenge_shadow", "research", alpha_schema, alpha_challenge,
                       description=alpha_schema["description"], max_result_size_chars=50000)
     registry.register("public_web_search_shadow", "shadow_web", web_search_schema, public_web_search,
@@ -531,7 +564,7 @@ def run_shadow(
     phase_timings["hermes_init_ms"] = round((time.monotonic() - hermes_load_started) * 1000, 1)
     _register_bounded_nexus_tools()
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
-    toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "nexus", "research", "delegation"]
+    toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "mcp-nexus_mcp", "research", "delegation"]
     if turn_contract := turn_requirements(prompt):
         if turn_contract.get("reuse_only"):
             # A result-retrieval follow-up uses the linked result in context;
@@ -544,6 +577,14 @@ def run_shadow(
             # can still request current evidence explicitly.
             toolsets = []
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
+    # Hermes intentionally removed MCP discovery as a module import side
+    # effect. Nova is a bounded synchronous entry point, so explicitly load
+    # the profile-local MCP server before taking the tool snapshot. This is
+    # the only primary Nexus read surface; the legacy shadow adapter remains
+    # disabled unless explicitly requested by an old fixture.
+    if "mcp-nexus_mcp" in toolsets:
+        from tools.mcp_tool import discover_mcp_tools
+        discover_mcp_tools()
     shadow_state = _load_shadow_state(active_session)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
@@ -890,7 +931,7 @@ def run_shadow(
                 result_id = result_id or payload.get("artifact_id") or payload.get("receipt_id")
             record = {
                 "capability": capability,
-                "resource": {"nexus_read_shadow": "NEXUS", "public_web_search_shadow": "PUBLIC_WEB", "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL", "alpha_challenge_shadow": "ALPHA"}.get(capability, capability),
+                "resource": ("NEXUS" if capability.startswith("mcp__nexus_mcp__nexus_get_") else {"nexus_read_shadow": "NEXUS", "public_web_search_shadow": "PUBLIC_WEB", "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL", "alpha_challenge_shadow": "ALPHA"}.get(capability, capability)),
                 "source_turn_id": turn_id,
                 "request_id": request_id,
                 "result_id": result_id,

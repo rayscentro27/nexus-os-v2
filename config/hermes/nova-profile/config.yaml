@@ -1,3 +1,18 @@
 memory:
   memory_enabled: false
   user_profile_enabled: false
+
+# Nova's Nexus surface is a local, read-only MCP boundary.  The server calls
+# the repository's governed canonical-read layer; MCP itself grants no
+# authority.  This profile-local configuration does not affect global Hermes.
+mcp_servers:
+  nexus_mcp:
+    enabled: true
+    command: /Users/raymonddavis/nexus-hermes-runtime/.venv/bin/python
+    args:
+      - -m
+      - services.nexus_mcp.server
+    env:
+      PYTHONPATH: /Users/raymonddavis/nexus-os-v2
+    timeout: 30
+    connect_timeout: 10

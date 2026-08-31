@@ -21,6 +21,9 @@ python-telegram-bot>=21.0
 httpx>=0.27
 requests>=2.31
 
+# Local Hermes/Nexus MCP stdio boundary
+mcp==1.28.1
+
 # Web search
 brave-search>=0.2
 
