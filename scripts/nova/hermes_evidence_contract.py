@@ -146,6 +146,29 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
     objective = (prompt or "").lower()
     unsupported: List[str] = []
     retrieved = [x for x in state.get("supported_claims", []) if x.get("support") == "DIRECT_PAGE_CONTENT"]
+    # Validate currentness asserted by the draft itself, not only currentness
+    # requested by the user. A no-tool recommendation may use model judgment,
+    # but cannot upgrade it to current or verified without direct evidence or
+    # an explicitly linked current result.
+    current_assertion = bool(re.search(
+        r"\b(current(?:ly)?|latest|right now|verified|confirmed|evidence (?:shows|indicates))\b",
+        text,
+    ))
+    qualification = re.search(
+        r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|"
+        r"currentness_not_proven|status remains unverified|no results|timeout|timed out|"
+        r"limited (?:results|evidence)|partial (?:evidence|verification)|"
+        r"lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current",
+        text,
+    )
+    linked_current = any(
+        str(row.get("currentness", "")).upper() == "CURRENT"
+        and row.get("valid_for_current_turn")
+        for row in state.get("reused_evidence", [])
+        if isinstance(row, dict)
+    )
+    if current_assertion and not qualification and not retrieved and not linked_current:
+        unsupported.append("currentness_not_proven")
     if re.search(r"\baffiliate|referral|partner program", objective) and re.search(r"affiliate program|referral program", text):
         page_text = " ".join(str(x.get("content", "")) for x in state.get("page_payloads", []))
         qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)
@@ -157,4 +180,4 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
     elif re.search(r"\b(current|latest|right now|today)\b", objective):
         if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text):
             unsupported.append("currentness_not_proven")
-    return {"valid": not unsupported, "unsupported_claims": unsupported}
+    return {"valid": not unsupported, "unsupported_claims": list(dict.fromkeys(unsupported))}
