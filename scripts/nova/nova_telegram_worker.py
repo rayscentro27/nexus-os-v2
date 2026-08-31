@@ -41,6 +41,8 @@ NOVA_STATUS_PATH = os.path.join(NOVA_STATE_DIR, "nova_telegram_status.json")
 NOVA_LOG_PATH = os.path.join(REPO_ROOT, "reports", "runtime", "nova_telegram.log")
 NOVA_ERROR_LOG = os.path.join(REPO_ROOT, "reports", "runtime", "nova_telegram_error.log")
 NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "nova")
+NOVA_AB_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "ab_certification")
+AB_CERTIFICATION_FLAG = "NOVA_TELEGRAM_AB_CERTIFICATION"
 
 # Agent Platform path
 sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
@@ -349,6 +351,67 @@ def write_receipt(receipt_data):
     return receipt_data
 
 
+def _ab_safe_text(value, limit=8000):
+    """Bound A/B evidence and redact credential-shaped values."""
+    text = str(value or "")[:limit]
+    text = re.sub(r"(?i)(api[_ -]?key|token|secret|password)\s*[:=]\s*\S+", r"\1=<redacted>", text)
+    return text
+
+
+def _run_shadow_ab(update_id, message, chat_id, text, primary_result, primary_response, primary_latency_ms):
+    """Run the Hermes shadow silently after primary processing.
+
+    This is an opt-in certification hook inside the canonical Telegram
+    consumer. It never calls Telegram send methods and any shadow exception is
+    recorded rather than allowed to alter the primary response.
+    """
+    if get_env().get(AB_CERTIFICATION_FLAG, "").lower() != "true":
+        return None
+    run_id = f"ab-shadow-{update_id}-{hashlib.sha256(f'{time.time_ns()}:{text}'.encode()).hexdigest()[:12]}"
+    session = f"nova-telegram-ab-{chat_id}"
+    started = time.monotonic()
+    shadow = {
+        "run_id": run_id,
+        "session_id": session,
+        "update_id": update_id,
+        "message_id": message.get("message_id") or update_id,
+        "user_text": _ab_safe_text(text, 2000),
+        "received_at": datetime.now(timezone.utc).isoformat(),
+        "custom": {
+            "run_id": f"custom-{update_id}",
+            "model": (primary_result.metadata or {}).get("model_used", "unknown"),
+            "resources_selected": (primary_result.metadata or {}).get("model_selected_capability"),
+            "tools_executed": ((primary_result.metadata or {}).get("capability_result") or {}).get("capability"),
+            "final_response": _ab_safe_text(primary_response),
+            "latency_ms": primary_latency_ms,
+            "error": (primary_result.metadata or {}).get("validation_error"),
+        },
+        "shadow": {"run_id": run_id, "model": get_env().get("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")},
+        "shadow_telegram_send_count": 0,
+        "primary_telegram_send_count": 1,
+    }
+    try:
+        os.environ["NOVA_HERMES_NATIVE_SHADOW"] = "true"
+        from nova.nova_hermes_shadow import run_shadow
+        result = run_shadow(text, session_id=session)
+        messages = result.get("messages", []) if isinstance(result, dict) else []
+        shadow["shadow"].update({
+            "final_response": _ab_safe_text((result or {}).get("final_response")),
+            "tools_executed": [m.get("name") or m.get("tool_name") for m in messages if m.get("role") == "tool"],
+            "results": [_ab_safe_text(m.get("content"), 3000) for m in messages if m.get("role") == "tool"],
+            "model": (result or {}).get("model", shadow["shadow"]["model"]),
+            "error": None,
+            "completed": (result or {}).get("completed"),
+        })
+    except Exception as exc:
+        shadow["shadow"].update({"final_response": None, "tools_executed": [], "results": [], "error": type(exc).__name__ + ": " + str(exc)[:300]})
+    shadow["shadow"]["latency_ms"] = round((time.monotonic() - started) * 1000, 1)
+    os.makedirs(NOVA_AB_DIR, exist_ok=True)
+    with open(os.path.join(NOVA_AB_DIR, f"{run_id}.json"), "w") as handle:
+        json.dump(shadow, handle, indent=2)
+    return shadow
+
+
 def _capability_receipt(result, update_id, conversation_id, final_response_id=None):
     """Return secret-free capability execution facts for the Nova receipt."""
     metadata = getattr(result, "metadata", {}) or {}
@@ -583,6 +646,18 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         if result.metadata.get("reset_requested"):
             reset_memory(chat_id)
             _log(f"Memory reset for chat {chat_id}")
+
+        # Optional certification fan-out. The current custom response remains
+        # the sole user-visible output; Hermes shadow execution is silent and
+        # independently persisted for A/B comparison.
+        ab_record = _run_shadow_ab(
+            update_id, message, chat_id, text, result, response, latency_ms
+        )
+        if ab_record:
+            update_mission(mission, "SHADOW_RECORDED", {
+                "ab_run_id": ab_record.get("run_id"),
+                "shadow_telegram_send_count": 0,
+            })
 
         if otel.is_enabled:
             otel.record_generation(
