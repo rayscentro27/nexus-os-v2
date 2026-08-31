@@ -61,6 +61,17 @@ def test_completed_retrieval_rejects_stale_planning_language():
     assert "retrieval_state_mismatch" in feedback["unsupported_claims"]
 
 
+def test_brand_name_is_not_a_currentness_claim():
+    prompt = "Check Nexus and current outside information and choose a business opportunity."
+    state = evidence_state(prompt, [{
+        "name": "public_web_retrieval_shadow",
+        "payload": {"status": "ok", "currentness": "RECENT_BUT_NOT_CURRENT", "content_length": 40},
+    }])
+    state["page_payloads"] = [{"currentness": "RECENT_BUT_NOT_CURRENT"}]
+    feedback = claim_feedback(prompt, "I would consider a partnership with Current, but the evidence is limited.", state)
+    assert feedback["valid"] is True
+
+
 def test_turn_objective_is_preserved_and_multi_resource_needs_synthesis():
     prompt = "Using Nexus and current outside information, choose a plan."
     contract = turn_requirements(prompt)

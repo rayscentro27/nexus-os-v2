@@ -164,15 +164,22 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         r"\b(?:currently|latest|verified|confirmed|evidence (?:shows|indicates)|"
         r"current\s+(?:trends?|market|conditions?|demand|data|evidence)|"
         r"(?:surging|growing demand|increasing demand|market demand|"
-        r"significant interest|ideal time|market is on the rise))\b",
+        r"significant interest|ideal time|market is on the rise|market access|"
+        r"market potential|revenue acceleration|growth potential|gaining traction|"
+        r"increasing preference|rising demand|growing market|growing consumer interest|"
+        r"proven interest|favorable environment))\b",
         text,
     ))
     qualification = re.search(
         r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|"
         r"currentness_not_proven|status remains unverified|no results|timeout|timed out|"
-        r"limited (?:results|evidence)|partial (?:evidence|verification)|"
-        r"lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|"
-        r"weak|uncertain|not enough|need(?:s)? to verify|cannot confirm|not definitive|no reliable",
+        r"limited(?:\s+(?:results|evidence))?|partial (?:evidence|verification)|"
+        r"lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|not current enough|"
+        r"(?:evidence|data|support|verification|findings?|research|sources?|signal|results?).{0,80}"
+        r"(?:limited|weak|uncertain|not enough|unavailable|inconclusive)|"
+        r"(?:limited|weak|uncertain|not enough|unavailable|inconclusive).{0,80}"
+        r"(?:evidence|data|support|verification|findings?|research|sources?|signal|results?)|"
+        r"need(?:s)? to verify|cannot confirm|not definitive|no reliable",
         text,
     )
     linked_current = any(
@@ -193,14 +200,17 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         unsupported.append("currentness_not_proven")
     if re.search(r"\baffiliate|referral|partner program", objective) and re.search(r"affiliate program|referral program", text):
         page_text = " ".join(str(x.get("content", "")) for x in state.get("page_payloads", []))
-        qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)
+        qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited(?:\s+(?:results|evidence))?|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)
         if not qualified_unknown and not re.search(r"affiliate|referral|partner program", page_text, re.I):
             unsupported.append("affiliate_program_status")
-    if re.search(r"\b(current|latest)\b", objective) and not retrieved:
-        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|weak|uncertain|not enough|need(?:s)? to verify|cannot confirm|not definitive|no reliable", text):
+    # A current-data request requires validation only when the answer itself
+    # makes a currentness assertion. Brand names such as “Current” and a
+    # qualified recommendation are not claims of current external evidence.
+    if current_assertion and re.search(r"\b(current|latest)\b", objective) and not retrieved:
+        if not qualification:
             unsupported.append("current_external_evidence")
-    elif re.search(r"\b(current|latest)\b", objective):
-        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out|limited (?:results|evidence)|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|weak|uncertain|not enough|need(?:s)? to verify|cannot confirm|not definitive|no reliable", text):
+    elif current_assertion and re.search(r"\b(current|latest)\b", objective):
+        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not qualification:
             unsupported.append("currentness_not_proven")
     executed = set(state.get("executed_resources", []))
     if "PUBLIC_WEB_RETRIEVAL" in executed and re.search(

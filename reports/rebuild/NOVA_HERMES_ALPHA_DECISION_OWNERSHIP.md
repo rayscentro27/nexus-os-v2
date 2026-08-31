@@ -4,4 +4,4 @@ Alpha remains a governed research capability with its request/result/artifact co
 
 Alpha output is not copied as `Objective`, `Status`, `Key Findings`, `Risks`, `Recommendations`, or `Next Steps`. Empty or unverified findings cannot be described as confirming a recommendation. The final response remains model-generated and Nova-owned.
 
-The bounded presentation pass has no tools and cannot alter Alpha execution, identifiers, failure semantics, or exactly-once behavior.
+The linked recommendation→Alpha regression produced a Nova-owned position (“I advise against…”), with one Alpha tool call. The bounded presentation pass has no tools and cannot alter Alpha execution, identifiers, failure semantics, or exactly-once behavior.

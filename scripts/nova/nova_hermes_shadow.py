@@ -176,6 +176,8 @@ def _tool_execution_state(tool_rows: list[Dict[str, Any]]) -> Dict[str, Any]:
         "tool_call_counts": counts,
         "tool_statuses": statuses,
         "tool_currentness": currentness,
+        "retrieved_page_count": counts.get("public_web_retrieval_shadow", 0),
+        "retrieved_page_statuses": statuses.get("public_web_retrieval_shadow", []),
         "retrieval_status": "COMPLETED" if "public_web_retrieval_shadow" in counts else "NOT_EXECUTED",
     }
 
@@ -189,7 +191,7 @@ def _final_presentation_prompt(prompt: str, draft: str, tool_state: Dict[str, An
     currentness_rule = (
         "At least one retrieved source is marked CURRENT; keep current factual claims bounded to that evidence."
         if "CURRENT" in {str(value).upper() for value in currentness_values}
-        else "No retrieved source is marked CURRENT; do not state current trends, growing demand, surging markets, or verified recent facts. Recast them as a qualified hypothesis or say the evidence is not current enough."
+        else "No retrieved source is marked CURRENT; do not state current trends, growth, growing demand, market access, market potential, surging markets, or verified recent facts as established facts. Recast them as a qualified hypothesis or say the evidence is not current enough."
     )
     alpha_rule = (
         "Alpha was executed. Open by stating plainly whether you still agree with the prior recommendation. "
@@ -223,11 +225,14 @@ def _final_presentation_prompt(prompt: str, draft: str, tool_state: Dict[str, An
         "reviewed. If evidence is weak or unknown, say so naturally. Do not "
         "introduce current/latest/trend claims without current evidence; recast "
         "them as judgment or qualify them. If no retrieved source is marked "
-        "CURRENT, do not use market-demand or growth language as fact. When Alpha is executed, explain what "
+        "CURRENT, do not use market-demand, growth, market-access, or market-potential language as fact. When Alpha is executed, explain what "
         "its findings change in your own recommendation; do not present Alpha's "
         "objective/status/findings/recommendations as the answer. Preserve the "
         "original objective and concrete recommendation. Output only the final "
-        "answer.\n\n"
+        "answer. In normal conversation, do not use a heading for each internal "
+        "field, do not append a generic research offer after the answer, and do "
+        "not turn a simple choice into a numbered action plan. At most, include "
+        "one concrete next move when it materially helps.\n\n"
         f"CURRENTNESS RULE:\n{currentness_rule}\n\n"
         f"ALPHA DECISION-OWNERSHIP RULE:\n{alpha_rule or 'Alpha was not executed; answer from the available evidence and your own judgment.'}\n\n"
         f"ORIGINAL OBJECTIVE:\n{prompt[:3000]}\n\n"
@@ -753,6 +758,7 @@ def run_shadow(
         presentation_started = time.monotonic()
         presented = presentation_agent.run_conversation(
             _final_presentation_prompt(prompt, draft, _tool_execution_state(final_rows), presentation_state),
+            conversation_history=conversation_history or None,
             task_id=turn_id + "-presentation",
         )
         model_calls.append(round((time.monotonic() - presentation_started) * 1000, 1))
@@ -771,6 +777,7 @@ def run_shadow(
                         _tool_execution_state(final_rows),
                         {**presentation_state, "claim_validation": {"valid": False, "unsupported_claims": final_claim.get("unsupported_claims", [])}},
                     ) + "\nCorrect every listed claim-state issue before answering.",
+                    conversation_history=conversation_history or None,
                     task_id=turn_id + "-presentation-correction",
                 )
                 model_calls.append(round((time.monotonic() - correction_started) * 1000, 1))
@@ -783,13 +790,26 @@ def run_shadow(
                     # cannot alter resource selection or execution state.
                     if not corrected_claim.get("valid", True):
                         second_correction_started = time.monotonic()
+                        strict_claim_repair = (
+                            "\nSTRICT CLAIM REPAIR: The answer is still invalid for "
+                            + ", ".join(corrected_claim.get("unsupported_claims", []))
+                            + ". If currentness is not proven, remove factual growth, "
+                            "demand, market-access, market-potential, or recent-trend "
+                            "language and describe the evidence as limited; any choice "
+                            "must be clearly your judgment. If retrieval state is at issue, "
+                            "describe the actual completed or failed state. If Alpha ran, "
+                            "state whether you agree with the prior recommendation and say "
+                            "whether Alpha strengthened it; do not list Alpha report fields. "
+                            "Use no schema headings and do not offer generic next steps. Return only the answer."
+                        )
                         corrected_again = presentation_agent.run_conversation(
                             _final_presentation_prompt(
                                 prompt,
                                 str(result["final_response"]),
                                 _tool_execution_state(final_rows),
                                 {**presentation_state, "claim_validation": corrected_claim},
-                            ) + "\nThe previous rewrite still failed validation. Remove every unsupported current, growth, market-demand, retrieval-state, or evidence claim listed above. Return only a concise answer.",
+                            ) + strict_claim_repair,
+                            conversation_history=conversation_history or None,
                             task_id=turn_id + "-presentation-correction-final",
                         )
                         model_calls.append(round((time.monotonic() - second_correction_started) * 1000, 1))

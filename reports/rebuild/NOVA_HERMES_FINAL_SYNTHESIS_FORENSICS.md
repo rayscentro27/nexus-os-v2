@@ -2,7 +2,7 @@
 
 Campaign: HG-WP6.5-NOVA-HERMES-PRIMARY-FINAL-SYNTHESIS-AND-COMMUNICATION-OWNERSHIP-REPAIR-20260831-01  
 Baseline: 0580e10  
-Implementation commit: a9a5bf4
+Implementation commit: pending final commit
 
 ## Path
 
@@ -10,6 +10,6 @@ The canonical native path is `nova_telegram_worker._run_hermes_primary()` → th
 
 The final synthesis entrypoint is the existing Hermes result path, followed by the new tool-disabled `_final_presentation_prompt()` pass in `scripts/nova/nova_hermes_shadow.py`. `claim_feedback()` is the final validation entrypoint. Telegram text comes from the final presentation result, not a tool payload.
 
-The defect was precedence and ownership: native tool/Alpha continuations produced report-shaped prose, and the worker forwarded it directly. The repair makes Nova explicitly rewrite the internal draft, supplies authoritative current-turn execution state, and performs bounded claim correction without another resource call. Internal receipts retain evidence state, provenance, and Alpha identifiers.
+The defect was precedence and ownership: native tool/Alpha continuations produced report-shaped prose, and the worker forwarded it directly. The repair makes Nova explicitly rewrite the internal draft, supplies authoritative current-turn execution state, performs bounded claim correction without another resource call, and validates currentness assertions introduced by the final prose. Internal receipts retain evidence state, provenance, and Alpha identifiers.
 
 No runtime/provider/model selection or custom-Nova path was changed.
