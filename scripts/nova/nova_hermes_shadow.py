@@ -210,9 +210,9 @@ def _final_presentation_prompt(prompt: str, draft: str, tool_state: Dict[str, An
         "research, Nexus provides state, and web provides outside information; "
         "none of them owns the response. Rewrite the draft as your own answer to "
         "the original objective. Do not quote, dump, or imitate a tool/Alpha "
-        "report. Answer first, give your choice or view early, explain the two to "
-        "four reasons that matter most, state meaningful uncertainty, and offer a "
-        "next move only when useful; do not end with a question or offer unless "
+        "report. Answer first and give a choice or view early when one is actually "
+        "requested. Explain only the reasons that matter, state meaningful "
+        "uncertainty, and stop naturally; do not end with a question or offer unless "
         "the user cannot act on the answer without clarification. Use two to five compact paragraphs or one "
         "opening paragraph plus at most four short bullets. Do not use VERIFIED, "
         "BLOCKERS, RECOMMENDATION, NEXT ACTION, OBJECTIVE, STATUS, KEY FINDINGS, "
@@ -225,7 +225,7 @@ def _final_presentation_prompt(prompt: str, draft: str, tool_state: Dict[str, An
         "need retrieval. If retrieval is NOT_EXECUTED, do not imply a page was "
         "reviewed or claim that you are about to run a command/tool. If no tool "
         "ran, answer self-contained questions from your judgment and available "
-        "conversation context; do not promise pending execution. If evidence is weak or unknown, say so naturally. Do not "
+        "conversation context; do not promise pending execution. If evidence is weak or unknown, say so naturally. When no current or external evidence was gathered, present business, market, and revenue claims as general reasoning or clearly qualified judgment, never as fresh verification. Do not "
         "turn a prioritization question into a catalog of projects: make one "
         "clear priority, explain why it comes first, and mention other options "
         "only as brief context.\n"
@@ -908,6 +908,11 @@ def run_shadow(
         state_contract["page_payloads"] = [row["payload"] for row in tool_rows if row.get("name") == "public_web_retrieval_shadow"]
         draft = shadow_state.get("last_response", "")
         state_contract["claim_validation"] = claim_feedback(prompt, draft, state_contract)
+        if not state_contract["claim_validation"].get("valid", True):
+            # Fail closed after the bounded repair path. An invalid draft must
+            # never be returned to the Telegram worker as if it were clean.
+            result["final_response"] = ""
+            result["claim_validation"] = state_contract["claim_validation"]
         shadow_state["turn_contract"] = turn_contract
         shadow_state["evidence_state"] = state_contract
     _save_shadow_state(active_session, shadow_state)

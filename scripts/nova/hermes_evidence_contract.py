@@ -174,7 +174,7 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         text,
     ))
     qualification = re.search(
-        r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|"
+        r"not (?:proven|verified|confirmed)|hasn't been verified|has not been verified|unknown|unavailable|insufficient evidence|"
         r"currentness_not_proven|status remains unverified|no results|timeout|timed out|"
         r"limited(?:\s+(?:results|evidence))?|partial (?:evidence|verification)|"
         r"lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current|not current enough|"
@@ -201,6 +201,17 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
     )
     if current_assertion and not qualification and not retrieved and not linked_current and not direct_current_resource:
         unsupported.append("currentness_not_proven")
+    no_current_evidence = not retrieved and not linked_current and not direct_current_resource
+    no_tool_business_assertion = bool(re.search(
+        r"(?:revenue\s+(?:potential|stream|generation|growth)|earning\s+potential|"
+        r"market\s+demand|currently\s+growing|recent\s+growth|financial\s+benefit)", text
+    ))
+    explicit_judgment = bool(re.search(
+        r"\b(?:i think|i believe|my (?:take|view|judgment)|i(?:'d| would)\s+use|"
+        r"my preference|in my judgment|generally|could|might|hypothesis|target|goal)\b", text
+    ))
+    if no_current_evidence and no_tool_business_assertion and not explicit_judgment:
+        unsupported.append("no_tool_evidence_attribution")
     if re.search(r"\baffiliate|referral|partner program", objective) and re.search(r"affiliate program|referral program", text):
         page_text = " ".join(str(x.get("content", "")) for x in state.get("page_payloads", []))
         qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited(?:\s+(?:results|evidence))?|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)

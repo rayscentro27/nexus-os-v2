@@ -48,6 +48,19 @@ def test_unsupported_growth_language_is_not_current_evidence():
     assert "currentness_not_proven" in feedback["unsupported_claims"]
 
 
+def test_no_tool_business_claim_requires_judgment_framing():
+    state = evidence_state("What should I focus on to make money right now?", [])
+    feedback = claim_feedback("What should I focus on to make money right now?", "This can create a reliable revenue stream.", state)
+    assert feedback["valid"] is False
+    assert "no_tool_evidence_attribution" in feedback["unsupported_claims"]
+
+
+def test_qualified_no_tool_business_judgment_is_allowed():
+    state = evidence_state("What should I focus on to make money right now?", [])
+    feedback = claim_feedback("What should I focus on to make money right now?", "I think this could become a useful revenue stream, but that is my judgment.", state)
+    assert feedback["valid"] is True
+
+
 def test_completed_retrieval_rejects_stale_planning_language():
     prompt = "Check current outside information and choose a business opportunity."
     messages = [{
