@@ -1,0 +1,138 @@
+"""Turn-scoped resource and evidence contracts for the Hermes Nova shadow.
+
+This is deliberately not a question router.  It records explicit resource
+requirements and evidence quality so the model can continue reasoning with an
+honest view of what was actually executed.
+"""
+
+from __future__ import annotations
+
+import re
+from datetime import datetime, timezone
+from typing import Any, Dict, Iterable, List
+from urllib.parse import urlparse
+
+
+def turn_requirements(prompt: str) -> Dict[str, Any]:
+    """Describe explicit resource obligations without assigning question ownership."""
+    text = (prompt or "").lower()
+    resources: List[str] = []
+    if re.search(r"\b(nexus|using nexus|check nexus)\b", text):
+        resources.append("NEXUS")
+    if re.search(r"\b(web|internet|online|outside information|current|latest|right now|today)\b", text):
+        resources.append("PUBLIC_WEB")
+    alpha_request = re.search(r"\b(research|researcher|alpha)\b", text)
+    reuse_alpha = re.search(r"\bwhat did research find\b|\bresearch findings?\b", text) and not re.search(r"\b(challenge|research this|independently)\b", text)
+    if alpha_request and not reuse_alpha:
+        resources.append("ALPHA")
+    current = bool(re.search(r"\b(current|latest|right now|today|this week)\b", text))
+    return {
+        "objective": (prompt or "")[:1000],
+        "required_resources": list(dict.fromkeys(resources)),
+        "fresh_execution_required": current or bool(resources),
+    }
+
+
+def executed_resources(tool_messages: Iterable[Dict[str, Any]]) -> List[str]:
+    result: List[str] = []
+    for message in tool_messages:
+        name = str(message.get("name") or message.get("tool_name") or "")
+        resource = {
+            "nexus_read_shadow": "NEXUS",
+            "public_web_search_shadow": "PUBLIC_WEB",
+            "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL",
+            "alpha_challenge_shadow": "ALPHA",
+        }.get(name)
+        if resource and resource not in result:
+            result.append(resource)
+    return result
+
+
+def source_quality(url: str) -> str:
+    host = (urlparse(url or "").hostname or "").lower()
+    if host.endswith(".gov") or host.endswith(".gov.uk") or host.endswith(".edu"):
+        return "PRIMARY"
+    if host.startswith("www.") and host.count(".") <= 2:
+        return "AUTHORITATIVE_SECONDARY"
+    if host in {"reuters.com", "apnews.com", "bbc.com", "ft.com", "wsj.com", "nytimes.com"}:
+        return "REPUTABLE_SECONDARY"
+    return "UNKNOWN"
+
+
+def currentness(source_date: str | None, retrieved_at: str | None, *, required: bool) -> str:
+    if not source_date:
+        return "UNKNOWN" if required else "UNDATED"
+    try:
+        date = datetime.fromisoformat(source_date.replace("Z", "+00:00"))
+        retrieved = datetime.fromisoformat((retrieved_at or datetime.now(timezone.utc).isoformat()).replace("Z", "+00:00"))
+        age_days = max(0, (retrieved - date).days)
+    except ValueError:
+        return "UNKNOWN"
+    return "CURRENT" if age_days <= 14 else "RECENT_BUT_NOT_CURRENT"
+
+
+def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+    messages = list(tool_messages)
+    requirements = turn_requirements(prompt)
+    executed = executed_resources(messages)
+    supported: List[Dict[str, Any]] = []
+    partial: List[Dict[str, Any]] = []
+    for message in messages:
+        payload = message.get("payload") if isinstance(message.get("payload"), dict) else {}
+        name = str(message.get("name") or message.get("tool_name") or "")
+        if name == "public_web_search_shadow":
+            for row in payload.get("results", []) if isinstance(payload.get("results"), list) else []:
+                supported.append({"claim": row.get("title", "candidate source"), "support": "DISCOVERY_ONLY", "url": row.get("url"), "source_quality": source_quality(row.get("url", ""))})
+        elif name == "public_web_retrieval_shadow":
+            url = payload.get("url") or payload.get("requested_url")
+            item = {"claim": "retrieved page content", "url": url, "support": "DIRECT_PAGE_CONTENT" if payload.get("content_length", 0) else "UNKNOWN", "source_quality": source_quality(url or ""), "retrieved_at": payload.get("retrieved_at")}
+            (supported if item["support"] == "DIRECT_PAGE_CONTENT" else partial).append(item)
+        elif name in {"nexus_read_shadow", "alpha_challenge_shadow"}:
+            status = payload.get("status")
+            (supported if status in {"success", "ok", "SUCCESS", "COMPLETE"} else partial).append({"claim": name, "support": "DIRECT_RESULT" if status else "UNKNOWN", "result_id": payload.get("result_id")})
+    missing = [r for r in requirements["required_resources"] if r not in executed and not (r == "PUBLIC_WEB" and "PUBLIC_WEB_RETRIEVAL" in executed)]
+    return {
+        "objective": requirements["objective"],
+        "required_resources": requirements["required_resources"],
+        "executed_resources": executed,
+        "missing_resources": missing,
+        "supported_claims": supported,
+        "partial_claims": partial,
+        "source_quality": sorted({x.get("source_quality") for x in supported if x.get("source_quality")}),
+        "currentness": "UNKNOWN" if requirements["fresh_execution_required"] and not supported else "AVAILABLE",
+    }
+
+
+def continuation_guidance(state: Dict[str, Any]) -> str:
+    missing = state.get("missing_resources") or []
+    if not missing:
+        return ""
+    names = ", ".join(missing)
+    return (
+        "\n\n[CURRENT TURN EVIDENCE CONTRACT]\n"
+        f"The current objective explicitly requires these resources: {names}. "
+        "Your prior draft did not execute all of them. Continue this same turn "
+        "by calling the missing native tools now. Do not claim current, verified, "
+        "Nexus, web, or research evidence until the corresponding result returns. "
+        "Then synthesize with clearly qualified confidence.\n"
+    )
+
+
+def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[str, Any]:
+    """Identify material evidence gaps without rejecting the answer outright."""
+    text = (response or "").lower()
+    objective = (prompt or "").lower()
+    unsupported: List[str] = []
+    retrieved = [x for x in state.get("supported_claims", []) if x.get("support") == "DIRECT_PAGE_CONTENT"]
+    if re.search(r"\baffiliate|referral|partner program", objective) and re.search(r"affiliate program|referral program", text):
+        page_text = " ".join(str(x.get("content", "")) for x in state.get("page_payloads", []))
+        qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified", text)
+        if not qualified_unknown and not re.search(r"affiliate|referral|partner program", page_text, re.I):
+            unsupported.append("affiliate_program_status")
+    if re.search(r"\b(current|latest|right now|today)\b", objective) and not retrieved:
+        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified", text):
+            unsupported.append("current_external_evidence")
+    elif re.search(r"\b(current|latest|right now|today)\b", objective):
+        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified", text):
+            unsupported.append("currentness_not_proven")
+    return {"valid": not unsupported, "unsupported_claims": unsupported}

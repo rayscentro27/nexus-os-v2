@@ -20,6 +20,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from hermes_evidence_contract import (
+    claim_feedback,
+    continuation_guidance,
+    currentness,
+    evidence_state,
+    source_quality,
+    turn_requirements,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HERMES_ROOT = Path(os.getenv("NOVA_HERMES_ROOT", str(Path.home() / ".hermes/hermes-agent")))
 SHADOW_FLAG = "NOVA_HERMES_NATIVE_SHADOW"
@@ -222,6 +231,18 @@ def _retrieve_public_page(url: str, max_chars: int = 50000) -> Dict[str, Any]:
         text = re.sub(r"<script[^>]*>.*?</script>|<style[^>]*>.*?</style>", " ", text, flags=re.I | re.S)
         text = re.sub(r"<[^>]+>", " ", text)
         text = re.sub(r"\s+", " ", text).strip()[:max_chars]
+        retrieved_at = datetime.now(timezone.utc).isoformat()
+        date_match = re.search(r"\b(20\d{2})[-/]([01]\d)[-/]([0-3]\d)\b|\b([A-Z][a-z]+ \d{1,2}, 20\d{2})\b", text)
+        source_date = None
+        if date_match:
+            raw_date = date_match.group(0)
+            try:
+                source_date = datetime.strptime(raw_date, "%B %d, %Y").replace(tzinfo=timezone.utc).isoformat()
+            except ValueError:
+                try:
+                    source_date = datetime.strptime(raw_date, "%Y-%m-%d").replace(tzinfo=timezone.utc).isoformat()
+                except ValueError:
+                    source_date = None
         if not text:
             return {"status": "no_content", "url": final_url, "requested_url": url,
                     "content_type": content_type, "content": "", "content_length": 0,
@@ -229,7 +250,9 @@ def _retrieve_public_page(url: str, max_chars: int = 50000) -> Dict[str, Any]:
         return {"status": "ok", "url": final_url, "requested_url": url,
                 "content_type": content_type, "content": text,
                 "content_length": len(text), "source_type": "LIVE_PUBLIC_PAGE",
-                "retrieved_at": datetime.now(timezone.utc).isoformat()}
+                "retrieved_at": retrieved_at, "source_date": source_date,
+                "source_quality": source_quality(final_url),
+                "currentness": currentness(source_date, retrieved_at, required=True)}
     except Exception as exc:
         return {"status": "error", "url": target, "requested_url": url,
                 "error": type(exc).__name__, "content": "", "content_length": 0,
@@ -350,6 +373,16 @@ def run_shadow(
         "When a user refers to a recommendation or Research result, use the current conversational referent and its linked request/result, never an unrelated older artifact. "
         "A tool result is evidence for this turn only when it is returned in this turn's native tool exchange."
     )
+    turn_contract = turn_requirements(prompt)
+    turn_contract_guidance = ""
+    if turn_contract["required_resources"]:
+        turn_contract_guidance = (
+            "\n\n[CURRENT TURN RESOURCE CONTRACT]\n"
+            "The current user request explicitly names resources that must be "
+            "consulted for this task: " + ", ".join(turn_contract["required_resources"]) + ". "
+            "Use native tools for those resources in this turn. Prior conversation "
+            "is context, not a substitute for a required current read.\n"
+        )
     current_context = _current_shadow_context(shadow_state)
     conversation_history = []
     for turn in (shadow_state.get("recent_turns") or [])[-8:]:
@@ -378,10 +411,43 @@ def run_shadow(
     # reopened.  Pass the sidecar's bounded conversational history into the
     # native Hermes continuation path; structured tool provenance remains in
     # the separate resource index below.
-    result = agent.run_conversation(prompt, conversation_history=conversation_history or None, task_id=turn_id)
+    result = agent.run_conversation(prompt + turn_contract_guidance, conversation_history=conversation_history or None, task_id=turn_id)
+    all_messages = list(result.get("messages", [])) if isinstance(result, dict) else []
+
+    def _tool_messages(messages):
+        rows = []
+        for message in messages:
+            if message.get("role") != "tool":
+                continue
+            rows.append({
+                "name": message.get("name") or message.get("tool_name"),
+                "payload": _json_object(message.get("content")),
+            })
+        return rows
+
+    # If an explicit current-turn resource was omitted, let Hermes continue the
+    # same session and request the missing native tools. This is an execution
+    # contract, not a question router or a canned answer path.
+    first_state = evidence_state(prompt, _tool_messages(all_messages))
+    first_state["page_payloads"] = [row["payload"] for row in _tool_messages(all_messages) if row.get("name") == "public_web_retrieval_shadow"]
+    first_state["claim_validation"] = claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
+    if first_state.get("missing_resources") or not first_state["claim_validation"].get("valid", True):
+        continuation = continuation_guidance(first_state)
+        if first_state["claim_validation"].get("unsupported_claims"):
+            continuation += (
+                "\n[CLAIM SUPPORT FEEDBACK]\n"
+                "The draft contains claims without direct support from the returned "
+                "evidence: " + ", ".join(first_state["claim_validation"]["unsupported_claims"]) + ". "
+                "Revise those claims to distinguish what the pages establish from "
+                "what remains unknown; do not invent verification.\n"
+            )
+        follow_up = agent.run_conversation(continuation, task_id=turn_id + "-evidence")
+        if isinstance(follow_up, dict):
+            all_messages.extend(follow_up.get("messages", []))
+            result = follow_up
     shadow_state.update({"last_turn_id": turn_id, "last_prompt": prompt[:500], "updated_at": datetime.now(timezone.utc).isoformat()})
     if isinstance(result, dict):
-        messages = result.get("messages", [])
+        messages = all_messages
         tools_seen = [m.get("name") for m in messages if m.get("role") == "tool"]
         shadow_state["last_tools"] = tools_seen
         records = shadow_state.setdefault("resource_results", [])
@@ -434,8 +500,21 @@ def run_shadow(
         turns = shadow_state.setdefault("recent_turns", [])
         turns.append({"user": prompt[:1000], "assistant": shadow_state.get("last_response", "")})
         shadow_state["recent_turns"] = turns[-8:]
+        tool_rows = _tool_messages(messages)
+        state_contract = evidence_state(prompt, tool_rows)
+        state_contract["page_payloads"] = [row["payload"] for row in tool_rows if row.get("name") == "public_web_retrieval_shadow"]
+        draft = shadow_state.get("last_response", "")
+        state_contract["claim_validation"] = claim_feedback(prompt, draft, state_contract)
+        shadow_state["turn_contract"] = turn_contract
+        shadow_state["evidence_state"] = state_contract
     _save_shadow_state(active_session, shadow_state)
     if isinstance(result, dict):
+        result["turn_contract"] = turn_contract
+        result["evidence_state"] = state_contract
+        result["claim_validation"] = state_contract["claim_validation"]
+        # Return the complete turn transcript so the canonical worker receipt
+        # records tools from the initial pass and any evidence continuation.
+        result["messages"] = all_messages
         return result
     return {"response": result, "model": chosen_model, "shadow": True}
 

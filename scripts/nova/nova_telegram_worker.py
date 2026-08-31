@@ -439,6 +439,9 @@ def _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=None, prima
             "completed": (result or {}).get("completed"),
             "runtime_init": True,
             "model_init": True,
+            "turn_contract": (result or {}).get("turn_contract"),
+            "evidence_state": (result or {}).get("evidence_state"),
+            "claim_validation": (result or {}).get("claim_validation"),
         })
     except Exception as exc:
         shadow["shadow"].update({"final_response": None, "tools_executed": [], "results": [], "error": type(exc).__name__ + ": " + str(exc)[:500], "runtime_init": False, "model_init": False})
