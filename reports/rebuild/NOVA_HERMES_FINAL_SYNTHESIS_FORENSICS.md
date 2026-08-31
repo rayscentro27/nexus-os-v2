@@ -2,7 +2,7 @@
 
 Campaign: HG-WP6.5-NOVA-HERMES-PRIMARY-FINAL-SYNTHESIS-AND-COMMUNICATION-OWNERSHIP-REPAIR-20260831-01  
 Baseline: 0580e10  
-Implementation commit: pending final commit
+Implementation commit: 454bff6
 
 ## Path
 
