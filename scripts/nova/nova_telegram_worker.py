@@ -509,6 +509,7 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
         for key in ("NOVA_SHADOW_FORCE_SEARXNG_FAILURE", "NOVA_SHADOW_FORCE_ALPHA_FAILURE"):
             if os.environ.get(key):
                 child_env[key] = os.environ[key]
+        subprocess_started = time.monotonic()
         completed = subprocess.run(
             [HERMES_SHADOW_PYTHON, HERMES_SHADOW_SCRIPT, text, "--session-id", session],
             cwd=REPO_ROOT, env=child_env, capture_output=True, text=True,
@@ -528,6 +529,7 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
         if not result:
             raise RuntimeError("hermes_primary_result_not_object")
         messages = result.get("messages", [])
+        child_telemetry = result.get("latency_telemetry") if isinstance(result.get("latency_telemetry"), dict) else {}
         record.update({
             "response": _ab_safe_text(result.get("final_response")),
             "model": result.get("model", get_env().get("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")),
@@ -537,12 +539,18 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
             "turn_contract": result.get("turn_contract"),
             "evidence_state": result.get("evidence_state"),
             "claim_validation": result.get("claim_validation"),
+            "latency_telemetry": {
+                **child_telemetry,
+                "subprocess_elapsed_ms": round((time.monotonic() - subprocess_started) * 1000, 1),
+                "subprocess_startup_ms": child_telemetry.get("hermes_init_ms"),
+            },
         })
     except Exception as exc:
         record.update({"response": None, "tools_executed": [], "runtime_init": False,
                        "model_init": False, "completed": False,
                        "error": type(exc).__name__ + ": " + str(exc)[:500]})
     record["latency_ms"] = round((time.monotonic() - started) * 1000, 1)
+    record.setdefault("latency_telemetry", {})["worker_total_ms"] = record["latency_ms"]
     return record
 
 

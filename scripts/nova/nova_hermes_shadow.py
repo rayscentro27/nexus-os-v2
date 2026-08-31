@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 import ssl
 import uuid
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -127,7 +128,10 @@ def _shadow_resource_guidance() -> str:
         "A supplied candidate comparison must produce a concrete provisional "
         "choice before any optional challenge delegation. "
         "After retrieval, distinguish source facts from your interpretation, "
-        "and make a concrete recommendation when Ray asks for one. If an "
+        "and make a concrete recommendation when Ray asks for one. For normal "
+        "conversation, answer first, keep paragraphs compact, prefer short "
+        "bullets, and avoid schema headings or wide tables; preserve formal "
+        "structure when Ray explicitly asks for a report or audit. If an "
         "optional resource such as Alpha is used, it supplements required "
         "resources and must not replace their evidence in the final synthesis.\n"
     )
@@ -346,11 +350,39 @@ def _register_bounded_nexus_tools() -> None:
             })
         return json.dumps(result, sort_keys=True, default=str)
 
+    # Per-turn memoization prevents an equivalent model retry from repeating a
+    # network request. The returned payload remains the original tool result,
+    # so provenance is not weakened and only duplicate work is removed.
+    search_cache: Dict[tuple[str, int], str] = {}
+    retrieval_cache: Dict[str, str] = {}
+    timing = _register_bounded_nexus_tools.timing = getattr(_register_bounded_nexus_tools, "timing", {})
+    timing.clear()
+
     def public_web_search(args: Dict[str, Any], **_: Any) -> str:
-        return json.dumps(_search_free_chain(args["query"], int(args.get("limit", 6))), sort_keys=True, default=str)
+        query = re.sub(r"\s+", " ", str(args["query"]).strip()).casefold()
+        limit = int(args.get("limit", 6))
+        key = (query, limit)
+        if key in search_cache:
+            timing["duplicate_search_calls"] = timing.get("duplicate_search_calls", 0) + 1
+            return search_cache[key]
+        started = time.monotonic()
+        value = json.dumps(_search_free_chain(query, limit), sort_keys=True, default=str)
+        timing["search_ms"] = timing.get("search_ms", 0.0) + (time.monotonic() - started) * 1000
+        timing["search_calls"] = timing.get("search_calls", 0) + 1
+        search_cache[key] = value
+        return value
 
     def public_web_retrieval(args: Dict[str, Any], **_: Any) -> str:
-        return json.dumps(_retrieve_public_page(args["url"]), sort_keys=True, default=str)
+        url = _resolve_public_url(str(args["url"]).strip())
+        if url in retrieval_cache:
+            timing["duplicate_retrieval_calls"] = timing.get("duplicate_retrieval_calls", 0) + 1
+            return retrieval_cache[url]
+        started = time.monotonic()
+        value = json.dumps(_retrieve_public_page(url), sort_keys=True, default=str)
+        timing["retrieval_ms"] = timing.get("retrieval_ms", 0.0) + (time.monotonic() - started) * 1000
+        timing["retrieval_calls"] = timing.get("retrieval_calls", 0) + 1
+        retrieval_cache[url] = value
+        return value
 
     registry.register("nexus_read_shadow", "nexus", nexus_schema, nexus_read,
                       description=nexus_schema["description"], max_result_size_chars=50000)
@@ -370,9 +402,14 @@ def run_shadow(
     enabled_toolsets: Optional[list[str]] = None,
 ) -> Dict[str, Any]:
     """Run one bounded, non-primary Hermes-native Nova turn."""
+    started_at = time.monotonic()
+    phase_timings: Dict[str, Any] = {}
     _require_runtime()
+    phase_timings["runtime_validation_ms"] = round((time.monotonic() - started_at) * 1000, 1)
     _load_approved_provider_env()
+    hermes_load_started = time.monotonic()
     AIAgent = _load_hermes()
+    phase_timings["hermes_init_ms"] = round((time.monotonic() - hermes_load_started) * 1000, 1)
     _register_bounded_nexus_tools()
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
     toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "nexus", "research", "delegation"]
@@ -456,7 +493,10 @@ def run_shadow(
     # reopened.  Pass the sidecar's bounded conversational history into the
     # native Hermes continuation path; structured tool provenance remains in
     # the separate resource index below.
+    model_calls = []
+    model_started = time.monotonic()
     result = agent.run_conversation(prompt + turn_contract_guidance, conversation_history=conversation_history or None, task_id=turn_id)
+    model_calls.append(round((time.monotonic() - model_started) * 1000, 1))
     all_messages = list(result.get("messages", [])) if isinstance(result, dict) else []
 
     def _tool_messages(messages):
@@ -525,10 +565,12 @@ def run_shadow(
                 "Revise those claims to distinguish what the pages establish from "
                 "what remains unknown; do not invent verification.\n"
             )
+        follow_up_started = time.monotonic()
         follow_up = agent.run_conversation(
             "For the original user request: " + prompt[:2000] + "\n" + continuation,
             task_id=turn_id + "-evidence",
         )
+        model_calls.append(round((time.monotonic() - follow_up_started) * 1000, 1))
         if isinstance(follow_up, dict):
             all_messages.extend(follow_up.get("messages", []))
             result = follow_up
@@ -551,10 +593,12 @@ def run_shadow(
                     "verified facts from your working hypothesis. Do not say current, "
                     "verified, or confirmed unless the returned evidence supports it.\n"
                 )
+                correction_started = time.monotonic()
                 final_correction = agent.run_conversation(
                     "For the original user request: " + prompt[:2000] + correction,
                     task_id=turn_id + "-provenance",
                 )
+                model_calls.append(round((time.monotonic() - correction_started) * 1000, 1))
                 if isinstance(final_correction, dict):
                     all_messages.extend(final_correction.get("messages", []))
                     result = final_correction
@@ -571,12 +615,14 @@ def run_shadow(
                 }
                 final_missing = [label for label, terms in required_synthesis_terms.items() if not any(term in final_lower for term in terms)]
                 if final_missing:
+                    synthesis_started = time.monotonic()
                     final_synthesis = agent.run_conversation(
                         "For the original user request: " + prompt[:2000] +
                         "\n[SYNTHESIS COMPLETION]\nThe final draft still omits: " + ", ".join(final_missing) +
                         ". Provide one clear working choice and fill every requested field using the returned Nexus and outside evidence. Mark weak or missing outside evidence explicitly and reduce confidence; do not claim verification that did not occur.",
                         task_id=turn_id + "-synthesis",
                     )
+                    model_calls.append(round((time.monotonic() - synthesis_started) * 1000, 1))
                     if isinstance(final_synthesis, dict):
                         all_messages.extend(final_synthesis.get("messages", []))
                         result = final_synthesis
@@ -666,6 +712,24 @@ def run_shadow(
         # Return the complete turn transcript so the canonical worker receipt
         # records tools from the initial pass and any evidence continuation.
         result["messages"] = all_messages
+        timing = getattr(_register_bounded_nexus_tools, "timing", {})
+        assistant_messages = [m for m in all_messages if m.get("role") == "assistant" and m.get("content")]
+        result["latency_telemetry"] = {
+            "model_call_count": len(model_calls),
+            "model_call_ms": model_calls,
+            "model_total_ms": round(sum(model_calls), 1),
+            "continuation_count": max(0, len(model_calls) - 1),
+            "tool_call_count": len([m for m in all_messages if m.get("role") == "tool"]),
+            "assistant_message_count": len(assistant_messages),
+            "search_ms": round(float(timing.get("search_ms", 0.0)), 1),
+            "retrieval_ms": round(float(timing.get("retrieval_ms", 0.0)), 1),
+            "search_calls": timing.get("search_calls", 0),
+            "retrieval_calls": timing.get("retrieval_calls", 0),
+            "duplicate_search_calls": timing.get("duplicate_search_calls", 0),
+            "duplicate_retrieval_calls": timing.get("duplicate_retrieval_calls", 0),
+            "total_runner_ms": round((time.monotonic() - started_at) * 1000, 1),
+            **phase_timings,
+        }
         return result
     return {"response": result, "model": chosen_model, "shadow": True}
 

@@ -167,7 +167,15 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         for row in state.get("reused_evidence", [])
         if isinstance(row, dict)
     )
-    if current_assertion and not qualification and not retrieved and not linked_current:
+    # Governed Nexus/Alpha results are direct current-turn execution evidence
+    # even though they are not public web pages. Do not confuse the absence of
+    # a page retrieval with the absence of evidence for a current capability
+    # read.
+    direct_current_resource = bool(
+        any(resource in state.get("executed_resources", []) for resource in ("NEXUS", "ALPHA"))
+        and any(resource in state.get("required_resources", []) for resource in ("NEXUS", "ALPHA"))
+    )
+    if current_assertion and not qualification and not retrieved and not linked_current and not direct_current_resource:
         unsupported.append("currentness_not_proven")
     if re.search(r"\baffiliate|referral|partner program", objective) and re.search(r"affiliate program|referral program", text):
         page_text = " ".join(str(x.get("content", "")) for x in state.get("page_payloads", []))
