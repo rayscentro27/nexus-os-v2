@@ -221,6 +221,9 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         r"research (?:found|showed|revealed|established|confirmed)|alpha (?:found|showed|revealed|confirmed)", text
     ):
         unsupported.append("unsupported_alpha_finding")
+    formal_request = bool(re.search(r"\b(?:report|audit|certification|formal|detailed evidence review|status report)\b", objective))
+    if not formal_request and re.search(r"\b(?:would you like|if you(?:'re| are) ready|let me know if|i can assist|next step|moving forward)\b", text):
+        unsupported.append("unnecessary_next_action_prompt")
     # A current-data request requires validation only when the answer itself
     # makes a currentness assertion. Brand names such as “Current” and a
     # qualified recommendation are not claims of current external evidence.
