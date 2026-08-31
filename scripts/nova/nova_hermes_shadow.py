@@ -126,7 +126,9 @@ def _shadow_resource_guidance() -> str:
         "A supplied candidate comparison must produce a concrete provisional "
         "choice before any optional challenge delegation. "
         "After retrieval, distinguish source facts from your interpretation, "
-        "and make a concrete recommendation when Ray asks for one.\n"
+        "and make a concrete recommendation when Ray asks for one. If an "
+        "optional resource such as Alpha is used, it supplements required "
+        "resources and must not replace their evidence in the final synthesis.\n"
     )
 
 
@@ -360,6 +362,11 @@ def run_shadow(
     _register_bounded_nexus_tools()
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
     toolsets = enabled_toolsets or ["shadow_web", "nexus", "research", "delegation"]
+    if turn_contract := turn_requirements(prompt):
+        if turn_contract.get("reuse_only"):
+            # A result-retrieval follow-up uses the linked result in context;
+            # Alpha remains available for an explicit new challenge.
+            toolsets = [name for name in toolsets if name != "research"]
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     shadow_state = _load_shadow_state(active_session)
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
@@ -372,6 +379,7 @@ def run_shadow(
         f"turn_id={turn_id}; session_id={active_session}. Volatile tool results must be linked to this turn. "
         "When a user refers to a recommendation or Research result, use the current conversational referent and its linked request/result, never an unrelated older artifact. "
         "A tool result is evidence for this turn only when it is returned in this turn's native tool exchange."
+        " For a follow-up asking what Research found, reuse the current linked Alpha result when one exists; do not rerun Alpha unless the user requests a new challenge."
     )
     turn_contract = turn_requirements(prompt)
     turn_contract_guidance = ""
@@ -431,8 +439,16 @@ def run_shadow(
     first_state = evidence_state(prompt, _tool_messages(all_messages))
     first_state["page_payloads"] = [row["payload"] for row in _tool_messages(all_messages) if row.get("name") == "public_web_retrieval_shadow"]
     first_state["claim_validation"] = claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
-    if first_state.get("missing_resources") or not first_state["claim_validation"].get("valid", True):
+    if first_state.get("missing_resources") or first_state.get("synthesis_required") or not first_state["claim_validation"].get("valid", True):
         continuation = continuation_guidance(first_state)
+        if first_state.get("synthesis_required"):
+            continuation += (
+                "\n[SYNTHESIS FEEDBACK]\n"
+                "The current objective requires a combined answer. The required "
+                "Nexus and public-web evidence must appear in the final reasoning; "
+                "any Alpha result is supplementary. Do not call another tool in "
+                "this continuation unless a required resource is still missing.\n"
+            )
         if first_state["claim_validation"].get("unsupported_claims"):
             continuation += (
                 "\n[CLAIM SUPPORT FEEDBACK]\n"
@@ -441,7 +457,10 @@ def run_shadow(
                 "Revise those claims to distinguish what the pages establish from "
                 "what remains unknown; do not invent verification.\n"
             )
-        follow_up = agent.run_conversation(continuation, task_id=turn_id + "-evidence")
+        follow_up = agent.run_conversation(
+            "For the original user request: " + prompt[:2000] + "\n" + continuation,
+            task_id=turn_id + "-evidence",
+        )
         if isinstance(follow_up, dict):
             all_messages.extend(follow_up.get("messages", []))
             result = follow_up

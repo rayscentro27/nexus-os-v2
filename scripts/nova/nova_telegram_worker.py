@@ -426,7 +426,23 @@ def _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=None, prima
         )
         if completed.returncode != 0:
             raise RuntimeError(_ab_safe_text(completed.stderr or "shadow_process_failed", 500))
-        result = json.loads(completed.stdout)
+        try:
+            result = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            # Hermes may emit a bounded diagnostic line before its final JSON
+            # envelope. Recover only a complete JSON object; do not treat
+            # arbitrary stdout as a shadow result.
+            result = None
+            for line in reversed(completed.stdout.splitlines()):
+                try:
+                    candidate = json.loads(line)
+                    if isinstance(candidate, dict):
+                        result = candidate
+                        break
+                except json.JSONDecodeError:
+                    continue
+            if result is None:
+                raise
         if not isinstance(result, dict):
             raise RuntimeError("shadow_result_not_object")
         messages = result.get("messages", []) if isinstance(result, dict) else []

@@ -30,6 +30,7 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
         "objective": (prompt or "")[:1000],
         "required_resources": list(dict.fromkeys(resources)),
         "fresh_execution_required": current or bool(resources),
+        "reuse_only": bool(reuse_alpha),
     }
 
 
@@ -91,6 +92,10 @@ def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]]) -> Dict
             status = payload.get("status")
             (supported if status in {"success", "ok", "SUCCESS", "COMPLETE"} else partial).append({"claim": name, "support": "DIRECT_RESULT" if status else "UNKNOWN", "result_id": payload.get("result_id")})
     missing = [r for r in requirements["required_resources"] if r not in executed and not (r == "PUBLIC_WEB" and "PUBLIC_WEB_RETRIEVAL" in executed)]
+    # Current or explicitly multi-source work needs page-level evidence when
+    # the search result is only discovery metadata.
+    if "PUBLIC_WEB" in requirements["required_resources"] and "PUBLIC_WEB" in executed and "PUBLIC_WEB_RETRIEVAL" not in executed:
+        missing.append("PUBLIC_WEB_RETRIEVAL")
     return {
         "objective": requirements["objective"],
         "required_resources": requirements["required_resources"],
@@ -100,6 +105,7 @@ def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]]) -> Dict
         "partial_claims": partial,
         "source_quality": sorted({x.get("source_quality") for x in supported if x.get("source_quality")}),
         "currentness": "UNKNOWN" if requirements["fresh_execution_required"] and not supported else "AVAILABLE",
+        "synthesis_required": len(requirements["required_resources"]) > 1 and "ALPHA" in executed,
     }
 
 
@@ -130,9 +136,9 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         if not qualified_unknown and not re.search(r"affiliate|referral|partner program", page_text, re.I):
             unsupported.append("affiliate_program_status")
     if re.search(r"\b(current|latest|right now|today)\b", objective) and not retrieved:
-        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified", text):
+        if not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out", text):
             unsupported.append("current_external_evidence")
     elif re.search(r"\b(current|latest|right now|today)\b", objective):
-        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified", text):
+        if not any(x.get("currentness") == "CURRENT" for x in state.get("page_payloads", [])) and not re.search(r"not (?:proven|verified|confirmed)|unknown|unavailable|insufficient evidence|currentness_not_proven|status remains unverified|no results|timeout|timed out", text):
             unsupported.append("currentness_not_proven")
     return {"valid": not unsupported, "unsupported_claims": unsupported}
