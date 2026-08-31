@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from hermes_evidence_contract import (
+    claim_attribution,
     claim_feedback,
     continuation_guidance,
     currentness,
@@ -233,6 +234,16 @@ def _final_presentation_prompt(prompt: str, draft: str, tool_state: Dict[str, An
         "field, do not append a generic research offer after the answer, and do "
         "not turn a simple choice into a numbered action plan. At most, include "
         "one concrete next move when it materially helps.\n\n"
+        "CLOSING RULE: For ordinary conversation, stop after answering. Do not "
+        "append next step, moving forward, would you like me to, I recommend "
+        "conducting, or we should now unless the user explicitly asks for a next "
+        "step or cannot act without one.\n"
+        "ATTRIBUTION RULE: Treat a numeric goal, estimate, or business target as "
+        "a target or your judgment unless a source directly supports that exact "
+        "claim. Alpha with zero supported findings cannot establish market "
+        "saturation, dominant competitors, or any other factual finding; those "
+        "may only be framed as your hypothesis or risk. Never say research found "
+        "something absent from supported Alpha findings.\n\n"
         f"CURRENTNESS RULE:\n{currentness_rule}\n\n"
         f"ALPHA DECISION-OWNERSHIP RULE:\n{alpha_rule or 'Alpha was not executed; answer from the available evidence and your own judgment.'}\n\n"
         f"ORIGINAL OBJECTIVE:\n{prompt[:3000]}\n\n"
@@ -899,6 +910,7 @@ def run_shadow(
         result["turn_contract"] = turn_contract
         result["evidence_state"] = state_contract
         result["claim_validation"] = state_contract["claim_validation"]
+        result["claim_attribution"] = claim_attribution(prompt, str(result.get("final_response", "")), state_contract)
         # Return the complete turn transcript so the canonical worker receipt
         # records tools from the initial pass and any evidence continuation.
         result["messages"] = all_messages

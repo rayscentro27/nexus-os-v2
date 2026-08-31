@@ -105,11 +105,14 @@ def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]], prior_r
                 supported.append({"claim": row.get("title", "candidate source"), "support": "DISCOVERY_ONLY", "url": row.get("url"), "source_quality": source_quality(row.get("url", ""))})
         elif name == "public_web_retrieval_shadow":
             url = payload.get("url") or payload.get("requested_url")
-            item = {"claim": "retrieved page content", "url": url, "support": "DIRECT_PAGE_CONTENT" if payload.get("content_length", 0) else "UNKNOWN", "source_quality": source_quality(url or ""), "retrieved_at": payload.get("retrieved_at")}
+            item = {"claim": "retrieved page content", "url": url, "support": "DIRECT_PAGE_CONTENT" if payload.get("content_length", 0) else "UNKNOWN", "source_quality": source_quality(url or ""), "retrieved_at": payload.get("retrieved_at"), "source_date": payload.get("source_date"), "currentness": payload.get("currentness") or "UNKNOWN"}
             (supported if item["support"] == "DIRECT_PAGE_CONTENT" else partial).append(item)
         elif name in {"nexus_read_shadow", "alpha_challenge_shadow"}:
             status = payload.get("status")
-            (supported if status in {"success", "ok", "SUCCESS", "COMPLETE"} else partial).append({"claim": name, "support": "DIRECT_RESULT" if status else "UNKNOWN", "result_id": payload.get("result_id")})
+            item = {"claim": name, "support": "DIRECT_RESULT" if status else "UNKNOWN", "result_id": payload.get("result_id")}
+            if name == "alpha_challenge_shadow":
+                item["supported_findings"] = payload.get("supported_findings") or payload.get("supported_claims") or []
+            (supported if status in {"success", "ok", "SUCCESS", "COMPLETE"} else partial).append(item)
     missing = [r for r in requirements["required_resources"] if r not in executed and not (r == "PUBLIC_WEB" and "PUBLIC_WEB_RETRIEVAL" in executed)]
     # Current or explicitly multi-source work needs page-level evidence when
     # the search result is only discovery metadata.
@@ -203,6 +206,20 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
         qualified_unknown = re.search(r"no (?:definitive|specific|confirmed)|unverified|not (?:proven|verified|confirmed)|remains unknown|insufficient evidence|status remains unverified|limited(?:\s+(?:results|evidence))?|partial (?:evidence|verification)|lacks? (?:strong|current|direct) (?:verification|evidence)|not strongly current", text)
         if not qualified_unknown and not re.search(r"affiliate|referral|partner program", page_text, re.I):
             unsupported.append("affiliate_program_status")
+    if re.search(r"\$\s*1,?000\s*(?:/|per\s+)week|1,?000\s+weekly", text):
+        exact_target_supported = any(
+            re.search(r"\$\s*1,?000\s*(?:/|per\s+)week|1,?000\s+weekly", str(item.get("claim", "")), re.I)
+            and item.get("support") in {"DIRECT_PAGE_CONTENT", "DIRECT_RESULT"}
+            for item in state.get("supported_claims", [])
+        )
+        if not exact_target_supported and not re.search(r"(?:target|goal|hypothesis|estimate|my judgment|i would use)", text):
+            unsupported.append("aspirational_target_attribution")
+    alpha_items = [item for item in state.get("supported_claims", []) if item.get("claim") == "alpha_challenge_shadow"]
+    alpha_has_findings = any(bool(item.get("supported_findings")) for item in alpha_items)
+    if "ALPHA" in set(state.get("executed_resources", [])) and not alpha_has_findings and re.search(
+        r"research (?:found|showed|revealed|established|confirmed)|alpha (?:found|showed|revealed|confirmed)", text
+    ):
+        unsupported.append("unsupported_alpha_finding")
     # A current-data request requires validation only when the answer itself
     # makes a currentness assertion. Brand names such as “Current” and a
     # qualified recommendation are not claims of current external evidence.
@@ -225,3 +242,31 @@ def claim_feedback(prompt: str, response: str, state: Dict[str, Any]) -> Dict[st
     ):
         unsupported.append("retrieval_state_mismatch")
     return {"valid": not unsupported, "unsupported_claims": list(dict.fromkeys(unsupported))}
+
+
+def claim_attribution(prompt: str, response: str, state: Dict[str, Any]) -> Dict[str, Any]:
+    """Retain an auditable claim/evidence index without leaking schema to Telegram."""
+    rows: List[Dict[str, Any]] = []
+    for item in state.get("supported_claims", []) + state.get("partial_claims", []):
+        rows.append({
+            "claim": item.get("claim"),
+            "classification": "VERIFIED_EXTERNAL_FACT" if item.get("support") == "DIRECT_PAGE_CONTENT" else "UNKNOWN",
+            "source_reference": item.get("url") or item.get("result_id"),
+            "source_date": item.get("source_date"),
+            "retrieval_state": "RETRIEVED" if item.get("support") == "DIRECT_PAGE_CONTENT" else "DISCOVERY_ONLY",
+            "currentness": item.get("currentness") or state.get("currentness", "UNKNOWN"),
+            "support": item.get("support", "UNKNOWN"),
+        })
+    lower = (response or "").lower()
+    if re.search(r"\$\s*1,?000\s*(?:/|per\s+)week|1,?000\s+weekly", lower):
+        rows.append({"claim": "$1,000/week", "classification": "ASPIRATIONAL_TARGET", "source_reference": None,
+                     "source_date": None, "retrieval_state": "NO_DIRECT_SUPPORT", "currentness": "UNKNOWN",
+                     "support": "MODEL_JUDGMENT"})
+    alpha_executed = "ALPHA" in set(state.get("executed_resources", []))
+    alpha_has_findings = any(bool(x.get("supported_findings")) for x in state.get("supported_claims", []) if x.get("claim") == "alpha_challenge_shadow")
+    if alpha_executed and not alpha_has_findings:
+        rows.append({"claim": "Alpha findings", "classification": "UNKNOWN", "source_reference": None,
+                     "source_date": None, "retrieval_state": "ALPHA_COMPLETE_ZERO_SUPPORTED_FINDINGS",
+                     "currentness": "UNKNOWN", "support": "NO_SUPPORTED_FINDINGS"})
+    return {"version": 1, "turn_objective": (prompt or "")[:500], "claims": rows,
+            "model_judgment_present": bool(re.search(r"\b(I would|I'd|my take|I think|I recommend)\b", response or "", re.I))}

@@ -23,6 +23,8 @@ import ssl
 import time
 import signal
 import hashlib
+import random
+import socket
 import subprocess
 import urllib.request
 import urllib.parse
@@ -42,6 +44,7 @@ NOVA_STATUS_PATH = os.path.join(NOVA_STATE_DIR, "nova_telegram_status.json")
 NOVA_LOG_PATH = os.path.join(REPO_ROOT, "reports", "runtime", "nova_telegram.log")
 NOVA_ERROR_LOG = os.path.join(REPO_ROOT, "reports", "runtime", "nova_telegram_error.log")
 NOVA_RECEIPTS_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "receipts", "nova")
+NOVA_DELIVERY_DIR = os.path.join(NOVA_STATE_DIR, "nova_telegram_delivery")
 NOVA_AB_DIR = os.path.join(REPO_ROOT, "reports", "telegram", "ab_certification")
 AB_CERTIFICATION_FLAG = "NOVA_TELEGRAM_AB_CERTIFICATION"
 PRIMARY_RUNTIME_FLAG = "NOVA_PRIMARY_RUNTIME"
@@ -77,6 +80,8 @@ TELEGRAM_MAX_MSG = 4000
 POLL_TIMEOUT = 30
 HEARTBEAT_INTERVAL = 60
 TELEGRAM_SEND_TIMEOUT = int(os.getenv("HERMES_NOVA_TELEGRAM_SEND_TIMEOUT_SECONDS", "20"))
+TELEGRAM_SEND_ATTEMPTS = int(os.getenv("HERMES_NOVA_TELEGRAM_SEND_ATTEMPTS", "3"))
+TELEGRAM_DELIVERY_EXPIRY_SECONDS = int(os.getenv("HERMES_NOVA_TELEGRAM_DELIVERY_EXPIRY_SECONDS", "86400"))
 
 # ─── Runtime env loader ─────────────────────────────────
 
@@ -166,6 +171,165 @@ def _tg_api(method, params=None, token=None, timeout=20):
         return None
 
 
+def _tg_send_attempt(chat_id, chunk, token=None, timeout=TELEGRAM_SEND_TIMEOUT):
+    """Return structured send state; preserve the generic API helper contract."""
+    env = get_env()
+    token = token or env.get("HERMES_NOVA_TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        return {"ok": False, "retryable": False, "error": "telegram_token_missing"}
+    url = TELEGRAM_API.format(token=token, method="sendMessage")
+    try:
+        req = urllib.request.Request(url, data=urllib.parse.urlencode({"chat_id": chat_id, "text": chunk}).encode("utf-8"))
+        with urllib.request.urlopen(req, timeout=timeout, context=SSL_CTX) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+        if body.get("ok"):
+            return {"ok": True, "message_id": body.get("result", {}).get("message_id")}
+        error_code = int(body.get("error_code") or 0)
+        return {"ok": False, "retryable": error_code in {408, 429, 500, 502, 503, 504}, "error": json.dumps(body)[:500], "retry_after": (body.get("parameters") or {}).get("retry_after")}
+    except urllib.error.HTTPError as exc:
+        retry_after = None
+        try:
+            retry_after = int(exc.headers.get("Retry-After")) if exc.headers.get("Retry-After") else None
+        except (TypeError, ValueError):
+            pass
+        return {"ok": False, "retryable": exc.code in {408, 429, 500, 502, 503, 504}, "error": f"HTTP {exc.code}: {str(exc)[:300]}", "retry_after": retry_after}
+    except (urllib.error.URLError, TimeoutError, socket.timeout, ConnectionError, OSError) as exc:
+        return {"ok": False, "retryable": True, "error": f"{type(exc).__name__}: {exc}"[:500]}
+
+
+def _delivery_path(update_id):
+    return os.path.join(NOVA_DELIVERY_DIR, f"{update_id}.json")
+
+
+def _load_delivery(update_id):
+    try:
+        with open(_delivery_path(update_id)) as handle:
+            value = json.load(handle)
+        return value if isinstance(value, dict) else None
+    except (OSError, ValueError):
+        return None
+
+
+def _save_delivery(record):
+    os.makedirs(NOVA_DELIVERY_DIR, exist_ok=True)
+    path = _delivery_path(record["telegram_update_id"])
+    temporary = path + ".tmp"
+    with open(temporary, "w") as handle:
+        json.dump(record, handle, indent=2)
+    os.replace(temporary, path)
+    return record
+
+
+def _delivery_record(update_id, chat_id, response, hermes_run_id=None, mission_id=None):
+    digest = hashlib.sha256(response.encode("utf-8")).hexdigest()
+    now = datetime.now(timezone.utc).isoformat()
+    return {"telegram_update_id": update_id, "chat_id": chat_id, "hermes_run_id": hermes_run_id,
+            "mission_id": mission_id, "response_id": digest[:24], "response_hash": digest,
+            "response": response, "state": "NOT_ATTEMPTED", "attempt_count": 0,
+            "last_error": None, "last_attempt_at": None, "message_ids": [],
+            "created_at": now, "updated_at": now}
+
+
+def _deliver_response(update_id, chat_id, response, *, hermes_run_id=None, mission_id=None):
+    """Deliver one composed response, recoverably and without rerunning Hermes."""
+    record = _load_delivery(update_id) or _delivery_record(update_id, chat_id, response, hermes_run_id, mission_id)
+    if record.get("state") == "DELIVERED":
+        return record
+    record.update({"response": response, "response_hash": hashlib.sha256(response.encode()).hexdigest(),
+                   "updated_at": datetime.now(timezone.utc).isoformat()})
+    chunks = _chunk_message(response)
+    sent = list(record.get("message_ids") or [])
+    last_error = None
+    cycle_attempts = 0
+    terminal_error = False
+    for index, chunk in enumerate(chunks[len(sent):], start=len(sent)):
+        chunk_ok = False
+        for attempt in range(TELEGRAM_SEND_ATTEMPTS):
+            cycle_attempts += 1
+            record["state"] = "ATTEMPTING"
+            record["attempt_count"] = int(record.get("attempt_count", 0)) + 1
+            record["last_attempt_at"] = datetime.now(timezone.utc).isoformat()
+            _save_delivery(record)
+            outcome = _tg_send_attempt(chat_id, chunk)
+            if outcome.get("ok") and outcome.get("message_id"):
+                sent.append(outcome["message_id"])
+                record["message_ids"] = sent
+                chunk_ok = True
+                _save_delivery(record)
+                break
+            last_error = outcome.get("error") or "telegram_send_failed"
+            record["last_error"] = last_error
+            if not outcome.get("retryable") or attempt + 1 >= TELEGRAM_SEND_ATTEMPTS:
+                terminal_error = not outcome.get("retryable")
+                break
+            delay = outcome.get("retry_after") or min(8, 0.5 * (2 ** attempt)) + random.uniform(0, 0.25)
+            time.sleep(delay)
+        if not chunk_ok:
+            expired = False
+            try:
+                created = datetime.fromisoformat(str(record.get("created_at", "")).replace("Z", "+00:00"))
+                expired = (datetime.now(timezone.utc) - created).total_seconds() >= TELEGRAM_DELIVERY_EXPIRY_SECONDS
+            except ValueError:
+                pass
+            record["state"] = "FAILED_TERMINAL" if terminal_error or expired else "FAILED_TRANSIENT"
+            record["terminal_outcome"] = "TERMINAL_DELIVERY_FAILURE" if record["state"] == "FAILED_TERMINAL" else "DELIVERY_PENDING"
+            record["updated_at"] = datetime.now(timezone.utc).isoformat()
+            return _save_delivery(record)
+    record["state"] = "DELIVERED"
+    record["terminal_outcome"] = "DELIVERED"
+    record["last_error"] = None
+    record["updated_at"] = datetime.now(timezone.utc).isoformat()
+    return _save_delivery(record)
+
+
+def delivery_completeness_check():
+    """Require every consumed response-producing mission to have a terminal delivery state."""
+    failures = []
+    if not os.path.isdir(NOVA_MISSIONS_DIR):
+        return {"valid": True, "failures": failures}
+    for name in os.listdir(NOVA_MISSIONS_DIR):
+        if not name.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(NOVA_MISSIONS_DIR, name)) as handle:
+                mission = json.load(handle)
+        except (OSError, ValueError):
+            continue
+        if mission.get("status") not in {"RESPONSE_COMPOSED", "DELIVERY_PENDING", "DELIVERY_FAILED", "DELIVERED", "TERMINAL_DELIVERY_FAILURE"}:
+            continue
+        delivery = _load_delivery(mission.get("update_id"))
+        if not delivery or delivery.get("state") not in {"DELIVERED", "FAILED_TERMINAL"}:
+            failures.append(mission.get("update_id"))
+    return {"valid": not failures, "failures": failures}
+
+
+def _retry_pending_deliveries():
+    """Retry only composed responses; never re-enter Hermes or resource tools."""
+    recovered = 0
+    if not os.path.isdir(NOVA_DELIVERY_DIR):
+        return recovered
+    for name in sorted(os.listdir(NOVA_DELIVERY_DIR)):
+        if not name.endswith(".json"):
+            continue
+        try:
+            update_id = int(name[:-5])
+        except ValueError:
+            continue
+        record = _load_delivery(update_id)
+        if not record or record.get("state") != "FAILED_TRANSIENT":
+            continue
+        delivered = _deliver_response(update_id, record.get("chat_id"), record.get("response", ""), hermes_run_id=record.get("hermes_run_id"), mission_id=record.get("mission_id"))
+        if delivered.get("state") == "DELIVERED":
+            recovered += 1
+            mission_path = os.path.join(NOVA_MISSIONS_DIR, f"{record.get('mission_id')}.json")
+            try:
+                with open(mission_path) as handle:
+                    mission = json.load(handle)
+                update_mission(mission, "DELIVERED", {"response_message_ids": delivered.get("message_ids", [])})
+            except (OSError, ValueError, TypeError):
+                pass
+    return recovered
+
 def tg_send_message(chat_id, text, token=None, timeout=TELEGRAM_SEND_TIMEOUT):
     """Send a message, chunking if needed. Returns list of message IDs."""
     if not text:
@@ -179,27 +343,11 @@ def tg_send_message(chat_id, text, token=None, timeout=TELEGRAM_SEND_TIMEOUT):
     message_ids = []
 
     for chunk in chunks:
-        result = _tg_api("sendMessage", {
-            "chat_id": chat_id,
-            "text": chunk,
-        }, token=token, timeout=timeout)
-        if result and result.get("ok"):
-            msg_id = result.get("result", {}).get("message_id")
-            if msg_id:
-                message_ids.append(msg_id)
+        outcome = _tg_send_attempt(chat_id, chunk, token=token, timeout=timeout)
+        if outcome.get("ok") and outcome.get("message_id"):
+            message_ids.append(outcome["message_id"])
         else:
-            _log_error(f"Failed to send message to {chat_id}")
-            time.sleep(1)
-            result = _tg_api("sendMessage", {
-                "chat_id": chat_id,
-                "text": chunk,
-            }, token=token, timeout=timeout)
-            if result and result.get("ok"):
-                msg_id = result.get("result", {}).get("message_id")
-                if msg_id:
-                    message_ids.append(msg_id)
-            else:
-                _log_error(f"Retry also failed for chat {chat_id}")
+            _log_error(f"Failed to send message to {chat_id}: {outcome.get('error')}")
 
     return message_ids
 
@@ -752,7 +900,8 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
                 metadata={"mission_id": mission["mission_id"], "runtime": "hermes_primary"},
             ):
-                msg_ids = tg_send_message(chat_id, response)
+                delivery = _deliver_response(update_id, chat_id, response, hermes_run_id=hermes_record.get("run_id"), mission_id=mission["mission_id"])
+            msg_ids = delivery.get("message_ids", [])
             hermes_record["telegram_send_count"] = len(msg_ids)
             write_receipt({
                 "type": "nova_hermes_primary_response",
@@ -767,12 +916,12 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 "tools_executed": hermes_record.get("tools_executed", []),
                 "response": _ab_safe_text(response),
                 "error": hermes_record.get("error"),
+                "delivery": delivery,
+                "claim_attribution": hermes_record.get("claim_attribution"),
                 "runtime_init": hermes_record.get("runtime_init"),
                 "model_init": hermes_record.get("model_init"),
             })
-            update_mission(mission, "COMPLETED" if msg_ids else "DELIVERY_FAILED", {
-                "response_message_ids": msg_ids,
-            })
+            update_mission(mission, "DELIVERED" if delivery.get("state") == "DELIVERED" else ("TERMINAL_DELIVERY_FAILURE" if delivery.get("state") == "FAILED_TERMINAL" else "DELIVERY_PENDING"), {"response_message_ids": msg_ids, "delivery_state": delivery.get("state"), "delivery_error": delivery.get("last_error")})
             return True
 
         # Explicit governed objects are resolved deterministically before the
@@ -1004,6 +1153,10 @@ def run_once():
         metadata={"mode": "once"},
     ):
         write_status(os.getpid(), "RUNNING")
+
+        recovered_deliveries = _retry_pending_deliveries()
+        if recovered_deliveries:
+            _log(f"Nova worker: recovered {recovered_deliveries} pending deliveries")
 
         offset = load_offset()
         result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
