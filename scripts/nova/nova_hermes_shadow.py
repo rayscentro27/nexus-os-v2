@@ -583,6 +583,12 @@ def run_shadow(
             conversation_history.append({"role": "user", "content": str(turn["user"])[:2000]})
         if turn.get("assistant"):
             conversation_history.append({"role": "assistant", "content": str(turn["assistant"])[:5000]})
+    native_conversation = not turn_contract["required_resources"]
+    ephemeral_prompt = (
+        "You are a conversational assistant. Answer the user's question directly and naturally using the conversation history. Treat opinions as opinions and do not invent current facts."
+        if native_conversation
+        else _nova_soul() + _shadow_resource_guidance() + current_context + immutable_objective + correlation_context
+    )
     agent = AIAgent(
         model=chosen_model,
         provider="openrouter",
@@ -590,7 +596,7 @@ def run_shadow(
         api_key=os.getenv("OPENROUTER_API_KEY"),
         enabled_toolsets=toolsets,
         session_id=active_session,
-        ephemeral_system_prompt=_nova_soul() + _shadow_resource_guidance() + current_context + immutable_objective + correlation_context,
+        ephemeral_system_prompt=ephemeral_prompt,
         load_soul_identity=False,
         save_trajectories=False,
         quiet_mode=True,
@@ -624,7 +630,14 @@ def run_shadow(
     # contract, not a question router or a canned answer path.
     first_state = evidence_state(prompt, _tool_messages(all_messages), prior_records)
     first_state["page_payloads"] = [row["payload"] for row in _tool_messages(all_messages) if row.get("name") == "public_web_retrieval_shadow"]
-    first_state["claim_validation"] = claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
+    first_tool_rows = _tool_messages(all_messages)
+    # Native conversation is already Hermes' user-facing answer. Evidence
+    # validators and operator presentation are for resource-backed claims;
+    # they must not suppress or rewrite an ordinary zero-tool turn.
+    first_state["claim_validation"] = (
+        claim_feedback(prompt, str(result.get("final_response", "")) if isinstance(result, dict) else "", first_state)
+        if first_tool_rows else {"valid": True, "unsupported_claims": []}
+    )
     draft_text = str(result.get("final_response", "")) if isinstance(result, dict) else ""
     synthesis_terms_missing = []
     if first_state.get("synthesis_required"):
@@ -639,7 +652,7 @@ def run_shadow(
         }.items():
             if not any(term in lower_draft for term in patterns):
                 synthesis_terms_missing.append(label)
-    if first_state.get("missing_resources") or first_state.get("synthesis_required") or synthesis_terms_missing or not first_state["claim_validation"].get("valid", True):
+    if first_state.get("missing_resources") or first_state.get("synthesis_required") or synthesis_terms_missing or (first_tool_rows and not first_state["claim_validation"].get("valid", True)):
         continuation = continuation_guidance(first_state)
         if first_state.get("synthesis_required"):
             continuation += (
@@ -746,7 +759,18 @@ def run_shadow(
         final_state = evidence_state(prompt, final_rows, prior_records)
         final_state["page_payloads"] = [row["payload"] for row in final_rows if row.get("name") == "public_web_retrieval_shadow"]
         draft = str(result.get("final_response", ""))
-        final_state["claim_validation"] = claim_feedback(prompt, draft, final_state)
+        final_state["claim_validation"] = claim_feedback(prompt, draft, final_state) if final_rows else {"valid": True, "unsupported_claims": []}
+        if not final_rows:
+            # Preserve the native Hermes response verbatim for ordinary
+            # conversation. No report formatter, prose validator, or repair
+            # model is allowed to turn a valid answer into a failed turn.
+            result["turn_contract"] = turn_contract
+            result["evidence_state"] = final_state
+            result["claim_validation"] = final_state["claim_validation"]
+            result["messages"] = all_messages
+            result["native_conversation"] = True
+            result["claim_attribution"] = claim_attribution(prompt, draft, final_state)
+            return result
         presentation_state = {
             "required_resources": final_state.get("required_resources", []),
             "executed_resources": final_state.get("executed_resources", []),
