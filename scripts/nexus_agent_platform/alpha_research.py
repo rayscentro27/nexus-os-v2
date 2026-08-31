@@ -79,15 +79,21 @@ def execute_alpha_request(*, objective: str, research_type: str = "MARKET_RESEAR
     company/client state.
     """
     from nexus_agent_platform.phase15 import live_research
+    from nexus_agent_platform.governed import persistence
+    # This is the correlation identity for the single execute lifecycle.  It
+    # is distinct from the research job and the resulting receipt/artifact,
+    # without creating a second Alpha workflow.
+    request_id = persistence.new_id("alpha_req")
     _load_web_search = live_research._load_web_search
     search, blocker = _load_web_search()
     if search is None:
-        return {"status": "BLOCKED", "reason": blocker or "search-adapter-unavailable", "executed": False}
+        return {"status": "BLOCKED", "reason": blocker or "search-adapter-unavailable", "executed": False, "request_id": request_id}
     query = normalize_text(objective)[:500]
     found = search(query, max_results=6)
     if found.get("status") != "ok" or not found.get("results"):
-        return {"status": "BLOCKED", "reason": (found.get("notes") or ["no-research-results"])[0], "provider": found.get("provider"), "executed": False}
+        return {"status": "BLOCKED", "reason": (found.get("notes") or ["no-research-results"])[0], "provider": found.get("provider"), "executed": False, "request_id": request_id}
     job = build_research_job(objective=query, research_type=research_type, requested_by=requested_by)
+    job["request_id"] = request_id
     evidence = []
     for index, item in enumerate(found["results"][:job["limits"]["max_sources"]]):
         ref = str(item.get("url") or "")
@@ -98,7 +104,14 @@ def execute_alpha_request(*, objective: str, research_type: str = "MARKET_RESEAR
             "content": {"normalized_text_or_markdown": json.dumps(item, sort_keys=True)},
         })
     result = run_alpha_research(job, evidence, cost_usage={"classification": "FREE_SEARCH", "model_calls": 0, "remote_cpu_jobs": 0}, runtime_root=runtime_root)
+    result["request_id"] = request_id
+    result["job_id"] = job["research_job_id"]
+    result["result_id"] = result["receipt"]["receipt_id"]
+    result["artifact_id"] = result["receipt"]["research_pack_ref"]
     result["execution"] = {"executed": True, "provider": found.get("provider"), "result_count": len(found["results"]), "referent": referent}
+    result["receipt"]["request_id"] = request_id
+    result["receipt"]["result_id"] = result["result_id"]
+    result["receipt"]["artifact_id"] = result["artifact_id"]
     return result
 
 

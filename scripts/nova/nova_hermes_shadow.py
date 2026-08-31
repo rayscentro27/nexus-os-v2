@@ -110,7 +110,12 @@ def _shadow_resource_guidance() -> str:
         "For a self-contained conversational hypothetical, use the supplied "
         "context first and research only if missing evidence would materially "
         "change the answer; do not delegate a self-contained hypothetical just "
-        "because it concerns business. "
+        "because it concerns business. When Ray supplies named alternatives for "
+        "comparison, preserve those alternatives as the conversational objects "
+        "and reason over them first; do not delegate merely to compare them "
+        "unless Ray asks for independent research or current evidence is needed. "
+        "A supplied candidate comparison must produce a concrete provisional "
+        "choice before any optional challenge delegation. "
         "After retrieval, distinguish source facts from your interpretation, "
         "and make a concrete recommendation when Ray asks for one.\n"
     )
@@ -257,7 +262,7 @@ def _register_bounded_nexus_tools() -> None:
     }
     alpha_schema = {
         "name": "alpha_challenge_shadow",
-        "description": "Request a bounded Alpha challenge/research review when deeper independent research is useful or explicitly requested; no operational execution.",
+        "description": "Request a bounded Alpha challenge/research review when Ray explicitly asks for independent research or when missing evidence materially prevents the answer; for a self-contained comparison with a supplied candidate set, reason and choose first instead of delegating. No operational execution.",
         "parameters": {"type": "object", "properties": {
             "objective": {"type": "string", "minLength": 10}
         }, "required": ["objective"]},
@@ -280,11 +285,26 @@ def _register_bounded_nexus_tools() -> None:
         )
         return json.dumps(result, sort_keys=True, default=str)
 
-    def alpha_challenge(args: Dict[str, Any], **_: Any) -> str:
+    def alpha_challenge(args: Dict[str, Any], **kwargs: Any) -> str:
         result = execute_shared_capability(
             "hermes_nova", "submit_alpha_request", {"objective": args["objective"], "execute": True, "requested_by": "hermes_nova"},
             conversation_id="shadow", trace_id="hermes_native_shadow",
         )
+        # Preserve the canonical Alpha identifiers inside the native tool
+        # result.  Hermes may provide a provider tool-call ID; it is metadata,
+        # not a replacement for the governed Alpha IDs.
+        if isinstance(result, dict):
+            data = result.get("data") if isinstance(result.get("data"), dict) else result
+            job = data.get("job") if isinstance(data.get("job"), dict) else {}
+            receipt = data.get("receipt") if isinstance(data.get("receipt"), dict) else {}
+            result.setdefault("correlation", {})
+            result["correlation"].update({
+                "hermes_tool_call_id": kwargs.get("tool_call_id") or kwargs.get("call_id"),
+                "alpha_request_id": data.get("request_id") or data.get("alpha_request_id") or job.get("request_id"),
+                "alpha_job_id": data.get("job_id") or data.get("research_job_id") or job.get("research_job_id"),
+                "alpha_result_id": data.get("result_id") or receipt.get("result_id") or receipt.get("receipt_id"),
+                "alpha_artifact_id": data.get("artifact_id") or receipt.get("artifact_id") or receipt.get("research_pack_ref"),
+            })
         return json.dumps(result, sort_keys=True, default=str)
 
     def public_web_search(args: Dict[str, Any], **_: Any) -> str:
@@ -331,6 +351,14 @@ def run_shadow(
         "A tool result is evidence for this turn only when it is returned in this turn's native tool exchange."
     )
     current_context = _current_shadow_context(shadow_state)
+    conversation_history = []
+    for turn in (shadow_state.get("recent_turns") or [])[-8:]:
+        if not isinstance(turn, dict):
+            continue
+        if turn.get("user"):
+            conversation_history.append({"role": "user", "content": str(turn["user"])[:2000]})
+        if turn.get("assistant"):
+            conversation_history.append({"role": "assistant", "content": str(turn["assistant"])[:5000]})
     agent = AIAgent(
         model=chosen_model,
         provider="openrouter",
@@ -345,7 +373,12 @@ def run_shadow(
         max_iterations=8,
         platform="nova-shadow",
     )
-    result = agent.run_conversation(prompt, task_id=turn_id)
+    # The worker is intentionally short-lived, so the stable session ID alone
+    # is insufficient for referents unless the prior exchange is explicitly
+    # reopened.  Pass the sidecar's bounded conversational history into the
+    # native Hermes continuation path; structured tool provenance remains in
+    # the separate resource index below.
+    result = agent.run_conversation(prompt, conversation_history=conversation_history or None, task_id=turn_id)
     shadow_state.update({"last_turn_id": turn_id, "last_prompt": prompt[:500], "updated_at": datetime.now(timezone.utc).isoformat()})
     if isinstance(result, dict):
         messages = result.get("messages", [])
@@ -359,8 +392,18 @@ def run_shadow(
             if not payload:
                 continue
             capability = message.get("name") or message.get("tool_name") or "unknown"
-            request_id = payload.get("request_id") or payload.get("alpha_request_id") or payload.get("research_job_id")
-            result_id = payload.get("result_id") or payload.get("artifact_id") or payload.get("receipt_id")
+            data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+            correlation = payload.get("correlation") if isinstance(payload.get("correlation"), dict) else {}
+            job = data.get("job") if isinstance(data.get("job"), dict) else {}
+            receipt = data.get("receipt") if isinstance(data.get("receipt"), dict) else {}
+            request_id = (correlation.get("alpha_request_id") or data.get("request_id") or
+                          data.get("alpha_request_id") or job.get("request_id"))
+            result_id = (correlation.get("alpha_result_id") or data.get("result_id") or
+                         receipt.get("result_id") or receipt.get("receipt_id"))
+            job_id = (correlation.get("alpha_job_id") or data.get("job_id") or
+                      data.get("research_job_id") or job.get("research_job_id"))
+            artifact_id = (correlation.get("alpha_artifact_id") or data.get("artifact_id") or
+                           receipt.get("artifact_id") or receipt.get("research_pack_ref"))
             if capability == "alpha_challenge_shadow":
                 request_id = request_id or payload.get("job_id")
                 result_id = result_id or payload.get("artifact_id") or payload.get("receipt_id")
@@ -368,6 +411,9 @@ def run_shadow(
                 "capability": capability,
                 "request_id": request_id,
                 "result_id": result_id,
+                "job_id": job_id,
+                "artifact_id": artifact_id,
+                "objective": data.get("objective") or job.get("objective"),
                 "completed_at": payload.get("completed_at") or payload.get("created_at") or datetime.now(timezone.utc).isoformat(),
                 "current_for_turn": True,
                 "status": payload.get("status"),
