@@ -29,6 +29,7 @@ import SystemHealthPanel from '../components/SystemHealthPanel'
 import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipeline'
 import AccountSecurityPanel from '../components/AccountSecurityPanel'
 import ErrorBoundary from '../components/ErrorBoundary'
+import CreativeReviewStudio from '../components/CreativeReviewStudio'
 import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
 import NovaWorkspace from '../components/NovaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
@@ -1485,7 +1486,7 @@ export function LegacyNexusAdminUI({ email, initialPage = 'command' }) {
     'mission-control-v2': <ErrorBoundary panelName="Mission Control V2"><HermesMissionControlV2 /></ErrorBoundary>,
     operations: <ErrorBoundary panelName="Nexus Operations"><NexusOperationsPanel onNavigate={navigate} /></ErrorBoundary>,
     subscription: <ErrorBoundary panelName="Subscription Command Center"><SubscriptionCommandCenterPage /></ErrorBoundary>,
-    creative: <ErrorBoundary panelName="Creative Studio"><Workspace id="creative" title="Creative Studio" sub="Campaign / Content Room" kind="campaign" type="creative" /></ErrorBoundary>,
+    creative: <ErrorBoundary panelName="Creative Studio"><CreativeReviewStudio /></ErrorBoundary>,
     design: <ErrorBoundary panelName="Design Library"><Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" /></ErrorBoundary>,
     trading: <ErrorBoundary panelName="Trading Lab"><Workspace id="trading" title="Trading Lab" sub="Paper Trading Research Room" kind="trading" type="trading" /></ErrorBoundary>,
     seo: <ErrorBoundary panelName="SEO / Marketing"><Workspace id="seo" title="SEO / Marketing" sub="Growth Room" kind="seo" type="seo" /></ErrorBoundary>,
