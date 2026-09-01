@@ -58,7 +58,13 @@ class NovaTrace:
     def __init__(self, *, update_id: Any, session_id: str = "", trace_id: str | None = None):
         self.update_id = str(update_id)
         self.session_id = session_id
-        self.trace_id = trace_id or os.getenv("NOVA_LANGFUSE_TRACE_ID") or f"nova-{self.update_id}-{uuid.uuid4().hex[:16]}"
+        external_trace_id = trace_id or os.getenv("NOVA_LANGFUSE_TRACE_ID")
+        # Langfuse/OTel accepts only a 32-character lowercase hex trace id.
+        # Keep the turn/update correlation in metadata while making the
+        # exported trace id valid for cross-process parent correlation.
+        self.trace_id = external_trace_id if external_trace_id and re.fullmatch(r"[0-9a-f]{32}", external_trace_id) else hashlib.sha256(
+            f"nova:{self.update_id}:{uuid.uuid4().hex}".encode()
+        ).hexdigest()[:32]
         self.started = time.monotonic()
         self.events: list[dict[str, Any]] = []
         self._adapter = None

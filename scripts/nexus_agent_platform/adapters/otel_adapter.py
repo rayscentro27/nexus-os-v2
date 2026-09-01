@@ -67,6 +67,14 @@ _HASH_META_KEYS = frozenset({
 })
 
 
+def _trace_context(metadata: Optional[Dict]) -> Optional[Dict[str, str]]:
+    """Return a valid Langfuse trace context when callers provide one."""
+    value = (metadata or {}).get("trace_id")
+    if isinstance(value, str) and re.fullmatch(r"[0-9a-f]{32}", value):
+        return {"trace_id": value}
+    return None
+
+
 def _safe_hash(value: str) -> str:
     """Salted hash for sensitive identifiers. Deterministic per-process."""
     salt = os.getenv('NEXUS_TRACE_SALT', 'nexus-default-salt')
@@ -171,6 +179,7 @@ class OtelAdapter:
             try:
                 with self._client.start_as_current_observation(
                     as_type="span", name=name, metadata=safe_meta,
+                    trace_context=_trace_context(metadata),
                 ) as trace:
                     yield trace
             except Exception as exc:
@@ -191,6 +200,7 @@ class OtelAdapter:
             try:
                 with self._client.start_as_current_observation(
                     as_type="span", name=name, metadata=safe_meta,
+                    trace_context=_trace_context(metadata),
                 ) as span:
                     yield span
             except Exception as exc:
@@ -211,11 +221,12 @@ class OtelAdapter:
             try:
                 with self._client.start_as_current_observation(
                     as_type="span", name=name, metadata=safe_meta,
+                    trace_context=_trace_context(metadata),
                 ):
                     with self._client.start_as_current_observation(
                         as_type="generation", name=f"{name}_gen",
                         model=model, input=safe_input, output=safe_output,
-                        metadata=safe_meta,
+                        metadata=safe_meta, trace_context=_trace_context(metadata),
                     ):
                         pass
             except Exception as exc:
