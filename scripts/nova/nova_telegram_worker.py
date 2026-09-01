@@ -230,6 +230,22 @@ def _delivery_record(update_id, chat_id, response, hermes_run_id=None, mission_i
             "created_at": now, "updated_at": now}
 
 
+def _is_progress_only_response(response, tools):
+    """Recognize an interim-looking model final that must not be delivered."""
+    if tools or not isinstance(response, str):
+        return False
+    text = response.strip().lower()
+    markers = (
+        "please hold on",
+        "one moment",
+        "fetching current",
+        "loading public_",
+        "[loading",
+        "[fetching",
+    )
+    return len(text) < 500 and any(marker in text for marker in markers)
+
+
 def _deliver_response(update_id, chat_id, response, *, hermes_run_id=None, mission_id=None):
     """Deliver one composed response, recoverably and without rerunning Hermes."""
     record = _load_delivery(update_id) or _delivery_record(update_id, chat_id, response, hermes_run_id, mission_id)
@@ -680,6 +696,41 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
         if not result:
             raise RuntimeError("hermes_primary_result_not_object")
         messages = result.get("messages", [])
+        retry_count = 0
+        if _is_progress_only_response(
+            result.get("final_response"),
+            [m.get("name") or m.get("tool_name") for m in messages if m.get("role") == "tool"],
+        ):
+            # Hermes occasionally emits progress prose as its terminal output
+            # without executing the requested resource. Do not expose that as
+            # the answer. Give the same native runtime one bounded retry; only
+            # the completed answer is eligible for Telegram delivery.
+            retry_count = 1
+            retry = subprocess.run(
+                [HERMES_SHADOW_PYTHON, HERMES_SHADOW_SCRIPT, text, "--session-id", session],
+                cwd=REPO_ROOT, env=child_env, capture_output=True, text=True,
+                timeout=HERMES_SHADOW_TIMEOUT, check=False,
+            )
+            retry_result = None
+            for line in reversed(retry.stdout.splitlines()):
+                try:
+                    candidate = json.loads(line)
+                    if isinstance(candidate, dict):
+                        retry_result = candidate
+                        break
+                except json.JSONDecodeError:
+                    continue
+            if retry.returncode == 0 and retry_result:
+                retry_messages = retry_result.get("messages", [])
+                retry_tools = [m.get("name") or m.get("tool_name") for m in retry_messages if m.get("role") == "tool"]
+                if not _is_progress_only_response(retry_result.get("final_response"), retry_tools):
+                    result = retry_result
+                    messages = retry_messages
+            if _is_progress_only_response(
+                result.get("final_response"),
+                [m.get("name") or m.get("tool_name") for m in messages if m.get("role") == "tool"],
+            ):
+                raise RuntimeError("hermes_primary_incomplete_progress_response")
         child_telemetry = result.get("latency_telemetry") if isinstance(result.get("latency_telemetry"), dict) else {}
         record.update({
             "response": _ab_safe_text(result.get("final_response")),
@@ -687,6 +738,7 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
             "tools_executed": [m.get("name") or m.get("tool_name") for m in messages if m.get("role") == "tool"],
             "runtime_init": True, "model_init": True,
             "completed": bool(result.get("completed")),
+            "retry_count": retry_count,
             "turn_contract": result.get("turn_contract"),
             "evidence_state": result.get("evidence_state"),
             "claim_validation": result.get("claim_validation"),
@@ -764,28 +816,45 @@ def _capability_receipt(result, update_id, conversation_id, final_response_id=No
 
 # ─── Single-Delivery Lock ───────────────────────────────
 
-def _acquire_chat_lock(chat_id):
-    """Acquire a per-chat file lock to prevent concurrent processing."""
+def _acquire_chat_lock(chat_id, *, wait_seconds=None):
+    """Acquire a per-chat lock, waiting instead of dropping a Telegram update."""
     lock_dir = os.path.join(NOVA_STATE_DIR, "nova_locks")
     os.makedirs(lock_dir, exist_ok=True)
     lock_path = os.path.join(lock_dir, f"chat_{chat_id}.lock")
+    wait_seconds = float(wait_seconds if wait_seconds is not None else os.getenv("NOVA_CHAT_LOCK_WAIT_SECONDS", "600"))
+    deadline = time.monotonic() + max(1.0, wait_seconds)
 
-    # Use atomic create — fails if lock already exists
-    try:
-        fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-        os.write(fd, f"{os.getpid()}\n".encode())
-        os.close(fd)
-        return lock_path
-    except FileExistsError:
-        # Check if lock is stale (older than 120s)
+    while True:
         try:
-            age = time.time() - os.path.getmtime(lock_path)
-            if age > 120:
-                os.remove(lock_path)
-                return _acquire_chat_lock(chat_id)
-        except OSError:
-            pass
-        return None
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+            os.write(fd, f"{os.getpid()}\n".encode())
+            os.close(fd)
+            return lock_path
+        except FileExistsError:
+            owner_pid = None
+            try:
+                with open(lock_path, encoding="utf-8") as handle:
+                    owner_pid = int(handle.read().strip().splitlines()[0])
+            except (OSError, ValueError, IndexError):
+                pass
+            owner_alive = False
+            if owner_pid == os.getpid():
+                owner_alive = True
+            elif owner_pid:
+                try:
+                    os.kill(owner_pid, 0)
+                    owner_alive = True
+                except OSError:
+                    owner_alive = False
+            if not owner_alive:
+                try:
+                    os.remove(lock_path)
+                except FileNotFoundError:
+                    pass
+                continue
+            if time.monotonic() >= deadline:
+                raise TimeoutError(f"timed out waiting for Telegram chat lock {chat_id}")
+            time.sleep(0.1)
 
 
 def _release_chat_lock(chat_id):
@@ -852,8 +921,11 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
     ):
         lock = _acquire_chat_lock(chat_id)
     if not lock:
-        _log(f"Skipped update {update_id} — another worker processing chat {chat_id}")
-        return False
+        # _acquire_chat_lock either returns ownership or raises. Keep this
+        # guard for test doubles and future lock implementations; never treat
+        # contention as successful processing because the poller would then
+        # advance past an unhandled Telegram update.
+        raise RuntimeError(f"chat lock unavailable for update {update_id}")
 
     try:
         with stage_execution(
@@ -1252,11 +1324,11 @@ def run_poll():
 
             for update in updates:
                 uid = update.get("update_id", 0)
-                if uid > max_update_id:
-                    max_update_id = uid
                 try:
-                    process_message(update)
-                    processed += 1
+                    if process_message(update):
+                        if uid > max_update_id:
+                            max_update_id = uid
+                        processed += 1
                 except Exception as e:
                     _log_error(f"Error processing update {uid}: {e}")
 

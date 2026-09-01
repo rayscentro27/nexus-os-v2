@@ -86,7 +86,7 @@ def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_pat
     assert len(calls) == 1
     assert first["metadata"].get("deduplicated") is None
     assert second["metadata"]["deduplicated"] is True
-    receipts = [json.loads(path.read_text()) for path in tmp_path.glob("*.json")]
+    receipts = [json.loads(path.read_text()) for path in sorted(tmp_path.glob("*.json"))]
     assert len(receipts) == 2
     assert receipts[1]["deduplicated"] is True
     assert receipts[1]["turn_id"] == "turn-test-1"
