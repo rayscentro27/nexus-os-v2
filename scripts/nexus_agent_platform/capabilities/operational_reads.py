@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from .currentness import classify_record, count_by_class, is_synthetic_record
+
 ROOT = Path(__file__).resolve().parents[3]
 
 AUTHORITY_RANKS = {
@@ -115,12 +117,25 @@ def _business_opportunities() -> Dict[str, Any]:
     if result["status"] != "OK":
         return result
     rows = result["data"].get("decisions", [])
+    source_timestamp = result.get("as_of")
+    classified = []
+    for row in rows:
+        meta = classify_record(row, source_timestamp=source_timestamp,
+                               synthetic=is_synthetic_record(row))
+        classified.append({**row, **meta})
+    eligible = [row for row in classified if row["live_response_eligible"]]
+    filtered = count_by_class(classified)
     result["data"] = {
-        "total": len(rows),
-        "by_decision": {key: sum(1 for row in rows if row.get("decision") == key) for key in ("ACCEPT", "WATCH", "REJECT", "NEEDS_MORE_EVIDENCE")},
-        "items": rows[:50],
-        "taxonomy": "BUSINESS_OPPORTUNITIES; process actions and registry entries excluded",
+        "total": len(eligible),
+        "by_decision": {key: sum(1 for row in eligible if row.get("decision") == key) for key in ("ACCEPT", "WATCH", "REJECT", "NEEDS_MORE_EVIDENCE")},
+        "items": eligible[:50],
+        "taxonomy": "CURRENT opportunities only; research history excluded",
+        "filtered_counts": filtered,
+        "historical_running_total": result["data"].get("counts", {}).get("running_total"),
     }
+    result["status"] = "OK" if eligible else "EMPTY"
+    result["warnings"] = list(result.get("warnings", []))
+    result["warnings"].append("Historical, synthetic, and non-current research decisions were excluded from the live opportunity view.")
     return result
 
 
@@ -191,10 +206,68 @@ def _approvals() -> Dict[str, Any]:
 
 
 def _blockers() -> Dict[str, Any]:
-    result = _report("BLOCKERS", "reports/hermes_modernization/daily_brief.json")
-    if result["status"] == "OK":
-        result["data"] = {"blockers": result["data"].get("blockers", []), "status": result["data"].get("status", "UNKNOWN")}
-    return result
+    """Derive blockers from current governed state, never from a daily brief."""
+    from nexus_agent_platform.governed import persistence, work_orders
+    from nexus_agent_platform.governed.approvals import get_pending_approvals
+
+    now = datetime.now(timezone.utc)
+    items: list[dict[str, Any]] = []
+    approvals = get_pending_approvals(requested_for="ray", include_self=False)
+    for approval in approvals:
+        items.append({
+            "id": approval.get("id"),
+            "title": approval.get("action_summary") or approval.get("action_id"),
+            "status": "WAITING_RAY",
+            "blocking": True,
+            "source": "data/governed/approvals.jsonl",
+            **classify_record(approval, source_timestamp=approval.get("created_at"), now=now),
+        })
+
+    latest: dict[str, dict[str, Any]] = {}
+    for record in persistence.read_records("work_orders"):
+        latest[record["work_order_id"]] = record
+    for order in latest.values():
+        if order.get("status") != "blocked":
+            continue
+        items.append({
+            "id": order.get("work_order_id"),
+            "title": order.get("expected_outcome") or order.get("action_id"),
+            "status": "BLOCKED",
+            "blocking": True,
+            "source": "data/governed/work_orders.jsonl",
+            **classify_record(order, source_timestamp=order.get("created_at"), now=now),
+        })
+
+    historical_report = ROOT / "reports/hermes_modernization/daily_brief.json"
+    historical_count = 0
+    historical_data = _load(historical_report)
+    if isinstance(historical_data, dict) and isinstance(historical_data.get("blockers"), list):
+        historical_count = len(historical_data["blockers"])
+
+    return {
+        "status": "OK" if items else "EMPTY",
+        "capability": "BLOCKERS",
+        "source": "governed_current_state",
+        "source_type": "live_governed_read",
+        "freshness": "live",
+        "data": {
+            "blockers": items,
+            "items": items,
+            "current_count": len(items),
+            "filtered_historical_count": historical_count,
+            "filtered_synthetic_count": 0,
+            "historical_report_excluded": "reports/hermes_modernization/daily_brief.json",
+        },
+        "warnings": [] if items else ["No active governed blocker was found."],
+        "errors": [],
+        "provenance": {
+            "capability": "BLOCKERS",
+            "source_type": "live_governed_read",
+            "source_timestamp": now.isoformat(),
+            "freshness": "live",
+            "authority": "Nexus governed approvals and work-order state",
+        },
+    }
 
 
 def _workforce() -> Dict[str, Any]:

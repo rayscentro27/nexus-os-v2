@@ -1961,6 +1961,9 @@ def _handle_operational_summary(
         components["system_health"] = {
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
+            "source": result.get("source", "UNKNOWN"),
+            "as_of": result.get("provenance", {}).get("retrieved_at"),
+            "freshness": result.get("freshness", "unknown"),
         }
         component_statuses["system_health"] = result.get("status", "unknown")
     except Exception as exc:
@@ -1974,6 +1977,9 @@ def _handle_operational_summary(
         components["client_counts"] = {
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
+            "source": result.get("source", "UNKNOWN"),
+            "as_of": result.get("provenance", {}).get("retrieved_at"),
+            "freshness": result.get("freshness", "unknown"),
         }
         component_statuses["client_counts"] = result.get("status", "unknown")
     except Exception as exc:
@@ -1987,6 +1993,9 @@ def _handle_operational_summary(
         components["pending_approvals"] = {
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
+            "source": result.get("source", "UNKNOWN"),
+            "as_of": result.get("provenance", {}).get("retrieved_at"),
+            "freshness": result.get("freshness", "unknown"),
         }
         component_statuses["pending_approvals"] = result.get("status", "unknown")
     except Exception as exc:
@@ -2000,6 +2009,9 @@ def _handle_operational_summary(
         components["recent_research"] = {
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
+            "source": result.get("source", "UNKNOWN"),
+            "as_of": result.get("provenance", {}).get("retrieved_at"),
+            "freshness": result.get("freshness", "unknown"),
         }
         component_statuses["recent_research"] = result.get("status", "unknown")
     except Exception as exc:
@@ -2013,6 +2025,9 @@ def _handle_operational_summary(
         components["opportunities"] = {
             "status": result.get("status", "unknown"),
             "data": result.get("data", {}),
+            "source": result.get("source", "UNKNOWN"),
+            "as_of": result.get("provenance", {}).get("retrieved_at"),
+            "freshness": result.get("freshness", "unknown"),
         }
         component_statuses["opportunities"] = result.get("status", "unknown")
     except Exception as exc:
@@ -2021,6 +2036,15 @@ def _handle_operational_summary(
         component_errors.append(f"opportunities: {exc}")
 
     query_end = datetime.now(timezone.utc)
+
+    # Preserve source/freshness semantics for each component.  The composite
+    # is current as a query, but a report-backed component can still be stale.
+    for component in components.values():
+        if "currentness" not in component:
+            component["currentness"] = (
+                "CURRENT" if component.get("status") in ("success", "empty") else
+                "PARTIAL" if component.get("status") == "partial" else "UNKNOWN"
+            )
 
     # Determine overall status from component statuses
     statuses = list(component_statuses.values())

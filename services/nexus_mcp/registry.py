@@ -14,7 +14,8 @@ CAPABILITY_MAP = {
     "nexus_get_blockers": "BLOCKERS",
     "nexus_get_opportunities": "BUSINESS_OPPORTUNITIES",
     "nexus_get_business_state": "get_operational_summary",
-    "nexus_get_system_health": "SYSTEM_HEALTH",
+    # Use the live composite resolver, not the historical report alias.
+    "nexus_get_system_health": "get_system_health",
 }
 
 

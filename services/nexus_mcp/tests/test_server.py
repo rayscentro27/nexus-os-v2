@@ -34,7 +34,25 @@ def test_public_result_preserves_canonical_state_and_metadata():
         "freshness": "live",
         "item_count": 1,
         "source_commit": None,
+        "currentness": "CURRENT",
+        "live_response_eligible": True,
+        "filtered_historical_count": 0,
+        "filtered_synthetic_count": 0,
+        "filtered_other_noncurrent_count": 0,
     }
+
+
+def test_public_result_marks_partial_business_state_and_live_health():
+    business = server._public_result(
+        "nexus_get_business_state",
+        {"status": "partial", "freshness": "live", "data": {}, "provenance": {}},
+    )
+    health = server._public_result(
+        "nexus_get_system_health",
+        {"status": "partial", "freshness": "live", "data": {}, "provenance": {}},
+    )
+    assert business["metadata"]["currentness"] == "PARTIAL"
+    assert health["metadata"]["currentness"] == "CURRENT"
 
 
 def test_canonical_read_failure_is_explicit_and_not_fabricated(monkeypatch, tmp_path: Path):

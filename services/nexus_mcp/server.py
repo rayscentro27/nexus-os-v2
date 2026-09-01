@@ -51,7 +51,19 @@ def _public_result(tool_name: str, result: dict[str, Any]) -> dict[str, Any]:
     """Normalize the shared envelope without exposing credentials or prose."""
     provenance = result.get("provenance") if isinstance(result.get("provenance"), dict) else {}
     data = result.get("data") if isinstance(result.get("data"), dict) else {}
+    metadata = result.get("metadata") if isinstance(result.get("metadata"), dict) else {}
+    filtered = data.get("filtered_counts") if isinstance(data.get("filtered_counts"), dict) else {}
     status = str(result.get("status", "UNKNOWN")).upper()
+    freshness = result.get("freshness") or provenance.get("freshness") or "UNKNOWN"
+    if tool_name == "nexus_get_business_state":
+        currentness = "PARTIAL" if status in {"PARTIAL", "ERROR"} else "CURRENT"
+        eligible = status in {"OK", "SUCCESS", "PARTIAL", "EMPTY"}
+    elif tool_name == "nexus_get_system_health":
+        currentness = "CURRENT" if freshness.lower() in {"live", "fresh"} else "UNKNOWN"
+        eligible = currentness == "CURRENT"
+    else:
+        currentness = result.get("currentness") or ("CURRENT" if status in {"OK", "SUCCESS", "EMPTY"} else "UNKNOWN")
+        eligible = result.get("live_response_eligible", currentness == "CURRENT")
     return {
         "status": "ok" if status in {"OK", "SUCCESS"} else status.lower(),
         "as_of": result.get("as_of") or provenance.get("source_timestamp") or _now(),
@@ -63,9 +75,15 @@ def _public_result(tool_name: str, result: dict[str, Any]) -> dict[str, Any]:
         "metadata": {
             "read_only": True,
             "canonical": True,
-            "freshness": result.get("freshness") or provenance.get("freshness") or "UNKNOWN",
+            "freshness": freshness,
             "item_count": len(_items(result)),
             "source_commit": provenance.get("source_commit"),
+            "currentness": currentness,
+            "live_response_eligible": eligible,
+            "filtered_historical_count": data.get("filtered_historical_count", filtered.get("REAL_HISTORICAL", 0)),
+            "filtered_synthetic_count": data.get("filtered_synthetic_count", filtered.get("SYNTHETIC", 0)),
+            "filtered_other_noncurrent_count": sum(value for key, value in filtered.items() if key not in {"REAL_CURRENT", "REAL_HISTORICAL", "SYNTHETIC"}),
+            **metadata,
         },
         "error": result.get("error") or (result.get("errors") or [None])[0],
     }
@@ -88,6 +106,11 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
         "canonical_source": CAPABILITY_MAP[tool_name],
         "result_status": payload.get("status"),
         "item_count": payload.get("metadata", {}).get("item_count", 0),
+        "currentness_result": payload.get("metadata", {}).get("currentness", "UNKNOWN"),
+        "eligible_item_count": payload.get("metadata", {}).get("item_count", 0),
+        "filtered_historical_count": payload.get("metadata", {}).get("filtered_historical_count", 0),
+        "filtered_synthetic_count": payload.get("metadata", {}).get("filtered_synthetic_count", 0),
+        "filtered_other_noncurrent_count": payload.get("metadata", {}).get("filtered_other_noncurrent_count", 0),
         "error": payload.get("error"),
         "read_only": True,
         "authority_owner": "Nexus",
@@ -100,27 +123,27 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
 
 
 def _register() -> None:
-    @mcp.tool(name="nexus_get_reviews")
+    @mcp.tool(name="nexus_get_reviews", description="Fresh volatile read: return only active Ray approvals requiring a decision. Call this for current review questions; do not reuse prior review context.")
     def nexus_get_reviews() -> dict[str, Any]:
         return _call("nexus_get_reviews")
 
-    @mcp.tool(name="nexus_get_work_items")
+    @mcp.tool(name="nexus_get_work_items", description="Fresh volatile read: return only current governed queued, running, blocked, or waiting work items.")
     def nexus_get_work_items() -> dict[str, Any]:
         return _call("nexus_get_work_items")
 
-    @mcp.tool(name="nexus_get_blockers")
+    @mcp.tool(name="nexus_get_blockers", description="Fresh volatile read: return only blockers proven by current governed approvals or blocked work orders. Historical reports are excluded.")
     def nexus_get_blockers() -> dict[str, Any]:
         return _call("nexus_get_blockers")
 
-    @mcp.tool(name="nexus_get_opportunities")
+    @mcp.tool(name="nexus_get_opportunities", description="Fresh read: return only current eligible opportunities; accumulated research history and synthetic records are excluded.")
     def nexus_get_opportunities() -> dict[str, Any]:
         return _call("nexus_get_opportunities")
 
-    @mcp.tool(name="nexus_get_business_state")
+    @mcp.tool(name="nexus_get_business_state", description="Fresh composite read: return business components with independent source, timestamp, and currentness metadata.")
     def nexus_get_business_state() -> dict[str, Any]:
         return _call("nexus_get_business_state")
 
-    @mcp.tool(name="nexus_get_system_health")
+    @mcp.tool(name="nexus_get_system_health", description="Fresh live health read: distinguish runtime, process, service, worker capacity, and component status; do not infer Nexus outage from zero active process entries.")
     def nexus_get_system_health() -> dict[str, Any]:
         return _call("nexus_get_system_health")
 
