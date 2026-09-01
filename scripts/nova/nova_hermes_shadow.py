@@ -860,6 +860,17 @@ def run_shadow(
             result["messages"] = all_messages
             result["native_conversation"] = True
             result["claim_attribution"] = claim_attribution(prompt, draft, final_state)
+            trace.event("hermes.final_synthesis", {
+                "response_chars": len(draft),
+                "claim_source_diagnostic": claim_diagnostics(
+                    draft,
+                    tool_names=[],
+                    prior_tool_result_count=len(prior_records),
+                    prior_claim_count=sum(1 for row in prior_records if row.get("currentness") or row.get("resource") == "NEXUS"),
+                ),
+                "tool_result_fingerprint": hashlib.sha256(b"[]").hexdigest()[:16],
+            })
+            trace.finish({"runtime": "hermes", "model": chosen_model, "completed": bool(result.get("completed"))})
             return result
         presentation_state = {
             "required_resources": final_state.get("required_resources", []),
@@ -1075,6 +1086,8 @@ def run_shadow(
             "total_runner_ms": round((time.monotonic() - started_at) * 1000, 1),
             **phase_timings,
         }
+        # Normal dict results must finalize the trace before returning.
+        trace.finish({"runtime": "hermes", "model": chosen_model, "completed": bool(result.get("completed"))})
         return result
     trace.finish({"runtime": "hermes", "model": chosen_model, "completed": bool(isinstance(result, dict) and result.get("completed"))})
     return {"response": result, "model": chosen_model, "shadow": True}

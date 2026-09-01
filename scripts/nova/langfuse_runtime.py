@@ -42,7 +42,12 @@ def _safe_meta(value: dict[str, Any] | None) -> dict[str, Any]:
         return {}
     try:
         from nexus_agent_platform.adapters.otel_adapter import _redact_metadata
-        return _redact_metadata(value)
+        safe = _redact_metadata(value)
+        # Keep session correlation without exporting a raw Telegram-derived ID.
+        if "session_id" in safe:
+            safe["session_id_hash"] = _hash(value.get("session_id"))
+            safe.pop("session_id", None)
+        return safe
     except Exception:
         return {str(k): _safe_text(v) if isinstance(v, str) else v for k, v in value.items()}
 
