@@ -156,6 +156,31 @@ def improvement_candidate(candidate_id: str, *, domain: str, hypothesis: str = "
     return {"candidate_id": candidate_id, "domain": domain, "current_version": "baseline", "candidate_version": "candidate", "source": source, "hypothesis": hypothesis, "expected_benefit": None, "baseline_metrics": {}, "test_metrics": {}, "risk": "bounded", "status": "CANDIDATE", "evidence": [], "rollback_target": "baseline"}
 
 
+def persist_organization() -> dict[str, int]:
+    """Persist the selected bounded organization in the existing governed store."""
+    from nexus_agent_platform.governed import persistence
+    counts: dict[str, int] = {}
+    for specialist_id in SPECIALISTS:
+        persistence.append_record("specialists", specialist_contract(specialist_id))
+    counts["specialists"] = len(SPECIALISTS)
+    for specialist_id, resources in RESOURCE_PERMISSIONS.items():
+        persistence.append_record("specialist_permissions", {"specialist_id": specialist_id, "permissions": resources, "authority_owner": "Nexus"})
+    counts["specialist_permissions"] = len(RESOURCE_PERMISSIONS)
+    for specialist_id, skills in SKILL_ASSIGNMENTS.items():
+        persistence.append_record("skill_assignments", {"specialist_id": specialist_id, "skills": skills})
+    counts["skill_assignments"] = len(SKILL_ASSIGNMENTS)
+    for loop_id, state in LOOP_CATALOG.items():
+        persistence.append_record("loop_state", build_loop_state(loop_id, owner=state["owner"]))
+    counts["loop_state"] = len(LOOP_CATALOG)
+    return counts
+
+
+def load_organization() -> dict[str, list[dict[str, Any]]]:
+    """Reload bounded organization records from the governed store."""
+    from nexus_agent_platform.governed import persistence
+    return {name: persistence.read_records(name) for name in ("specialists", "specialist_permissions", "skill_assignments", "loop_state")}
+
+
 def validate_trading_safety() -> dict[str, Any]:
     return {"LIVE_TRADING": False, "AUTO_TRADING": False, "PAPER_ONLY": True, "LIVE_TRADING_AUTHORITY": "NONE", "status": "PASS"}
 

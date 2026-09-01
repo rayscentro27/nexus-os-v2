@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sys
+import os
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -8,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from nexus_foundation.contracts import (  # noqa: E402
     LOOP_CATALOG, RESOURCE_PERMISSIONS, SPECIALISTS, SPECIALIST_CONTRACT_FIELDS,
     TRADING_METRICS, build_goal, build_loop_state, build_work_order, complete_work_order, dependency_state, improvement_candidate, run_foundation_proof,
-    specialist_contract, trading_strategy, validate_trading_safety,
+    load_organization, persist_organization, specialist_contract, trading_strategy, validate_trading_safety,
 )
 
 
@@ -46,6 +48,25 @@ def test_goal_loop_improvement_and_dependency_contracts():
     assert build_loop_state("GROWTH_LOOP")["status"] == "READY"
     assert improvement_candidate("c", domain="efficiency")["status"] == "CANDIDATE"
     assert dependency_state("github", "DISCONNECTED")["secret_present"] is False
+
+
+def test_organization_persists_and_reloads_from_governed_store():
+    with tempfile.TemporaryDirectory() as directory:
+        previous = os.environ.get("NEXUS_GOVERNED_DATA_DIR")
+        os.environ["NEXUS_GOVERNED_DATA_DIR"] = directory
+        try:
+            counts = persist_organization()
+            loaded = load_organization()
+        finally:
+            if previous is None:
+                os.environ.pop("NEXUS_GOVERNED_DATA_DIR", None)
+            else:
+                os.environ["NEXUS_GOVERNED_DATA_DIR"] = previous
+    assert counts["specialists"] == 7
+    assert len(loaded["specialists"]) == 7
+    assert len(loaded["specialist_permissions"]) == 7
+    assert len(loaded["skill_assignments"]) == 6
+    assert len(loaded["loop_state"]) == 14
 
 
 def test_bounded_first_work_paths_and_recovery_proof():
