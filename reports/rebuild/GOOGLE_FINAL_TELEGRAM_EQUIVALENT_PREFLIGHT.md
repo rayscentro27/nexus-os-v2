@@ -12,6 +12,10 @@
 - Real process-equivalent D→E check: PASS. D performed one fresh external
   Gmail search; E used the resulting set and performed one linked thread read,
   with no new discovery search.
+- Context release: the persisted Gmail referent was cleared before an unrelated
+  business turn. The native model nevertheless selected one Nexus opportunity
+  read; this remaining selection issue is not a lost Google snapshot and was
+  not suppressed with a phrase router.
 - The B response selected objects from A’s five-item set. It was verbose, but
   the result-set and object linkage were correct; response style is outside
   this campaign’s scope.
@@ -25,4 +29,5 @@
 - Google MCP tests: `4 passed`.
 
 The real-world Google certification boundary remains with Ray’s final Telegram
-retest. No real-world certification is claimed here.
+retest. No real-world certification is claimed here; the unrelated-turn
+resource-selection issue remains a separate trace-backed blocker.

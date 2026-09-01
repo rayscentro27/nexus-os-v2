@@ -10,3 +10,10 @@ The repair makes referent continuity explicit and clears `active_referent` when
 a turn has neither a resource execution nor an object continuation. Historical
 records remain available for audit and explanation but no longer select the
 active resource for unrelated turns.
+
+The post-repair process-equivalent business test cleared the prior Gmail
+referent correctly, but the native model still voluntarily selected a Nexus
+opportunities read. This is a remaining model-native resource-selection issue,
+not persisted Calendar/Gmail context injection. Suppressing it would require a
+new routing or behavioral restriction, which is outside this campaign’s allowed
+scope.

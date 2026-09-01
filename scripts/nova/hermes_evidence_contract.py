@@ -54,10 +54,15 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
     # A prior resource identifies a referent only when the new utterance is
     # actually an anaphoric/continuation request.  Resource history must not
     # become a persistent conversation domain for unrelated turns.
-    referent_followup = bool(re.search(
-        r"\b(?:that|those|it|they|them|these|one|first|last|next|earlier|above|same|most important|still|remain(?:s)?|active|open|pending|resolved)\b",
-        text,
-    ))
+    # An ordinal in ordinary prose (for example, “evaluate first”) is not an
+    # object referent. Ordinal/object terms require an explicit selection
+    # structure; pronouns and state-continuation terms remain intrinsically
+    # anaphoric.
+    referent_followup = bool(
+        re.search(r"\b(?:that|those|it|they|them|these|earlier|above|same|still|remain(?:s)?|active|open|pending|resolved)\b", text)
+        or re.search(r"\bwhich\b.{0,40}\b(?:one|first|last|next|most important)\b", text)
+        or re.search(r"\b(?:the|this|that)\s+(?:first|last|next|same)\s+one\b", text)
+    )
     # Referent context identifies what “those” or “still active” means, but it
     # cannot establish present operational truth. Refresh the same volatile
     # Nexus resource whenever the follow-up asks about current state.

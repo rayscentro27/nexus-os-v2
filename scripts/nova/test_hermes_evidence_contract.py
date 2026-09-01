@@ -127,6 +127,13 @@ def test_unrelated_turn_does_not_inherit_prior_nexus_referent():
     assert turn_requirements("my favorite is hazelnut", prior)["referent_capability"] == ""
 
 
+def test_ordinary_ordinal_does_not_reopen_prior_google_referent():
+    prior = [{"resource": "GOOGLE", "capability": "gmail_search"}]
+    contract = turn_requirements("What should we evaluate first?", prior)
+    assert contract["referent_capability"] == ""
+    assert contract["referent_mode"] == "NONE"
+
+
 def test_anaphoric_turn_preserves_prior_nexus_referent():
     prior = [{"resource": "NEXUS", "capability": "nexus_get_opportunities"}]
     contract = turn_requirements("Which of those are still active?", prior)
