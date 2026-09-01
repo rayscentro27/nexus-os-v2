@@ -19,6 +19,7 @@ import urllib.request
 import ssl
 import uuid
 import time
+import contextvars
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -42,6 +43,7 @@ SHADOW_STATE_DIR = REPO_ROOT / "data" / "runtime" / "nova_hermes_shadow_sessions
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
+_ACTIVE_HERMES_TURN: contextvars.ContextVar[str] = contextvars.ContextVar("nova_active_hermes_turn", default="")
 
 
 def _file_hash(path: Path) -> str:
@@ -438,6 +440,44 @@ def _referent_snapshot(payload: Dict[str, Any]) -> list[Dict[str, Any]]:
     return snapshot
 
 
+def _install_google_turn_dedupe() -> None:
+    """Memoize successful identical Google reads only within one Hermes task."""
+    try:
+        from tools.registry import registry
+    except Exception:
+        return
+    for name, entry in list(getattr(registry, "_tools", {}).items()):
+        if "google_mcp" not in str(name):
+            continue
+        handler = getattr(entry, "handler", None)
+        if not callable(handler) or getattr(handler, "_nova_turn_dedupe", False):
+            continue
+        cache: Dict[tuple[str, str, str], str] = {}
+
+        def deduped(args: Dict[str, Any], _handler=handler, _cache=cache, _name=str(name), **kwargs: Any) -> str:
+            task_id = str(kwargs.get("task_id") or kwargs.get("effective_task_id") or _ACTIVE_HERMES_TURN.get() or "")
+            if not task_id:
+                return _handler(args, **kwargs)
+            key = (task_id, _name, json.dumps(args or {}, sort_keys=True, default=str))
+            if key in _cache:
+                return _cache[key]
+            result = _handler(args, **kwargs)
+            try:
+                parsed = json.loads(result)
+            except (TypeError, json.JSONDecodeError):
+                parsed = None
+            if not isinstance(parsed, dict) or not parsed.get("error"):
+                _cache[key] = result
+                # Keep this process-local cache bounded even when a worker
+                # handles many turns before its MCP registry is reloaded.
+                if len(_cache) > 256:
+                    del _cache[next(iter(_cache))]
+            return result
+
+        deduped._nova_turn_dedupe = True
+        entry.handler = deduped
+
+
 def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
     """Use existing free/private adapters, deliberately excluding Brave."""
     if str(REPO_ROOT / "scripts") not in sys.path:
@@ -679,6 +719,7 @@ def run_shadow(
     _register_bounded_nexus_tools()
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
+    _ACTIVE_HERMES_TURN.set(turn_id)
     trace = NovaTrace(update_id=os.getenv("NOVA_SHADOW_UPDATE_ID", turn_id), session_id=active_session)
     trace.event("telegram.intake", {"runtime": "hermes", "agent": "nova", "turn_id": turn_id})
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
@@ -708,6 +749,7 @@ def run_shadow(
     if "mcp-nexus_mcp" in toolsets:
         from tools.mcp_tool import discover_mcp_tools
         discover_mcp_tools()
+    _install_google_turn_dedupe()
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
         if isinstance(row, dict):
@@ -785,6 +827,7 @@ def run_shadow(
     ephemeral_prompt = (
         _volatile_resource_guidance()
         + (_shadow_resource_guidance() if turn_contract["fresh_execution_required"] else "")
+        + referent_context
         if native_conversation
         else _nova_soul() + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context + referent_context
     )
@@ -803,6 +846,9 @@ def run_shadow(
         max_iterations=8,
         platform="nova-shadow",
     )
+    # AIAgent may refresh profile MCP registrations during construction; apply
+    # the task-scoped wrapper after that refresh as well.
+    _install_google_turn_dedupe()
     # A volatile anaphoric follow-up inherits only the previously resolved
     # Nexus capability. Restricting the exposed MCP definitions for this turn
     # prevents Hermes from widening “those” into a survey of unrelated state;
@@ -812,6 +858,19 @@ def run_shadow(
         scoped_tools = [
             tool for tool in getattr(agent, "tools", [])
             if str(tool.get("function", {}).get("name", "")).endswith(referent_capability)
+        ]
+        if scoped_tools:
+            agent.tools = scoped_tools
+            agent.valid_tool_names = {tool["function"]["name"] for tool in scoped_tools}
+    elif referent_capability and _resource_name(referent_capability) == "GOOGLE" and turn_contract.get("referent_mode") == "OBJECT":
+        # An object follow-up reasons over the linked bounded result set. If
+        # it needs more detail, item/thread reads remain available; a broad
+        # discovery search is not a substitute for the already-resolved set.
+        scoped_tools = [
+            tool for tool in getattr(agent, "tools", [])
+            if "google_mcp" in str(tool.get("function", {}).get("name", ""))
+            and not str(tool.get("function", {}).get("name", "")).endswith("gmail_search")
+            and not str(tool.get("function", {}).get("name", "")).endswith("calendar_search_events")
         ]
         if scoped_tools:
             agent.tools = scoped_tools

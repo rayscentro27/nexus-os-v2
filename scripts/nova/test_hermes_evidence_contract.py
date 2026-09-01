@@ -6,6 +6,7 @@ def test_google_resource_is_reusable_for_semantic_followups():
     result = turn_requirements("Which one is first?", prior)
     assert result["referent_capability"] == "calendar_search_events"
     assert result["required_resources"] == []
+    assert result["referent_mode"] == "OBJECT"
 
 
 def test_google_current_followup_requires_fresh_execution():

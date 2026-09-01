@@ -69,6 +69,9 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
         if prior_resource == "NEXUS":
             resources.append("NEXUS")
             current = True
+    referent_mode = "NONE"
+    if prior_resource and referent_followup:
+        referent_mode = "CURRENT_RECHECK" if current else "OBJECT"
     comparison = re.search(r"\bcompare\s+(.+?)(?:[.?]|$)", text, re.I)
     candidate_set: List[str] = []
     if comparison:
@@ -94,6 +97,7 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
             ),
             "",
         ),
+        "referent_mode": referent_mode,
     }
 
 
