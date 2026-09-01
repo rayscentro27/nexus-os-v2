@@ -2,10 +2,10 @@
 
 CAMPAIGN=HG-WP8.6-AUTONOMOUS-OANDA-PRACTICE-BROKER-LEARNING-AND-FORWARD-TRADING-LOOP-20260901-01
 START_HEAD=6bf01b7
-END_HEAD=PENDING_COMMIT
-IMPLEMENTATION_COMMIT=PENDING
-PUSHED=NO
-ORIGIN_MAIN=6bf01b7
+END_HEAD=5f1889b
+IMPLEMENTATION_COMMIT=5f1889b
+PUSHED=YES
+ORIGIN_MAIN=5f1889b
 
 CURRENT_BASELINE_VERIFIED=6bf01b7
 WP8_5_STATE_LOADED=YES
@@ -147,6 +147,6 @@ FILES_CHANGED=config/oanda_practice_risk_limits.json; scripts/nexus_foundation/c
 TESTS=focused safety tests PASS; real read-only Practice self-test PASS; real one-unit certification open/fill/close/reconcile PASS; bounded daemon cycle PASS
 JSON_VALIDATION=PASS
 SECRET_SCAN=PASS
-WORKTREE=pre-existing unrelated modifications preserved; WP8.6 task files pending commit
+WORKTREE=pre-existing unrelated modifications preserved; WP8.6 task files committed
 NEXT_RECOMMENDED_PHASE=Finish injected recovery proofs, obtain Ray review, then activate the bounded after-hours Practice window.
 WAITING_RAY=YES
