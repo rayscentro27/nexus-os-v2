@@ -14,5 +14,11 @@ mcp_servers:
       - services.nexus_mcp.server
     env:
       PYTHONPATH: /Users/raymonddavis/nexus-os-v2
+      # Explicit correlation fields are safe metadata, not credentials. The
+      # Hermes MCP launcher only passes configured environment entries to the
+      # stdio child, so these preserve the current turn boundary.
+      NEXUS_MCP_TURN_ID: "${NEXUS_MCP_TURN_ID}"
+      NEXUS_MCP_UPDATE_ID: "${NEXUS_MCP_UPDATE_ID}"
+      NOVA_LANGFUSE_TRACE_ID: "${NOVA_LANGFUSE_TRACE_ID}"
     timeout: 30
     connect_timeout: 10
