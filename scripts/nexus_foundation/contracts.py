@@ -158,6 +158,13 @@ def enforce_budgets(*, cost_budget: Mapping[str, Any], retry_budget: Mapping[str
     return cost_used <= float(cost_budget.get("max_usd", 0)) and retries_used <= int(retry_budget.get("max_attempts", 1))
 
 
+def authority_allows(specialist_id: str, resource: str, operation: str) -> bool:
+    permission = RESOURCE_PERMISSIONS.get(specialist_id, {}).get(resource, "none")
+    if resource == "live_trading" or operation in {"publish", "spend", "deploy", "install", "send", "mutate_external"}:
+        return False
+    return operation in {"read", "execute", "draft", "sandboxed_execute"} and permission not in {"none", "write"}
+
+
 def complete_work_order(order: Mapping[str, Any], result: Mapping[str, Any], *, receipt_ref: str) -> dict[str, Any]:
     if not isinstance(result, Mapping) or result.get("status") != "PASS":
         raise ValueError("result_not_verified")
@@ -230,6 +237,10 @@ def run_foundation_proof() -> dict[str, Any]:
     trading = complete_work_order(assign_work_order(build_work_order(goal_id="goal_trading_demo", work_type="backtest", owner_specialist="TRADING_ENGINE", inputs={"strategy": "synthetic_candidate"})), {"status": "PASS", "artifact": "bounded_backtest_metrics"}, receipt_ref="dev:trading")
     improvement = complete_work_order(assign_work_order(build_work_order(goal_id="goal_improvement_demo", work_type="capability_improvement", owner_specialist="JAX", inputs={"gap": "synthetic inefficiency"})), {"status": "PASS", "artifact": "sandbox_benchmark"}, receipt_ref="dev:improvement")
     repair = complete_work_order(assign_work_order(build_work_order(goal_id="goal_repair_demo", work_type="system_repair", owner_specialist="JAX", inputs={"issue": "synthetic health defect"})), {"status": "PASS", "artifact": "verification_receipt"}, receipt_ref="dev:repair")
+    growth = complete_work_order(assign_work_order(build_work_order(goal_id="goal_growth_demo", work_type="growth_analysis", owner_specialist="GROWTH", inputs={"offer": "synthetic"})), {"status": "PASS", "artifact": "bounded_funnel_metrics"}, receipt_ref="dev:growth")
+    creative = complete_work_order(assign_work_order(build_work_order(goal_id="goal_creative_demo", work_type="creative_brief", owner_specialist="CREATIVE", inputs={"brief": "synthetic"})), {"status": "PASS", "artifact": "bounded_creative_brief"}, receipt_ref="dev:creative")
+    clyde = complete_work_order(assign_work_order(build_work_order(goal_id="goal_clyde_demo", work_type="client_readiness", owner_specialist="CLYDE", inputs={"fixture": "synthetic"})), {"status": "PASS", "artifact": "bounded_readiness_result"}, receipt_ref="dev:clyde")
+    handoffs_ok = all(handoff_work_order(source, work_type=kind)["inputs"]["previous_work_order_id"] == source["work_order_id"] for source, kind in ((business, "growth_analysis"), (growth, "creative_brief"), (business, "backtest"), (repair, "system_repair")))
     loop = build_loop_state("TRADING_RESEARCH_LOOP", goal_id="goal_trading_demo")
     restored_order = json.loads(json.dumps(trading))
     restored_loop = json.loads(json.dumps({**loop, "state": "BACKTEST", "current_step": "BACKTEST", "next_step": "OOS_TEST"}))
@@ -237,4 +248,4 @@ def run_foundation_proof() -> dict[str, Any]:
     network_wait = dependency_state("synthetic_external", "DISCONNECTED", attempt=1, last_error="bounded_test_failure")
     network_resume = dependency_state("synthetic_external", "CONNECTED", attempt=2)
     network_ok = network_wait["state"] == "DISCONNECTED" and network_resume["state"] == "CONNECTED" and not network_resume["secret_present"]
-    return {"status": "PASS" if recovery_ok and network_ok else "FAIL", "business": business["status"], "trading": trading["status"], "improvement": improvement["status"], "repair": repair["status"], "work_order_recovery": "PASS" if recovery_ok else "FAIL", "loop_recovery": "PASS" if recovery_ok else "FAIL", "process_recovery": "PASS" if recovery_ok else "FAIL", "network_recovery": "PASS" if network_ok else "FAIL", "trading_safety": safety}
+    return {"status": "PASS" if recovery_ok and network_ok and handoffs_ok else "FAIL", "business": business["status"], "trading": trading["status"], "improvement": improvement["status"], "repair": repair["status"], "growth": growth["status"], "creative": creative["status"], "clyde": clyde["status"], "handoffs": "PASS" if handoffs_ok else "FAIL", "authority": "PASS" if not authority_allows("TRADING_ENGINE", "live_trading", "execute") else "FAIL", "work_order_recovery": "PASS" if recovery_ok else "FAIL", "loop_recovery": "PASS" if recovery_ok else "FAIL", "process_recovery": "PASS" if recovery_ok else "FAIL", "network_recovery": "PASS" if network_ok else "FAIL", "trading_safety": safety}

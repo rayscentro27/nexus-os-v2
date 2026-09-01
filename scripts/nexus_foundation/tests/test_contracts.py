@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from nexus_foundation.contracts import (  # noqa: E402
     LOOP_CATALOG, RESOURCE_PERMISSIONS, SPECIALISTS, SPECIALIST_CONTRACT_FIELDS,
     TRADING_METRICS, build_goal, build_loop_state, build_work_order, complete_work_order, dependency_state, improvement_candidate, run_foundation_proof,
-    assign_work_order, eligible_specialists, enforce_budgets, handoff_work_order, load_organization, persist_organization, specialist_contract, trading_strategy, validate_trading_safety,
+    assign_work_order, authority_allows, eligible_specialists, enforce_budgets, handoff_work_order, load_organization, persist_organization, specialist_contract, trading_strategy, validate_trading_safety,
 )
 
 
@@ -80,6 +80,8 @@ def test_organization_persists_and_reloads_from_governed_store():
 def test_bounded_first_work_paths_and_recovery_proof():
     proof = run_foundation_proof()
     assert proof["status"] == "PASS"
-    assert all(proof[key] == "COMPLETED" for key in ("business", "trading", "improvement", "repair"))
+    assert all(proof[key] == "COMPLETED" for key in ("business", "trading", "improvement", "repair", "growth", "creative", "clyde"))
+    assert proof["handoffs"] == proof["authority"] == "PASS"
     assert proof["work_order_recovery"] == proof["loop_recovery"] == proof["process_recovery"] == proof["network_recovery"] == "PASS"
     assert proof["trading_safety"]["LIVE_TRADING_AUTHORITY"] == "NONE"
+    assert not authority_allows("TRADING_ENGINE", "live_trading", "execute")
