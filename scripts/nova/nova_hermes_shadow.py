@@ -128,6 +128,9 @@ def _shadow_resource_guidance() -> str:
         "other details, inspect the candidates and call "
         "public_web_retrieval_shadow for the relevant source pages before "
         "concluding. For a simple fact, do not use a resource unnecessarily. "
+        "For present-tense questions about Nexus operational state, use the "
+        "relevant Nexus read rather than asking the user to choose a business "
+        "category; the read may truthfully return an empty result. "
         "For a self-contained conversational hypothetical, use the supplied "
         "context first and research only if missing evidence would materially "
         "change the answer; do not delegate a self-contained hypothetical just "
@@ -323,6 +326,20 @@ def _current_shadow_context(state: Dict[str, Any]) -> str:
         lines.append("CURRENT_RECOMMENDATION=" + str(state["last_recommendation"])[:1800])
     if state.get("active_request"):
         lines.append("ACTIVE_REQUEST=" + str(state["active_request"])[:500])
+    nexus_recent = [
+        row for row in recent
+        if isinstance(row, dict) and (
+            row.get("resource") == "NEXUS"
+            or str(row.get("capability", "")).startswith("nexus_get_")
+        )
+    ]
+    if nexus_recent:
+        latest_nexus = nexus_recent[-1]
+        lines.append("CURRENT_REFERENT_DOMAIN=" + str(latest_nexus.get("capability") or "NEXUS")[:120])
+        lines.append(
+            "REFERENT_RULE=Use the current conversational referent to identify the domain; "
+            "if the user asks whether it is still current, refresh that same Nexus capability."
+        )
     turns = state.get("recent_turns") or []
     for turn in turns[-6:]:
         if isinstance(turn, dict):
@@ -590,8 +607,13 @@ def run_shadow(
     trace = NovaTrace(update_id=os.getenv("NOVA_SHADOW_UPDATE_ID", turn_id), session_id=active_session)
     trace.event("telegram.intake", {"runtime": "hermes", "agent": "nova", "turn_id": turn_id})
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
+    # Load prior structured resource metadata before deciding which tools are
+    # available. A volatile follow-up may omit the resource name, but its
+    # current-state wording still requires the relevant fresh Nexus surface.
+    shadow_state = _load_shadow_state(active_session)
+    prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
     toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "mcp-nexus_mcp", "research", "delegation"]
-    if turn_contract := turn_requirements(prompt):
+    if turn_contract := turn_requirements(prompt, prior_records):
         if turn_contract.get("reuse_only"):
             # A result-retrieval follow-up uses the linked result in context;
             # Alpha remains available for an explicit new challenge.
@@ -614,8 +636,6 @@ def run_shadow(
     if "mcp-nexus_mcp" in toolsets:
         from tools.mcp_tool import discover_mcp_tools
         discover_mcp_tools()
-    shadow_state = _load_shadow_state(active_session)
-    prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
         if isinstance(row, dict):
@@ -627,7 +647,7 @@ def run_shadow(
         "A tool result is evidence for this turn only when it is returned in this turn's native tool exchange."
         " For a follow-up asking what Research found, reuse the current linked Alpha result when one exists; do not rerun Alpha unless the user requests a new challenge."
     )
-    turn_contract = turn_requirements(prompt)
+    turn_contract = turn_requirements(prompt, prior_records)
     turn_contract_guidance = ""
     if turn_contract["required_resources"]:
         turn_contract_guidance = (
@@ -636,6 +656,23 @@ def run_shadow(
             "consulted for this task: " + ", ".join(turn_contract["required_resources"]) + ". "
             "Use native tools for those resources in this turn. Prior conversation "
             "is context, not a substitute for a required current read.\n"
+        )
+    elif turn_contract["fresh_execution_required"]:
+        turn_contract_guidance = (
+            "\n\n[CURRENT INFORMATION CONTRACT]\n"
+            "This request asks about present information. Use the available "
+            "resource whose semantic domain matches the request before asking "
+            "for unnecessary clarification; a truthful empty result is valid. "
+            "Do not treat prior conversation as current external or operational "
+            "truth.\n"
+        )
+    if turn_contract.get("referent_capability") and not re.search(r"\b(?:nexus|reviews?|blockers?|opportunit(?:y|ies)|work items?)\b", prompt, re.I):
+        turn_contract_guidance += (
+            "\n[CURRENT REFERENT SCOPE]\n"
+            "This is an anaphoric follow-up to the latest Nexus result. Preserve "
+            "the prior conversational subject and refresh the same capability: "
+            + turn_contract["referent_capability"]
+            + ". Do not call unrelated Nexus capabilities in this turn.\n"
         )
     current_context = _current_shadow_context(shadow_state)
     immutable_objective = (
@@ -669,6 +706,7 @@ def run_shadow(
     # guidance is added only when resource-backed execution needs it.
     ephemeral_prompt = (
         _volatile_resource_guidance()
+        + (_shadow_resource_guidance() if turn_contract["fresh_execution_required"] else "")
         if native_conversation
         else _nova_soul() + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context
     )
@@ -687,6 +725,20 @@ def run_shadow(
         max_iterations=8,
         platform="nova-shadow",
     )
+    # A volatile anaphoric follow-up inherits only the previously resolved
+    # Nexus capability. Restricting the exposed MCP definitions for this turn
+    # prevents Hermes from widening “those” into a survey of unrelated state;
+    # the capability is derived from prior tool provenance, never from a
+    # phrase-specific route.
+    referent_capability = turn_contract.get("referent_capability")
+    if referent_capability and not re.search(r"\b(?:nexus|reviews?|blockers?|opportunit(?:y|ies)|work items?)\b", prompt, re.I):
+        scoped_tools = [
+            tool for tool in getattr(agent, "tools", [])
+            if str(tool.get("function", {}).get("name", "")).endswith(referent_capability)
+        ]
+        if scoped_tools:
+            agent.tools = scoped_tools
+            agent.valid_tool_names = {tool["function"]["name"] for tool in scoped_tools}
     # The worker is intentionally short-lived, so the stable session ID alone
     # is insufficient for referents unless the prior exchange is explicitly
     # reopened.  Pass the sidecar's bounded conversational history into the
@@ -988,7 +1040,7 @@ def run_shadow(
                 result_id = result_id or payload.get("artifact_id") or payload.get("receipt_id")
             record = {
                 "capability": capability,
-                "resource": ("NEXUS" if capability.startswith("mcp__nexus_mcp__nexus_get_") else {"nexus_read_shadow": "NEXUS", "public_web_search_shadow": "PUBLIC_WEB", "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL", "alpha_challenge_shadow": "ALPHA"}.get(capability, capability)),
+                "resource": ("NEXUS" if "nexus_get_" in capability else {"nexus_read_shadow": "NEXUS", "public_web_search_shadow": "PUBLIC_WEB", "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL", "alpha_challenge_shadow": "ALPHA"}.get(capability, capability)),
                 "source_turn_id": turn_id,
                 "request_id": request_id,
                 "result_id": result_id,

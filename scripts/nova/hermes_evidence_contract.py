@@ -13,8 +13,9 @@ from typing import Any, Dict, Iterable, List
 from urllib.parse import urlparse
 
 
-def turn_requirements(prompt: str) -> Dict[str, Any]:
+def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ()) -> Dict[str, Any]:
     """Describe explicit resource obligations without assigning question ownership."""
+    prior_records = list(prior_records)
     text = (prompt or "").lower()
     resources: List[str] = []
     if re.search(r"\b(nexus|using nexus|check nexus)\b", text):
@@ -33,7 +34,23 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
     reuse_alpha = re.search(r"\bwhat did research find\b|\bresearch findings?\b", text) and not re.search(r"\b(challenge|research this|independently)\b", text)
     if alpha_request and not reuse_alpha:
         resources.append("ALPHA")
-    current = bool(re.search(r"\b(current|latest|this week)\b", text) or volatile_subject_request)
+    current = bool(re.search(r"\b(current|currently|latest|this week|right now|present|still|active)\b", text) or volatile_subject_request)
+    prior_nexus = any(
+        isinstance(row, dict) and (
+            row.get("resource") == "NEXUS"
+            or str(row.get("capability", "")).startswith("nexus_get_")
+        )
+        for row in prior_records
+    )
+    # Referent context identifies what “those” or “still active” means, but it
+    # cannot establish present operational truth. Refresh the same volatile
+    # Nexus resource whenever the follow-up asks about current state.
+    if prior_nexus and re.search(
+        r"\b(?:still|remain(?:s)?|active|open|pending|resolved|current|currently|right now|present)\b",
+        text,
+    ):
+        resources.append("NEXUS")
+        current = True
     comparison = re.search(r"\bcompare\s+(.+?)(?:[.?]|$)", text, re.I)
     candidate_set: List[str] = []
     if comparison:
@@ -50,6 +67,18 @@ def turn_requirements(prompt: str) -> Dict[str, Any]:
         # No named resource obligation means the native model reasons first;
         # optional research remains available when the model finds it material.
         "reasoning_first": bool(not resources),
+        "referent_capability": next(
+            (
+                str(row.get("capability"))
+                for row in reversed(list(prior_records))
+                if isinstance(row, dict)
+                and (
+                    row.get("resource") == "NEXUS"
+                    or str(row.get("capability", "")).startswith("nexus_get_")
+                )
+            ),
+            "",
+        ),
     }
 
 
@@ -63,7 +92,7 @@ def executed_resources(tool_messages: Iterable[Dict[str, Any]]) -> List[str]:
             "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL",
             "alpha_challenge_shadow": "ALPHA",
         }.get(name)
-        if name.startswith("mcp__nexus_mcp__nexus_get_"):
+        if "nexus_get_" in name:
             resource = "NEXUS"
         if resource and resource not in result:
             result.append(resource)
@@ -95,7 +124,8 @@ def currentness(source_date: str | None, retrieved_at: str | None, *, required: 
 
 def evidence_state(prompt: str, tool_messages: Iterable[Dict[str, Any]], prior_records: Iterable[Dict[str, Any]] = ()) -> Dict[str, Any]:
     messages = list(tool_messages)
-    requirements = turn_requirements(prompt)
+    prior_records = list(prior_records)
+    requirements = turn_requirements(prompt, prior_records)
     executed = executed_resources(messages)
     supported: List[Dict[str, Any]] = []
     partial: List[Dict[str, Any]] = []
