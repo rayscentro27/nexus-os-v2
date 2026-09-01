@@ -383,15 +383,21 @@ def _conversation_history_for_model(state: Dict[str, Any]) -> list[Dict[str, str
             source_type = str(turn.get("source_type") or "UNCLASSIFIED_PRIOR_CONTEXT")
             domains = ",".join(str(item) for item in (turn.get("resource_domains") or []) if item)
             if source_type == "RESOURCE_BACKED":
+                # Preserve the prior resource as a referent without placing
+                # stale factual prose beside the fresh result. The complete
+                # response remains in the sidecar for historical/audit use.
                 label = (
-                    "[PRIOR RESOURCE-BACKED RESPONSE — continuity/history only; "
-                    "not current operational truth"
+                    "[PRIOR RESOURCE-BACKED EXCHANGE — referent continuity only; "
+                    "retrieve fresh state for facts"
                     + (f"; resource={domains}" if domains else "")
-                    + "]\n"
+                    + "]"
                 )
             else:
-                label = "[PRIOR CONVERSATION RESPONSE — continuity context; not a current resource result]\n"
-            history.append({"role": "assistant", "content": label + str(turn["assistant"])[:5000]})
+                # Unannotated legacy entries cannot safely be distinguished
+                # from old resource output. Keep the turn's user text above,
+                # but do not promote unknown assistant prose into model facts.
+                label = "[PRIOR UNCLASSIFIED RESPONSE — continuity metadata only; facts require current evidence]"
+            history.append({"role": "assistant", "content": label})
     return history
 
 
@@ -609,7 +615,7 @@ def _register_bounded_nexus_tools() -> None:
     # to Hermes' supported resolver just as a discovered plugin/MCP server
     # would. This keeps the dedicated profile's tool surface identical to the
     # certified Nova surface without inheriting global tool configuration.
-    for toolset_name in ("nexus", "research", "shadow_web"):
+    for toolset_name in ("nexus", "google", "research", "shadow_web"):
         registry.register_toolset_alias(toolset_name, toolset_name)
 
 
@@ -644,18 +650,15 @@ def run_shadow(
     # current-state wording still requires the relevant fresh Nexus surface.
     shadow_state = _load_shadow_state(active_session)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
-    toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "mcp-nexus_mcp", "research", "delegation"]
+    toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "mcp-nexus_mcp", "mcp-google_mcp", "research", "delegation"]
     if turn_contract := turn_requirements(prompt, prior_records):
         if turn_contract.get("reuse_only"):
             # A result-retrieval follow-up uses the linked result in context;
             # Alpha remains available for an explicit new challenge.
             toolsets = [name for name in toolsets if name != "research"]
-        if turn_contract.get("reasoning_first"):
-            # A self-contained object comparison is completed by the model
-            # before optional resources are exposed. This is a generic
-            # reason-first contract, not a candidate-specific router; callers
-            # can still request current evidence explicitly.
-            toolsets = []
+        # ``reasoning_first`` describes how Hermes should approach a
+        # self-contained question; it must not remove optional resources from
+        # the model's semantic tool surface. Availability is not selection.
     # Hermes intentionally removed MCP discovery as a module import side
     # effect. Nova is a bounded synchronous entry point, so explicitly load
     # the profile-local MCP server before taking the tool snapshot. This is
@@ -778,7 +781,7 @@ def run_shadow(
     trace.generation("hermes.generation", model=chosen_model, input_text=prompt,
                      output_text=str(result.get("final_response", "")) if isinstance(result, dict) else "",
                      metadata={"generation_type": "INITIAL_GENERATION", "tool_calls_requested": first_tool_names,
-                               "selected_resource_type": "NEXUS_MCP" if any("nexus_get_" in x for x in first_tool_names) else ("WEB" if any("web_" in x for x in first_tool_names) else ("ALPHA" if any("alpha_" in x for x in first_tool_names) else "NONE")),
+                               "selected_resource_type": "NEXUS_MCP" if any("nexus_get_" in x for x in first_tool_names) else ("GOOGLE" if any(x.startswith(("gmail_", "calendar_")) or "google_mcp" in x for x in first_tool_names) else ("WEB" if any("web_" in x for x in first_tool_names) else ("ALPHA" if any("alpha_" in x for x in first_tool_names) else "NONE"))),
                                "model_call_count": len(model_calls)})
 
     def _tool_messages(messages):

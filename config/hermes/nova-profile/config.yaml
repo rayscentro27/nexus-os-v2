@@ -22,3 +22,14 @@ mcp_servers:
       NOVA_LANGFUSE_TRACE_ID: "${NOVA_LANGFUSE_TRACE_ID}"
     timeout: 30
     connect_timeout: 10
+  google_mcp:
+    enabled: true
+    command: /Users/raymonddavis/nexus-hermes-runtime/.venv/bin/python
+    args:
+      - -m
+      - services.google_mcp.server
+    env:
+      PYTHONPATH: /Users/raymonddavis/nexus-os-v2
+      GOOGLE_MCP_RECEIPT_DIR: /Users/raymonddavis/nexus-os-v2/data/runtime/google_mcp_receipts
+    timeout: 30
+    connect_timeout: 10
