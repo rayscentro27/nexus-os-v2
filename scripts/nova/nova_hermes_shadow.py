@@ -21,6 +21,7 @@ import uuid
 import time
 import contextvars
 import threading
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -151,7 +152,21 @@ def _load_shadow_state(session_id: str) -> Dict[str, Any]:
 
 def _save_shadow_state(session_id: str, state: Dict[str, Any]) -> None:
     SHADOW_STATE_DIR.mkdir(parents=True, exist_ok=True)
-    _state_path(session_id).write_text(json.dumps(state, sort_keys=True) + "\n")
+    target = _state_path(session_id)
+    # Telegram turns are separate processes. Replace the complete sidecar
+    # atomically so a reader cannot observe a truncated snapshot.
+    fd, temporary = tempfile.mkstemp(prefix=target.name + ".", dir=str(SHADOW_STATE_DIR))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(json.dumps(state, sort_keys=True) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, target)
+    finally:
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
 
 
 def _shadow_resource_guidance() -> str:
@@ -467,6 +482,34 @@ def _referent_snapshot(payload: Dict[str, Any]) -> list[Dict[str, Any]]:
             row["snippet"] = row["snippet"][:300]
         snapshot.append(row)
     return snapshot
+
+
+def _referent_snapshot_fingerprint(snapshot: list[Dict[str, Any]]) -> str | None:
+    if not snapshot:
+        return None
+    return _fingerprint(snapshot)
+
+
+def _latest_linked_result(prior_records: list[Dict[str, Any]], capability: str) -> Dict[str, Any] | None:
+    """Find the latest persisted bounded result for an object follow-up."""
+    for row in reversed(prior_records):
+        if not isinstance(row, dict) or str(row.get("capability")) != str(capability):
+            continue
+        snapshot = row.get("referent_snapshot")
+        if isinstance(snapshot, list) and snapshot:
+            return row
+    return None
+
+
+def _prior_records_for_turn(state: Dict[str, Any], records: list[Dict[str, Any]]) -> list[Dict[str, Any]]:
+    """Order persisted evidence so an active referent outranks unrelated history."""
+    active = state.get("active_referent")
+    capability = active.get("capability") if isinstance(active, dict) else None
+    if not capability:
+        return records
+    matching = [row for row in records if str(row.get("capability")) == str(capability)]
+    other = [row for row in records if str(row.get("capability")) != str(capability)]
+    return other + matching
 
 
 def _install_google_turn_dedupe() -> None:
@@ -788,6 +831,23 @@ def run_shadow(
     # current-state wording still requires the relevant fresh Nexus surface.
     shadow_state = _load_shadow_state(active_session)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
+    # Keep the latest bounded referent independently of the rolling evidence
+    # index. This survives process boundaries and remains useful if the index
+    # is truncated or contains a later non-object read.
+    for linked in (shadow_state.get("resource_referent_links") or {}).values():
+        if not isinstance(linked, dict) or not linked.get("objects"):
+            continue
+        if not any(row.get("request_id") == linked.get("request_id") for row in prior_records):
+            prior_records.append({
+                "capability": linked.get("capability"),
+                "resource": linked.get("resource"),
+                "source_turn_id": linked.get("source_turn_id"),
+                "request_id": linked.get("request_id"),
+                "retrieved_at": linked.get("created_at"),
+                "currentness": linked.get("currentness"),
+                "referent_snapshot": linked.get("objects"),
+            })
+    prior_records = _prior_records_for_turn(shadow_state, prior_records)
     toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "mcp-nexus_mcp", "mcp-google_mcp", "research", "delegation"]
     if turn_contract := turn_requirements(prompt, prior_records):
         if turn_contract.get("reuse_only"):
@@ -859,16 +919,31 @@ def run_shadow(
     referent_context = ""
     referent_capability = turn_contract.get("referent_capability")
     if referent_capability:
-        for row in reversed(prior_records):
-            if str(row.get("capability")) == referent_capability:
-                snapshot = row.get("referent_snapshot")
-                if snapshot:
-                    referent_context = (
-                        "\n\n[LINKED REFERENT DATA — use only for the prior subject; "
-                        "current-state questions still require a fresh read]\n"
-                        + json.dumps(snapshot, sort_keys=True, default=str)[:5000]
-                    )
-                break
+        row = _latest_linked_result(prior_records, referent_capability)
+        snapshot = row.get("referent_snapshot") if row else None
+        if snapshot:
+            referent_context = (
+                "\n\n[LINKED REFERENT DATA — bounded result set for the prior subject]\n"
+                "This is the persisted result set the user is referring to. "
+                "Use these objects for object-level comparison or selection; "
+                "a currentness recheck is a separate fresh-read request.\n"
+                + json.dumps({
+                    "resource": row.get("resource"),
+                    "capability": row.get("capability"),
+                    "result_set_fingerprint": _referent_snapshot_fingerprint(snapshot),
+                    "item_count": len(snapshot),
+                    "objects": snapshot,
+                }, sort_keys=True, default=str)[:5000]
+            )
+        trace.event("nova.referent_hydration", {
+            "referent_capability": referent_capability,
+            "referent_mode": turn_contract.get("referent_mode"),
+            "snapshot_found": bool(snapshot),
+            "snapshot_item_count": len(snapshot or []),
+            "snapshot_fingerprint": _referent_snapshot_fingerprint(snapshot or []),
+            "session_id": active_session,
+            "turn_id": turn_id,
+        })
     native_conversation = not turn_contract["required_resources"]
     trace.event("nova.session_context", {
         "session_turn_count": len(shadow_state.get("recent_turns") or []),
@@ -960,6 +1035,7 @@ def run_shadow(
             rows.append({
                 "name": message.get("name") or message.get("tool_name"),
                 "payload": _json_object(message.get("content")),
+                "resource": _resource_name(message.get("name") or message.get("tool_name")),
             })
         return rows
 
@@ -1253,11 +1329,38 @@ def run_shadow(
                 "referent_snapshot": _referent_snapshot(payload),
             }
             records.append(record)
+            snapshot = record.get("referent_snapshot")
+            if snapshot:
+                links = shadow_state.setdefault("resource_referent_links", {})
+                links[str(record.get("capability"))] = {
+                    "resource": record.get("resource"),
+                    "capability": record.get("capability"),
+                    "source_turn_id": turn_id,
+                    "request_id": request_id,
+                    "result_set_fingerprint": _referent_snapshot_fingerprint(snapshot),
+                    "item_count": len(snapshot),
+                    "objects": snapshot,
+                    "created_at": record.get("retrieved_at"),
+                    "currentness": record.get("currentness"),
+                }
             if capability == "alpha_challenge_shadow":
                 shadow_state["last_alpha_result_id"] = result_id
                 shadow_state["last_alpha_request_id"] = request_id
         # Keep the sidecar as an index, not a second evidence store.
         shadow_state["resource_results"] = records[-20:]
+        turn_resource_records = [row for row in records if row.get("source_turn_id") == turn_id]
+        if turn_resource_records:
+            latest = turn_resource_records[-1]
+            shadow_state["active_referent"] = {
+                "resource": latest.get("resource"),
+                "capability": latest.get("capability"),
+                "source_turn_id": turn_id,
+                "request_id": latest.get("request_id"),
+            }
+        elif turn_contract.get("referent_mode") != "OBJECT" and not tools_seen:
+            # A new unrelated conversational turn closes the previous resource
+            # referent without deleting the historical result or its snapshot.
+            shadow_state.pop("active_referent", None)
         shadow_state["last_google_dedupe_events"] = _google_dedupe_events(turn_id)
         for message in reversed(messages):
             if message.get("role") == "assistant" and message.get("content"):
