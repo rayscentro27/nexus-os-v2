@@ -76,6 +76,10 @@ LOOP_CATALOG.update({
 TRADING_STRATEGY_STATUSES = ("CANDIDATE", "BACKTESTING", "REJECTED", "PAPER_APPROVED", "PAPER_ACTIVE", "DEGRADED", "SUPERSEDED", "RETIRED")
 TRADING_METRICS = ("net_return", "gross_profit", "gross_loss", "win_rate", "loss_rate", "expectancy", "profit_factor", "max_drawdown", "average_trade", "trade_count", "sharpe", "sortino", "mae", "mfe", "consecutive_losses", "exposure", "performance_by_instrument", "performance_by_timeframe", "performance_by_regime")
 WORK_ORDER_STATUSES = ("CREATED", "READY", "ASSIGNED", "IN_PROGRESS", "WAITING_DEPENDENCY", "WAITING_REVIEW", "COMPLETED", "FAILED", "CANCELLED")
+WORK_TYPE_CAPABILITIES = {
+    "research": ("web", "python"), "backtest": ("backtest",), "capability_improvement": ("python",), "system_repair": ("terminal",),
+    "growth_analysis": ("analytics",), "creative_brief": ("creative_media",), "client_readiness": ("credit_state",),
+}
 
 
 def _now() -> str:
@@ -128,6 +132,30 @@ def transition_work_order(order: Mapping[str, Any], status: str, **changes: Any)
     if status in {"COMPLETED", "FAILED", "CANCELLED"}:
         updated["completed_at"] = updated.get("completed_at") or _now()
     return updated
+
+
+def eligible_specialists(work_type: str, required_capabilities: tuple[str, ...] = ()) -> list[str]:
+    required = set(required_capabilities or WORK_TYPE_CAPABILITIES.get(work_type, ()))
+    return [specialist_id for specialist_id, resources in RESOURCE_PERMISSIONS.items() if required <= set(resources) and all(resources[name] not in {"none", "write"} for name in required)]
+
+
+def assign_work_order(order: Mapping[str, Any], *, required_capabilities: tuple[str, ...] = ()) -> dict[str, Any]:
+    candidates = eligible_specialists(str(order.get("work_type", "")), required_capabilities)
+    if not candidates:
+        raise ValueError("no_eligible_specialist")
+    return transition_work_order(order, "ASSIGNED", owner_specialist=candidates[0], required_capabilities=list(required_capabilities or WORK_TYPE_CAPABILITIES.get(str(order.get("work_type", "")), ())), assignment_candidates=candidates)
+
+
+def handoff_work_order(order: Mapping[str, Any], *, work_type: str, owner_specialist: str | None = None) -> dict[str, Any]:
+    """Create a bounded next-stage order linked to the completed predecessor."""
+    next_owner = owner_specialist or (eligible_specialists(work_type) or [None])[0]
+    if not next_owner:
+        raise ValueError("no_handoff_owner")
+    return build_work_order(goal_id=str(order.get("goal_id")), initiative_id=order.get("initiative_id"), loop_id=order.get("loop_id"), work_type=work_type, owner_specialist=next_owner, inputs={"previous_work_order_id": order.get("work_order_id"), "previous_result_refs": order.get("receipt_refs", [])})
+
+
+def enforce_budgets(*, cost_budget: Mapping[str, Any], retry_budget: Mapping[str, Any], cost_used: float = 0, retries_used: int = 0) -> bool:
+    return cost_used <= float(cost_budget.get("max_usd", 0)) and retries_used <= int(retry_budget.get("max_attempts", 1))
 
 
 def complete_work_order(order: Mapping[str, Any], result: Mapping[str, Any], *, receipt_ref: str) -> dict[str, Any]:
@@ -198,10 +226,10 @@ def metric(entity_type: str, entity_id: str, metric_name: str, metric_value: Any
 def run_foundation_proof() -> dict[str, Any]:
     """Run bounded, synthetic, no-external-write proofs for four work paths."""
     safety = validate_trading_safety()
-    business = complete_work_order(build_work_order(goal_id="goal_business_demo", work_type="research", owner_specialist="ALPHA", inputs={"idea": "synthetic service"}), {"status": "PASS", "artifact": "bounded_research_result"}, receipt_ref="dev:business")
-    trading = complete_work_order(build_work_order(goal_id="goal_trading_demo", work_type="backtest", owner_specialist="TRADING_ENGINE", inputs={"strategy": "synthetic_candidate"}), {"status": "PASS", "artifact": "bounded_backtest_metrics"}, receipt_ref="dev:trading")
-    improvement = complete_work_order(build_work_order(goal_id="goal_improvement_demo", work_type="capability_improvement", owner_specialist="JAX", inputs={"gap": "synthetic inefficiency"}), {"status": "PASS", "artifact": "sandbox_benchmark"}, receipt_ref="dev:improvement")
-    repair = complete_work_order(build_work_order(goal_id="goal_repair_demo", work_type="system_repair", owner_specialist="JAX", inputs={"issue": "synthetic health defect"}), {"status": "PASS", "artifact": "verification_receipt"}, receipt_ref="dev:repair")
+    business = complete_work_order(assign_work_order(build_work_order(goal_id="goal_business_demo", work_type="research", owner_specialist="ALPHA", inputs={"idea": "synthetic service"}), required_capabilities=("python",)), {"status": "PASS", "artifact": "bounded_research_result"}, receipt_ref="dev:business")
+    trading = complete_work_order(assign_work_order(build_work_order(goal_id="goal_trading_demo", work_type="backtest", owner_specialist="TRADING_ENGINE", inputs={"strategy": "synthetic_candidate"})), {"status": "PASS", "artifact": "bounded_backtest_metrics"}, receipt_ref="dev:trading")
+    improvement = complete_work_order(assign_work_order(build_work_order(goal_id="goal_improvement_demo", work_type="capability_improvement", owner_specialist="JAX", inputs={"gap": "synthetic inefficiency"})), {"status": "PASS", "artifact": "sandbox_benchmark"}, receipt_ref="dev:improvement")
+    repair = complete_work_order(assign_work_order(build_work_order(goal_id="goal_repair_demo", work_type="system_repair", owner_specialist="JAX", inputs={"issue": "synthetic health defect"})), {"status": "PASS", "artifact": "verification_receipt"}, receipt_ref="dev:repair")
     loop = build_loop_state("TRADING_RESEARCH_LOOP", goal_id="goal_trading_demo")
     restored_order = json.loads(json.dumps(trading))
     restored_loop = json.loads(json.dumps({**loop, "state": "BACKTEST", "current_step": "BACKTEST", "next_step": "OOS_TEST"}))

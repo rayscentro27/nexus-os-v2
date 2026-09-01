@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from nexus_foundation.contracts import (  # noqa: E402
     LOOP_CATALOG, RESOURCE_PERMISSIONS, SPECIALISTS, SPECIALIST_CONTRACT_FIELDS,
     TRADING_METRICS, build_goal, build_loop_state, build_work_order, complete_work_order, dependency_state, improvement_candidate, run_foundation_proof,
-    load_organization, persist_organization, specialist_contract, trading_strategy, validate_trading_safety,
+    assign_work_order, eligible_specialists, enforce_budgets, handoff_work_order, load_organization, persist_organization, specialist_contract, trading_strategy, validate_trading_safety,
 )
 
 
@@ -33,6 +33,13 @@ def test_work_order_lifecycle_and_idempotency_key():
     assert completed["status"] == "COMPLETED"
     assert completed["return_to_nova"] is True
     assert len(completed["idempotency_key"]) == 64
+    assigned = assign_work_order(order, required_capabilities=("python",))
+    assert assigned["status"] == "ASSIGNED"
+    assert assigned["owner_specialist"] == "ALPHA"
+    next_order = handoff_work_order(completed, work_type="growth_analysis")
+    assert next_order["inputs"]["previous_work_order_id"] == completed["work_order_id"]
+    assert enforce_budgets(cost_budget={"max_usd": 1}, retry_budget={"max_attempts": 1}, cost_used=1, retries_used=1)
+    assert not enforce_budgets(cost_budget={"max_usd": 1}, retry_budget={"max_attempts": 1}, cost_used=2)
 
 
 def test_trading_contract_has_no_live_status_or_authority():
@@ -48,6 +55,7 @@ def test_goal_loop_improvement_and_dependency_contracts():
     assert build_loop_state("GROWTH_LOOP")["status"] == "READY"
     assert improvement_candidate("c", domain="efficiency")["status"] == "CANDIDATE"
     assert dependency_state("github", "DISCONNECTED")["secret_present"] is False
+    assert "ALPHA" in eligible_specialists("research", ("python",))
 
 
 def test_organization_persists_and_reloads_from_governed_store():
