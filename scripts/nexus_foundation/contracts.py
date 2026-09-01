@@ -73,7 +73,7 @@ LOOP_CATALOG.update({
     "NETWORK_RECOVERY_LOOP": {**LOOP_CATALOG["NETWORK_RECOVERY_LOOP"], "states": ["DETECT", "WAITING_DEPENDENCY", "RECONNECTING", "REFRESH", "RESUME", "VERIFY"], "owner": "NEXUS", "authority": "bounded_reconnect"},
 })
 
-TRADING_STRATEGY_STATUSES = ("CANDIDATE", "BACKTESTING", "REJECTED", "PAPER_APPROVED", "PAPER_ACTIVE", "DEGRADED", "SUPERSEDED", "RETIRED")
+TRADING_STRATEGY_STATUSES = ("CANDIDATE", "BACKTESTING", "REJECTED", "NEEDS_MORE_DATA", "PAPER_RESEARCH", "PAPER_QUALIFIED", "PAPER_ACTIVE", "PAPER_DEGRADED", "PAPER_PAUSED", "PAPER_RETIRED", "PAPER_APPROVED", "DEGRADED", "SUPERSEDED", "RETIRED")
 TRADING_METRICS = ("net_return", "gross_profit", "gross_loss", "win_rate", "loss_rate", "expectancy", "profit_factor", "max_drawdown", "average_trade", "trade_count", "sharpe", "sortino", "mae", "mfe", "consecutive_losses", "exposure", "performance_by_instrument", "performance_by_timeframe", "performance_by_regime")
 WORK_ORDER_STATUSES = ("CREATED", "READY", "ASSIGNED", "IN_PROGRESS", "WAITING_DEPENDENCY", "WAITING_REVIEW", "COMPLETED", "FAILED", "CANCELLED")
 WORK_TYPE_CAPABILITIES = {
@@ -217,7 +217,7 @@ def load_organization() -> dict[str, list[dict[str, Any]]]:
 
 
 def validate_trading_safety() -> dict[str, Any]:
-    return {"LIVE_TRADING": False, "AUTO_TRADING": False, "PAPER_ONLY": True, "LIVE_TRADING_AUTHORITY": "NONE", "status": "PASS"}
+    return {"TRADING_RESEARCH_AUTOMATION": True, "FOREX_PAPER_TRADING_ALLOWED": True, "FOREX_PAPER_AUTO_TRADING_ALLOWED": True, "FOREX_PAPER_ENVIRONMENT": "OANDA_PRACTICE", "FOREX_PAPER_AUTO_TRADING_AUTHORITY": "BOUNDED", "FOREX_LIVE_TRADING_ALLOWED": False, "FOREX_LIVE_AUTO_TRADING_ALLOWED": False, "FOREX_LIVE_AUTHORITY": "NONE", "CRYPTO_LIVE_TRADING_ALLOWED": False, "CRYPTO_LIVE_AUTO_TRADING_ALLOWED": False, "CRYPTO_LIVE_AUTHORITY": "NONE", "OPTIONS_LIVE_TRADING_ALLOWED": False, "OPTIONS_LIVE_AUTO_TRADING_ALLOWED": False, "OPTIONS_LIVE_AUTHORITY": "NONE", "LIVE_TRADING": False, "AUTO_TRADING": False, "PAPER_ONLY": True, "LIVE_TRADING_AUTHORITY": "NONE", "status": "PASS"}
 
 
 def trading_strategy(strategy_id: str = "strategy_candidate_v1") -> dict[str, Any]:

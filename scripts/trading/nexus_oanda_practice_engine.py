@@ -23,8 +23,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "trading"))
 sys.path.insert(0, str(ROOT / "scripts" / "ops"))
+sys.path.insert(0, str(ROOT / "scripts"))
 from nexus_runtime_env import load_runtime_env  # noqa: E402
 from oanda_demo_common import account_path, environment, execute_smoke, request  # noqa: E402
+from nexus_agent_platform.governed import persistence  # noqa: E402
 
 load_runtime_env()
 
@@ -34,6 +36,7 @@ PUBLIC_STATUS = ROOT / "public" / "runtime" / "oanda-practice-status.json"
 STATE_PATH = ROOT / "data" / "runtime" / "oanda_practice_engine_state.json"
 KILL_SWITCH_PATH = ROOT / "data" / "runtime" / "oanda_practice_kill_switch.json"
 AUDIT_PATH = RUNTIME / "oanda_practice_engine_audit.jsonl"
+FORWARD_JOURNAL_PATH = RUNTIME / "oanda_practice_execution_journal.jsonl"
 STATUS_PATH = RUNTIME / "oanda_practice_engine_status_latest.json"
 MD_STATUS_PATH = MANUAL / "oanda_practice_engine_status_latest.md"
 
@@ -122,6 +125,10 @@ class Signal:
     strategy_id: str
     synthetic_test: bool = False
     price: float | None = None
+    stop_price: float | None = None
+    target_price: float | None = None
+    experiment_id: str | None = None
+    evidence_tier: str = "PAPER_RESEARCH"
 
 
 class OandaPracticeClient:
@@ -166,9 +173,17 @@ class OandaPracticeClient:
                 },
             }
         }
+        if signal_obj.stop_price is not None:
+            payload["order"]["stopLossOnFill"] = {"price": f"{signal_obj.stop_price:.5f}", "timeInForce": "GTC"}
+        if signal_obj.target_price is not None:
+            payload["order"]["takeProfitOnFill"] = {"price": f"{signal_obj.target_price:.5f}", "timeInForce": "GTC"}
         ok, status, data, error = request("POST", account_path("/orders"), payload)
         fill = data.get("orderFillTransaction") if isinstance(data, dict) else None
         return {"ok": ok, "status_code": status, "data": data, "error": error, "filled": bool(fill)}
+
+    def close_trade(self, trade_id: str) -> dict[str, Any]:
+        ok, status, data, error = request("PUT", account_path(f"/trades/{urllib.parse.quote(trade_id, safe='')}/close"), {"units": "ALL"})
+        return {"ok": ok, "status_code": status, "data": data, "error": error}
 
 
 class MarketDataAdapter:
@@ -190,6 +205,27 @@ class MarketDataAdapter:
         return {"ok": pricing.get("ok"), "prices": prices, "status_code": pricing.get("status_code"), "error": pricing.get("error")}
 
 
+def market_is_fresh(market: dict[str, Any], max_age_seconds: int) -> bool:
+    if not market.get("ok") or not market.get("prices"):
+        return False
+    now = datetime.now(timezone.utc)
+    for price in market["prices"]:
+        try:
+            timestamp = datetime.fromisoformat(str(price.get("time", "")).replace("Z", "+00:00"))
+            if (now - timestamp).total_seconds() <= max_age_seconds:
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def classify_broker_reconciliation(local_expected: dict[str, Any], broker: dict[str, Any]) -> dict[str, Any]:
+    """Classify broker truth without claiming ownership of unknown state."""
+    local_positions = set(local_expected.get("trade_ids", []))
+    broker_positions = {str(trade_id) for row in broker.get("open_positions", []) for trade_id in (row.get("long", {}).get("tradeIDs", []) + row.get("short", {}).get("tradeIDs", []))}
+    return {"broker_authoritative": True, "orphan_trade_ids": sorted(broker_positions - local_positions), "missing_trade_ids": sorted(local_positions - broker_positions), "safe_to_enter": not bool(broker_positions - local_positions or local_positions - broker_positions), "action": "REVIEW_AND_PAUSE" if broker_positions != local_positions else "CONTINUE"}
+
+
 class StrategyAdapter:
     def __init__(self, limits: dict[str, Any]) -> None:
         self.limits = limits
@@ -207,8 +243,25 @@ class StrategyAdapter:
             "signal": None,
             "reason": "no_valid_strategy_signal_available",
             "strategy_id": self.strategy_id,
+            "paper_cohort": self.paper_cohort(),
             "market_ok": market.get("ok"),
         }
+
+    @staticmethod
+    def paper_cohort() -> list[dict[str, Any]]:
+        """Return bounded durable paper candidates without loading full bodies."""
+        rows = persistence.read_records("trading_experiments", limit=50)
+        seen: set[str] = set(); cohort = []
+        for row in rows:
+            if row.get("decision") not in {"PAPER_RESEARCH", "PAPER_QUALIFIED"}:
+                continue
+            spec = row.get("spec") or {}
+            strategy_id = spec.get("strategy_id") or row.get("strategy_id")
+            if not strategy_id or strategy_id in seen:
+                continue
+            seen.add(strategy_id)
+            cohort.append({"strategy_id": strategy_id, "strategy_version": spec.get("strategy_version", "1.0"), "instrument": spec.get("instrument"), "tier": row.get("decision"), "experiment_id": row.get("experiment_id")})
+        return cohort
 
     def synthetic_signal(self, instrument: str = "AUD_USD", *, stale: bool = False, duplicate: bool = False, risk_limit: bool = False) -> Signal:
         created = datetime.now(timezone.utc) - timedelta(seconds=(300 if stale else 0))
@@ -270,6 +323,8 @@ class RiskEngine:
             return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "instrument_not_approved"}
         if signal_obj.strategy_id != self.limits["approved_strategy"]:
             return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "strategy_not_approved"}
+        if signal_obj.evidence_tier not in {"PAPER_RESEARCH", "PAPER_QUALIFIED"}:
+            return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "paper_evidence_tier_not_allowed"}
         if abs(signal_obj.units) > int(self.limits["max_order_units"]):
             return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "max_order_units_exceeded"}
         if signal_obj.confidence < float(self.limits["signal_confidence_threshold"]):
@@ -284,11 +339,26 @@ class RiskEngine:
             return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "duplicate_signal"}
         if reconciliation.get("open_position_count", 0) >= int(self.limits["max_open_positions"]):
             return {"approved": False, "state": "RISK_STOPPED", "reason": "max_open_positions_reached"}
+        if reconciliation.get("pending_order_count", 0) >= int(self.limits.get("max_pending_orders", 1)):
+            return {"approved": False, "state": "RISK_STOPPED", "reason": "max_pending_orders_reached"}
+        if not market_is_fresh(market, int(self.limits.get("stale_market_seconds", 120))):
+            return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "stale_market_data"}
         price = next((p for p in market.get("prices", []) if p.get("instrument") == signal_obj.instrument), None)
         if not price:
             return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "price_unavailable"}
         if price.get("spread") is None or float(price["spread"]) > float(self.limits["max_spread_units"]):
             return {"approved": False, "state": "SIGNAL_REJECTED", "reason": "spread_guard_rejected"}
+        recent_orders = []
+        for value in self.state.get("order_timestamps", []):
+            try:
+                if (datetime.now(timezone.utc) - datetime.fromisoformat(value.replace("Z", "+00:00"))).total_seconds() < 3600:
+                    recent_orders.append(value)
+            except Exception:
+                continue
+        if len(recent_orders) >= int(self.limits.get("max_orders_per_hour", 3)):
+            return {"approved": False, "state": "RISK_STOPPED", "reason": "max_orders_per_hour_reached"}
+        if abs(float(price.get("ask") or price.get("bid") or 0) * signal_obj.units) > float(self.limits.get("max_order_notional_usd", 10)):
+            return {"approved": False, "state": "RISK_STOPPED", "reason": "max_order_notional_exceeded"}
         return {"approved": True, "state": "SIGNAL_APPROVED", "reason": "risk_checks_passed", "price": price}
 
     def mark_seen(self, signal_obj: Signal) -> None:
@@ -297,6 +367,7 @@ class RiskEngine:
             seen.append(signal_obj.signal_id)
         self.state["seen_signal_ids"] = seen[-200:]
         self.state["last_signal_id"] = signal_obj.signal_id
+        self.state["order_timestamps"] = [*self.state.get("order_timestamps", []), utc_now()][-50:]
         self.state["updated_at"] = utc_now()
         write_json(STATE_PATH, self.state)
 
@@ -307,9 +378,44 @@ class OrderExecutor:
         self.risk = risk
 
     def execute(self, signal_obj: Signal) -> dict[str, Any]:
+        intent = {
+            "order_intent_id": "intent_" + hashlib.sha256(signal_obj.signal_id.encode()).hexdigest()[:24],
+            "execution_identity": signal_obj.signal_id,
+            "strategy_id": signal_obj.strategy_id,
+            "strategy_version": "1.0",
+            "experiment_id": signal_obj.experiment_id,
+            "instrument": signal_obj.instrument,
+            "direction": signal_obj.side,
+            "units": signal_obj.units,
+            "order_type": "MARKET",
+            "stop": signal_obj.stop_price,
+            "target": signal_obj.target_price,
+            "signal_timestamp": signal_obj.created_at,
+            "evidence_tier": signal_obj.evidence_tier,
+        }
+        FORWARD_JOURNAL_PATH.parent.mkdir(parents=True, exist_ok=True)
+        existing = []
+        if FORWARD_JOURNAL_PATH.exists():
+            for line in FORWARD_JOURNAL_PATH.read_text().splitlines():
+                try:
+                    existing.append(json.loads(line))
+                except json.JSONDecodeError:
+                    pass
+        prior = next((row for row in reversed(existing) if row.get("execution_identity") == signal_obj.signal_id and row.get("broker_order_id")), None)
+        if prior:
+            return {"ok": True, "reused": True, "status_code": None, "filled": bool(prior.get("fill_transaction_id")), "journal": prior}
         result = self.client.submit_market_order(signal_obj)
+        result["ambiguous_response"] = (not result.get("ok") and result.get("error") in {"TimeoutError", "URLError", "socket.timeout"})
+        data = result.get("data") or {}
+        create = data.get("orderCreateTransaction") or {}
+        fill = data.get("orderFillTransaction") or {}
+        intent.update({"broker_order_id": create.get("id"), "fill_transaction_id": fill.get("id"), "trade_id": (fill.get("tradeOpened") or {}).get("tradeID"), "broker_status": "FILLED" if result.get("filled") else "ACCEPTED" if result.get("ok") else "REJECTED", "status_code": result.get("status_code"), "error_code": result.get("error")})
+        with FORWARD_JOURNAL_PATH.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(intent, sort_keys=True) + "\n")
+        persistence.append_record("trading_journal", {"journal_id": persistence.new_id("broker"), "type": "PRACTICE_EXECUTION", **intent, "created_at": utc_now()})
         if result.get("ok"):
             self.risk.mark_seen(signal_obj)
+        result["journal"] = intent
         return result
 
 
@@ -552,8 +658,7 @@ def self_test(*, execute_order: bool = False) -> dict[str, Any]:
     }
     order_result = {"attempted": False}
     if execute_order:
-        smoke = execute_smoke("NEXUS_PRACTICE_ENGINE_CERT", limits["approved_instruments"][0], units=1, runtime_name="oanda_practice_engine_cert")
-        order_result = {"attempted": True, **smoke}
+        order_result = {"attempted": True, **run_certification_order()}
     report = {
         "ok": all(checks.values()) and (not execute_order or order_result.get("ok")),
         "generated_at": utc_now(),
@@ -567,7 +672,71 @@ def self_test(*, execute_order: bool = False) -> dict[str, Any]:
     return report
 
 
-def daemon(interval: int) -> int:
+def run_certification_order(*, close_after: bool = True) -> dict[str, Any]:
+    """One bounded Practice-only broker proof through the full canonical path.
+
+    This is explicitly a certification trade, not strategy-performance evidence.
+    It is opened with broker-side protection, verified, closed, and reconciled.
+    """
+    client = OandaPracticeClient()
+    limits = load_limits()
+    market = MarketDataAdapter(client, limits).fetch()
+    before = PositionReconciler(client).reconcile()
+    if not before.get("ok") or before.get("open_position_count") or before.get("pending_order_count"):
+        return {"ok": False, "status": "certification_gate_blocked_existing_broker_state", "before": before}
+    price = next((row for row in market.get("prices", []) if row.get("instrument") == limits["approved_instruments"][0]), None)
+    if not price or price.get("ask") is None or price.get("bid") is None:
+        return {"ok": False, "status": "certification_gate_price_unavailable"}
+    signal_obj = Signal(
+        signal_id="certification_" + hashlib.sha256(f"{limits['approved_instruments'][0]}:{price['time']}".encode()).hexdigest()[:24],
+        instrument=limits["approved_instruments"][0], side="BUY", units=1, confidence=0.99,
+        created_at=utc_now(), strategy_id=limits["approved_strategy"], synthetic_test=True,
+        price=price["ask"], stop_price=round(float(price["bid"]) - 0.001, 5), target_price=round(float(price["ask"]) + 0.001, 5),
+        evidence_tier="PAPER_RESEARCH",
+    )
+    risk = RiskEngine(limits, TradingKillSwitch())
+    decision = risk.validate(signal_obj, market, before)
+    if not decision.get("approved"):
+        return {"ok": False, "status": "certification_risk_veto", "decision": decision}
+    execution = OrderExecutor(client, risk).execute(signal_obj)
+    data = execution.get("data") or {}
+    fill = data.get("orderFillTransaction") or {}
+    trade_id = str((fill.get("tradeOpened") or {}).get("tradeID") or "")
+    after_open = PositionReconciler(client).reconcile()
+    close = client.close_trade(trade_id) if trade_id and close_after else {"ok": not close_after, "status": "left_open_for_restart_proof"}
+    after_close = PositionReconciler(client).reconcile() if close_after else {"ok": True, "open_position_count": 1}
+    close_data = close.get("data") or {}
+    close_fill = close_data.get("orderFillTransaction") or close_data.get("orderFillTransaction") or {}
+    close_row = {"execution_identity": signal_obj.signal_id, "event": "certification_close" if close_after else "certification_open_position_checkpoint", "trade_id": trade_id, "close_transaction_id": close_fill.get("id"), "broker_status": "CLOSED" if close_after and close.get("ok") else "OPEN_CHECKPOINT" if not close_after else "CLOSE_FAILED", "real_money_trading": False, "timestamp": utc_now()}
+    FORWARD_JOURNAL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with FORWARD_JOURNAL_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(close_row, sort_keys=True) + "\n")
+    persistence.append_record("trading_journal", {"journal_id": persistence.new_id("broker"), **close_row, "created_at": utc_now()})
+    return {"ok": bool(execution.get("filled") and trade_id and after_open.get("ok") and close.get("ok") and after_close.get("ok") and (not close_after or after_close.get("open_position_count") == 0)), "status": "certification_trade_opened_verified_closed" if close_after and close.get("ok") else "certification_trade_opened_left_open" if not close_after else "certification_close_failed", "order": execution.get("journal"), "trade_id": trade_id, "before": before, "after_open": after_open, "close": {"ok": close.get("ok"), "status_code": close.get("status_code"), "error": close.get("error")}, "after_close": after_close, "real_money_trading": False}
+
+
+def reconcile_only() -> dict[str, Any]:
+    client = OandaPracticeClient()
+    summary = client.summary()
+    reconciliation = PositionReconciler(client).reconcile()
+    return {"ok": bool(summary.get("ok") and reconciliation.get("ok")), "environment": "OANDA_PRACTICE", "account_state": {"ok": summary.get("ok"), "status_code": summary.get("status_code")}, "reconciliation": reconciliation, "real_money_trading": False}
+
+
+def close_practice_trade(trade_id: str) -> dict[str, Any]:
+    client = OandaPracticeClient()
+    result = client.close_trade(trade_id)
+    after = PositionReconciler(client).reconcile()
+    close_data = result.get("data") or {}
+    close_fill = close_data.get("orderFillTransaction") or {}
+    row = {"journal_id": persistence.new_id("broker"), "event": "practice_close", "trade_id": trade_id, "close_transaction_id": close_fill.get("id"), "broker_status": "CLOSED" if result.get("ok") else "CLOSE_FAILED", "status_code": result.get("status_code"), "error_code": result.get("error"), "created_at": utc_now(), "real_money_trading": False}
+    FORWARD_JOURNAL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with FORWARD_JOURNAL_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, sort_keys=True) + "\n")
+    persistence.append_record("trading_journal", row)
+    return {"ok": bool(result.get("ok") and after.get("ok")), "close_status_code": result.get("status_code"), "error": result.get("error"), "reconciliation": after, "journal": row, "real_money_trading": False}
+
+
+def daemon(interval: int, max_cycles: int = 0) -> int:
     stop = {"requested": False}
 
     def handle_stop(_signum: int, _frame: Any) -> None:
@@ -576,9 +745,11 @@ def daemon(interval: int) -> int:
     signal.signal(signal.SIGTERM, handle_stop)
     signal.signal(signal.SIGINT, handle_stop)
     started_at = utc_now()
-    while not stop["requested"]:
+    cycles = 0
+    while not stop["requested"] and (max_cycles <= 0 or cycles < max_cycles):
         try:
             run_cycle(started_at=started_at, interval=interval)
+            cycles += 1
         except Exception as exc:  # noqa: BLE001
             status = {"ok": False, "engine_active": False, "state": "ERROR", "heartbeat_at": utc_now(), "error": exc.__class__.__name__, "real_money_trading": False}
             TradingStatusAdapter.write(status)
@@ -593,20 +764,31 @@ def main() -> int:
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--daemon", action="store_true")
     parser.add_argument("--interval-seconds", type=int, default=60)
+    parser.add_argument("--max-cycles", type=int, default=0)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--execute-test-order", action="store_true")
+    parser.add_argument("--certification-order", action="store_true")
+    parser.add_argument("--leave-open-certification-order", action="store_true")
+    parser.add_argument("--reconcile-only", action="store_true")
+    parser.add_argument("--close-trade-id")
     parser.add_argument("--test-valid-signal", action="store_true")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
 
-    if args.self_test:
+    if args.close_trade_id:
+        result = close_practice_trade(args.close_trade_id)
+    elif args.reconcile_only:
+        result = reconcile_only()
+    elif args.certification_order:
+        result = run_certification_order(close_after=not args.leave_open_certification_order)
+    elif args.self_test:
         result = self_test(execute_order=args.execute_test_order)
     elif args.test_valid_signal:
         limits = load_limits()
         sig = StrategyAdapter(limits).synthetic_signal(limits["approved_instruments"][0])
         result = run_cycle(execute_signal=sig, interval=args.interval_seconds)
     elif args.daemon:
-        return daemon(args.interval_seconds)
+        return daemon(args.interval_seconds, args.max_cycles)
     else:
         result = run_cycle(interval=args.interval_seconds)
 
@@ -618,6 +800,7 @@ def main() -> int:
             "practice": not result.get("real_money_trading", False),
             "checks": result.get("checks"),
             "bounded_practice_execution_path": result.get("bounded_practice_execution_path"),
+            "certification_result": result if args.certification_order else None,
             "process_registry": result.get("process_registry", {}).get("remote_registry_updated") if isinstance(result.get("process_registry"), dict) else None,
         }, indent=2))
     else:
