@@ -105,6 +105,7 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
     started = _now()
     turn_id = os.getenv("NEXUS_MCP_TURN_ID") or None
     update_id = os.getenv("NEXUS_MCP_UPDATE_ID") or None
+    trace_id = os.getenv("NOVA_LANGFUSE_TRACE_ID") or None
     cached = _TURN_RESULTS.get(turn_id, {}).get(tool_name) if turn_id else None
     deduplicated = cached is not None
     try:
@@ -127,6 +128,7 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
         "tool_name": tool_name,
         "turn_id": turn_id,
         "update_id": update_id,
+        "trace_id": trace_id,
         "started_at": started,
         "completed_at": _now(),
         "canonical_source": CAPABILITY_MAP[tool_name],
@@ -148,6 +150,7 @@ def _call(tool_name: str, arguments: dict[str, Any] | None = None) -> dict[str, 
     payload["request_id"] = request_id
     payload["turn_id"] = turn_id
     payload["update_id"] = update_id
+    payload["trace_id"] = trace_id
     return payload
 
 

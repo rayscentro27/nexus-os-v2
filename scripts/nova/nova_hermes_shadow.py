@@ -9,6 +9,7 @@ delivery owner.
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import sys
 import base64
@@ -41,6 +42,13 @@ SHADOW_STATE_DIR = REPO_ROOT / "data" / "runtime" / "nova_hermes_shadow_sessions
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
+
+
+def _file_hash(path: Path) -> str:
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+    except OSError:
+        return "unavailable"
 
 
 def _require_runtime() -> None:
@@ -569,6 +577,7 @@ def run_shadow(
     _require_runtime()
     phase_timings["runtime_validation_ms"] = round((time.monotonic() - started_at) * 1000, 1)
     _load_approved_provider_env()
+    from langfuse_runtime import NovaTrace, claim_diagnostics
     # Nova runs in an invocation-scoped Hermes home. This prevents the global
     # operator SOUL and memory from entering the primary conversation prompt.
     os.environ["HERMES_HOME"] = str(NOVA_HERMES_HOME)
@@ -576,6 +585,10 @@ def run_shadow(
     AIAgent = _load_hermes()
     phase_timings["hermes_init_ms"] = round((time.monotonic() - hermes_load_started) * 1000, 1)
     _register_bounded_nexus_tools()
+    active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
+    turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
+    trace = NovaTrace(update_id=os.getenv("NOVA_SHADOW_UPDATE_ID", turn_id), session_id=active_session)
+    trace.event("telegram.intake", {"runtime": "hermes", "agent": "nova", "turn_id": turn_id})
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
     toolsets = enabled_toolsets if enabled_toolsets is not None else ["shadow_web", "mcp-nexus_mcp", "research", "delegation"]
     if turn_contract := turn_requirements(prompt):
@@ -589,19 +602,20 @@ def run_shadow(
             # reason-first contract, not a candidate-specific router; callers
             # can still request current evidence explicitly.
             toolsets = []
-    active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     # Hermes intentionally removed MCP discovery as a module import side
     # effect. Nova is a bounded synchronous entry point, so explicitly load
     # the profile-local MCP server before taking the tool snapshot. This is
     # the only primary Nexus read surface; the legacy shadow adapter remains
     # disabled unless explicitly requested by an old fixture.
+    # The turn identifier must exist before discovery so MCP receipts and
+    # Langfuse events share the same correlation boundary.
+    os.environ["NEXUS_MCP_TURN_ID"] = turn_id
+    os.environ["NEXUS_MCP_UPDATE_ID"] = os.getenv("NOVA_SHADOW_UPDATE_ID", "")
     if "mcp-nexus_mcp" in toolsets:
         from tools.mcp_tool import discover_mcp_tools
         discover_mcp_tools()
     shadow_state = _load_shadow_state(active_session)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
-    turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
-    os.environ["NEXUS_MCP_TURN_ID"] = turn_id
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
         if isinstance(row, dict):
@@ -639,6 +653,18 @@ def run_shadow(
         if turn.get("assistant"):
             conversation_history.append({"role": "assistant", "content": str(turn["assistant"])[:5000]})
     native_conversation = not turn_contract["required_resources"]
+    trace.event("nova.session_context", {
+        "session_turn_count": len(shadow_state.get("recent_turns") or []),
+        "prior_assistant_message_count": sum(1 for row in shadow_state.get("recent_turns", []) if isinstance(row, dict) and row.get("assistant")),
+        "prior_tool_result_count": len(prior_records),
+        "prior_volatile_claim_count": sum(1 for row in prior_records if row.get("currentness") or row.get("resource") == "NEXUS"),
+        "profile_hash": _file_hash(NOVA_HERMES_HOME / "SOUL.md"),
+        "volatile_guidance_present": True,
+        "available_mcp": "mcp-nexus_mcp" in toolsets,
+        "available_web": "shadow_web" in toolsets,
+        "available_alpha": "research" in toolsets,
+        "chain_of_thought_captured": False,
+    })
     # The dedicated Hermes profile owns ordinary conversation. Nova-specific
     # guidance is added only when resource-backed execution needs it.
     ephemeral_prompt = (
@@ -671,6 +697,12 @@ def run_shadow(
     result = agent.run_conversation(prompt + turn_contract_guidance, conversation_history=conversation_history or None, task_id=turn_id)
     model_calls.append(round((time.monotonic() - model_started) * 1000, 1))
     all_messages = list(result.get("messages", [])) if isinstance(result, dict) else []
+    first_tool_names = [str(row.get("name") or row.get("tool_name")) for row in all_messages if row.get("role") == "tool"]
+    trace.generation("hermes.generation", model=chosen_model, input_text=prompt,
+                     output_text=str(result.get("final_response", "")) if isinstance(result, dict) else "",
+                     metadata={"generation_type": "INITIAL_GENERATION", "tool_calls_requested": first_tool_names,
+                               "selected_resource_type": "NEXUS_MCP" if any("nexus_get_" in x for x in first_tool_names) else ("WEB" if any("web_" in x for x in first_tool_names) else ("ALPHA" if any("alpha_" in x for x in first_tool_names) else "NONE")),
+                               "model_call_count": len(model_calls)})
 
     def _tool_messages(messages):
         rows = []
@@ -977,6 +1009,14 @@ def run_shadow(
         turns.append({"user": prompt[:1000], "assistant": shadow_state.get("last_response", "")})
         shadow_state["recent_turns"] = turns[-8:]
         tool_rows = _tool_messages(messages)
+        trace.event("nexus.mcp" if any("nexus_get_" in str(row.get("name")) for row in tool_rows) else "resource.selection", {
+            "tool_names": [str(row.get("name") or row.get("tool_name")) for row in tool_rows],
+            "actual_tool_count": len(tool_rows),
+            "mcp_tool_count": sum(1 for row in tool_rows if "nexus_get_" in str(row.get("name"))),
+            "web_tool_count": sum(1 for row in tool_rows if "web_" in str(row.get("name"))),
+            "alpha_tool_count": sum(1 for row in tool_rows if "alpha_" in str(row.get("name"))),
+            "trace_id": trace.trace_id,
+        })
         state_contract = evidence_state(prompt, tool_rows, prior_records)
         if not tool_rows and prior_records and not turn_contract.get("required_resources"):
             # A follow-up may reuse evidence, but only through its structured
@@ -1004,6 +1044,16 @@ def run_shadow(
         result["evidence_state"] = state_contract
         result["claim_validation"] = state_contract["claim_validation"]
         result["claim_attribution"] = claim_attribution(prompt, str(result.get("final_response", "")), state_contract)
+        trace.event("hermes.final_synthesis", {
+            "response_chars": len(str(result.get("final_response", ""))),
+            "claim_source_diagnostic": claim_diagnostics(
+                str(result.get("final_response", "")),
+                tool_names=[str(row.get("name") or row.get("tool_name")) for row in all_messages if row.get("role") == "tool"],
+                prior_tool_result_count=len(prior_records),
+                prior_claim_count=sum(1 for row in prior_records if row.get("currentness") or row.get("resource") == "NEXUS"),
+            ),
+            "tool_result_fingerprint": hashlib.sha256(json.dumps([row.get("payload", {}) for row in tool_rows], sort_keys=True, default=str).encode()).hexdigest()[:16],
+        })
         # Return the complete turn transcript so the canonical worker receipt
         # records tools from the initial pass and any evidence continuation.
         result["messages"] = all_messages
@@ -1026,6 +1076,7 @@ def run_shadow(
             **phase_timings,
         }
         return result
+    trace.finish({"runtime": "hermes", "model": chosen_model, "completed": bool(isinstance(result, dict) and result.get("completed"))})
     return {"response": result, "model": chosen_model, "shadow": True}
 
 

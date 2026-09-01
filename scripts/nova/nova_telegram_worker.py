@@ -573,6 +573,8 @@ def _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=None, prima
             "PYTHONUNBUFFERED": "1",
             "NOVA_SHADOW_UPDATE_ID": str(update_id),
             "NOVA_SHADOW_MESSAGE_ID": str(message.get("message_id") or update_id),
+            "NOVA_LANGFUSE_TRACE_ID": os.getenv("NOVA_LANGFUSE_TRACE_ID", ""),
+            "NOVA_LANGFUSE_UPDATE_ID": str(update_id),
         }
         # Development-only bounded fault injection is inherited by the
         # already-isolated shadow process. It is intentionally opt-in and has
@@ -815,6 +817,10 @@ def process_message(update):
         "chat_id_hash": hashlib.sha256(str(chat_id).encode()).hexdigest()[:16],
     }
 
+    from langfuse_runtime import NovaTrace
+    trace = NovaTrace(update_id=update_id, session_id=f"nova-telegram-primary-{chat_id}")
+    trace.event("telegram.intake", {"runtime": "hermes", "agent": "nova"})
+    os.environ["NOVA_LANGFUSE_TRACE_ID"] = trace.trace_id
     with execution_run(
         process_id="telegram_operator",
         process_name="Telegram Operator",
@@ -830,10 +836,13 @@ def process_message(update):
                 source="scripts/nova/nova_telegram_worker.py:process_message",
             ):
                 pass
-            return _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, run_id)
+            trace.event("telegram.authorization", {"authorized": True})
+            outcome = _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, run_id, trace=trace)
+            trace.finish({"runtime": "hermes", "delivery_visible": True, "outcome": outcome})
+            return outcome
 
 
-def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, primary_run_id=None):
+def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, primary_run_id=None, trace=None):
     _log(f"Incoming: update={update_id} chat={chat_id} user={username} text={text[:80]}")
 
     # Acquire per-chat lock to prevent duplicate delivery
@@ -882,7 +891,11 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             ab_record = _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=primary_run_id)
 
         if primary_runtime == PRIMARY_RUNTIME_HERMES:
+            if trace:
+                trace.event("hermes.context_build", {"session_id": f"nova-telegram-primary-{chat_id}", "profile": os.getenv("NOVA_HERMES_HOME", os.path.join(REPO_ROOT, "config", "hermes", "nova-profile"))})
             hermes_record = _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+            if trace:
+                trace.event("hermes.generation", {"generation_type": "FINAL_SYNTHESIS_GENERATION", "model": hermes_record.get("model"), "tool_count": len(hermes_record.get("tools_executed", [])), "latency_ms": hermes_record.get("latency_ms")})
             response, blocked_reason = _response_integrity(hermes_record.get("response") or "", "conversation")
             if response is None:
                 update_mission(mission, "DELIVERY_FAILED", {
@@ -902,6 +915,8 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 metadata={"mission_id": mission["mission_id"], "runtime": "hermes_primary"},
             ):
                 delivery = _deliver_response(update_id, chat_id, response, hermes_run_id=hermes_record.get("run_id"), mission_id=mission["mission_id"])
+            if trace:
+                trace.event("telegram.delivery", {"attempt_count": delivery.get("attempt_count"), "state": delivery.get("state"), "message_ids": delivery.get("message_ids", []), "last_error": delivery.get("last_error")})
             msg_ids = delivery.get("message_ids", [])
             hermes_record["telegram_send_count"] = len(msg_ids)
             write_receipt({
@@ -911,6 +926,7 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 "correlation_id": mission.get("correlation_id"),
                 "primary_run_id": primary_run_id,
                 "hermes_run_id": hermes_record.get("run_id"),
+                "langfuse_trace_id": os.getenv("NOVA_LANGFUSE_TRACE_ID"),
                 "session_id": hermes_record.get("session_id"),
                 "model": hermes_record.get("model"),
                 "latency_ms": hermes_record.get("latency_ms"),
