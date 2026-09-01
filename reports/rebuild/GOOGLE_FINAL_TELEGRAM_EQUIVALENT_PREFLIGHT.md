@@ -9,6 +9,9 @@
   search despite three equivalent model requests; B, in a separate runner
   process, hydrated the persisted five-item result set and performed only
   object reads, with no new discovery search.
+- Real process-equivalent D→E check: PASS. D performed one fresh external
+  Gmail search; E used the resulting set and performed one linked thread read,
+  with no new discovery search.
 - The B response selected objects from A’s five-item set. It was verbose, but
   the result-set and object linkage were correct; response style is outside
   this campaign’s scope.
