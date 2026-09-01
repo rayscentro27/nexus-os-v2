@@ -19,6 +19,7 @@ import { CheckoutStatusPage, ServiceOfferPage, ServicePricingPage } from '../pag
 import TesterInvitePage from '../pages/tester/TesterInvitePage';
 import TesterAcceptPage from '../pages/tester/TesterAcceptPage';
 import TesterTasksPage from '../pages/tester/TesterTasksPage';
+import OperatorConsole from '../operator/OperatorConsole';
 
 const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
 
@@ -40,6 +41,7 @@ export function App() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const isGoClear = GOCLEAR_ROUTES.includes(path);
   const isAdmin = path === '/admin' || path.startsWith('/admin/');
+  const isOperator = path === '/operator' || path.startsWith('/operator/');
 
   if (isGoClear || path === '/') {
     return (
@@ -85,6 +87,17 @@ export function App() {
   }
   if (path === '/admin/login') {
     return <AdminLoginPage />;
+  }
+  if (isOperator) {
+    return (
+      <AdminGuard>
+        {() => (
+          <AuthGate>
+            {(user) => <OperatorConsole email={user.email} />}
+          </AuthGate>
+        )}
+      </AdminGuard>
+    );
   }
   if (path === '/client/login') {
     return <ClientLoginPage />;
