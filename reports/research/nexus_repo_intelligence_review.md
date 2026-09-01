@@ -112,3 +112,12 @@ B — parallel research lane with limited governance hooks in Wave 1
 ```
 
 Wave 1 should show Repo Intelligence status, evidence, risk, and Ray Review hooks inside Founder Mode. It should not integrate external code or activate external services.
+
+## WP8.3.5 local trading-repository audit
+
+The 2026-09-01 audit found no standalone Vibe-Trading checkout, CLI, Python
+module, or package metadata. Vibe-compatible legacy components were found in
+Ray-owned `nexus-ai/trading-engine` and `nexuslive/trading-engine`, and in
+`nexuslive/nexus-strategy-lab`; the current Nexus adapter is report-only and
+blocks auto-execution. These are registered as `REFERENCE_ONLY` / `ADAPT`, not
+activated dependencies. No repository was cloned, installed, or executed.
