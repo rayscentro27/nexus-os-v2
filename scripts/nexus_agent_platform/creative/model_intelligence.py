@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 import time
 import urllib.request
 from datetime import datetime, timezone
@@ -20,6 +21,7 @@ from nexus_agent_platform.creative.department import build_brief, territories
 MODEL = "gemma3:4b"
 PROVIDER = "oracle_ollama_gemma"
 ENDPOINT = os.getenv("NEXUS_CREATIVE_MODEL_ENDPOINT", "http://127.0.0.1:11435")
+HERMES_MODEL = os.getenv("HERMES_INFERENCE_MODEL", "gpt-5.5")
 MAX_AI_INVOCATIONS = 12
 
 
@@ -63,14 +65,25 @@ class BoundedCreativeModel:
             "testimonials, prices, results, demand, or claims. Use null or UNKNOWN when absent.\n"
             + instruction + "\nCONTEXT:\n" + _compact(context, 10000)
         )
-        payload = json.dumps({"model": MODEL, "prompt": prompt, "stream": False, "format": "json", "options": {"temperature": 0.2, "num_predict": 700}}).encode()
+        # Prefer the currently active, already-authorized Hermes route. Oracle
+        # remains an explicit private fallback, never a hidden replacement.
+        if os.getenv("NEXUS_CREATIVE_FORCE_ORACLE", "false").lower() != "true":
+            started = time.monotonic()
+            try:
+                completed = subprocess.run(["hermes", "-z", prompt, "-m", HERMES_MODEL], capture_output=True, text=True, timeout=45, check=False)
+                if completed.returncode == 0 and completed.stdout.strip():
+                    result = _json_response(completed.stdout)
+                    result.update({"purpose": purpose, "model": HERMES_MODEL, "provider": "openai_codex_oauth", "execution_location": "active Hermes runtime", "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1), "call_number": self.calls})
+                    return result
+            except (OSError, subprocess.TimeoutExpired):
+                pass
         started = time.monotonic()
         req = urllib.request.Request(ENDPOINT.rstrip("/") + "/api/generate", data=payload, headers={"Content-Type": "application/json"}, method="POST")
         try:
             with urllib.request.urlopen(req, timeout=45) as response:
                 raw = json.loads(response.read().decode() or "{}")
             result = _json_response(raw.get("response", ""))
-            result.update({"purpose": purpose, "model": MODEL, "provider": PROVIDER, "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1), "call_number": self.calls})
+            result.update({"purpose": purpose, "model": MODEL, "provider": PROVIDER, "execution_location": "existing Oracle Ollama service", "status": "PASS", "latency_ms": round((time.monotonic() - started) * 1000, 1), "call_number": self.calls})
             return result
         except Exception as exc:
             return {"purpose": purpose, "model": MODEL, "provider": PROVIDER, "status": "BLOCKED", "error": type(exc).__name__, "call_number": self.calls}

@@ -12,16 +12,17 @@
       "master_object_ref": "creative/asset_media_a5488aff871d61a7/v1/master.png",
       "mime_type": "image/png",
       "object_key_prefix": "creative/asset_media_a5488aff871d61a7/v1/",
-      "object_provider": "local_private_object_store",
+      "object_provider": "supabase_storage",
       "parent_version": null,
       "persistence": "DUPLICATE_SUPPRESSED",
+      "remote_bucket": "creative-assets",
+      "remote_sync_verified_at": "2026-09-01T23:23:44.817902+00:00",
       "render_state": "RENDERED",
       "review_object_ref": "creative/asset_media_a5488aff871d61a7/v1/review.webp",
       "review_state": "READY_FOR_REVIEW",
       "review_urls": {
-        "master_object_ref": "/creative-library/objects/asset_media_a5488aff871d61a7/v1/master.png",
-        "review_object_ref": "/creative-library/objects/asset_media_a5488aff871d61a7/v1/review.webp",
-        "thumbnail_object_ref": "/creative-library/objects/asset_media_a5488aff871d61a7/v1/thumb.webp"
+        "review_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_a5488aff871d61a7/v1/review.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfYTU0ODhhZmY4NzFkNjFhNy92MS9yZXZpZXcud2VicCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODgzMDUwMjMsImV4cCI6MTc4ODMwODYyM30.ytP6Mi9RZwYb9xLECssTcPr6AjS4tLYG1AKD6K-h5Zw",
+        "thumbnail_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_a5488aff871d61a7/v1/thumb.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfYTU0ODhhZmY4NzFkNjFhNy92MS90aHVtYi53ZWJwIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODMwNTAyNCwiZXhwIjoxNzg4MzA4NjI0fQ.WIixjYtdEskmQvSZJGvr9TmVmRig8Y1VYgDN_AmcBBw"
       },
       "schema_version": "nexus.creative-media.v1",
       "scope": "INTERNAL_NEXUS",
@@ -29,7 +30,7 @@
       "territory_id": "territory_wp8_11b_17ce55942fc01e5f",
       "thumbnail_object_ref": "creative/asset_media_a5488aff871d61a7/v1/thumb.webp",
       "updated_at": "2026-09-01T23:03:33.701223+00:00",
-      "upload_state": "VERIFIED",
+      "upload_state": "VERIFIED_REMOTE",
       "version": "v1",
       "width": 1280
     },
@@ -45,16 +46,17 @@
       "master_object_ref": "creative/asset_media_6b631cb578f00702/v1/master.png",
       "mime_type": "image/png",
       "object_key_prefix": "creative/asset_media_6b631cb578f00702/v1/",
-      "object_provider": "local_private_object_store",
+      "object_provider": "supabase_storage",
       "parent_version": null,
       "persistence": "DUPLICATE_SUPPRESSED",
+      "remote_bucket": "creative-assets",
+      "remote_sync_verified_at": "2026-09-01T23:23:48.084128+00:00",
       "render_state": "RENDERED",
       "review_object_ref": "creative/asset_media_6b631cb578f00702/v1/review.webp",
       "review_state": "READY_FOR_REVIEW",
       "review_urls": {
-        "master_object_ref": "/creative-library/objects/asset_media_6b631cb578f00702/v1/master.png",
-        "review_object_ref": "/creative-library/objects/asset_media_6b631cb578f00702/v1/review.webp",
-        "thumbnail_object_ref": "/creative-library/objects/asset_media_6b631cb578f00702/v1/thumb.webp"
+        "review_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_6b631cb578f00702/v1/review.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfNmI2MzFjYjU3OGYwMDcwMi92MS9yZXZpZXcud2VicCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODgzMDUwMjcsImV4cCI6MTc4ODMwODYyN30.b0usUEW2wZCNNblCJoYjLejnNrN_4ZQnLTpjWdxheBk",
+        "thumbnail_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_6b631cb578f00702/v1/thumb.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfNmI2MzFjYjU3OGYwMDcwMi92MS90aHVtYi53ZWJwIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODMwNTAyOCwiZXhwIjoxNzg4MzA4NjI4fQ.x_hqyK_XkcmoUfbaBUNEseZ688fi23XO1Tt-RNk6PTk"
       },
       "schema_version": "nexus.creative-media.v1",
       "scope": "INTERNAL_NEXUS",
@@ -62,7 +64,7 @@
       "territory_id": "territory_wp8_11b_17ce55942fc01e5f",
       "thumbnail_object_ref": "creative/asset_media_6b631cb578f00702/v1/thumb.webp",
       "updated_at": "2026-09-01T23:03:33.798244+00:00",
-      "upload_state": "VERIFIED",
+      "upload_state": "VERIFIED_REMOTE",
       "version": "v1",
       "width": 390
     },
@@ -78,16 +80,17 @@
       "master_object_ref": "creative/asset_media_778d064dae9ec875/v2/master.png",
       "mime_type": "image/png",
       "object_key_prefix": "creative/asset_media_778d064dae9ec875/v2/",
-      "object_provider": "local_private_object_store",
+      "object_provider": "supabase_storage",
       "parent_version": null,
       "persistence": "DUPLICATE_SUPPRESSED",
+      "remote_bucket": "creative-assets",
+      "remote_sync_verified_at": "2026-09-01T23:23:51.363324+00:00",
       "render_state": "RENDERED",
       "review_object_ref": "creative/asset_media_778d064dae9ec875/v2/review.webp",
       "review_state": "READY_FOR_REVIEW",
       "review_urls": {
-        "master_object_ref": "/creative-library/objects/asset_media_778d064dae9ec875/v2/master.png",
-        "review_object_ref": "/creative-library/objects/asset_media_778d064dae9ec875/v2/review.webp",
-        "thumbnail_object_ref": "/creative-library/objects/asset_media_778d064dae9ec875/v2/thumb.webp"
+        "review_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_778d064dae9ec875/v2/review.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfNzc4ZDA2NGRhZTllYzg3NS92Mi9yZXZpZXcud2VicCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODgzMDUwMzAsImV4cCI6MTc4ODMwODYzMH0.EfNzFwgY0ACaiFs1f1Wu7W6jQQPaQt_Mi-Hk5dhhQYY",
+        "thumbnail_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_778d064dae9ec875/v2/thumb.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfNzc4ZDA2NGRhZTllYzg3NS92Mi90aHVtYi53ZWJwIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODMwNTAzMSwiZXhwIjoxNzg4MzA4NjMxfQ.qWq2stdiR6hkTcM_NLj9Vcdgps2WwZQoY-h_X-I8xfQ"
       },
       "schema_version": "nexus.creative-media.v1",
       "scope": "INTERNAL_NEXUS",
@@ -95,7 +98,7 @@
       "territory_id": "territory_wp8_11b_17ce55942fc01e5f",
       "thumbnail_object_ref": "creative/asset_media_778d064dae9ec875/v2/thumb.webp",
       "updated_at": "2026-09-01T23:03:33.979901+00:00",
-      "upload_state": "VERIFIED",
+      "upload_state": "VERIFIED_REMOTE",
       "version": "v2",
       "width": 1280
     },
@@ -111,16 +114,17 @@
       "master_object_ref": "creative/asset_media_df114366cd943d7d/v2/master.png",
       "mime_type": "image/png",
       "object_key_prefix": "creative/asset_media_df114366cd943d7d/v2/",
-      "object_provider": "local_private_object_store",
+      "object_provider": "supabase_storage",
       "parent_version": null,
       "persistence": "DUPLICATE_SUPPRESSED",
+      "remote_bucket": "creative-assets",
+      "remote_sync_verified_at": "2026-09-01T23:23:54.315011+00:00",
       "render_state": "RENDERED",
       "review_object_ref": "creative/asset_media_df114366cd943d7d/v2/review.webp",
       "review_state": "READY_FOR_REVIEW",
       "review_urls": {
-        "master_object_ref": "/creative-library/objects/asset_media_df114366cd943d7d/v2/master.png",
-        "review_object_ref": "/creative-library/objects/asset_media_df114366cd943d7d/v2/review.webp",
-        "thumbnail_object_ref": "/creative-library/objects/asset_media_df114366cd943d7d/v2/thumb.webp"
+        "review_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_df114366cd943d7d/v2/review.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfZGYxMTQzNjZjZDk0M2Q3ZC92Mi9yZXZpZXcud2VicCIsInNjb3BlIjoiZG93bmxvYWQiLCJpYXQiOjE3ODgzMDUwMzMsImV4cCI6MTc4ODMwODYzM30.g4d1vBDvPEqHw5cBsPAKkc6s2fWkfMCbucjk7ouV9sc",
+        "thumbnail_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_df114366cd943d7d/v2/thumb.webp?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfZGYxMTQzNjZjZDk0M2Q3ZC92Mi90aHVtYi53ZWJwIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODMwNTAzNCwiZXhwIjoxNzg4MzA4NjM0fQ.Ghb4ZyLYY8oO8I-whBlAtOky7VLxiPgIv1JCX1YeznA"
       },
       "schema_version": "nexus.creative-media.v1",
       "scope": "INTERNAL_NEXUS",
@@ -128,7 +132,7 @@
       "territory_id": "territory_wp8_11b_17ce55942fc01e5f",
       "thumbnail_object_ref": "creative/asset_media_df114366cd943d7d/v2/thumb.webp",
       "updated_at": "2026-09-01T23:03:34.057470+00:00",
-      "upload_state": "VERIFIED",
+      "upload_state": "VERIFIED_REMOTE",
       "version": "v2",
       "width": 390
     },
@@ -146,18 +150,19 @@
       "master_object_ref": "creative/asset_media_e17b5e3af126621c/v1/master.mp4",
       "mime_type": "video/mp4",
       "object_key_prefix": "creative/asset_media_e17b5e3af126621c/v1/",
-      "object_provider": "local_private_object_store",
+      "object_provider": "supabase_storage",
       "parent_version": null,
       "persistence": "DUPLICATE_SUPPRESSED",
       "poster_object_ref": "creative/asset_media_e17b5e3af126621c/v1/poster.jpg",
+      "remote_bucket": "creative-assets",
+      "remote_sync_verified_at": "2026-09-01T23:23:58.786564+00:00",
       "render_state": "RENDERED",
       "review_object_ref": "creative/asset_media_e17b5e3af126621c/v1/review.mp4",
       "review_state": "READY_FOR_REVIEW",
       "review_urls": {
-        "master_object_ref": "/creative-library/objects/asset_media_e17b5e3af126621c/v1/master.mp4",
-        "poster_object_ref": "/creative-library/objects/asset_media_e17b5e3af126621c/v1/poster.jpg",
-        "review_object_ref": "/creative-library/objects/asset_media_e17b5e3af126621c/v1/review.mp4",
-        "thumbnail_object_ref": "/creative-library/objects/asset_media_e17b5e3af126621c/v1/thumb.jpg"
+        "poster_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_e17b5e3af126621c/v1/poster.jpg?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfZTE3YjVlM2FmMTI2NjIxYy92MS9wb3N0ZXIuanBnIiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODMwNTAzNiwiZXhwIjoxNzg4MzA4NjM2fQ.UdHeJiS1YbrHPoXPcQSnOD0chpvUCYHMMWs5bFYoB5g",
+        "review_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_e17b5e3af126621c/v1/review.mp4?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfZTE3YjVlM2FmMTI2NjIxYy92MS9yZXZpZXcubXA0Iiwic2NvcGUiOiJkb3dubG9hZCIsImlhdCI6MTc4ODMwNTAzNywiZXhwIjoxNzg4MzA4NjM3fQ.g5eAIxV8zpBYWgQEEEmX04r_0hJa0Nk40_Pp9hkbWsw",
+        "thumbnail_object_ref": "https://iqjwgpnujbeoyaeuwehj.supabase.co/storage/v1/object/sign/creative-assets/creative/asset_media_e17b5e3af126621c/v1/thumb.jpg?token=eyJraWQiOiI0NmQ3ZGRhNy1kMDMxLTQ2ZmYtYjVkYy1hMDNmNTJmZGQzMzQiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjcmVhdGl2ZS1hc3NldHMvY3JlYXRpdmUvYXNzZXRfbWVkaWFfZTE3YjVlM2FmMTI2NjIxYy92MS90aHVtYi5qcGciLCJzY29wZSI6ImRvd25sb2FkIiwiaWF0IjoxNzg4MzA1MDM4LCJleHAiOjE3ODgzMDg2Mzh9.jpTCOeMGk6IrcpCMGD3M6szBkFe_rPED16SYSuE7Bog"
       },
       "schema_version": "nexus.creative-media.v1",
       "scope": "INTERNAL_NEXUS",
@@ -165,14 +170,21 @@
       "territory_id": "territory_wp8_11b_17ce55942fc01e5f",
       "thumbnail_object_ref": "creative/asset_media_e17b5e3af126621c/v1/thumb.jpg",
       "updated_at": "2026-09-01T23:03:35.386316+00:00",
-      "upload_state": "VERIFIED",
+      "upload_state": "VERIFIED_REMOTE",
       "version": "v1",
       "width": 1080
     }
   ],
   "external_action_performed": false,
-  "generated_at": "2026-09-01T23:04:16.557754+00:00",
-  "provider": "local_private_object_store",
+  "generated_at": "2026-09-01T23:27:32.030508+00:00",
+  "provider": "supabase_storage",
+  "remote_bucket": "creative-assets",
+  "remote_sync": {
+    "bucket_state": "EXISTING_PRIVATE_OR_CONFIGURED",
+    "uploaded_objects": 0,
+    "verified_at": "2026-09-01T23:27:32.507781+00:00",
+    "verified_objects": 0
+  },
   "review_policy": "proxy_first; master_explicit",
   "schema_version": "nexus.creative-library-index.v1"
 }

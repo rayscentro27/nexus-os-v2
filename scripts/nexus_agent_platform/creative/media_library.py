@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
 import subprocess
+import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -36,6 +38,77 @@ class CreativeStorageAdapter:
 
     def review_url(self, key: str) -> str:
         return "/creative-library/objects/" + str(Path(key).relative_to("creative"))
+
+
+class SupabaseCreativeStorageAdapter:
+    """Private Supabase Storage adapter using the existing service credential.
+
+    This adapter is deliberately used by bounded operator-side sync jobs only;
+    the service key is never exposed to the browser or persisted in a record.
+    """
+    provider = "supabase_storage"
+
+    def __init__(self, bucket: str = "creative-assets") -> None:
+        self.base = (os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL") or "").rstrip("/")
+        self.key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+        self.bucket = bucket
+        if not self.base or not self.key:
+            raise RuntimeError("supabase-service-storage-not-configured")
+
+    def _url(self, key: str) -> str:
+        encoded = "/".join(urllib.parse.quote(part, safe="") for part in key.split("/"))
+        return f"{self.base}/storage/v1/object/{self.bucket}/{encoded}"
+
+    def _curl(self, args: list[str], *, input_data: bytes | None = None) -> tuple[int, bytes, str]:
+        result = subprocess.run(["curl", "-sS", "--max-time", "20", *args], input=input_data, capture_output=True)
+        return result.returncode, result.stdout, result.stderr.decode("utf-8", "replace")[:240]
+
+    def ensure_private_bucket(self) -> str:
+        code, body, _ = self._curl([f"{self.base}/storage/v1/bucket", "-H", f"apikey: {self.key}", "-H", f"Authorization: Bearer {self.key}"])
+        if code != 0:
+            raise RuntimeError("supabase-bucket-list-failed")
+        buckets = json.loads(body or b"[]")
+        if any(x.get("name") == self.bucket for x in buckets if isinstance(x, dict)):
+            return "EXISTING_PRIVATE_OR_CONFIGURED"
+        payload = json.dumps({"id": self.bucket, "name": self.bucket, "public": False}).encode()
+        code, body, err = self._curl([f"{self.base}/storage/v1/bucket", "-X", "POST", "-H", "Content-Type: application/json", "-H", f"apikey: {self.key}", "-H", f"Authorization: Bearer {self.key}", "--data-binary", "@-", "-w", "\n%{http_code}"], input_data=payload)
+        if code != 0 or not (200 <= _http_code(body, err) < 300):
+            raise RuntimeError("supabase-private-bucket-create-failed")
+        return "CREATED_PRIVATE"
+
+    def put(self, source: Path, key: str) -> dict[str, Any]:
+        code, body, err = self._curl([self._url(key), "-X", "POST", "-H", "x-upsert: true", "-H", f"Content-Type: {_mime(source)}", "-H", f"apikey: {self.key}", "-H", f"Authorization: Bearer {self.key}", "--upload-file", str(source), "-w", "\n%{http_code}"])
+        if code != 0 or not (200 <= _http_code(body, err) < 300):
+            raise RuntimeError("supabase-object-upload-failed")
+        return {"provider": self.provider, "object_key": key, "bytes": source.stat().st_size, "verified": self.head(key)["exists"]}
+
+    def head(self, key: str) -> dict[str, Any]:
+        code, body, err = self._curl([self._url(key), "-D", "/tmp/nexus_supabase_headers", "-o", "/dev/null", "-w", "%{http_code}", "-H", f"apikey: {self.key}", "-H", f"Authorization: Bearer {self.key}"])
+        status = int(body.decode() or "0") if body and body.decode().isdigit() else 0
+        return {"provider": self.provider, "object_key": key, "exists": code == 0 and 200 <= status < 300, "status": status, "error": err if code else ""}
+
+    def signed_url(self, key: str, expires: int = 3600) -> str:
+        payload = json.dumps({"expiresIn": expires}).encode()
+        endpoint = self._url(key).replace(f"/object/{self.bucket}/", f"/object/sign/{self.bucket}/")
+        code, body, err = self._curl([endpoint, "-X", "POST", "-H", "Content-Type: application/json", "-H", f"apikey: {self.key}", "-H", f"Authorization: Bearer {self.key}", "--data-binary", "@-"], input_data=payload)
+        if code != 0:
+            raise RuntimeError("supabase-signed-url-failed")
+        data = json.loads(body or b"{}")
+        path = data.get("signedURL") or data.get("signedUrl")
+        if not path:
+            raise RuntimeError(f"supabase-signed-url-failed:{err}")
+        return path if path.startswith("http") else self.base + "/storage/v1" + path
+
+
+def _http_code(body: bytes, err: str) -> int:
+    try:
+        return int(body.decode().strip().splitlines()[-1])
+    except (ValueError, IndexError, UnicodeDecodeError):
+        return 0
+
+
+def _mime(path: Path) -> str:
+    return {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".mp4": "video/mp4"}.get(path.suffix.lower(), "application/octet-stream")
 
 
 def now() -> str:
@@ -122,4 +195,40 @@ def build_library() -> dict[str, Any]:
     return payload
 
 
-if __name__ == "__main__": print(json.dumps(build_library(), indent=2, sort_keys=True))
+def sync_library_to_supabase(payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Upload the already-indexed local artifacts and publish signed review refs."""
+    adapter = SupabaseCreativeStorageAdapter()
+    bucket_state = adapter.ensure_private_bucket()
+    payload = payload or json.loads(INDEX_PATH.read_text())
+    uploaded = 0; verified = 0
+    remote_assets = []
+    for asset in payload.get("assets", []):
+        prior_remote = next((x for x in read_records("creative_media") if x.get("asset_id") == asset.get("asset_id") and x.get("object_provider") == adapter.provider and x.get("upload_state") == "VERIFIED_REMOTE"), None)
+        if prior_remote:
+            remote_assets.append(prior_remote)
+            continue
+        remote = dict(asset)
+        remote_urls = {}
+        for field, key in ((k, v) for k, v in asset.items() if k.endswith("_object_ref")):
+            source = OBJECT_ROOT / Path(key).relative_to("creative")
+            adapter.put(source, key)
+            uploaded += 1
+            if adapter.head(key)["exists"]: verified += 1
+            if field != "master_object_ref": remote_urls[field] = adapter.signed_url(key)
+        remote["object_provider"] = adapter.provider
+        remote["upload_state"] = "VERIFIED_REMOTE"
+        remote["remote_bucket"] = adapter.bucket
+        remote["review_urls"] = remote_urls
+        remote["remote_sync_verified_at"] = now()
+        append_record("creative_media", remote)
+        remote_assets.append(remote)
+    remote_payload = {**payload, "provider": adapter.provider, "remote_bucket": adapter.bucket, "assets": remote_assets, "remote_sync": {"bucket_state": bucket_state, "uploaded_objects": uploaded, "verified_objects": verified, "verified_at": now()}}
+    INDEX_PATH.write_text(json.dumps(remote_payload, indent=2, sort_keys=True) + "\n")
+    emit_audit_event({"event": "creative_remote_media_sync", "provider": adapter.provider, "bucket": adapter.bucket, "uploaded_objects": uploaded, "verified_objects": verified, "external_action_performed": False})
+    return remote_payload
+
+
+if __name__ == "__main__":
+    data = build_library()
+    if os.environ.get("NEXUS_CREATIVE_SYNC_SUPABASE") == "1": data = sync_library_to_supabase(data)
+    print(json.dumps(data, indent=2, sort_keys=True))
