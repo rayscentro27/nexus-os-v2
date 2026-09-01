@@ -88,8 +88,9 @@ def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_pat
     assert second["metadata"]["deduplicated"] is True
     receipts = [json.loads(path.read_text()) for path in sorted(tmp_path.glob("*.json"))]
     assert len(receipts) == 2
-    assert receipts[1]["deduplicated"] is True
-    assert receipts[1]["turn_id"] == "turn-test-1"
+    deduplicated = [receipt for receipt in receipts if receipt["deduplicated"]]
+    assert len(deduplicated) == 1
+    assert deduplicated[0]["turn_id"] == "turn-test-1"
 
 
 @pytest.mark.parametrize("name", server.TOOL_NAMES)

@@ -131,7 +131,6 @@ def _business_opportunities() -> Dict[str, Any]:
         "items": eligible[:50],
         "taxonomy": "CURRENT opportunities only; research history excluded",
         "filtered_counts": filtered,
-        "historical_running_total": result["data"].get("counts", {}).get("running_total"),
     }
     result["status"] = "OK" if eligible else "EMPTY"
     result["warnings"] = list(result.get("warnings", []))

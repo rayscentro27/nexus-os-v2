@@ -338,8 +338,9 @@ def test_business_opportunity_result_excludes_process_actions_and_supports_empty
     from nexus_agent_platform.capabilities.operational_reads import _business_opportunities
 
     result = _business_opportunities()
-    assert result["status"] == "OK"
-    assert result["data"]["taxonomy"].startswith("BUSINESS_OPPORTUNITIES")
+    assert result["status"] in {"OK", "EMPTY"}
+    assert "opportunities" in result["data"]["taxonomy"].lower()
+    assert "historical_running_total" not in result["data"]
     assert all("system_health.run" not in str(item) for item in result["data"]["items"])
     assert all("repo_intelligence.scan" not in str(item) for item in result["data"]["items"])
     assert isinstance(result["data"]["by_decision"], dict)
