@@ -122,6 +122,9 @@ def youtube_transcript(url: str, timeout: int = 90) -> dict[str, Any]:
         return {"ok": True, "video_id": video_id, "status": "TRANSCRIPT_RETRIEVED", "language": "en", "transcript_hash": hashlib.sha256(text.encode()).hexdigest(), "excerpt": text[:2400], "retrieved_at": now(), "media_downloaded": False, "audio_downloaded": False}
 def route_finding(theme: str, research_id: str, finding: str) -> str:
     route = {"TRADING": "trading_research", "BUSINESS": "business_opportunity", "MARKETING": "growth_experiment_candidate", "AI_NEXUS": "nexus_capability_improvement"}.get(theme, "alpha_review")
+    work_order_id = digest({"research_id": research_id, "route": route}, "wo")
+    if not any(r.get("work_order_id") == work_order_id for r in read_records("work_orders")):
+        append_record("work_orders", {"work_order_id": work_order_id, "work_type": "alpha_research", "owner_specialist": "ALPHA", "required_capabilities": ["research", "verification"], "status": "ASSIGNED", "research_id": research_id, "route": route, "inputs": {"finding": finding[:800]}, "authority": "bounded_internal_research", "created_at": now()})
     append_record("alpha_outcomes", {"outcome_id": digest({"research_id": research_id, "route": route}, "route"), "research_id": research_id, "route": route, "finding": finding[:800], "status": "CANDIDATE", "authority": "Nexus_review_required", "created_at": now()})
     return route
 def create_research(theme: str, question: str, contents: list[dict[str, Any]], claims: list[dict[str, Any]], window: str = "LAST_30_DAYS") -> dict[str, Any]:
