@@ -14,6 +14,11 @@ TOOL_NAMES = (
     "nexus_get_system_health",
 )
 
+# Operational reads are volatile by capability.  This metadata describes the
+# freshness contract; it is not a cache policy and never makes persisted data
+# current on its own.
+CAPABILITY_FRESHNESS = {name: "VOLATILE" for name in TOOL_NAMES}
+
 
 def unavailable(capability: str, error: str) -> dict[str, Any]:
     return {
@@ -25,4 +30,3 @@ def unavailable(capability: str, error: str) -> dict[str, Any]:
         "metadata": {"read_only": True, "canonical": True},
         "error": error,
     }
-

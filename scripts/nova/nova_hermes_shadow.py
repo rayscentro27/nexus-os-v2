@@ -145,6 +145,19 @@ def _shadow_resource_guidance() -> str:
     )
 
 
+def _volatile_resource_guidance() -> str:
+    """Minimal generic freshness contract for the profile-local MCP tools."""
+    return (
+        "\n\n[VOLATILE RESOURCE FRESHNESS]\n"
+        "Nexus operational reads are volatile. When the user asks for present, "
+        "current, live, or still-true operational state, perform a fresh "
+        "authoritative Nexus read; prior conversation is context for meaning, "
+        "not proof of current state. Reuse a prior result only when answering "
+        "without a current-state claim. Within one turn, do not repeat the same "
+        "capability unless the read failed or genuinely needs retry/pagination.\n"
+    )
+
+
 def _json_object(value: Any) -> Dict[str, Any]:
     if isinstance(value, dict):
         return value
@@ -588,6 +601,7 @@ def run_shadow(
     shadow_state = _load_shadow_state(active_session)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
+    os.environ["NEXUS_MCP_TURN_ID"] = turn_id
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
         if isinstance(row, dict):
@@ -628,9 +642,9 @@ def run_shadow(
     # The dedicated Hermes profile owns ordinary conversation. Nova-specific
     # guidance is added only when resource-backed execution needs it.
     ephemeral_prompt = (
-        None
+        _volatile_resource_guidance()
         if native_conversation
-        else _nova_soul() + _shadow_resource_guidance() + current_context + immutable_objective + correlation_context
+        else _nova_soul() + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context
     )
     agent = AIAgent(
         model=chosen_model,

@@ -35,6 +35,7 @@ def test_public_result_preserves_canonical_state_and_metadata():
         "item_count": 1,
         "source_commit": None,
         "currentness": "CURRENT",
+        "volatility": "VOLATILE",
         "live_response_eligible": True,
         "filtered_historical_count": 0,
         "filtered_synthetic_count": 0,
@@ -67,6 +68,28 @@ def test_canonical_read_failure_is_explicit_and_not_fabricated(monkeypatch, tmp_
     assert receipt["result_status"] == "NOT_AVAILABLE"
     assert receipt["read_only"] is True
     assert receipt["authority_owner"] == "Nexus"
+
+
+def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_path: Path):
+    server._TURN_RESULTS.clear()
+    monkeypatch.setattr(server, "RECEIPT_DIR", tmp_path)
+    calls = []
+
+    def read_once(*args, **kwargs):
+        calls.append((args, kwargs))
+        return {"status": "empty", "freshness": "live", "data": {}, "provenance": {}}
+
+    monkeypatch.setattr(server, "read_canonical", read_once)
+    monkeypatch.setenv("NEXUS_MCP_TURN_ID", "turn-test-1")
+    first = server._call("nexus_get_reviews")
+    second = server._call("nexus_get_reviews")
+    assert len(calls) == 1
+    assert first["metadata"].get("deduplicated") is None
+    assert second["metadata"]["deduplicated"] is True
+    receipts = [json.loads(path.read_text()) for path in tmp_path.glob("*.json")]
+    assert len(receipts) == 2
+    assert receipts[1]["deduplicated"] is True
+    assert receipts[1]["turn_id"] == "turn-test-1"
 
 
 @pytest.mark.parametrize("name", server.TOOL_NAMES)
