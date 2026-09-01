@@ -56,6 +56,17 @@ def test_public_result_marks_partial_business_state_and_live_health():
     assert health["metadata"]["currentness"] == "CURRENT"
 
 
+def test_business_state_tool_description_is_operationally_scoped():
+    source = Path(server.__file__).read_text(encoding="utf-8")
+    description = next(
+        line for line in source.splitlines()
+        if 'name="nexus_get_business_state"' in line
+    )
+    assert "Nexus operational-state" in description
+    assert "not general business advice" in description
+    assert "hypothetical idea evaluation" in description
+
+
 def test_canonical_read_failure_is_explicit_and_not_fabricated(monkeypatch, tmp_path: Path):
     monkeypatch.setattr(server, "RECEIPT_DIR", tmp_path)
     monkeypatch.setattr(server, "read_canonical", lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("offline")))

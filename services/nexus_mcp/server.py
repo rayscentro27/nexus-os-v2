@@ -167,11 +167,11 @@ def _register() -> None:
     def nexus_get_blockers() -> dict[str, Any]:
         return _call("nexus_get_blockers")
 
-    @mcp.tool(name="nexus_get_opportunities", description="VOLATILE current-state read: return only current eligible opportunities; history and synthetic records are excluded. Re-read for present state.")
+    @mcp.tool(name="nexus_get_opportunities", description="VOLATILE Nexus operational-state read: return only current eligible opportunity records already present in Nexus; history and synthetic records are excluded. This does not generate ideas, evaluate hypothetical businesses, provide market research, or give general strategy advice. Re-read for present state.")
     def nexus_get_opportunities() -> dict[str, Any]:
         return _call("nexus_get_opportunities")
 
-    @mcp.tool(name="nexus_get_business_state", description="VOLATILE composite current-state read: return business components with independent source, timestamp, and currentness metadata. Re-read present state.")
+    @mcp.tool(name="nexus_get_business_state", description="VOLATILE composite Nexus operational-state read: return current governed company components with independent source, timestamp, and currentness metadata. Use only when the user asks about what Nexus/company operations currently contain or report; this is not general business advice, strategy, market research, or hypothetical idea evaluation. Re-read present state.")
     def nexus_get_business_state() -> dict[str, Any]:
         return _call("nexus_get_business_state")
 
