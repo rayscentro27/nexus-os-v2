@@ -16,7 +16,11 @@ def _signal(**changes):
     return Signal(**values)
 
 
-def test_practice_authority_gate_and_freshness():
+def test_practice_authority_gate_and_freshness(tmp_path, monkeypatch):
+    # The engine is intentionally durable; isolate this unit test from prior
+    # real Practice certification cycles so historical order timestamps cannot
+    # make a fresh fixture fail the hourly safety limit.
+    monkeypatch.setattr(engine, "STATE_PATH", tmp_path / "state.json")
     market = _market()
     limits = {"approved_instruments": ["EUR_USD"], "approved_strategy": "nexus_practice_monitor_v1", "max_order_units": 1, "signal_confidence_threshold": .75, "stale_signal_seconds": 120, "max_open_positions": 1, "max_pending_orders": 1, "max_spread_units": .0015, "stale_market_seconds": 120}
     risk = RiskEngine(limits, TradingKillSwitch())
