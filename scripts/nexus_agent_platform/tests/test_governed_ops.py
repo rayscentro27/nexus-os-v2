@@ -331,6 +331,7 @@ class TestSecurityBoundaries:
             "resolve_governed_approval",
             "create_work_order_from_approval",
             "submit_nexus_request",
+            "submit_alpha_request",
         })
 
     def test_hermes_cannot_use_governed_intents(self, governed):
