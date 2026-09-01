@@ -15,8 +15,8 @@ def test_resource_backed_history_is_labeled_as_non_current_context():
         "role": "user",
         "content": "Check Nexus and tell me what needs my attention.",
     }
-    assert "PRIOR RESOURCE-BACKED RESPONSE" in history[1]["content"]
-    assert "not current operational truth" in history[1]["content"]
+    assert "PRIOR RESOURCE-BACKED EXCHANGE" in history[1]["content"]
+    assert "retrieve fresh state for facts" in history[1]["content"]
 
 
 def test_legacy_history_is_retained_but_not_promoted_to_resource_truth():
@@ -27,5 +27,5 @@ def test_legacy_history_is_retained_but_not_promoted_to_resource_truth():
         }],
     })
 
-    assert "A historical research count was recorded." in history[1]["content"]
-    assert "not a current resource result" in history[1]["content"]
+    assert "A historical research count was recorded." not in history[1]["content"]
+    assert "facts require current evidence" in history[1]["content"]

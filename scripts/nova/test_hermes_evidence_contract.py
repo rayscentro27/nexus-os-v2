@@ -1,6 +1,19 @@
 from hermes_evidence_contract import claim_feedback, evidence_state, turn_requirements
 
 
+def test_google_resource_is_reusable_for_semantic_followups():
+    prior = [{"resource": "GOOGLE", "capability": "calendar_search_events"}]
+    result = turn_requirements("Which one is first?", prior)
+    assert result["referent_capability"] == "calendar_search_events"
+    assert result["required_resources"] == []
+
+
+def test_google_current_followup_requires_fresh_execution():
+    prior = [{"resource": "GOOGLE", "capability": "calendar_search_events"}]
+    result = turn_requirements("Has anything changed on my calendar today?", prior)
+    assert result["fresh_execution_required"] is True
+
+
 def test_explicit_multi_resource_request_is_scoped_to_current_turn():
     contract = turn_requirements("Using Nexus and current outside information, decide what to test.")
     assert contract["required_resources"] == ["NEXUS", "PUBLIC_WEB"]

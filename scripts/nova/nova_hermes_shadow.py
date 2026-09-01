@@ -51,6 +51,21 @@ def _file_hash(path: Path) -> str:
         return "unavailable"
 
 
+def _resource_name(capability: Any) -> str:
+    """Map tool identifiers to a resource family for generic continuity."""
+    name = str(capability or "")
+    lowered = name.lower()
+    if "nexus_get_" in lowered or lowered == "nexus_read_shadow" or "nexus_mcp" in lowered:
+        return "NEXUS"
+    if lowered.startswith(("gmail_", "calendar_")) or "google_mcp" in lowered:
+        return "GOOGLE"
+    if lowered.startswith(("public_web", "web_")):
+        return "PUBLIC_WEB"
+    if lowered.startswith(("alpha_", "research_")):
+        return "ALPHA"
+    return name
+
+
 def _require_runtime() -> None:
     shadow = os.getenv(SHADOW_FLAG, "false").lower() == "true"
     primary = os.getenv(PRIMARY_FLAG, "false").lower() == "true"
@@ -401,6 +416,28 @@ def _conversation_history_for_model(state: Dict[str, Any]) -> list[Dict[str, str
     return history
 
 
+def _referent_snapshot(payload: Dict[str, Any]) -> list[Dict[str, Any]]:
+    """Return bounded, non-body metadata useful for anaphoric follow-ups."""
+    data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+    items = data.get("items") if isinstance(data, dict) else []
+    if not isinstance(items, list):
+        return []
+    snapshot: list[Dict[str, Any]] = []
+    for item in items[:10]:
+        if not isinstance(item, dict):
+            continue
+        allowed = (
+            "id", "event_id", "message_id", "thread_id", "summary", "subject",
+            "from", "sender", "start", "end", "internal_date", "date", "status",
+            "updated_at", "labels", "snippet",
+        )
+        row = {key: item[key] for key in allowed if key in item}
+        if isinstance(row.get("snippet"), str):
+            row["snippet"] = row["snippet"][:300]
+        snapshot.append(row)
+    return snapshot
+
+
 def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
     """Use existing free/private adapters, deliberately excluding Brave."""
     if str(REPO_ROOT / "scripts") not in sys.path:
@@ -704,10 +741,10 @@ def run_shadow(
     if turn_contract.get("referent_capability") and not re.search(r"\b(?:nexus|reviews?|blockers?|opportunit(?:y|ies)|work items?)\b", prompt, re.I):
         turn_contract_guidance += (
             "\n[CURRENT REFERENT SCOPE]\n"
-            "This is an anaphoric follow-up to the latest Nexus result. Preserve "
-            "the prior conversational subject and refresh the same capability: "
+            "This is an anaphoric follow-up to the latest linked resource result. Preserve "
+            "the prior conversational subject and use its linked capability when needed: "
             + turn_contract["referent_capability"]
-            + ". Do not call unrelated Nexus capabilities in this turn.\n"
+            + ". Do not call unrelated resource capabilities in this turn.\n"
         )
     current_context = _current_shadow_context(shadow_state)
     immutable_objective = (
@@ -717,6 +754,19 @@ def run_shadow(
         "The final response must answer the original objective.\n"
     )
     conversation_history = _conversation_history_for_model(shadow_state)
+    referent_context = ""
+    referent_capability = turn_contract.get("referent_capability")
+    if referent_capability:
+        for row in reversed(prior_records):
+            if str(row.get("capability")) == referent_capability:
+                snapshot = row.get("referent_snapshot")
+                if snapshot:
+                    referent_context = (
+                        "\n\n[LINKED REFERENT DATA — use only for the prior subject; "
+                        "current-state questions still require a fresh read]\n"
+                        + json.dumps(snapshot, sort_keys=True, default=str)[:5000]
+                    )
+                break
     native_conversation = not turn_contract["required_resources"]
     trace.event("nova.session_context", {
         "session_turn_count": len(shadow_state.get("recent_turns") or []),
@@ -736,7 +786,7 @@ def run_shadow(
         _volatile_resource_guidance()
         + (_shadow_resource_guidance() if turn_contract["fresh_execution_required"] else "")
         if native_conversation
-        else _nova_soul() + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context
+        else _nova_soul() + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context + referent_context
     )
     agent = AIAgent(
         model=chosen_model,
@@ -758,8 +808,7 @@ def run_shadow(
     # prevents Hermes from widening “those” into a survey of unrelated state;
     # the capability is derived from prior tool provenance, never from a
     # phrase-specific route.
-    referent_capability = turn_contract.get("referent_capability")
-    if referent_capability and not re.search(r"\b(?:nexus|reviews?|blockers?|opportunit(?:y|ies)|work items?)\b", prompt, re.I):
+    if referent_capability and _resource_name(referent_capability) == "NEXUS" and not re.search(r"\b(?:nexus|reviews?|blockers?|opportunit(?:y|ies)|work items?)\b", prompt, re.I):
         scoped_tools = [
             tool for tool in getattr(agent, "tools", [])
             if str(tool.get("function", {}).get("name", "")).endswith(referent_capability)
@@ -1068,7 +1117,7 @@ def run_shadow(
                 result_id = result_id or payload.get("artifact_id") or payload.get("receipt_id")
             record = {
                 "capability": capability,
-                "resource": ("NEXUS" if "nexus_get_" in capability else {"nexus_read_shadow": "NEXUS", "public_web_search_shadow": "PUBLIC_WEB", "public_web_retrieval_shadow": "PUBLIC_WEB_RETRIEVAL", "alpha_challenge_shadow": "ALPHA"}.get(capability, capability)),
+                "resource": _resource_name(capability),
                 "source_turn_id": turn_id,
                 "request_id": request_id,
                 "result_id": result_id,
@@ -1082,6 +1131,7 @@ def run_shadow(
                 "valid_for_current_turn": True,
                 "current_for_turn": True,
                 "status": payload.get("status"),
+                "referent_snapshot": _referent_snapshot(payload),
             }
             records.append(record)
             if capability == "alpha_challenge_shadow":

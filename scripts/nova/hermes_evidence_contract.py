@@ -34,30 +34,41 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
     reuse_alpha = re.search(r"\bwhat did research find\b|\bresearch findings?\b", text) and not re.search(r"\b(challenge|research this|independently)\b", text)
     if alpha_request and not reuse_alpha:
         resources.append("ALPHA")
-    current = bool(re.search(r"\b(current|currently|latest|this week|right now|present|still|active)\b", text) or volatile_subject_request)
-    prior_nexus = any(
-        isinstance(row, dict) and (
-            row.get("resource") == "NEXUS"
-            or str(row.get("capability", "")).startswith("nexus_get_")
-        )
-        for row in prior_records
-    )
+    current = bool(re.search(r"\b(current|currently|latest|this week|right now|present|still|active|changed|newer|new)\b", text) or volatile_subject_request)
+    def resource_of(row: Dict[str, Any]) -> str:
+        resource = str(row.get("resource") or "").upper()
+        capability = str(row.get("capability") or "").lower()
+        if resource in {"NEXUS", "GOOGLE"}:
+            return resource
+        if capability.startswith("nexus_get_") or "nexus_mcp" in capability:
+            return "NEXUS"
+        if capability.startswith(("gmail_", "calendar_")) or "google_mcp" in capability:
+            return "GOOGLE"
+        return resource
+
+    prior_resource_rows = [
+        row for row in prior_records
+        if isinstance(row, dict) and resource_of(row) in {"NEXUS", "GOOGLE"}
+    ]
+    prior_nexus = any(resource_of(row) == "NEXUS" for row in prior_resource_rows)
     # A prior resource identifies a referent only when the new utterance is
     # actually an anaphoric/continuation request.  Resource history must not
     # become a persistent conversation domain for unrelated turns.
     referent_followup = bool(re.search(
-        r"\b(?:that|those|it|they|them|these|still|remain(?:s)?|active|open|pending|resolved)\b",
+        r"\b(?:that|those|it|they|them|these|one|first|last|next|earlier|above|same|most important|still|remain(?:s)?|active|open|pending|resolved)\b",
         text,
     ))
     # Referent context identifies what “those” or “still active” means, but it
     # cannot establish present operational truth. Refresh the same volatile
     # Nexus resource whenever the follow-up asks about current state.
-    if prior_nexus and referent_followup and re.search(
+    prior_resource = resource_of(prior_resource_rows[-1]) if prior_resource_rows else ""
+    if prior_resource and referent_followup and re.search(
         r"\b(?:still|remain(?:s)?|active|open|pending|resolved|current|currently|right now|present)\b",
         text,
     ):
-        resources.append("NEXUS")
-        current = True
+        if prior_resource == "NEXUS":
+            resources.append("NEXUS")
+            current = True
     comparison = re.search(r"\bcompare\s+(.+?)(?:[.?]|$)", text, re.I)
     candidate_set: List[str] = []
     if comparison:
@@ -78,11 +89,8 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
             (
                 str(row.get("capability"))
                 for row in reversed(list(prior_records))
-                if prior_nexus and referent_followup and isinstance(row, dict)
-                and (
-                    row.get("resource") == "NEXUS"
-                    or str(row.get("capability", "")).startswith("nexus_get_")
-                )
+                if prior_resource and referent_followup and isinstance(row, dict)
+                and resource_of(row) == prior_resource
             ),
             "",
         ),
@@ -101,6 +109,8 @@ def executed_resources(tool_messages: Iterable[Dict[str, Any]]) -> List[str]:
         }.get(name)
         if "nexus_get_" in name:
             resource = "NEXUS"
+        if name.startswith(("gmail_", "calendar_")) or "google_mcp" in name:
+            resource = "GOOGLE"
         if resource and resource not in result:
             result.append(resource)
     return result
