@@ -20,6 +20,7 @@ import ssl
 import uuid
 import time
 import contextvars
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -44,6 +45,34 @@ SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 _ACTIVE_HERMES_TURN: contextvars.ContextVar[str] = contextvars.ContextVar("nova_active_hermes_turn", default="")
+_GOOGLE_DEDUPE_EVENTS: dict[str, list[dict[str, Any]]] = {}
+_GOOGLE_DEDUPE_LOCK = threading.Lock()
+
+
+def _root_turn_id(task_id: str) -> str:
+    """Collapse bounded Hermes continuation task IDs to their user-turn ID."""
+    value = str(task_id or "")
+    for suffix in (
+        "-presentation-correction-final", "-presentation-correction", "-presentation",
+        "-synthesis", "-provenance", "-evidence",
+    ):
+        if value.endswith(suffix):
+            return value[: -len(suffix)]
+    return value
+
+
+def _bounded_args(args: Dict[str, Any], name: str) -> Dict[str, Any]:
+    """Return deterministic, non-secret arguments for execution correlation."""
+    canonical = dict(args or {})
+    if str(name).endswith("gmail_search"):
+        # Search bounds do not change the semantic mailbox query; the runtime
+        # may reuse a successful bounded result for an equivalent continuation.
+        return {"query": str(canonical.get("query", "")).strip().casefold()}
+    return canonical
+
+
+def _fingerprint(value: Any) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, default=str).encode()).hexdigest()[:16]
 
 
 def _file_hash(path: Path) -> str:
@@ -441,47 +470,70 @@ def _referent_snapshot(payload: Dict[str, Any]) -> list[Dict[str, Any]]:
 
 
 def _install_google_turn_dedupe() -> None:
-    """Memoize successful identical Google reads only within one Hermes task."""
+    """Memoize successful equivalent Google reads at registry dispatch."""
     try:
         from tools.registry import registry
     except Exception:
         return
-    for name, entry in list(getattr(registry, "_tools", {}).items()):
-        if "google_mcp" not in str(name):
-            continue
-        handler = getattr(entry, "handler", None)
-        if not callable(handler) or getattr(handler, "_nova_turn_dedupe", False):
-            continue
-        cache: Dict[tuple[str, str, str], str] = {}
+    if getattr(registry, "_nova_dispatch_dedupe", False):
+        return
+    original_dispatch = registry.dispatch
+    cache: Dict[tuple[str, str, str], str] = {}
 
-        def deduped(args: Dict[str, Any], _handler=handler, _cache=cache, _name=str(name), **kwargs: Any) -> str:
-            task_id = str(kwargs.get("task_id") or kwargs.get("effective_task_id") or _ACTIVE_HERMES_TURN.get() or "")
-            if not task_id:
-                return _handler(args, **kwargs)
-            canonical_args = dict(args or {})
-            if _name.endswith("gmail_search"):
-                # max_results changes the bound, not the mailbox query. A
-                # continuation asking for the same discovery set must reuse
-                # the successful set already fetched for this task.
-                canonical_args = {"query": str(canonical_args.get("query", "")).strip().casefold()}
-            key = (task_id, _name, json.dumps(canonical_args, sort_keys=True, default=str))
-            if key in _cache:
-                return _cache[key]
-            result = _handler(args, **kwargs)
-            try:
-                parsed = json.loads(result)
-            except (TypeError, json.JSONDecodeError):
-                parsed = None
-            if not isinstance(parsed, dict) or not parsed.get("error"):
-                _cache[key] = result
-                # Keep this process-local cache bounded even when a worker
-                # handles many turns before its MCP registry is reloaded.
-                if len(_cache) > 256:
-                    del _cache[next(iter(_cache))]
-            return result
+    def dispatch(name: str, args: dict, **kwargs: Any) -> str:
+        tool_name = str(name)
+        if "google_mcp" not in tool_name:
+            return original_dispatch(name, args, **kwargs)
+        task_id = _root_turn_id(str(kwargs.get("task_id") or kwargs.get("effective_task_id") or _ACTIVE_HERMES_TURN.get() or ""))
+        canonical = _bounded_args(args, tool_name)
+        event = {
+            "tool": tool_name,
+            "turn_id": task_id or None,
+            "normalized_args_fingerprint": _fingerprint(canonical),
+            "semantic_query_fingerprint": _fingerprint({"query": canonical.get("query")}) if tool_name.endswith("gmail_search") else None,
+            "call_sequence": 0,
+            "dedupe_decision": "NO_TURN_ID" if not task_id else "EXECUTE",
+            "actual_execution": False,
+        }
+        event_key = task_id or "uncorrelated"
+        with _GOOGLE_DEDUPE_LOCK:
+            events = _GOOGLE_DEDUPE_EVENTS.setdefault(event_key, [])
+            event["call_sequence"] = len(events) + 1
+            events.append(event)
+        if not task_id:
+            event["dedupe_decision"] = "NO_TURN_ID_EXECUTE"
+            event["actual_execution"] = True
+            return original_dispatch(name, args, **kwargs)
+        key = (task_id, tool_name, json.dumps(canonical, sort_keys=True, default=str))
+        if key in cache:
+            event["dedupe_decision"] = "REUSED_SUCCESS"
+            event["reused_call_sequence"] = next(
+                (row.get("call_sequence") for row in _GOOGLE_DEDUPE_EVENTS.get(task_id, [])
+                 if row.get("normalized_args_fingerprint") == event["normalized_args_fingerprint"]
+                 and row.get("dedupe_decision") in {"EXECUTE", "RETRY_AFTER_FAILURE"}), None)
+            return cache[key]
+        event["actual_execution"] = True
+        result = original_dispatch(name, args, **kwargs)
+        try:
+            parsed = json.loads(result)
+        except (TypeError, json.JSONDecodeError):
+            parsed = None
+        if not isinstance(parsed, dict) or not parsed.get("error"):
+            cache[key] = result
+            event["dedupe_decision"] = "EXECUTE"
+            if len(cache) > 256:
+                del cache[next(iter(cache))]
+        else:
+            event["dedupe_decision"] = "RETRY_AFTER_FAILURE"
+        return result
 
-        deduped._nova_turn_dedupe = True
-        entry.handler = deduped
+    registry.dispatch = dispatch
+    registry._nova_dispatch_dedupe = True
+
+
+def _google_dedupe_events(turn_id: str) -> list[dict[str, Any]]:
+    with _GOOGLE_DEDUPE_LOCK:
+        return [dict(row) for row in _GOOGLE_DEDUPE_EVENTS.get(_root_turn_id(turn_id), [])]
 
 
 def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
@@ -726,6 +778,8 @@ def run_shadow(
     active_session = session_id or "nova-shadow-" + uuid.uuid4().hex[:12]
     turn_id = "shadow-turn-" + uuid.uuid4().hex[:12]
     _ACTIVE_HERMES_TURN.set(turn_id)
+    with _GOOGLE_DEDUPE_LOCK:
+        _GOOGLE_DEDUPE_EVENTS.pop(turn_id, None)
     trace = NovaTrace(update_id=os.getenv("NOVA_SHADOW_UPDATE_ID", turn_id), session_id=active_session)
     trace.event("telegram.intake", {"runtime": "hermes", "agent": "nova", "turn_id": turn_id})
     chosen_model = model or os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini")
@@ -1204,6 +1258,7 @@ def run_shadow(
                 shadow_state["last_alpha_request_id"] = request_id
         # Keep the sidecar as an index, not a second evidence store.
         shadow_state["resource_results"] = records[-20:]
+        shadow_state["last_google_dedupe_events"] = _google_dedupe_events(turn_id)
         for message in reversed(messages):
             if message.get("role") == "assistant" and message.get("content"):
                 assistant_text = str(message["content"])[-3000:]
@@ -1231,6 +1286,7 @@ def run_shadow(
             "web_tool_count": sum(1 for row in tool_rows if "web_" in str(row.get("name"))),
             "alpha_tool_count": sum(1 for row in tool_rows if "alpha_" in str(row.get("name"))),
             "trace_id": trace.trace_id,
+            "google_dedupe_events": _google_dedupe_events(turn_id),
         })
         state_contract = evidence_state(prompt, tool_rows, prior_records)
         if not tool_rows and prior_records and turn_contract.get("reuse_only"):
@@ -1288,9 +1344,18 @@ def run_shadow(
             "retrieval_calls": timing.get("retrieval_calls", 0),
             "duplicate_search_calls": timing.get("duplicate_search_calls", 0),
             "duplicate_retrieval_calls": timing.get("duplicate_retrieval_calls", 0),
+            "google_dedupe_events": _google_dedupe_events(turn_id),
+            "google_external_execution_count": sum(
+                1 for row in _google_dedupe_events(turn_id) if row.get("actual_execution")
+            ),
+            "google_same_turn_reuse_count": sum(
+                1 for row in _google_dedupe_events(turn_id) if row.get("dedupe_decision") == "REUSED_SUCCESS"
+            ),
             "total_runner_ms": round((time.monotonic() - started_at) * 1000, 1),
             **phase_timings,
         }
+        shadow_state["last_latency_telemetry"] = result["latency_telemetry"]
+        _save_shadow_state(active_session, shadow_state)
         # Normal dict results must finalize the trace before returning.
         trace.finish({"runtime": "hermes", "model": chosen_model, "completed": bool(result.get("completed"))})
         return result
