@@ -105,3 +105,15 @@ def test_prior_receipts_are_exposed_as_reused_evidence():
     }]
     state = evidence_state("Why do you prefer that?", [], prior)
     assert state["reused_evidence"][0]["result_id"] == "result-1"
+
+
+def test_unrelated_turn_does_not_inherit_prior_nexus_referent():
+    prior = [{"resource": "NEXUS", "capability": "nexus_get_system_health"}]
+    assert turn_requirements("good morning", prior)["referent_capability"] == ""
+    assert turn_requirements("my favorite is hazelnut", prior)["referent_capability"] == ""
+
+
+def test_anaphoric_turn_preserves_prior_nexus_referent():
+    prior = [{"resource": "NEXUS", "capability": "nexus_get_opportunities"}]
+    contract = turn_requirements("Which of those are still active?", prior)
+    assert contract["referent_capability"] == "nexus_get_opportunities"

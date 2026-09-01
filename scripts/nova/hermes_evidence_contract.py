@@ -42,10 +42,17 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
         )
         for row in prior_records
     )
+    # A prior resource identifies a referent only when the new utterance is
+    # actually an anaphoric/continuation request.  Resource history must not
+    # become a persistent conversation domain for unrelated turns.
+    referent_followup = bool(re.search(
+        r"\b(?:that|those|it|they|them|these|still|remain(?:s)?|active|open|pending|resolved)\b",
+        text,
+    ))
     # Referent context identifies what “those” or “still active” means, but it
     # cannot establish present operational truth. Refresh the same volatile
     # Nexus resource whenever the follow-up asks about current state.
-    if prior_nexus and re.search(
+    if prior_nexus and referent_followup and re.search(
         r"\b(?:still|remain(?:s)?|active|open|pending|resolved|current|currently|right now|present)\b",
         text,
     ):
@@ -71,7 +78,7 @@ def turn_requirements(prompt: str, prior_records: Iterable[Dict[str, Any]] = ())
             (
                 str(row.get("capability"))
                 for row in reversed(list(prior_records))
-                if isinstance(row, dict)
+                if prior_nexus and referent_followup and isinstance(row, dict)
                 and (
                     row.get("resource") == "NEXUS"
                     or str(row.get("capability", "")).startswith("nexus_get_")

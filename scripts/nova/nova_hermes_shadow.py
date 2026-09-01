@@ -363,6 +363,38 @@ def _current_shadow_context(state: Dict[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def _conversation_history_for_model(state: Dict[str, Any]) -> list[Dict[str, str]]:
+    """Build continuity context without turning resource output into truth.
+
+    The session sidecar intentionally retains prior answers for conversational
+    continuity.  A prior answer is not, however, a current Nexus resource
+    result.  Keep the text available for explanation and referents while
+    making its provenance explicit to the native model.  Older sidecars do not
+    have provenance fields, so those entries are conservatively labeled as
+    unclassified prior context rather than being promoted to current state.
+    """
+    history: list[Dict[str, str]] = []
+    for turn in (state.get("recent_turns") or [])[-8:]:
+        if not isinstance(turn, dict):
+            continue
+        if turn.get("user"):
+            history.append({"role": "user", "content": str(turn["user"])[:2000]})
+        if turn.get("assistant"):
+            source_type = str(turn.get("source_type") or "UNCLASSIFIED_PRIOR_CONTEXT")
+            domains = ",".join(str(item) for item in (turn.get("resource_domains") or []) if item)
+            if source_type == "RESOURCE_BACKED":
+                label = (
+                    "[PRIOR RESOURCE-BACKED RESPONSE — continuity/history only; "
+                    "not current operational truth"
+                    + (f"; resource={domains}" if domains else "")
+                    + "]\n"
+                )
+            else:
+                label = "[PRIOR CONVERSATION RESPONSE — continuity context; not a current resource result]\n"
+            history.append({"role": "assistant", "content": label + str(turn["assistant"])[:5000]})
+    return history
+
+
 def _search_free_chain(query: str, limit: int = 6) -> Dict[str, Any]:
     """Use existing free/private adapters, deliberately excluding Brave."""
     if str(REPO_ROOT / "scripts") not in sys.path:
@@ -681,14 +713,7 @@ def run_shadow(
         "Tool calls may collect evidence, but they must not replace or change this objective. "
         "The final response must answer the original objective.\n"
     )
-    conversation_history = []
-    for turn in (shadow_state.get("recent_turns") or [])[-8:]:
-        if not isinstance(turn, dict):
-            continue
-        if turn.get("user"):
-            conversation_history.append({"role": "user", "content": str(turn["user"])[:2000]})
-        if turn.get("assistant"):
-            conversation_history.append({"role": "assistant", "content": str(turn["assistant"])[:5000]})
+    conversation_history = _conversation_history_for_model(shadow_state)
     native_conversation = not turn_contract["required_resources"]
     trace.event("nova.session_context", {
         "session_turn_count": len(shadow_state.get("recent_turns") or []),
@@ -1068,10 +1093,19 @@ def run_shadow(
                 if any(word in assistant_text.lower() for word in ("recommend", "i would choose", "best option")):
                     shadow_state["last_recommendation"] = assistant_text
                 break
-        turns = shadow_state.setdefault("recent_turns", [])
-        turns.append({"user": prompt[:1000], "assistant": shadow_state.get("last_response", "")})
-        shadow_state["recent_turns"] = turns[-8:]
         tool_rows = _tool_messages(messages)
+        turns = shadow_state.setdefault("recent_turns", [])
+        turns.append({
+            "user": prompt[:1000],
+            "assistant": shadow_state.get("last_response", ""),
+            "source_type": "RESOURCE_BACKED" if tools_seen else "NATIVE_CONVERSATION",
+            "resource_domains": sorted({
+                str(row.get("resource")) for row in tool_rows
+                if row.get("resource")
+            }),
+            "turn_id": turn_id,
+        })
+        shadow_state["recent_turns"] = turns[-8:]
         trace.event("nexus.mcp" if any("nexus_get_" in str(row.get("name")) for row in tool_rows) else "resource.selection", {
             "tool_names": [str(row.get("name") or row.get("tool_name")) for row in tool_rows],
             "actual_tool_count": len(tool_rows),
@@ -1081,9 +1115,10 @@ def run_shadow(
             "trace_id": trace.trace_id,
         })
         state_contract = evidence_state(prompt, tool_rows, prior_records)
-        if not tool_rows and prior_records and not turn_contract.get("required_resources"):
-            # A follow-up may reuse evidence, but only through its structured
-            # receipt linkage. Conversation text alone is not provenance.
+        if not tool_rows and prior_records and turn_contract.get("reuse_only"):
+            # A result follow-up may reuse evidence, but only through its
+            # structured receipt linkage. Ordinary conversation text alone is
+            # never promoted to current evidence.
             for row in prior_records[-8:]:
                 row["valid_for_current_turn"] = True
                 row["relevance"] = "prior_turn_followup"
