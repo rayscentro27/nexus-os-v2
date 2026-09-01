@@ -458,7 +458,13 @@ def _install_google_turn_dedupe() -> None:
             task_id = str(kwargs.get("task_id") or kwargs.get("effective_task_id") or _ACTIVE_HERMES_TURN.get() or "")
             if not task_id:
                 return _handler(args, **kwargs)
-            key = (task_id, _name, json.dumps(args or {}, sort_keys=True, default=str))
+            canonical_args = dict(args or {})
+            if _name.endswith("gmail_search"):
+                # max_results changes the bound, not the mailbox query. A
+                # continuation asking for the same discovery set must reuse
+                # the successful set already fetched for this task.
+                canonical_args = {"query": str(canonical_args.get("query", "")).strip().casefold()}
+            key = (task_id, _name, json.dumps(canonical_args, sort_keys=True, default=str))
             if key in _cache:
                 return _cache[key]
             result = _handler(args, **kwargs)
