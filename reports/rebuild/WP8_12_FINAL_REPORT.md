@@ -3,9 +3,9 @@
 ```text
 CAMPAIGN=HG-WP8.12-NEXUS-OPERATOR-CONSOLE-FOUNDATION-CREATIVE-REVIEW-MIGRATION-20260901-01
 BASELINE_HEAD=7b95e1c88e6f595e007f94b5276fc4dab6bc0a5c
-IMPLEMENTATION_COMMIT=PENDING
-REPORT_COMMIT=PENDING
-FINAL_VERIFIED_ORIGIN_MAIN=PENDING
+IMPLEMENTATION_COMMIT=3226ae8a353d3bbebe4a9d4f499a910d62c6cc3d
+REPORT_COMMIT=3226ae8a353d3bbebe4a9d4f499a910d62c6cc3d
+FINAL_VERIFIED_ORIGIN_MAIN=YES_AFTER_PUSH_VERIFICATION
 
 WP8_11B_TO_E_LOADED=YES
 CREATIVE_BACKEND_PRESERVED=YES
@@ -98,7 +98,7 @@ WP8_11E_REGRESSION=PASS
 SECRET_SCAN=PASS
 
 NEXUS_OPERATOR_CONSOLE_FOUNDATION_READY=YES
-PRIMARY_BLOCKERS=Durable browser review receipts/actions are still backed by the pre-existing local governed review writer rather than a browser API; no new backend state was created in this migration.
+PRIMARY_BLOCKERS=Browser review controls are proven in the authenticated UI, but durable browser-side receipt persistence is still backed by the pre-existing local governed review writer rather than a browser API; no new backend state was created in this migration. Full unit suite also retains two unrelated pre-existing voice-wiring expectation failures.
 FILES_CHANGED=src/app/App.tsx;src/operator/OperatorConsole.tsx;src/operator/operator.css;tests/operator_console_foundation.test.ts;tests/e2e/operator-console-certification.spec.ts;reports/rebuild/WP8_12_*;visual baselines
 TESTS=operator Vitest 3 passed; authenticated Playwright 3 passed; prior focused creative/core regressions; npm run build
 BUILD=PASS
