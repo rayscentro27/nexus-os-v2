@@ -1,0 +1,77 @@
+{
+  "finance_department": "NEXUS_FINANCE",
+  "campaign": {
+    "campaign_id": "opp_bffe3378956f40bb9317970938eb3f21:individual_vehicle_convenience",
+    "price": "UNKNOWN",
+    "variable_cost": "UNKNOWN",
+    "upfront_cost": 0,
+    "continuous_cost": 0,
+    "max_validation_cost_usd": 0,
+    "conversion": "UNKNOWN",
+    "cac": "UNKNOWN",
+    "scenarios": {
+      "DOWNSIDE": {
+        "customers": 0,
+        "revenue": "UNKNOWN",
+        "contribution": "UNKNOWN",
+        "break_even": {
+          "break_even_quantity": "UNKNOWN"
+        }
+      },
+      "BASE": {
+        "customers": 0,
+        "revenue": "UNKNOWN",
+        "contribution": "UNKNOWN",
+        "break_even": {
+          "break_even_quantity": "UNKNOWN"
+        }
+      },
+      "UPSIDE": {
+        "customers": 0,
+        "revenue": "UNKNOWN",
+        "contribution": "UNKNOWN",
+        "break_even": {
+          "break_even_quantity": "UNKNOWN"
+        }
+      }
+    },
+    "state": "ESTIMATED",
+    "recommendation": "VALIDATE_WITH_NO_SPEND_FIRST",
+    "provenance": "ESTIMATED_WITH_UNKNOWN_CAC_CONVERSION_RETENTION",
+    "created_at": "2026-09-02T01:16:19.146655+00:00"
+  },
+  "trading": {
+    "strategy_id": "nexus_sma_cross_v1",
+    "research_cost": 0,
+    "data_cost": 0,
+    "compute_cost": 0,
+    "friction_per_trade": 0.00015000000000000001,
+    "gross_expectancy": "UNKNOWN",
+    "net_expectancy": "UNKNOWN",
+    "trade_count": 0,
+    "capital": "UNKNOWN",
+    "win_rate_not_used_as_decision": "PASS",
+    "economic_state": "INSUFFICIENT_DATA",
+    "provenance": "PAPER_OR_ESTIMATED",
+    "created_at": "2026-09-02T01:16:19.147846+00:00"
+  },
+  "daily_ledger": {
+    "cash_spent": 0.0,
+    "free_credit_consumed": 0.0,
+    "quota_consumed": 0.0,
+    "compute_consumed": 0.0,
+    "storage_added": 0.0,
+    "replacement_cost_estimate": 0,
+    "revenue_received": 0,
+    "net_contribution": 0.0,
+    "provenance": "ACTUAL_RECEIPTS_ONLY",
+    "generated_at": "2026-09-02T01:16:19.148647+00:00"
+  },
+  "authority": {
+    "purchase": false,
+    "payment": false,
+    "bank_transfer": false,
+    "ad_spend": false,
+    "live_trading_capital": false
+  }
+}
