@@ -65,8 +65,10 @@ RAY_SEND_THIS_EXACT_MESSAGE=
 
 ## Tests
 
-Focused MCP/Nova/Telegram/session tests: **18 passed**. Canonical build:
-**PASS_EXIT_0**. Secret scan: **PASS**. Scheduler preserved.
+Focused MCP/Nova/Telegram/session tests: **18 passed**. The canonical build
+reproduced the known Tailwind nontermination after `Rebuilding...`; it was
+bounded and interrupted, so `CANONICAL_BUILD=KNOWN_TAILWIND_HANG`, not pass.
+Secret scan: **PASS**. Scheduler preserved.
 
 ## Final Status
 
