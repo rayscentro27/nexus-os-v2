@@ -34,6 +34,23 @@ def test_timeout_or_transport_failure_fails_closed():
     assert "FAIL_CLOSED" in response.warnings
 
 
+def test_transient_read_timeout_retries_once_and_records_attempts():
+    calls = {"count": 0}
+
+    def transport(*args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise TimeoutError("transient")
+        return {"model": "synthetic", "choices": [{"message": {"content": "ok"}}]}
+
+    response = OracleHermesBridge("http://127.0.0.1:18642", api_key="test",
+                                 transport=transport).ask(request())
+    assert response.status == "SUCCEEDED"
+    assert calls["count"] == 2
+    assert response.model_provider_metadata["bridge_attempts"] == 2
+    assert "RETRIED_TRANSIENT_PROVIDER_READ" in response.warnings
+
+
 def test_malformed_response_fails_closed():
     bridge = OracleHermesBridge("http://127.0.0.1:18642", api_key="test",
                                 transport=lambda *args, **kwargs: {"choices": []})

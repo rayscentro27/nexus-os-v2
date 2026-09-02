@@ -146,6 +146,7 @@ class OracleHermesBridge:
 
     def ask(self, request: BridgeRequest) -> BridgeResponse:
         started = _now()
+        attempts = 0
         try:
             request.validate()
             payload = {
@@ -163,15 +164,36 @@ class OracleHermesBridge:
                 "max_tokens": request.max_tokens,
                 "temperature": 0,
             }
-            raw = self._transport("POST", "/v1/chat/completions", payload,
-                                  self._headers(request.request_id), request.timeout_seconds)
+            raw = None
+            last_error = None
+            # The Oracle lane is advisory/read-only. One bounded retry is safe
+            # for transient provider reads and prevents a single upstream idle
+            # timeout from becoming an unexplained user-visible failure. Never
+            # retry validation/authentication failures or loop indefinitely.
+            for attempts in range(1, 3):
+                try:
+                    raw = self._transport("POST", "/v1/chat/completions", payload,
+                                          self._headers(request.request_id), request.timeout_seconds)
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    if type(exc).__name__ not in {"ReadTimeout", "ConnectTimeout", "TimeoutError", "ReadError"} or attempts == 2:
+                        raise
+            if raw is None:
+                raise last_error or BridgeError("Hermes returned no response")
             result = _extract_result(raw)
+            metadata = _metadata(raw)
+            metadata["bridge_attempts"] = attempts
+            warnings = ["ADVISORY_ONLY"]
+            if attempts > 1:
+                warnings.append("RETRIED_TRANSIENT_PROVIDER_READ")
             return BridgeResponse(request_id=request.request_id, status="SUCCEEDED",
-                                  result=result, model_provider_metadata=_metadata(raw),
-                                  warnings=["ADVISORY_ONLY"], started_at=started,
+                                  result=result, model_provider_metadata=metadata,
+                                  warnings=warnings, started_at=started,
                                   completed_at=_now())
         except Exception as exc:  # bridge must never invent success
             return BridgeResponse(request_id=request.request_id, status="UNAVAILABLE",
+                                  model_provider_metadata={"bridge_attempts": attempts},
                                   error=type(exc).__name__, warnings=["FAIL_CLOSED"],
                                   started_at=started, completed_at=_now())
 
