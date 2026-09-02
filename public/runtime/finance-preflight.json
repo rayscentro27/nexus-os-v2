@@ -38,7 +38,7 @@
     "state": "ESTIMATED",
     "recommendation": "VALIDATE_WITH_NO_SPEND_FIRST",
     "provenance": "ESTIMATED_WITH_UNKNOWN_CAC_CONVERSION_RETENTION",
-    "created_at": "2026-09-02T01:16:19.146655+00:00"
+    "created_at": "2026-09-02T01:27:52.789886+00:00"
   },
   "trading": {
     "strategy_id": "nexus_sma_cross_v1",
@@ -53,7 +53,7 @@
     "win_rate_not_used_as_decision": "PASS",
     "economic_state": "INSUFFICIENT_DATA",
     "provenance": "PAPER_OR_ESTIMATED",
-    "created_at": "2026-09-02T01:16:19.147846+00:00"
+    "created_at": "2026-09-02T01:27:52.830260+00:00"
   },
   "daily_ledger": {
     "cash_spent": 0.0,
@@ -65,8 +65,524 @@
     "revenue_received": 0,
     "net_contribution": 0.0,
     "provenance": "ACTUAL_RECEIPTS_ONLY",
-    "generated_at": "2026-09-02T01:16:19.148647+00:00"
+    "generated_at": "2026-09-02T01:27:53.039624+00:00"
   },
+  "dry_run": {
+    "type": "FINANCE_DRY_RUN",
+    "jobs": [
+      {
+        "work_order_id": "alpha-dry-run",
+        "department": "ALPHA",
+        "preflight": {
+          "type": "FINANCE_PREFLIGHT",
+          "work_order_id": "alpha-dry-run",
+          "department": "ALPHA",
+          "initiative_id": "wp8_14b_dry_run",
+          "campaign_id": null,
+          "strategy_id": null,
+          "envelope": {
+            "MAX_CASH_COST_USD": 0
+          },
+          "estimated": {
+            "cash_cost_usd": 0
+          },
+          "authority": "INTERNAL_ONLY",
+          "resource_state": "UNKNOWN",
+          "decision": "ALLOW",
+          "created_at": "2026-09-02T01:27:52.830309+00:00"
+        },
+        "postrun": {
+          "receipt": {
+            "attempt": 1,
+            "compute_consumed": 0.0,
+            "confidence": "HIGH",
+            "created_at": "2026-09-02T01:26:31.199798+00:00",
+            "department": "ALPHA",
+            "estimated_replacement_cost_usd": "UNKNOWN",
+            "free_credit_consumed": 0.0,
+            "gpu_minutes": 0,
+            "initiative_id": "wp8_14b_dry_run",
+            "model_tokens": 0,
+            "money_spent_usd": 0.0,
+            "provenance": "ACTUAL",
+            "quota_consumed": 0.0,
+            "receipt_id": "finance-postrun:alpha-dry-run:1",
+            "retry_of": null,
+            "status": "COMPLETED",
+            "storage_consumed": 0.0,
+            "work_order_id": "alpha-dry-run",
+            "idempotent": true
+          },
+          "status": "COMPLETED",
+          "attempt": 1,
+          "variance": {
+            "cash_cost_usd": {
+              "estimated": 0,
+              "actual": 0,
+              "difference": 0
+            }
+          },
+          "failed_work_still_accounted": false
+        }
+      },
+      {
+        "work_order_id": "creative-dry-run",
+        "department": "CREATIVE",
+        "preflight": {
+          "type": "FINANCE_PREFLIGHT",
+          "work_order_id": "creative-dry-run",
+          "department": "CREATIVE",
+          "initiative_id": "wp8_14b_dry_run",
+          "campaign_id": null,
+          "strategy_id": null,
+          "envelope": {
+            "MAX_CASH_COST_USD": 0
+          },
+          "estimated": {
+            "cash_cost_usd": 0
+          },
+          "authority": "INTERNAL_ONLY",
+          "resource_state": "UNKNOWN",
+          "decision": "ALLOW",
+          "created_at": "2026-09-02T01:27:52.857487+00:00"
+        },
+        "postrun": {
+          "receipt": {
+            "attempt": 1,
+            "compute_consumed": 0.0,
+            "confidence": "HIGH",
+            "created_at": "2026-09-02T01:26:31.226369+00:00",
+            "department": "CREATIVE",
+            "estimated_replacement_cost_usd": "UNKNOWN",
+            "free_credit_consumed": 0.0,
+            "gpu_minutes": 0,
+            "initiative_id": "wp8_14b_dry_run",
+            "model_tokens": 0,
+            "money_spent_usd": 0.0,
+            "provenance": "ACTUAL",
+            "quota_consumed": 0.0,
+            "receipt_id": "finance-postrun:creative-dry-run:1",
+            "retry_of": null,
+            "status": "COMPLETED",
+            "storage_consumed": 0.0,
+            "work_order_id": "creative-dry-run",
+            "idempotent": true
+          },
+          "status": "COMPLETED",
+          "attempt": 1,
+          "variance": {
+            "cash_cost_usd": {
+              "estimated": 0,
+              "actual": 0,
+              "difference": 0
+            }
+          },
+          "failed_work_still_accounted": false
+        }
+      },
+      {
+        "work_order_id": "growth-dry-run",
+        "department": "GROWTH",
+        "preflight": {
+          "type": "FINANCE_PREFLIGHT",
+          "work_order_id": "growth-dry-run",
+          "department": "GROWTH",
+          "initiative_id": "wp8_14b_dry_run",
+          "campaign_id": null,
+          "strategy_id": null,
+          "envelope": {
+            "MAX_CASH_COST_USD": 0
+          },
+          "estimated": {
+            "cash_cost_usd": 0
+          },
+          "authority": "INTERNAL_ONLY",
+          "resource_state": "UNKNOWN",
+          "decision": "ALLOW",
+          "created_at": "2026-09-02T01:27:52.862488+00:00"
+        },
+        "postrun": {
+          "receipt": {
+            "attempt": 1,
+            "compute_consumed": 0.0,
+            "confidence": "HIGH",
+            "created_at": "2026-09-02T01:26:31.263057+00:00",
+            "department": "GROWTH",
+            "estimated_replacement_cost_usd": "UNKNOWN",
+            "free_credit_consumed": 0.0,
+            "gpu_minutes": 0,
+            "initiative_id": "wp8_14b_dry_run",
+            "model_tokens": 0,
+            "money_spent_usd": 0.0,
+            "provenance": "ACTUAL",
+            "quota_consumed": 0.0,
+            "receipt_id": "finance-postrun:growth-dry-run:1",
+            "retry_of": null,
+            "status": "COMPLETED",
+            "storage_consumed": 0.0,
+            "work_order_id": "growth-dry-run",
+            "idempotent": true
+          },
+          "status": "COMPLETED",
+          "attempt": 1,
+          "variance": {
+            "cash_cost_usd": {
+              "estimated": 0,
+              "actual": 0,
+              "difference": 0
+            }
+          },
+          "failed_work_still_accounted": false
+        }
+      },
+      {
+        "work_order_id": "trading-dry-run",
+        "department": "TRADING",
+        "preflight": {
+          "type": "FINANCE_PREFLIGHT",
+          "work_order_id": "trading-dry-run",
+          "department": "TRADING",
+          "initiative_id": "wp8_14b_dry_run",
+          "campaign_id": null,
+          "strategy_id": null,
+          "envelope": {
+            "MAX_CASH_COST_USD": 0
+          },
+          "estimated": {
+            "cash_cost_usd": 0
+          },
+          "authority": "INTERNAL_ONLY",
+          "resource_state": "UNKNOWN",
+          "decision": "ALLOW",
+          "created_at": "2026-09-02T01:27:52.887394+00:00"
+        },
+        "postrun": {
+          "receipt": {
+            "attempt": 1,
+            "compute_consumed": 0.0,
+            "confidence": "HIGH",
+            "created_at": "2026-09-02T01:26:31.287520+00:00",
+            "department": "TRADING",
+            "estimated_replacement_cost_usd": "UNKNOWN",
+            "free_credit_consumed": 0.0,
+            "gpu_minutes": 0,
+            "initiative_id": "wp8_14b_dry_run",
+            "model_tokens": 0,
+            "money_spent_usd": 0.0,
+            "provenance": "ACTUAL",
+            "quota_consumed": 0.0,
+            "receipt_id": "finance-postrun:trading-dry-run:1",
+            "retry_of": null,
+            "status": "COMPLETED",
+            "storage_consumed": 0.0,
+            "work_order_id": "trading-dry-run",
+            "idempotent": true
+          },
+          "status": "COMPLETED",
+          "attempt": 1,
+          "variance": {
+            "cash_cost_usd": {
+              "estimated": 0,
+              "actual": 0,
+              "difference": 0
+            }
+          },
+          "failed_work_still_accounted": false
+        }
+      },
+      {
+        "work_order_id": "finance-dry-run",
+        "department": "FINANCE",
+        "preflight": {
+          "type": "FINANCE_PREFLIGHT",
+          "work_order_id": "finance-dry-run",
+          "department": "FINANCE",
+          "initiative_id": "wp8_14b_dry_run",
+          "campaign_id": null,
+          "strategy_id": null,
+          "envelope": {
+            "MAX_CASH_COST_USD": 0
+          },
+          "estimated": {
+            "cash_cost_usd": 0
+          },
+          "authority": "INTERNAL_ONLY",
+          "resource_state": "UNKNOWN",
+          "decision": "ALLOW",
+          "created_at": "2026-09-02T01:27:52.894543+00:00"
+        },
+        "postrun": {
+          "receipt": {
+            "attempt": 1,
+            "compute_consumed": 0.0,
+            "confidence": "HIGH",
+            "created_at": "2026-09-02T01:26:31.345628+00:00",
+            "department": "FINANCE",
+            "estimated_replacement_cost_usd": "UNKNOWN",
+            "free_credit_consumed": 0.0,
+            "gpu_minutes": 0,
+            "initiative_id": "wp8_14b_dry_run",
+            "model_tokens": 0,
+            "money_spent_usd": 0.0,
+            "provenance": "ACTUAL",
+            "quota_consumed": 0.0,
+            "receipt_id": "finance-postrun:finance-dry-run:1",
+            "retry_of": null,
+            "status": "COMPLETED",
+            "storage_consumed": 0.0,
+            "work_order_id": "finance-dry-run",
+            "idempotent": true
+          },
+          "status": "COMPLETED",
+          "attempt": 1,
+          "variance": {
+            "cash_cost_usd": {
+              "estimated": 0,
+              "actual": 0,
+              "difference": 0
+            }
+          },
+          "failed_work_still_accounted": false
+        }
+      }
+    ],
+    "daily_ledger": {
+      "cash_spent": 0.0,
+      "free_credit_consumed": 0.0,
+      "quota_consumed": 0.0,
+      "compute_consumed": 0.0,
+      "storage_added": 0.0,
+      "replacement_cost_estimate": 0,
+      "revenue_received": 0,
+      "net_contribution": 0.0,
+      "provenance": "ACTUAL_RECEIPTS_ONLY",
+      "generated_at": "2026-09-02T01:27:52.956533+00:00"
+    },
+    "company_rollup": {
+      "department": null,
+      "initiative_id": "wp8_14b_dry_run",
+      "work_orders": [
+        "alpha-dry-run",
+        "creative-dry-run",
+        "finance-dry-run",
+        "growth-dry-run",
+        "trading-dry-run"
+      ],
+      "cash_cost_usd": 0.0,
+      "free_credit_consumed": 0.0,
+      "quota_consumed": 0.0,
+      "compute_consumed": 0.0,
+      "storage_consumed": 0.0,
+      "estimated_replacement_cost_usd": 0,
+      "provenance": "ACTUAL_RECEIPTS_ONLY"
+    },
+    "authority": "INTERNAL_ONLY",
+    "publication": false,
+    "created_at": "2026-09-02T01:27:52.956953+00:00"
+  },
+  "lifecycle": {
+    "preflight": {
+      "type": "FINANCE_PREFLIGHT",
+      "work_order_id": "wo_wp8_14b_finance_proof",
+      "department": "FINANCE",
+      "initiative_id": "wp8_14b",
+      "campaign_id": null,
+      "strategy_id": null,
+      "envelope": {
+        "MAX_CASH_COST_USD": 0
+      },
+      "estimated": {
+        "cash_cost_usd": 0
+      },
+      "authority": "INTERNAL_ONLY",
+      "resource_state": "UNKNOWN",
+      "decision": "ALLOW",
+      "created_at": "2026-09-02T01:27:53.037628+00:00"
+    },
+    "postrun": {
+      "receipt": {
+        "attempt": 1,
+        "compute_consumed": 0.0,
+        "confidence": "HIGH",
+        "created_at": "2026-09-02T01:26:31.486359+00:00",
+        "department": "FINANCE",
+        "estimated_replacement_cost_usd": "UNKNOWN",
+        "free_credit_consumed": 0.0,
+        "gpu_minutes": 0,
+        "initiative_id": "wp8_14b",
+        "model_tokens": 0,
+        "money_spent_usd": 0.0,
+        "provenance": "ACTUAL",
+        "quota_consumed": 0.0,
+        "receipt_id": "finance-postrun:wo_wp8_14b_finance_proof:1",
+        "retry_of": null,
+        "status": "COMPLETED",
+        "storage_consumed": 0.0,
+        "work_order_id": "wo_wp8_14b_finance_proof",
+        "idempotent": true
+      },
+      "status": "COMPLETED",
+      "attempt": 1,
+      "variance": {
+        "cash_cost_usd": {
+          "estimated": 0,
+          "actual": 0,
+          "difference": 0
+        }
+      },
+      "failed_work_still_accounted": false
+    }
+  },
+  "rollups": {
+    "departments": [
+      {
+        "department": "CREATIVE",
+        "initiative_id": null,
+        "work_orders": [
+          "creative-dry-run"
+        ],
+        "cash_cost_usd": 0.0,
+        "free_credit_consumed": 0.0,
+        "quota_consumed": 0.0,
+        "compute_consumed": 0.0,
+        "storage_consumed": 0.0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      },
+      {
+        "department": "ALPHA",
+        "initiative_id": null,
+        "work_orders": [
+          "alpha-dry-run"
+        ],
+        "cash_cost_usd": 0.0,
+        "free_credit_consumed": 0.0,
+        "quota_consumed": 0.0,
+        "compute_consumed": 0.0,
+        "storage_consumed": 0.0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      },
+      {
+        "department": "GROWTH",
+        "initiative_id": null,
+        "work_orders": [
+          "growth-dry-run"
+        ],
+        "cash_cost_usd": 0.0,
+        "free_credit_consumed": 0.0,
+        "quota_consumed": 0.0,
+        "compute_consumed": 0.0,
+        "storage_consumed": 0.0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      },
+      {
+        "department": "TRADING",
+        "initiative_id": null,
+        "work_orders": [
+          "trading-dry-run"
+        ],
+        "cash_cost_usd": 0.0,
+        "free_credit_consumed": 0.0,
+        "quota_consumed": 0.0,
+        "compute_consumed": 0.0,
+        "storage_consumed": 0.0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      },
+      {
+        "department": "ENGINEERING",
+        "initiative_id": null,
+        "work_orders": [],
+        "cash_cost_usd": 0,
+        "free_credit_consumed": 0,
+        "quota_consumed": 0,
+        "compute_consumed": 0,
+        "storage_consumed": 0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      },
+      {
+        "department": "OPERATIONS",
+        "initiative_id": null,
+        "work_orders": [],
+        "cash_cost_usd": 0,
+        "free_credit_consumed": 0,
+        "quota_consumed": 0,
+        "compute_consumed": 0,
+        "storage_consumed": 0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      },
+      {
+        "department": "FINANCE",
+        "initiative_id": null,
+        "work_orders": [
+          "finance-dry-run",
+          "wo_wp8_14b_finance_proof"
+        ],
+        "cash_cost_usd": 0.0,
+        "free_credit_consumed": 0.0,
+        "quota_consumed": 0.0,
+        "compute_consumed": 0.0,
+        "storage_consumed": 0.0,
+        "estimated_replacement_cost_usd": 0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY"
+      }
+    ],
+    "company": {
+      "department": null,
+      "initiative_id": null,
+      "work_orders": [
+        "alpha-dry-run",
+        "creative-dry-run",
+        "finance-dry-run",
+        "growth-dry-run",
+        "trading-dry-run",
+        "wo_wp8_14b_finance_proof"
+      ],
+      "cash_cost_usd": 0.0,
+      "free_credit_consumed": 0.0,
+      "quota_consumed": 0.0,
+      "compute_consumed": 0.0,
+      "storage_consumed": 0.0,
+      "estimated_replacement_cost_usd": 0,
+      "provenance": "ACTUAL_RECEIPTS_ONLY"
+    }
+  },
+  "resource_inventory": [
+    {
+      "provider": "openai_codex_oauth",
+      "resource": "Hermes Creative model",
+      "state": "MEASURED_USAGE_UNKNOWN_BALANCE",
+      "scarcity": "LIMITED_CREDIT"
+    },
+    {
+      "provider": "oracle",
+      "resource": "Ollama",
+      "state": "UNKNOWN",
+      "scarcity": "FIXED_INFRASTRUCTURE"
+    },
+    {
+      "provider": "supabase",
+      "resource": "Storage",
+      "state": "CONFIGURED_COST_UNKNOWN",
+      "scarcity": "PAID_METERED"
+    },
+    {
+      "provider": "netlify",
+      "resource": "Hosting",
+      "state": "CONFIGURED_COST_UNKNOWN",
+      "scarcity": "PAID_METERED"
+    },
+    {
+      "provider": "local",
+      "resource": "Mac control plane",
+      "state": "AVAILABLE",
+      "scarcity": "FIXED_INFRASTRUCTURE"
+    }
+  ],
   "authority": {
     "purchase": false,
     "payment": false,

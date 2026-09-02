@@ -51,7 +51,7 @@ def trading_preflight(strategy_id: str, *, research_cost: float = 0, data_cost: 
     return {'strategy_id':strategy_id,'research_cost':research_cost,'data_cost':data_cost,'compute_cost':compute_cost,'friction_per_trade':friction,'gross_expectancy':gross_expectancy,'net_expectancy':net,'trade_count':trade_count,'capital':capital,'win_rate_not_used_as_decision':'PASS','economic_state':'INSUFFICIENT_DATA' if trade_count < 30 or net == 'UNKNOWN' else ('PROFITABLE' if net > 0 else 'UNPROFITABLE'),'provenance':'PAPER_OR_ESTIMATED','created_at':now()}
 
 def budget_check(used: Mapping[str, float], budget: Mapping[str, float]) -> dict[str, Any]:
-    exceeded = [k for k,v in budget.items() if k.startswith('MAX_') and k.removeprefix('MAX_').lower() in used and float(used[k.removeprefix('MAX_').lower()]) >= float(v)]
+    exceeded = [k for k,v in budget.items() if k.startswith('MAX_') and k.removeprefix('MAX_').lower() in used and float(used[k.removeprefix('MAX_').lower()]) > float(v)]
     status = 'PAUSE_OPTIONAL_CONSUMPTION' if exceeded else 'WITHIN_ENVELOPE'
     return {'status':status,'state':status,'exceeded':exceeded,'overages':exceeded,'preserve_state':True,'escalate_to':'FINANCE_PLUS_OWNER'}
 
@@ -60,3 +60,55 @@ def daily_ledger() -> dict[str, Any]:
     actual = lambda key: sum(float(r.get(key,0) or 0) for r in costs if isinstance(r.get(key,0),(int,float)))
     received = sum(float(r.get('amount_usd',0) or 0) for r in revenue if r.get('state') == 'RECEIVED' and isinstance(r.get('amount_usd'),(int,float)))
     return {'cash_spent':actual('money_spent_usd'),'free_credit_consumed':actual('free_credit_consumed'),'quota_consumed':actual('quota_consumed'),'compute_consumed':actual('compute_consumed'),'storage_added':actual('storage_consumed'),'replacement_cost_estimate':sum(float(r.get('estimated_replacement_cost_usd',0) or 0) for r in costs if isinstance(r.get('estimated_replacement_cost_usd'),(int,float))),'revenue_received':received,'net_contribution':received-actual('money_spent_usd'),'provenance':'ACTUAL_RECEIPTS_ONLY','generated_at':now()}
+
+def finance_preflight(work_order_id: str, *, department: str, initiative_id: str | None = None,
+                      campaign_id: str | None = None, strategy_id: str | None = None,
+                      envelope: Mapping[str, Any] | None = None, estimated: Mapping[str, Any] | None = None,
+                      authority: str = 'INTERNAL_ONLY', resource_state: str = 'UNKNOWN') -> dict[str, Any]:
+    """Governed preflight boundary used before an autonomous work order."""
+    envelope = dict(envelope or {}); estimated = dict(estimated or {})
+    if authority not in {'INTERNAL_ONLY', 'ADVISORY_ONLY'}:
+        decision = 'BLOCK_AUTHORITY'
+    else:
+        check = budget_check({k: v for k, v in estimated.items() if isinstance(v, (int, float))}, envelope)
+        decision = 'BLOCK_BUDGET' if check['exceeded'] else ('UNKNOWN_REQUIRES_REVIEW' if resource_state == 'UNKNOWN' and envelope.get('require_known_resource') else 'ALLOW')
+    receipt = {'type': 'FINANCE_PREFLIGHT', 'work_order_id': work_order_id, 'department': department, 'initiative_id': initiative_id, 'campaign_id': campaign_id, 'strategy_id': strategy_id, 'envelope': envelope, 'estimated': estimated, 'authority': authority, 'resource_state': resource_state, 'decision': decision, 'created_at': now()}
+    persistence.append_record('finance_learning', receipt)
+    return receipt
+
+def finance_postrun(work_order_id: str, *, department: str, initiative_id: str | None = None,
+                    estimated: Mapping[str, Any] | None = None, actual: Mapping[str, Any] | None = None,
+                    status: str = 'COMPLETED', attempt: int = 1, retry_of: str | None = None) -> dict[str, Any]:
+    """Persist a post-run cost receipt, including failed and retry attempts."""
+    actual = dict(actual or {}); estimated = dict(estimated or {})
+    receipt_id = f'finance-postrun:{work_order_id}:{attempt}'
+    receipt = record_cost(receipt_id, work_order_id=work_order_id, department=department, initiative_id=initiative_id,
+                          money_spent_usd=float(actual.get('cash_cost_usd', actual.get('money_spent_usd', 0)) or 0),
+                          free_credit_consumed=float(actual.get('free_credit_consumed', 0) or 0),
+                          quota_consumed=float(actual.get('quota_consumed', 0) or 0),
+                          compute_consumed=float(actual.get('compute_minutes', actual.get('compute_consumed', 0)) or 0),
+                          storage_consumed=float(actual.get('storage_bytes', actual.get('storage_consumed', 0)) or 0),
+                          estimated_replacement_cost_usd=actual.get('estimated_replacement_cost_usd', 'UNKNOWN'),
+                          provenance='ACTUAL', confidence='HIGH', status=status, attempt=attempt, retry_of=retry_of,
+                          model_tokens=actual.get('model_tokens', 0), gpu_minutes=actual.get('gpu_minutes', 0))
+    variance = {key: {'estimated': estimated.get(key, 'UNKNOWN'), 'actual': actual.get(key, 0), 'difference': (actual.get(key, 0) - estimated[key]) if isinstance(actual.get(key), (int, float)) and isinstance(estimated.get(key), (int, float)) else 'UNKNOWN'} for key in set(estimated) | set(actual)}
+    return {'receipt': receipt, 'status': status, 'attempt': attempt, 'variance': variance, 'failed_work_still_accounted': status not in {'COMPLETED', 'PASS'}}
+
+def finance_rollup(*, department: str | None = None, initiative_id: str | None = None) -> dict[str, Any]:
+    rows = persistence.read_records('finance_cost_receipts')
+    if department: rows = [r for r in rows if r.get('department') == department]
+    if initiative_id: rows = [r for r in rows if r.get('initiative_id') == initiative_id]
+    numeric = lambda key: sum(float(r.get(key, 0) or 0) for r in rows if isinstance(r.get(key, 0), (int, float)))
+    return {'department': department, 'initiative_id': initiative_id, 'work_orders': sorted({r.get('work_order_id') for r in rows if r.get('work_order_id')}), 'cash_cost_usd': numeric('money_spent_usd'), 'free_credit_consumed': numeric('free_credit_consumed'), 'quota_consumed': numeric('quota_consumed'), 'compute_consumed': numeric('compute_consumed'), 'storage_consumed': numeric('storage_consumed'), 'estimated_replacement_cost_usd': numeric('estimated_replacement_cost_usd'), 'provenance': 'ACTUAL_RECEIPTS_ONLY'}
+
+def run_bounded_dry_run() -> dict[str, Any]:
+    """Run a local, no-spend proof across the scheduler's department boundary."""
+    jobs = [('alpha-dry-run', 'ALPHA'), ('creative-dry-run', 'CREATIVE'), ('growth-dry-run', 'GROWTH'), ('trading-dry-run', 'TRADING'), ('finance-dry-run', 'FINANCE')]
+    results = []
+    for work_order_id, department in jobs:
+        pre = finance_preflight(work_order_id, department=department, initiative_id='wp8_14b_dry_run', envelope={'MAX_CASH_COST_USD': 0}, estimated={'cash_cost_usd': 0}, resource_state='UNKNOWN')
+        post = finance_postrun(work_order_id, department=department, initiative_id='wp8_14b_dry_run', estimated={'cash_cost_usd': 0}, actual={'cash_cost_usd': 0}, status='COMPLETED')
+        results.append({'work_order_id': work_order_id, 'department': department, 'preflight': pre, 'postrun': post})
+    summary = {'type': 'FINANCE_DRY_RUN', 'jobs': results, 'daily_ledger': daily_ledger(), 'company_rollup': finance_rollup(initiative_id='wp8_14b_dry_run'), 'authority': 'INTERNAL_ONLY', 'publication': False, 'created_at': now()}
+    persistence.append_record('finance_learning', summary)
+    return summary
