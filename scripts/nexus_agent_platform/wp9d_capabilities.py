@@ -116,6 +116,26 @@ def placement(capability: str, *, cpu: str = "LOW", ram: str = "LOW", gpu: str =
     return {"capability": capability, "cpu": cpu, "ram": ram, "gpu": gpu, "privacy": privacy, "cost": cost, "run_location": location, "reason": "bounded control-plane work" if location == "MAC_CONTROL_PLANE" else "hardware placement required", "created_at": now()}
 
 
+def browser_placement(capability: str = "browser", *, estimated_ram_mb: int = 1200,
+                      duration_seconds: int = 120, tabs: int = 1,
+                      auth_required: bool = False, privacy: str = "INTERNAL",
+                      oracle_health: str = "UNKNOWN") -> dict[str, Any]:
+    """WP9E browser placement policy exposed through the WP9D engine."""
+    heavy = estimated_ram_mb > 1200 or duration_seconds > 180 or tabs > 2
+    private = privacy.upper() in {"SENSITIVE", "CONFIDENTIAL"}
+    if oracle_health != "HEALTHY":
+        location = "LOCAL_REQUIRED" if not heavy and not private else "DEFER"
+    elif auth_required:
+        location = "AUTHENTICATED_ORACLE"
+    elif heavy:
+        location = "ORACLE_REMOTE"
+    else:
+        location = "LOCAL_LIGHT"
+    return {"capability": capability, "run_location": location,
+            "heavy": heavy, "oracle_health": oracle_health,
+            "authority": "internal bounded browser only", "created_at": now()}
+
+
 def talent_candidates() -> list[dict[str, Any]]:
     rows = [
         ("OpenCode", "MIT", "client/server TUI; local and hosted OpenAI-compatible routes", "headless support requires bounded command test", "ARM64/Mac likely; Oracle requires runtime validation"),

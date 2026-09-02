@@ -1,0 +1,15 @@
+{
+  "receipt_id": "wp9e-oracle-example-public-20260902",
+  "status": "PASS",
+  "execution_location": "ORACLE_HERMES_CONTAINER",
+  "host": "nexus-llm-worker",
+  "container": "nexus-hermes-0206",
+  "url": "https://example.com",
+  "dom_extraction": "PASS",
+  "screenshot": "PASS",
+  "screenshot_path": "reports/runtime/wp9e/oracle-browser-proof.png",
+  "screenshot_sha256": "bc7cf1f419af36be6d190e8559333b0915d7fc0ec66c41414bdb22b65932e4d2",
+  "browser_cleanup": "PASS_TEMP_FILES_REMOVED",
+  "cash_cost_usd": 0,
+  "limitations": ["single public-page proof; authenticated profile and multi-tab Playwright API not proven"]
+}
