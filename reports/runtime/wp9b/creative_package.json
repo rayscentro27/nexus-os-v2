@@ -1,0 +1,369 @@
+{
+  "artifact": {
+    "artifact_id": "artifact_d63ffeae1725f491",
+    "brief_id": "brief_69b75bc597acbe0c",
+    "disclosure": "Internal concept; no affiliate or outcome claim.",
+    "facebook": {
+      "body": "Funding readiness starts before you apply. Organize the profile, documents, and credit-readiness questions you can actually verify. Education and preparation only; no guaranteed funding or approval.",
+      "cta": "request an internal review",
+      "hook": "Start with the path, not the application."
+    },
+    "image_provider": "NOT_CONFIGURED",
+    "instagram": {
+      "caption": "Preparation is easier when the next step is visible.",
+      "slides": [
+        "problem",
+        "evidence",
+        "next step"
+      ]
+    },
+    "landing_page": {
+      "copy": "Funding readiness starts before you apply. Organize the profile, documents, and credit-readiness questions you can actually verify. Education and preparation only; no guaranteed funding or approval.",
+      "hero": "editorial route-map and checkpoints",
+      "mobile_hierarchy": "headline > proof > CTA"
+    },
+    "render_ready_jobs": [
+      {
+        "status": "BLOCKED_PROVIDER_NOT_CONFIGURED",
+        "type": "IMAGE_RENDER"
+      }
+    ],
+    "schema_version": "nexus.creative-artifact-plan.v1",
+    "short_video": {
+      "cta": "request an internal review",
+      "hook_seconds": 2,
+      "shots": [
+        "scattered documents",
+        "annotated checklist",
+        "clear next step"
+      ]
+    },
+    "status": "INTERNAL_REVIEW"
+  },
+  "brief": {
+    "brand_profile_id": "brand_goclear_partial",
+    "brief_id": "brief_69b75bc597acbe0c",
+    "budget_ceiling_usd": 0.0,
+    "business_objective": "turn verified research into a bounded validation-ready offer",
+    "campaign_id": "commercial_alpha_derived",
+    "channel": [
+      "LANDING_PAGE",
+      "FACEBOOK",
+      "INSTAGRAM",
+      "SHORT_VIDEO",
+      "YOUTUBE_SHORT"
+    ],
+    "claim_constraints": [
+      "no guaranteed approval",
+      "no fabricated proof"
+    ],
+    "company": "GoClear/Nexus",
+    "constraints": [
+      "internal review",
+      "no publishing",
+      "no ad spend",
+      "no unsupported claims"
+    ],
+    "created_at": "2026-09-02T17:21:27.477944+00:00",
+    "created_by": "nexus_wp9b",
+    "desired_action": "request an internal review",
+    "initiative": "Alpha-derived commercial readiness",
+    "offer": "evidence-aware readiness review",
+    "references": [
+      "Alpha persisted research packet"
+    ],
+    "required_deliverables": [
+      "landing page",
+      "channel-native copy",
+      "short-video storyboard",
+      "visual direction",
+      "critic",
+      "revision"
+    ],
+    "target_audience": "small-business owners preparing for funding",
+    "validation_stage": "VALIDATION_READY",
+    "work_order_id": "wo_4f53cda18c2baa0c"
+  },
+  "claim_boundary": "validation-ready internal package; no external performance or revenue claim",
+  "created_at": "2026-09-02T17:21:27.925364+00:00",
+  "critic": {
+    "dimensions": {
+      "AUDIENCE_FIT": 82,
+      "BRAND_FIT": 82,
+      "CHANNEL_FIT": 82,
+      "CLAIM_DISCIPLINE": 82,
+      "CLARITY": 82,
+      "CTA_STRENGTH": 82,
+      "DISTINCTIVENESS": 82,
+      "GENERICNESS": 35,
+      "MOBILE_READABILITY": 82,
+      "OFFER_CLARITY": 82,
+      "TRUST": 82,
+      "VISUAL_COHERENCE": 82,
+      "VISUAL_HIERARCHY": 82
+    },
+    "evidence": [
+      "Alpha persisted research packet"
+    ],
+    "independent": true,
+    "problem": [
+      "specific evidence-linked direction"
+    ],
+    "recommended_revision": [],
+    "schema_version": "nexus.creative-structured-critic.v1",
+    "score": 78,
+    "status": "PASS"
+  },
+  "finance": {
+    "cash_cost_usd": 0.0,
+    "compute_seconds": 0.0,
+    "created_at": "2026-09-02T17:21:27.479162+00:00",
+    "department": "CREATIVE",
+    "estimated_replacement_cost_usd": 3e-06,
+    "free_credits_consumed": 0,
+    "gpu_minutes": 0,
+    "max_new_paid_cost_usd": 0.0,
+    "model_tokens": 0,
+    "quota_consumed": "UNKNOWN",
+    "receipt_id": "creative-finance_d63ffeae1725f491",
+    "schema_version": "nexus.creative-finance-receipt.v1",
+    "status": "POSTRUN",
+    "storage_bytes": 1274,
+    "work_order_id": "wo_4f53cda18c2baa0c"
+  },
+  "finance_preflight": {
+    "cash_envelope_usd": 0.0,
+    "created_at": "2026-09-02T17:21:27.479097+00:00",
+    "decision": "ALLOW",
+    "department": "CREATIVE",
+    "max_new_paid_cost_usd": 0.0,
+    "preflight_id": "creative-preflight_d63ffeae1725f491",
+    "resource_policy": "unknown balances remain unknown",
+    "schema_version": "nexus.creative-finance-preflight.v1",
+    "work_order_id": "wo_4f53cda18c2baa0c"
+  },
+  "growth_handoff": {
+    "external_action_performed": false,
+    "lineage": [
+      "brief_69b75bc597acbe0c",
+      "territory_794b3161b1cd1c51",
+      "artifact_d63ffeae1725f491",
+      "wo_4f53cda18c2baa0c"
+    ],
+    "status": "READY_FOR_REVIEW"
+  },
+  "package_id": "package_d63ffeae1725f491",
+  "provider_routes": [
+    {
+      "authentication_source": "existing runtime auth",
+      "capability": "TEXT",
+      "estimated_cost": "UNKNOWN",
+      "execution_location": "control-plane",
+      "expected_latency": "UNKNOWN",
+      "fallback_order": 1,
+      "model": "configured-route",
+      "privacy_classification": "governed",
+      "provider": "existing_authorized_runtime",
+      "status": "AVAILABLE"
+    },
+    {
+      "authentication_source": "none",
+      "capability": "RENDER",
+      "estimated_cost": "$0",
+      "execution_location": "control-plane",
+      "expected_latency": "bounded",
+      "fallback_order": 1,
+      "model": "system ffmpeg",
+      "privacy_classification": "internal",
+      "provider": "ffmpeg",
+      "status": "AVAILABLE"
+    },
+    {
+      "authentication_source": "not configured",
+      "capability": "IMAGE",
+      "estimated_cost": "UNKNOWN",
+      "execution_location": "UNKNOWN",
+      "expected_latency": "UNKNOWN",
+      "fallback_order": 9,
+      "model": "UNKNOWN",
+      "privacy_classification": "UNKNOWN",
+      "provider": "authorized-provider",
+      "status": "NOT_CONFIGURED"
+    },
+    {
+      "authentication_source": "not configured",
+      "capability": "VIDEO",
+      "estimated_cost": "UNKNOWN",
+      "execution_location": "UNKNOWN",
+      "expected_latency": "UNKNOWN",
+      "fallback_order": 9,
+      "model": "UNKNOWN",
+      "privacy_classification": "UNKNOWN",
+      "provider": "authorized-provider",
+      "status": "NOT_CONFIGURED"
+    },
+    {
+      "authentication_source": "not configured",
+      "capability": "REMOTE_WORKER",
+      "estimated_cost": "UNKNOWN",
+      "execution_location": "remote",
+      "expected_latency": "UNKNOWN",
+      "fallback_order": 2,
+      "model": "nexus-remote-cpu-worker",
+      "privacy_classification": "governed",
+      "provider": "modal",
+      "status": "NOT_CONFIGURED"
+    }
+  ],
+  "research_packet": {
+    "model_output_not_evidence": true,
+    "source": "persisted Alpha evidence",
+    "source_refs": []
+  },
+  "revision": {
+    "changes": [
+      "retained source references",
+      "made CTA action-specific",
+      "kept claims qualified"
+    ],
+    "created_at": "2026-09-02T17:21:27.478922+00:00",
+    "critic_before": {
+      "dimensions": {
+        "AUDIENCE_FIT": 82,
+        "BRAND_FIT": 82,
+        "CHANNEL_FIT": 82,
+        "CLAIM_DISCIPLINE": 82,
+        "CLARITY": 82,
+        "CTA_STRENGTH": 82,
+        "DISTINCTIVENESS": 82,
+        "GENERICNESS": 35,
+        "MOBILE_READABILITY": 82,
+        "OFFER_CLARITY": 82,
+        "TRUST": 82,
+        "VISUAL_COHERENCE": 82,
+        "VISUAL_HIERARCHY": 82
+      },
+      "evidence": [
+        "Alpha persisted research packet"
+      ],
+      "independent": true,
+      "problem": [
+        "specific evidence-linked direction"
+      ],
+      "recommended_revision": [],
+      "schema_version": "nexus.creative-structured-critic.v1",
+      "score": 78,
+      "status": "PASS"
+    },
+    "history_preserved": true,
+    "parent_version_id": "version_d63ffeae1725f491",
+    "request": "make the evidence and CTA more specific",
+    "revision_id": "revision_eff83cbc1482a839",
+    "schema_version": "nexus.creative-revision.v1",
+    "status": "REVIEW_REQUIRED",
+    "version_id": "version_1af75fd5499072e7"
+  },
+  "schema_version": "nexus.wp9b-creative-package.v1",
+  "selected_territory": {
+    "audience_fit": "small-business owners preparing for funding",
+    "brand_fit": "measured, educational, needs review",
+    "channel_fit": [
+      "LANDING_PAGE",
+      "FACEBOOK",
+      "INSTAGRAM",
+      "SHORT_VIDEO",
+      "YOUTUBE_SHORT"
+    ],
+    "core_idea": "make preparation a visible sequence",
+    "critic_score": 82,
+    "cta_direction": "Review the next step",
+    "differentiation_rationale": "turn uncertainty into a concrete path",
+    "emotional_angle": "calm control",
+    "genericness_score": 18,
+    "headline_direction": "Know the next readiness step before you apply.",
+    "name": "Readiness Map",
+    "proof_direction": "checklist and source-linked explanation",
+    "risks": [
+      "demand remains unverified"
+    ],
+    "territory_id": "territory_794b3161b1cd1c51",
+    "visual_direction": "editorial route-map and checkpoints"
+  },
+  "territories": [
+    {
+      "audience_fit": "small-business owners preparing for funding",
+      "brand_fit": "measured, educational, needs review",
+      "channel_fit": [
+        "LANDING_PAGE",
+        "FACEBOOK",
+        "INSTAGRAM",
+        "SHORT_VIDEO",
+        "YOUTUBE_SHORT"
+      ],
+      "core_idea": "make preparation a visible sequence",
+      "critic_score": 82,
+      "cta_direction": "Review the next step",
+      "differentiation_rationale": "turn uncertainty into a concrete path",
+      "emotional_angle": "calm control",
+      "genericness_score": 18,
+      "headline_direction": "Know the next readiness step before you apply.",
+      "name": "Readiness Map",
+      "proof_direction": "checklist and source-linked explanation",
+      "risks": [
+        "demand remains unverified"
+      ],
+      "territory_id": "territory_794b3161b1cd1c51",
+      "visual_direction": "editorial route-map and checkpoints"
+    },
+    {
+      "audience_fit": "small-business owners preparing for funding",
+      "brand_fit": "measured, educational, needs review",
+      "channel_fit": [
+        "LANDING_PAGE",
+        "FACEBOOK",
+        "INSTAGRAM",
+        "SHORT_VIDEO",
+        "YOUTUBE_SHORT"
+      ],
+      "core_idea": "make evidence the advantage",
+      "critic_score": 81,
+      "cta_direction": "See the evidence",
+      "differentiation_rationale": "replace hype with inspectable preparation",
+      "emotional_angle": "assured curiosity",
+      "genericness_score": 19,
+      "headline_direction": "A stronger case starts with what you can verify.",
+      "name": "The Prepared Case",
+      "proof_direction": "evidence ledger, not testimonials",
+      "risks": [
+        "demand remains unverified"
+      ],
+      "territory_id": "territory_94547eb1e680ce98",
+      "visual_direction": "annotated case-file with provenance"
+    },
+    {
+      "audience_fit": "small-business owners preparing for funding",
+      "brand_fit": "measured, educational, needs review",
+      "channel_fit": [
+        "LANDING_PAGE",
+        "FACEBOOK",
+        "INSTAGRAM",
+        "SHORT_VIDEO",
+        "YOUTUBE_SHORT"
+      ],
+      "core_idea": "surface risk before commitment",
+      "critic_score": 80,
+      "cta_direction": "Find the gaps",
+      "differentiation_rationale": "make the cost of skipping preparation legible",
+      "emotional_angle": "clear-eyed confidence",
+      "genericness_score": 20,
+      "headline_direction": "Before you apply, see what still needs work.",
+      "name": "Before the Gate",
+      "proof_direction": "qualified readiness gaps",
+      "risks": [
+        "demand remains unverified"
+      ],
+      "territory_id": "territory_b896d50a243e6fae",
+      "visual_direction": "minimal open-gate metaphor"
+    }
+  ]
+}
