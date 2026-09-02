@@ -51,6 +51,7 @@ _GOOGLE_DEDUPE_LOCK = threading.Lock()
 
 
 def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, shutdown_mcp_servers=None,
+                                        reset_mcp_server=None, expected_tool_marker="nexus_mcp",
                                         timing: Optional[Dict[str, Any]] = None) -> list[str]:
     """Discover the configured MCP surface with one transient retry.
 
@@ -67,11 +68,11 @@ def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, shutdown_mcp_serv
         started = time.monotonic()
         try:
             last_tools = list(discover_mcp_tools() or [])
-            nexus_tools = [name for name in last_tools if "nexus_mcp" in str(name)]
-            outcome = "PASS" if nexus_tools else "NO_NEXUS_TOOLS"
+            expected_tools = [name for name in last_tools if expected_tool_marker in str(name)]
+            outcome = "PASS" if expected_tools else "NO_EXPECTED_TOOLS"
             attempts.append({"attempt": attempt, "outcome": outcome,
                              "elapsed_ms": round((time.monotonic() - started) * 1000, 1)})
-            if nexus_tools or attempt == 2:
+            if expected_tools or attempt == 2:
                 break
         except (ConnectionError, TimeoutError, OSError) as exc:
             attempts.append({"attempt": attempt, "outcome": "TRANSIENT_FAILURE",
@@ -79,11 +80,14 @@ def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, shutdown_mcp_serv
                              "elapsed_ms": round((time.monotonic() - started) * 1000, 1)})
             if attempt == 2:
                 raise
-        if attempt == 1 and not recovery_cycle_used and shutdown_mcp_servers is not None:
+        if attempt == 1 and not recovery_cycle_used and (reset_mcp_server is not None or shutdown_mcp_servers is not None):
             # The Hermes MCP SDK owns these allowlisted connections. Tear down
             # its stale client/server tasks before the single reconnect; this
             # is not arbitrary process management and is safe for discovery.
-            shutdown_mcp_servers()
+            if reset_mcp_server is not None:
+                reset_mcp_server()
+            else:
+                shutdown_mcp_servers()
             recovery_cycle_used = True
             attempts[-1]["recovery_action"] = "HERMES_MCP_SHUTDOWN_RECONNECT"
         if attempt == 1:
@@ -92,6 +96,18 @@ def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, shutdown_mcp_serv
         timing["mcp_discovery_attempts"] = attempts
         timing["mcp_discovery_recovered"] = len(attempts) == 2 and attempts[-1].get("outcome") == "PASS"
     return last_tools
+
+
+def _reset_named_mcp_server(server_name: str) -> None:
+    """Ask the Hermes MCP SDK to close one cached server connection."""
+    from tools import mcp_tool
+    with mcp_tool._lock:
+        server = mcp_tool._servers.get(server_name)
+    if server is None:
+        return
+    mcp_tool._run_on_mcp_loop(server.shutdown(), timeout=10)
+    with mcp_tool._lock:
+        mcp_tool._servers.pop(server_name, None)
 
 
 def _root_turn_id(task_id: str) -> str:
@@ -579,7 +595,8 @@ def _install_google_turn_dedupe() -> None:
 
     def dispatch(name: str, args: dict, **kwargs: Any) -> str:
         tool_name = str(name)
-        if "google_mcp" not in tool_name:
+        dedupe_nexus_read = "nexus_mcp" in tool_name and "delegate" not in tool_name
+        if "google_mcp" not in tool_name and not dedupe_nexus_read:
             return original_dispatch(name, args, **kwargs)
         task_id = _root_turn_id(str(kwargs.get("task_id") or kwargs.get("effective_task_id") or _ACTIVE_HERMES_TURN.get() or ""))
         canonical = _bounded_args(args, tool_name)
@@ -926,6 +943,8 @@ def run_shadow(
         _discover_mcp_with_bounded_recovery(
             discover_mcp_tools,
             shutdown_mcp_servers=shutdown_mcp_servers,
+            reset_mcp_server=lambda: _reset_named_mcp_server("nexus_mcp"),
+            expected_tool_marker="nexus_mcp",
             timing=phase_timings,
         )
     _install_google_turn_dedupe()

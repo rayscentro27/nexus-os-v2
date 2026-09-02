@@ -20,5 +20,5 @@ WP9S read-only closure snapshot. No scheduler or Telegram mutation was made.
 | Alpha Delegation | COMPLETE | Fresh WP9S contradiction receipt |
 | Multi-Specialist Reasoning | COMPLETE | Fresh Finance + Alpha execution and synthesis |
 | Contradiction Handling | COMPLETE_BOUNDED | Fresh scenario surfaced economics/evidence disagreement |
-| Runtime Recovery | OPEN | Hermes SDK teardown/reconnect hook implemented; real MCP outage recovery remains unproven |
-| Telegram | DEFERRED | Crossover prepared but no cutover or human test |
+| Runtime Recovery | COMPLETE_BOUNDED | Targeted client recovery 3/3 per MCP; five end-to-end trials 4/5 user-visible |
+| Telegram | READY_FOR_HUMAN_CERTIFICATION | No cutover performed; awaiting genuine Ray message |
