@@ -9,7 +9,7 @@ FINAL_VERIFIED_ORIGIN_MAIN=main_verified_after_push
 WP8_6_TO_WP8_13_LOADED=YES
 CERTIFIED_CAPABILITIES_PRESERVED=YES
 NEXUS_FINANCE_DEPARTMENT=IMPLEMENTED
-NEXUS_FINANCE_DEPARTMENT_READY=YES
+NEXUS_FINANCE_DEPARTMENT_READY=NO
 
 FINANCE_AUTHORITY_BOUNDARY=PASS
 FINANCE_TRUTH_CONTRACT=PASS
@@ -88,7 +88,7 @@ FINANCE_PROVENANCE=PASS
 FINANCE_ESTIMATE_CONFIDENCE=PASS
 FINANCE_MEMORY=PASS
 
-FULL_PRODUCTION_BUILD=PASS_DIRECT_VITE_BUILD
+FULL_PRODUCTION_BUILD=NOT_PROVEN_NPM_BUILD_HANGS_AFTER_TAILWIND; DIRECT_VITE_BUILD_PASS
 PREEXISTING_VOICE_FAILURES_UNCHANGED=YES
 WP8_6_REGRESSION=PASS_INHERITED
 WP8_7_REGRESSION=PASS_INHERITED
@@ -113,13 +113,13 @@ TOTAL_REVISIONS=0_NEW
 TOTAL_RETRIES=0
 TOTAL_REPORTED_COST=0.00_ACTUAL_RECEIPTS
 
-PRIMARY_BLOCKERS=Trading break-even and provider balances remain unknown; no billed-cost claim is made.
+PRIMARY_BLOCKERS=This commit provides the initial ledger/preflight/operator foundation, but the full WP8.14 certification remains incomplete: scheduler/work-order integrations, Nova/Alpha/Jax/Growth/Trading rollups, complete operator Finance surfaces, focused regressions, and full build harness certification were not proven in this run.
 FILES_CHANGED=Finance engine, governed collection registry, Operator Finance view/styles, preflight artifact, eleven reports, focused tests
 TESTS=Direct Python Finance checks PASS; pytest harness hangs before output and is not claimed PASS
 BUILD=./node_modules/.bin/vite build PASS
 WORKTREE=Scoped WP8.14 files only staged; unrelated pre-existing changes preserved
-NEXT_RECOMMENDED_PHASE=Integrate Finance receipts into the company scheduler after review; retain trading/provider unknowns
-FINANCE_READY_FOR_COMPANY_SCHEDULER=YES
+NEXT_RECOMMENDED_PHASE=Complete Finance integration and evidence pass before company scheduler adoption; retain trading/provider unknowns
+FINANCE_READY_FOR_COMPANY_SCHEDULER=NO
 WAITING_RAY=YES
 
 The Finance layer does not prove revenue, profitability, trading success, or free-resource availability. It proves bounded accounting contracts and explicit uncertainty.
