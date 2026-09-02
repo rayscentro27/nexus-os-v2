@@ -179,6 +179,72 @@ def _register() -> None:
     def nexus_get_system_health() -> dict[str, Any]:
         return _call("nexus_get_system_health")
 
+    @mcp.tool(
+        name="nexus_delegate_specialist",
+        description=(
+            "Bounded read-only specialist request. Select one allowlisted Nexus "
+            "specialist and a concrete objective. Nexus validates the request "
+            "and maps it to an existing canonical read; this tool cannot write, "
+            "execute shell, publish, pay, trade, or change authority. Allowed "
+            "specialists: SYSTEM, ALPHA, FINANCE, GROWTH, CREATIVE, JAX, TRADING."
+        ),
+    )
+    def nexus_delegate_specialist(specialist: str, objective: str) -> dict[str, Any]:
+        return _delegate_specialist(specialist, objective)
+
+
+def _delegate_specialist(specialist: str, objective: str) -> dict[str, Any]:
+    specialist_key = str(specialist or "").strip().upper()
+    objective_text = str(objective or "").strip()[:500]
+    routes = {
+        "SYSTEM": "nexus_get_system_health",
+        "ALPHA": "nexus_get_opportunities",
+        "FINANCE": "nexus_get_business_state",
+        "GROWTH": "nexus_get_opportunities",
+        "CREATIVE": "nexus_get_business_state",
+        "JAX": "nexus_get_system_health",
+        "TRADING": "nexus_get_business_state",
+    }
+    if specialist_key not in routes or not objective_text:
+        return {
+            "status": "rejected",
+            "error": "specialist/objective_not_allowlisted_or_missing",
+            "allowed_specialists": sorted(routes),
+            "authority": "Nexus",
+            "read_only": True,
+        }
+    underlying = routes[specialist_key]
+    result = _call(underlying)
+    delegation_id = f"nexus-delegation-{uuid.uuid4().hex}"
+    receipt = {
+        "schema_version": "nexus.specialist-delegation-receipt.v1",
+        "delegation_id": delegation_id,
+        "specialist": specialist_key,
+        "objective": objective_text,
+        "underlying_read": underlying,
+        "underlying_request_id": result.get("request_id"),
+        "result_status": result.get("status"),
+        "currentness": result.get("metadata", {}).get("currentness", "UNKNOWN"),
+        "read_only": True,
+        "authority_owner": "Nexus",
+        "created_at": _now(),
+    }
+    receipt["receipt_hash"] = hashlib.sha256(
+        json.dumps(receipt, sort_keys=True).encode()
+    ).hexdigest()
+    RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
+    (RECEIPT_DIR / f"{delegation_id}.json").write_text(
+        json.dumps(receipt, indent=2) + "\n", encoding="utf-8"
+    )
+    return {
+        "status": "delegated",
+        "delegation_id": delegation_id,
+        "specialist": specialist_key,
+        "objective": objective_text,
+        "result": result,
+        "provenance": {"source": "nexus_canonical_read_layer", "read_only": True},
+    }
+
 
 _register()
 

@@ -12,6 +12,7 @@ TOOL_NAMES = (
     "nexus_get_opportunities",
     "nexus_get_business_state",
     "nexus_get_system_health",
+    "nexus_delegate_specialist",
 )
 
 # Operational reads are volatile by capability.  This metadata describes the

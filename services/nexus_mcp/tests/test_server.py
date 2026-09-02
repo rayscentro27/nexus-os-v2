@@ -11,7 +11,7 @@ from services.nexus_mcp import server
 def test_tool_surface_is_read_only_and_complete():
     names = {tool.name for tool in server.mcp._tool_manager.list_tools()}
     assert names == set(server.TOOL_NAMES)
-    assert all(name.startswith("nexus_get_") for name in names)
+    assert all(name.startswith("nexus_get_") or name == "nexus_delegate_specialist" for name in names)
 
 
 def test_public_result_preserves_canonical_state_and_metadata():
@@ -106,5 +106,26 @@ def test_successful_reads_are_deduplicated_only_within_turn(monkeypatch, tmp_pat
 
 @pytest.mark.parametrize("name", server.TOOL_NAMES)
 def test_each_tool_has_empty_object_input_schema(name):
+    if name == "nexus_delegate_specialist":
+        return
     tool = next(tool for tool in server.mcp._tool_manager.list_tools() if tool.name == name)
     assert tool.parameters == {} or tool.parameters.get("properties", {}) == {}
+
+
+def test_specialist_request_rejects_unknown_specialist():
+    result = server._delegate_specialist("UNKNOWN", "inspect current state")
+    assert result["status"] == "rejected"
+
+
+def test_specialist_request_is_allowlisted_and_read_only(monkeypatch, tmp_path):
+    monkeypatch.setattr(server, "RECEIPT_DIR", tmp_path)
+    monkeypatch.setattr(
+        server,
+        "_call",
+        lambda name: {"status": "ok", "request_id": "read-1", "metadata": {"currentness": "CURRENT"}},
+    )
+    result = server._delegate_specialist("SYSTEM", "check current health")
+    assert result["status"] == "delegated"
+    assert result["specialist"] == "SYSTEM"
+    assert result["result"]["status"] == "ok"
+    assert json.loads(next(tmp_path.glob("nexus-delegation-*.json")).read_text())["read_only"] is True
