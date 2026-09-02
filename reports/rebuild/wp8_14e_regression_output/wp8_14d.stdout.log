@@ -5,4 +5,4 @@ Running 2 tests using 1 worker
 
 [1/2] tests/e2e/wp8-14d-operator-finance.spec.ts:38:1 › WP8.14D authenticated Finance desktop evidence
 [2/2] tests/e2e/wp8-14d-operator-finance.spec.ts:42:1 › WP8.14D authenticated Finance mobile evidence
-  2 passed (16.9s)
+  2 passed (22.3s)

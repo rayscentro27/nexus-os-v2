@@ -1,0 +1,16 @@
+{
+  "schema_version": "wp9.scheduler.v1",
+  "label": "com.nexus.wp9-company-cycle",
+  "schedule": ["20:00 local company cycle", "06:00 local morning report"],
+  "max_cycle_duration_seconds": 600,
+  "certification_nights": 3,
+  "overnight_observability_mode": "TEMPORARY",
+  "new_paid_spend_usd": 0,
+  "authority": "INTERNAL_ONLY",
+  "departments": {
+    "NOVA": {"enabled": true}, "FINANCE": {"enabled": true}, "ALPHA": {"enabled": true},
+    "CREATIVE": {"enabled": true}, "GROWTH": {"enabled": true}, "TRADING": {"enabled": true}, "JAX": {"enabled": false}
+  },
+  "meaningful_work": {"ALPHA": true, "CREATIVE": true, "GROWTH": true, "TRADING": true},
+  "kill_switch": {"path": "configs/wp9_scheduler.json", "active": false}
+}
