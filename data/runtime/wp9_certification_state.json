@@ -1,6 +1,6 @@
 {
   "active": false,
-  "certification_state": "PENDING_NIGHT_1",
+  "certification_state": "RETRY_NIGHT_1",
   "cycles": [
     {
       "authority": {

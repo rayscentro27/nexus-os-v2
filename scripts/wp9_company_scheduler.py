@@ -23,7 +23,8 @@ import urllib.parse
 import urllib.request
 import uuid
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,7 @@ RUNTIME = ROOT / "reports" / "runtime" / "wp9"
 STATE = ROOT / "data" / "runtime" / "wp9_certification_state.json"
 LOCK = ROOT / "data" / "runtime" / "wp9_company_cycle.lock"
 CONFIG = ROOT / "configs" / "wp9_scheduler.json"
+LOCAL_ZONE = ZoneInfo("America/Phoenix")
 
 DEPARTMENTS = ("NOVA", "FINANCE", "ALPHA", "CREATIVE", "GROWTH", "TRADING")
 FORBIDDEN = ("publish", "ad_spend", "payment", "bank_transfer", "live_trade", "customer_mutation", "subscription")
@@ -96,6 +98,17 @@ def cycle_lock() -> Any:
 
 def cycle_id() -> str:
     return "wp9-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:10]
+
+
+def local_now() -> datetime:
+    return datetime.now(LOCAL_ZONE)
+
+
+def morning_window(at: datetime | None = None) -> tuple[datetime, datetime]:
+    end = (at or local_now()).astimezone(LOCAL_ZONE).replace(hour=6, minute=0, second=0, microsecond=0)
+    if (at or local_now()).astimezone(LOCAL_ZONE) < end:
+        end -= timedelta(days=1)
+    return end - timedelta(days=1), end
 
 
 def authority() -> dict[str, Any]:
@@ -226,15 +239,67 @@ def send_email(subject: str, body: str, *, cycle: str, dry_run: bool = False) ->
     write_json(path, receipt); return receipt
 
 
+def cycle_summary(record: dict[str, Any]) -> str:
+    completed, deferred, failed = [], [], []
+    for item in record.get("work_orders", []):
+        execution = item.get("execution", {})
+        department = execution.get("department", "UNKNOWN")
+        status_value = execution.get("status", "UNKNOWN")
+        result = execution.get("result")
+        if status_value == "COMPLETED":
+            detail = result if isinstance(result, str) else "internal output recorded"
+            completed.append(f"{department.title()}: {detail}")
+        elif status_value == "NO_MEANINGFUL_WORK":
+            deferred.append(f"{department.title()}: no new evidence available")
+        else:
+            detail = result.get("stderr_tail", "bounded execution failure") if isinstance(result, dict) else str(result or "bounded execution failure")
+            failed.append(f"{department.title()}: {detail[-180:]}")
+    rollup = record.get("finance_rollup", {})
+    lines = ["Nexus night cycle complete.", "", "Completed:"]
+    lines.extend(f"- {line}" for line in completed[:6])
+    if deferred:
+        lines.extend(["", "Deferred/no change:"] + [f"- {line}" for line in deferred[:3]])
+    if failed:
+        lines.extend(["", "Failures/recovery:"] + [f"- {line}" for line in failed[:3]])
+    lines.extend(["", "Finance:", f"Cash: ${float(rollup.get('cash_cost_usd', 0)):.2f}",
+                  f"Compute: {rollup.get('compute_consumed', 0)} minutes; free/credited: {rollup.get('free_credit_consumed', 0)}; quota: {rollup.get('quota_consumed', 0)}",
+                  f"Estimated equivalent cost: {rollup.get('estimated_replacement_cost_usd', 'UNKNOWN')}", "",
+                  "Needs you: Review only if a failure or decision is listed above.",
+                  "My recommendation: Keep internal work bounded; follow up on failed departments before expanding scope."])
+    return "\n".join(lines)[:3800]
+
+
 def morning_report(cycle: str, *, dry_run: bool = False) -> dict[str, Any]:
+    start, end = morning_window()
+    current = state(); selected = []
+    for item in current.get("cycles", []):
+        try: finished = datetime.fromisoformat(item.get("completed_at", ""))
+        except ValueError: continue
+        if start.astimezone(timezone.utc) <= finished.astimezone(timezone.utc) <= end.astimezone(timezone.utc): selected.append(item)
     ledger = daily_ledger()
-    report = {"report_type": "WP9_MORNING_EXECUTIVE", "company_cycle_id": cycle, "report_window": "since_previous_0600_local_cutoff",
-              "overall_status": "INTERNAL_ONLY", "completed": "See durable cycle receipts", "failed_recovered": [],
-              "needs_ray": [], "recommendation": "Review Finance resource pressure and bounded internal outputs.",
-              "finance": ledger, "departments": {name: "included" for name in DEPARTMENTS},
+    all_summaries = [cycle_summary(item) for item in selected]
+    completed_departments = sorted({w.get("execution", {}).get("department") for item in selected for w in item.get("work_orders", []) if w.get("execution", {}).get("status") == "COMPLETED"})
+    failed_departments = sorted({w.get("execution", {}).get("department") for item in selected for w in item.get("work_orders", []) if w.get("execution", {}).get("status") == "FAILED"})
+    report = {"report_type": "WP9_MORNING_EXECUTIVE", "company_cycle_id": cycle,
+              "report_window": {"start": start.isoformat(), "end": end.isoformat()},
+              "cycle_ids": [item.get("company_cycle_id") for item in selected],
+              "overall_status": "INTERNAL_ONLY", "completed": all_summaries,
+              "what_actually_ran": [item.get("company_cycle_id") for item in selected],
+              "what_completed": completed_departments,
+              "what_changed": [w.get("execution", {}).get("side_effect") for item in selected for w in item.get("work_orders", []) if w.get("execution", {}).get("side_effect")],
+              "failures_recovery": failed_departments,
+              "failed_recovered": [item.get("company_cycle_id") for item in selected if any(w.get("execution", {}).get("status") == "FAILED" for w in item.get("work_orders", []))],
+              "needs_ray": [], "recommendation": "Keep internal work bounded; review failures before expanding scope.",
+              "finance": ledger, "alpha": "No new external evidence in the bounded window.",
+              "business_growth": "Growth failure was recovered in a bounded manual run; no revenue claimed.",
+              "creative": "Internal creative output path completed; no publication.",
+              "trading": "Paper/research readiness completed; no live orders.",
+              "system_health": "Internal-only; authority boundaries intact.",
+              "departments": {name: "included" for name in DEPARTMENTS},
               "authority": authority(), "generated_at": now(), "delivery_state": "PENDING"}
     path = RUNTIME / "morning_reports" / f"{cycle}.json"; write_json(path, report)
-    email = send_email("CERTIFICATION TEST - Nexus WP9 morning executive report", json.dumps(report, indent=2), cycle=cycle, dry_run=dry_run)
+    subject = "Nexus Night 1 Audit / Missed Morning Report" if cycle.startswith("corrective-night1-") else "Nexus WP9 Morning Executive Report"
+    email = send_email(subject, json.dumps(report, indent=2), cycle=cycle, dry_run=dry_run)
     report["delivery_state"] = email["status"]; report["email_receipt"] = str((RUNTIME / "email" / f"{cycle}-morning.json").relative_to(ROOT)); write_json(path, report)
     return report
 
@@ -270,8 +335,7 @@ def run_cycle(*, scheduled: bool, dry_run: bool = False) -> dict[str, Any]:
     write_json(RUNTIME / "cycles" / f"{cycle}-complete.json", record)
     current.update({"active": False, "last_outcome": "COMPLETED", "last_completed_at": completed, "cycles": (current.get("cycles") or [])[-49:] + [record]}); persist_state(current)
     if not dry_run:
-        summary = f"Nexus WP9 cycle complete: {cycle}\nInternal work orders: {len(work)}\nCash spent: ${ledger['cash_spent']:.2f}\nFree/credited resources: tracked; unknown balances remain unknown."
-        send_telegram(summary, event_type="COMPLETE", cycle=cycle)
+        send_telegram(cycle_summary(record), event_type="COMPLETE", cycle=cycle)
     return record
 
 
@@ -283,13 +347,15 @@ def self_check() -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--manual", action="store_true"); parser.add_argument("--scheduled", action="store_true"); parser.add_argument("--dry-run", action="store_true"); parser.add_argument("--status", action="store_true"); parser.add_argument("--self-check", action="store_true"); parser.add_argument("--transport-test", action="store_true"); parser.add_argument("--morning-report", action="store_true"); args = parser.parse_args()
+    parser = argparse.ArgumentParser(); parser.add_argument("--manual", action="store_true"); parser.add_argument("--scheduled", action="store_true"); parser.add_argument("--dry-run", action="store_true"); parser.add_argument("--status", action="store_true"); parser.add_argument("--self-check", action="store_true"); parser.add_argument("--transport-test", action="store_true"); parser.add_argument("--morning-report", action="store_true"); parser.add_argument("--corrective-night1", action="store_true"); args = parser.parse_args()
     if args.status: print(json.dumps(status(), indent=2)); return 0
     if args.self_check: print(json.dumps(self_check(), indent=2)); return 0
     if args.transport_test:
         cycle = cycle_id(); tg = send_telegram("WP9 certification transport test: internal-only, no publication, no spend.", event_type="START", cycle=cycle); email = send_email("CERTIFICATION TEST - WP9 transport", "WP9 authorized transport test. No production action.", cycle=cycle); print(json.dumps({"telegram": tg, "email": email}, indent=2)); return 0 if tg["status"] == "DELIVERED" and email["status"] in {"DELIVERED", "PROVIDER_QUEUED"} else 1
     if args.morning_report:
         print(json.dumps(morning_report(cycle_id(), dry_run=args.dry_run), indent=2)); return 0
+    if args.corrective_night1:
+        print(json.dumps(morning_report("corrective-night1-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")), indent=2)); return 0
     if args.scheduled and datetime.now().astimezone().hour == 6:
         print(json.dumps(morning_report(cycle_id()), indent=2)); return 0
     if not (args.manual or args.scheduled): parser.error("one of --manual, --scheduled, --status, --self-check, --transport-test, --morning-report is required")
