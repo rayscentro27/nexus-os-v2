@@ -166,7 +166,7 @@ def _run(command: list[str], timeout: int = 60) -> dict[str, Any]:
 
 def dispatch(department: str, cycle: str) -> dict[str, Any]:
     commands = {
-        "ALPHA": [sys.executable, "scripts/alpha/run_alpha_discovery_cycle.py", "--theme", "BUSINESS", "--question", "Bounded internal opportunity evidence refresh", "--json"],
+        "ALPHA": [sys.executable, "scripts/alpha/alpha_heartbeat.py", "--max-channels", "4", "--json"],
         "CREATIVE": [sys.executable, "scripts/creative/generate_overnight_creative_asset_queue.py", "--dry-run", "--json"],
         "GROWTH": [sys.executable, "-m", "nexus_foundation.run_growth_validation_loop", "--json"],
         "TRADING": [sys.executable, "scripts/trading/run_trading_demo_readiness_cycle.py", "--json"],
