@@ -104,7 +104,7 @@ export function FundingReadinessV2({ data }: { data: V2ViewData }) {
           )}
           <CardV2>
             <div className="flex items-center justify-between gap-3"><span className="text-v2base font-semibold text-v2ink">Upload readiness evidence</span><span className="text-[11px] text-v2muted">Bank statements or revenue support</span></div>
-            <InlineDocumentUpload compact category="banking" label="Choose readiness document" pageContext="client_v2_funding_readiness" track="funding_readiness" />
+            <InlineDocumentUpload category="banking" label="Choose readiness document" pageContext="client_v2_funding_readiness" track="funding_readiness" />
           </CardV2>
         </div>
 

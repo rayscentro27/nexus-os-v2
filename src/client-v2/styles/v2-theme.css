@@ -130,6 +130,67 @@
   }
 }
 
+/* Mobile is a working client journey, not a long desktop sidebar stacked above
+ * the page. Keep the journey destinations reachable in a compact horizontal
+ * rail so the current task and Hermes remain in the first viewport. */
+@media (max-width: 767px) {
+  .v2-sidebar {
+    height: 72px;
+    flex-direction: row;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    overflow: hidden;
+  }
+
+  .v2-sidebar > div:first-child {
+    padding: 10px 12px;
+    flex: 0 0 auto;
+  }
+
+  .v2-sidebar > div:first-child > div:last-child,
+  .v2-sidebar > div:last-child {
+    display: none;
+  }
+
+  .v2-sidebar > nav {
+    display: flex;
+    gap: 6px;
+    margin: 0;
+    padding: 8px 12px 8px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+  }
+
+  .v2-sidebar > nav > div {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .v2-sidebar .v2-nav-section-label {
+    display: none;
+  }
+
+  .v2-sidebar .v2-nav-item {
+    width: auto;
+    min-height: 42px;
+    padding: 8px 11px;
+    flex: 0 0 auto;
+  }
+
+  .v2-sidebar .v2-nav-item > span:nth-child(2) {
+    max-width: 118px;
+  }
+
+  .v2-sidebar > nav > div > .space-y-1 {
+    display: flex;
+    gap: 6px;
+  }
+}
+
 /* ---- Buttons ---- */
 .v2-btn {
   display: inline-flex;

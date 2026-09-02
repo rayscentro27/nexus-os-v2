@@ -1,0 +1,7 @@
+# OmniRoute Audit
+
+Canonical repository identified as `https://github.com/diegosouzapw/OmniRoute`, release branch `v3.8.51`. The repository advertises a large OpenAI-compatible provider catalog, quota-aware fallback, MCP/A2A, and compression. GitHub reports MIT code license and active release history; the repository contains a documented local dashboard/API surface, encrypted-storage configuration, OAuth/API-key provider modes, and explicitly privileged management/MCP features. Its own security policy notes plaintext passthrough when `STORAGE_ENCRYPTION_KEY` is absent and flags sensitive bundled modules for scanner review.
+
+Classification: `REFERENCE_ONLY`. Nexus will not install or adopt it in this campaign. It must not replace Nexus model routing, Hermes, memory, work orders, or authority policy. Provider routes requiring cookies, account cycling, quota evasion, or unsupported consumer automation are rejected. Compression may only be considered later for verbose logs/tool output; never contracts, exact JSON, client-sensitive, legal, or high-stakes text.
+
+Source evidence: [repository](https://github.com/diegosouzapw/OmniRoute), [MIT license](https://raw.githubusercontent.com/diegosouzapw/OmniRoute/release/v3.8.51/LICENSE), [security policy](https://raw.githubusercontent.com/diegosouzapw/OmniRoute/release/v3.8.51/SECURITY.md), [package metadata](https://raw.githubusercontent.com/diegosouzapw/OmniRoute/release/v3.8.51/package.json).
