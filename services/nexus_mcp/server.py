@@ -13,7 +13,7 @@ import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "scripts") not in sys.path:
@@ -182,14 +182,16 @@ def _register() -> None:
     @mcp.tool(
         name="nexus_delegate_specialist",
         description=(
-            "Bounded read-only specialist request. Select one allowlisted Nexus "
-            "specialist and a concrete objective. Nexus validates the request "
-            "and maps it to an existing canonical read; this tool cannot write, "
-            "execute shell, publish, pay, trade, or change authority. Allowed "
-            "specialists: SYSTEM, ALPHA, FINANCE, GROWTH, CREATIVE, JAX, TRADING."
+            "Use when Nova needs one bounded specialist perspective on a current "
+            "Nexus question. Provide the specialist enum and a concrete objective; "
+            "returns one current governed read plus a delegation receipt. Read-only: "
+            "no shell, writes, publication, payment, trading, or authority changes."
         ),
     )
-    def nexus_delegate_specialist(specialist: str, objective: str) -> dict[str, Any]:
+    def nexus_delegate_specialist(
+        specialist: Literal["SYSTEM", "ALPHA", "FINANCE", "GROWTH", "CREATIVE", "JAX", "TRADING"],
+        objective: str,
+    ) -> dict[str, Any]:
         return _delegate_specialist(specialist, objective)
 
 
