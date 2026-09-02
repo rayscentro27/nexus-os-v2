@@ -19,6 +19,33 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _keychain_secret(service: str) -> str | None:
+    """Read a named macOS Keychain item without echoing its value.
+
+    Keychain lookup is an optional local control-plane source.  The bridge
+    never writes the result to disk, reports, subprocess arguments, or logs.
+    Non-macOS hosts simply fall through to the environment path.
+    """
+    import platform
+    import subprocess
+
+    if platform.system() != "Darwin":
+        return None
+    try:
+        result = subprocess.run(
+            ["security", "find-generic-password", "-a", os.getenv("USER", ""),
+             "-s", service, "-w"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    value = result.stdout.strip()
+    return value or None
+
+
 class BridgeError(RuntimeError):
     """A fail-closed bridge error."""
 
@@ -89,7 +116,11 @@ class OracleHermesBridge:
         transport: Callable[..., dict[str, Any]] | None = None,
     ) -> None:
         self.base_url = (base_url or os.getenv("NEXUS_ORACLE_HERMES_BASE_URL", "http://127.0.0.1:18642")).rstrip("/")
-        self.api_key = api_key if api_key is not None else os.getenv("NEXUS_ORACLE_HERMES_API_KEY")
+        self.api_key = api_key if api_key is not None else (
+            os.getenv("NEXUS_ORACLE_HERMES_API_KEY")
+            or _keychain_secret(os.getenv("NEXUS_ORACLE_HERMES_KEYCHAIN_SERVICE",
+                                          "nexus-oracle-hermes-api"))
+        )
         self._transport = transport or self._http_transport
         if not self.base_url.startswith("http://127.0.0.1:"):
             raise BridgeError("Hermes endpoint must be loopback/private")
@@ -118,7 +149,8 @@ class OracleHermesBridge:
         try:
             request.validate()
             payload = {
-                "model": "hermes-agent",
+                "model": os.getenv("NEXUS_ORACLE_HERMES_MODEL",
+                                    "nvidia/nemotron-3.5-lightning:free"),
                 "messages": [
                     {"role": "system", "content": (
                         "You are advisory intelligence for Nexus. TruthKernel is read-only "

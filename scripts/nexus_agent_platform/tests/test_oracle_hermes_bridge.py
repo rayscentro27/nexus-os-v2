@@ -55,3 +55,28 @@ def test_public_endpoint_is_rejected():
         assert "loopback/private" in str(exc)
     else:
         raise AssertionError("public Hermes endpoint was accepted")
+
+
+def test_keychain_lookup_is_used_when_environment_is_absent(monkeypatch):
+    monkeypatch.delenv("NEXUS_ORACLE_HERMES_API_KEY", raising=False)
+    monkeypatch.setattr(
+        "scripts.nexus_agent_platform.bridge.oracle_hermes._keychain_secret",
+        lambda service: "keychain-test",
+    )
+    bridge = OracleHermesBridge("http://127.0.0.1:18642",
+                               transport=lambda *args, **kwargs: {})
+    assert bridge.api_key == "keychain-test"
+
+
+def test_model_route_is_explicitly_configurable(monkeypatch):
+    monkeypatch.setenv("NEXUS_ORACLE_HERMES_MODEL", "synthetic-model")
+    seen = {}
+
+    def transport(method, path, payload, headers, timeout):
+        seen.update(payload=payload)
+        return {"choices": [{"message": {"content": "ok"}}]}
+
+    bridge = OracleHermesBridge("http://127.0.0.1:18642", api_key="test",
+                               transport=transport)
+    bridge.ask(request())
+    assert seen["payload"]["model"] == "synthetic-model"
