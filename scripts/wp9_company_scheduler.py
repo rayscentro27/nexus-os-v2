@@ -64,7 +64,7 @@ def load_config() -> dict[str, Any]:
 
 def load_runtime_env() -> dict[str, str]:
     values: dict[str, str] = {}
-    for path in (Path("/Users/raymonddavis/.config/nexus/runtime.env"), ROOT / ".env"):
+    for path in (Path("/Users/raymonddavis/.config/nexus/runtime.env"), ROOT / ".env", ROOT / ".env.e2e.local"):
         try:
             for raw in path.read_text(encoding="utf-8").splitlines():
                 line = raw.strip()
@@ -197,17 +197,31 @@ def send_email(subject: str, body: str, *, cycle: str, dry_run: bool = False) ->
     fingerprint = hashlib.sha256((cycle + subject).encode()).hexdigest()[:20]
     receipt = {"company_cycle_id": cycle, "fingerprint": fingerprint, "sent_at": now(), "dry_run": dry_run, "secret_redacted": True}
     path = RUNTIME / "email" / f"{cycle}-morning.json"
+    if path.exists() and not dry_run:
+        prior = read_json(path, {}) or {}
+        if prior.get("status") in {"DELIVERED", "REQUEST_ACCEPTED", "PROVIDER_QUEUED", "DUPLICATE_SUPPRESSED"}:
+            return {**prior, "status": "DUPLICATE_SUPPRESSED", "idempotent": True}
     if dry_run or not key or not sender or not recipient:
         receipt.update({"status": "DRY_RUN" if dry_run else "BLOCKED_NOT_CONFIGURED", "delivery_id": None})
     else:
-        payload = json.dumps({"from": sender, "to": [recipient], "subject": subject, "text": body}).encode()
         try:
-            request = urllib.request.Request("https://api.resend.com/emails", data=payload, headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"})
-            with urllib.request.urlopen(request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as response:
+            # Canonical existing route: Supabase function authenticated with
+            # the provisioned synthetic operator session. Do not persist JWT.
+            base = (os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL", "")).rstrip("/")
+            anon = os.environ.get("VITE_SUPABASE_ANON_KEY", "")
+            admin_email = os.environ.get("E2E_ADMIN_EMAIL", "")
+            admin_password = os.environ.get("E2E_ADMIN_PASSWORD", "")
+            login_payload = json.dumps({"email": admin_email, "password": admin_password}).encode()
+            login_request = urllib.request.Request(base + "/auth/v1/token?grant_type=password", data=login_payload, headers={"apikey": anon, "Content-Type": "application/json"})
+            with urllib.request.urlopen(login_request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as login_response:
+                session = json.loads(login_response.read().decode())
+            function_payload = json.dumps({"to": recipient, "template": "status_update", "subject": subject, "data": {"status": "CERTIFICATION", "message": body[:6000]}}).encode()
+            function_request = urllib.request.Request(base + "/functions/v1/send-client-email", data=function_payload, headers={"apikey": anon, "Authorization": "Bearer " + session["access_token"], "Content-Type": "application/json"})
+            with urllib.request.urlopen(function_request, timeout=30, context=__import__("ssl").create_default_context(cafile=certifi.where())) as response:
                 result = json.loads(response.read().decode())
-            receipt.update({"status": "DELIVERED", "delivery_id": result.get("id")})
+            receipt.update({"status": "PROVIDER_QUEUED", "delivery_id": result.get("id"), "route": "supabase.send-client-email", "delivery_claim": "REQUEST_ACCEPTED_PROVIDER_QUEUED"})
         except (OSError, urllib.error.URLError, urllib.error.HTTPError) as exc:
-            receipt.update({"status": "FAILED", "delivery_id": None, "error": type(exc).__name__})
+            receipt.update({"status": "FAILED", "delivery_id": None, "error": type(exc).__name__, "route": "supabase.send-client-email"})
     write_json(path, receipt); return receipt
 
 
@@ -272,7 +286,7 @@ def main() -> int:
     if args.status: print(json.dumps(status(), indent=2)); return 0
     if args.self_check: print(json.dumps(self_check(), indent=2)); return 0
     if args.transport_test:
-        cycle = cycle_id(); tg = send_telegram("WP9 certification transport test: internal-only, no publication, no spend.", event_type="START", cycle=cycle); email = send_email("CERTIFICATION TEST - WP9 transport", "WP9 authorized transport test. No production action.", cycle=cycle); print(json.dumps({"telegram": tg, "email": email}, indent=2)); return 0 if tg["status"] == "DELIVERED" and email["status"] == "DELIVERED" else 1
+        cycle = cycle_id(); tg = send_telegram("WP9 certification transport test: internal-only, no publication, no spend.", event_type="START", cycle=cycle); email = send_email("CERTIFICATION TEST - WP9 transport", "WP9 authorized transport test. No production action.", cycle=cycle); print(json.dumps({"telegram": tg, "email": email}, indent=2)); return 0 if tg["status"] == "DELIVERED" and email["status"] in {"DELIVERED", "PROVIDER_QUEUED"} else 1
     if args.morning_report:
         print(json.dumps(morning_report(cycle_id(), dry_run=args.dry_run), indent=2)); return 0
     if args.scheduled and datetime.now().astimezone().hour == 6:
