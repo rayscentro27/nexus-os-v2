@@ -1,0 +1,203 @@
+{
+  "auth_checkpoints": [
+    {
+      "account_state": "UNKNOWN_REQUIRES_RAY_CONFIRMATION",
+      "capability": "native design read/write",
+      "checkpoint_id": "auth_8ee70efb118a9231",
+      "cost_review": "$0 new spend",
+      "created_at": "2026-09-02T18:06:13.747985+00:00",
+      "human_action": "Ray completes OAuth/MFA/consent only if the account and scopes are acceptable",
+      "official_authorization_url": "https://www.figma.com/oauth",
+      "provider": "Figma",
+      "reason": "Creative remote-native design remains unavailable; prepare minimum consent gate",
+      "requested_scopes": [
+        "file content read",
+        "private test-frame write"
+      ],
+      "resume_step": "configure canonical adapter, run bounded capability test, verify, close blocker",
+      "security_review": "least privilege; no client PII; no payment",
+      "session_state": "NOT_DISCOVERED",
+      "status": "WAITING_HUMAN_CONSENT"
+    },
+    {
+      "account_state": "UNKNOWN_REQUIRES_RAY_CONFIRMATION",
+      "capability": "read-only",
+      "checkpoint_id": "auth_5a2e36d9887a9706",
+      "cost_review": "$0 new spend",
+      "created_at": "2026-09-02T18:07:31.927882+00:00",
+      "human_action": "Ray completes OAuth/MFA/consent only if the account and scopes are acceptable",
+      "official_authorization_url": "https://example.com/oauth",
+      "provider": "Example",
+      "reason": "test",
+      "requested_scopes": [
+        "read"
+      ],
+      "resume_step": "configure canonical adapter, run bounded capability test, verify, close blocker",
+      "security_review": "least privilege; no client PII; no payment",
+      "session_state": "NOT_DISCOVERED",
+      "status": "WAITING_HUMAN_CONSENT"
+    }
+  ],
+  "blockers": [
+    {
+      "account_required": false,
+      "authority_required": false,
+      "blocker_id": "blocker_1e7ac4c63480908d",
+      "blocker_type": "CONFIGURATION",
+      "candidate_recovery_paths": [
+        "set bounded default",
+        "escalate human"
+      ],
+      "capability": "wp9d-self-resolution-probe",
+      "cost_requirement": "$0 new spend",
+      "credential_required": false,
+      "current_status": "RESOLVED",
+      "description": "controlled probe: missing bounded configuration value",
+      "first_seen": "2026-09-02T18:06:14.676637+00:00",
+      "hardware_requirement": "NONE",
+      "human_checkpoint": null,
+      "last_seen": "2026-09-02T18:06:14.698747+00:00",
+      "network_requirement": "NONE",
+      "occurrence_count": 1,
+      "recovery_attempts": [
+        {
+          "completed_at": "2026-09-02T18:06:14.698741+00:00",
+          "detail": "SYNTHETIC_CONTROLLED_PROOF; no production runtime mutation",
+          "path": "set bounded default",
+          "started_at": "2026-09-02T18:06:14.698725+00:00",
+          "success": true
+        }
+      ],
+      "resolved_at": "2026-09-02T18:06:14.698750+00:00",
+      "resume_token": null,
+      "selected_recovery_path": "set bounded default",
+      "source_department": "SYSTEM",
+      "technical_cause": "configuration intentionally omitted",
+      "verification_evidence": [
+        "probe reran with explicit safe default and returned exit 0"
+      ],
+      "work_order_id": "wp9d-synthetic-probe"
+    },
+    {
+      "account_required": false,
+      "authority_required": false,
+      "blocker_id": "blocker_88b7d870245e682b",
+      "blocker_type": "CONFIGURATION",
+      "candidate_recovery_paths": [
+        "set bounded default",
+        "escalate human"
+      ],
+      "capability": "wp9d-self-resolution-probe",
+      "cost_requirement": "$0 new spend",
+      "credential_required": false,
+      "current_status": "RESOLVED",
+      "description": "controlled probe: missing bounded configuration value",
+      "first_seen": "2026-09-02T18:07:31.921321+00:00",
+      "hardware_requirement": "NONE",
+      "human_checkpoint": null,
+      "last_seen": "2026-09-02T18:07:31.924994+00:00",
+      "network_requirement": "NONE",
+      "occurrence_count": 1,
+      "recovery_attempts": [
+        {
+          "completed_at": "2026-09-02T18:07:31.924988+00:00",
+          "detail": "SYNTHETIC_CONTROLLED_PROOF; no production runtime mutation",
+          "path": "set bounded default",
+          "started_at": "2026-09-02T18:07:31.924973+00:00",
+          "success": true
+        }
+      ],
+      "resolved_at": "2026-09-02T18:07:31.924997+00:00",
+      "resume_token": null,
+      "selected_recovery_path": "set bounded default",
+      "source_department": "SYSTEM",
+      "technical_cause": "configuration intentionally omitted",
+      "verification_evidence": [
+        "probe reran with explicit safe default and returned exit 0"
+      ],
+      "work_order_id": "wp9d-synthetic-probe"
+    }
+  ],
+  "schema_version": "nexus.wp9d-state.v1",
+  "talent": [
+    {
+      "architecture": "client/server TUI; local and hosted OpenAI-compatible routes",
+      "automation": "headless support requires bounded command test",
+      "candidate_id": "talent_6ff2d11737e87a7f",
+      "compatibility": "ARM64/Mac likely; Oracle requires runtime validation",
+      "created_at": "2026-09-02T18:06:13.739001+00:00",
+      "license": "MIT",
+      "lifecycle": "CANDIDATE",
+      "name": "OpenCode",
+      "security_status": "REQUIRES_SANDBOX_AND_PERMISSION_REVIEW",
+      "software_cost": "$0 license; runtime/model costs UNKNOWN",
+      "source": "official project source reviewed"
+    },
+    {
+      "architecture": "terminal pair programmer; broad provider/local model support",
+      "automation": "CLI scriptable",
+      "candidate_id": "talent_3310fef0981dc4a6",
+      "compatibility": "Python; Mac/ARM64 and Oracle feasible subject to model",
+      "created_at": "2026-09-02T18:06:13.739329+00:00",
+      "license": "Apache-2.0",
+      "lifecycle": "CANDIDATE",
+      "name": "Aider",
+      "security_status": "REQUIRES_SANDBOX_AND_PERMISSION_REVIEW",
+      "software_cost": "$0 license; runtime/model costs UNKNOWN",
+      "source": "official project source reviewed"
+    },
+    {
+      "architecture": "CLI/SDK with headless, MCP, approvals, and worktree/team features",
+      "automation": "headless documented",
+      "candidate_id": "talent_2d2280f1fc5cf7ea",
+      "compatibility": "Node; Mac/ARM64 and Oracle require install test",
+      "created_at": "2026-09-02T18:06:13.739343+00:00",
+      "license": "Apache-2.0",
+      "lifecycle": "CANDIDATE",
+      "name": "Cline CLI",
+      "security_status": "REQUIRES_SANDBOX_AND_PERMISSION_REVIEW",
+      "software_cost": "$0 license; runtime/model costs UNKNOWN",
+      "source": "official project source reviewed"
+    },
+    {
+      "architecture": "SDK/CLI agent platform with sandbox/remote options",
+      "automation": "CLI/SDK",
+      "candidate_id": "talent_3a1840a34d9cc0e0",
+      "compatibility": "Python/container; heavier resource and model burden",
+      "created_at": "2026-09-02T18:06:13.739353+00:00",
+      "license": "MIT",
+      "lifecycle": "CANDIDATE",
+      "name": "OpenHands",
+      "security_status": "REQUIRES_SANDBOX_AND_PERMISSION_REVIEW",
+      "software_cost": "$0 license; runtime/model costs UNKNOWN",
+      "source": "official project source reviewed"
+    },
+    {
+      "architecture": "research-oriented software engineering agent",
+      "automation": "CLI",
+      "candidate_id": "talent_445a1ba11b3a44fc",
+      "compatibility": "Python; task/model setup burden",
+      "created_at": "2026-09-02T18:06:13.739361+00:00",
+      "license": "MIT",
+      "lifecycle": "CANDIDATE",
+      "name": "SWE-agent",
+      "security_status": "REQUIRES_SANDBOX_AND_PERMISSION_REVIEW",
+      "software_cost": "$0 license; runtime/model costs UNKNOWN",
+      "source": "official project source reviewed"
+    },
+    {
+      "architecture": "IDE/CLI assistant with model/provider integrations",
+      "automation": "CLI/IDE-oriented",
+      "candidate_id": "talent_25ad263f60f3ed38",
+      "compatibility": "Node; headless workflow needs validation",
+      "created_at": "2026-09-02T18:06:13.739369+00:00",
+      "license": "Apache-2.0",
+      "lifecycle": "CANDIDATE",
+      "name": "Continue",
+      "security_status": "REQUIRES_SANDBOX_AND_PERMISSION_REVIEW",
+      "software_cost": "$0 license; runtime/model costs UNKNOWN",
+      "source": "official project source reviewed"
+    }
+  ],
+  "updated_at": "2026-09-02T18:04:52.133382+00:00"
+}
