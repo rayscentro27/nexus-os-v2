@@ -22,6 +22,24 @@ def test_mcp_discovery_recovers_once_from_transient_startup_failure():
     assert timing["mcp_discovery_attempts"][0]["outcome"] == "TRANSIENT_FAILURE"
 
 
+def test_mcp_recovery_closes_stale_hermes_connections_before_reconnect():
+    calls = []
+
+    def discover():
+        calls.append("discover")
+        if len(calls) == 1:
+            return []
+        return ["mcp_nexus_mcp_nexus_get_system_health"]
+
+    def shutdown():
+        calls.append("shutdown")
+
+    timing = {}
+    assert _discover_mcp_with_bounded_recovery(discover, shutdown_mcp_servers=shutdown, timing=timing)
+    assert calls == ["discover", "shutdown", "discover"]
+    assert timing["mcp_discovery_attempts"][0]["recovery_action"] == "HERMES_MCP_SHUTDOWN_RECONNECT"
+
+
 def test_mcp_discovery_does_not_retry_permanent_failure():
     calls = []
 

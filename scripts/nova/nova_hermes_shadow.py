@@ -50,7 +50,8 @@ _GOOGLE_DEDUPE_EVENTS: dict[str, list[dict[str, Any]]] = {}
 _GOOGLE_DEDUPE_LOCK = threading.Lock()
 
 
-def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, timing: Optional[Dict[str, Any]] = None) -> list[str]:
+def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, shutdown_mcp_servers=None,
+                                        timing: Optional[Dict[str, Any]] = None) -> list[str]:
     """Discover the configured MCP surface with one transient retry.
 
     MCP discovery is idempotent: Hermes only registers servers that are not
@@ -61,6 +62,7 @@ def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, timing: Optional[
     """
     attempts = []
     last_tools: list[str] = []
+    recovery_cycle_used = False
     for attempt in range(1, 3):
         started = time.monotonic()
         try:
@@ -77,6 +79,13 @@ def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, timing: Optional[
                              "elapsed_ms": round((time.monotonic() - started) * 1000, 1)})
             if attempt == 2:
                 raise
+        if attempt == 1 and not recovery_cycle_used and shutdown_mcp_servers is not None:
+            # The Hermes MCP SDK owns these allowlisted connections. Tear down
+            # its stale client/server tasks before the single reconnect; this
+            # is not arbitrary process management and is safe for discovery.
+            shutdown_mcp_servers()
+            recovery_cycle_used = True
+            attempts[-1]["recovery_action"] = "HERMES_MCP_SHUTDOWN_RECONNECT"
         if attempt == 1:
             time.sleep(0.25)
     if timing is not None:
@@ -913,7 +922,12 @@ def run_shadow(
     os.environ["NEXUS_MCP_UPDATE_ID"] = os.getenv("NOVA_SHADOW_UPDATE_ID", "")
     if "mcp-nexus_mcp" in toolsets:
         from tools.mcp_tool import discover_mcp_tools
-        _discover_mcp_with_bounded_recovery(discover_mcp_tools, timing=phase_timings)
+        from tools.mcp_tool import shutdown_mcp_servers
+        _discover_mcp_with_bounded_recovery(
+            discover_mcp_tools,
+            shutdown_mcp_servers=shutdown_mcp_servers,
+            timing=phase_timings,
+        )
     _install_google_turn_dedupe()
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
