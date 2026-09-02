@@ -1,7 +1,52 @@
 from scripts.nova.nova_hermes_shadow import (
     _current_shadow_context,
+    _conversation_history_for_model,
+    _discover_mcp_with_bounded_recovery,
     _shadow_resource_guidance,
 )
+
+
+def test_mcp_discovery_recovers_once_from_transient_startup_failure():
+    calls = []
+
+    def discover():
+        calls.append(1)
+        if len(calls) == 1:
+            raise TimeoutError("MCP startup timeout")
+        return ["mcp_nexus_mcp_nexus_get_system_health"]
+
+    timing = {}
+    assert _discover_mcp_with_bounded_recovery(discover, timing=timing)
+    assert len(calls) == 2
+    assert timing["mcp_discovery_recovered"] is True
+    assert timing["mcp_discovery_attempts"][0]["outcome"] == "TRANSIENT_FAILURE"
+
+
+def test_mcp_discovery_does_not_retry_permanent_failure():
+    calls = []
+
+    def discover():
+        calls.append(1)
+        raise ValueError("invalid MCP configuration")
+
+    try:
+        _discover_mcp_with_bounded_recovery(discover)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("permanent discovery errors must not be swallowed")
+    assert len(calls) == 1
+
+
+def test_native_conversation_history_survives_with_secret_shaped_text_redacted():
+    history = _conversation_history_for_model({"recent_turns": [{
+        "user": "Remember the project codename.",
+        "assistant": "The codename is HELIOS and the key is sk-test-not-for-use.",
+        "source_type": "NATIVE_CONVERSATION",
+    }]})
+    assert "HELIOS" in history[-1]["content"]
+    assert "sk-test-not-for-use" not in history[-1]["content"]
+    assert "[REDACTED]" in history[-1]["content"]
 
 
 def test_shadow_guidance_separates_discovery_from_verification():

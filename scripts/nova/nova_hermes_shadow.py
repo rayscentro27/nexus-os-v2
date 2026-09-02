@@ -50,6 +50,41 @@ _GOOGLE_DEDUPE_EVENTS: dict[str, list[dict[str, Any]]] = {}
 _GOOGLE_DEDUPE_LOCK = threading.Lock()
 
 
+def _discover_mcp_with_bounded_recovery(discover_mcp_tools, *, timing: Optional[Dict[str, Any]] = None) -> list[str]:
+    """Discover the configured MCP surface with one transient retry.
+
+    MCP discovery is idempotent: Hermes only registers servers that are not
+    already connected, and failed servers are retried by its own discovery
+    contract.  A startup race previously left the Nova turn with no Nexus
+    tools, so retry only that observable condition once.  This is deliberately
+    not a general model/request retry and cannot duplicate a tool mutation.
+    """
+    attempts = []
+    last_tools: list[str] = []
+    for attempt in range(1, 3):
+        started = time.monotonic()
+        try:
+            last_tools = list(discover_mcp_tools() or [])
+            nexus_tools = [name for name in last_tools if "nexus_mcp" in str(name)]
+            outcome = "PASS" if nexus_tools else "NO_NEXUS_TOOLS"
+            attempts.append({"attempt": attempt, "outcome": outcome,
+                             "elapsed_ms": round((time.monotonic() - started) * 1000, 1)})
+            if nexus_tools or attempt == 2:
+                break
+        except (ConnectionError, TimeoutError, OSError) as exc:
+            attempts.append({"attempt": attempt, "outcome": "TRANSIENT_FAILURE",
+                             "error_class": type(exc).__name__,
+                             "elapsed_ms": round((time.monotonic() - started) * 1000, 1)})
+            if attempt == 2:
+                raise
+        if attempt == 1:
+            time.sleep(0.25)
+    if timing is not None:
+        timing["mcp_discovery_attempts"] = attempts
+        timing["mcp_discovery_recovered"] = len(attempts) == 2 and attempts[-1].get("outcome") == "PASS"
+    return last_tools
+
+
 def _root_turn_id(task_id: str) -> str:
     """Collapse bounded Hermes continuation task IDs to their user-turn ID."""
     value = str(task_id or "")
@@ -454,10 +489,20 @@ def _conversation_history_for_model(state: Dict[str, Any]) -> list[Dict[str, str
                     + "]"
                 )
             else:
-                # Unannotated legacy entries cannot safely be distinguished
-                # from old resource output. Keep the turn's user text above,
-                # but do not promote unknown assistant prose into model facts.
-                label = "[PRIOR UNCLASSIFIED RESPONSE — continuity metadata only; facts require current evidence]"
+                # Native conversation is the durable conversational context.
+                # Preserve its bounded answer across worker processes, while
+                # redacting common credential-shaped values before reusing it
+                # as model context. Resource-backed answers remain metadata-only
+                # above because their facts require a fresh authoritative read.
+                if source_type == "NATIVE_CONVERSATION":
+                    native = str(turn.get("assistant", ""))[:1400]
+                    native = re.sub(r"(?i)(sk-[A-Za-z0-9_-]+|ghp_[A-Za-z0-9_]+|Bearer\s+[A-Za-z0-9._~+/=-]+)", "[REDACTED]", native)
+                    label = "[PRIOR NATIVE CONVERSATION — durable referent context]\n" + native
+                else:
+                    # Unannotated legacy entries cannot safely be distinguished
+                    # from old resource output. Keep the turn's user text above,
+                    # but do not promote unknown assistant prose into model facts.
+                    label = "[PRIOR UNCLASSIFIED RESPONSE — continuity metadata only; facts require current evidence]"
             history.append({"role": "assistant", "content": label})
     return history
 
@@ -868,7 +913,7 @@ def run_shadow(
     os.environ["NEXUS_MCP_UPDATE_ID"] = os.getenv("NOVA_SHADOW_UPDATE_ID", "")
     if "mcp-nexus_mcp" in toolsets:
         from tools.mcp_tool import discover_mcp_tools
-        discover_mcp_tools()
+        _discover_mcp_with_bounded_recovery(discover_mcp_tools, timing=phase_timings)
     _install_google_turn_dedupe()
     shadow_state["active_request"] = prompt[:1000]
     for row in shadow_state.get("resource_results", []) or []:
@@ -1184,6 +1229,24 @@ def run_shadow(
             result["messages"] = all_messages
             result["native_conversation"] = True
             result["claim_attribution"] = claim_attribution(prompt, draft, final_state)
+            # Zero-tool turns return early, but they are still conversation
+            # state. Persist them before returning so a new worker process can
+            # recover native referents; resource-backed turns continue through
+            # the fuller evidence index below.
+            shadow_state.update({
+                "last_turn_id": turn_id,
+                "last_prompt": prompt[:500],
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "last_response": draft[-3000:],
+                "turn_contract": turn_contract,
+                "evidence_state": final_state,
+            })
+            turns = shadow_state.setdefault("recent_turns", [])
+            turns.append({"user": prompt[:1000], "assistant": draft[-3000:],
+                          "source_type": "NATIVE_CONVERSATION", "resource_domains": [],
+                          "turn_id": turn_id})
+            shadow_state["recent_turns"] = turns[-8:]
+            _save_shadow_state(active_session, shadow_state)
             trace.event("hermes.final_synthesis", {
                 "response_chars": len(draft),
                 "claim_source_diagnostic": claim_diagnostics(
