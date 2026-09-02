@@ -13,13 +13,20 @@ Native launchd evidence:
 - schedule: 20:00 local company cycle and 06:00 local morning report
 - last exit: never exited at activation time
 
-Temporary observability is configured for three nights. Certification state is
-durable at `PENDING_NIGHT_1`. No scheduled trigger was observed during the
-short activation-session polling window; no scheduled proof is claimed.
+Temporary observability is configured for three nights. The first real calendar
+trigger occurred at 20:00 local and produced cycle
+`wp9-20260902T030000Z-be889fce76` with `scheduled=true`, durable start/preflight/
+completion receipts, Finance rollup, and launchd exit code 0. Growth initially
+failed because launchd lacked the repository Python path; Finance recorded that
+failure, and the corrected bounded recovery run completed Growth successfully.
+Alpha truthfully recorded `NO_MEANINGFUL_WORK`.
 
 WP9_IMPLEMENTATION_READY=YES
 WP9_CANONICAL_SCHEDULER_INSTALLED=YES
 WP9_CANONICAL_SCHEDULER_LOADED=PASS
 WP9_TEMPORARY_OBSERVABILITY_ACTIVATED=YES
 CERTIFICATION_STATE=PENDING_NIGHT_1
-WP9_FIRST_REAL_SCHEDULED_TRIGGER=PENDING
+WP9_FIRST_REAL_SCHEDULED_TRIGGER=PASS
+WP9_FIRST_REAL_SCHEDULED_CYCLE=PASS_WITH_RECORDED_FAILURE_AND_RECOVERY
+WP9_REAL_SCHEDULED_SIDE_EFFECT=PASS
+WP9_UNATTENDED_EVIDENCE=PASS_FIRST_SCHEDULED_CYCLE

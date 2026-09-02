@@ -141,7 +141,8 @@ def preflight(cycle: str) -> dict[str, Any]:
 def _run(command: list[str], timeout: int = 60) -> dict[str, Any]:
     started = time.monotonic()
     try:
-        proc = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=timeout, check=False)
+        environment = {**os.environ, "PYTHONPATH": str(ROOT / "scripts")}
+        proc = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=timeout, check=False)
         return {"command": " ".join(command), "exit_code": proc.returncode,
                 "stdout_tail": (proc.stdout or "")[-1500:], "stderr_tail": (proc.stderr or "")[-1000:],
                 "duration_seconds": round(time.monotonic() - started, 3), "timeout": False}

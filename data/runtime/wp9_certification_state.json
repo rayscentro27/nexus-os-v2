@@ -2096,11 +2096,535 @@
           "work_order_id": "wp9-20260902T030000Z-be889fce76-trading"
         }
       ]
+    },
+    {
+      "authority": {
+        "ad_spend": false,
+        "client_production_mutation": false,
+        "live_trading": false,
+        "new_paid_spend": false,
+        "outreach": false,
+        "payments": false,
+        "profile": "INTERNAL_ONLY",
+        "social_publish": false
+      },
+      "company_cycle_id": "wp9-20260902T030352Z-cae636bf48",
+      "completed_at": "2026-09-02T03:03:53.163090+00:00",
+      "daily_ledger": {
+        "cash_spent": 0.0,
+        "compute_consumed": 14.391,
+        "free_credit_consumed": 0.0,
+        "generated_at": "2026-09-02T03:03:53.163050+00:00",
+        "net_contribution": 0.0,
+        "provenance": "ACTUAL_RECEIPTS_ONLY",
+        "quota_consumed": 0.0,
+        "replacement_cost_estimate": 0,
+        "revenue_received": 0,
+        "storage_added": 0.0
+      },
+      "finance_rollup": {
+        "cash_cost_usd": 0.0,
+        "compute_consumed": 0.9309999999999999,
+        "department": null,
+        "estimated_replacement_cost_usd": 0,
+        "free_credit_consumed": 0.0,
+        "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+        "provenance": "ACTUAL_RECEIPTS_ONLY",
+        "quota_consumed": 0.0,
+        "storage_consumed": 0.0,
+        "work_orders": [
+          "wp9-20260902T030352Z-cae636bf48-alpha",
+          "wp9-20260902T030352Z-cae636bf48-creative",
+          "wp9-20260902T030352Z-cae636bf48-finance",
+          "wp9-20260902T030352Z-cae636bf48-growth",
+          "wp9-20260902T030352Z-cae636bf48-nova",
+          "wp9-20260902T030352Z-cae636bf48-trading"
+        ]
+      },
+      "live_trading": false,
+      "payments": false,
+      "publication": false,
+      "scheduled": false,
+      "started_at": "2026-09-02T03:03:52.085688+00:00",
+      "status": "COMPLETED",
+      "work_orders": [
+        {
+          "execution": {
+            "department": "NOVA",
+            "result": "state_assessment_written",
+            "side_effect": "cycle_state",
+            "status": "COMPLETED"
+          },
+          "postrun": {
+            "attempt": 1,
+            "failed_work_still_accounted": false,
+            "receipt": {
+              "attempt": 1,
+              "compute_consumed": 0.0,
+              "confidence": "HIGH",
+              "created_at": "2026-09-02T03:03:52.176119+00:00",
+              "department": "NOVA",
+              "estimated_replacement_cost_usd": "UNKNOWN",
+              "free_credit_consumed": 0.0,
+              "gpu_minutes": 0,
+              "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+              "model_tokens": 0,
+              "money_spent_usd": 0.0,
+              "provenance": "ACTUAL",
+              "quota_consumed": 0.0,
+              "receipt_id": "finance-postrun:wp9-20260902T030352Z-cae636bf48-nova:1",
+              "retry_of": null,
+              "status": "COMPLETED",
+              "storage_consumed": 0.0,
+              "work_order_id": "wp9-20260902T030352Z-cae636bf48-nova"
+            },
+            "status": "COMPLETED",
+            "variance": {
+              "cash_cost_usd": {
+                "actual": 0,
+                "difference": 0,
+                "estimated": 0
+              },
+              "compute_minutes": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              },
+              "model_tokens": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              }
+            }
+          },
+          "preflight": {
+            "authority": "INTERNAL_ONLY",
+            "campaign_id": null,
+            "created_at": "2026-09-02T03:03:52.110418+00:00",
+            "decision": "ALLOW",
+            "department": "NOVA",
+            "envelope": {
+              "MAX_CASH_COST_USD": 0,
+              "MAX_FREE_CREDIT_USAGE": 0,
+              "MAX_GPU_MINUTES": 0,
+              "MAX_MODEL_TOKENS": 12000,
+              "MAX_STORAGE_BYTES": 26214400
+            },
+            "estimated": {
+              "cash_cost_usd": 0
+            },
+            "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+            "resource_state": "UNKNOWN",
+            "strategy_id": null,
+            "type": "FINANCE_PREFLIGHT",
+            "work_order_id": "wp9-20260902T030352Z-cae636bf48-nova"
+          },
+          "work_order_id": "wp9-20260902T030352Z-cae636bf48-nova"
+        },
+        {
+          "execution": {
+            "department": "FINANCE",
+            "result": "ledger_snapshot_written",
+            "side_effect": "finance_receipt",
+            "status": "COMPLETED"
+          },
+          "postrun": {
+            "attempt": 1,
+            "failed_work_still_accounted": false,
+            "receipt": {
+              "attempt": 1,
+              "compute_consumed": 0.0,
+              "confidence": "HIGH",
+              "created_at": "2026-09-02T03:03:52.178770+00:00",
+              "department": "FINANCE",
+              "estimated_replacement_cost_usd": "UNKNOWN",
+              "free_credit_consumed": 0.0,
+              "gpu_minutes": 0,
+              "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+              "model_tokens": 0,
+              "money_spent_usd": 0.0,
+              "provenance": "ACTUAL",
+              "quota_consumed": 0.0,
+              "receipt_id": "finance-postrun:wp9-20260902T030352Z-cae636bf48-finance:1",
+              "retry_of": null,
+              "status": "COMPLETED",
+              "storage_consumed": 0.0,
+              "work_order_id": "wp9-20260902T030352Z-cae636bf48-finance"
+            },
+            "status": "COMPLETED",
+            "variance": {
+              "cash_cost_usd": {
+                "actual": 0,
+                "difference": 0,
+                "estimated": 0
+              },
+              "compute_minutes": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              },
+              "model_tokens": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              }
+            }
+          },
+          "preflight": {
+            "authority": "INTERNAL_ONLY",
+            "campaign_id": null,
+            "created_at": "2026-09-02T03:03:52.177164+00:00",
+            "decision": "ALLOW",
+            "department": "FINANCE",
+            "envelope": {
+              "MAX_CASH_COST_USD": 0,
+              "MAX_FREE_CREDIT_USAGE": 0,
+              "MAX_GPU_MINUTES": 0,
+              "MAX_MODEL_TOKENS": 12000,
+              "MAX_STORAGE_BYTES": 26214400
+            },
+            "estimated": {
+              "cash_cost_usd": 0
+            },
+            "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+            "resource_state": "UNKNOWN",
+            "strategy_id": null,
+            "type": "FINANCE_PREFLIGHT",
+            "work_order_id": "wp9-20260902T030352Z-cae636bf48-finance"
+          },
+          "work_order_id": "wp9-20260902T030352Z-cae636bf48-finance"
+        },
+        {
+          "execution": {
+            "cycle_id": "wp9-20260902T030352Z-cae636bf48",
+            "department": "ALPHA",
+            "result": {
+              "classification": "NO_MEANINGFUL_WORK",
+              "command": "/usr/local/opt/python@3.14/bin/python3.14 scripts/alpha/run_alpha_discovery_cycle.py --theme BUSINESS --question Bounded internal opportunity evidence refresh --json",
+              "duration_seconds": 0.237,
+              "exit_code": 2,
+              "stderr_tail": "",
+              "stdout_tail": "{\n  \"ok\": false,\n  \"theme\": \"BUSINESS\",\n  \"window\": \"LAST_30_DAYS\",\n  \"question\": \"Bounded internal opportunity evidence refresh\",\n  \"research\": {\n    \"research_id\": \"research_2a92cd7c88d06aac24cf\",\n    \"theme\": \"BUSINESS\",\n    \"question\": \"Bounded internal opportunity evidence refresh\",\n    \"discovery_source\": \"bounded_alpha_discovery\",\n    \"discovery_window\": \"LAST_30_DAYS\",\n    \"candidate_content_ids\": [],\n    \"claims\": [],\n    \"source_refs\": [],\n    \"support\": [],\n    \"contrary_evidence\": [],\n    \"evidence_quality\": 0.0,\n    \"status\": \"SCREENED\",\n    \"recommendation\": \"ROUTE_FOR_NEXUS_REVIEW\",\n    \"routing\": null,\n    \"created_at\": \"2026-09-02T03:03:52.358527+00:00\",\n    \"updated_at\": \"2026-09-02T03:03:52.358536+00:00\"\n  },\n  \"content_count\": 0,\n  \"claim_count\": 0,\n  \"retrieval\": [],\n  \"budget\": {\n    \"MAX_SEARCH_QUERIES\": 4,\n    \"MAX_DISCOVERY_RESULTS\": 12,\n    \"MAX_YOUTUBE_TRANSCRIPTS\": 1,\n    \"MAX_PAGE_FETCHES\": 4,\n    \"MAX_GITHUB_REPOS\": 4,\n    \"MAX_FORUM_THREADS\": 2,\n    \"MAX_RESEARCH_CALLS\": 8,\n    \"MAX_AI_CALLS\": 1,\n    \"MAX_RUNTIME_SECONDS\": 180\n  },\n  \"no_external_action\": true\n}\n",
+              "timeout": false
+            },
+            "side_effect": "no_new_evidence",
+            "status": "NO_MEANINGFUL_WORK"
+          },
+          "postrun": {
+            "attempt": 1,
+            "failed_work_still_accounted": true,
+            "receipt": {
+              "attempt": 1,
+              "compute_consumed": 0.237,
+              "confidence": "HIGH",
+              "created_at": "2026-09-02T03:03:52.419562+00:00",
+              "department": "ALPHA",
+              "estimated_replacement_cost_usd": "UNKNOWN",
+              "free_credit_consumed": 0.0,
+              "gpu_minutes": 0,
+              "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+              "model_tokens": 0,
+              "money_spent_usd": 0.0,
+              "provenance": "ACTUAL",
+              "quota_consumed": 0.0,
+              "receipt_id": "finance-postrun:wp9-20260902T030352Z-cae636bf48-alpha:1",
+              "retry_of": null,
+              "status": "NO_MEANINGFUL_WORK",
+              "storage_consumed": 0.0,
+              "work_order_id": "wp9-20260902T030352Z-cae636bf48-alpha"
+            },
+            "status": "NO_MEANINGFUL_WORK",
+            "variance": {
+              "cash_cost_usd": {
+                "actual": 0,
+                "difference": 0,
+                "estimated": 0
+              },
+              "compute_minutes": {
+                "actual": 0.237,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              },
+              "model_tokens": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              }
+            }
+          },
+          "preflight": {
+            "authority": "INTERNAL_ONLY",
+            "campaign_id": null,
+            "created_at": "2026-09-02T03:03:52.179592+00:00",
+            "decision": "ALLOW",
+            "department": "ALPHA",
+            "envelope": {
+              "MAX_CASH_COST_USD": 0,
+              "MAX_FREE_CREDIT_USAGE": 0,
+              "MAX_GPU_MINUTES": 0,
+              "MAX_MODEL_TOKENS": 12000,
+              "MAX_STORAGE_BYTES": 26214400
+            },
+            "estimated": {
+              "cash_cost_usd": 0
+            },
+            "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+            "resource_state": "UNKNOWN",
+            "strategy_id": null,
+            "type": "FINANCE_PREFLIGHT",
+            "work_order_id": "wp9-20260902T030352Z-cae636bf48-alpha"
+          },
+          "work_order_id": "wp9-20260902T030352Z-cae636bf48-alpha"
+        },
+        {
+          "execution": {
+            "cycle_id": "wp9-20260902T030352Z-cae636bf48",
+            "department": "CREATIVE",
+            "result": {
+              "command": "/usr/local/opt/python@3.14/bin/python3.14 scripts/creative/generate_overnight_creative_asset_queue.py --dry-run --json",
+              "duration_seconds": 0.139,
+              "exit_code": 0,
+              "stderr_tail": "",
+              "stdout_tail": "ds\": [\n        \"tiktok_video\",\n        \"ig_fb_post\"\n      ],\n      \"publish_status\": \"draft_only\",\n      \"approval_required\": true\n    },\n    {\n      \"opportunity_id\": \"funding_path_banks\",\n      \"title\": \"Funding-path bank angles (BofA, Chase, credit unions, community banks)\",\n      \"asset_kinds\": [\n        \"landing_page\",\n        \"tiktok_video\",\n        \"ig_fb_post\"\n      ],\n      \"publish_status\": \"draft_only\",\n      \"approval_required\": true\n    },\n    {\n      \"opportunity_id\": \"acr_free_education\",\n      \"title\": \"AnnualCreditReport.com free-option education\",\n      \"asset_kinds\": [\n        \"tiktok_video\",\n        \"ig_fb_post\"\n      ],\n      \"publish_status\": \"draft_only\",\n      \"approval_required\": true\n    }\n  ],\n  \"counts\": {\n    \"assets\": 10\n  },\n  \"summary\": \"10 creative assets queued (draft-only). Nothing produced, uploaded, or published.\",\n  \"safety\": {\n    \"external_action\": false,\n    \"messages_sent\": false,\n    \"client_contacted\": false,\n    \"money_spent\": false,\n    \"client_charged\": false,\n    \"trade_placed\": false,\n    \"letters_mailed\": false,\n    \"disputes_submitted\": false,\n    \"smartcredit_password_stored\": false,\n    \"smartcredit_scraped\": false,\n    \"docupost_sending\": false,\n    \"live_client_vault_connected\": false,\n    \"second_supabase_connected\": false,\n    \"external_ai_on_client_data\": false,\n    \"broad_scrape\": false,\n    \"level_3_blocked\": true,\n    \"post_published\": false,\n    \"video_uploaded\": false,\n    \"external_action_performed\": false\n  }\n}\n",
+              "timeout": false
+            },
+            "side_effect": "internal_report_or_no_change",
+            "status": "COMPLETED"
+          },
+          "postrun": {
+            "attempt": 1,
+            "failed_work_still_accounted": false,
+            "receipt": {
+              "attempt": 1,
+              "compute_consumed": 0.139,
+              "confidence": "HIGH",
+              "created_at": "2026-09-02T03:03:52.561622+00:00",
+              "department": "CREATIVE",
+              "estimated_replacement_cost_usd": "UNKNOWN",
+              "free_credit_consumed": 0.0,
+              "gpu_minutes": 0,
+              "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+              "model_tokens": 0,
+              "money_spent_usd": 0.0,
+              "provenance": "ACTUAL",
+              "quota_consumed": 0.0,
+              "receipt_id": "finance-postrun:wp9-20260902T030352Z-cae636bf48-creative:1",
+              "retry_of": null,
+              "status": "COMPLETED",
+              "storage_consumed": 0.0,
+              "work_order_id": "wp9-20260902T030352Z-cae636bf48-creative"
+            },
+            "status": "COMPLETED",
+            "variance": {
+              "cash_cost_usd": {
+                "actual": 0,
+                "difference": 0,
+                "estimated": 0
+              },
+              "compute_minutes": {
+                "actual": 0.139,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              },
+              "model_tokens": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              }
+            }
+          },
+          "preflight": {
+            "authority": "INTERNAL_ONLY",
+            "campaign_id": null,
+            "created_at": "2026-09-02T03:03:52.420478+00:00",
+            "decision": "ALLOW",
+            "department": "CREATIVE",
+            "envelope": {
+              "MAX_CASH_COST_USD": 0,
+              "MAX_FREE_CREDIT_USAGE": 0,
+              "MAX_GPU_MINUTES": 0,
+              "MAX_MODEL_TOKENS": 12000,
+              "MAX_STORAGE_BYTES": 26214400
+            },
+            "estimated": {
+              "cash_cost_usd": 0
+            },
+            "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+            "resource_state": "UNKNOWN",
+            "strategy_id": null,
+            "type": "FINANCE_PREFLIGHT",
+            "work_order_id": "wp9-20260902T030352Z-cae636bf48-creative"
+          },
+          "work_order_id": "wp9-20260902T030352Z-cae636bf48-creative"
+        },
+        {
+          "execution": {
+            "cycle_id": "wp9-20260902T030352Z-cae636bf48",
+            "department": "GROWTH",
+            "result": {
+              "command": "/usr/local/opt/python@3.14/bin/python3.14 -m nexus_foundation.run_growth_validation_loop --json",
+              "duration_seconds": 0.414,
+              "exit_code": 0,
+              "stderr_tail": "",
+              "stdout_tail": "th_plan_30ee4e659046a99cc845\",\n    \"sample_status\": \"NO_REAL_VALIDATION_DATA\",\n    \"counts\": {\n      \"VISIT\": 0,\n      \"LEAD\": 0,\n      \"QUALIFIED\": 0,\n      \"BOOKING_INTENT\": 0,\n      \"SERVICE_INTENT\": 0,\n      \"MEMBERSHIP_INTEREST\": 0,\n      \"OBJECTION\": 0\n    },\n    \"lead_rate\": null,\n    \"qualification_rate\": null,\n    \"booking_intent_rate\": null,\n    \"cac\": \"UNKNOWN\",\n    \"revenue\": null,\n    \"retention\": null,\n    \"source\": \"observed_events_only\",\n    \"updated_at\": \"2026-09-02T03:03:52.922440+00:00\"\n  },\n  \"evidence_state\": \"NO_REAL_VALIDATION_DATA\",\n  \"external_actions\": {\n    \"ad_spend\": false,\n    \"publishing\": false,\n    \"email_outreach\": false,\n    \"sms_outreach\": false,\n    \"payments\": false\n  },\n  \"nova_return\": {\n    \"what_changed\": \"bounded no-spend Growth validation is ready\",\n    \"evidence\": {\n      \"plan_id\": \"growth_plan_30ee4e659046a99cc845\",\n      \"sample_status\": \"NO_REAL_VALIDATION_DATA\",\n      \"counts\": {\n        \"VISIT\": 0,\n        \"LEAD\": 0,\n        \"QUALIFIED\": 0,\n        \"BOOKING_INTENT\": 0,\n        \"SERVICE_INTENT\": 0,\n        \"MEMBERSHIP_INTEREST\": 0,\n        \"OBJECTION\": 0\n      },\n      \"lead_rate\": null,\n      \"qualification_rate\": null,\n      \"booking_intent_rate\": null,\n      \"cac\": \"UNKNOWN\",\n      \"revenue\": null,\n      \"retention\": null,\n      \"source\": \"observed_events_only\",\n      \"updated_at\": \"2026-09-02T03:03:52.922440+00:00\"\n    },\n    \"recommendation\": \"collect approved real evidence before changing the opportunity decision\"\n  }\n}\n",
+              "timeout": false
+            },
+            "side_effect": "internal_report_or_no_change",
+            "status": "COMPLETED"
+          },
+          "postrun": {
+            "attempt": 1,
+            "failed_work_still_accounted": false,
+            "receipt": {
+              "attempt": 1,
+              "compute_consumed": 0.414,
+              "confidence": "HIGH",
+              "created_at": "2026-09-02T03:03:52.979060+00:00",
+              "department": "GROWTH",
+              "estimated_replacement_cost_usd": "UNKNOWN",
+              "free_credit_consumed": 0.0,
+              "gpu_minutes": 0,
+              "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+              "model_tokens": 0,
+              "money_spent_usd": 0.0,
+              "provenance": "ACTUAL",
+              "quota_consumed": 0.0,
+              "receipt_id": "finance-postrun:wp9-20260902T030352Z-cae636bf48-growth:1",
+              "retry_of": null,
+              "status": "COMPLETED",
+              "storage_consumed": 0.0,
+              "work_order_id": "wp9-20260902T030352Z-cae636bf48-growth"
+            },
+            "status": "COMPLETED",
+            "variance": {
+              "cash_cost_usd": {
+                "actual": 0,
+                "difference": 0,
+                "estimated": 0
+              },
+              "compute_minutes": {
+                "actual": 0.414,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              },
+              "model_tokens": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              }
+            }
+          },
+          "preflight": {
+            "authority": "INTERNAL_ONLY",
+            "campaign_id": null,
+            "created_at": "2026-09-02T03:03:52.562571+00:00",
+            "decision": "ALLOW",
+            "department": "GROWTH",
+            "envelope": {
+              "MAX_CASH_COST_USD": 0,
+              "MAX_FREE_CREDIT_USAGE": 0,
+              "MAX_GPU_MINUTES": 0,
+              "MAX_MODEL_TOKENS": 12000,
+              "MAX_STORAGE_BYTES": 26214400
+            },
+            "estimated": {
+              "cash_cost_usd": 0
+            },
+            "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+            "resource_state": "UNKNOWN",
+            "strategy_id": null,
+            "type": "FINANCE_PREFLIGHT",
+            "work_order_id": "wp9-20260902T030352Z-cae636bf48-growth"
+          },
+          "work_order_id": "wp9-20260902T030352Z-cae636bf48-growth"
+        },
+        {
+          "execution": {
+            "cycle_id": "wp9-20260902T030352Z-cae636bf48",
+            "department": "TRADING",
+            "result": {
+              "command": "/usr/local/opt/python@3.14/bin/python3.14 scripts/trading/run_trading_demo_readiness_cycle.py --json",
+              "duration_seconds": 0.141,
+              "exit_code": 0,
+              "stderr_tail": "",
+              "stdout_tail": "{\n  \"ok\": true,\n  \"generated_at\": \"2026-09-02T03:03:53.136219+00:00\",\n  \"status\": \"trading_demo_readiness_cycle_passed\",\n  \"gates\": {\n    \"practice_account\": true,\n    \"pricing\": true,\n    \"instruments\": true,\n    \"bridge_dry_run\": true,\n    \"tournament\": true\n  },\n  \"recurring_demo_orders_allowed\": false,\n  \"live_orders_allowed\": false,\n  \"orders_placed\": false,\n  \"external_action_performed\": false\n}\n",
+              "timeout": false
+            },
+            "side_effect": "internal_report_or_no_change",
+            "status": "COMPLETED"
+          },
+          "postrun": {
+            "attempt": 1,
+            "failed_work_still_accounted": false,
+            "receipt": {
+              "attempt": 1,
+              "compute_consumed": 0.141,
+              "confidence": "HIGH",
+              "created_at": "2026-09-02T03:03:53.160351+00:00",
+              "department": "TRADING",
+              "estimated_replacement_cost_usd": "UNKNOWN",
+              "free_credit_consumed": 0.0,
+              "gpu_minutes": 0,
+              "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+              "model_tokens": 0,
+              "money_spent_usd": 0.0,
+              "provenance": "ACTUAL",
+              "quota_consumed": 0.0,
+              "receipt_id": "finance-postrun:wp9-20260902T030352Z-cae636bf48-trading:1",
+              "retry_of": null,
+              "status": "COMPLETED",
+              "storage_consumed": 0.0,
+              "work_order_id": "wp9-20260902T030352Z-cae636bf48-trading"
+            },
+            "status": "COMPLETED",
+            "variance": {
+              "cash_cost_usd": {
+                "actual": 0,
+                "difference": 0,
+                "estimated": 0
+              },
+              "compute_minutes": {
+                "actual": 0.141,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              },
+              "model_tokens": {
+                "actual": 0,
+                "difference": "UNKNOWN",
+                "estimated": "UNKNOWN"
+              }
+            }
+          },
+          "preflight": {
+            "authority": "INTERNAL_ONLY",
+            "campaign_id": null,
+            "created_at": "2026-09-02T03:03:52.985127+00:00",
+            "decision": "ALLOW",
+            "department": "TRADING",
+            "envelope": {
+              "MAX_CASH_COST_USD": 0,
+              "MAX_FREE_CREDIT_USAGE": 0,
+              "MAX_GPU_MINUTES": 0,
+              "MAX_MODEL_TOKENS": 12000,
+              "MAX_STORAGE_BYTES": 26214400
+            },
+            "estimated": {
+              "cash_cost_usd": 0
+            },
+            "initiative_id": "wp9-20260902T030352Z-cae636bf48",
+            "resource_state": "UNKNOWN",
+            "strategy_id": null,
+            "type": "FINANCE_PREFLIGHT",
+            "work_order_id": "wp9-20260902T030352Z-cae636bf48-trading"
+          },
+          "work_order_id": "wp9-20260902T030352Z-cae636bf48-trading"
+        }
+      ]
     }
   ],
-  "last_completed_at": "2026-09-02T03:00:16.120933+00:00",
-  "last_cycle": "wp9-20260902T030000Z-be889fce76",
+  "last_completed_at": "2026-09-02T03:03:53.163090+00:00",
+  "last_cycle": "wp9-20260902T030352Z-cae636bf48",
   "last_outcome": "COMPLETED",
-  "last_started_at": "2026-09-02T03:00:00.454078+00:00",
+  "last_started_at": "2026-09-02T03:03:52.085688+00:00",
   "nights": {}
 }
