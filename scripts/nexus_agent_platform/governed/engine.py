@@ -89,6 +89,33 @@ def execute_approved_work_order(
     action = get_action(action_id)
     timeout_seconds = action.get("timeout_seconds", 120) if action else 120
 
+    # Finance is a single, advisory gate at the governed executor boundary.
+    # It records the decision before execution and never receives publication,
+    # payment, or live-trading authority.
+    try:
+        from nexus_agent_platform.finance.engine import finance_preflight
+        finance_pre = finance_preflight(
+            work_order_id,
+            department=str(inputs.get("department") or action.get("department") if action else "OPERATIONS"),
+            initiative_id=inputs.get("initiative_id"),
+            campaign_id=inputs.get("campaign_id"),
+            strategy_id=inputs.get("strategy_id"),
+            envelope={"MAX_CASH_COST_USD": float((inputs.get("finance_budget") or {}).get("max_cash_cost_usd", 0))},
+            estimated={"cash_cost_usd": float(inputs.get("estimated_cash_cost_usd", 0) or 0)},
+            authority="INTERNAL_ONLY",
+            resource_state=str(inputs.get("resource_state", "UNKNOWN")),
+        )
+        if finance_pre.get("decision") in {"BLOCK_BUDGET", "BLOCK_AUTHORITY", "BLOCK_RESOURCE", "UNKNOWN_REQUIRES_REVIEW"}:
+            try:
+                wo.transition(work_order_id, "blocked")
+            except ValueError:
+                pass
+            return {"status": "blocked", "work_order_id": work_order_id, "action_id": action_id, "executed": False, "finance_preflight": finance_pre}
+    except Exception as exc:
+        # Finance failure must not silently permit spending; retain the work
+        # order and make the accounting dependency visible to the operator.
+        return {"status": "blocked", "work_order_id": work_order_id, "action_id": action_id, "executed": False, "reason": f"finance_preflight_failed:{exc}"}
+
     try:
         wo.transition(work_order_id, "running")
     except ValueError:
@@ -172,6 +199,7 @@ def execute_approved_work_order(
 
     if result.get("_execution_status") == "REPAIR_FAILED":
         failed = wo.record_result(work_order_id, status="failed", result=result, error=result.get("failure"))
+        _finance_postrun(work_order_id, inputs, "FAILED")
         return {"status": "failed", "work_order_id": work_order_id, "action_id": action_id,
                 "executed": True, "blocked": False, "result": result, "order": failed}
 
@@ -184,6 +212,7 @@ def execute_approved_work_order(
         error=None,
         telemetry_run_id=run_id,
     )
+    _finance_postrun(work_order_id, inputs, "COMPLETED")
     return {
         "status": "completed",
         "work_order_id": work_order_id,
@@ -215,10 +244,29 @@ def _timeout_failure(work_order_id, action_id, error, approval_id, meta):
     except Exception:
         pass
     wo.record_result(work_order_id, status="failed", error=error, telemetry_run_id=None)
+    _finance_postrun(work_order_id, {}, "FAILED")
 
 
 def _execution_failure(work_order_id, action_id, error, approval_id, meta):
     wo.record_result(work_order_id, status="failed", error=error, telemetry_run_id=None)
+    _finance_postrun(work_order_id, {}, "FAILED")
+
+
+def _finance_postrun(work_order_id: str, inputs: Dict[str, Any], status: str) -> None:
+    try:
+        from nexus_agent_platform.finance.engine import finance_postrun
+        finance_postrun(work_order_id, department=str(inputs.get("department", "OPERATIONS")),
+                        initiative_id=inputs.get("initiative_id"),
+                        estimated={"cash_cost_usd": float(inputs.get("estimated_cash_cost_usd", 0) or 0)},
+                        actual={"cash_cost_usd": float(inputs.get("actual_cash_cost_usd", 0) or 0),
+                                "model_tokens": int(inputs.get("model_tokens", 0) or 0),
+                                "gpu_minutes": float(inputs.get("gpu_minutes", 0) or 0),
+                                "storage_bytes": int(inputs.get("storage_bytes", 0) or 0)},
+                        status=status, attempt=int(inputs.get("attempt", 1) or 1), retry_of=inputs.get("retry_of"))
+    except Exception:
+        # Execution truth remains in the governed work-order receipt; an
+        # accounting error is surfaced by the missing Finance postrun record.
+        return
 
 
 # ═══════════════════════════════════════════════════════════════

@@ -41,3 +41,21 @@ def test_bounded_dry_run_has_pre_and_post_receipts(tmp_path, monkeypatch):
     assert len(result["jobs"]) == 5
     assert all(job["preflight"]["decision"] == "ALLOW" for job in result["jobs"])
     assert all(job["postrun"]["receipt"]["money_spent_usd"] == 0 for job in result["jobs"])
+
+
+def test_real_governed_executor_writes_finance_hooks(tmp_path, monkeypatch):
+    monkeypatch.setenv("NEXUS_GOVERNED_DATA_DIR", str(tmp_path / "governed"))
+    monkeypatch.setenv("NEXUS_EXECUTION_TELEMETRY_PATH", str(tmp_path / "telemetry.jsonl"))
+    from nexus_agent_platform.capabilities.nexus_query_planner import register_executor
+    from nexus_agent_platform.capabilities.shared import execute_shared_capability
+    from nexus_agent_platform.governed import actions_api, engine, resolution, persistence
+    register_executor(lambda capability, args=None: execute_shared_capability("hermes_nova", capability, args or {}, trace_id="finance-test"))
+    rec = actions_api.prepare_action_recommendation(title="Finance hook test", problem="prove hook", recommended_action_id="system_health.run", reason="bounded", evidence=[], expected_outcome="healthy", risk_level="low")
+    approval = actions_api.create_approval_request(action_id="system_health.run", action_summary="finance hook test", recommendation_id=rec["recommendation_id"])
+    resolution.resolve_approval_intent("approve", chat_id=991, decision="approve")
+    order = actions_api.create_work_order_from_approval(approval["approval_id"])
+    result = engine.execute_approved_work_order(order["work_order_id"])
+    assert result["status"] == "completed"
+    assert any(r.get("work_order_id") == order["work_order_id"] for r in persistence.read_records("finance_cost_receipts"))
+    assert any(r.get("work_order_id") == order["work_order_id"] and r.get("type") == "FINANCE_PREFLIGHT" for r in persistence.read_records("finance_learning"))
+    register_executor(None)
