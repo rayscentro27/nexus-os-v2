@@ -1,6 +1,6 @@
 {
   "artifact_id": "visual_proof_wp9b1",
-  "created_at": "2026-09-02T17:29:47.207545+00:00",
+  "created_at": "2026-09-02T17:39:33.242985+00:00",
   "critic": {
     "genericness": "PASS",
     "pixel_critic": "DETERMINISTIC_BROWSER_AND_DIMENSION_CHECKS",
@@ -13,7 +13,7 @@
     "free_credits": 0,
     "preflight": "ALLOW",
     "quota": "UNKNOWN",
-    "storage_bytes": 171138
+    "storage_bytes": 231806
   },
   "outputs": [
     {
@@ -39,11 +39,82 @@
       "checksum": "22af163c10cb506e784b9d46d63f6437c51cc5f01563d122ca9ee1c84a5345f3",
       "kind": "video_poster",
       "path": "reports/runtime/wp9b1/visual_proof_video_poster.jpg"
+    },
+    {
+      "bytes": 28896,
+      "checksum": "258451bea51b0ea845cfc2d099eeaa64320a562aad8509e5dc262799549eeda7",
+      "composition": "deterministic Pillow; not generative",
+      "kind": "FACEBOOK",
+      "path": "reports/runtime/wp9b1/facebook_visual.png"
+    },
+    {
+      "bytes": 31772,
+      "checksum": "5bc363c6e87c8028aaf0d3dfe102c0422cd4c4365db4bb799e59fe413af69657",
+      "composition": "deterministic Pillow; not generative",
+      "kind": "INSTAGRAM",
+      "path": "reports/runtime/wp9b1/instagram_visual.png"
     }
   ],
   "provider": "existing_internal_rendered_asset_plus_deterministic_derivatives",
+  "remote_storage": {
+    "bucket": "creative-assets",
+    "objects": [
+      {
+        "bytes": 37252,
+        "kind": "preview",
+        "object_key": "wp9b2/visual_proof_preview.webp",
+        "provider": "supabase_storage",
+        "signed_url_present": true,
+        "verified": true
+      },
+      {
+        "bytes": 6240,
+        "kind": "thumbnail",
+        "object_key": "wp9b2/visual_proof_thumbnail.webp",
+        "provider": "supabase_storage",
+        "signed_url_present": true,
+        "verified": true
+      },
+      {
+        "bytes": 30516,
+        "kind": "mobile_crop",
+        "object_key": "wp9b2/visual_proof_mobile_crop.webp",
+        "provider": "supabase_storage",
+        "signed_url_present": true,
+        "verified": true
+      },
+      {
+        "bytes": 97130,
+        "kind": "video_poster",
+        "object_key": "wp9b2/visual_proof_video_poster.jpg",
+        "provider": "supabase_storage",
+        "signed_url_present": true,
+        "verified": true
+      },
+      {
+        "bytes": 28896,
+        "kind": "FACEBOOK",
+        "object_key": "wp9b2/facebook_visual.png",
+        "provider": "supabase_storage",
+        "signed_url_present": true,
+        "verified": true
+      },
+      {
+        "bytes": 31772,
+        "kind": "INSTAGRAM",
+        "object_key": "wp9b2/instagram_visual.png",
+        "provider": "supabase_storage",
+        "signed_url_present": true,
+        "verified": true
+      }
+    ],
+    "private": true,
+    "provider": "supabase_storage",
+    "review_state": "READY_FOR_AUTHENTICATED_OPERATOR_REVIEW",
+    "status": "VERIFIED_REMOTE"
+  },
   "review_state": "READY_FOR_AUTHENTICATED_OPERATOR_REVIEW",
-  "schema_version": "nexus.wp9b1-visual-proof.v1",
+  "schema_version": "nexus.wp9b1-visual-proof.v2",
   "source": "reports/rebuild/wp8_11b_artifacts/opp_bffe3378956f40bb9317970938eb3f21/individual_vehicle_convenience/landing_v2_desktop.png",
   "source_checksum": "61a20a3cf38cb804459eddc676d22f9480d9270aee07a3240b1d9b0b2e3815cb",
   "toolchain": {
