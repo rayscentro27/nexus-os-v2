@@ -54,8 +54,19 @@ def _html(brief: dict[str, Any], territory: dict[str, Any], version: int) -> str
     return f'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{territory["name"]} | Internal concept</title><style>*{{box-sizing:border-box}}body{{margin:0;background:#f5f1e9;color:#17252b;font-family:Inter,system-ui,sans-serif}}main{{max-width:1120px;margin:auto;padding:clamp(24px,6vw,80px)}}.tag{{letter-spacing:.12em;text-transform:uppercase;font-size:12px;color:#7d5b39}}h1{{font-size:clamp(38px,7vw,82px);line-height:.98;max-width:850px;margin:20px 0}}p{{font-size:19px;line-height:1.55;max-width:650px}}.hero{{background:#d8e3df;border-radius:28px;padding:clamp(28px,6vw,72px);min-height:520px;display:flex;flex-direction:column;justify-content:center}}.cta{{display:inline-block;background:#17252b;color:white;border-radius:999px;padding:16px 24px;text-decoration:none;margin-top:18px;font-weight:700}}.grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}}.card{{background:white;padding:22px;border-radius:18px}}@media(max-width:700px){{main{{padding:20px}}.hero{{min-height:620px;border-radius:20px}}.grid{{grid-template-columns:1fr}}h1{{font-size:48px}}}}</style></head><body><main><div class="tag">Internal validation concept · {territory["name"]}</div><section class="hero"><h1>{headline}</h1><p>Mobile detailing is being tested as a practical convenience service. This page is a concept for measuring interest; it does not claim completed service, customer results, or market demand.</p><a class="cta" href="#next">{cta}</a></section><section id="next" class="grid"><div class="card"><b>Clear steps</b><p>Choose the vehicle, location, and timing.</p></div><div class="card"><b>Local convenience</b><p>Explore whether bringing the service to you matters.</p></div><div class="card"><b>No inflated promise</b><p>Share interest only if the fit is real.</p></div></section></main></body></html>'''
 
 def _screenshot(url: str, path: Path, viewport: str) -> None:
-    cmd=[shutil.which("playwright") or "playwright","screenshot","--browser","chromium","--viewport-size",viewport,"--full-page",url,str(path)]
-    subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # The installed Playwright CLI leaves its driver child alive on this
+    # macOS/Python combination after a file:// screenshot.  Use the supported
+    # Python API so the browser, context, and driver all close deterministically.
+    from playwright.sync_api import sync_playwright
+    width, height = (int(value) for value in viewport.split(",", 1))
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        try:
+            page = browser.new_page(viewport={"width": width, "height": height})
+            page.goto(url, wait_until="load")
+            page.screenshot(path=str(path), full_page=True)
+        finally:
+            browser.close()
 
 def render_landing(brief: dict[str, Any], territory: dict[str, Any], out: Path) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True); html1=out/"landing_v1.html"; html2=out/"landing_v2.html"; html1.write_text(_html(brief,territory,1)); html2.write_text(_html(brief,territory,2))

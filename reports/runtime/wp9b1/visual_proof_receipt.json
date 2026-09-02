@@ -1,0 +1,54 @@
+{
+  "artifact_id": "visual_proof_wp9b1",
+  "created_at": "2026-09-02T17:29:47.207545+00:00",
+  "critic": {
+    "genericness": "PASS",
+    "pixel_critic": "DETERMINISTIC_BROWSER_AND_DIMENSION_CHECKS",
+    "status": "PASS_WITHOUT_VISION_MODEL"
+  },
+  "external_action_performed": false,
+  "finance": {
+    "cash_cost_usd": 0.0,
+    "compute": "local bounded",
+    "free_credits": 0,
+    "preflight": "ALLOW",
+    "quota": "UNKNOWN",
+    "storage_bytes": 171138
+  },
+  "outputs": [
+    {
+      "bytes": 37252,
+      "checksum": "9e88b1b3972c36cc402651d02667a303c78b25ccf0d1f666fa31dc23553575b6",
+      "kind": "preview",
+      "path": "reports/runtime/wp9b1/visual_proof_preview.webp"
+    },
+    {
+      "bytes": 6240,
+      "checksum": "fc90762198c0925cd2a16870644bff4ec146cef9014db7a6f7cebb08bac86829",
+      "kind": "thumbnail",
+      "path": "reports/runtime/wp9b1/visual_proof_thumbnail.webp"
+    },
+    {
+      "bytes": 30516,
+      "checksum": "b235fa6749700649398b1b3924d0a61d7e05416410d072674b821705826ae9cb",
+      "kind": "mobile_crop",
+      "path": "reports/runtime/wp9b1/visual_proof_mobile_crop.webp"
+    },
+    {
+      "bytes": 97130,
+      "checksum": "22af163c10cb506e784b9d46d63f6437c51cc5f01563d122ca9ee1c84a5345f3",
+      "kind": "video_poster",
+      "path": "reports/runtime/wp9b1/visual_proof_video_poster.jpg"
+    }
+  ],
+  "provider": "existing_internal_rendered_asset_plus_deterministic_derivatives",
+  "review_state": "READY_FOR_AUTHENTICATED_OPERATOR_REVIEW",
+  "schema_version": "nexus.wp9b1-visual-proof.v1",
+  "source": "reports/rebuild/wp8_11b_artifacts/opp_bffe3378956f40bb9317970938eb3f21/individual_vehicle_convenience/landing_v2_desktop.png",
+  "source_checksum": "61a20a3cf38cb804459eddc676d22f9480d9270aee07a3240b1d9b0b2e3815cb",
+  "toolchain": {
+    "Pillow": "12.1.1",
+    "ffmpeg": "system binary",
+    "playwright": "Python API verified separately"
+  }
+}
