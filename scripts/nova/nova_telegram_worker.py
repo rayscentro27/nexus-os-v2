@@ -210,6 +210,18 @@ def _load_delivery(update_id):
         return None
 
 
+def _update_already_delivered(update_id):
+    """Return whether this Telegram update already has a final delivery.
+
+    Poll offsets protect the normal path, but a replayed update can also reach
+    ``process_message`` directly after a worker restart.  Check the durable
+    delivery record before creating a mission or invoking Hermes so replay
+    cannot duplicate work.  Pending records remain retryable.
+    """
+    record = _load_delivery(update_id)
+    return bool(record and record.get("state") == "DELIVERED")
+
+
 def _save_delivery(record):
     os.makedirs(NOVA_DELIVERY_DIR, exist_ok=True)
     path = _delivery_path(record["telegram_update_id"])
@@ -880,6 +892,10 @@ def process_message(update):
 
     if not text or not chat_id:
         return False
+
+    if _update_already_delivered(update_id):
+        _log(f"Duplicate Telegram update suppressed: update={update_id}")
+        return True
 
     base_metadata = {
         "update_id": update_id,

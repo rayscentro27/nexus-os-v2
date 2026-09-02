@@ -76,3 +76,17 @@ def test_primary_shadow_failure_is_recorded_without_telegram_send(monkeypatch, t
     assert record["shadow"]["runtime_init"] is False
     assert "No module named openai" in record["shadow"]["error"]
     assert record["shadow_telegram_send_count"] == 0
+
+
+def test_replayed_delivered_update_is_suppressed_before_runtime(monkeypatch, tmp_path):
+    import scripts.nova.nova_telegram_worker as worker
+
+    monkeypatch.setattr(worker, "NOVA_DELIVERY_DIR", str(tmp_path))
+    worker._save_delivery({
+        "telegram_update_id": 991,
+        "chat_id": 123,
+        "state": "DELIVERED",
+        "response": "already sent",
+    })
+    assert worker._update_already_delivered(991) is True
+    assert worker._update_already_delivered(992) is False
