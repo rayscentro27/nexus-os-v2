@@ -166,6 +166,13 @@ def test_evidence_provenance_is_required():
     assert evidence["provenance"]["source"] == "recommendations"
 
 
+def test_quality_and_confidence_are_separate_when_evidence_is_missing():
+    candidate = {"title": "Promising service", "scores": {"revenue_potential": 90, "business_fit": 85, "speed_to_value": 80}}
+    scored = __import__("nexus_agent_platform.opportunities.engine", fromlist=["score_governed_opportunity"]).score_governed_opportunity(candidate, evidence_valid=False, freshness="UNKNOWN")
+    assert scored["opportunity_quality_score"] > scored["evidence_confidence_score"]
+    assert scored["interpretation"] == "PROMISING_RESEARCH_MORE"
+
+
 def test_known_inferred_unverified_preserved():
     known = build_opportunity_evidence(
         source_id="rec_1",

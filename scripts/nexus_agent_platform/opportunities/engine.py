@@ -748,9 +748,28 @@ def score_governed_opportunity(candidate: Dict[str, Any], *, evidence_valid: boo
         "confidence": _bounded_score(scores.get("confidence", candidate.get("confidence")), 50 if evidence_valid else 15),
         "freshness": freshness_score,
     }
+    # Keep opportunity quality separate from how well the opportunity is
+    # evidenced.  Missing/unknown evidence should lower confidence and route
+    # to research; it must not silently become a low-quality opportunity.
+    quality_keys = ("revenue_potential", "speed_to_value", "launch_cost", "effort", "risk", "client_value", "business_fit", "recurring_revenue", "strategic_fit")
+    quality_components = {key: components[key] for key in quality_keys if key in scores or key in candidate}
+    # An absent dimension is unknown, not a negative score.  Keep it out of
+    # the denominator and expose the supplied evidence separately.
+    if not quality_components:
+        quality_components = {key: 50.0 for key in quality_keys}
+    quality_weights = {key: _SCORING_WEIGHTS[key] for key in quality_components}
+    quality_weight_total = sum(quality_weights.values()) or 1.0
+    quality = round(sum(quality_components[key] * quality_weights[key] for key in quality_components) / quality_weight_total)
+    evidence_confidence = round((components["evidence_strength"] * 0.55) + (components["confidence"] * 0.30) + (components["freshness"] * 0.15))
     positive = sum(components[name] * weight for name, weight in _SCORING_WEIGHTS.items())
     overall = round(max(0.0, min(100.0, positive - components["risk"] * 0.10 - components["launch_cost"] * 0.06 - components["effort"] * 0.04)))
-    return {"policy": SCORING_POLICY_VERSION, "overall_score": overall, "components": {k: round(v, 2) for k, v in components.items()}, "weights": _SCORING_WEIGHTS, "penalties": {"risk": 0.10, "launch_cost": 0.06, "effort": 0.04}}
+    return {"policy": SCORING_POLICY_VERSION, "overall_score": overall,
+            "opportunity_quality_score": quality,
+            "evidence_confidence_score": evidence_confidence,
+            "components": {k: round(v, 2) for k, v in components.items()},
+            "weights": _SCORING_WEIGHTS,
+            "penalties": {"risk": 0.10, "launch_cost": 0.06, "effort": 0.04},
+            "interpretation": "PROMISING_RESEARCH_MORE" if quality >= 55 and evidence_confidence < 60 else "QUALIFIED_CANDIDATE" if evidence_confidence >= 60 else "EARLY_SCREEN"}
 
 
 def _opportunity_fingerprint(candidate: Dict[str, Any]) -> str:
@@ -803,6 +822,8 @@ def canonicalize_governed_opportunity(candidate: Dict[str, Any], *, research_job
         "monetization_path": _clean_text(candidate.get("monetization_path") or candidate.get("monetization") or "UNKNOWN"),
         "target_audience": _clean_text(candidate.get("target_audience") or candidate.get("target_customer") or "UNKNOWN"),
         "scores": score,
+        "opportunity_quality_score": score["opportunity_quality_score"],
+        "evidence_confidence_score": score["evidence_confidence_score"],
         "value_estimate": _value_estimate(candidate),
         "dependencies": list(candidate.get("dependencies") or []),
         "relationships": list(candidate.get("relationships") or []),

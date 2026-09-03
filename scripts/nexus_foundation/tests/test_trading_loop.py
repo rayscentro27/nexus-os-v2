@@ -1,4 +1,4 @@
-from nexus_foundation.trading_loop import _run
+from nexus_foundation.trading_loop import _run, score_trading_evidence
 from nexus_foundation.contracts import authority_allows, validate_trading_safety
 
 
@@ -17,6 +17,12 @@ def test_deterministic_completed_bar_backtest():
 def test_live_order_authority_fails_closed():
     assert validate_trading_safety()["LIVE_TRADING_AUTHORITY"] == "NONE"
     assert authority_allows("TRADING_ENGINE", "live_trading", "execute") is False
+
+def test_unknown_metric_is_evidence_gap_not_negative_performance():
+    scored = score_trading_evidence(performance={"net_return_pct": 2.0, "expectancy_pct": 0.1, "max_drawdown_pct": 1.0, "trade_count": 10, "profit_factor": None})
+    assert scored["performance_score"] is not None
+    assert scored["evidence_completeness"] < 100
+    assert "profit_factor" in scored["unknown_metrics"]
 
 
 def test_backtest_feedback_contract_is_bounded_and_open():

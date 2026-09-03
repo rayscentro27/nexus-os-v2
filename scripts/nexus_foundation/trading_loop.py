@@ -33,6 +33,16 @@ def _run(rows, start, end, spec):
     gross_profit=sum(wins); gross_loss=abs(sum(losses)); pf=gross_profit/gross_loss if gross_loss else (math.inf if gross_profit else 0.0)
     return {"trade_count":len(trades),"net_return_pct":round((equity/10000-1)*100,4),"win_rate_pct":round(len(wins)/len(trades)*100,2) if trades else 0.0,"expectancy_pct":round(expectancy,5),"profit_factor":round(pf,4) if math.isfinite(pf) else "INF","max_drawdown_pct":round(maxdd,4),"equity":round(equity,2),"trades":trades}
 
+def score_trading_evidence(*, performance: dict[str, Any], robustness: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Separate measured performance from evidence completeness."""
+    return_pct, drawdown, expectancy = (performance.get(key) for key in ("net_return_pct", "max_drawdown_pct", "expectancy_pct"))
+    performance_score = None if not all(isinstance(value, (int, float)) for value in (return_pct, drawdown, expectancy)) else max(0.0, min(100.0, round(50 + return_pct * 5 + expectancy * 100 - drawdown * 1.5, 2)))
+    fields = ("trade_count", "net_return_pct", "expectancy_pct", "profit_factor", "max_drawdown_pct")
+    evidence_completeness = round(sum(performance.get(key) is not None for key in fields) / len(fields) * 100)
+    stress = (robustness or {}).get("cost_stress", [])
+    robustness_confidence = None if not stress else round(sum(item.get("metrics", {}).get("expectancy_pct") is not None for item in stress) / len(stress) * 100)
+    return {"performance_score": performance_score, "evidence_completeness": evidence_completeness, "robustness_confidence": robustness_confidence, "unknown_metrics": [key for key in fields if performance.get(key) is None]}
+
 def _research_package():
     return {"decomposition":{"market_rationale":"short-term EUR/USD H1 trend observation","mechanism":"fast SMA crossing slow SMA","entry":"completed-bar fast SMA crosses above slow SMA","exit":"cross below or max holding period","risk":"fixed fractional paper risk; transaction cost stress","regime_assumptions":"trend persistence may not hold","execution_assumptions":"next observed completed close with bounded cost","failure_conditions":["low trade count","cost sensitivity","OOS collapse","regime dependence"]},"sources":[{"source":"Nexus forex_research_scanner","ref":"scripts/trading/forex_research_scanner.py","claim":"existing canonical scanner observes SMA10/SMA30 on OANDA Practice","classification":"SUPPORTED"},{"source":"OANDA Practice candles","ref":"OANDA_PRACTICE","claim":"fresh completed EUR/USD H1 candles","classification":"SUPPORTED"}],"contrary_evidence":["scanner currently reports no approved setup; this loop tests a research candidate, not an approved signal"],"confidence":"MODERATE"}
 
@@ -53,11 +63,12 @@ def run_trading_loop():
     stress=[]
     for cost in (0.00015,0.00030,0.00050): stress.append({"cost_rate":cost,"metrics":_run(rows,split[1],split[2],{**spec,"cost_rate":cost})})
     robustness={"parameter_perturbations":[{"fast":8,"slow":30},{"fast":12,"slow":30},{"fast":10,"slow":40}],"cost_stress":stress,"subperiods":[_run(rows,0,split[0],spec),_run(rows,split[0],split[1],spec),_run(rows,split[1],split[2],spec)]}
+    evidence_scores = score_trading_evidence(performance=oos, robustness=robustness)
     score=max(0,min(100,round(35+oos["expectancy_pct"]*100+min(oos["profit_factor"] if isinstance(oos["profit_factor"],(int,float)) else 0,3)*10-oos["max_drawdown_pct"]-max(0,30-oos["trade_count"]))))
     decision="PAPER_APPROVE" if oos["trade_count"]>=5 and oos["expectancy_pct"]>0 and all(x["metrics"]["expectancy_pct"]>-0.01 for x in stress) else "REJECT"
     critique={"status":"PASS","falsifiers":["OOS collapse","cost stress negative","too few trades","regime dependence"],"findings":["no future-bar references in implementation","completed-bar inputs only","sample and trade-count limitations remain"],"decision":decision}
     experiment_id = persistence.new_id("exp")
-    _append("trading_experiments",{"experiment_id":experiment_id,"loop_id":loop_id,"strategy_id":strategy["strategy_id"],"version":strategy["version"],"data":{"source":"OANDA_PRACTICE","instrument":"EUR_USD","timeframe":"H1","start":rows[0]["time"],"end":rows[-1]["time"],"bar_count":len(rows),"split":split},"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"score":score,"decision":decision,"failure_modes":critique["falsifiers"],"created_at":_now()})
+    _append("trading_experiments",{"experiment_id":experiment_id,"loop_id":loop_id,"strategy_id":strategy["strategy_id"],"version":strategy["version"],"data":{"source":"OANDA_PRACTICE","instrument":"EUR_USD","timeframe":"H1","start":rows[0]["time"],"end":rows[-1]["time"],"bar_count":len(rows),"split":split},"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"performance_vs_evidence":evidence_scores,"score":score,"decision":decision,"failure_modes":critique["falsifiers"],"created_at":_now()})
     alpha_result={"status":"PASS","artifact":"research_critique_backtest_oos_robustness","decision":decision,"score":score,"oos":oos,"critique":critique}; alpha=complete_work_order(alpha,alpha_result,receipt_ref="trading_experiment"); _append("work_orders",alpha)
     paper=None; paper_order=None
     if decision=="PAPER_APPROVE":
@@ -81,4 +92,4 @@ def run_trading_loop():
                                       "oos": variant_oos, "decision": "RESEARCH_FEEDBACK_VARIANT", "created_at": _now()})
     if decision=="REJECT": _append("improvement_candidates",improvement_candidate(persistence.new_id("improve"),domain="trading_strategy",hypothesis="Investigate whether a non-crossover candidate or improved execution model addresses observed weakness",source="wp8.4_experiment"))
     loop.update({"state":"PAPER_OBSERVE" if paper else "DECIDED","current_step":"PAPER_OBSERVE" if paper else "DECISION","next_step":"FORWARD_REVIEW" if paper else "RESEARCH_NEW_CANDIDATE","status":"READY","outputs":{"strategy_id":strategy["strategy_id"],"decision":decision,"score":score,"oos":oos},"updated_at":_now()}); _append("loop_state",loop)
-    return {"status":"PASS","safety":safety,"loop":loop,"strategy":strategy,"research":research,"data":data,"split":split,"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"score":score,"decision":decision,"critique":critique,"paper":paper,"learning":learning,"feedback":feedback,"alpha_work_order":alpha,"prior_experiments":len(prior),"cost":{"ai_invocations":0,"research_calls":3,"market_data_calls":1,"backtest_executions":2,"paper_executions":0,"retries":0},"authority_denial":not authority_allows("TRADING_ENGINE","live_trading","execute")}
+    return {"status":"PASS","safety":safety,"loop":loop,"strategy":strategy,"research":research,"data":data,"split":split,"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"performance_vs_evidence":evidence_scores,"score":score,"decision":decision,"critique":critique,"paper":paper,"learning":learning,"feedback":feedback,"alpha_work_order":alpha,"prior_experiments":len(prior),"cost":{"ai_invocations":0,"research_calls":3,"market_data_calls":1,"backtest_executions":2,"paper_executions":0,"retries":0},"authority_denial":not authority_allows("TRADING_ENGINE","live_trading","execute")}
