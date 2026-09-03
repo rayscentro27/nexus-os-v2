@@ -24,6 +24,10 @@ CAMPAIGN_PATH = ROOT / "data/runtime/nexus_completion_campaign.json"
 LEDGER_PATH = ROOT / "reports/runtime/campaign_execution_ledger.jsonl"
 ENGINE_RECEIPT = ROOT / "reports/runtime/campaign_execution_latest.json"
 BACKLOG_STATUSES = {"UNMATERIALIZED", "DIAGNOSING", "READY", "RUNNING", "VERIFYING", "RECOVERING", "RESEARCHING", "WAITING_HUMAN", "BLOCKED_EXTERNAL", "PASS", "DEFERRED_BY_RAY"}
+# Full regression is a certification workload, not a company-dispatch
+# dependency.  Running it in the same bounded worker pool allowed a heavy or
+# failing test harness to starve otherwise healthy department work.
+CERTIFICATION_ONLY_BACKLOGS = {"FULL_REGRESSION"}
 BACKLOG_SPECS = (
     ("REAL_CONDITION_WATCH_END_TO_END", "Condition watch end-to-end", "condition watch", "LOCAL_ONLY", "proof.watchdog"),
     ("REAL_WORLD_CONVERSATION_25", "Real-world conversation 25", "conversation acceptance", "MODEL_DEPENDENT", "model.router"),
@@ -272,7 +276,7 @@ def _consume_directives(decisions: Sequence[Mapping[str, Any]], *, state: Dict[s
     return generated
 
 
-def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence[Mapping[str, Any]]] = None, state_path: Path = CAMPAIGN_PATH, ledger_path: Path = LEDGER_PATH, receipt_dir: Optional[Path] = None, max_workers: int = 3) -> Dict[str, Any]:
+def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence[Mapping[str, Any]]] = None, state_path: Path = CAMPAIGN_PATH, ledger_path: Path = LEDGER_PATH, receipt_dir: Optional[Path] = None, max_workers: int = 3, include_certification: bool = False) -> Dict[str, Any]:
     """Run one canonical scheduled campaign cycle and consume its decisions."""
     state = load_campaign(state_path, materialize_queue=objectives is None)
     cycle_no = int(state.get("cycle_number", 0)) + 1
@@ -295,6 +299,10 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
     queue = [dict(item) for item in state.get("objective_queue") or [] if isinstance(item, dict)]
     # Only executable, dependency-free objectives are dispatched this cycle.
     runnable = [item for item in queue if not item.get("dependency_ids") and item.get("status", "READY") not in {"COMPLETED", "WAITING_HUMAN", "BLOCKED_EXTERNAL"}]
+    deferred_certification = []
+    if not include_certification:
+        deferred_certification = [item for item in runnable if str(item.get("backlog_id")) in CERTIFICATION_ONLY_BACKLOGS]
+        runnable = [item for item in runnable if str(item.get("backlog_id")) not in CERTIFICATION_ONLY_BACKLOGS]
     state["cycle_number"] = cycle_no
     state["scheduler_instance"] = scheduler_instance
     state["campaign_health"] = "RUNNING" if runnable else "STALLED" if queue else "WAITING_HUMAN"
@@ -350,7 +358,7 @@ def run_campaign_cycle(*, scheduler_instance: str, objectives: Optional[Sequence
             state["objective_queue"].append({"objective_id": verifier_id, "backlog_id": row["backlog_id"], "capability_id": "acceptance.verifier", "dependency_domain": row["domain"], "expected_outcome": "independent acceptance verification", "criterion": criterion, "result_ref": (criterion.get("proof_refs") or [None])[-1], "verification_only": True})
     state["campaign_health"] = "RECOVERING" if state["recovering_objectives"] else "RUNNING" if state["objective_queue"] else "STALLED" if _machine_backlog(state) else "PASS"
     _save_state(state, state_path)
-    cycle = {"schema_version": "nexus.campaign-execution-receipt.v1", "campaign_id": state["campaign_id"], "scheduler_instance": scheduler_instance, "cycle_id": cycle_id, "cycle_number": cycle_no, "objectives": results, "completion_law_decisions": decisions.get("decisions", []), "generated_work": generated, "active_executor_count": len([r for r in results if r["state"] == "RECOVERING"]), "queued_dispatch_count": len(generated), "campaign_health": state["campaign_health"], "next_runnable_objective": (state["objective_queue"] or [{}])[0].get("objective_id") if state["objective_queue"] else None, "created_at": utc_now()}
+    cycle = {"schema_version": "nexus.campaign-execution-receipt.v1", "campaign_id": state["campaign_id"], "scheduler_instance": scheduler_instance, "cycle_id": cycle_id, "cycle_number": cycle_no, "objectives": results, "deferred_certification": [{"objective_id": item.get("objective_id"), "backlog_id": item.get("backlog_id"), "reason": "CERTIFICATION_ISOLATED_FROM_COMPANY_DISPATCH"} for item in deferred_certification], "completion_law_decisions": decisions.get("decisions", []), "generated_work": generated, "active_executor_count": len([r for r in results if r["state"] == "RECOVERING"]), "queued_dispatch_count": len(generated), "campaign_health": state["campaign_health"], "next_runnable_objective": (state["objective_queue"] or [{}])[0].get("objective_id") if state["objective_queue"] else None, "created_at": utc_now()}
     _append_jsonl(ledger_path, cycle)
     atomic_write_json(ENGINE_RECEIPT, cycle)
     return cycle
