@@ -359,6 +359,50 @@ def _retry_pending_deliveries():
                 pass
     return recovered
 
+
+def _resume_authorized_missions(max_age_seconds=86400):
+    """Resume accepted missions whose worker died before composing a response.
+
+    Telegram removes an update from the polling queue as soon as getUpdates
+    returns it.  The mission record is therefore the canonical recovery source
+    when a one-shot worker exits during Hermes execution.  Only recent,
+    explicitly authorized missions without a terminal delivery are eligible;
+    the original update ID and mission identity are retained.
+    """
+    if not os.path.isdir(NOVA_MISSIONS_DIR):
+        return 0
+    now = datetime.now(timezone.utc)
+    recovered = 0
+    for name in sorted(os.listdir(NOVA_MISSIONS_DIR)):
+        if not name.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(NOVA_MISSIONS_DIR, name), encoding="utf-8") as handle:
+                mission = json.load(handle)
+            if mission.get("status") != "AUTHORIZED":
+                continue
+            received_at = datetime.fromisoformat(str(mission["timestamps"]["received_at"]).replace("Z", "+00:00"))
+            if (now - received_at).total_seconds() > max_age_seconds:
+                continue
+            if _load_delivery(mission.get("update_id")):
+                continue
+            update_id = int(mission["update_id"])
+            update = {
+                "update_id": update_id,
+                "message": {
+                    "message_id": update_id,
+                    "date": int(received_at.timestamp()),
+                    "text": mission.get("original_message", ""),
+                    "chat": {"id": mission["chat_id"]},
+                    "from": {"id": mission.get("user_id"), "username": ""},
+                },
+            }
+            if process_message(update, existing_mission=mission):
+                recovered += 1
+        except (OSError, ValueError, TypeError, KeyError):
+            continue
+    return recovered
+
 def tg_send_message(chat_id, text, token=None, timeout=TELEGRAM_SEND_TIMEOUT):
     """Send a message, chunking if needed. Returns list of message IDs."""
     if not text:
@@ -904,7 +948,7 @@ def _release_chat_lock(chat_id):
 
 # ─── Message Processing ─────────────────────────────────
 
-def process_message(update):
+def process_message(update, existing_mission=None):
     """Process a single incoming Telegram update through Nova."""
     message = update.get("message", {})
     chat = message.get("chat", {})
@@ -947,12 +991,12 @@ def process_message(update):
             ):
                 pass
             trace.event("telegram.authorization", {"authorized": True})
-            outcome = _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, run_id, trace=trace)
+            outcome = _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, run_id, trace=trace, mission_override=existing_mission)
             trace.finish({"runtime": "hermes", "delivery_visible": True, "outcome": outcome})
             return outcome
 
 
-def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, primary_run_id=None, trace=None):
+def _process_message_inner(update, message, chat, user, chat_id, user_id, username, text, update_id, primary_run_id=None, trace=None, mission_override=None):
     _log(f"Incoming: update={update_id} chat={chat_id} user={username} text={text[:80]}")
 
     # Acquire per-chat lock to prevent duplicate delivery
@@ -973,7 +1017,7 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             stage="mission_create",
             source="scripts/nova/nova_telegram_worker.py:_process_message_inner",
         ):
-            mission = create_mission(update_id, chat_id, user_id, text)
+            mission = mission_override or create_mission(update_id, chat_id, user_id, text)
 
         with stage_execution(
             stage="authorization",
@@ -1300,6 +1344,10 @@ def run_once():
         recovered_deliveries = _retry_pending_deliveries()
         if recovered_deliveries:
             _log(f"Nova worker: recovered {recovered_deliveries} pending deliveries")
+
+        recovered_missions = _resume_authorized_missions()
+        if recovered_missions:
+            _log(f"Nova worker: resumed {recovered_missions} authorized missions")
 
         offset = load_offset()
         result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})

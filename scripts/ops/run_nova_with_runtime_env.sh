@@ -23,4 +23,7 @@ fi
 # Cellar path. Keep the runtime self-contained for launchd and manual cycles.
 export DYLD_LIBRARY_PATH="${DYLD_LIBRARY_PATH:-/usr/local/Cellar/openssl@3/3.6.3/lib}"
 
-exec "$PYTHON" "$REPO_ROOT/scripts/nova/nova_telegram_worker.py" --once
+# Keep launchd's interval supervision effective even if a network/library call
+# ignores its inner timeout.  Accepted missions are persisted before Hermes
+# execution and are resumed by the worker on the next cycle.
+exec /usr/bin/perl -e 'alarm 300; exec @ARGV' "$PYTHON" "$REPO_ROOT/scripts/nova/nova_telegram_worker.py" --once
