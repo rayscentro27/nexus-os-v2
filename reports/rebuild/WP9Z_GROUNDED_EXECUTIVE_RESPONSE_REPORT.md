@@ -111,3 +111,7 @@ Starting head: `49d8dfc2781891b4eda1bfdd12359a8830647bc7`.
 Unrelated existing worktree changes were preserved.  Only the grounded
 response module, its focused tests, and this report are WP9Z changes.
 
+End head / final origin: `90d38db578bbdfce6e46d743b948b1417d5d80af`.
+Pushed: `YES`.  Worktree entry count before: `575` (inherited WP9Y record);
+after: `5547` by broad porcelain enumeration.  The increase consists of
+existing/runtime-generated dirty entries and was not cleaned or staged.
