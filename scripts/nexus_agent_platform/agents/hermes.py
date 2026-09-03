@@ -699,6 +699,14 @@ def _get_failure_report() -> Dict[str, str]:
 def _get_alpha_status() -> str:
     """Read Alpha's current status."""
     try:
+        # Alpha's worker heartbeat is not the department state.  Use the
+        # read-only operational projection so IDLE/AVAILABLE and background
+        # processing remain separate facts in executive responses.
+        from nexus_agent_platform.research_operational_state import alpha_status_summary
+        return alpha_status_summary()
+    except Exception:
+        pass
+    try:
         status_path = get_nexus_repo_root() / "data" / "runtime" / "alpha_telegram_status.json"
         with open(status_path) as f:
             data = json.load(f)

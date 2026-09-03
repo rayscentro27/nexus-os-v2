@@ -59,6 +59,8 @@ def build_company_context() -> Dict[str, Any]:
     program = _read(program_path, {})
     review = _read(review_path, {})
     operator = _read(operator_path, {})
+    from nexus_agent_platform.research_operational_state import build_research_operational_state
+    research_state = build_research_operational_state()
     brief_timestamp = _timestamp(brief, brief_path)
     operator_timestamp = _timestamp(operator, operator_path)
     brief_age = _age_seconds(brief_timestamp)
@@ -96,6 +98,7 @@ def build_company_context() -> Dict[str, Any]:
         "overnight_activity": brief.get("loop_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."},
         "what_changed": brief.get("opportunity_updates", []) if brief_is_current else [],
         "research": {"canonical_alpha": canonical_research, "brief": brief.get("research_updates", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
+        "research_operational_state": research_state,
         "operations": {"canonical_nexus": canonical_operations, "brief": brief.get("system_health", {}) if brief_is_current else {"status": "UNKNOWN", "reason": "The available daily brief is stale."}},
         "business": {
             "top_priority": brief.get("top_priority", {}) if brief_is_current else {},
