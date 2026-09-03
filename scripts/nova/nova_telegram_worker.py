@@ -50,6 +50,7 @@ AB_CERTIFICATION_FLAG = "NOVA_TELEGRAM_AB_CERTIFICATION"
 PRIMARY_RUNTIME_FLAG = "NOVA_PRIMARY_RUNTIME"
 PRIMARY_RUNTIME_CUSTOM = "custom"
 PRIMARY_RUNTIME_HERMES = "hermes"
+PRIMARY_RUNTIME_ORACLE = "oracle_hermes"
 HERMES_SHADOW_SCRIPT = os.path.join(REPO_ROOT, "scripts", "nova", "nova_hermes_shadow.py")
 HERMES_SHADOW_PYTHON = os.path.expanduser("~/.hermes/hermes-agent/venv/bin/python")
 HERMES_SHADOW_TIMEOUT = int(os.getenv("NOVA_HERMES_SHADOW_TIMEOUT_SECONDS", "180"))
@@ -120,7 +121,7 @@ def get_env():
 def _primary_runtime():
     """Return the explicitly selected primary runtime, failing closed."""
     value = get_env().get(PRIMARY_RUNTIME_FLAG, PRIMARY_RUNTIME_CUSTOM).strip().lower()
-    if value not in {PRIMARY_RUNTIME_CUSTOM, PRIMARY_RUNTIME_HERMES}:
+    if value not in {PRIMARY_RUNTIME_CUSTOM, PRIMARY_RUNTIME_HERMES, PRIMARY_RUNTIME_ORACLE}:
         raise RuntimeError(f"invalid {PRIMARY_RUNTIME_FLAG}={value!r}")
     return value
 
@@ -769,6 +770,30 @@ def _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=None):
     return record
 
 
+def _run_oracle_primary(update_id, message, chat_id, text, primary_run_id=None):
+    """Run the fixed, governed Oracle Hermes 0.20.6 adapter."""
+    from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
+    session = f"nova-telegram-primary-{chat_id}"
+    started = time.monotonic()
+    result = run_oracle_hermes(text, session, request_id=f"telegram-{update_id}",
+                               timeout_seconds=HERMES_SHADOW_TIMEOUT)
+    return {
+        "run_id": f"oracle-hermes-primary-{update_id}",
+        "primary_run_id": primary_run_id or f"oracle-hermes-primary-{update_id}",
+        "session_id": session, "update_id": update_id,
+        "message_id": message.get("message_id") or update_id,
+        "runtime": "oracle_hermes", "runtime_host": result.runtime_host,
+        "hermes_version": result.hermes_version, "profile": result.profile,
+        "provider": result.provider, "model": result.model,
+        "telegram_send_count": 0, "error": result.error,
+        "response": result.response, "tools_executed": [],
+        "runtime_init": result.status == "SUCCEEDED", "model_init": result.status == "SUCCEEDED",
+        "completed": result.status == "SUCCEEDED", "latency_ms": result.latency_ms,
+        "latency_telemetry": {"bridge_elapsed_ms": result.latency_ms,
+                               "worker_total_ms": round((time.monotonic() - started) * 1000, 1)},
+    }
+
+
 def _complete_shadow_ab(shadow_record, primary_result=None, primary_response=None, primary_latency_ms=None):
     """Attach the eventual primary outcome to a pre-branch shadow receipt."""
     if not shadow_record:
@@ -978,10 +1003,18 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         if primary_runtime == PRIMARY_RUNTIME_CUSTOM:
             ab_record = _run_shadow_ab(update_id, message, chat_id, text, primary_run_id=primary_run_id)
 
-        if primary_runtime == PRIMARY_RUNTIME_HERMES:
+        if primary_runtime in {PRIMARY_RUNTIME_HERMES, PRIMARY_RUNTIME_ORACLE}:
             if trace:
-                trace.event("hermes.context_build", {"session_id": f"nova-telegram-primary-{chat_id}", "profile": os.getenv("NOVA_HERMES_HOME", os.path.join(REPO_ROOT, "config", "hermes", "nova-profile"))})
-            hermes_record = _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+                trace.event("hermes.context_build", {
+                    "session_id": f"nova-telegram-primary-{chat_id}",
+                    "profile": "nova_nexus",
+                    "runtime_host": "ORACLE" if primary_runtime == PRIMARY_RUNTIME_ORACLE else "MAC",
+                })
+            hermes_record = (
+                _run_oracle_primary(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+                if primary_runtime == PRIMARY_RUNTIME_ORACLE
+                else _run_hermes_primary(update_id, message, chat_id, text, primary_run_id=primary_run_id)
+            )
             if trace:
                 trace.event("hermes.generation", {"generation_type": "FINAL_SYNTHESIS_GENERATION", "model": hermes_record.get("model"), "tool_count": len(hermes_record.get("tools_executed", [])), "latency_ms": hermes_record.get("latency_ms")})
             response, blocked_reason = _response_integrity(hermes_record.get("response") or "", "conversation")
@@ -1017,6 +1050,11 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 "langfuse_trace_id": os.getenv("NOVA_LANGFUSE_TRACE_ID"),
                 "session_id": hermes_record.get("session_id"),
                 "model": hermes_record.get("model"),
+                "runtime": hermes_record.get("runtime"),
+                "runtime_host": hermes_record.get("runtime_host", "MAC"),
+                "hermes_version": hermes_record.get("hermes_version", "0.14.0"),
+                "profile": hermes_record.get("profile", "nova_nexus"),
+                "provider": hermes_record.get("provider", "openrouter"),
                 "latency_ms": hermes_record.get("latency_ms"),
                 "tools_executed": hermes_record.get("tools_executed", []),
                 "response": _ab_safe_text(response),
