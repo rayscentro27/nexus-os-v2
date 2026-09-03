@@ -61,6 +61,28 @@ def _executive_prompt(message: str) -> str:
     strategic = any(term in lowered for term in ("should", "recommend", "opportunity", "focus", "what next", "what should happen", "compare"))
     if not strategic:
         return message
+    priority_rules = ""
+    if any(term in lowered for term in ("focus on today", "focus today", "prioritize today", "what should nexus focus")):
+        priority_rules = (
+            " This is a PRIORITY_REQUEST, not a status request: choose exactly one primary company focus "
+            "from the current parent goals/objectives and unfinished work, rank it by business impact, "
+            "customer/economic value, dependency, urgency, and evidence confidence, and explain why it "
+            "comes first. Do not substitute a list of telemetry, available departments, opportunity counts, "
+            "or runtime metadata. Mention a system issue only if it materially blocks the selected company "
+            "outcome. State what Nexus will do next and what, if anything, Ray must decide."
+        )
+    pricing_rules = ""
+    if any(term in lowered for term in ("$97", "pricing", "readiness assessment", "make it free")):
+        pricing_rules = (
+            " This is a DECISION_REQUEST about GoClear monetization: treat $97 as an unvalidated hypothesis. "
+            "Do not use degraded telemetry, runtime health, model/provider status, or absence of clients as "
+            "direct pricing evidence unless you establish a specific causal mechanism. Distinguish known "
+            "facts, missing market/customer evidence, and judgment. Give a provisional recommendation only, "
+            "include meaningful alternatives such as free basic assessment plus paid plan or low-cost entry, "
+            "and keep the parent decision open. Safe internal Research, Alpha, Finance, Marketing, Clyde, "
+            "and Opportunity follow-up is Nexus-owned: route it and tell Ray what Nexus is doing; do not ask "
+            "whether Ray wants that internal research started."
+        )
     return (
         "[NOVA EXECUTIVE REQUEST CONTRACT]\n"
         "Answer the user's parent question directly. For a strategic request, identify the parent decision, "
@@ -68,7 +90,48 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
+        + priority_rules + pricing_rules + "\n"
         "USER REQUEST:\n" + message[:7000]
+    )
+
+
+def _judgment_needs_correction(message: str, response: str) -> bool:
+    """Detect two known judgment regressions without judging ordinary prose."""
+    lowered = message.casefold()
+    answer = response.casefold()
+    if "focus on today" in lowered or "what should nexus focus" in lowered:
+        # Priority answers receive one bounded editor pass. This avoids
+        # relying on fragile phrase detection when a model has already
+        # wrapped a status dump in an apparently executive heading.
+        return True
+    if any(term in lowered for term in ("$97", "pricing", "readiness assessment", "make it free")):
+        return True
+    return False
+
+
+def _judgment_correction_prompt(message: str, response: str) -> str:
+    lowered = message.casefold()
+    if "focus on today" in lowered or "what should nexus focus" in lowered:
+        instruction = (
+            "Rewrite this as an executive PRIORITY answer. Select one actual company/objective focus, "
+            "why it ranks first by outcome/impact/dependency/urgency, what outcome it advances, and what "
+            "Nexus will do next. Do not make degraded telemetry, runtime status, department availability, "
+            "or a pending approval the priority unless it directly blocks that selected outcome. Do not ask "
+            "Ray to approve safe internal work; name a Ray decision only if an existing external boundary "
+            "truly requires one. Answer directly and concisely."
+        )
+    else:
+        instruction = (
+            "Rewrite this as a careful GoClear pricing judgment. Do not use degraded telemetry, runtime "
+            "health, or zero/missing clients as direct pricing evidence. State that $97 is unvalidated, "
+            "separate known facts from unknown market evidence, give a provisional recommendation and a "
+            "meaningful alternative, and keep the parent decision open. Route safe internal Research, Alpha, "
+            "Finance, Marketing, Clyde, and Opportunity follow-up automatically; do not ask Ray whether to "
+            "start it. State Ray's next action as none unless an external approval is actually needed."
+        )
+    return (
+        "The draft below answered with an evidence or ownership error. " + instruction +
+        "\nOriginal request: " + message[:5000] + "\nDraft to correct:\n" + response[:6000]
     )
 
 
@@ -124,4 +187,13 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
             if not any(marker in recovered_text.lower() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
                 return OracleHermesResult(recovered_text, "SUCCEEDED", None, round(elapsed + recovery_elapsed, 1), recovery="SYNTHESIS_AFTER_TOOL_HALT")
         return OracleHermesResult(response, "SUCCEEDED", None, round(elapsed + recovery_elapsed, 1), recovery="RECOVERY_UNUSABLE")
+    if _judgment_needs_correction(message, response):
+        try:
+            corrected, correction_elapsed = invoke(_judgment_correction_prompt(message, response), "skills")
+        except subprocess.TimeoutExpired:
+            return OracleHermesResult(response, "SUCCEEDED", None, elapsed, recovery="JUDGMENT_CORRECTION_TIMEOUT")
+        if corrected.returncode == 0 and corrected.stdout.strip():
+            corrected_text = corrected.stdout.strip()
+            if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
+                return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="JUDGMENT_CORRECTION")
     return OracleHermesResult(response, "SUCCEEDED", None, elapsed)

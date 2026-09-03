@@ -76,9 +76,60 @@ def specialist_selection(question: str) -> list[str]:
     return selected
 
 
+def resolve_intent(question: str) -> dict[str, Any]:
+    """Resolve the requested conversational gear before selecting depth."""
+    text = (question or "").strip().lower()
+    if not text:
+        return {"intent": "CASUAL_CONVERSATION", "expected_output": "Natural acknowledgment."}
+    if re.search(r"\b(good (morning|afternoon|evening)|hello|hi nova|how are you|how's it going|i've been working|what do you think about where this is going|frustrat)", text):
+        if re.search(r"\b(status|running|current|today|review|should|focus|recommend)", text):
+            return {"intent": "OPINION_CONVERSATION", "expected_output": "Natural opinion, with a concise state or recommendation only if requested."}
+        return {"intent": "CASUAL_CONVERSATION", "expected_output": "Natural conversation without executive formatting or tool calls."}
+    if re.search(r"\b(items?|things?|what) .*\b(review|approve|attention)\b|\bneed my review\b", text):
+        return {"intent": "CURRENT_REVIEW_REQUEST", "expected_output": "Current review items only, prioritized with the exact Ray decision."}
+    if re.search(r"\bwhat (is|are) nexus (status|health)|\b(system|runtime) status\b|\bis .* still running\b", text):
+        return {"intent": "STATUS_REQUEST", "expected_output": "Minimal authoritative current-state answer."}
+    if re.search(r"\bwhat should .*\b(focus|prioritize)|\bwhere should .* focus\b|\bwhat .* focus on today\b", text):
+        return {"intent": "PRIORITY_REQUEST", "expected_output": "One primary priority, why now, outcome advanced, Nexus next action, and Ray action if any."}
+    if re.search(r"\b(should|recommend|what should|what do you think|which|who is right|what would change)", text):
+        if re.search(r"\b(compare|versus| vs\.?|or should|alternative|options?)\b", text):
+            intent = "COMPARISON_REQUEST"
+        else:
+            intent = "DECISION_REQUEST"
+        return {"intent": intent, "expected_output": "Relevant evidence, sufficiency, recommendation, alternatives, uncertainty, and next action."}
+    if re.search(r"\b(research|investigate|find out|look into)\b", text):
+        return {"intent": "STRATEGIC_QUESTION", "expected_output": "Research question, evidence gap, durable internal next action, and parent-goal continuation."}
+    return {"intent": "SIMPLE_FACT", "expected_output": "Direct answer in natural conversation."}
+
+
+def evidence_relevance(question: str, fact: str) -> str:
+    """Classify whether a fact belongs in a decision answer."""
+    q = (question or "").lower()
+    f = (fact or "").lower()
+    pricing = bool(re.search(r"\b(price|pricing|\$97|free|paid|subscription|monetiz|revenue model)\b", q))
+    if pricing and re.search(r"\b(telemetry|runtime|oracle|ollama|searx|system health|model version|service availability)\b", f):
+        return "SUPPORTING_CONTEXT_ONLY"
+    if pricing and re.search(r"\b(customer|market|competitor|willingness|conversion|lead|retention|margin|cost|lifetime|downstream|offer)\b", f):
+        return "DIRECTLY_RELEVANT"
+    if re.search(r"\b(status|health|running|current state)\b", q) and re.search(r"\b(health|heartbeat|scheduler|runtime|service|running|status)\b", f):
+        return "DIRECTLY_RELEVANT"
+    return "UNKNOWN_RELATIONSHIP"
+
+
+def decision_sufficiency(question: str, *, has_external_evidence: bool = False, has_internal_evidence: bool = False) -> str:
+    """State what an evidence set can support without manufacturing certainty."""
+    intent = resolve_intent(question)["intent"]
+    if intent not in {"DECISION_REQUEST", "COMPARISON_REQUEST", "PRIORITY_REQUEST", "STRATEGIC_QUESTION"}:
+        return "SUFFICIENT_FOR_DECISION"
+    if has_external_evidence or has_internal_evidence:
+        return "SUFFICIENT_FOR_PROVISIONAL_RECOMMENDATION"
+    return "INSUFFICIENT_BUT_BOUNDED_TEST_POSSIBLE"
+
+
 def decompose_question(question: str) -> dict[str, Any]:
     """Return an auditable plan hint; specialists still decide the evidence."""
     complexity = classify_query(question)
+    intent = resolve_intent(question)
     specialists = specialist_selection(question)
     if complexity in {"SIMPLE_FACT", "CURRENT_STATE_QUERY"}:
         specialists = specialists[:1]
@@ -88,12 +139,18 @@ def decompose_question(question: str) -> dict[str, Any]:
     return {
         "schema_version": "nexus.nova-executive-plan.v1",
         "complexity": complexity,
+        "intent": intent["intent"],
+        "expected_output": intent["expected_output"],
         "parent_question": (question or "").strip()[:1000],
         "subquestion_prompt": "Identify assumptions, unknowns, alternatives, and the decision criterion before answering." if complexity in {"MULTI_LEVEL_STRATEGIC_QUERY", "DURABLE_PROCESS_REQUEST"} else None,
         "specialists": specialists,
         "parallel_candidates": specialists[:],
         "needs_research": needs_research,
         "requires_recommendation": complexity in {"MULTI_LEVEL_STRATEGIC_QUERY", "MULTI_SPECIALIST_QUERY", "DURABLE_PROCESS_REQUEST"},
+        "decision_sufficiency": decision_sufficiency(question),
+        "evidence_relevance_rule": "Use only facts that materially affect option ranking, risk, uncertainty, or the next action; system health is not pricing evidence without a causal link.",
+        "next_action_owner_rule": "Safe internal Research, Alpha, Finance, Marketing, Clyde, Opportunity, planning, and internal work creation belong to Nexus; Ray owns only existing approval boundaries.",
+        "autonomous_follow_through": complexity in {"MULTI_LEVEL_STRATEGIC_QUERY", "MULTI_SPECIALIST_QUERY", "DURABLE_PROCESS_REQUEST"},
         "goal_completion_rule": "Do not close the parent goal when only a task, report, asset, or specialist response is complete.",
         "created_at": _now(),
     }

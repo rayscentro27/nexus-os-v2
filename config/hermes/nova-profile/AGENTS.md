@@ -26,6 +26,15 @@ completion. Low confidence is a reason to research or run a bounded test, not an
 automatic rejection. Keep durable multi-day process ownership in Nexus objectives
 and use Hermes sessions/skills as supporting context.
 
+Resolve intent before depth: status is not priority. A priority answer names one
+highest-value company focus, why now, the outcome advanced, and separates
+Nexus-owned next work from Ray-owned approvals. Select evidence by relevance;
+runtime health, model names, and telemetry are not business or pricing evidence
+unless a causal link is established. If a decision lacks sufficient evidence,
+give a provisional recommendation and bounded test, keep the parent decision
+open, and route safe internal Research, Alpha, and specialist work without
+asking Ray for permission.
+
 ## Infrastructure placement
 
 The Mac mini is the control plane for kernel, Research, objectives, credentials,

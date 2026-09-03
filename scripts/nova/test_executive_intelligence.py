@@ -1,4 +1,6 @@
-from executive_intelligence import classify_query, decompose_question, decision_framework, process_record, specialist_selection, telegram_executive_format
+from executive_intelligence import (classify_query, decision_framework, decision_sufficiency,
+                                    decompose_question, evidence_relevance, process_record,
+                                    resolve_intent, specialist_selection, telegram_executive_format)
 
 
 BENCHMARK_QUESTIONS = [
@@ -31,6 +33,27 @@ def test_twenty_case_executive_benchmark_has_depth_routing():
     assert sum(p["complexity"] == "MULTI_LEVEL_STRATEGIC_QUERY" for p in plans) >= 7
     assert sum(len(p["specialists"]) >= 2 for p in plans) >= 6
     assert all(p["goal_completion_rule"] for p in plans)
+
+
+def test_intent_distinguishes_status_priority_and_casual_conversation():
+    assert resolve_intent("What is Nexus status?")["intent"] == "STATUS_REQUEST"
+    assert resolve_intent("What should Nexus focus on today and why?")["intent"] == "PRIORITY_REQUEST"
+    assert resolve_intent("Good afternoon Nova.")["intent"] == "CASUAL_CONVERSATION"
+
+
+def test_decision_evidence_relevance_and_sufficiency_are_separate():
+    question = "Should the GoClear readiness assessment remain $97 or become free?"
+    assert evidence_relevance(question, "Oracle telemetry is degraded") == "SUPPORTING_CONTEXT_ONLY"
+    assert evidence_relevance(question, "Competitor pricing and conversion evidence") == "DIRECTLY_RELEVANT"
+    assert decision_sufficiency(question) == "INSUFFICIENT_BUT_BOUNDED_TEST_POSSIBLE"
+    assert decision_sufficiency(question, has_external_evidence=True) == "SUFFICIENT_FOR_PROVISIONAL_RECOMMENDATION"
+
+
+def test_priority_plan_assigns_internal_follow_through_to_nexus():
+    plan = decompose_question("What should Nexus focus on today and why?")
+    assert plan["intent"] == "PRIORITY_REQUEST"
+    assert "Nexus" in plan["next_action_owner_rule"]
+    assert plan["autonomous_follow_through"] is True
 
 
 def test_simple_and_current_queries_do_not_over_orchestrate():
