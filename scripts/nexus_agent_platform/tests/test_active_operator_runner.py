@@ -40,10 +40,11 @@ def test_no_action_is_successful_and_writes_heartbeat(monkeypatch, tmp_path):
     (root / "data/operations/nexus_process_registry.json").write_text("[]")
     (root / "reports/phase16a/scheduler_health.json").write_text('{"status":"HEALTHY"}')
     result = runner.run_once()
-    assert result["status"] == "NO_ACTION_REQUIRED"
+    assert result["status"] == "COMPLETED_WITH_FINDINGS"
+    assert "research.refresh" in result["actions_considered"]
     assert result["operator_health"] == "HEALTHY"
     assert Path(result["heartbeat_path"]).name == "heartbeat.json"
-    assert json.loads((root / "reports/runtime/heartbeat.json").read_text())["work_discovered"] == 0
+    assert json.loads((root / "reports/runtime/heartbeat.json").read_text())["work_discovered"] == 1
 
 
 def test_work_order_creation_and_duplicate_suppression(monkeypatch, tmp_path):
@@ -55,7 +56,7 @@ def test_work_order_creation_and_duplicate_suppression(monkeypatch, tmp_path):
     second = runner.run_once()
     assert first["status"] == "COMPLETED_WITH_FINDINGS"
     assert len(first["work_orders_created"]) == 1
-    assert second["duplicates_suppressed"] == 1
+    assert second["duplicates_suppressed"] == 2
     assert len(persistence.read_records("work_orders")) == 1
 
 
@@ -96,7 +97,8 @@ def test_corrupt_inputs_fail_safe_to_no_action(monkeypatch, tmp_path):
     (root / "data/operations/nexus_process_registry.json").write_text("not-json")
     (root / "reports/phase16a/scheduler_health.json").write_text("not-json")
     result = runner.run_once()
-    assert result["status"] == "NO_ACTION_REQUIRED"
+    assert result["status"] == "COMPLETED_WITH_FINDINGS"
+    assert "research.refresh" in result["actions_considered"]
     assert result["authority"]["external_actions"] == "BLOCKED"
 
 

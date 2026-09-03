@@ -307,7 +307,15 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
     if action_id != "research.refresh":
         return {"status": "RECORDED_NOT_EXECUTED", "action": action_id}
     from nexus_agent_platform.loops.governed_loops import _research
-    result = dict(_research({"question": finding.get("question"), "live_private_searxng": True}))
+    from nexus_agent_platform.continuous_operating_kernel import build_program_registry, build_source_registry, run_cycle
+    build_program_registry(source_registry=build_source_registry())
+    kernel_receipt = run_cycle(
+        lambda: dict(_research({"question": finding.get("question"), "live_private_searxng": True})),
+        queue_empty=finding.get("source") == "continuous_kernel",
+        incomplete_objectives=int(finding.get("incomplete_objectives", 0)),
+    )
+    result = dict(kernel_receipt.get("result", {}))
+    result["continuous_kernel_receipt"] = kernel_receipt.get("cycle_id")
     result["synthetic"] = False
     result["source"] = "private SearXNG adapter"
     return result
@@ -518,6 +526,34 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 break
     except (OSError, ValueError, TypeError, KeyError):
         pass
+    # A finite queue is not a terminal Research state.  When there is no
+    # explicit request, hand the canonical bounded discovery action to the
+    # existing Alpha/research executor.  The kernel receipt supplies the next
+    # wake and objective ownership; this finding is idempotent per operator run.
+    if not any(item.get("proposed_action") == "research.refresh" for item in findings):
+        try:
+            from nexus_agent_platform.research_operational_state import build_research_operational_state
+            research_state = build_research_operational_state()
+            findings.append({
+                "finding_id": "continuous_kernel:research_refresh",
+                "source": "continuous_kernel",
+                "source_system": "research_heartbeat",
+                "category": "research_intelligence",
+                "priority": "P3",
+                "summary": "Continue objective-driven Research heartbeat",
+                "reason": research_state.get("empty_queue_next_action", "RUN_BOUNDED_AUTONOMOUS_DISCOVERY"),
+                "proposed_action": "research.refresh",
+                "approval_required": False,
+                "action_class": "INTERNAL_AUTONOMOUS",
+                "capability": "searxng.research",
+                "dedupe_key": "continuous_kernel:research_refresh:v1",
+                "question": "Find current public evidence that can reduce an open Nexus knowledge gap or improve a current capability.",
+                "incomplete_objectives": research_state.get("open_research_objectives", 0),
+                "synthetic": False,
+                "evidence_refs": ["data/runtime/research_heartbeat.json", "data/runtime/research_program_registry.json"],
+            })
+        except Exception:
+            pass
     return sorted(findings, key=lambda item: (PRIORITY_RANK[item["priority"]], item["finding_id"]))
 
 
