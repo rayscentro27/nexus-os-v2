@@ -35,6 +35,10 @@ from hermes_evidence_contract import (
     source_quality,
     turn_requirements,
 )
+from executive_intelligence import (
+    decompose_question,
+    process_record,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HERMES_ROOT = Path(os.getenv("NOVA_HERMES_ROOT", str(Path.home() / ".hermes/hermes-agent")))
@@ -901,6 +905,10 @@ def run_shadow(
     # available. A volatile follow-up may omit the resource name, but its
     # current-state wording still requires the relevant fresh Nexus surface.
     shadow_state = _load_shadow_state(active_session)
+    executive_plan = decompose_question(prompt)
+    # This is a bounded planning hint for Hermes, not a second router. Native
+    # tool selection remains model-driven and governed by the existing surface.
+    process_record(active_session, prompt, executive_plan)
     prior_records = [dict(row) for row in (shadow_state.get("resource_results") or []) if isinstance(row, dict)]
     # Keep the latest bounded referent independently of the rolling evidence
     # index. This survives process boundaries and remains useful if the index
@@ -958,6 +966,14 @@ def run_shadow(
         "When a user refers to a recommendation or Research result, use the current conversational referent and its linked request/result, never an unrelated older artifact. "
         "A tool result is evidence for this turn only when it is returned in this turn's native tool exchange."
         " For a follow-up asking what Research found, reuse the current linked Alpha result when one exists; do not rerun Alpha unless the user requests a new challenge."
+    )
+    executive_guidance = (
+        "\n\n[EXECUTIVE PLANNING HINT — internal]\n"
+        + json.dumps(executive_plan, sort_keys=True)
+        + "\nUse this only to choose appropriate depth. Preserve the parent question, "
+        "separate evidence from judgment, surface contradictions, recommend one "
+        "reversible next action when useful, and do not claim a goal complete "
+        "because one task or report finished."
     )
     turn_contract = turn_requirements(prompt, prior_records)
     turn_contract_guidance = ""
@@ -1042,7 +1058,7 @@ def run_shadow(
         + (_shadow_resource_guidance() if turn_contract["fresh_execution_required"] else "")
         + referent_context
         if native_conversation
-        else _nova_soul() + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context + referent_context
+        else _nova_soul() + executive_guidance + _shadow_resource_guidance() + _volatile_resource_guidance() + current_context + immutable_objective + correlation_context + referent_context
     )
     agent = AIAgent(
         model=chosen_model,
@@ -1262,6 +1278,8 @@ def run_shadow(
             result["messages"] = all_messages
             result["native_conversation"] = True
             result["claim_attribution"] = claim_attribution(prompt, draft, final_state)
+            result["executive_plan"] = executive_plan
+            process_record(active_session, prompt, executive_plan, result=draft)
             # Zero-tool turns return early, but they are still conversation
             # state. Persist them before returning so a new worker process can
             # recover native referents; resource-backed turns continue through
@@ -1511,6 +1529,8 @@ def run_shadow(
         shadow_state["evidence_state"] = state_contract
     _save_shadow_state(active_session, shadow_state)
     if isinstance(result, dict):
+        result["executive_plan"] = executive_plan
+        process_record(active_session, prompt, executive_plan, result=str(result.get("final_response", "")))
         result["turn_contract"] = turn_contract
         result["evidence_state"] = state_contract
         result["claim_validation"] = state_contract["claim_validation"]
