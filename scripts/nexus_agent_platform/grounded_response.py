@@ -138,22 +138,25 @@ def _verified_lines(evidence: Dict[str, Any]) -> list[str]:
     health = evidence["health"]
     specialists = evidence["specialists"]
     priority = evidence["priority"]
-    return [
-        "Verified current facts (from runtime and governed read-only evidence):",
-        f"- Health: {health.get('status', 'UNKNOWN')}; raw active={health.get('raw', {}).get('active_services', 'UNKNOWN')}, degraded={health.get('raw', {}).get('degraded_services', 'UNKNOWN')}, failed={health.get('raw', {}).get('failed_services', 'UNKNOWN')}.",
-        f"- Priority: {priority.get('summary', 'UNKNOWN')} ({priority.get('classification', 'UNKNOWN')}).",
-        f"- Finance availability: {specialists.get('finance', {}).get('availability', 'UNKNOWN')}.",
-        f"- Alpha availability: {specialists.get('alpha', {}).get('availability', 'UNKNOWN')}.",
-        f"- Hermes runtime: {runtime.get('host', 'UNKNOWN')} Hermes {runtime.get('hermes_version', 'UNKNOWN')}, profile {runtime.get('profile', 'UNKNOWN')}, {runtime.get('provider', 'UNKNOWN')} / {runtime.get('model', 'UNKNOWN')}.",
-        "- Python, operating-system, and Podman versions: UNKNOWN unless separately verified; not inferred from the model response.",
-    ]
+    lines = ["Nexus is operational, with telemetry currently degraded." if health.get("status") == "OPERATIONAL_WITH_TELEMETRY_DEGRADED" else f"Nexus health: {health.get('status', 'UNKNOWN')}."]
+    if priority.get("classification") == "REQUIRES_RAY":
+        lines.append(f"Ray action: {priority.get('summary', 'A governed approval is pending.')}")
+    else:
+        lines.append("Ray action: Nothing currently requires your action.")
+        lines.append(f"Nexus working: {priority.get('summary', 'No internally actionable priority was verified.')}")
+    lines.extend([
+        f"Finance: {specialists.get('finance', {}).get('availability', 'UNKNOWN')}.",
+        f"Alpha: {specialists.get('alpha', {}).get('availability', 'UNKNOWN')}.",
+        f"Runtime: {runtime.get('host', 'UNKNOWN')} Hermes {runtime.get('hermes_version', 'UNKNOWN')}, profile {runtime.get('profile', 'UNKNOWN')}, {runtime.get('provider', 'UNKNOWN')} / {runtime.get('model', 'UNKNOWN')}.",
+    ])
+    return lines
 
 
-def ground_response(response: str, request: str, runtime: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
+def ground_response(response: str, request: str, runtime: Dict[str, Any], verified_current_state: Dict[str, Any] | None = None) -> tuple[str, Dict[str, Any]]:
     """Ground only current-state responses and return the evidence object."""
     if not requires_current_evidence(request):
         return str(response or "").strip(), {}
-    evidence = collect_verified_current_state(runtime)
+    evidence = verified_current_state or collect_verified_current_state(runtime)
     # Remove model-authored field claims only where deterministic evidence now
     # owns that field.  Narrative, analysis, and recommendations remain intact.
     kept = []
@@ -163,7 +166,7 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any]) -> tup
         if re.search(r"highest[- ]priority|priority work item", heading):
             owned_section = True
             continue
-        if re.search(r"(?:current )?system health|availability(?: of resources| of finance)|hermes runtime", heading):
+        if re.search(r"(?:current )?(?:nexus )?system health|current nexus health|availability(?: of resources| of finance)|finance and alpha availability|actions required|hermes runtime", heading):
             owned_section = True
             continue
         if owned_section and re.search(r"availability|hermes runtime|runtime|let me know", heading):
@@ -171,17 +174,27 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any]) -> tup
         if owned_section or _FACT_LABEL.match(_normalized_line(line)):
             continue
         kept.append(line)
-    text = "\n".join(kept).strip()
-    return (text + "\n\n" if text else "") + "\n".join(_verified_lines(evidence)), evidence
+    # Current-state answers are a single authoritative composition.  Reusing
+    # free-form model prose here would permit an unlabeled contradiction (for
+    # example, a claim that a resource is unavailable) to survive the field
+    # filter.  Hermes still performs the upstream reasoning; this boundary
+    # owns the final machine-fact slots only for this narrow response surface.
+    narrative = ""
+    composed = "\n".join(_verified_lines(evidence))
+    if re.search(r"\b(?:python|operating system|podman)\b", str(request), re.I):
+        composed += "\nEnvironment versions: UNKNOWN unless separately verified."
+    if narrative:
+        composed = narrative + "\n\n" + composed
+    return composed, evidence
 
 
 def response_completeness(response: str) -> Dict[str, bool]:
     """General multipart coverage check for the grounded executive surface."""
     text = str(response or "").lower()
     return {
-        "system_health": "health:" in text,
-        "ray_priority": "priority:" in text,
-        "finance": "finance availability:" in text,
-        "alpha": "alpha availability:" in text,
-        "runtime": "hermes runtime:" in text,
+        "system_health": "nexus is operational" in text or "nexus health:" in text,
+        "ray_priority": "ray action:" in text,
+        "finance": "finance:" in text,
+        "alpha": "alpha:" in text,
+        "runtime": "runtime:" in text,
     }

@@ -28,9 +28,9 @@ def test_current_state_replaces_model_owned_fact_lines(monkeypatch):
     )
     assert "3.13.5" not in response
     assert "Not checked" not in response
-    assert "Finance availability: AVAILABLE" in response
-    assert "Alpha availability: AVAILABLE" in response
-    assert "- Hermes runtime: ORACLE Hermes 0.20.6" in response
+    assert "Finance: AVAILABLE" in response
+    assert "Alpha: AVAILABLE" in response
+    assert "Runtime: ORACLE Hermes 0.20.6" in response
     assert all(response_completeness(response).values())
     assert evidence["runtime"]["provenance"] == "CURRENT"
 
@@ -61,3 +61,15 @@ def test_ordinary_conversation_is_not_reformatted():
     response, evidence = ground_response(value, "I disagree with you. Defend your view.", RUNTIME)
     assert response == value
     assert evidence == {}
+
+
+def test_unlabeled_model_contradiction_is_not_carried_into_current_state():
+    response, _ = ground_response(
+        "Finance and Alpha could not be verified and the Oracle runtime is unavailable.",
+        "Give me current Nexus health, Finance and Alpha availability, and the runtime.",
+        RUNTIME,
+    )
+    assert "could not be verified" not in response
+    assert "unavailable" not in response
+    assert "Finance: AVAILABLE" in response
+    assert "Alpha: AVAILABLE" in response
