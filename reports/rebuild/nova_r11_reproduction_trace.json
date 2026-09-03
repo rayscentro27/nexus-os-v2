@@ -1,0 +1,29 @@
+{
+  "schema_version": "nexus.nova-tool-loop-reproduction.v1",
+  "captured_at": "2026-09-03",
+  "runtime": "ORACLE_HERMES_0.20.6",
+  "profile": "nova_nexus",
+  "cases": [
+    {
+      "case": "opportunity_canary_before_recovery",
+      "question": "What is the biggest opportunity for Nexus right now?",
+      "complexity": "MULTI_LEVEL_STRATEGIC_QUERY",
+      "tool_sequence": ["mcp_nexus_mcp_nexus_get_opportunities", "public_web_search_shadow", "public_web_retrieval_shadow"],
+      "failure": "same_tool_failure_halt",
+      "usable_evidence_before_halt": true,
+      "recovery": "not_available_before_change"
+    },
+    {
+      "case": "opportunity_canary_after_recovery",
+      "question": "What is the biggest opportunity for Nexus right now?",
+      "complexity": "MULTI_LEVEL_STRATEGIC_QUERY",
+      "tool_sequence": ["nexus_mcp_tool_path", "recovery_tool_disabled_synthesis"],
+      "failure": null,
+      "usable_evidence_before_halt": true,
+      "recovery": "SYNTHESIS_AFTER_TOOL_HALT",
+      "result": "bounded conditional recommendation returned"
+    }
+  ],
+  "secrets_exposed": false,
+  "external_mutation": false
+}
