@@ -9,9 +9,9 @@ ending the executive question. The opportunity and GoClear canaries completed;
 two controlled contradiction cases produced explicit positions, assumptions,
 missing evidence, and provisional recommendations.
 
-The remaining gate is a genuine Ray-originated Telegram proof. It cannot be
-fabricated by a shell/harness request, so the campaign is waiting for Ray to
-send the prescribed messages through Telegram.
+The genuine Ray-originated Telegram proof has now been completed. It confirms
+the transport and response path, but the executive-quality gate remains open
+because two responses were not sufficiently actionable/evidence-grounded.
 
 ## Previous Failure
 
@@ -212,7 +212,23 @@ substitute for the required human-originated Telegram proof.
 
 ## Real Ray Telegram Certification
 
-`REAL_TELEGRAM_RAY_ORIGIN=WAITING_RAY_HUMAN_ACTION`.
+Ray supplied three user-originated messages from the production Telegram path
+on 2026-09-03. All three received responses and none ended in an unresolved
+`same_tool_failure_halt`.
+
+`REAL_TELEGRAM_RAY_ORIGIN=PASS_REAL`.
+`REAL_TELEGRAM_NOVA_RESPONSE=PASS_REAL`.
+
+The first response correctly reported zero current review items. The second
+reported current runtime context, but its “focus” recommendation was too
+generic and did not clearly name a highest-value autonomous objective. The
+third identified the pricing parent decision, alternatives, uncertainty, and
+a bounded next step; however, it also reported a failed market-analysis
+delegation and leaned on absent client activity rather than validated market
+evidence. This is real communication proof, but not a passing executive
+quality result.
+
+`REAL_TELEGRAM_EXECUTIVE_QUALITY=FAIL`.
 
 Ray must send these exact messages through the already-authorized Telegram bot,
 one at a time:
@@ -250,7 +266,9 @@ scheduler change occurred.
 
 ## Remaining Gaps
 
-- Inspect the three real Telegram responses and receipts.
+- Improve live Telegram answer quality: convert current state into a concrete
+  prioritized action, and prevent weak/failed specialist retrieval from being
+  treated as sufficient pricing evidence.
 - Capture a true same-conditions 20-case pre/post model-quality scorecard.
 - Improve generic strategic prioritization and Trading answers.
 - Add a completed live specialist-failure/alternate-specialist proof.
@@ -258,8 +276,8 @@ scheduler change occurred.
 
 ## True Ray Blockers
 
-`NONE` for internal repair. `WAITING_RAY_HUMAN_ACTION` is the required test
-input, not an infrastructure blocker.
+`NONE`. The real Telegram test is complete; the remaining work is an internal
+quality repair, not a Ray blocker.
 
 ## Git
 
@@ -295,9 +313,9 @@ NOVA_PROCESS_FAILURE_RECOVERY=PASS_REAL
 NOVA_BLOCKER_RECOVERY=PASS_REAL
 NOVA_TELEGRAM_EXECUTIVE_UX=PASS_REAL
 NOVA_EXECUTIVE_COMMUNICATION_PROOF=FAIL
-REAL_TELEGRAM_RAY_ORIGIN=WAITING_RAY_HUMAN_ACTION
-REAL_TELEGRAM_NOVA_RESPONSE=NOT_RUN
-REAL_TELEGRAM_EXECUTIVE_QUALITY=NOT_RUN
+REAL_TELEGRAM_RAY_ORIGIN=PASS_REAL
+REAL_TELEGRAM_NOVA_RESPONSE=PASS_REAL
+REAL_TELEGRAM_EXECUTIVE_QUALITY=FAIL
 NOVA_EXECUTIVE_REASONING_IMPROVEMENT=NO_MEASURABLE_IMPROVEMENT
 NOVA_TOOL_RECOVERY_MEMORY_UPDATED=PASS_REAL
 NOVA_INITIATIVE_RETAINED=PASS_REAL
