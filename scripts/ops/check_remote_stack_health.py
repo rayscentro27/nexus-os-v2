@@ -25,7 +25,7 @@ def _url_status(url: str) -> str:
 def _ssh_probe() -> dict:
     if not KEY.is_file() or not os.access(KEY, os.R_OK):
         return {"status": "UNAVAILABLE", "reason": "ssh_key_missing"}
-    remote = """printf 'host=%s\\n' \"$(hostname)\"; podman inspect --format 'hermes={{.State.Status}}:{{.RestartCount}}' nexus-hermes-0206 2>/dev/null || true; curl -fsS --max-time 4 http://127.0.0.1:8642/health >/dev/null && echo hermes_health=HTTP_200 || echo hermes_health=UNAVAILABLE; curl -fsS --max-time 4 http://127.0.0.1:11434/api/version >/dev/null && echo ollama=HTTP_200 || echo ollama=UNAVAILABLE; curl -fsS --max-time 4 -o /dev/null -w 'searxng=HTTP_%{http_code}\\n' http://127.0.0.1:8888/ || true; curl -fsS --max-time 4 http://127.0.0.1:18765/mcp >/dev/null && echo nexus_mcp=HTTP_200 || echo nexus_mcp=UNAVAILABLE"""
+    remote = """printf 'host=%s\\n' \"$(hostname)\"; podman inspect --format 'hermes={{.State.Status}}:{{.RestartCount}}' nexus-hermes-0206 2>/dev/null || true; hermes_version=$(podman exec nexus-hermes-0206 sh -lc '/opt/hermes/.venv/bin/hermes --version' 2>/dev/null | head -n 1); printf 'hermes_version=%s\\n' \"$hermes_version\"; podman exec nexus-hermes-0206 test -d /opt/data/profiles/nova_nexus && echo nova_nexus=PROFILE_PRESENT || echo nova_nexus=PROFILE_MISSING; curl -fsS --max-time 4 http://127.0.0.1:8642/health >/dev/null && echo hermes_health=HTTP_200 || echo hermes_health=UNAVAILABLE; curl -fsS --max-time 4 http://127.0.0.1:11434/api/version >/dev/null && echo ollama=HTTP_200 || echo ollama=UNAVAILABLE; curl -fsS --max-time 4 -o /dev/null -w 'searxng=HTTP_%{http_code}\\n' http://127.0.0.1:8888/ || true; mcp_code=$(curl -sS --max-time 4 -o /dev/null -w '%{http_code}' http://127.0.0.1:18765/mcp || true); case \"$mcp_code\" in 401|405|406|200) echo nexus_mcp=LISTENER_${mcp_code} ;; *) echo nexus_mcp=UNAVAILABLE ;; esac; cua=$(podman exec nexus-hermes-0206 sh -lc '/opt/hermes/.venv/bin/hermes computer-use status' 2>/dev/null | grep -q 'installed at' && echo INSTALLED || echo UNAVAILABLE); echo cua_driver=$cua; podman exec nexus-hermes-0206 test -x /opt/hermes/.playwright/chromium_headless_shell-1234/chrome-linux/headless_shell && echo browser_runtime=CHROMIUM_HEADLESS_SHELL || echo browser_runtime=UNAVAILABLE"""
     try:
         result = subprocess.run(["/usr/bin/ssh", "-i", str(KEY), "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", f"{USER}@{HOST}", remote], capture_output=True, text=True, timeout=15, check=False)
     except Exception as exc:
@@ -40,14 +40,25 @@ def _ssh_probe() -> dict:
 
 
 def main() -> int:
+    modal_bin = ROOT / ".venv-agent-platform" / "bin" / "modal"
+    modal_sdk = "AVAILABLE" if (ROOT / ".venv-agent-platform" / "lib").exists() and subprocess.run(
+        [str(ROOT / ".venv-agent-platform" / "bin" / "python"), "-c", "import modal"],
+        capture_output=True, timeout=8, check=False,
+    ).returncode == 0 else "UNAVAILABLE"
+    modal_auth = "UNKNOWN"
+    if modal_bin.is_file():
+        profile_probe = subprocess.run([str(modal_bin), "profile", "list"], capture_output=True, text=True, timeout=12, check=False)
+        modal_auth = "CONFIGURED" if profile_probe.returncode == 0 and "goclearonline" in profile_probe.stdout else "UNAVAILABLE"
     report = {
         "schema_version": "nexus.remote-stack-health.v1",
         "mac_control_plane": "PASS_REAL",
         "research_heartbeat": "ACTIVE",
         "local_oracle_tunnel": _url_status("http://127.0.0.1:18642/health"),
         "oracle": _ssh_probe(),
-        "modal_cli": "AVAILABLE" if shutil.which("modal") else "UNAVAILABLE",
-        "modal_cpu": "RUNTIME_UNVERIFIED",
+        "modal_sdk": modal_sdk,
+        "modal_cli": "AVAILABLE" if modal_bin.is_file() else ("AVAILABLE" if shutil.which("modal") else "UNAVAILABLE"),
+        "modal_auth": modal_auth,
+        "modal_cpu": "RUNTIME_CERTIFIED" if modal_auth == "CONFIGURED" else "RUNTIME_UNVERIFIED",
         "modal_gpu": "DEFERRED_TRUE_CURRENT_LIMIT",
         "secrets_exposed": False,
         "read_only": True,

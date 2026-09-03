@@ -13,8 +13,13 @@
     "hermes_version_expected": "0.20.6",
     "hermes_profile": "nova_nexus",
     "hermes_api_loopback": "127.0.0.1:8642",
-    "mac_tunnel": "127.0.0.1:18642 -> oracle:127.0.0.1:8642",
+    "mac_tunnel": "127.0.0.1:18642 -> oracle:127.0.0.1:8642; reverse 127.0.0.1:18765 -> mac:127.0.0.1:18765",
     "mcp_endpoint_expected": "127.0.0.1:18765/mcp",
+    "mcp_bridge_owner": "Mac launchd com.nexus.nexus-mcp-bridge -> services.nexus_mcp.http_server",
+    "mcp_bridge_secret_source": "macOS Keychain nexus/credential.nexus.mcp.bridge.v1 (value never stored here)",
+    "oracle_browser_runtime": "/opt/hermes/.playwright/chromium_headless_shell-1234/chrome-linux/headless_shell",
+    "oracle_cua_driver": "/root/.local/bin/cua-driver",
+    "canonical_health_check": "scripts/ops/check_remote_stack_health.py",
     "secrets": "never stored here"
   },
   "modal_cpu": {
@@ -28,14 +33,14 @@
     "state": "DEFERRED_TRUE_CURRENT_LIMIT",
     "role": "future governed creative GPU only"
   },
-  "last_audit": {
+    "last_audit": {
     "oracle_ssh": "PASS_REAL",
     "oracle_hermes": "HEALTHY_0.20.6",
-    "nova_nexus": "PROFILE_PRESENT_MCP_ENDPOINT_UNAVAILABLE",
+        "nova_nexus": "PROFILE_PRESENT_MCP_CURRENT_STATE_PASS",
     "ollama": "HEALTHY_0.21.2",
     "searxng": "HEALTHY_HTTP_200",
-    "oracle_browser": "NOT_CURRENTLY_PROVEN",
-    "modal_cpu": "ACCOUNT_EVIDENCE_PRESENT_RUNTIME_UNVERIFIED",
+        "oracle_browser": "PASS_REAL_HERMES_BROWSER_EXAMPLE_COM",
+        "modal_cpu": "PASS_REAL_HEALTH_AND_JOB",
     "updated_at": "2026-09-03"
   }
 }
