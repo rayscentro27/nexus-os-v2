@@ -65,7 +65,7 @@ simulated and the WP9X event was not replayed.
 
 Ray must send:
 
-> Nexus, WP9Z human certification NEXUS-WP9Z-7F4A2C. Give me a concise executive briefing: current Nexus health, anything that truly requires my action now, verified Finance and Alpha availability, and the exact verified Hermes runtime answering me.
+> Nexus, WP9AA human certification NEXUS-WP9AA-08DE14. Give me a concise executive briefing: current Nexus health, anything that truly requires my action now, verified Finance and Alpha availability, and the exact verified Hermes runtime answering me.
 
 This message was not sent by Codex.
 
