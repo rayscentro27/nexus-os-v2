@@ -1,0 +1,41 @@
+{
+  "schema_version": "nexus.remote-capability-memory.v1",
+  "control_plane": {
+    "host": "MAC",
+    "role": "Continuous Kernel, Research, objectives, credentials, receipts, governance"
+  },
+  "oracle": {
+    "host_identity": "nexus-llm-worker",
+    "ssh_target": "opc@161.153.40.41",
+    "ssh_key_path": "~/.ssh/oracle_vm",
+    "role": "Hermes, bounded CPU, browser when current browser runtime is healthy",
+    "hermes_container": "nexus-hermes-0206",
+    "hermes_version_expected": "0.20.6",
+    "hermes_profile": "nova_nexus",
+    "hermes_api_loopback": "127.0.0.1:8642",
+    "mac_tunnel": "127.0.0.1:18642 -> oracle:127.0.0.1:8642",
+    "mcp_endpoint_expected": "127.0.0.1:18765/mcp",
+    "secrets": "never stored here"
+  },
+  "modal_cpu": {
+    "workspace": "goclearonline",
+    "app": "nexus-remote-cpu-worker",
+    "function": "submit_job",
+    "health_function": "health_check",
+    "auth": "local profile/credential control only; values never stored here"
+  },
+  "modal_gpu": {
+    "state": "DEFERRED_TRUE_CURRENT_LIMIT",
+    "role": "future governed creative GPU only"
+  },
+  "last_audit": {
+    "oracle_ssh": "PASS_REAL",
+    "oracle_hermes": "HEALTHY_0.20.6",
+    "nova_nexus": "PROFILE_PRESENT_MCP_ENDPOINT_UNAVAILABLE",
+    "ollama": "HEALTHY_0.21.2",
+    "searxng": "HEALTHY_HTTP_200",
+    "oracle_browser": "NOT_CURRENTLY_PROVEN",
+    "modal_cpu": "ACCOUNT_EVIDENCE_PRESENT_RUNTIME_UNVERIFIED",
+    "updated_at": "2026-09-03"
+  }
+}
