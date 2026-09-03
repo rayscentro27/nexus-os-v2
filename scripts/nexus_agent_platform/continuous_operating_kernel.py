@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
@@ -203,7 +204,8 @@ def recover_loop(*, enabled: bool, state: str, heartbeat_age_seconds: int | None
 def run_cycle(cycle_fn: Callable[[], dict[str, Any]], *, cycle_id: str | None = None,
               queue_empty: bool = True, incomplete_objectives: int = 0,
               alpha_feedback: int = 0, due_sources: int = 0, knowledge_gaps: int = 0,
-              stale_claims: int = 0, pressure: float = 0.0) -> dict[str, Any]:
+              stale_claims: int = 0, pressure: float = 0.0,
+              interval_seconds: int = 1200, scheduler: str = "ACTIVE_IN_PROCESS_CYCLE") -> dict[str, Any]:
     """Run one bounded cycle and persist a heartbeat even when work is empty."""
     started = now()
     cycle_id = cycle_id or "cycle_" + fingerprint((started, os.getpid()))
@@ -213,10 +215,10 @@ def run_cycle(cycle_fn: Callable[[], dict[str, Any]], *, cycle_id: str | None = 
     resources = resource_decision(pressure=pressure, checkpoint={"cycle_id": cycle_id, "next_action": action})
     result = dict(cycle_fn())
     finished = now()
-    next_wake = (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat()
+    next_wake = (datetime.now(timezone.utc) + timedelta(seconds=max(30, interval_seconds))).isoformat()
     heartbeat = {
         "schema_version": "nexus.research-heartbeat.v1", "enabled": True, "heartbeat": "ACTIVE",
-        "scheduler": "ACTIVE_IN_PROCESS_CYCLE", "worker_state": "IDLE_BETWEEN_CYCLES",
+        "scheduler": scheduler, "worker_state": "IDLE_BETWEEN_CYCLES",
         "cycle_id": cycle_id, "started_at": started, "last_success": finished,
         "next_wake": next_wake, "next_action": action, "resources": resources,
         "result_status": result.get("status", "PASS"), "objective_owner": "RESEARCH",
@@ -234,7 +236,13 @@ def current_kernel_contract() -> dict[str, Any]:
     heartbeat = _read(HEARTBEAT_PATH, {})
     scheduler_health = _read(ROOT / "reports/phase16a/scheduler_health.json", {})
     scheduler = heartbeat.get("scheduler", "INACTIVE")
-    if scheduler_health.get("status") == "FAIL":
+    supervisor_loaded = False
+    try:
+        supervisor_loaded = subprocess.run(["launchctl", "print", f"gui/{os.getuid()}/com.nexus.continuous-loop"],
+                                           capture_output=True, timeout=3, check=False).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        supervisor_loaded = False
+    if scheduler_health.get("status") == "FAIL" and not supervisor_loaded:
         scheduler = "INACTIVE"
     return {"research_enabled": True, "research_heartbeat": heartbeat.get("heartbeat", "UNKNOWN"),
             "research_scheduler": scheduler, "research_scheduler_reason": "existing launchd supervisor is not healthy" if scheduler == "INACTIVE" else None,

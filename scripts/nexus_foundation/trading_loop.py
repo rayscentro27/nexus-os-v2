@@ -56,12 +56,29 @@ def run_trading_loop():
     score=max(0,min(100,round(35+oos["expectancy_pct"]*100+min(oos["profit_factor"] if isinstance(oos["profit_factor"],(int,float)) else 0,3)*10-oos["max_drawdown_pct"]-max(0,30-oos["trade_count"]))))
     decision="PAPER_APPROVE" if oos["trade_count"]>=5 and oos["expectancy_pct"]>0 and all(x["metrics"]["expectancy_pct"]>-0.01 for x in stress) else "REJECT"
     critique={"status":"PASS","falsifiers":["OOS collapse","cost stress negative","too few trades","regime dependence"],"findings":["no future-bar references in implementation","completed-bar inputs only","sample and trade-count limitations remain"],"decision":decision}
-    _append("trading_experiments",{"experiment_id":persistence.new_id("exp"),"loop_id":loop_id,"strategy_id":strategy["strategy_id"],"version":strategy["version"],"data":{"source":"OANDA_PRACTICE","instrument":"EUR_USD","timeframe":"H1","start":rows[0]["time"],"end":rows[-1]["time"],"bar_count":len(rows),"split":split},"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"score":score,"decision":decision,"failure_modes":critique["falsifiers"],"created_at":_now()})
+    experiment_id = persistence.new_id("exp")
+    _append("trading_experiments",{"experiment_id":experiment_id,"loop_id":loop_id,"strategy_id":strategy["strategy_id"],"version":strategy["version"],"data":{"source":"OANDA_PRACTICE","instrument":"EUR_USD","timeframe":"H1","start":rows[0]["time"],"end":rows[-1]["time"],"bar_count":len(rows),"split":split},"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"score":score,"decision":decision,"failure_modes":critique["falsifiers"],"created_at":_now()})
     alpha_result={"status":"PASS","artifact":"research_critique_backtest_oos_robustness","decision":decision,"score":score,"oos":oos,"critique":critique}; alpha=complete_work_order(alpha,alpha_result,receipt_ref="trading_experiment"); _append("work_orders",alpha)
     paper=None; paper_order=None
     if decision=="PAPER_APPROVE":
         paper={"paper_observation_id":persistence.new_id("paper"),"strategy_id":strategy["strategy_id"],"version":"1.0","environment":"OANDA_PRACTICE","status":"INSUFFICIENT_YET","signals":[],"paper_trades":[],"created_at":_now()}; _append("trading_paper_observations",paper)
     learning={"learning_id":persistence.new_id("learn"),"loop_id":loop_id,"strategy_id":strategy["strategy_id"],"status":"CANDIDATE","finding":"OOS and cost sensitivity recorded; not promoted without forward corroboration","evidence_refs":[strategy["strategy_id"]],"promote":False,"created_at":_now()}; _append("trading_learning",learning)
+    feedback_question = "Why does this candidate fail or remain inconclusive out of sample, and does a bounded parameter variant improve robustness?"
+    variant_spec = {**spec, "fast": 8, "slow": 30}
+    variant_oos = _run(rows, split[1], split[2], variant_spec)
+    feedback = {"feedback_id": persistence.new_id("trading_feedback"), "loop_id": loop_id, "parent_experiment_id": experiment_id,
+                "strategy_id": strategy["strategy_id"], "source": "BACKTEST_RESULT", "finding": critique["findings"],
+                "question": feedback_question, "weaknesses": ["trade_count", "cost_sensitivity", "out_of_sample_expectancy"],
+                "alpha_review": {"decision": decision, "score": score}, "variant": {"fast": 8, "slow": 30, "oos": variant_oos},
+                "next_action": "RESEARCH_AND_RETEST", "parent_objective_open": True, "created_at": _now()}
+    _append("trading_learning", feedback)
+    _append("work_orders", build_work_order(goal_id=goal_id, work_type="research", owner_specialist="ALPHA", loop_id=loop_id,
+                                              inputs={"question": feedback_question, "parent_experiment_id": experiment_id,
+                                                      "evidence": {"oos": oos, "variant_oos": variant_oos}}, retry_budget={"max_attempts": 2}))
+    _append("trading_experiments", {"experiment_id": persistence.new_id("exp"), "parent_experiment_id": experiment_id,
+                                      "loop_id": loop_id, "strategy_id": strategy["strategy_id"], "version": "1.1-variant",
+                                      "data": {"source": "OANDA_PRACTICE", "instrument": "EUR_USD", "timeframe": "H1", "split": split},
+                                      "oos": variant_oos, "decision": "RESEARCH_FEEDBACK_VARIANT", "created_at": _now()})
     if decision=="REJECT": _append("improvement_candidates",improvement_candidate(persistence.new_id("improve"),domain="trading_strategy",hypothesis="Investigate whether a non-crossover candidate or improved execution model addresses observed weakness",source="wp8.4_experiment"))
     loop.update({"state":"PAPER_OBSERVE" if paper else "DECIDED","current_step":"PAPER_OBSERVE" if paper else "DECISION","next_step":"FORWARD_REVIEW" if paper else "RESEARCH_NEW_CANDIDATE","status":"READY","outputs":{"strategy_id":strategy["strategy_id"],"decision":decision,"score":score,"oos":oos},"updated_at":_now()}); _append("loop_state",loop)
-    return {"status":"PASS","safety":safety,"loop":loop,"strategy":strategy,"research":research,"data":data,"split":split,"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"score":score,"decision":decision,"critique":critique,"paper":paper,"learning":learning,"alpha_work_order":alpha,"prior_experiments":len(prior),"cost":{"ai_invocations":0,"research_calls":2,"market_data_calls":1,"backtest_executions":1,"paper_executions":0,"retries":0},"authority_denial":not authority_allows("TRADING_ENGINE","live_trading","execute")}
+    return {"status":"PASS","safety":safety,"loop":loop,"strategy":strategy,"research":research,"data":data,"split":split,"in_sample":is_m,"validation":val,"oos":oos,"robustness":robustness,"score":score,"decision":decision,"critique":critique,"paper":paper,"learning":learning,"feedback":feedback,"alpha_work_order":alpha,"prior_experiments":len(prior),"cost":{"ai_invocations":0,"research_calls":3,"market_data_calls":1,"backtest_executions":2,"paper_executions":0,"retries":0},"authority_denial":not authority_allows("TRADING_ENGINE","live_trading","execute")}

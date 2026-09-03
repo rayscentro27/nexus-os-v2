@@ -48,12 +48,12 @@ def build_research_operational_state() -> dict[str, Any]:
     work_orders = _jsonl(ROOT / "data/governed/work_orders.jsonl")
     metadata = _json(metadata_path, [])
     transcripts = _json(transcript_path, [])
-    scheduler_plist = Path.home() / "Library/LaunchAgents/com.nexus.research-worker.plist"
+    scheduler_plist = Path.home() / "Library/LaunchAgents/com.nexus.continuous-loop.plist"
     scheduler_loaded = False
     try:
         import subprocess
         scheduler_loaded = subprocess.run(
-            ["launchctl", "print", f"gui/{__import__('os').getuid()}/com.nexus.research-worker"],
+            ["launchctl", "print", f"gui/{__import__('os').getuid()}/com.nexus.continuous-loop"],
             capture_output=True, text=True, timeout=3, check=False,
         ).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
@@ -125,7 +125,7 @@ def build_research_operational_state() -> dict[str, Any]:
         "research_needs_ray": False,
         "youtube": {"approved_targets": 5, "metadata_records": len(metadata) if isinstance(metadata, list) else 0, "transcripts_imported": len(transcripts) if isinstance(transcripts, list) else 0, "source": str(metadata_path.relative_to(ROOT))},
         "invariants": {"idle_is_not_unavailable": True, "available_is_not_active": True, "queue_empty_is_not_unavailable": True},
-        "scheduler": {"plist_present": scheduler_plist.exists(), "loaded": scheduler_loaded, "source": str(scheduler_plist)},
+        "scheduler": {"owner": "com.nexus.continuous-loop", "plist_present": scheduler_plist.exists(), "loaded": scheduler_loaded, "source": str(scheduler_plist)},
         "empty_queue_next_action": (
             "INSPECT_INCOMPLETE_OBJECTIVES_AND_CONTINUE" if open_objectives or queued_jobs else
             "RUN_BOUNDED_AUTONOMOUS_DISCOVERY" if health == "HEALTHY" else

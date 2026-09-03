@@ -6,7 +6,7 @@ WP9S read-only closure snapshot. No scheduler or Telegram mutation was made.
 |---|---|---|
 | Continuous Loop | COMPLETE_BOUNDED | Existing WP9 certification state preserved |
 | Reboot Recovery | COMPLETE_BOUNDED | Existing runtime recovery evidence; no WP9S reboot certification |
-| Scheduler | COMPLETE | State remains `RETRY_NIGHT_1`; not mutated |
+| Scheduler | COMPLETE_BOUNDED | Canonical `com.nexus.continuous-loop` is loaded/running with KeepAlive and the kernel daemon; production interval is 1200s |
 | Safety/Readiness | COMPLETE_BOUNDED | Authority and zero-new-spend constraints preserved |
 | Credential Control Plane | COMPLETE | Prior durable injection and redaction proof |
 | Hermes Runtime | COMPLETE | Hermes 0.20.6, 10/10 Oracle tool-loop regression |
@@ -20,5 +20,7 @@ WP9S read-only closure snapshot. No scheduler or Telegram mutation was made.
 | Alpha Delegation | COMPLETE | Fresh WP9S contradiction receipt |
 | Multi-Specialist Reasoning | COMPLETE | Fresh Finance + Alpha execution and synthesis |
 | Contradiction Handling | COMPLETE_BOUNDED | Fresh scenario surfaced economics/evidence disagreement |
-| Runtime Recovery | COMPLETE_BOUNDED | Targeted client recovery 3/3 per MCP; five end-to-end trials 4/5 user-visible |
+| Runtime Recovery | COMPLETE_BOUNDED | Targeted client recovery 3/3 per MCP; five end-to-end trials 4/5 user-visible; bounded launchd restart proof added |
+| Stale Knowledge Refresh | COMPLETE_BOUNDED | Canonical Alpha content/claim record refreshed from live MCP specification with immutable refresh receipt |
+| Trading Research Feedback | COMPLETE_BOUNDED | OANDA Practice backtest persisted weakness, Alpha follow-up work order, and bounded variant retest; live trading remains disabled |
 | Telegram | READY_FOR_HUMAN_CERTIFICATION | No cutover performed; awaiting genuine Ray message |
