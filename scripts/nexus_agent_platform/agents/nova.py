@@ -1235,6 +1235,9 @@ def _canonical_awareness_capability(text: str) -> Optional[str]:
     awareness questions.
     """
     lower = text.lower().strip()
+    if (any(word in lower for word in ("goal", "objective", "portfolio", "roadmap", "focus"))
+            and any(word in lower for word in ("nexus", "company", "working", "advance", "doing", "priority"))):
+        return "get_company_goal_portfolio"
     # Domain-first semantic cues keep the company context aligned with the
     # question. These are bounded read classifications, not execution grants.
     if "research" in lower and any(word in lower for word in ("find", "found", "recent", "latest", "attention", "interesting", "worth")):
@@ -2624,6 +2627,19 @@ def _format_verified_context(result: Dict[str, Any]) -> str:
         lines.append("NOTE: unique_incomplete_count counts each component once.")
         lines.append("Category counts may overlap — do NOT sum them to get unique count.")
         lines.append("[END VERIFIED NEXUS KNOWLEDGE]")
+        return "\n".join(lines)
+
+    if query_type == "get_company_goal_portfolio":
+        counts = data.get("counts_by_status", {})
+        lines = ["[VERIFIED NEXUS COMPANY PORTFOLIO]", "capability: get_company_goal_portfolio",
+                 f"status: {status}", "source: durable_local_runtime", "freshness: live", "facts:",
+                 f"- total_goals: {data.get('total_goals', 0)}",
+                 f"- active: {counts.get('ACTIVE', 0)}", f"- ready: {counts.get('READY', 0)}",
+                 f"- dependency_gated: {counts.get('PLANNED_DEPENDENCY', 0)}",
+                 f"- waiting_ray: {counts.get('WAITING_RAY', 0)}"]
+        for row in data.get("goals", [])[:30]:
+            lines.append(f"- {row.get('goal_id', 'unknown')}: {row.get('status', 'unknown')} ({row.get('priority', 'P4')}); missing criteria: {len(row.get('missing_criteria', []))}; next: {row.get('next_action', 'unknown')}")
+        lines.extend(["- operating_duties: evaluated separately before discretionary work", "[END VERIFIED NEXUS COMPANY PORTFOLIO]"])
         return "\n".join(lines)
 
     # Fallback

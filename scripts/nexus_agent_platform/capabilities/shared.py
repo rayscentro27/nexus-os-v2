@@ -98,6 +98,7 @@ NOVA_ALLOWED_READS = frozenset({
     "get_runtime_telemetry_health",
     "get_nexus_datetime",
     "get_incomplete_areas",
+    "get_company_goal_portfolio",
     # Nexus Study Layer (governed read-only system discovery)
     "get_architecture_summary",
     "get_agent_inventory",
@@ -3151,6 +3152,31 @@ def _handle_canonical_operational_read(capability: str, arguments, trace_id: str
     return result
 
 
+def _handle_company_goal_portfolio(arguments=None, trace_id: str = "") -> Dict[str, Any]:
+    """Read the durable company portfolio in an executive-safe shape."""
+    from nexus_agent_platform.goal_completion import ensure_company_goal_portfolio
+    rows = ensure_company_goal_portfolio()
+    summary = [{
+        "goal_id": row.get("goal_id"), "program_id": row.get("program_id"),
+        "statement": row.get("statement"), "department": row.get("department"),
+        "priority": row.get("priority"), "status": row.get("status"),
+        "success_criteria_total": len(row.get("success_criteria", [])),
+        "missing_criteria": row.get("missing_criteria", []),
+        "last_progress": row.get("last_progress"), "next_review": row.get("next_review"),
+        "dependencies": row.get("dependencies", []),
+        "next_action": (row.get("candidate_next_paths") or [None])[0],
+    } for row in rows]
+    counts = {status: sum(1 for row in summary if row["status"] == status) for status in {row["status"] for row in summary}}
+    data = {"total_goals": len(summary), "counts_by_status": counts, "goals": summary,
+            "operating_duties": "evaluated separately before discretionary portfolio selection",
+            "source_path": "data/runtime/company_goal_portfolio.json"}
+    return {"status": "success", "capability": "get_company_goal_portfolio", "query_type": "get_company_goal_portfolio", "source": "nexus_company_goal_portfolio",
+            "source_type": "durable_local_runtime", "freshness": "live", "access_boundary": "approved read capability only",
+            "data": data, "error": None, "provenance": {"capability": "get_company_goal_portfolio", "status": "success",
+            "source": "nexus_company_goal_portfolio", "source_type": "durable_local_runtime",
+            "retrieved_at": datetime.now(timezone.utc).isoformat(), "trace_id": trace_id}}
+
+
 # ─── Capability Dispatch ───────────────────────────────────
 
 _CAPABILITY_HANDLERS: Dict[str, Callable] = {
@@ -3189,6 +3215,7 @@ _CAPABILITY_HANDLERS: Dict[str, Callable] = {
     "get_runtime_telemetry_health": lambda args, tid: _handle_runtime_telemetry_health(args, tid),
     "get_nexus_datetime": lambda args, tid: _handle_nexus_datetime(args, tid),
     "get_incomplete_areas": lambda args, tid: _handle_incomplete_areas(args, tid),
+    "get_company_goal_portfolio": lambda args, tid: _handle_company_goal_portfolio(args, tid),
     # Nexus Study Layer
     **{
         cap: _make_study_handler(cap, reader)

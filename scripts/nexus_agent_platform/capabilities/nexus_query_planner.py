@@ -105,6 +105,20 @@ DOMAIN_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "operations": ["overview"],
         "capability": "get_recent_research",
     },
+    "company_goals": {
+        "description": "Current durable Nexus company goal portfolio and discretionary work state",
+        "fields": {
+            "goal_id": {"type": "string", "values": "any"},
+            "program_id": {"type": "string", "values": "any"},
+            "department": {"type": "string", "values": "any"},
+            "priority": {"type": "enum", "values": ["P0", "P1", "P2", "P3", "P4"]},
+            "status": {"type": "string", "values": "any"},
+            "missing_criteria": {"type": "array", "values": "any"},
+            "last_progress": {"type": "string", "values": "any"},
+        },
+        "operations": ["overview", "list", "filter", "count", "summarize"],
+        "capability": "get_company_goal_portfolio",
+    },
     "system_health": {
         "description": "Nexus system health — service status and failures",
         "fields": {
@@ -245,6 +259,7 @@ SOURCE_REQUIREMENTS = {
     "reports": "operational_state",
     "approvals": "operational_state",
     "research": "operational_state",
+    "company_goals": "operational_state",
     "system_health": "operational_state",
     "recent_activity": "execution_telemetry",
     "runtime_execution": "execution_telemetry",
@@ -506,6 +521,9 @@ _INTENT_PATTERNS: List[Tuple[str, str, str, List[str]]] = [
 
     # Research queries
     (r'research|finding|alpha.*research', "research", "overview", "Research pipeline query"),
+
+    # Durable company-goal queries
+    (r'goal|objective|portfolio|what.*working|what.*focus|company.*roadmap|accomplish|advance', "company_goals", "overview", "Company goal portfolio query"),
 
     # Health queries
     (r'health|system.*status|broken|down|degraded', "system_health", "overview", "System health query"),

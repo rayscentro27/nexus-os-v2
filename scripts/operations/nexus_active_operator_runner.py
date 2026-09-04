@@ -31,7 +31,7 @@ from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
-from nexus_agent_platform.goal_completion import active_objective_portfolio, next_work_for_active_goal  # noqa: E402
+from nexus_agent_platform.goal_completion import active_objective_portfolio, next_work_for_active_goal, operating_duty_preflight, select_portfolio_goal  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -537,11 +537,15 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
             from nexus_agent_platform.research_operational_state import build_research_operational_state
             research_state = build_research_operational_state()
             goals = active_objective_portfolio()
+            # Operating duties are evaluated before discretionary selection;
+            # healthy duty state must not masquerade as company goal work.
+            duty_preflight = operating_duty_preflight()
+            goal = select_portfolio_goal(goals)
+            if not goal:
+                return findings
             # One bounded research child per cycle keeps the supervisor
-            # cooperative while rotating through open objectives.  Questions
-            # are goal-derived, not test-probe handlers.
-            cursor = datetime.now(timezone.utc).hour % max(1, len(goals))
-            goal = goals[cursor]
+            # cooperative while the durable governor rotates through eligible
+            # goals. Questions are goal-derived, not test-probe handlers.
             prompts = {
                 "trading.real_data": "Find legitimate read-only alternatives or recovery evidence for the open Trading real-market-data path.",
                 "research.company_intelligence": "Find current public evidence that closes an open Nexus company-intelligence gap.",
@@ -571,7 +575,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
                 "source_record_id": cycle_work_item, "question": dispatch["question"],
                 "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
-                "incomplete_objectives": len(goals), "synthetic": False,
+                "incomplete_objectives": len(goals), "synthetic": False, "operating_duty_preflight": duty_preflight,
                 "evidence_refs": ["data/runtime/research_heartbeat.json", "data/runtime/research_program_registry.json"],
             })
         except Exception:

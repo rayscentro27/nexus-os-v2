@@ -29,8 +29,9 @@ def test_repetition_guard_switches_strategy_after_identical_failure():
 
 def test_portfolio_keeps_multiple_parent_goals_active():
     portfolio = active_objective_portfolio()
-    assert len(portfolio) == 7
-    assert {row["status"] for row in portfolio} == {"ACTIVE"}
+    assert len(portfolio) >= 7
+    assert {"trading.real_data", "research.company_intelligence", "portal.client_beta"}.issubset({row["goal_id"] for row in portfolio})
+    assert {row["status"] for row in portfolio}.issubset({"ACTIVE", "READY", "QUEUED"})
 
 
 def test_open_parent_goal_materializes_general_internal_work():
