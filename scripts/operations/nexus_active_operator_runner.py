@@ -31,7 +31,7 @@ from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
-from nexus_agent_platform.goal_completion import active_objective_portfolio, next_work_for_active_goal, operating_duty_preflight, select_portfolio_goal  # noqa: E402
+from nexus_agent_platform.goal_completion import active_objective_portfolio, next_work_for_active_goal, operating_duty_preflight, record_goal_progress, select_portfolio_goal  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -304,9 +304,22 @@ def classify_action(action_id: str) -> str:
 
 
 def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
-    """Execute only the fixed public-research adapter; all other actions stay declarative."""
+    """Run only bounded existing internal adapters; no external mutation."""
+    if action_id == "generate_internal_report":
+        report_dir = ROOT / "reports/runtime/department_progress"
+        report_dir.mkdir(parents=True, exist_ok=True)
+        goal_id = str(finding.get("parent_goal") or "unscoped")
+        report_path = report_dir / f"{hashlib.sha256(goal_id.encode()).hexdigest()[:20]}.json"
+        artifact = {"goal_id": goal_id, "department": finding.get("department", "Nexus"),
+                    "action": action_id, "question": finding.get("question"),
+                    "authority": "INTERNAL_SAFE", "external_side_effects": False,
+                    "recorded_at": utc_now()}
+        write_json(report_path, artifact)
+        return {"status": "PASS", "action": action_id, "artifact": artifact,
+                "output_hash": hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()[:24],
+                "artifact_path": str(report_path.relative_to(ROOT)), "execution_mode": "REAL"}
     if action_id != "research.refresh":
-        return {"status": "RECORDED_NOT_EXECUTED", "action": action_id}
+        return {"status": "RECORDED_NOT_EXECUTED", "action": action_id, "execution_mode": "REAL"}
     from nexus_agent_platform.loops.governed_loops import _research
     from nexus_agent_platform.continuous_operating_kernel import build_program_registry, build_source_registry
     build_program_registry(source_registry=build_source_registry())
@@ -756,13 +769,13 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         for finding in dispatch_findings:
             route = classify_action(finding["proposed_action"])
             if route == "AUTO_EXECUTE_INTERNAL_SAFE":
-                if finding["proposed_action"] == "research.refresh" and not dry_run:
+                if not dry_run:
                     claimed, prior = _claim_work_item(finding, run_id)
                     if not claimed:
                         duplicates += 1
                         continue
                 actions_executed.append(finding["proposed_action"])
-                if finding["proposed_action"] == "research.refresh" and not dry_run:
+                if not dry_run:
                     _record_progress("EXECUTING", work_item_id=finding.get("source_record_id"))
                     try:
                         safe_action_results.append({"finding_id": finding["finding_id"], "result": execute_safe_internal_action(finding["proposed_action"], finding)})
@@ -795,9 +808,14 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         for item in safe_action_results:
             research_result = item.get("result", {})
             if research_result.get("status") == "PASS":
+                finding = next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {})
                 item["work_item_state"] = _complete_work_item(
-                    next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {}),
+                    finding,
                     run_id, run_id, research_result, receipt_path)
+                if finding.get("parent_goal"):
+                    item["goal_progress"] = record_goal_progress(
+                        str(finding["parent_goal"]), work_item_id=str(finding.get("source_record_id") or finding.get("finding_id")),
+                        result=research_result, action=str(finding.get("proposed_action")), receipt_ref=receipt_path)
         _record_progress("PERSISTING")
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]

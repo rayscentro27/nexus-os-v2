@@ -253,7 +253,7 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
 
 
 def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, question: str,
-                              department: str = "RESEARCH", action: str = "research.refresh") -> dict[str, Any]:
+                              department: str | None = None, action: str | None = None) -> dict[str, Any]:
     """Materialize one bounded, idempotent child action for an open parent goal.
 
     This remains a planning contract: the canonical Active Operator owns queue
@@ -263,6 +263,14 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
     """
     if str(goal.get("status", "ACTIVE")) in TERMINAL_STATES:
         return {"dispatch": "SKIP_TERMINAL_GOAL", "continue_parent": False, "goal_id": goal.get("goal_id")}
+    # Use the smallest already-authorized internal executor appropriate to the
+    # goal.  Research remains the default when evidence is missing; bounded
+    # internal reports let existing Portal/Systems/Marketing owners advance
+    # without pretending that every department is a Research adapter.
+    department = department or str(goal.get("department") or "RESEARCH")
+    action = action or str(goal.get("next_action") or "research.refresh")
+    if action == "research.refresh" and department != "RESEARCH":
+        action = "generate_internal_report"
     return {
         "dispatch": "CREATE_OR_REUSE_WORK_ORDER",
         "goal_id": goal.get("goal_id"),
@@ -277,3 +285,28 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         "external_side_effects": False,
         "continue_parent": True,
     }
+
+
+def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, Any],
+                         action: str, receipt_ref: str | None = None) -> dict[str, Any] | None:
+    """Persist bounded child-work evidence without declaring the parent done."""
+    rows = ensure_company_goal_portfolio()
+    for row in rows:
+        if row.get("goal_id") != goal_id:
+            continue
+        evidence = list(row.get("current_evidence", []))
+        marker = receipt_ref or f"work:{work_item_id}"
+        if marker not in evidence:
+            evidence.append(marker)
+        workstreams = list(row.get("active_workstreams", []))
+        if action not in workstreams:
+            workstreams.append(action)
+        row["current_evidence"] = evidence[-20:]
+        row["active_workstreams"] = workstreams[-12:]
+        row["last_progress"] = _now()
+        row["updated_at"] = _now()
+        # A child receipt is progress, not proof of every parent criterion.
+        row["status"] = "ACTIVE" if row.get("status") in ELIGIBLE_STATUSES else row.get("status")
+        _portfolio_write(rows)
+        return row
+    return None

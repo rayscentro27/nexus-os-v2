@@ -1403,6 +1403,17 @@ def run_once():
             write_status(os.getpid(), "API_ERROR")
             return "API_ERROR"
 
+        # Proactive operational communication shares this worker's trusted
+        # token, destination resolution, retry path, and launchd cadence.  A
+        # failure here never interrupts inbound Nova processing.
+        try:
+            from proactive_communications import process_once
+            proactive = process_once()
+            if proactive.get("status") not in {"NO_SEND", "SUPPRESSED"}:
+                _log(f"Nova worker: proactive communication {proactive.get('status')}")
+        except Exception as exc:
+            _log_error(f"Proactive communication unavailable: {type(exc).__name__}")
+
         updates = result.get("result", [])
         if not updates:
             _log("Nova worker: no new updates")
