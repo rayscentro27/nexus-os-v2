@@ -175,7 +175,7 @@ this on the six Ray-originated messages.
 
 The focused benchmark now covers intent, priority, relevance, sufficiency,
 provisional decisions, option expansion, action ownership, health separation,
-no-data reasoning, and parent continuity. Focused regression: **42 passed**.
+no-data reasoning, and parent continuity. Focused regression: **50 passed**.
 
 ## Production-Equivalent Canaries
 
@@ -255,9 +255,10 @@ failure-recovery repair, not a Ray blocker.
 
 ## Git
 
-R1.2 judgment and Alpha-recovery changes are pending the task-scoped commit
-that follows focused validation. Unrelated worktree changes remain untouched
-and unstaged.
+Task-scoped commit: `0c4355c` (`Repair Nova judgment and Alpha continuation`),
+pushed to `origin/main`. It contains only the judgment prompt, Alpha registry
+repair, Telegram sanitizer, focused tests, and this report update. Unrelated
+worktree changes remain untouched and unstaged.
 
 ```text
 HERMES_NOVA_EXECUTIVE_JUDGMENT_R1_2=PARTIAL
