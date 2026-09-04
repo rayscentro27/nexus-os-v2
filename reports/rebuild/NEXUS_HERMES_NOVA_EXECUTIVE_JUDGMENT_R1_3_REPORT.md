@@ -2,15 +2,17 @@
 
 ## Executive Result
 
-`HERMES_NOVA_EXECUTIVE_JUDGMENT_R1_3=PARTIAL` at this checkpoint.
+`HERMES_NOVA_EXECUTIVE_JUDGMENT_R1_3=PARTIAL`.
 
 The four targeted repairs are implemented and focused regressions pass. The
 live Oracle canary now produces grounded casual and opinion responses, and the
 canonical Research read separates heartbeat, scheduler, configured process,
 execution mode, task processing, queue/work state, and recent activity.
 
-Final certification is intentionally pending Ray-originated Telegram evidence.
-No claim of full-company autonomy is made before that test.
+Real Ray-originated Telegram certification has now run. Research state truth
+passed, but casual identity, opinion sharpness, pricing evidence, daily
+priority, and current-review UX still contain material defects. No claim of
+full-company autonomy is made.
 
 ## Starting State
 
@@ -180,6 +182,55 @@ company objective, explain why, and separate Nexus work from Ray action.
 The current-review path remains the authoritative approval-queue read and does
 not reintroduce stale seeded review items.
 
+## Real Telegram Parity Diagnosis
+
+The real Telegram path is `nova_telegram_worker.py` → `_run_oracle_primary()`
+→ `run_oracle_hermes()` → `_response_integrity()` → `ground_response()` →
+`_deliver_response()`.
+
+The production-equivalent canary previously exercised the Oracle adapter
+directly and therefore did not execute the Telegram worker's final grounding
+boundary. This caused two distinct defects:
+
+1. A daily-priority request contains “today,” so `requires_current_evidence()`
+   classified it as a generic current-state request. `ground_response()` then
+   discarded the model's priority synthesis and replaced it with the legacy
+   status composition, producing telemetry, Finance/Alpha availability, and
+   runtime metadata.
+2. “What items currently need my review?” was not recognized by the previous
+   current-evidence matcher. The model's raw approval object therefore bypassed
+   the executive formatter and exposed identifiers, condition keys, timestamps,
+   and a filesystem evidence path.
+
+The narrow parity repair now excludes priority from generic replacement and adds
+an approval-specific executive composition. It does not alter the priority
+engine, Telegram transport, objective store, or architecture.
+
+## Real Telegram Final Certification
+
+Ray-originated Telegram transport and response receipts passed, but substantive
+certification did not:
+
+- casual conversation: `FAIL` — natural wording remained generic rather than
+  recognizably Nova;
+- opinion conversation: `PARTIAL` — Nexus architecture was recalled, but the
+  opening, risk judgment, and closing were generic/soft;
+- Research state truth: `PASS_REAL` — heartbeat, scheduler, configured
+  process, simulated/DRY_RUN mode, task processing, queue/work, and activity
+  were correctly separated;
+- strategic evidence: `PARTIAL` — $97/free uncertainty improved, but one
+  generalized Research/opportunity claim still lacked visible provenance and
+  the preference for free remained too strong;
+- daily priority: `FAIL` — the real Telegram response was the old generic
+  status composition;
+- current review: `FAIL` — one real approval was found, but raw schema-style
+  fields and a filesystem path were exposed.
+
+These results override automated formatting/canary claims for final
+certification. The remaining work is a focused production-path verification of
+the parity repair plus stronger evidence-backed executive synthesis; it is not
+a broad architecture rebuild.
+
 ## Internal Failure Regression
 
 The Alpha mixed-registry repair and Telegram traceback sanitization from R1.2
@@ -240,7 +291,9 @@ Compiler was built here.
 
 ## Continuity
 
-Focused regressions: `62 passed`. Oracle was healthy during the live canaries.
+Focused regressions: `23 passed` for the parity, grounding, integrity, and
+delivery subset. The earlier R1.3 implementation checkpoint had `62 passed`.
+Oracle was healthy during the live canaries.
 The Mac control plane, Research heartbeat, and existing remote infrastructure
 were not intentionally changed.
 
@@ -289,9 +342,9 @@ NOVA_INTERNAL_AUTHORITY_REASONING=PASS_REAL
 NOVA_NEXT_ACTION_OWNERSHIP=PASS_REAL
 NOVA_PARENT_PROCESS_CONTINUATION=PASS_REAL
 NOVA_GOCLEAR_MONETIZATION_REASONING=PASS_REAL
-NOVA_DAILY_FOCUS_CANARY=PASS_REAL
-NOVA_REVIEW_CANARY=PASS_REAL
-NOVA_CASUAL_CONVERSATION_NATURAL=PASS_REAL
+NOVA_DAILY_FOCUS_CANARY=FAIL
+NOVA_REVIEW_CANARY=FAIL
+NOVA_CASUAL_CONVERSATION_NATURAL=FAIL
 NOVA_ADAPTIVE_REASONING_DEPTH=PASS_REAL
 NOVA_NO_UNNECESSARY_TOOLING=PASS_REAL
 NOVA_EXECUTIVE_LANGUAGE=PASS_REAL
@@ -307,14 +360,14 @@ NOVA_INTENT_TO_PROGRAM_COMPATIBILITY=PASS_REAL
 NOVA_PRODUCTION_EQUIVALENT_JUDGMENT_CANARY=PASS_REAL
 NOVA_SUBSTANCE_OVER_FORMAT=PASS_REAL
 NOVA_SINGLE_PERSONALITY_MULTI_GEAR=PASS_REAL
-REAL_TELEGRAM_RAY_ORIGIN=WAITING_RAY_HUMAN_ACTION
-REAL_TELEGRAM_CASUAL_CONVERSATION=NOT_RUN
-REAL_TELEGRAM_OPINION_CONVERSATION=NOT_RUN
-REAL_TELEGRAM_RESEARCH_STATE_TRUTH=NOT_RUN
-REAL_TELEGRAM_STRATEGIC_EVIDENCE=NOT_RUN
-REAL_TELEGRAM_DAILY_PRIORITY=NOT_RUN
-REAL_TELEGRAM_CURRENT_REVIEW=NOT_RUN
-REAL_TELEGRAM_EXECUTIVE_QUALITY=NOT_RUN
+REAL_TELEGRAM_RAY_ORIGIN=PASS_REAL
+REAL_TELEGRAM_CASUAL_CONVERSATION=FAIL
+REAL_TELEGRAM_OPINION_CONVERSATION=PARTIAL
+REAL_TELEGRAM_RESEARCH_STATE_TRUTH=PASS_REAL
+REAL_TELEGRAM_STRATEGIC_EVIDENCE=PARTIAL
+REAL_TELEGRAM_DAILY_PRIORITY=FAIL
+REAL_TELEGRAM_CURRENT_REVIEW=FAIL
+REAL_TELEGRAM_EXECUTIVE_QUALITY=FAIL
 NOVA_INTENT_TO_PROGRAM_READINESS=PASS_REAL
 NOVA_INITIATIVE_RETAINED=PASS_REAL
 NEW_COMPLIANCE_DEPARTMENT_IMPLEMENTED=NO
@@ -328,5 +381,5 @@ MAC_CONTROL_PLANE_PROTECTED=PASS_REAL
 RESEARCH_HEARTBEAT=ACTIVE
 TRUE_RAY_BLOCKERS=NONE
 HERMES_NOVA_READY_FOR_FULL_COMPANY_AUTONOMY=NO
-NEXT_RECOMMENDED_PHASE=REAL_RAY_TELEGRAM_FINAL_CERTIFICATION
+NEXT_RECOMMENDED_PHASE=FOCUSED_NOVA_PRODUCTION_PARITY_REPAIR
 ```

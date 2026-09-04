@@ -17,6 +17,12 @@ from typing import Any, Dict
 def requires_current_evidence(request: str) -> bool:
     """Detect requests that explicitly ask for current or runtime facts."""
     text = str(request or "").lower()
+    # Priority is an executive recommendation, not a request to replace the
+    # model's answer with the generic runtime-status composition.
+    if re.search(r"\b(?:what should|where should|how should)\s+nexus\s+focus\b", text) or "focus on today" in text:
+        return False
+    if re.search(r"\b(?:what items|which items|what)\b.*\b(?:need|needs)\s+(?:my|ray's)\s+review\b", text):
+        return True
     if re.search(r"\bresearch\b", text) and re.search(
         r"\b(still|running|active|heartbeat|scheduler|processing|cycle|activity|status|enabled)\b", text
     ):
@@ -170,7 +176,10 @@ def collect_verified_current_state(runtime: Dict[str, Any]) -> Dict[str, Any]:
             top = ray_items[0]
             evidence["priority"] = {
                 "classification": "REQUIRES_RAY",
-                "summary": str(top.get("title") or top.get("exact_action_requested") or "A governed approval is pending."),
+                "summary": str(top.get("title") or top.get("action_summary") or top.get("exact_action_requested") or "A governed approval is pending."),
+                "risk_level": str(top.get("risk_level") or "UNKNOWN").upper(),
+                "status": str(top.get("status") or "PENDING").upper(),
+                "expires_at": top.get("expires_at"),
                 "source": approvals.get("source_path", "APPROVAL_QUEUE"),
                 "provenance": "CURRENT",
             }
@@ -234,6 +243,24 @@ def _research_verified_lines(evidence: Dict[str, Any]) -> list[str]:
     return lines
 
 
+def _review_verified_lines(evidence: Dict[str, Any]) -> list[str]:
+    """Turn the current approval read into an executive mobile decision."""
+    priority = evidence.get("priority", {})
+    if priority.get("classification") != "REQUIRES_RAY":
+        return ["Nothing currently needs your review. Nexus can continue without you."]
+    lines = [
+        "One item currently needs your review.",
+        f"What: {priority.get('summary', 'A governed approval is pending.')}",
+        "Why you: Nexus needs your decision at the existing approval boundary before proceeding.",
+        f"Risk: {str(priority.get('risk_level', 'UNKNOWN')).lower()}.",
+        "Recommendation: review the bounded action and approve only if it matches your intent.",
+        "If approved: Nexus can continue that action. If not: it remains pending and the parent work stays open.",
+    ]
+    if priority.get("expires_at"):
+        lines.append(f"Expiry: {priority['expires_at']}.")
+    return lines
+
+
 def ground_response(response: str, request: str, runtime: Dict[str, Any], verified_current_state: Dict[str, Any] | None = None) -> tuple[str, Dict[str, Any]]:
     """Ground only current-state responses and return the evidence object."""
     if not requires_current_evidence(request):
@@ -262,7 +289,12 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     # filter.  Hermes still performs the upstream reasoning; this boundary
     # owns the final machine-fact slots only for this narrow response surface.
     narrative = ""
-    composed = "\n".join(_research_verified_lines(evidence) if re.search(r"\bresearch\b", request, re.I) else _verified_lines(evidence))
+    if re.search(r"\b(?:what items|which items|what)\b.*\b(?:need|needs)\s+(?:my|ray's)\s+review\b", request, re.I):
+        composed = "\n".join(_review_verified_lines(evidence))
+    elif re.search(r"\bresearch\b", request, re.I):
+        composed = "\n".join(_research_verified_lines(evidence))
+    else:
+        composed = "\n".join(_verified_lines(evidence))
     if re.search(r"\b(?:python|operating system|podman)\b", str(request), re.I):
         composed += "\nEnvironment versions: UNKNOWN unless separately verified."
     if narrative:

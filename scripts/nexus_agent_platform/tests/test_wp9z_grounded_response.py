@@ -79,6 +79,39 @@ def test_research_running_question_requires_current_evidence():
     assert requires_current_evidence("Is Research still running?") is True
 
 
+def test_priority_is_not_replaced_by_generic_current_status_composition():
+    assert requires_current_evidence("What should Nexus focus on today and why?") is False
+
+
+def test_current_review_requires_grounded_evidence():
+    assert requires_current_evidence("What items currently need my review?") is True
+
+
+def test_current_review_is_executive_not_schema_output():
+    response, _ = ground_response(
+        "Approval ID: secret-id\nEvidence Reference: /private/path\nrequested_for: ray",
+        "What items currently need my review?",
+        RUNTIME,
+        {
+            "runtime": RUNTIME,
+            "health": {"status": "HEALTHY"},
+            "specialists": {},
+            "priority": {
+                "classification": "REQUIRES_RAY",
+                "summary": "Governed recovery review: continuous loop",
+                "risk_level": "LOW",
+                "status": "PENDING",
+                "expires_at": "2026-09-04T04:03:02Z",
+            },
+        },
+    )
+    assert "One item currently needs your review." in response
+    assert "Why you:" in response
+    assert "Recommendation:" in response
+    assert "secret-id" not in response
+    assert "/private/path" not in response
+
+
 def test_research_state_keeps_heartbeat_scheduler_and_processing_separate(monkeypatch):
     monkeypatch.setattr(
         "nexus_agent_platform.grounded_response.collect_verified_current_state",
