@@ -2,7 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import nexus_agent_platform.bridge.oracle_hermes_cli as oracle
-from nexus_agent_platform.bridge.oracle_hermes_cli import _executive_prompt, _remote_command, run_oracle_hermes
+from nexus_agent_platform.bridge.oracle_hermes_cli import _conversation_needs_correction, _executive_prompt, _remote_command, run_oracle_hermes
 
 
 def test_remote_command_is_fixed_and_session_is_stdin_bound():
@@ -53,11 +53,35 @@ def test_priority_prompt_requires_company_focus_not_status_dump():
     assert "Do not substitute a list of telemetry" in prompt
 
 
+def test_casual_prompt_is_lightweight_but_nova_grounded():
+    prompt = _executive_prompt("Good afternoon Nova. How are things?")
+    assert "NOVA LIGHT CONVERSATION" in prompt
+    assert "Ray Davis" in prompt
+    assert "autonomous operating-company system" in prompt
+    assert "NOVA EXECUTIVE REQUEST CONTRACT" not in prompt
+
+
+def test_generic_casual_and_opinion_drafts_are_selected_for_bounded_editor():
+    assert _conversation_needs_correction(
+        "Good afternoon Nova. How are things?", "I'm here and ready to assist you. How can I help?"
+    ) is True
+    assert _conversation_needs_correction(
+        "I've been working on Nexus for months. What do you think about where this is going?",
+        "AI and innovation will improve productivity and collaboration."
+    ) is True
+    assert _conversation_needs_correction(
+        "I've been working on Nexus for months. What do you think about where this is going?",
+        "I think Research, Alpha, GoClear, and the operating-company model are the right direction, with execution discipline as the risk."
+    ) is False
+
+
 def test_pricing_prompt_suppresses_irrelevant_telemetry_and_assigns_internal_work():
     prompt = _executive_prompt("Should our $97 readiness assessment become free?")
     assert "unvalidated hypothesis" in prompt
     assert "degraded telemetry" in prompt
     assert "do not ask" in prompt
+    assert "traceable support" in prompt
+    assert "not evidence that willingness to pay is weak" in prompt
 
 
 def test_priority_judgment_correction_switches_to_bounded_no_tool_synthesis(tmp_path, monkeypatch):

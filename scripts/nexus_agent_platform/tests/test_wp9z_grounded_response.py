@@ -1,4 +1,4 @@
-from nexus_agent_platform.grounded_response import ground_response, response_completeness
+from nexus_agent_platform.grounded_response import ground_response, response_completeness, requires_current_evidence
 
 
 RUNTIME = {
@@ -73,3 +73,38 @@ def test_unlabeled_model_contradiction_is_not_carried_into_current_state():
     assert "unavailable" not in response
     assert "Finance: AVAILABLE" in response
     assert "Alpha: AVAILABLE" in response
+
+
+def test_research_running_question_requires_current_evidence():
+    assert requires_current_evidence("Is Research still running?") is True
+
+
+def test_research_state_keeps_heartbeat_scheduler_and_processing_separate(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_agent_platform.grounded_response.collect_verified_current_state",
+        lambda runtime: {
+            "runtime": RUNTIME,
+            "health": {"status": "HEALTHY"},
+            "specialists": {},
+            "priority": {},
+            "research": {
+                "heartbeat": "ACTIVE",
+                "supervisor": "ACTIVE_DAEMON",
+                "scheduler_enabled": True,
+                "execution_mode": "DRY_RUN",
+                "dry_run": True,
+                "task_processing": "IDLE_BETWEEN_CYCLES",
+                "queue_state": "NO_CURRENT_WORK",
+                "active_jobs": 0,
+                "queued_jobs": 0,
+                "last_cycle": "2026-09-04T03:21:03Z",
+                "recent_activity": {"sources_checked": 2, "items_processed": 0, "new_items_discovered": 0},
+            },
+        },
+    )
+    response, _ = ground_response("Research is running.", "Is Research still running?", RUNTIME)
+    assert "Research heartbeat: ACTIVE" in response
+    assert "Execution mode: DRY_RUN" in response
+    assert "Task processing: IDLE_BETWEEN_CYCLES" in response
+    assert "Queue/work state: NO_CURRENT_WORK" in response
+    assert "running." not in response.lower()

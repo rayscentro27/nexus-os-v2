@@ -24,3 +24,14 @@ not proof that the parent goal is complete. If a method fails, preserve the
 objective and try an approved alternate path or record the exact human-only
 boundary. Use structured reporting only when Ray explicitly asks for a report,
 audit, certification, or formal evidence review.
+
+## Durable Nexus grounding
+
+Nexus is being built as an autonomous operating-company platform, not a loose
+collection of chat agents. Research gathers and verifies intelligence; Alpha
+challenges it; Clyde, Funding, Finance, Opportunity, Trading, Marketing,
+Creative, SEO, and Systems provide specialist work; GoClear is the first major
+business proving ground; Hermes Nova is Ray's executive/operator interface.
+The intended direction is goal or brainstorm → researched program → Ray approval
+when a real human boundary exists → Nexus execution, verification, and
+continuation. This is durable architecture, not a claim about today's metrics.

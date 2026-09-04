@@ -62,6 +62,19 @@ def _executive_prompt(message: str) -> str:
     current_research = "is research still running" in lowered or "research still running" in lowered
     strategic = opinion or current_research or any(term in lowered for term in ("should", "recommend", "opportunity", "focus", "what next", "what should happen", "compare"))
     if not strategic:
+        # Keep casual conversation lightweight while carrying Nova's identity.
+        if len(lowered.split()) <= 18 and any(term in lowered for term in (
+            "good afternoon", "good morning", "hello", "hi nova", "how are you",
+            "how are things", "what are you thinking", "that last build", "glad we're",
+        )):
+            return (
+                "[NOVA LIGHT CONVERSATION]\n"
+                "You are Hermes Nova, Ray Davis's conversational partner and executive interface to Nexus. "
+                "Answer naturally and briefly in your own voice. You know Nexus is being built as an autonomous "
+                "operating-company system with Research/Alpha, specialized departments, GoClear, and durable work. "
+                "Do not turn a casual exchange into a report, use tools, or invent live facts.\n"
+                "USER REQUEST:\n" + message[:3000]
+            )
         return message
     priority_rules = ""
     if any(term in lowered for term in ("focus on today", "focus today", "prioritize today", "what should nexus focus")):
@@ -84,7 +97,10 @@ def _executive_prompt(message: str) -> str:
             "and keep the parent decision open. Safe internal Research, Alpha, Finance, Marketing, Clyde, "
             "and Opportunity follow-up is Nexus-owned: route it and tell Ray what Nexus is doing; do not ask "
             "whether Ray wants that internal research started. No active clients only means no observed "
-            "launch/customer sample; it is not evidence that willingness to pay is weak."
+            "launch/customer sample; it is not evidence that willingness to pay is weak. Material market claims "
+            "must name a current evidence/source reference from this turn; do not use vague phrases such as "
+            "'market discussions' or 'previous analyses suggest' without traceable support. If verified "
+            "competitor, customer, conversion, fulfillment-cost, or LTV evidence is absent, say so plainly."
         )
     opinion_rules = ""
     if opinion:
@@ -145,14 +161,58 @@ def _judgment_correction_prompt(message: str, response: str) -> str:
             "Rewrite this as a careful GoClear pricing judgment. Do not use degraded telemetry, runtime "
             "health, or zero/missing clients as direct pricing evidence. State that $97 is unvalidated, "
             "separate known facts from unknown market evidence, give a provisional recommendation and a "
-            "meaningful alternative, and keep the parent decision open. Route safe internal Research, Alpha, "
+            "meaningful alternative, and keep the parent decision open. Do not lean toward free or paid as "
+            "a validated conclusion when the relevant evidence is absent; recommend a bounded comparison/test "
+            "or research program instead. Route safe internal Research, Alpha, "
             "Finance, Marketing, Clyde, and Opportunity follow-up automatically; do not ask Ray whether to "
-            "start it. State Ray's next action as none unless an external approval is actually needed."
+            "start it. State Ray's next action as none unless an external approval is actually needed. Do not "
+            "use vague market claims without a named traceable source. No active clients means no observed "
+            "test, not negative willingness-to-pay evidence; absent source-backed pricing evidence must be "
+            "described as unknown."
         )
     return (
         "The draft below answered with an evidence or ownership error. " + instruction +
         "\nOriginal request: " + message[:5000] + "\nDraft to correct:\n" + response[:6000]
     )
+
+
+def _conversation_needs_correction(message: str, response: str) -> bool:
+    """Catch generic Nova conversation without routing it through specialists."""
+    lowered = message.casefold()
+    answer = response.casefold()
+    opinion = "what do you think" in lowered or "where this is going" in lowered
+    casual = len(lowered.split()) <= 18 and any(term in lowered for term in (
+        "good afternoon", "good morning", "hello", "hi nova", "how are you",
+        "how are things", "what are you thinking", "that last build", "glad we're",
+    ))
+    if opinion:
+        # A valid opinion should demonstrate at least two durable Nexus anchors.
+        anchors = sum(term in answer for term in ("research", "alpha", "goclear", "trading", "department", "operating", "ray"))
+        return anchors < 2 or any(term in answer for term in ("machine learning", "ai is transforming", "productivity", "innovation"))
+    if casual:
+        return any(term in answer for term in ("i'm here and ready", "how can i assist", "how can i help", "what can i do for you"))
+    return False
+
+
+def _conversation_correction_prompt(message: str, response: str) -> str:
+    lowered = message.casefold()
+    if "what do you think" in lowered or "where this is going" in lowered:
+        instruction = (
+            "Answer as Nova's grounded opinion, not generic AI commentary. Keep it conversational and concise. "
+            "Discuss the actual Nexus direction: an autonomous operating-company architecture, Research and Alpha, "
+            "specialist departments, GoClear as the first business proving ground, Hermes Nova as Ray's interface, "
+            "and the shift from prompt-by-prompt work toward durable goals/programs and verified outcomes. Include "
+            "one constructive risk or thing to protect. Use durable context only; do not invent current metrics or "
+            "turn this into a formal report."
+        )
+    else:
+        instruction = (
+            "Reply naturally as Hermes Nova to Ray. Be warm, brief, and recognizable as his Nexus partner; avoid "
+            "generic support-assistant phrases such as 'I'm here and ready to assist' or 'How can I help you today?'. "
+            "Acknowledge the conversation in your own words and, where natural, lightly ground it in the ongoing "
+            "Nexus work. Do not use tools, report headings, or claim live facts."
+        )
+    return instruction + "\nUser message: " + message[:3000] + "\nDraft to improve: " + response[:4000]
 
 
 def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float = 180.0,
@@ -216,4 +276,13 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
             corrected_text = corrected.stdout.strip()
             if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
                 return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="JUDGMENT_CORRECTION")
+    if _conversation_needs_correction(message, response):
+        try:
+            corrected, correction_elapsed = invoke(_conversation_correction_prompt(message, response), "skills")
+        except subprocess.TimeoutExpired:
+            return OracleHermesResult(response, "SUCCEEDED", None, elapsed, recovery="CONVERSATION_CORRECTION_TIMEOUT")
+        if corrected.returncode == 0 and corrected.stdout.strip():
+            corrected_text = corrected.stdout.strip()
+            if not any(marker in corrected_text.casefold() for marker in ("same_tool_failure_halt", "tool-call guardrail", "non-progressing attempts")):
+                return OracleHermesResult(corrected_text, "SUCCEEDED", None, round(elapsed + correction_elapsed, 1), recovery="CONVERSATION_CORRECTION")
     return OracleHermesResult(response, "SUCCEEDED", None, elapsed)

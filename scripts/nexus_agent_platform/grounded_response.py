@@ -17,9 +17,13 @@ from typing import Any, Dict
 def requires_current_evidence(request: str) -> bool:
     """Detect requests that explicitly ask for current or runtime facts."""
     text = str(request or "").lower()
+    if re.search(r"\bresearch\b", text) and re.search(
+        r"\b(still|running|active|heartbeat|scheduler|processing|cycle|activity|status|enabled)\b", text
+    ):
+        return True
     return bool(
         re.search(r"\b(current|right now|today|available|health|what happened|runtime|version|model|python|operating system|podman)\b", text)
-        and re.search(r"\b(nexus|system|hermes|finance|alpha|model|python|operating|podman|runtime|health)\b", text)
+        and re.search(r"\b(nexus|system|hermes|finance|alpha|research|model|python|operating|podman|runtime|health)\b", text)
     )
 
 
@@ -43,6 +47,7 @@ def collect_verified_current_state(runtime: Dict[str, Any]) -> Dict[str, Any]:
         "health": {"status": "UNKNOWN", "raw": {}, "source": "UNKNOWN", "provenance": "UNKNOWN"},
         "specialists": {},
         "priority": {"classification": "UNKNOWN", "summary": "Current priority was not verified.", "source": "UNKNOWN"},
+        "research": {},
     }
     # Read the canonical bounded artifact directly.  Calling the full health
     # capability here can include telemetry/database work; the Telegram
@@ -69,6 +74,61 @@ def collect_verified_current_state(runtime: Dict[str, Any]) -> Dict[str, Any]:
         }
     except Exception:
         pass
+
+    # Read-only composition over the existing kernel and Research readers.
+    # This is not a second state store: each dimension retains its canonical
+    # owner so liveness is never mistaken for active task processing.
+    try:
+        from nexus_agent_platform.continuous_operating_kernel import current_kernel_contract
+        from nexus_agent_platform.research_operational_state import build_research_operational_state
+        kernel = current_kernel_contract()
+        operational = build_research_operational_state()
+        root = Path(__file__).resolve().parents[2]
+        activity_path = root / "reports/runtime/alpha_research_activity_latest.json"
+        activity = json.loads(activity_path.read_text(encoding="utf-8")) if activity_path.exists() else {}
+        heartbeat_path = root / "data/runtime/research_heartbeat.json"
+        heartbeat = json.loads(heartbeat_path.read_text(encoding="utf-8")) if heartbeat_path.exists() else {}
+        process_path = root / "data/operations/nexus_process_registry.json"
+        process_rows = json.loads(process_path.read_text(encoding="utf-8")) if process_path.exists() else []
+        research_process = next(
+            (row for row in (process_rows if isinstance(process_rows, list) else [])
+             if row.get("process_id") == "research_intelligence"),
+            {},
+        )
+        worker = str(heartbeat.get("worker_state") or kernel.get("research_worker_state") or "UNKNOWN").upper()
+        if worker in {"RUNNING", "PROCESSING", "BUSY"} or operational.get("research_work_state") == "WORKING":
+            task_processing = "ACTIVE"
+        elif worker in {"IDLE", "IDLE_BETWEEN_CYCLES", "WAITING"}:
+            task_processing = "IDLE_BETWEEN_CYCLES"
+        else:
+            task_processing = "UNKNOWN"
+        scheduler = str(kernel.get("research_scheduler") or "UNKNOWN").upper()
+        evidence["research"] = {
+            "heartbeat": str(kernel.get("research_heartbeat") or heartbeat.get("heartbeat") or "UNKNOWN").upper(),
+            "supervisor": scheduler,
+            "scheduler_enabled": scheduler not in {"INACTIVE", "UNKNOWN"},
+            "process_configured": bool(research_process),
+            "process_enabled": research_process.get("enabled") if research_process else None,
+            "execution_mode": str(research_process.get("mode") or heartbeat.get("execution_mode") or heartbeat.get("mode") or "UNKNOWN").upper(),
+            "dry_run": str(research_process.get("mode") or "").upper() == "DRY_RUN" if research_process else heartbeat.get("dry_run") if "dry_run" in heartbeat else None,
+            "process_last_status": str(research_process.get("last_status") or "UNKNOWN").upper(),
+            "task_processing": task_processing,
+            "worker_state": worker,
+            "queue_state": str(operational.get("research_work_state") or "UNKNOWN").upper(),
+            "queued_jobs": operational.get("queued_research_jobs"),
+            "active_jobs": operational.get("active_research_jobs"),
+            "last_cycle": activity.get("generated_at") or heartbeat.get("last_success") or "UNKNOWN",
+            "last_successful_output": heartbeat.get("last_success") or "UNKNOWN",
+            "recent_activity": {
+                "sources_checked": activity.get("sources_checked"),
+                "items_processed": activity.get("items_processed"),
+                "new_items_discovered": activity.get("new_items_discovered"),
+            },
+            "source": "continuous_operating_kernel+research_operational_state+alpha_research_activity",
+            "provenance": "CURRENT_READ_MODEL",
+        }
+    except Exception as exc:
+        evidence["research"] = {"heartbeat": "UNKNOWN", "source": type(exc).__name__, "provenance": "UNKNOWN"}
 
     # Capability registry status is the canonical availability check for the
     # bounded Alpha lane.  Finance is a governed capability path rather than a
@@ -152,6 +212,28 @@ def _verified_lines(evidence: Dict[str, Any]) -> list[str]:
     return lines
 
 
+def _research_verified_lines(evidence: Dict[str, Any]) -> list[str]:
+    """Render Research liveness, scheduling, and work as separate facts."""
+    state = evidence.get("research", {})
+    activity = state.get("recent_activity", {})
+    lines = [
+        f"Research heartbeat: {state.get('heartbeat', 'UNKNOWN')}.",
+        f"Research scheduler/supervisor: {state.get('supervisor', 'UNKNOWN')} (enabled={state.get('scheduler_enabled', 'UNKNOWN')}).",
+        f"Research process: configured={state.get('process_configured', 'UNKNOWN')}, enabled={state.get('process_enabled', 'UNKNOWN')}, last status={state.get('process_last_status', 'UNKNOWN')}.",
+        f"Execution mode: {state.get('execution_mode', 'UNKNOWN')}.",
+        f"Task processing: {state.get('task_processing', 'UNKNOWN')}.",
+        f"Queue/work state: {state.get('queue_state', 'UNKNOWN')} (active={state.get('active_jobs', 'UNKNOWN')}, queued={state.get('queued_jobs', 'UNKNOWN')}).",
+        f"Last verified cycle/activity: {state.get('last_cycle', 'UNKNOWN')}.",
+        "Recent monitored activity: "
+        f"{activity.get('sources_checked', 'UNKNOWN')} sources checked, "
+        f"{activity.get('items_processed', 'UNKNOWN')} items processed, "
+        f"{activity.get('new_items_discovered', 'UNKNOWN')} new items.",
+    ]
+    if state.get("dry_run") is not None:
+        lines.insert(3, f"Dry-run: {state.get('dry_run')}.")
+    return lines
+
+
 def ground_response(response: str, request: str, runtime: Dict[str, Any], verified_current_state: Dict[str, Any] | None = None) -> tuple[str, Dict[str, Any]]:
     """Ground only current-state responses and return the evidence object."""
     if not requires_current_evidence(request):
@@ -180,7 +262,7 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     # filter.  Hermes still performs the upstream reasoning; this boundary
     # owns the final machine-fact slots only for this narrow response surface.
     narrative = ""
-    composed = "\n".join(_verified_lines(evidence))
+    composed = "\n".join(_research_verified_lines(evidence) if re.search(r"\bresearch\b", request, re.I) else _verified_lines(evidence))
     if re.search(r"\b(?:python|operating system|podman)\b", str(request), re.I):
         composed += "\nEnvironment versions: UNKNOWN unless separately verified."
     if narrative:
