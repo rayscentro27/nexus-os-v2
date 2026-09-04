@@ -109,3 +109,30 @@ def repetition_guard(attempts: Iterable[dict[str, Any]], *, max_identical: int =
 
 def active_objective_portfolio() -> list[dict[str, Any]]:
     return [{"goal_id": goal_id, "domain": domain, "status": "ACTIVE", "owner": "NEXUS", "priority": priority, "authority": "INTERNAL_SAFE"} for goal_id, domain, priority in (("trading.real_data", "Trading real-data completion", "P1"), ("research.company_intelligence", "Research intelligence expansion", "P1"), ("portal.client_beta", "Client portal advancement", "P2"), ("portal.admin_control_center", "Admin portal advancement", "P2"), ("goclear.example_campaign", "Internal GoClear campaign/video", "P2"), ("systems.modal_verification", "Modal capability verification", "P2"), ("systems.oracle_browser", "Oracle browser verification", "P2"))]
+
+
+def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, question: str,
+                              department: str = "RESEARCH", action: str = "research.refresh") -> dict[str, Any]:
+    """Materialize one bounded, idempotent child action for an open parent goal.
+
+    This remains a planning contract: the canonical Active Operator owns queue
+    persistence and execution.  Keeping the contract here makes empty-queue
+    continuation reusable by departments instead of encoding a Trading-only
+    exception in the supervisor.
+    """
+    if str(goal.get("status", "ACTIVE")) in TERMINAL_STATES:
+        return {"dispatch": "SKIP_TERMINAL_GOAL", "continue_parent": False, "goal_id": goal.get("goal_id")}
+    return {
+        "dispatch": "CREATE_OR_REUSE_WORK_ORDER",
+        "goal_id": goal.get("goal_id"),
+        "parent_goal": goal.get("statement") or goal.get("domain"),
+        "department": department,
+        "owner": goal.get("owner", "NEXUS"),
+        "priority": goal.get("priority", "P2"),
+        "action": action,
+        "work_item_id": work_item_id,
+        "question": question,
+        "authority": goal.get("authority_envelope", "INTERNAL_SAFE"),
+        "external_side_effects": False,
+        "continue_parent": True,
+    }

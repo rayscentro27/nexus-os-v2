@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from pathlib import Path
@@ -39,6 +40,21 @@ def main() -> int:
     while limit is None or index < limit:
         stale_records = [r for r in persistence.read_records("alpha_content") if refresh_due(r)]
         def real_research() -> dict:
+            # Active Operator is the canonical goal-to-work dispatcher.  The
+            # continuous supervisor must invoke it; a heartbeat-only cycle is
+            # not company execution.  It uses the existing bounded, read-only
+            # Research adapter and governed receipts.
+            from operations.nexus_active_operator_runner import run_once as operator_run_once
+            os.environ["NEXUS_OPERATOR_CYCLE_ID"] = f"kernel_cycle_{index + 1}_{int(time.time())}"
+            operator = operator_run_once(dry_run=False, mode="live")
+            executed = operator.get("safe_action_results", [])
+            if executed:
+                result = dict(executed[0].get("result", {}))
+                result["operator_run_id"] = operator.get("operator_run_id")
+                result["execution_mode"] = "REAL"
+                result["task_processing"] = "COMPLETED"
+                result["last_real_output"] = operator.get("completed_at")
+                return result
             refresh = None
             if stale_records:
                 refresh = refresh_once(stale_records[0], retrieve_page)

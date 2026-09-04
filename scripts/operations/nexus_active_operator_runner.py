@@ -31,6 +31,7 @@ from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
+from nexus_agent_platform.goal_completion import active_objective_portfolio, next_work_for_active_goal  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -307,15 +308,16 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
     if action_id != "research.refresh":
         return {"status": "RECORDED_NOT_EXECUTED", "action": action_id}
     from nexus_agent_platform.loops.governed_loops import _research
-    from nexus_agent_platform.continuous_operating_kernel import build_program_registry, build_source_registry, run_cycle
+    from nexus_agent_platform.continuous_operating_kernel import build_program_registry, build_source_registry
     build_program_registry(source_registry=build_source_registry())
-    kernel_receipt = run_cycle(
-        lambda: dict(_research({"question": finding.get("question"), "live_private_searxng": True})),
-        queue_empty=finding.get("source") == "continuous_kernel",
-        incomplete_objectives=int(finding.get("incomplete_objectives", 0)),
-    )
-    result = dict(kernel_receipt.get("result", {}))
-    result["continuous_kernel_receipt"] = kernel_receipt.get("cycle_id")
+    # The outer continuous kernel owns the heartbeat.  Calling it recursively
+    # here previously overwrote the outer state and made a real read appear as
+    # an idle/simulated cycle.  Execute the existing read-only adapter once.
+    result = dict(_research({"question": finding.get("question"), "live_private_searxng": True}))
+    result["execution_mode"] = "REAL"
+    result["parent_goal"] = finding.get("parent_goal")
+    result["department"] = finding.get("department", "RESEARCH")
+    result["work_order_id"] = finding.get("source_record_id") or finding.get("finding_id")
     result["synthetic"] = False
     result["source"] = "private SearXNG adapter"
     return result
@@ -527,29 +529,49 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
     except (OSError, ValueError, TypeError, KeyError):
         pass
     # A finite queue is not a terminal Research state.  When there is no
-    # explicit request, hand the canonical bounded discovery action to the
-    # existing Alpha/research executor.  The kernel receipt supplies the next
-    # wake and objective ownership; this finding is idempotent per operator run.
+    # explicit request, materialize the next bounded child action from the
+    # reusable parent-goal contract.  The existing operator remains the sole
+    # queue/receipt owner; this is the missing goal -> work bridge.
     if not any(item.get("proposed_action") == "research.refresh" for item in findings):
         try:
             from nexus_agent_platform.research_operational_state import build_research_operational_state
             research_state = build_research_operational_state()
+            goals = active_objective_portfolio()
+            # One bounded research child per cycle keeps the supervisor
+            # cooperative while rotating through open objectives.  Questions
+            # are goal-derived, not test-probe handlers.
+            cursor = datetime.now(timezone.utc).hour % max(1, len(goals))
+            goal = goals[cursor]
+            prompts = {
+                "trading.real_data": "Find legitimate read-only alternatives or recovery evidence for the open Trading real-market-data path.",
+                "research.company_intelligence": "Find current public evidence that closes an open Nexus company-intelligence gap.",
+                "portal.client_beta": "Find current evidence relevant to the highest-value client portal beta-readiness gap.",
+                "portal.admin_control_center": "Find current evidence relevant to the highest-value internal company-control-center gap.",
+                "goclear.example_campaign": "Find current public evidence for a useful GoClear campaign topic and customer problem.",
+                "systems.modal_verification": "Find current authoritative evidence for safe bounded remote CPU capability verification.",
+                "systems.oracle_browser": "Find current authoritative evidence for safe browser/computer-control verification.",
+            }
+            dispatch = next_work_for_active_goal(
+                goal,
+                work_item_id=f"continuous_kernel:{goal['goal_id']}",
+                question=prompts.get(goal["goal_id"], "Find current public evidence for the next open Nexus capability gap."),
+            )
+            # Identity is scoped to the bounded scheduler cadence: the same
+            # cycle is idempotent, while a later cycle may advance the open
+            # parent goal instead of being suppressed forever.
+            cycle_token = os.environ.get("NEXUS_OPERATOR_CYCLE_ID") or datetime.now(timezone.utc).strftime('%Y%m%d%H%M')
+            cycle_work_item = f"{dispatch['work_item_id']}:{cycle_token}"
             findings.append({
-                "finding_id": "continuous_kernel:research_refresh",
-                "source": "continuous_kernel",
-                "source_system": "research_heartbeat",
-                "category": "research_intelligence",
-                "priority": "P3",
-                "summary": "Continue objective-driven Research heartbeat",
-                "reason": research_state.get("empty_queue_next_action", "RUN_BOUNDED_AUTONOMOUS_DISCOVERY"),
-                "proposed_action": "research.refresh",
-                "approval_required": False,
-                "action_class": "INTERNAL_AUTONOMOUS",
-                "capability": "searxng.research",
-                "dedupe_key": "continuous_kernel:research_refresh:v1",
-                "question": "Find current public evidence that can reduce an open Nexus knowledge gap or improve a current capability.",
-                "incomplete_objectives": research_state.get("open_research_objectives", 0),
-                "synthetic": False,
+                "finding_id": cycle_work_item, "source": "active_parent_goal",
+                "source_system": "goal_completion_engine", "category": "research_intelligence",
+                "priority": goal.get("priority", "P2"), "summary": f"Advance {goal['domain']}",
+                "reason": research_state.get("empty_queue_next_action", "OPEN_GOAL_MISSING_SUCCESS_CRITERION"),
+                "proposed_action": dispatch["action"], "approval_required": False,
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": "searxng.research",
+                "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
+                "source_record_id": cycle_work_item, "question": dispatch["question"],
+                "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
+                "incomplete_objectives": len(goals), "synthetic": False,
                 "evidence_refs": ["data/runtime/research_heartbeat.json", "data/runtime/research_program_registry.json"],
             })
         except Exception:

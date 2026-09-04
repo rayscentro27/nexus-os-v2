@@ -1,6 +1,7 @@
 from nexus_agent_platform.goal_completion import (
     active_objective_portfolio, build_goal, classify_path_failure,
     evaluate_parent_goal, repetition_guard, should_continue,
+    next_work_for_active_goal,
 )
 
 
@@ -30,3 +31,11 @@ def test_portfolio_keeps_multiple_parent_goals_active():
     portfolio = active_objective_portfolio()
     assert len(portfolio) == 7
     assert {row["status"] for row in portfolio} == {"ACTIVE"}
+
+
+def test_open_parent_goal_materializes_general_internal_work():
+    goal = active_objective_portfolio()[0]
+    work = next_work_for_active_goal(goal, work_item_id="cycle-1", question="Find the next evidence gap")
+    assert work["dispatch"] == "CREATE_OR_REUSE_WORK_ORDER"
+    assert work["continue_parent"] is True
+    assert work["authority"] == "INTERNAL_SAFE"

@@ -221,7 +221,14 @@ def run_cycle(cycle_fn: Callable[[], dict[str, Any]], *, cycle_id: str | None = 
         "scheduler": scheduler, "worker_state": "IDLE_BETWEEN_CYCLES",
         "cycle_id": cycle_id, "started_at": started, "last_success": finished,
         "next_wake": next_wake, "next_action": action, "resources": resources,
-        "result_status": result.get("status", "PASS"), "objective_owner": "RESEARCH",
+        "result_status": result.get("status", "PASS"),
+        "execution_mode": result.get("execution_mode", "REAL" if result.get("status") == "PASS" else "UNKNOWN"),
+        "dry_run": result.get("execution_mode") == "DRY_RUN",
+        "task_processing": result.get("task_processing", "COMPLETED" if result.get("status") == "PASS" else "DEGRADED"),
+        "last_real_output": result.get("last_real_output") or result.get("completed_at") or finished if result.get("execution_mode", "REAL") == "REAL" else None,
+        "latest_parent_goal_advanced": result.get("parent_goal"),
+        "last_department_served": result.get("department"),
+        "objective_owner": "RESEARCH",
         "objective_has_durable_owner": True, "queue_empty_does_not_stop": True,
     }
     _write(HEARTBEAT_PATH, heartbeat)
@@ -246,6 +253,11 @@ def current_kernel_contract() -> dict[str, Any]:
         scheduler = "INACTIVE"
     return {"research_enabled": True, "research_heartbeat": heartbeat.get("heartbeat", "UNKNOWN"),
             "research_scheduler": scheduler, "research_scheduler_reason": "existing launchd supervisor is not healthy" if scheduler == "INACTIVE" else None,
+            "research_execution_mode": heartbeat.get("execution_mode", "UNKNOWN"),
+            "research_task_processing": heartbeat.get("task_processing", "UNKNOWN"),
+            "research_last_real_output": heartbeat.get("last_real_output"),
+            "research_latest_parent_goal": heartbeat.get("latest_parent_goal_advanced"),
+            "research_last_department": heartbeat.get("last_department_served"),
             "research_background_process_state": "IDLE_BETWEEN_CYCLES" if heartbeat.get("worker_state") else "STOPPED",
             "research_worker_state": heartbeat.get("worker_state", "UNKNOWN"), "research_next_wake": heartbeat.get("next_wake", "NONE"),
             "next_research_action": heartbeat.get("next_action", "INSPECT_OBJECTIVES"), "objective_owner": "RESEARCH",
