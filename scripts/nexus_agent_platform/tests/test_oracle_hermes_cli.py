@@ -72,7 +72,7 @@ def test_generic_casual_and_opinion_drafts_are_selected_for_bounded_editor():
     assert _conversation_needs_correction(
         "I've been working on Nexus for months. What do you think about where this is going?",
         "I think Research, Alpha, GoClear, and the operating-company model are the right direction, with execution discipline as the risk."
-    ) is False
+    ) is True
 
 
 def test_pricing_prompt_suppresses_irrelevant_telemetry_and_assigns_internal_work():
@@ -88,6 +88,7 @@ def test_priority_judgment_correction_switches_to_bounded_no_tool_synthesis(tmp_
     key = tmp_path / "key"
     key.write_text("test")
     monkeypatch.setattr(oracle, "ORACLE_KEY", str(key))
+    monkeypatch.setattr(oracle, "_bounded_priority_context", lambda: "objective=bounded-test")
     calls = []
     responses = [
         "Nexus should focus on system health. Telemetry is degraded. Ray should approve the review.",

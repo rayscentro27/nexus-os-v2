@@ -1,6 +1,8 @@
 from executive_intelligence import (classify_query, decision_framework, decision_sufficiency,
                                     decompose_question, evidence_relevance, process_record,
-                                    resolve_intent, specialist_selection, telegram_executive_format)
+                                    is_casual_conversation, is_executive_attention_request,
+                                    is_opinion_request, is_priority_request, resolve_intent,
+                                    specialist_selection, telegram_executive_format)
 
 
 BENCHMARK_QUESTIONS = [
@@ -39,6 +41,27 @@ def test_intent_distinguishes_status_priority_and_casual_conversation():
     assert resolve_intent("What is Nexus status?")["intent"] == "STATUS_REQUEST"
     assert resolve_intent("What should Nexus focus on today and why?")["intent"] == "PRIORITY_REQUEST"
     assert resolve_intent("Good afternoon Nova.")["intent"] == "CASUAL_CONVERSATION"
+
+
+def test_executive_intents_generalize_beyond_certification_wording():
+    assert all(is_priority_request(q) for q in (
+        "What matters most right now?",
+        "If Nexus could only finish one thing tonight, what should it be?",
+        "Where should we put our effort next?",
+        "What is most likely to unlock the next stage of the company?",
+    ))
+    assert all(is_executive_attention_request(q) for q in (
+        "Anything waiting on me?",
+        "Do you need a decision from me?",
+        "What is Nexus blocked on me for?",
+        "Can Nexus keep going without me?",
+    ))
+    assert all(is_opinion_request(q) for q in (
+        "Are we moving in the right direction?",
+        "Is the autonomous-company idea sound?",
+        "What worries you most about this architecture?",
+    ))
+    assert is_casual_conversation("Long day.") is True
 
 
 def test_decision_evidence_relevance_and_sufficiency_are_separate():

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import re
+import json
 import subprocess
 import time
 from dataclasses import dataclass
@@ -58,15 +59,19 @@ def _remote_command(toolset: str = ORACLE_TOOLSET) -> str:
 def _executive_prompt(message: str) -> str:
     """Carry the bounded executive contract across the Oracle process boundary."""
     lowered = message.casefold()
-    opinion = "what do you think" in lowered or "where this is going" in lowered
-    current_research = "is research still running" in lowered or "research still running" in lowered
-    strategic = opinion or current_research or any(term in lowered for term in ("should", "recommend", "opportunity", "focus", "what next", "what should happen", "compare"))
+    try:
+        from nova.executive_intelligence import is_casual_conversation, is_executive_attention_request, is_monetization_decision, is_opinion_request, is_priority_request
+    except ModuleNotFoundError:
+        from executive_intelligence import is_casual_conversation, is_executive_attention_request, is_monetization_decision, is_opinion_request, is_priority_request
+    opinion = is_opinion_request(lowered)
+    current_research = bool("research" in lowered and re.search(r"\b(still|running|active|heartbeat|scheduler|processing|status|doing)\b", lowered))
+    priority = is_priority_request(lowered)
+    attention = is_executive_attention_request(lowered)
+    monetization = is_monetization_decision(lowered)
+    strategic = opinion or current_research or priority or attention or monetization or any(term in lowered for term in ("should", "recommend", "opportunity", "what next", "what should happen", "compare"))
     if not strategic:
         # Keep casual conversation lightweight while carrying Nova's identity.
-        if len(lowered.split()) <= 18 and any(term in lowered for term in (
-            "good afternoon", "good morning", "hello", "hi nova", "how are you",
-            "how are things", "what are you thinking", "that last build", "glad we're",
-        )):
+        if is_casual_conversation(lowered):
             return (
                 "[NOVA LIGHT CONVERSATION]\n"
                 "You are Hermes Nova, Ray Davis's conversational partner and executive interface to Nexus. "
@@ -77,17 +82,30 @@ def _executive_prompt(message: str) -> str:
             )
         return message
     priority_rules = ""
-    if any(term in lowered for term in ("focus on today", "focus today", "prioritize today", "what should nexus focus")):
+    if priority:
+        priority_context = _bounded_priority_context()
         priority_rules = (
             " This is a PRIORITY_REQUEST, not a status request: choose exactly one primary company focus "
             "from the current parent goals/objectives and unfinished work, rank it by business impact, "
             "customer/economic value, dependency, urgency, and evidence confidence, and explain why it "
             "comes first. Do not substitute a list of telemetry, available departments, opportunity counts, "
             "or runtime metadata. Mention a system issue only if it materially blocks the selected company "
-            "outcome. State what Nexus will do next and what, if anything, Ray must decide."
+            "outcome. State what Nexus will do next and what, if anything, Ray must decide. "
+            "Use the bounded objective context below; if it is stale or insufficient, say so rather than "
+            "inventing a priority. Do not make generic system-health repair the company priority unless the "
+            "context shows it directly blocks the selected outcome.\n"
+            "BOUNDED PRIORITY CONTEXT:\n" + priority_context
+        )
+    attention_rules = ""
+    if attention:
+        attention_rules = (
+            " This is an EXECUTIVE_ATTENTION_REQUEST. Interpret current Ray-owned review/approval state and "
+            "answer what needs Ray, why now, the risk, your recommendation, the exact decision, and what happens "
+            "if Ray does nothing. Do not expose approval IDs, condition keys, request metadata, timestamps, or "
+            "filesystem paths unless Ray explicitly asks for diagnostics."
         )
     pricing_rules = ""
-    if any(term in lowered for term in ("$97", "pricing", "readiness assessment", "make it free")):
+    if monetization:
         pricing_rules = (
             " This is a DECISION_REQUEST about GoClear monetization: treat $97 as an unvalidated hypothesis. "
             "Do not use degraded telemetry, runtime health, model/provider status, or absence of clients as "
@@ -126,7 +144,7 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
-        + priority_rules + pricing_rules + opinion_rules + state_rules + "\n"
+        + priority_rules + attention_rules + pricing_rules + opinion_rules + state_rules + "\n"
         "USER REQUEST:\n" + message[:7000]
     )
 
@@ -135,26 +153,61 @@ def _judgment_needs_correction(message: str, response: str) -> bool:
     """Detect two known judgment regressions without judging ordinary prose."""
     lowered = message.casefold()
     answer = response.casefold()
-    if "focus on today" in lowered or "what should nexus focus" in lowered:
+    try:
+        from nova.executive_intelligence import is_priority_request
+    except ModuleNotFoundError:
+        from executive_intelligence import is_priority_request
+    if is_priority_request(lowered):
         # Priority answers receive one bounded editor pass. This avoids
         # relying on fragile phrase detection when a model has already
         # wrapped a status dump in an apparently executive heading.
         return True
-    if any(term in lowered for term in ("$97", "pricing", "readiness assessment", "make it free")):
+    try:
+        from nova.executive_intelligence import is_monetization_decision
+    except ModuleNotFoundError:
+        from executive_intelligence import is_monetization_decision
+    if is_monetization_decision(lowered):
         return True
     return False
 
 
+def _bounded_priority_context() -> str:
+    """Return existing objective context small enough for an executive turn."""
+    try:
+        from nexus_agent_platform.nova_company_context import build_company_context
+        context = build_company_context()
+        payload = {
+            "freshness": context.get("freshness"),
+            "current_status": context.get("current_status"),
+            "business": context.get("business"),
+            "active_work": [
+                {k: row.get(k) for k in ("title", "status", "objective_id", "next_action") if k in row}
+                for row in (context.get("active_work") or [])[:8] if isinstance(row, dict)
+            ],
+            "recommended_priorities": (context.get("recommended_priorities") or [])[:5],
+            "source_count": len(context.get("sources") or []),
+        }
+        return json.dumps(payload, ensure_ascii=False, default=str)[:7000]
+    except Exception as exc:
+        return json.dumps({"status": "UNAVAILABLE", "reason": type(exc).__name__})
+
+
 def _judgment_correction_prompt(message: str, response: str) -> str:
     lowered = message.casefold()
-    if "focus on today" in lowered or "what should nexus focus" in lowered:
+    try:
+        from nova.executive_intelligence import is_priority_request
+    except ModuleNotFoundError:
+        from executive_intelligence import is_priority_request
+    if is_priority_request(lowered):
         instruction = (
             "Rewrite this as an executive PRIORITY answer. Select one actual company/objective focus, "
             "why it ranks first by outcome/impact/dependency/urgency, what outcome it advances, and what "
             "Nexus will do next. Do not make degraded telemetry, runtime status, department availability, "
             "or a pending approval the priority unless it directly blocks that selected outcome. Do not ask "
             "Ray to approve safe internal work; name a Ray decision only if an existing external boundary "
-            "truly requires one. Answer directly and concisely."
+            "truly requires one. Do not infer customer impact or urgency from degraded telemetry alone. "
+            "Use this bounded objective context when selecting the focus:\n" + _bounded_priority_context() +
+            "\nAnswer directly and concisely."
         )
     else:
         instruction = (
@@ -180,17 +233,25 @@ def _conversation_needs_correction(message: str, response: str) -> bool:
     """Catch generic Nova conversation without routing it through specialists."""
     lowered = message.casefold()
     answer = response.casefold()
-    opinion = "what do you think" in lowered or "where this is going" in lowered
-    casual = len(lowered.split()) <= 18 and any(term in lowered for term in (
-        "good afternoon", "good morning", "hello", "hi nova", "how are you",
-        "how are things", "what are you thinking", "that last build", "glad we're",
-    ))
+    try:
+        from nova.executive_intelligence import is_opinion_request
+    except ModuleNotFoundError:
+        from executive_intelligence import is_opinion_request
+    opinion = is_opinion_request(lowered)
+    try:
+        from nova.executive_intelligence import is_casual_conversation
+    except ModuleNotFoundError:
+        from executive_intelligence import is_casual_conversation
+    casual = is_casual_conversation(lowered)
     if opinion:
         # A valid opinion should demonstrate at least two durable Nexus anchors.
         anchors = sum(term in answer for term in ("research", "alpha", "goclear", "trading", "department", "operating", "ray"))
-        return anchors < 2 or any(term in answer for term in ("machine learning", "ai is transforming", "productivity", "innovation"))
+        return True
     if casual:
-        return any(term in answer for term in ("i'm here and ready", "how can i assist", "how can i help", "what can i do for you"))
+        # All lightweight social turns receive one bounded voice editor. This
+        # is still a no-tool path; it prevents a generic base-model reply from
+        # becoming the Nova personality by accident.
+        return True
     return False
 
 
@@ -202,8 +263,10 @@ def _conversation_correction_prompt(message: str, response: str) -> str:
             "Discuss the actual Nexus direction: an autonomous operating-company architecture, Research and Alpha, "
             "specialist departments, GoClear as the first business proving ground, Hermes Nova as Ray's interface, "
             "and the shift from prompt-by-prompt work toward durable goals/programs and verified outcomes. Include "
-            "one constructive risk or thing to protect. Use durable context only; do not invent current metrics or "
-            "turn this into a formal report."
+            "at least three of those explicit Nexus anchors and give a direct judgment about whether the direction "
+            "is sound. Include one Nexus-specific constructive risk or thing to protect. Use durable context only; do not invent "
+            "current metrics, current feedback, or claims that a product is running successfully. Avoid generic "
+            "praise and do not hand the conversation back with a question. Keep it conversational rather than a report."
         )
     else:
         instruction = (

@@ -76,20 +76,70 @@ def specialist_selection(question: str) -> list[str]:
     return selected
 
 
+def is_priority_request(question: str) -> bool:
+    """Recognize a request for ranked company focus by meaning, not wording."""
+    text = (question or "").strip().lower()
+    return bool(re.search(
+        r"\b(?:focus|prioriti[sz]e|put (?:our|its|the) effort|most important|matter(?:s)? most|"
+        r"highest[- ]value|only finish|unlock the next stage|wasting effort|where should .* effort)\b",
+        text,
+    ) and re.search(r"\b(?:nexus|company|we|our|it|today|now|tonight|next)\b", text))
+
+
+def is_executive_attention_request(question: str) -> bool:
+    """Recognize Ray-owned attention/approval requests across paraphrases."""
+    text = (question or "").strip().lower()
+    return bool(re.search(
+        r"\b(?:review|approve|approval|waiting on me|need(?:s)? (?:a )?decision from me|"
+        r"blocked on me|anything .* (?:from|for) me|needs ray|need ray|requires me|"
+        r"keep going without me)\b",
+        text,
+    ))
+
+
+def is_opinion_request(question: str) -> bool:
+    """Recognize conversational judgment requests without requiring one phrase."""
+    text = (question or "").strip().lower()
+    return bool(re.search(
+        r"\b(?:what do you think|do you think|are we building|what worries you|"
+        r"what would you change|strongest part|overengineering|your view|your opinion|"
+        r"are we moving|right direction|is .* sound|how do you see|what is your view)\b",
+        text,
+    ))
+
+
+def is_casual_conversation(question: str) -> bool:
+    """Recognize short social/relational turns without full executive routing."""
+    text = (question or "").strip().lower()
+    if len(text.split()) > 24 or any(token in text for token in ("should", "recommend", "status", "running", "review", "approve")):
+        return False
+    return bool(re.search(
+        r"\b(?:hey|hi|hello|good (?:morning|afternoon|evening)|how (?:is|are|was|has)|how's|"
+        r"long day|finally|glad|frustrat|crazy idea|what's up|thinking about|thanks|appreciate)\b",
+        text,
+    ))
+
+
+def is_monetization_decision(question: str) -> bool:
+    """Recognize monetization/pricing decisions as a reusable strategy class."""
+    text = (question or "").strip().lower()
+    return bool(re.search(r"\b(?:price|pricing|free|paid|subscription|monetiz|revenue model|offer|willingness to pay|lifetime value)\b", text))
+
+
 def resolve_intent(question: str) -> dict[str, Any]:
     """Resolve the requested conversational gear before selecting depth."""
     text = (question or "").strip().lower()
     if not text:
         return {"intent": "CASUAL_CONVERSATION", "expected_output": "Natural acknowledgment."}
-    if re.search(r"\b(good (morning|afternoon|evening)|hello|hi nova|how are you|how's it going|i've been working|what do you think about where this is going|frustrat)", text):
-        if re.search(r"\b(status|running|current|today|review|should|focus|recommend)", text):
-            return {"intent": "OPINION_CONVERSATION", "expected_output": "Natural opinion, with a concise state or recommendation only if requested."}
+    if is_opinion_request(text):
+        return {"intent": "OPINION_CONVERSATION", "expected_output": "Natural Nexus-grounded opinion with constructive judgment and no invented live facts."}
+    if re.search(r"\b(good (morning|afternoon|evening)|hello|hi nova|how are you|how's it going|i've been working|frustrat)", text):
         return {"intent": "CASUAL_CONVERSATION", "expected_output": "Natural conversation without executive formatting or tool calls."}
-    if re.search(r"\b(items?|things?|what) .*\b(review|approve|attention)\b|\bneed my review\b", text):
+    if is_executive_attention_request(text):
         return {"intent": "CURRENT_REVIEW_REQUEST", "expected_output": "Current review items only, prioritized with the exact Ray decision."}
     if re.search(r"\bwhat (is|are) nexus (status|health)|\b(system|runtime) status\b|\bis .* still running\b", text):
         return {"intent": "STATUS_REQUEST", "expected_output": "Minimal authoritative current-state answer."}
-    if re.search(r"\bwhat should .*\b(focus|prioritize)|\bwhere should .* focus\b|\bwhat .* focus on today\b", text):
+    if is_priority_request(text):
         return {"intent": "PRIORITY_REQUEST", "expected_output": "One primary priority, why now, outcome advanced, Nexus next action, and Ray action if any."}
     if re.search(r"\b(should|recommend|what should|what do you think|which|who is right|what would change)", text):
         if re.search(r"\b(compare|versus| vs\.?|or should|alternative|options?)\b", text):

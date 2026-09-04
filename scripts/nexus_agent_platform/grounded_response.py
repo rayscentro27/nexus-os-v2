@@ -14,21 +14,37 @@ from pathlib import Path
 from typing import Any, Dict
 
 
+def _priority_request(request: str) -> bool:
+    try:
+        from nova.executive_intelligence import is_priority_request
+    except ModuleNotFoundError:
+        from executive_intelligence import is_priority_request
+    return is_priority_request(request)
+
+
+def _review_request(request: str) -> bool:
+    try:
+        from nova.executive_intelligence import is_executive_attention_request
+    except ModuleNotFoundError:
+        from executive_intelligence import is_executive_attention_request
+    return is_executive_attention_request(request)
+
+
 def requires_current_evidence(request: str) -> bool:
     """Detect requests that explicitly ask for current or runtime facts."""
     text = str(request or "").lower()
     # Priority is an executive recommendation, not a request to replace the
     # model's answer with the generic runtime-status composition.
-    if re.search(r"\b(?:what should|where should|how should)\s+nexus\s+focus\b", text) or "focus on today" in text:
+    if _priority_request(text):
         return False
-    if re.search(r"\b(?:what items|which items|what)\b.*\b(?:need|needs)\s+(?:my|ray's)\s+review\b", text):
+    if _review_request(text):
         return True
     if re.search(r"\bresearch\b", text) and re.search(
         r"\b(still|running|active|heartbeat|scheduler|processing|cycle|activity|status|enabled)\b", text
     ):
         return True
     return bool(
-        re.search(r"\b(current|right now|today|available|health|what happened|runtime|version|model|python|operating system|podman)\b", text)
+        re.search(r"\b(current|right now|today|available|health|status|what happened|runtime|version|model|python|operating system|podman)\b", text)
         and re.search(r"\b(nexus|system|hermes|finance|alpha|research|model|python|operating|podman|runtime|health)\b", text)
     )
 
@@ -289,7 +305,7 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     # filter.  Hermes still performs the upstream reasoning; this boundary
     # owns the final machine-fact slots only for this narrow response surface.
     narrative = ""
-    if re.search(r"\b(?:what items|which items|what)\b.*\b(?:need|needs)\s+(?:my|ray's)\s+review\b", request, re.I):
+    if _review_request(request):
         composed = "\n".join(_review_verified_lines(evidence))
     elif re.search(r"\bresearch\b", request, re.I):
         composed = "\n".join(_research_verified_lines(evidence))
