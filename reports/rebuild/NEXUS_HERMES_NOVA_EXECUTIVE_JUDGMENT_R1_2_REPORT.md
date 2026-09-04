@@ -10,9 +10,8 @@ pass for priority/pricing answers.
 
 The production-equivalent canaries completed without an unresolved tool-loop
 halt. Priority now selects a concrete company focus; pricing now treats `$97`
-as unvalidated and recommends a provisional, testable structure; casual turns
-remain ordinary conversation. Real Telegram quality is not certified until
-Ray's six messages are observed.
+as unvalidated and recommends a provisional, testable structure. The real
+Telegram transcript below remains a failing/partial quality result.
 
 ## Starting State
 
@@ -27,8 +26,8 @@ The R1.1 transcript showed a real review answer that was acceptable, a daily
 answer that returned runtime status rather than a company priority, and a
 pricing answer that used degraded telemetry/absence of engagement as weak
 decision evidence and asked whether to retrieve feedback. The R1.2 repair
-targets those exact behaviors. No user-originated R1.2 messages have yet been
-sent.
+targets those exact behaviors. Ray's real R1.2 transcript is recorded below
+and remains a failing/partial quality result.
 
 ## Architecture Reuse
 
@@ -187,10 +186,22 @@ used the bounded judgment correction path where needed. No unresolved
 
 ## Real Telegram Certification
 
-Awaiting Ray's six real messages. The transcript must be evaluated for current
-review accuracy, actual priority selection, pricing evidence relevance and
-sufficiency, natural casual conversation, natural opinion conversation, and a
-clean transition to current-state reporting.
+Ray's transcript confirmed the transport and response path, but not executive
+quality. Results are: review `PASS_REAL`; daily priority `PARTIAL`; strategic
+pricing `PARTIAL`; casual `FAIL`; opinion `FAIL`; Research current-state
+transition `PARTIAL`; overall executive quality `FAIL`.
+
+The pricing defect was unsupported inference: no active clients means no
+observed launch/test sample, not weak willingness to pay. `$97` and free are
+both unvalidated. The vague market-preference claim must be removed unless
+grounded in actual Research evidence.
+
+The Alpha night-cycle failure was an internal defect, not a Ray task. Five
+persisted source rows used `url_or_safe_identifier` while the seeder assumed
+legacy `url`, causing `KeyError: 'url'`. The canonical seeder now normalizes
+both shapes, preserves rows, and writes `reports/runtime/alpha_registry_repair_latest.json`
+with `ALPHA_RETRY_ALLOWED`. Raw diagnostics remain in receipts; executive
+Telegram receives a concise repair/continuation statement.
 
 ## Intent-to-Program Compatibility
 
@@ -226,22 +237,27 @@ introduced.
 
 ## Remaining Gaps
 
-- Complete and score the six real Ray-originated Telegram responses.
-- Improve generic opinion/current-state wording if the real transcript confirms
-  it is not sufficiently useful.
-- Add stronger persisted evidence linkage for the autonomous pricing research
-  continuation if the existing process record does not capture it.
-- Do not claim full autonomy certification until the real quality gate passes.
+- Ground pricing only in directly relevant verified evidence; no-client state is
+  not willingness-to-pay evidence.
+- Make casual responses identity-grounded without executive formatting.
+- Make opinion responses reflect durable Nexus direction without inventing live
+  metrics.
+- Report Research heartbeat, scheduler, configured process, dry-run, actual
+  task processing, and recent activity separately.
+- Keep internal failures with Nexus-owned repair/retry rather than Ray-owned
+  action.
+- Do not claim full autonomy certification until the quality gate passes.
 
 ## True Ray Blockers
 
-`NONE`. Waiting for Ray's test messages is the requested certification input,
-not a blocker.
+`NONE`. The Telegram test is complete; remaining work is internal quality and
+failure-recovery repair, not a Ray blocker.
 
 ## Git
 
-R1.2 task changes are not yet committed in this report version. Unrelated
-worktree changes remain untouched and unstaged.
+R1.2 judgment and Alpha-recovery changes are pending the task-scoped commit
+that follows focused validation. Unrelated worktree changes remain untouched
+and unstaged.
 
 ```text
 HERMES_NOVA_EXECUTIVE_JUDGMENT_R1_2=PARTIAL
@@ -278,14 +294,14 @@ NOVA_INTENT_TO_PROGRAM_COMPATIBILITY=PASS_REAL
 NOVA_PRODUCTION_EQUIVALENT_JUDGMENT_CANARY=PASS_REAL
 NOVA_SUBSTANCE_OVER_FORMAT=PASS_REAL
 NOVA_SINGLE_PERSONALITY_MULTI_GEAR=PASS_REAL
-REAL_TELEGRAM_RAY_ORIGIN=WAITING_RAY_HUMAN_ACTION
-REAL_TELEGRAM_CURRENT_REVIEW=NOT_RUN
-REAL_TELEGRAM_DAILY_PRIORITY=NOT_RUN
-REAL_TELEGRAM_STRATEGIC_JUDGMENT=NOT_RUN
-REAL_TELEGRAM_CASUAL_CONVERSATION=NOT_RUN
-REAL_TELEGRAM_OPINION_CONVERSATION=NOT_RUN
-REAL_TELEGRAM_CURRENT_STATE_TRANSITION=NOT_RUN
-REAL_TELEGRAM_EXECUTIVE_QUALITY=NOT_RUN
+REAL_TELEGRAM_RAY_ORIGIN=PASS_REAL
+REAL_TELEGRAM_CURRENT_REVIEW=PASS_REAL
+REAL_TELEGRAM_DAILY_PRIORITY=PARTIAL
+REAL_TELEGRAM_STRATEGIC_JUDGMENT=PARTIAL
+REAL_TELEGRAM_CASUAL_CONVERSATION=FAIL
+REAL_TELEGRAM_OPINION_CONVERSATION=FAIL
+REAL_TELEGRAM_CURRENT_STATE_TRANSITION=PARTIAL
+REAL_TELEGRAM_EXECUTIVE_QUALITY=FAIL
 NOVA_INITIATIVE_RETAINED=PASS_REAL
 NEW_COMPLIANCE_DEPARTMENT_IMPLEMENTED=NO
 NEW_PRE_CREATIVE_COMPLIANCE_GATE=NO

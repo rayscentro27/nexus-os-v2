@@ -20,6 +20,22 @@ def test_youtube_result_is_bounded_to_latest_ten():
     assert len(result["entries"][:10]) == 10
 
 
+def test_seed_registry_repairs_newer_safe_identifier_shape(tmp_path):
+    registry = tmp_path / "registry.json"
+    registry.write_text(json.dumps([
+        {"source_id": "legacy", "url": "https://example.com/legacy", "source_type": "WEB_PAGE"},
+        {"source_id": "intake", "url_or_safe_identifier": "https://example.com/intake", "source_type": "WEB_PAGE"},
+    ]))
+    with patch.object(heartbeat, "REGISTRY", registry), patch.object(heartbeat, "REPAIR_RECEIPT", tmp_path / "repair.json"):
+        rows = heartbeat.seed_registry()
+    assert {row["url"] for row in rows if row["source_id"] in {"legacy", "intake"}} == {
+        "https://example.com/legacy", "https://example.com/intake"
+    }
+    receipt = json.loads((tmp_path / "repair.json").read_text())
+    assert receipt["rows_normalized"] == 1
+    assert receipt["continuation"] == "ALPHA_RETRY_ALLOWED"
+
+
 def test_heartbeat_does_not_call_queue_for_work():
     with patch.object(heartbeat, "REGISTRY", Path("/tmp/alpha-heartbeat-registry.json")), \
          patch.object(heartbeat, "seed_registry", return_value=[{"source_id": "g", "source_type": "GITHUB_REPO", "url": "https://github.com/example/g", "monitoring_enabled": True, "research_lane": "AI_NEXUS"}]), \

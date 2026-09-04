@@ -3,6 +3,14 @@ import json
 from scripts.nova import nova_telegram_worker as worker
 
 
+def test_internal_alpha_traceback_is_sanitized_for_telegram():
+    response = "Traceback (most recent call last): Alpha failed with KeyError: 'url'"
+    safe = worker._sanitize_internal_failure(response)
+    assert "KeyError" not in safe
+    assert "repairing the registry internally" in safe
+    assert "parent objective remains active" in safe
+
+
 def test_transient_delivery_is_persisted_and_recovered_without_resynthesis(tmp_path, monkeypatch):
     monkeypatch.setattr(worker, "NOVA_DELIVERY_DIR", str(tmp_path / "delivery"))
     calls = []

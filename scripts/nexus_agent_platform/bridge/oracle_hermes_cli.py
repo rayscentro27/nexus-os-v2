@@ -58,7 +58,9 @@ def _remote_command(toolset: str = ORACLE_TOOLSET) -> str:
 def _executive_prompt(message: str) -> str:
     """Carry the bounded executive contract across the Oracle process boundary."""
     lowered = message.casefold()
-    strategic = any(term in lowered for term in ("should", "recommend", "opportunity", "focus", "what next", "what should happen", "compare"))
+    opinion = "what do you think" in lowered or "where this is going" in lowered
+    current_research = "is research still running" in lowered or "research still running" in lowered
+    strategic = opinion or current_research or any(term in lowered for term in ("should", "recommend", "opportunity", "focus", "what next", "what should happen", "compare"))
     if not strategic:
         return message
     priority_rules = ""
@@ -81,7 +83,25 @@ def _executive_prompt(message: str) -> str:
             "include meaningful alternatives such as free basic assessment plus paid plan or low-cost entry, "
             "and keep the parent decision open. Safe internal Research, Alpha, Finance, Marketing, Clyde, "
             "and Opportunity follow-up is Nexus-owned: route it and tell Ray what Nexus is doing; do not ask "
-            "whether Ray wants that internal research started."
+            "whether Ray wants that internal research started. No active clients only means no observed "
+            "launch/customer sample; it is not evidence that willingness to pay is weak."
+        )
+    opinion_rules = ""
+    if opinion:
+        opinion_rules = (
+            " This is an OPINION_CONVERSATION. Answer naturally in Nova's own voice, grounded in the durable "
+            "Nexus context: the autonomous company operating model, Research/Alpha intelligence core, "
+            "Hermes executive interface, departments, GoClear commercial engine, economic engine, Trading "
+            "laboratory, and Ray's shift from manually driving every task toward approving Nexus-created "
+            "programs. Do not invoke specialists or produce a report; do not invent a current metric."
+        )
+    state_rules = ""
+    if current_research:
+        state_rules = (
+            " This is a CURRENT_STATE_REQUEST. Answer the specific Research question by distinguishing "
+            "heartbeat alive, scheduler enabled, process configured, dry-run mode, actual task processing, "
+            "and recent activity. Do not collapse these states into a single running/not-running claim; use "
+            "a fresh authoritative Nexus read and state unknowns plainly."
         )
     return (
         "[NOVA EXECUTIVE REQUEST CONTRACT]\n"
@@ -90,7 +110,7 @@ def _executive_prompt(message: str) -> str:
         "compare disagreement when present, make one recommendation, and name one bounded next action. "
         "Do not call the same tool repeatedly; if a tool fails or returns no progress, synthesize from available evidence "
         "or state the exact unknown. A task/report/specialist response is not parent-goal completion.\n"
-        + priority_rules + pricing_rules + "\n"
+        + priority_rules + pricing_rules + opinion_rules + state_rules + "\n"
         "USER REQUEST:\n" + message[:7000]
     )
 

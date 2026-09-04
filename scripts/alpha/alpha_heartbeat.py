@@ -24,6 +24,7 @@ from nexus_agent_platform.governed.persistence import append_record, read_record
 
 REGISTRY = ROOT / "data" / "runtime" / "alpha_source_registry.json"
 ACTIVITY = ROOT / "reports" / "runtime" / "alpha_research_activity_latest.json"
+REPAIR_RECEIPT = ROOT / "reports" / "runtime" / "alpha_registry_repair_latest.json"
 RAY_YOUTUBE = [
     "https://www.youtube.com/@sharbelxyz/videos", "https://www.youtube.com/@Buildonaut-AI/videos",
     "https://www.youtube.com/@StedmanWaiters/videos", "https://www.youtube.com/@Codacus/videos",
@@ -45,7 +46,26 @@ def digest(value: Any) -> str: return hashlib.sha256(json.dumps(value, sort_keys
 
 def seed_registry() -> list[dict[str, Any]]:
     prior = json.loads(REGISTRY.read_text()) if REGISTRY.exists() else []
-    by_url = {row["url"]: row for row in prior}
+    # The canonical registry has existed in both the original `url` shape and
+    # the safer source-intake `url_or_safe_identifier` shape. Normalize at this
+    # boundary instead of allowing one malformed/ newer row to kill Alpha.
+    by_url: dict[str, dict[str, Any]] = {}
+    repaired = 0
+    skipped = 0
+    for row in prior:
+        if not isinstance(row, dict):
+            skipped += 1
+            continue
+        source_url = row.get("url") or row.get("source_url") or row.get("url_or_safe_identifier")
+        if not isinstance(source_url, str) or not source_url.strip():
+            skipped += 1
+            continue
+        source_url = source_url.strip()
+        normalized = dict(row)
+        if normalized.get("url") != source_url:
+            normalized["url"] = source_url
+            repaired += 1
+        by_url[source_url] = normalized
     urls = [(url, "GITHUB_REPO", "AI_NEXUS") for url in RAY_GITHUB] + [(url, "YOUTUBE_CHANNEL", "BUSINESS") for url in RAY_YOUTUBE]
     for url, source_type, lane in urls:
         by_url.setdefault(url, {"source_id": "src_" + digest(url), "source_type": source_type, "url": url,
@@ -55,6 +75,19 @@ def seed_registry() -> list[dict[str, Any]]:
                                  "research_lane": lane, "baseline_limit": 10 if source_type == "YOUTUBE_CHANNEL" else None})
     records = list(by_url.values()); REGISTRY.parent.mkdir(parents=True, exist_ok=True)
     REGISTRY.write_text(json.dumps(records, indent=2) + "\n")
+    REPAIR_RECEIPT.parent.mkdir(parents=True, exist_ok=True)
+    REPAIR_RECEIPT.write_text(json.dumps({
+        "schema_version": "nexus.alpha-registry-repair.v1",
+        "timestamp": iso(),
+        "input_rows": len(prior),
+        "output_rows": len(records),
+        "rows_normalized": repaired,
+        "rows_skipped": skipped,
+        "parent_process": "alpha_research_heartbeat",
+        "failure_class": "MALFORMED_PRIOR_REGISTRY_SHAPE",
+        "continuation": "ALPHA_RETRY_ALLOWED",
+        "no_external_action": True,
+    }, indent=2) + "\n")
     return records
 
 

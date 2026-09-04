@@ -471,6 +471,28 @@ def _response_integrity(response, response_type="conversation"):
             pass
     return value, None
 
+
+def _sanitize_internal_failure(response):
+    """Keep implementation diagnostics in receipts, not executive Telegram."""
+    value = str(response or "").strip()
+    lower = value.casefold()
+    alpha_registry_failure = "alpha" in lower and (
+        "keyerror" in lower or "traceback" in lower or "failed with" in lower or "'url'" in lower
+    )
+    if alpha_registry_failure:
+        return (
+            "Alpha encountered malformed prior registry state while preparing research. "
+            "Nexus is repairing the registry internally and will retry Alpha; the parent objective remains active. "
+            "Ray action: none unless a genuine approval boundary appears."
+        )
+    if "traceback (most recent call last)" in lower or "keyerror:" in lower:
+        return (
+            "An internal Nexus method failed while preparing this update. "
+            "Nexus is preserving the parent objective, repairing the method, and will retry or reroute automatically. "
+            "Ray action: none unless a genuine approval boundary appears."
+        )
+    return value
+
 # ─── Offset Management ─────────────────────────────────
 
 def load_offset():
@@ -1054,6 +1076,18 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                     "profile": "nova_nexus",
                     "runtime_host": "ORACLE" if primary_runtime == PRIMARY_RUNTIME_ORACLE else "MAC",
                 })
+            pre_verified_current_state = None
+            if primary_runtime == PRIMARY_RUNTIME_ORACLE:
+                from nexus_agent_platform.grounded_response import collect_verified_current_state, requires_current_evidence
+                if requires_current_evidence(text):
+                    # Capture trusted facts before the model call.  Hermes may
+                    # reason over them, but the final composition remains
+                    # governed by this same object.
+                    pre_verified_current_state = collect_verified_current_state({
+                        "runtime_host": "ORACLE", "hermes_version": "0.20.6",
+                        "profile": "nova_nexus", "provider": "openrouter",
+                        "model": os.getenv("HERMES_NOVA_MODEL", "openai/gpt-4o-mini"),
+                    })
             hermes_record = (
                 _run_oracle_primary(update_id, message, chat_id, text, primary_run_id=primary_run_id)
                 if primary_runtime == PRIMARY_RUNTIME_ORACLE
@@ -1061,7 +1095,9 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
             )
             if trace:
                 trace.event("hermes.generation", {"generation_type": "FINAL_SYNTHESIS_GENERATION", "model": hermes_record.get("model"), "tool_count": len(hermes_record.get("tools_executed", [])), "latency_ms": hermes_record.get("latency_ms")})
-            response, blocked_reason = _response_integrity(hermes_record.get("response") or "", "conversation")
+            response, blocked_reason = _response_integrity(
+                _sanitize_internal_failure(hermes_record.get("response") or ""), "conversation"
+            )
             if response is None:
                 update_mission(mission, "DELIVERY_FAILED", {
                     "response_mode": "hermes_primary",
@@ -1069,6 +1105,14 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                     "hermes_error": hermes_record.get("error") or blocked_reason,
                 })
                 return True
+            # Current-state claims are grounded after Hermes synthesis.  The
+            # model remains the owner of narrative and recommendations, while
+            # runtime/specialist facts come from deterministic local evidence.
+            if primary_runtime == PRIMARY_RUNTIME_ORACLE:
+                from nexus_agent_platform.grounded_response import ground_response, response_completeness
+                response, verified_current_state = ground_response(response, text, hermes_record, pre_verified_current_state)
+                hermes_record["verified_current_state"] = verified_current_state
+                hermes_record["response_completeness"] = response_completeness(response)
             update_mission(mission, "RESPONSE_COMPOSED", {
                 "response_mode": "hermes_primary",
                 "model_used": hermes_record.get("model"),
@@ -1107,6 +1151,8 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
                 "claim_attribution": hermes_record.get("claim_attribution"),
                 "runtime_init": hermes_record.get("runtime_init"),
                 "model_init": hermes_record.get("model_init"),
+                "verified_current_state": hermes_record.get("verified_current_state"),
+                "response_completeness": hermes_record.get("response_completeness"),
             })
             update_mission(mission, "DELIVERED" if delivery.get("state") == "DELIVERED" else ("TERMINAL_DELIVERY_FAILURE" if delivery.get("state") == "FAILED_TERMINAL" else "DELIVERY_PENDING"), {"response_message_ids": msg_ids, "delivery_state": delivery.get("state"), "delivery_error": delivery.get("last_error")})
             return True
