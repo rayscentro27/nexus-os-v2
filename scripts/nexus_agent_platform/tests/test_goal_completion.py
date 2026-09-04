@@ -1,0 +1,32 @@
+from nexus_agent_platform.goal_completion import (
+    active_objective_portfolio, build_goal, classify_path_failure,
+    evaluate_parent_goal, repetition_guard, should_continue,
+)
+
+
+def test_report_or_child_completion_does_not_complete_parent_goal():
+    goal = build_goal("stock-data", "Establish real stock data", ["real_source", "normalized_read"])
+    result = evaluate_parent_goal(goal, {"satisfied_criteria": ["real_source"]})
+    assert result["status"] == "ACTIVE"
+    assert result["missing_criteria"] == ["normalized_read"]
+
+
+def test_failure_classification_and_alternative_path_continue_parent():
+    goal = build_goal("market", "Complete market data", ["source"], candidate_next_paths=("API", "ORACLE_BROWSER"))
+    failure = classify_path_failure({"path": "YAHOO_API", "error": "endpoint unavailable", "known_alternatives": ["ORACLE_BROWSER"]})
+    assert failure["failure_class"] == "DATA_NOT_AVAILABLE"
+    decision = should_continue(goal, failure=failure, attempted_paths=["YAHOO_API"])
+    assert decision["parent_goal_complete"] is False
+    assert decision["next_action"]["action"] == "API"
+
+
+def test_repetition_guard_switches_strategy_after_identical_failure():
+    decision = repetition_guard([{"path": "dead_api", "arguments": {"symbol": "SPY"}, "result": "blocked"}] * 3)
+    assert decision["repeated"] is True
+    assert decision["action"] == "CHANGE_STRATEGY"
+
+
+def test_portfolio_keeps_multiple_parent_goals_active():
+    portfolio = active_objective_portfolio()
+    assert len(portfolio) == 7
+    assert {row["status"] for row in portfolio} == {"ACTIVE"}
