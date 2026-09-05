@@ -57,3 +57,8 @@ def test_goal_action_uses_existing_non_research_executors():
     portal = {"goal_id": "p", "status": "ACTIVE", "department": "Portal/Product", "statement": "portal", "priority": "P2"}
     assert next_work_for_active_goal(trading, work_item_id="t1", question="q")["action"] == "trading.research_cycle"
     assert next_work_for_active_goal(portal, work_item_id="p1", question="q")["action"] == "internal.capability_verify"
+
+
+def test_goal_action_uses_existing_safe_funding_fixture_executor():
+    funding = {"goal_id": "f", "status": "ACTIVE", "department": "Funding/Product", "statement": "funding readiness", "priority": "P2"}
+    assert next_work_for_active_goal(funding, work_item_id="f1", question="q")["action"] == "funding.readiness_review"

@@ -77,7 +77,7 @@ selection/analysis.
 | Trading | paper-only OANDA research loop | No model call; deterministic strategy/backtest path | paper/backtest/OOS/feedback state | REAL SAFE EXECUTION |
 | Portal/Product | local portal backend capability verifier | No | local verification artifact when selected | BOUNDED NON-AI EXECUTOR |
 | Systems | generic local capability verifier | No | generic capability-state artifact | BOUNDED, NOT FULL CAPABILITY PROOF |
-| Funding / Funding/Product | registered fixture loop exists in governed loop registry, but not mapped by Active Operator | No | not observed through canonical portfolio dispatch | REGISTERED ELSEWHERE, NOT CONNECTED |
+| Funding / Funding/Product | fixture-only `NEXUS_CREDIT_BUSINESS_FUNDING` loop connected as `funding.readiness_review` | No | bounded readiness receipt and verified fixture result | BOUNDED SAFE EXECUTOR; NO AI |
 | Alpha | persistence/evaluation bridge exists | No autonomous model evaluation proof | Alpha evaluation store when input exists | PARTIAL |
 | Marketing/Creative | content worker/skill registry entries | No | no current canonical portfolio executor | QUEUED / MISSING EXECUTOR |
 | Creative / Video | historical lab and builder proof surfaces | No current autonomous project invocation | deterministic/internal artifacts only | QUEUED / MISSING EXECUTOR |
@@ -223,11 +223,27 @@ Research and Trading. It did not prove a multi-department AI-worker cycle:
 - restart-safe AI worker task/result lineage: NOT PROVEN for a current company
   objective.
 
+## Additional safe executor recovery
+
+The existing fixture-only `NEXUS_CREDIT_BUSINESS_FUNDING` governed loop was
+connected to the canonical portfolio as `funding.readiness_review` for
+`Funding` and `Funding/Product`. A direct bounded proof returned:
+
+- loop: `NEXUS_CREDIT_BUSINESS_FUNDING`;
+- final state: `SUCCEEDED_VERIFIED`;
+- receipt: `reports/rebuild/nexus_loop_receipts/receipt_4c826069cd8a4b7186ba7701482afaf1.json`;
+- authority: `INTERNAL_REVIEW`;
+- financial transactions: `false`;
+- applications submitted: `false`.
+
+This closes one previously disconnected safe executor. It remains a fixture /
+readiness analysis, not an AI-funded workflow or external financial action.
+
 ## Tests
 
 Focused tests completed:
 
-`24 passed`
+`25 passed`
 
 Covered builder selection/verification, deterministic fallback, retry
 behavior, engineering-worker handoff, goal continuation, and the new
@@ -245,8 +261,8 @@ certified would be misleading.
 ## Remaining blockers
 
 1. Register and verify safe department executors for the incomplete portfolio
-   goals, beginning with existing Funding, Portal/Product, Systems, and
-   Marketing/Creative internal-only paths.
+   goals, continuing with Portal/Product, Systems, and Marketing/Creative
+   internal-only paths; Funding's existing fixture executor is now connected.
 2. Add a governed AI-worker invocation contract to the canonical operator:
    context → structured decision → executor → result → AI review → next action.
 3. Connect current Research outputs to autonomous Alpha intake/evaluation on
@@ -264,10 +280,11 @@ credentials, external service access, or consequential authority is required.
 ## Git
 
 - Local prior continuation commit: `1f1e3b7c014f7a234be7521d674c987e269555df`.
-- This recovery task adds the builder telemetry/worker-handoff repair and this
-  report locally.
+- This recovery task adds the builder telemetry/worker-handoff repair, the
+  bounded Funding executor connection, its receipt, and this report.
 - Unrelated worktree changes remain preserved and unstaged.
-- Push status: not pushed in this run.
+- The builder/worker-handoff commit was pushed as `bca402b`; the bounded
+  Funding follow-up is staged for the next task-specific commit.
 
 ## Certification
 

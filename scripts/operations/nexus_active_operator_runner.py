@@ -68,7 +68,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "trading.research_cycle", "internal.capability_verify",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "trading.research_cycle", "internal.capability_verify", "funding.readiness_review",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -82,6 +82,7 @@ CAPABILITY_REGISTRY = {
     "searxng.research": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["research.refresh"], "gated_actions": []},
     "trading.paper_research": {"status": "READY", "authority": "PAPER_ONLY", "safe_actions": ["trading.research_cycle"], "gated_actions": ["trading.live_execution"]},
     "portal.local_verification": {"status": "READY", "authority": "LOCAL_READ_ONLY", "safe_actions": ["internal.capability_verify"], "gated_actions": ["portal.production_mutation"]},
+    "funding.fixture_review": {"status": "READY", "authority": "INTERNAL_REVIEW", "safe_actions": ["funding.readiness_review"], "gated_actions": ["funding.application_submission", "financial_transaction"]},
     "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
     "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
     "google.calendar.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.calendar.read"], "gated_actions": ["calendar.mutate"]},
@@ -348,6 +349,28 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                     "artifact_path": str(path.relative_to(ROOT)),
                     "output_hash": hashlib.sha256(json.dumps(artifact, sort_keys=True, default=str).encode()).hexdigest()[:24],
                     "execution_mode": "REAL", "external_side_effects": False}
+        if action_id == "funding.readiness_review":
+            from nexus_agent_platform.loops.governed_loops import run_governed_loop
+            loop = run_governed_loop("NEXUS_CREDIT_BUSINESS_FUNDING", {
+                "subject": finding.get("parent_goal") or finding.get("question") or "bounded funding readiness",
+                "input_source": "company_goal_portfolio",
+            })
+            result = {
+                "status": "PASS" if loop.final_state == "SUCCEEDED_VERIFIED" else "FAILED",
+                "action": action_id,
+                "loop_id": loop.loop_id,
+                "receipt_id": loop.receipt_id,
+                "receipt_path": loop.receipt_path,
+                "artifact_path": loop.receipt_path,
+                "execution_mode": "REAL",
+                "authority": "INTERNAL_REVIEW",
+                "external_side_effects": False,
+                "financial_transactions": False,
+                "applications_submitted": False,
+            }
+            if loop.error:
+                result["error"] = loop.error
+            return result
         return {"status": "RECORDED_NOT_EXECUTED", "action": action_id, "execution_mode": "REAL"}
     from nexus_agent_platform.loops.governed_loops import _research
     from nexus_agent_platform.continuous_operating_kernel import build_program_registry, build_source_registry
@@ -613,7 +636,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "priority": goal.get("priority", "P2"), "summary": f"Advance {goal['domain']}",
                 "reason": research_state.get("empty_queue_next_action", "OPEN_GOAL_MISSING_SUCCESS_CRITERION"),
                 "proposed_action": dispatch["action"], "approval_required": False,
-                "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "portal.local_verification", "Systems": "portal.local_verification"}.get(dispatch["department"], "searxng.research"),
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "portal.local_verification", "Systems": "portal.local_verification", "Funding": "funding.fixture_review", "Funding/Product": "funding.fixture_review"}.get(dispatch["department"], "searxng.research"),
                 "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
                 "source_record_id": cycle_work_item, "question": dispatch["question"],
                 "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
