@@ -303,10 +303,16 @@ The existing `scripts/nova/proactive_communications.py` is a real bounded
 extension of the Nova Telegram worker, not a second worker. It resolves only
 the trusted configured Ray chat, uses the existing `tg_send_message` retry
 path, persists event/delivery/message state, suppresses duplicates, and is
-called by the launchd Nova worker. A recovery-complete message was deliberately
-not sent because this campaign remains PARTIAL; sending one would overclaim
-company-wide certification. The implementation is available for the final
-certification event, but real completion delivery remains unproven.
+called by the launchd Nova worker. A real material event was subsequently
+delivered without an inbound Ray prompt: `research.company_intelligence`
+received a verified internal work result and Telegram message ID `1222` was
+delivered at `2026-09-05T18:09:05Z` (`11:09:05 AM Phoenix`). The durable
+delivery record is `data/runtime/nova_proactive_communications.json`, with
+the source receipt `operator_operator_97cda7151a3a4849bbcaf69b3ccc336f.json`.
+Duplicate suppression and trusted-recipient routing therefore have real
+production evidence. A recovery-complete message was deliberately not sent
+because this campaign remains PARTIAL; sending one would overclaim
+company-wide certification.
 
 ## Tests
 
@@ -322,10 +328,11 @@ and durable control-request validation.
 
 ## Nova Telegram outbound proof
 
-No outbound completion message is claimed in this report. The existing
-proactive path is now identified and wired into the Nova worker, but the
-company-wide recovery has not reached a truthful terminal certification state.
-Sending a completion claim now would be misleading.
+Material proactive delivery is proven: message ID `1222` was sent to Ray
+without an inbound prompt, with the concise text recorded in the delivery
+state and the source goal receipt retained. No outbound completion message is
+claimed. The company-wide recovery has not reached a truthful terminal
+certification state, so sending a completion claim now would be misleading.
 
 ## Remaining blockers
 
@@ -376,6 +383,6 @@ credentials, external service access, or consequential authority is required.
 
 `NOVA_ASSIGN_TRACK_REROUTE=PASS_REAL_FOR_SAFE_INTERNAL_ASSIGNMENT; REROUTE_NOT_PROVEN`
 
-`NOVA_COMPLETION_NOTIFICATION=NOT_SENT`
+`NOVA_COMPLETION_NOTIFICATION=NOT_SENT; MATERIAL_PROACTIVE_DELIVERY=PASS_REAL_MESSAGE_ID_1222`
 
 `SAFE_TO_CERTIFY_COMPANY_WIDE_AI_AUTONOMY=NO`
