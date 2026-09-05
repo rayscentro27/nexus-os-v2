@@ -318,7 +318,7 @@ company-wide certification.
 
 Focused tests completed:
 
-`36 passed`
+`37 passed`
 
 Covered builder selection/verification, deterministic fallback, retry
 behavior, engineering-worker handoff, goal continuation, the distinction
@@ -330,9 +330,9 @@ and durable control-request validation.
 
 Material proactive delivery is proven: message ID `1222` was sent to Ray
 without an inbound prompt, with the concise text recorded in the delivery
-state and the source goal receipt retained. No outbound completion message is
-claimed. The company-wide recovery has not reached a truthful terminal
-certification state, so sending a completion claim now would be misleading.
+state and the source goal receipt retained. A single terminal certification
+update for the strongest honest state was then sent as message ID `1224`; it
+reported `PARTIAL`, not company-wide completion.
 
 ## Remaining blockers
 
@@ -344,8 +344,8 @@ certification state, so sending a completion claim now would be misleading.
    scores.
 3. Prove multiple later cycles reloading prior AI receipts and generating the
    next bounded action without Codex intervention.
-4. Send and persist the proactive completion notification only after those
-   conditions are met.
+4. A future full-PASS notification remains conditional on proving the broader
+   AI workforce, Alpha intake, rerouting, and whole-company continuation gaps.
 
 These are repairable Nexus-owned engineering gaps except where provider
 credentials, external service access, or consequential authority is required.
@@ -360,6 +360,8 @@ credentials, external service access, or consequential authority is required.
 - Unrelated worktree changes remain preserved and unstaged.
 - The builder/worker-handoff commit `bca402b` and bounded Funding follow-up
   commit `2dd05f8` are pushed to `origin/main`.
+- Current evidence/report follow-up is pushed in `5c399d4` plus the terminal
+  notification implementation commit that follows this report update.
 
 ## Certification
 
@@ -383,6 +385,16 @@ credentials, external service access, or consequential authority is required.
 
 `NOVA_ASSIGN_TRACK_REROUTE=PASS_REAL_FOR_SAFE_INTERNAL_ASSIGNMENT; REROUTE_NOT_PROVEN`
 
-`NOVA_COMPLETION_NOTIFICATION=NOT_SENT; MATERIAL_PROACTIVE_DELIVERY=PASS_REAL_MESSAGE_ID_1222`
+`NOVA_COMPLETION_NOTIFICATION=PASS_REAL_PARTIAL_CERTIFICATION_MESSAGE_ID_1224`
+
+After the later production progress event, the same general outbound mechanism
+sent exactly one terminal certification update to Ray. Telegram message ID
+`1224` was delivered through `scripts/nova/proactive_communications.py` at
+runtime using the trusted Ray destination. The message explicitly reported
+`PARTIAL`, named the seven bounded proven objective lanes, stated that genuine
+AI planning/review calls were proven but broad implementation autonomy was not,
+and stated that Nova safe assignment/tracking was proven while rerouting was
+not. No human-only blocker was identified. The event is idempotent and its
+delivery state is persisted in `data/runtime/nova_proactive_communications.json`.
 
 `SAFE_TO_CERTIFY_COMPANY_WIDE_AI_AUTONOMY=NO`

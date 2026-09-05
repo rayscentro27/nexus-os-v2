@@ -47,3 +47,27 @@ def test_failed_nested_action_is_not_progress(monkeypatch, tmp_path):
     result = proactive.process_once()
     assert result["status"] == "NO_SEND"
     assert not sent
+
+
+def test_terminal_certification_is_one_shot_and_truthful(monkeypatch, tmp_path):
+    state = tmp_path / "proactive.json"
+    monkeypatch.setattr(proactive, "STATE_PATH", state)
+    monkeypatch.setattr(proactive, "get_env", lambda: {"TELEGRAM_CHAT_ID": "42"})
+    calls = []
+    monkeypatch.setattr(proactive, "tg_send_message", lambda chat, text: calls.append((chat, text)) or [123])
+    event = {
+        "autonomy": "PARTIAL",
+        "departments": "Research, Trading, Portal/Product",
+        "objectives_advanced": "7",
+        "ai_workforce": "PARTIAL",
+        "multi_cycle": "PARTIAL",
+        "nova_control": "PARTIAL",
+        "ray_action": "None",
+    }
+    first = proactive.process_once(terminal_event=event)
+    second = proactive.process_once(terminal_event=event)
+    assert first["status"] == "PASS"
+    assert second["results"][0]["status"] == "SUPPRESSED_DUPLICATE"
+    assert len(calls) == 1
+    assert "Autonomy: PARTIAL" in calls[0][1]
+    assert json.loads(state.read_text())["last_event_severity"] == "MATERIAL"

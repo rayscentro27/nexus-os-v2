@@ -65,6 +65,8 @@ def classify_event(event: dict[str, Any]) -> str:
     if kind in {"SUPERVISOR_UNHEALTHY", "RESEARCH_NOT_REAL", "REQUIRED_PATH_FAILED",
                 "RAY_REQUIRED", "APPROVAL_REQUIRED", "SAFETY_EVENT", "RECOVERY"}:
         return "CRITICAL"
+    if kind == "TERMINAL_CERTIFICATION":
+        return "MATERIAL"
     if kind in {"GOAL_ADVANCED", "GOAL_COMPLETED", "BLOCKER_REPAIRED",
                 "CAPABILITY_PROVEN", "DEPARTMENT_MILESTONE"}:
         return "MATERIAL"
@@ -143,6 +145,17 @@ def _message(event: dict[str, Any], severity: str) -> str:
                 "I can now contact you without waiting for an inbound message.\n\n"
                 "Portfolio: 23 company goals\nResearch: REAL\n"
                 "This channel is limited to Ray operational updates.")
+    if str(event.get("kind", "")).upper() == "TERMINAL_CERTIFICATION":
+        return (
+            "Ray — Nexus autonomy certification update.\n\n"
+            f"Autonomy: {event.get('autonomy', 'PARTIAL')}\n"
+            f"Departments proven: {event.get('departments', 'bounded internal lanes')}\n"
+            f"Legitimate objectives advanced: {event.get('objectives_advanced', '0')}\n"
+            f"Genuine AI workers: {event.get('ai_workforce', 'PARTIAL')}\n"
+            f"Multi-cycle continuation: {event.get('multi_cycle', 'PARTIAL')}\n"
+            f"Nova executive control: {event.get('nova_control', 'PARTIAL')}\n"
+            f"Ray action: {event.get('ray_action', 'None; continue observing the bounded recovery.')}."
+        )
     if severity == "CRITICAL":
         return f"Ray — Nexus needs attention.\n\n{event.get('summary', 'A critical operational condition was detected.')}\n\nNexus is recording the condition and continuing safe unrelated work where possible.\nRay action: review the operational update."
     if severity == "MATERIAL":
@@ -150,7 +163,8 @@ def _message(event: dict[str, Any], severity: str) -> str:
     return "Nexus update: systems are healthy and safe internal work is continuing. Nothing needs you."
 
 
-def process_once(*, force_test: bool = False, force_digest: bool = False) -> dict[str, Any]:
+def process_once(*, force_test: bool = False, force_digest: bool = False,
+                 terminal_event: dict[str, Any] | None = None) -> dict[str, Any]:
     state = _read(STATE_PATH, {"schema_version": "nexus.proactive-communications.v1", "events": {}, "deliveries": {}, "last_notification_at": None, "last_digest_at": None})
     state.setdefault("events", {})
     state.setdefault("deliveries", {})
@@ -159,7 +173,10 @@ def process_once(*, force_test: bool = False, force_digest: bool = False) -> dic
         state["last_suppression_reason"] = "TRUSTED_RAY_CHAT_NOT_PROVEN"
         _write(state)
         return {"status": "SUPPRESSED", "reason": "TRUSTED_RAY_CHAT_NOT_PROVEN"}
-    events = [{"kind": "DEPARTMENT_MILESTONE", "test": True, "summary": "Explicit transport proof."}] if force_test else collect_events()
+    if terminal_event is not None:
+        events = [{"kind": "TERMINAL_CERTIFICATION", **terminal_event}]
+    else:
+        events = [{"kind": "DEPARTMENT_MILESTONE", "test": True, "summary": "Explicit transport proof."}] if force_test else collect_events()
     results = []
     for event in events:
         severity = classify_event(event)
@@ -183,7 +200,7 @@ def process_once(*, force_test: bool = False, force_digest: bool = False) -> dic
         state["last_event_severity"] = severity
         _write(state)
         results.append({"event": key, "severity": severity, "status": delivery["status"], "message_ids": ids})
-    if not force_test and (force_digest or _digest_due(state)):
+    if terminal_event is None and not force_test and (force_digest or _digest_due(state)):
         digest_key = _hash({"kind": "DIGEST", "period": datetime.now(timezone.utc).strftime("%Y%m%d%H")})
         if digest_key not in state["events"]:
             text = _digest_message()
