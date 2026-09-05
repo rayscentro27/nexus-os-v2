@@ -751,6 +751,60 @@ def run_builder_task(
     duration_ms = int((time.monotonic() - start_monotonic) * 1000)
     final_status = "pass" if verification["status"] == "pass" else "failed"
     retry_count = max(0, len(attempts) - 1)
+    # Keep provider execution evidence honest.  The old implementation
+    # reported zero model calls and ``local_python`` for every worker because
+    # the deterministic proof path was the first consumer of this contract.
+    # That made a real CLI invocation indistinguishable from the local
+    # fallback.  A CLI execution is evidence that a provider worker was
+    # invoked, but token counts remain UNKNOWN unless the adapter reports
+    # them; never manufacture token usage.
+    reported_usage = collected.get("ai_usage") or collected.get("model_usage")
+    if isinstance(reported_usage, dict):
+        ai_usage = {
+            "model_calls": reported_usage.get("model_calls", 1 if selected.worker_type == "cli" else 0),
+            "input_tokens": reported_usage.get("input_tokens"),
+            "output_tokens": reported_usage.get("output_tokens"),
+            "tier1_calls": reported_usage.get("tier1_calls", 0),
+            "tier2_calls": reported_usage.get("tier2_calls", 0),
+            "tier3_calls": reported_usage.get("tier3_calls", 0),
+            "usage_status": reported_usage.get("usage_status", "REPORTED"),
+        }
+    elif selected.worker_type == "cli":
+        ai_usage = {
+            "model_calls": 1,
+            "input_tokens": None,
+            "output_tokens": None,
+            "tier1_calls": 0,
+            "tier2_calls": 0,
+            "tier3_calls": 0,
+            "usage_status": "INVOCATION_OBSERVED_TOKEN_COUNTS_UNAVAILABLE",
+        }
+    else:
+        ai_usage = {
+            "model_calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "tier1_calls": 0,
+            "tier2_calls": 0,
+            "tier3_calls": 0,
+            "usage_status": "ZERO_TOKEN_DETERMINISTIC_EXECUTION",
+        }
+    default_cost = {
+        "tier": task.budget.get("model_tier", "ZERO_MODEL_COST"),
+        "provider": selected.worker_id,
+        "estimated_cost_usd": None if selected.worker_type == "cli" else 0.0,
+        "cost_status": "UNKNOWN_UNREPORTED" if selected.worker_type == "cli" else "ZERO_COST_DETERMINISTIC",
+    }
+    cost_provenance = dict(collected.get("cost_provenance", default_cost))
+    invocation = {
+        "worker_id": selected.worker_id,
+        "worker_type": selected.worker_type,
+        "invocation_observed": True,
+        "execution_status": final_status,
+        "reasoning_output_observed": bool(collected.get("worker_report") or collected.get("output")),
+        "business_state_mutation_observed": bool(collected.get("files_changed") or collected.get("artifact_refs")),
+        "usage": ai_usage,
+    }
     ledger_entry = append_builder_ledger(
         {
             "task_id": task.task_id,
@@ -768,7 +822,9 @@ def run_builder_task(
             "protected_path_violation": bool(collected.get("protected_path_violation", False)),
             "status": final_status,
             "artifact_refs": collected.get("artifact_refs", []),
-            "cost_provenance": collected.get("cost_provenance", {"tier": task.budget.get("model_tier", "ZERO_MODEL_COST"), "provider": "local_python"}),
+            "cost_provenance": cost_provenance,
+            "ai_usage": ai_usage,
+            "worker_invocation": invocation,
             "attempts": attempts,
         }
     )
@@ -791,7 +847,7 @@ def run_builder_task(
         retry_count=retry_count,
         protected_path_violation=bool(collected.get("protected_path_violation", False)),
         artifact_refs=list(collected.get("artifact_refs", [])),
-        cost_provenance=dict(collected.get("cost_provenance", {"tier": task.budget.get("model_tier", "ZERO_MODEL_COST"), "provider": "local_python", "estimated_cost_usd": 0.0})),
+        cost_provenance=cost_provenance,
         worker_report=dict(collected.get("worker_report", {})),
         verification=verification,
         selected_worker_reason=selected.availability_reason,
@@ -807,32 +863,20 @@ def run_builder_task(
         "result": {
             **result.__dict__,
             "attempts": attempts,
-            "ai_usage": {
-                "model_calls": 0,
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "tier1_calls": 0,
-                "tier2_calls": 0,
-                "tier3_calls": 0,
-            },
-            "zero_token_execution": True,
+            "ai_usage": ai_usage,
+            "zero_token_execution": ai_usage["model_calls"] == 0,
+            "worker_invocation": invocation,
         },
-        "ai_usage": {
-            "model_calls": 0,
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "tier1_calls": 0,
-            "tier2_calls": 0,
-            "tier3_calls": 0,
-        },
+        "ai_usage": ai_usage,
         "retry_count": retry_count,
         "ledger_path": str(LEDGER_PATH),
         "duration_ms": duration_ms,
         "starting_commit": starting_commit,
         "ending_commit": ending_commit,
         "builder_audit": build_builder_audit(),
-        "ai_calls": 0,
-        "zero_token_execution": True,
+        "ai_calls": ai_usage["model_calls"],
+        "zero_token_execution": ai_usage["model_calls"] == 0,
+        "worker_invocation": invocation,
         "attempts": attempts,
     }
 
@@ -990,7 +1034,6 @@ def _build_safe_proof_task(previous_state: Optional[Dict[str, Any]] = None) -> B
 def run_builder_pilot(previous_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     task = _build_safe_proof_task(previous_state=previous_state)
     workers = build_coding_worker_registry()
-    ai_usage = {"model_calls": 0, "input_tokens": 0, "output_tokens": 0, "tier1_calls": 0, "tier2_calls": 0, "tier3_calls": 0}
     with execution_run(
         process_id="builder_abstraction",
         process_name="Builder Abstraction",
@@ -1005,8 +1048,8 @@ def run_builder_pilot(previous_state: Optional[Dict[str, Any]] = None) -> Dict[s
     return {
         **proof,
         "ok": proof["status"] == "pass",
-        "ai_usage": ai_usage,
-        "zero_token_execution": True,
+        "ai_usage": proof.get("ai_usage", {}),
+        "zero_token_execution": bool(proof.get("zero_token_execution")),
     }
 
 

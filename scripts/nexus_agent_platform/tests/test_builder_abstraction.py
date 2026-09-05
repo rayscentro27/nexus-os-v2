@@ -140,6 +140,41 @@ def test_retry_count_bounded_and_failure_delta_only(monkeypatch, tmp_path):
     assert ledger.exists()
 
 
+def test_cli_worker_invocation_is_not_reported_as_zero_token_local_fallback(tmp_path, monkeypatch):
+    from nexus_agent_platform.builders import runtime as builder_runtime
+
+    monkeypatch.setattr(builder_runtime, "LEDGER_PATH", tmp_path / "ledger.jsonl")
+    task = _task()
+    worker = _worker(
+        "opencode",
+        available=True,
+        execute_fn=lambda t: {
+            "status": "success",
+            "artifact_refs": [],
+            "files_changed": [],
+            "tests_run": [],
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "visual_check": {"required": False, "verified": False, "status": "not_required"},
+            "protected_path_violation": False,
+            "worker_report": {"summary": "bounded provider response observed"},
+        },
+    )
+    # The test helper uses worker_type=test, so make the execution class
+    # explicit to exercise the provider-observation branch.
+    worker.worker_type = "cli"
+    result = run_builder_task(task, [worker], max_retries=0)
+
+    assert result["status"] == "pass"
+    assert result["ai_usage"]["model_calls"] == 1
+    assert result["ai_usage"]["input_tokens"] is None
+    assert result["zero_token_execution"] is False
+    assert result["worker_invocation"]["invocation_observed"] is True
+    ledger = json.loads((tmp_path / "ledger.jsonl").read_text().splitlines()[-1])
+    assert ledger["cost_provenance"]["provider"] == "opencode"
+    assert ledger["ai_usage"]["usage_status"] == "INVOCATION_OBSERVED_TOKEN_COUNTS_UNAVAILABLE"
+
+
 def test_worker_self_report_cannot_bypass_verification():
     task = _task()
     worker = _worker(

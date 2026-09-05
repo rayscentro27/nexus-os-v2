@@ -166,7 +166,28 @@ def release_lease(work_order_id: str) -> None:
 
 def run_voice_task(*, task: BuildTaskSpec, repair_id: str, work_order_id: str, run_id: str,
                    engineering_run_id: str, previous_worker: Optional[str] = None) -> Dict[str, Any]:
-    rows = worker_matrix(task)
+    # Use one canonical registry snapshot for selection and execution.  The
+    # prior implementation re-probed a separate matrix, which made a tested
+    # worker registry appear unavailable to the handoff path and obscured the
+    # real Codex -> OpenCode recovery decision.
+    workers = build_coding_worker_registry()
+    rows = []
+    for worker in workers:
+        health = worker.health_check()
+        rows.append({
+            "worker": worker.worker_id,
+            "installed": bool(health.get("installed", worker.installed)),
+            "adapter_exists": worker._execute_fn is not None,
+            "isolated_worktree": worker.supports_worktrees,
+            "repo_edit": worker.supports_repo_edit,
+            "tests": worker.supports_tests,
+            "state": health.get("classification") or ("AVAILABLE" if worker.available else "UNAVAILABLE"),
+            "authenticated": "UNKNOWN",
+            "certified": bool(worker.available),
+            "capacity": health.get("classification") or ("AVAILABLE" if worker.available else "UNAVAILABLE"),
+            "available": bool(worker.available),
+            "reason": health.get("reason") or worker.availability_reason,
+        })
     selected = next((row for row in rows if row["worker"] == "codex" and _eligible(row)), None)
     if selected is None:
         selected = next((row for row in rows if row["worker"] == "opencode" and _eligible(row)), None)
@@ -183,7 +204,6 @@ def run_voice_task(*, task: BuildTaskSpec, repair_id: str, work_order_id: str, r
                                "previous_worker_state": "BUSY", "new_worker": worker, "reason": "CODEX_BUSY",
                                "handoff_at": _now(), "checkpoint_sha": task.metadata.get("source_commit") or task.metadata.get("starting_commit"),
                                "authority_scope": [repair_id], "attempt_number": task.metadata.get("attempt_number", 1)})
-    workers = build_coding_worker_registry()
     chosen = next(worker_obj for worker_obj in workers if worker_obj.worker_id == worker)
     result = run_builder_task(task, [chosen], max_retries=0)
     report = result.get("worker_report") or {}
