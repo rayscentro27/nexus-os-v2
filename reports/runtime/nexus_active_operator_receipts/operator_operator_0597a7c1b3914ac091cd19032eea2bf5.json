@@ -1,0 +1,1128 @@
+{
+  "actions_considered": [
+    "ai.plan_and_verify"
+  ],
+  "actions_executed": [
+    "read_operational_state",
+    "write_heartbeat",
+    "business_attention.generate",
+    "ai.plan_and_verify"
+  ],
+  "approvals_requested": [],
+  "authority": {
+    "arbitrary_shell": "UNAVAILABLE",
+    "external_actions": "BLOCKED",
+    "stripe_autonomous_execution": "DISABLED"
+  },
+  "business_brief_path": "reports/runtime/nexus_active_operator_business_brief_latest.md",
+  "business_duplicates_suppressed": 0,
+  "business_findings": [],
+  "business_priorities": [],
+  "business_safe_actions_executed": [
+    "business_attention.generate"
+  ],
+  "business_source_errors": [],
+  "business_sources": {
+    "business_attention": "DISABLED_FOR_BOUNDED_PILOT"
+  },
+  "business_work_orders_created": [],
+  "canonical_work_order_duplicates_suppressed": 0,
+  "capabilities": {
+    "ai.workforce.internal_planning": {
+      "authority": "INTERNAL_SAFE",
+      "capability_id": "ai.workforce.internal_planning",
+      "gated_actions": [
+        "shell.arbitrary",
+        "production_mutation",
+        "external_message"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "ai.plan_and_verify"
+      ],
+      "status": "READY"
+    },
+    "email.send": {
+      "authority": "NONE",
+      "block_reason": "Resend domain status is not certified and outbound send is gated",
+      "capability_id": "email.send",
+      "gated_actions": [
+        "email.send"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "forex.practice.execution": {
+      "authority": "PRACTICE_ONLY",
+      "capability_id": "forex.practice.execution",
+      "gated_actions": [
+        "forex.place_order"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "funding.fixture_review": {
+      "authority": "INTERNAL_REVIEW",
+      "capability_id": "funding.fixture_review",
+      "gated_actions": [
+        "funding.application_submission",
+        "financial_transaction"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "funding.readiness_review"
+      ],
+      "status": "READY"
+    },
+    "gemini.models": {
+      "authority": "ADVISORY_ONLY",
+      "capability_id": "gemini.models",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "OPTIONAL_MISSING"
+    },
+    "google.calendar.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "google.calendar.read",
+      "gated_actions": [
+        "calendar.mutate"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "google.calendar.read"
+      ],
+      "status": "READY"
+    },
+    "google.drive.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "google.drive.read",
+      "gated_actions": [
+        "drive.mutate"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "google.drive.read"
+      ],
+      "status": "READY"
+    },
+    "google.gmail.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "google.gmail.read",
+      "gated_actions": [
+        "email.send"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "google.gmail.read"
+      ],
+      "status": "READY"
+    },
+    "groq.models": {
+      "authority": "ADVISORY_ONLY",
+      "capability_id": "groq.models",
+      "gated_actions": [],
+      "last_verified": "Netlify environment metadata",
+      "safe_actions": [],
+      "status": "REMOTE_CONFIGURED"
+    },
+    "meta.inbound": {
+      "authority": "INGEST_ONLY",
+      "block_reason": "webhook callback and signature verifier are not certified",
+      "capability_id": "meta.inbound",
+      "gated_actions": [
+        "meta.inbound"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "NOT_READY"
+    },
+    "meta.publish": {
+      "authority": "NONE",
+      "block_reason": "outbound social publishing requires Ray approval",
+      "capability_id": "meta.publish",
+      "gated_actions": [
+        "meta.publish"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "meta.read": {
+      "authority": "READ_ONLY",
+      "capability_id": "meta.read",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "meta.read"
+      ],
+      "status": "READY"
+    },
+    "netlify.release": {
+      "authority": "NONE",
+      "capability_id": "netlify.release",
+      "gated_actions": [
+        "netlify.release"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "oanda.practice.read": {
+      "authority": "PRACTICE_READ_ONLY",
+      "capability_id": "oanda.practice.read",
+      "gated_actions": [
+        "forex.place_order"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "forex.read"
+      ],
+      "status": "READY"
+    },
+    "oracle.gemma": {
+      "authority": "ADVISORY_ONLY",
+      "capability_id": "oracle.gemma",
+      "gated_actions": [
+        "execution.approve"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "notes": [
+        "OpenRouter remote fallback configured"
+      ],
+      "safe_actions": [
+        "research.synthesize"
+      ],
+      "status": "READY"
+    },
+    "payments": {
+      "authority": "NONE",
+      "capability_id": "payments",
+      "gated_actions": [
+        "payments"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [],
+      "status": "GATED"
+    },
+    "portal.local_verification": {
+      "authority": "LOCAL_READ_ONLY",
+      "capability_id": "portal.local_verification",
+      "gated_actions": [
+        "portal.production_mutation"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "internal.capability_verify"
+      ],
+      "status": "READY"
+    },
+    "searxng.research": {
+      "authority": "READ_ONLY",
+      "capability_id": "searxng.research",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "research.refresh"
+      ],
+      "status": "READY"
+    },
+    "telegram.transport": {
+      "authority": "GOVERNED_OUTBOUND",
+      "capability_id": "telegram.transport",
+      "gated_actions": [
+        "telegram.send"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "telegram.read"
+      ],
+      "status": "READY"
+    },
+    "trading.paper_research": {
+      "authority": "PAPER_ONLY",
+      "capability_id": "trading.paper_research",
+      "gated_actions": [
+        "trading.live_execution"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "trading.research_cycle"
+      ],
+      "status": "READY"
+    },
+    "voice.local": {
+      "authority": "LOCAL_ONLY",
+      "capability_id": "voice.local",
+      "gated_actions": [],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "voice.read"
+      ],
+      "status": "READY"
+    },
+    "voice.remote": {
+      "authority": "REMOTE_SERVER_SIDE",
+      "capability_id": "voice.remote",
+      "gated_actions": [
+        "voice.remote"
+      ],
+      "last_verified": "Netlify environment metadata",
+      "safe_actions": [],
+      "status": "REMOTE_CONFIGURED"
+    },
+    "youtube.metadata": {
+      "authority": "READ_ONLY",
+      "capability_id": "youtube.metadata",
+      "gated_actions": [
+        "youtube.publish"
+      ],
+      "last_verified": "existing_certification_or_runtime_state",
+      "safe_actions": [
+        "youtube.read"
+      ],
+      "status": "READY"
+    }
+  },
+  "completed_at": "2026-09-05T17:29:52.612747+00:00",
+  "cycle_receipt": true,
+  "decision": "ACTION",
+  "dry_run": false,
+  "duplicates_suppressed": 0,
+  "errors": [],
+  "escalations": [
+    {
+      "created_at": "2026-09-05T17:29:48.734015+00:00",
+      "deferred_effect": "No external action is attempted; internal work remains queued.",
+      "escalation_id": "esc_190075d45040a12dda6d",
+      "external_action_performed": false,
+      "recommended_action": "meta.inbound",
+      "risk": "GATED",
+      "type": "CAPABILITY_NOT_CERTIFIED",
+      "what_is_needed": "webhook callback and signature verifier are not certified",
+      "work_order_id": "awo_190075d45040a12dda6d"
+    },
+    {
+      "created_at": "2026-09-05T17:29:48.734788+00:00",
+      "deferred_effect": "No external action is attempted; internal work remains queued.",
+      "escalation_id": "esc_ca46b39c6f8905862187",
+      "external_action_performed": false,
+      "recommended_action": "email.send",
+      "risk": "GATED",
+      "type": "CAPABILITY_NOT_CERTIFIED",
+      "what_is_needed": "outbound email remains gated",
+      "work_order_id": "awo_ca46b39c6f8905862187"
+    }
+  ],
+  "executions": [
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "read_operational_state",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_0597a7c1b3914ac091cd19032eea2bf5_read_operational_state",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-09-05T17:29:52.623849+00:00",
+      "tool_action_id": "read_operational_state",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "write_heartbeat",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_0597a7c1b3914ac091cd19032eea2bf5_write_heartbeat",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-09-05T17:29:52.623863+00:00",
+      "tool_action_id": "write_heartbeat",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "business_attention.generate",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_0597a7c1b3914ac091cd19032eea2bf5_business_attention_generate",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-09-05T17:29:52.623869+00:00",
+      "tool_action_id": "business_attention.generate",
+      "work_order_id": ""
+    }
+  ],
+  "external_mutations": 0,
+  "heartbeat_path": "reports/runtime/nexus_active_operator_heartbeat_latest.json",
+  "internal_work_orders_queued": [],
+  "kill_switch": "ON",
+  "limits": {
+    "max_executions": 3,
+    "max_new_work_orders": 3,
+    "max_research_tasks": 1,
+    "max_runtime_seconds": 600
+  },
+  "mode": "live",
+  "next_scheduled_run": "2026-09-05T17:34:52.612747+00:00",
+  "operational_result": "INTERNAL_ATTENTION_IDENTIFIED",
+  "operator_health": "HEALTHY",
+  "operator_run_id": "operator_0597a7c1b3914ac091cd19032eea2bf5",
+  "receipt_id": "operator_receipt_operator_0597a7c1b3914ac091cd19032eea2bf5",
+  "receipt_path": "reports/runtime/nexus_active_operator_receipts/operator_operator_0597a7c1b3914ac091cd19032eea2bf5.json",
+  "receipts": [
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "read_operational_state",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_0597a7c1b3914ac091cd19032eea2bf5_read_operational_state",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-09-05T17:29:52.623849+00:00",
+      "tool_action_id": "read_operational_state",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "write_heartbeat",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_0597a7c1b3914ac091cd19032eea2bf5_write_heartbeat",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-09-05T17:29:52.623863+00:00",
+      "tool_action_id": "write_heartbeat",
+      "work_order_id": ""
+    },
+    {
+      "authority_used": "INTERNAL_READ_ONLY",
+      "capability": "business_attention.generate",
+      "duration_ms": 0,
+      "error_classification": null,
+      "external_side_effects": false,
+      "files_artifacts_changed": [],
+      "inputs_summary": "redacted deterministic runtime state",
+      "next_action": "none",
+      "receipt_id": "receipt_operator_0597a7c1b3914ac091cd19032eea2bf5_business_attention_generate",
+      "result": {
+        "mode": "live",
+        "status": "COMPLETED"
+      },
+      "timestamp": "2026-09-05T17:29:52.623869+00:00",
+      "tool_action_id": "business_attention.generate",
+      "work_order_id": ""
+    }
+  ],
+  "safe_action_results": [
+    {
+      "finding_id": "continuous_kernel:goclear.example_campaign:202609051729",
+      "goal_progress": {
+        "active_workstreams": [
+          "ai.plan_and_verify"
+        ],
+        "authority": "INTERNAL_SAFE",
+        "candidate_next_paths": [
+          "REUSE_PREVIOUS_SUCCESSFUL_PATH",
+          "CHECK_CONFIG_ENVIRONMENT",
+          "EXISTING_CODE",
+          "EXISTING_CREDENTIAL_CONTROL",
+          "CLI",
+          "API",
+          "MCP",
+          "PUBLIC_WEB",
+          "ORACLE_BROWSER",
+          "EXISTING_REMOTE_WORKER",
+          "MODAL_CPU",
+          "RESEARCH_ALTERNATIVE_PROVIDER",
+          "GITHUB_OPEN_SOURCE_RESEARCH",
+          "BUILD_OR_ADAPT_CONNECTOR",
+          "REROUTE_OBJECTIVE",
+          "RAY_ONLY_TRUE_BOUNDARY"
+        ],
+        "consecutive_selections": 1,
+        "created_at": "2026-09-04T11:07:59.309033+00:00",
+        "current_evidence": [
+          "reports/runtime/nexus_active_operator_receipts/operator_operator_0597a7c1b3914ac091cd19032eea2bf5.json"
+        ],
+        "department": "Marketing/Creative",
+        "dependencies": [],
+        "domain": "Produce and internally review one complete GoClear campaign example.",
+        "failed_paths": [],
+        "goal_id": "goclear.example_campaign",
+        "last_progress": "2026-09-05T17:29:52.621656+00:00",
+        "last_result": {
+          "action": "ai.plan_and_verify",
+          "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_84f54764f14149f6b3ac253028616118.json",
+          "decision": null,
+          "next_step": null,
+          "status": "PASS"
+        },
+        "last_selected_at": "2026-09-05T17:29:46.030221+00:00",
+        "missing_criteria": [
+          "Research and Marketing rationale recorded",
+          "Creative campaign package exists",
+          "publication remains approval-gated"
+        ],
+        "next_action": "CONTINUE_MISSING_CRITERIA",
+        "next_review": "2026-09-04T11:07:59.309033+00:00",
+        "owner": "NEXUS",
+        "priority": "P2",
+        "program_id": "goclear",
+        "schema_version": "nexus.company-goal-portfolio.v1",
+        "selection_count": 2,
+        "statement": "Produce and internally review one complete GoClear campaign example.",
+        "status": "ACTIVE",
+        "success_criteria": [
+          "Research and Marketing rationale recorded",
+          "Creative campaign package exists",
+          "publication remains approval-gated"
+        ],
+        "updated_at": "2026-09-05T17:29:52.621676+00:00"
+      },
+      "result": {
+        "action": "ai.plan_and_verify",
+        "ai_model_invoked": true,
+        "ai_plan": {
+          "completion_check": "Verify that all required internal resources and capabilities are aligned with the campaign objectives.",
+          "needs_human": false,
+          "next_action": "internal.capability_verify",
+          "objective_id": "goclear.example_campaign",
+          "rationale": "To ensure that the necessary capabilities and resources are available for advancing the GoClear campaign example effectively."
+        },
+        "ai_review": {
+          "pushback": "No external side effects were reported.",
+          "remaining_work": "Further verification of additional capabilities may be needed to fully align with campaign objectives.",
+          "result_quality": "PASS",
+          "verified": true
+        },
+        "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_84f54764f14149f6b3ac253028616118.json",
+        "execution_mode": "REAL",
+        "executor_result": {
+          "action": "internal.capability_verify",
+          "artifact": {
+            "action": "internal.capability_verify",
+            "authority": "INTERNAL_SAFE",
+            "checked_at": "2026-09-05T17:29:51.277842+00:00",
+            "department": "Marketing/Creative",
+            "external_side_effects": false,
+            "goal_id": "goclear.example_campaign",
+            "verification": "LOCAL_EXISTING_CAPABILITY_STATE"
+          },
+          "artifact_path": "reports/runtime/department_progress/50d2b501c118fc25de47_verification.json",
+          "execution_mode": "REAL",
+          "external_side_effects": false,
+          "output_hash": "242fa01d3d62f2f2bfd64bbe",
+          "status": "PASS"
+        },
+        "external_side_effects": false,
+        "output_hash": "aiwf_84f54764f14149f6b3ac253028616118",
+        "receipt_path": "reports/runtime/ai_workforce_receipts/aiwf_84f54764f14149f6b3ac253028616118.json",
+        "status": "PASS"
+      },
+      "work_item_state": {
+        "attempt_count": 1,
+        "claimed_at": "2026-09-05T17:29:48.739090+00:00",
+        "completed_at": "2026-09-05T17:29:52.615124+00:00",
+        "execution_id": "operator_0597a7c1b3914ac091cd19032eea2bf5",
+        "idempotency_key": "continuous_kernel:goclear.example_campaign:2026090517",
+        "lifecycle_state": "COMPLETE",
+        "receipt_reference": "reports/runtime/nexus_active_operator_receipts/operator_operator_0597a7c1b3914ac091cd19032eea2bf5.json",
+        "result_artifact": null,
+        "result_hash": "aiwf_84f54764f14149f6b3ac253028616118",
+        "selected_cycle_id": "operator_0597a7c1b3914ac091cd19032eea2bf5",
+        "started_at": "2026-09-05T17:29:48.739090+00:00",
+        "validation_status": "PASS",
+        "work_item_id": "continuous_kernel:goclear.example_campaign:202609051729"
+      }
+    }
+  ],
+  "safe_internal_execution": "PASS",
+  "started_at": "2026-09-05T17:29:45.758029+00:00",
+  "state_snapshot": {
+    "APPROVALS_REQUIRED": [],
+    "BLOCKED_WORK": [
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "meta.inbound"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-09-05T17:29:48.733868+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:meta.inbound:v1",
+        "description": "webhook callback and signature verifier are not certified",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-09-05T17:29:48.733880+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "meta.inbound",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: meta.inbound",
+        "work_order_id": "awo_190075d45040a12dda6d"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "email.send"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-09-05T17:29:48.734685+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:email.send:v1",
+        "description": "outbound email remains gated",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-09-05T17:29:48.734702+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "email.send",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: email.send",
+        "work_order_id": "awo_ca46b39c6f8905862187"
+      }
+    ],
+    "CAPABILITY_STATE": {
+      "ai.workforce.internal_planning": {
+        "authority": "INTERNAL_SAFE",
+        "capability_id": "ai.workforce.internal_planning",
+        "gated_actions": [
+          "shell.arbitrary",
+          "production_mutation",
+          "external_message"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "ai.plan_and_verify"
+        ],
+        "status": "READY"
+      },
+      "email.send": {
+        "authority": "NONE",
+        "block_reason": "Resend domain status is not certified and outbound send is gated",
+        "capability_id": "email.send",
+        "gated_actions": [
+          "email.send"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "forex.practice.execution": {
+        "authority": "PRACTICE_ONLY",
+        "capability_id": "forex.practice.execution",
+        "gated_actions": [
+          "forex.place_order"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "funding.fixture_review": {
+        "authority": "INTERNAL_REVIEW",
+        "capability_id": "funding.fixture_review",
+        "gated_actions": [
+          "funding.application_submission",
+          "financial_transaction"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "funding.readiness_review"
+        ],
+        "status": "READY"
+      },
+      "gemini.models": {
+        "authority": "ADVISORY_ONLY",
+        "capability_id": "gemini.models",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "OPTIONAL_MISSING"
+      },
+      "google.calendar.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "google.calendar.read",
+        "gated_actions": [
+          "calendar.mutate"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "google.calendar.read"
+        ],
+        "status": "READY"
+      },
+      "google.drive.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "google.drive.read",
+        "gated_actions": [
+          "drive.mutate"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "google.drive.read"
+        ],
+        "status": "READY"
+      },
+      "google.gmail.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "google.gmail.read",
+        "gated_actions": [
+          "email.send"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "google.gmail.read"
+        ],
+        "status": "READY"
+      },
+      "groq.models": {
+        "authority": "ADVISORY_ONLY",
+        "capability_id": "groq.models",
+        "gated_actions": [],
+        "last_verified": "Netlify environment metadata",
+        "safe_actions": [],
+        "status": "REMOTE_CONFIGURED"
+      },
+      "meta.inbound": {
+        "authority": "INGEST_ONLY",
+        "block_reason": "webhook callback and signature verifier are not certified",
+        "capability_id": "meta.inbound",
+        "gated_actions": [
+          "meta.inbound"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "NOT_READY"
+      },
+      "meta.publish": {
+        "authority": "NONE",
+        "block_reason": "outbound social publishing requires Ray approval",
+        "capability_id": "meta.publish",
+        "gated_actions": [
+          "meta.publish"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "meta.read": {
+        "authority": "READ_ONLY",
+        "capability_id": "meta.read",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "meta.read"
+        ],
+        "status": "READY"
+      },
+      "netlify.release": {
+        "authority": "NONE",
+        "capability_id": "netlify.release",
+        "gated_actions": [
+          "netlify.release"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "oanda.practice.read": {
+        "authority": "PRACTICE_READ_ONLY",
+        "capability_id": "oanda.practice.read",
+        "gated_actions": [
+          "forex.place_order"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "forex.read"
+        ],
+        "status": "READY"
+      },
+      "oracle.gemma": {
+        "authority": "ADVISORY_ONLY",
+        "capability_id": "oracle.gemma",
+        "gated_actions": [
+          "execution.approve"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "notes": [
+          "OpenRouter remote fallback configured"
+        ],
+        "safe_actions": [
+          "research.synthesize"
+        ],
+        "status": "READY"
+      },
+      "payments": {
+        "authority": "NONE",
+        "capability_id": "payments",
+        "gated_actions": [
+          "payments"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [],
+        "status": "GATED"
+      },
+      "portal.local_verification": {
+        "authority": "LOCAL_READ_ONLY",
+        "capability_id": "portal.local_verification",
+        "gated_actions": [
+          "portal.production_mutation"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "internal.capability_verify"
+        ],
+        "status": "READY"
+      },
+      "searxng.research": {
+        "authority": "READ_ONLY",
+        "capability_id": "searxng.research",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "research.refresh"
+        ],
+        "status": "READY"
+      },
+      "telegram.transport": {
+        "authority": "GOVERNED_OUTBOUND",
+        "capability_id": "telegram.transport",
+        "gated_actions": [
+          "telegram.send"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "telegram.read"
+        ],
+        "status": "READY"
+      },
+      "trading.paper_research": {
+        "authority": "PAPER_ONLY",
+        "capability_id": "trading.paper_research",
+        "gated_actions": [
+          "trading.live_execution"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "trading.research_cycle"
+        ],
+        "status": "READY"
+      },
+      "voice.local": {
+        "authority": "LOCAL_ONLY",
+        "capability_id": "voice.local",
+        "gated_actions": [],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "voice.read"
+        ],
+        "status": "READY"
+      },
+      "voice.remote": {
+        "authority": "REMOTE_SERVER_SIDE",
+        "capability_id": "voice.remote",
+        "gated_actions": [
+          "voice.remote"
+        ],
+        "last_verified": "Netlify environment metadata",
+        "safe_actions": [],
+        "status": "REMOTE_CONFIGURED"
+      },
+      "youtube.metadata": {
+        "authority": "READ_ONLY",
+        "capability_id": "youtube.metadata",
+        "gated_actions": [
+          "youtube.publish"
+        ],
+        "last_verified": "existing_certification_or_runtime_state",
+        "safe_actions": [
+          "youtube.read"
+        ],
+        "status": "READY"
+      }
+    },
+    "CLIENT_OPERATIONS": [],
+    "COMMUNICATION_STATE": {
+      "email_send": "GATED",
+      "meta_inbound": "NOT_READY",
+      "telegram": "READY",
+      "voice_remote": "PARTIAL"
+    },
+    "CURRENT_WORK": [
+      {
+        "authority_required": "INTERNAL_AUTONOMOUS",
+        "capabilities_required": [
+          "ai.workforce.internal_planning"
+        ],
+        "category": "research_intelligence",
+        "created_at": "2026-09-05T17:29:48.733755+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "continuous_kernel:goclear.example_campaign:2026090517",
+        "description": "INSPECT_INCOMPLETE_OBJECTIVES_AND_CONTINUE",
+        "evidence_refs": [
+          "data/runtime/research_heartbeat.json",
+          "data/runtime/research_program_registry.json"
+        ],
+        "execution_mode": "INTERNAL_AUTONOMOUS",
+        "last_updated": "2026-09-05T17:29:48.733802+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 60,
+        "receipt_refs": [],
+        "recommended_action": "ai.plan_and_verify",
+        "risk_class": "LOW",
+        "source": "goal_completion_engine",
+        "status": "READY",
+        "title": "Advance Produce and internally review one complete GoClear campaign example.",
+        "work_order_id": "awo_21b41b2b223beb90aca2"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "meta.inbound"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-09-05T17:29:48.733868+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:meta.inbound:v1",
+        "description": "webhook callback and signature verifier are not certified",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-09-05T17:29:48.733880+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "meta.inbound",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: meta.inbound",
+        "work_order_id": "awo_190075d45040a12dda6d"
+      },
+      {
+        "authority_required": "APPROVAL_REQUIRED",
+        "capabilities_required": [
+          "email.send"
+        ],
+        "category": "APPROVALS_REQUIRED",
+        "created_at": "2026-09-05T17:29:48.734685+00:00",
+        "created_by": "active_operator_v1",
+        "dedupe_key": "capability:email.send:v1",
+        "description": "outbound email remains gated",
+        "evidence_refs": [],
+        "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+        "last_updated": "2026-09-05T17:29:48.734702+00:00",
+        "owner": "active_operator",
+        "prerequisites": [],
+        "priority": "P2",
+        "priority_score": 45,
+        "receipt_refs": [],
+        "recommended_action": "email.send",
+        "risk_class": "GATED",
+        "source": "active_operator",
+        "status": "BLOCKED",
+        "title": "Capability requires attention: email.send",
+        "work_order_id": "awo_ca46b39c6f8905862187"
+      }
+    ],
+    "FOREX_RESEARCH": {
+      "ai_calls": 0,
+      "status": "READY"
+    },
+    "RECENT_RECEIPTS": [],
+    "RESEARCH_OPPORTUNITIES": [
+      {
+        "action_class": "INTERNAL_AUTONOMOUS",
+        "approval_required": false,
+        "capability": "ai.workforce.internal_planning",
+        "category": "research_intelligence",
+        "dedupe_key": "continuous_kernel:goclear.example_campaign:2026090517",
+        "department": "Marketing/Creative",
+        "evidence_refs": [
+          "data/runtime/research_heartbeat.json",
+          "data/runtime/research_program_registry.json"
+        ],
+        "finding_id": "continuous_kernel:goclear.example_campaign:202609051729",
+        "incomplete_objectives": 22,
+        "operating_duty_preflight": {
+          "control_plane": "HEALTHY",
+          "duty_lane": "OPERATING_DUTY_PREFLIGHT",
+          "ray_review": "EVALUATE",
+          "receipt_integrity": "HEALTHY",
+          "research_execution_mode": "UNKNOWN",
+          "research_heartbeat": "ACTIVE",
+          "safety_authority": "INTERNAL_SAFE",
+          "supervisor": "RUNNING"
+        },
+        "parent_goal": "goclear.example_campaign",
+        "priority": "P2",
+        "proposed_action": "ai.plan_and_verify",
+        "question": "Find current public evidence for a useful GoClear campaign topic and customer problem.",
+        "reason": "INSPECT_INCOMPLETE_OBJECTIVES_AND_CONTINUE",
+        "source": "active_parent_goal",
+        "source_record_id": "continuous_kernel:goclear.example_campaign:202609051729",
+        "source_system": "goal_completion_engine",
+        "summary": "Advance Produce and internally review one complete GoClear campaign example.",
+        "synthetic": false
+      }
+    ],
+    "REVENUE_OPPORTUNITIES": [],
+    "STALE_WORK": [],
+    "SYSTEM_HEALTH": {
+      "scheduler": {
+        "cadence_seconds": 3600,
+        "duplicate_detected": false,
+        "failed_dispatches": 168,
+        "git_commit": "33c661559a37fcbda34adb98eb61c304fd793131",
+        "health_path": "reports/phase16a/scheduler_health.json",
+        "host": "Raymonds-Mac-mini.local",
+        "last_dispatch": "2026-09-03T15:50:24.484726+00:00",
+        "last_exit_code": 0,
+        "last_heartbeat": "2026-09-03T15:50:57.759414+00:00",
+        "next_dispatch": "2026-09-03T16:50:57.759414+00:00",
+        "registered_loops": [
+          "open_source_scout_loop",
+          "research_intake_loop",
+          "revenue_opportunity_loop",
+          "seo_opportunity_loop"
+        ],
+        "scheduler_instance": "com.nexus.continuous-loop:f16061ff597842c3b32b5a731b69027c",
+        "scheduler_label": "com.nexus.continuous-loop",
+        "started_at": "2026-08-20T13:35:05.316509+00:00",
+        "status": "HEALTHY",
+        "successful_dispatches": 189,
+        "updated_at": "2026-09-03T15:50:57.759414+00:00"
+      }
+    },
+    "generated_at": "2026-09-05T17:29:45.758029+00:00",
+    "schema_version": "nexus.active-operator-state.v1"
+  },
+  "status": "COMPLETED_WITH_FINDINGS",
+  "trigger_type": "manual",
+  "work_orders": [
+    {
+      "authority_required": "INTERNAL_AUTONOMOUS",
+      "capabilities_required": [
+        "ai.workforce.internal_planning"
+      ],
+      "category": "research_intelligence",
+      "created_at": "2026-09-05T17:29:48.733755+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "continuous_kernel:goclear.example_campaign:2026090517",
+      "description": "INSPECT_INCOMPLETE_OBJECTIVES_AND_CONTINUE",
+      "evidence_refs": [
+        "data/runtime/research_heartbeat.json",
+        "data/runtime/research_program_registry.json"
+      ],
+      "execution_mode": "INTERNAL_AUTONOMOUS",
+      "last_updated": "2026-09-05T17:29:48.733802+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 60,
+      "receipt_refs": [],
+      "recommended_action": "ai.plan_and_verify",
+      "risk_class": "LOW",
+      "source": "goal_completion_engine",
+      "status": "READY",
+      "title": "Advance Produce and internally review one complete GoClear campaign example.",
+      "work_order_id": "awo_21b41b2b223beb90aca2"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "meta.inbound"
+      ],
+      "category": "APPROVALS_REQUIRED",
+      "created_at": "2026-09-05T17:29:48.733868+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "capability:meta.inbound:v1",
+      "description": "webhook callback and signature verifier are not certified",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-09-05T17:29:48.733880+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 45,
+      "receipt_refs": [],
+      "recommended_action": "meta.inbound",
+      "risk_class": "GATED",
+      "source": "active_operator",
+      "status": "BLOCKED",
+      "title": "Capability requires attention: meta.inbound",
+      "work_order_id": "awo_190075d45040a12dda6d"
+    },
+    {
+      "authority_required": "APPROVAL_REQUIRED",
+      "capabilities_required": [
+        "email.send"
+      ],
+      "category": "APPROVALS_REQUIRED",
+      "created_at": "2026-09-05T17:29:48.734685+00:00",
+      "created_by": "active_operator_v1",
+      "dedupe_key": "capability:email.send:v1",
+      "description": "outbound email remains gated",
+      "evidence_refs": [],
+      "execution_mode": "HUMAN_APPROVAL_REQUIRED",
+      "last_updated": "2026-09-05T17:29:48.734702+00:00",
+      "owner": "active_operator",
+      "prerequisites": [],
+      "priority": "P2",
+      "priority_score": 45,
+      "receipt_refs": [],
+      "recommended_action": "email.send",
+      "risk_class": "GATED",
+      "source": "active_operator",
+      "status": "BLOCKED",
+      "title": "Capability requires attention: email.send",
+      "work_order_id": "awo_ca46b39c6f8905862187"
+    }
+  ],
+  "work_orders_created": []
+}

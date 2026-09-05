@@ -97,7 +97,9 @@ def collect_events() -> list[dict[str, Any]]:
     if receipt:
         nested = receipt.get("safe_action_results") or []
         nested_result = nested[-1].get("result", {}) if isinstance(nested, list) and nested and isinstance(nested[-1], dict) else {}
-        goal = receipt.get("parent_goal") or receipt.get("goal_id") or nested_result.get("parent_goal")
+        ai_plan = nested_result.get("ai_plan") if isinstance(nested_result.get("ai_plan"), dict) else {}
+        goal = (receipt.get("parent_goal") or receipt.get("goal_id") or nested_result.get("parent_goal")
+                or ai_plan.get("objective_id"))
         department = receipt.get("department") or nested_result.get("department", "Nexus")
         status = str(nested_result.get("status") or receipt.get("safe_internal_execution") or receipt.get("status") or "").upper()
         if goal and status not in {"FAILED", "DEGRADED"}:

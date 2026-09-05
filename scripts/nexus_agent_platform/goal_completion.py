@@ -282,8 +282,12 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
     action = action or str(goal.get("next_action") or "research.refresh")
     if department == "Trading" and action not in {"trading.research_cycle"}:
         action = "trading.research_cycle"
-    elif department in {"Portal/Product", "Systems"} and action not in {"internal.capability_verify"}:
-        action = "internal.capability_verify"
+    elif department in {
+        "Portal/Product", "Systems", "Finance", "Finance/Opportunity",
+        "Marketing/Creative", "Marketing", "Creative", "Opportunity",
+        "Grants", "Clyde", "Nexus/Systems", "Nexus/Product",
+    } and action not in {"ai.plan_and_verify"}:
+        action = "ai.plan_and_verify"
     elif department in {"Funding", "Funding/Product"} and action not in {"funding.readiness_review"}:
         action = "funding.readiness_review"
     elif department == "Research" and action not in {"research.refresh"}:

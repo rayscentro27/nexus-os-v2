@@ -87,8 +87,10 @@ selection/analysis.
 
 ## AI worker result
 
-The existing workforce certification proves provider probes and bounded worker
-availability, not current company execution:
+The historical workforce certification still proves provider probes and
+bounded worker availability only. The follow-up recovery additionally proves
+current model calls through the existing OpenRouter/Nova gateway for bounded
+company-goal planning and result review:
 
 - Codex: historical `AVAILABLE` / execution probe verified;
 - OpenCode: historical `AVAILABLE` / execution probe verified;
@@ -131,15 +133,19 @@ snapshot for selection and execution. This fixes the prior handoff mismatch in
 which a test/registered worker could be selected in one view and appear absent
 in a second probe.
 
-These changes repair measurement and worker handoff semantics. They do not
-pretend that an AI worker has been activated for every company department.
+These changes repair measurement and worker handoff semantics. The new
+`ai.plan_and_verify` path proves a model-backed worker for selected safe
+internal departments, but it is not yet a general implementation worker for
+every company department.
 
 ## Objective/backlog recovery
 
 The durable portfolio contains 23 goals. Current evidence supports:
 
-- 2 goals with observed real bounded progress: `research.company_intelligence`
-  and `trading.real_data`;
+- 7 goals with observed real bounded progress: `research.company_intelligence`,
+  `trading.real_data`, `clyde.entity_readiness`, `goclear.economic_model`,
+  `goclear.example_campaign`, `portal.admin_control_center`, and
+  `opportunity.engine`;
 - 1 Portal/Product executor available for local verification but not proven as
   a complete portal implementation loop;
 - 1 Systems generic verifier available, not a full Modal/Oracle executor;
@@ -178,26 +184,26 @@ evidence that Alpha consciously rejected every project.
 ## Nova executive control
 
 Nova has verified read access to the company goal portfolio and conversational
-model access. It can create governed work orders through existing Telegram
-approval flows, but the current pre-model capability gate explicitly denies
-generic writes:
+model access. Generic writes remain denied, but a narrow governed
+`assign_safe_internal_work` primitive queues only an existing eligible goal
+for Active Operator pickup and derives an allowlisted action. It cannot create
+arbitrary records or perform external actions.
 
 `Write operations are not permitted. I have read-only access.`
 
-Therefore the following are not certified for Nova as an autonomous company
-operator:
+Therefore the following remain not certified for Nova as a full autonomous
+company operator:
 
-- direct safe objective creation;
-- department assignment;
 - priority recommendation persisted into canonical goal state;
 - autonomous rerouting;
-- tracking a newly assigned work item through execution;
 - completion notification based on a completed recovery campaign.
 
+Safe assignment and tracking of an existing Portal/Product goal through Active
+Operator were proven by control request
+`nova_control_4431686837894b41bf4611d02d6e0438` and its completed AI receipt.
+
 This is an authority/control-plane capability gap, not a model-quality claim.
-No new write authority was granted in this recovery because the existing
-governed approval path and exact authority envelope need to be reused rather
-than bypassed.
+No arbitrary write authority was granted in this recovery.
 
 ## Real business effects
 
@@ -208,20 +214,23 @@ Verified effects are limited to safe internal state:
 - Trading acquired real OANDA Practice candles and produced backtest/OOS/
   paper feedback without live orders;
 - builder proof produced isolated deterministic artifacts;
-- no current evidence proves an AI-generated implementation was applied to an
-  active company project by the unattended operator.
+- AI-backed planning/review caused bounded internal verification and durable
+  progress on four existing company goals; no production/customer mutation was
+  attempted.
 
 ## Multi-cycle and restart proof
 
-The prior run proved repeated canonical cycles and restart-safe JSON state for
-Research and Trading. It did not prove a multi-department AI-worker cycle:
+The follow-up run proved multiple canonical cycles and multiple AI-backed
+departments. It still does not prove a full restart plus later AI continuation
+for every lane:
 
-- Cycle continuation: PASS for Research/Trading;
-- multi-department AI execution: NOT PROVEN;
-- provider-worker autonomous invocation: NOT PROVEN;
+- Cycle continuation: PASS for Research/Trading and bounded AI lanes;
+- multi-department AI execution: PASS bounded;
+- provider-worker autonomous invocation: PASS through the existing OpenRouter
+  gateway; external coding-worker path remains unproven;
 - restart-safe unsupported department assignment: queued work survives;
-- restart-safe AI worker task/result lineage: NOT PROVEN for a current company
-  objective.
+- restart-safe AI worker task/result lineage: PARTIAL; receipts are durable,
+  but a dedicated restart certification remains.
 
 ## Additional safe executor recovery
 
@@ -239,40 +248,97 @@ connected to the canonical portfolio as `funding.readiness_review` for
 This closes one previously disconnected safe executor. It remains a fixture /
 readiness analysis, not an AI-funded workflow or external financial action.
 
+## Follow-up AI workforce recovery
+
+The missing model-backed boundary was repaired as a bounded, allowlisted
+`ai.plan_and_verify` action. It uses the existing Nova/OpenRouter gateway and
+does not grant the model shell, arbitrary file, production, customer,
+financial, or messaging authority. The sequence is:
+
+`durable goal → model plan → exact allowlisted internal.capability_verify → model review → receipt → parent progress`
+
+Real canonical Active Operator cycles then produced the following evidence
+without a manually selected child action:
+
+| Cycle | Existing objective | Department | Model evidence | Executor/result |
+|---|---|---|---|---|
+| `operator_ddb4113e8b8f40c5b3c6688116281505` | `clyde.entity_readiness` | Clyde | `openai/gpt-4o-mini`, planning and review usage persisted | local capability verification; goal remains ACTIVE with missing criteria |
+| `operator_c7b4081ef5aa46919ad5e3f13c7cfab1` | `goclear.economic_model` | Finance/Opportunity | real planning/review calls | bounded internal verification; goal remains ACTIVE |
+| `operator_0597a7c1b3914ac091cd19032eea2bf5` | `goclear.example_campaign` | Marketing/Creative | real planning/review calls | bounded internal verification; goal remains ACTIVE |
+| `operator_b17c5efdc7a340a9a729d4319e01b9da` | `portal.admin_control_center` | Portal/Product | Nova-assigned request caused real planning/review calls | existing portal backend build and local-only artifacts; no production mutation |
+
+Receipt references:
+
+- `reports/runtime/ai_workforce_receipts/aiwf_014deca968164f2d85be5ebc2ba87845.json`
+- `reports/runtime/ai_workforce_receipts/aiwf_961f2cf5ca484a2b9ba8a2eb052ba439.json`
+- `reports/runtime/ai_workforce_receipts/aiwf_84f54764f14149f6b3ac253028616118.json`
+- `reports/runtime/ai_workforce_receipts/aiwf_12daeb1c86784f1d881c7f472ad82251.json`
+- `reports/runtime/ai_workforce_receipts/aiwf_21e27eb828c542ea8683df5d6e3cbd38.json`
+- `reports/runtime/ai_workforce_receipts/aiwf_795b0a583585420792786b1347c3b5cc.json`
+- `reports/runtime/ai_workforce_receipts/aiwf_7a0919aca5d1475d987f8e9bb2d3d7a9.json`
+
+The later canonical cycles were not manually assigned child actions. Cycle
+`operator_a965994710a94f1e9333a22b36d4e3d2` reloaded the portfolio, consumed
+Nova request `nova_control_93916450abcf465bbc8bf81bea96d5e2`, and advanced both
+`portal.admin_control_center` and `opportunity.engine`. Later cycle
+`operator_3269f02473b9435ca3056d5af03ddc91` selected the Portal objective again
+and produced `aiwf_7a0919aca5d1475d987f8e9bb2d3d7a9.json`, proving persisted
+continuation of the same incomplete objective after the first AI result.
+
+The AI review explicitly preserved remaining work; no parent goal was marked
+complete from a child result. The first Portal/Product attempt also exposed a
+real legacy import defect (`ModuleNotFoundError: common`), which was repaired
+at the governed executor boundary before the successful cycle.
+
+Nova safe control is now a narrow governed primitive, not generic write access:
+`assign_safe_internal_work` validates an existing eligible goal, derives its
+allowlisted action, persists a request for Active Operator, and records no
+external side effect. The real request for `portal.admin_control_center`
+(`nova_control_4431686837894b41bf4611d02d6e0438`) was picked up by the next
+canonical cycle and completed with the receipt above.
+
+## Proactive communication path status
+
+The existing `scripts/nova/proactive_communications.py` is a real bounded
+extension of the Nova Telegram worker, not a second worker. It resolves only
+the trusted configured Ray chat, uses the existing `tg_send_message` retry
+path, persists event/delivery/message state, suppresses duplicates, and is
+called by the launchd Nova worker. A recovery-complete message was deliberately
+not sent because this campaign remains PARTIAL; sending one would overclaim
+company-wide certification. The implementation is available for the final
+certification event, but real completion delivery remains unproven.
+
 ## Tests
 
 Focused tests completed:
 
-`25 passed`
+`36 passed`
 
 Covered builder selection/verification, deterministic fallback, retry
-behavior, engineering-worker handoff, goal continuation, and the new
-distinction between CLI invocation evidence and zero-token local execution.
+behavior, engineering-worker handoff, goal continuation, the distinction
+between CLI invocation evidence and zero-token local execution, model-plan /
+result-review contracts, proactive-message suppression, safe Nova assignment,
+and durable control-request validation.
 
 ## Nova Telegram outbound proof
 
-No new outbound completion message is claimed in this report. A repository
-search did not find a certified proactive Nova sender in the current tracked
-AI-worker/control path; the existing Telegram runtime is primarily inbound /
-reply-oriented and governed work-order creation remains approval-mediated.
-Sending a completion claim before Nova write/control and outbound delivery are
-certified would be misleading.
+No outbound completion message is claimed in this report. The existing
+proactive path is now identified and wired into the Nova worker, but the
+company-wide recovery has not reached a truthful terminal certification state.
+Sending a completion claim now would be misleading.
 
 ## Remaining blockers
 
-1. Register and verify safe department executors for the incomplete portfolio
-   goals, continuing with Portal/Product, Systems, and Marketing/Creative
-   internal-only paths; Funding's existing fixture executor is now connected.
-2. Add a governed AI-worker invocation contract to the canonical operator:
-   context → structured decision → executor → result → AI review → next action.
-3. Connect current Research outputs to autonomous Alpha intake/evaluation on
+1. Extend bounded AI-backed executors to additional safe internal lanes where
+   the existing artifacts support meaningful work; customer communication,
+   e-sign, publication, live finance, and production mutation remain gated.
+2. Connect current Research outputs to autonomous Alpha intake/evaluation on
    the same cycle, without replacing deterministic evidence checks with fake
    scores.
-4. Extend Nova's existing governed control path for safe internal goal/work
-   assignment; do not convert the current read-only denial into arbitrary
-   writes.
-5. Reuse or certify the existing proactive Telegram path before sending a
-   recovery-complete message.
+3. Prove multiple later cycles reloading prior AI receipts and generating the
+   next bounded action without Codex intervention.
+4. Send and persist the proactive completion notification only after those
+   conditions are met.
 
 These are repairable Nexus-owned engineering gaps except where provider
 credentials, external service access, or consequential authority is required.
@@ -281,7 +347,9 @@ credentials, external service access, or consequential authority is required.
 
 - Local prior continuation commit: `1f1e3b7c014f7a234be7521d674c987e269555df`.
 - This recovery task adds the builder telemetry/worker-handoff repair, the
-  bounded Funding executor connection, its receipt, and this report.
+  bounded Funding executor connection, model-backed safe internal planning and
+  review, Nova safe assignment, the proactive-parser repair, selected runtime
+  receipts, and this report.
 - Unrelated worktree changes remain preserved and unstaged.
 - The builder/worker-handoff commit `bca402b` and bounded Funding follow-up
   commit `2dd05f8` are pushed to `origin/main`.
@@ -290,7 +358,13 @@ credentials, external service access, or consequential authority is required.
 
 `AI_WORKER_PROVIDER_PROBES=PASS_HISTORICAL`
 
-`AUTONOMOUS_AI_PROJECT_INVOCATION=NOT_PROVEN`
+`AUTONOMOUS_AI_PROJECT_INVOCATION=PASS_REAL_BOUNDED_PLANNING_AND_VERIFICATION; FULL_IMPLEMENTATION_NOT_PROVEN`
+
+`REAL_AI_MODEL_INVOCATIONS=PASS_REAL_FOR_BOUNDED_INTERNAL_PLANNING_AND_REVIEW`
+
+`REAL_OBJECTIVES_ADVANCED=clyde.entity_readiness,goclear.economic_model,goclear.example_campaign,portal.admin_control_center`
+
+`MULTI_DEPARTMENT_AI_EXECUTION=PASS_REAL_BOUNDED`
 
 `REGISTERED_SAFE_EXECUTOR_COVERAGE=PARTIAL`
 
@@ -300,7 +374,7 @@ credentials, external service access, or consequential authority is required.
 
 `NOVA_READ_VISIBILITY=PASS_REAL`
 
-`NOVA_ASSIGN_TRACK_REROUTE=NOT_PROVEN`
+`NOVA_ASSIGN_TRACK_REROUTE=PASS_REAL_FOR_SAFE_INTERNAL_ASSIGNMENT; REROUTE_NOT_PROVEN`
 
 `NOVA_COMPLETION_NOTIFICATION=NOT_SENT`
 

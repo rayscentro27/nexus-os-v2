@@ -46,6 +46,7 @@ SUPABASE_REPORT_PATH = ROOT / "reports/supabase/nexus_supabase_browser_verificat
 ESCALATION_DIR = ROOT / "reports/runtime/nexus_active_operator_escalations"
 WORK_ORDER_STATE_PATH = ROOT / "data/runtime/active_operator_work_orders.json"
 RESEARCH_QUEUE_PATH = ROOT / "data/runtime/alpha_research/portfolio_requests.jsonl"
+NOVA_CONTROL_REQUESTS_PATH = ROOT / "data/runtime/nova_control_requests.jsonl"
 WORK_ITEM_STATE_PATH = ROOT / "data/runtime/active_operator_work_item_state.json"
 OPERATOR_LATEST_PATH = ROOT / "reports/runtime/active_operator_latest.json"
 OPERATOR_HEARTBEAT_PATH = ROOT / "reports/runtime/active_operator_heartbeat.json"
@@ -68,7 +69,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "trading.research_cycle", "internal.capability_verify", "funding.readiness_review",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "trading.research_cycle", "internal.capability_verify", "ai.plan_and_verify", "funding.readiness_review",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -83,6 +84,7 @@ CAPABILITY_REGISTRY = {
     "trading.paper_research": {"status": "READY", "authority": "PAPER_ONLY", "safe_actions": ["trading.research_cycle"], "gated_actions": ["trading.live_execution"]},
     "portal.local_verification": {"status": "READY", "authority": "LOCAL_READ_ONLY", "safe_actions": ["internal.capability_verify"], "gated_actions": ["portal.production_mutation"]},
     "funding.fixture_review": {"status": "READY", "authority": "INTERNAL_REVIEW", "safe_actions": ["funding.readiness_review"], "gated_actions": ["funding.application_submission", "financial_transaction"]},
+    "ai.workforce.internal_planning": {"status": "READY", "authority": "INTERNAL_SAFE", "safe_actions": ["ai.plan_and_verify"], "gated_actions": ["shell.arbitrary", "production_mutation", "external_message"]},
     "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
     "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
     "google.calendar.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.calendar.read"], "gated_actions": ["calendar.mutate"]},
@@ -311,6 +313,12 @@ def classify_action(action_id: str) -> str:
 
 def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
     """Run only bounded existing internal adapters; no external mutation."""
+    if action_id == "ai.plan_and_verify":
+        from nexus_agent_platform.ai_workforce_executor import run_ai_planned_verification
+        return run_ai_planned_verification(
+            finding,
+            lambda bounded_finding: execute_safe_internal_action("internal.capability_verify", bounded_finding),
+        )
     if action_id == "generate_internal_report":
         report_dir = ROOT / "reports/runtime/department_progress"
         report_dir.mkdir(parents=True, exist_ok=True)
@@ -339,6 +347,14 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                         "verification": "LOCAL_EXISTING_CAPABILITY_STATE"}
             if department == "Portal/Product":
                 try:
+                    # The existing portal builder is a legacy script-module
+                    # surface whose sibling imports expect its directory on
+                    # sys.path.  Make that dependency explicit at the
+                    # governed executor boundary instead of letting an
+                    # autonomous cycle fail with ModuleNotFoundError.
+                    portal_builder_path = str(ROOT / "scripts" / "client_flow")
+                    if portal_builder_path not in sys.path:
+                        sys.path.insert(0, portal_builder_path)
                     from client_flow.run_client_portal_backend_build import build
                     artifact["backend_build"] = build()
                 except Exception as exc:
@@ -514,6 +530,23 @@ def _safe_receipt(run_id: str, action: str, result: Dict[str, Any], *, work_orde
             "error_classification": None, "next_action": "none"}
 
 
+def _update_nova_control_request(request_id: str, status: str, result_ref: str = "") -> None:
+    """Update the JSONL control assignment without creating a second queue."""
+    try:
+        rows = [json.loads(line) for line in NOVA_CONTROL_REQUESTS_PATH.read_text(encoding="utf-8").splitlines() if line.strip()]
+        changed = False
+        for row in rows:
+            if row.get("request_id") == request_id:
+                row.update({"status": status, "updated_at": utc_now(), "result_ref": result_ref})
+                changed = True
+        if changed:
+            temporary = NOVA_CONTROL_REQUESTS_PATH.with_suffix(".tmp")
+            temporary.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
+            temporary.replace(NOVA_CONTROL_REQUESTS_PATH)
+    except (OSError, ValueError, TypeError):
+        pass
+
+
 def _write_v1_report(result: Dict[str, Any]) -> None:
     report = {"schema_version": "nexus.active-operator.v1", **result}
     write_json(ROOT / "reports/runtime/active_operator_latest.json", report)
@@ -563,6 +596,30 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
             "proposed_action": "runtime_report.generate",
             "related_artifact": "reports/phase16a/scheduler_health.json",
         })
+    # Nova's safe control primitive feeds the same canonical Active Operator
+    # queue. It does not execute directly and cannot select a non-allowlisted
+    # action.
+    try:
+        item_state = _load_work_item_state()
+        for line in NOVA_CONTROL_REQUESTS_PATH.read_text(encoding="utf-8").splitlines():
+            request = json.loads(line)
+            if request.get("status") != "QUEUED" or item_state.get(request.get("request_id"), {}).get("lifecycle_state") in {"RUNNING", "COMPLETE"}:
+                continue
+            findings.append({
+                "finding_id": f"nova_control:{request['request_id']}",
+                "source_system": "nova_safe_control", "source_record_id": request["request_id"],
+                "source": "nova_safe_control", "category": "goal_control", "priority": "P2",
+                "summary": request["summary"], "reason": "Nova-assigned safe internal work",
+                "proposed_action": request["action"], "approval_required": False,
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": "ai.workforce.internal_planning",
+                "dedupe_key": request["idempotency_key"], "question": request["summary"],
+                "parent_goal": request["goal_id"], "department": request["department"],
+                "control_request_id": request["request_id"], "synthetic": False,
+                "evidence_refs": ["data/runtime/nova_control_requests.jsonl"],
+            })
+            break
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
     # The bounded pilot may consume one explicitly queued, public-only
     # research request through the existing Alpha research queue. This is a
     # queue read, not a manual research invocation.
@@ -636,7 +693,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "priority": goal.get("priority", "P2"), "summary": f"Advance {goal['domain']}",
                 "reason": research_state.get("empty_queue_next_action", "OPEN_GOAL_MISSING_SUCCESS_CRITERION"),
                 "proposed_action": dispatch["action"], "approval_required": False,
-                "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "portal.local_verification", "Systems": "portal.local_verification", "Funding": "funding.fixture_review", "Funding/Product": "funding.fixture_review"}.get(dispatch["department"], "searxng.research"),
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "ai.workforce.internal_planning", "Systems": "ai.workforce.internal_planning", "Finance": "ai.workforce.internal_planning", "Finance/Opportunity": "ai.workforce.internal_planning", "Marketing/Creative": "ai.workforce.internal_planning", "Marketing": "ai.workforce.internal_planning", "Creative": "ai.workforce.internal_planning", "Opportunity": "ai.workforce.internal_planning", "Grants": "ai.workforce.internal_planning", "Clyde": "ai.workforce.internal_planning", "Nexus/Systems": "ai.workforce.internal_planning", "Nexus/Product": "ai.workforce.internal_planning", "Funding": "funding.fixture_review", "Funding/Product": "funding.fixture_review"}.get(dispatch["department"], "searxng.research"),
                 "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
                 "source_record_id": cycle_work_item, "question": dispatch["question"],
                 "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
@@ -873,6 +930,8 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
                     item["goal_progress"] = record_goal_progress(
                         str(finding["parent_goal"]), work_item_id=str(finding.get("source_record_id") or finding.get("finding_id")),
                         result=research_result, action=str(finding.get("proposed_action")), receipt_ref=receipt_path)
+                if finding.get("source_system") == "nova_safe_control" and finding.get("control_request_id"):
+                    _update_nova_control_request(str(finding["control_request_id"]), "COMPLETED", receipt_path)
         _record_progress("PERSISTING")
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]

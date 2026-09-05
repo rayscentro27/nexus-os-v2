@@ -1,0 +1,101 @@
+{
+  "ai_review": {
+    "pushback": false,
+    "remaining_work": "Verify alignment of current capabilities with requirements to address the capability gap.",
+    "result_quality": "PASS",
+    "verified": true
+  },
+  "completed_at": "2026-09-05T17:29:39.705888+00:00",
+  "execution": {
+    "action": "internal.capability_verify",
+    "artifact": {
+      "action": "internal.capability_verify",
+      "authority": "INTERNAL_SAFE",
+      "checked_at": "2026-09-05T17:29:38.226369+00:00",
+      "department": "Finance/Opportunity",
+      "external_side_effects": false,
+      "goal_id": "goclear.economic_model",
+      "verification": "LOCAL_EXISTING_CAPABILITY_STATE"
+    },
+    "artifact_path": "reports/runtime/department_progress/88f1cd798b61f4c95da4_verification.json",
+    "execution_mode": "REAL",
+    "external_side_effects": false,
+    "output_hash": "2a5d9a7ba809ec29136a9d88",
+    "status": "PASS"
+  },
+  "execution_mode": "REAL",
+  "executor": "allowlisted:internal.capability_verify",
+  "external_side_effects": false,
+  "model": "openai/gpt-4o-mini",
+  "model_invocation": true,
+  "model_worker": "nexus_ai_workforce",
+  "objective": {
+    "allowed_action": "internal.capability_verify",
+    "authority": "INTERNAL_SAFE",
+    "department": "Finance/Opportunity",
+    "external_actions": false,
+    "goal_id": "goclear.economic_model",
+    "question": "Find current public evidence for the next open Nexus capability gap.",
+    "statement": "Advance Determine evidence-grounded GoClear commercial economics and pricing hypotheses."
+  },
+  "plan": {
+    "completion_check": "Verify that the current capabilities align with the requirements to address the capability gap.",
+    "needs_human": false,
+    "next_action": "internal.capability_verify",
+    "objective_id": "goclear.economic_model",
+    "rationale": "To ensure that the necessary capabilities are in place to address the identified Nexus capability gap and support the advancement of evidence-grounded commercial economics and pricing hypotheses."
+  },
+  "receipt_id": "aiwf_961f2cf5ca484a2b9ba8a2eb052ba439",
+  "remaining_work": "Verify alignment of current capabilities with requirements to address the capability gap.",
+  "schema_version": "nexus.ai-workforce-receipt.v1",
+  "started_at": "2026-09-05T17:29:35.629693+00:00",
+  "status": "PASS",
+  "usage": {
+    "planning": {
+      "completion_tokens": 92,
+      "completion_tokens_details": {
+        "audio_tokens": 0,
+        "image_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "cost": 7.755e-05,
+      "cost_details": {
+        "upstream_inference_completions_cost": 5.52e-05,
+        "upstream_inference_cost": 7.755e-05,
+        "upstream_inference_prompt_cost": 2.235e-05
+      },
+      "is_byok": false,
+      "prompt_tokens": 149,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cache_write_tokens": 0,
+        "cached_tokens": 0,
+        "video_tokens": 0
+      },
+      "total_tokens": 241
+    },
+    "review": {
+      "completion_tokens": 43,
+      "completion_tokens_details": {
+        "audio_tokens": 0,
+        "image_tokens": 0,
+        "reasoning_tokens": 0
+      },
+      "cost": 8.34e-05,
+      "cost_details": {
+        "upstream_inference_completions_cost": 2.58e-05,
+        "upstream_inference_cost": 8.34e-05,
+        "upstream_inference_prompt_cost": 5.76e-05
+      },
+      "is_byok": false,
+      "prompt_tokens": 384,
+      "prompt_tokens_details": {
+        "audio_tokens": 0,
+        "cache_write_tokens": 0,
+        "cached_tokens": 0,
+        "video_tokens": 0
+      },
+      "total_tokens": 427
+    }
+  }
+}

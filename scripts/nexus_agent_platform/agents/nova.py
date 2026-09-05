@@ -3698,6 +3698,32 @@ def _capability_gate(state: AgentState) -> AgentState:
         }
         return state
 
+    # Safe internal control is narrower than generic writes: Nova may queue
+    # one existing durable goal for Active Operator pickup, but cannot create
+    # arbitrary records, choose shell commands, mutate production, or execute
+    # external actions.
+    if re.search(r"\b(?:assign|queue|route)\b.*\b(?:work|goal|objective)\b", text, re.I):
+        from nexus_agent_platform.goal_completion import active_objective_portfolio
+        from nexus_agent_platform.capabilities.shared import execute_shared_capability
+        goals = active_objective_portfolio()
+        matched = next((row for row in goals if str(row.get("goal_id")) in text), None)
+        if matched:
+            trace_id = f"nova_control_{chat_id}_{int(time.time())}"
+            delegation = execute_shared_capability(
+                "hermes_nova", "assign_safe_internal_work", {
+                    "goal_id": matched["goal_id"], "department": matched.get("department"),
+                    "summary": text,
+                }, trace_id=trace_id,
+            )
+            state.metadata["capability_gate"] = {"decision": "safe_internal_assignment", "capability": "assign_safe_internal_work", "build_sha": BUILD_SHA, "trace_id": trace_id}
+            state.metadata["capability_result"] = {"tool": "nexus_governed_layer", "query_type": "safe_internal_assignment", "status": delegation.get("status", "unknown"), "data": delegation.get("data", delegation), "provenance": delegation.get("provenance", {}), "trace_id": trace_id}
+            data = delegation.get("data", delegation)
+            if delegation.get("status") == "QUEUED":
+                state.assistant_response = f"Queued {matched['goal_id']} for Active Operator pickup as {data.get('work_order_id', 'a safe internal work item')}. No external action was taken."
+            else:
+                state.assistant_response = f"I could not queue that goal safely: {delegation.get('error') or data.get('error') or 'the governed control path rejected it'}."
+            return state
+
     # ── Priority 2.25: Governed approval continuity ──
     # Ray explicitly approved/rejected an action Nova recommended in this chat.
     # Requires an action-bound phrase AND exactly one pending approval scoped to
