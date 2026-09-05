@@ -2,6 +2,7 @@ from nexus_agent_platform.goal_completion import (
     active_objective_portfolio, build_goal, classify_path_failure,
     evaluate_parent_goal, repetition_guard, should_continue,
     next_work_for_active_goal,
+    select_portfolio_goal,
 )
 
 
@@ -40,3 +41,19 @@ def test_open_parent_goal_materializes_general_internal_work():
     assert work["dispatch"] == "CREATE_OR_REUSE_WORK_ORDER"
     assert work["continue_parent"] is True
     assert work["authority"] == "INTERNAL_SAFE"
+
+
+def test_selection_does_not_starve_older_lower_priority_goal():
+    rows = [
+        {"goal_id": "p1-open", "status": "ACTIVE", "priority": "P1", "selection_count": 8, "consecutive_selections": 1, "last_selected_at": "2026-09-05T00:00:00+00:00"},
+        {"goal_id": "p2-open", "status": "ACTIVE", "priority": "P2", "selection_count": 0, "consecutive_selections": 0, "last_selected_at": None},
+    ]
+    selected = select_portfolio_goal(rows)
+    assert selected["goal_id"] == "p2-open"
+
+
+def test_goal_action_uses_existing_non_research_executors():
+    trading = {"goal_id": "t", "status": "ACTIVE", "department": "Trading", "statement": "trade research", "priority": "P1"}
+    portal = {"goal_id": "p", "status": "ACTIVE", "department": "Portal/Product", "statement": "portal", "priority": "P2"}
+    assert next_work_for_active_goal(trading, work_item_id="t1", question="q")["action"] == "trading.research_cycle"
+    assert next_work_for_active_goal(portal, work_item_id="p1", question="q")["action"] == "internal.capability_verify"

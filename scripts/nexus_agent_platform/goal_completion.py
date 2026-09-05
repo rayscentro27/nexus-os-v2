@@ -229,10 +229,22 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
         except ValueError:
             age = 10**9
         row["_age_seconds"] = age
-    # Once a goal has had two consecutive discretionary turns, prefer any
-    # eligible peer that has materially older progress.
-    fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
-    candidates = fair or rows
+    # Priority is authoritative for urgent work, but a permanently open P1
+    # goal must not starve every P2/P3 goal. A durable selection-count gap of
+    # two turns is evidence of starvation; temporarily promote least-run work.
+    urgent = [row for row in rows if str(row.get("priority")) == "P0"]
+    if urgent:
+        candidates = urgent
+    else:
+        counts = [int(row.get("selection_count", 0)) for row in rows]
+        max_count = max(counts, default=0)
+        starved = [row for row in rows if int(row.get("selection_count", 0)) <= max_count - 2]
+        fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
+        # Promote one starved peer, then return to the normal priority lane on
+        # the following cycle. This prevents both monopoly and a long sweep
+        # through every lower-priority goal before urgent work resumes.
+        recent = max((row for row in rows if row.get("last_selected_at")), key=lambda row: str(row.get("last_selected_at")), default=None)
+        candidates = starved if recent and recent.get("priority") == "P1" else (fair or rows)
     selected = min(candidates, key=lambda row: (PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), -float(row.get("_age_seconds", 0)), int(row.get("selection_count", 0)), str(row.get("goal_id"))))
     for row in rows:
         row.pop("_age_seconds", None)
@@ -263,14 +275,19 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
     """
     if str(goal.get("status", "ACTIVE")) in TERMINAL_STATES:
         return {"dispatch": "SKIP_TERMINAL_GOAL", "continue_parent": False, "goal_id": goal.get("goal_id")}
-    # Use the smallest already-authorized internal executor appropriate to the
-    # goal.  Research remains the default when evidence is missing; bounded
-    # internal reports let existing Portal/Systems/Marketing owners advance
-    # without pretending that every department is a Research adapter.
+    # Use the smallest already-authorized existing executor appropriate to the
+    # goal. Unsupported departments receive a durable work order, but are not
+    # falsely reported as executed by a generic report writer.
     department = department or str(goal.get("department") or "RESEARCH")
     action = action or str(goal.get("next_action") or "research.refresh")
-    if action == "research.refresh" and department != "RESEARCH":
-        action = "generate_internal_report"
+    if department == "Trading" and action not in {"trading.research_cycle"}:
+        action = "trading.research_cycle"
+    elif department in {"Portal/Product", "Systems"} and action not in {"internal.capability_verify"}:
+        action = "internal.capability_verify"
+    elif department == "Research" and action not in {"research.refresh"}:
+        action = "research.refresh"
+    elif department != "Research" and action == "research.refresh":
+        action = "department.work_order"
     return {
         "dispatch": "CREATE_OR_REUSE_WORK_ORDER",
         "goal_id": goal.get("goal_id"),
@@ -304,6 +321,8 @@ def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, A
         row["current_evidence"] = evidence[-20:]
         row["active_workstreams"] = workstreams[-12:]
         row["last_progress"] = _now()
+        row["last_result"] = {"status": result.get("status"), "action": action, "artifact_path": result.get("artifact_path"), "decision": result.get("decision"), "next_step": result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else None}
+        row["next_action"] = result.get("next_action") or result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else result.get("next_action") or "CONTINUE_MISSING_CRITERIA"
         row["updated_at"] = _now()
         # A child receipt is progress, not proof of every parent criterion.
         row["status"] = "ACTIVE" if row.get("status") in ELIGIBLE_STATUSES else row.get("status")

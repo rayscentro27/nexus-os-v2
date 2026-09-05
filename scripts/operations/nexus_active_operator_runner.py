@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts/operations"))
 
@@ -67,7 +68,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "trading.research_cycle", "internal.capability_verify",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -79,6 +80,8 @@ PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 
 CAPABILITY_REGISTRY = {
     "searxng.research": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["research.refresh"], "gated_actions": []},
+    "trading.paper_research": {"status": "READY", "authority": "PAPER_ONLY", "safe_actions": ["trading.research_cycle"], "gated_actions": ["trading.live_execution"]},
+    "portal.local_verification": {"status": "READY", "authority": "LOCAL_READ_ONLY", "safe_actions": ["internal.capability_verify"], "gated_actions": ["portal.production_mutation"]},
     "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
     "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
     "google.calendar.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.calendar.read"], "gated_actions": ["calendar.mutate"]},
@@ -298,6 +301,8 @@ def priority_for(process: Dict[str, Any]) -> str:
 def classify_action(action_id: str) -> str:
     if action_id in SAFE_INTERNAL_ACTIONS:
         return "AUTO_EXECUTE_INTERNAL_SAFE"
+    if action_id == "department.work_order":
+        return "INTERNAL_WORK_ORDER"
     if action_id in NOT_AUTHORIZED_ACTIONS:
         return "NOT_AUTHORIZED"
     return "APPROVAL_REQUIRED"
@@ -319,6 +324,30 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                 "output_hash": hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()[:24],
                 "artifact_path": str(report_path.relative_to(ROOT)), "execution_mode": "REAL"}
     if action_id != "research.refresh":
+        if action_id == "trading.research_cycle":
+            # Existing paper-only Trading loop; no funded/live mutation.
+            from nexus_foundation.trading_loop import run_trading_loop
+            result = dict(run_trading_loop())
+            result.update({"execution_mode": "REAL", "parent_goal": finding.get("parent_goal"), "department": "Trading", "external_side_effects": False, "live_orders": False})
+            return result
+        if action_id == "internal.capability_verify":
+            department = str(finding.get("department") or "Nexus")
+            artifact = {"goal_id": finding.get("parent_goal"), "department": department,
+                        "action": action_id, "checked_at": utc_now(),
+                        "authority": "INTERNAL_SAFE", "external_side_effects": False,
+                        "verification": "LOCAL_EXISTING_CAPABILITY_STATE"}
+            if department == "Portal/Product":
+                try:
+                    from client_flow.run_client_portal_backend_build import build
+                    artifact["backend_build"] = build()
+                except Exception as exc:
+                    return {"status": "FAILED", "error": type(exc).__name__, "execution_mode": "REAL", "external_side_effects": False}
+            path = ROOT / "reports/runtime/department_progress" / f"{hashlib.sha256(str(finding.get('parent_goal')).encode()).hexdigest()[:20]}_verification.json"
+            write_json(path, artifact)
+            return {"status": "PASS", "action": action_id, "artifact": artifact,
+                    "artifact_path": str(path.relative_to(ROOT)),
+                    "output_hash": hashlib.sha256(json.dumps(artifact, sort_keys=True, default=str).encode()).hexdigest()[:24],
+                    "execution_mode": "REAL", "external_side_effects": False}
         return {"status": "RECORDED_NOT_EXECUTED", "action": action_id, "execution_mode": "REAL"}
     from nexus_agent_platform.loops.governed_loops import _research
     from nexus_agent_platform.continuous_operating_kernel import build_program_registry, build_source_registry
@@ -584,7 +613,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "priority": goal.get("priority", "P2"), "summary": f"Advance {goal['domain']}",
                 "reason": research_state.get("empty_queue_next_action", "OPEN_GOAL_MISSING_SUCCESS_CRITERION"),
                 "proposed_action": dispatch["action"], "approval_required": False,
-                "action_class": "INTERNAL_AUTONOMOUS", "capability": "searxng.research",
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "portal.local_verification", "Systems": "portal.local_verification"}.get(dispatch["department"], "searxng.research"),
                 "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
                 "source_record_id": cycle_work_item, "question": dispatch["question"],
                 "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
@@ -766,6 +795,7 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         duplicates = 0
         business_created: List[Dict[str, Any]] = []
         business_duplicates = 0
+        internal_work_orders: List[Dict[str, Any]] = []
         for finding in dispatch_findings:
             route = classify_action(finding["proposed_action"])
             if route == "AUTO_EXECUTE_INTERNAL_SAFE":
@@ -781,6 +811,10 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
                         safe_action_results.append({"finding_id": finding["finding_id"], "result": execute_safe_internal_action(finding["proposed_action"], finding)})
                     except Exception as exc:
                         errors.append(f"{finding['finding_id']}: {type(exc).__name__}")
+            elif route == "INTERNAL_WORK_ORDER":
+                order = next((item for item in operator_orders if item.get("dedupe_key") == finding.get("dedupe_key")), None)
+                if order:
+                    internal_work_orders.append({"status": "DISPATCH_QUEUED", "work_order_id": order["work_order_id"], "finding_id": finding["finding_id"], "execution_status": "WAITING_CAPABLE_DEPARTMENT_EXECUTOR"})
             elif route == "APPROVAL_REQUIRED":
                 if dry_run:
                     approvals_requested.append({"finding_id": finding["finding_id"], "status": "DRY_RUN"})
@@ -834,6 +868,7 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             "business_source_errors": business_result.get("errors", []),
             "business_safe_actions_executed": business_safe_actions,
             "business_work_orders_created": business_created,
+            "internal_work_orders_queued": internal_work_orders,
             "business_duplicates_suppressed": business_duplicates,
             "safe_action_results": safe_action_results,
             "business_brief_path": str(business_brief_path.relative_to(ROOT)),
