@@ -30,6 +30,14 @@ def _review_request(request: str) -> bool:
     return is_executive_attention_request(request)
 
 
+def _company_operating_request(request: str) -> bool:
+    """Recognize the meaning class of broad company-state questions."""
+    text = str(request or "").lower()
+    scope = any(term in text for term in ("nexus", "company", "department", "departments", "everyone", "all teams")) or bool(re.search(r"\bwhat (?:are|is) we\b", text))
+    state = any(term in text for term in ("working", "doing", "status", "update", "today", "completed", "queued", "next", "blocked", "broken", "currently", "right now", "happened"))
+    return scope and state and not _review_request(text) and not _priority_request(text)
+
+
 def requires_current_evidence(request: str) -> bool:
     """Detect requests that explicitly ask for current or runtime facts."""
     text = str(request or "").lower()
@@ -44,7 +52,7 @@ def requires_current_evidence(request: str) -> bool:
     ):
         return True
     return bool(
-        re.search(r"\b(current|right now|today|available|health|status|what happened|runtime|version|model|python|operating system|podman)\b", text)
+        re.search(r"\b(current|currently|right now|today|available|health|status|what happened|working|doing|queued|department|runtime|version|model|python|operating system|podman)\b", text)
         and re.search(r"\b(nexus|system|hermes|finance|alpha|research|model|python|operating|podman|runtime|health)\b", text)
     )
 
@@ -131,16 +139,19 @@ def collect_verified_current_state(runtime: Dict[str, Any]) -> Dict[str, Any]:
             "scheduler_enabled": scheduler not in {"INACTIVE", "UNKNOWN"},
             "process_configured": bool(research_process),
             "process_enabled": research_process.get("enabled") if research_process else None,
-            "execution_mode": str(research_process.get("mode") or heartbeat.get("execution_mode") or heartbeat.get("mode") or "UNKNOWN").upper(),
-            "dry_run": str(research_process.get("mode") or "").upper() == "DRY_RUN" if research_process else heartbeat.get("dry_run") if "dry_run" in heartbeat else None,
-            "process_last_status": str(research_process.get("last_status") or "UNKNOWN").upper(),
+            # The legacy registry row is a configuration snapshot (and may
+            # retain an old simulated/manual status).  A current kernel
+            # heartbeat is authoritative for the continuous executor.
+            "execution_mode": str(heartbeat.get("execution_mode") or ("REAL" if heartbeat.get("heartbeat") == "ACTIVE" and heartbeat.get("result_status") == "PASS" else "UNKNOWN")).upper(),
+            "dry_run": heartbeat.get("dry_run") if "dry_run" in heartbeat else False if heartbeat.get("heartbeat") == "ACTIVE" and heartbeat.get("result_status") == "PASS" else None,
+            "process_last_status": str(heartbeat.get("result_status") or research_process.get("last_status") or "UNKNOWN").upper(),
             "task_processing": task_processing,
             "worker_state": worker,
             "queue_state": str(operational.get("research_work_state") or "UNKNOWN").upper(),
             "queued_jobs": operational.get("queued_research_jobs"),
             "active_jobs": operational.get("active_research_jobs"),
-            "last_cycle": activity.get("generated_at") or heartbeat.get("last_success") or "UNKNOWN",
-            "last_successful_output": heartbeat.get("last_success") or "UNKNOWN",
+            "last_cycle": heartbeat.get("last_success") or activity.get("generated_at") or "UNKNOWN",
+            "last_successful_output": heartbeat.get("last_real_output") or heartbeat.get("last_success") or "UNKNOWN",
             "recent_activity": {
                 "sources_checked": activity.get("sources_checked"),
                 "items_processed": activity.get("items_processed"),
@@ -305,7 +316,12 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     # filter.  Hermes still performs the upstream reasoning; this boundary
     # owns the final machine-fact slots only for this narrow response surface.
     narrative = ""
-    if _review_request(request):
+    if _company_operating_request(request):
+        from nexus_agent_platform.company_operating_state import build_company_operating_state
+        company = evidence.get("company_operating_state") or build_company_operating_state()
+        evidence["company_operating_state"] = company
+        composed = _company_verified_lines(company)
+    elif _review_request(request):
         composed = "\n".join(_review_verified_lines(evidence))
     elif re.search(r"\bresearch\b", request, re.I):
         composed = "\n".join(_research_verified_lines(evidence))
@@ -316,6 +332,36 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     if narrative:
         composed = narrative + "\n\n" + composed
     return composed, evidence
+
+
+def _company_verified_lines(state: Dict[str, Any]) -> str:
+    health = state.get("system_health", {})
+    research = state.get("research", {})
+    lines = [f"Nexus is {str(health.get('state', 'UNKNOWN')).lower().replace('_', ' ')} and continuing internal work."]
+    lines.append("\nWorking now:")
+    work = state.get("current_work", [])
+    if work:
+        lines.extend(f"- {item.get('department', 'UNKNOWN')} — {item.get('action', 'bounded internal work')} ({item.get('status', 'UNKNOWN')})." for item in work[:4])
+    else:
+        lines.append(f"- No child task is active at this read. The supervisor is {health.get('supervisor', 'UNKNOWN')} and the next Research cycle is scheduled for {research.get('next_wake', 'UNKNOWN')}.")
+    lines.append("\nCompleted recently:")
+    completions = state.get("recent_completions", [])
+    if completions:
+        lines.extend(f"- {item.get('department', 'UNKNOWN')} — {item.get('goal_id', 'goal')} recorded progress at {item.get('at', 'UNKNOWN')}." for item in completions[:4])
+    else:
+        lines.append("- No fresh parent-goal completion was verified.")
+    lines.append("\nResearch and Alpha:")
+    lines.append(f"- Research — {research.get('state', 'UNKNOWN')}; execution mode {research.get('execution_mode', 'UNKNOWN')}; queue {research.get('queue_state', 'UNKNOWN')}.")
+    lines.append(f"- Alpha — {state.get('alpha', {}).get('state', 'UNKNOWN')}; activity evidence {state.get('alpha', {}).get('activity', 'UNKNOWN')}.")
+    lines.append("\nNext:")
+    lines.append(f"- {state.get('queued_next', {}).get('action', 'UNKNOWN')} (next wake {state.get('queued_next', {}).get('next_wake', 'UNKNOWN')}).")
+    lines.append("\nIssues:")
+    blockers = state.get("blockers", [])
+    lines.extend(f"- {item.get('summary')} Impact: {item.get('impact')}." for item in blockers[:3])
+    if not blockers:
+        lines.append("- No current blocker was evidenced.")
+    lines.append(f"\nRay action: {state.get('ray_action', 'UNKNOWN')}.")
+    return "\n".join(lines)
 
 
 def response_completeness(response: str) -> Dict[str, bool]:

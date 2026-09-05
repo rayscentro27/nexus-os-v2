@@ -79,6 +79,42 @@ def test_research_running_question_requires_current_evidence():
     assert requires_current_evidence("Is Research still running?") is True
 
 
+def test_broad_company_work_question_uses_operating_state(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_agent_platform.grounded_response.collect_verified_current_state",
+        lambda runtime: {
+            "runtime": RUNTIME,
+            "health": {"status": "OPERATIONAL_WITH_TELEMETRY_DEGRADED"},
+            "specialists": {},
+            "priority": {},
+            "company_operating_state": {
+                "system_health": {"state": "OPERATIONAL_WITH_TELEMETRY_DEGRADED", "supervisor": "RUNNING"},
+                "research": {"state": "IDLE_BETWEEN_CYCLES", "execution_mode": "REAL", "queue_state": "NO_ASSIGNED_QUEUE_ITEM", "next_wake": "later"},
+                "alpha": {"state": "AVAILABLE", "activity": "STALE"},
+                "current_work": [], "recent_completions": [], "departments": {},
+                "queued_next": {"action": "CONTINUE_INCOMPLETE_OBJECTIVE", "next_wake": "later"},
+                "blockers": [], "ray_action": "NONE_EVIDENCED",
+            },
+        },
+    )
+    response, _ = ground_response("generic", "What is Nexus currently working on?", RUNTIME)
+    assert "Research — IDLE_BETWEEN_CYCLES" in response
+    assert "execution mode REAL" in response
+    assert "NO_ASSIGNED_QUEUE_ITEM" in response
+    assert "Alpha — AVAILABLE; activity evidence STALE" in response
+
+
+def test_fresh_pass_heartbeat_does_not_inherit_legacy_dry_run(monkeypatch):
+    monkeypatch.setattr(
+        "nexus_agent_platform.grounded_response._read_runtime_json" if False else "nexus_agent_platform.grounded_response.collect_verified_current_state",
+        lambda runtime: {"runtime": RUNTIME, "health": {"status": "UNKNOWN"}, "specialists": {}, "priority": {},
+                         "research": {"heartbeat": "ACTIVE", "execution_mode": "REAL", "dry_run": False}},
+    )
+    response, evidence = ground_response("x", "Is Research still running?", RUNTIME)
+    assert "Execution mode: REAL" in response
+    assert "Dry-run: False" in response
+
+
 def test_priority_is_not_replaced_by_generic_current_status_composition():
     assert requires_current_evidence("What should Nexus focus on today and why?") is False
 

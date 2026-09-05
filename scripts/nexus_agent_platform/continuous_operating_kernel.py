@@ -251,9 +251,12 @@ def current_kernel_contract() -> dict[str, Any]:
         supervisor_loaded = False
     if scheduler_health.get("status") == "FAIL" and not supervisor_loaded:
         scheduler = "INACTIVE"
+    execution_mode = heartbeat.get("execution_mode")
+    if not execution_mode and heartbeat.get("heartbeat") == "ACTIVE" and heartbeat.get("result_status") == "PASS":
+        execution_mode = "REAL"
     return {"research_enabled": True, "research_heartbeat": heartbeat.get("heartbeat", "UNKNOWN"),
             "research_scheduler": scheduler, "research_scheduler_reason": "existing launchd supervisor is not healthy" if scheduler == "INACTIVE" else None,
-            "research_execution_mode": heartbeat.get("execution_mode", "UNKNOWN"),
+            "research_execution_mode": execution_mode or "UNKNOWN",
             "research_task_processing": heartbeat.get("task_processing", "UNKNOWN"),
             "research_last_real_output": heartbeat.get("last_real_output"),
             "research_latest_parent_goal": heartbeat.get("latest_parent_goal_advanced"),
