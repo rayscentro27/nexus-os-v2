@@ -41,6 +41,12 @@ def _company_operating_request(request: str) -> bool:
 def requires_current_evidence(request: str) -> bool:
     """Detect requests that explicitly ask for current or runtime facts."""
     text = str(request or "").lower()
+    try:
+        from nexus_agent_platform.research_alpha_lineage import is_research_lineage_request
+        if is_research_lineage_request(text):
+            return True
+    except Exception:
+        pass
     # Priority is an executive recommendation, not a request to replace the
     # model's answer with the generic runtime-status composition.
     if _priority_request(text):
@@ -316,7 +322,16 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     # filter.  Hermes still performs the upstream reasoning; this boundary
     # owns the final machine-fact slots only for this narrow response surface.
     narrative = ""
-    if _company_operating_request(request):
+    try:
+        from nexus_agent_platform.research_alpha_lineage import is_research_lineage_request, query_lineage
+    except Exception:
+        is_research_lineage_request = lambda _request: False
+        query_lineage = None
+    if is_research_lineage_request(request) and query_lineage is not None:
+        lineage = query_lineage()
+        evidence["research_alpha_lineage"] = lineage
+        composed = _research_lineage_lines(lineage)
+    elif _company_operating_request(request):
         from nexus_agent_platform.company_operating_state import build_company_operating_state
         company = evidence.get("company_operating_state") or build_company_operating_state()
         evidence["company_operating_state"] = company
@@ -332,6 +347,35 @@ def ground_response(response: str, request: str, runtime: Dict[str, Any], verifi
     if narrative:
         composed = narrative + "\n\n" + composed
     return composed, evidence
+
+
+def _research_lineage_lines(lineage: Dict[str, Any]) -> str:
+    """Render only persisted Research outputs and explicit Alpha lineage."""
+    outputs = lineage.get("research_outputs") or []
+    lines = [f"Research produced {len(outputs)} persisted intelligence item(s) in the requested period."]
+    if not outputs:
+        lines.append("No persisted Research output records were found in that period. Heartbeat and monitored-source counters are not being substituted for output evidence.")
+        lines.append("Alpha evaluations: 0.")
+        return "\n".join(lines)
+    for index, item in enumerate(outputs, 1):
+        lines.append(f"\n{index}. {item.get('title', 'Untitled Research output')}")
+        lines.append(f"Research finding: {item.get('finding', 'UNKNOWN')}")
+        sources = item.get("sources") or []
+        lines.append(f"Source: {', '.join(sources) if sources else 'UNKNOWN'}")
+        lines.append(f"Artifact: {item.get('artifact_id', 'UNKNOWN')} (Research record: {item.get('research_id') or 'NONE'})")
+        lines.append(f"Verification: {item.get('verification_status', 'UNKNOWN')}; confidence: {item.get('confidence', 'UNKNOWN')}")
+        evaluation = item.get("alpha_evaluation") or {}
+        if evaluation.get("evaluated"):
+            lines.append(f"Alpha evaluation: score {evaluation.get('score', 'UNKNOWN')}; decision {evaluation.get('decision', 'UNKNOWN')}; reason {evaluation.get('reasoning') or 'not recorded'}.")
+        else:
+            intake = item.get("alpha_intake")
+            lines.append("Alpha evaluation: not scored; no canonical Alpha evaluation record was found.")
+            if intake:
+                lines.append(f"Alpha intake: {intake.get('status', 'RECORDED')} (challenge/intake is not a score).")
+        routing = item.get("routing") or {}
+        lines.append(f"Routed to: {routing.get('destination') or 'NONE'}; current status: {item.get('current_status', 'UNKNOWN')}.")
+    lines.append(f"Unscored Research items: {lineage.get('unscored_count', 0)}.")
+    return "\n".join(lines)
 
 
 def _company_verified_lines(state: Dict[str, Any]) -> str:
