@@ -46,3 +46,19 @@ def test_nova_safe_assignment_is_allowlisted_and_durable(monkeypatch, tmp_path):
     record = json.loads((tmp_path / "requests.jsonl").read_text().splitlines()[0])
     assert record["action"] == "ai.plan_and_verify"
     assert record["external_side_effects"] is False
+
+
+def test_nova_reroute_selects_governed_fallback(monkeypatch, tmp_path):
+    monkeypatch.setattr(control, "SAFE_CONTROL_REQUESTS", tmp_path / "requests.jsonl")
+    result = control.reroute_safe_internal_work(
+        goal_id="portal.admin_control_center",
+        department="Portal/Product",
+        failed_action="ai.plan_and_verify",
+        reason="temporary worker mismatch",
+        summary="recover the next internal portal verification step",
+    )
+    assert result["status"] == "QUEUED"
+    record = json.loads((tmp_path / "requests.jsonl").read_text().splitlines()[0])
+    assert record["action"] == "internal.capability_verify"
+    assert record["rerouted_from"] == "ai.plan_and_verify"
+    assert record["external_side_effects"] is False

@@ -1,0 +1,25 @@
+{
+  "completed_at": "2026-09-05T22:57:40.151422+00:00",
+  "execution_mode": "REAL",
+  "failure_class": "INVALID_MODEL_PLAN",
+  "model": "openai/gpt-4o-mini",
+  "model_invocation": true,
+  "objective": {
+    "allowed_action": "internal.capability_verify",
+    "authority": "INTERNAL_SAFE",
+    "department": "Opportunity",
+    "external_actions": false,
+    "goal_id": "opportunity.engine",
+    "question": "Find current public evidence for the next open Nexus capability gap.",
+    "statement": "Advance Continue the evidence-backed business opportunity engine from research to measurement."
+  },
+  "plan": null,
+  "receipt_id": "aiwf_ecd1b4c04802499085654c8a35fbec90",
+  "schema_version": "nexus.ai-workforce-receipt.v1",
+  "started_at": "2026-09-05T22:57:39.752884+00:00",
+  "status": "FAILED",
+  "usage": {
+    "planning": {},
+    "review": {}
+  }
+}

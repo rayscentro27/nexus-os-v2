@@ -144,6 +144,7 @@ NOVA_GOVERNED_INTENTS = frozenset({
     "create_work_order_from_approval",
     "submit_nexus_request",
     "assign_safe_internal_work",
+    "reroute_safe_internal_work",
     "submit_alpha_request",
 })
 
@@ -2982,6 +2983,7 @@ _GOVERNED_INTENT_HANDLERS: Dict[str, Callable[..., Dict[str, Any]]] = {
     "create_work_order_from_approval": lambda args, tid: _handle_create_work_order_from_approval(args, tid),
     "submit_nexus_request": lambda args, tid: _handle_submit_nexus_request(args, tid),
     "assign_safe_internal_work": lambda args, tid: _handle_assign_safe_internal_work(args, tid),
+    "reroute_safe_internal_work": lambda args, tid: _handle_reroute_safe_internal_work(args, tid),
     "submit_alpha_request": lambda args, tid: _handle_submit_alpha_request(args, tid),
 }
 
@@ -3134,6 +3136,19 @@ def _handle_assign_safe_internal_work(arguments, trace_id):
     return _governed_envelope("assign_safe_internal_work", lambda: assign_safe_internal_work(
         goal_id=str(args.get("goal_id", "")),
         summary=str(args.get("summary", "")),
+        department=str(args.get("department", "")),
+        requested_by="hermes_nova",
+    ), trace_id)
+
+
+def _handle_reroute_safe_internal_work(arguments, trace_id):
+    from nexus_agent_platform.nexus_command_acknowledgement import reroute_safe_internal_work
+    args = arguments or {}
+    return _governed_envelope("reroute_safe_internal_work", lambda: reroute_safe_internal_work(
+        goal_id=str(args.get("goal_id", "")),
+        summary=str(args.get("summary", "")),
+        failed_action=str(args.get("failed_action", "")),
+        reason=str(args.get("reason", "")),
         department=str(args.get("department", "")),
         requested_by="hermes_nova",
     ), trace_id)

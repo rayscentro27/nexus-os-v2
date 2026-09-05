@@ -48,6 +48,14 @@ def _json_content(result: Dict[str, Any]) -> Dict[str, Any] | None:
 
 
 async def _completion(agent_id: str, messages: list[dict[str, str]], max_tokens: int = 300) -> Dict[str, Any]:
+    # Active Operator is launched by the supervisor, not the interactive Nova
+    # shell. Reuse the canonical runtime loader so provider credentials and
+    # model configuration are available without printing or broadening them.
+    try:
+        from nexus_agent_platform.phase15.common import load_runtime_env
+        load_runtime_env()
+    except Exception:
+        pass
     return await LlmGatewayAdapter(agent_id=agent_id).completion(
         model=_model(), messages=messages, temperature=0.2, max_tokens=max_tokens,
         timeout=30, request_timeout=30,
