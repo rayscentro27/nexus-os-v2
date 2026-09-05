@@ -78,7 +78,10 @@ def classify_claim(claim: dict[str, Any], support: Iterable[dict[str, Any]], con
     if s: return "PARTIALLY_SUPPORTED"
     return "UNVERIFIED"
 def persist_content(record: dict[str, Any]) -> dict[str, Any]:
-    if any(r.get("content_id") == record["content_id"] and r.get("content_hash") == record.get("content_hash") for r in read_records("alpha_content")): return {"stored": False, "duplicate": True}
+    # ``content_id`` is the canonical identity (derived from the canonical
+    # source locator).  A changed title/excerpt must not create a second
+    # intelligence item or inflate the Research "new" counter.
+    if any(r.get("content_id") == record["content_id"] for r in read_records("alpha_content")): return {"stored": False, "duplicate": True}
     append_record("alpha_content", record); return {"stored": True, "duplicate": False}
 def persist_claim(record: dict[str, Any]) -> dict[str, Any]:
     prior = next((r for r in read_records("alpha_claims") if r.get("claim_id") == record["claim_id"]), None)

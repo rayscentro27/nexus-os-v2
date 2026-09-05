@@ -14,6 +14,7 @@ from alpha.alpha_discovery import (bounded_budget, claim_record, content_record,
                                    persist_claim, persist_content, persist_registry, route_finding, youtube_transcript, retrieve_page,
                                    evidence_score, classify_claim)
 from nexus_agent_platform.governed.persistence import append_record, read_records
+from nexus_agent_platform.research_alpha_pipeline import evaluate_pending
 
 def run(theme: str, question: str, youtube_url: str | None, page_urls: list[str], forum_urls: list[str], github_urls: list[str], support_urls: list[str], contrary_urls: list[str], window: str) -> dict:
     persist_registry(); contents=[]; claims=[]; retrieval=[]
@@ -49,10 +50,13 @@ def run(theme: str, question: str, youtube_url: str | None, page_urls: list[str]
         claim["evidence_score"] = evidence_score(authority=.65 if support else .2, independence=min(1, len({x['source_family'] for x in support}) / 2), currentness=.9, directness=.7 if support else .2, methodology=.6, conflict=.5 if contrary else 0)
         claim["verification_status"] = classify_claim(claim, support, contrary)
     research = create_research(theme, question, contents, claims, window)
-    route = route_finding(theme, research["research_id"], question) if contents else None
+    alpha_result = evaluate_pending(max_items=max(1, len(contents))) if contents else {"evaluations_created": [], "evaluated_count": 0}
+    evaluations = [row for row in alpha_result.get("evaluations_created", []) if row.get("research_id") == research.get("research_id")]
+    route = next((row.get("next_route") for row in evaluations if row.get("next_route")), None)
     research["routing"] = route
-    append_record("alpha_discovery_queue", {"queue_id": digest(research["research_id"], "queue"), "research_id": research["research_id"], "state": "ROUTED" if route else "REJECTED", "content_ids": [x["content_id"] for x in contents], "created_at": research["created_at"]})
-    return {"ok": bool(contents), "theme": theme, "window": window, "question": question, "research": research, "content_count": len(contents), "claim_count": len(claims), "retrieval": retrieval, "budget": bounded_budget(), "no_external_action": True}
+    state = "ROUTED" if route else ("EVALUATED_REJECTED" if evaluations and evaluations[0].get("decision") == "REJECTED" else "AWAITING_ALPHA")
+    append_record("alpha_discovery_queue", {"queue_id": digest(research["research_id"], "queue"), "research_id": research["research_id"], "state": state, "content_ids": [x["content_id"] for x in contents], "created_at": research["created_at"], "alpha_evaluation_ids": [row.get("evaluation_id") for row in evaluations]})
+    return {"ok": bool(contents), "theme": theme, "window": window, "question": question, "research": research, "content_count": len(contents), "claim_count": len(claims), "retrieval": retrieval, "budget": bounded_budget(), "alpha": alpha_result, "no_external_action": True}
 
 def main() -> int:
     p=argparse.ArgumentParser(); p.add_argument("--theme", choices=["TRADING","BUSINESS","MARKETING","AI_NEXUS"], required=True); p.add_argument("--question", required=True); p.add_argument("--youtube-url"); p.add_argument("--page-url", action="append", default=[]); p.add_argument("--forum-url", action="append", default=[]); p.add_argument("--github-url", action="append", default=[]); p.add_argument("--support-url", action="append", default=[]); p.add_argument("--contrary-url", action="append", default=[]); p.add_argument("--window", default="LAST_30_DAYS"); p.add_argument("--json", action="store_true"); a=p.parse_args(); result=run(a.theme,a.question,a.youtube_url,a.page_url,a.forum_url,a.github_url,a.support_url,a.contrary_url,a.window); print(json.dumps(result,indent=2) if a.json else f"Alpha discovery {'PASS' if result['ok'] else 'NO_CONTENT'}: {result['research']['research_id']}"); return 0 if result["ok"] else 2

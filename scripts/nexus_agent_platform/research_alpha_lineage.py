@@ -123,13 +123,12 @@ def query_lineage(*, since: datetime | None = None, until: datetime | None = Non
     queue_by_research = _latest_by(queue_rows, "research_id")
 
     outputs: list[dict[str, Any]] = []
-    seen_content: set[str] = set()
-    for content in content_rows:
+    latest_content = _latest_by(content_rows, "content_id")
+    for content in latest_content.values():
         content_id = str(content.get("content_id") or "")
         discovered = _row_time(content)
-        if not content_id or content_id in seen_content or not discovered or not (since <= discovered <= until):
+        if not content_id or not discovered or not (since <= discovered <= until):
             continue
-        seen_content.add(content_id)
         claim = claims.get(content_id)
         linked_research: list[dict[str, Any]] = []
         if claim:
@@ -144,8 +143,9 @@ def query_lineage(*, since: datetime | None = None, until: datetime | None = Non
         evaluation = max(matching_evals, key=lambda row: _row_time(row) or datetime.min.replace(tzinfo=timezone.utc), default=None)
         outcome = outcomes_by_research.get(str(research_id)) if research_id else None
         queue = queue_by_research.get(str(research_id)) if research_id else None
-        route = (outcome or {}).get("route") or (research or {}).get("routing") or None
-        status = (outcome or {}).get("status") or (research or {}).get("status") or (content.get("status") or "DISCOVERED")
+        evaluation_route = (evaluation or {}).get("next_route") if evaluation else None
+        route = evaluation_route or (outcome or {}).get("route") or (research or {}).get("routing") or None
+        status = ((evaluation or {}).get("status") if evaluation else None) or (outcome or {}).get("status") or (research or {}).get("status") or (content.get("status") or "DISCOVERED")
         outputs.append({
             "artifact_id": content_id,
             "research_id": research_id,

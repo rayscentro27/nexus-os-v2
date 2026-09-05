@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 import sys
 sys.path.insert(0, str(ROOT / "scripts"))
 from alpha.alpha_discovery import claim_record, content_record, persist_claim, persist_content  # noqa: E402
+from nexus_agent_platform.research_alpha_pipeline import evaluate_pending  # noqa: E402
 from nexus_agent_platform.governed.persistence import append_record, read_records  # noqa: E402
 
 REGISTRY = ROOT / "data" / "runtime" / "alpha_source_registry.json"
@@ -129,6 +130,19 @@ def persist_finding(source: dict[str, Any], result: dict[str, Any], item: dict[s
                              source_id=source["source_id"], source_url=source["url"], retrieved_at=result["retrieved_at"],
                              content_hash=digest([url, excerpt]), evidence_class="RAY_CURATED_SOURCE", retrieval_status="RETRIEVED",
                              published_at=item.get("published_at") if item else result.get("sha"))
+    # ``alpha_content`` is the existing canonical source-artifact store.  Add
+    # the Research-output contract at write time so a durable new item is
+    # distinguishable from a source candidate or an operational counter.
+    content.update({
+        "research_item_id": content["content_id"],
+        "research_objective": "What current source signals can reduce Nexus uncertainty?",
+        "finding": excerpt or result.get("title", url),
+        "verification_status": "UNVERIFIED",
+        "confidence": "MEDIUM",
+        "alpha_eligibility": "ELIGIBLE_FOR_BOUNDED_REVIEW",
+        "lifecycle_status": "PERSISTED_AWAITING_ALPHA",
+        "created_at": content.get("first_seen_at"),
+    })
     stored = persist_content(content)
     claim = claim_record(content["content_id"], excerpt[:1200] or "Source was checked; no specific claim extracted.",
                          "source_observation", source_id=source["source_id"], category=source["research_lane"], importance="LOW",
@@ -161,10 +175,21 @@ def run(max_channels: int = 4) -> dict[str, Any]:
         source["last_checked"] = result.get("retrieved_at")
     REGISTRY.write_text(json.dumps(registry, indent=2) + "\n")
     chain_id = "chain_" + digest(findings[:3])
+    research = None
     if findings:
-        append_record("alpha_research", {"research_id": "research_" + digest(findings), "theme": "AI_NEXUS", "question": "What current source signals can reduce Nexus uncertainty?", "source_refs": [x["url"] for x in findings[:8]], "claims": [x["claim_id"] for x in findings[:8]], "status": "CHALLENGED", "chain_id": chain_id, "support": [], "contrary_evidence": [], "unknowns": ["independent verification pending"], "created_at": iso()})
-        append_record("alpha_outcomes", {"outcome_id": "handoff_" + digest(chain_id), "research_id": "research_" + digest(findings), "route": "growth_experiment_candidate", "handoff_type": "EVIDENCE_PACKET", "hypothesis": "Current source observations may reveal bounded testable improvements; this is not a business verdict.", "unknown_variables": ["market response", "independent source support"], "improvement_challenge": "Can Growth improve this hypothesis enough to justify a no-spend test?", "status": "CANDIDATE", "lineage_id": chain_id, "created_at": iso()})
-    activity = {"generated_at": iso(), "sources_monitored": len(active), "sources_checked": len(checked), "new_items_discovered": len(findings), "items_processed": len(findings), "unchanged_items_skipped": max(0, sum((len(x.get("entries", [])) if x.get("source_type") == "YOUTUBE_CHANNEL" else 1) for x in checked) - len(findings)), "baseline_backlog": "latest_10_per_youtube_channel", "research_chains_opened": 1 if findings else 0, "claims_extracted": len(findings), "claims_supported": 0, "claims_contradicted": 0, "claims_unresolved": len(findings), "hypotheses_produced": 1 if findings else 0, "handoffs_created": 1 if findings else 0, "priority_order": ["P0_RAY_DIRECT", "P1_ACTIVE_RESEARCH_CHAIN", "P2_NEW_SOURCE_DELTA", "P3_BASELINE_BACKLOG", "P4_DISCOVERED_SOURCE_EXPANSION"], "no_queue_does_not_mean_no_research": True, "real_external_sources": True}
+        # Link the canonical chain to the actual persisted claim IDs.  The
+        # chain is created once; duplicate scheduler cycles reuse it.
+        from nexus_agent_platform.governed.persistence import read_records
+        research_id = "research_" + digest(findings)
+        rows = read_records("alpha_research")
+        research = next((row for row in rows if row.get("research_id") == research_id), None)
+        if research is None:
+            research = {"research_id": research_id, "theme": "AI_NEXUS", "question": "What current source signals can reduce Nexus uncertainty?", "source_refs": [x.get("url") for x in findings[:8] if x.get("url")], "claims": [x.get("claim_id") for x in findings if x.get("claim_id")], "candidate_content_ids": [x.get("content_id") for x in findings if x.get("content_id")], "status": "CHALLENGED", "chain_id": chain_id, "support": [], "contrary_evidence": [], "unknowns": ["independent verification pending"], "created_at": iso(), "updated_at": iso()}
+            append_record("alpha_research", research)
+    alpha_result = evaluate_pending(max_items=20)
+    candidate_count = len(findings)
+    rejected = 0
+    activity = {"generated_at": iso(), "sources_monitored": len(active), "sources_checked": len(checked), "candidates_seen": candidate_count, "candidates_rejected": rejected, "new_persisted_items": candidate_count, "new_items_discovered": candidate_count, "items_processed": candidate_count, "unchanged_items_skipped": max(0, sum((len(x.get("entries", [])) if x.get("source_type") == "YOUTUBE_CHANNEL" else 1) for x in checked) - candidate_count), "research_chains_opened": 1 if findings else 0, "claims_extracted": candidate_count, "claims_supported": 0, "claims_contradicted": 0, "claims_unresolved": candidate_count, "hypotheses_produced": 1 if findings else 0, "handoffs_created": sum(1 for x in alpha_result["evaluations_created"] if x.get("next_route")), "alpha_evaluations_created": alpha_result["evaluated_count"], "priority_order": ["P0_RAY_DIRECT", "P1_ACTIVE_RESEARCH_CHAIN", "P2_NEW_SOURCE_DELTA", "P3_BASELINE_BACKLOG", "P4_DISCOVERED_SOURCE_EXPANSION"], "no_queue_does_not_mean_no_research": True, "real_external_sources": True}
     ACTIVITY.parent.mkdir(parents=True, exist_ok=True); ACTIVITY.write_text(json.dumps(activity, indent=2) + "\n")
     return {"ok": any(result.get("ok") for result in checked), "activity": activity, "checked": checked, "findings": findings, "registry": str(REGISTRY), "no_external_action": True}
 

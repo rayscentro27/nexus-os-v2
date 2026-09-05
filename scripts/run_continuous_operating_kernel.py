@@ -18,6 +18,7 @@ from nexus_agent_platform.governed import persistence  # noqa: E402
 from nexus_agent_platform.continuous_operating_kernel import (build_program_registry, build_source_registry,
     run_cycle)
 from nexus_agent_platform.knowledge_freshness import refresh_due, refresh_once  # noqa: E402
+from nexus_agent_platform.research_alpha_pipeline import evaluate_pending  # noqa: E402
 
 
 def main() -> int:
@@ -64,8 +65,9 @@ def main() -> int:
                 None,
                 ["https://modelcontextprotocol.io/specification/2025-06-18"], [], [], [], [], "LAST_30_DAYS",
             )
+            alpha_result = evaluate_pending(max_items=20)
             return {"status": "PASS" if result.get("ok") else "DEGRADED", "research_id": result.get("research", {}).get("research_id"),
-                    "content_count": result.get("content_count", 0), "stale_refresh": refresh, "no_external_action": True}
+                    "content_count": result.get("content_count", 0), "alpha_evaluations_created": alpha_result.get("evaluated_count", 0), "stale_refresh": refresh, "no_external_action": True}
         receipts.append(run_cycle(real_research, cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
                                   incomplete_objectives=1, stale_claims=len(stale_records), interval_seconds=args.interval_seconds,
                                   scheduler="ACTIVE_DAEMON" if args.daemon else "ACTIVE_IN_PROCESS_CYCLE"))
