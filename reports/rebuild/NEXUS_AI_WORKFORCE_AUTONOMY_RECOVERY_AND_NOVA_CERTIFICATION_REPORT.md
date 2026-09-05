@@ -283,8 +283,8 @@ credentials, external service access, or consequential authority is required.
 - This recovery task adds the builder telemetry/worker-handoff repair, the
   bounded Funding executor connection, its receipt, and this report.
 - Unrelated worktree changes remain preserved and unstaged.
-- The builder/worker-handoff commit was pushed as `bca402b`; the bounded
-  Funding follow-up is staged for the next task-specific commit.
+- The builder/worker-handoff commit `bca402b` and bounded Funding follow-up
+  commit `2dd05f8` are pushed to `origin/main`.
 
 ## Certification
 
