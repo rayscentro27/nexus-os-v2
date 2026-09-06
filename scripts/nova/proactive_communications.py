@@ -118,6 +118,26 @@ def collect_events() -> list[dict[str, Any]]:
                            "department": department,
                            "summary": f"{goal} received a verified internal work result.",
                            "source": receipt.get("receipt_path", "active_operator")})
+        # Terminal closure is a distinct executive event.  It is emitted from
+        # the canonical operator receipt only after the objective state has
+        # been durably transitioned, so Ray is never told that an ordinary
+        # receipt is a completed company outcome.
+        for closure in receipt.get("objective_closures") or []:
+            if not isinstance(closure, dict):
+                continue
+            closure_status = str(closure.get("status") or "").upper()
+            if closure_status == "READY_FOR_HUMAN_REVIEW":
+                closure_goal = closure.get("goal_id") or goal or "company objective"
+                artifact = closure.get("artifact_path") or "the persisted final package"
+                events.append({
+                    "kind": "RAY_REQUIRED",
+                    "goal": str(closure_goal),
+                    "summary": (
+                        f"{closure_goal} is ready for Ray review. The verified final internal "
+                        f"deliverable is available at {artifact}."
+                    ),
+                    "source": receipt.get("receipt_path", "active_operator"),
+                })
         if status in {"FAILED", "DEGRADED"}:
             events.append({"kind": "SUPERVISOR_UNHEALTHY", "summary": "The latest autonomous work cycle needs recovery.", "source": "active_operator"})
     if str(operator.get("operator_health", "HEALTHY")).upper() not in {"HEALTHY", "UNKNOWN", ""}:
@@ -166,6 +186,10 @@ def _message(event: dict[str, Any], severity: str) -> str:
             f"Ray action: {event.get('ray_action', 'None; continue observing the bounded recovery.')}."
         )
     if severity == "CRITICAL":
+        if str(event.get("kind", "")).upper() in {"RAY_REQUIRED", "APPROVAL_REQUIRED"}:
+            return (f"Ray — Nexus needs your review.\n\n{event.get('summary', 'A finished internal deliverable is ready for review.')}\n\n"
+                    "No external action has been taken. Nexus will continue unrelated safe work.\n"
+                    "Ray action: review the deliverable when available.")
         return f"Ray — Nexus needs attention.\n\n{event.get('summary', 'A critical operational condition was detected.')}\n\nNexus is recording the condition and continuing safe unrelated work where possible.\nRay action: review the operational update."
     if severity == "MATERIAL":
         return f"Ray — Nexus advanced.\n\n{event.get('summary', 'A material company milestone was verified.')}\n\nNo external action was taken. Nexus is selecting the next bounded internal step.\nRay action: none."

@@ -115,3 +115,26 @@ def test_terminal_certification_is_one_shot_and_truthful(monkeypatch, tmp_path):
     assert len(calls) == 1
     assert "Autonomy: PARTIAL" in calls[0][1]
     assert json.loads(state.read_text())["last_event_severity"] == "MATERIAL"
+
+
+def test_terminal_goal_review_event_uses_persisted_closure(monkeypatch, tmp_path):
+    state = tmp_path / "proactive.json"
+    monkeypatch.setattr(proactive, "STATE_PATH", state)
+    monkeypatch.setattr(proactive, "get_env", lambda: {"TELEGRAM_CHAT_ID": "42"})
+    monkeypatch.setattr(proactive, "_read", lambda path, default: {
+        "heartbeat": "ACTIVE", "result_status": "PASS"
+    } if path == proactive.HEARTBEAT_PATH else default)
+    monkeypatch.setattr(proactive, "_latest_receipt", lambda: {
+        "receipt_path": "reports/runtime/nexus_active_operator_receipts/closure.json",
+        "objective_closures": [{
+            "goal_id": "goclear.example_campaign",
+            "status": "READY_FOR_HUMAN_REVIEW",
+            "artifact_path": "reports/runtime/wp9b/creative_package.json",
+        }],
+    })
+    sent = []
+    monkeypatch.setattr(proactive, "tg_send_message", lambda chat, text: sent.append(text) or [7])
+    result = proactive.process_once()
+    assert result["status"] == "PASS"
+    assert sent and "needs your review" in sent[0]
+    assert "creative_package.json" in sent[0]

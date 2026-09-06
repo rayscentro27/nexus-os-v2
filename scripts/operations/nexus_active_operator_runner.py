@@ -32,7 +32,7 @@ from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
-from nexus_agent_platform.goal_completion import active_objective_portfolio, next_work_for_active_goal, operating_duty_preflight, record_goal_progress, select_portfolio_goal  # noqa: E402
+from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_goal_progress, select_portfolio_goal  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -954,6 +954,7 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         _record_progress("STATE_LOADING")
         registry = load_json(REGISTRY_PATH, [])
         scheduler_health = load_json(SCHEDULER_HEALTH_PATH, {})
+        terminal_closures = apply_terminal_closures()
         _record_progress("WORK_DISCOVERY")
         findings = discover_attention(registry if isinstance(registry, list) else [], scheduler_health)
         # WP6 pilot keeps the cycle bounded to the certified operational
@@ -1119,6 +1120,7 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             "started_at": started, "completed_at": completed,
             "actions_considered": actions_considered,
             "actions_executed": actions_executed if not dry_run else [],
+            "objective_closures": terminal_closures,
             "approvals_requested": approvals_requested,
             "work_orders_created": created, "duplicates_suppressed": duplicates,
             "canonical_work_order_duplicates_suppressed": canonical_duplicates,

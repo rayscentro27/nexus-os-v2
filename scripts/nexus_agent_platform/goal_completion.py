@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-TERMINAL_STATES = {"GOAL_COMPLETED", "GOAL_INVALIDATED_BY_EVIDENCE", "GOAL_SUPERSEDED", "GOAL_DEFERRED_BY_EXPLICIT_PRIORITY_DECISION", "TRUE_EXTERNAL_BLOCKER", "SAFETY_BLOCKED", "REQUIRES_RAY_APPROVAL", "REQUIRES_HUMAN_ORIGIN_EVENT", "TECHNICALLY_UNSOLVABLE_WITH_CURRENT_AUTHORITY"}
+TERMINAL_STATES = {"GOAL_COMPLETED", "READY_FOR_HUMAN_REVIEW", "GOAL_INVALIDATED_BY_EVIDENCE", "GOAL_SUPERSEDED", "GOAL_DEFERRED_BY_EXPLICIT_PRIORITY_DECISION", "TRUE_EXTERNAL_BLOCKER", "SAFETY_BLOCKED", "REQUIRES_RAY_APPROVAL", "REQUIRES_HUMAN_ORIGIN_EVENT", "TECHNICALLY_UNSOLVABLE_WITH_CURRENT_AUTHORITY"}
 FAILURE_CLASSES = {"PROVIDER_UNAVAILABLE", "ENDPOINT_BLOCKED", "AUTH_RUNTIME_MISMATCH", "MISSING_CREDENTIAL", "RATE_LIMIT", "BAD_CONFIGURATION", "NETWORK_PATH_FAILURE", "DATA_NOT_AVAILABLE", "WEBSITE_INTERACTIVE_ONLY", "BROWSER_REQUIRED", "API_REQUIRED", "MCP_REQUIRED", "CLI_REQUIRED", "REMOTE_WORKER_REQUIRED", "CAPABILITY_GAP", "DEPENDENCY_MISSING", "FORMAT_CHANGED", "TEMPORARY_PROVIDER_ERROR", "PAID_SERVICE_REQUIRED", "LEGAL_TERMS_RESTRICTION", "SAFETY_BLOCKED"}
 RESOLUTION_LADDER = ("REUSE_PREVIOUS_SUCCESSFUL_PATH", "CHECK_CONFIG_ENVIRONMENT", "EXISTING_CODE", "EXISTING_CREDENTIAL_CONTROL", "CLI", "API", "MCP", "PUBLIC_WEB", "ORACLE_BROWSER", "EXISTING_REMOTE_WORKER", "MODAL_CPU", "RESEARCH_ALTERNATIVE_PROVIDER", "GITHUB_OPEN_SOURCE_RESEARCH", "BUILD_OR_ADAPT_CONNECTOR", "REROUTE_OBJECTIVE", "RAY_ONLY_TRUE_BOUNDARY")
 ROOT = Path(__file__).resolve().parents[2]
@@ -189,6 +189,82 @@ def evaluate_parent_goal(goal: dict[str, Any], evidence: dict[str, Any] | None =
     else:
         status = "ACTIVE"
     return {**goal, "status": status, "current_evidence": list(evidence.get("current_evidence", goal.get("current_evidence", []))), "missing_criteria": missing, "last_progress": evidence.get("last_progress", goal.get("last_progress")), "updated_at": _now()}
+
+
+def _read_json(path: Path) -> dict[str, Any] | None:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else None
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def evaluate_terminal_closure(goal: dict[str, Any]) -> dict[str, Any]:
+    """Evaluate verified final-deliverable evidence without guessing progress.
+
+    This is deliberately evidence-led.  It knows how to consume the existing
+    GoClear campaign package because that package has a durable schema, critic,
+    claim boundary, and human-review handoff.  Other objectives remain active
+    until they expose an equivalent final-deliverable contract.
+    """
+    goal_id = str(goal.get("goal_id") or "")
+    if goal_id != "goclear.example_campaign":
+        return {"status": "ACTIVE", "goal_id": goal_id, "reason": "NO_VERIFIED_FINAL_DELIVERABLE_CONTRACT"}
+    path = ROOT / "reports/runtime/wp9b/creative_package.json"
+    package = _read_json(path)
+    artifact = package.get("artifact") if isinstance(package, dict) else None
+    brief = package.get("brief") if isinstance(package, dict) else None
+    critic = package.get("critic") if isinstance(package, dict) else None
+    handoff = package.get("growth_handoff") if isinstance(package, dict) else None
+    required = set((brief or {}).get("required_deliverables") or [])
+    artifact_keys = set((artifact or {}).keys())
+    deliverable_map = {"landing page": "landing_page", "channel-native copy": "facebook",
+                       "short-video storyboard": "short_video", "visual direction": "instagram"}
+    deliverables_present = all(deliverable_map[item] in artifact_keys for item in required if item in deliverable_map)
+    valid = bool(
+        artifact and brief and critic and handoff
+        and artifact.get("status") == "INTERNAL_REVIEW"
+        and handoff.get("status") == "READY_FOR_REVIEW"
+        and critic.get("status") == "PASS"
+        and deliverables_present
+        and package.get("claim_boundary")
+        and package.get("external_action_performed") is not True
+    )
+    if not valid:
+        return {"status": "ACTIVE", "goal_id": goal_id, "reason": "FINAL_PACKAGE_INCOMPLETE_OR_UNVERIFIED"}
+    return {
+        "status": "READY_FOR_HUMAN_REVIEW", "goal_id": goal_id,
+        "artifact_path": str(path.relative_to(ROOT)),
+        "artifact_id": artifact.get("artifact_id"), "package_id": package.get("package_id"),
+        "critic_score": critic.get("score"),
+        "satisfied_criteria": list(goal.get("success_criteria") or []),
+        "missing_criteria": [],
+        "human_action": "Review the internal campaign package before any publication or external use.",
+        "external_action_performed": False,
+    }
+
+
+def apply_terminal_closures() -> list[dict[str, Any]]:
+    """Persist only independently verified terminal transitions."""
+    rows = ensure_company_goal_portfolio()
+    closures = []
+    changed = False
+    for row in rows:
+        if row.get("status") in TERMINAL_STATES:
+            continue
+        result = evaluate_terminal_closure(row)
+        if result.get("status") not in TERMINAL_STATES:
+            continue
+        row.update({"status": result["status"], "missing_criteria": result.get("missing_criteria", []),
+                    "current_evidence": list(dict.fromkeys(list(row.get("current_evidence", [])) + [result["artifact_path"]]))[-20:],
+                    "last_progress": _now(), "last_result": {"action": "objective.closure", **result},
+                    "next_action": "RAY_REVIEW" if result["status"] == "READY_FOR_HUMAN_REVIEW" else None,
+                    "updated_at": _now()})
+        closures.append(result)
+        changed = True
+    if changed:
+        _portfolio_write(rows)
+    return closures
 
 
 def select_next_safe_action(goal: dict[str, Any], *, failure: dict[str, Any] | None = None, attempted_paths: Iterable[str] = ()) -> dict[str, Any]:

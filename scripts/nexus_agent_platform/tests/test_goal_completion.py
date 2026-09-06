@@ -1,6 +1,6 @@
 from nexus_agent_platform.goal_completion import (
     active_objective_portfolio, build_goal, classify_path_failure,
-    evaluate_parent_goal, repetition_guard, should_continue,
+    evaluate_parent_goal, evaluate_terminal_closure, repetition_guard, should_continue,
     next_work_for_active_goal,
     select_portfolio_goal,
 )
@@ -76,3 +76,19 @@ def test_safe_ai_executor_covers_customer_service_documents_and_systems():
 def test_goal_action_uses_existing_safe_funding_fixture_executor():
     funding = {"goal_id": "f", "status": "ACTIVE", "department": "Funding/Product", "statement": "funding readiness", "priority": "P2"}
     assert next_work_for_active_goal(funding, work_item_id="f1", question="q")["action"] == "funding.readiness_review"
+
+
+def test_existing_campaign_package_reaches_human_review_closure():
+    goal = {"goal_id": "goclear.example_campaign", "status": "ACTIVE",
+            "success_criteria": ["Research and Marketing rationale recorded",
+                                 "Creative campaign package exists",
+                                 "publication remains approval-gated"]}
+    closure = evaluate_terminal_closure(goal)
+    assert closure["status"] == "READY_FOR_HUMAN_REVIEW"
+    assert closure["artifact_id"]
+    assert closure["external_action_performed"] is False
+
+
+def test_unverified_goal_does_not_close_from_a_child_receipt():
+    goal = {"goal_id": "media.youtube_video", "status": "ACTIVE"}
+    assert evaluate_terminal_closure(goal)["status"] == "ACTIVE"
