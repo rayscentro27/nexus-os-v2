@@ -69,7 +69,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "ai.plan_and_verify", "funding.readiness_review",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "internal.assemble_final_deliverable", "ai.plan_and_verify", "funding.readiness_review",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -412,6 +412,37 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
         return {"status": "PASS", "action": action_id, "artifact": artifact,
                 "artifact_path": str(path.relative_to(ROOT)), "output_hash": hashlib.sha256(
                     json.dumps(artifact, sort_keys=True).encode()).hexdigest()[:24],
+                "execution_mode": "REAL", "external_side_effects": False}
+    if action_id == "internal.assemble_final_deliverable":
+        plan = finding.get("ai_plan") if isinstance(finding.get("ai_plan"), dict) else {}
+        title = str(plan.get("deliverable_title") or "").strip()
+        content = str(plan.get("deliverable_content") or "").strip()
+        criteria = [str(x) for x in (finding.get("success_criteria") or [])]
+        satisfied = [str(x) for x in (plan.get("criteria_satisfied") or [])]
+        if not title or not content or not set(criteria).issubset(set(satisfied)):
+            return {"status": "FAILED", "action": action_id, "failure_class": "INCOMPLETE_FINAL_DELIVERABLE",
+                    "error": "Final package must name every success criterion and contain content", "execution_mode": "REAL",
+                    "external_side_effects": False}
+        allowed_refs = {str(x) for x in (finding.get("evidence_refs") or [])}
+        requested_refs = {str(x) for x in (plan.get("evidence_refs") or [])}
+        if not requested_refs.issubset(allowed_refs):
+            return {"status": "FAILED", "action": action_id, "failure_class": "UNSUPPORTED_EVIDENCE_REFERENCE",
+                    "error": "Final package referenced evidence not present in canonical objective context",
+                    "execution_mode": "REAL", "external_side_effects": False}
+        artifact_id = "final_deliverable_" + uuid.uuid4().hex
+        artifact = {
+            "schema_version": "nexus.final-deliverable.v1", "artifact_id": artifact_id,
+            "goal_id": finding.get("parent_goal"), "department": finding.get("department", "Nexus"),
+            "title": title, "content": content, "summary": str(plan.get("deliverable_summary") or "").strip(),
+            "success_criteria": criteria, "criteria_satisfied": satisfied,
+            "evidence_refs": list(plan.get("evidence_refs") or []), "status": "CANDIDATE_FINAL",
+            "final_evaluation": {"verified": False}, "human_action": plan.get("human_action"),
+            "external_action_performed": False, "authority": "INTERNAL_SAFE", "created_at": utc_now(),
+        }
+        path = ROOT / "reports/runtime/final_deliverables" / f"{artifact_id}.json"
+        write_json(path, artifact)
+        return {"status": "PASS", "action": action_id, "artifact": artifact,
+                "artifact_path": str(path.relative_to(ROOT)), "output_hash": hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()[:24],
                 "execution_mode": "REAL", "external_side_effects": False}
     if action_id == "generate_internal_report":
         report_dir = ROOT / "reports/runtime/department_progress"
@@ -851,7 +882,11 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "current_evidence": goal.get("current_evidence", []),
                 "objective_next_action": goal.get("next_action"),
                 "incomplete_objectives": len(goals), "synthetic": False, "operating_duty_preflight": duty_preflight,
-                "evidence_refs": ["data/runtime/research_heartbeat.json", "data/runtime/research_program_registry.json"],
+                "evidence_refs": list(dict.fromkeys([
+                    "data/runtime/research_heartbeat.json",
+                    "data/runtime/research_program_registry.json",
+                    *[str(ref) for ref in (goal.get("current_evidence") or []) if ref]
+                ])),
             })
         except Exception:
             pass

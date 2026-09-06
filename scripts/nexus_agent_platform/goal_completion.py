@@ -199,6 +199,46 @@ def _read_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def _generic_final_deliverable(goal: dict[str, Any]) -> dict[str, Any] | None:
+    """Consume a strict, reusable final-deliverable contract from evidence.
+
+    A child receipt, report, or AI plan is intentionally not sufficient.  A
+    department may close any goal only by publishing a durable
+    ``nexus.final-deliverable.v1`` artifact that names the goal, records the
+    complete criteria set, carries a verified final evaluation, and states
+    whether Ray review is still required.
+    """
+    criteria = set(str(item) for item in (goal.get("success_criteria") or []))
+    for reference in reversed(goal.get("current_evidence") or []):
+        path = ROOT / str(reference)
+        artifact = _read_json(path)
+        if not artifact or artifact.get("schema_version") != "nexus.final-deliverable.v1":
+            continue
+        if str(artifact.get("goal_id")) != str(goal.get("goal_id")):
+            continue
+        satisfied = set(str(item) for item in (artifact.get("criteria_satisfied") or []))
+        evaluation = artifact.get("final_evaluation") or {}
+        if not criteria.issubset(satisfied) or evaluation.get("verified") is not True:
+            continue
+        if artifact.get("external_action_performed") is True:
+            continue
+        status = str(artifact.get("status") or "").upper()
+        if status not in {"COMPLETE", "READY_FOR_HUMAN_REVIEW"}:
+            continue
+        return {
+            "status": status,
+            "goal_id": goal.get("goal_id"),
+            "artifact_path": str(path.relative_to(ROOT)),
+            "artifact_id": artifact.get("artifact_id"),
+            "satisfied_criteria": list(criteria),
+            "missing_criteria": [],
+            "human_action": artifact.get("human_action"),
+            "external_action_performed": False,
+            "final_evaluation": evaluation,
+        }
+    return None
+
+
 def evaluate_terminal_closure(goal: dict[str, Any]) -> dict[str, Any]:
     """Evaluate verified final-deliverable evidence without guessing progress.
 
@@ -208,6 +248,9 @@ def evaluate_terminal_closure(goal: dict[str, Any]) -> dict[str, Any]:
     until they expose an equivalent final-deliverable contract.
     """
     goal_id = str(goal.get("goal_id") or "")
+    generic = _generic_final_deliverable(goal)
+    if generic:
+        return generic
     if goal_id != "goclear.example_campaign":
         return {"status": "ACTIVE", "goal_id": goal_id, "reason": "NO_VERIFIED_FINAL_DELIVERABLE_CONTRACT"}
     path = ROOT / "reports/runtime/wp9b/creative_package.json"
@@ -384,6 +427,11 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         action = "research.refresh"
     elif department != "Research" and action == "research.refresh":
         action = "department.work_order"
+    finalization_requested = bool(
+        goal.get("current_evidence") and goal.get("last_result")
+        and goal.get("missing_criteria") and str(goal.get("last_result", {}).get("action")) not in {"internal.capability_verify", "objective.closure"}
+    )
+    productive_action = "internal.assemble_final_deliverable" if action == "ai.plan_and_verify" and finalization_requested else ("internal.create_bounded_work_artifact" if action == "ai.plan_and_verify" else None)
     return {
         "dispatch": "CREATE_OR_REUSE_WORK_ORDER",
         "goal_id": goal.get("goal_id"),
@@ -392,7 +440,8 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         "owner": goal.get("owner", "NEXUS"),
         "priority": goal.get("priority", "P2"),
         "action": action,
-        "productive_action": "internal.create_bounded_work_artifact" if action == "ai.plan_and_verify" else None,
+        "productive_action": productive_action,
+        "finalization_requested": finalization_requested,
         "work_item_id": work_item_id,
         "question": question,
         "authority": goal.get("authority_envelope", "INTERNAL_SAFE"),
@@ -420,6 +469,8 @@ def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, A
         execution = result.get("executor_result") if isinstance(result.get("executor_result"), dict) else {}
         effective_action = str(execution.get("action") or action)
         artifact_path = execution.get("artifact_path") or result.get("artifact_path")
+        if artifact_path and artifact_path not in evidence:
+            evidence.append(str(artifact_path))
         if effective_action == "internal.capability_verify":
             # A healthy check is maintenance evidence, not objective progress.
             # Keep it observable without letting it reset the governor's

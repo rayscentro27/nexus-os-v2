@@ -4,6 +4,7 @@ from nexus_agent_platform.goal_completion import (
     next_work_for_active_goal,
     select_portfolio_goal,
 )
+import json
 
 
 def test_report_or_child_completion_does_not_complete_parent_goal():
@@ -92,3 +93,35 @@ def test_existing_campaign_package_reaches_human_review_closure():
 def test_unverified_goal_does_not_close_from_a_child_receipt():
     goal = {"goal_id": "media.youtube_video", "status": "ACTIVE"}
     assert evaluate_terminal_closure(goal)["status"] == "ACTIVE"
+
+
+def test_generic_final_deliverable_contract_is_reusable(tmp_path, monkeypatch):
+    import nexus_agent_platform.goal_completion as completion
+    artifact = tmp_path / "final.json"
+    artifact.write_text(json.dumps({
+        "schema_version": "nexus.final-deliverable.v1",
+        "artifact_id": "final-real-goal-1",
+        "goal_id": "portal.admin_control_center",
+        "status": "READY_FOR_HUMAN_REVIEW",
+        "criteria_satisfied": ["audit", "admin state readable"],
+        "final_evaluation": {"verified": True, "result": "PASS"},
+        "external_action_performed": False,
+        "human_action": "Review the internal control-center package.",
+    }), encoding="utf-8")
+    monkeypatch.setattr(completion, "ROOT", tmp_path)
+    goal = {"goal_id": "portal.admin_control_center", "status": "ACTIVE",
+            "success_criteria": ["audit", "admin state readable"],
+            "current_evidence": ["final.json"]}
+    closure = completion.evaluate_terminal_closure(goal)
+    assert closure["status"] == "READY_FOR_HUMAN_REVIEW"
+    assert closure["artifact_id"] == "final-real-goal-1"
+
+
+def test_existing_progress_requests_finalization_after_intermediate_work():
+    goal = {"goal_id": "portal.admin_control_center", "status": "ACTIVE",
+            "department": "Portal/Product", "current_evidence": ["reports/runtime/x.json"],
+            "last_result": {"action": "internal.create_bounded_work_artifact"},
+            "missing_criteria": ["audit"]}
+    work = next_work_for_active_goal(goal, work_item_id="w1", question="assemble the real final package")
+    assert work["productive_action"] == "internal.assemble_final_deliverable"
+    assert work["finalization_requested"] is True

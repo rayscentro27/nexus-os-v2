@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 RECEIPT_DIR = ROOT / "reports/runtime/ai_workforce_receipts"
 ALLOWED_ACTION = "internal.capability_verify"
 PRODUCTIVE_ACTION = "internal.create_bounded_work_artifact"
-ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION}
+FINAL_ACTION = "internal.assemble_final_deliverable"
+ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION, FINAL_ACTION}
 
 
 def _now() -> str:
@@ -104,15 +105,16 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
             "You are a bounded Nexus internal planning worker. Return JSON only with "
             "keys objective_id, next_action, rationale, completion_check, needs_human. "
             "next_action must be exactly " + required_action + ". If the action is "
-            "internal.create_bounded_work_artifact, also return deliverable_type, "
-            "deliverable_title, deliverable_summary, deliverable_content, evidence_refs, "
+            "internal.create_bounded_work_artifact or internal.assemble_final_deliverable, "
+            "also return deliverable_type, deliverable_title, deliverable_summary, "
+            "deliverable_content, evidence_refs, criteria_satisfied, human_action, "
             "and recommended_next_action. Evidence refs must be copied only from "
             "the supplied current_evidence/evidence_refs; never invent sources, "
             "interviews, metrics, URLs, or findings. Do not claim completion, request shell, "
             "credentials, production changes, external messaging, or money."
         )},
         {"role": "user", "content": json.dumps(objective, sort_keys=True)},
-    ])
+    ], max_tokens=900 if required_action == FINAL_ACTION else 300)
     plan = _json_content(plan_call)
     usage = {"planning": plan_call.get("usage", {}), "review": {}}
     if plan_call.get("error") or not plan or plan.get("next_action") != required_action:
@@ -136,6 +138,22 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
         {"role": "user", "content": json.dumps({"objective": objective, "plan": plan, "execution": execution}, sort_keys=True, default=str)},
     ])
     review = _json_content(review_call) or {"result_quality": "UNKNOWN", "verified": False, "remaining_work": "Review output was not valid JSON", "pushback": "MODEL_REVIEW_PARSE_FAILURE"}
+    if required_action == FINAL_ACTION and execution.get("status") == "PASS":
+        artifact_path = execution.get("artifact_path")
+        criteria = {str(x) for x in objective.get("success_criteria") or []}
+        satisfied = {str(x) for x in plan.get("criteria_satisfied") or []}
+        remaining = str(review.get("remaining_work") or "").strip().lower()
+        if artifact_path and criteria.issubset(satisfied) and review.get("verified") is True and remaining in {"", "none", "no remaining work", "no remaining work."}:
+            try:
+                path = ROOT / str(artifact_path)
+                artifact = json.loads(path.read_text(encoding="utf-8"))
+                artifact.update({"status": "READY_FOR_HUMAN_REVIEW", "criteria_satisfied": sorted(satisfied),
+                                 "final_evaluation": {"verified": True, "result_quality": review.get("result_quality"), "pushback": review.get("pushback"), "reviewed_at": _now()},
+                                 "human_action": plan.get("human_action") or "Review the internal deliverable before any external use."})
+                path.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                execution["finalized"] = True
+            except (OSError, ValueError, TypeError):
+                execution["finalized"] = False
     usage["review"] = review_call.get("usage", {})
     receipt = {"schema_version": "nexus.ai-workforce-receipt.v1", "receipt_id": receipt_id,
                "execution_mode": "REAL", "status": "PASS" if execution.get("status") == "PASS" else "FAILED",
