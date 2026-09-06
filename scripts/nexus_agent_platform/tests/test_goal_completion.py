@@ -52,11 +52,25 @@ def test_selection_does_not_starve_older_lower_priority_goal():
     assert selected["goal_id"] == "p2-open"
 
 
+def test_selection_promotes_never_run_eligible_cohort_over_repeated_p2_work():
+    rows = [
+        {"goal_id": "p2-open", "status": "ACTIVE", "priority": "P2", "selection_count": 5, "consecutive_selections": 0, "last_selected_at": "2026-09-06T00:00:00+00:00"},
+        {"goal_id": "p3-new", "status": "READY", "priority": "P3", "selection_count": 0, "consecutive_selections": 0, "last_selected_at": None},
+    ]
+    assert select_portfolio_goal(rows)["goal_id"] == "p3-new"
+
+
 def test_goal_action_uses_existing_non_research_executors():
     trading = {"goal_id": "t", "status": "ACTIVE", "department": "Trading", "statement": "trade research", "priority": "P1"}
     portal = {"goal_id": "p", "status": "ACTIVE", "department": "Portal/Product", "statement": "portal", "priority": "P2"}
     assert next_work_for_active_goal(trading, work_item_id="t1", question="q")["action"] == "trading.research_cycle"
     assert next_work_for_active_goal(portal, work_item_id="p1", question="q")["action"] == "ai.plan_and_verify"
+
+
+def test_safe_ai_executor_covers_customer_service_documents_and_systems():
+    for department in ("Customer Service", "Documents", "Nexus/Systems"):
+        goal = {"goal_id": department, "status": "READY", "department": department, "statement": "internal work", "priority": "P3"}
+        assert next_work_for_active_goal(goal, work_item_id=f"{department}-1", question="q")["action"] == "ai.plan_and_verify"
 
 
 def test_goal_action_uses_existing_safe_funding_fixture_executor():

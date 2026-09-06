@@ -77,13 +77,23 @@ def ensure_company_goal_portfolio() -> list[dict[str, Any]]:
     rows = []
     for goal_id, department, statement, priority, dependencies, criteria in ROADMAP_GOALS:
         prior = existing.get(goal_id, {})
-        dependency_blocked = any(existing.get(dep, {}).get("status") == "PLANNED_DEPENDENCY" for dep in dependencies)
+        dependency_blocked = any(existing.get(dep, {}).get("status") not in {"COMPLETED", "GOAL_COMPLETED"} for dep in dependencies)
         default_status = "PLANNED_DEPENDENCY" if goal_id == "nexus.productization" or (dependencies and dependency_blocked) else ("ACTIVE" if priority in {"P1", "P2"} else "READY")
+        prior_status = prior.get("status")
+        if goal_id == "nexus.productization" and dependency_blocked:
+            durable_status = "PLANNED_DEPENDENCY"
+        elif prior_status == "PLANNED_DEPENDENCY" and not dependency_blocked:
+            # Dependency gates are wakeable state, not permanent terminal
+            # state. The next portfolio load makes Product READY once every
+            # prerequisite leaves PLANNED_DEPENDENCY.
+            durable_status = "READY"
+        else:
+            durable_status = prior_status or default_status
         row = {
             **prior, "schema_version": "nexus.company-goal-portfolio.v1", "goal_id": goal_id,
             "program_id": prior.get("program_id", goal_id.split(".", 1)[0]), "statement": statement,
             "domain": prior.get("domain", statement), "owner": prior.get("owner", "NEXUS"), "department": department, "priority": priority,
-            "status": ("PLANNED_DEPENDENCY" if goal_id == "nexus.productization" and prior.get("status") in {None, "ACTIVE", "READY", "QUEUED"} else prior.get("status", default_status)), "authority": "INTERNAL_SAFE",
+            "status": durable_status, "authority": "INTERNAL_SAFE",
             "success_criteria": list(prior.get("success_criteria", criteria)),
             "dependencies": list(prior.get("dependencies", dependencies)),
             "active_workstreams": list(prior.get("active_workstreams", [])),
@@ -238,13 +248,17 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     else:
         counts = [int(row.get("selection_count", 0)) for row in rows]
         max_count = max(counts, default=0)
-        starved = [row for row in rows if int(row.get("selection_count", 0)) <= max_count - 2]
+        min_count = min(counts, default=0)
+        # Promote the least-run eligible cohort, rather than allowing a
+        # lower-count P2 goal to repeatedly outrank never-run P3 work. This
+        # keeps priority meaningful while making the anti-starvation contract
+        # observable for every eligible department.
+        starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
         fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
         # Promote one starved peer, then return to the normal priority lane on
         # the following cycle. This prevents both monopoly and a long sweep
         # through every lower-priority goal before urgent work resumes.
-        recent = max((row for row in rows if row.get("last_selected_at")), key=lambda row: str(row.get("last_selected_at")), default=None)
-        candidates = starved if recent and recent.get("priority") == "P1" else (fair or rows)
+        candidates = starved or (fair or rows)
     selected = min(candidates, key=lambda row: (PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), -float(row.get("_age_seconds", 0)), int(row.get("selection_count", 0)), str(row.get("goal_id"))))
     for row in rows:
         row.pop("_age_seconds", None)
@@ -285,7 +299,7 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
     elif department in {
         "Portal/Product", "Systems", "Finance", "Finance/Opportunity",
         "Marketing/Creative", "Marketing", "Creative", "Opportunity",
-        "Grants", "Clyde", "Nexus/Systems", "Nexus/Product",
+        "Grants", "Clyde", "Customer Service", "Documents", "Nexus/Systems", "Nexus/Product",
     } and action not in {"ai.plan_and_verify"}:
         action = "ai.plan_and_verify"
     elif department in {"Funding", "Funding/Product"} and action not in {"funding.readiness_review"}:
