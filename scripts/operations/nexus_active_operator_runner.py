@@ -69,7 +69,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "trading.research_cycle", "internal.capability_verify", "ai.plan_and_verify", "funding.readiness_review",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "ai.plan_and_verify", "funding.readiness_review",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -79,12 +79,19 @@ NOT_AUTHORIZED_ACTIONS = frozenset({
 })
 PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 
+
+def normalized_priority(value: Any) -> str:
+    """Accept governed portfolio labels such as P2_REVENUE at the runner boundary."""
+    raw = str(value or "P4").upper()
+    return raw if raw in PRIORITY_RANK else raw.split("_", 1)[0] if raw.split("_", 1)[0] in PRIORITY_RANK else "P4"
+
 CAPABILITY_REGISTRY = {
     "searxng.research": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["research.refresh"], "gated_actions": []},
     "trading.paper_research": {"status": "READY", "authority": "PAPER_ONLY", "safe_actions": ["trading.research_cycle"], "gated_actions": ["trading.live_execution"]},
     "portal.local_verification": {"status": "READY", "authority": "LOCAL_READ_ONLY", "safe_actions": ["internal.capability_verify"], "gated_actions": ["portal.production_mutation"]},
     "funding.fixture_review": {"status": "READY", "authority": "INTERNAL_REVIEW", "safe_actions": ["funding.readiness_review"], "gated_actions": ["funding.application_submission", "financial_transaction"]},
     "ai.workforce.internal_planning": {"status": "READY", "authority": "INTERNAL_SAFE", "safe_actions": ["ai.plan_and_verify"], "gated_actions": ["shell.arbitrary", "production_mutation", "external_message"]},
+    "department.research_handoff": {"status": "READY", "authority": "READ_ONLY_INTERNAL", "safe_actions": ["department.research_handoff"], "gated_actions": ["external_mutation", "publication", "customer_contact"]},
     "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
     "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
     "google.calendar.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.calendar.read"], "gated_actions": ["calendar.mutate"]},
@@ -313,6 +320,47 @@ def classify_action(action_id: str) -> str:
 
 def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
     """Run only bounded existing internal adapters; no external mutation."""
+    if action_id == "department.research_handoff":
+        # Consume the existing governed department-research contract.  The
+        # target is the canonical Alpha/Research path; the originating
+        # department is resumed on a later Active Operator cycle.  This is a
+        # read-only public-research action and never publishes or contacts a
+        # customer.
+        from nexus_agent_platform.governed import persistence
+        from nexus_agent_platform import alpha_research, intelligence_fabric
+
+        request_id = str(finding.get("source_record_id") or "")
+        request = persistence.get_record("research_requests", request_id, key="request_id")
+        if not request or request.get("research_status") not in {"RECEIVED", "FOLLOW_UP_REQUIRED"}:
+            return {"status": "FAILED", "action": action_id, "error": "research-request-not-runnable", "request_id": request_id, "execution_mode": "REAL", "external_side_effects": False}
+        public = alpha_research.execute_alpha_request(
+            objective=request["question"], research_type="MARKET_RESEARCH",
+            requested_by="active_operator", referent=request.get("objective_id", ""),
+        )
+        if public.get("status") in {"BLOCKED", "FAILED"}:
+            persistence.append_record("research_requests", {**request, "research_status": "BLOCKED", "alpha_status": "NOT_STARTED", "last_error": public.get("reason", public.get("status")), "updated_at": utc_now()})
+            return {"status": "FAILED", "action": action_id, "request_id": request_id, "research": public, "execution_mode": "REAL", "external_side_effects": False}
+        pack = public.get("pack") or {}
+        # Feed the actual public evidence produced by the canonical Research
+        # path into the existing intelligence fabric so Alpha correlation,
+        # provenance, and the originating-department handoff remain durable.
+        evidence = []
+        for source in pack.get("sources", []):
+            evidence.append({
+                "text": json.dumps(source, sort_keys=True),
+                "source": (source.get("source") or {}).get("original_reference", "public-research"),
+                "source_type": "PUBLIC_SEARCH_RESULT",
+                "retrieved_at": (source.get("source") or {}).get("retrieved_at", utc_now()),
+            })
+        correlated = intelligence_fabric.run_research_request(request, evidence, claim=request.get("knowledge_gap", ""))
+        updated = correlated.get("request", {})
+        return {"status": "PASS", "action": action_id, "request_id": request_id,
+                "research": public, "alpha": correlated.get("alpha"),
+                "alpha_decision": correlated.get("alpha_decision"),
+                "next_action": updated.get("next_action"),
+                "artifact_path": public.get("receipt", {}).get("report_ref"),
+                "execution_mode": "REAL", "external_side_effects": False,
+                "department_handoff": {"originating_department": request.get("department"), "target": "Research/Alpha", "resume_state": updated.get("research_status")}}
     if action_id == "ai.plan_and_verify":
         from nexus_agent_platform.ai_workforce_executor import run_ai_planned_verification
         return run_ai_planned_verification(
@@ -620,6 +668,60 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
             break
     except (OSError, ValueError, TypeError, KeyError):
         pass
+    # Durable department-research requests are a cross-department handoff,
+    # not a second queue. Research/Alpha consumes RECEIVED or follow-up work;
+    # the originating department is offered a resume action after the result
+    # is durably correlated.
+    try:
+        from nexus_agent_platform.governed import persistence
+        latest_requests: Dict[str, Dict[str, Any]] = {}
+        for request in persistence.read_records("research_requests"):
+            request_id = str(request.get("request_id") or "")
+            if request_id and request_id not in latest_requests:
+                latest_requests[request_id] = request
+        item_state = _load_work_item_state()
+        for request_id, request in latest_requests.items():
+            if request.get("research_status") not in {"RECEIVED", "FOLLOW_UP_REQUIRED"}:
+                continue
+            if item_state.get(request_id, {}).get("lifecycle_state") in {"CLAIMED", "RUNNING", "SUCCEEDED_VERIFIED", "COMPLETE"}:
+                continue
+            findings.append({
+                "finding_id": f"department_handoff:{request_id}",
+                "source_system": "department_research_handoff", "source_record_id": request_id,
+                "source": "governed.research_requests", "category": "cross_department_intelligence",
+                "priority": request.get("priority", "P2"),
+                "summary": f"Research prerequisite for {request.get('objective_id') or request.get('department')}",
+                "reason": request.get("reason_needed", "Originating department needs verified evidence."),
+                "proposed_action": "department.research_handoff", "approval_required": False,
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": "department.research_handoff",
+                "dedupe_key": f"department-research:{request_id}:{request.get('research_status')}",
+                "question": request.get("question"), "parent_goal": request.get("objective_id"),
+                "department": request.get("department"), "synthetic": False,
+                "evidence_refs": ["data/governed/research_requests.jsonl"],
+            })
+            break
+        for request_id, request in latest_requests.items():
+            if request.get("research_status") != "READY_TO_RESUME":
+                continue
+            resume_item_id = f"{request_id}:resume"
+            if item_state.get(resume_item_id, {}).get("lifecycle_state") in {"CLAIMED", "RUNNING", "SUCCEEDED_VERIFIED", "COMPLETE"}:
+                continue
+            findings.append({
+                "finding_id": f"department_resume:{resume_item_id}",
+                "source_system": "department_research_resume", "source_record_id": resume_item_id,
+                "request_id": request_id, "source": "governed.research_requests",
+                "category": "cross_department_intelligence", "priority": request.get("priority", "P2"),
+                "summary": f"Resume {request.get('objective_id') or request.get('department')} from verified Research",
+                "reason": "Research and Alpha produced a durable result for the originating department.",
+                "proposed_action": "ai.plan_and_verify", "approval_required": False,
+                "action_class": "INTERNAL_AUTONOMOUS", "capability": "ai.workforce.internal_planning",
+                "dedupe_key": f"department-resume:{request_id}", "question": request.get("next_action"),
+                "parent_goal": request.get("objective_id"), "department": request.get("department"),
+                "synthetic": False, "evidence_refs": ["data/governed/research_requests.jsonl", str(request.get("result_reference") or "")],
+            })
+            break
+    except (OSError, ValueError, TypeError, KeyError):
+        pass
     # The bounded pilot may consume one explicitly queued, public-only
     # research request through the existing Alpha research queue. This is a
     # queue read, not a manual research invocation.
@@ -702,7 +804,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
             })
         except Exception:
             pass
-    return sorted(findings, key=lambda item: (PRIORITY_RANK[item["priority"]], item["finding_id"]))
+    return sorted(findings, key=lambda item: (PRIORITY_RANK[normalized_priority(item.get("priority"))], item["finding_id"]))
 
 
 def _existing_idempotency_keys() -> set[str]:
@@ -932,6 +1034,31 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
                         result=research_result, action=str(finding.get("proposed_action")), receipt_ref=receipt_path)
                 if finding.get("source_system") == "nova_safe_control" and finding.get("control_request_id"):
                     _update_nova_control_request(str(finding["control_request_id"]), "COMPLETED", receipt_path)
+                if finding.get("source_system") == "department_research_handoff":
+                    # Leave the request in READY_TO_RESUME so the next cycle
+                    # can route the originating department.  This is a
+                    # durable continuation marker, not a parent completion.
+                    try:
+                        from nexus_agent_platform.governed import persistence
+                        request_id = str(finding.get("request_id") or finding.get("source_record_id") or "").removesuffix(":resume")
+                        request = persistence.get_record("research_requests", request_id, key="request_id")
+                        if request and request.get("research_status") == "READY_TO_RESUME":
+                            # The handoff itself is not the originating
+                            # department's resume action. Preserve READY_TO_RESUME
+                            # so the next scheduler cycle must dispatch and
+                            # execute that second step.
+                            persistence.append_record("research_requests", {**request, "handoff_result_ref": receipt_path, "updated_at": utc_now()})
+                    except (OSError, ValueError, TypeError):
+                        pass
+                if finding.get("source_system") == "department_research_resume":
+                    try:
+                        from nexus_agent_platform.governed import persistence
+                        request_id = str(finding.get("request_id") or finding.get("source_record_id") or "").removesuffix(":resume")
+                        request = persistence.get_record("research_requests", request_id, key="request_id")
+                        if request and request.get("research_status") == "READY_TO_RESUME":
+                            persistence.append_record("research_requests", {**request, "research_status": "RESUMED", "department_resume": "RESUMED", "resume_result_ref": receipt_path, "updated_at": utc_now()})
+                    except (OSError, ValueError, TypeError):
+                        pass
         _record_progress("PERSISTING")
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]

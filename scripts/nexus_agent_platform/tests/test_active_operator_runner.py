@@ -70,6 +70,32 @@ def test_priority_and_authority_routing():
     assert runner.classify_action("stripe.live_activation") == "NOT_AUTHORIZED"
 
 
+def test_governed_department_research_handoff_uses_real_result_and_preserves_resume_boundary(monkeypatch, tmp_path):
+    root = _sandbox(monkeypatch, tmp_path)
+    from nexus_agent_platform import alpha_research, intelligence_fabric
+    from nexus_agent_platform.intelligence_fabric import build_research_request, persist_research_request
+    request = build_research_request(
+        department="CREATIVE", objective_id="goclear.example_campaign",
+        parent_goal_id="goclear.example_campaign",
+        question="Find public evidence for the campaign customer problem.",
+        knowledge_gap="The campaign needs source-backed positioning evidence.",
+    )
+    persist_research_request(request)
+    monkeypatch.setattr(alpha_research, "execute_alpha_request", lambda **kwargs: {
+        "status": "COMPLETE", "pack": {"sources": [{"source": {"original_reference": "https://example.test/source"}, "content": "measured public evidence"}]},
+        "receipt": {"receipt_id": "alpha-receipt-test"}, "artifact_id": "alpha-pack:test",
+    })
+    monkeypatch.setattr(intelligence_fabric, "run_research_request", lambda request, evidence, claim="": {
+        "request": {**request, "research_status": "READY_TO_RESUME", "alpha_status": "QUALIFIED", "result_reference": "alpha-receipt-test"},
+        "alpha": {"receipt": {"receipt_id": "alpha-receipt-test"}}, "alpha_decision": "QUALIFIED", "follow_up": None,
+    })
+    result = runner.execute_safe_internal_action("department.research_handoff", {"source_record_id": request["request_id"]})
+    assert result["status"] == "PASS"
+    assert result["department_handoff"]["target"] == "Research/Alpha"
+    assert result["department_handoff"]["resume_state"] == "READY_TO_RESUME"
+    assert runner.classify_action("department.research_handoff") == "AUTO_EXECUTE_INTERNAL_SAFE"
+
+
 def test_environment_isolation_removes_stripe_credentials(monkeypatch):
     monkeypatch.setenv("STRIPE_SECRET_KEY", "sentinel")
     monkeypatch.setenv("VITE_STRIPE_PUBLISHABLE_KEY", "sentinel")
