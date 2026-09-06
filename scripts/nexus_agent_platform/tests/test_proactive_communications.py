@@ -49,6 +49,50 @@ def test_failed_nested_action_is_not_progress(monkeypatch, tmp_path):
     assert not sent
 
 
+def test_capability_verification_is_not_material_progress(monkeypatch, tmp_path):
+    state = tmp_path / "proactive.json"
+    monkeypatch.setattr(proactive, "STATE_PATH", state)
+    monkeypatch.setattr(proactive, "get_env", lambda: {"TELEGRAM_CHAT_ID": "42"})
+    monkeypatch.setattr(proactive, "_read", lambda path, default: {
+        "heartbeat": "ACTIVE", "result_status": "PASS"
+    } if path == proactive.HEARTBEAT_PATH else {
+        "status": "COMPLETED_WITH_FINDINGS",
+        "safe_internal_execution": "PASS",
+        "safe_action_results": [{"result": {
+            "status": "PASS", "parent_goal": "media.youtube_video",
+            "action": "ai.plan_and_verify",
+            "executor_result": {"action": "internal.capability_verify"},
+        }}],
+    } if path == proactive.OPERATOR_PATH else default)
+    monkeypatch.setattr(proactive, "tg_send_message", lambda chat, text: [1])
+    result = proactive.process_once()
+    assert result["status"] == "NO_SEND"
+
+
+def test_bounded_deliverable_is_material_progress(monkeypatch, tmp_path):
+    state = tmp_path / "proactive.json"
+    monkeypatch.setattr(proactive, "STATE_PATH", state)
+    monkeypatch.setattr(proactive, "get_env", lambda: {"TELEGRAM_CHAT_ID": "42"})
+    monkeypatch.setattr(proactive, "_read", lambda path, default: {
+        "heartbeat": "ACTIVE", "result_status": "PASS"
+    } if path == proactive.HEARTBEAT_PATH else default)
+    monkeypatch.setattr(proactive, "_latest_receipt", lambda: {
+        "status": "COMPLETED_WITH_FINDINGS",
+        "safe_internal_execution": "PASS",
+        "parent_goal": "media.youtube_video",
+        "safe_action_results": [{"result": {
+            "status": "PASS", "parent_goal": "media.youtube_video",
+            "action": "ai.plan_and_verify",
+                "executor_result": {"action": "internal.create_bounded_work_artifact", "material_progress": True},
+        }}],
+    })
+    sent = []
+    monkeypatch.setattr(proactive, "tg_send_message", lambda chat, text: sent.append(text) or [1])
+    result = proactive.process_once()
+    assert result["status"] == "PASS"
+    assert sent and "Nexus advanced" in sent[0]
+
+
 def test_terminal_certification_is_one_shot_and_truthful(monkeypatch, tmp_path):
     state = tmp_path / "proactive.json"
     monkeypatch.setattr(proactive, "STATE_PATH", state)

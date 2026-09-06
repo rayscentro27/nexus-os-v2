@@ -34,6 +34,46 @@ def test_model_plan_is_consumed_by_allowlisted_executor_and_review(monkeypatch, 
     assert (tmp_path / result["receipt_path"].split("/")[-1]).exists()
 
 
+def test_productive_action_requires_and_persists_deliverable_plan(monkeypatch, tmp_path):
+    monkeypatch.setattr(worker, "RECEIPT_DIR", tmp_path)
+    seen = []
+
+    def fake_call(agent_id, messages, max_tokens=300):
+        seen.append(agent_id)
+        if agent_id.endswith("planner"):
+            return {"model": "test-model", "content": json.dumps({
+                "objective_id": "media.youtube_video",
+                "next_action": "internal.create_bounded_work_artifact",
+                "rationale": "draft the next internal production brief",
+                "completion_check": "brief contains a bounded next step",
+                "needs_human": False,
+                "deliverable_type": "video_production_brief",
+                "deliverable_title": "Internal video brief",
+                "deliverable_summary": "A reviewable production brief.",
+                "deliverable_content": "Audience, hook, evidence needs, and the next internal production step.",
+                "evidence_refs": ["reports/runtime/research_heartbeat.json"],
+                "recommended_next_action": "REVIEW_BRIEF_AND_CREATE_SCRIPT",
+            })}
+        return {"model": "test-model", "content": json.dumps({
+            "result_quality": "PASS", "verified": True,
+            "remaining_work": "Create the script in the next bounded cycle.", "pushback": "none",
+        })}
+
+    monkeypatch.setattr(worker, "_call", fake_call)
+    result = worker.run_ai_planned_verification(
+        {"parent_goal": "media.youtube_video", "department": "Creative",
+         "question": "q", "summary": "s",
+         "productive_action": "internal.create_bounded_work_artifact"},
+        lambda finding: {"status": "PASS", "action": "internal.create_bounded_work_artifact",
+                         "artifact_path": "reports/runtime/department_deliverables/test.json"},
+    )
+    assert result["status"] == "PASS"
+    assert result["ai_plan"]["deliverable_content"]
+    receipt = json.loads((tmp_path / result["receipt_path"].split("/")[-1]).read_text())
+    assert receipt["executor"] == "allowlisted:internal.create_bounded_work_artifact"
+    assert seen == ["nexus_ai_workforce_planner", "nexus_ai_workforce_reviewer"]
+
+
 def test_nova_safe_assignment_is_allowlisted_and_durable(monkeypatch, tmp_path):
     monkeypatch.setattr(control, "SAFE_CONTROL_REQUESTS", tmp_path / "requests.jsonl")
     result = control.assign_safe_internal_work(

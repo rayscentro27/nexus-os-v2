@@ -69,7 +69,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "ai.plan_and_verify", "funding.readiness_review",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "ai.plan_and_verify", "funding.readiness_review",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -90,7 +90,7 @@ CAPABILITY_REGISTRY = {
     "trading.paper_research": {"status": "READY", "authority": "PAPER_ONLY", "safe_actions": ["trading.research_cycle"], "gated_actions": ["trading.live_execution"]},
     "portal.local_verification": {"status": "READY", "authority": "LOCAL_READ_ONLY", "safe_actions": ["internal.capability_verify"], "gated_actions": ["portal.production_mutation"]},
     "funding.fixture_review": {"status": "READY", "authority": "INTERNAL_REVIEW", "safe_actions": ["funding.readiness_review"], "gated_actions": ["funding.application_submission", "financial_transaction"]},
-    "ai.workforce.internal_planning": {"status": "READY", "authority": "INTERNAL_SAFE", "safe_actions": ["ai.plan_and_verify"], "gated_actions": ["shell.arbitrary", "production_mutation", "external_message"]},
+    "ai.workforce.internal_planning": {"status": "READY", "authority": "INTERNAL_SAFE", "safe_actions": ["ai.plan_and_verify", "internal.create_bounded_work_artifact"], "gated_actions": ["shell.arbitrary", "production_mutation", "external_message"]},
     "department.research_handoff": {"status": "READY", "authority": "READ_ONLY_INTERNAL", "safe_actions": ["department.research_handoff"], "gated_actions": ["external_mutation", "publication", "customer_contact"]},
     "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
     "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
@@ -365,8 +365,54 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
         from nexus_agent_platform.ai_workforce_executor import run_ai_planned_verification
         return run_ai_planned_verification(
             finding,
-            lambda bounded_finding: execute_safe_internal_action("internal.capability_verify", bounded_finding),
+            lambda bounded_finding: execute_safe_internal_action(
+                str(bounded_finding.get("productive_action") or "internal.capability_verify"),
+                bounded_finding,
+            ),
         )
+    if action_id == "internal.create_bounded_work_artifact":
+        plan = finding.get("ai_plan") if isinstance(finding.get("ai_plan"), dict) else {}
+        title = str(plan.get("deliverable_title") or "").strip()
+        content = str(plan.get("deliverable_content") or "").strip()
+        if not title or not content:
+            return {"status": "FAILED", "action": action_id, "failure_class": "INVALID_DELIVERABLE",
+                    "error": "AI plan did not contain a bounded deliverable", "execution_mode": "REAL",
+                    "external_side_effects": False}
+        allowed_refs = {str(x) for x in (finding.get("evidence_refs") or [])}
+        requested_refs = {str(x) for x in (plan.get("evidence_refs") or [])}
+        if not requested_refs.issubset(allowed_refs):
+            return {"status": "FAILED", "action": action_id, "failure_class": "UNSUPPORTED_EVIDENCE_REFERENCE",
+                    "error": "AI plan referenced evidence not present in canonical objective context",
+                    "execution_mode": "REAL", "external_side_effects": False}
+        artifact_id = "deliverable_" + uuid.uuid4().hex
+        artifact = {
+            "schema_version": "nexus.internal-deliverable.v1",
+            "artifact_id": artifact_id,
+            "goal_id": finding.get("parent_goal"),
+            "department": finding.get("department", "Nexus"),
+            "objective_statement": finding.get("summary"),
+            "success_criteria": list(finding.get("success_criteria") or []),
+            "missing_criteria": list(finding.get("missing_criteria") or []),
+            "objective_next_action": finding.get("objective_next_action"),
+            "artifact_type": str(plan.get("deliverable_type") or "objective_gap_deliverable"),
+            "title": title,
+            "summary": str(plan.get("deliverable_summary") or "").strip(),
+            "content": content,
+            "evidence_refs": list(plan.get("evidence_refs") or finding.get("evidence_refs") or []),
+            "assumptions": list(plan.get("assumptions") or []),
+            "recommended_next_action": str(plan.get("recommended_next_action") or "CONTINUE_MISSING_CRITERIA"),
+            "authority": "INTERNAL_SAFE",
+            "external_side_effects": False,
+            "progress_class": "USEFUL_INTERMEDIATE_PROGRESS",
+            "material_progress": False,
+            "created_at": utc_now(),
+        }
+        path = ROOT / "reports/runtime/department_deliverables" / f"{artifact_id}.json"
+        write_json(path, artifact)
+        return {"status": "PASS", "action": action_id, "artifact": artifact,
+                "artifact_path": str(path.relative_to(ROOT)), "output_hash": hashlib.sha256(
+                    json.dumps(artifact, sort_keys=True).encode()).hexdigest()[:24],
+                "execution_mode": "REAL", "external_side_effects": False}
     if action_id == "generate_internal_report":
         report_dir = ROOT / "reports/runtime/department_progress"
         report_dir.mkdir(parents=True, exist_ok=True)
@@ -794,11 +840,16 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "source_system": "goal_completion_engine", "category": "research_intelligence",
                 "priority": goal.get("priority", "P2"), "summary": f"Advance {goal['domain']}",
                 "reason": research_state.get("empty_queue_next_action", "OPEN_GOAL_MISSING_SUCCESS_CRITERION"),
-                "proposed_action": dispatch["action"], "approval_required": False,
+                "proposed_action": dispatch["action"], "productive_action": dispatch.get("productive_action"), "approval_required": False,
                 "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "ai.workforce.internal_planning", "Systems": "ai.workforce.internal_planning", "Finance": "ai.workforce.internal_planning", "Finance/Opportunity": "ai.workforce.internal_planning", "Marketing/Creative": "ai.workforce.internal_planning", "Marketing": "ai.workforce.internal_planning", "Creative": "ai.workforce.internal_planning", "Opportunity": "ai.workforce.internal_planning", "Grants": "ai.workforce.internal_planning", "Clyde": "ai.workforce.internal_planning", "Customer Service": "ai.workforce.internal_planning", "Documents": "ai.workforce.internal_planning", "Nexus/Systems": "ai.workforce.internal_planning", "Nexus/Product": "ai.workforce.internal_planning", "Funding": "funding.fixture_review", "Funding/Product": "funding.fixture_review"}.get(dispatch["department"], "searxng.research"),
                 "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
                 "source_record_id": cycle_work_item, "question": dispatch["question"],
                 "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
+                "productive_action": dispatch.get("productive_action"),
+                "success_criteria": goal.get("success_criteria", []),
+                "missing_criteria": goal.get("missing_criteria", []),
+                "current_evidence": goal.get("current_evidence", []),
+                "objective_next_action": goal.get("next_action"),
                 "incomplete_objectives": len(goals), "synthetic": False, "operating_duty_preflight": duty_preflight,
                 "evidence_refs": ["data/runtime/research_heartbeat.json", "data/runtime/research_program_registry.json"],
             })

@@ -316,6 +316,7 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         "owner": goal.get("owner", "NEXUS"),
         "priority": goal.get("priority", "P2"),
         "action": action,
+        "productive_action": "internal.create_bounded_work_artifact" if action == "ai.plan_and_verify" else None,
         "work_item_id": work_item_id,
         "question": question,
         "authority": goal.get("authority_envelope", "INTERNAL_SAFE"),
@@ -340,8 +341,17 @@ def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, A
             workstreams.append(action)
         row["current_evidence"] = evidence[-20:]
         row["active_workstreams"] = workstreams[-12:]
-        row["last_progress"] = _now()
-        row["last_result"] = {"status": result.get("status"), "action": action, "artifact_path": result.get("artifact_path"), "decision": result.get("decision"), "next_step": result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else None}
+        execution = result.get("executor_result") if isinstance(result.get("executor_result"), dict) else {}
+        effective_action = str(execution.get("action") or action)
+        artifact_path = execution.get("artifact_path") or result.get("artifact_path")
+        if effective_action == "internal.capability_verify":
+            # A healthy check is maintenance evidence, not objective progress.
+            # Keep it observable without letting it reset the governor's
+            # staleness/fairness clock and perpetuate the same loop.
+            row["last_capability_verification"] = _now()
+        else:
+            row["last_progress"] = _now()
+        row["last_result"] = {"status": result.get("status"), "action": effective_action, "artifact_path": artifact_path, "decision": result.get("decision"), "next_step": result.get("next_action") or (result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else None)}
         row["next_action"] = result.get("next_action") or result.get("loop", {}).get("next_step") if isinstance(result.get("loop"), dict) else result.get("next_action") or "CONTINUE_MISSING_CRITERIA"
         row["updated_at"] = _now()
         # A child receipt is progress, not proof of every parent criterion.

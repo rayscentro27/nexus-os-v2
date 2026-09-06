@@ -104,7 +104,16 @@ def collect_events() -> list[dict[str, Any]]:
                 or ai_plan.get("objective_id"))
         department = receipt.get("department") or nested_result.get("department", "Nexus")
         status = str(nested_result.get("status") or receipt.get("safe_internal_execution") or receipt.get("status") or "").upper()
-        if goal and status not in {"FAILED", "DEGRADED"}:
+        executor_result = nested_result.get("executor_result") if isinstance(nested_result.get("executor_result"), dict) else {}
+        executed_action = str(executor_result.get("action") or nested_result.get("action") or "")
+        # A healthy capability check is maintenance, not company progress.
+        # Only a real bounded deliverable or specialized business action may
+        # produce a material GOAL_ADVANCED notification.
+        material = (
+            executor_result.get("material_progress") is True
+            or executed_action in {"department.research_handoff", "trading.research_cycle", "funding.readiness_review"}
+        ) and status not in {"FAILED", "DEGRADED"}
+        if goal and material:
             events.append({"kind": "GOAL_ADVANCED", "goal": str(goal),
                            "department": department,
                            "summary": f"{goal} received a verified internal work result.",
