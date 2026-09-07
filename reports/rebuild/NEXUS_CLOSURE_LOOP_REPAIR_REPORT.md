@@ -117,3 +117,35 @@ shows rework artifacts and retries, but not yet a criterion changing from
 failed to verified and then a new terminal transition under this closure
 session implementation. The system now records enough information to make
 that next attempt actionable and auditable without falsely claiming success.
+
+## Live closure convergence observation — 2026-09-07
+
+Using the normal operator entry point on the existing
+`systems.modal_verification` goal, the runtime produced this same-session
+sequence:
+
+```text
+FINALIZATION ATTEMPT 1: 202609071723 -> failed; 3 criteria unresolved
+REPAIR ROUND 1: 202609071738 -> bounded artifact persisted
+FINALIZATION ATTEMPT 2: 202609071753 -> failed; same 3 criteria unresolved
+REPAIR ROUND 2: closure session retained
+FINALIZATION ATTEMPT 3: closure_live_20260907_04 -> failed; 3 criteria unresolved
+REPAIR ROUND 3: closure_live_20260907_05 -> artifact persisted
+FINALIZATION ATTEMPT 4: closure_live_20260907_06 -> failed; 3 criteria unresolved
+```
+
+The durable session ID was `closure_d55547e5aec91e3a7184`. Runtime state
+recorded `current_round=4`, `finalization_attempt_count=4`, and
+`repair_attempt_count=4`. Every attempt used the same real goal and the same
+evidence-bound AI planner/reviewer; no Codex-authored deliverable or synthetic
+goal was inserted. This proves automatic retries and session continuity, but
+not convergence: the model repeatedly produced explanatory report text
+without evidence that satisfies Modal health, bounded-job, and cost/authority
+criteria. The final retry remains correctly non-terminal.
+
+The bounded-exhaustion guard is now implemented: when a new failure reaches
+the configured fourth round, the session is written as `CLOSURE_STALLED` and
+excluded from ordinary portfolio selection, preventing silent infinite retry.
+The live session reached round four just before that guard was installed, so
+its persisted pre-guard label remains `REPAIR_REQUIRED`; this is intentionally
+not rewritten by Codex as a business result.

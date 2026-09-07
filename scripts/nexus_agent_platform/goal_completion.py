@@ -348,6 +348,8 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     one open goal from monopolizing the discretionary lane.
     """
     rows = [row for row in goals if row.get("status") in ELIGIBLE_STATUSES]
+    rows = [row for row in rows if not (isinstance(row.get("closure_session"), dict)
+                                       and row["closure_session"].get("closure_state") == "CLOSURE_STALLED")]
     if not rows:
         return None
     now = now or datetime.now(timezone.utc)
@@ -382,7 +384,10 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
                 if str(row.get("next_action")) == "internal.assemble_final_deliverable"
                 and not (row.get("last_result") or {}).get("rework_required")
             ]
-            rework = [row for row in rows if isinstance(row.get("last_result"), dict) and row.get("last_result", {}).get("rework_required")]
+            rework = [row for row in rows if isinstance(row.get("last_result"), dict)
+                      and row.get("last_result", {}).get("rework_required")
+                      and not (isinstance(row.get("closure_session"), dict)
+                               and row["closure_session"].get("closure_state") == "CLOSURE_STALLED")]
             if finalization:
                 candidates = finalization
             elif rework:
@@ -531,6 +536,8 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         session = row.get("closure_session") if isinstance(row.get("closure_session"), dict) else {}
         session_id = str(session.get("closure_session_id") or f"closure_{hashlib.sha256((goal_id + work_item_id).encode()).hexdigest()[:20]}")
         round_no = int(session.get("current_round", 0)) + 1
+        max_rounds = int(session.get("max_rounds", 4))
+        exhausted = round_no >= max_rounds
         repair_contracts = []
         for index, item in enumerate(criteria, 1):
             criterion = str(item.get("criterion") or item.get("criterion_text") or f"criterion_{index}")
@@ -585,13 +592,13 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                                  "failed_criteria_current": criteria, "failed_criteria_previous": session.get("failed_criteria_current", []),
                                  "criteria_fixed": [], "criteria_remaining": missing,
                                  "current_strategy": "criterion_specific_repair", "last_material_progress_at": row.get("last_progress"),
-                                 "closure_state": "REPAIR_REQUIRED", "max_rounds": 4},
+                                 "closure_state": "CLOSURE_STALLED" if exhausted else "REPAIR_REQUIRED", "max_rounds": max_rounds},
             "repair_contracts": repair_contracts,
             "last_result": {"status": "FAILED", "action": action, "rework_required": missing,
                              "failure_class": result.get("failure_class") or executor.get("failure_class") or workforce.get("failure_class"),
                              "artifact_path": result.get("artifact_path"), "work_item_id": work_item_id,
                              "finalization_failure": failure_report or {"criteria": criteria}},
-            "next_action": "CONTINUE_MISSING_CRITERIA", "updated_at": _now(),
+            "next_action": "CLOSURE_STALLED" if exhausted else "CONTINUE_MISSING_CRITERIA", "updated_at": _now(),
         })
         _portfolio_write(rows)
         return row
