@@ -365,33 +365,37 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     if urgent:
         candidates = urgent
     else:
-        # A successful criterion-specific artifact is immediately eligible
-        # for final assembly.  Finish that path before opening another
-        # rework cohort; otherwise a large backlog of failed reviews can
-        # starve the very finalization they are meant to unlock.
-        finalization = [
-            row for row in rows
-            if str(row.get("next_action")) == "internal.assemble_final_deliverable"
-            and not (row.get("last_result") or {}).get("rework_required")
-        ]
-        rework = [row for row in rows if isinstance(row.get("last_result"), dict) and row.get("last_result", {}).get("rework_required")]
-        if finalization:
-            candidates = finalization
-        elif rework:
-            # A persisted reviewer deficiency is more actionable than a new
-            # exploratory child.  Rework remains bounded and evidence-led,
-            # while preserving the normal priority/fairness rules inside the
-            # rework cohort.
-            candidates = rework
+        # A bounded closure session keeps repairable finalization work with
+        # its owning goal across scheduler yields.  The round limit prevents
+        # a pathological goal from monopolizing the portfolio.
+        sessions = [row for row in rows if isinstance(row.get("closure_session"), dict)
+                    and row["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"}
+                    and int(row["closure_session"].get("current_round", 0)) < int(row["closure_session"].get("max_rounds", 4))]
+        if sessions:
+            candidates = sessions
         else:
-            counts = [int(row.get("selection_count", 0)) for row in rows]
-            max_count = max(counts, default=0)
-            min_count = min(counts, default=0)
-            # Promote the least-run eligible cohort, rather than allowing a
-            # lower-count P2 goal to repeatedly outrank never-run P3 work.
-            starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
-            fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
-            candidates = starved or (fair or rows)
+            # A successful criterion-specific artifact is immediately eligible
+            # for final assembly. Finish that path before opening another
+            # rework cohort, so failed-review backlog cannot starve closure.
+            finalization = [
+                row for row in rows
+                if str(row.get("next_action")) == "internal.assemble_final_deliverable"
+                and not (row.get("last_result") or {}).get("rework_required")
+            ]
+            rework = [row for row in rows if isinstance(row.get("last_result"), dict) and row.get("last_result", {}).get("rework_required")]
+            if finalization:
+                candidates = finalization
+            elif rework:
+                # A persisted reviewer deficiency is more actionable than a
+                # new exploratory child.
+                candidates = rework
+            else:
+                counts = [int(row.get("selection_count", 0)) for row in rows]
+                max_count = max(counts, default=0)
+                min_count = min(counts, default=0)
+                starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
+                fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
+                candidates = starved or (fair or rows)
     selected = min(candidates, key=lambda row: (PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), -float(row.get("_age_seconds", 0)), int(row.get("selection_count", 0)), str(row.get("goal_id"))))
     for row in rows:
         row.pop("_age_seconds", None)
@@ -516,8 +520,54 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         executor = result.get("executor_result") if isinstance(result.get("executor_result"), dict) else {}
         review = result.get("ai_review") if isinstance(result.get("ai_review"), dict) else {}
         workforce = result.get("ai_workforce") if isinstance(result.get("ai_workforce"), dict) else {}
+        failure_report = result.get("finalization_failure") if isinstance(result.get("finalization_failure"), dict) else {}
         raw = review.get("remaining_work") or executor.get("error") or workforce.get("failure_class") or result.get("failure_class") or "Finalization requires bounded rework."
         missing = [str(x) for x in raw] if isinstance(raw, list) else [str(raw)]
+        criteria = list(failure_report.get("criteria") or [])
+        if not criteria:
+            criteria = [{"criterion": item, "status": "UNSATISFIED", "reason": item,
+                         "required_repair": "internal.create_bounded_work_artifact",
+                         "evidence_required": item} for item in missing]
+        session = row.get("closure_session") if isinstance(row.get("closure_session"), dict) else {}
+        session_id = str(session.get("closure_session_id") or f"closure_{hashlib.sha256((goal_id + work_item_id).encode()).hexdigest()[:20]}")
+        round_no = int(session.get("current_round", 0)) + 1
+        repair_contracts = []
+        for index, item in enumerate(criteria, 1):
+            criterion = str(item.get("criterion") or item.get("criterion_text") or f"criterion_{index}")
+            criterion_id = "criterion_" + hashlib.sha256(criterion.encode()).hexdigest()[:12]
+            failure_id = "failure_" + hashlib.sha256((session_id + criterion_id + work_item_id).encode()).hexdigest()[:18]
+            repair_contracts.append({
+                "repair_id": f"repair_{hashlib.sha256((session_id + criterion_id + str(round_no)).encode()).hexdigest()[:18]}",
+                "closure_session_id": session_id, "goal_id": goal_id, "criterion_id": criterion_id,
+                "criterion_text": criterion, "failure_reason": str(item.get("reason") or "Criterion was not verified."),
+                "expected_condition": str(item.get("evidence_required") or criterion),
+                "observed_condition": str(item.get("observed_condition") or "Not verified in the final package."),
+                "remaining_delta": str(item.get("reason") or "Required evidence/content remains missing."),
+                "required_output": str(item.get("required_repair") or "internal.create_bounded_work_artifact"),
+                "required_output_type": "evidence_bound_internal_deliverable",
+                "required_evidence": [str(x) for x in row.get("current_evidence") or []],
+                "existing_usable_artifacts": [str(x) for x in row.get("current_evidence") or []],
+                "allowed_tools": ["canonical_evidence_read", "internal_artifact_writer"],
+                "allowed_workers": ["nexus_ai_workforce"],
+                "acceptance_test": f"Final package explicitly satisfies criterion: {criterion}",
+                "completion_condition": "criterion_verified=true", "failure_conditions": ["unsupported_claim", "missing_evidence"],
+                "strategy_version": "closure-repair-v1",
+            })
+            item.update({
+                "failure_id": failure_id, "goal_id": goal_id, "finalization_attempt_id": work_item_id,
+                "criterion_id": criterion_id, "criterion_text": criterion, "criterion_type": "success_criterion",
+                "expected_condition": str(item.get("expected_condition") or criterion),
+                "observed_condition": str(item.get("observed_condition") or "Not verified in the final package."),
+                "pass_or_fail": "FAIL", "failure_reason": str(item.get("reason") or "Criterion was not verified."),
+                "required_output": str(item.get("required_repair") or "internal.create_bounded_work_artifact"),
+                "required_evidence": item.get("required_evidence") or f"Evidence-backed content explicitly addressing: {criterion}",
+                "current_evidence": list(row.get("current_evidence") or []), "missing_component": criterion,
+                "missing_information": str(item.get("delta") or item.get("reason") or ""),
+                "unsupported_claims": [], "quality_gap": str(item.get("reason") or ""), "format_gap": "",
+                "source_gap": "", "validation_gap": "Final reviewer did not verify the criterion.",
+                "repairable_by_nexus": True, "repair_strategy": "criterion_specific_repair",
+                "acceptance_test": f"Final package explicitly satisfies criterion: {criterion}", "blocker_type": "NEXUS_REPAIRABLE",
+            })
         failed_paths = list(row.get("failed_paths") or [])
         marker = f"{action}:{result.get('failure_class') or executor.get('failure_class') or 'REWORK_REQUIRED'}"
         if marker not in failed_paths:
@@ -527,9 +577,20 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
             evidence.append(receipt_ref)
         row.update({
             "current_evidence": evidence[-20:], "failed_paths": failed_paths[-20:],
+            "finalization_failures": (list(row.get("finalization_failures") or []) + criteria)[-40:],
+            "closure_session": {"closure_session_id": session_id, "goal_id": goal_id,
+                                 "started_at": session.get("started_at") or _now(), "current_round": round_no,
+                                 "finalization_attempt_count": int(session.get("finalization_attempt_count", 0)) + 1,
+                                 "repair_attempt_count": int(session.get("repair_attempt_count", 0)) + 1,
+                                 "failed_criteria_current": criteria, "failed_criteria_previous": session.get("failed_criteria_current", []),
+                                 "criteria_fixed": [], "criteria_remaining": missing,
+                                 "current_strategy": "criterion_specific_repair", "last_material_progress_at": row.get("last_progress"),
+                                 "closure_state": "REPAIR_REQUIRED", "max_rounds": 4},
+            "repair_contracts": repair_contracts,
             "last_result": {"status": "FAILED", "action": action, "rework_required": missing,
                              "failure_class": result.get("failure_class") or executor.get("failure_class") or workforce.get("failure_class"),
-                             "artifact_path": result.get("artifact_path"), "work_item_id": work_item_id},
+                             "artifact_path": result.get("artifact_path"), "work_item_id": work_item_id,
+                             "finalization_failure": failure_report or {"criteria": criteria}},
             "next_action": "CONTINUE_MISSING_CRITERIA", "updated_at": _now(),
         })
         _portfolio_write(rows)

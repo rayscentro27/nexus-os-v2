@@ -5,6 +5,7 @@ from nexus_agent_platform.goal_completion import (
     select_portfolio_goal,
 )
 import json
+from nexus_agent_platform.ai_workforce_executor import _finalization_failure_report
 
 
 def test_report_or_child_completion_does_not_complete_parent_goal():
@@ -77,6 +78,29 @@ def test_safe_ai_executor_covers_customer_service_documents_and_systems():
 def test_goal_action_uses_existing_safe_funding_fixture_executor():
     funding = {"goal_id": "f", "status": "ACTIVE", "department": "Funding/Product", "statement": "funding readiness", "priority": "P2"}
     assert next_work_for_active_goal(funding, work_item_id="f1", question="q")["action"] == "funding.readiness_review"
+
+
+def test_finalization_failure_contains_expected_observed_delta_and_repair():
+    failure = _finalization_failure_report(
+        {"goal_id": "g", "success_criteria": ["C1", "C2"]},
+        {"criteria_satisfied": ["C1"], "deliverable_content": "partial C1"},
+        {"status": "PASS", "failure_class": "INCOMPLETE_FINAL_DELIVERABLE"},
+        {"verified": False, "remaining_work": ["C2"], "pushback": "C2 missing"},
+    )
+    item = next(x for x in failure["criteria"] if x["criterion"] == "C2")
+    assert item["expected_condition"] == "C2"
+    assert item["pass_or_fail"] == "FAIL"
+    assert item["delta"] == "C2"
+    assert failure["repairable"] is True
+
+
+def test_open_closure_session_precedes_generic_rework():
+    rows = [
+        {"goal_id": "generic", "status": "ACTIVE", "priority": "P1", "selection_count": 0},
+        {"goal_id": "closure", "status": "ACTIVE", "priority": "P2", "selection_count": 5,
+         "closure_session": {"closure_state": "REPAIR_REQUIRED", "current_round": 1, "max_rounds": 4}},
+    ]
+    assert select_portfolio_goal(rows)["goal_id"] == "closure"
 
 
 def test_existing_campaign_package_reaches_human_review_closure():

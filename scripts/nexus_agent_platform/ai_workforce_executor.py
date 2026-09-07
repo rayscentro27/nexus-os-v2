@@ -116,6 +116,43 @@ def _evidence_context(refs: list[Any], limit: int = 24000) -> str:
     return "\n\n".join(chunks) or "NO_READABLE_EVIDENCE_CONTENT"
 
 
+def _finalization_failure_report(objective: Dict[str, Any], plan: Dict[str, Any] | None,
+                                 execution: Dict[str, Any], review: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a failed final package into criterion-level repair work."""
+    plan = plan or {}
+    criteria = [str(x) for x in objective.get("success_criteria") or []]
+    satisfied = {str(x) for x in plan.get("criteria_satisfied") or []}
+    remaining = review.get("remaining_work")
+    remaining_items = [str(x) for x in remaining] if isinstance(remaining, list) else ([str(remaining)] if remaining else [])
+    base_reason = str(execution.get("error") or review.get("pushback") or "Criterion evidence was not sufficient.")
+    failure_class = str(execution.get("failure_class") or "INCOMPLETE_FINAL_DELIVERABLE")
+    content = str(plan.get("deliverable_content") or "").strip()
+    items = []
+    for criterion in criteria:
+        if criterion in satisfied and not remaining_items:
+            continue
+        matching = next((x for x in remaining_items if criterion.lower() in x.lower() or x.lower() in criterion.lower()), None)
+        items.append({
+            "criterion": criterion,
+            "status": "SATISFIED" if criterion in satisfied and not matching else "UNSATISFIED",
+            "pass_or_fail": "PASS" if criterion in satisfied and not matching else "FAIL",
+            "reason": matching or ("Criterion was not listed in criteria_satisfied." if criterion not in satisfied else base_reason),
+            "expected_condition": criterion,
+            "observed_condition": ("Criterion listed as satisfied and present in the proposed content." if criterion in satisfied and not matching
+                                    else (content[:500] if content else "No deliverable content was produced.")),
+            "delta": matching or ("Criterion absent from criteria_satisfied." if criterion not in satisfied else base_reason),
+            "required_repair": "internal.create_bounded_work_artifact",
+            "evidence_required": f"Evidence-backed content explicitly addressing: {criterion}",
+        })
+    if not items and (execution.get("status") != "PASS" or review.get("verified") is not True):
+        items.append({"criterion": "final package verification", "status": "UNSATISFIED", "reason": base_reason,
+                      "required_repair": "internal.create_bounded_work_artifact",
+                      "evidence_required": "A complete evidence-bound package and successful final review"})
+    return {"failure_class": failure_class, "repairable": failure_class in {"INCOMPLETE_FINAL_DELIVERABLE", "UNSUPPORTED_EVIDENCE_REFERENCE", "INVALID_DELIVERABLE"},
+            "reason": base_reason, "criteria": items, "required_repair": "internal.create_bounded_work_artifact",
+            "source_action": objective.get("allowed_action"), "recorded_at": _now()}
+
+
 def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dict[str, Any]], Dict[str, Any]]) -> Dict[str, Any]:
     """Run one real model plan, one governed executor, and one AI review."""
     started = _now()
@@ -182,6 +219,23 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
         {"role": "user", "content": json.dumps({"objective": objective, "plan": plan, "execution": execution}, sort_keys=True, default=str)},
     ])
     review = _json_content(review_call) or {"result_quality": "UNKNOWN", "verified": False, "remaining_work": "Review output was not valid JSON", "pushback": "MODEL_REVIEW_PARSE_FAILURE"}
+    failure_report = _finalization_failure_report(objective, plan, execution, review)
+    for item in failure_report.get("criteria", []):
+        criterion_id = "criterion_" + __import__("hashlib").sha256(str(item.get("criterion", "")).encode()).hexdigest()[:12]
+        item.update({
+            "failure_id": "failure_" + __import__("hashlib").sha256((receipt_id + criterion_id).encode()).hexdigest()[:18],
+            "goal_id": objective.get("goal_id"), "finalization_attempt_id": receipt_id,
+            "criterion_id": criterion_id, "criterion_text": str(item.get("criterion", "")),
+            "criterion_type": "success_criterion", "pass_or_fail": "FAIL",
+            "missing_component": str(item.get("criterion", "")),
+            "missing_information": str(item.get("delta") or item.get("reason") or ""),
+            "unsupported_claims": [], "quality_gap": str(item.get("reason") or ""),
+            "format_gap": "", "source_gap": "", "validation_gap": "Final reviewer did not verify the criterion.",
+            "repairable_by_nexus": bool(failure_report.get("repairable")),
+            "repair_strategy": "criterion_specific_repair",
+            "acceptance_test": f"Final package explicitly satisfies criterion: {item.get('criterion')}",
+            "blocker_type": "NEXUS_REPAIRABLE" if failure_report.get("repairable") else "UNRESOLVED_LIMITATION",
+        })
     if required_action == FINAL_ACTION and execution.get("status") == "PASS":
         artifact_path = execution.get("artifact_path")
         criteria = {str(x) for x in objective.get("success_criteria") or []}
@@ -206,9 +260,12 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
                "plan": plan, "executor": "allowlisted:" + required_action, "execution": execution,
                "ai_review": review, "usage": usage, "remaining_work": review.get("remaining_work"),
                "started_at": started, "completed_at": _now(), "external_side_effects": False}
+    if execution.get("status") != "PASS" or (required_action == FINAL_ACTION and not execution.get("finalized")) or review.get("verified") is not True:
+        receipt["finalization_failure"] = failure_report
     receipt["receipt_path"] = _write_receipt(receipt)
     return {"status": receipt["status"], "action": "ai.plan_and_verify", "artifact_path": receipt["receipt_path"],
             "output_hash": receipt_id, "execution_mode": "REAL", "external_side_effects": False,
             "ai_model_invoked": True, "ai_plan": plan, "ai_review": review, "executor_result": execution,
+            "finalization_failure": failure_report if "finalization_failure" in receipt else None,
             "next_action": plan.get("recommended_next_action") or plan.get("next_action"),
             "receipt_path": receipt["receipt_path"]}
