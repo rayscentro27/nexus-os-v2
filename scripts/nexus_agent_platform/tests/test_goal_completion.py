@@ -125,3 +125,14 @@ def test_existing_progress_requests_finalization_after_intermediate_work():
     work = next_work_for_active_goal(goal, work_item_id="w1", question="assemble the real final package")
     assert work["productive_action"] == "internal.assemble_final_deliverable"
     assert work["finalization_requested"] is True
+
+
+def test_rework_goal_is_prioritized_over_new_exploration():
+    from nexus_agent_platform.goal_completion import select_portfolio_goal
+    rows = [
+        {"goal_id": "new", "status": "ACTIVE", "priority": "P1", "selection_count": 0},
+        {"goal_id": "rework", "status": "ACTIVE", "priority": "P2", "selection_count": 10,
+         "last_result": {"rework_required": ["missing final section"]}},
+    ]
+    selected = select_portfolio_goal(rows)
+    assert selected["goal_id"] == "rework"

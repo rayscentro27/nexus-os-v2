@@ -171,3 +171,64 @@ assemble enough evidence-backed final packages to reduce the broader backlog
 without continued engineering or human review. The next safe engineering
 step is to give each active goal a real deliverable assembler/evidence source
 path, not to relabel intermediate receipts as completion.
+
+## Final-gap closure update — 2026-09-07
+
+This update records the bounded repair and the subsequent normal-runtime
+observation; it does not replace the earlier evidence.
+
+### Repair
+
+Failed finalization is now durable rework: the reviewer deficiencies are
+written to `last_result.rework_required`, the governor prioritizes that
+rework, and a successful criterion-specific artifact is prioritized for final
+assembly before opening another failed-review branch. The real AI planner now
+receives bounded read-only excerpts from the newest canonical evidence paths,
+not only path names. Absolute paths and parent traversal are rejected, and
+the excerpt is capped. No external capability or approval boundary changed.
+
+### Unattended rework evidence
+
+The normal Active Operator entry point, rather than a manually selected
+business action, produced these observed transitions:
+
+| Cycle | Goal | AI receipt | Action | Result |
+|---|---|---|---|---|
+| `goal_rework_20260907_23` | `systems.oracle_browser` | `aiwf_8b97ccda95344c08afdb28568261d6a7` | `internal.create_bounded_work_artifact` | persisted `reports/runtime/department_deliverables/deliverable_2ae5c8a25f6d449e82c82b79438bcd25.json`; criteria still missing |
+| `goal_rework_finalize_oracle` | `systems.oracle_browser` | `aiwf_676bfb20a8784ec68b16f9f15dff60e8` | `internal.assemble_final_deliverable` | correctly rejected: criteria not named/satisfied |
+| `goal_rework_rework_oracle_2` | `commerce.billing_accounting` | `aiwf_ad904ccc371143d891dbd8c0bc5482cf` | `internal.assemble_final_deliverable` | correctly rejected: invoice lifecycle, receivables/expense, and gating criteria unmet |
+
+Additional real rework artifacts were persisted for Billing, Clyde, and GoClear
+economics (`deliverable_1e5312458ce64bc6bdd30824a874f258`,
+`deliverable_3c4eeb14e3104db4b6642214a60faa55`, and
+`deliverable_55c5d1d1867d4e54a44a1f5fe9e8464a`). These are intermediate
+artifacts, not terminal deliverables. The finalization retries demonstrate
+that state reload and failure-to-rework continuation work; they do not prove
+that the current evidence is sufficient to complete those goals.
+
+### Updated scorecard
+
+```text
+TOTAL_REAL_GOALS=23
+TERMINAL_BEFORE_RUN=1 (goclear.example_campaign READY_FOR_HUMAN_REVIEW)
+ELIGIBLE_FOR_AUTONOMOUS_COMPLETION=21
+FINALIZATION_REJECTIONS=2 observed in the final-gap window
+AUTONOMOUS_REWORK_CYCLES=at least 5 real AI-backed intermediate/retry cycles observed
+GOALS_COMPLETED_THIS_RUN=0
+GOALS_READY_FOR_HUMAN_REVIEW_THIS_RUN=0 new
+GOALS_BLOCKED_HUMAN=0
+GOALS_BLOCKED_EXTERNAL=0
+GOALS_BLOCKED_DEPENDENCY=1 (nexus.productization)
+GOALS_INVALID_OR_UNCLEAR=0
+GOALS_LEFT_ACTIVE_WITH_NEXUS_SOLVABLE_WORK=21
+FAILED_FINALIZATION_DIAGNOSIS=PASS
+AUTONOMOUS_FINALIZATION_REWORK=PASS
+CRITERION_COMPLETE_DELIVERABLES=FAIL
+UNATTENDED_BACKLOG_CLOSURE=FAIL
+SYSTEMATIC_OUTCOME_AUTONOMY=NO
+```
+
+The remaining boundary is substantive evidence production, not scheduler
+selection, persistence, or finalization retry: the real model is still
+unable to support every criterion from the available artifacts for the
+observed goals. No goal was falsely terminalized.

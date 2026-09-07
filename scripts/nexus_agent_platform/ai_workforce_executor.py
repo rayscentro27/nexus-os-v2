@@ -80,6 +80,42 @@ def _write_receipt(receipt: Dict[str, Any]) -> str:
         return str(path)
 
 
+def _evidence_context(refs: list[Any], limit: int = 24000) -> str:
+    """Expose bounded contents of canonical evidence to the internal worker.
+
+    Objective state historically carried only paths.  That was safe for
+    reference validation but left the model unable to assemble a truthful
+    deliverable.  Read only repository-relative files, cap each excerpt and
+    the aggregate, and label unavailable evidence instead of guessing.
+    """
+    chunks: list[str] = []
+    total = 0
+    # Newest evidence is appended to the canonical list.  Read it first so
+    # a bounded prompt does not crowd the latest artifact out with historical
+    # heartbeat receipts.
+    seen: set[str] = set()
+    for raw in reversed(refs):
+        ref = str(raw or "")
+        if ref in seen:
+            continue
+        seen.add(ref)
+        if not ref or ref.startswith(("/", "~")) or ".." in Path(ref).parts:
+            continue
+        path = ROOT / ref
+        try:
+            if not path.is_file():
+                continue
+            text = path.read_text(encoding="utf-8", errors="replace")[:6000]
+        except OSError:
+            continue
+        chunk = f"EVIDENCE_REF: {ref}\n{text}"
+        if total + len(chunk) > limit:
+            break
+        chunks.append(chunk)
+        total += len(chunk)
+    return "\n\n".join(chunks) or "NO_READABLE_EVIDENCE_CONTENT"
+
+
 def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dict[str, Any]], Dict[str, Any]]) -> Dict[str, Any]:
     """Run one real model plan, one governed executor, and one AI review."""
     started = _now()
@@ -97,7 +133,11 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
         "success_criteria": finding.get("success_criteria", []),
         "missing_criteria": finding.get("missing_criteria", []),
         "current_evidence": finding.get("current_evidence", []),
+        "evidence_context": _evidence_context(
+            list(finding.get("current_evidence") or []) + list(finding.get("evidence_refs") or [])
+        ),
         "current_next_action": finding.get("objective_next_action"),
+        "rework_context": finding.get("rework_context") or {},
         "external_actions": False,
     }
     plan_call = _call("nexus_ai_workforce_planner", [
@@ -111,10 +151,14 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
             "and recommended_next_action. Evidence refs must be copied only from "
             "the supplied current_evidence/evidence_refs; never invent sources, "
             "interviews, metrics, URLs, or findings. Do not claim completion, request shell, "
-            "credentials, production changes, external messaging, or money."
+            "credentials, production changes, external messaging, or money. If rework_context "
+            "is present, address those exact deficiencies before attempting final assembly. "
+            "Use the supplied evidence_context to write substantive, evidence-grounded "
+            "deliverable_content; do not return a plan describing what a future report "
+            "would contain. If the context cannot support a criterion, leave it unsatisfied."
         )},
         {"role": "user", "content": json.dumps(objective, sort_keys=True)},
-    ], max_tokens=900 if required_action == FINAL_ACTION else 300)
+    ], max_tokens=900 if required_action in {FINAL_ACTION, PRODUCTIVE_ACTION} else 300)
     plan = _json_content(plan_call)
     usage = {"planning": plan_call.get("usage", {}), "review": {}}
     if plan_call.get("error") or not plan or plan.get("next_action") != required_action:

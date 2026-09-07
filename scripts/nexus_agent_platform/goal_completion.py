@@ -365,19 +365,33 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     if urgent:
         candidates = urgent
     else:
-        counts = [int(row.get("selection_count", 0)) for row in rows]
-        max_count = max(counts, default=0)
-        min_count = min(counts, default=0)
-        # Promote the least-run eligible cohort, rather than allowing a
-        # lower-count P2 goal to repeatedly outrank never-run P3 work. This
-        # keeps priority meaningful while making the anti-starvation contract
-        # observable for every eligible department.
-        starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
-        fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
-        # Promote one starved peer, then return to the normal priority lane on
-        # the following cycle. This prevents both monopoly and a long sweep
-        # through every lower-priority goal before urgent work resumes.
-        candidates = starved or (fair or rows)
+        # A successful criterion-specific artifact is immediately eligible
+        # for final assembly.  Finish that path before opening another
+        # rework cohort; otherwise a large backlog of failed reviews can
+        # starve the very finalization they are meant to unlock.
+        finalization = [
+            row for row in rows
+            if str(row.get("next_action")) == "internal.assemble_final_deliverable"
+            and not (row.get("last_result") or {}).get("rework_required")
+        ]
+        rework = [row for row in rows if isinstance(row.get("last_result"), dict) and row.get("last_result", {}).get("rework_required")]
+        if finalization:
+            candidates = finalization
+        elif rework:
+            # A persisted reviewer deficiency is more actionable than a new
+            # exploratory child.  Rework remains bounded and evidence-led,
+            # while preserving the normal priority/fairness rules inside the
+            # rework cohort.
+            candidates = rework
+        else:
+            counts = [int(row.get("selection_count", 0)) for row in rows]
+            max_count = max(counts, default=0)
+            min_count = min(counts, default=0)
+            # Promote the least-run eligible cohort, rather than allowing a
+            # lower-count P2 goal to repeatedly outrank never-run P3 work.
+            starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
+            fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
+            candidates = starved or (fair or rows)
     selected = min(candidates, key=lambda row: (PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), -float(row.get("_age_seconds", 0)), int(row.get("selection_count", 0)), str(row.get("goal_id"))))
     for row in rows:
         row.pop("_age_seconds", None)
@@ -431,6 +445,9 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         goal.get("current_evidence") and goal.get("last_result")
         and goal.get("missing_criteria") and str(goal.get("last_result", {}).get("action")) not in {"internal.capability_verify", "objective.closure"}
     )
+    rework_required = bool((goal.get("last_result") or {}).get("rework_required"))
+    if rework_required:
+        finalization_requested = False
     productive_action = "internal.assemble_final_deliverable" if action == "ai.plan_and_verify" and finalization_requested else ("internal.create_bounded_work_artifact" if action == "ai.plan_and_verify" else None)
     return {
         "dispatch": "CREATE_OR_REUSE_WORK_ORDER",
@@ -442,6 +459,7 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         "action": action,
         "productive_action": productive_action,
         "finalization_requested": finalization_requested,
+        "rework_required": rework_required,
         "work_item_id": work_item_id,
         "question": question,
         "authority": goal.get("authority_envelope", "INTERNAL_SAFE"),
@@ -483,6 +501,37 @@ def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, A
         row["updated_at"] = _now()
         # A child receipt is progress, not proof of every parent criterion.
         row["status"] = "ACTIVE" if row.get("status") in ELIGIBLE_STATUSES else row.get("status")
+        _portfolio_write(rows)
+        return row
+    return None
+
+
+def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any],
+                       action: str, receipt_ref: str | None = None) -> dict[str, Any] | None:
+    """Persist an actionable failed-finalization request for the next cycle."""
+    rows = ensure_company_goal_portfolio()
+    for row in rows:
+        if row.get("goal_id") != goal_id:
+            continue
+        executor = result.get("executor_result") if isinstance(result.get("executor_result"), dict) else {}
+        review = result.get("ai_review") if isinstance(result.get("ai_review"), dict) else {}
+        workforce = result.get("ai_workforce") if isinstance(result.get("ai_workforce"), dict) else {}
+        raw = review.get("remaining_work") or executor.get("error") or workforce.get("failure_class") or result.get("failure_class") or "Finalization requires bounded rework."
+        missing = [str(x) for x in raw] if isinstance(raw, list) else [str(raw)]
+        failed_paths = list(row.get("failed_paths") or [])
+        marker = f"{action}:{result.get('failure_class') or executor.get('failure_class') or 'REWORK_REQUIRED'}"
+        if marker not in failed_paths:
+            failed_paths.append(marker)
+        evidence = list(row.get("current_evidence") or [])
+        if receipt_ref and receipt_ref not in evidence:
+            evidence.append(receipt_ref)
+        row.update({
+            "current_evidence": evidence[-20:], "failed_paths": failed_paths[-20:],
+            "last_result": {"status": "FAILED", "action": action, "rework_required": missing,
+                             "failure_class": result.get("failure_class") or executor.get("failure_class") or workforce.get("failure_class"),
+                             "artifact_path": result.get("artifact_path"), "work_item_id": work_item_id},
+            "next_action": "CONTINUE_MISSING_CRITERIA", "updated_at": _now(),
+        })
         _portfolio_write(rows)
         return row
     return None

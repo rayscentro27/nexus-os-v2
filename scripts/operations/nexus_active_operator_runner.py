@@ -32,7 +32,7 @@ from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
-from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_goal_progress, select_portfolio_goal  # noqa: E402
+from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -373,7 +373,8 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
     if action_id == "internal.create_bounded_work_artifact":
         plan = finding.get("ai_plan") if isinstance(finding.get("ai_plan"), dict) else {}
         title = str(plan.get("deliverable_title") or "").strip()
-        content = str(plan.get("deliverable_content") or "").strip()
+        raw_content = plan.get("deliverable_content")
+        content = raw_content if isinstance(raw_content, (dict, list)) else str(raw_content or "").strip()
         if not title or not content:
             return {"status": "FAILED", "action": action_id, "failure_class": "INVALID_DELIVERABLE",
                     "error": "AI plan did not contain a bounded deliverable", "execution_mode": "REAL",
@@ -416,7 +417,8 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
     if action_id == "internal.assemble_final_deliverable":
         plan = finding.get("ai_plan") if isinstance(finding.get("ai_plan"), dict) else {}
         title = str(plan.get("deliverable_title") or "").strip()
-        content = str(plan.get("deliverable_content") or "").strip()
+        raw_content = plan.get("deliverable_content")
+        content = raw_content if isinstance(raw_content, (dict, list)) else str(raw_content or "").strip()
         criteria = [str(x) for x in (finding.get("success_criteria") or [])]
         satisfied = [str(x) for x in (plan.get("criteria_satisfied") or [])]
         if not title or not content or not set(criteria).issubset(set(satisfied)):
@@ -881,6 +883,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "missing_criteria": goal.get("missing_criteria", []),
                 "current_evidence": goal.get("current_evidence", []),
                 "objective_next_action": goal.get("next_action"),
+                "rework_context": goal.get("last_result") if isinstance(goal.get("last_result"), dict) and goal.get("last_result", {}).get("rework_required") else {},
                 "incomplete_objectives": len(goals), "synthetic": False, "operating_duty_preflight": duty_preflight,
                 "evidence_refs": list(dict.fromkeys([
                     "data/runtime/research_heartbeat.json",
@@ -1110,7 +1113,13 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         receipt_path = str((RECEIPT_DIR / f"operator_{run_id}.json").relative_to(ROOT))
         for item in safe_action_results:
             research_result = item.get("result", {})
-            if research_result.get("status") == "PASS":
+            final_review_failed = bool(
+                research_result.get("status") == "PASS"
+                and isinstance(research_result.get("executor_result"), dict)
+                and research_result.get("executor_result", {}).get("action") == "internal.assemble_final_deliverable"
+                and (research_result.get("ai_review") or {}).get("verified") is not True
+            )
+            if research_result.get("status") == "PASS" and not final_review_failed:
                 finding = next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {})
                 item["work_item_state"] = _complete_work_item(
                     finding,
@@ -1146,6 +1155,13 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
                             persistence.append_record("research_requests", {**request, "research_status": "RESUMED", "department_resume": "RESUMED", "resume_result_ref": receipt_path, "updated_at": utc_now()})
                     except (OSError, ValueError, TypeError):
                         pass
+            elif research_result.get("action") == "ai.plan_and_verify":
+                finding = next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {})
+                if finding.get("parent_goal"):
+                    item["goal_rework"] = record_goal_rework(
+                        str(finding["parent_goal"]),
+                        work_item_id=str(finding.get("source_record_id") or finding.get("finding_id")),
+                        result=research_result, action="ai.plan_and_verify", receipt_ref=receipt_path)
         _record_progress("PERSISTING")
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]
