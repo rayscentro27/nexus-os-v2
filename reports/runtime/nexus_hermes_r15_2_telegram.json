@@ -1,0 +1,10 @@
+{
+  "schema_version":"nexus.hermes.r15.2.telegram.v1",
+  "configured":"FAIL",
+  "reason":"Oracle Hermes status reports Telegram not configured; local token-shaped runtime variables were not copied or exposed",
+  "basic_roundtrip":"NOT_TESTED",
+  "command_surface":"NOT_TESTED",
+  "full_workflow":"NOT_TESTED",
+  "messages_sent":false,
+  "secrets_exposed":false
+}

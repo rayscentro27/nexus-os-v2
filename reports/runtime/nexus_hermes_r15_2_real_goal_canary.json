@@ -1,0 +1,11 @@
+{
+  "schema_version":"nexus.hermes.r15.2.real-goal-canary.v1",
+  "result":"NO",
+  "reason":"The native dependency graph did not produce a completed child handoff, so no existing Nexus business goal was routed through the full Hermes stack",
+  "r14_result_to_hermes_task_handoff":"NOT_PROVEN",
+  "invalid_model_plan_recovery":"NOT_PROVEN",
+  "pass_without_delta_recovery":"NOT_PROVEN",
+  "new_criteria_verified":0,
+  "material_progress":false,
+  "portal_states_preserved":{"portal.client_beta":"READY_FOR_HUMAN_REVIEW","portal.admin_control_center":"READY_FOR_HUMAN_REVIEW"}
+}

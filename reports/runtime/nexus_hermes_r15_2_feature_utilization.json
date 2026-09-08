@@ -1,0 +1,6 @@
+{
+  "schema_version":"nexus.hermes.r15.2.feature-utilization.v1",
+  "proven_and_routable":["hermes.profile.worker","hermes.kanban","hermes.kanban.dispatch","hermes.skill_pinning","hermes.skills","hermes.mcp","hermes.terminal","hermes.file_read","hermes.execute_code","hermes.subagent","hermes.cli.git","hermes.cli.python","hermes.cli.node","hermes.cli.npm","hermes.cli.curl","hermes.cli.rg"],
+  "not_proven_or_unhealthy":["hermes.multi_agent_handoff","hermes.skill_attachment_provenance","hermes.cli.opencode","hermes.cli.gh","hermes.cli.supabase","hermes.cli.netlify","hermes.browser","hermes.file_edit","hermes.telegram"],
+  "stable_features_bypassed_without_reason":[]
+}

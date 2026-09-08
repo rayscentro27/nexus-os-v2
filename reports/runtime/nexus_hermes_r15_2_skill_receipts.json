@@ -1,0 +1,11 @@
+{
+  "schema_version": "nexus.hermes.r15.2.skill-receipts.v1",
+  "task_level_pinning": "PASS_REAL",
+  "tasks": [
+    {"task_id":"t_ab3e8fa6","profile":"nexus_research_test","skill":"grounded-citations","status":"not_claimed","claim_rejection":"parents_not_done"},
+    {"task_id":"t_ecd1363a","profile":"nexus_engineer_test","skill":"codebase-inspection","status":"blocked"},
+    {"task_id":"t_5fbedb6a","profile":"nexus_review_test","skill":"github-code-review","status":"blocked"}
+  ],
+  "machine_verifiable_attachment_provenance": "FAIL",
+  "reason": "Kanban stores pinned skill metadata, but no child execution reached worker start in the dependency graph; prior smoke logs do not provide a durable attachment receipt"
+}

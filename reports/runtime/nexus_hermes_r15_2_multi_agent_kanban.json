@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r15.2.multi-agent-kanban.v1",
+  "parent_task":"t_bf11da8c",
+  "children": {"research":"t_ab3e8fa6","engineer":"t_ecd1363a","reviewer":"t_5fbedb6a"},
+  "parent_spawn": "PASS_REAL",
+  "parent_heartbeats": 4,
+  "research_child_claim": "REJECTED",
+  "research_child_claim_reason": "parents_not_done",
+  "engineer_child": "BLOCKED",
+  "reviewer_child": "BLOCKED",
+  "multi_agent_handoff": "FAIL",
+  "restart_persistence": "NOT_PROVEN",
+  "cleanup": "all scratch tasks reclaimed/archived"
+}
