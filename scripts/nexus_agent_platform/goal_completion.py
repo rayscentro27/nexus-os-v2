@@ -539,6 +539,10 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         max_rounds = int(session.get("max_rounds", 4))
         exhausted = round_no >= max_rounds
         repair_contracts = []
+        prior_fingerprints = list(session.get("strategy_fingerprints") or [])
+        current_fingerprint = hashlib.sha256(json.dumps({"goal": goal_id, "criteria": [str(x.get("criterion") or x.get("criterion_text")) for x in criteria], "action": action, "failure_class": failure_report.get("failure_class") or executor.get("failure_class")}, sort_keys=True).encode()).hexdigest()[:20]
+        repeated_strategy_count = prior_fingerprints.count(current_fingerprint) + 1
+        strategy = "criterion_specific_repair" if repeated_strategy_count == 1 else "evidence_context_expansion"
         for index, item in enumerate(criteria, 1):
             criterion = str(item.get("criterion") or item.get("criterion_text") or f"criterion_{index}")
             criterion_id = "criterion_" + hashlib.sha256(criterion.encode()).hexdigest()[:12]
@@ -558,7 +562,7 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                 "allowed_workers": ["nexus_ai_workforce"],
                 "acceptance_test": f"Final package explicitly satisfies criterion: {criterion}",
                 "completion_condition": "criterion_verified=true", "failure_conditions": ["unsupported_claim", "missing_evidence"],
-                "strategy_version": "closure-repair-v1",
+                "strategy_version": "closure-repair-v2" if repeated_strategy_count > 1 else "closure-repair-v1",
             })
             item.update({
                 "failure_id": failure_id, "goal_id": goal_id, "finalization_attempt_id": work_item_id,
@@ -572,7 +576,7 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                 "missing_information": str(item.get("delta") or item.get("reason") or ""),
                 "unsupported_claims": [], "quality_gap": str(item.get("reason") or ""), "format_gap": "",
                 "source_gap": "", "validation_gap": "Final reviewer did not verify the criterion.",
-                "repairable_by_nexus": True, "repair_strategy": "criterion_specific_repair",
+                "repairable_by_nexus": True, "repair_strategy": strategy,
                 "acceptance_test": f"Final package explicitly satisfies criterion: {criterion}", "blocker_type": "NEXUS_REPAIRABLE",
             })
         failed_paths = list(row.get("failed_paths") or [])
@@ -591,7 +595,8 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                                  "repair_attempt_count": int(session.get("repair_attempt_count", 0)) + 1,
                                  "failed_criteria_current": criteria, "failed_criteria_previous": session.get("failed_criteria_current", []),
                                  "criteria_fixed": [], "criteria_remaining": missing,
-                                 "current_strategy": "criterion_specific_repair", "last_material_progress_at": row.get("last_progress"),
+                                 "current_strategy": strategy, "strategy_fingerprints": (prior_fingerprints + [current_fingerprint])[-12:],
+                                 "repeated_strategy_count": repeated_strategy_count, "last_material_progress_at": row.get("last_progress"),
                                  "closure_state": "CLOSURE_STALLED" if exhausted else "REPAIR_REQUIRED", "max_rounds": max_rounds},
             "repair_contracts": repair_contracts,
             "last_result": {"status": "FAILED", "action": action, "rework_required": missing,

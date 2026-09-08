@@ -883,7 +883,11 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "missing_criteria": goal.get("missing_criteria", []),
                 "current_evidence": goal.get("current_evidence", []),
                 "objective_next_action": goal.get("next_action"),
-                "rework_context": goal.get("last_result") if isinstance(goal.get("last_result"), dict) and goal.get("last_result", {}).get("rework_required") else {},
+                "rework_context": {
+                    "last_failure": goal.get("last_result") if isinstance(goal.get("last_result"), dict) else {},
+                    "closure_session": goal.get("closure_session") if isinstance(goal.get("closure_session"), dict) else {},
+                    "repair_contracts": goal.get("repair_contracts") if isinstance(goal.get("repair_contracts"), list) else [],
+                } if (isinstance(goal.get("last_result"), dict) and goal.get("last_result", {}).get("rework_required")) else {},
                 "incomplete_objectives": len(goals), "synthetic": False, "operating_duty_preflight": duty_preflight,
                 "evidence_refs": list(dict.fromkeys([
                     "data/runtime/research_heartbeat.json",
