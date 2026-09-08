@@ -23,6 +23,28 @@ ELIGIBLE_STATUSES = {"ACTIVE", "READY", "QUEUED"}
 PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 
 
+def resolve_criterion_capability(goal_id: str, criterion: str) -> dict[str, Any]:
+    """Deterministically bind evidence criteria to governed capabilities.
+
+    This is metadata for repair contracts, not permission to invent an
+    executor.  An unavailable capability is returned as unavailable and must
+    remain a blocker until a real existing path is found.
+    """
+    text = criterion.lower()
+    if goal_id == "systems.modal_verification" or "modal" in text:
+        modal_python = ROOT / ".venv-agent-platform" / "bin" / "python"
+        modal_cli = ROOT / ".venv-agent-platform" / "bin" / "modal"
+        modal_ready = modal_python.is_file() and modal_cli.is_file()
+        if "health" in text:
+            return {"evidence_type": "LIVE_SERVICE_HEALTH", "capability_required": "modal.runtime", "tool_or_executor": "existing_modal_health_probe", "action": "modal.health_probe", "expected_output": "timestamped Modal health result", "acceptance_test": "health probe returns a real bounded Modal status", "fallback_paths": ["CONFIG_ENV", "CLI_API", "REMOTE_WORKER"], "available": modal_ready}
+        if "job" in text or "execution" in text:
+            return {"evidence_type": "BOUNDED_EXECUTION_RECEIPT", "capability_required": "modal.bounded_job", "tool_or_executor": "existing_modal_bounded_worker", "action": "modal.bounded_job", "expected_output": "job ID, result, duration, resource receipt", "acceptance_test": "bounded Modal job completes with a real result receipt", "fallback_paths": ["EXISTING_REMOTE_WORKER", "CONFIG_ENV"], "available": modal_ready}
+        return {"evidence_type": "AUTHORITY_COST_RECEIPT", "capability_required": "modal.governance", "tool_or_executor": "Modal execution configuration and receipt", "action": "modal.inspect_execution_controls", "expected_output": "actual authority and cost controls tied to a real receipt", "acceptance_test": "controls and receipt show bounded internal authority", "fallback_paths": ["CONFIG_ENV", "CLI_API"], "available": modal_ready}
+    if goal_id == "opportunity.engine" or any(word in text for word in ("scoring", "experiment", "hype", "economics")):
+        return {"evidence_type": "CROSS_CHECKED_RESEARCH_ALPHA_EVIDENCE", "capability_required": "research.alpha", "tool_or_executor": "Research + Alpha evidence pipeline", "action": "research.refresh", "expected_output": "sourced claims, contradictions, confidence, and Alpha decision", "acceptance_test": "primary/credible evidence is persisted and challenged by Alpha", "fallback_paths": ["PRIMARY_SOURCE_RESEARCH", "SearXNG", "ORACLE_BROWSER"], "available": True}
+    return {"evidence_type": "INTERNAL_DELIVERABLE", "capability_required": "ai.workforce.internal_planning", "tool_or_executor": "allowlisted internal artifact writer", "action": "internal.create_bounded_work_artifact", "expected_output": "criterion-specific evidence-bound artifact", "acceptance_test": f"artifact explicitly satisfies: {criterion}", "fallback_paths": ["EXISTING_CODE", "RESEARCH"], "available": True}
+
+
 # This is the durable seed for the single runtime portfolio.  It contains
 # definitions and success criteria only; progress/status are persisted in
 # PORTFOLIO_PATH and are never inferred from a report existing.
@@ -458,6 +480,15 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
     if rework_required:
         finalization_requested = False
     productive_action = "internal.assemble_final_deliverable" if action == "ai.plan_and_verify" and finalization_requested else ("internal.create_bounded_work_artifact" if action == "ai.plan_and_verify" else None)
+    # A failed evidence criterion owns the next action.  Do not let the
+    # generic AI artifact writer stand in for a live capability probe/job.
+    if rework_required or goal.get("closure_session"):
+        remaining = (goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria") or []
+        if remaining:
+            binding = resolve_criterion_capability(str(goal.get("goal_id") or ""), str(remaining[0]))
+            if binding.get("evidence_type") != "INTERNAL_DELIVERABLE":
+                productive_action = str(binding["action"])
+                finalization_requested = False
     return {
         "dispatch": "CREATE_OR_REUSE_WORK_ORDER",
         "goal_id": goal.get("goal_id"),
@@ -539,12 +570,17 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         max_rounds = int(session.get("max_rounds", 4))
         exhausted = round_no >= max_rounds
         repair_contracts = []
+        previously_fixed = {str(x).lower() for x in session.get("criteria_fixed") or []}
+        if previously_fixed:
+            criteria = [x for x in criteria if str(x.get("criterion") or x.get("criterion_text") or "").lower() not in previously_fixed]
+            missing = [x for x in missing if str(x).lower() not in previously_fixed]
         prior_fingerprints = list(session.get("strategy_fingerprints") or [])
         current_fingerprint = hashlib.sha256(json.dumps({"goal": goal_id, "criteria": [str(x.get("criterion") or x.get("criterion_text")) for x in criteria], "action": action, "failure_class": failure_report.get("failure_class") or executor.get("failure_class")}, sort_keys=True).encode()).hexdigest()[:20]
         repeated_strategy_count = prior_fingerprints.count(current_fingerprint) + 1
         strategy = "criterion_specific_repair" if repeated_strategy_count == 1 else "evidence_context_expansion"
         for index, item in enumerate(criteria, 1):
             criterion = str(item.get("criterion") or item.get("criterion_text") or f"criterion_{index}")
+            binding = resolve_criterion_capability(goal_id, criterion)
             criterion_id = "criterion_" + hashlib.sha256(criterion.encode()).hexdigest()[:12]
             failure_id = "failure_" + hashlib.sha256((session_id + criterion_id + work_item_id).encode()).hexdigest()[:18]
             repair_contracts.append({
@@ -554,13 +590,17 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                 "expected_condition": str(item.get("evidence_required") or criterion),
                 "observed_condition": str(item.get("observed_condition") or "Not verified in the final package."),
                 "remaining_delta": str(item.get("reason") or "Required evidence/content remains missing."),
-                "required_output": str(item.get("required_repair") or "internal.create_bounded_work_artifact"),
-                "required_output_type": "evidence_bound_internal_deliverable",
+                "evidence_type": binding["evidence_type"], "capability_required": binding["capability_required"],
+                "tool_or_executor": binding["tool_or_executor"], "action": binding["action"],
+                "expected_output": binding["expected_output"],
+                "required_output": binding["action"] if binding["evidence_type"] != "INTERNAL_DELIVERABLE" else str(item.get("required_repair") or binding["action"]),
+                "required_output_type": binding["evidence_type"],
                 "required_evidence": [str(x) for x in row.get("current_evidence") or []],
                 "existing_usable_artifacts": [str(x) for x in row.get("current_evidence") or []],
-                "allowed_tools": ["canonical_evidence_read", "internal_artifact_writer"],
+                "allowed_tools": [binding["tool_or_executor"], "canonical_evidence_read"],
                 "allowed_workers": ["nexus_ai_workforce"],
-                "acceptance_test": f"Final package explicitly satisfies criterion: {criterion}",
+                "acceptance_test": binding["acceptance_test"], "fallback_paths": binding["fallback_paths"],
+                "capability_available": binding["available"],
                 "completion_condition": "criterion_verified=true", "failure_conditions": ["unsupported_claim", "missing_evidence"],
                 "strategy_version": "closure-repair-v2" if repeated_strategy_count > 1 else "closure-repair-v1",
             })
@@ -594,7 +634,7 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                                  "finalization_attempt_count": int(session.get("finalization_attempt_count", 0)) + 1,
                                  "repair_attempt_count": int(session.get("repair_attempt_count", 0)) + 1,
                                  "failed_criteria_current": criteria, "failed_criteria_previous": session.get("failed_criteria_current", []),
-                                 "criteria_fixed": [], "criteria_remaining": missing,
+                                 "criteria_fixed": list(session.get("criteria_fixed") or []), "criteria_remaining": missing,
                                  "current_strategy": strategy, "strategy_fingerprints": (prior_fingerprints + [current_fingerprint])[-12:],
                                  "repeated_strategy_count": repeated_strategy_count, "last_material_progress_at": row.get("last_progress"),
                                  "closure_state": "CLOSURE_STALLED" if exhausted else "REPAIR_REQUIRED", "max_rounds": max_rounds},
@@ -605,6 +645,43 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                              "finalization_failure": failure_report or {"criteria": criteria}},
             "next_action": "CLOSURE_STALLED" if exhausted else "CONTINUE_MISSING_CRITERIA", "updated_at": _now(),
         })
+        _portfolio_write(rows)
+        return row
+    return None
+
+
+def record_criterion_verification(goal_id: str, *, criterion: str, evidence: dict[str, Any],
+                                  acceptance_test: str, result: str) -> dict[str, Any] | None:
+    """Attach a real tool result to one closure criterion without closing the goal."""
+    rows = ensure_company_goal_portfolio()
+    for row in rows:
+        if row.get("goal_id") != goal_id:
+            continue
+        session = dict(row.get("closure_session") or {})
+        if not session:
+            return None
+        criterion_id = "criterion_" + hashlib.sha256(str(criterion).encode()).hexdigest()[:12]
+        verification = {"criterion_id": criterion_id, "criterion": criterion,
+                        "expected_condition": str(criterion), "observed_condition": str(evidence.get("observed_condition") or evidence.get("result") or ""),
+                        "evidence": evidence, "acceptance_test": acceptance_test,
+                        "acceptance_result": result, "verified_at": _now()}
+        checks = list(row.get("criterion_verifications") or [])
+        checks.append(verification)
+        evidence_refs = list(row.get("current_evidence") or [])
+        ref = evidence.get("artifact_path") or evidence.get("receipt_path")
+        if ref and str(ref) not in evidence_refs:
+            evidence_refs.append(str(ref))
+        remaining = [str(x) for x in session.get("criteria_remaining") or [] if str(x).lower() != str(criterion).lower()]
+        fixed = list(session.get("criteria_fixed") or [])
+        if result == "VERIFIED" and str(criterion) not in fixed:
+            fixed.append(str(criterion))
+        session.update({"criteria_remaining": remaining, "criteria_fixed": fixed,
+                        "failed_criteria_current": remaining,
+                        "closure_state": "FINALIZATION_RETRY" if result == "VERIFIED" else session.get("closure_state", "REPAIR_REQUIRED"),
+                        "last_criterion_verification": verification})
+        row.update({"criterion_verifications": checks[-40:], "current_evidence": evidence_refs[-20:],
+                    "closure_session": session, "next_action": "FINALIZATION_RETRY" if result == "VERIFIED" else row.get("next_action"),
+                    "updated_at": _now()})
         _portfolio_write(rows)
         return row
     return None

@@ -21,7 +21,8 @@ RECEIPT_DIR = ROOT / "reports/runtime/ai_workforce_receipts"
 ALLOWED_ACTION = "internal.capability_verify"
 PRODUCTIVE_ACTION = "internal.create_bounded_work_artifact"
 FINAL_ACTION = "internal.assemble_final_deliverable"
-ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION, FINAL_ACTION}
+TOOL_ACTIONS = {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls", "research.refresh"}
+ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION, FINAL_ACTION, *TOOL_ACTIONS}
 
 
 def _now() -> str:

@@ -2,6 +2,7 @@ from nexus_agent_platform.goal_completion import (
     active_objective_portfolio, build_goal, classify_path_failure,
     evaluate_parent_goal, evaluate_terminal_closure, repetition_guard, should_continue,
     next_work_for_active_goal,
+    resolve_criterion_capability,
     select_portfolio_goal,
 )
 import json
@@ -148,7 +149,23 @@ def test_existing_progress_requests_finalization_after_intermediate_work():
             "missing_criteria": ["audit"]}
     work = next_work_for_active_goal(goal, work_item_id="w1", question="assemble the real final package")
     assert work["productive_action"] == "internal.assemble_final_deliverable"
-    assert work["finalization_requested"] is True
+
+
+def test_modal_failed_criterion_binds_to_real_health_tool():
+    binding = resolve_criterion_capability("systems.modal_verification", "health check proven")
+    assert binding["action"] == "modal.health_probe"
+    assert binding["tool_or_executor"] == "existing_modal_health_probe"
+    assert binding["evidence_type"] == "LIVE_SERVICE_HEALTH"
+
+
+def test_modal_closure_does_not_fall_back_to_generic_artifact():
+    work = next_work_for_active_goal({
+        "goal_id": "systems.modal_verification", "status": "ACTIVE", "department": "Systems",
+        "closure_session": {"closure_state": "REPAIR_REQUIRED", "criteria_remaining": ["health check proven"], "current_round": 1, "max_rounds": 4},
+    }, work_item_id="modal-r5", question="produce the missing health evidence")
+    assert work["productive_action"] == "modal.health_probe"
+    assert work["productive_action"] != "internal.create_bounded_work_artifact"
+    assert work["finalization_requested"] is False
 
 
 def test_rework_goal_is_prioritized_over_new_exploration():

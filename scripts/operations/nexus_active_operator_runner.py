@@ -32,7 +32,7 @@ from nexus_agent_platform.governed import approvals, work_orders  # noqa: E402
 from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
-from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
+from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_criterion_verification, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -69,7 +69,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "internal.assemble_final_deliverable", "ai.plan_and_verify", "funding.readiness_review",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "internal.assemble_final_deliverable", "ai.plan_and_verify", "funding.readiness_review", "modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -91,6 +91,8 @@ CAPABILITY_REGISTRY = {
     "portal.local_verification": {"status": "READY", "authority": "LOCAL_READ_ONLY", "safe_actions": ["internal.capability_verify"], "gated_actions": ["portal.production_mutation"]},
     "funding.fixture_review": {"status": "READY", "authority": "INTERNAL_REVIEW", "safe_actions": ["funding.readiness_review"], "gated_actions": ["funding.application_submission", "financial_transaction"]},
     "ai.workforce.internal_planning": {"status": "READY", "authority": "INTERNAL_SAFE", "safe_actions": ["ai.plan_and_verify", "internal.create_bounded_work_artifact"], "gated_actions": ["shell.arbitrary", "production_mutation", "external_message"]},
+    "modal.runtime": {"status": "READY", "authority": "BOUNDED_REMOTE_READ", "safe_actions": ["modal.health_probe"], "gated_actions": ["arbitrary_shell", "live_external_mutation"]},
+    "modal.bounded_job": {"status": "READY", "authority": "BOUNDED_REMOTE_WORKER", "safe_actions": ["modal.bounded_job"], "gated_actions": ["arbitrary_shell", "live_external_mutation"]},
     "department.research_handoff": {"status": "READY", "authority": "READ_ONLY_INTERNAL", "safe_actions": ["department.research_handoff"], "gated_actions": ["external_mutation", "publication", "customer_contact"]},
     "oracle.gemma": {"status": "READY", "authority": "ADVISORY_ONLY", "safe_actions": ["research.synthesize"], "gated_actions": ["execution.approve"]},
     "google.gmail.read": {"status": "READY", "authority": "READ_ONLY", "safe_actions": ["google.gmail.read"], "gated_actions": ["email.send"]},
@@ -320,6 +322,54 @@ def classify_action(action_id: str) -> str:
 
 def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
     """Run only bounded existing internal adapters; no external mutation."""
+    if action_id in {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls"}:
+        # The Modal adapter is an existing governed path.  Keep its SDK in
+        # the dedicated agent-platform environment; the control-plane Python
+        # process must not silently replace a remote probe with a local report.
+        modal_python = ROOT / ".venv-agent-platform" / "bin" / "python"
+        if not modal_python.is_file():
+            return {"status": "BLOCKED", "action": action_id, "failure_class": "CAPABILITY_GAP", "blocker_type": "MISSING_RUNTIME_CAPABILITY", "error": "authenticated Modal runtime environment is unavailable", "execution_mode": "REAL", "external_side_effects": False}
+        if action_id == "modal.bounded_job" and not os.environ.get("NEXUS_REMOTE_WORKER_SHARED_SECRET"):
+            return {"status": "BLOCKED", "action": action_id, "failure_class": "MISSING_CREDENTIAL", "blocker_type": "EXTERNAL_ACCESS_REQUIRED", "error": "NEXUS_REMOTE_WORKER_SHARED_SECRET is not available to the governed runner", "execution_mode": "REAL", "external_side_effects": False}
+        script = """
+import json, os, sys
+from scripts.nexus_agent_platform.providers.modal_provider import provider_from_environment
+p = provider_from_environment()
+action = os.environ.get('ACTION')
+if action == 'modal.health_probe':
+    value = p.health()
+elif action == 'modal.inspect_execution_controls':
+    value = p.health()
+    value['authority_inspection'] = {'arbitrary_shell': value.get('arbitrary_shell'), 'stripe': value.get('stripe'), 'funded_trading': value.get('funded_trading'), 'optional': value.get('optional'), 'core_health_dependency': value.get('core_health_dependency')}
+else:
+    raise RuntimeError('bounded Modal job requires an explicit governed job payload')
+print(json.dumps(value, sort_keys=True))
+"""
+        env = dict(os.environ, ACTION=action_id, MODAL_PROFILE=os.environ.get("MODAL_PROFILE", "goclearonline"), PYTHONPATH=str(ROOT))
+        try:
+            completed = subprocess.run([str(modal_python), "-c", script], cwd=str(ROOT), env=env,
+                                       capture_output=True, text=True, timeout=90, check=False)
+            if completed.returncode != 0:
+                return {"status": "FAILED", "action": action_id, "failure_class": "REMOTE_WORKER_REQUIRED", "error": completed.stderr[-600:], "execution_mode": "REAL", "external_side_effects": False}
+            value = json.loads(completed.stdout)
+            status = "PASS" if value.get("status") == "HEALTHY" else "FAILED"
+            receipt_id = "modal_tool_" + uuid.uuid4().hex
+            receipt = {"schema_version": "nexus.criterion-tool-receipt.v1", "receipt_id": receipt_id,
+                       "criterion_id": finding.get("criterion_id"), "criterion": finding.get("criterion"),
+                       "action_selected": action_id, "capability_used": "modal.runtime", "tool_used": "ModalRemoteWorkerProvider",
+                       "started_at": value.get("last_seen") or utc_now(), "completed_at": utc_now(),
+                       "result_status": status, "raw_result": value, "raw_result_reference": "inline:modal-health-result",
+                       "artifact_or_receipt": f"reports/runtime/criterion_tool_receipts/{receipt_id}.json",
+                       "expected_condition": finding.get("criterion"), "observed_condition": value.get("status"),
+                       "acceptance_test": "health probe returns a real bounded Modal status",
+                       "acceptance_result": "VERIFIED" if status == "PASS" else "FAILED",
+                       "evidence_classification": "VERIFIED_EVIDENCE" if status == "PASS" else "FAILED_EVIDENCE",
+                       "execution_mode": "REAL", "external_side_effects": False}
+            path = ROOT / receipt["artifact_or_receipt"]
+            write_json(path, receipt)
+            return {"status": status, "action": action_id, "artifact_path": receipt["artifact_or_receipt"], "receipt_path": receipt["artifact_or_receipt"], "criterion_verification": receipt["acceptance_result"], "evidence_classification": receipt["evidence_classification"], "modal_result": value, "execution_mode": "REAL", "external_side_effects": False}
+        except (OSError, subprocess.SubprocessError, ValueError, TypeError) as exc:
+            return {"status": "FAILED", "action": action_id, "failure_class": "REMOTE_WORKER_REQUIRED", "error": f"{type(exc).__name__}: {exc}", "execution_mode": "REAL", "external_side_effects": False}
     if action_id == "department.research_handoff":
         # Consume the existing governed department-research contract.  The
         # target is the canonical Alpha/Research path; the originating
@@ -1117,6 +1167,17 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         receipt_path = str((RECEIPT_DIR / f"operator_{run_id}.json").relative_to(ROOT))
         for item in safe_action_results:
             research_result = item.get("result", {})
+            finding = next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {})
+            execution_evidence = research_result.get("executor_result") if isinstance(research_result.get("executor_result"), dict) else research_result
+            if execution_evidence.get("action") in {"modal.health_probe", "modal.inspect_execution_controls"} and finding.get("parent_goal"):
+                goal = next((g for g in active_objective_portfolio() if g.get("goal_id") == finding.get("parent_goal")), {})
+                remaining = (goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria") or []
+                if remaining and execution_evidence.get("criterion_verification"):
+                    item["criterion_verification"] = record_criterion_verification(
+                        str(finding["parent_goal"]), criterion=str(remaining[0]), evidence=execution_evidence,
+                        acceptance_test="health probe returns a real bounded Modal status",
+                        result=str(execution_evidence["criterion_verification"]),
+                    )
             final_review_failed = bool(
                 research_result.get("status") == "PASS"
                 and isinstance(research_result.get("executor_result"), dict)
@@ -1124,7 +1185,6 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
                 and (research_result.get("ai_review") or {}).get("verified") is not True
             )
             if research_result.get("status") == "PASS" and not final_review_failed:
-                finding = next((f for f in dispatch_findings if f.get("finding_id") == item.get("finding_id")), {})
                 item["work_item_state"] = _complete_work_item(
                     finding,
                     run_id, run_id, research_result, receipt_path)
