@@ -1,0 +1,8 @@
+{
+  "schema_version": "nexus.hermes.r15.1.real-goal-canary.v1",
+  "status": "NOT_PROVEN",
+  "reason": "R15.1 bounded dispatcher tests used scratch Kanban tasks; no existing Nexus business goal was routed through the full Hermes profile/skill/CLI/reviewer stack",
+  "new_criteria_verified": 0,
+  "material_progress": false,
+  "portal_states_preserved": {"portal.client_beta":"READY_FOR_HUMAN_REVIEW","portal.admin_control_center":"READY_FOR_HUMAN_REVIEW"}
+}

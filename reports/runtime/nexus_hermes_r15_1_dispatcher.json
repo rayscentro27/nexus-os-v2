@@ -1,0 +1,18 @@
+{
+  "schema_version": "nexus.hermes.r15.1.dispatcher.v1",
+  "root_cause": "PROFILE_CONFIG_ERROR",
+  "root_cause_detail": "cloned test profile config.yaml and .env were root:root mode 600; dispatcher worker runs as hermes:hermes",
+  "repair": "test-only profile ownership changed to hermes:hermes, mode 600 retained",
+  "previous_failed_task": "t_92c132db",
+  "previous_result": "profile config PermissionError before model execution",
+  "tests": [
+    {"task_id":"t_e05913a1","profile":"nexus_engineer_test","skill":"codebase-inspection","status":"done","result":"ENGINEER_DISPATCH_OK","heartbeat":true,"duration_seconds":28},
+    {"task_id":"t_cc6505b4","profile":"nexus_research_test","skill":"grounded-citations","status":"done","result":"RESEARCH_DISPATCH_OK","heartbeat":true,"duration_seconds":16},
+    {"task_id":"t_2a864e0f","profile":"nexus_review_test","skill":"github-code-review","status":"done","result":"REVIEW_DISPATCH_OK","heartbeat":true,"duration_seconds":22}
+  ],
+  "dispatcher_worker_completion": "PASS_REAL",
+  "dispatcher_tests": "3/3",
+  "worker_heartbeat": "PASS_REAL",
+  "stalled_worker_reclaim": "PASS_REAL",
+  "multi_agent_kanban": "NOT_PROVEN"
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": "nexus.hermes.r15.1.cli-matrix.v1",
+  "host": "Oracle ARM64 / nexus-hermes-0206",
+  "available": {
+    "git":"/usr/bin/git 2.47.3",
+    "python":"/usr/bin/python 3.13.5",
+    "node":"/usr/local/bin/node 26.5.1",
+    "npm":"/usr/local/bin/npm 11.17.0",
+    "npx":"/usr/local/bin/npx 11.17.0",
+    "docker":"/usr/bin/docker 26.1.5",
+    "curl":"/usr/bin/curl 8.14.1",
+    "rg":"/usr/bin/rg 14.1.1",
+    "hermes":"/opt/hermes/.venv/bin/hermes 0.20.6"
+  },
+  "absent_or_not_certified": {
+    "gh":"not installed",
+    "supabase":"not installed; bounded npx probe did not return",
+    "netlify":"not installed; bounded npx probe did not return",
+    "playwright":"not on PATH; Hermes doctor reports browser dependency unmet",
+    "opencode":"not installed",
+    "jq":"not installed",
+    "fd":"not installed",
+    "pnpm":"not installed",
+    "bun":"not installed",
+    "podman":"not installed inside container",
+    "ollama":"not installed"
+  },
+  "hermes_cli_status_probes": "PASS_REAL",
+  "hermes_agent_cli_execution": "NOT_PROVEN_FOR_ABSENT_CLIS"
+}

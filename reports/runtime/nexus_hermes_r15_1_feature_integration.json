@@ -1,0 +1,8 @@
+{
+  "schema_version": "nexus.hermes.r15.1.feature-integration.v1",
+  "registered_or_existing_proven_capabilities": ["hermes.profile.worker", "hermes.kanban", "hermes.kanban.dispatch", "hermes.skill_pinning", "hermes.skills", "hermes.mcp", "hermes.terminal", "hermes.file_read", "hermes.execute_code", "hermes.subagent", "hermes.cli.git", "hermes.cli.python", "hermes.cli.node", "hermes.cli.npm", "hermes.cli.curl", "hermes.cli.rg"],
+  "real_goal_integration": "NOT_PROVEN",
+  "stable_features_bypassed_without_reason": [],
+  "legacy_paths": {"keep_as_fallback":["Nexus internal worker","Oracle Hermes gateway read-only","R12.6 certified tools"],"replace_with_hermes":[],"deprecate_later":[]},
+  "r14_result_to_hermes_task_handoff": "NOT_PROVEN"
+}

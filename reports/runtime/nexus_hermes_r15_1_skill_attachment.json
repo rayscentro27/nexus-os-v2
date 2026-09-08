@@ -1,0 +1,12 @@
+{
+  "schema_version": "nexus.hermes.r15.1.skill-attachment.v1",
+  "task_skill_pinning": "PASS_REAL",
+  "executions": [
+    {"task_id":"t_e05913a1","profile":"nexus_engineer_test","selected_skill":"codebase-inspection","task_metadata_visible":true,"worker_result":"ENGINEER_DISPATCH_OK"},
+    {"task_id":"t_cc6505b4","profile":"nexus_research_test","selected_skill":"grounded-citations","task_metadata_visible":true,"worker_result":"RESEARCH_DISPATCH_OK"},
+    {"task_id":"t_2a864e0f","profile":"nexus_review_test","selected_skill":"github-code-review","task_metadata_visible":true,"worker_result":"REVIEW_DISPATCH_OK"}
+  ],
+  "machine_verifiable_skill_attachment_provenance": "PARTIAL",
+  "reason": "Kanban persisted task skill metadata and worker context, but Hermes did not emit a separate versioned attachment receipt",
+  "skill_learning": "AVAILABLE_REQUIRES_APPROVAL"
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r15.1.telegram.v1",
+  "configured": false,
+  "reason": "Oracle Hermes status reports Telegram not configured; local Nexus runtime contains token-shaped configuration names but it was not propagated to Oracle",
+  "credential_exposed": false,
+  "messages_sent": false,
+  "command_surface": "NOT_TESTED",
+  "full_workflow": "NOT_TESTED"
+}
