@@ -34,6 +34,7 @@ import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
 from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_criterion_verification, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
 from nexus_agent_platform.execution_harness import capability_readiness, classify_execution_failure, worker_environment_preflight  # noqa: E402
+from nexus_agent_platform.unified_capability_control import select_candidate  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -1058,6 +1059,14 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 work_item_id=f"continuous_kernel:{goal['goal_id']}",
                 question=prompts.get(goal["goal_id"], "Find current public evidence for the next open Nexus capability gap."),
             )
+            selection = select_candidate(
+                task_id=f"continuous_kernel:{goal['goal_id']}",
+                goal_id=str(goal.get("goal_id") or ""),
+                criterion_id=str(dispatch.get("criterion") or "next-criterion"),
+                goal=str(goal.get("statement") or goal.get("domain") or ""),
+                criterion=str(dispatch.get("criterion") or " ".join(str(x) for x in goal.get("missing_criteria", []))),
+                task=str(dispatch.get("question") or ""),
+            )
             # Identity is scoped to the bounded scheduler cadence: the same
             # cycle is idempotent, while a later cycle may advance the open
             # parent goal instead of being suppressed forever.
@@ -1079,6 +1088,7 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "missing_criteria": goal.get("missing_criteria", []),
                 "current_evidence": goal.get("current_evidence", []),
                 "objective_next_action": goal.get("next_action"),
+                "capability_selection": selection,
                 "rework_context": {
                     "last_failure": goal.get("last_result") if isinstance(goal.get("last_result"), dict) else {},
                     "closure_session": goal.get("closure_session") if isinstance(goal.get("closure_session"), dict) else {},
