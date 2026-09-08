@@ -35,6 +35,7 @@ from business_active_operator import discover_business_attention, write_business
 from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_criterion_verification, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
 from nexus_agent_platform.execution_harness import capability_readiness, classify_execution_failure, worker_environment_preflight  # noqa: E402
 from nexus_agent_platform.unified_capability_control import select_candidate  # noqa: E402
+from nexus_agent_platform.hermes_native_adapter import probe_authenticated_native_tool  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -71,7 +72,7 @@ class ActiveOperatorTimeout(RuntimeError):
 _CYCLE_CONTEXT: Dict[str, Any] = {}
 
 SAFE_INTERNAL_ACTIONS = frozenset({
-    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "internal.assemble_final_deliverable", "ai.plan_and_verify", "engineering.portal_beta", "funding.readiness_review", "modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls",
+    "read_operational_state", "write_heartbeat", "write_receipt", "generate_internal_report", "business_attention.generate", "measurement_gap.report", "research.refresh", "research.alternate_public", "department.research_handoff", "trading.research_cycle", "internal.capability_verify", "internal.create_bounded_work_artifact", "internal.assemble_final_deliverable", "ai.plan_and_verify", "engineering.portal_beta", "funding.readiness_review", "modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls", "hermes.native.read_only",
 })
 NOT_AUTHORIZED_ACTIONS = frozenset({
     "stripe.live_activation", "financial.transactions", "place_trade", "charge_customer",
@@ -337,6 +338,22 @@ def classify_action(action_id: str) -> str:
 
 def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dict[str, Any]:
     """Run only bounded existing internal adapters; no external mutation."""
+    if action_id == "hermes.native.read_only":
+        criterion = str(finding.get("criterion") or "")
+        if not any(term in criterion.lower() for term in ("readable", "executive state", "current state")):
+            return {"status": "FAILED", "action": action_id, "failure_class": "ACCEPTANCE_SCOPE_MISMATCH", "error": "Hermes read-only canary is not authorized for this criterion", "execution_mode": "REAL", "external_side_effects": False}
+        try:
+            native = probe_authenticated_native_tool(prompt=("Use the authenticated native read-only capability once. Return a concise sanitized current executive/system state summary. Do not edit files, call external services, send messages, or expose credentials. Include observed state and degraded sources."), persist=True)
+            result = native.get("result") if isinstance(native, dict) else {}
+            content = str((result or {}).get("content") or (result or {}).get("response") or "").strip()
+            passed = bool(content) and not bool((result or {}).get("error"))
+            receipt_id = "hermes_goal_read_" + uuid.uuid4().hex
+            receipt = {"schema_version": "nexus.hermes-real-goal-receipt.v1", "receipt_id": receipt_id, "goal_id": finding.get("parent_goal"), "criterion": criterion, "action": action_id, "capability_used": "hermes.native.gateway.read_only", "worker": "oracle_hermes_0.20.6", "selection_owner": "nexus_unified_capability_selector", "prompt_class": "sanitized_current_state_read", "observed_condition": content[:2000], "acceptance_test": "authenticated Hermes read-only state result is non-empty and persisted with a real execution receipt", "criterion_verification": "VERIFIED" if passed else "FAILED", "evidence_classification": "VERIFIED_EVIDENCE" if passed else "FAILED_EVIDENCE", "execution_mode": "REAL", "external_side_effects": False, "secret_exposed": False, "native_receipt": native, "recorded_at": utc_now()}
+            path = ROOT / "reports/runtime/nexus_hermes_native_r12" / f"{receipt_id}.json"
+            write_json(path, receipt)
+            return {"status": "PASS" if passed else "FAILED", "action": action_id, "capability_used": receipt["capability_used"], "artifact_path": str(path.relative_to(ROOT)), "receipt_path": str(path.relative_to(ROOT)), "criterion_verification": receipt["criterion_verification"], "evidence_classification": receipt["evidence_classification"], "observed_condition": content[:2000], "execution_mode": "REAL", "external_side_effects": False, "native_result": result}
+        except Exception as exc:
+            return {"status": "FAILED", "action": action_id, "failure_class": "HERMES_NATIVE_CALL_FAILURE", "error": f"{type(exc).__name__}: {exc}", "execution_mode": "REAL", "external_side_effects": False}
     if action_id == "engineering.portal_beta":
         # Narrow, reversible Engineering executor for the real portal beta
         # objective. It may touch exactly one source file and runs fixed local
@@ -655,6 +672,13 @@ print(json.dumps(value, sort_keys=True))
         return {"status": "PASS", "action": action_id, "artifact": artifact,
                 "output_hash": hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()[:24],
                 "artifact_path": str(report_path.relative_to(ROOT)), "execution_mode": "REAL"}
+    if action_id == "research.alternate_public":
+        from nexus_agent_platform import alpha_research
+        question = str(finding.get("question") or finding.get("criterion") or "current public evidence")
+        alternate = "official primary sources and independently corroborated evidence for " + question
+        result = alpha_research.execute_alpha_request(objective=alternate, research_type="MARKET_RESEARCH", requested_by="active_operator", referent=str(finding.get("parent_goal") or ""))
+        result.update({"status": "PASS" if (result.get("execution") or {}).get("executed") is True else "FAILED", "action": action_id, "execution_mode": "REAL", "parent_goal": finding.get("parent_goal"), "department": finding.get("department", "RESEARCH"), "external_side_effects": False, "strategy_delta": ["SOURCE_CLASS", "QUERY_STRATEGY", "TOOL"], "source_class": "PRIMARY_AND_CORROBORATED_PUBLIC"})
+        return result
     if action_id != "research.refresh":
         if action_id == "trading.research_cycle":
             # Existing paper-only Trading loop; no funded/live mutation.
@@ -1328,6 +1352,8 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             if execution_evidence.get("criterion_verification") and finding.get("parent_goal") and finding.get("criterion"):
                 goal = next((g for g in active_objective_portfolio() if g.get("goal_id") == finding.get("parent_goal")), {})
                 remaining = (goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria") or []
+                failed_current = (goal.get("closure_session") or {}).get("failed_criteria_current") or []
+                remaining = list(remaining) + [x.get("criterion") if isinstance(x, dict) else x for x in failed_current]
                 criterion = str(finding.get("criterion"))
                 if criterion.lower() in {str(x).lower() for x in remaining} or execution_evidence.get("action", "").startswith("modal."):
                     item["criterion_verification"] = record_criterion_verification(
@@ -1383,6 +1409,55 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
                         str(finding["parent_goal"]),
                         work_item_id=str(finding.get("source_record_id") or finding.get("finding_id")),
                         result=research_result, action="ai.plan_and_verify", receipt_ref=receipt_path)
+                # A planning worker is an attempt executor, not the owner of
+                # continuation.  If it cannot produce a valid plan, translate
+                # the failure and immediately use the controller-known
+                # productive path when it is a real alternate capability.
+                from nexus_agent_platform.downstream_continuation import next_action_after_result
+                decision = next_action_after_result(
+                    result=research_result,
+                    previous={"tool": "ai.plan_and_verify", "strategy": "model_plan"},
+                    alternatives_available=bool(finding.get("productive_action")),
+                )
+                item["continuation_decision"] = decision
+                productive = str(finding.get("productive_action") or "")
+                if productive == "research.refresh":
+                    alternate_finding = {
+                        **finding,
+                        "proposed_action": "research.alternate_public",
+                        "productive_action": "research.alternate_public",
+                        "question": f"{finding.get('question', '')} — alternate primary-source strategy",
+                    }
+                    item["alternate_execution"] = execute_safe_internal_action("research.alternate_public", alternate_finding)
+                    alternate = item["alternate_execution"]
+                    if alternate.get("status") == "PASS" and finding.get("parent_goal"):
+                        # The alternate evidence action is itself parent work:
+                        # persist its receipt/evidence delta so the next cycle
+                        # can consume it instead of treating the handoff as
+                        # complete-but-unconnected.
+                        item["alternate_goal_progress"] = record_goal_progress(
+                            str(finding["parent_goal"]),
+                            work_item_id=str(finding.get("source_record_id") or finding.get("finding_id")) + ":alternate",
+                            result=alternate, action="research.alternate_public", receipt_ref=receipt_path)
+                elif productive and productive not in {"internal.create_bounded_work_artifact", "internal.assemble_final_deliverable"}:
+                    # Non-document capabilities can execute without a model
+                    # authored artifact; keep them in the same continuation.
+                    item["alternate_execution"] = execute_safe_internal_action(productive, finding)
+            if research_result.get("status") == "FAILED" and str(research_result.get("action") or "") == "research.refresh":
+                from nexus_agent_platform.downstream_continuation import next_action_after_result
+                decision = next_action_after_result(
+                    result=research_result,
+                    previous={"tool": "research.refresh", "query_strategy": "private_exact_query"},
+                )
+                item["continuation_decision"] = decision
+                if decision.get("next_action") == "research.alternate_public":
+                    alternate_finding = {
+                        **finding,
+                        "proposed_action": "research.alternate_public",
+                        "productive_action": "research.alternate_public",
+                        "question": f"{finding.get('question', '')} — alternate primary-source strategy",
+                    }
+                    item["alternate_execution"] = execute_safe_internal_action("research.alternate_public", alternate_finding)
         _record_progress("PERSISTING")
         safe_receipts = [_safe_receipt(run_id, action, {"status": "COMPLETED", "mode": mode})
                          for action in dict.fromkeys(actions_executed) if action in SAFE_INTERNAL_ACTIONS or action == "business_attention.generate"]

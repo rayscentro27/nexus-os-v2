@@ -44,6 +44,17 @@ def resolve_criterion_capability(goal_id: str, criterion: str) -> dict[str, Any]
     remain a blocker until a real existing path is found.
     """
     text = criterion.lower()
+    if "readable" in text and any(term in text for term in ("state", "executive", "admin", "current")):
+        return {
+            "evidence_type": "LIVE_HERMES_READ_ONLY_STATE",
+            "capability_required": "hermes.native.gateway.read_only",
+            "tool_or_executor": "authenticated Oracle Hermes read-only gateway",
+            "action": "hermes.native.read_only",
+            "expected_output": "sanitized live executive/system state returned by the authenticated Hermes gateway",
+            "acceptance_test": "authenticated Hermes read-only state result is non-empty and persisted with a real execution receipt",
+            "fallback_paths": ["NEXUS_MCP_READ", "INTERNAL_READ"],
+            "available": True,
+        }
     if goal_id == "systems.modal_verification" or "modal" in text:
         modal_python = ROOT / ".venv-agent-platform" / "bin" / "python"
         modal_cli = ROOT / ".venv-agent-platform" / "bin" / "modal"
@@ -411,6 +422,7 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     # goal must not starve every P2/P3 goal. A durable selection-count gap of
     # two turns is evidence of starvation; temporarily promote least-run work.
     urgent = [row for row in rows if str(row.get("priority")) == "P0"]
+    recovery = []
     if urgent:
         candidates = urgent
     else:
@@ -458,7 +470,14 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
                 starved = [row for row in rows if int(row.get("selection_count", 0)) == min_count and max_count - min_count >= 2]
                 fair = [row for row in rows if int(row.get("consecutive_selections", 0)) < 2]
                 candidates = starved or (fair or rows)
-    selected = min(candidates, key=lambda row: (PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), -float(row.get("_age_seconds", 0)), int(row.get("selection_count", 0)), str(row.get("goal_id"))))
+    if recovery and candidates is recovery:
+        # Once a closure strategy is exhausted, fairness must operate on the
+        # recovery cohort itself.  Priority/age alone repeatedly selected the
+        # same old P2 goal and starved other stalled parents of their alternate
+        # strategy.  Selection remains deterministic and bounded.
+        selected = min(candidates, key=lambda row: (int(row.get("selection_count", 0)), -float(row.get("_age_seconds", 0)), PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), str(row.get("goal_id"))))
+    else:
+        selected = min(candidates, key=lambda row: (PRIORITY_RANK.get(str(row.get("priority", "P4")), 4), -float(row.get("_age_seconds", 0)), int(row.get("selection_count", 0)), str(row.get("goal_id"))))
     for row in rows:
         row.pop("_age_seconds", None)
     selected["last_selected_at"] = now.isoformat()
@@ -529,6 +548,19 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
     # generic AI artifact writer stand in for a live capability probe/job.
     if rework_required or goal.get("closure_session"):
         remaining = (goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria") or []
+        failed_current = (goal.get("closure_session") or {}).get("failed_criteria_current") or []
+        if failed_current:
+            concrete = [x.get("criterion") if isinstance(x, dict) else x for x in failed_current]
+            concrete = [x for x in concrete if str(x).strip() and "controller-selected downstream action required" not in str(x).lower()]
+            if concrete:
+                remaining = concrete
+        if remaining and all("controller-selected downstream action required" in str(x).lower() for x in remaining):
+            fixed = {str(x).lower() for x in ((goal.get("closure_session") or {}).get("criteria_fixed") or [])}
+            declared = [str(x) for x in (goal.get("success_criteria") or []) if str(x).lower() not in fixed]
+            if declared:
+                remaining = declared
+        if any("readable" in str(x).lower() for x in remaining):
+            remaining = [x for x in remaining if "readable" in str(x).lower()] + [x for x in remaining if "readable" not in str(x).lower()]
         if remaining:
             binding = resolve_criterion_capability(str(goal.get("goal_id") or ""), str(remaining[0]))
             if binding.get("evidence_type") != "INTERNAL_DELIVERABLE":
@@ -545,7 +577,10 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         "productive_action": productive_action,
         "finalization_requested": finalization_requested,
         "rework_required": rework_required,
-        "criterion": next((str(x) for x in ((goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria") or []) if any(phrase in str(x).lower() for phrase in ("highest-value beta gap", "capability audit", "tenant and approval"))), None),
+        # Every downstream task needs a concrete parent criterion.  The old
+        # phrase filter only populated this for the Portal canary, leaving
+        # Clyde/Opportunity resumes unbound to an acceptance target.
+        "criterion": str(remaining[0]) if (rework_required or goal.get("closure_session")) and remaining else next((str(x) for x in (goal.get("missing_criteria") or [])), None),
         "work_item_id": work_item_id,
         "question": question,
         "authority": goal.get("authority_envelope", "INTERNAL_SAFE"),
@@ -603,9 +638,21 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         review = result.get("ai_review") if isinstance(result.get("ai_review"), dict) else {}
         workforce = result.get("ai_workforce") if isinstance(result.get("ai_workforce"), dict) else {}
         failure_report = result.get("finalization_failure") if isinstance(result.get("finalization_failure"), dict) else {}
-        raw = review.get("remaining_work") or executor.get("error") or workforce.get("failure_class") or result.get("failure_class") or "Finalization requires bounded rework."
+        failure_class = str(executor.get("failure_class") or workforce.get("failure_class") or result.get("failure_class") or "")
+        # A malformed planner response is an attempt failure, never a parent
+        # criterion.  Previously INVALID_MODEL_PLAN was persisted as a fake
+        # missing criterion, which made every later cycle repair the planner
+        # error instead of the real goal.
+        if failure_class == "INVALID_MODEL_PLAN":
+            existing = (row.get("closure_session") or {}).get("criteria_remaining") or row.get("missing_criteria") or []
+            raw = "Controller-selected downstream action required after invalid worker plan."
+            criteria = [{"criterion": str(x), "status": "UNSATISFIED", "reason": raw,
+                         "required_repair": "controller_selected_productive_action",
+                         "evidence_required": str(x)} for x in existing]
+        else:
+            raw = review.get("remaining_work") or executor.get("error") or workforce.get("failure_class") or result.get("failure_class") or "Finalization requires bounded rework."
+            criteria = list((failure_report.get("criteria") or []))
         missing = [str(x) for x in raw] if isinstance(raw, list) else [str(raw)]
-        criteria = list(failure_report.get("criteria") or [])
         if not criteria:
             criteria = [{"criterion": item, "status": "UNSATISFIED", "reason": item,
                          "required_repair": "internal.create_bounded_work_artifact",
@@ -717,7 +764,19 @@ def record_criterion_verification(goal_id: str, *, criterion: str, evidence: dic
         ref = evidence.get("artifact_path") or evidence.get("receipt_path")
         if ref and str(ref) not in evidence_refs:
             evidence_refs.append(str(ref))
-        remaining = [str(x) for x in session.get("criteria_remaining") or [] if str(x).lower() != str(criterion).lower()]
+        remaining = [str(x) for x in session.get("criteria_remaining") or []
+                     if str(x).lower() != str(criterion).lower()
+                     and "controller-selected downstream action required" not in str(x).lower()]
+        # Older closure repair rounds persisted a synthetic invalid-plan
+        # placeholder instead of a business criterion. Once a real criterion
+        # verification arrives, discard that placeholder and retain only the
+        # concrete reviewer deficiencies as the resumable next tasks.
+        for failed in session.get("failed_criteria_current") or []:
+            failed_name = failed.get("criterion") if isinstance(failed, dict) else failed
+            if failed_name and str(failed_name).lower() != str(criterion).lower() \
+                    and "controller-selected downstream action required" not in str(failed_name).lower() \
+                    and str(failed_name) not in remaining:
+                remaining.append(str(failed_name))
         fixed = list(session.get("criteria_fixed") or [])
         if result == "VERIFIED" and str(criterion) not in fixed:
             fixed.append(str(criterion))

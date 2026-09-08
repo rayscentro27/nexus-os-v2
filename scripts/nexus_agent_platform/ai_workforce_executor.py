@@ -21,7 +21,7 @@ RECEIPT_DIR = ROOT / "reports/runtime/ai_workforce_receipts"
 ALLOWED_ACTION = "internal.capability_verify"
 PRODUCTIVE_ACTION = "internal.create_bounded_work_artifact"
 FINAL_ACTION = "internal.assemble_final_deliverable"
-TOOL_ACTIONS = {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls", "research.refresh"}
+TOOL_ACTIONS = {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls", "research.refresh", "hermes.native.read_only"}
 ENGINEERING_ACTIONS = {"engineering.portal_beta"}
 ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION, FINAL_ACTION, *TOOL_ACTIONS, *ENGINEERING_ACTIONS}
 
@@ -203,13 +203,35 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
     plan = _json_content(plan_call)
     usage = {"planning": plan_call.get("usage", {}), "review": {}}
     if plan_call.get("error") or not plan or plan.get("next_action") != required_action:
-        receipt = {"schema_version": "nexus.ai-workforce-receipt.v1", "receipt_id": receipt_id,
-                   "execution_mode": "REAL", "status": "FAILED", "failure_class": "INVALID_MODEL_PLAN",
-                   "objective": objective, "model": plan_call.get("model", _model()),
-                   "model_invocation": True, "plan": plan, "usage": usage,
-                   "started_at": started, "completed_at": _now()}
-        receipt["receipt_path"] = _write_receipt(receipt)
-        return {"status": "FAILED", "action": "ai.plan_and_verify", "artifact_path": receipt["receipt_path"], "ai_workforce": receipt}
+        # A malformed planner response is a worker-attempt failure, not a
+        # parent-goal failure.  Give the controller one bounded, materially
+        # different recovery attempt with compact context before returning the
+        # failure to the continuation translator.
+        recovery_objective = {**objective, "evidence_context": str(objective.get("evidence_context") or "")[-9000:],
+                              "recovery_reason": "INITIAL_PLAN_INVALID; produce the concrete bounded action now"}
+        recovery_call = _call("nexus_ai_workforce_planner_recovery", [
+            {"role": "system", "content": (
+                "Recover an invalid bounded plan. Return JSON only with the same required keys. "
+                "next_action must be exactly " + required_action + ". Use only the supplied evidence; "
+                "do not claim unsupported facts or completion."
+            )},
+            {"role": "user", "content": json.dumps(recovery_objective, sort_keys=True)},
+        ], max_tokens=900 if required_action in {FINAL_ACTION, PRODUCTIVE_ACTION} else 300)
+        recovery_plan = _json_content(recovery_call)
+        if not recovery_call.get("error") and recovery_plan and recovery_plan.get("next_action") == required_action:
+            plan = recovery_plan
+            usage["planning_recovery"] = recovery_call.get("usage", {})
+        else:
+            receipt = {"schema_version": "nexus.ai-workforce-receipt.v1", "receipt_id": receipt_id,
+                       "execution_mode": "REAL", "status": "FAILED", "failure_class": "INVALID_MODEL_PLAN",
+                       "objective": objective, "model": plan_call.get("model", _model()),
+                       "model_invocation": True, "plan": plan,
+                       "recovery_plan": recovery_plan,
+                       "planner_recovery_error": str(recovery_call.get("error") or "INVALID_MODEL_PLAN")[:300],
+                       "usage": usage,
+                       "started_at": started, "completed_at": _now()}
+            receipt["receipt_path"] = _write_receipt(receipt)
+            return {"status": "FAILED", "action": "ai.plan_and_verify", "failure_class": "INVALID_MODEL_PLAN", "artifact_path": receipt["receipt_path"], "ai_workforce": receipt}
 
     executor_input = {**finding, "ai_plan": plan,
                       "question": plan.get("next_action") + ": " + str(plan.get("rationale", finding.get("question", "")))}
@@ -218,7 +240,12 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
         {"role": "system", "content": (
             "You are a bounded Nexus result reviewer. Return JSON only with keys "
             "result_quality, verified, remaining_work, pushback. Do not claim a parent "
-            "goal is complete from one child result."
+            "goal is complete from one child result. Verify only the supplied "
+            "objective criteria and evidence. Do not reject an internal beta-readiness "
+            "package merely because deployment or public release was not performed; "
+            "if all objective criteria pass and release requires human approval, "
+            "report verified=true with remaining_work empty and preserve human review "
+            "as the handoff."
         )},
         {"role": "user", "content": json.dumps({"objective": objective, "plan": plan, "execution": execution}, sort_keys=True, default=str)},
     ])
