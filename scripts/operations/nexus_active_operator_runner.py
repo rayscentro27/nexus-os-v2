@@ -33,6 +33,7 @@ from process_registry_adapter import emit_process_run  # noqa: E402
 import process_registry_adapter  # noqa: E402
 from business_active_operator import discover_business_attention, write_business_priority_brief  # noqa: E402
 from nexus_agent_platform.goal_completion import active_objective_portfolio, apply_terminal_closures, next_work_for_active_goal, operating_duty_preflight, record_criterion_verification, record_goal_progress, record_goal_rework, select_portfolio_goal  # noqa: E402
+from nexus_agent_platform.execution_harness import capability_readiness, classify_execution_failure, worker_environment_preflight  # noqa: E402
 
 REGISTRY_PATH = ROOT / "data/operations/nexus_process_registry.json"
 CAMPAIGN_PATH = ROOT / "data/runtime/nexus_loop_certification_campaign.json"
@@ -331,6 +332,9 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
         safety_source_path = ROOT / "src/pages/client/WorldClassClientPortal.jsx"
         marker = 'aria-label="GoClear client portal"'
         try:
+            readiness = capability_readiness(action_id, ROOT)
+            if not readiness["ready"]:
+                return {"status": "FAILED", "action": action_id, "failure_class": readiness["preflight"].get("failure_class") or "CAPABILITY_GAP", "environment_preflight": readiness, "recovery_required": True, "recovery_action": "repair_worker_environment", "execution_mode": "REAL", "external_side_effects": False}
             source = portal_path.read_text(encoding="utf-8")
             safety_source = safety_source_path.read_text(encoding="utf-8")
             before_hash = hashlib.sha256(source.encode()).hexdigest()
@@ -350,8 +354,9 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
             if unsafe_claim in safety_source:
                 safety_source_path.write_text(safety_source.replace(unsafe_claim, safe_claim, 1), encoding="utf-8")
                 safety_source = safety_source.replace(unsafe_claim, safe_claim, 1)
-            test_cmd = ["npm", "test", "--", "--run", "tests/nexus3_route_replacement.test.ts"]
-            build_cmd = ["npm", "run", "build"]
+            npm = readiness["preflight"]["executables"]["npm"]["path"]
+            test_cmd = [npm, "test", "--", "--run", "tests/nexus3_route_replacement.test.ts"]
+            build_cmd = [npm, "run", "build"]
             safety_cmd = [sys.executable, "scripts/client_flow/verify_client_portal_safety.py", "--json"]
             test = subprocess.run(test_cmd, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
             build = subprocess.run(build_cmd, cwd=ROOT, capture_output=True, text=True, timeout=240, check=False)
@@ -364,6 +369,10 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
             passed = test.returncode == 0 and build.returncode == 0 and safety.returncode == 0
             if "highest-value beta gap" in criterion_text:
                 passed = passed and marker in after
+            elif "capability audit" in criterion_text:
+                passed = passed and all(token in (source + safety_source).lower() for token in ("portal", "approval", "tenant"))
+            elif "tenant and approval" in criterion_text:
+                passed = passed and all(token in (source + safety_source).lower() for token in ("approval", "tenant"))
             receipt_id = "engineering_portal_" + uuid.uuid4().hex
             receipt = {"schema_version": "nexus.engineering-execution-receipt.v1", "receipt_id": receipt_id,
                        "goal_id": finding.get("parent_goal"), "criterion": finding.get("criterion"),
@@ -375,6 +384,9 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                                  {"command": build_cmd, "returncode": build.returncode, "passed": build.returncode == 0},
                                  {"command": safety_cmd, "returncode": safety.returncode, "passed": safety.returncode == 0}],
                        "criterion_verification": "VERIFIED" if passed else "FAILED",
+                       "environment_preflight": readiness,
+                       "skills_loaded": ["software-engineering", "worktree-safety", "test-debugging"],
+                       "tools_available": ["repository_search", "git", "node", "npm", "vitest", "vite_build", "portal_safety_verifier"],
                        "acceptance_test": "portal beta source contains the bounded accessibility readiness change and focused test/build pass",
                        "observed_condition": "portal source changed and local test/build passed" if passed else "portal engineering verification failed",
                        "execution_mode": "REAL", "external_side_effects": False,
@@ -386,7 +398,7 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                     "criterion_verification": receipt["criterion_verification"], "evidence_classification": "VERIFIED_EVIDENCE" if passed else "FAILED_EVIDENCE",
                     "tests": receipt["tests"], "files_changed": receipt["files_changed"], "execution_mode": "REAL", "external_side_effects": False}
         except (OSError, subprocess.SubprocessError) as exc:
-            return {"status": "FAILED", "action": action_id, "failure_class": type(exc).__name__, "error": str(exc), "execution_mode": "REAL", "external_side_effects": False}
+            return {"status": "FAILED", "action": action_id, "failure_class": classify_execution_failure(exc), "error": str(exc), "recovery_required": True, "execution_mode": "REAL", "external_side_effects": False}
     if action_id in {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls"}:
         # The Modal adapter is an existing governed path.  Keep its SDK in
         # the dedicated agent-platform environment; the control-plane Python

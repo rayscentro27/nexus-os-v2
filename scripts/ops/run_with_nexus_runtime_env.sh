@@ -17,6 +17,23 @@ set +a
 # bounded scheduler and the existing Hermes transport callers.
 export PYTHONPATH="/Users/raymonddavis/nexus-os-v2/scripts${PYTHONPATH:+:$PYTHONPATH}"
 
+# launchd does not inherit interactive nvm initialization. Resolve the
+# Nexus-controlled Node installation before any worker is dispatched so a
+# missing PATH is classified as environment recovery, not an AI failure.
+NEXUS_NODE_ROOT="/Users/raymonddavis/.nvm/versions/node"
+if [ -d "$NEXUS_NODE_ROOT" ]; then
+  NEXUS_NODE_BINS=( "$NEXUS_NODE_ROOT"/v*/bin )
+  NEXUS_NODE_INDEX=${#NEXUS_NODE_BINS[@]}
+  while (( NEXUS_NODE_INDEX > 0 )); do
+    NEXUS_NODE_BIN="${NEXUS_NODE_BINS[$NEXUS_NODE_INDEX]}"
+    if [ -x "$NEXUS_NODE_BIN/node" ] && [ -x "$NEXUS_NODE_BIN/npm" ]; then
+      export PATH="$NEXUS_NODE_BIN:$PATH"
+      break
+    fi
+    (( NEXUS_NODE_INDEX-- ))
+  done
+fi
+
 # The continuous-loop runtime has no Stripe execution responsibility. Keep
 # shared application credentials available to their legitimate consumers, but
 # prevent them from crossing into this autonomous child process.

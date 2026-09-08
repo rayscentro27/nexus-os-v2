@@ -715,6 +715,8 @@ def record_criterion_verification(goal_id: str, *, criterion: str, evidence: dic
         row.update({"criterion_verifications": checks[-40:], "current_evidence": evidence_refs[-20:],
                     "missing_criteria": remaining,
                     "closure_session": session, "next_action": "FINALIZATION_RETRY" if result == "VERIFIED" else row.get("next_action"),
+                    "next_task_id": (f"{goal_id}:{remaining[0]}" if result == "VERIFIED" and remaining else None),
+                    "next_task_criterion": (remaining[0] if result == "VERIFIED" and remaining else None),
                     "updated_at": _now()})
         _portfolio_write(rows)
         return row
