@@ -1,0 +1,6 @@
+{
+  "schema_version": "nexus.hermes.r15.kanban-receipts.v1",
+  "manual_lifecycle": {"task_id": "t_0f597ebe", "result": "PASS_REAL", "events": ["created", "claimed", "commented", "review_requested", "completed"], "scope": "scratch", "production_mutation": false},
+  "dispatcher": {"task_id": "t_92c132db", "created": true, "spawned": true, "result": "BOUNDED_TIMEOUT_RECLAIMED", "archived": true},
+  "multi_agent_kanban": "NOT_PROVEN"
+}

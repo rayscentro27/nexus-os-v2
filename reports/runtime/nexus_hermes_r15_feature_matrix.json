@@ -1,0 +1,25 @@
+{
+  "schema_version": "nexus.hermes.r15.feature-matrix.v1",
+  "version": "0.20.6",
+  "oracle_health": "PASS_REAL",
+  "features": {
+    "profiles": {"status": "PASS_REAL", "evidence": "five test-only profiles created; three direct bounded profile turns returned PROFILE_OK"},
+    "named_agent_worker": {"status": "PARTIAL", "reason": "profile identity works; dispatcher task exceeded 30s and was reclaimed"},
+    "kanban_lifecycle": {"status": "PASS_REAL", "task": "t_0f597ebe", "evidence": ["create", "claim", "comment", "request-review", "complete"]},
+    "kanban_dispatch": {"status": "FAIL", "task": "t_92c132db", "reason": "spawned worker remained running past bounded task window; reclaimed"},
+    "skills": {"status": "PARTIAL", "discovery": "PASS_REAL", "attachment": "not independently attributable in result"},
+    "mcp": {"status": "PASS_REAL", "discovery": "PASS_REAL", "execution": "PASS_REAL from R12.6"},
+    "terminal": {"status": "PASS_REAL", "evidence": "R12.6 individual terminal probe"},
+    "file_read": {"status": "PASS_REAL", "evidence": "R12.6 individual file-read probe"},
+    "file_write_edit": {"status": "FAIL", "reason": "R12.6 bounded write/edit loop timed out"},
+    "execute_code": {"status": "PASS_REAL", "evidence": "R12.6 deterministic code probe"},
+    "browser": {"status": "FAIL", "reason": "R12.6 browser tool-loop timeout"},
+    "subagents": {"status": "PASS_REAL", "evidence": "R12.6 bounded delegation probe"},
+    "memory": {"status": "PRESENT_NOT_TESTED", "reason": "built-in memory enabled; memory tool disabled"},
+    "session_continuity": {"status": "PRESENT_NOT_TESTED"},
+    "cron": {"status": "PRESENT_NOT_TESTED", "reason": "gateway running, no active jobs"},
+    "plugins_hooks": {"status": "PRESENT_NOT_TESTED", "reason": "plugins listed; no plugin enabled for certification"},
+    "telegram_surface": {"status": "UNAVAILABLE", "reason": "Oracle status reports Telegram not configured"}
+  },
+  "real_goal_hermes_stack": "NO"
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "nexus.hermes.r15.real-goal-canary.v1",
+  "result": "NO",
+  "reason": "dispatcher worker did not complete bounded task; no existing Nexus business goal was routed through the full Hermes agent stack",
+  "portal_states_preserved": {"portal.client_beta": "READY_FOR_HUMAN_REVIEW", "portal.admin_control_center": "READY_FOR_HUMAN_REVIEW"},
+  "r14_failure_repair_handoff": "NOT_PROVEN"
+}

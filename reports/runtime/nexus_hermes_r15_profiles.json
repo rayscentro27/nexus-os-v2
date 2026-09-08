@@ -1,0 +1,12 @@
+{
+  "schema_version": "nexus.hermes.r15.profiles.v1",
+  "profiles": [
+    {"name": "nexus_orchestrator_test", "created": true, "clone_source": "default", "bounded_direct_turn": "PASS_REAL"},
+    {"name": "nexus_engineer_test", "created": true, "clone_source": "default", "bounded_direct_turn": "PASS_REAL", "dispatcher_task": "RECLAIMED_TIMEOUT"},
+    {"name": "nexus_research_test", "created": true, "clone_source": "default", "bounded_direct_turn": "PASS_REAL"},
+    {"name": "nexus_browser_test", "created": true, "clone_source": "default", "bounded_direct_turn": "NOT_COMPLETED_WITHIN_BOUND"},
+    {"name": "nexus_review_test", "created": true, "clone_source": "default", "bounded_direct_turn": "NOT_COMPLETED_WITHIN_BOUND"}
+  ],
+  "production_profiles_modified": false,
+  "secrets_exposed": false
+}

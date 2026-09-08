@@ -1,0 +1,7 @@
+{
+  "schema_version": "nexus.hermes.r15.skill-receipts.v1",
+  "discovery": {"result": "PASS_REAL", "installed_skill_count_observed": 78},
+  "attachment": {"result": "PARTIAL", "reason": "skills were available and direct skill-tool turns worked in R12.6, but R15 did not obtain machine-readable per-execution attachment provenance"},
+  "learning_loop": "AVAILABLE_REQUIRES_APPROVAL",
+  "task_pinning": "NOT_PROVEN"
+}

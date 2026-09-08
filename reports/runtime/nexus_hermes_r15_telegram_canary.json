@@ -1,0 +1,5 @@
+{
+  "schema_version": "nexus.hermes.r15.telegram-canary.v1",
+  "result": "UNAVAILABLE",
+  "reason": "live Hermes status reports Telegram not configured; no message was sent"
+}
