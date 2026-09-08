@@ -23,6 +23,19 @@ ELIGIBLE_STATUSES = {"ACTIVE", "READY", "QUEUED"}
 PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 
 
+def _criterion_key(value: Any) -> str:
+    """Normalize known equivalent Portal labels without relaxing requirements."""
+    text = str(value or "").strip().casefold()
+    return {
+        "capability audit recorded": "capability audit",
+        "record capability audit": "capability audit",
+        "highest-value beta gap implemented or actively worked": "highest-value beta gap",
+        "implement or actively work on highest-value beta gap": "highest-value beta gap",
+        "tenant and approval boundaries verified": "tenant and approval boundaries",
+        "verify tenant and approval boundaries": "tenant and approval boundaries",
+    }.get(text, text)
+
+
 def resolve_criterion_capability(goal_id: str, criterion: str) -> dict[str, Any]:
     """Deterministically bind evidence criteria to governed capabilities.
 
@@ -240,7 +253,7 @@ def _generic_final_deliverable(goal: dict[str, Any]) -> dict[str, Any] | None:
             continue
         satisfied = set(str(item) for item in (artifact.get("criteria_satisfied") or []))
         evaluation = artifact.get("final_evaluation") or {}
-        if not criteria.issubset(satisfied) or evaluation.get("verified") is not True:
+        if not {_criterion_key(value) for value in criteria}.issubset({_criterion_key(value) for value in satisfied}) or evaluation.get("verified") is not True:
             continue
         if artifact.get("external_action_performed") is True:
             continue
@@ -555,13 +568,13 @@ def record_goal_progress(goal_id: str, *, work_item_id: str, result: dict[str, A
         workstreams = list(row.get("active_workstreams", []))
         if action not in workstreams:
             workstreams.append(action)
-        row["current_evidence"] = evidence[-20:]
-        row["active_workstreams"] = workstreams[-12:]
         execution = result.get("executor_result") if isinstance(result.get("executor_result"), dict) else {}
         effective_action = str(execution.get("action") or action)
         artifact_path = execution.get("artifact_path") or result.get("artifact_path")
         if artifact_path and artifact_path not in evidence:
             evidence.append(str(artifact_path))
+        row["current_evidence"] = evidence[-20:]
+        row["active_workstreams"] = workstreams[-12:]
         if effective_action == "internal.capability_verify":
             # A healthy check is maintenance evidence, not objective progress.
             # Keep it observable without letting it reset the governor's

@@ -81,6 +81,19 @@ NOT_AUTHORIZED_ACTIONS = frozenset({
 PRIORITY_RANK = {"P0": 0, "P1": 1, "P2": 2, "P3": 3, "P4": 4}
 
 
+def _criterion_key(value: Any) -> str:
+    """Normalize known equivalent Portal labels without relaxing requirements."""
+    text = str(value or "").strip().casefold()
+    return {
+        "capability audit recorded": "capability audit",
+        "record capability audit": "capability audit",
+        "highest-value beta gap implemented or actively worked": "highest-value beta gap",
+        "implement or actively work on highest-value beta gap": "highest-value beta gap",
+        "tenant and approval boundaries verified": "tenant and approval boundaries",
+        "verify tenant and approval boundaries": "tenant and approval boundaries",
+    }.get(text, text)
+
+
 def normalized_priority(value: Any) -> str:
     """Accept governed portfolio labels such as P2_REVENUE at the runner boundary."""
     raw = str(value or "P4").upper()
@@ -356,6 +369,7 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                 safety_source = safety_source.replace(unsafe_claim, safe_claim, 1)
             npm = readiness["preflight"]["executables"]["npm"]["path"]
             node = readiness["preflight"]["executables"]["node"]["path"]
+            criterion_text = str(finding.get("criterion") or "").lower()
             test_cmd = [npm, "test", "--", "--run", "tests/nexus3_route_replacement.test.ts"]
             build_cmd = [npm, "run", "build"]
             safety_cmd = [sys.executable, "scripts/client_flow/verify_client_portal_safety.py", "--json"]
@@ -365,13 +379,13 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
             test = subprocess.run(test_cmd, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
             build = subprocess.run(build_cmd, cwd=ROOT, capture_output=True, text=True, timeout=240, check=False)
             safety = subprocess.run(safety_cmd, cwd=ROOT, capture_output=True, text=True, timeout=60, check=False)
-            tenant = subprocess.run(tenant_cmd, cwd=ROOT, capture_output=True, text=True, timeout=240, check=False) if boundary_criterion else None
+            tenant_env = {**os.environ, "E2E_ENABLE_AUTHENTICATED": "true"}
+            tenant = subprocess.run(tenant_cmd, cwd=ROOT, env=tenant_env, capture_output=True, text=True, timeout=240, check=False) if boundary_criterion else None
             approval = subprocess.run(approval_cmd, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False) if boundary_criterion else None
             after = portal_path.read_text(encoding="utf-8")
             after_hash = hashlib.sha256(after.encode()).hexdigest()
             safety_after = safety_source_path.read_text(encoding="utf-8")
             safety_after_hash = hashlib.sha256(safety_after.encode()).hexdigest()
-            criterion_text = str(finding.get("criterion") or "").lower()
             passed = test.returncode == 0 and build.returncode == 0 and safety.returncode == 0
             if "highest-value beta gap" in criterion_text:
                 passed = passed and marker in after
@@ -403,7 +417,7 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
             return {"status": "PASS" if passed else "FAILED", "action": action_id,
                     "artifact_path": str(receipt_path.relative_to(ROOT)), "receipt_path": str(receipt_path.relative_to(ROOT)),
                     "criterion_verification": receipt["criterion_verification"], "evidence_classification": "VERIFIED_EVIDENCE" if passed else "FAILED_EVIDENCE",
-                    "tests": receipt["tests"], "files_changed": receipt["files_changed"], "execution_mode": "REAL", "external_side_effects": False}
+                    "tests": receipt["tests"], "boundary_tests": receipt["boundary_tests"], "files_changed": receipt["files_changed"], "execution_mode": "REAL", "external_side_effects": False}
         except (OSError, subprocess.SubprocessError) as exc:
             return {"status": "FAILED", "action": action_id, "failure_class": classify_execution_failure(exc), "error": str(exc), "recovery_required": True, "execution_mode": "REAL", "external_side_effects": False}
     if action_id in {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls"}:
@@ -577,7 +591,8 @@ print(json.dumps(value, sort_keys=True))
         content = raw_content if isinstance(raw_content, (dict, list)) else str(raw_content or "").strip()
         criteria = [str(x) for x in (finding.get("success_criteria") or [])]
         satisfied = [str(x) for x in (plan.get("criteria_satisfied") or [])]
-        if not title or not content or not set(criteria).issubset(set(satisfied)):
+        satisfied_normalized = {_criterion_key(value) for value in satisfied}
+        if not title or not content or not {_criterion_key(value) for value in criteria}.issubset(satisfied_normalized):
             return {"status": "FAILED", "action": action_id, "failure_class": "INCOMPLETE_FINAL_DELIVERABLE",
                     "error": "Final package must name every success criterion and contain content", "execution_mode": "REAL",
                     "external_side_effects": False}
@@ -606,8 +621,19 @@ print(json.dumps(value, sort_keys=True))
             candidate = load_json(ROOT / str(ref), {})
             if candidate.get("schema_version") == "nexus.criterion-tool-receipt.v1":
                 tool_receipts.append(candidate)
-        verified_criteria = {str(x.get("criterion")) for x in tool_receipts if x.get("acceptance_result") == "VERIFIED" and x.get("evidence_classification") == "VERIFIED_EVIDENCE"}
-        if set(criteria).issubset(verified_criteria):
+            elif (candidate.get("schema_version") == "nexus.engineering-execution-receipt.v1"
+                  and candidate.get("status") == "PASS"
+                  and candidate.get("criterion_verification") == "VERIFIED"):
+                # Engineering receipts are criterion evidence when the
+                # governed executor recorded a passing criterion-specific
+                # acceptance test. Descriptive reports remain ineligible.
+                tool_receipts.append(candidate)
+        verified_criteria = {
+            str(x.get("criterion")) for x in tool_receipts
+            if (x.get("acceptance_result") == "VERIFIED" and x.get("evidence_classification") == "VERIFIED_EVIDENCE")
+            or (x.get("status") == "PASS" and x.get("criterion_verification") == "VERIFIED")
+        }
+        if {value.casefold() for value in criteria}.issubset({value.casefold() for value in verified_criteria}):
             artifact["status"] = "COMPLETE"
             artifact["final_evaluation"] = {"verified": True, "method": "deterministic_tool_receipt_acceptance", "verified_criteria": sorted(verified_criteria), "verified_at": utc_now()}
         path = ROOT / "reports/runtime/final_deliverables" / f"{artifact_id}.json"

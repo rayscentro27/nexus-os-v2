@@ -34,7 +34,10 @@ def test_repetition_guard_switches_strategy_after_identical_failure():
 def test_portfolio_keeps_multiple_parent_goals_active():
     portfolio = active_objective_portfolio()
     assert len(portfolio) >= 7
-    assert {"trading.real_data", "research.company_intelligence", "portal.client_beta"}.issubset({row["goal_id"] for row in portfolio})
+    # Portal may legitimately leave the active portfolio after its final
+    # deliverable reaches READY_FOR_HUMAN_REVIEW; unrelated parent goals must
+    # still remain active and schedulable.
+    assert {"trading.real_data", "research.company_intelligence"}.issubset({row["goal_id"] for row in portfolio})
     assert {row["status"] for row in portfolio}.issubset({"ACTIVE", "READY", "QUEUED"})
 
 

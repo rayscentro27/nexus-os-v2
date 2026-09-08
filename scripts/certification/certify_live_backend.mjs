@@ -26,6 +26,12 @@ function readEnvFile(file) {
 
 function loadEnv() {
   const values = loadRuntimeEnv({ override: true });
+  // Synthetic certification credentials are deliberately kept in the
+  // ignored E2E file, not the general company runtime environment.  Load
+  // them only for this explicitly authenticated certification path.
+  if (process.env.E2E_ENABLE_AUTHENTICATED === 'true') {
+    Object.assign(values, readEnvFile(path.join(ROOT, '.env.e2e.local')));
+  }
   Object.assign(values, process.env);
   return values;
 }
