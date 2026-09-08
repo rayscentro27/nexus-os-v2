@@ -1,0 +1,7 @@
+{
+  "schema_version":"nexus.hermes.r15.3.cli-matrix.v1",
+  "real_worker_cli_smoke":"PASS_REAL for git/python/node/npm/npx/curl/rg via prior bounded Hermes workers",
+  "available":["git","python3","node","npm","npx","docker","curl","rg","hermes"],
+  "required_missing":["opencode","gh","jq","fd","supabase","netlify","playwright"],
+  "full_cli_matrix":"FAIL_NOT_ALL_REQUIRED_CLIS_AVAILABLE"
+}

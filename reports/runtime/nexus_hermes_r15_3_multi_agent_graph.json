@@ -1,0 +1,15 @@
+{
+  "schema_version":"nexus.hermes.r15.3.multi-agent-graph.v1",
+  "orchestrator_tracker":"t_3f02f7b4",
+  "research":"t_0b222960",
+  "engineering":"t_864ffd5b",
+  "reviewer":"t_6d04f968",
+  "research_result":"PASS_REAL",
+  "engineering_result":"PASS_REAL",
+  "reviewer_result":"FAIL_TIMEOUT",
+  "research_to_engineering_dependency":"PASS_REAL",
+  "engineering_to_reviewer_dependency":"DISPATCHED_BUT_TIMEOUT",
+  "full_multi_agent_kanban":"FAIL",
+  "restart_persistence":"NOT_PROVEN",
+  "cleanup":"scratch tasks archived"
+}

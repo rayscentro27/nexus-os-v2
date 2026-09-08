@@ -1,0 +1,8 @@
+{
+  "schema_version":"nexus.hermes.r15.3.kanban-semantics.v1",
+  "parents_meaning":"PREREQUISITE",
+  "child_claim_requires_parent_done":true,
+  "source_evidence":"/opt/hermes/hermes_cli/kanban_db.py: create_task, recompute_ready, claim_task",
+  "supported_orchestrator_pattern":"orchestrator outside executable prerequisite chain; executable tasks link only to prior executable tasks",
+  "integration_change":"do not link active orchestrator as parent of runnable children"
+}

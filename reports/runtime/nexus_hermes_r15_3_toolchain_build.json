@@ -1,0 +1,19 @@
+{
+  "schema_version":"nexus.hermes.r15.3.toolchain-build.v1",
+  "host_architecture":"aarch64",
+  "container":"nexus-hermes-0206",
+  "base_image":"not recovered",
+  "containerfile":"not recovered",
+  "build_command":"not recovered",
+  "volume_mount":"/home/opc/.local/share/nexus-hermes-0206-cert:/opt/data",
+  "existing_available_tools":["git","python3","node","npm","npx","docker","curl","rg","hermes"],
+  "durable_toolchain_provisioned":false,
+  "container_rebuild_survival":"NOT_TESTED",
+  "opencode":"absent",
+  "gh":"absent",
+  "supabase":"absent",
+  "netlify":"absent",
+  "jq":"absent",
+  "fd":"absent",
+  "playwright":"browser dependency unmet"
+}

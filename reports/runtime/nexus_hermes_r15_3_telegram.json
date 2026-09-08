@@ -1,0 +1,9 @@
+{
+  "schema_version":"nexus.hermes.r15.3.telegram.v1",
+  "configured":false,
+  "reason":"Oracle Hermes status reports Telegram not configured",
+  "basic_roundtrip":"NOT_TESTED",
+  "full_workflow":"NOT_TESTED",
+  "secret_exposed":false,
+  "messages_sent":false
+}

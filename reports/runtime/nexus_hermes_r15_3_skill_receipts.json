@@ -1,0 +1,11 @@
+{
+  "schema_version":"nexus.hermes.r15.3.skill-receipts.v1",
+  "task_pinning":"PASS_REAL",
+  "executions":[
+    {"task_id":"t_0b222960","profile":"nexus_research_test","skill":"grounded-citations","status":"completed"},
+    {"task_id":"t_864ffd5b","profile":"nexus_engineer_test","skill":"codebase-inspection","status":"completed"},
+    {"task_id":"t_6d04f968","profile":"nexus_review_test","skill":"github-code-review","status":"timed_out_after_60s"}
+  ],
+  "independent_skill_attachment_provenance":"FAIL",
+  "reason":"Kanban metadata persisted requested skills, but no worker-side durable attachment receipt was emitted"
+}
