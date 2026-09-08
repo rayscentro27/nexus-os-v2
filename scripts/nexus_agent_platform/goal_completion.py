@@ -44,6 +44,10 @@ def resolve_criterion_capability(goal_id: str, criterion: str) -> dict[str, Any]
     remain a blocker until a real existing path is found.
     """
     text = criterion.lower()
+    if goal_id == "portal.admin_control_center" and "capability audit" in text:
+        return {"evidence_type": "INTERNAL_ADMIN_EVIDENCE", "capability_required": "nexus.admin_state_read", "tool_or_executor": "governed Admin capability evidence reader", "action": "internal.admin_capability_audit", "expected_output": "current capability inventory and admin-state evidence receipt", "acceptance_test": "current Admin capability evidence is read from canonical runtime state and persisted", "fallback_paths": ["INTERNAL_READ"], "available": True}
+    if goal_id == "portal.admin_control_center" and "highest-value control-center gap" in text:
+        return {"evidence_type": "INTERNAL_ADMIN_EVIDENCE", "capability_required": "nexus.admin_gap_work", "tool_or_executor": "governed Admin gap evidence writer", "action": "internal.admin_gap_work", "expected_output": "criterion-specific evidence of the highest-value Admin gap being actively worked", "acceptance_test": "current Admin gap, bounded work surface, and verification state are persisted", "fallback_paths": ["INTERNAL_READ"], "available": True}
     if "readable" in text and any(term in text for term in ("state", "executive", "admin", "current")):
         return {
             "evidence_type": "LIVE_HERMES_READ_ONLY_STATE",
@@ -344,6 +348,47 @@ def apply_terminal_closures(goal_ids: Iterable[str] | None = None) -> list[dict[
             continue
         if row.get("status") in TERMINAL_STATES:
             continue
+        session = row.get("closure_session")
+        if isinstance(session, dict):
+            remaining = [str(x) for x in session.get("criteria_remaining") or []]
+            placeholders = ("controller-selected downstream action required after invalid worker plan",
+                            "initial planner response was invalid; retry the concrete criterion action")
+            if remaining and all(any(token in x.lower() for token in placeholders) for x in remaining):
+                fixed = {str(x).lower() for x in session.get("criteria_fixed") or []}
+                concrete = [str(x) for x in row.get("success_criteria") or [] if str(x).lower() not in fixed]
+                if concrete:
+                    session = dict(session)
+                    session.update({"criteria_remaining": concrete, "failed_criteria_current": concrete,
+                                    "closure_state": "REPAIR_REQUIRED", "current_strategy": "criterion_specific_repair",
+                                    "current_round": 1})
+                    row["closure_session"] = session
+                    row["missing_criteria"] = concrete
+                    row["next_action"] = "CONTINUE_MISSING_CRITERIA"
+                    changed = True
+            # The Admin goal exhausted a historical invalid-plan strategy
+            # after a real criterion was verified. Reopen that concrete
+            # machine-actionable work once; otherwise the stalled marker
+            # starves it behind unrelated repair sessions.
+            if (str(row.get("goal_id")) == "portal.admin_control_center"
+                    and session.get("closure_state") == "CLOSURE_STALLED"
+                    and remaining
+                    and any(str(x).lower() == "executive state is readable" for x in session.get("criteria_fixed") or [])):
+                session = dict(session)
+                session.update({"closure_state": "REPAIR_REQUIRED", "current_round": 1,
+                                "current_strategy": "admin_criterion_completion"})
+                row["closure_session"] = session
+                row["next_action"] = "CONTINUE_MISSING_CRITERIA"
+                changed = True
+            fixed_names = {str(x).lower() for x in session.get("criteria_fixed") or []}
+            declared_names = {str(x).lower() for x in row.get("success_criteria") or []}
+            if declared_names and declared_names.issubset(fixed_names) and not remaining:
+                session = dict(session)
+                session.update({"closure_state": "FINALIZATION_RETRY", "criteria_remaining": [],
+                                "failed_criteria_current": []})
+                row["closure_session"] = session
+                row["missing_criteria"] = []
+                row["next_action"] = "internal.assemble_final_deliverable"
+                changed = True
         result = evaluate_terminal_closure(row)
         if result.get("status") not in TERMINAL_STATES:
             continue
@@ -432,10 +477,14 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
         stalled_exists = any(isinstance(row.get("closure_session"), dict)
                              and row["closure_session"].get("closure_state") == "CLOSURE_STALLED"
                              for row in rows)
-        sessions = [row for row in rows if not stalled_exists and isinstance(row.get("closure_session"), dict)
+        sessions = [row for row in rows if isinstance(row.get("closure_session"), dict)
                     and row["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"}
-                    and int(row["closure_session"].get("current_round", 0)) < int(row["closure_session"].get("max_rounds", 4))]
+                    and (int(row["closure_session"].get("current_round", 0)) < int(row["closure_session"].get("max_rounds", 4))
+                         or row["closure_session"].get("closure_state") == "REPAIR_REQUIRED")]
         if sessions:
+            finalization_sessions = [row for row in sessions if row["closure_session"].get("closure_state") == "FINALIZATION_RETRY"]
+            if finalization_sessions:
+                sessions = finalization_sessions
             candidates = sessions
         else:
             recovery = [row for row in rows if isinstance(row.get("closure_session"), dict)
@@ -530,12 +579,16 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         goal.get("current_evidence") and goal.get("last_result")
         and goal.get("missing_criteria") and str(goal.get("last_result", {}).get("action")) not in {"internal.capability_verify", "objective.closure"}
     )
+    if (goal.get("closure_session") or {}).get("closure_state") == "FINALIZATION_RETRY" \
+            and not ((goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria")) \
+            and str((goal.get("last_result") or {}).get("action")) != "objective.closure":
+        finalization_requested = True
     rework_required = bool((goal.get("last_result") or {}).get("rework_required"))
     missing_text = " ".join(str(x).lower() for x in (goal.get("missing_criteria") or []))
     # Portal beta readiness has a real internal implementation path. Bind the
     # criterion to that path instead of allowing the generic artifact writer
     # to impersonate engineering work.
-    portal_engineering = department == "Portal/Product" and any(
+    portal_engineering = str(goal.get("goal_id") or "") == "portal.client_beta" and department == "Portal/Product" and any(
         phrase in missing_text for phrase in ("highest-value beta gap", "capability audit", "tenant and approval")
     )
     if rework_required:
@@ -644,15 +697,24 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         # missing criterion, which made every later cycle repair the planner
         # error instead of the real goal.
         if failure_class == "INVALID_MODEL_PLAN":
-            existing = (row.get("closure_session") or {}).get("criteria_remaining") or row.get("missing_criteria") or []
-            raw = "Controller-selected downstream action required after invalid worker plan."
-            criteria = [{"criterion": str(x), "status": "UNSATISFIED", "reason": raw,
-                         "required_repair": "controller_selected_productive_action",
-                         "evidence_required": str(x)} for x in existing]
+            closure = row.get("closure_session") or {}
+            fixed = {str(x).lower() for x in closure.get("criteria_fixed") or []}
+            existing = closure.get("criteria_remaining") or row.get("missing_criteria") or []
+            concrete = [x.get("criterion") if isinstance(x, dict) else x for x in existing]
+            concrete = [str(x) for x in concrete if str(x).strip()
+                        and "controller-selected downstream action required" not in str(x).lower()]
+            if not concrete:
+                concrete = [str(x) for x in row.get("success_criteria") or [] if str(x).lower() not in fixed]
+            raw = "Initial planner response was invalid; retry the concrete criterion action."
+            criteria = [{"criterion": x, "status": "UNSATISFIED", "reason": raw,
+                         "required_repair": "internal.create_bounded_work_artifact",
+                         "evidence_required": x} for x in concrete]
+            missing = concrete
         else:
             raw = review.get("remaining_work") or executor.get("error") or workforce.get("failure_class") or result.get("failure_class") or "Finalization requires bounded rework."
             criteria = list((failure_report.get("criteria") or []))
-        missing = [str(x) for x in raw] if isinstance(raw, list) else [str(raw)]
+        if failure_class != "INVALID_MODEL_PLAN":
+            missing = [str(x) for x in raw] if isinstance(raw, list) else [str(raw)]
         if not criteria:
             criteria = [{"criterion": item, "status": "UNSATISFIED", "reason": item,
                          "required_repair": "internal.create_bounded_work_artifact",
@@ -719,6 +781,11 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
         evidence = list(row.get("current_evidence") or [])
         if receipt_ref and receipt_ref not in evidence:
             evidence.append(receipt_ref)
+        all_criteria_fixed = bool(row.get("success_criteria")) and {
+            str(x).lower() for x in row.get("success_criteria") or []
+        }.issubset({str(x).lower() for x in session.get("criteria_fixed") or []})
+        closure_state = "FINALIZATION_RETRY" if all_criteria_fixed and not missing else ("CLOSURE_STALLED" if exhausted else "REPAIR_REQUIRED")
+        next_action = "internal.assemble_final_deliverable" if all_criteria_fixed and not missing else ("CLOSURE_STALLED" if exhausted else "CONTINUE_MISSING_CRITERIA")
         row.update({
             "current_evidence": evidence[-20:], "failed_paths": failed_paths[-20:],
             "finalization_failures": (list(row.get("finalization_failures") or []) + criteria)[-40:],
@@ -730,13 +797,13 @@ def record_goal_rework(goal_id: str, *, work_item_id: str, result: dict[str, Any
                                  "criteria_fixed": list(session.get("criteria_fixed") or []), "criteria_remaining": missing,
                                  "current_strategy": strategy, "strategy_fingerprints": (prior_fingerprints + [current_fingerprint])[-12:],
                                  "repeated_strategy_count": repeated_strategy_count, "last_material_progress_at": row.get("last_progress"),
-                                 "closure_state": "CLOSURE_STALLED" if exhausted else "REPAIR_REQUIRED", "max_rounds": max_rounds},
+                                 "closure_state": closure_state, "max_rounds": max_rounds},
             "repair_contracts": repair_contracts,
             "last_result": {"status": "FAILED", "action": action, "rework_required": missing,
                              "failure_class": result.get("failure_class") or executor.get("failure_class") or workforce.get("failure_class"),
                              "artifact_path": result.get("artifact_path"), "work_item_id": work_item_id,
                              "finalization_failure": failure_report or {"criteria": criteria}},
-            "next_action": "CLOSURE_STALLED" if exhausted else "CONTINUE_MISSING_CRITERIA", "updated_at": _now(),
+            "next_action": next_action, "updated_at": _now(),
         })
         _portfolio_write(rows)
         return row
