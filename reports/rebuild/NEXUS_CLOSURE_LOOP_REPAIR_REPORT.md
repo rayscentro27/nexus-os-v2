@@ -149,3 +149,38 @@ excluded from ordinary portfolio selection, preventing silent infinite retry.
 The live session reached round four just before that guard was installed, so
 its persisted pre-guard label remains `REPAIR_REQUIRED`; this is intentionally
 not rewritten by Codex as a business result.
+
+## Second live validation — 2026-09-08
+
+The normal runtime then exercised a second existing real goal,
+`opportunity.engine`, using closure session `closure_92664a4ffb62454460b1`:
+
+```text
+closure_validation_01: repair artifact persisted; 3 criteria remained
+closure_validation_02: automatic FINALIZATION retry failed descriptively
+closure_validation_03: repair artifact persisted; same criteria remained
+closure_validation_04: automatic FINALIZATION retry failed descriptively
+final state: CLOSURE_STALLED after bounded round 4
+```
+
+The four operator receipts and AI receipts are persisted under
+`reports/runtime/nexus_active_operator_receipts/` and
+`reports/runtime/ai_workforce_receipts/`. No human or Codex business action
+was supplied between cycles. This confirms the second-attempt and additional
+retry behavior on a second real goal, while also confirming non-convergence
+detection. The remaining delta is substantive evidence for evidence-bound
+scoring, experiment/routing design, and rejection of hype/weak economics;
+the AI repeatedly produced descriptive plans rather than proof of those
+criteria.
+
+Updated live status:
+
+```text
+AUTOMATIC_SECOND_ATTEMPT=YES
+CRITERION_VERIFICATION=PARTIAL (review runs and records criterion failures; no criterion passed)
+STRATEGY_CHANGE_ON_REPEAT_FAILURE=NO (same model strategy remained descriptive)
+UNATTENDED_CLOSURE_RESUME=YES
+REAL_GOAL_CONVERGENCE_PROVEN=NO
+NEW_REAL_GOAL_TERMINAL_TRANSITION=NO
+SYSTEMATIC_OUTCOME_AUTONOMY=NO
+```
