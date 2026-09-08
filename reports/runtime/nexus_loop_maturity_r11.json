@@ -1,0 +1,18 @@
+{
+  "schema_version": "nexus.loop-maturity.r11",
+  "generated_at": "2026-09-08",
+  "levels": {
+    "active_operator": "L3_BOUNDED_UNATTENDED",
+    "engineering": "L3_BOUNDED_UNATTENDED",
+    "research": "L3_BOUNDED_UNATTENDED",
+    "closure": "L3_BOUNDED_UNATTENDED",
+    "portfolio": "L3_BOUNDED_UNATTENDED",
+    "hermes": "L1_REPORT_ONLY",
+    "whole_company": "L3_BOUNDED_UNATTENDED"
+  },
+  "r8_style_stagnation_still_possible": "YES",
+  "tool_control_plane": "PARTIAL_FRAGMENTED_ROUTING",
+  "skill_control_plane": "PARTIAL_INTEGRATION",
+  "loop_architecture": "PARTIAL_MULTI_LOOP_ARCHITECTURE",
+  "systematic_outcome_autonomy": "NOT_CERTIFIED"
+}

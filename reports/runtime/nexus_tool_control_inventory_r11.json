@@ -1,0 +1,19 @@
+{
+  "schema_version": "nexus.tool-control-inventory.r11",
+  "generated_at": "2026-09-08",
+  "method": "read-only repository, launchd, registry, cache, receipt, and bounded CLI probes",
+  "repo_head": "23fc2f8702fdf32bb5945adf83823575194216b6",
+  "cli_registry": {"records": 11, "installed": 11, "authenticated_proven": 0, "routable_by_nexus_proven": 0},
+  "nexus_manifest": {"records": 11, "enabled": 10, "safe_without_approval": 7, "disabled_or_gated": 4},
+  "hermes_tool_discovery_cache": {"records": 105, "profile": "nova-profile", "model_visibility_proven": false},
+  "mcp": {"servers_configured": ["nexus_mcp", "google_mcp"], "cached_nexus_tools": 6, "live_tool_call_from_this_audit": false},
+  "workers": [
+    {"id": "nexus_ai_workforce", "repo_edit": true, "real_goal_use": true, "route": "hardcoded engineering action"},
+    {"id": "codex", "installed": true, "real_probe": "historical certification", "nexus_route": false},
+    {"id": "opencode", "installed": true, "version": "1.18.25", "real_probe": "version", "nexus_route": false},
+    {"id": "local_python", "installed": true, "real_probe": "historical certification", "nexus_route": "capability broker"},
+    {"id": "mimo", "status": "installed_unproven"}
+  ],
+  "classification": {"used_real": "receipts prove selected Nexus actions and Modal/Research/Portal paths", "tested_not_routable": ["opencode", "codex"], "installed_only": ["supabase", "netlify", "gh", "playwright"]},
+  "secret_values_included": false
+}

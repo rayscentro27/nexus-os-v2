@@ -1,0 +1,10 @@
+{
+  "schema_version": "nexus.skill-inventory.r11",
+  "generated_at": "2026-09-08",
+  "nexus_skills": {"count": 17, "root": "skills/nexus", "loader": "scripts/nexus_agent_platform/loops/skill_resolver.py", "selection": "caller/static worker pack; no dynamic task scorer proven", "real_goal_receipt_skills": ["software-engineering", "worktree-safety", "test-debugging"]},
+  "native_hermes": {"skill_files": 1, "skill": "yuanbao", "skill_hub_and_manager_present": true, "native_usage_in_nexus_goals": false},
+  "plugin_skills": ["google_meet"],
+  "integration": {"active_operator": "NO", "engineering": "PARTIAL", "research": "NO", "closure": "PARTIAL", "portfolio": "NO", "hermes": "NOT_PROVEN"},
+  "failure_can_select_new_skill": false,
+  "secret_values_included": false
+}

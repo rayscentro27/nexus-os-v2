@@ -1,0 +1,19 @@
+{
+  "schema_version": "hermes.native-feature-inventory.r11",
+  "generated_at": "2026-09-08",
+  "deployed_evidence": {"local_source_version": "0.20.0", "expected_oracle_version": "0.20.6", "actual_oracle_version": "NOT_REPROBED", "local_cli_probe": "hermes CLI timed out in 3-second bounded version probes"},
+  "native_surface": {"tool_modules_discovered": 105, "configured_mcp_servers": 2, "native_skill_files": 1, "plugin_families": 9, "cron_package_present": true, "browser_modules_present": true, "terminal_modules_present": true, "delegation_modules_present": true, "memory_modules_present": true, "code_execution_module_present": true},
+  "feature_matrix": {
+    "terminal": "present_source_configured_profile_not_proven_live",
+    "file_read_edit_patch": "present_source_not_proven_in_nexus_loop",
+    "browser": "present_source_and_prior_remote_health_evidence",
+    "mcp": "configured_two_servers_cached_nexus_schema",
+    "skills": "native machinery present but not integrated into Nexus goal loops",
+    "subagents": "present_source_not_proven_in_nexus_goal",
+    "execute_code": "present_source_not_proven",
+    "cron": "present_source; Nexus launchd is separate",
+    "memory_learning": "source present; profile memory_enabled false",
+    "plugins": "source present; enabled state not uniformly proven"
+  },
+  "secret_values_included": false
+}
