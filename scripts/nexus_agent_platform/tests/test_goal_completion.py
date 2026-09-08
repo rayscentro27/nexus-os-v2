@@ -3,7 +3,7 @@ from nexus_agent_platform.goal_completion import (
     evaluate_parent_goal, evaluate_terminal_closure, repetition_guard, should_continue,
     next_work_for_active_goal,
     resolve_criterion_capability,
-    select_portfolio_goal,
+    select_portfolio_goal, continuation_invariant,
 )
 import json
 from nexus_agent_platform.ai_workforce_executor import _finalization_failure_report
@@ -177,3 +177,8 @@ def test_rework_goal_is_prioritized_over_new_exploration():
     ]
     selected = select_portfolio_goal(rows)
     assert selected["goal_id"] == "rework"
+
+
+def test_active_goal_without_action_or_wait_is_a_continuation_violation():
+    assert continuation_invariant({"goal_id": "open", "status": "ACTIVE"})["violation"] is True
+    assert continuation_invariant({"goal_id": "open", "status": "ACTIVE", "next_action": "work"})["violation"] is False

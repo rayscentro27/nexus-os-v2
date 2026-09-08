@@ -22,5 +22,5 @@ export default function ClientPortalRoot() {
     window.history.pushState({}, '', nextPath)
     setPath(normalizePath(nextUrl.pathname))
   }
-  return <WorldClassClientPortal path={path} onNavigate={navigate} />
+  return <main aria-label="GoClear client portal"><WorldClassClientPortal path={path} onNavigate={navigate} /></main>
 }

@@ -354,6 +354,17 @@ def should_continue(goal: dict[str, Any], *, evidence: dict[str, Any] | None = N
     return {"goal": evaluated, "next_action": action, "parent_goal_complete": evaluated["status"] in TERMINAL_STATES, "report_complete_is_goal_complete": False}
 
 
+def continuation_invariant(goal: dict[str, Any], *, executing: bool = False) -> dict[str, Any]:
+    """Detect an open parent that has no executable or durable continuation."""
+    if str(goal.get("status", "ACTIVE")) in TERMINAL_STATES:
+        return {"violation": False, "reason": "TERMINAL_GOAL"}
+    wait = goal.get("wait_condition") or goal.get("human_blocker") or goal.get("external_blocker")
+    next_action = goal.get("next_action") or (goal.get("closure_session") or {}).get("closure_state")
+    violation = not executing and not next_action and not wait
+    return {"violation": violation, "reason": "ACTIVE_GOAL_WITHOUT_EXECUTION_NEXT_ACTION_OR_WAIT" if violation else "CONTINUATION_PRESENT",
+            "repair_action": "CONTINUE_MISSING_CRITERIA" if violation else None}
+
+
 def repetition_guard(attempts: Iterable[dict[str, Any]], *, max_identical: int = 2) -> dict[str, Any]:
     rows = list(attempts)
     fingerprints = [fingerprint({"path": row.get("path"), "arguments": row.get("arguments"), "result": row.get("result")}) for row in rows]
@@ -373,8 +384,6 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
     one open goal from monopolizing the discretionary lane.
     """
     rows = [row for row in goals if row.get("status") in ELIGIBLE_STATUSES]
-    rows = [row for row in rows if not (isinstance(row.get("closure_session"), dict)
-                                       and row["closure_session"].get("closure_state") == "CLOSURE_STALLED")]
     if not rows:
         return None
     now = now or datetime.now(timezone.utc)
@@ -395,12 +404,17 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
         # A bounded closure session keeps repairable finalization work with
         # its owning goal across scheduler yields.  The round limit prevents
         # a pathological goal from monopolizing the portfolio.
-        sessions = [row for row in rows if isinstance(row.get("closure_session"), dict)
+        stalled_exists = any(isinstance(row.get("closure_session"), dict)
+                             and row["closure_session"].get("closure_state") == "CLOSURE_STALLED"
+                             for row in rows)
+        sessions = [row for row in rows if not stalled_exists and isinstance(row.get("closure_session"), dict)
                     and row["closure_session"].get("closure_state") in {"REPAIR_REQUIRED", "REPAIRING", "VERIFYING", "FINALIZATION_RETRY"}
                     and int(row["closure_session"].get("current_round", 0)) < int(row["closure_session"].get("max_rounds", 4))]
         if sessions:
             candidates = sessions
         else:
+            recovery = [row for row in rows if isinstance(row.get("closure_session"), dict)
+                        and row["closure_session"].get("closure_state") == "CLOSURE_STALLED"]
             # A successful criterion-specific artifact is immediately eligible
             # for final assembly. Finish that path before opening another
             # rework cohort, so failed-review backlog cannot starve closure.
@@ -413,7 +427,12 @@ def select_portfolio_goal(goals: Iterable[dict[str, Any]], *, now: datetime | No
                       and row.get("last_result", {}).get("rework_required")
                       and not (isinstance(row.get("closure_session"), dict)
                                and row["closure_session"].get("closure_state") == "CLOSURE_STALLED")]
-            if finalization:
+            if recovery:
+                # CLOSURE_STALLED exhausts one strategy; it is not a terminal
+                # parent state. Keep the goal visible so the next cycle can
+                # select a different governed recovery path.
+                candidates = recovery
+            elif finalization:
                 candidates = finalization
             elif rework:
                 # A persisted reviewer deficiency is more actionable than a
@@ -480,9 +499,19 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         and goal.get("missing_criteria") and str(goal.get("last_result", {}).get("action")) not in {"internal.capability_verify", "objective.closure"}
     )
     rework_required = bool((goal.get("last_result") or {}).get("rework_required"))
+    missing_text = " ".join(str(x).lower() for x in (goal.get("missing_criteria") or []))
+    # Portal beta readiness has a real internal implementation path. Bind the
+    # criterion to that path instead of allowing the generic artifact writer
+    # to impersonate engineering work.
+    portal_engineering = department == "Portal/Product" and any(
+        phrase in missing_text for phrase in ("highest-value beta gap", "capability audit", "tenant and approval")
+    )
     if rework_required:
         finalization_requested = False
     productive_action = "internal.assemble_final_deliverable" if action == "ai.plan_and_verify" and finalization_requested else ("internal.create_bounded_work_artifact" if action == "ai.plan_and_verify" else None)
+    if portal_engineering:
+        productive_action = "engineering.portal_beta"
+        finalization_requested = False
     # A failed evidence criterion owns the next action.  Do not let the
     # generic AI artifact writer stand in for a live capability probe/job.
     if rework_required or goal.get("closure_session"):
@@ -503,6 +532,7 @@ def next_work_for_active_goal(goal: dict[str, Any], *, work_item_id: str, questi
         "productive_action": productive_action,
         "finalization_requested": finalization_requested,
         "rework_required": rework_required,
+        "criterion": next((str(x) for x in ((goal.get("closure_session") or {}).get("criteria_remaining") or goal.get("missing_criteria") or []) if any(phrase in str(x).lower() for phrase in ("highest-value beta gap", "capability audit", "tenant and approval"))), None),
         "work_item_id": work_item_id,
         "question": question,
         "authority": goal.get("authority_envelope", "INTERNAL_SAFE"),

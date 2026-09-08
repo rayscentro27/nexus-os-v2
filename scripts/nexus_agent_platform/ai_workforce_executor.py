@@ -22,7 +22,8 @@ ALLOWED_ACTION = "internal.capability_verify"
 PRODUCTIVE_ACTION = "internal.create_bounded_work_artifact"
 FINAL_ACTION = "internal.assemble_final_deliverable"
 TOOL_ACTIONS = {"modal.health_probe", "modal.bounded_job", "modal.inspect_execution_controls", "research.refresh"}
-ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION, FINAL_ACTION, *TOOL_ACTIONS}
+ENGINEERING_ACTIONS = {"engineering.portal_beta"}
+ALLOWED_ACTIONS = {ALLOWED_ACTION, PRODUCTIVE_ACTION, FINAL_ACTION, *TOOL_ACTIONS, *ENGINEERING_ACTIONS}
 
 
 def _now() -> str:
@@ -191,6 +192,8 @@ def run_ai_planned_verification(finding: Dict[str, Any], executor: Callable[[Dic
             "interviews, metrics, URLs, or findings. Do not claim completion, request shell, "
             "credentials, production changes, external messaging, or money. If rework_context "
             "is present, address those exact deficiencies before attempting final assembly. "
+            "For engineering.portal_beta, return only the bounded engineering decision and "
+            "do not claim code changed; the governed executor performs and verifies the edit. "
             "Use the supplied evidence_context to write substantive, evidence-grounded "
             "deliverable_content; do not return a plan describing what a future report "
             "would contain. If the context cannot support a criterion, leave it unsatisfied."
