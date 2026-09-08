@@ -355,12 +355,18 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                 safety_source_path.write_text(safety_source.replace(unsafe_claim, safe_claim, 1), encoding="utf-8")
                 safety_source = safety_source.replace(unsafe_claim, safe_claim, 1)
             npm = readiness["preflight"]["executables"]["npm"]["path"]
+            node = readiness["preflight"]["executables"]["node"]["path"]
             test_cmd = [npm, "test", "--", "--run", "tests/nexus3_route_replacement.test.ts"]
             build_cmd = [npm, "run", "build"]
             safety_cmd = [sys.executable, "scripts/client_flow/verify_client_portal_safety.py", "--json"]
+            boundary_criterion = "tenant and approval" in criterion_text
+            tenant_cmd = [node, "scripts/certification/certify_live_backend.mjs"]
+            approval_cmd = [npm, "test", "--", "--run", "tests/goclear_readiness_internal_test_runner.test.ts"]
             test = subprocess.run(test_cmd, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False)
             build = subprocess.run(build_cmd, cwd=ROOT, capture_output=True, text=True, timeout=240, check=False)
             safety = subprocess.run(safety_cmd, cwd=ROOT, capture_output=True, text=True, timeout=60, check=False)
+            tenant = subprocess.run(tenant_cmd, cwd=ROOT, capture_output=True, text=True, timeout=240, check=False) if boundary_criterion else None
+            approval = subprocess.run(approval_cmd, cwd=ROOT, capture_output=True, text=True, timeout=180, check=False) if boundary_criterion else None
             after = portal_path.read_text(encoding="utf-8")
             after_hash = hashlib.sha256(after.encode()).hexdigest()
             safety_after = safety_source_path.read_text(encoding="utf-8")
@@ -372,7 +378,7 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
             elif "capability audit" in criterion_text:
                 passed = passed and all(token in (source + safety_source).lower() for token in ("portal", "approval", "tenant"))
             elif "tenant and approval" in criterion_text:
-                passed = passed and all(token in (source + safety_source).lower() for token in ("approval", "tenant"))
+                passed = passed and all(token in (source + safety_source).lower() for token in ("approval", "tenant")) and tenant is not None and tenant.returncode == 0 and approval is not None and approval.returncode == 0
             receipt_id = "engineering_portal_" + uuid.uuid4().hex
             receipt = {"schema_version": "nexus.engineering-execution-receipt.v1", "receipt_id": receipt_id,
                        "goal_id": finding.get("parent_goal"), "criterion": finding.get("criterion"),
@@ -385,6 +391,7 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
                                  {"command": safety_cmd, "returncode": safety.returncode, "passed": safety.returncode == 0}],
                        "criterion_verification": "VERIFIED" if passed else "FAILED",
                        "environment_preflight": readiness,
+                       "boundary_tests": ([{"command": tenant_cmd, "returncode": tenant.returncode, "passed": tenant.returncode == 0, "report": "NEXUS_LIVE_BACKEND_CERTIFICATION.md"}, {"command": approval_cmd, "returncode": approval.returncode, "passed": approval.returncode == 0}] if boundary_criterion and tenant and approval else []),
                        "skills_loaded": ["software-engineering", "worktree-safety", "test-debugging"],
                        "tools_available": ["repository_search", "git", "node", "npm", "vitest", "vite_build", "portal_safety_verifier"],
                        "acceptance_test": "portal beta source contains the bounded accessibility readiness change and focused test/build pass",
