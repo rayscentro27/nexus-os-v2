@@ -329,10 +329,10 @@ def execute_safe_internal_action(action_id: str, finding: Dict[str, Any]) -> Dic
         modal_python = ROOT / ".venv-agent-platform" / "bin" / "python"
         if not modal_python.is_file():
             return {"status": "BLOCKED", "action": action_id, "failure_class": "CAPABILITY_GAP", "blocker_type": "MISSING_RUNTIME_CAPABILITY", "error": "authenticated Modal runtime environment is unavailable", "execution_mode": "REAL", "external_side_effects": False}
-        if action_id == "modal.bounded_job" and not os.environ.get("NEXUS_REMOTE_WORKER_SHARED_SECRET"):
-            return {"status": "BLOCKED", "action": action_id, "failure_class": "MISSING_CREDENTIAL", "blocker_type": "EXTERNAL_ACCESS_REQUIRED", "error": "NEXUS_REMOTE_WORKER_SHARED_SECRET is not available to the governed runner", "execution_mode": "REAL", "external_side_effects": False}
         script = """
 import json, os, sys
+from nexus_agent_platform.phase15.common import load_runtime_env
+load_runtime_env()
 from scripts.nexus_agent_platform.providers.modal_provider import provider_from_environment
 p = provider_from_environment()
 action = os.environ.get('ACTION')
@@ -341,29 +341,51 @@ if action == 'modal.health_probe':
 elif action == 'modal.inspect_execution_controls':
     value = p.health()
     value['authority_inspection'] = {'arbitrary_shell': value.get('arbitrary_shell'), 'stripe': value.get('stripe'), 'funded_trading': value.get('funded_trading'), 'optional': value.get('optional'), 'core_health_dependency': value.get('core_health_dependency')}
+elif action == 'modal.bounded_job':
+    from nexus_agent_platform.alpha_evidence_bridge import request_research_evidence
+    import uuid
+    url = os.environ.get('NEXUS_MODAL_CANARY_URL', 'https://example.com/')
+    value = request_research_evidence(url=url, job_id='modal-r5-' + uuid.uuid4().hex[:16], tenant_context={'scope':'founder_admin','tenant_id':None}, limits={'timeout_seconds':10})
+    value['remote_result'] = value.get('remote_result') or {}
+    value['status'] = value.get('remote_result', {}).get('status', value.get('status'))
 else:
     raise RuntimeError('bounded Modal job requires an explicit governed job payload')
 print(json.dumps(value, sort_keys=True))
 """
-        env = dict(os.environ, ACTION=action_id, MODAL_PROFILE=os.environ.get("MODAL_PROFILE", "goclearonline"), PYTHONPATH=str(ROOT))
+        env = dict(os.environ, ACTION=action_id, MODAL_PROFILE=os.environ.get("MODAL_PROFILE", "goclearonline"), PYTHONPATH=str(ROOT / "scripts") + ":" + str(ROOT))
         try:
             completed = subprocess.run([str(modal_python), "-c", script], cwd=str(ROOT), env=env,
                                        capture_output=True, text=True, timeout=90, check=False)
             if completed.returncode != 0:
                 return {"status": "FAILED", "action": action_id, "failure_class": "REMOTE_WORKER_REQUIRED", "error": completed.stderr[-600:], "execution_mode": "REAL", "external_side_effects": False}
             value = json.loads(completed.stdout)
-            status = "PASS" if value.get("status") == "HEALTHY" else "FAILED"
+            if action_id == "modal.bounded_job":
+                status = "PASS" if value.get("status") in {"SUCCESS", "DUPLICATE", "NO_CHANGE"} else "FAILED"
+                acceptance_test = "bounded Modal job returns a real result receipt"
+                evidence_type = "VERIFIED_EVIDENCE" if status == "PASS" else "FAILED_EVIDENCE"
+            else:
+                controls_ok = action_id != "modal.inspect_execution_controls" or (
+                    value.get("status") == "HEALTHY"
+                    and value.get("arbitrary_shell") == "UNAVAILABLE"
+                    and value.get("stripe") == "UNAVAILABLE"
+                    and value.get("funded_trading") == "UNAVAILABLE"
+                )
+                status = "PASS" if controls_ok else "FAILED"
+                acceptance_test = ("actual Modal execution controls show bounded authority and no external mutation capability"
+                                   if action_id == "modal.inspect_execution_controls"
+                                   else "health probe returns a real bounded Modal status")
+                evidence_type = "VERIFIED_EVIDENCE" if status == "PASS" else "FAILED_EVIDENCE"
             receipt_id = "modal_tool_" + uuid.uuid4().hex
             receipt = {"schema_version": "nexus.criterion-tool-receipt.v1", "receipt_id": receipt_id,
                        "criterion_id": finding.get("criterion_id"), "criterion": finding.get("criterion"),
-                       "action_selected": action_id, "capability_used": "modal.runtime", "tool_used": "ModalRemoteWorkerProvider",
+                       "action_selected": action_id, "capability_used": "modal.bounded_job" if action_id == "modal.bounded_job" else "modal.runtime", "tool_used": "ModalRemoteWorkerProvider",
                        "started_at": value.get("last_seen") or utc_now(), "completed_at": utc_now(),
                        "result_status": status, "raw_result": value, "raw_result_reference": "inline:modal-health-result",
                        "artifact_or_receipt": f"reports/runtime/criterion_tool_receipts/{receipt_id}.json",
                        "expected_condition": finding.get("criterion"), "observed_condition": value.get("status"),
-                       "acceptance_test": "health probe returns a real bounded Modal status",
+                       "acceptance_test": acceptance_test,
                        "acceptance_result": "VERIFIED" if status == "PASS" else "FAILED",
-                       "evidence_classification": "VERIFIED_EVIDENCE" if status == "PASS" else "FAILED_EVIDENCE",
+                       "evidence_classification": evidence_type,
                        "execution_mode": "REAL", "external_side_effects": False}
             path = ROOT / receipt["artifact_or_receipt"]
             write_json(path, receipt)
@@ -491,6 +513,19 @@ print(json.dumps(value, sort_keys=True))
             "final_evaluation": {"verified": False}, "human_action": plan.get("human_action"),
             "external_action_performed": False, "authority": "INTERNAL_SAFE", "created_at": utc_now(),
         }
+        # Tool-evidence packages can be evaluated deterministically at the
+        # executor boundary.  This is deliberately narrow: every criterion
+        # must be represented by a persisted criterion-tool receipt whose
+        # acceptance result is VERIFIED.  Descriptive artifacts never pass.
+        tool_receipts = []
+        for ref in artifact["evidence_refs"]:
+            candidate = load_json(ROOT / str(ref), {})
+            if candidate.get("schema_version") == "nexus.criterion-tool-receipt.v1":
+                tool_receipts.append(candidate)
+        verified_criteria = {str(x.get("criterion")) for x in tool_receipts if x.get("acceptance_result") == "VERIFIED" and x.get("evidence_classification") == "VERIFIED_EVIDENCE"}
+        if set(criteria).issubset(verified_criteria):
+            artifact["status"] = "COMPLETE"
+            artifact["final_evaluation"] = {"verified": True, "method": "deterministic_tool_receipt_acceptance", "verified_criteria": sorted(verified_criteria), "verified_at": utc_now()}
         path = ROOT / "reports/runtime/final_deliverables" / f"{artifact_id}.json"
         write_json(path, artifact)
         return {"status": "PASS", "action": action_id, "artifact": artifact,

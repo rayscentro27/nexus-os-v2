@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-TERMINAL_STATES = {"GOAL_COMPLETED", "READY_FOR_HUMAN_REVIEW", "GOAL_INVALIDATED_BY_EVIDENCE", "GOAL_SUPERSEDED", "GOAL_DEFERRED_BY_EXPLICIT_PRIORITY_DECISION", "TRUE_EXTERNAL_BLOCKER", "SAFETY_BLOCKED", "REQUIRES_RAY_APPROVAL", "REQUIRES_HUMAN_ORIGIN_EVENT", "TECHNICALLY_UNSOLVABLE_WITH_CURRENT_AUTHORITY"}
+TERMINAL_STATES = {"COMPLETE", "GOAL_COMPLETED", "READY_FOR_HUMAN_REVIEW", "GOAL_INVALIDATED_BY_EVIDENCE", "GOAL_SUPERSEDED", "GOAL_DEFERRED_BY_EXPLICIT_PRIORITY_DECISION", "TRUE_EXTERNAL_BLOCKER", "SAFETY_BLOCKED", "REQUIRES_RAY_APPROVAL", "REQUIRES_HUMAN_ORIGIN_EVENT", "TECHNICALLY_UNSOLVABLE_WITH_CURRENT_AUTHORITY"}
 FAILURE_CLASSES = {"PROVIDER_UNAVAILABLE", "ENDPOINT_BLOCKED", "AUTH_RUNTIME_MISMATCH", "MISSING_CREDENTIAL", "RATE_LIMIT", "BAD_CONFIGURATION", "NETWORK_PATH_FAILURE", "DATA_NOT_AVAILABLE", "WEBSITE_INTERACTIVE_ONLY", "BROWSER_REQUIRED", "API_REQUIRED", "MCP_REQUIRED", "CLI_REQUIRED", "REMOTE_WORKER_REQUIRED", "CAPABILITY_GAP", "DEPENDENCY_MISSING", "FORMAT_CHANGED", "TEMPORARY_PROVIDER_ERROR", "PAID_SERVICE_REQUIRED", "LEGAL_TERMS_RESTRICTION", "SAFETY_BLOCKED"}
 RESOLUTION_LADDER = ("REUSE_PREVIOUS_SUCCESSFUL_PATH", "CHECK_CONFIG_ENVIRONMENT", "EXISTING_CODE", "EXISTING_CREDENTIAL_CONTROL", "CLI", "API", "MCP", "PUBLIC_WEB", "ORACLE_BROWSER", "EXISTING_REMOTE_WORKER", "MODAL_CPU", "RESEARCH_ALTERNATIVE_PROVIDER", "GITHUB_OPEN_SOURCE_RESEARCH", "BUILD_OR_ADAPT_CONNECTOR", "REROUTE_OBJECTIVE", "RAY_ONLY_TRUE_BOUNDARY")
 ROOT = Path(__file__).resolve().parents[2]
@@ -309,12 +309,15 @@ def evaluate_terminal_closure(goal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def apply_terminal_closures() -> list[dict[str, Any]]:
+def apply_terminal_closures(goal_ids: Iterable[str] | None = None) -> list[dict[str, Any]]:
     """Persist only independently verified terminal transitions."""
     rows = ensure_company_goal_portfolio()
+    target_ids = {str(x) for x in goal_ids} if goal_ids is not None else None
     closures = []
     changed = False
     for row in rows:
+        if target_ids is not None and str(row.get("goal_id")) not in target_ids:
+            continue
         if row.get("status") in TERMINAL_STATES:
             continue
         result = evaluate_terminal_closure(row)
@@ -680,6 +683,7 @@ def record_criterion_verification(goal_id: str, *, criterion: str, evidence: dic
                         "closure_state": "FINALIZATION_RETRY" if result == "VERIFIED" else session.get("closure_state", "REPAIR_REQUIRED"),
                         "last_criterion_verification": verification})
         row.update({"criterion_verifications": checks[-40:], "current_evidence": evidence_refs[-20:],
+                    "missing_criteria": remaining,
                     "closure_session": session, "next_action": "FINALIZATION_RETRY" if result == "VERIFIED" else row.get("next_action"),
                     "updated_at": _now()})
         _portfolio_write(rows)
