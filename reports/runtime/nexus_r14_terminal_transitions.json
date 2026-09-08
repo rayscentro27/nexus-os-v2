@@ -1,0 +1,6 @@
+{
+  "schema_version": "nexus.r14.terminal-transitions.v1",
+  "transitions": [],
+  "count": 0,
+  "excluded_existing_review_boundaries": ["portal.client_beta", "portal.admin_control_center"]
+}

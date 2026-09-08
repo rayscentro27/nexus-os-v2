@@ -1,0 +1,11 @@
+{
+  "schema_version": "nexus.r14.department-activity.v1",
+  "departments_touched": ["Finance", "Clyde", "Opportunity"],
+  "department_count": 3,
+  "activity": {
+    "Finance": {"goals": ["commerce.billing_accounting"], "material_progress": 0, "failures": ["INVALID_MODEL_PLAN"]},
+    "Clyde": {"goals": ["clyde.entity_readiness"], "material_progress": 0, "failures": ["INVALID_MODEL_PLAN"]},
+    "Opportunity": {"goals": ["opportunity.engine"], "material_progress": 0, "failures": ["no criterion delta after plan", "reselection without evidence delta"]}
+  },
+  "idle_active_goals_with_available_capability": ["clyde.entity_readiness", "commerce.billing_accounting", "opportunity.engine"]
+}

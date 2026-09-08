@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.r14.capability-selections.v1",
+  "normal_runtime_used": true,
+  "codex_selected_business_child_actions": false,
+  "selection_evidence": [
+    {"run_id": "operator_7839f05cca6040e3849fa8c02a0dacc6", "goal": "commerce.billing_accounting", "action": "ai.plan_and_verify", "selector_result": "selected_by_active_operator", "result": "INVALID_MODEL_PLAN"},
+    {"run_id": "operator_d981900057f142ee9b0f3ac887a291fb", "goal": "clyde.entity_readiness", "action": "ai.plan_and_verify", "selector_result": "selected_by_active_operator", "result": "INVALID_MODEL_PLAN"},
+    {"run_id": "operator_575fe046285c473ca3f8609a68bab561", "goal": "opportunity.engine", "action": "ai.plan_and_verify", "selector_result": "selected_by_active_operator", "result": "pass_without_material_delta"},
+    {"run_id": "operator_cd30a11ca72a4069ad981ed6c6d1a431", "goal": "opportunity.engine", "action": "ai.plan_and_verify", "selector_result": "reselected_after_failure", "result": "no_material_delta"}
+  ],
+  "dynamic_capability_selection_used": true,
+  "hermes_native_used_in_r14_real_goal": false,
+  "hermes_blocker": "BLOCKED_EXTERNAL_ADMIN_ACCESS"
+}

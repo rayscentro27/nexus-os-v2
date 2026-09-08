@@ -1,0 +1,11 @@
+{
+  "schema_version": "nexus.r14.continuation-chains.v1",
+  "chains": [
+    {"goal": "commerce.billing_accounting", "result": "INVALID_MODEL_PLAN", "controller_decision": "CHANGE_STRATEGY", "next_action": "RESELECT_CAPABILITY", "executed_downstream": false},
+    {"goal": "clyde.entity_readiness", "result": "INVALID_MODEL_PLAN", "controller_decision": "CHANGE_STRATEGY", "next_action": "RESELECT_CAPABILITY", "executed_downstream": false},
+    {"goal": "opportunity.engine", "result": "PASS_WITHOUT_CRITERION_DELTA", "controller_decision": "none_observed", "next_action": null, "executed_downstream": false},
+    {"goal": "opportunity.engine", "result": "failure_after_reselection", "controller_decision": "CHANGE_STRATEGY", "next_action": "RESELECT_CAPABILITY", "executed_downstream": false}
+  ],
+  "active_with_available_capability_and_no_next_action": ["clyde.entity_readiness", "commerce.billing_accounting", "opportunity.engine"],
+  "r8_style_stagnation": true
+}

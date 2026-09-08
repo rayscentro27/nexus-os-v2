@@ -1,0 +1,12 @@
+{
+  "schema_version": "nexus.r14.failure-recoveries.v1",
+  "recoveries": [
+    {"goal": "commerce.billing_accounting", "failure": "INVALID_MODEL_PLAN", "classification": "WORKER_OR_PLAN_VALIDATION_FAILURE", "recovery": "CHANGE_STRATEGY/RESELECT_CAPABILITY", "recovery_executed": true, "criterion_progress": false},
+    {"goal": "clyde.entity_readiness", "failure": "INVALID_MODEL_PLAN", "classification": "WORKER_OR_PLAN_VALIDATION_FAILURE", "recovery": "CHANGE_STRATEGY/RESELECT_CAPABILITY", "recovery_executed": true, "criterion_progress": false},
+    {"goal": "opportunity.engine", "failure": "NO_CRITERION_DELTA", "classification": "NO_PROGRESS", "recovery": "CHANGE_STRATEGY/RESELECT_CAPABILITY", "recovery_executed": true, "material_strategy_change_proven": false}
+  ],
+  "failed_attempt_triggered_tool_change": false,
+  "failed_attempt_triggered_worker_change": false,
+  "failed_attempt_triggered_skill_change": false,
+  "failed_attempt_triggered_strategy_change": true
+}

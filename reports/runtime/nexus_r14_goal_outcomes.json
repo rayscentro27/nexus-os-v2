@@ -1,0 +1,22 @@
+{
+  "schema_version": "nexus.r14.goal-outcomes.v1",
+  "run": "r14_bounded_multi_goal_certification",
+  "real_nonterminal_goals_at_start": 19,
+  "goals_excluded": ["portal.client_beta", "portal.admin_control_center"],
+  "goals_selected": [
+    {"goal_id": "commerce.billing_accounting", "department": "Finance", "run_id": "operator_7839f05cca6040e3849fa8c02a0dacc6", "result": "INVALID_MODEL_PLAN", "material_progress": false},
+    {"goal_id": "clyde.entity_readiness", "department": "Clyde", "run_id": "operator_d981900057f142ee9b0f3ac887a291fb", "result": "INVALID_MODEL_PLAN", "material_progress": false},
+    {"goal_id": "opportunity.engine", "department": "Opportunity", "run_id": "operator_575fe046285c473ca3f8609a68bab561", "result": "PASS_WITHOUT_CRITERION_DELTA", "material_progress": false},
+    {"goal_id": "opportunity.engine", "department": "Opportunity", "run_id": "operator_cd30a11ca72a4069ad981ed6c6d1a431", "result": "RESELECTION_WITHOUT_CRITERION_DELTA", "material_progress": false}
+  ],
+  "real_goals_considered": 3,
+  "real_goals_with_material_progress": 0,
+  "new_criteria_verified": 0,
+  "new_complete_goals": 0,
+  "new_ready_for_human_review": 0,
+  "new_terminal_transitions": 0,
+  "portal_states_preserved": {
+    "portal.client_beta": "READY_FOR_HUMAN_REVIEW",
+    "portal.admin_control_center": "READY_FOR_HUMAN_REVIEW"
+  }
+}
