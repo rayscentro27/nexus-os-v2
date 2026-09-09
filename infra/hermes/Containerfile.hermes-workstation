@@ -14,7 +14,7 @@ ARG PLAYWRIGHT_VERSION=1.62.0
 # Debian's ARM64 packages are used for small, non-JavaScript utilities.  The
 # npm packages are pinned because this image is the durable execution surface.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates jq fd-find gh \
+    && apt-get install -y --no-install-recommends ca-certificates passwd jq fd-find gh \
     && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
     && npm install --global --omit=dev \
          --allow-scripts=netlify-cli,opencode-ai,esbuild,unix-dgram,sharp \
@@ -22,12 +22,15 @@ RUN apt-get update \
          "supabase@${SUPABASE_VERSION}" \
          "netlify-cli@${NETLIFY_VERSION}" \
          "playwright@${PLAYWRIGHT_VERSION}" \
+    && PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright npx --yes playwright@${PLAYWRIGHT_VERSION} install chromium \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /root/.npm/_cacache
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
-ENV PATH=/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:/usr/local/bin:/usr/bin:/bin
+ENV PATH=/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Keep the image's upstream entrypoint, gateway, profiles, MCP, and /opt/data
 # persistence unchanged.
-USER 0
+# Keep the upstream image's default runtime user/init behavior.  The build
+# steps above run as root, but the final image must not override the upstream
+# s6/Hermes UID reconciliation used by the protected /opt/data mount.

@@ -1,0 +1,18 @@
+{
+  "schema_version": "nexus.hermes.r15.5.cli-validation.v1",
+  "status": "PASS_REAL_PRESENCE",
+  "container": "nexus-hermes-0206",
+  "architecture": "aarch64",
+  "hermes_version": "0.20.6",
+  "tools": {
+    "opencode": {"path": "/usr/local/bin/opencode", "version": "1.18.29", "worker_execution": "NOT_YET_RUN"},
+    "gh": {"path": "/usr/bin/gh", "version": "2.46.0", "worker_execution": "NOT_YET_RUN"},
+    "jq": {"path": "/usr/bin/jq", "version": "1.7", "worker_execution": "NOT_YET_RUN"},
+    "fd": {"path": "/usr/local/bin/fd", "version": "10.2.0", "worker_execution": "NOT_YET_RUN"},
+    "supabase": {"path": "/usr/local/bin/supabase", "version": "2.117.0", "worker_execution": "NOT_YET_RUN"},
+    "netlify": {"path": "/usr/local/bin/netlify", "version": "27.5.1", "worker_execution": "NOT_YET_RUN"},
+    "playwright": {"path": "/usr/local/bin/playwright", "version": "1.62.0", "chromium": "present"}
+  },
+  "through_hermes_worker": false,
+  "auth_tokens_exposed": false
+}

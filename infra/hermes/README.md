@@ -18,9 +18,9 @@ live certified Hermes digest and the following tool versions:
 - Debian ARM64: `gh`, `jq`, `fd-find` (exposed as `fd`)
 - npm: OpenCode `1.18.29`, Supabase `2.117.0`, Netlify `27.5.1`, Playwright `1.62.0`
 
-Browser binaries are intentionally not downloaded in the image layer: the
-Oracle runtime must certify the approved Playwright browser cache separately,
-because Chromium is large and its cache is not part of Hermes state.
+The image includes the pinned Chromium browser downloaded by Playwright into
+`/opt/hermes/.playwright`; browser dependencies are part of the immutable
+workstation layer rather than the Hermes `/opt/data` state volume.
 
 Credentials are deliberately not copied into the image. CLI auth, if any,
 must remain in the established protected runtime mounts.

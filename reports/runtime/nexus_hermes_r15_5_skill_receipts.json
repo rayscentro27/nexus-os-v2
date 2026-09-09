@@ -1,0 +1,7 @@
+{
+  "schema_version": "nexus.hermes.r15.5.skill-receipts.v1",
+  "status": "NOT_REACHED",
+  "required": 3,
+  "completed": 0,
+  "reason": "Workstation was provisioned and cut over in this bounded run; worker-boundary instrumentation and three-worker execution remain the next action."
+}

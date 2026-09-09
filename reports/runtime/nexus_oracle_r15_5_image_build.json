@@ -1,0 +1,17 @@
+{
+  "schema_version": "nexus.oracle.r15.5.image-build.v1",
+  "status": "PASS_REAL",
+  "image": "localhost/nexus-hermes-0206-workstation:r15.4",
+  "image_id": "17c7c24ab14ad1777ba4a67e08933f7ccc3509207e61745b3c1920563704d134",
+  "image_digest": "sha256:7821f2f04d63e5e2a841f891106d746f59b4a3095a629811a2e87d906a2f8755",
+  "image_size_bytes": 4201054064,
+  "architecture": "arm64",
+  "hermes_version": "0.20.6",
+  "browser": "chromium-1234",
+  "runtime_cutover": "PASS_REAL",
+  "live_health_after_cutover": "PASS_REAL",
+  "current_unit_backup": "/home/opc/.config/containers/systemd/nexus-hermes-0206.container.r15.5-final2-precutover",
+  "state_mount_preserved": true,
+  "auth_source_preserved": true,
+  "secret_exposed": false
+}

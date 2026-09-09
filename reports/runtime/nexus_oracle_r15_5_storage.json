@@ -1,0 +1,17 @@
+{
+  "schema_version": "nexus.oracle.r15.5.storage.v1",
+  "root_volume_size_gb": 30,
+  "root_free_before_gb": 2.7,
+  "root_free_after_gb": 6.5,
+  "space_recovered_gb": 4.1,
+  "inode_use_percent": 8,
+  "recovery": [
+    {"target": "dangling build image 0ae7be826e6d", "classification": "OLD_BUILD_CACHE", "action": "removed", "reversible": "rebuildable"},
+    {"target": "dnf cache and /var/tmp/dnf-opc-cvi6f9l8", "classification": "SAFE_TO_PRUNE", "action": "cleaned", "reversible": "re-downloadable"}
+  ],
+  "protected": ["nexus-hermes-0206", "active Hermes base image", "/home/opc/.local/share/nexus-hermes-0206-cert", "/home/opc/.config/nexus-hermes-0206-cert/api.env"],
+  "storage_expansion_required": false,
+  "future_build_storage_headroom": "PASS_BOUNDED",
+  "active_runtime_health_after_recovery": "PASS_REAL",
+  "secret_exposed": false
+}
