@@ -2,6 +2,7 @@ from nexus_agent_platform.unified_capability_control import Candidate, failure_l
 from nexus_agent_platform.downstream_continuation import next_action_after_result
 from nexus_agent_platform.hermes_kanban_executor import execute_with_hermes_kanban
 from nexus_agent_platform.unified_capability_control import execute_selected_candidate
+from nexus_agent_platform.adaptive_hermes_routing import ModelRoute, score_route, validate_criterion_evidence
 
 
 def test_engineering_selection_compares_internal_and_opencode(tmp_path, monkeypatch):
@@ -97,3 +98,10 @@ def test_normal_executor_boundary_routes_selected_hermes_candidate(monkeypatch):
     result = execute_selected_candidate({"selected_tool": "hermes.kanban.executor", "selected_skills": ["research-intelligence"]}, {"goal_id":"g", "criterion_id":"c", "task_id":"t", "task_requirements":{}})
     assert result["status"] == "COMPLETED"
     assert seen["skills"] == ["research-intelligence"]
+
+
+def test_slow_model_failure_is_penalized_and_prose_is_not_evidence():
+    route = ModelRoute("openrouter", "nvidia/nemotron-3.5-lightning:free", "nexus_research_test", True, True, True, "READY", 51)
+    assert score_route(route, "RESEARCH", [{"fingerprint": "wrong"}]) > 0
+    invalid = validate_criterion_evidence("task complete", "opportunity.engine", "opportunity-scoring", "t")
+    assert invalid["valid"] is False and invalid["reason"] == "PASS_WITHOUT_MATERIAL_DELTA"

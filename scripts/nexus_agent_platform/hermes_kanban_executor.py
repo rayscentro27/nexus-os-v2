@@ -14,6 +14,7 @@ import time
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Callable
+from nexus_agent_platform.adaptive_hermes_routing import validate_criterion_evidence
 
 
 def _now() -> str:
@@ -126,12 +127,13 @@ def execute_with_hermes_kanban(task_spec: dict[str, Any], *, runner: Callable[[s
         else:
             error_class = "NONE"
         result = latest.get("task", {}).get("result") or latest.get("result") or latest.get("output") or latest.get("comment") or latest.get("latest_summary")
+        evidence_validation = validate_criterion_evidence(result, task_spec["goal_id"], task_spec["criterion_id"], task_spec["task_id"])
         return {
             "schema_version": "nexus.hermes-kanban-execution.v1", "execution_id": execution_id,
             "kanban_task_id": kanban_id, "goal_id": task_spec["goal_id"], "criterion_id": task_spec["criterion_id"],
             "profile": profile, "skills": hermes_skills, "nexus_skills_requested": skills, "tools": latest.get("tools", []), "clis": latest.get("clis", []),
             "artifacts": latest.get("artifacts", []), "result": result, "review_result": latest.get("review_result"),
-            "status": status, "material_delta": bool(result or latest.get("artifacts")),
+            "status": status, "material_delta": bool(evidence_validation["valid"] or latest.get("artifacts")), "evidence_validation": evidence_validation,
             "evidence": latest.get("evidence", result), "error_class": error_class,
             "run_error": run_error, "recovery_hint": "verify criterion; reselect with material delta" if error_class != "NONE" else "NEXUS_VERIFIER",
             "started_at": started, "completed_at": _now(), "transport": "ORACLE_SSH_PODMAN_HERMES",

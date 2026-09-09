@@ -1,0 +1,19 @@
+{
+  "schema_version": "nexus.hermes.r15.9.model-matrix.v1",
+  "live_routes": [{
+    "provider": "openrouter",
+    "model": "nvidia/nemotron-3.5-lightning:free",
+    "profile_compatibility": ["nexus_research_test"],
+    "auth_available": true,
+    "current_health": "READY",
+    "recent_latency_seconds": 51,
+    "tool_use_supported": true,
+    "structured_output_supported": true,
+    "cost_class": "FREE_ROUTE",
+    "rate_limit_state": "UNKNOWN",
+    "last_real_success": "run 63 completed"
+  }],
+  "configured_fallbacks": [],
+  "model_candidates_tested": 1,
+  "second_qualified_route": "UNAVAILABLE_WITHOUT_CONFIGURED_AUTH"
+}

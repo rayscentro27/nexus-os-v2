@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r15.9.real-goal.v1",
+  "goal_id": "opportunity.engine",
+  "criterion_id": "opportunity-scoring",
+  "criterion_expected": "opportunity scoring is evidence-bound",
+  "criterion_current_observed": "existing public evidence exists, but canonical scoring criterion remains unverified",
+  "exact_missing_delta": "structured evidence-bound scoring result plus Nexus verification",
+  "normal_broker_selected": "hermes.kanban.executor",
+  "structured_output_required": true,
+  "result_validation": "receipt-only prose rejected as PASS_WITHOUT_MATERIAL_DELTA",
+  "criterion_verified": false,
+  "material_progress": false,
+  "next_action": "use configured alternate Research/Alpha route or reconcile a second authenticated Hermes model route"
+}

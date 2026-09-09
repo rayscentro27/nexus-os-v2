@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r15.9.failover.v1",
+  "failover_policy": "failure fingerprint penalizes provider+model+task-class; identical route is not retried indefinitely",
+  "penalized_route": "openrouter/nvidia/nemotron-3.5-lightning:free/RESEARCH",
+  "failure": "MODEL_TOO_SLOW_FOR_CURRENT_LIMIT",
+  "fallback": "Research/Alpha via unified capability selector",
+  "adaptive_router_implemented": true,
+  "live_two-route_failover": "NOT_PROVEN; Hermes has no configured fallback provider"
+}
