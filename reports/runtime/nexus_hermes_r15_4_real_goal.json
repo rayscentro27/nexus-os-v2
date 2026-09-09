@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r15.4.real-goal.v1",
+  "status": "NOT_RUN",
+  "selected_goal": null,
+  "real_goal_hermes_agent_stack_used": false,
+  "real_goal_material_progress": false,
+  "new_criteria_verified": 0,
+  "reason": "The required durable Hermes workstation and worker-side receipts were not available, so no normal Nexus full-stack canary was started."
+}

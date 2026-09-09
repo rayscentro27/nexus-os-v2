@@ -1,0 +1,33 @@
+# Nexus Hermes workstation layer for Oracle ARM64.
+# The base digest is the live, certified Hermes 0.20.6 image.  Do not replace
+# it with a floating tag: upgrades require a new certification run.
+ARG HERMES_BASE_IMAGE=docker.io/nousresearch/hermes-agent@sha256:e3f4f0679f15556d5e09369cc36bf1074351b2d37bdd672dae593dfd07495180
+FROM ${HERMES_BASE_IMAGE}
+
+USER root
+
+ARG OPENCODE_VERSION=1.18.29
+ARG SUPABASE_VERSION=2.117.0
+ARG NETLIFY_VERSION=27.5.1
+ARG PLAYWRIGHT_VERSION=1.62.0
+
+# Debian's ARM64 packages are used for small, non-JavaScript utilities.  The
+# npm packages are pinned because this image is the durable execution surface.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates jq fd-find gh \
+    && ln -sf /usr/bin/fdfind /usr/local/bin/fd \
+    && npm install --global --omit=dev \
+         --allow-scripts=netlify-cli,opencode-ai,esbuild,unix-dgram,sharp \
+         "opencode-ai@${OPENCODE_VERSION}" \
+         "supabase@${SUPABASE_VERSION}" \
+         "netlify-cli@${NETLIFY_VERSION}" \
+         "playwright@${PLAYWRIGHT_VERSION}" \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /root/.npm/_cacache
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/hermes/.playwright
+ENV PATH=/opt/hermes/bin:/opt/hermes/.venv/bin:/opt/data/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+# Keep the image's upstream entrypoint, gateway, profiles, MCP, and /opt/data
+# persistence unchanged.
+USER 0

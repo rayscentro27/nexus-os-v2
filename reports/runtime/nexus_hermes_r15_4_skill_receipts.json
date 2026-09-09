@@ -1,0 +1,8 @@
+{
+  "schema_version": "nexus.hermes.r15.4.skill-receipts.v1",
+  "status": "FAIL",
+  "required": 3,
+  "completed": 0,
+  "reason": "R15.3 task metadata pinning exists, but the live worker path has not emitted an independent worker-side attachment receipt.",
+  "next_action": "Instrument the actual dispatcher worker startup/result boundary and rerun researcher, engineer, and reviewer tasks."
+}

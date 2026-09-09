@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r15.4.cli-matrix.v1",
+  "status": "NOT_CERTIFIED",
+  "reason": "No rebuilt image was produced; current running container was deliberately not modified.",
+  "current_certified_in_container": ["git", "python3", "node", "npm", "npx", "docker", "curl", "rg", "hermes"],
+  "pending_after_rebuild": ["opencode", "gh", "jq", "fd", "supabase", "netlify", "playwright"],
+  "through_hermes_worker": false,
+  "secret_exposed": false
+}

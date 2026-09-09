@@ -1,0 +1,27 @@
+{
+  "schema_version": "nexus.hermes.r15.4.image-build.v1",
+  "status": "RUN_LIMIT_CHECKPOINT",
+  "host": "nexus-llm-worker",
+  "host_architecture": "aarch64",
+  "container": "nexus-hermes-0206",
+  "current_image": "docker.io/nousresearch/hermes-agent@sha256:e3f4f0679f15556d5e09369cc36bf1074351b2d37bdd672dae593dfd07495180",
+  "current_image_architecture": "arm64",
+  "entrypoint": ["/opt/hermes/docker/entrypoint-dispatch.sh"],
+  "command": ["gateway", "run"],
+  "network": "host",
+  "state_mount": "/home/opc/.local/share/nexus-hermes-0206-cert:/opt/data",
+  "auth_mount": "/home/opc/.config/nexus-hermes-0206-cert/api.env",
+  "durable_build_definition": "infra/hermes/Containerfile.hermes-workstation",
+  "base_digest_pinned": true,
+  "build_attempts": [
+    {"result": "FAIL", "reason": "playwright_1.63.0_unavailable_at_runtime_registry_date"},
+    {"result": "FAIL", "reason": "oracle_root_volume_exhausted_during_image_commit", "observed_free": "22M"}
+  ],
+  "apt_cli_install_completed_before_failure": ["gh", "jq", "fd-find"],
+  "npm_install_completed_before_failure": ["opencode-ai@1.18.29", "supabase@2.117.0", "netlify-cli@27.5.1", "playwright@1.62.0"],
+  "image_tag_produced": false,
+  "running_container_modified": false,
+  "toolchain_durable": false,
+  "browser_binary_included": false,
+  "next_action": "Expand Oracle root volume or provide approved build storage, rerun podman build from this Containerfile with the same pinned base, then verify the resulting image before Quadlet cutover."
+}

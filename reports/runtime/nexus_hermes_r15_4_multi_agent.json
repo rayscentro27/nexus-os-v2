@@ -1,0 +1,13 @@
+{
+  "schema_version": "nexus.hermes.r15.4.multi-agent.v1",
+  "status": "FAIL",
+  "parents_meaning": "PREREQUISITE",
+  "orchestration_graph_uses_native_semantics": true,
+  "research": {"task_id": "t_0b222960", "status": "done", "result": "R153_RESEARCH_OK"},
+  "engineering": {"task_id": "t_864ffd5b", "status": "done", "result": "R153_ENGINEER_OK"},
+  "reviewer": {"task_id": "t_6d04f968", "status": "archived", "result": "TIMEOUT"},
+  "reviewer_timeout_root_cause": "worker model/tool-loop failure: tool_search could not invoke and subsequent tool calls errored while checking the scratch workspace; not a prerequisite rejection",
+  "skill_receipts_complete": "0/3",
+  "restart_persistence": "NOT_PROVEN",
+  "next_action": "After workstation storage is available, rerun the corrected executable chain with the orchestrator outside prerequisite edges and capture worker receipts."
+}
