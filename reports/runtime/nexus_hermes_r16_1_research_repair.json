@@ -1,0 +1,22 @@
+{
+  "goal_id": "opportunity.engine",
+  "criterion_id": "opportunity-scoring",
+  "attempt": "R16.1 alternate Research/Alpha",
+  "status": "NO_MATERIAL_PROGRESS",
+  "source_count": 6,
+  "supported_claim_count": 0,
+  "governed_opportunity_candidate_count": 0,
+  "result_id": "alpha-receipt-382b4f2931864df4",
+  "artifact_id": "alpha-pack:alpha-research-10d707d2e61a4048",
+  "root_cause": "CLAIM_EXTRACTION_FAILURE",
+  "contributing_stage": "SCORING_INPUT_MISSING",
+  "direct_evidence": [
+    "execute_alpha_request calls run_alpha_research with model_calls=0 and without claim_specs or opportunities",
+    "run_alpha_research only creates findings from claim_specs and candidates from opportunities",
+    "the ordinary public-search executor therefore persists six source rows but supplies no claim/candidate inputs"
+  ],
+  "repair_attempted": "NARROWER_OBJECTIVE_QUERY",
+  "repair_result": "SAME_PIPELINE_GAP; six sources and zero claims",
+  "next_material_action": "Add a governed claim-extraction stage that binds each extracted claim to source evidence and passes only validated claim_specs to run_alpha_research, then rerun candidate generation and scoring.",
+  "safety": "No claims or candidates were fabricated from search snippets."
+}

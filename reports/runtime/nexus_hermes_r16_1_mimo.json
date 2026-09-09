@@ -1,0 +1,16 @@
+{
+  "feature": "MiMo Code",
+  "official_repository": "https://github.com/XiaomiMiMo/MiMo-Code",
+  "official_install": "npm install -g @mimo-ai/cli or official macOS/Linux installer",
+  "mimo_found": true,
+  "host": "MAC",
+  "path": "/Users/raymonddavis/.mimocode/bin/mimo",
+  "version": "UNKNOWN_INTERACTIVE_PROBE",
+  "arm64_oracle_compatible": "UNKNOWN",
+  "linux_support": "OFFICIAL_REPOSITORY_AND_INSTALLER_CLAIM_LINUX; ARM64_NOT_VERIFIED_HERE",
+  "noninteractive_mode": "NOT_ESTABLISHED_FROM_INSTALLED_BINARY",
+  "benchmark": "NOT_RUN",
+  "reason_not_benchmarked": "The bounded --version/help discovery path entered an interactive startup behavior; no authenticated noninteractive execution contract was established. No credentials or paid calls were attempted.",
+  "classification": "PRESENT_ON_MAC_NOT_ROUTABLE_TO_HERMES",
+  "official_sources": ["https://github.com/XiaomiMiMo/MiMo-Code", "https://mimo.mi.com/docs/en-US/tokenplan/integration/mimo-code"]
+}

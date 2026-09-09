@@ -1,0 +1,14 @@
+{
+  "schema": "nexus.hermes.r16.1.cli-inventory.v1",
+  "host": "ORACLE_HOST",
+  "architecture": "aarch64",
+  "captured_at": "2026-09-09",
+  "discovered": [
+    {"cli":"ollama","path":"/usr/local/bin/ollama","version":"0.21.2","auth_state":"LOCAL_RUNTIME_NOT_EXPOSED"},
+    {"cli":"git","path":"/usr/bin/git","version":"2.52.0","auth_state":"N/A"},
+    {"cli":"python3","path":"/usr/bin/python3","version":"3.9.25","auth_state":"N/A"},
+    {"cli":"jq","path":"/usr/bin/jq","version":"jq-1.6","auth_state":"N/A"}
+  ],
+  "absent_tested": ["mimo","opencode","codex","claude","aider","kilo","kilocode","gemini","copilot","crush","amp","cursor-agent","qwen","qwen-code","gh","node","npm","pnpm","bun","fd","supabase","netlify","playwright"],
+  "notes": ["Oracle host binaries are distinct from the Hermes container image.", "No host authentication or secret values were inspected."]
+}

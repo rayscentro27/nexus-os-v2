@@ -1,0 +1,26 @@
+{
+  "schema": "nexus.hermes.r16.1.cli-inventory.v1",
+  "host": "ORACLE_HERMES_CONTAINER",
+  "container": "nexus-hermes-0206",
+  "architecture": "linux/arm64",
+  "hermes_version": "0.20.6",
+  "discovered": [
+    {"cli":"opencode","path":"/usr/local/bin/opencode","version":"1.18.29","auth_state":"NOT_INSPECTED"},
+    {"cli":"gh","path":"/usr/bin/gh","version":"2.46.0","auth_state":"CLI_PASS_AUTH_NOT_TESTED"},
+    {"cli":"jq","path":"/usr/bin/jq","version":"1.7","auth_state":"N/A"},
+    {"cli":"fd","path":"/usr/local/bin/fd","version":"10.2.0","auth_state":"N/A"},
+    {"cli":"supabase","path":"/usr/local/bin/supabase","version":"2.117.0","auth_state":"NOT_INSPECTED"},
+    {"cli":"netlify","path":"/usr/local/bin/netlify","version":"27.5.1 linux-arm64 node-v26.5.1","auth_state":"NOT_INSPECTED"},
+    {"cli":"playwright","path":"/usr/local/bin/playwright","version":"1.62.0","auth_state":"N/A"},
+    {"cli":"git","path":"/usr/bin/git","version":"2.47.3","auth_state":"N/A"},
+    {"cli":"python3","path":"/usr/bin/python3","version":"3.13.5","auth_state":"N/A"},
+    {"cli":"node","path":"/usr/local/bin/node","version":"v26.5.1","auth_state":"N/A"},
+    {"cli":"npm","path":"/usr/local/bin/npm","version":"11.17.0","auth_state":"N/A"},
+    {"cli":"npx","path":"/usr/local/bin/npx","version":"11.17.0","auth_state":"N/A"},
+    {"cli":"curl","path":"PATH_RESOLVED","version":"PRESENT","auth_state":"N/A"},
+    {"cli":"rg","path":"PATH_RESOLVED","version":"PRESENT","auth_state":"N/A"},
+    {"cli":"hermes","path":"PATH_RESOLVED","version":"0.20.6","auth_state":"N/A"}
+  ],
+  "absent_tested": ["mimo","codex","claude","aider","kilo","kilocode","gemini","copilot","crush","amp","cursor-agent","qwen","qwen-code","ollama","pnpm","bun"],
+  "notes": ["These are container-side paths; host availability does not imply container availability.", "Presence is not equivalent to successful AI-authenticated execution."]
+}

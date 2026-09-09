@@ -1,0 +1,11 @@
+{
+  "cli": "opencode",
+  "container_path": "/usr/local/bin/opencode",
+  "version": "1.18.29",
+  "presence": "PASS_REAL",
+  "actual_ai_edit_benchmark": "NOT_RUN",
+  "reason": "No safe authenticated model execution was available for a disposable edit benchmark in this bounded run; presence/version is not claimed as process success.",
+  "documented_mode": "opencode run prompt",
+  "official_source": "https://opencode.ai/v2/docs/cli",
+  "hermes_candidate": "PRESENT_NOT_TESTED"
+}

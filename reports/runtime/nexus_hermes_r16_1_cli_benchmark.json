@@ -1,0 +1,22 @@
+{
+  "schema": "nexus.hermes.r16.1.cli-benchmark.v1",
+  "benchmark_status": "RUN_LIMIT_CHECKPOINT",
+  "identical_benchmark": "NOT_EXECUTED_FOR_AI_EDIT_BACKENDS",
+  "candidates": [
+    {"name":"mimo","host":"MAC","status":"PRESENT_NOT_TESTED","reason":"interactive/auth route not established"},
+    {"name":"opencode","host":"ORACLE_HERMES_CONTAINER","status":"PRESENT_NOT_TESTED","reason":"authenticated model edit route not available"},
+    {"name":"codex","host":"MAC","status":"PRESENT_NOT_TESTED","reason":"not benchmarked after discovery; no authorization test attempted"},
+    {"name":"claude","host":"MAC","status":"PRESENT_NOT_TESTED","reason":"not benchmarked after discovery; no authorization test attempted"},
+    {"name":"kilo","host":"MAC","status":"PRESENT_NOT_TESTED","reason":"automation contract not established"},
+    {"name":"aider","host":"MAC","status":"ABSENT","reason":"command not found"}
+  ],
+  "winner_by_task_class": {"SMALL_EDIT":"NOT_DETERMINED","BUG_FIX":"NOT_DETERMINED","REPO_ANALYSIS":"NOT_DETERMINED","TEST_REPAIR":"NOT_DETERMINED","CODE_REVIEW":"NOT_DETERMINED"},
+  "cli_failover": {"status":"PASS_REAL_FROM_R16_MODEL/CLI_FAILURE_LEARNING_PATH","new_cli_failure_fingerprint":"NOT_CREATED_IN_R16_1"},
+  "official_comparison_sources": {
+    "mimo":"https://github.com/XiaomiMiMo/MiMo-Code",
+    "opencode":"https://opencode.ai/v2/docs/cli",
+    "codex":"https://help.openai.com/en/articles/11096431",
+    "claude_code":"https://docs.anthropic.com/en/docs/claude-code/cli-usage",
+    "aider":"https://aider.chat/docs/config/options.html"
+  }
+}
