@@ -34,7 +34,7 @@ function ConnectionStatusCard() {
   );
 }
 
-export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | null; onNavigate?: (id: string) => void }) {
+export function SourceIntakeReviewPage({ email, onNavigate, defaultNotebookId }: { email: string | null; onNavigate?: (id: string) => void; defaultNotebookId?: string | null }) {
   const [picked, setPicked] = useState<SourceType | null>(null);
   const [captureRefresh, setCaptureRefresh] = useState(0);
   const [workspaceKey, setWorkspaceKey] = useState(0);
@@ -60,7 +60,7 @@ export function SourceIntakeReviewPage({ email, onNavigate }: { email: string | 
         leading={(
           <div className="nx-grid" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', marginBottom: 14 }}>
             <AddSourcePanel onPick={setPicked} picked={picked?.key ?? null} />
-            <SourceEntryForm picked={picked} email={email} onSubmitted={submitted} />
+            <SourceEntryForm picked={picked} email={email} onSubmitted={submitted} defaultNotebookId={defaultNotebookId} />
             <div className="nx-col">
               <PendingCaptureRequests refresh={captureRefresh} />
               <ConnectionStatusCard />

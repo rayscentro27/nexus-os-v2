@@ -14,7 +14,7 @@ function captureCommand(url: string): string {
   return `python3 scripts/intake/run_existing_youtube_monitor.py --source-url "${url}" --once --limit 1 --no-external-ai --write-events --no-dry-run`;
 }
 
-export function SourceEntryForm({ picked, email, onSubmitted }: { picked: SourceType | null; email: string | null; onSubmitted?: () => void }) {
+export function SourceEntryForm({ picked, email, onSubmitted, defaultNotebookId }: { picked: SourceType | null; email: string | null; onSubmitted?: () => void; defaultNotebookId?: string | null }) {
   const [type, setType] = useState('youtube_video');
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -22,6 +22,9 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
   const [targetUse, setTargetUse] = useState('Auto-route (by score)');
   const [priority, setPriority] = useState('Medium');
   const [tags, setTags] = useState('');
+  const [researchMode, setResearchMode] = useState<'ONE_TIME_RESEARCH' | 'PERSISTENT_SOURCE'>('ONE_TIME_RESEARCH');
+  const [cadence, setCadence] = useState<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'MANUAL'>('WEEKLY');
+  const [notebookId, setNotebookId] = useState(defaultNotebookId || 'general-research');
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -44,6 +47,9 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
       priority,
       tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
       requested_by: email,
+      research_mode: researchMode,
+      cadence: researchMode === 'PERSISTENT_SOURCE' ? cadence : 'MANUAL',
+      notebook_id: notebookId.trim() || null,
     });
     const res = await submitSourceCapture({
       source_type: type, source_url: url.trim() || null, title: title || null, snippet: snippet || null,
@@ -79,6 +85,12 @@ export function SourceEntryForm({ picked, email, onSubmitted }: { picked: Source
         </div>
         <label className="nx-muted" style={{ fontSize: 12 }}>Tags (comma-separated)
           <input className="nx-input" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="ai_tooling, credit_funding_readiness" /></label>
+        <label className="nx-muted" style={{ fontSize: 12 }}>Research mode
+          <select className="nx-input" value={researchMode} onChange={(e) => setResearchMode(e.target.value as 'ONE_TIME_RESEARCH' | 'PERSISTENT_SOURCE')}><option value="ONE_TIME_RESEARCH">Research once</option><option value="PERSISTENT_SOURCE">Monitor continuously</option></select></label>
+        {researchMode === 'PERSISTENT_SOURCE' && <label className="nx-muted" style={{ fontSize: 12 }}>Refresh cadence
+          <select className="nx-input" value={cadence} onChange={(e) => setCadence(e.target.value as 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'MANUAL')}><option>DAILY</option><option>WEEKLY</option><option>MONTHLY</option><option>MANUAL</option></select></label>}
+        <label className="nx-muted" style={{ fontSize: 12 }}>Notebook
+          <input className="nx-input" value={notebookId} onChange={(e) => setNotebookId(e.target.value)} placeholder="business-funding" /></label>
         <label className="nx-muted" style={{ fontSize: 12 }}>Text snippet (optional, public only)
           <textarea className="nx-input" style={{ minHeight: 48 }} value={snippet} onChange={(e) => setSnippet(e.target.value)} /></label>
         <button className="nx-btn" disabled={busy} onClick={submit}>{busy ? 'Saving…' : 'Add Source / Research Now'}</button>

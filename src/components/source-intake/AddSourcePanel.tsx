@@ -6,9 +6,9 @@ export const SOURCE_TYPES: SourceType[] = [
   { key: 'youtube_video', icon: '▶', label: 'YouTube URL', note: 'Capture via approved CLI', supported: true },
   { key: 'transcript_file', icon: '📄', label: 'Transcript File', note: '.txt, .md, .pdf', supported: false },
   { key: 'manual_idea', icon: '💡', label: 'Pasted Text / Idea', note: 'Paste or write', supported: true },
-  { key: 'website_url', icon: '🌐', label: 'Website URL', note: 'Capture webpage', supported: false },
+  { key: 'website_url', icon: '🌐', label: 'Web Page / Site', note: 'Bounded public source', supported: true },
   { key: 'notebooklm_export', icon: '◈', label: 'NotebookLM Export', note: '.zip / .json', supported: false },
-  { key: 'youtube_channel', icon: '📺', label: 'YouTube Channel', note: 'Allowlist only', supported: false },
+  { key: 'youtube_channel', icon: '📺', label: 'YouTube Channel', note: 'Monitor new videos', supported: true },
 ];
 
 export function AddSourcePanel({ onPick, picked }: { onPick: (t: SourceType) => void; picked: string | null }) {
