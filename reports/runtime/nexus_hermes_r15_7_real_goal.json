@@ -1,0 +1,18 @@
+{
+  "schema_version": "nexus.hermes.r15.7.real-goal.v1",
+  "goal_id": "opportunity.engine",
+  "criterion_id": "opportunity-scoring",
+  "goal_is_existing": true,
+  "normal_broker_used": true,
+  "hermes_selected_by_scoring": true,
+  "kanban_task_id": "t_ca9d36f9",
+  "profile": "nexus_research_test",
+  "nexus_skill_requested": "research-intelligence",
+  "hermes_skill_attached": "sdlc-review",
+  "result": "worker run timed out after 45s against a 40s task cap and was requeued",
+  "criterion_verified": false,
+  "material_progress": false,
+  "blocker": "Hermes worker model-response timeout on the selected live task",
+  "next_action": "materially different bounded Hermes task or certified Research fallback",
+  "portal_goals_untouched": true
+}

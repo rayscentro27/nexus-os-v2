@@ -1,0 +1,5 @@
+{
+  "feature": "HERMES_KANBAN_RESTART_PERSISTENCE",
+  "status": "NOT_REACHED",
+  "reason": "The normal-broker canary failed at worker model-response execution before a persistence chain could safely be started"
+}

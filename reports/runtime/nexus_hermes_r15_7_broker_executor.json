@@ -1,0 +1,16 @@
+{
+  "schema_version": "nexus.hermes.r15.7.broker-executor.v1",
+  "broker_entrypoint": "nexus_agent_platform.unified_capability_control.select_and_execute",
+  "executor": "nexus_agent_platform.hermes_kanban_executor.execute_with_hermes_kanban",
+  "registered_capability": "hermes.kanban.executor",
+  "selected_by_normal_scoring": true,
+  "selection_task": "r15-7-real-opportunity-3",
+  "selected_backend": "ORACLE_HERMES_KANBAN",
+  "skill_aliases": {"research-intelligence": "sdlc-review", "repo-intelligence": "codebase-inspection", "software-engineering": "codebase-inspection"},
+  "execution_task": "t_ca9d36f9",
+  "execution_outcome": "MODEL_RESPONSE_TIMEOUT",
+  "material_delta": false,
+  "criterion_completion_claimed": false,
+  "secret_exposed": false,
+  "live_runtime_preserved": true
+}

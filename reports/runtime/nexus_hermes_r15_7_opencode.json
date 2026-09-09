@@ -1,0 +1,5 @@
+{
+  "feature": "HERMES_CAN_CALL_OPENCODE",
+  "status": "NOT_RUN_IN_R15_7",
+  "reason": "R15.7 scope was normal broker cutover; prior R15.6 evidence showed direct editing rather than an OpenCode invocation"
+}

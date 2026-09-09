@@ -1,0 +1,5 @@
+{
+  "feature": "HERMES_PLAYWRIGHT_CLI_BROWSER",
+  "status": "NOT_RUN_IN_R15_7",
+  "reason": "R15.7 scope was normal broker cutover; prior browser worker failed before browser execution"
+}

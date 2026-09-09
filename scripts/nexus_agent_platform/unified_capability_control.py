@@ -12,7 +12,7 @@ import json
 import os
 import shutil
 import subprocess
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
@@ -121,13 +121,22 @@ def normalized_capabilities() -> list[dict[str, Any]]:
         {"capability_id": "worker.nexus_ai_workforce", "name": "Nexus AI workforce", "category": "WORKER", "provider": "Nexus", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "R9/R10 receipts"},
         {"capability_id": "worker.opencode", "name": "OpenCode", "category": "WORKER", "provider": "OpenCode", "installed": bool(shutil.which("opencode")), "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": bool(shutil.which("opencode")), "health": "READY" if shutil.which("opencode") else "MISSING", "source_registry": "OpenCode executable + governed adapter"},
         {"capability_id": "mcp.nexus_mcp", "name": "Nexus MCP", "category": "MCP", "provider": "Nexus", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "config/hermes/nova-profile/config.yaml"},
+        {"capability_id": "hermes.native.gateway.read_only", "name": "Hermes native authenticated read-only", "category": "TOOL", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": (ROOT / "reports/runtime/nexus_hermes_native_r12/native_tool_call_gateway.json").is_file(), "health": "READY" if (ROOT / "reports/runtime/nexus_hermes_native_r12/native_tool_call_gateway.json").is_file() else "UNKNOWN", "source_registry": "Oracle-side protected api.env via SSH gateway", "side_effect_class": "READ_ONLY", "authority_scope": "READ_ONLY_INTERNAL", "privacy_scope": "INTERNAL"},
+        {"capability_id": "hermes.native.mcp", "name": "Hermes native MCP", "category": "MCP", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "Hermes mcp test and MCP-only live turn", "side_effect_class": "READ_ONLY", "authority_scope": "READ_ONLY_INTERNAL"},
+        {"capability_id": "hermes.native.terminal", "name": "Hermes native terminal", "category": "TOOL", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "R12.6 terminal-only receipt", "side_effect_class": "BOUNDED_INTERNAL", "authority_scope": "BOUNDED_TASK_SCOPE"},
+        {"capability_id": "hermes.native.file_read", "name": "Hermes native file read", "category": "TOOL", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "R12.6 file-read-only receipt", "side_effect_class": "READ_ONLY", "authority_scope": "BOUNDED_TASK_SCOPE"},
+        {"capability_id": "hermes.native.execute_code", "name": "Hermes native execute code", "category": "TOOL", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "R12.6 execute-code-only receipt", "side_effect_class": "BOUNDED_INTERNAL", "authority_scope": "SANDBOXED_DETERMINISTIC"},
+        {"capability_id": "hermes.native.subagent", "name": "Hermes native bounded delegation", "category": "WORKER", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "R12.6 delegation-only receipt", "side_effect_class": "READ_ONLY", "authority_scope": "BOUNDED_DELEGATION"},
+        {"capability_id": "hermes.kanban.executor", "name": "Hermes governed Kanban executor", "category": "EXECUTOR", "provider": "Oracle Hermes 0.20.6", "installed": True, "configured": True, "enabled": True, "authorized": True, "runtime_access": True, "worker_access": True, "real_tested": True, "health": "READY", "source_registry": "R15.6 live dispatcher, worker, skill-receipt and reviewer receipts", "side_effect_class": "BOUNDED_INTERNAL", "authority_scope": "INTERNAL_SAFE", "execution_plane": "HERMES_KANBAN"},
     ])
     return rows
 
 
 def required_capabilities(goal: str, criterion: str, task: str = "") -> dict[str, Any]:
     text = " ".join((goal, criterion, task)).lower()
-    if any(x in text for x in ("tenant", "approval", "rls", "supabase")):
+    if any(x in text for x in ("system health", "operational state", "current company state")):
+        classes, skills = ["INTERNAL_READ"], ["repo-intelligence"]
+    elif any(x in text for x in ("tenant", "approval", "rls", "supabase")):
         classes = ["DATABASE", "AUTHORIZATION_TESTING", "ENGINEERING"]
         skills = ["software-engineering", "worktree-safety"]
     elif any(x in text for x in ("research", "pricing", "opportunity", "source", "public evidence", "current evidence")):
@@ -172,18 +181,25 @@ def select_skills(*, task_id: str, requirements: dict[str, Any], failure_memory:
 
 
 def _candidate(worker: str, tool: str, backend: str, skills: Iterable[str], fit: float, *, tested: float = 1.0, cost: float = 1.0, reason: str = "") -> Candidate:
-    return Candidate(worker, tool, backend, tuple(skills), fit, 1.0, 1.0, tested, 1.0 if worker == "nexus_ai_workforce" else .5, 0.0, 1.0, cost, 1.0, 1.0, 1.0, 1.0, reason=reason)
+    return Candidate(worker, tool, backend, tuple(skills), fit, 1.0, 1.0, tested, 1.0 if worker in {"nexus_ai_workforce", "hermes_orchestrator"} else .5, 0.0, 1.0, cost, 1.0, 1.0, 1.0, 1.0, reason=reason)
 
 
 def discover_candidates(requirements: dict[str, Any], *, failure_memory: Iterable[dict[str, Any]] = ()) -> list[Candidate]:
     classes = set(requirements.get("capability_classes", []))
+    if "INTERNAL_READ" in classes:
+        tested = (ROOT / "reports/runtime/nexus_hermes_native_r12/native_tool_call_gateway.json").is_file()
+        return [
+            _candidate("hermes_native", "hermes.native.gateway.read_only", "ORACLE_SSH_GATEWAY", requirements["required_skills"], 1.0, tested=1.0 if tested else 0.0, reason="authenticated Oracle Hermes read-only receipt"),
+            _candidate("nexus_mcp", "mcp.nexus_mcp", "LOCAL_ORACLE_BRIDGE", requirements["required_skills"], .9, tested=1.0, reason="certified Nexus MCP read path"),
+        ]
     if "ENGINEERING" in classes:
         return [
+            _candidate("hermes_orchestrator", "hermes.kanban.executor", "ORACLE_HERMES_KANBAN", requirements["required_skills"], 1.0, reason="live Hermes dispatcher and worker receipts"),
             _candidate("nexus_ai_workforce", "engineering.portal_beta", "LOCAL", requirements["required_skills"], 1.0, reason="certified Nexus engineering receipt path"),
             _candidate("opencode", "opencode.run", "LOCAL_ISOLATED_WORKTREE", requirements["required_skills"], .9, tested=.8, cost=.5, reason="installed and governed adapter; candidate requires bounded certification"),
         ]
     if "RESEARCH" in classes:
-        return [_candidate("research", "research.alpha", "LOCAL_OR_SEARXNG", requirements["required_skills"], 1.0, reason="existing Research/Alpha path"), _candidate("oracle", "oracle.browser.read", "ORACLE", requirements["required_skills"], .7, tested=.6, reason="historical read-only browser path")]
+        return [_candidate("hermes_orchestrator", "hermes.kanban.executor", "ORACLE_HERMES_KANBAN", requirements["required_skills"], 1.0, reason="live Hermes dispatcher and worker receipts"), _candidate("research", "research.alpha", "LOCAL_OR_SEARXNG", requirements["required_skills"], 1.0, reason="existing Research/Alpha path"), _candidate("oracle", "oracle.browser.read", "ORACLE", requirements["required_skills"], .7, tested=.6, reason="historical read-only browser path")]
     if "BROWSER" in classes:
         return [_candidate("playwright", "browser.playwright", "LOCAL", requirements["required_skills"], .95, tested=.7), _candidate("oracle", "browser.oracle", "ORACLE", requirements["required_skills"], .9, tested=.8)]
     if "REMOTE_EXECUTION" in classes:
@@ -191,20 +207,41 @@ def discover_candidates(requirements: dict[str, Any], *, failure_memory: Iterabl
     return [_candidate("nexus_ai_workforce", "internal.create_bounded_work_artifact", "LOCAL", requirements["required_skills"], .8)]
 
 
-def select_candidate(*, task_id: str, goal_id: str, criterion_id: str, goal: str, criterion: str, task: str = "", failure_memory: Iterable[dict[str, Any]] = (), persist: bool = True) -> dict[str, Any]:
-    requirements = required_capabilities(goal, criterion, task)
-    skill_receipt = select_skills(task_id=task_id, requirements=requirements, failure_memory=failure_memory, persist=persist)
-    requirements = dict(requirements, required_skills=skill_receipt["skills_selected"])
-    candidates = discover_candidates(requirements, failure_memory=failure_memory)
-    filtered: list[dict[str, Any]] = []
-    qualified: list[Candidate] = []
+def filter_candidates(candidates: Iterable[Candidate], requirements: dict[str, Any]) -> tuple[list[Candidate], list[dict[str, Any]]]:
+    """Apply deterministic readiness, authority, privacy, and health gates."""
+    qualified, rejected = [], []
     for c in candidates:
         reasons = []
         if not c.authorized: reasons.append("AUTHORITY")
         if not c.runtime_access: reasons.append("RUNTIME_ACCESS")
+        if c.worker_access <= 0: reasons.append("WORKER_ACCESS")
+        if c.health <= 0: reasons.append("UNHEALTHY")
         if c.real_test_confidence <= 0: reasons.append("REAL_TEST_REQUIRED")
-        if reasons: filtered.append({"worker": c.worker, "tool": c.tool, "reasons": reasons})
+        if c.privacy_fit <= 0: reasons.append("PRIVACY")
+        if reasons: rejected.append({"worker": c.worker, "tool": c.tool, "reasons": reasons})
         else: qualified.append(c)
+    return qualified, rejected
+
+
+def _apply_failure_memory(candidates: Iterable[Candidate], failure_memory: Iterable[dict[str, Any]]) -> list[Candidate]:
+    """Apply task-scoped failure penalties without globally blacklisting tools."""
+    history = list(failure_memory)
+    result = []
+    for c in candidates:
+        relevant = [h for h in history if h.get("worker") == c.worker or h.get("tool") == c.tool]
+        if relevant:
+            result.append(replace(c, past_failure=-min(1.0, .25 * len(relevant)), failure_compatibility=-min(1.0, .2 * len(relevant))))
+        else:
+            result.append(c)
+    return result
+
+
+def select_candidate(*, task_id: str, goal_id: str, criterion_id: str, goal: str, criterion: str, task: str = "", failure_memory: Iterable[dict[str, Any]] = (), persist: bool = True) -> dict[str, Any]:
+    requirements = required_capabilities(goal, criterion, task)
+    skill_receipt = select_skills(task_id=task_id, requirements=requirements, failure_memory=failure_memory, persist=persist)
+    requirements = dict(requirements, required_skills=skill_receipt["skills_selected"])
+    candidates = _apply_failure_memory(discover_candidates(requirements, failure_memory=failure_memory), failure_memory)
+    qualified, filtered = filter_candidates(candidates, requirements)
     if not qualified:
         raise RuntimeError("NO_QUALIFIED_CAPABILITY_CANDIDATE")
     selected = max(qualified, key=lambda c: (c.score, c.worker, c.tool))
@@ -224,6 +261,29 @@ def select_candidate(*, task_id: str, goal_id: str, criterion_id: str, goal: str
         RECEIPT_DIR.mkdir(parents=True, exist_ok=True)
         (RECEIPT_DIR / f"selection_{task_id}.json").write_text(json.dumps(receipt, indent=2) + "\n")
     return receipt
+
+
+def execute_selected_candidate(selection: dict[str, Any], task_spec: dict[str, Any]) -> dict[str, Any]:
+    """Execute a selected candidate without replacing its provider lifecycle.
+
+    Hermes is the only candidate with a broker-native executor here; other
+    providers remain available to their established runners. This function is
+    intentionally called after ``select_candidate`` and never selects a
+    business child action itself.
+    """
+    if selection.get("selected_tool") == "hermes.kanban.executor":
+        from nexus_agent_platform.hermes_kanban_executor import execute_with_hermes_kanban
+        return execute_with_hermes_kanban({**task_spec,
+            "skills": task_spec.get("skills") or selection.get("selected_skills", []),
+            "profile": task_spec.get("profile") or "nexus_research_test"})
+    return {"schema_version": "nexus.selected-executor-result.v1", "status": "UNSUPPORTED_IN_BROKER", "selected_tool": selection.get("selected_tool"), "recovery_hint": "invoke the established provider runner"}
+
+
+def select_and_execute(*, task_id: str, goal_id: str, criterion_id: str, goal: str, criterion: str, task: str, task_spec: dict[str, Any], failure_memory: Iterable[dict[str, Any]] = (), persist: bool = True) -> dict[str, Any]:
+    """Normal Nexus broker entrypoint: requirements → selection → execution."""
+    selection = select_candidate(task_id=task_id, goal_id=goal_id, criterion_id=criterion_id, goal=goal, criterion=criterion, task=task, failure_memory=failure_memory, persist=persist)
+    execution = execute_selected_candidate(selection, {**task_spec, "goal_id": goal_id, "criterion_id": criterion_id, "task_id": task_id, "task_requirements": selection["requirements"]})
+    return {"selection": selection, "execution": execution, "verifier_required": True, "criterion_completion_claimed": False}
 
 
 def failure_learning(previous: dict[str, Any], *, new_strategy: str, new_skills: Iterable[str] = (), new_tool: str | None = None, new_worker: str | None = None) -> dict[str, Any]:
