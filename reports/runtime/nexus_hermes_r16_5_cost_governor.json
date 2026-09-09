@@ -1,0 +1,10 @@
+{
+  "status":"PARTIAL",
+  "tiers":{"TIER_0":"local/free preferred","TIER_1":"low-cost remote preferred","TIER_2":"premium only when authorized"},
+  "primary_route":"openrouter/nvidia/nemotron-3.5-lightning:free",
+  "secondary_route":"NONE",
+  "max_retries":1,
+  "premium_allowed":false,
+  "cost_telemetry":{"today":"UNKNOWN","7d":"UNKNOWN","30d":"UNKNOWN","by_provider":"UNKNOWN","by_model":"UNKNOWN","cost_per_verified_criterion":"UNKNOWN"},
+  "reason":"Policy shape is recorded, but activation requires a second healthy route and actual cost telemetry."
+}

@@ -1,0 +1,10 @@
+{
+  "status":"RUN_LIMIT_CHECKPOINT",
+  "candidates_tested":2,
+  "samples":[
+    {"provider":"openrouter","model":"nvidia/nemotron-3.5-lightning:free","source":"R15.8/R15.9 authoritative history","attempts":3,"latency_seconds":[45,51,130],"successes":0,"useful_structured_results":0,"failure":"MODEL_TOO_SLOW_FOR_CURRENT_LIMIT_OR_NO_USABLE_EVIDENCE"},
+    {"provider":"ollama-local","model":"gemma3:4b","source":"bounded live probe","attempts":1,"latency_seconds":[60],"successes":0,"tool_call":false,"structured_json":false,"failure":"LOCAL_MODEL_RESPONSE_TIMEOUT"}
+  ],
+  "ready_candidates_remaining":0,
+  "estimated_cost":"UNKNOWN_FOR_REMOTE; LOCAL_RESOURCE_COST_NOT_ZERO"
+}

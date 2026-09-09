@@ -1,0 +1,9 @@
+{
+  "model_response_timeout":"40s historical bound",
+  "worker_runtime":"90s observed R16.3 task bound",
+  "kanban_runtime":"bounded by task/worker configuration",
+  "dispatcher_reclaim":"heartbeat/reclaim enabled",
+  "nexus_executor_window":"bounded existing poll",
+  "status":"FAIL_NOT_RECONCILED_FOR_SECOND_ROUTE",
+  "reason":"No timeout changes were made; the required route benchmark did not establish a healthy route."
+}

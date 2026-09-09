@@ -1,0 +1,8 @@
+{
+  "native_fallback_chain":[],
+  "native_router_active":false,
+  "multi_model_failover":"FAIL_NOT_CONFIGURED",
+  "nemotron_penalty":"RETAINED",
+  "reason":"No second authenticated healthy route passed the bounded orchestration probe; enabling Gemma would create a known-timeout fallback.",
+  "next_action":"Obtain existing authorization for a second Hermes-supported provider/model, then configure through hermes fallback add and benchmark."
+}

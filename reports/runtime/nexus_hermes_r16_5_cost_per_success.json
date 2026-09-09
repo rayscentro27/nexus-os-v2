@@ -1,0 +1,12 @@
+{
+  "primary":"openrouter/nvidia/nemotron-3.5-lightning:free",
+  "secondary":"NONE",
+  "raw_inference_cost_primary":"FREE",
+  "successful_control_tasks_primary":0,
+  "expected_cost_per_successful_task_primary":"UNKNOWN/UNBOUNDED_FROM_OBSERVED_FAILURES",
+  "local_gemma_raw_inference_cost":"LOCAL_RESOURCE_COST",
+  "local_gemma_expected_cost_per_successful_task":"UNKNOWN/UNBOUNDED_FROM_TIMEOUT",
+  "tokens":"UNKNOWN",
+  "premium_costs":"NOT_INVOKED",
+  "interpretation":"Free price did not produce a successful bounded control task, so it is not treated as operationally cheap."
+}
