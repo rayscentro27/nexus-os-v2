@@ -597,6 +597,9 @@ export async function saveInstantResearchSource(input: {
   priority?: string;
   tags?: string[];
   requested_by?: string | null;
+  research_mode?: 'ONE_TIME_RESEARCH' | 'PERSISTENT_SOURCE';
+  cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'MANUAL';
+  notebook_id?: string | null;
 }): Promise<{ id: string | null; error: string | null }> {
   if (!supabase) return { id: null, error: 'Supabase is not configured.' };
   const { data, error } = await supabase.from('research_sources').insert({
@@ -605,6 +608,7 @@ export async function saveInstantResearchSource(input: {
     url: input.source_url || null,
     snippet: input.snippet || null,
     why_it_matters: input.target_use || null,
+    notebook_id: input.notebook_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.notebook_id) ? input.notebook_id : null,
     metadata: {
       review_status: 'saved',
       transcript_status: input.source_url ? 'enrichment_pending' : 'not_required',
@@ -626,6 +630,11 @@ export async function saveInstantResearchSource(input: {
       tags: input.tags || [],
       requested_by: input.requested_by || 'operator',
       instant_research_mode: true,
+      research_mode: input.research_mode || 'ONE_TIME_RESEARCH',
+      cadence: input.cadence || 'MANUAL',
+      notebook_id: input.notebook_id || null,
+      freshness_status: 'FRESH',
+      source_health: 'HEALTHY',
       enrichment_pending: true,
     },
   }).select('id').single();
