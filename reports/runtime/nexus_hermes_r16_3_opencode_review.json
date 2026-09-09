@@ -1,0 +1,7 @@
+{
+  "task_id":"t_d3f67f79",
+  "review_status":"NOT_REACHED",
+  "reviewer_completion":"FAIL",
+  "reason":"Worker produced no result or diff before bounded execution timeout; reviewer had no artifact to inspect.",
+  "skill_receipt":"NOT_EMITTED_FOR_THIS_EXECUTION"
+}

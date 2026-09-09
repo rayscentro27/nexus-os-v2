@@ -26,7 +26,7 @@ class HermesKanbanExecutionError(RuntimeError):
 
 
 ALLOWED_PROFILES = {"nexus_orchestrator_test", "nexus_engineer_test", "nexus_research_test", "nexus_review_test", "nova_nexus"}
-ALLOWED_SKILLS = {"research-intelligence", "repo-intelligence", "software-engineering", "test-debugging", "worktree-safety", "sdlc-review", "codebase-inspection"}
+ALLOWED_SKILLS = {"research-intelligence", "repo-intelligence", "software-engineering", "test-debugging", "worktree-safety", "sdlc-review", "codebase-inspection", "opencode"}
 HERMES_SKILL_ALIASES = {"research-intelligence": "sdlc-review", "repo-intelligence": "codebase-inspection", "software-engineering": "codebase-inspection"}
 
 

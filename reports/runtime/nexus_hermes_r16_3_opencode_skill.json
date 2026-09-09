@@ -1,0 +1,21 @@
+{
+  "hermes_version":"0.20.6",
+  "opencode_skill_present":true,
+  "opencode_skill_id":"opencode",
+  "opencode_skill_path":"/opt/hermes/skills/autonomous-ai-agents/opencode/SKILL.md",
+  "opencode_skill_source":"builtin",
+  "opencode_skill_version":"1.2.0",
+  "opencode_skill_enabled":true,
+  "opencode_skill_loadable":true,
+  "skill_instructions": {
+    "one_shot":"opencode run PROMPT",
+    "interactive":"Hermes terminal background=true, pty=true; Hermes process poll/log/submit/write",
+    "worktree":"single isolated Git repository/workdir",
+    "verification":"return files changed, tests, diff, and concrete outcome"
+  },
+  "install_required":false,
+  "evidence":"hermes skills list reported opencode builtin enabled; installed SKILL.md was read live",
+  "attachment_task":"t_d3f67f79",
+  "attachment_observation":"Kanban metadata requested opencode, but no completed worker-side skill receipt was emitted before timeout",
+  "status":"PRESENT_LOADABLE_NOT_EXECUTION_CERTIFIED"
+}
