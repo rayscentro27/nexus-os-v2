@@ -12,6 +12,9 @@ import { classifyCaptureSubmission } from '../config/nexusActionPolicy';
 export interface SourceSubmission {
   source_type: string; source_url?: string | null; title?: string | null; snippet?: string | null;
   target_use?: string; priority?: string; tags?: string[];
+  research_mode?: 'ONE_TIME_RESEARCH' | 'PERSISTENT_SOURCE';
+  cadence?: 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'MANUAL';
+  notebook_id?: string | null;
   capture_command_preview?: string | null;
 }
 
@@ -30,6 +33,9 @@ export async function submitSourceCapture(sub: SourceSubmission, email: string |
     priority: sub.priority ?? 'Medium', tags: sub.tags ?? [], requested_by: email ?? 'operator',
     requested_by_admin: true, created_at: new Date().toISOString(),
     capture_command_preview: sub.capture_command_preview ?? null,
+    research_mode: sub.research_mode ?? 'ONE_TIME_RESEARCH',
+    cadence: sub.cadence ?? 'MANUAL',
+    notebook_id: sub.notebook_id ?? null,
     source_capture_policy: 'safe_admin_submitted_capture_v1',
     external_ai: false, scheduler: false, v1_jobs_touched: false,
     note: 'Browser capture is disabled. A worker runs the CLI wrapper after the item is queued/approved.',
