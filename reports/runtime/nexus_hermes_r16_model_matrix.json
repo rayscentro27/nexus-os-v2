@@ -1,0 +1,7 @@
+{
+  "schema_version": "nexus.hermes.r16.model-matrix.v1",
+  "live_hermes_routes": [{"provider":"openrouter","model":"nvidia/nemotron-3.5-lightning:free","profile":"nexus_research_test","auth_available":true,"health":"READY","recent_latency_seconds":51,"tool_use_supported":true,"structured_output_supported":true,"cost_class":"FREE_ROUTE"}],
+  "configured_fallback_routes": [],
+  "model_candidates_tested": 1,
+  "note": "No second authenticated Hermes route exists to benchmark or install into the fallback chain."
+}

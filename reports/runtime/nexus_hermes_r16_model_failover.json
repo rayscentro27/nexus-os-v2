@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r16.failover.v1",
+  "nemotron_penalty": "APPLIED",
+  "failure_fingerprint": "openrouter+nvidia/nemotron-3.5-lightning:free+RESEARCH+MODEL_TOO_SLOW_FOR_CURRENT_LIMIT",
+  "alternate_capability": "research.alpha",
+  "alternate_execution": "PASS_REAL",
+  "same_model_retry_suppressed": true,
+  "hermes_multi_model_failover": "NOT_PROVEN; no second authenticated route"
+}

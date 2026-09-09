@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r16.cli-matrix.v1",
+  "oracle_arm64": {"opencode":"present_1.18.29","codex":"absent","claude":"absent","aider":"absent","git":"present","python3":"present","node":"present","npm":"present","npx":"present"},
+  "codex":"NOT_COMPATIBLE_OR_AUTH_NOT_AVAILABLE_IN_LIVE_WORKSTATION",
+  "claude_code":"NOT_COMPATIBLE_OR_AUTH_NOT_AVAILABLE_IN_LIVE_WORKSTATION",
+  "aider":"NOT_COMPATIBLE_OR_AUTH_NOT_AVAILABLE_IN_LIVE_WORKSTATION",
+  "opencode":"PRESENT_NOT_REAL_BENCHMARKED",
+  "hermes_terminal_controls":"bounded terminal tool; no PTY/background/process-wait certification in R16"
+}

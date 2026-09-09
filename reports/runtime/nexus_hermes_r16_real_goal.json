@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r16.real-goal.v1",
+  "goal_id": "opportunity.engine",
+  "criterion_id": "opportunity-scoring",
+  "expected": "opportunity scoring is evidence-bound",
+  "research_fallback": {"status":"COMPLETE","provider":"brave","source_count":6,"supported_claim_count":0,"opportunity_candidate_count":0,"research_job_id":"alpha-research-10d707d2e61a4048","receipt_id":"alpha-receipt-382b4f2931864df4"},
+  "observed": "six public sources accepted, but no supported claim or governed opportunity candidate produced",
+  "evidence_items": ["alpha-pack:alpha-research-10d707d2e61a4048","alpha-receipt-382b4f2931864df4"],
+  "delta_remaining": "evidence-bound opportunity score and candidate remain unverified",
+  "material_progress": false,
+  "verifier_ran": true,
+  "verifier_result": "FAILED_WITH_EVIDENCE_INSUFFICIENT",
+  "rerouted_after_hermes": true
+}
