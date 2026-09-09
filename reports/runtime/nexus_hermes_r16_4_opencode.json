@@ -1,0 +1,11 @@
+{
+  "skill":"opencode",
+  "skill_source":"builtin",
+  "skill_version":"1.2.0",
+  "cli":"opencode 1.18.29",
+  "rerun":"NOT_REACHED",
+  "reason":"Second healthy authenticated Hermes control-model route was not established; rerunning would repeat the known Nemotron-bound failure.",
+  "process_invoked":false,
+  "code_change_correct":false,
+  "reviewer":false
+}

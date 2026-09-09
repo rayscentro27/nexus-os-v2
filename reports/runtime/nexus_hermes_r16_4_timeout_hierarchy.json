@@ -1,0 +1,9 @@
+{
+  "model_response_timeout":"40s historical task bound; current worker observed 45-130s",
+  "worker_runtime":"90s R16.3 official-skill task bound",
+  "kanban_task_runtime":"worker-bound and reclaim controlled; exact live per-profile value not independently changed",
+  "dispatcher_reclaim":"active heartbeat/reclaim mechanism",
+  "nexus_executor_poll_window":"bounded existing executor poll",
+  "invariant":"NOT_RECONCILED_FOR_NEW_SECOND_ROUTE",
+  "reason":"No timeout change was made; R16.4 stopped before router activation rather than widening limits again."
+}

@@ -1,0 +1,13 @@
+{
+  "schema":"nexus.hermes.r16.4.model-benchmark.v1",
+  "benchmark_status":"PARTIAL_AUTH_ROUTE_LIMIT",
+  "candidates_tested":2,
+  "samples":[
+    {"provider":"openrouter","model":"nvidia/nemotron-3.5-lightning:free","samples_from_authoritative_history":3,"latency_seconds":[45,51,130],"tool_selection_correct":"PARTIAL","worker_completed":"PARTIAL","structured_result_valid":"NO_ON_ONE_COMPLETED_RUN","failure_class":"MODEL_TOO_SLOW_FOR_CURRENT_LIMIT"},
+    {"provider":"openrouter-local-proxy","model":"gemma3:4b","samples":1,"latency_seconds":[20],"tool_selection_correct":"NOT_OBSERVED","tool_call_completed":"NO_RESPONSE","worker_completed":"NO","structured_result_valid":"NO","failure_class":"LOCAL_MODEL_RESPONSE_TIMEOUT"}
+  ],
+  "best_healthy_route":"NONE_ESTABLISHED",
+  "secondary_route":"NONE_ESTABLISHED",
+  "nemotron_penalized":true,
+  "no_paid_route_invoked":true
+}

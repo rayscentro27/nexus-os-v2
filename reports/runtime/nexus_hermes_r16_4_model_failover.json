@@ -1,0 +1,8 @@
+{
+  "native_hermes_fallback_chain":"EMPTY",
+  "hermes_native_model_router_active":"FAIL",
+  "multi_model_failover":"FAIL_NOT_CONFIGURED",
+  "existing_nexus_failure_learning":"PRESENT_FROM_R15_9",
+  "reason":"No second authenticated healthy route is available. The local model endpoint advertises models but did not complete a bounded chat probe; configured OpenAI/Codex, Nous, Groq, and other providers have no safe ready auth evidence.",
+  "safe_next_action":"Ray-authorize or configure a second provider through Hermes native auth, then benchmark before enabling fallback."
+}

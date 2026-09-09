@@ -1,0 +1,18 @@
+{
+  "schema":"nexus.hermes.r16.4.provider-inventory.v1",
+  "hermes_version":"0.20.6",
+  "active_profile_provider":"openrouter",
+  "supported_provider_ids_from_live_config":["openrouter","openai-codex","nous","zai","kimi-coding","kimi-coding-cn","minimax","minimax-cn","bedrock","custom"],
+  "routes": [
+    {"provider":"openrouter","model":"nvidia/nemotron-3.5-lightning:free","profile":"nexus_engineer_test/nexus_research_test","auth_state":"READY","current_health":"PENALIZED_LATENCY","tool_use":"SUPPORTED_BY_HERMES","structured_output":"SUPPORTED_BY_NEXUS_CONTRACT","cost_class":"FREE","last_real_success":"R16 Alpha fallback/control path"},
+    {"provider":"openrouter-local-proxy","model":"gemma3:4b","profile":"available_via_127.0.0.1:11434/v1","auth_state":"NOT_CONFIGURED_AS_HERMES_PROFILE","current_health":"NO_RESPONSE_IN_20S_PROBE","tool_use":"UNKNOWN","structured_output":"UNKNOWN","cost_class":"LOCAL_OR_PROXY_UNKNOWN","last_real_success":null},
+    {"provider":"openrouter-local-proxy","model":"deepseek-v4-pro:cloud","profile":"advertised_by_local_models_endpoint","auth_state":"NOT_CONFIGURED_AS_HERMES_PROFILE","current_health":"NOT_TESTED","tool_use":"UNKNOWN","structured_output":"UNKNOWN","cost_class":"CLOUD_AUTH_UNKNOWN","last_real_success":null},
+    {"provider":"custom-groq","model":"llama-3.3-70b-versatile","profile":"nexusworker","auth_state":"AUTH_REQUIRED","current_health":"NOT_READY","tool_use":"UNKNOWN","structured_output":"UNKNOWN","cost_class":"REMOTE_PAID_OR_QUOTA","last_real_success":null},
+    {"provider":"openai-codex","model":"UNSELECTED","profile":"supported_in_comments_only","auth_state":"AUTH_REQUIRED","current_health":"NOT_READY","tool_use":"UNKNOWN","structured_output":"UNKNOWN","cost_class":"PAID_OR_SUBSCRIPTION","last_real_success":null},
+    {"provider":"nous","model":"UNSELECTED","profile":"supported_in_comments_only","auth_state":"AUTH_REQUIRED","current_health":"NOT_READY","tool_use":"UNKNOWN","structured_output":"UNKNOWN","cost_class":"UNKNOWN","last_real_success":null}
+  ],
+  "live_model_route_count":3,
+  "authenticated_model_route_count":1,
+  "credentials_exposed":false,
+  "notes":["/v1/models advertised gemma3:4b and deepseek-v4-pro:cloud; advertising is not authentication or health proof.","Hermes fallback list is empty."]
+}
