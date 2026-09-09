@@ -1,0 +1,4 @@
+{
+  "status": "NOT_REACHED",
+  "reason": "The direct normal-broker real-goal execution did not return a verified criterion result within the bounded run; no Active Operator cycle was started."
+}

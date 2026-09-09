@@ -1,0 +1,23 @@
+{
+  "schema_version": "nexus.hermes.r15.8.timeout-analysis.v1",
+  "task_id": "t_ca9d36f9",
+  "nexus_task_budget_seconds": 40,
+  "effective_retry_budget_seconds": 75,
+  "observed_worker_timeout_seconds": 45,
+  "observed_retry_worker_timeout_seconds": 130,
+  "profile": "nexus_research_test",
+  "provider": "openrouter",
+  "model": "nvidia/nemotron-3.5-lightning:free",
+  "profile_mcp_timeout_seconds": 30,
+  "classification": "MODEL_TOO_SLOW_FOR_CURRENT_LIMIT",
+  "root_cause": "Hermes worker model-response latency exceeds the original 40s task cap; a later 75s cap still produced a 130s dispatcher timeout/reclaim.",
+  "samples": [
+    {"run_id": 60, "outcome": "crashed", "elapsed_seconds": 67, "reason": "pre-policy skill-name mismatch"},
+    {"run_id": 62, "outcome": "timed_out", "elapsed_seconds": 45, "limit_seconds": 40},
+    {"run_id": 63, "outcome": "completed", "elapsed_seconds": 51, "result": "bounded receipt confirmation"},
+    {"run_id": 64, "outcome": "timed_out", "elapsed_seconds": 130, "limit_seconds": 75}
+  ],
+  "policy_change": "Nexus executor floors requested task budget at 75s with bounded polling; no infinite wait.",
+  "secret_exposed": false,
+  "live_runtime_preserved": true
+}

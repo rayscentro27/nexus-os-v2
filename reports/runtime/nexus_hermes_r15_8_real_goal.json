@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r15.8.real-goal.v1",
+  "goal_id": "opportunity.engine",
+  "criterion_id": "opportunity-scoring",
+  "normal_broker_used": true,
+  "hermes_selected": true,
+  "task_id": "t_9dd66c78",
+  "worker_completion": "NOT_OBSERVED_WITHIN_BOUNDED_EXECUTOR_WINDOW",
+  "canonical_task_state": "running with a timed-out run requeued",
+  "criterion_verified": false,
+  "material_delta": false,
+  "next_action": "reclaim/retry only after dispatcher timeout policy is reconciled, otherwise select Research/Alpha fallback",
+  "portal_goals_untouched": true
+}

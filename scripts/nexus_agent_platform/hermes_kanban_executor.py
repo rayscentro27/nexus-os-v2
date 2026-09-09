@@ -85,7 +85,11 @@ def execute_with_hermes_kanban(task_spec: dict[str, Any], *, runner: Callable[[s
         "authority_class": "INTERNAL_SAFE", "verification_expectations": task_spec.get("verification_expectations", {}),
         "instruction": task_spec.get("instruction") or "Perform the bounded task and report concrete evidence; do not claim criterion completion.",
     }
-    max_runtime = int(task_spec.get("time_budget", 90))
+    # The live workstation records a healthy 45s worker turn. Keep the
+    # caller's bound, but never configure a task below 75s; this leaves
+    # bounded headroom for the dispatcher reclaim boundary without creating
+    # an unbounded wait.
+    max_runtime = max(75, int(task_spec.get("time_budget", 90)))
     started = _now()
     create_args = ["create", title, "--json", "--body", json.dumps(body, separators=(",", ":")), "--assignee", profile, "--workspace", "scratch", "--max-runtime", str(max_runtime)]
     for skill in hermes_skills:
