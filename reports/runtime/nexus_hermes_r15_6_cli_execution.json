@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r15.6.cli-execution.v1",
+  "status": "PARTIAL",
+  "execution_plane": "LIVE_ORACLE_HERMES_WORKER",
+  "profile_toolset_change": "terminal enabled in nexus_engineer_test, nexus_research_test, nexus_review_test",
+  "results": [
+    {"task_id":"t_556d93a0","profile":"nexus_engineer_test","skill":"sdlc-review","cli":"jq","command":"jq .n /tmp/r156-jq-2.json","result":"PASS_REAL","evidence":"output 7"},
+    {"task_id":"t_a6056d81","profile":"nexus_engineer_test","skill":"sdlc-review","cli":"gh","command":"gh --version","result":"PASS_REAL","evidence":"gh version 2.46.0"},
+    {"task_id":"t_afbb3b8e","profile":"nexus_research_test","skill":"sdlc-review","cli":"fd","command":"fd /tmp/r156-fd-marker.txt","result":"PARTIAL","evidence":"worker invoked fd; first pattern returned empty, file existence verified separately"},
+    {"task_id":"t_83d4261d","profile":"nexus_engineer_test","skill":"sdlc-review","cli":"supabase","command":"supabase --version","result":"PASS_REAL","evidence":"2.117.0"},
+    {"task_id":"t_64e3e792","profile":"nexus_engineer_test","skill":"sdlc-review","cli":"netlify","command":"netlify --version","result":"PASS_REAL","evidence":"netlify-cli/27.5.1 linux-arm64 node-v26.5.1"}
+  ],
+  "missing_or_unproven": {"opencode":"worker edited scratch repo without invoking opencode","playwright":"worker entered Python/install fallback and was bounded; no browser result"}
+}

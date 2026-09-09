@@ -1,0 +1,6 @@
+{
+  "schema_version": "nexus.hermes.r15.6.restart.v1",
+  "status": "RUN_LIMIT_CHECKPOINT",
+  "result": "not exercised after the corrected chain because the bounded run was consumed by worker certification and timeout recovery",
+  "next_action": "fresh scratch chain: complete research, restart dispatcher through normal service procedure, verify dependent engineering and reviewer resume"
+}

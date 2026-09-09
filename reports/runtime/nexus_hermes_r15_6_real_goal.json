@@ -1,0 +1,8 @@
+{
+  "schema_version": "nexus.hermes.r15.6.real-goal.v1",
+  "status": "NOT_REACHED",
+  "reason": "The current Nexus broker exposes Hermes read-only/native capability receipts but has no normal Hermes Kanban task executor; the bounded run therefore did not manually select a business child action or claim real-goal progress.",
+  "real_goal_hermes_agent_stack_used": false,
+  "real_goal_material_progress": false,
+  "next_action": "add a governed Hermes-Kanban executor to the normal broker, then route an existing unresolved criterion through selector→Kanban→worker→reviewer→Nexus verifier"
+}

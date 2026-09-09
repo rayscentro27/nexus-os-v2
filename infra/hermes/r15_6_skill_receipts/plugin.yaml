@@ -1,0 +1,6 @@
+name: r15-6-skill-receipts
+version: 1.0.0
+description: "Emit non-secret skill attachment provenance from completed Kanban workers."
+author: "Nexus"
+hooks:
+  - kanban_task_completed

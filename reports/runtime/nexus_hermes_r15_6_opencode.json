@@ -1,0 +1,9 @@
+{
+  "schema_version": "nexus.hermes.r15.6.opencode.v1",
+  "status": "FAIL_WITH_EXACT_REASON",
+  "task_id": "t_05ae466c",
+  "profile": "nexus_engineer_test",
+  "worker_result": "scratch repository was edited and diff described, but the log contains no opencode invocation",
+  "failure_class": "TOOL_NOT_SELECTED",
+  "required_next_action": "run a bounded worker task whose acceptance requires an explicit opencode command and capture its terminal receipt"
+}

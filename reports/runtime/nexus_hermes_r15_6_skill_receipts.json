@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r15.6.skill-receipts.v1",
+  "status": "PASS_REAL",
+  "provenance": "worker_on_kanban_task_completed_hook",
+  "receipt_root": "/opt/data/receipts/r15_6_skill_attachments",
+  "required": 3,
+  "completed": 3,
+  "receipts": [
+    {"task_id":"t_41569dd3","profile":"nexus_research_test","execution_id":"hermes-kanban:t_41569dd3:56","skill":"sdlc-review","worker_id":"nexus-llm-worker:2669"},
+    {"task_id":"t_dd42a4cf","profile":"nexus_engineer_test","execution_id":"hermes-kanban:t_dd42a4cf:57","skill":"codebase-inspection","worker_id":"nexus-llm-worker:2739"},
+    {"task_id":"t_8fff31a5","profile":"nexus_review_test","execution_id":"hermes-kanban:t_8fff31a5:58","skill":"sdlc-review","worker_id":"nexus-llm-worker:164"}
+  ],
+  "fields_verified": ["execution_id","task_id","worker_id","profile","requested_skills","resolved_skills","loaded_skills","skill_path","skill_hash_or_version","worker_start_time","end_time","result_id","result_status"]
+}

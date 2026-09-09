@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.hermes.r15.6.multi-agent.v1",
+  "status": "PASS_REAL",
+  "parents_meaning": "PREREQUISITE",
+  "orchestrator_outside_prerequisite_edges": true,
+  "chain": [
+    {"role":"researcher","task_id":"t_62994938","profile":"nexus_research_test","skill":"sdlc-review","status":"done","summary":"git version 2.47.3"},
+    {"role":"engineer","task_id":"t_052a07eb","profile":"nexus_engineer_test","skill":"codebase-inspection","status":"done","summary":"created and read VERIFIED scratch artifact"},
+    {"role":"reviewer","task_id":"t_8a3414bd","profile":"nexus_review_test","skill":"sdlc-review","status":"done","summary":"approved VERIFIED artifact"}
+  ],
+  "automatic_unblocking": true,
+  "manual_status_mutation": false,
+  "restart_persistence": "NOT_RUN_AFTER_CHAIN; existing durable Kanban state preserved"
+}
