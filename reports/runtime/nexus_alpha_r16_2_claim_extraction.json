@@ -1,0 +1,16 @@
+{
+  "goal_id": "opportunity.engine",
+  "criterion_id": "opportunity-scoring",
+  "request_entrypoint": "execute_alpha_request",
+  "source_collection": {"provider":"brave","source_count":6},
+  "expected_producer": "executor must derive source-bound claim_specs and candidate inputs before run_alpha_research",
+  "actual_producer_before_repair": "none; execute_alpha_request passed neither claim_specs nor opportunities",
+  "repair": "deterministic extract_claim_specs_from_search_results; candidate generated only after >=2 non-empty source observations",
+  "claim_extraction_executed": true,
+  "claims_extracted": 6,
+  "supported_claims": 6,
+  "model_calls": 0,
+  "claim_records": "alpha-pack:alpha-research-2045f6bdd2a340cc",
+  "support_rule": "each claim is a direct title/snippet observation bound to one evidence_id; confidence LOW and source quality UNVERIFIED",
+  "safety": "No demand, revenue, or suitability was inferred from snippets."
+}

@@ -1,0 +1,20 @@
+{
+  "research_job_id": "alpha-research-2045f6bdd2a340cc",
+  "candidate_count": 1,
+  "candidates": [{
+    "opportunity_id": "opp_7cea4e8c5bd687cd2ef14ef5",
+    "title": "Evidence-bound pricing opportunity assessment",
+    "status": "QUALIFIED",
+    "supporting_claim_count": 6,
+    "source_reference_count": 6,
+    "business_model": "UNKNOWN",
+    "who_can_execute": "Nexus opportunity-intelligence workflow",
+    "estimated_effort": "UNKNOWN",
+    "estimated_cost": "UNKNOWN",
+    "estimated_revenue_range": "UNKNOWN",
+    "score": 28,
+    "evidence_confidence_score": 85,
+    "next_validation_action": "Review cited primary sources and validate customer-specific demand before planning.",
+    "external_action_performed": false
+  }]
+}

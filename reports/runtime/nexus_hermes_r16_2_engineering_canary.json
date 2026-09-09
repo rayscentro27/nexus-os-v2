@@ -1,0 +1,6 @@
+{
+  "status":"NOT_REACHED",
+  "reason":"No Mimo or OpenCode backend reached PASS_REAL in this bounded run; normal broker engineering canary was not executed.",
+  "material_progress":false,
+  "production_mutation":false
+}

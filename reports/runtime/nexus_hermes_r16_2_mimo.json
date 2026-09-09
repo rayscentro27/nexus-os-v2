@@ -1,0 +1,13 @@
+{
+  "cli":"mimo",
+  "host":"MAC",
+  "path":"/Users/raymonddavis/.mimocode/bin/mimo",
+  "version":"UNKNOWN",
+  "automation_mode_identified":true,
+  "supported_invocation":"mimo run --dangerously-skip-permissions PROMPT (official headless form)",
+  "safe_mode_tested":false,
+  "auth_state":"AUTH_REQUIRED",
+  "hermes_call":"NOT_REACHED",
+  "reason":"The documented headless form uses a dangerous permission bypass for unattended execution; no safe allowlist configuration or authenticated noninteractive route was established in this run.",
+  "official_source":"https://github.com/XiaomiMiMo/MiMo-Code"
+}

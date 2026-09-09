@@ -1,0 +1,13 @@
+{
+  "cli":"opencode",
+  "host":"ORACLE_HERMES_CONTAINER",
+  "path":"/usr/local/bin/opencode",
+  "version":"1.18.29",
+  "automation_mode_identified":true,
+  "supported_invocation":"opencode run --format json --dir WORKTREE PROMPT",
+  "model_route":"Hermes default openrouter/nvidia/nemotron-3.5-lightning:free",
+  "hermes_call":"NOT_REACHED",
+  "actual_edit_benchmark":"NOT_RUN",
+  "reason":"The available Hermes model route is already penalized for latency and no separate safe authenticated coding-model route was available for a disposable edit benchmark.",
+  "official_source":"https://opencode.ai/v2/docs/cli"
+}

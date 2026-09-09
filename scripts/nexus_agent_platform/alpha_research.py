@@ -9,6 +9,7 @@ gates.
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import re
 import uuid
@@ -103,7 +104,29 @@ def execute_alpha_request(*, objective: str, research_type: str = "MARKET_RESEAR
             "integrity": {"material_hash": hashlib.sha256(json.dumps(item, sort_keys=True).encode()).hexdigest()},
             "content": {"normalized_text_or_markdown": json.dumps(item, sort_keys=True)},
         })
-    result = run_alpha_research(job, evidence, cost_usage={"classification": "FREE_SEARCH", "model_calls": 0, "remote_cpu_jobs": 0}, runtime_root=runtime_root)
+    claim_specs = extract_claim_specs_from_search_results(found["results"], evidence)
+    opportunities = []
+    if len(claim_specs) >= 2:
+        opportunities.append({
+            "opportunity_title": "Evidence-bound pricing opportunity assessment",
+            "summary": "A bounded internal research candidate for assessing pricing and demand signals; no revenue is assumed.",
+            "supporting_claims": [item["claim"] for item in claim_specs],
+            "evidence_refs": [ref for item in claim_specs for ref in item["evidence_refs"]],
+            "business_model": "UNKNOWN",
+            "who_can_execute": "Nexus opportunity-intelligence workflow",
+            "effort": "UNKNOWN",
+            "launch_cost": "UNKNOWN",
+            "value_estimate": {"status": "UNKNOWN", "low": None, "expected": None, "high": None, "currency": None, "time_horizon": None, "assumptions": []},
+            "risks": ["Search-result snippets require primary-source review before any decision."],
+            "confidence": "LOW",
+            "recommended_next_action": "Review the cited primary sources and validate customer-specific demand before planning.",
+            "retrieved_at": _now(),
+        })
+    result = run_alpha_research(job, evidence, claim_specs=claim_specs, opportunities=opportunities, cost_usage={"classification": "FREE_SEARCH", "model_calls": 0, "remote_cpu_jobs": 0}, runtime_root=runtime_root)
+    if result["pack"]["opportunities"]:
+        from nexus_agent_platform.opportunities.engine import import_alpha_opportunity_candidate
+        for candidate in result["pack"]["opportunities"]:
+            import_alpha_opportunity_candidate(candidate, research_job_id=job["research_job_id"], research_pack_ref=result["receipt"]["research_pack_ref"], research_pack=result["pack"])
     result["request_id"] = request_id
     result["job_id"] = job["research_job_id"]
     result["result_id"] = result["receipt"]["receipt_id"]
@@ -113,6 +136,34 @@ def execute_alpha_request(*, objective: str, research_type: str = "MARKET_RESEAR
     result["receipt"]["result_id"] = result["result_id"]
     result["receipt"]["artifact_id"] = result["artifact_id"]
     return result
+
+
+def extract_claim_specs_from_search_results(results: Iterable[dict], evidence: Iterable[dict]) -> list[dict]:
+    """Extract only directly observable, source-bound claims from search rows.
+
+    This is intentionally deterministic.  It does not infer demand, revenue,
+    or suitability; those remain unknown until a primary-source review binds
+    stronger evidence.  The evidence list must be in the same order as rows.
+    """
+    specs = []
+    for item, ev in zip(results, evidence):
+        if not isinstance(item, dict) or not isinstance(ev, dict):
+            continue
+        title = html.unescape(re.sub(r"<[^>]+>", "", str(item.get("title") or ""))).strip()
+        snippet = html.unescape(re.sub(r"<[^>]+>", "", str(item.get("snippet") or ""))).strip()
+        observation = ". ".join(part for part in (title, snippet) if part)
+        evidence_id = ev.get("evidence_id")
+        if not observation or not evidence_id:
+            continue
+        specs.append({
+            "claim": f"Public search observation: {observation[:600]}",
+            "claim_type": "DIRECT_EVIDENCE",
+            "confidence": "LOW",
+            "evidence_refs": [evidence_id],
+            "source_quality": "UNVERIFIED",
+            "notes": "Search-result observation only; primary-source review required.",
+        })
+    return specs
 
 
 def _now() -> str:

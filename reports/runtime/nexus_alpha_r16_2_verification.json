@@ -1,0 +1,12 @@
+{
+  "goal_id":"opportunity.engine",
+  "criterion":"opportunity scoring is evidence-bound",
+  "criterion_verifier":"record_criterion_verification",
+  "status":"VERIFIED",
+  "expected":"At least one governed candidate has source-bound supported claims, an inspectable score, and no invented economics.",
+  "observed":"Six source-bound claims and one governed candidate were persisted; canonical score is 28 and value estimate is UNKNOWN.",
+  "material_delta":true,
+  "new_criteria_verified":1,
+  "evidence":["alpha-pack:alpha-research-2045f6bdd2a340cc","opp_7cea4e8c5bd687cd2ef14ef5"],
+  "remaining_criteria":["experiment design and routing exist","hype and weak economics are rejected"]
+}

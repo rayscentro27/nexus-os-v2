@@ -1,0 +1,9 @@
+{
+  "status":"RUN_LIMIT_CHECKPOINT",
+  "mimo_vs_opencode":"NOT_DETERMINED",
+  "task_classes":["SMALL_EDIT","BUG_FIX","TEST_REPAIR","REPO_ANALYSIS","CODE_REVIEW"],
+  "measurements":"not available because neither AI edit process was safely executed",
+  "best_by_task_class":"NOT_DETERMINED",
+  "registrations":"none; no unproven backend was made routable",
+  "cli_failover":"existing R16 failure-learning path remains PASS_REAL"
+}
