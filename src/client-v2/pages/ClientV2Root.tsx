@@ -16,11 +16,27 @@ import { FundingAccessV2 } from './FundingAccessV2'
 import { ResourcesV2 } from './ResourcesV2'
 import { BillingV2 } from './BillingV2'
 import { PlaceholderV2 } from './PlaceholderV2'
+import { RouteContractV2 } from './RouteContractV2'
 import type { V2ViewData } from '../types/v2-models'
 import { ROUTE_LABELS, navigateV2, mapRouteToV2 } from '../utils/navigate'
 import { V2_ROUTE_CONTRACTS } from '../routeContracts'
 
+const IMPLEMENTED_V2_ROUTES = new Set([
+  '/client-v2/dashboard',
+  '/client-v2/credit-review',
+  '/client-v2/credit-improvement',
+  '/client-v2/documents',
+  '/client-v2/business-foundation',
+  '/client-v2/funding-readiness',
+  '/client-v2/funding-access',
+  '/client-v2/resources',
+  '/client-v2/billing',
+])
+
 export function renderV2Page(path: string, data: V2ViewData) {
+  if (V2_ROUTE_CONTRACTS[path] && !IMPLEMENTED_V2_ROUTES.has(path)) {
+    return <RouteContractV2 path={path} data={data} />
+  }
   switch (path) {
     case '/client-v2/dashboard':
       return <DashboardV2 data={data} />

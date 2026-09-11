@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-foundation-gate-repaired",
-  "created_at": "2026-09-11T11:52:00-07:00",
+  "checkpoint_id": "r30a-design-neutral-contract-surface",
+  "created_at": "2026-09-11T13:22:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
-  "current_task": "Continue design-neutral Client Portal V2 route contracts, real adapters, and browser foundation while closing remaining R29.1 browser/communication proof.",
+  "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
   "last_real_action": "Deployed persisted client AI controls and mounted Clyde in the active V2 client shell.",
-  "last_real_action_result": "V2 gate now resolves membership using the authenticated session user ID; production build and fresh Playwright client-AI run pass. Design-neutral route contracts and viewport screenshot foundation are present.",
+  "last_real_action_result": "V2 gate and fresh Playwright client-AI run pass. Desktop/tablet/mobile screenshot foundation passes. Non-implemented V2 routes now render a neutral contract surface with truthful live/demo/error state markers; final visual design remains pending.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -22,6 +22,7 @@
     "tests/e2e/r29_client_ai_live.spec.ts",
     "src/client-v2/routeContracts.ts",
     "tests/e2e/r30a-v2-screenshot-foundation.spec.ts",
+    "src/client-v2/pages/RouteContractV2.tsx",
     "src/client-v2/pages/ClientV2Root.tsx",
     "src/client-v2/utils/navigate.ts"
   ],
@@ -31,7 +32,9 @@
     "live client AI disable/reenable: PASS_REAL",
     "focused Playwright r29_client_ai_live.spec.ts: PASS_REAL",
     "design-neutral V2 route contracts: PASS",
-    "V2 viewport screenshot foundation spec: PASS_REAL (desktop/tablet/mobile artifacts); visual approval remains pending"
+    "V2 viewport screenshot foundation spec: PASS_REAL (desktop/tablet/mobile artifacts); visual approval remains pending",
+    "git diff --check for V2 changes: PASS_REAL",
+    "standalone TypeScript verification: interrupted after local process stall; prior build PASS remains valid evidence"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -41,7 +44,7 @@
   "canonical_state_changed": true,
   "current_failure": "R29.1 governed communication, Customer Service UI, Admin control UI, and cross-tenant browser closure remain; final R30A visual composition is intentionally design-gated.",
   "root_cause": "Resolved V2 gate post-login race by using the authenticated session user ID for the membership query; remaining items are separate browser canaries and product/design approval boundaries.",
-  "next_machine_action": "Run the governed communication and Customer Service/Admin browser canaries, then wire remaining R30A route contracts to proven backend adapters without final visual elaboration.",
+  "next_machine_action": "Run the governed communication and Customer Service/Admin browser canaries, then connect each contract route to its existing real adapter without final visual elaboration.",
   "machine_actionable_remaining": [
     "Governed outbound communication canary",
     "Customer Service browser/status canary",
