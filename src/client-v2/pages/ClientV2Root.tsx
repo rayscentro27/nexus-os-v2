@@ -86,18 +86,17 @@ export function ClientV2Gate() {
     }
     let cancelled = false
     ;(async () => {
-      try {
-        const admin = await isUserAdmin(user.id)
-        if (cancelled) return
-        if (admin) {
-          setClientOk(false)
-          return
-        }
-        const ctx = await resolveClientContextForCurrentUser()
-        if (!cancelled) setClientOk(!!ctx)
-      } catch {
-        if (!cancelled) setClientOk(false)
+      for (let attempt = 0; attempt < 3 && !cancelled; attempt += 1) {
+        try {
+          const admin = await isUserAdmin(user.id)
+          if (cancelled) return
+          if (admin) { setClientOk(false); return }
+          const ctx = await resolveClientContextForCurrentUser()
+          if (ctx) { setClientOk(true); return }
+        } catch {}
+        await new Promise(resolve => window.setTimeout(resolve, 250))
       }
+      if (!cancelled) setClientOk(false)
     })()
     return () => {
       cancelled = true
