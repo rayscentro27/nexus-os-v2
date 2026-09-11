@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import '../styles/v2-tailwind.generated.css'
 import '../styles/v2-theme.css'
 import { useSession } from '../../components/auth'
-import { resolveClientContextForCurrentUser } from '../../lib/clientAuthContext'
+import { resolveClientContextForUser } from '../../lib/clientAuthContext'
 import { supabase, isSupabaseConfigured } from '../../lib/supabaseClient'
 import { useV2ClientData } from '../hooks/useV2ClientData'
 import { AppShellV2 } from '../layouts/AppShellV2'
@@ -18,6 +18,7 @@ import { BillingV2 } from './BillingV2'
 import { PlaceholderV2 } from './PlaceholderV2'
 import type { V2ViewData } from '../types/v2-models'
 import { ROUTE_LABELS, navigateV2, mapRouteToV2 } from '../utils/navigate'
+import { V2_ROUTE_CONTRACTS } from '../routeContracts'
 
 export function renderV2Page(path: string, data: V2ViewData) {
   switch (path) {
@@ -91,7 +92,11 @@ export function ClientV2Gate() {
           const admin = await isUserAdmin(user.id)
           if (cancelled) return
           if (admin) { setClientOk(false); return }
-          const ctx = await resolveClientContextForCurrentUser()
+          // Resolve membership with the user already authenticated by useSession.
+          // Re-reading auth.getUser here can briefly return no user during the
+          // post-login session handoff even though the authenticated REST query
+          // is valid.
+          const ctx = await resolveClientContextForUser(user.id)
           if (ctx) { setClientOk(true); return }
         } catch {}
         await new Promise(resolve => window.setTimeout(resolve, 250))
@@ -124,7 +129,7 @@ export function ClientV2Gate() {
 export function ClientV2Root() {
   const path = normalizePath(window.location.pathname)
   const data = useV2ClientData(path)
-  const known = Boolean(ROUTE_LABELS[path])
+  const known = Boolean(ROUTE_LABELS[path] || V2_ROUTE_CONTRACTS[path])
   const safePath = known ? path : '/client-v2/dashboard'
   return (
     <AppShellV2

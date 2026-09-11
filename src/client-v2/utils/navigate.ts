@@ -56,4 +56,12 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/client-v2/resources': 'Resources',
   '/client-v2/messages': 'Messages',
   '/client-v2/billing': 'Billing',
+  '/client-v2/credit': 'Credit',
+  '/client-v2/utilization': 'Utilization',
+  '/client-v2/business': 'Business',
+  '/client-v2/bankability': 'Bankability',
+  '/client-v2/recommendations': 'Recommendations',
+  '/client-v2/review': 'Review',
+  '/client-v2/support': 'Support',
+  '/client-v2/account': 'Account',
 }
