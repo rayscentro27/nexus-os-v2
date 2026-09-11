@@ -71,6 +71,51 @@ export async function createTesterInvitation(input: {
   return { ok: true, data } as const;
 }
 
+export async function createGuestInvitation(input: { name: string; email: string; expiresInDays?: number; note?: string }) {
+  if (!supabase || !isSupabaseConfigured) return { ok: false, error: 'not_configured' } as const;
+  const { data, error } = await supabase.functions.invoke('create-guest-invitation', { body: input });
+  if (error) return { ok: false, error: error.message || 'creation_failed' } as const;
+  trackEvent({ event: 'invitation_created', route: '/admin', detail: 'GUEST_FREE' });
+  return { ok: true, data } as const;
+}
+
+export async function acceptGuestInvitation(input: { token: string; password: string; consentAccepted: boolean; name?: string }) {
+  if (!supabase || !isSupabaseConfigured) return { ok: false, error: 'not_configured' } as const;
+  const { data, error } = await supabase.functions.invoke('accept-guest-invitation', { body: input });
+  if (error) return { ok: false, error: error.message || 'acceptance_failed' } as const;
+  trackEvent({ event: 'invitation_accepted', route: '/guest/accept', detail: 'FREE_GUEST' });
+  return { ok: true, data } as const;
+}
+
+export async function loadGuestInvitations() {
+  if (!supabase || !isSupabaseConfigured) return { invitations: [], error: 'not_configured' } as const;
+  const { data, error } = await supabase.from('guest_invitations').select('id,name,email,invite_type,access_tier,status,created_at,expires_at,used_at,provider_message_id').order('created_at', { ascending: false }).limit(100);
+  return { invitations: data || [], error: error?.message } as const;
+}
+
+export async function loadCustomerCommunications() {
+  if (!supabase || !isSupabaseConfigured) return { communications: [], error: 'not_configured' } as const;
+  const { data, error } = await supabase.from('customer_communications').select('id,template_id,trigger,recipient,status,created_at,sent_at,provider_message_id,related_invite_id').order('created_at', { ascending: false }).limit(100);
+  return { communications: data || [], error: error?.message } as const;
+}
+
+export async function loadClientAiAdminState() {
+  if (!supabase || !isSupabaseConfigured) return { conversations: [], escalations: [], error: 'not_configured' } as const;
+  const [conversations, escalations, controls] = await Promise.all([
+    supabase.from('client_ai_conversations').select('id,client_id,intent,policy_decision,model_tier,estimated_cost_class,created_at').order('created_at', { ascending: false }).limit(100),
+    supabase.from('client_ai_escalations').select('id,client_id,intent,recommended_owner,priority,status,created_at').order('created_at', { ascending: false }).limit(100),
+    supabase.from('client_ai_controls').select('id,tenant_id,client_id,user_id,clyde_enabled,customer_service_ai_enabled,access_tier,token_daily_limit,session_limit,expensive_call_limit,escalation_only_mode,client_ai_paused,guest_access_revoked,convert_to_paid_workflow,updated_at').order('updated_at', { ascending: false }).limit(100),
+  ]);
+  return { conversations: conversations.data || [], escalations: escalations.data || [], controls: controls.data || [], error: conversations.error?.message || escalations.error?.message || controls.error?.message } as const;
+}
+
+export async function updateClientAiControls(input: { tenant_id: string; client_id: string } & Record<string, unknown>) {
+  if (!supabase || !isSupabaseConfigured) return { ok: false, error: 'not_configured' } as const;
+  const { data, error } = await supabase.functions.invoke('manage-client-ai-controls', { body: input });
+  if (error) return { ok: false, error: error.message || 'controls_update_failed' } as const;
+  return { ok: true, data } as const;
+}
+
 export async function validateInviteToken(token: string) {
   if (!supabase || !isSupabaseConfigured) return { ok: false, error: 'not_configured' } as const;
   const { data, error } = await supabase.functions.invoke('validate-invite-token', { body: { token } });

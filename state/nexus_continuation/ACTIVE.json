@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "checkpoint_id": "r291-browser-closure-current",
+  "created_at": "2026-09-11T07:00:00Z",
+  "phase": "R29.1",
+  "objective": "Client AI live UI and Admin control closure",
+  "current_status": "IN_PROGRESS",
+  "current_workstream": "client-browser-canary",
+  "current_task": "Run the focused live V2 client Clyde browser canary against a fresh build, then complete governed communication proof.",
+  "last_real_action": "Deployed persisted client AI controls and mounted Clyde in the active V2 client shell.",
+  "last_real_action_result": "Server-side disable/reenable proof passed; production build passed; V2 Clyde drawer source is mounted; browser run is still not final because the authenticated V2 gate redirected in the fresh preview despite REST membership 200.",
+  "files_changed": [
+    "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
+    "supabase/functions/client-ai-gateway/index.ts",
+    "supabase/functions/manage-client-ai-controls/index.ts",
+    "src/lib/clientAiGateway.ts",
+    "src/lib/clientAuthContext.ts",
+    "src/client-v2/components/ClientClydeDrawer.tsx",
+    "src/client-v2/layouts/AppShellV2.tsx",
+    "src/lib/testerInvitationClient.ts",
+    "src/admin/R28AdminOperationsPanel.jsx",
+    "tests/e2e/r29_client_ai_live.spec.ts"
+  ],
+  "commits_created": [],
+  "tests_run": [
+    "npm run build: PASS",
+    "live client AI disable/reenable: PASS_REAL",
+    "focused Playwright: V2 shell reached; first canary pass was not accepted as final because the second run hit a stale session/bundle condition"
+  ],
+  "deployments": [
+    "Supabase migration 20260911210000_r291_client_ai_controls applied",
+    "client-ai-gateway deployed",
+    "manage-client-ai-controls deployed"
+  ],
+  "canonical_state_changed": true,
+  "current_failure": "V2 client gate still redirects the browser after successful password authentication; REST membership is visible and the resolver was hardened to consume the bounded row array. Governed communication canary remains.",
+  "root_cause": "The remaining browser discrepancy is between the browser V2 gate and its authenticated membership resolution; no Ray action is indicated.",
+  "next_machine_action": "Run the focused browser test against a newly built preview, inspect the V2 gate runtime response if it still redirects, repair it, then verify the governed communication path.",
+  "machine_actionable_remaining": [
+    "Clean client browser canary",
+    "Customer Service browser/status canary",
+    "Governed outbound communication canary",
+    "Admin control UI/browser proof",
+    "Cross-tenant browser proof if available"
+  ],
+  "blocked_work": [],
+  "ray_decision_queue": [],
+  "external_boundaries": [
+    "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
+  ],
+  "safe_to_resume": true,
+  "resume_point": "R29_1_FRESH_BROWSER_CANARY",
+  "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
+}

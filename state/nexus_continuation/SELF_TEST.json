@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "checkpoint_id": "continuation-self-test",
+  "created_at": "2026-09-11T18:21:13.406353+00:00",
+  "phase": "PROTOCOL_SELF_TEST",
+  "objective": "Synthetic continuation proof",
+  "current_status": "READY_TO_RESUME",
+  "current_workstream": "self-test",
+  "current_task": "Validate repository checkpoint load",
+  "last_real_action": "Synthetic checkpoint written",
+  "last_real_action_result": "Safe schema checkpoint persisted",
+  "files_changed": [],
+  "commits_created": [],
+  "tests_run": [
+    "checkpoint schema: PASS_REAL",
+    "reload simulation: PASS_REAL"
+  ],
+  "deployments": [],
+  "canonical_state_changed": false,
+  "current_failure": "",
+  "root_cause": "",
+  "next_machine_action": "Resume simulation loaded the synthetic next action",
+  "machine_actionable_remaining": [
+    "synthetic next action"
+  ],
+  "blocked_work": [],
+  "ray_decision_queue": [],
+  "external_boundaries": [],
+  "safe_to_resume": true,
+  "resume_point": "SELF_TEST_NEXT_ACTION",
+  "resume_instructions": "This file is disposable proof; ACTIVE.json remains canonical."
+}

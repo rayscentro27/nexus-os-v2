@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { V2ProfileView, V2RailStage } from '../types/v2-models'
 import { SidebarV2 } from './SidebarV2'
 import { TopHeaderV2 } from './TopHeaderV2'
+import { ClientClydeDrawer } from '../components/ClientClydeDrawer'
 
 export function AppShellV2({
   profile,
@@ -27,6 +28,7 @@ export function AppShellV2({
           <main className="flex-1 min-w-0 p-5">
             <div className="w-full min-w-0 space-y-4">{children}</div>
           </main>
+          {currentPath === '/client-v2/messages' && <div className="fixed bottom-5 right-5 z-40"><ClientClydeDrawer /></div>}
         </div>
       </div>
     </div>
