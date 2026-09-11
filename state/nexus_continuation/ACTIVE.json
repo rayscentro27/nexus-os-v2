@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r291-browser-closure-current",
-  "created_at": "2026-09-11T07:00:00Z",
+  "checkpoint_id": "r30a-foundation-gate-repaired",
+  "created_at": "2026-09-11T11:52:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
@@ -25,7 +25,7 @@
     "src/client-v2/pages/ClientV2Root.tsx",
     "src/client-v2/utils/navigate.ts"
   ],
-  "commits_created": ["321256b"],
+  "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
     "npm run build: PASS",
     "live client AI disable/reenable: PASS_REAL",
@@ -55,6 +55,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "R29_1_COMMUNICATION_AND_R30A_FOUNDATION",
+  "resume_point": "R29_1_GOVERNED_COMMUNICATION_AND_UI_PROOF",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
