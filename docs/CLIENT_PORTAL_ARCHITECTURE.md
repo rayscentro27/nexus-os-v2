@@ -16,3 +16,18 @@ resources, review, support, account, and contextual Clyde. A page must expose
 The existing V2 shell, responsive primitives, live data hook, and route map
 are the greenfield foundation. No legacy giant-page component may be imported
 into a new V2 feature by default.
+
+## Engineering/design boundary
+
+R30A may establish route contracts, data/security plumbing, responsive
+primitives, and screenshot capture without selecting final product composition.
+The following surfaces remain explicitly design-gated:
+
+- `CLIENT_DASHBOARD` — `VISUAL_DESIGN_PENDING=YES`
+- `DOCUMENTS` — `VISUAL_DESIGN_PENDING=YES`
+- `FUNDING_READINESS` — `VISUAL_DESIGN_PENDING=YES`
+- `CLYDE_MOBILE` — `VISUAL_DESIGN_PENDING=YES`
+- `CLIENT_MOBILE_NAVIGATION` — `VISUAL_DESIGN_PENDING=YES`
+
+Until approved references exist, contract surfaces expose truthful live,
+loading, empty/demo, and error state markers only.

@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-contract-surface-build-repaired",
-  "created_at": "2026-09-12T13:35:00-07:00",
+  "checkpoint_id": "r30a-design-boundary-documented",
+  "created_at": "2026-09-12T13:45:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
   "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Repaired the V2 route-contract label import and added stable Admin AI-control test hooks.",
-  "last_real_action_result": "Vite production build passes after the import-boundary repair. Admin per-client control rows now expose stable test IDs and aria-pressed state; no outbound customer-template send was performed.",
+  "last_real_action": "Documented the R30A engineering/design boundary and retained stable Admin AI-control observability hooks.",
+  "last_real_action_result": "V2 route contracts and neutral state markers remain build-verified; final composition is explicitly pending for the five named screens. No outbound customer-template send was performed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -25,7 +25,8 @@
     "src/client-v2/pages/RouteContractV2.tsx",
     "src/client-v2/pages/ClientV2Root.tsx",
     "src/client-v2/utils/navigate.ts",
-    "src/admin/R28AdminOperationsPanel.jsx"
+    "src/admin/R28AdminOperationsPanel.jsx",
+    "docs/CLIENT_PORTAL_ARCHITECTURE.md"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -38,7 +39,8 @@
     "standalone TypeScript verification: interrupted after local process stall; prior build PASS remains valid evidence",
     "existing Resend controlled canary: PASS_REAL provider accepted",
     "existing Resend delivery verification: PASS_REAL delivered",
-    "Vite production build after route-contract repair: PASS_REAL"
+    "Vite production build after route-contract repair: PASS_REAL",
+    "R30A visual design boundary documentation: PASS_REAL"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
