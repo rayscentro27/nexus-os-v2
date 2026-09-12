@@ -50,7 +50,6 @@
   "machine_actionable_remaining": [
     "Governed outbound communication canary",
     "Customer Service browser/status canary",
-    "Governed outbound communication canary",
     "Admin control UI/browser proof",
     "Cross-tenant browser proof if available"
   ],
