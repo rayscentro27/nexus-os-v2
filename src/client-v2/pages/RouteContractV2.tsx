@@ -1,11 +1,11 @@
 import type { V2ViewData } from '../types/v2-models'
 import { V2_ROUTE_CONTRACTS } from '../routeContracts'
-import { currentLabelFor } from '../utils/navigate'
+import { ROUTE_LABELS } from '../utils/navigate'
 
 /** Design-neutral route boundary until product/UX approves final composition. */
 export function RouteContractV2({ path, data }: { path: string; data: V2ViewData }) {
   const contract = V2_ROUTE_CONTRACTS[path]
-  const label = currentLabelFor(path)
+  const label = ROUTE_LABELS[path] || 'Workspace'
   const live = data.mode === 'live'
   const state = data.mode === 'loading' ? 'LOADING' : data.loadError ? 'ERROR' : live ? 'LIVE' : 'EMPTY_OR_DEMO'
 
