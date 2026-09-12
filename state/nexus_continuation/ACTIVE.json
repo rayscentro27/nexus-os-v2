@@ -7,8 +7,8 @@
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
   "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Deployed persisted client AI controls and mounted Clyde in the active V2 client shell.",
-  "last_real_action_result": "V2 gate and fresh Playwright client-AI run pass. Desktop/tablet/mobile screenshot foundation passes. Non-implemented V2 routes now render a neutral contract surface with truthful live/demo/error state markers; final visual design remains pending.",
+  "last_real_action": "Ran the existing idempotent Resend canary and read-only delivery verification.",
+  "last_real_action_result": "Provider accepted the controlled test and the existing verification path observed delivery; no customer contact was made. This proves Resend delivery only, not the governed customer-template canary.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -34,7 +34,9 @@
     "design-neutral V2 route contracts: PASS",
     "V2 viewport screenshot foundation spec: PASS_REAL (desktop/tablet/mobile artifacts); visual approval remains pending",
     "git diff --check for V2 changes: PASS_REAL",
-    "standalone TypeScript verification: interrupted after local process stall; prior build PASS remains valid evidence"
+    "standalone TypeScript verification: interrupted after local process stall; prior build PASS remains valid evidence",
+    "existing Resend controlled canary: PASS_REAL provider accepted",
+    "existing Resend delivery verification: PASS_REAL delivered"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -42,9 +44,9 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "R29.1 governed communication, Customer Service UI, Admin control UI, and cross-tenant browser closure remain; final R30A visual composition is intentionally design-gated.",
-  "root_cause": "Resolved V2 gate post-login race by using the authenticated session user ID for the membership query; remaining items are separate browser canaries and product/design approval boundaries.",
-  "next_machine_action": "Run the governed communication and Customer Service/Admin browser canaries, then connect each contract route to its existing real adapter without final visual elaboration.",
+  "current_failure": "R29.1 governed customer-template communication, Customer Service UI, Admin control UI, and cross-tenant browser closure remain; final R30A visual composition is intentionally design-gated.",
+  "root_cause": "V2 gate race is resolved. Existing Resend provider delivery is now independently verified; the governed customer communication path still needs its approved-template trigger proof.",
+  "next_machine_action": "Use the existing safe test infrastructure to prove Customer Service/Admin UI and the governed template trigger without sending to a real customer; obtain explicit approval before any new outbound customer-template send.",
   "machine_actionable_remaining": [
     "Governed outbound communication canary",
     "Customer Service browser/status canary",
