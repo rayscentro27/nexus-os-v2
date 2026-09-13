@@ -13435,11 +13435,11 @@
       }
     ],
     "goal_id": "grants.intelligence",
-    "last_progress": "2026-09-13T20:33:57.239003+00:00",
+    "last_progress": "2026-09-13T20:34:08.834206+00:00",
     "last_result": {
       "action": "objective.closure",
       "status": "COMPLETE",
-      "receipt_id": "grants-intelligence-20260913203357"
+      "receipt_id": "grants-intelligence-20260913203408"
     },
     "last_selected_at": "2026-09-10T20:50:56.659728+00:00",
     "missing_criteria": [],
@@ -13702,7 +13702,7 @@
       "profile matching and missing information detected",
       "no autonomous submission"
     ],
-    "updated_at": "2026-09-13T20:33:57.239003+00:00"
+    "updated_at": "2026-09-13T20:34:08.834206+00:00"
   },
   {
     "active_workstreams": [
@@ -22326,7 +22326,7 @@
       "signature integration candidates audited",
       "consent and retention evidence defined"
     ],
-    "updated_at": "2026-09-13T20:33:57.239003+00:00"
+    "updated_at": "2026-09-13T20:34:08.834206+00:00"
   },
   {
     "active_workstreams": [
