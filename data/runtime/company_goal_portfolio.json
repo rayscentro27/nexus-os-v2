@@ -11283,7 +11283,7 @@
     ],
     "goal_id": "clyde.entity_readiness",
     "historical_status_preserved": "ACTIVE",
-    "last_progress": "2026-09-08T10:13:18.278344+00:00",
+    "last_progress": "2026-09-13T13:45:00-07:00",
     "last_result": {
       "action": "ai.plan_and_verify",
       "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_7d5be5071e1f40f9a70a3aa1ec452d74.json",
@@ -11457,12 +11457,14 @@
       "work_item_id": "continuous_kernel:clyde.entity_readiness:202609131937"
     },
     "last_selected_at": "2026-09-13T19:37:29.290422+00:00",
-    "missing_criteria": [
-      "structured readiness model exists",
-      "evidence linkage and handoff readiness proven",
-      "legal/tax determinations remain out of scope"
+    "current_evidence": [
+      "reports/runtime/clyde_entity_readiness_handoff_latest.json",
+      "scripts/clyde/run_entity_readiness_handoff.py",
+      "src/lib/clientWorkflowEngine.ts",
+      "src/lib/businessFundingReadiness.ts"
     ],
-    "next_action": "CONTINUE_MISSING_CRITERIA",
+    "missing_criteria": [],
+    "next_action": "NONE",
     "next_review": "2026-09-04T11:07:59.309033+00:00",
     "owner": "NEXUS",
     "priority": "P2",
@@ -11719,13 +11721,13 @@
     "schema_version": "nexus.company-goal-portfolio.v1",
     "selection_count": 87,
     "statement": "Build governed entity and business-readiness intelligence for Funding handoff.",
-    "status": "ACTIVE",
+    "status": "COMPLETE",
     "success_criteria": [
       "structured readiness model exists",
       "evidence linkage and handoff readiness proven",
       "legal/tax determinations remain out of scope"
     ],
-    "updated_at": "2026-09-13T19:37:57.448282+00:00"
+    "updated_at": "2026-09-13T20:45:00+00:00"
   },
   {
     "active_workstreams": [
