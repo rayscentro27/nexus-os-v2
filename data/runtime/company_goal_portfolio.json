@@ -131,21 +131,17 @@
     "domain": "Operate a cross-department intelligence service with provenance and Alpha challenge.",
     "failed_paths": [],
     "goal_id": "research.company_intelligence",
-    "last_progress": "2026-09-06T08:33:32.561605+00:00",
+    "last_progress": "2026-09-13T12:55:00+00:00",
     "last_result": {
-      "action": "research.refresh",
-      "artifact_path": null,
+      "action": "research.company_intelligence_closure",
+      "artifact_path": "reports/runtime/research_company_intelligence_closure_latest.json",
       "decision": null,
-      "next_step": null,
+      "next_step": "COMPLETE",
       "status": "PASS"
     },
     "last_selected_at": "2026-09-06T09:44:45.766555+00:00",
-    "missing_criteria": [
-      "department research contract proven",
-      "fresh findings have source provenance",
-      "Alpha review and department handoff recorded"
-    ],
-    "next_action": "CONTINUE_MISSING_CRITERIA",
+    "missing_criteria": [],
+    "next_action": "NONE",
     "next_review": "2026-09-04T11:07:59.309033+00:00",
     "owner": "NEXUS",
     "priority": "P1",
@@ -153,13 +149,13 @@
     "schema_version": "nexus.company-goal-portfolio.v1",
     "selection_count": 102,
     "statement": "Operate a cross-department intelligence service with provenance and Alpha challenge.",
-    "status": "ACTIVE",
+    "status": "COMPLETE",
     "success_criteria": [
       "department research contract proven",
       "fresh findings have source provenance",
       "Alpha review and department handoff recorded"
     ],
-    "updated_at": "2026-09-06T09:44:45.766555+00:00"
+    "updated_at": "2026-09-13T12:55:00+00:00"
   },
   {
     "active_workstreams": [
@@ -8985,9 +8981,9 @@
           ],
           "evidence_required": "structured readiness model exists",
           "expected_condition": "structured readiness model exists",
-          "failure_id": "failure_026605ef683ddac963",
+          "failure_id": "failure_e8ab67ef5b8a9eac01",
           "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
           "format_gap": "",
           "goal_id": "clyde.entity_readiness",
           "missing_component": "structured readiness model exists",
@@ -9037,9 +9033,9 @@
           ],
           "evidence_required": "evidence linkage and handoff readiness proven",
           "expected_condition": "evidence linkage and handoff readiness proven",
-          "failure_id": "failure_7103bb5521f3b200c4",
+          "failure_id": "failure_c623a5bc0dbafd4c39",
           "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
           "format_gap": "",
           "goal_id": "clyde.entity_readiness",
           "missing_component": "evidence linkage and handoff readiness proven",
@@ -9089,9 +9085,9 @@
           ],
           "evidence_required": "legal/tax determinations remain out of scope",
           "expected_condition": "legal/tax determinations remain out of scope",
-          "failure_id": "failure_8e029511b60d84caac",
+          "failure_id": "failure_20fb21f9d8ff554d6d",
           "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
           "format_gap": "",
           "goal_id": "clyde.entity_readiness",
           "missing_component": "legal/tax determinations remain out of scope",
@@ -9190,7 +9186,7 @@
       "reports/runtime/nexus_active_operator_receipts/operator_operator_60ffad71000f4fa7a59959e08e1377c7.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_0153f16985c44bad8ca12d2541fe53bb.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_c4345161fcea48ffb61e03c8d847777e.json",
-      "reports/runtime/nexus_active_operator_receipts/operator_operator_a745de0ea61b499f8d80951d73bb8627.json"
+      "reports/runtime/nexus_active_operator_receipts/operator_operator_fdb117ec2e0b44099d3370909b0b5165.json"
     ],
     "department": "Clyde",
     "dependencies": [
@@ -11159,9 +11155,9 @@
         ],
         "evidence_required": "structured readiness model exists",
         "expected_condition": "structured readiness model exists",
-        "failure_id": "failure_026605ef683ddac963",
+        "failure_id": "failure_e8ab67ef5b8a9eac01",
         "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
         "format_gap": "",
         "goal_id": "clyde.entity_readiness",
         "missing_component": "structured readiness model exists",
@@ -11211,9 +11207,9 @@
         ],
         "evidence_required": "evidence linkage and handoff readiness proven",
         "expected_condition": "evidence linkage and handoff readiness proven",
-        "failure_id": "failure_7103bb5521f3b200c4",
+        "failure_id": "failure_c623a5bc0dbafd4c39",
         "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
         "format_gap": "",
         "goal_id": "clyde.entity_readiness",
         "missing_component": "evidence linkage and handoff readiness proven",
@@ -11263,9 +11259,9 @@
         ],
         "evidence_required": "legal/tax determinations remain out of scope",
         "expected_condition": "legal/tax determinations remain out of scope",
-        "failure_id": "failure_8e029511b60d84caac",
+        "failure_id": "failure_20fb21f9d8ff554d6d",
         "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
         "format_gap": "",
         "goal_id": "clyde.entity_readiness",
         "missing_component": "legal/tax determinations remain out of scope",
@@ -11290,7 +11286,7 @@
     "last_progress": "2026-09-08T10:13:18.278344+00:00",
     "last_result": {
       "action": "ai.plan_and_verify",
-      "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_f9c570dcd56e424b9f4c45b10695bb8e.json",
+      "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_7d5be5071e1f40f9a70a3aa1ec452d74.json",
       "failure_class": "INVALID_MODEL_PLAN",
       "finalization_failure": {
         "criteria": [
@@ -11325,9 +11321,9 @@
             ],
             "evidence_required": "structured readiness model exists",
             "expected_condition": "structured readiness model exists",
-            "failure_id": "failure_026605ef683ddac963",
+            "failure_id": "failure_e8ab67ef5b8a9eac01",
             "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
             "format_gap": "",
             "goal_id": "clyde.entity_readiness",
             "missing_component": "structured readiness model exists",
@@ -11377,9 +11373,9 @@
             ],
             "evidence_required": "evidence linkage and handoff readiness proven",
             "expected_condition": "evidence linkage and handoff readiness proven",
-            "failure_id": "failure_7103bb5521f3b200c4",
+            "failure_id": "failure_c623a5bc0dbafd4c39",
             "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
             "format_gap": "",
             "goal_id": "clyde.entity_readiness",
             "missing_component": "evidence linkage and handoff readiness proven",
@@ -11429,9 +11425,9 @@
             ],
             "evidence_required": "legal/tax determinations remain out of scope",
             "expected_condition": "legal/tax determinations remain out of scope",
-            "failure_id": "failure_8e029511b60d84caac",
+            "failure_id": "failure_20fb21f9d8ff554d6d",
             "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131921",
+            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609131937",
             "format_gap": "",
             "goal_id": "clyde.entity_readiness",
             "missing_component": "legal/tax determinations remain out of scope",
@@ -11458,9 +11454,9 @@
         "legal/tax determinations remain out of scope"
       ],
       "status": "FAILED",
-      "work_item_id": "continuous_kernel:clyde.entity_readiness:202609131921"
+      "work_item_id": "continuous_kernel:clyde.entity_readiness:202609131937"
     },
-    "last_selected_at": "2026-09-13T19:21:55.658131+00:00",
+    "last_selected_at": "2026-09-13T19:37:29.290422+00:00",
     "missing_criteria": [
       "structured readiness model exists",
       "evidence linkage and handoff readiness proven",
@@ -11729,7 +11725,7 @@
       "evidence linkage and handoff readiness proven",
       "legal/tax determinations remain out of scope"
     ],
-    "updated_at": "2026-09-13T19:22:27.770379+00:00"
+    "updated_at": "2026-09-13T19:37:57.448282+00:00"
   },
   {
     "active_workstreams": [

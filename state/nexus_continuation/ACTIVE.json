@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "trading-real-data-complete-research-company-intelligence-selected",
-  "created_at": "2026-09-13T12:40:00-07:00",
-  "phase": "R30A → trading.real_data → research.company_intelligence",
-  "objective": "Complete bounded real-data trading evidence, then continue the next eligible P1 research goal",
+  "checkpoint_id": "research-company-intelligence-complete-oracle-browser-selected",
+  "created_at": "2026-09-13T13:05:00-07:00",
+  "phase": "R30A → trading.real_data → research.company_intelligence → systems.oracle_browser",
+  "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading and Research",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "research.company_intelligence",
-  "current_task": "Complete the existing company-intelligence source-refresh path, then record Alpha review and department handoff.",
-  "last_real_action": "Ran the existing bounded company-intelligence source activation path after closing trading.real_data.",
-  "last_real_action_result": "Source activation completed: 8 public sources processed, 24 related candidates recorded, 30 YouTube discoveries, 4 forum reads, 25 bounded agenda items, and one-time/continuous source lifecycle canaries passed. No publication or external commitment occurred.",
+  "current_workstream": "systems.oracle_browser",
+  "current_task": "Run a bounded read-only Oracle browser result and reconcile stale-session recovery evidence.",
+  "last_real_action": "Completed the company-intelligence Alpha review and governed department handoff, then selected systems.oracle_browser by P2/no-dependency priority and verified its direct Oracle runtime path.",
+  "last_real_action_result": "Research closure receipt records 8 provenance-bound source candidates, conservative Alpha ACCEPT_WITH_REWORK, and handoff to Research/Funding/Marketing/Systems. Oracle direct SSH to 161.153.40.41 succeeded and the existing Hermes container reported BROWSER_PRESENT; no external action occurred.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -37,7 +37,8 @@
     "scripts/trading/run_vibe_paper_backtest_dry_run.py",
     "scripts/trading/run_trading_demo_readiness_cycle.py"
     ,"scripts/trading/run_real_data_oos_paper.py",
-    "scripts/research/run_r19_14_source_activation.py"
+    "scripts/research/run_r19_14_source_activation.py",
+    "scripts/research/complete_company_intelligence_closure.py"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -72,7 +73,9 @@
     "Trading demo readiness reconciliation: PASS_REAL; live orders disabled",
     "Real-data OOS/paper evaluator: PASS_REAL; 84/36 split, no broker order API call",
     "Failed-path progression: PASS_REAL; prior NO_VALID_SETUP advanced to EUR_USD:M5 and was evaluated",
-    "Research company-intelligence source activation: PASS_REAL; fresh provenance and bounded agenda recorded"
+    "Research company-intelligence source activation: PASS_REAL; fresh provenance and bounded agenda recorded",
+    "Research Alpha review and department handoff: PASS_REAL; conservative review and governed work-order routing recorded",
+    "Oracle browser host-path check: PASS_REAL; direct SSH and existing headless browser binary verified"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -81,10 +84,10 @@
   ],
   "canonical_state_changed": true,
   "current_failure": null,
-  "root_cause": "The prior trading candidate was rejected safely; the research goal now has fresh source artifacts and provenance, with Alpha review and department handoff still to be reconciled.",
-  "next_machine_action": "Reconcile the new research receipt against the company-intelligence contract, then record Alpha review and department handoff using existing governed artifacts.",
+  "root_cause": "Trading and Research are complete. Oracle browser host access is proven, but a bounded read-only browser result and stale-session recovery proof remain for systems.oracle_browser.",
+  "next_machine_action": "Use the existing Oracle headless browser runtime for one bounded read-only result, then document the restart/session recovery path.",
   "machine_actionable_remaining": [
-    "research.company_intelligence: Alpha review and department handoff after fresh source activation"
+    "systems.oracle_browser: bounded read-only browser result and stale-session recovery evidence"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -92,6 +95,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "RESEARCH_COMPANY_INTELLIGENCE_REFRESH",
+  "resume_point": "SYSTEMS_ORACLE_BROWSER_READONLY_RESULT",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
