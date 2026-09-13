@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-auth-proof-availability-audited",
-  "created_at": "2026-09-13T11:35:00-07:00",
+  "checkpoint_id": "r29-browser-proofs-recovered",
+  "created_at": "2026-09-13T12:25:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
   "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Audited authenticated browser proof availability and the existing governed communication path.",
-  "last_real_action_result": "Support browser spec completed without failures but skipped its authenticated body because no synthetic client credentials are available in this runtime. Admin and cross-tenant credentials/specs are likewise unavailable. Existing Resend delivery is verified; no new customer-template send was performed.",
+  "last_real_action": "Recovered synthetic auth fixtures, repaired membership provisioning, and ran authenticated Support/Admin/cross-tenant browser proofs.",
+  "last_real_action_result": "Support route proof PASS_REAL; Admin route/control/backend proof PASS_REAL; two isolated synthetic tenant browser contexts each read their own profile and zero rows for the other tenant. No governed customer-template send was performed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -47,7 +47,11 @@
     "Support browser spec: no failures; authenticated body SKIPPED because E2E credentials are absent",
     "Admin browser proof: NOT_RUN; authenticated admin credentials/spec are absent",
     "Cross-tenant browser proof: NOT_RUN; paired authenticated identities/spec are absent",
-    "Governed customer-template canary preparation: PASS_REAL; send not performed"
+    "Governed customer-template canary preparation: PASS_REAL; send not performed",
+    "Synthetic Persona A/B provisioning and auth login: PASS_REAL",
+    "Support authenticated browser proof: PASS_REAL",
+    "Admin authenticated route/control/backend proof: PASS_REAL",
+    "Cross-tenant browser data-boundary proof: PASS_REAL (own 200/1; other 200/0 for both contexts)"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -55,14 +59,12 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "Authenticated Support/Admin/cross-tenant browser closure cannot execute without available synthetic credentials; governed customer-template send remains approval-gated.",
-  "root_cause": "No approved synthetic client/admin credential material is available to the local browser runner, and the current request does not authorize a new outbound customer-template send.",
-  "next_machine_action": "When existing synthetic credentials are available, run Support/Admin/cross-tenant browser proofs; otherwise obtain explicit approval plus a safe test recipient for the governed template canary.",
+  "current_failure": "Governed customer-template communication remains approval-gated; remaining V2 adapter wiring is not yet complete.",
+  "root_cause": "Synthetic auth recovery and browser isolation are now closed. The remaining R29 send is an external side effect requiring explicit approval, while V2 route adapter work remains machine-actionable.",
+  "next_machine_action": "Connect remaining V2 contract routes to existing real adapters, then request explicit approval only if the governed customer-template canary is the sole remaining R29 criterion.",
   "machine_actionable_remaining": [
     "Governed outbound communication canary",
-    "Customer Service browser/status canary",
-    "Admin control UI/browser proof",
-    "Cross-tenant browser proof if available"
+    "Remaining V2 contract-route adapters"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],

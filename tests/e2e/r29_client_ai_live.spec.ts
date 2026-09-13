@@ -10,6 +10,7 @@ async function login(page: import('playwright/test').Page) {
   await page.getByLabel(/password/i).fill(password)
   await page.getByRole('button', { name: /sign in/i }).click()
   await expect(page).not.toHaveURL(/\/client-v2\/login$/, { timeout: 20_000 })
+  await page.waitForTimeout(1_000)
   await page.goto('/client/messages')
   await expect(page.locator('.v2-app')).toBeVisible({ timeout: 20_000 })
 }
