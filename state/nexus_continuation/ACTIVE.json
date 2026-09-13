@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "intent-program-compiler-20260913210349",
-  "created_at": "2026-09-13T21:03:49.241197+00:00",
+  "checkpoint_id": "nexus-productization-20260913211804",
+  "created_at": "2026-09-13T21:18:04.229931+00:00",
   "phase": "R30A \u2192 trading.real_data \u2192 research.company_intelligence \u2192 systems.oracle_browser \u2192 clyde.entity_readiness \u2192 business_plans.customer_goals",
   "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading, Research, Systems, and Clyde readiness",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "nexus.productization",
-  "current_task": "Recover productization artifacts and verify governed commercialization options, tenant/cost model, and dependency-gated readiness.",
-  "last_real_action": "Closed nexus.intent_program_compiler with normalization, canonical-goal matching, proposal-only compilation, dependency checks, authority envelopes, conflict handling, and safety cases.",
-  "last_real_action_result": "No goals were mutated by compilation and no external action was executed.",
+  "current_workstream": "portal.client_beta",
+  "current_task": "Await approved Client Portal V2 visual references before any visual implementation or production cutover.",
+  "last_real_action": "Closed nexus.productization with bounded product options, reused tenant/RLS foundations, governed capability tiers, cost classifications, privacy boundaries, synthetic provisioning proof, and dependency-gated readiness.",
+  "last_real_action_result": "No live pricing changed, no real customer was provisioned, and no production launch occurred.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,16 +93,24 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Trading, Research, Systems browser verification, and Clyde readiness are complete. business_plans.customer_goals is the next eligible P2 goal; its goals, milestone, evidence-linkage, and portal-visibility criteria remain to be verified.",
-  "next_machine_action": "Inspect productization artifacts and run the bounded tenant, cost, and governance contract.",
-  "machine_actionable_remaining": [
-    "nexus.productization: productization options, tenant/cost/governance model, and dependency-gated readiness"
-  ],
+  "next_machine_action": "Hold V2 visual implementation until approved visual references exist; maintain legacy portal as bug-fix-only.",
+  "machine_actionable_remaining": [],
   "blocked_work": [],
-  "ray_decision_queue": [],
+  "ray_decision_queue": [
+    {
+      "decision_id": "portal-v2-visual-approval",
+      "phase": "R30A",
+      "objective": "portal.client_beta",
+      "question": "Provide or approve Client Portal V2 visual references before implementation/cutover.",
+      "why_ray_is_required": "Final product/visual design is explicitly outside the engineering foundation scope.",
+      "status": "OPEN",
+      "unrelated_work_can_continue": true
+    }
+  ],
   "external_boundaries": [
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "PRODUCTIZATION_RECONCILIATION",
+  "resume_point": "CLIENT_PORTAL_V2_DESIGN_REVIEW",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
