@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-support-contract-wired",
-  "created_at": "2026-09-12T17:10:00-07:00",
+  "checkpoint_id": "r30a-support-browser-coverage",
+  "created_at": "2026-09-13T10:20:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
   "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Wired the existing Customer Service gateway into the isolated V2 Support route.",
-  "last_real_action_result": "SupportV2 uses the existing Supabase client AI gateway in customer_service mode with authenticated-context, loading, error, and response plumbing. Vite production build passes; no outbound customer-template send was performed.",
+  "last_real_action": "Added collision-safe Support session identity and focused authenticated browser coverage for the V2 Support route.",
+  "last_real_action_result": "SupportV2 now uses a per-mount session ID and the browser spec asserts the backend-connected support boundary when synthetic credentials are available. No outbound customer-template send was performed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -26,8 +26,9 @@
     "src/client-v2/pages/ClientV2Root.tsx",
     "src/client-v2/utils/navigate.ts",
     "src/admin/R28AdminOperationsPanel.jsx",
-    "docs/CLIENT_PORTAL_ARCHITECTURE.md"
-    ,"src/client-v2/pages/SupportV2.tsx"
+    "docs/CLIENT_PORTAL_ARCHITECTURE.md",
+    "src/client-v2/pages/SupportV2.tsx",
+    "tests/e2e/r30a-support-ui.spec.ts"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -42,7 +43,8 @@
     "existing Resend delivery verification: PASS_REAL delivered",
     "Vite production build after route-contract repair: PASS_REAL",
     "R30A visual design boundary documentation: PASS_REAL",
-    "Vite production build after SupportV2 wiring: PASS_REAL"
+    "Vite production build after SupportV2 wiring: PASS_REAL",
+    "Support browser coverage: CREATED; authenticated execution requires existing synthetic credentials"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",

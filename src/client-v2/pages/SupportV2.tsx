@@ -8,6 +8,7 @@ export function SupportV2() {
   const [answer, setAnswer] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [sessionId] = useState(() => `client-v2-support-${globalThis.crypto?.randomUUID?.() || Date.now()}`)
   const contract = V2_ROUTE_CONTRACTS['/client-v2/support']
 
   async function submit(event: React.FormEvent) {
@@ -16,7 +17,7 @@ export function SupportV2() {
     if (!message || busy) return
     setBusy(true)
     setError('')
-    const result = await askClientAI(message, 'client-v2-support', 'customer_service')
+    const result = await askClientAI(message, sessionId, 'customer_service')
     if (result.ok) {
       setAnswer(String(result.data?.answer || 'Customer Service could not provide a safe status answer.'))
       setQuestion('')
