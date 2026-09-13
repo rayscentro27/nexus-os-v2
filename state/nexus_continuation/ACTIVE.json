@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-support-browser-coverage",
-  "created_at": "2026-09-13T10:20:00-07:00",
+  "checkpoint_id": "r30a-auth-proof-availability-audited",
+  "created_at": "2026-09-13T11:35:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
   "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Added collision-safe Support session identity and focused authenticated browser coverage for the V2 Support route.",
-  "last_real_action_result": "SupportV2 now uses a per-mount session ID and the browser spec asserts the backend-connected support boundary when synthetic credentials are available. No outbound customer-template send was performed.",
+  "last_real_action": "Audited authenticated browser proof availability and the existing governed communication path.",
+  "last_real_action_result": "Support browser spec completed without failures but skipped its authenticated body because no synthetic client credentials are available in this runtime. Admin and cross-tenant credentials/specs are likewise unavailable. Existing Resend delivery is verified; no new customer-template send was performed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -44,7 +44,10 @@
     "Vite production build after route-contract repair: PASS_REAL",
     "R30A visual design boundary documentation: PASS_REAL",
     "Vite production build after SupportV2 wiring: PASS_REAL",
-    "Support browser coverage: CREATED; authenticated execution requires existing synthetic credentials"
+    "Support browser spec: no failures; authenticated body SKIPPED because E2E credentials are absent",
+    "Admin browser proof: NOT_RUN; authenticated admin credentials/spec are absent",
+    "Cross-tenant browser proof: NOT_RUN; paired authenticated identities/spec are absent",
+    "Governed customer-template canary preparation: PASS_REAL; send not performed"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -52,9 +55,9 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "R29.1 governed customer-template communication, Customer Service/Admin browser proof, and cross-tenant browser closure remain; final R30A visual composition is intentionally design-gated.",
-  "root_cause": "V2 gate race is resolved and the Support route now has a real Customer Service gateway path. Remaining closure requires authenticated browser canaries and an approved outbound template trigger.",
-  "next_machine_action": "Run authenticated Customer Service/Admin/cross-tenant browser proofs, then request explicit approval before any new outbound customer-template canary.",
+  "current_failure": "Authenticated Support/Admin/cross-tenant browser closure cannot execute without available synthetic credentials; governed customer-template send remains approval-gated.",
+  "root_cause": "No approved synthetic client/admin credential material is available to the local browser runner, and the current request does not authorize a new outbound customer-template send.",
+  "next_machine_action": "When existing synthetic credentials are available, run Support/Admin/cross-tenant browser proofs; otherwise obtain explicit approval plus a safe test recipient for the governed template canary.",
   "machine_actionable_remaining": [
     "Governed outbound communication canary",
     "Customer Service browser/status canary",
