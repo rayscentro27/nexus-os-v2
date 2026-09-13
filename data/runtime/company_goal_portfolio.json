@@ -8475,7 +8475,7 @@
       }
     ],
     "goal_id": "systems.oracle_browser",
-    "last_progress": "2026-09-08T06:40:21.208693+00:00",
+    "last_progress": "2026-09-13T13:20:00-07:00",
     "last_result": {
       "action": "ai.plan_and_verify",
       "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_a9a171000ffc40309231b101c3a44613.json",
@@ -8649,12 +8649,12 @@
       "work_item_id": "continuous_kernel:systems.oracle_browser:202609091815"
     },
     "last_selected_at": "2026-09-09T18:15:27.561639+00:00",
-    "missing_criteria": [
-      "Oracle path proven",
-      "bounded read-only browser result returned",
-      "stale-session recovery path documented"
+    "current_evidence": [
+      "reports/runtime/systems_oracle_browser_latest.json",
+      "Direct Oracle SSH and container headless browser read: Example Domain"
     ],
-    "next_action": "CONTINUE_MISSING_CRITERIA",
+    "missing_criteria": [],
+    "next_action": "NONE",
     "next_review": "2026-09-04T11:07:59.309033+00:00",
     "owner": "NEXUS",
     "priority": "P2",
@@ -8907,13 +8907,13 @@
     "schema_version": "nexus.company-goal-portfolio.v1",
     "selection_count": 87,
     "statement": "Verify the existing Oracle browser/computer-control capability.",
-    "status": "ACTIVE",
+    "status": "COMPLETE",
     "success_criteria": [
       "Oracle path proven",
       "bounded read-only browser result returned",
       "stale-session recovery path documented"
     ],
-    "updated_at": "2026-09-09T18:16:11.033665+00:00"
+    "updated_at": "2026-09-13T20:00:00+00:00"
   },
   {
     "active_workstreams": [
