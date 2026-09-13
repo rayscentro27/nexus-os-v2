@@ -1,0 +1,4 @@
+import { describe, expect, it } from 'vitest'
+import { allocationRecommendation, runway, scenario, transactionGate, type FinancialValue } from '../src/lib/capitalManagement'
+const unknown: FinancialValue = { value: null, currency: 'USD', source: 'no bank feed', classification: 'UNKNOWN', confidence: 'NONE' }
+describe('governed capital management', () => { it('does not fabricate balances or runway', () => { expect(runway(unknown, unknown)).toMatchObject({ months: null, precision: 'UNKNOWN' }) }); it('keeps scenarios modeled and allocations advisory', () => { expect(scenario('BASE', { revenue: 1000, expenses: 500, reserves: 100 }).modeled).toBe(true); expect(allocationRecommendation('OPERATIONS', 50, 'continuity').approvalRequired).toBe(true) }); it('blocks every real transaction', () => { expect(transactionGate('bank transfer', false)).toMatchObject({ allowed: false, executed: false }); expect(transactionGate('vendor payment', true).allowed).toBe(false) }) })
