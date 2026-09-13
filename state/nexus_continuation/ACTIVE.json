@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-design-boundary-documented",
-  "created_at": "2026-09-12T13:45:00-07:00",
+  "checkpoint_id": "r30a-support-contract-wired",
+  "created_at": "2026-09-12T17:10:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
   "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Documented the R30A engineering/design boundary and retained stable Admin AI-control observability hooks.",
-  "last_real_action_result": "V2 route contracts and neutral state markers remain build-verified; final composition is explicitly pending for the five named screens. No outbound customer-template send was performed.",
+  "last_real_action": "Wired the existing Customer Service gateway into the isolated V2 Support route.",
+  "last_real_action_result": "SupportV2 uses the existing Supabase client AI gateway in customer_service mode with authenticated-context, loading, error, and response plumbing. Vite production build passes; no outbound customer-template send was performed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -27,6 +27,7 @@
     "src/client-v2/utils/navigate.ts",
     "src/admin/R28AdminOperationsPanel.jsx",
     "docs/CLIENT_PORTAL_ARCHITECTURE.md"
+    ,"src/client-v2/pages/SupportV2.tsx"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -40,7 +41,8 @@
     "existing Resend controlled canary: PASS_REAL provider accepted",
     "existing Resend delivery verification: PASS_REAL delivered",
     "Vite production build after route-contract repair: PASS_REAL",
-    "R30A visual design boundary documentation: PASS_REAL"
+    "R30A visual design boundary documentation: PASS_REAL",
+    "Vite production build after SupportV2 wiring: PASS_REAL"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -48,9 +50,9 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "R29.1 governed customer-template communication, Customer Service UI, Admin control UI, and cross-tenant browser closure remain; final R30A visual composition is intentionally design-gated.",
-  "root_cause": "V2 gate race is resolved. Existing Resend provider delivery is now independently verified; the governed customer communication path still needs its approved-template trigger proof.",
-  "next_machine_action": "Use the existing safe test infrastructure to prove Customer Service/Admin UI and the governed template trigger without sending to a real customer; obtain explicit approval before any new outbound customer-template send.",
+  "current_failure": "R29.1 governed customer-template communication, Customer Service/Admin browser proof, and cross-tenant browser closure remain; final R30A visual composition is intentionally design-gated.",
+  "root_cause": "V2 gate race is resolved and the Support route now has a real Customer Service gateway path. Remaining closure requires authenticated browser canaries and an approved outbound template trigger.",
+  "next_machine_action": "Run authenticated Customer Service/Admin/cross-tenant browser proofs, then request explicit approval before any new outbound customer-template canary.",
   "machine_actionable_remaining": [
     "Governed outbound communication canary",
     "Customer Service browser/status canary",

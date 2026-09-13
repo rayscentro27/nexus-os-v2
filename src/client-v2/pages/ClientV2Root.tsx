@@ -17,6 +17,7 @@ import { ResourcesV2 } from './ResourcesV2'
 import { BillingV2 } from './BillingV2'
 import { PlaceholderV2 } from './PlaceholderV2'
 import { RouteContractV2 } from './RouteContractV2'
+import { SupportV2 } from './SupportV2'
 import type { V2ViewData } from '../types/v2-models'
 import { ROUTE_LABELS, navigateV2, mapRouteToV2 } from '../utils/navigate'
 import { V2_ROUTE_CONTRACTS } from '../routeContracts'
@@ -34,6 +35,7 @@ const IMPLEMENTED_V2_ROUTES = new Set([
 ])
 
 export function renderV2Page(path: string, data: V2ViewData) {
+  if (path === '/client-v2/support') return <SupportV2 />
   if (V2_ROUTE_CONTRACTS[path] && !IMPLEMENTED_V2_ROUTES.has(path)) {
     return <RouteContractV2 path={path} data={data} />
   }
