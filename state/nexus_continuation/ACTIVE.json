@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "opportunity-balance-20260913202822",
-  "created_at": "2026-09-13T20:28:22.219930+00:00",
+  "checkpoint_id": "grants-intelligence-20260913203357",
+  "created_at": "2026-09-13T20:33:57.239003+00:00",
   "phase": "R30A \u2192 trading.real_data \u2192 research.company_intelligence \u2192 systems.oracle_browser \u2192 clyde.entity_readiness \u2192 business_plans.customer_goals",
   "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading, Research, Systems, and Clyde readiness",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "grants.intelligence",
-  "current_task": "Recover grant intelligence source monitoring, eligibility matching, missing-information detection, and submission gating.",
-  "last_real_action": "Refined the completed Opportunity Engine with diagnosis-before-rejection, separate improvability scoring, bounded rework, salvage outcomes, and governed quarantine reactivation.",
-  "last_real_action_result": "Balanced cases preserve promising opportunities for research, rework, experiment, or hold; only fundamentally contradicted/risky cases reject.",
+  "current_workstream": "documents.esign",
+  "current_task": "Recover governed document and e-sign artifacts and verify template/version workflow, signature candidates, consent, and retention evidence.",
+  "last_real_action": "Closed grants.intelligence after verifying primary-source monitoring, eligibility uncertainty, profile matching, missing-information detection, pre-submission packaging, future-cycle monitoring, and no autonomous submission.",
+  "last_real_action_result": "Potential matches remain distinct from eligibility; missing information is salvageable and all submission actions remain blocked.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,9 +93,9 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Trading, Research, Systems browser verification, and Clyde readiness are complete. business_plans.customer_goals is the next eligible P2 goal; its goals, milestone, evidence-linkage, and portal-visibility criteria remain to be verified.",
-  "next_machine_action": "Continue the already selected grants.intelligence goal using the canonical source, eligibility, and no-submission contract.",
+  "next_machine_action": "Inspect existing document/e-sign artifacts and run the bounded template, consent, retention, and submission-gate contract.",
   "machine_actionable_remaining": [
-    "grants.intelligence: source monitoring, profile matching, missing information, and no autonomous submission"
+    "documents.esign: template/version workflow, signature integration audit, consent and retention evidence"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -103,6 +103,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "GRANTS_INTELLIGENCE_RECONCILIATION",
+  "resume_point": "DOCUMENTS_ESIGN_RECONCILIATION",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }

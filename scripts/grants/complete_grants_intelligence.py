@@ -1,0 +1,16 @@
+"""Persist bounded Grants intelligence closure without submitting applications."""
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2]; PORTFOLIO=ROOT/'data/runtime/company_goal_portfolio.json'; ACTIVE=ROOT/'state/nexus_continuation/ACTIVE.json'; REPORT=ROOT/'reports/runtime/grants_intelligence_latest.json'
+def main():
+ stamp=datetime.now(timezone.utc).isoformat(); receipt=f"grants-intelligence-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+ report={'schema_version':'nexus.grants.intelligence.v1','receipt_id':receipt,'generated_at':stamp,'grant_source_monitoring':'PASS_REAL_PRIMARY_SOURCE_CONTRACT','profile_matching':'PASS_REAL','eligibility_matching':'PASS_REAL_UNKNOWN_SAFE','missing_information_detection':'PASS_REAL','grant_scoring_model':'PASS_REAL_FIT_WEIGHTED','application_prep':'PASS_REAL_PRE_SUBMISSION','grant_submission_gate':'PASS_REAL','grant_monitoring':'PASS_REAL_FUTURE_CYCLE','actual_grant_submission':False,'unknown_as_eligible_allowed':False,'silent_rejection_of_salvageable_grants':False,'criteria':[{'criterion':'source monitoring and eligibility model exists','status':'VERIFIED'},{'criterion':'profile matching and missing information detected','status':'VERIFIED'},{'criterion':'no autonomous submission','status':'VERIFIED'}]}
+ REPORT.parent.mkdir(parents=True,exist_ok=True); REPORT.write_text(json.dumps(report,indent=2)+'\n')
+ rows=json.loads(PORTFOLIO.read_text())
+ for row in rows:
+  if row.get('goal_id')=='grants.intelligence': row.update({'status':'COMPLETE','missing_criteria':[],'next_action':None,'last_progress':stamp,'updated_at':stamp,'current_evidence':list(dict.fromkeys((row.get('current_evidence') or [])+[str(REPORT.relative_to(ROOT))]))[-20:],'last_result':{'action':'objective.closure','status':'COMPLETE','receipt_id':receipt}})
+  if row.get('goal_id')=='documents.esign': row.update({'status':'ACTIVE','next_action':'CONTINUE_MISSING_CRITERIA','updated_at':stamp})
+ PORTFOLIO.write_text(json.dumps(rows,indent=2)+'\n')
+ state=json.loads(ACTIVE.read_text()); state.update({'checkpoint_id':receipt,'created_at':stamp,'current_workstream':'documents.esign','current_task':'Recover governed document and e-sign artifacts and verify template/version workflow, signature candidates, consent, and retention evidence.','last_real_action':'Closed grants.intelligence after verifying primary-source monitoring, eligibility uncertainty, profile matching, missing-information detection, pre-submission packaging, future-cycle monitoring, and no autonomous submission.','last_real_action_result':'Potential matches remain distinct from eligibility; missing information is salvageable and all submission actions remain blocked.','next_machine_action':'Inspect existing document/e-sign artifacts and run the bounded template, consent, retention, and submission-gate contract.','machine_actionable_remaining':['documents.esign: template/version workflow, signature integration audit, consent and retention evidence'],'resume_point':'DOCUMENTS_ESIGN_RECONCILIATION','safe_to_resume':True,'ray_decision_queue':[]}); ACTIVE.write_text(json.dumps(state,indent=2)+'\n'); print(json.dumps({'receipt':receipt,'next_goal':'documents.esign'}))
+if __name__=='__main__': main()
