@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-engineering-foundation-checkpoint",
+  "checkpoint_id": "r30a-engineering-foundation-verified",
   "created_at": "2026-09-13T12:25:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
-  "current_task": "Maintain the isolated Client Portal V2 engineering foundation; final visual composition remains design-gated.",
-  "last_real_action": "Added the focused V2 route-contract/adapter test guard and recovered the canonical R30A engineering scope from the architecture boundary.",
-  "last_real_action_result": "R30A route contracts, live adapter boundary, auth/RLS gate, responsive shell, screenshot foundation, and no-cutover legacy boundary are present. Prior production build and browser foundations passed. New focused Vitest verification stalled under resident local Node/Vite processes and is not claimed as passed.",
+  "current_task": "R30A engineering foundation verified; hold final visual composition at the design gate.",
+  "last_real_action": "Recovered the local Node/Vite runner, passed the focused V2 route-contract test, and completed a fresh Vite production build.",
+  "last_real_action_result": "Focused contract suite PASS_REAL (2 tests); fresh Vite production build PASS_REAL. R30A engineering criteria are verified. Final visual composition remains intentionally design-gated; legacy portal remains frozen and V2 is not production-cut over.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -59,7 +59,8 @@
     "V2 contract-route adapter matrix audit: PASS_REAL (12/12 routes bound)",
     "Vite production build after V2 adapter wiring: PASS_REAL",
     "R29.1 governed template canary: PASS_REAL (one send; delivery observed as delivered)",
-    "R30A focused V2 route-contract test: PENDING_LOCAL_RUNNER_STALL"
+    "R30A focused V2 route-contract test: PASS_REAL (2 tests)",
+    "R30A fresh Vite production build after runner recovery: PASS_REAL"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -67,12 +68,12 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": null,
-  "root_cause": "R29.1 browser proofs, adapter bindings, and the explicitly approved governed communication canary are complete. R30A remains design-neutral engineering until visual/product approval.",
-  "next_machine_action": "Rerun the focused V2 route-contract test after the local Node/Vite runner is available; then continue only approved R30A engineering or await visual design references.",
+  "current_failure": "Final R30A visual/product composition is intentionally pending approved references; no engineering defect remains in the current foundation scope.",
+  "root_cause": "The local runner issue was stale workspace Vite processes plus an unsupported Vitest flag; after cleanup and supported invocation, the focused test and production build passed.",
+  "next_machine_action": "Await approved visual references for the design-gated V2 screens, or select a separate canonical machine-ready goal; do not alter the frozen legacy portal or cut V2 over.",
   "machine_actionable_remaining": [
-    "Rerun focused V2 route-contract test after local runner recovery",
-    "R30A design-neutral Client Portal V2 engineering"
+    "Approved visual references for design-gated V2 screens",
+    "Separate canonical machine-ready goal selection"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -80,6 +81,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "R30A_FOCUSED_CONTRACT_TEST_AND_ENGINEERING",
+  "resume_point": "R30A_VISUAL_DESIGN_GATE_OR_NEXT_CANONICAL_GOAL",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
