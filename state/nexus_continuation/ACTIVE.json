@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r30a-engineering-foundation-verified",
+  "checkpoint_id": "portfolio-trading-real-data-selected",
   "created_at": "2026-09-13T12:25:00-07:00",
-  "phase": "R29.1 → R30A",
-  "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
+  "phase": "R30A → trading.real_data",
+  "objective": "Continue the highest-priority machine-actionable company goal after the R30A engineering gate",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "r30a-engineering-foundation",
-  "current_task": "R30A engineering foundation verified; hold final visual composition at the design gate.",
-  "last_real_action": "Recovered the local Node/Vite runner, passed the focused V2 route-contract test, and completed a fresh Vite production build.",
-  "last_real_action_result": "Focused contract suite PASS_REAL (2 tests); fresh Vite production build PASS_REAL. R30A engineering criteria are verified. Final visual composition remains intentionally design-gated; legacy portal remains frozen and V2 is not production-cut over.",
+  "current_workstream": "trading.real_data",
+  "current_task": "Run the next bounded OANDA practice research/backtest/OOS/paper evidence step.",
+  "last_real_action": "Selected the canonical P1 trading.real_data goal and ran its existing OANDA practice-only research scanner, synthetic paper backtest, and demo-readiness reconciliation.",
+  "last_real_action_result": "OANDA practice account/pricing reads PASS_REAL (HTTP 200); 9 bounded candle reads PASS_REAL; scanner result NO_VALID_SETUP with no orders. Synthetic paper backtest PASS_REAL and demo readiness PASS_REAL with live trading disabled.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -32,7 +32,10 @@
     "src/client-v2/adapters/routeAdapters.ts",
     "docs/R29_1_V2_ADAPTER_MATRIX.md",
     "scripts/r29_1/execute_governed_template_canary.py",
-    "tests/client_v2_route_contracts.test.ts"
+    "tests/client_v2_route_contracts.test.ts",
+    "scripts/trading/forex_research_scanner.py",
+    "scripts/trading/run_vibe_paper_backtest_dry_run.py",
+    "scripts/trading/run_trading_demo_readiness_cycle.py"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -60,7 +63,11 @@
     "Vite production build after V2 adapter wiring: PASS_REAL",
     "R29.1 governed template canary: PASS_REAL (one send; delivery observed as delivered)",
     "R30A focused V2 route-contract test: PASS_REAL (2 tests)",
-    "R30A fresh Vite production build after runner recovery: PASS_REAL"
+    "R30A fresh Vite production build after runner recovery: PASS_REAL",
+    "Portfolio reselection: trading.real_data selected by P1/no-dependency priority",
+    "OANDA practice research scanner: PASS_REAL data lane; NO_VALID_SETUP; no orders",
+    "Synthetic paper backtest: PASS_REAL",
+    "Trading demo readiness reconciliation: PASS_REAL; live orders disabled"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -68,12 +75,12 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "Final R30A visual/product composition is intentionally pending approved references; no engineering defect remains in the current foundation scope.",
-  "root_cause": "The local runner issue was stale workspace Vite processes plus an unsupported Vitest flag; after cleanup and supported invocation, the focused test and production build passed.",
-  "next_machine_action": "Await approved visual references for the design-gated V2 screens, or select a separate canonical machine-ready goal; do not alter the frozen legacy portal or cut V2 over.",
+  "current_failure": "No approved trading setup was present in the bounded scan; this is a valid research result, not an execution failure.",
+  "root_cause": "R30A engineering reached its design gate. Portfolio governor selected trading.real_data as the highest-priority active goal with no dependencies; practice data is healthy but the strategy gate correctly rejected all current setups.",
+  "next_machine_action": "Continue the existing trading.real_data recovery ladder with a bounded OOS/paper evidence step or research the next candidate; do not place funded/live trades.",
   "machine_actionable_remaining": [
-    "Approved visual references for design-gated V2 screens",
-    "Separate canonical machine-ready goal selection"
+    "Bounded OOS/paper evidence for trading.real_data",
+    "Research next trading candidate after rejected setup"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -81,6 +88,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "R30A_VISUAL_DESIGN_GATE_OR_NEXT_CANONICAL_GOAL",
+  "resume_point": "TRADING_REAL_DATA_OOS_PAPER_EVIDENCE",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
