@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "r29-browser-proofs-recovered",
+  "checkpoint_id": "r29-v2-adapter-wiring-closed",
   "created_at": "2026-09-13T12:25:00-07:00",
   "phase": "R29.1 → R30A",
   "objective": "Close R29.1 machine work and begin isolated Client Portal V2",
   "current_status": "IN_PROGRESS",
   "current_workstream": "r30a-engineering-foundation",
-  "current_task": "Close remaining R29.1 browser/communication proof, then wire each design-neutral V2 route contract to its proven backend adapter.",
-  "last_real_action": "Recovered synthetic auth fixtures, repaired membership provisioning, and ran authenticated Support/Admin/cross-tenant browser proofs.",
-  "last_real_action_result": "Support route proof PASS_REAL; Admin route/control/backend proof PASS_REAL; two isolated synthetic tenant browser contexts each read their own profile and zero rows for the other tenant. No governed customer-template send was performed.",
+  "current_task": "Maintain the governed R29.1 send boundary and continue R30A visual-design-gated portal work.",
+  "last_real_action": "Bound every R29 Client Portal V2 contract route to the existing tenant-scoped live data model through the route adapter registry and documented the finite adapter matrix.",
+  "last_real_action_result": "V2 adapter matrix covers all 12 contract routes with named backend boundaries, loading/error/empty state handling, and no legacy fallback. Production Vite build PASS_REAL. No governed customer-template send was performed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -28,7 +28,9 @@
     "src/admin/R28AdminOperationsPanel.jsx",
     "docs/CLIENT_PORTAL_ARCHITECTURE.md",
     "src/client-v2/pages/SupportV2.tsx",
-    "tests/e2e/r30a-support-ui.spec.ts"
+    "tests/e2e/r30a-support-ui.spec.ts",
+    "src/client-v2/adapters/routeAdapters.ts",
+    "docs/R29_1_V2_ADAPTER_MATRIX.md"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -51,7 +53,9 @@
     "Synthetic Persona A/B provisioning and auth login: PASS_REAL",
     "Support authenticated browser proof: PASS_REAL",
     "Admin authenticated route/control/backend proof: PASS_REAL",
-    "Cross-tenant browser data-boundary proof: PASS_REAL (own 200/1; other 200/0 for both contexts)"
+    "Cross-tenant browser data-boundary proof: PASS_REAL (own 200/1; other 200/0 for both contexts)",
+    "V2 contract-route adapter matrix audit: PASS_REAL (12/12 routes bound)",
+    "Vite production build after V2 adapter wiring: PASS_REAL"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -59,12 +63,11 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "Governed customer-template communication remains approval-gated; remaining V2 adapter wiring is not yet complete.",
-  "root_cause": "Synthetic auth recovery and browser isolation are now closed. The remaining R29 send is an external side effect requiring explicit approval, while V2 route adapter work remains machine-actionable.",
-  "next_machine_action": "Connect remaining V2 contract routes to existing real adapters, then request explicit approval only if the governed customer-template canary is the sole remaining R29 criterion.",
+  "current_failure": "Governed customer-template communication remains approval-gated; final visual composition and any new mutation UI remain R30A design/product work.",
+  "root_cause": "All machine-actionable R29 V2 read-contract adapter bindings are complete. The remaining governed send is an explicit external side effect and the V2 visual gate is intentionally pending.",
+  "next_machine_action": "Request fresh approval only for the governed customer-template canary if R29 closure is desired; otherwise continue R30A design-neutral engineering work without changing the frozen legacy portal.",
   "machine_actionable_remaining": [
-    "Governed outbound communication canary",
-    "Remaining V2 contract-route adapters"
+    "Governed outbound communication canary"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -72,6 +75,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "R29_1_GOVERNED_COMMUNICATION_AND_UI_PROOF",
+  "resume_point": "R29_1_GOVERNED_SEND_BOUNDARY_OR_R30A_ENGINEERING",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
