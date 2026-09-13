@@ -8959,9 +8959,9 @@
           ],
           "evidence_required": "structured readiness model exists",
           "expected_condition": "structured readiness model exists",
-          "failure_id": "failure_bab788b9e8362ca2e8",
+          "failure_id": "failure_31c1927bf226d705f7",
           "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
           "format_gap": "",
           "goal_id": "clyde.entity_readiness",
           "missing_component": "structured readiness model exists",
@@ -9011,9 +9011,9 @@
           ],
           "evidence_required": "evidence linkage and handoff readiness proven",
           "expected_condition": "evidence linkage and handoff readiness proven",
-          "failure_id": "failure_ed36b4e5c9b5d3144b",
+          "failure_id": "failure_771d466b19b62c3398",
           "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
           "format_gap": "",
           "goal_id": "clyde.entity_readiness",
           "missing_component": "evidence linkage and handoff readiness proven",
@@ -9063,9 +9063,9 @@
           ],
           "evidence_required": "legal/tax determinations remain out of scope",
           "expected_condition": "legal/tax determinations remain out of scope",
-          "failure_id": "failure_365aba80f9bc8a8ab4",
+          "failure_id": "failure_41aced0ae10d4f3cf6",
           "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+          "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
           "format_gap": "",
           "goal_id": "clyde.entity_readiness",
           "missing_component": "legal/tax determinations remain out of scope",
@@ -9164,7 +9164,7 @@
       "reports/runtime/nexus_active_operator_receipts/operator_operator_60ffad71000f4fa7a59959e08e1377c7.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_0153f16985c44bad8ca12d2541fe53bb.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_c4345161fcea48ffb61e03c8d847777e.json",
-      "reports/runtime/nexus_active_operator_receipts/operator_operator_613d8ea8218e48a5b18379c3d4ae8d5c.json"
+      "reports/runtime/nexus_active_operator_receipts/operator_operator_9e653431356a434f886c70903bfef97f.json"
     ],
     "department": "Clyde",
     "dependencies": [
@@ -11133,9 +11133,9 @@
         ],
         "evidence_required": "structured readiness model exists",
         "expected_condition": "structured readiness model exists",
-        "failure_id": "failure_bab788b9e8362ca2e8",
+        "failure_id": "failure_31c1927bf226d705f7",
         "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
         "format_gap": "",
         "goal_id": "clyde.entity_readiness",
         "missing_component": "structured readiness model exists",
@@ -11185,9 +11185,9 @@
         ],
         "evidence_required": "evidence linkage and handoff readiness proven",
         "expected_condition": "evidence linkage and handoff readiness proven",
-        "failure_id": "failure_ed36b4e5c9b5d3144b",
+        "failure_id": "failure_771d466b19b62c3398",
         "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
         "format_gap": "",
         "goal_id": "clyde.entity_readiness",
         "missing_component": "evidence linkage and handoff readiness proven",
@@ -11237,9 +11237,9 @@
         ],
         "evidence_required": "legal/tax determinations remain out of scope",
         "expected_condition": "legal/tax determinations remain out of scope",
-        "failure_id": "failure_365aba80f9bc8a8ab4",
+        "failure_id": "failure_41aced0ae10d4f3cf6",
         "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+        "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
         "format_gap": "",
         "goal_id": "clyde.entity_readiness",
         "missing_component": "legal/tax determinations remain out of scope",
@@ -11264,7 +11264,7 @@
     "last_progress": "2026-09-08T10:13:18.278344+00:00",
     "last_result": {
       "action": "ai.plan_and_verify",
-      "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_dcdaca710d454b0ebb1ca5c7d2b016a9.json",
+      "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_8cbe391d3c7644cf94ced9d69001f315.json",
       "failure_class": "INVALID_MODEL_PLAN",
       "finalization_failure": {
         "criteria": [
@@ -11299,9 +11299,9 @@
             ],
             "evidence_required": "structured readiness model exists",
             "expected_condition": "structured readiness model exists",
-            "failure_id": "failure_bab788b9e8362ca2e8",
+            "failure_id": "failure_31c1927bf226d705f7",
             "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
             "format_gap": "",
             "goal_id": "clyde.entity_readiness",
             "missing_component": "structured readiness model exists",
@@ -11351,9 +11351,9 @@
             ],
             "evidence_required": "evidence linkage and handoff readiness proven",
             "expected_condition": "evidence linkage and handoff readiness proven",
-            "failure_id": "failure_ed36b4e5c9b5d3144b",
+            "failure_id": "failure_771d466b19b62c3398",
             "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
             "format_gap": "",
             "goal_id": "clyde.entity_readiness",
             "missing_component": "evidence linkage and handoff readiness proven",
@@ -11403,9 +11403,9 @@
             ],
             "evidence_required": "legal/tax determinations remain out of scope",
             "expected_condition": "legal/tax determinations remain out of scope",
-            "failure_id": "failure_365aba80f9bc8a8ab4",
+            "failure_id": "failure_41aced0ae10d4f3cf6",
             "failure_reason": "Initial planner response was invalid; retry the concrete criterion action.",
-            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132008",
+            "finalization_attempt_id": "continuous_kernel:clyde.entity_readiness:202609132024",
             "format_gap": "",
             "goal_id": "clyde.entity_readiness",
             "missing_component": "legal/tax determinations remain out of scope",
@@ -11432,9 +11432,9 @@
         "legal/tax determinations remain out of scope"
       ],
       "status": "FAILED",
-      "work_item_id": "continuous_kernel:clyde.entity_readiness:202609132008"
+      "work_item_id": "continuous_kernel:clyde.entity_readiness:202609132024"
     },
-    "last_selected_at": "2026-09-13T20:08:42.301009+00:00",
+    "last_selected_at": "2026-09-13T20:24:14.450923+00:00",
     "missing_criteria": [
       "structured readiness model exists",
       "evidence linkage and handoff readiness proven",
@@ -11703,7 +11703,7 @@
       "evidence linkage and handoff readiness proven",
       "legal/tax determinations remain out of scope"
     ],
-    "updated_at": "2026-09-13T20:09:13.293405+00:00"
+    "updated_at": "2026-09-13T20:24:40.596757+00:00"
   },
   {
     "active_workstreams": [
@@ -11841,8 +11841,8 @@
     "last_progress": "2026-09-13T20:09:35.797565+00:00",
     "last_result": {
       "action": "objective.closure",
-      "status": "COMPLETE",
-      "receipt_id": "funding-workflow-expansion-20260913200935"
+      "receipt_id": "funding-workflow-expansion-20260913200935",
+      "status": "COMPLETE"
     },
     "last_selected_at": "2026-09-10T21:33:49.638476+00:00",
     "missing_criteria": [],
@@ -13871,7 +13871,7 @@
       "profile matching and missing information detected",
       "no autonomous submission"
     ],
-    "updated_at": "2026-09-10T20:51:23.575002+00:00"
+    "updated_at": "2026-09-13T20:25:50.527786+00:00"
   },
   {
     "active_workstreams": [
@@ -15285,8 +15285,8 @@
     "last_progress": "2026-09-13T20:15:20.054706+00:00",
     "last_result": {
       "action": "objective.closure",
-      "status": "COMPLETE",
-      "receipt_id": "goclear-economic-model-20260913201520"
+      "receipt_id": "goclear-economic-model-20260913201520",
+      "status": "COMPLETE"
     },
     "last_selected_at": "2026-09-10T21:18:05.022348+00:00",
     "missing_criteria": [],
@@ -18045,8 +18045,8 @@
     "last_progress": "2026-09-13T20:20:11.028324+00:00",
     "last_result": {
       "action": "objective.closure",
-      "status": "COMPLETE",
-      "receipt_id": "commerce-billing-accounting-20260913202011"
+      "receipt_id": "commerce-billing-accounting-20260913202011",
+      "status": "COMPLETE"
     },
     "last_selected_at": "2026-09-09T17:59:33.447206+00:00",
     "missing_criteria": [],
@@ -22554,8 +22554,8 @@
     "last_progress": "2026-09-13T20:22:00.355839+00:00",
     "last_result": {
       "action": "objective.closure",
-      "status": "COMPLETE",
-      "receipt_id": "research-notebook-20260913202200"
+      "receipt_id": "research-notebook-20260913202200",
+      "status": "COMPLETE"
     },
     "last_selected_at": "2026-09-10T22:07:43.507322+00:00",
     "missing_criteria": [],
@@ -23150,7 +23150,6 @@
       }
     ],
     "current_evidence": [
-      "reports/runtime/nexus_active_operator_receipts/operator_operator_0f64c7ea347840bf82a51499b6029d3d.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_e504fa648b4644c3b230ef295593e4e3.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_886ba3fb7f5f446ca3ae68e0ce6f46b1.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_72f1261da3dd4adeab84c0d3672efc5a.json",
@@ -23169,7 +23168,8 @@
       "reports/runtime/nexus_active_operator_receipts/operator_operator_e553a9f41e8a4e2190f1266830e85d69.json",
       "reports/runtime/ai_workforce_receipts/aiwf_d531a8f2e80c4c84bae3c8bf95e2dbf1.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_9a0ad1ea0848407ca07abd43e711d111.json",
-      "reports/runtime/nexus_active_operator_receipts/operator_operator_16f0cd56331d4ad1b0504b71c9c75b6e.json"
+      "reports/runtime/nexus_active_operator_receipts/operator_operator_16f0cd56331d4ad1b0504b71c9c75b6e.json",
+      "reports/runtime/opportunity_engine_latest.json"
     ],
     "department": "Opportunity",
     "dependencies": [
@@ -25303,193 +25303,15 @@
       }
     ],
     "goal_id": "opportunity.engine",
-    "last_progress": "2026-09-09T12:59:38.920182+00:00",
+    "last_progress": "2026-09-13T20:25:50.527786+00:00",
     "last_result": {
-      "action": "ai.plan_and_verify",
-      "artifact_path": "reports/runtime/ai_workforce_receipts/aiwf_8f02849e033b4710ba8f2252eda7bb8b.json",
-      "failure_class": null,
-      "finalization_failure": {
-        "criteria": [
-          {
-            "acceptance_test": "Final package explicitly satisfies criterion: opportunity scoring is evidence-bound",
-            "blocker_type": "NEXUS_REPAIRABLE",
-            "criterion": "opportunity scoring is evidence-bound",
-            "criterion_id": "criterion_472d2cb1a336",
-            "criterion_text": "opportunity scoring is evidence-bound",
-            "criterion_type": "success_criterion",
-            "current_evidence": [
-              "reports/runtime/ai_workforce_receipts/aiwf_23aa34ba69864d2b93c1e67ce9044b3a.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_0f64c7ea347840bf82a51499b6029d3d.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_e504fa648b4644c3b230ef295593e4e3.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_886ba3fb7f5f446ca3ae68e0ce6f46b1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_72f1261da3dd4adeab84c0d3672efc5a.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_5d6499015aa9487b87ec2b2c45f70465.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_cab78899d82a417caf32895002a2f75f.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_20d1d7520ebd45c184c18812a22a85b1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_f870681808854bd69a104ed614e3b2da.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_5f72773ed951452b94e8e463531a0365.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_c655192b635b4cafb1b26fb110d14e34.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_4095981978bd436c80cfd4ec4659b59c.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_a09eca4488ef4c4f91690834baaad2c3.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_cf5d5b252e3846fb83cc401f5757cc09.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_d25c2b746f3e4f94942b5aafe9c88243.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_15cfa8a3ae6c4026a500e37a80833b7b.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_474a60833b854a72a0fd00ddfdc85aff.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_e553a9f41e8a4e2190f1266830e85d69.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_d531a8f2e80c4c84bae3c8bf95e2dbf1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_9a0ad1ea0848407ca07abd43e711d111.json"
-            ],
-            "delta": "Criterion absent from criteria_satisfied.",
-            "evidence_required": "Evidence-backed content explicitly addressing: opportunity scoring is evidence-bound",
-            "expected_condition": "opportunity scoring is evidence-bound",
-            "failure_id": "failure_7a94e1eb086d677e29",
-            "failure_reason": "Criterion was not listed in criteria_satisfied.",
-            "finalization_attempt_id": "continuous_kernel:opportunity.engine:kernel_cycle_57_1788961201",
-            "format_gap": "",
-            "goal_id": "opportunity.engine",
-            "missing_component": "opportunity scoring is evidence-bound",
-            "missing_information": "Criterion absent from criteria_satisfied.",
-            "observed_condition": "No deliverable content was produced.",
-            "pass_or_fail": "FAIL",
-            "quality_gap": "Criterion was not listed in criteria_satisfied.",
-            "reason": "Criterion was not listed in criteria_satisfied.",
-            "repair_strategy": "evidence_context_expansion",
-            "repairable_by_nexus": true,
-            "required_evidence": "Evidence-backed content explicitly addressing: opportunity scoring is evidence-bound",
-            "required_output": "internal.create_bounded_work_artifact",
-            "required_repair": "internal.create_bounded_work_artifact",
-            "source_gap": "",
-            "status": "UNSATISFIED",
-            "unsupported_claims": [],
-            "validation_gap": "Final reviewer did not verify the criterion."
-          },
-          {
-            "acceptance_test": "Final package explicitly satisfies criterion: experiment design and routing exist",
-            "blocker_type": "NEXUS_REPAIRABLE",
-            "criterion": "experiment design and routing exist",
-            "criterion_id": "criterion_d76581a8757b",
-            "criterion_text": "experiment design and routing exist",
-            "criterion_type": "success_criterion",
-            "current_evidence": [
-              "reports/runtime/ai_workforce_receipts/aiwf_23aa34ba69864d2b93c1e67ce9044b3a.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_0f64c7ea347840bf82a51499b6029d3d.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_e504fa648b4644c3b230ef295593e4e3.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_886ba3fb7f5f446ca3ae68e0ce6f46b1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_72f1261da3dd4adeab84c0d3672efc5a.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_5d6499015aa9487b87ec2b2c45f70465.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_cab78899d82a417caf32895002a2f75f.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_20d1d7520ebd45c184c18812a22a85b1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_f870681808854bd69a104ed614e3b2da.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_5f72773ed951452b94e8e463531a0365.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_c655192b635b4cafb1b26fb110d14e34.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_4095981978bd436c80cfd4ec4659b59c.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_a09eca4488ef4c4f91690834baaad2c3.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_cf5d5b252e3846fb83cc401f5757cc09.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_d25c2b746f3e4f94942b5aafe9c88243.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_15cfa8a3ae6c4026a500e37a80833b7b.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_474a60833b854a72a0fd00ddfdc85aff.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_e553a9f41e8a4e2190f1266830e85d69.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_d531a8f2e80c4c84bae3c8bf95e2dbf1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_9a0ad1ea0848407ca07abd43e711d111.json"
-            ],
-            "delta": "Criterion absent from criteria_satisfied.",
-            "evidence_required": "Evidence-backed content explicitly addressing: experiment design and routing exist",
-            "expected_condition": "experiment design and routing exist",
-            "failure_id": "failure_2941d8b1902f75f16a",
-            "failure_reason": "Criterion was not listed in criteria_satisfied.",
-            "finalization_attempt_id": "continuous_kernel:opportunity.engine:kernel_cycle_57_1788961201",
-            "format_gap": "",
-            "goal_id": "opportunity.engine",
-            "missing_component": "experiment design and routing exist",
-            "missing_information": "Criterion absent from criteria_satisfied.",
-            "observed_condition": "No deliverable content was produced.",
-            "pass_or_fail": "FAIL",
-            "quality_gap": "Criterion was not listed in criteria_satisfied.",
-            "reason": "Criterion was not listed in criteria_satisfied.",
-            "repair_strategy": "evidence_context_expansion",
-            "repairable_by_nexus": true,
-            "required_evidence": "Evidence-backed content explicitly addressing: experiment design and routing exist",
-            "required_output": "internal.create_bounded_work_artifact",
-            "required_repair": "internal.create_bounded_work_artifact",
-            "source_gap": "",
-            "status": "UNSATISFIED",
-            "unsupported_claims": [],
-            "validation_gap": "Final reviewer did not verify the criterion."
-          },
-          {
-            "acceptance_test": "Final package explicitly satisfies criterion: hype and weak economics are rejected",
-            "blocker_type": "NEXUS_REPAIRABLE",
-            "criterion": "hype and weak economics are rejected",
-            "criterion_id": "criterion_23e83d40f253",
-            "criterion_text": "hype and weak economics are rejected",
-            "criterion_type": "success_criterion",
-            "current_evidence": [
-              "reports/runtime/ai_workforce_receipts/aiwf_23aa34ba69864d2b93c1e67ce9044b3a.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_0f64c7ea347840bf82a51499b6029d3d.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_e504fa648b4644c3b230ef295593e4e3.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_886ba3fb7f5f446ca3ae68e0ce6f46b1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_72f1261da3dd4adeab84c0d3672efc5a.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_5d6499015aa9487b87ec2b2c45f70465.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_cab78899d82a417caf32895002a2f75f.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_20d1d7520ebd45c184c18812a22a85b1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_f870681808854bd69a104ed614e3b2da.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_5f72773ed951452b94e8e463531a0365.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_c655192b635b4cafb1b26fb110d14e34.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_4095981978bd436c80cfd4ec4659b59c.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_a09eca4488ef4c4f91690834baaad2c3.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_cf5d5b252e3846fb83cc401f5757cc09.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_d25c2b746f3e4f94942b5aafe9c88243.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_15cfa8a3ae6c4026a500e37a80833b7b.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_474a60833b854a72a0fd00ddfdc85aff.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_e553a9f41e8a4e2190f1266830e85d69.json",
-              "reports/runtime/ai_workforce_receipts/aiwf_d531a8f2e80c4c84bae3c8bf95e2dbf1.json",
-              "reports/runtime/nexus_active_operator_receipts/operator_operator_9a0ad1ea0848407ca07abd43e711d111.json"
-            ],
-            "delta": "Criterion absent from criteria_satisfied.",
-            "evidence_required": "Evidence-backed content explicitly addressing: hype and weak economics are rejected",
-            "expected_condition": "hype and weak economics are rejected",
-            "failure_id": "failure_843d8ac53be149337e",
-            "failure_reason": "Criterion was not listed in criteria_satisfied.",
-            "finalization_attempt_id": "continuous_kernel:opportunity.engine:kernel_cycle_57_1788961201",
-            "format_gap": "",
-            "goal_id": "opportunity.engine",
-            "missing_component": "hype and weak economics are rejected",
-            "missing_information": "Criterion absent from criteria_satisfied.",
-            "observed_condition": "No deliverable content was produced.",
-            "pass_or_fail": "FAIL",
-            "quality_gap": "Criterion was not listed in criteria_satisfied.",
-            "reason": "Criterion was not listed in criteria_satisfied.",
-            "repair_strategy": "evidence_context_expansion",
-            "repairable_by_nexus": true,
-            "required_evidence": "Evidence-backed content explicitly addressing: hype and weak economics are rejected",
-            "required_output": "internal.create_bounded_work_artifact",
-            "required_repair": "internal.create_bounded_work_artifact",
-            "source_gap": "",
-            "status": "UNSATISFIED",
-            "unsupported_claims": [],
-            "validation_gap": "Final reviewer did not verify the criterion."
-          }
-        ],
-        "failure_class": "INCOMPLETE_FINAL_DELIVERABLE",
-        "reason": "Criterion evidence was not sufficient.",
-        "recorded_at": "2026-09-09T13:43:14.543249+00:00",
-        "repairable": true,
-        "required_repair": "internal.create_bounded_work_artifact",
-        "source_action": "research.refresh"
-      },
-      "rework_required": [
-        "Further research is needed to gather evidence that meets the criteria for opportunity scoring, experiment design, and rejection of hype and weak economics."
-      ],
-      "status": "FAILED",
-      "work_item_id": "continuous_kernel:opportunity.engine:kernel_cycle_57_1788961201"
+      "action": "objective.closure",
+      "status": "COMPLETE",
+      "receipt_id": "opportunity-engine-20260913202550"
     },
     "last_selected_at": "2026-09-09T13:42:45.714913+00:00",
-    "missing_criteria": [
-      "Further research is needed to gather evidence that meets the criteria for opportunity scoring, experiment design, and rejection of hype and weak economics.",
-      "experiment design and routing exist",
-      "hype and weak economics are rejected"
-    ],
-    "next_action": "CONTINUE_MISSING_CRITERIA",
+    "missing_criteria": [],
+    "next_action": null,
     "next_review": "2026-09-04T11:07:59.309033+00:00",
     "next_task_criterion": "Further research is needed to gather evidence that meets the criteria for opportunity scoring, experiment design, and rejection of hype and weak economics.",
     "next_task_id": "opportunity.engine:Further research is needed to gather evidence that meets the criteria for opportunity scoring, experiment design, and rejection of hype and weak economics.",
@@ -25747,13 +25569,13 @@
     "schema_version": "nexus.company-goal-portfolio.v1",
     "selection_count": 80,
     "statement": "Continue the evidence-backed business opportunity engine from research to measurement.",
-    "status": "ACTIVE",
+    "status": "COMPLETE",
     "success_criteria": [
       "opportunity scoring is evidence-bound",
       "experiment design and routing exist",
       "hype and weak economics are rejected"
     ],
-    "updated_at": "2026-09-13T20:22:00.355839+00:00"
+    "updated_at": "2026-09-13T20:25:50.527786+00:00"
   },
   {
     "active_workstreams": [
