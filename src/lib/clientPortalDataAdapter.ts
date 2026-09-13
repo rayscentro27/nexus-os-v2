@@ -461,12 +461,16 @@ export async function loadClientProfileIntake(forcedContext?: ResolvedClientCont
       .from('client_profiles')
       .select(PROFILE_INTAKE_COLUMNS)
       .eq('client_id', ctx.clientId)
-      .single()
+      // A historical duplicate profile row must not crash the authenticated
+      // client path. Resolve the newest governed row deterministically; RLS
+      // still limits the query to the current client's tenant context.
+      .order('updated_at', { ascending: false })
+      .limit(1)
 
     if (result.error) return { data: EMPTY_PROFILE_INTAKE, source: 'supabase' as const, error: result.error.message }
-    if (!result.data) return { data: EMPTY_PROFILE_INTAKE, source: 'supabase' as const }
+    if (!result.data?.length) return { data: EMPTY_PROFILE_INTAKE, source: 'supabase' as const }
 
-    const row = result.data as unknown as Record<string, unknown>
+    const row = result.data[0] as unknown as Record<string, unknown>
     const intake: ProfileIntakeData = {
       legal_name: String(row.legal_name || row.client_label || ''),
       preferred_name: String(row.preferred_name || ''),

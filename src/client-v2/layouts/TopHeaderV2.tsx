@@ -1,13 +1,16 @@
-import { Database, MonitorCheck } from 'lucide-react'
+import { Database, MonitorCheck, User } from 'lucide-react'
 import { StatusBadgeV2 } from '../components/primitives'
 import { ROUTE_LABELS, navigateV2 } from '../utils/navigate'
+import type { V2ProfileView } from '../types/v2-models'
 
 export function TopHeaderV2({
   currentPath,
   isDemo,
+  profile,
 }: {
   currentPath: string
   isDemo: boolean
+  profile: V2ProfileView | null
 }) {
   const label = ROUTE_LABELS[currentPath] || 'Dashboard'
   return (
@@ -32,6 +35,12 @@ export function TopHeaderV2({
         <Database size={14} />
         Supabase connected
       </span>
+      <button type="button" className="v2-header-profile flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-[#E6F7FA]" aria-label={profile?.name ? `Open account for ${profile.name}` : 'Open account'} onClick={() => navigateV2('/client-v2/account')}>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E6F7FA] text-v2brand font-semibold text-[11px]">{profile?.name ? initials(profile.name) : <User size={16} />}</span>
+        <span className="hidden sm:block text-left"><span className="block text-[12px] font-semibold text-v2ink truncate max-w-[140px]">{profile?.name || 'Account'}</span>{profile?.membershipTier && <span className="block text-[10px] text-v2muted">{profile.membershipTier}</span>}</span>
+      </button>
     </header>
   )
 }
+
+const initials = (name: string) => name.replace(/\(.*?\)/g, '').trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()

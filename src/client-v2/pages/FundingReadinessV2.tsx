@@ -7,6 +7,7 @@ import { ReadinessArcV2 } from '../components/ReadinessArcV2'
 import { NextMoveCardV2 } from '../components/NextMoveCardV2'
 import { HermesPanelV2 } from '../components/HermesPanelV2'
 import InlineDocumentUpload from '../../components/client/InlineDocumentUpload'
+import { BrandWave } from '../components/BrandWave'
 
 export function FundingReadinessV2({ data }: { data: V2ViewData }) {
   const { readiness, scores, hermes } = data
@@ -27,7 +28,8 @@ export function FundingReadinessV2({ data }: { data: V2ViewData }) {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-4">
         <div className="space-y-4 min-w-0">
           <div className="grid grid-cols-1 md:grid-cols-[220px_minmax(0,1fr)] gap-4">
-            <CardV2 variant="feature" className="flex items-center justify-center">
+            <CardV2 variant="feature" className="goclear-visual-card flex items-center justify-center">
+              <BrandWave className="absolute inset-x-0 bottom-0 h-24 w-full" />
               <ReadinessArcV2 readiness={readiness} credit={scores.credit} business={scores.business} funding={scores.funding} />
             </CardV2>
             <div className="space-y-3">

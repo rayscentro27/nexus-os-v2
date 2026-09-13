@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   MessageSquare,
   Receipt,
-  Sparkles,
   Target,
   TrendingUp,
 } from 'lucide-react'
@@ -48,13 +47,7 @@ export function SidebarV2({
   return (
     <aside className="v2-sidebar w-full xl:w-[220px] xl:shrink-0 xl:h-screen xl:sticky xl:top-0 flex flex-col overflow-y-auto v2-thin-scroll">
       <div className="px-4 pt-5 pb-4 flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-v2brand to-v2indigo flex items-center justify-center shadow-lg shadow-[#0A1329]/40">
-          <Sparkles size={18} className="text-white" />
-        </div>
-        <div className="leading-none">
-          <div className="text-[15px] font-bold tracking-tight text-white">Nexus</div>
-          <div className="text-[10.5px] font-medium text-white/45 tracking-wide">Client Portal</div>
-        </div>
+        <img src="/brand/GoClearLogo.svg" alt="GoClear" className="h-10 w-auto brightness-0 invert" />
       </div>
 
       <nav className="flex-1 px-3 pb-4 space-y-5 mt-1">
@@ -133,12 +126,12 @@ export function SidebarV2({
       <div className="px-3 pb-4">
         <div className="rounded-2xl bg-white/[0.05] border border-white/10 p-3">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-full v2-avatar-glyph flex items-center justify-center text-[13px] font-bold shrink-0">
-              {profile?.name ? initials(profile.name) : '·'}
+            <div className="w-9 h-9 rounded-full v2-avatar-glyph flex items-center justify-center text-[13px] font-bold shrink-0" aria-label={profile?.name ? `Profile for ${profile.name}` : 'Profile'}>
+              {profile?.name ? initials(profile.name) : <UserIcon />}
             </div>
             <div className="min-w-0">
-              <div className="text-[12.5px] font-semibold text-white truncate">{profile?.name || 'Client'}</div>
-              <div className="text-[10.5px] text-white/50 truncate">{profile?.membershipTier || 'Membership'}</div>
+              <div className="text-[12.5px] font-semibold text-white truncate">{profile?.name || 'Account'}</div>
+              {profile?.membershipTier && <div className="text-[10.5px] text-white/50 truncate">{profile.membershipTier}</div>}
             </div>
           </div>
           <button
@@ -165,3 +158,7 @@ const initials = (name: string) =>
     .map((n) => n[0])
     .join('')
     .toUpperCase()
+
+function UserIcon() {
+  return <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+}

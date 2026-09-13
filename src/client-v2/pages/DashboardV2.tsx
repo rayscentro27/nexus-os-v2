@@ -18,6 +18,7 @@ import { HealthStripV2, type HealthItem } from '../components/HealthStripV2'
 import { HermesPanelV2 } from '../components/HermesPanelV2'
 import { DocumentStatusCardV2 } from '../components/DocumentStatusCardV2'
 import { ActivityFeedV2 } from '../components/ActivityFeedV2'
+import { BrandWave } from '../components/BrandWave'
 
 const greeting = () => {
   const h = new Date().getHours()
@@ -127,7 +128,8 @@ export function DashboardV2({ data }: { data: V2ViewData }) {
       <div className="v2-dashboard-shell w-full min-w-0 gap-4">
         <div className="space-y-4 min-w-0">
           <div className="v2-dashboard-primary w-full min-w-0 gap-4">
-            <CardV2 variant="feature" className="p-5">
+            <CardV2 variant="feature" className="goclear-visual-card p-5">
+              <BrandWave className="absolute inset-x-0 bottom-0 h-28 w-full" />
               <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-5 items-center">
                 <div className="flex items-center justify-center">
                   <ReadinessArcV2 readiness={readiness} credit={scores.credit} business={scores.business} funding={scores.funding} />

@@ -2,13 +2,13 @@
   "schema_version": "1.0",
   "checkpoint_id": "nexus-productization-20260913211804",
   "created_at": "2026-09-13T21:18:04.229931+00:00",
-  "phase": "R30A \u2192 trading.real_data \u2192 research.company_intelligence \u2192 systems.oracle_browser \u2192 clyde.entity_readiness \u2192 business_plans.customer_goals",
-  "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading, Research, Systems, and Clyde readiness",
+  "phase": "R30A",
+  "objective": "Complete portal.client_beta visual implementation from approved GoClear references without production cutover",
   "current_status": "IN_PROGRESS",
   "current_workstream": "portal.client_beta",
-  "current_task": "Await approved Client Portal V2 visual references before any visual implementation or production cutover.",
-  "last_real_action": "Closed nexus.productization with bounded product options, reused tenant/RLS foundations, governed capability tiers, cost classifications, privacy boundaries, synthetic provisioning proof, and dependency-gated readiness.",
-  "last_real_action_result": "No live pricing changed, no real customer was provisioned, and no production launch occurred.",
+  "current_task": "Finalize authenticated visual proof and beta-readiness checkpoint; preserve legacy portal and production routing.",
+  "last_real_action": "Implemented the approved GoClear V2 visual system, repaired duplicate-profile intake resolution, and ran authenticated desktop/tablet/mobile route screenshots against live Supabase data.",
+  "last_real_action_result": "Visual proof passed for Dashboard, Funding Readiness, Goals, and Documents at desktop, tablet, and mobile widths.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -92,25 +92,15 @@
   ],
   "canonical_state_changed": true,
   "current_failure": null,
-  "root_cause": "Trading, Research, Systems browser verification, and Clyde readiness are complete. business_plans.customer_goals is the next eligible P2 goal; its goals, milestone, evidence-linkage, and portal-visibility criteria remain to be verified.",
-  "next_machine_action": "Hold V2 visual implementation until approved visual references exist; maintain legacy portal as bug-fix-only.",
+  "root_cause": "The approved visual references are now available and the V2 implementation is live-data verified; remaining work is beta visual review, not an engineering prerequisite.",
+  "next_machine_action": "Preserve beta artifact and await Ray visual review before any production cutover.",
   "machine_actionable_remaining": [],
   "blocked_work": [],
-  "ray_decision_queue": [
-    {
-      "decision_id": "portal-v2-visual-approval",
-      "phase": "R30A",
-      "objective": "portal.client_beta",
-      "question": "Provide or approve Client Portal V2 visual references before implementation/cutover.",
-      "why_ray_is_required": "Final product/visual design is explicitly outside the engineering foundation scope.",
-      "status": "OPEN",
-      "unrelated_work_can_continue": true
-    }
-  ],
+  "ray_decision_queue": [],
   "external_boundaries": [
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "CLIENT_PORTAL_V2_DESIGN_REVIEW",
+  "resume_point": "CLIENT_PORTAL_V2_BETA_REVIEW",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }

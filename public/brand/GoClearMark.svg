@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title">
+  <title id="title">GoClear</title>
+  <defs><linearGradient id="g" x1="12" y1="82" x2="84" y2="12" gradientUnits="userSpaceOnUse"><stop stop-color="#0B2D5B"/><stop offset="1" stop-color="#00B4C6"/></linearGradient></defs>
+  <path fill="url(#g)" d="M78 18v20l-9-7-9 8v-9c-8-6-19-7-27-2-12 7-16 23-9 35 7 12 23 16 35 9 4-2 7-5 9-9l13 7c-5 10-14 18-25 21-21 6-43-6-49-27C1 43 13 21 34 15c12-3 24-1 34 5l10-2Z"/>
+  <path fill="#fff" d="M27 58h9v14h-9V58Zm14-8h9v22h-9V50Zm14-10h9v32h-9V40Z"/>
+  <path fill="#00B4C6" d="m51 34 13 1 10-10-1 14-12 9-10-14Z"/>
+</svg>
