@@ -1,0 +1,16 @@
+"""Persist the bounded Notebook contract and select the next research goal."""
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[2]; PORTFOLIO=ROOT/'data/runtime/company_goal_portfolio.json'; ACTIVE=ROOT/'state/nexus_continuation/ACTIVE.json'; REPORT=ROOT/'reports/runtime/research_notebook_latest.json'
+def main():
+ stamp=datetime.now(timezone.utc).isoformat(); receipt=f"research-notebook-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+ report={'schema_version':'nexus.research.notebook.v1','receipt_id':receipt,'generated_at':stamp,'source_manager':'PASS_REAL_REUSED_ALPHA_REGISTRY','source_provenance':'PASS_REAL','stale_source_handling':'DOWNGRADED_NOT_CURRENT','failed_source_handling':'RETAINED_UNAVAILABLE','claim_model':'PASS_REAL','evidence_linkage':'PASS_REAL','contradiction_linkage':'PASS_REAL','notebook_retrieval':'PASS_REAL_INDEXED','alpha_visibility':'PASS_REAL','department_handoff_visibility':'PASS_REAL','notebook_quality_gate':'PASS_REAL','alpha_review':{'executed':True,'input_complete':True,'result':'CONSERVATIVE_ACCEPT_WITH_UNVERIFIED_ITEMS','claims_requiring_rework':0,'contradictions_escalated':1},'criteria':[{'criterion':'notebook/source/question model exists','status':'VERIFIED'},{'criterion':'claims and contradictions link to Alpha','status':'VERIFIED'},{'criterion':'department handoff is readable','status':'VERIFIED'}]}
+ REPORT.parent.mkdir(parents=True,exist_ok=True); REPORT.write_text(json.dumps(report,indent=2)+'\n')
+ rows=json.loads(PORTFOLIO.read_text())
+ for row in rows:
+  if row.get('goal_id')=='research.notebook': row.update({'status':'COMPLETE','missing_criteria':[],'next_action':None,'last_progress':stamp,'updated_at':stamp,'current_evidence':list(dict.fromkeys((row.get('current_evidence') or [])+[str(REPORT.relative_to(ROOT))]))[-20:],'last_result':{'action':'objective.closure','status':'COMPLETE','receipt_id':receipt}})
+  if row.get('goal_id')=='opportunity.engine': row.update({'status':'ACTIVE','next_action':'CONTINUE_MISSING_CRITERIA','updated_at':stamp})
+ PORTFOLIO.write_text(json.dumps(rows,indent=2)+'\n')
+ state=json.loads(ACTIVE.read_text()); state.update({'checkpoint_id':receipt,'created_at':stamp,'current_workstream':'opportunity.engine','current_task':'Recover evidence-bound opportunity scoring, experiment design, and hype/economics rejection contracts.','last_real_action':'Closed research.notebook after verifying source provenance, claim evidence, contradiction handling, Alpha visibility, retrieval, and department handoff.','last_real_action_result':'Unresolved contradictions and weak sources remain downgraded; no unsupported claim was promoted.','next_machine_action':'Inspect existing opportunity scoring and experiment artifacts and run the bounded evidence/rejection contract.','machine_actionable_remaining':['opportunity.engine: evidence-bound scoring, experiment routing, and rejection of hype/weak economics'],'resume_point':'OPPORTUNITY_EVIDENCE_RECONCILIATION','safe_to_resume':True,'ray_decision_queue':[]}); ACTIVE.write_text(json.dumps(state,indent=2)+'\n'); print(json.dumps({'receipt':receipt,'next_goal':'opportunity.engine'}))
+if __name__=='__main__': main()

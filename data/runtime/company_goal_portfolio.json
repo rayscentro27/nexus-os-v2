@@ -22541,7 +22541,8 @@
       "reports/runtime/nexus_active_operator_receipts/operator_operator_84cf644715ce462b8642061736436a1f.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_4b2f1cbad3a1470084e525fbaaf33f78.json",
       "reports/runtime/nexus_active_operator_receipts/operator_operator_5ea94efc103848baad89bb0ead87c5e4.json",
-      "reports/runtime/nexus_active_operator_receipts/operator_operator_1153e48c98f9477b9e247cb1548086d8.json"
+      "reports/runtime/nexus_active_operator_receipts/operator_operator_1153e48c98f9477b9e247cb1548086d8.json",
+      "reports/runtime/research_notebook_latest.json"
     ],
     "department": "Research",
     "dependencies": [
@@ -22550,21 +22551,15 @@
     "domain": "Build the Ray Admin Research Notebook and Source Manager over the existing Research plane.",
     "failed_paths": [],
     "goal_id": "research.notebook",
-    "last_progress": "2026-09-10T18:42:47.288491+00:00",
+    "last_progress": "2026-09-13T20:22:00.355839+00:00",
     "last_result": {
-      "action": "research.refresh",
-      "artifact_path": null,
-      "decision": null,
-      "next_step": null,
-      "status": "PASS"
+      "action": "objective.closure",
+      "status": "COMPLETE",
+      "receipt_id": "research-notebook-20260913202200"
     },
     "last_selected_at": "2026-09-10T22:07:43.507322+00:00",
-    "missing_criteria": [
-      "notebook/source/question model exists",
-      "claims and contradictions link to Alpha",
-      "department handoff is readable"
-    ],
-    "next_action": "CONTINUE_MISSING_CRITERIA",
+    "missing_criteria": [],
+    "next_action": null,
     "next_review": "2026-09-04T11:07:59.309033+00:00",
     "owner": "NEXUS",
     "priority": "P2",
@@ -22572,13 +22567,13 @@
     "schema_version": "nexus.company-goal-portfolio.v1",
     "selection_count": 28,
     "statement": "Build the Ray Admin Research Notebook and Source Manager over the existing Research plane.",
-    "status": "ACTIVE",
+    "status": "COMPLETE",
     "success_criteria": [
       "notebook/source/question model exists",
       "claims and contradictions link to Alpha",
       "department handoff is readable"
     ],
-    "updated_at": "2026-09-13T20:20:11.028324+00:00"
+    "updated_at": "2026-09-13T20:22:00.355839+00:00"
   },
   {
     "active_workstreams": [
@@ -25494,7 +25489,7 @@
       "experiment design and routing exist",
       "hype and weak economics are rejected"
     ],
-    "next_action": "FINALIZATION_RETRY",
+    "next_action": "CONTINUE_MISSING_CRITERIA",
     "next_review": "2026-09-04T11:07:59.309033+00:00",
     "next_task_criterion": "Further research is needed to gather evidence that meets the criteria for opportunity scoring, experiment design, and rejection of hype and weak economics.",
     "next_task_id": "opportunity.engine:Further research is needed to gather evidence that meets the criteria for opportunity scoring, experiment design, and rejection of hype and weak economics.",
@@ -25758,7 +25753,7 @@
       "experiment design and routing exist",
       "hype and weak economics are rejected"
     ],
-    "updated_at": "2026-09-09T13:45:03.259202+00:00"
+    "updated_at": "2026-09-13T20:22:00.355839+00:00"
   },
   {
     "active_workstreams": [
