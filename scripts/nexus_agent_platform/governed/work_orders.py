@@ -204,9 +204,15 @@ def detect_stale_work_orders() -> List[Dict[str, Any]]:
     stale = []
     seen: set = set()
     for record in persistence.read_records("work_orders"):
-        if record["work_order_id"] in seen:
+        work_order_id = record.get("work_order_id")
+        # Older research/handoff records share this append-only collection but
+        # are not executable work orders. Ignore them instead of allowing a
+        # malformed historical record to break recovery checks.
+        if not work_order_id:
             continue
-        seen.add(record["work_order_id"])
+        if work_order_id in seen:
+            continue
+        seen.add(work_order_id)
         if record.get("status") in ("queued", "running") and _order_is_stale(record):
             stale.append(_mask_work_order({**record, "status": "stale"}))
     return stale
@@ -219,9 +225,12 @@ def list_work_orders(
     seen: set = set()
     result: List[Dict[str, Any]] = []
     for record in persistence.read_records("work_orders"):
-        if record["work_order_id"] in seen:
+        work_order_id = record.get("work_order_id")
+        if not work_order_id:
             continue
-        seen.add(record["work_order_id"])
+        if work_order_id in seen:
+            continue
+        seen.add(work_order_id)
         if status and record.get("status") != status:
             continue
         result.append(_mask_work_order(record))
@@ -232,9 +241,12 @@ def count_work_orders_by_status() -> Dict[str, int]:
     counts = {s: 0 for s in VALID_STATUSES}
     seen: set = set()
     for record in persistence.read_records("work_orders"):
-        if record["work_order_id"] in seen:
+        work_order_id = record.get("work_order_id")
+        if not work_order_id:
             continue
-        seen.add(record["work_order_id"])
+        if work_order_id in seen:
+            continue
+        seen.add(work_order_id)
         status_key = record.get("status", "unknown")
         if status_key in counts:
             counts[status_key] += 1

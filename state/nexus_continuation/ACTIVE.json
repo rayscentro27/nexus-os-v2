@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "nexus-productization-20260913211804",
-  "created_at": "2026-09-13T21:18:04.229931+00:00",
-  "phase": "R30A",
-  "objective": "Complete portal.client_beta visual implementation from approved GoClear references without production cutover",
+  "checkpoint_id": "grants-intelligence-20260913233606",
+  "created_at": "2026-09-13T23:36:06.882386+00:00",
+  "phase": "COMPANYWIDE_LOOP_CERTIFICATION",
+  "objective": "Certify one bounded real loop per operational capability and autonomous continuation without unsafe external side effects",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "portal.client_beta",
-  "current_task": "Finalize authenticated visual proof and beta-readiness checkpoint; preserve legacy portal and production routing.",
-  "last_real_action": "Implemented the approved GoClear V2 visual system, repaired duplicate-profile intake resolution, and ran authenticated desktop/tablet/mobile route screenshots against live Supabase data.",
-  "last_real_action_result": "Visual proof passed for Dashboard, Funding Readiness, Goals, and Documents at desktop, tablet, and mobile widths.",
+  "current_workstream": "companywide.loop_certification",
+  "current_task": "Run bounded departmental loops, persist evidence, isolate blockers, and prove autonomous second dispatch.",
+  "last_real_action": "Ran Systems recovery, Creative campaign canary, OANDA Practice OOS/paper loop, supplied YouTube capture, SEO/affiliate bounded intake, fresh public-source research, and two Active Operator dispatches.",
+  "last_real_action_result": "All external mutations remained zero; malformed historical work-order records were safely skipped by recovery enumeration; stale scheduler health was isolated behind approval.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -92,15 +92,30 @@
   ],
   "canonical_state_changed": true,
   "current_failure": null,
-  "root_cause": "The approved visual references are now available and the V2 implementation is live-data verified; remaining work is beta visual review, not an engineering prerequisite.",
-  "next_machine_action": "Preserve beta artifact and await Ray visual review before any production cutover.",
-  "machine_actionable_remaining": [],
+  "root_cause": "Companywide loop certification is partially complete: internal operator continuation is proven, while fresh second-loop evidence and certain external capabilities remain gated or unverified.",
+  "next_machine_action": "Run fresh bounded Customer Service/Clyde/Funding/Grants/Admin runtime canaries and complete machine-safe SEO/affiliate primary-source verification; do not send, publish, trade live, or mutate calendar externally.",
+  "machine_actionable_remaining": [
+    "fresh bounded client-delivery canaries",
+    "primary-source affiliate verification",
+    "current SERP/SEO evidence",
+    "fresh Nova transport proof where governed"
+  ],
   "blocked_work": [],
-  "ray_decision_queue": [],
+  "ray_decision_queue": [
+    {
+      "decision_id": "scheduler-health-recovery-approval",
+      "phase": "COMPANYWIDE_LOOP_CERTIFICATION",
+      "objective": "continuous_loop_health",
+      "question": "Approve the governed scheduler recovery/mutation work order if runtime ownership should repair the stale scheduler artifact.",
+      "why_ray_is_required": "The canonical capability marks scheduler mutation APPROVAL_REQUIRED.",
+      "status": "OPEN",
+      "unrelated_work_can_continue": true
+    }
+  ],
   "external_boundaries": [
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "CLIENT_PORTAL_V2_BETA_REVIEW",
+  "resume_point": "COMPANYWIDE_LOOP_CERTIFICATION",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }

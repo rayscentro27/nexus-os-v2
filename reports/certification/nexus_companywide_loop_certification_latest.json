@@ -1,0 +1,94 @@
+{
+  "schema_version": "nexus.companywide-loop-certification.v1",
+  "generated_at": "2026-09-13T23:44:29Z",
+  "scope": "One bounded loop per operational capability plus autonomous second internal dispatch",
+  "safety": {
+    "external_mutations": 0,
+    "real_money_orders": 0,
+    "live_funded_trading": false,
+    "public_publishing": false,
+    "customer_contact": false,
+    "production_cutover": false,
+    "legacy_portal_frozen": true
+  },
+  "systems": {
+    "hermes_current_version": "0.14.0 local CLI; Oracle Hermes 0.20.6 authoritative gateway",
+    "hermes_latest_version": "UNVERIFIED_THIS_RUN",
+    "hermes_upgrade_recommendation": "HOLD_AND_COMPARE",
+    "opencode_responsive": "UNVERIFIED",
+    "kilo_responsive": "UNVERIFIED",
+    "mimo_responsive": "UNVERIFIED",
+    "provider_health": "PARTIAL_REAL",
+    "mcp_health": "PARTIAL_REAL",
+    "browser_health": "PASS_REAL (prior authenticated V2 proof; read-only runtime checks)",
+    "scheduler_health": "PARTIAL_REAL (stale health artifact isolated; approval work order created)",
+    "continuous_loop_health": "PASS_REAL_FOR_ACTIVE_OPERATOR",
+    "loop_1": "PASS_REAL",
+    "loop_2": "PASS_REAL (second active-operator dispatch started autonomously; duplicate suppressed; zero external mutations)",
+    "receipt": "reports/runtime/nexus_active_operator_receipts/"
+  },
+  "loops": {
+    "SYSTEMS": {"loop_1_completed":"PASS_REAL","real_external_or_runtime_evidence":"PASS_REAL","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"PASS_REAL","codex_required_to_continue":"NO","ray_required_to_continue":"YES_FOR_SCHEDULER_APPROVAL"},
+    "NOVA": {"loop_1_completed":"PARTIAL_REAL","real_external_or_runtime_evidence":"PASS_REAL_RUNTIME_HEALTH; fresh Telegram exchange not run","state_persisted":"PASS_REAL","failure_path_tested":"PARTIAL_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_GOVERNED_TELEGRAM_OUTBOUND"},
+    "CUSTOMER_SERVICE": {"loop_1_completed":"PASS_REAL_PRIOR_CANARY; fresh cycle not rerun","real_external_or_runtime_evidence":"PASS_REAL_SUPABASE/RLS","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "CLYDE": {"loop_1_completed":"PASS_REAL_PRIOR_CANARY; fresh cycle not rerun","real_external_or_runtime_evidence":"PASS_REAL_SUPABASE/RLS","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "EMAIL": {"loop_1_completed":"PARTIAL_REAL","real_external_or_runtime_evidence":"Prior Resend canary delivered; current outbound capability gated","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_SEND"},
+    "CALENDAR": {"loop_1_completed":"PARTIAL_REAL","real_external_or_runtime_evidence":"Google Calendar read capability configured; test mutation not performed","state_persisted":"PASS_REAL","failure_path_tested":"UNVERIFIED","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_EXTERNAL_EVENT"},
+    "CREATIVE": {"loop_1_completed":"PASS_REAL_INTERNAL_PACKAGE","real_external_or_runtime_evidence":"Existing campaign assets and governed package; publication not performed","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_PUBLICATION"},
+    "MERCHANDISE": {"loop_1_completed":"RESEARCH_ONLY","real_external_or_runtime_evidence":"Existing creative package; demand and fulfillment terms not freshly validated","state_persisted":"PASS_REAL","failure_path_tested":"PARTIAL_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_LAUNCH"},
+    "MARKETING": {"loop_1_completed":"PARTIAL_REAL","real_external_or_runtime_evidence":"Governed campaign routing and current capability registry","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_PUBLISHING"},
+    "SOCIAL": {"loop_1_completed":"PARTIAL_REAL","real_external_or_runtime_evidence":"Meta read/approval-gated status; TikTok absent; YouTube read-only","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"YES_FOR_PLATFORM_CONSENT"},
+    "RESEARCH_ALPHA": {"loop_1_completed":"PASS_REAL_RESEARCH_ARTIFACT","real_external_or_runtime_evidence":"Fresh public-source research and Alpha-governed artifacts","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"PASS_REAL_VIA_OPERATOR_DISPATCH","codex_required_to_continue":"NO","ray_required_to_continue":"NO"},
+    "YOUTUBE": {"loop_1_completed":"PASS_REAL","real_external_or_runtime_evidence":"Video transcript captured from supplied URL; score 22; claims treated conservatively","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "SEO": {"loop_1_completed":"SYNTHETIC_TEST_ONLY","real_external_or_runtime_evidence":"Fixture CSV only; no paid API and no current SERP proof","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "AFFILIATES": {"loop_1_completed":"SYNTHETIC_TEST_ONLY","real_external_or_runtime_evidence":"Fixture candidates explicitly marked not current until primary verification","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "TRADING": {"loop_1_completed":"PASS_REAL","real_external_or_runtime_evidence":"OANDA Practice candles; OOS/paper receipt; no order API","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "FUNDING": {"loop_1_completed":"PASS_REAL_PRIOR_CANARY","real_external_or_runtime_evidence":"Canonical readiness/package/gate state","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "GRANTS": {"loop_1_completed":"PASS_REAL_INTERNAL_WORKFLOW","real_external_or_runtime_evidence":"Canonical grant intelligence and no-submission gate","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"UNVERIFIED","codex_required_to_continue":"YES","ray_required_to_continue":"NO"},
+    "ADMIN": {"loop_1_completed":"PASS_REAL_PRIOR_BROWSER_PROOF","real_external_or_runtime_evidence":"Authenticated Admin controls/runtime visibility","state_persisted":"PASS_REAL","failure_path_tested":"PASS_REAL","local_blocker_isolated":"PASS_REAL","next_work_selected":"PASS_REAL","loop_2_started_autonomously":"PASS_REAL_VIA_ACTIVE_OPERATOR","codex_required_to_continue":"NO","ray_required_to_continue":"NO"}
+  },
+  "fresh_external_research": {
+    "status": "PASS_REAL",
+    "window": "2026-08-14 through 2026-09-13",
+    "sources": [
+      {"url":"https://www.azcommerce.com/fast-program/","finding":"Arizona FAST opens Sept 24, 2026; primary source; grant eligibility and dates require profile match"},
+      {"url":"https://www.azcommerce.com/small-business/","finding":"Arizona Commerce Authority current small-business and innovation opportunity context"},
+      {"url":"https://www.consumerfinance.gov/1071-rule/","finding":"CFPB small-business lending rule page; regulatory research item, not legal advice"},
+      {"url":"https://www.federalreserve.gov/supervisionreg/srletters/2026.htm","finding":"Federal Reserve 2026 supervision/regulation update index"},
+      {"url":"https://openai.com/index/introducing-chatgpt-small-business-program/","finding":"Current small-business AI program information"}
+    ],
+    "ranked_opportunities":[
+      {"topic":"Arizona FAST grant readiness content","status":"RESEARCH_MORE","reason":"fresh primary source, date-sensitive, eligibility/profile matching required"},
+      {"topic":"small-business lending rule explainer","status":"RESEARCH_MORE","reason":"regulatory relevance; requires careful primary-source review"},
+      {"topic":"small-business AI workflow education","status":"PROMISING_BUT_UNVALIDATED","reason":"current source signal; no conversion or affiliate validation"}
+    ],
+    "work_orders_created": 1,
+    "next_batch": "verify Arizona FAST eligibility requirements and map to governed GoClear readiness content"
+  },
+  "fresh_browser_recheck": {
+    "status": "PARTIAL_REAL",
+    "client_identity": "synthetic Persona A / Tenant A",
+    "support_route": "AUTH_CONTEXT_REGRESSION_OR_FIXTURE_MISMATCH",
+    "clyde_route": "LIVE_V2_SHELL_PASS; Clyde gateway returned controlled temporary-unavailable state",
+    "safety_behavior": "controlled error; no stack trace or secret leakage",
+    "admin_and_cross_tenant": "existing PASS_REAL browser evidence preserved; not reopened in this bounded run",
+    "next_machine_action": "inspect client-ai-gateway runtime/configuration and rerun authenticated Support/Clyde proof"
+  },
+  "real_estate_idea": {
+    "captured": "PASS_REAL_INTERNAL",
+    "canonical_owner": "Nexus / Opportunity Engine with Research, Systems, Marketing, Compliance review",
+    "regulatory_research_required": true,
+    "next_work": "bounded Arizona/Nevada brokerage, advertising, referral, licensing, and AI disclosure research",
+    "autonomous_continuation": "PASS_REAL_INTERNAL_PROPOSAL; no company build or public launch"
+  },
+  "certification": {
+    "departments_total": 18,
+    "departments_pass_real": 8,
+    "departments_partial": 8,
+    "departments_failed": 0,
+    "departments_human_gated": 2,
+    "global_loop_autonomy": "PARTIAL",
+    "reason": "The Active Operator completed two autonomous internal dispatches, but fresh second-loop proof is not established for every capability and several external actions are correctly approval-gated."
+  },
+  "next_work": "Repair stale scheduler health/runtime ownership where machine-safe; then run the next eligible internal research/operations loop."
+}
