@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "funding-workflow-expansion-20260913200935",
-  "created_at": "2026-09-13T20:09:35.797565+00:00",
+  "checkpoint_id": "goclear-economic-model-20260913201520",
+  "created_at": "2026-09-13T20:15:20.054706+00:00",
   "phase": "R30A \u2192 trading.real_data \u2192 research.company_intelligence \u2192 systems.oracle_browser \u2192 clyde.entity_readiness \u2192 business_plans.customer_goals",
   "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading, Research, Systems, and Clyde readiness",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "goclear.economic_model",
-  "current_task": "Recover evidence-backed GoClear commercial economics and pricing hypotheses without treating unvalidated pricing as fact.",
-  "last_real_action": "Closed funding.workflow_expansion after verifying readiness, offer/document traceability, pre-submission packaging, and approval enforcement.",
-  "last_real_action_result": "Funding package is bounded and approval-gated; no external application or communication was submitted.",
+  "current_workstream": "commerce.billing_accounting",
+  "current_task": "Recover governed Billing and Accounting artifacts and verify invoice lifecycle, receivables/expense visibility, and external invoice gating.",
+  "last_real_action": "Closed goclear.economic_model with observed facts, linked evidence, bounded hypotheses, scenarios, and conservative Alpha challenge.",
+  "last_real_action_result": "Pricing and economics remain explicitly classified; no production prices or external experiments changed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,9 +93,9 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Trading, Research, Systems browser verification, and Clyde readiness are complete. business_plans.customer_goals is the next eligible P2 goal; its goals, milestone, evidence-linkage, and portal-visibility criteria remain to be verified.",
-  "next_machine_action": "Inspect existing economics research and offer artifacts, then run the bounded evidence and hypothesis contract.",
+  "next_machine_action": "Inspect existing billing, payment, invoice, and accounting artifacts and run the bounded reconciliation contract.",
   "machine_actionable_remaining": [
-    "goclear.economic_model: pricing hypotheses, value/economics evidence linkage, and validation status"
+    "commerce.billing_accounting: invoice lifecycle, receivables/expense views, and external invoice gate"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -103,6 +103,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "ECONOMICS_EVIDENCE_RECONCILIATION",
+  "resume_point": "BILLING_ACCOUNTING_RECONCILIATION",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
