@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "finance-capital-management-20260913204028",
-  "created_at": "2026-09-13T20:40:28.339641+00:00",
+  "checkpoint_id": "intent-program-compiler-20260913210349",
+  "created_at": "2026-09-13T21:03:49.241197+00:00",
   "phase": "R30A \u2192 trading.real_data \u2192 research.company_intelligence \u2192 systems.oracle_browser \u2192 clyde.entity_readiness \u2192 business_plans.customer_goals",
   "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading, Research, Systems, and Clyde readiness",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "nexus.intent_program_compiler",
-  "current_task": "Recover the intent-to-program compiler artifacts and verify proposal mapping, dependencies, authority envelope, and canonical goal-system preservation.",
-  "last_real_action": "Closed finance.capital_management with explicit unknown cash handling, advisory reserve/allocation/scenario modeling, evidence linkage, and a hard no-transaction gate.",
-  "last_real_action_result": "Finance closure verified with zero financial transactions; modeled outputs remain clearly distinguished from observed evidence.",
+  "current_workstream": "nexus.productization",
+  "current_task": "Recover productization artifacts and verify governed commercialization options, tenant/cost model, and dependency-gated readiness.",
+  "last_real_action": "Closed nexus.intent_program_compiler with normalization, canonical-goal matching, proposal-only compilation, dependency checks, authority envelopes, conflict handling, and safety cases.",
+  "last_real_action_result": "No goals were mutated by compilation and no external action was executed.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,9 +93,9 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Trading, Research, Systems browser verification, and Clyde readiness are complete. business_plans.customer_goals is the next eligible P2 goal; its goals, milestone, evidence-linkage, and portal-visibility criteria remain to be verified.",
-  "next_machine_action": "Inspect existing intent-to-program compiler artifacts and run the bounded proposal/authority contract.",
+  "next_machine_action": "Inspect productization artifacts and run the bounded tenant, cost, and governance contract.",
   "machine_actionable_remaining": [
-    "nexus.intent_program_compiler: intent-to-parent-goal proposal, dependency/authority envelope, and canonical goal-system preservation"
+    "nexus.productization: productization options, tenant/cost/governance model, and dependency-gated readiness"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -103,6 +103,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "INTENT_PROGRAM_COMPILER_RECONCILIATION",
+  "resume_point": "PRODUCTIZATION_RECONCILIATION",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
