@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -66,7 +67,16 @@ def main() -> int:
     # The scanner's prior result was NO_VALID_SETUP. Select exactly one next
     # candidate using a stable ordering and evaluate it, preventing unbounded
     # search while proving progression.
-    instrument, timeframe, rows = candidates[0]
+    requested = os.environ.get("NEXUS_TRADING_CANDIDATE", "").strip()
+    if requested:
+        selected = next((item for item in candidates if f"{item[0]}:{item[1]}" == requested), None)
+        if selected is None:
+            raise SystemExit(f"Requested bounded candidate unavailable: {requested}")
+        instrument, timeframe, rows = selected
+        selection_reason = "explicit bounded candidate selected by controlled research run"
+    else:
+        instrument, timeframe, rows = candidates[0]
+        selection_reason = "stable availability/instrument/timeframe ordering"
     sample = rows[:IN_SAMPLE_BARS]
     oos = rows[IN_SAMPLE_BARS:IN_SAMPLE_BARS + OOS_BARS]
     in_sample = evaluate_segment(sample, "IN_SAMPLE")
@@ -84,7 +94,7 @@ def main() -> int:
         "data_window": {"bars": len(rows), "oldest": rows[0].get("time"), "newest": rows[-1].get("time"), "cache": str(CACHE)},
         "data_read_result": "PASS_REAL_COMPLETE_CANDLES",
         "research_method": "nexus_range_observer_v1_bounded_sma10_sma30",
-        "candidate_setup": {"prior_result": "NO_VALID_SETUP", "next_candidate_selected": f"{instrument}:{timeframe}", "selection": "stable availability/instrument/timeframe ordering", "candidates_available": len(candidates), "bounded_candidate_limit": 1},
+        "candidate_setup": {"prior_result": "NO_VALID_SETUP", "next_candidate_selected": f"{instrument}:{timeframe}", "selection": selection_reason, "candidates_available": len(candidates), "bounded_candidate_limit": 1},
         "in_sample_result": in_sample,
         "oos_method": {"split": "84/36 chronological", "no_lookahead": True, "source_rows": len(rows)},
         "oos_result": oos_result,

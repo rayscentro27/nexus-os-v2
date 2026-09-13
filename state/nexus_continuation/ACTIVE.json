@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "grants-intelligence-20260913233606",
-  "created_at": "2026-09-13T23:36:06.882386+00:00",
+  "checkpoint_id": "capability-gap-closure-20260913",
+  "created_at": "2026-09-13T23:50:31.083938+00:00",
   "phase": "COMPANYWIDE_LOOP_CERTIFICATION",
   "objective": "Certify one bounded real loop per operational capability and autonomous continuation without unsafe external side effects",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "companywide.loop_certification",
-  "current_task": "Run bounded departmental loops, persist evidence, isolate blockers, and prove autonomous second dispatch.",
-  "last_real_action": "Ran Systems recovery, Creative campaign canary, OANDA Practice OOS/paper loop, supplied YouTube capture, SEO/affiliate bounded intake, fresh public-source research, and two Active Operator dispatches.",
-  "last_real_action_result": "All external mutations remained zero; malformed historical work-order records were safely skipped by recovery enumeration; stale scheduler health was isolated behind approval.",
+  "current_workstream": "capability_gap_closure",
+  "current_task": "Close safe TikTok/Webull/provider and second-loop gaps while preserving approval and live-trading boundaries.",
+  "last_real_action": "Provisioned synthetic Admin/Persona A/B identities, verified the deployed client gateway directly, and ran a second OANDA Practice GBP_USD:H1 bounded paper-research loop.",
+  "last_real_action_result": "Synthetic auth provisioning passed; gateway returned POLICY_ALLOW with NEXT_STEP and a tenant-scoped answer; OANDA second loop produced NO_VALID_SETUP and zero orders.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,29 +93,24 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Companywide loop certification is partially complete: internal operator continuation is proven, while fresh second-loop evidence and certain external capabilities remain gated or unverified.",
-  "next_machine_action": "Run fresh bounded Customer Service/Clyde/Funding/Grants/Admin runtime canaries and complete machine-safe SEO/affiliate primary-source verification; do not send, publish, trade live, or mutate calendar externally.",
+  "next_machine_action": "Diagnose the Playwright login hang and run bounded fresh Customer Service/Clyde browser proof; then preserve TikTok/Webull external setup gates and update the capability matrix.",
   "machine_actionable_remaining": [
-    "fresh bounded client-delivery canaries",
-    "primary-source affiliate verification",
-    "current SERP/SEO evidence",
-    "fresh Nova transport proof where governed"
+    "fresh authenticated client/support/Clyde browser proof",
+    "fresh bounded funding/grants/customer delivery loop receipts",
+    "calendar test-event mutation proof if canonical governed test path is available",
+    "TikTok/Webull integration preparation only; external setup remains gated",
+    "real SEO and affiliate evidence artifacts"
   ],
-  "blocked_work": [],
+  "blocked_work": ["scheduler mutation approval", "TikTok developer authorization/review", "Webull sandbox account/application and secret issuance"],
   "ray_decision_queue": [
-    {
-      "decision_id": "scheduler-health-recovery-approval",
-      "phase": "COMPANYWIDE_LOOP_CERTIFICATION",
-      "objective": "continuous_loop_health",
-      "question": "Approve the governed scheduler recovery/mutation work order if runtime ownership should repair the stale scheduler artifact.",
-      "why_ray_is_required": "The canonical capability marks scheduler mutation APPROVAL_REQUIRED.",
-      "status": "OPEN",
-      "unrelated_work_can_continue": true
-    }
+    {"decision_id":"scheduler-health-recovery-approval","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"continuous_loop_health","question":"Approve the governed scheduler recovery/mutation work order if runtime ownership should repair the stale scheduler artifact.","why_ray_is_required":"Scheduler mutation is APPROVAL_REQUIRED.","status":"OPEN","unrelated_work_can_continue":true},
+    {"decision_id":"tiktok-developer-authorization","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"social.tiktok","question":"Configure and authorize a TikTok developer app for controlled private testing, then complete required review before public posting.","why_ray_is_required":"External account/app ownership, OAuth authorization, and platform review are outside Nexus control.","status":"OPEN","unrelated_work_can_continue":true},
+    {"decision_id":"webull-sandbox-provisioning","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"trading.webull_sandbox","question":"Create a Webull sandbox OpenAPI application and place credentials in the canonical secret store; do not provide live credentials.","why_ray_is_required":"External sandbox account/application ownership and secret issuance are outside Nexus control.","status":"OPEN","unrelated_work_can_continue":true}
   ],
   "external_boundaries": [
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "COMPANYWIDE_LOOP_CERTIFICATION",
+  "resume_point": "CAPABILITY_GAP_CLOSURE",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
