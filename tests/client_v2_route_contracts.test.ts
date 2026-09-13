@@ -16,6 +16,7 @@ const routePaths = [
   '/client-v2/review',
   '/client-v2/support',
   '/client-v2/account',
+  '/client-v2/goals',
 ] as const
 
 const liveData = {

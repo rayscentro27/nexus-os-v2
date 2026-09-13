@@ -64,4 +64,5 @@ export const ROUTE_LABELS: Record<string, string> = {
   '/client-v2/review': 'Review',
   '/client-v2/support': 'Support',
   '/client-v2/account': 'Account',
+  '/client-v2/goals': 'Goals',
 }

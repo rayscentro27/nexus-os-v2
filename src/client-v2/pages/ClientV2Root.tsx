@@ -18,6 +18,7 @@ import { BillingV2 } from './BillingV2'
 import { PlaceholderV2 } from './PlaceholderV2'
 import { RouteContractV2 } from './RouteContractV2'
 import { SupportV2 } from './SupportV2'
+import { CustomerGoalsV2 } from './CustomerGoalsV2'
 import type { V2ViewData } from '../types/v2-models'
 import { ROUTE_LABELS, navigateV2, mapRouteToV2 } from '../utils/navigate'
 import { V2_ROUTE_CONTRACTS } from '../routeContracts'
@@ -32,10 +33,12 @@ const IMPLEMENTED_V2_ROUTES = new Set([
   '/client-v2/funding-access',
   '/client-v2/resources',
   '/client-v2/billing',
+  '/client-v2/goals',
 ])
 
 export function renderV2Page(path: string, data: V2ViewData) {
   if (path === '/client-v2/support') return <SupportV2 />
+  if (path === '/client-v2/goals') return <CustomerGoalsV2 data={data} />
   if (V2_ROUTE_CONTRACTS[path] && !IMPLEMENTED_V2_ROUTES.has(path)) {
     return <RouteContractV2 path={path} data={data} />
   }
@@ -105,7 +108,10 @@ export function ClientV2Gate() {
     }
     let cancelled = false
     ;(async () => {
-      for (let attempt = 0; attempt < 3 && !cancelled; attempt += 1) {
+      // Auth navigation can complete before the browser storage/session event
+      // is visible to the REST client. Keep the authorization decision strict,
+      // but allow a bounded handoff window before redirecting.
+      for (let attempt = 0; attempt < 8 && !cancelled; attempt += 1) {
         try {
           const admin = await isUserAdmin(user.id)
           if (cancelled) return
@@ -117,7 +123,7 @@ export function ClientV2Gate() {
           const ctx = await resolveClientContextForUser(user.id)
           if (ctx) { setClientOk(true); return }
         } catch {}
-        await new Promise(resolve => window.setTimeout(resolve, 250))
+        await new Promise(resolve => window.setTimeout(resolve, 400))
       }
       if (!cancelled) setClientOk(false)
     })()

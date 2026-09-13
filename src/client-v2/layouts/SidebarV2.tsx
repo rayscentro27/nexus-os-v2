@@ -15,6 +15,7 @@ import type { V2ProfileView, V2RailStage } from '../types/v2-models'
 
 const WORKSPACE_NAV = [
   { id: 'dashboard', label: 'Dashboard', path: '/client-v2/dashboard', icon: LayoutDashboard },
+  { id: 'goals', label: 'Goals', path: '/client-v2/goals', icon: Target },
   { id: 'documents', label: 'Documents', path: '/client-v2/documents', icon: FileText },
   { id: 'resources', label: 'Resources', path: '/client-v2/resources', icon: BookOpen },
 ]
