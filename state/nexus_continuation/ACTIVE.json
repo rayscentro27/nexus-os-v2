@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "opportunity-engine-20260913202550",
-  "created_at": "2026-09-13T20:25:50.527786+00:00",
+  "checkpoint_id": "opportunity-balance-20260913202822",
+  "created_at": "2026-09-13T20:28:22.219930+00:00",
   "phase": "R30A \u2192 trading.real_data \u2192 research.company_intelligence \u2192 systems.oracle_browser \u2192 clyde.entity_readiness \u2192 business_plans.customer_goals",
   "objective": "Continue the canonical machine-actionable goal portfolio after closing Trading, Research, Systems, and Clyde readiness",
   "current_status": "IN_PROGRESS",
   "current_workstream": "grants.intelligence",
   "current_task": "Recover grant intelligence source monitoring, eligibility matching, missing-information detection, and submission gating.",
-  "last_real_action": "Closed opportunity.engine after verifying evidence-weighted scoring, economics separation, Alpha challenge, bounded experiment routing, department handoff, and rejection quarantine.",
-  "last_real_action_result": "Hype, stale, contradicted, weak-economics, and unsupported opportunities remain blocked from promotion; no external experiment ran.",
+  "last_real_action": "Refined the completed Opportunity Engine with diagnosis-before-rejection, separate improvability scoring, bounded rework, salvage outcomes, and governed quarantine reactivation.",
+  "last_real_action_result": "Balanced cases preserve promising opportunities for research, rework, experiment, or hold; only fundamentally contradicted/risky cases reject.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,7 +93,7 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Trading, Research, Systems browser verification, and Clyde readiness are complete. business_plans.customer_goals is the next eligible P2 goal; its goals, milestone, evidence-linkage, and portal-visibility criteria remain to be verified.",
-  "next_machine_action": "Inspect existing grant intelligence artifacts and run the bounded source, eligibility, and no-submission contract.",
+  "next_machine_action": "Continue the already selected grants.intelligence goal using the canonical source, eligibility, and no-submission contract.",
   "machine_actionable_remaining": [
     "grants.intelligence: source monitoring, profile matching, missing information, and no autonomous submission"
   ],
