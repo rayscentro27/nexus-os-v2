@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "portfolio-trading-real-data-selected",
-  "created_at": "2026-09-13T12:25:00-07:00",
-  "phase": "R30A → trading.real_data",
-  "objective": "Continue the highest-priority machine-actionable company goal after the R30A engineering gate",
+  "checkpoint_id": "trading-real-data-complete-research-company-intelligence-selected",
+  "created_at": "2026-09-13T12:40:00-07:00",
+  "phase": "R30A → trading.real_data → research.company_intelligence",
+  "objective": "Complete bounded real-data trading evidence, then continue the next eligible P1 research goal",
   "current_status": "IN_PROGRESS",
-  "current_workstream": "trading.real_data",
-  "current_task": "Run the next bounded OANDA practice research/backtest/OOS/paper evidence step.",
-  "last_real_action": "Selected the canonical P1 trading.real_data goal and ran its existing OANDA practice-only research scanner, synthetic paper backtest, and demo-readiness reconciliation.",
-  "last_real_action_result": "OANDA practice account/pricing reads PASS_REAL (HTTP 200); 9 bounded candle reads PASS_REAL; scanner result NO_VALID_SETUP with no orders. Synthetic paper backtest PASS_REAL and demo readiness PASS_REAL with live trading disabled.",
+  "current_workstream": "research.company_intelligence",
+  "current_task": "Complete the existing company-intelligence source-refresh path, then record Alpha review and department handoff.",
+  "last_real_action": "Ran the existing bounded company-intelligence source activation path after closing trading.real_data.",
+  "last_real_action_result": "Source activation completed: 8 public sources processed, 24 related candidates recorded, 30 YouTube discoveries, 4 forum reads, 25 bounded agenda items, and one-time/continuous source lifecycle canaries passed. No publication or external commitment occurred.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -36,6 +36,8 @@
     "scripts/trading/forex_research_scanner.py",
     "scripts/trading/run_vibe_paper_backtest_dry_run.py",
     "scripts/trading/run_trading_demo_readiness_cycle.py"
+    ,"scripts/trading/run_real_data_oos_paper.py",
+    "scripts/research/run_r19_14_source_activation.py"
   ],
   "commits_created": ["321256b", "6ca94b2"],
   "tests_run": [
@@ -67,7 +69,10 @@
     "Portfolio reselection: trading.real_data selected by P1/no-dependency priority",
     "OANDA practice research scanner: PASS_REAL data lane; NO_VALID_SETUP; no orders",
     "Synthetic paper backtest: PASS_REAL",
-    "Trading demo readiness reconciliation: PASS_REAL; live orders disabled"
+    "Trading demo readiness reconciliation: PASS_REAL; live orders disabled",
+    "Real-data OOS/paper evaluator: PASS_REAL; 84/36 split, no broker order API call",
+    "Failed-path progression: PASS_REAL; prior NO_VALID_SETUP advanced to EUR_USD:M5 and was evaluated",
+    "Research company-intelligence source activation: PASS_REAL; fresh provenance and bounded agenda recorded"
   ],
   "deployments": [
     "Supabase migration 20260911210000_r291_client_ai_controls applied",
@@ -75,12 +80,11 @@
     "manage-client-ai-controls deployed"
   ],
   "canonical_state_changed": true,
-  "current_failure": "No approved trading setup was present in the bounded scan; this is a valid research result, not an execution failure.",
-  "root_cause": "R30A engineering reached its design gate. Portfolio governor selected trading.real_data as the highest-priority active goal with no dependencies; practice data is healthy but the strategy gate correctly rejected all current setups.",
-  "next_machine_action": "Continue the existing trading.real_data recovery ladder with a bounded OOS/paper evidence step or research the next candidate; do not place funded/live trades.",
+  "current_failure": null,
+  "root_cause": "The prior trading candidate was rejected safely; the research goal now has fresh source artifacts and provenance, with Alpha review and department handoff still to be reconciled.",
+  "next_machine_action": "Reconcile the new research receipt against the company-intelligence contract, then record Alpha review and department handoff using existing governed artifacts.",
   "machine_actionable_remaining": [
-    "Bounded OOS/paper evidence for trading.real_data",
-    "Research next trading candidate after rejected setup"
+    "research.company_intelligence: Alpha review and department handoff after fresh source activation"
   ],
   "blocked_work": [],
   "ray_decision_queue": [],
@@ -88,6 +92,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "TRADING_REAL_DATA_OOS_PAPER_EVIDENCE",
+  "resume_point": "RESEARCH_COMPANY_INTELLIGENCE_REFRESH",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }
