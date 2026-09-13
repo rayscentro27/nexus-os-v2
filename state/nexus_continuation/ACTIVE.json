@@ -70,7 +70,22 @@
     "Governed outbound communication canary"
   ],
   "blocked_work": [],
-  "ray_decision_queue": [],
+  "ray_decision_queue": [
+    {
+      "decision_id": "r29-governed-customer-template-send",
+      "created_at": "2026-09-13T12:45:00-07:00",
+      "phase": "R29.1",
+      "objective": "Complete the governed customer-template communication canary",
+      "question": "Approve one controlled send to the existing synthetic/non-production recipient?",
+      "why_ray_is_required": "This creates an external customer-communication side effect and the current run explicitly withholds send authorization.",
+      "options": ["Approve one controlled synthetic-recipient send", "Keep send deferred"],
+      "recommended_option": "Keep send deferred until explicitly approved",
+      "impact_if_delayed": "R29 remains PARTIAL_REAL; no production customer is contacted.",
+      "work_blocked": "Only the governed communication canary",
+      "unrelated_work_can_continue": true,
+      "status": "PENDING"
+    }
+  ],
   "external_boundaries": [
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
