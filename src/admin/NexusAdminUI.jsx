@@ -30,6 +30,7 @@ import { getCapabilityBadge, handleHermesMessage } from '../lib/hermesBrainPipel
 import AccountSecurityPanel from '../components/AccountSecurityPanel'
 import ErrorBoundary from '../components/ErrorBoundary'
 import CreativeReviewStudio from '../components/CreativeReviewStudio'
+import CreativeVariationActions from '../components/CreativeVariationActions'
 import HermesAlphaWorkspace from '../components/HermesAlphaWorkspace'
 import NovaWorkspace from '../components/NovaWorkspace'
 import NexusOperationsPanel from '../components/NexusOperationsPanel'
@@ -37,6 +38,7 @@ import { HermesMissionControlV2 } from '../components/command-center/HermesMissi
 import TesterReadinessPanel from '../components/TesterReadinessPanel'
 import OutsourcedFulfillmentCenter from '../components/OutsourcedFulfillmentCenter'
 import TesterInvitationPanel from '../components/TesterInvitationPanel'
+import LiveCompanyIntelligence from './LiveCompanyIntelligence'
 import {
   Activity, BadgeDollarSign, Bot, Building2, CalendarDays, CheckCircle2, ChevronDown,
   ChevronRight, CircleHelp, CircleX, ClipboardList, CopyPlus, Cross, Database, DatabaseZap, FileCheck2, FileText,
@@ -71,6 +73,7 @@ const kindThumbIcon = {
 const navGroups = [
   { label: 'Executive', items: [
     { id: 'command', label: 'Command Center', icon: 'LayoutDashboard', status: 'Internal', statusTone: 'blue' },
+    { id: 'live-intelligence', label: 'Live Company Intelligence', icon: 'Activity', status: 'Canonical', statusTone: 'green' },
     { id: 'mission-control-v2', label: 'Mission Control V2', icon: 'Orbit', status: 'Phase 10', statusTone: 'amber' },
     { id: 'operations', label: 'Nexus Operations', icon: 'Orbit', status: 'Report-backed', statusTone: 'amber' },
     { id: 'health', label: 'System Health', icon: 'Activity', status: 'Probe required', statusTone: 'amber' },
@@ -108,6 +111,7 @@ const navGroups = [
 const modeLabels = {
   command: 'Executive Overview',
   'mission-control-v2': 'Mission Control V2 — Hermes modernization visibility',
+  'live-intelligence': 'Live Company Intelligence',
   operations: 'Nexus Internal Operations',
   subscription: 'Subscription Command Center',
   source: 'Source Intake & Review',
@@ -1483,10 +1487,11 @@ export function LegacyNexusAdminUI({ email, initialPage = 'command' }) {
 
   const page = {
     command: <ErrorBoundary panelName="Command Center"><RestoredCommandCenter onNavigate={navigate} onAskHermes={askHermes} /></ErrorBoundary>,
+    'live-intelligence': <ErrorBoundary panelName="Live Company Intelligence"><LiveCompanyIntelligence /></ErrorBoundary>,
     'mission-control-v2': <ErrorBoundary panelName="Mission Control V2"><HermesMissionControlV2 /></ErrorBoundary>,
     operations: <ErrorBoundary panelName="Nexus Operations"><NexusOperationsPanel onNavigate={navigate} /></ErrorBoundary>,
     subscription: <ErrorBoundary panelName="Subscription Command Center"><SubscriptionCommandCenterPage /></ErrorBoundary>,
-    creative: <ErrorBoundary panelName="Creative Studio"><CreativeReviewStudio /></ErrorBoundary>,
+    creative: <ErrorBoundary panelName="Creative Studio"><CreativeReviewStudio /><CreativeVariationActions campaign={{ campaign_id: 'goclear-restaurant-expansion-r20d', campaign_strategy: { campaign_id: 'goclear-restaurant-expansion-r20d', industry: 'restaurant / catering', business_stage: 'operating catering business', desired_outcome: 'open first permanent restaurant storefront', offer: '$97 funding-readiness review', claim_boundaries: ['no guaranteed funding', 'no guaranteed approval'], funnel_route: '/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B' } }} /></ErrorBoundary>,
     design: <ErrorBoundary panelName="Design Library"><Workspace id="design" title="Design Library" sub="Visual / Design Room" kind="design" type="design" /></ErrorBoundary>,
     trading: <ErrorBoundary panelName="Trading Lab"><Workspace id="trading" title="Trading Lab" sub="Paper Trading Research Room" kind="trading" type="trading" /></ErrorBoundary>,
     seo: <ErrorBoundary panelName="SEO / Marketing"><Workspace id="seo" title="SEO / Marketing" sub="Growth Room" kind="seo" type="seo" /></ErrorBoundary>,
