@@ -1,5 +1,5 @@
 from scripts.creative.design_engine import (
-    classify_surface, create_design_project, implementation_contract, transition,
+    classify_surface, create_design_project, implementation_contract, route_asset, transition,
 )
 
 
@@ -27,3 +27,9 @@ def test_state_machine_requires_approval_then_freeze():
         project = transition(project, state)
     assert project["design_frozen"] is True
     assert implementation_contract(project)["instruction"] == "IMPLEMENT THIS DESIGN."
+
+
+def test_asset_router_preserves_approval_boundary():
+    asset = route_asset({"design_project_id": "design-1"}, "logo", file_reference="public/brand/app-icon.svg")
+    assert asset["source"] == "existing_brand_library"
+    assert asset["approval_status"] == "PENDING"

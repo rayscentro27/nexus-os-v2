@@ -144,6 +144,15 @@ def route_department_request(work_order: Mapping[str, Any]) -> dict[str, Any]:
                                 source_work_order_id=work_order.get("work_order_id"))
 
 
+def route_asset(project: Mapping[str, Any], asset_type: str, *, source: str = "existing_brand_library", file_reference: str | None = None) -> dict[str, Any]:
+    """Bind an asset source to a project without generating or approving art."""
+    asset_id = "asset-" + sha256(f"{project.get('design_project_id')}|{asset_type}|{source}|{file_reference or ''}".encode()).hexdigest()[:16]
+    return {
+        "asset_id": asset_id, "design_project_id": project.get("design_project_id"), "asset_type": asset_type,
+        "source": source, "version": "1", "approval_status": "PENDING", "file_reference": file_reference,
+    }
+
+
 def adapter_contract(worker: str) -> dict[str, Any]:
     operations = {
         "penpot": ["create_design_project", "create_page", "create_frame", "create_component", "apply_tokens", "insert_asset", "create_responsive_variant", "export_design_metadata", "fetch_design_artifact"],
