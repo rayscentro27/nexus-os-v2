@@ -1,0 +1,39 @@
+{
+  "schema_version": "nexus.creative-design-governance.v1",
+  "codex_can_create_visual_design": false,
+  "codex_can_implement_approved_design": true,
+  "major_ui_change_requires_creative_design": true,
+  "major_ui_change_requires_ray_approval": true,
+  "approved_design_is_source_of_truth": true,
+  "codex_bounded_corrections": [
+    "functional_bug",
+    "responsive_bug",
+    "accessibility_bug",
+    "faithful_implementation_correction"
+  ],
+  "codex_prohibited_without_explicit_authorization": [
+    "invent_layout",
+    "change_branding",
+    "choose_arbitrary_backgrounds",
+    "replace_approved_graphics",
+    "introduce_new_visual_hierarchy",
+    "redesign_screen_during_implementation"
+  ],
+  "required_handoff_fields": [
+    "design_tokens",
+    "spacing",
+    "typography",
+    "colors",
+    "components",
+    "icon_specs",
+    "layout_dimensions",
+    "responsive_rules",
+    "asset_references",
+    "interaction_rules",
+    "do_not_change_rules",
+    "approved_artifact_url",
+    "ray_approval_receipt"
+  ],
+  "admin_command_center_artifact_status": "creative_artifact_required",
+  "admin_command_center_implementation_status": "not_started"
+}
