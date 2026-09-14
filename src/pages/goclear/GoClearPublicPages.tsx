@@ -698,7 +698,9 @@ export function GoClearLoginPage() {
       }
       setBusy(false);
     } else {
-      window.location.assign("/client");
+      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+      const safeReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : "/client";
+      window.location.assign(safeReturnTo);
     }
   }
 

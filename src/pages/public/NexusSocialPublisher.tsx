@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { useSession } from '../../components/auth';
+import { supabase } from '../../lib/supabaseClient';
 import './nexus-social.css';
 
 const appName = 'Nexus Social Publisher';
@@ -24,23 +26,40 @@ function Shell({ children, title }: { children: React.ReactNode; title: string }
 }
 
 function Home() {
+  const { user, loading: authLoading } = useSession();
+  const [membership, setMembership] = useState<'checking' | 'present' | 'missing' | 'error'>('checking');
   const [connection, setConnection] = useState<'idle' | 'starting' | 'unavailable'>('idle');
+  useEffect(() => {
+    let active = true;
+    if (authLoading) { setMembership('checking'); return () => { active = false; }; }
+    if (!user || !supabase) { setMembership('missing'); return () => { active = false; }; }
+    setMembership('checking');
+    supabase.from('tenant_memberships').select('tenant_id,role').eq('user_id', user.id).limit(1).then(({ data, error }) => {
+      if (!active) return;
+      setMembership(error ? 'error' : data?.length ? 'present' : 'missing');
+    });
+    return () => { active = false; };
+  }, [authLoading, user]);
   async function connectTikTok() {
     setConnection('starting');
     try {
-      const session = await import('../../lib/supabaseClient').then(({ supabase }) => supabase?.auth.getSession());
+      if (authLoading) { setConnection('idle'); return; }
+      if (!user || !supabase) { window.location.assign('/goclear/login?returnTo=%2Fnexus-social'); return; }
+      if (membership !== 'present') { setConnection('unavailable'); return; }
+      const session = await supabase.auth.getSession();
       const token = session?.data.session?.access_token;
-      if (!token) { setConnection('unavailable'); return; }
+      if (!token) { window.location.assign('/goclear/login?returnTo=%2Fnexus-social'); return; }
       const response = await fetch('/api/tiktok/auth/start', { headers: { Authorization: `Bearer ${token}` } });
       const data = await response.json();
       if (!response.ok || !data.authorization_url) throw new Error('TikTok authorization is unavailable');
       window.location.assign(data.authorization_url);
     } catch { setConnection('unavailable'); }
   }
+  const status = authLoading ? 'Checking your Nexus session…' : user && membership === 'checking' ? 'Checking your Nexus workspace access…' : user && membership === 'present' ? `Signed in${user.email ? ` as ${user.email}` : ''}` : user ? 'Your Nexus account needs an authorized workspace membership before connecting TikTok.' : 'Sign in to Nexus to connect an authorized TikTok account.';
   return <Shell title="Social publishing with permission at the center.">
     <p className="ns-lede">Nexus Social Publisher helps businesses create, review, manage, and publish approved social content to accounts they have explicitly authorized.</p>
-    <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a><button className="ns-button" type="button" onClick={connectTikTok} disabled={connection === 'starting'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button><a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
-    {connection === 'unavailable' && <p className="ns-note" role="status">Sign in to Nexus first to connect an authorized TikTok account. No token or account data was stored.</p>}
+    <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a>{!authLoading && !user ? <a className="ns-button" href="/goclear/login?returnTo=%2Fnexus-social">Sign in to Nexus</a> : <button className="ns-button" type="button" onClick={connectTikTok} disabled={authLoading || membership === 'checking' || connection === 'starting' || membership !== 'present'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button>}<a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
+    <p className="ns-note" role="status">{status} {connection === 'unavailable' && membership !== 'present' ? 'No token or account data was stored.' : ''}</p>
     <section id="how-it-works" className="ns-grid" aria-label="How Nexus Social Publisher works">
       <article><CheckCircle2 aria-hidden="true" /><h2>Create and review</h2><p>Teams prepare content and review it before it moves toward publication.</p></article>
       <article><LockKeyhole aria-hidden="true" /><h2>Connect authorized accounts</h2><p>Users connect only accounts they control or are authorized to manage. Nexus does not publish to unauthorized accounts.</p></article>
