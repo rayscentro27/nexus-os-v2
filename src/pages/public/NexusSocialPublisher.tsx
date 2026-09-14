@@ -29,6 +29,7 @@ function Home() {
   const { user, loading: authLoading } = useSession();
   const [membership, setMembership] = useState<'checking' | 'present' | 'missing' | 'error'>('checking');
   const [connection, setConnection] = useState<'idle' | 'starting' | 'unavailable'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
   useEffect(() => {
     let active = true;
     if (authLoading) { setMembership('checking'); return () => { active = false; }; }
@@ -42,24 +43,29 @@ function Home() {
   }, [authLoading, user]);
   async function connectTikTok() {
     setConnection('starting');
+    setErrorMessage('');
     try {
       if (authLoading) { setConnection('idle'); return; }
       if (!user || !supabase) { window.location.assign('/goclear/login?returnTo=%2Fnexus-social'); return; }
-      if (membership !== 'present') { setConnection('unavailable'); return; }
+      if (membership !== 'present') { setConnection('unavailable'); setErrorMessage('An authorized Nexus workspace membership is required before connecting TikTok.'); return; }
       const session = await supabase.auth.getSession();
       const token = session?.data.session?.access_token;
       if (!token) { window.location.assign('/goclear/login?returnTo=%2Fnexus-social'); return; }
-      const response = await fetch('/api/tiktok/auth/start', { headers: { Authorization: `Bearer ${token}` } });
-      const data = await response.json();
-      if (!response.ok || !data.authorization_url) throw new Error('TikTok authorization is unavailable');
+      const response = await fetch('/.netlify/functions/tiktok-auth-start', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.authorization_url) {
+        if (data.error === 'authenticated_nexus_session_required') { window.location.assign('/goclear/login?returnTo=%2Fnexus-social'); return; }
+        if (data.error === 'tenant_membership_required' || data.error === 'tenant_binding_required') throw new Error('Your Nexus account needs an authorized workspace membership before connecting TikTok.');
+        throw new Error(data.error?.startsWith('server_configuration_missing') ? 'TikTok integration is temporarily unavailable. Please try again later.' : 'Unable to start TikTok authorization.');
+      }
       window.location.assign(data.authorization_url);
-    } catch { setConnection('unavailable'); }
+    } catch (error) { setConnection('unavailable'); setErrorMessage(error instanceof Error ? error.message : 'Unable to start TikTok authorization.'); }
   }
   const status = authLoading ? 'Checking your Nexus session…' : user && membership === 'checking' ? 'Checking your Nexus workspace access…' : user && membership === 'present' ? `Signed in${user.email ? ` as ${user.email}` : ''}` : user ? 'Your Nexus account needs an authorized workspace membership before connecting TikTok.' : 'Sign in to Nexus to connect an authorized TikTok account.';
   return <Shell title="Social publishing with permission at the center.">
     <p className="ns-lede">Nexus Social Publisher helps businesses create, review, manage, and publish approved social content to accounts they have explicitly authorized.</p>
     <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a>{!authLoading && !user ? <a className="ns-button" href="/goclear/login?returnTo=%2Fnexus-social">Sign in to Nexus</a> : <button className="ns-button" type="button" onClick={connectTikTok} disabled={authLoading || membership === 'checking' || connection === 'starting' || membership !== 'present'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button>}<a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
-    <p className="ns-note" role="status">{status} {connection === 'unavailable' && membership !== 'present' ? 'No token or account data was stored.' : ''}</p>
+    <p className="ns-note" role="status">{errorMessage || status} {connection === 'unavailable' && !errorMessage ? 'No token or account data was stored.' : ''}</p>
     <section id="how-it-works" className="ns-grid" aria-label="How Nexus Social Publisher works">
       <article><CheckCircle2 aria-hidden="true" /><h2>Create and review</h2><p>Teams prepare content and review it before it moves toward publication.</p></article>
       <article><LockKeyhole aria-hidden="true" /><h2>Connect authorized accounts</h2><p>Users connect only accounts they control or are authorized to manage. Nexus does not publish to unauthorized accounts.</p></article>
