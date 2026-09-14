@@ -17,9 +17,16 @@ create table if not exists public.nexus_tiktok_connections (
 
 alter table public.nexus_tiktok_connections enable row level security;
 create policy "tiktok connections owner read" on public.nexus_tiktok_connections
-  for select to authenticated using (user_id = auth.uid());
+  for select to authenticated using (user_id = auth.uid() and exists (select 1 from public.tenant_memberships tm where tm.user_id = auth.uid() and tm.tenant_id = nexus_tiktok_connections.tenant_id));
 create policy "tiktok connections owner cannot write tokens" on public.nexus_tiktok_connections
   for all to authenticated using (false) with check (false);
+
+-- Authenticated clients may inspect status metadata only. Encrypted token
+-- columns are server-only and are never selectable through the client role.
+revoke all on public.nexus_tiktok_connections from anon, authenticated;
+grant select (id, user_id, tenant_id, open_id, access_token_expires_at,
+  refresh_token_expires_at, scopes, status, created_at, updated_at, revoked_at)
+  on public.nexus_tiktok_connections to authenticated;
 
 create table if not exists public.nexus_tiktok_post_receipts (
   id uuid primary key default gen_random_uuid(),
@@ -35,6 +42,9 @@ create table if not exists public.nexus_tiktok_post_receipts (
 
 alter table public.nexus_tiktok_post_receipts enable row level security;
 create policy "tiktok receipts owner read" on public.nexus_tiktok_post_receipts
-  for select to authenticated using (user_id = auth.uid());
+  for select to authenticated using (user_id = auth.uid() and exists (select 1 from public.tenant_memberships tm where tm.user_id = auth.uid() and tm.tenant_id = nexus_tiktok_post_receipts.tenant_id));
 create policy "tiktok receipts owner cannot write" on public.nexus_tiktok_post_receipts
   for all to authenticated using (false) with check (false);
+
+revoke all on public.nexus_tiktok_post_receipts from anon, authenticated;
+grant select on public.nexus_tiktok_post_receipts to authenticated;

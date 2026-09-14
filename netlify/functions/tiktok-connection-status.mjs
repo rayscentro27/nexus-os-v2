@@ -1,10 +1,10 @@
-import { config, db, json, userFromBearer } from './_tiktok.mjs'
+import { config, dbAsUser, json, userFromBearer } from './_tiktok.mjs'
 
 export async function handler(event) {
   try {
-    const c = config()
+    const c = config({ persistence: false })
     const u = await userFromBearer(event, c)
-    const rows = await db(c, `nexus_tiktok_connections?user_id=eq.${encodeURIComponent(u.id)}&tenant_id=eq.${encodeURIComponent(u.tenant)}&select=id,open_id,scopes,status,access_token_expires_at,refresh_token_expires_at,created_at,updated_at,revoked_at&order=updated_at.desc&limit=1`)
+    const rows = await dbAsUser(c, u, `nexus_tiktok_connections?user_id=eq.${encodeURIComponent(u.id)}&tenant_id=eq.${encodeURIComponent(u.tenant)}&select=id,open_id,scopes,status,access_token_expires_at,refresh_token_expires_at,created_at,updated_at,revoked_at&order=updated_at.desc&limit=1`)
     const connection = rows?.[0] || null
     return json(200, { connected: Boolean(connection && connection.status !== 'DISCONNECTED'), connection })
   } catch (e) {
