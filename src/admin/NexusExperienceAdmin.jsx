@@ -21,9 +21,12 @@ import CreativeReviewStudio from '../components/CreativeReviewStudio'
 import TradingLabPanel from '../components/TradingLabPanel'
 import AdminOperatingCenter from '../components/AdminOperatingCenter'
 import { ResearchNotebookWorkspace } from '../components/ResearchNotebookWorkspace'
+import R28AdminOperationsPanel from './R28AdminOperationsPanel'
+import LiveCompanyIntelligence from './LiveCompanyIntelligence'
 
 const nav = [
   { id: 'command', label: 'Command', icon: Sparkles },
+  { id: 'live-intelligence', label: 'Live Intelligence', icon: Activity },
   { id: 'work', label: 'Work', icon: FolderKanban },
   { id: 'agents', label: 'Agents', icon: Bot },
   { id: 'business', label: 'Business', icon: BriefcaseBusiness },
@@ -31,6 +34,7 @@ const nav = [
   { id: 'studio', label: 'Studio', icon: Layers3 },
   { id: 'trading-lab', label: 'Trading Lab', icon: TrendingUp },
   { id: 'system', label: 'System', icon: Network },
+  { id: 'access', label: 'Access & Comms', icon: UsersRound },
 ]
 
 const agentMeta = {
@@ -63,7 +67,7 @@ const secondaryNav = {
   studio: [['Overview', 'studio'], ['Review', 'studio-review'], ['Research', 'studio-research'], ['Creative', 'studio'], ['Campaigns', 'studio-campaigns'], ['Artifacts', 'studio'], ['Reports', 'studio']],
   system: [['Overview', 'system'], ['Mission Control', 'system-mission-control'], ['Workers', 'system-workers'], ['Integrations', 'system'], ['Costs', 'system'], ['Runtime', 'system'], ['Diagnostics', 'system']],
 }
-const areaNames = { work: 'Work', business: 'Business', studio: 'Studio', 'trading-lab': 'Trading Lab', system: 'System' }
+const areaNames = { work: 'Work', 'live-intelligence': 'Live Intelligence', business: 'Business', studio: 'Studio', 'trading-lab': 'Trading Lab', system: 'System', access: 'Access & Comms' }
 const subpageNames = { detail: 'Work Item', approvals: 'Ray Review', clients: 'Clients', credit: 'Credit & Funding', opportunities: 'Opportunities', funding: 'Funding Readiness', review: 'Review Center', research: 'Research Notebook', campaigns: 'Campaigns', 'mission-control': 'Mission Control', workers: 'Workers' }
 function NavigationContext({ area, subpage, onNavigate }) {
   if (!areaNames[area]) return null
@@ -138,8 +142,10 @@ export default function NexusExperienceAdmin({ email, initialPage = 'command' })
   else if (area === 'work') page = subpage === 'detail' ? <WorkDetailPage onNavigate={navigate} /> : <WorkPage onNavigate={navigate} />
   else if (area === 'agents') page = conversationId || window.location.pathname.includes('/agents/') ? <NexusAgentConversation agent={selectedAgent} conversationId={conversationId} initialPrompt={pendingPrompt} onConversationChange={onConversationChange} context="Current Admin surface" /> : <AgentsPage onOpenAgent={askAgent} />
   else if (area === 'business') page = <BusinessPage subpage={subpage} onNavigate={navigate} />
+  else if (area === 'live-intelligence') page = <ErrorBoundary panelName="Live Company Intelligence"><LiveCompanyIntelligence /></ErrorBoundary>
   else if (area === 'studio') page = <StudioPage subpage={subpage} onNavigate={navigate} email={email} />
   else if (area === 'trading-lab') page = <TradingLabPanel />
+  else if (area === 'access') page = <R28AdminOperationsPanel />
   else page = <SystemPage subpage={subpage} email={email} onNavigate={navigate} />
 
   return <div className="nx2-root"><header className="nx2-top-banner"><span> NEXUS </span><small>Operating system</small></header><div className="nx2-shell"><aside className={`nx2-sidebar ${mobileOpen ? 'open' : ''}`}><div className="nx2-brand"><span className="nx2-brand-mark">N</span><div><strong>NEXUS</strong><small>Founder mode</small></div></div><button className="nx2-mobile-close" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X size={20} /></button><nav aria-label="Primary navigation">{nav.map(item => { const Icon = item.icon; const active = area === item.id || (item.id === 'research' && area === 'studio' && subpage === 'research'); return <button key={item.id} className={`nx2-nav-item ${active ? 'active' : ''}`} onClick={() => navigate(item.id)}><Icon size={18} /><span>{item.label}</span>{item.id === 'work' && <em>3</em>}</button> })}</nav><div className="nx2-sidebar-footer"><div className="nx2-ray-avatar">R</div><div><strong>{email || 'Ray'}</strong><small>Admin · governed</small></div></div></aside><main className="nx2-main"><header className="nx2-header"><button className="nx2-menu" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu size={20} /></button><div className="nx2-breadcrumb">NEXUS / {area.toUpperCase()}{subpage ? ` / ${subpageNames[subpage] || subpage}` : ''}</div><div className="nx2-header-actions"><button className="nx2-search"><Search size={17} /> Search Nexus <kbd>⌘K</kbd></button><a href="/client">View Client Portal</a><span className="nx2-live-dot" /> <small>Authenticated</small></div></header><NexusWakeVoice /><div className="nx2-content">{page}</div><GlobalAskNexus /></main></div></div>
