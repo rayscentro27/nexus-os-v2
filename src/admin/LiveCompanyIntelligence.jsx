@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import snapshot from '../data/adminCompanyState.json'
+import { supabase } from '../lib/supabaseClient'
 
 const statusClass = (value) => String(value || '').toLowerCase().replaceAll('_', '-')
 function Card({ label, value, note }) { return <div className="glass2 admin-live-card"><small>{label}</small><strong>{value}</strong>{note && <span>{note}</span>}</div> }
@@ -10,7 +11,10 @@ export default function LiveCompanyIntelligence() {
   const [refreshed, setRefreshed] = useState(snapshot.generated_at)
   useEffect(() => {
     let cancelled = false
-    const load = () => fetch('/admin-company-state.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(next => { if (!cancelled && next?.provenance) { setState(next); setRefreshed(next.generated_at) } }).catch(() => {})
+    const load = () => supabase?.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token
+      return token ? fetch('/.netlify/functions/admin-live-state', { cache: 'no-store', headers: { Authorization: `Bearer ${token}` } }) : null
+    }).then(r => r?.ok ? r.json() : null).then(next => { if (!cancelled && next?.provenance) { setState(next); setRefreshed(next.generated_at) } }).catch(() => {})
     load(); const timer = window.setInterval(load, 30000)
     return () => { cancelled = true; window.clearInterval(timer) }
   }, [])
