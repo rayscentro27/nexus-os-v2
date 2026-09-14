@@ -3,6 +3,7 @@ create table if not exists public.nexus_tiktok_connections (
   user_id uuid not null references auth.users(id) on delete cascade,
   tenant_id text not null,
   open_id text not null,
+  environment text not null default 'production' check (environment in ('sandbox','production')),
   encrypted_access_token text not null,
   encrypted_refresh_token text,
   access_token_expires_at timestamptz,
@@ -12,7 +13,7 @@ create table if not exists public.nexus_tiktok_connections (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   revoked_at timestamptz,
-  unique (tenant_id, user_id, open_id)
+  unique (tenant_id, user_id, open_id, environment)
 );
 
 alter table public.nexus_tiktok_connections enable row level security;

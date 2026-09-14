@@ -5,9 +5,15 @@ const API = 'https://open.tiktokapis.com'
 
 export function json(statusCode, body, headers = {}) { return { statusCode, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...headers }, body: JSON.stringify(body) } }
 export function env() {
-  const required = ['TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET', 'TIKTOK_REDIRECT_URI', 'TIKTOK_TOKEN_ENCRYPTION_KEY']
+  const runtimeEnv = String(process.env.TIKTOK_ENV || 'production').toLowerCase() === 'sandbox' ? 'sandbox' : 'production'
+  const keyName = runtimeEnv === 'sandbox' ? 'TIKTOK_SANDBOX_CLIENT_KEY' : 'TIKTOK_CLIENT_KEY'
+  const secretName = runtimeEnv === 'sandbox' ? 'TIKTOK_SANDBOX_CLIENT_SECRET' : 'TIKTOK_CLIENT_SECRET'
+  const required = [keyName, secretName, 'TIKTOK_REDIRECT_URI', 'TIKTOK_TOKEN_ENCRYPTION_KEY']
   for (const key of required) if (!process.env[key]) throw new Error(`server_configuration_missing:${key}`)
-  return Object.fromEntries(required.map(key => [key, process.env[key]]))
+  const clientKey = process.env[keyName]
+  const clientSecret = process.env[secretName]
+  const tokenEncryptionKey = process.env.TIKTOK_TOKEN_ENCRYPTION_KEY
+  return { runtimeEnv, clientKey, clientSecret, redirectUri: process.env.TIKTOK_REDIRECT_URI, tokenEncryptionKey, TIKTOK_CLIENT_KEY: clientKey, TIKTOK_CLIENT_SECRET: clientSecret, TIKTOK_REDIRECT_URI: process.env.TIKTOK_REDIRECT_URI, TIKTOK_TOKEN_ENCRYPTION_KEY: tokenEncryptionKey }
 }
 export function random(size = 32) { return crypto.randomBytes(size).toString('base64url') }
 export function pkce(verifier) { return crypto.createHash('sha256').update(verifier).digest('base64url') }

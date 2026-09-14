@@ -7,7 +7,7 @@ export async function handler(event) {
     const mode = input.mode === 'draft' ? 'draft' : 'direct'
     if (!input.video_url || !/^https:\/\//i.test(input.video_url)) return json(400, { error: 'verified_https_video_url_required' })
     if (mode === 'direct' && (!input.approval_id || input.privacy_level !== 'SELF_ONLY')) return json(403, { error: 'direct_post_requires_approval_and_self_only_privacy' })
-    const rows = await db(c, `nexus_tiktok_connections?user_id=eq.${u.id}&tenant_id=eq.${encodeURIComponent(u.tenant)}&status=eq.CONNECTED&select=*&limit=1`)
+    const rows = await db(c, `nexus_tiktok_connections?user_id=eq.${u.id}&tenant_id=eq.${encodeURIComponent(u.tenant)}&environment=eq.${c.runtimeEnv}&status=eq.CONNECTED&select=*&limit=1`)
     if (!rows?.[0]) return json(404, { error: 'tiktok_connection_not_found' })
     const path = mode === 'draft' ? '/v2/post/publish/inbox/video/init/' : '/v2/post/publish/video/init/'
     const body = mode === 'draft' ? { source_info: { source: 'PULL_FROM_URL', video_url: input.video_url } } : { post_info: { title: String(input.title || '').slice(0, 2200), privacy_level: 'SELF_ONLY', disable_comment: true, disable_duet: true, disable_stitch: true }, source_info: { source: 'PULL_FROM_URL', video_url: input.video_url } }
