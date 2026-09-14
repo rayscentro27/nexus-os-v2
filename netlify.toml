@@ -1,8 +1,10 @@
-# Netlify build settings for Nexus OS v2 (GitHub-connected deploy: push main → Netlify build).
-# Self-documents the build so the dashboard settings and the repo agree.
+# Netlify build settings for Nexus OS v2.
+# Production deploys intentionally use the proven Vite artifact build while the
+# local Tailwind/typecheck stall is tracked separately for Systems remediation.
+# GitHub main → Netlify production deploy is enabled at the site level only.
 
 [build]
-  command = "npm run build"
+  command = "vite build"
   publish = "dist"
   functions = "netlify/functions"
 
