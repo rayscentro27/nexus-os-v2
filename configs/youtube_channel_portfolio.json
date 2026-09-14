@@ -1,0 +1,29 @@
+{
+  "schema_version": "nexus.youtube-channel-portfolio.v1",
+  "source_of_record": "Ray-curated Alpha registry plus original YouTube channel configuration",
+  "watch_mode": true,
+  "backfill_mode": true,
+  "max_consecutive_backfill_items_per_channel": 2,
+  "channels": [
+    {"name":"Sharbel A.","url":"https://www.youtube.com/@sharbelxyz/videos","purpose":"AI/tools and automation"},
+    {"name":"Buildonaut AI","url":"https://www.youtube.com/@Buildonaut-AI/videos","purpose":"AI/tools and automation"},
+    {"name":"Stedman Waiters","url":"https://www.youtube.com/@StedmanWaiters/videos","purpose":"trading and market research"},
+    {"name":"Codacus","url":"https://www.youtube.com/@Codacus/videos","purpose":"AI/tools and automation"},
+    {"name":"Julian Goldie SEO","url":"https://www.youtube.com/@JulianGoldieSEO/videos","purpose":"SEO and marketing"},
+    {"name":"Success with Stephen Smith","url":"https://www.youtube.com/@Successwithstephensmith/videos","purpose":"business models and marketing"},
+    {"name":"Credit With Colin","url":"https://www.youtube.com/@CreditWithColin/videos","purpose":"credit and funding"},
+    {"name":"The Build AI","url":"https://www.youtube.com/@thebuildai/videos","purpose":"AI/tools and automation"},
+    {"name":"JTHustlez","url":"https://www.youtube.com/@JTHustlez/videos","purpose":"business models and funding"},
+    {"name":"LYFE Accounting","url":"https://www.youtube.com/@LYFEAccounting/videos","purpose":"business and accounting"},
+    {"name":"Credit Plug","url":"https://www.youtube.com/@creditplug/videos","purpose":"credit, funding, and GoClear"},
+    {"name":"Marvin Francois","url":"https://www.youtube.com/@marvinfrancois1/videos","purpose":"business models and funding"},
+    {"name":"Jared Rhod","url":"https://www.youtube.com/@jaredrhod/videos","purpose":"business models and marketing"},
+    {"name":"Luuk Alleman","url":"https://www.youtube.com/@LuukAlleman/videos","purpose":"AI/tools and automation"},
+    {"name":"Monica Main","url":"https://www.youtube.com/@MonicaMain/videos","purpose":"business models and marketing"},
+    {"name":"Alec Delpuech","url":"https://www.youtube.com/@alecdelpuech/videos","purpose":"online business and marketing"},
+    {"name":"Money Talk Rashad","url":"https://www.youtube.com/@moneytalkrashad/videos","purpose":"business funding"},
+    {"name":"Robert's Tech Toolbox","url":"https://www.youtube.com/@RobertsTechToolbox/videos","purpose":"AI/tools and automation"},
+    {"name":"The Moving Average","url":"https://www.youtube.com/@TheMovingAverage/videos","purpose":"trading and market research"},
+    {"name":"Trading Strategy Testing","url":"https://www.youtube.com/@TradingStrategyTesting/videos","purpose":"trading and strategy testing"}
+  ]
+}
