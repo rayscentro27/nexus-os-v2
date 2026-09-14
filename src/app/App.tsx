@@ -16,12 +16,15 @@ import {
   GoClearLoginPage,
 } from '../pages/goclear/GoClearPublicPages';
 import { CheckoutStatusPage, ServiceOfferPage, ServicePricingPage } from '../pages/goclear/ServiceOfferPages';
+import GoClearFundingReadinessCampaign from '../pages/goclear/GoClearFundingReadinessCampaign';
 import TesterInvitePage from '../pages/tester/TesterInvitePage';
 import TesterAcceptPage from '../pages/tester/TesterAcceptPage';
 import TesterTasksPage from '../pages/tester/TesterTasksPage';
+import GuestAcceptPage from '../pages/guest/GuestAcceptPage';
 import OperatorConsole from '../operator/OperatorConsole';
+import NexusSocialPublisher from '../pages/public/NexusSocialPublisher';
 
-const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
+const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/funding-readiness', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
 
 function GoClearScrollUnlock() {
   useEffect(() => {
@@ -43,6 +46,10 @@ export function App() {
   const isAdmin = path === '/admin' || path.startsWith('/admin/');
   const isOperator = path === '/operator' || path.startsWith('/operator/');
 
+  if (path === '/nexus-social' || path.startsWith('/nexus-social/')) {
+    return <NexusSocialPublisher path={path} />;
+  }
+
   if (isGoClear || path === '/') {
     return (
       <>
@@ -51,6 +58,7 @@ export function App() {
         {path === '/goclear' && <GoClearLandingPage />}
         {path === '/goclear/signup' && <GoClearSignupPage />}
         {path === '/goclear/pricing' && <GoClearPricingPage />}
+        {path === '/funding-readiness' && <GoClearFundingReadinessCampaign />}
         {path === '/pricing' && <ServicePricingPage />}
         {path === '/readiness-review' && <ServiceOfferPage slug="readiness-review-97" />}
         {path === '/readiness-action-plan' && <ServiceOfferPage slug="readiness-action-plan-297" />}
@@ -78,6 +86,9 @@ export function App() {
   }
   if (path === '/tester/tasks') {
     return <TesterTasksPage />;
+  }
+  if (path === '/guest/accept') {
+    return <GuestAcceptPage />;
   }
   if (path === '/update-password') {
     return <UpdatePasswordPage />;
