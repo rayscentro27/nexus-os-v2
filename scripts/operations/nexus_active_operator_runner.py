@@ -17,6 +17,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -1255,6 +1256,18 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
         scheduler_health = load_json(SCHEDULER_HEALTH_PATH, {})
         terminal_closures = apply_terminal_closures()
         _record_progress("WORK_DISCOVERY")
+        campaign_dispatch = {"status": "SKIPPED", "reason": "dry_run"}
+        if not dry_run:
+            # Campaign-derived handoffs use the same governed work-order
+            # store as the operator.  Invoke the canonical queue consumer at
+            # the normal discovery boundary so scheduler wakes can consume
+            # them without a Codex-only repair command.
+            try:
+                from research.dispatch_campaign_handoffs import run_dispatch
+                campaign_dispatch = run_dispatch()
+            except Exception as exc:
+                campaign_dispatch = {"status": "FAILED", "error": type(exc).__name__,
+                                     "execution_mode": "REAL", "external_side_effects": False}
         findings = discover_attention(registry if isinstance(registry, list) else [], scheduler_health)
         # WP6 pilot keeps the cycle bounded to the certified operational
         # registry. Business read-model scans are opt-in and cannot lengthen
@@ -1505,6 +1518,7 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             "business_safe_actions_executed": business_safe_actions,
             "business_work_orders_created": business_created,
             "internal_work_orders_queued": internal_work_orders,
+            "campaign_handoff_dispatch": campaign_dispatch,
             "business_duplicates_suppressed": business_duplicates,
             "safe_action_results": safe_action_results,
             "business_brief_path": str(business_brief_path.relative_to(ROOT)),
@@ -1524,6 +1538,10 @@ def _run_once_impl(*, dry_run: bool = False, mode: str = "live") -> Dict[str, An
             "safe_internal_execution": "PASS" if not errors else "DEGRADED",
             "external_mutations": 0, "limits": {"max_new_work_orders": MAX_NEW_WORK_ORDERS, "max_executions": MAX_EXECUTIONS, "max_research_tasks": MAX_RESEARCH_TASKS, "max_runtime_seconds": MAX_RUNTIME_SECONDS},
         }
+        result.update({"selected_lane_id": os.environ.get("NEXUS_SELECTED_LANE_ID"),
+                       "selected_lane_name": os.environ.get("NEXUS_SELECTED_LANE_NAME"),
+                       "selection_reason": os.environ.get("NEXUS_SELECTED_LANE_REASON"),
+                       "lane_identity_status": "CANONICAL" if os.environ.get("NEXUS_SELECTED_LANE_ID") else "NOT_EMITTED"})
         heartbeat = {
             "operator_run_id": run_id, "last_run": completed,
             "last_successful_run": completed if not errors else None,
@@ -1600,6 +1618,7 @@ def _timeout_result(*, run_id: str, started_at: str, dry_run: bool, mode: str) -
 def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
     """Run one cycle with a hard wall-clock deadline in the parent process."""
     started_at = utc_now()
+    started_monotonic = time.monotonic()
     run_id = f"operator_{uuid.uuid4().hex}"
     previous = signal.getsignal(signal.SIGALRM)
     signal.signal(signal.SIGALRM, _deadline_handler)
@@ -1607,6 +1626,16 @@ def run_once(*, dry_run: bool = False, mode: str = "live") -> Dict[str, Any]:
     try:
         # Keep the implementation's run id and deadline context coherent.
         result = _run_once_impl(dry_run=dry_run, mode=mode)
+        elapsed = time.monotonic() - started_monotonic
+        # SIGALRM is the primary interrupt. Reconcile late returns as a
+        # terminal timeout so a syscall/C extension cannot report success
+        # after the declared bound.
+        if not dry_run and elapsed > MAX_RUNTIME_SECONDS:
+            _CYCLE_CONTEXT.update({"observed_runtime_seconds": elapsed, "late_return": True})
+            return _timeout_result(run_id=_CYCLE_CONTEXT.get("operator_run_id", run_id),
+                                   started_at=_CYCLE_CONTEXT.get("started_at", started_at),
+                                   dry_run=dry_run, mode=mode)
+        result["observed_runtime_seconds"] = elapsed
         return result
     except ActiveOperatorTimeout:
         return _timeout_result(run_id=_CYCLE_CONTEXT.get("operator_run_id", run_id),

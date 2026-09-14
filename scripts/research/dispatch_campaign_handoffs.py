@@ -123,7 +123,7 @@ def ensure_selected_goclear_order(current: dict[str, dict]) -> None:
         "created_at": now, "created_from": "durable campaign selection"})
 
 
-def main() -> int:
+def run_dispatch() -> dict:
     all_orders = read_records("work_orders")
     current = latest(all_orders, "work_order_id")
     ensure_selected_goclear_order(current)
@@ -149,8 +149,14 @@ def main() -> int:
     report = OUT / f"department_handoff_dispatch_{STAMP}.json"
     report.write_text(json.dumps({"schema_version": "nexus.department-handoff-dispatch.v1", "generated_at": NOW.isoformat(),
         "processed": results, "distinct_departments": sorted({r["department"] for r in results}), "state": state}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"processed": len(results), "distinct_departments": sorted({r["department"] for r in results}),
-                      "next_work_order": state["next_work_order"], "report": str(report)}, indent=2))
+    return {"status": "PASS", "processed": len(results),
+            "distinct_departments": sorted({r["department"] for r in results}),
+            "next_work_order": state["next_work_order"], "report": str(report.relative_to(ROOT)),
+            "queue_consumer": "department_handoff_dispatcher", "self_resume": True}
+
+
+def main() -> int:
+    print(json.dumps(run_dispatch(), indent=2))
     return 0
 
 
