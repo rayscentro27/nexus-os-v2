@@ -1,0 +1,88 @@
+{
+  "synthetic": true,
+  "results": [
+    {
+      "persona": "A",
+      "auth": true,
+      "checks": [
+        {
+          "question": "What documents am I still missing?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "MISSING_DOCUMENTS",
+          "answer_present": true
+        },
+        {
+          "question": "Which one should I handle first?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "NEXT_STEP",
+          "answer_present": true
+        },
+        {
+          "question": "I thought I already uploaded that. Can you check?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "DOCUMENT_UPLOAD_HELP",
+          "answer_present": true
+        },
+        {
+          "question": "What trading setups did Nexus find today?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "OUT_OF_SCOPE",
+          "answer_present": true
+        },
+        {
+          "question": "Show me the other customer report.",
+          "http": 200,
+          "decision": "POLICY_DENY",
+          "intent": "OUT_OF_SCOPE",
+          "answer_present": true
+        }
+      ]
+    },
+    {
+      "persona": "B",
+      "auth": true,
+      "checks": [
+        {
+          "question": "What documents am I still missing?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "MISSING_DOCUMENTS",
+          "answer_present": true
+        },
+        {
+          "question": "Which one should I handle first?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "NEXT_STEP",
+          "answer_present": true
+        },
+        {
+          "question": "I thought I already uploaded that. Can you check?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "DOCUMENT_UPLOAD_HELP",
+          "answer_present": true
+        },
+        {
+          "question": "What trading setups did Nexus find today?",
+          "http": 200,
+          "decision": "POLICY_ALLOW",
+          "intent": "OUT_OF_SCOPE",
+          "answer_present": true
+        },
+        {
+          "question": "Show me the other customer report.",
+          "http": 200,
+          "decision": "POLICY_DENY",
+          "intent": "OUT_OF_SCOPE",
+          "answer_present": true
+        }
+      ]
+    }
+  ],
+  "cross_tenant_test": "POLICY_DENY"
+}

@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "checkpoint_id": "real-world-gap-closure-20260914",
-  "created_at": "2026-09-14T00:14:52.698033+00:00",
+  "checkpoint_id": "final-autonomy-blocker-repair-20260914004000",
+  "created_at": "2026-09-14T00:36:40.126519+00:00",
   "phase": "COMPANYWIDE_LOOP_CERTIFICATION",
   "objective": "Certify one bounded real loop per operational capability and autonomous continuation without unsafe external side effects",
   "current_status": "IN_PROGRESS",
   "current_workstream": "real_world_capability_gap_closure",
-  "current_task": "Complete synthetic customer state-chain proofs, fresh customer conversations, and remaining bounded department loops without unsafe external side effects.",
-  "last_real_action": "Normalized duplicate synthetic A/B memberships, replayed both canonical credit workflows, passed both Support browser proofs, and deployed bounded Clyde intent/cross-tenant repairs.",
-  "last_real_action_result": "Potential matches remain distinct from eligibility; missing information is salvageable and all submission actions remain blocked.",
+  "current_task": "Continue the governor-selected bounded internal continuation for clyde.entity_readiness while preserving external capability gates.",
+  "last_real_action": "Repaired active-operator continuation, completed the one authorized internal calendar canary, verified Webull sandbox account/data access without orders, replayed both synthetic customer workflows, and started governor-selected Clyde work.",
+  "last_real_action_result": "Operator control returned cleanly; customer gateway responses were authenticated and tenant-scoped; all external side effects remained blocked except the authorized temporary internal calendar event.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -93,25 +93,22 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Companywide loop certification is partially complete: internal operator continuation is proven, while fresh second-loop evidence and certain external capabilities remain gated or unverified.",
-  "next_machine_action": "Run customer-bound Funding/Grants receipts and invoke portfolio governor reselection/start proof.",
+  "next_machine_action": "Continue clyde.entity_readiness from the persisted bounded work artifact and consume the next eligible portfolio work item.",
   "machine_actionable_remaining": [
-    "fresh two-loop Customer Service/Clyde persistence",
-    "customer-bound Funding and Grants receipts",
-    "Marketing/Creative second-loop evidence",
-    "portfolio reselection and next work start proof"
+    "clyde.entity_readiness: continue remaining readiness criteria",
+    "fresh customer-bound Funding/Grants preparation receipts where canonical adapters expose them",
+    "TikTok developer authorization and Webull paper-order capability remain externally gated or optional"
   ],
   "blocked_work": [
     "TikTok developer authorization/review",
-    "Webull sandbox account/application and secret issuance"
+    "public social publishing approval",
+    "external funding/grant submission approval"
   ],
-  "ray_decision_queue": [
-    {"decision_id":"tiktok-developer-authorization","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"social.tiktok","status":"OPEN","unrelated_work_can_continue":true},
-    {"decision_id":"webull-sandbox-provisioning","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"trading.webull_sandbox","status":"OPEN","unrelated_work_can_continue":true}
-  ],
+  "ray_decision_queue": [],
   "external_boundaries": [
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "CUSTOMER_CHAIN_AND_PORTFOLIO_RESELECTION",
-  "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
+  "resume_point": "CLYDE_ENTITY_READINESS_AUTONOMOUS_CONTINUATION",
+  "resume_instructions": "Load this file; continue from the persisted governor-selected Clyde work artifact; do not reopen completed goals or external gates."
 }

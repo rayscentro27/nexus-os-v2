@@ -1,0 +1,42 @@
+{
+  "schema_version": "nexus.cross-industry-creative-canary.v1",
+  "campaign_id": "merch-hug-me-baddie-r20d1",
+  "industry": "merchandise/apparel",
+  "product": "t-shirt",
+  "slogan": "HUG ME IF YOU'RE A BADDIE",
+  "audience": "young adult social-media apparel buyer",
+  "desired_outcome": "merchandise purchase",
+  "adult_safety": "Both depicted people are clearly adults; playful friendly hug, no sexualized minor framing, no coercion.",
+  "variations": [
+    {
+      "mechanism": "REACTION",
+      "hook": "Testing this shirt in public\u2014and the reaction was not what he expected.",
+      "video_prompt": "Vertical UGC-style scene: clearly adult man wearing a shirt with the exact slogan, clearly adult stylish woman notices it, smiles, gives a brief playful friendly hug, man reacts surprised and amused; natural public setting, consent implied by friendly interaction, no minors, no embedded text beyond the provided shirt slogan.",
+      "score": 8.2
+    },
+    {
+      "mechanism": "POV",
+      "hook": "POV: the shirt actually works.",
+      "video_prompt": "Vertical POV comedy: clearly adult shopper wearing the exact slogan shirt walks through a casual social setting; clearly adult woman notices, smiles, gives a playful friendly hug, shopper reacts with amused surprise; upbeat, respectful, no minors, no harassment, no fake testimonial.",
+      "score": 8.0
+    },
+    {
+      "mechanism": "SOCIAL_EXPERIMENT",
+      "hook": "Would this shirt get a hug? We tested it respectfully.",
+      "video_prompt": "Vertical social-experiment concept with clearly adult participants and visible consent: adult man wears the exact slogan, adult woman chooses a playful friendly hug, both smile, then product close-up and merchandise CTA; no minors, no coercion, no fabricated results.",
+      "score": 8.4
+    }
+  ],
+  "image_prompt": "Lifestyle apparel image with two clearly adult people, exact slogan on shirt, friendly playful reaction, fashion-forward public setting, no minors, no sexual coercion, no generated extra lettering.",
+  "social_post": {
+    "hook": "POV: the shirt actually works.",
+    "body": "A playful slogan, a friendly reaction, and a shirt people remember.",
+    "cta": "Shop the shirt when the store destination is configured."
+  },
+  "product_cta": "STORE_DESTINATION_NOT_CONFIGURED \u2014 prepare product CTA only; do not create a fake URL.",
+  "landing_destination": {
+    "status": "NOT_CONFIGURED",
+    "concept": "product-detail page with slogan, size guide, shipping/returns, and checkout CTA"
+  },
+  "publication_status": "DRAFT"
+}

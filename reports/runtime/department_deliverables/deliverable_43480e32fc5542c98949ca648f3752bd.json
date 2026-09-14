@@ -1,0 +1,39 @@
+{
+  "artifact_id": "deliverable_43480e32fc5542c98949ca648f3752bd",
+  "artifact_type": "portfolio_continuation",
+  "assumptions": [],
+  "authority": "INTERNAL_SAFE",
+  "content": {
+    "criterion": "structured readiness model exists",
+    "execution_mode": "INTERNAL_AUTONOMOUS",
+    "external_side_effects": false,
+    "selected_goal": "clyde.entity_readiness"
+  },
+  "created_at": "2026-09-14T00:44:17.896887+00:00",
+  "department": "Clyde",
+  "evidence_refs": [
+    "reports/runtime/nexus_active_operator_receipts/operator_operator_2aafac8eb5e647a681a48033ec29b23b.json",
+    "reports/runtime/nexus_active_operator_receipts/operator_operator_0929ef503ed64d13841abcaa3741eab6.json",
+    "reports/runtime/nexus_active_operator_receipts/operator_operator_1d72e16b10844b88a7f0922205dd409a.json"
+  ],
+  "external_side_effects": false,
+  "goal_id": "clyde.entity_readiness",
+  "material_progress": false,
+  "missing_criteria": [
+    "structured readiness model exists",
+    "evidence linkage and handoff readiness proven",
+    "legal/tax determinations remain out of scope"
+  ],
+  "objective_next_action": "CONTINUE_MISSING_CRITERIA",
+  "objective_statement": "Build governed entity and business-readiness intelligence for Funding handoff.",
+  "progress_class": "USEFUL_INTERMEDIATE_PROGRESS",
+  "recommended_next_action": "CONTINUE_MISSING_CRITERIA",
+  "schema_version": "nexus.internal-deliverable.v1",
+  "success_criteria": [
+    "structured readiness model exists",
+    "evidence linkage and handoff readiness proven",
+    "legal/tax determinations remain out of scope"
+  ],
+  "summary": "Governor-selected bounded continuation was started and persisted for the active goal.",
+  "title": "Autonomous portfolio continuation receipt"
+}

@@ -1,0 +1,677 @@
+{
+  "schema_version": "nexus.creative-variation-social-package.v1",
+  "base_campaign": {
+    "campaign_id": "goclear-restaurant-expansion-r20d",
+    "industry": "restaurant / catering",
+    "business_stage": "operating catering business",
+    "desired_outcome": "open first permanent restaurant storefront",
+    "target_audience": "catering owners with real customers and revenue who want a permanent location",
+    "current_obstacle": "needs to understand preparation and capital path before expansion",
+    "emotional_driver": "pride in what has already been built and urgency to make the next chapter real",
+    "core_promise": "see what is ready, what is missing, and what to work on before pursuing appropriate funding opportunities",
+    "claim_boundaries": [
+      "no guaranteed funding",
+      "no guaranteed approval",
+      "no guaranteed credit result",
+      "no specific funding amount",
+      "GoClear is not a lender"
+    ],
+    "cta": "Find out what stands between your catering business and your first location.",
+    "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+    "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B",
+    "channels": [
+      "TikTok",
+      "Instagram Reels",
+      "Facebook",
+      "YouTube Shorts",
+      "YouTube long-form"
+    ]
+  },
+  "tone_model": [
+    "SERIOUS_PREMIUM",
+    "FUNNY_RELATABLE",
+    "ASPIRATIONAL",
+    "EMOTIONAL",
+    "CONTRARIAN",
+    "EDUCATIONAL",
+    "STORY_DRIVEN",
+    "DRAMATIC",
+    "UGC_NATIVE",
+    "MEME_STYLE",
+    "POV",
+    "BEFORE_AFTER"
+  ],
+  "mechanism_library": [
+    "RELATABLE_CHAOS",
+    "PATTERN_INTERRUPT",
+    "VISUAL_METAPHOR",
+    "EXPECTATION_REVERSAL",
+    "COMEDIC_PAYOFF",
+    "BEFORE_AFTER_TRANSFORMATION",
+    "ASPIRATIONAL_REVEAL",
+    "MYTH_BUST",
+    "SURPRISING_FACT",
+    "POV",
+    "REACTION",
+    "DIRECT_CALLOUT",
+    "CURIOSITY_GAP",
+    "SOCIAL_PROOF",
+    "STORY_TENSION"
+  ],
+  "variations": [
+    {
+      "variation_id": "goclear-r20d1-original-premium",
+      "parent_campaign_id": "goclear-restaurant-expansion-r20d",
+      "creative_tone": "SERIOUS_PREMIUM",
+      "hook": "You already built the catering business. What would it take to open your own doors?",
+      "mechanism": "ASPIRATIONAL_REVEAL",
+      "cta": "Find out what stands between your catering business and your first location.",
+      "preserved_context": {
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "industry": "restaurant / catering",
+        "business_stage": "operating catering business",
+        "desired_outcome": "open first permanent restaurant storefront",
+        "target_audience": "catering owners with real customers and revenue who want a permanent location",
+        "current_obstacle": "needs to understand preparation and capital path before expansion",
+        "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+        "claim_boundaries": [
+          "no guaranteed funding",
+          "no guaranteed approval",
+          "no guaranteed credit result",
+          "no specific funding amount",
+          "GoClear is not a lender"
+        ],
+        "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+      },
+      "changed_fields": {
+        "creative_tone": "SERIOUS_PREMIUM",
+        "hook": "You already built the catering business. What would it take to open your own doors?",
+        "mechanism": "ASPIRATIONAL_REVEAL",
+        "emotional_arc": "pride \u2192 possibility",
+        "visual_direction": "documentary storefront and kitchen reveal",
+        "cta": "Find out what stands between your catering business and your first location."
+      },
+      "status": "READY_FOR_HUMAN_REVIEW",
+      "publication_status": "DRAFT",
+      "prompts": {
+        "prompt_evolution_trace": {
+          "base_campaign_context": {
+            "campaign_id": "goclear-restaurant-expansion-r20d",
+            "industry": "restaurant / catering",
+            "business_stage": "operating catering business",
+            "desired_outcome": "open first permanent restaurant storefront",
+            "target_audience": "catering owners with real customers and revenue who want a permanent location",
+            "current_obstacle": "needs to understand preparation and capital path before expansion",
+            "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+            "claim_boundaries": [
+              "no guaranteed funding",
+              "no guaranteed approval",
+              "no guaranteed credit result",
+              "no specific funding amount",
+              "GoClear is not a lender"
+            ],
+            "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+          },
+          "creative_tone": "SERIOUS_PREMIUM",
+          "hook": "You already built the catering business. What would it take to open your own doors?",
+          "creative_mechanism": "ASPIRATIONAL_REVEAL",
+          "emotional_arc": "pride \u2192 possibility",
+          "visual_direction": "documentary storefront and kitchen reveal",
+          "cta": "Find out what stands between your catering business and your first location."
+        },
+        "video_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: SERIOUS_PREMIUM. Hook: You already built the catering business. What would it take to open your own doors?. Mechanism: ASPIRATIONAL_REVEAL. CTA: Find out what stands between your catering business and your first location.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a short vertical scene; no generated lettering, no fake testimonial, no guaranteed outcome.",
+        "image_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: SERIOUS_PREMIUM. Hook: You already built the catering business. What would it take to open your own doors?. Mechanism: ASPIRATIONAL_REVEAL. CTA: Find out what stands between your catering business and your first location.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a clean campaign image with negative space for deterministic text; no embedded words or logos.",
+        "social_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: SERIOUS_PREMIUM. Hook: You already built the catering business. What would it take to open your own doors?. Mechanism: ASPIRATIONAL_REVEAL. CTA: Find out what stands between your catering business and your first location.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Write platform-native copy that invites the stated action without claiming automated replies unless configured.",
+        "landing_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: SERIOUS_PREMIUM. Hook: You already built the catering business. What would it take to open your own doors?. Mechanism: ASPIRATIONAL_REVEAL. CTA: Find out what stands between your catering business and your first location.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Preserve the existing GoClear funnel and offer; change only the creative treatment to match this variation."
+      },
+      "quality": {
+        "first_2_second_hook": 8.2,
+        "relatability": 8.0,
+        "entertainment": 7.8,
+        "emotional_pull": 8.7,
+        "visual_story": 8.4,
+        "curiosity": 8.8,
+        "outcome_clarity": 8.9,
+        "cta_fit": 8.8,
+        "brand_fit": 8.7,
+        "claim_safety": 9.8
+      },
+      "new_asset": {
+        "asset_status": "PROMPT_AND_TREATMENT_CANARY",
+        "reuse_policy": "reuse certified R20A/R20A5 source assets with new deterministic treatment; do not imply a new generated file"
+      }
+    },
+    {
+      "schema_version": "nexus.creative-variation.v1",
+      "variation_id": "variation-0affe57662cce2a2",
+      "parent_campaign_id": "goclear-restaurant-expansion-r20d",
+      "preserved_context": {
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "industry": "restaurant / catering",
+        "business_stage": "operating catering business",
+        "desired_outcome": "open first permanent restaurant storefront",
+        "target_audience": "catering owners with real customers and revenue who want a permanent location",
+        "current_obstacle": "needs to understand preparation and capital path before expansion",
+        "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+        "claim_boundaries": [
+          "no guaranteed funding",
+          "no guaranteed approval",
+          "no guaranteed credit result",
+          "no specific funding amount",
+          "GoClear is not a lender"
+        ],
+        "cta": "Find out what stands between your catering business and your first location.",
+        "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+      },
+      "revision_request": "Make it funny",
+      "interpretation": {
+        "request": "Make it funny",
+        "normalized": "make it funny",
+        "command": "FUNNY_RELATABLE",
+        "tone": "FUNNY_RELATABLE",
+        "natural_language": true
+      },
+      "changed_fields": {
+        "creative_tone": "FUNNY_RELATABLE",
+        "hook": "Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.",
+        "mechanism": "RELATABLE_CHAOS",
+        "emotional_arc": "stress \u2192 recognition \u2192 comic relief \u2192 clearer next step",
+        "visual_direction": "paperwork chaos as a visual character; quick reaction beat; clean order reveal",
+        "cta": "Comment FUNDING if the paperwork pile looks familiar."
+      },
+      "creative_tone": "FUNNY_RELATABLE",
+      "mechanism": "RELATABLE_CHAOS",
+      "hook": "Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.",
+      "cta": "Comment FUNDING if the paperwork pile looks familiar.",
+      "status": "READY_FOR_HUMAN_REVIEW",
+      "created_at": "2026-09-14T00:36:40.466054+00:00",
+      "publication_status": "DRAFT",
+      "prompts": {
+        "prompt_evolution_trace": {
+          "base_campaign_context": {
+            "campaign_id": "goclear-restaurant-expansion-r20d",
+            "industry": "restaurant / catering",
+            "business_stage": "operating catering business",
+            "desired_outcome": "open first permanent restaurant storefront",
+            "target_audience": "catering owners with real customers and revenue who want a permanent location",
+            "current_obstacle": "needs to understand preparation and capital path before expansion",
+            "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+            "claim_boundaries": [
+              "no guaranteed funding",
+              "no guaranteed approval",
+              "no guaranteed credit result",
+              "no specific funding amount",
+              "GoClear is not a lender"
+            ],
+            "cta": "Find out what stands between your catering business and your first location.",
+            "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+          },
+          "creative_tone": "FUNNY_RELATABLE",
+          "hook": "Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.",
+          "creative_mechanism": "RELATABLE_CHAOS",
+          "emotional_arc": "stress \u2192 recognition \u2192 comic relief \u2192 clearer next step",
+          "visual_direction": "paperwork chaos as a visual character; quick reaction beat; clean order reveal",
+          "cta": "Comment FUNDING if the paperwork pile looks familiar."
+        },
+        "video_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a short vertical scene; no generated lettering, no fake testimonial, no guaranteed outcome.",
+        "image_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a clean campaign image with negative space for deterministic text; no embedded words or logos.",
+        "social_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Write platform-native copy that invites the stated action without claiming automated replies unless configured.",
+        "landing_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Preserve the existing GoClear funnel and offer; change only the creative treatment to match this variation."
+      },
+      "quality": {
+        "first_2_second_hook": 8.8,
+        "relatability": 9.0,
+        "entertainment": 8.8,
+        "emotional_pull": 8.1,
+        "visual_story": 8.4,
+        "curiosity": 8.8,
+        "outcome_clarity": 8.9,
+        "cta_fit": 8.8,
+        "brand_fit": 8.7,
+        "claim_safety": 9.8
+      },
+      "new_asset": {
+        "asset_status": "PROMPT_AND_TREATMENT_CANARY",
+        "reuse_policy": "reuse certified R20A/R20A5 source assets with new deterministic treatment; do not imply a new generated file"
+      }
+    },
+    {
+      "schema_version": "nexus.creative-variation.v1",
+      "variation_id": "variation-c924480e67179132",
+      "parent_campaign_id": "goclear-restaurant-expansion-r20d",
+      "preserved_context": {
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "industry": "restaurant / catering",
+        "business_stage": "operating catering business",
+        "desired_outcome": "open first permanent restaurant storefront",
+        "target_audience": "catering owners with real customers and revenue who want a permanent location",
+        "current_obstacle": "needs to understand preparation and capital path before expansion",
+        "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+        "claim_boundaries": [
+          "no guaranteed funding",
+          "no guaranteed approval",
+          "no guaranteed credit result",
+          "no specific funding amount",
+          "GoClear is not a lender"
+        ],
+        "cta": "Find out what stands between your catering business and your first location.",
+        "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+      },
+      "revision_request": "Use an interesting fact and tell them to comment FUNDING",
+      "interpretation": {
+        "request": "Use an interesting fact and tell them to comment FUNDING",
+        "normalized": "use an interesting fact and tell them to comment funding",
+        "command": "ADD_COMMENT_KEYWORD",
+        "tone": null,
+        "natural_language": true
+      },
+      "changed_fields": {
+        "creative_tone": "EDUCATIONAL",
+        "hook": "A funding application is not the first step. Preparation is.",
+        "mechanism": "SURPRISING_FACT",
+        "emotional_arc": "misconception \u2192 useful fact \u2192 participation",
+        "visual_direction": "fact card over real restaurant preparation B-roll",
+        "cta": "Comment FUNDING if you want the checklist."
+      },
+      "creative_tone": "EDUCATIONAL",
+      "mechanism": "SURPRISING_FACT",
+      "hook": "A funding application is not the first step. Preparation is.",
+      "cta": "Comment FUNDING if you want the checklist.",
+      "status": "READY_FOR_HUMAN_REVIEW",
+      "created_at": "2026-09-14T00:36:40.466436+00:00",
+      "publication_status": "DRAFT",
+      "verified_fact": {
+        "fact_id": "goclear-funding-fact-001",
+        "claim": "Funding readiness depends on personal credit, business foundation, and financial documentation; bank statements, revenue, and cash-flow documentation may be required by lenders.",
+        "verification": "Nexus Research business-funding readiness seed",
+        "source": "nexus_research/research_inbox/business_funding/2026-07-03_business_funding_readiness_seed.md",
+        "qualification": "Requirements vary by lender/program; this is education, not a lender decision or approval prediction."
+      },
+      "engagement_cta": {
+        "cta_type": "COMMENT_KEYWORD",
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "comment_keyword": "FUNDING",
+        "comment_response_asset": "funding-readiness-checklist-template",
+        "followup_route": "internal_review_queue \u2192 approved resource \u2192 /funding-readiness",
+        "public_automation": "DISABLED_UNLESS_PLATFORM_AUTHORIZED"
+      },
+      "prompts": {
+        "prompt_evolution_trace": {
+          "base_campaign_context": {
+            "campaign_id": "goclear-restaurant-expansion-r20d",
+            "industry": "restaurant / catering",
+            "business_stage": "operating catering business",
+            "desired_outcome": "open first permanent restaurant storefront",
+            "target_audience": "catering owners with real customers and revenue who want a permanent location",
+            "current_obstacle": "needs to understand preparation and capital path before expansion",
+            "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+            "claim_boundaries": [
+              "no guaranteed funding",
+              "no guaranteed approval",
+              "no guaranteed credit result",
+              "no specific funding amount",
+              "GoClear is not a lender"
+            ],
+            "cta": "Find out what stands between your catering business and your first location.",
+            "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+          },
+          "creative_tone": "EDUCATIONAL",
+          "hook": "A funding application is not the first step. Preparation is.",
+          "creative_mechanism": "SURPRISING_FACT",
+          "emotional_arc": "misconception \u2192 useful fact \u2192 participation",
+          "visual_direction": "fact card over real restaurant preparation B-roll",
+          "cta": "Comment FUNDING if you want the checklist."
+        },
+        "video_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a short vertical scene; no generated lettering, no fake testimonial, no guaranteed outcome.",
+        "image_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a clean campaign image with negative space for deterministic text; no embedded words or logos.",
+        "social_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Write platform-native copy that invites the stated action without claiming automated replies unless configured.",
+        "landing_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Preserve the existing GoClear funnel and offer; change only the creative treatment to match this variation."
+      },
+      "quality": {
+        "first_2_second_hook": 8.8,
+        "relatability": 9.0,
+        "entertainment": 7.8,
+        "emotional_pull": 8.1,
+        "visual_story": 8.4,
+        "curiosity": 8.8,
+        "outcome_clarity": 8.9,
+        "cta_fit": 8.8,
+        "brand_fit": 8.7,
+        "claim_safety": 9.8
+      },
+      "new_asset": {
+        "asset_status": "PROMPT_AND_TREATMENT_CANARY",
+        "reuse_policy": "reuse certified R20A/R20A5 source assets with new deterministic treatment; do not imply a new generated file"
+      }
+    },
+    {
+      "schema_version": "nexus.creative-variation.v1",
+      "variation_id": "variation-71b409649bc5afaa",
+      "parent_campaign_id": "goclear-restaurant-expansion-r20d",
+      "preserved_context": {
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "industry": "restaurant / catering",
+        "business_stage": "operating catering business",
+        "desired_outcome": "open first permanent restaurant storefront",
+        "target_audience": "catering owners with real customers and revenue who want a permanent location",
+        "current_obstacle": "needs to understand preparation and capital path before expansion",
+        "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+        "claim_boundaries": [
+          "no guaranteed funding",
+          "no guaranteed approval",
+          "no guaranteed credit result",
+          "no specific funding amount",
+          "GoClear is not a lender"
+        ],
+        "cta": "Find out what stands between your catering business and your first location.",
+        "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+      },
+      "revision_request": "Make it POV",
+      "interpretation": {
+        "request": "Make it POV",
+        "normalized": "make it pov",
+        "command": "POV",
+        "tone": "POV",
+        "natural_language": true
+      },
+      "changed_fields": {
+        "creative_tone": "POV",
+        "hook": "POV: your catering business is ready for a real front door\u2014but the business story has to catch up.",
+        "mechanism": "POV",
+        "emotional_arc": "recognition \u2192 anticipation \u2192 action",
+        "visual_direction": "first-person walk from catering prep toward the storefront door",
+        "cta": "See what needs to be ready before you expand."
+      },
+      "creative_tone": "POV",
+      "mechanism": "POV",
+      "hook": "POV: your catering business is ready for a real front door\u2014but the business story has to catch up.",
+      "cta": "See what needs to be ready before you expand.",
+      "status": "READY_FOR_HUMAN_REVIEW",
+      "created_at": "2026-09-14T00:36:40.466487+00:00",
+      "publication_status": "DRAFT",
+      "prompts": {
+        "prompt_evolution_trace": {
+          "base_campaign_context": {
+            "campaign_id": "goclear-restaurant-expansion-r20d",
+            "industry": "restaurant / catering",
+            "business_stage": "operating catering business",
+            "desired_outcome": "open first permanent restaurant storefront",
+            "target_audience": "catering owners with real customers and revenue who want a permanent location",
+            "current_obstacle": "needs to understand preparation and capital path before expansion",
+            "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+            "claim_boundaries": [
+              "no guaranteed funding",
+              "no guaranteed approval",
+              "no guaranteed credit result",
+              "no specific funding amount",
+              "GoClear is not a lender"
+            ],
+            "cta": "Find out what stands between your catering business and your first location.",
+            "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+          },
+          "creative_tone": "POV",
+          "hook": "POV: your catering business is ready for a real front door\u2014but the business story has to catch up.",
+          "creative_mechanism": "POV",
+          "emotional_arc": "recognition \u2192 anticipation \u2192 action",
+          "visual_direction": "first-person walk from catering prep toward the storefront door",
+          "cta": "See what needs to be ready before you expand."
+        },
+        "video_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: POV. Hook: POV: your catering business is ready for a real front door\u2014but the business story has to catch up.. Mechanism: POV. CTA: See what needs to be ready before you expand.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a short vertical scene; no generated lettering, no fake testimonial, no guaranteed outcome.",
+        "image_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: POV. Hook: POV: your catering business is ready for a real front door\u2014but the business story has to catch up.. Mechanism: POV. CTA: See what needs to be ready before you expand.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a clean campaign image with negative space for deterministic text; no embedded words or logos.",
+        "social_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: POV. Hook: POV: your catering business is ready for a real front door\u2014but the business story has to catch up.. Mechanism: POV. CTA: See what needs to be ready before you expand.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Write platform-native copy that invites the stated action without claiming automated replies unless configured.",
+        "landing_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: POV. Hook: POV: your catering business is ready for a real front door\u2014but the business story has to catch up.. Mechanism: POV. CTA: See what needs to be ready before you expand.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Preserve the existing GoClear funnel and offer; change only the creative treatment to match this variation."
+      },
+      "quality": {
+        "first_2_second_hook": 8.8,
+        "relatability": 8.0,
+        "entertainment": 7.8,
+        "emotional_pull": 8.7,
+        "visual_story": 8.4,
+        "curiosity": 8.8,
+        "outcome_clarity": 8.9,
+        "cta_fit": 8.8,
+        "brand_fit": 8.7,
+        "claim_safety": 9.8
+      },
+      "new_asset": {
+        "asset_status": "PROMPT_AND_TREATMENT_CANARY",
+        "reuse_policy": "reuse certified R20A/R20A5 source assets with new deterministic treatment; do not imply a new generated file"
+      }
+    }
+  ],
+  "merch_canary": {
+    "schema_version": "nexus.cross-industry-creative-canary.v1",
+    "campaign_id": "merch-hug-me-baddie-r20d1",
+    "industry": "merchandise/apparel",
+    "product": "t-shirt",
+    "slogan": "HUG ME IF YOU'RE A BADDIE",
+    "audience": "young adult social-media apparel buyer",
+    "desired_outcome": "merchandise purchase",
+    "adult_safety": "Both depicted people are clearly adults; playful friendly hug, no sexualized minor framing, no coercion.",
+    "variations": [
+      {
+        "mechanism": "REACTION",
+        "hook": "Testing this shirt in public\u2014and the reaction was not what he expected.",
+        "video_prompt": "Vertical UGC-style scene: clearly adult man wearing a shirt with the exact slogan, clearly adult stylish woman notices it, smiles, gives a brief playful friendly hug, man reacts surprised and amused; natural public setting, consent implied by friendly interaction, no minors, no embedded text beyond the provided shirt slogan.",
+        "score": 8.2
+      },
+      {
+        "mechanism": "POV",
+        "hook": "POV: the shirt actually works.",
+        "video_prompt": "Vertical POV comedy: clearly adult shopper wearing the exact slogan shirt walks through a casual social setting; clearly adult woman notices, smiles, gives a playful friendly hug, shopper reacts with amused surprise; upbeat, respectful, no minors, no harassment, no fake testimonial.",
+        "score": 8.0
+      },
+      {
+        "mechanism": "SOCIAL_EXPERIMENT",
+        "hook": "Would this shirt get a hug? We tested it respectfully.",
+        "video_prompt": "Vertical social-experiment concept with clearly adult participants and visible consent: adult man wears the exact slogan, adult woman chooses a playful friendly hug, both smile, then product close-up and merchandise CTA; no minors, no coercion, no fabricated results.",
+        "score": 8.4
+      }
+    ],
+    "image_prompt": "Lifestyle apparel image with two clearly adult people, exact slogan on shirt, friendly playful reaction, fashion-forward public setting, no minors, no sexual coercion, no generated extra lettering.",
+    "social_post": {
+      "hook": "POV: the shirt actually works.",
+      "body": "A playful slogan, a friendly reaction, and a shirt people remember.",
+      "cta": "Shop the shirt when the store destination is configured."
+    },
+    "product_cta": "STORE_DESTINATION_NOT_CONFIGURED \u2014 prepare product CTA only; do not create a fake URL.",
+    "landing_destination": {
+      "status": "NOT_CONFIGURED",
+      "concept": "product-detail page with slogan, size guide, shipping/returns, and checkout CTA"
+    },
+    "publication_status": "DRAFT"
+  },
+  "revision_memory": [
+    {
+      "original_prompt": "R20D base campaign package",
+      "revision_request": "Make it funny",
+      "preserved_context": {
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "industry": "restaurant / catering",
+        "business_stage": "operating catering business",
+        "desired_outcome": "open first permanent restaurant storefront",
+        "target_audience": "catering owners with real customers and revenue who want a permanent location",
+        "current_obstacle": "needs to understand preparation and capital path before expansion",
+        "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+        "claim_boundaries": [
+          "no guaranteed funding",
+          "no guaranteed approval",
+          "no guaranteed credit result",
+          "no specific funding amount",
+          "GoClear is not a lender"
+        ],
+        "cta": "Find out what stands between your catering business and your first location.",
+        "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+      },
+      "changed_fields": {
+        "creative_tone": "FUNNY_RELATABLE",
+        "hook": "Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.",
+        "mechanism": "RELATABLE_CHAOS",
+        "emotional_arc": "stress \u2192 recognition \u2192 comic relief \u2192 clearer next step",
+        "visual_direction": "paperwork chaos as a visual character; quick reaction beat; clean order reveal",
+        "cta": "Comment FUNDING if the paperwork pile looks familiar."
+      },
+      "new_prompt": {
+        "prompt_evolution_trace": {
+          "base_campaign_context": {
+            "campaign_id": "goclear-restaurant-expansion-r20d",
+            "industry": "restaurant / catering",
+            "business_stage": "operating catering business",
+            "desired_outcome": "open first permanent restaurant storefront",
+            "target_audience": "catering owners with real customers and revenue who want a permanent location",
+            "current_obstacle": "needs to understand preparation and capital path before expansion",
+            "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+            "claim_boundaries": [
+              "no guaranteed funding",
+              "no guaranteed approval",
+              "no guaranteed credit result",
+              "no specific funding amount",
+              "GoClear is not a lender"
+            ],
+            "cta": "Find out what stands between your catering business and your first location.",
+            "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+          },
+          "creative_tone": "FUNNY_RELATABLE",
+          "hook": "Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.",
+          "creative_mechanism": "RELATABLE_CHAOS",
+          "emotional_arc": "stress \u2192 recognition \u2192 comic relief \u2192 clearer next step",
+          "visual_direction": "paperwork chaos as a visual character; quick reaction beat; clean order reveal",
+          "cta": "Comment FUNDING if the paperwork pile looks familiar."
+        },
+        "video_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a short vertical scene; no generated lettering, no fake testimonial, no guaranteed outcome.",
+        "image_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a clean campaign image with negative space for deterministic text; no embedded words or logos.",
+        "social_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Write platform-native copy that invites the stated action without claiming automated replies unless configured.",
+        "landing_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: FUNNY_RELATABLE. Hook: Funding paperwork got you like \ud83e\udd2f? Your catering orders are organized\u2014your expansion folder should be too.. Mechanism: RELATABLE_CHAOS. CTA: Comment FUNDING if the paperwork pile looks familiar.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Preserve the existing GoClear funnel and offer; change only the creative treatment to match this variation."
+      },
+      "new_asset": {
+        "asset_status": "PROMPT_AND_TREATMENT_CANARY",
+        "reuse_policy": "reuse certified R20A/R20A5 source assets with new deterministic treatment; do not imply a new generated file"
+      },
+      "quality_score": {
+        "first_2_second_hook": 8.8,
+        "relatability": 9.0,
+        "entertainment": 8.8,
+        "emotional_pull": 8.1,
+        "visual_story": 8.4,
+        "curiosity": 8.8,
+        "outcome_clarity": 8.9,
+        "cta_fit": 8.8,
+        "brand_fit": 8.7,
+        "claim_safety": 9.8
+      },
+      "ray_score": "UNKNOWN",
+      "result": "READY_FOR_HUMAN_REVIEW"
+    },
+    {
+      "original_prompt": "R20D base campaign package",
+      "revision_request": "Use an interesting fact and tell them to comment FUNDING",
+      "preserved_context": {
+        "campaign_id": "goclear-restaurant-expansion-r20d",
+        "industry": "restaurant / catering",
+        "business_stage": "operating catering business",
+        "desired_outcome": "open first permanent restaurant storefront",
+        "target_audience": "catering owners with real customers and revenue who want a permanent location",
+        "current_obstacle": "needs to understand preparation and capital path before expansion",
+        "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+        "claim_boundaries": [
+          "no guaranteed funding",
+          "no guaranteed approval",
+          "no guaranteed credit result",
+          "no specific funding amount",
+          "GoClear is not a lender"
+        ],
+        "cta": "Find out what stands between your catering business and your first location.",
+        "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+      },
+      "changed_fields": {
+        "creative_tone": "EDUCATIONAL",
+        "hook": "A funding application is not the first step. Preparation is.",
+        "mechanism": "SURPRISING_FACT",
+        "emotional_arc": "misconception \u2192 useful fact \u2192 participation",
+        "visual_direction": "fact card over real restaurant preparation B-roll",
+        "cta": "Comment FUNDING if you want the checklist."
+      },
+      "new_prompt": {
+        "prompt_evolution_trace": {
+          "base_campaign_context": {
+            "campaign_id": "goclear-restaurant-expansion-r20d",
+            "industry": "restaurant / catering",
+            "business_stage": "operating catering business",
+            "desired_outcome": "open first permanent restaurant storefront",
+            "target_audience": "catering owners with real customers and revenue who want a permanent location",
+            "current_obstacle": "needs to understand preparation and capital path before expansion",
+            "offer": "$97 funding-readiness review; Variant B may credit the $97 once toward a later qualifying service under written terms",
+            "claim_boundaries": [
+              "no guaranteed funding",
+              "no guaranteed approval",
+              "no guaranteed credit result",
+              "no specific funding amount",
+              "GoClear is not a lender"
+            ],
+            "cta": "Find out what stands between your catering business and your first location.",
+            "funnel_route": "/funding-readiness?campaign_id=goclear-restaurant-expansion-r20d&variant=A|B"
+          },
+          "creative_tone": "EDUCATIONAL",
+          "hook": "A funding application is not the first step. Preparation is.",
+          "creative_mechanism": "SURPRISING_FACT",
+          "emotional_arc": "misconception \u2192 useful fact \u2192 participation",
+          "visual_direction": "fact card over real restaurant preparation B-roll",
+          "cta": "Comment FUNDING if you want the checklist."
+        },
+        "video_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a short vertical scene; no generated lettering, no fake testimonial, no guaranteed outcome.",
+        "image_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Create a clean campaign image with negative space for deterministic text; no embedded words or logos.",
+        "social_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Write platform-native copy that invites the stated action without claiming automated replies unless configured.",
+        "landing_prompt": "Audience: catering owners with real customers and revenue who want a permanent location. Stage: operating catering business. Desired outcome: open first permanent restaurant storefront. Obstacle: needs to understand preparation and capital path before expansion. Tone: EDUCATIONAL. Hook: A funding application is not the first step. Preparation is.. Mechanism: SURPRISING_FACT. CTA: Comment FUNDING if you want the checklist.. Boundaries: no guaranteed funding, no guaranteed approval, no guaranteed credit result, no specific funding amount, GoClear is not a lender. Preserve the existing GoClear funnel and offer; change only the creative treatment to match this variation."
+      },
+      "new_asset": {
+        "asset_status": "PROMPT_AND_TREATMENT_CANARY",
+        "reuse_policy": "reuse certified R20A/R20A5 source assets with new deterministic treatment; do not imply a new generated file"
+      },
+      "quality_score": {
+        "first_2_second_hook": 8.8,
+        "relatability": 9.0,
+        "entertainment": 7.8,
+        "emotional_pull": 8.1,
+        "visual_story": 8.4,
+        "curiosity": 8.8,
+        "outcome_clarity": 8.9,
+        "cta_fit": 8.8,
+        "brand_fit": 8.7,
+        "claim_safety": 9.8
+      },
+      "ray_score": "UNKNOWN",
+      "result": "READY_FOR_HUMAN_REVIEW"
+    }
+  ],
+  "feedback_example": {
+    "feedback": "hook is weak; make it funnier but keep the same CTA",
+    "dimensions": [
+      "entertainment",
+      "hook_strength",
+      "cta_fit"
+    ],
+    "preserves_campaign_context": true,
+    "recorded_at": "2026-09-14T00:36:40.466555+00:00"
+  },
+  "social_engagement_funnel": {
+    "steps": [
+      "VIDEO",
+      "COMMENT_KEYWORD",
+      "COMMENT_OR_LEAD_EVENT",
+      "APPROVED_RESPONSE",
+      "RESOURCE_OR_LANDING_PAGE",
+      "READINESS_REVIEW",
+      "ATTRIBUTION",
+      "CLIENT_JOURNEY"
+    ],
+    "public_automation": "DISABLED_UNLESS_PLATFORM_AUTHORIZED"
+  },
+  "viral_hypothesis_integrity": {
+    "pattern_reference": "TikTok hook/body/close and direct-callout patterns",
+    "hypothesis": "early motion, identity recognition, and an open question may increase attention",
+    "actual_result": "UNKNOWN"
+  },
+  "approval_state": "READY_FOR_HUMAN_REVIEW",
+  "publication_status": "DRAFT",
+  "out_of_pocket_spend": "0"
+}

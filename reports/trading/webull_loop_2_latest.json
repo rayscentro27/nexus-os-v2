@@ -1,0 +1,11 @@
+{
+  "receipt_id": "webull_loop_2_3b36cc1085f7",
+  "environment": "SANDBOX",
+  "strategy": "read-only snapshot research",
+  "instrument": "MSFT",
+  "market_data_status": 200,
+  "paper_order": "NOT_PLACED_SAFE_READ_ONLY",
+  "live_trading_enabled": false,
+  "funded_account_access": false,
+  "real_money_orders": 0
+}

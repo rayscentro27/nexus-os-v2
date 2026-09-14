@@ -1,0 +1,17 @@
+{
+  "receipt_id": "calendar_canary_d6114e98e95e43fd8cdc8d8162f90e58",
+  "operation": "internal_calendar_canary",
+  "read_only": false,
+  "external_invite": false,
+  "attendee_count": 0,
+  "create": "PASS_REAL",
+  "event_id": "k2n4jpfri2kr5loop5osbvqurs",
+  "read_back": "PASS_REAL",
+  "update": "PASS_REAL",
+  "cancel": "PASS_REAL",
+  "conflict_handling": "NOT_RUN_NO_SAFE_CONFLICT_MUTATION",
+  "deleted_verified": true,
+  "created_at": "2026-09-14T00:35:49+00:00",
+  "delete_retry_error_class": "HttpError",
+  "cancelled_verified": true
+}

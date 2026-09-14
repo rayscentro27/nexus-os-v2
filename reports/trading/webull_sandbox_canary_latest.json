@@ -1,0 +1,19 @@
+{
+  "environment": "SANDBOX",
+  "secret_file": "FOUND",
+  "account_discovery": {
+    "status": 200,
+    "body_keys": [
+      "list"
+    ],
+    "content_type": "application/json;charset=UTF-8"
+  },
+  "market_data": {
+    "status": 200,
+    "body_keys": [
+      "list"
+    ],
+    "content_type": "application/json;charset=UTF-8"
+  },
+  "secrets_exposed": false
+}
