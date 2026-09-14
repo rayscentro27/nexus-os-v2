@@ -128,7 +128,7 @@ def run_dispatch() -> dict:
     current = latest(all_orders, "work_order_id")
     ensure_selected_goclear_order(current)
     current = latest(read_records("work_orders"), "work_order_id")
-    eligible = [x for x in current.values() if x.get("status") in {"ASSIGNED", "CREATED"}
+    eligible = [x for x in current.values() if x.get("status") in {"ASSIGNED", "CREATED", "FAILED_RETRYABLE"}
                 and x.get("owner_specialist") != "ALPHA"
                 and (x.get("research_id") or x.get("opportunity_id") or x.get("campaign_id"))
                 and x.get("work_type") in {"RESEARCH_DERIVED", "YOUTUBE_RESEARCH_HANDOFF", "CAMPAIGN_DERIVED_GOCLEAR"}]
