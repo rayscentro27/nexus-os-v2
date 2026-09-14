@@ -35,6 +35,31 @@
   to = "/.netlify/functions/alpha-provider/:splat"
   status = 200
 
+[[redirects]]
+  from = "/api/tiktok/auth/start"
+  to = "/.netlify/functions/tiktok-auth-start"
+  status = 200
+
+[[redirects]]
+  from = "/api/tiktok/oauth/callback"
+  to = "/.netlify/functions/tiktok-oauth-callback"
+  status = 200
+
+[[redirects]]
+  from = "/api/tiktok/creator-info"
+  to = "/.netlify/functions/tiktok-creator-info"
+  status = 200
+
+[[redirects]]
+  from = "/api/tiktok/post-status"
+  to = "/.netlify/functions/tiktok-post-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/tiktok/post-init"
+  to = "/.netlify/functions/tiktok-post-init"
+  status = 200
+
 # SPA fallback so the React app's client routes resolve. The static landing page
 # (public/goclear-apex-readiness.html → dist/goclear-apex-readiness.html) is a real file and is
 # served directly; this redirect only catches unknown app routes.

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import './nexus-social.css';
 
@@ -24,9 +24,23 @@ function Shell({ children, title }: { children: React.ReactNode; title: string }
 }
 
 function Home() {
+  const [connection, setConnection] = useState<'idle' | 'starting' | 'unavailable'>('idle');
+  async function connectTikTok() {
+    setConnection('starting');
+    try {
+      const session = await import('../../lib/supabaseClient').then(({ supabase }) => supabase?.auth.getSession());
+      const token = session?.data.session?.access_token;
+      if (!token) { setConnection('unavailable'); return; }
+      const response = await fetch('/api/tiktok/auth/start', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await response.json();
+      if (!response.ok || !data.authorization_url) throw new Error('TikTok authorization is unavailable');
+      window.location.assign(data.authorization_url);
+    } catch { setConnection('unavailable'); }
+  }
   return <Shell title="Social publishing with permission at the center.">
     <p className="ns-lede">Nexus Social Publisher helps businesses create, review, manage, and publish approved social content to accounts they have explicitly authorized.</p>
-    <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a><a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
+    <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a><button className="ns-button" type="button" onClick={connectTikTok} disabled={connection === 'starting'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button><a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
+    {connection === 'unavailable' && <p className="ns-note" role="status">Sign in to Nexus first to connect an authorized TikTok account. No token or account data was stored.</p>}
     <section id="how-it-works" className="ns-grid" aria-label="How Nexus Social Publisher works">
       <article><CheckCircle2 aria-hidden="true" /><h2>Create and review</h2><p>Teams prepare content and review it before it moves toward publication.</p></article>
       <article><LockKeyhole aria-hidden="true" /><h2>Connect authorized accounts</h2><p>Users connect only accounts they control or are authorized to manage. Nexus does not publish to unauthorized accounts.</p></article>
@@ -48,7 +62,11 @@ function TermsContent() { return <div className="ns-legal"><p>These terms descri
 
 function PrivacyContent() { return <div className="ns-legal"><p>This policy explains the information {appName} may process when you use the service. It is written for the current foundation and does not claim collection beyond configured features.</p><h2>Information you provide</h2><p>This may include account details, workspace identifiers, content drafts, approvals, and support messages that you submit. The exact fields depend on the enabled workflow.</p><h2>Connected-platform data</h2><p>When you authorize a platform, the service may process account or profile identifiers, permission metadata, social-content metadata, publishing results, and status information needed for the requested workflow. Access tokens are handled as protected credentials and are not displayed in this page.</p><h2>How information is used</h2><p>Information is used to provide requested publishing workflows, enforce permissions and approvals, show status, troubleshoot failures, maintain security, and produce audit records.</p><h2>Sharing and third parties</h2><p>Data may be exchanged with a platform only as needed for an authorized integration. Platform providers process data under their own policies. Nexus does not sell personal information.</p><h2>Retention and deletion</h2><p>Retention periods are governed by the applicable Nexus policy and workflow configuration. A single universal duration is not asserted here. You may disconnect or revoke platform access; deletion requests should use the configured Nexus support channel.</p><h2>Security</h2><p>Nexus uses access controls, scoped permissions, tenant boundaries, and auditability appropriate to the configured workflow. No online service can guarantee absolute security.</p><h2>Your choices</h2><p>You may choose whether to connect an account, review or approve content where supported, disconnect access, and request help with account data. Revoking access may not delete data already retained by the platform provider.</p><h2>Policy updates and contact</h2><p>This policy may change as integrations evolve. For privacy questions, use the contact channel provided with your Nexus OS account or deployment. A dedicated public legal-entity contact is not currently configured.</p></div>; }
 
-function Callback() { return <Shell title="Authorization callback ready."><p className="ns-lede">This route is reserved for a future OAuth return flow. No authorization was completed from this page.</p><a className="ns-text-link" href="/nexus-social"><ArrowLeft aria-hidden="true" /> Return to Nexus Social Publisher</a></Shell>; }
+function Callback() {
+  const [message, setMessage] = useState('Completing authorization…');
+  useEffect(() => { (async () => { try { const session = await import('../../lib/supabaseClient').then(({ supabase }) => supabase?.auth.getSession()); const token = session?.data.session?.access_token; if (!token) throw new Error('Sign in to Nexus before connecting TikTok.'); const response = await fetch(`/.netlify/functions/tiktok-oauth-callback${window.location.search}`, { headers: { Authorization: `Bearer ${token}` } }); const data = await response.json(); if (!response.ok || !data.connected) throw new Error(data.error || 'TikTok authorization could not be completed.'); setMessage(`Connected account: ${data.account?.display_name || 'authorized creator'} · ${data.scopes?.join(', ') || 'scopes recorded'}`); } catch (error) { setMessage(error instanceof Error ? error.message : 'TikTok authorization could not be completed.'); } })(); }, []);
+  return <Shell title="TikTok authorization"><p className="ns-lede" role="status">{message}</p><a className="ns-text-link" href="/nexus-social"><ArrowLeft aria-hidden="true" /> Return to Nexus Social Publisher</a></Shell>;
+}
 
 export default function NexusSocialPublisher({ path }: { path: string }) {
   if (path === '/nexus-social/terms') return <LegalPage />;
