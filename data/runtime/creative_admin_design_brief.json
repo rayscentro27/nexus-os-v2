@@ -1,0 +1,84 @@
+{
+  "schema_version": "nexus.creative-design-brief.v1",
+  "design_project_id": "design-d34d4d5c50a632b4",
+  "title": "Nexus Admin Executive Command Center",
+  "surface_type": "ADMIN_DASHBOARD",
+  "worker": "penpot",
+  "status": "READY_FOR_SPECIALIST_WORKER",
+  "questions_answered": {
+    "page_purpose": "Give Ray a calm, scannable operating view of what Nexus is doing, what changed, revenue progress, blockers, decisions, and the next machine action.",
+    "ray_needs_to_learn": [
+      "What is Nexus doing now?",
+      "What changed since the last check?",
+      "What is moving toward revenue?",
+      "What is stuck?",
+      "What needs Ray?",
+      "What happens next?"
+    ],
+    "above_the_fold": [
+      "plain-language operating summary",
+      "meaningful progress and blocker signals",
+      "Ray decision count",
+      "next machine action"
+    ],
+    "primary_action": "Open the most important current work or decision.",
+    "secondary_actions": [
+      "Open research detail",
+      "Open opportunity detail",
+      "Open handoff or department detail"
+    ],
+    "click_through": "Summary items link to their canonical research, opportunity, handoff, department, or decision record.",
+    "visual_style": "Use the existing Nexus/GoClear calm command-surface design system and approved brand assets.",
+    "avoid_raw_jargon": [
+      "Do not show HEALTHY without explaining what is healthy.",
+      "Do not show bare opportunity counts without status or meaning.",
+      "Do not make internal pipeline labels the primary user-facing copy."
+    ]
+  },
+  "information_architecture": [
+    "left navigation",
+    "branded header and operating summary",
+    "what changed",
+    "revenue and opportunity progress",
+    "research summary",
+    "department activity",
+    "Ray decision queue",
+    "next machine action"
+  ],
+  "data_requirements": [
+    "research health and current/next lane",
+    "recent findings and Alpha classifications",
+    "active opportunities and experiments",
+    "handoff states and blockers",
+    "department status and latest result",
+    "Ray decision items",
+    "next wake and next machine action"
+  ],
+  "asset_requirements": [
+    {"type": "logo", "source": "public/brand/GoClearLogo.svg"},
+    {"type": "brand_mark", "source": "public/brand/GoClearMark.svg"},
+    {"type": "wordmark", "source": "public/brand/GoClearWordmark.svg"}
+  ],
+  "tokens_ref": "docs/experience-2/DESIGN_SYSTEM.md",
+  "responsive_rules": {
+    "1440": "Persistent navigation and two-column command surface; summary remains above detail.",
+    "1024": "Narrow navigation and stacked detail groups; preserve readable table/card widths.",
+    "390": "Single-column flow; navigation collapses; cards stack; page scrolls vertically; no horizontal overflow."
+  },
+  "interaction_rules": [
+    "Summary cards are links only when a canonical detail destination exists.",
+    "Status labels include plain-language context.",
+    "No destructive action is implied by a summary card."
+  ],
+  "accessibility_requirements": [
+    "WCAG-conscious contrast",
+    "keyboard-visible focus",
+    "semantic headings and landmarks",
+    "status meaning not conveyed by color alone"
+  ],
+  "do_not_change_rules": [
+    "Do not redesign the approved Nexus/GoClear brand system.",
+    "Do not expose secrets, tokens, or tenant identifiers.",
+    "Do not begin Codex implementation until Ray approves and the design is frozen."
+  ]
+}
