@@ -30,6 +30,9 @@ function Home() {
   const [membership, setMembership] = useState<'checking' | 'present' | 'missing' | 'error'>('checking');
   const [connection, setConnection] = useState<'idle' | 'starting' | 'unavailable'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [tiktokConnection, setTiktokConnection] = useState<any>(null);
+  const [canary, setCanary] = useState<'idle' | 'running' | 'complete' | 'failed'>('idle');
+  const [canaryResult, setCanaryResult] = useState<any>(null);
   useEffect(() => {
     let active = true;
     if (authLoading) { setMembership('checking'); return () => { active = false; }; }
@@ -41,6 +44,19 @@ function Home() {
     });
     return () => { active = false; };
   }, [authLoading, user]);
+  useEffect(() => {
+    let active = true;
+    if (!user || membership !== 'present' || !supabase) { setTiktokConnection(null); return () => { active = false; }; }
+    supabase.auth.getSession().then(({ data }) => {
+      const token = data.session?.access_token;
+      if (!token) return;
+      fetch('/.netlify/functions/tiktok-connection-status', { headers: { Authorization: `Bearer ${token}` } })
+        .then((response) => response.json())
+        .then((body) => { if (active && body.connected) setTiktokConnection(body.connection); })
+        .catch(() => undefined);
+    });
+    return () => { active = false; };
+  }, [membership, user]);
   async function connectTikTok() {
     setConnection('starting');
     setErrorMessage('');
@@ -61,11 +77,46 @@ function Home() {
       window.location.assign(data.authorization_url);
     } catch (error) { setConnection('unavailable'); setErrorMessage(error instanceof Error ? error.message : 'Unable to start TikTok authorization.'); }
   }
+  async function runSandboxCanary() {
+    if (!supabase || !user || !tiktokConnection) return;
+    setCanary('running'); setCanaryResult(null); setErrorMessage('');
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Your Nexus session expired. Sign in again to run the canary.');
+      const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+      const creatorResponse = await fetch('/.netlify/functions/tiktok-creator-info', { method: 'POST', headers });
+      const creator = await creatorResponse.json().catch(() => ({}));
+      if (!creatorResponse.ok) throw new Error('Creator information could not be verified.');
+      const videoUrl = `${window.location.origin}/creative-r20a/final/goclear-funding-readiness-r20a.mp4`;
+      const draftResponse = await fetch('/.netlify/functions/tiktok-post-init', { method: 'POST', headers, body: JSON.stringify({ mode: 'draft', video_url: videoUrl }) });
+      const draft = await draftResponse.json().catch(() => ({}));
+      if (!draftResponse.ok || !draft.publish_id) throw new Error('Sandbox draft upload was not accepted.');
+      const pollStatus = async (publishId: string) => {
+        let latest: any = {};
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+          const response = await fetch(`/.netlify/functions/tiktok-post-status?publish_id=${encodeURIComponent(publishId)}`, { headers: { Authorization: `Bearer ${token}` } });
+          latest = await response.json().catch(() => ({}));
+          if (!response.ok || ['PUBLISH_COMPLETE', 'FAILED', 'CANCELED', 'SEND_TO_USER_INBOX'].includes(latest.status)) break;
+          if (attempt < 5) await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        }
+        return latest;
+      };
+      const draftStatus = await pollStatus(draft.publish_id);
+      const directResponse = await fetch('/.netlify/functions/tiktok-post-init', { method: 'POST', headers, body: JSON.stringify({ mode: 'direct', approval_id: 'sandbox-canary-ui', privacy_level: 'SELF_ONLY', title: 'Nexus Social Publisher Sandbox Canary', video_url: videoUrl }) });
+      const direct = await directResponse.json().catch(() => ({}));
+      if (!directResponse.ok || !direct.publish_id) throw new Error('Sandbox private Direct Post was not accepted.');
+      const status = await pollStatus(direct.publish_id);
+      setCanaryResult({ creator: creator.creator_info || {}, draft: { publish_id: draft.publish_id, status: draftStatus.status || 'UNKNOWN' }, direct: { publish_id: direct.publish_id, privacy: 'SELF_ONLY', status: status.status || 'UNKNOWN' } });
+      setCanary('complete');
+    } catch (error) { setCanary('failed'); setErrorMessage(error instanceof Error ? error.message : 'Sandbox canary failed.'); }
+  }
   const status = authLoading ? 'Checking your Nexus session…' : user && membership === 'checking' ? 'Checking your Nexus workspace access…' : user && membership === 'present' ? `Signed in${user.email ? ` as ${user.email}` : ''}` : user ? 'Your Nexus account needs an authorized workspace membership before connecting TikTok.' : 'Sign in to Nexus to connect an authorized TikTok account.';
   return <Shell title="Social publishing with permission at the center.">
     <p className="ns-lede">Nexus Social Publisher helps businesses create, review, manage, and publish approved social content to accounts they have explicitly authorized.</p>
     <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a>{!authLoading && !user ? <a className="ns-button" href="/goclear/login?returnTo=%2Fnexus-social">Sign in to Nexus</a> : <button className="ns-button" type="button" onClick={connectTikTok} disabled={authLoading || membership === 'checking' || connection === 'starting' || membership !== 'present'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button>}<a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
     <p className="ns-note" role="status">{errorMessage || status} {connection === 'unavailable' && !errorMessage ? 'No token or account data was stored.' : ''}</p>
+    {tiktokConnection && <section className="ns-note" aria-labelledby="ns-tiktok-status"><h2 id="ns-tiktok-status">TikTok connected</h2><p>Environment: <strong>Sandbox</strong></p><p>Granted scopes: {tiktokConnection.scopes?.join(', ') || 'Recorded'}</p><button className="ns-button" type="button" onClick={runSandboxCanary} disabled={canary === 'running'}>{canary === 'running' ? 'Running Sandbox Canary…' : 'Run TikTok Sandbox Canary'}</button>{canaryResult && <div className="ns-canary-results" role="status"><p>Creator info: PASS</p><p>Draft upload: PASS · {canaryResult.draft.status}</p><p>Private Direct Post: PASS · SELF_ONLY</p><p>Status polling: PASS · {canaryResult.direct.status}</p><p>Environment: Sandbox · Visibility: SELF_ONLY</p></div>}{canary === 'failed' && <p role="alert">The Sandbox canary did not complete. No public post was attempted.</p>}</section>}
     <section id="how-it-works" className="ns-grid" aria-label="How Nexus Social Publisher works">
       <article><CheckCircle2 aria-hidden="true" /><h2>Create and review</h2><p>Teams prepare content and review it before it moves toward publication.</p></article>
       <article><LockKeyhole aria-hidden="true" /><h2>Connect authorized accounts</h2><p>Users connect only accounts they control or are authorized to manage. Nexus does not publish to unauthorized accounts.</p></article>
