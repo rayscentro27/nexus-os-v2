@@ -28,44 +28,54 @@ function Shell({ children, title }: { children: React.ReactNode; title: string }
 function Home() {
   const { user, loading: authLoading } = useSession();
   const [membership, setMembership] = useState<'checking' | 'present' | 'missing' | 'error'>('checking');
+  const [membershipTenant, setMembershipTenant] = useState<string | null>(null);
   const [connection, setConnection] = useState<'idle' | 'starting' | 'unavailable'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [tiktokConnection, setTiktokConnection] = useState<any>(null);
   const [connectionStatusLoading, setConnectionStatusLoading] = useState(true);
+  const [hydration, setHydration] = useState({ auth: 'waiting', membership: 'waiting', fetch: 'not_started', fetchStatus: '', fetchType: '', fetchConnected: 'unknown', fetchEnvironment: '', fallback: 'not_started', fallbackCount: '0', fallbackFound: 'no', final: 'unknown' });
   const [canary, setCanary] = useState<'idle' | 'running' | 'complete' | 'failed'>('idle');
   const [canaryResult, setCanaryResult] = useState<any>(null);
   useEffect(() => {
     let active = true;
-    if (authLoading) { setMembership('checking'); return () => { active = false; }; }
-    if (!user || !supabase) { setMembership('missing'); return () => { active = false; }; }
+    if (authLoading) { setMembership('checking'); setMembershipTenant(null); setHydration((state) => ({ ...state, auth: 'resolving', membership: 'waiting' })); return () => { active = false; }; }
+    if (!user || !supabase) { setMembership('missing'); setMembershipTenant(null); setHydration((state) => ({ ...state, auth: user ? 'resolved' : 'absent', membership: 'not_checked' })); return () => { active = false; }; }
+    setHydration((state) => ({ ...state, auth: 'resolved', membership: 'resolving' }));
     setMembership('checking');
     supabase.from('tenant_memberships').select('tenant_id,role').eq('user_id', user.id).limit(1).then(({ data, error }) => {
       if (!active) return;
       setMembership(error ? 'error' : data?.length ? 'present' : 'missing');
+      setMembershipTenant(data?.[0]?.tenant_id ? String(data[0].tenant_id) : null);
+      setHydration((state) => ({ ...state, membership: error ? 'error' : data?.length ? 'resolved' : 'missing' }));
     });
     return () => { active = false; };
   }, [authLoading, user]);
   useEffect(() => {
     let active = true;
     setConnectionStatusLoading(true);
-    if (!user || membership !== 'present' || !supabase) { setTiktokConnection(null); setConnectionStatusLoading(false); return () => { active = false; }; }
+    setHydration((state) => ({ ...state, fetch: 'waiting', fallback: 'not_started', fallbackCount: '0', fallbackFound: 'no', final: 'unknown' }));
+    if (!user || membership !== 'present' || !supabase) { setTiktokConnection(null); setConnectionStatusLoading(false); setHydration((state) => ({ ...state, final: 'unconnected' })); return () => { active = false; }; }
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
         if (!token) return;
-        const response = await fetch('/.netlify/functions/tiktok-connection-status', { headers: { Authorization: `Bearer ${token}` } });
+        setHydration((state) => ({ ...state, fetch: 'started' }));
+        const response = await fetch('/.netlify/functions/tiktok-connection-status', { headers: { Authorization: `Bearer ${token}`, ...(membershipTenant ? { 'X-Nexus-Tenant-Id': membershipTenant } : {}) } });
         const body = await response.json().catch(() => ({}));
-        if (active && body.connected && body.connection) { setTiktokConnection(body.connection); return; }
+        setHydration((state) => ({ ...state, fetch: 'complete', fetchStatus: String(response.status), fetchType: response.headers.get('content-type') || 'unknown', fetchConnected: String(Boolean(body.connected)), fetchEnvironment: body.environment || body.connection?.environment || '' }));
+        if (active && body.connected && body.connection && body.connection.environment === 'sandbox') { setTiktokConnection(body.connection); setHydration((state) => ({ ...state, final: 'connected' })); return; }
         // Safe fallback: only non-secret columns, with RLS enforcing the current
         // user's membership and tenant boundary in Supabase.
+        setHydration((state) => ({ ...state, fallback: 'started' }));
         const { data: rows } = await supabase.from('nexus_tiktok_connections').select('id,open_id,environment,scopes,status,access_token_expires_at,refresh_token_expires_at,created_at,updated_at,revoked_at').eq('user_id', user.id).eq('environment', 'sandbox').order('updated_at', { ascending: false }).limit(1);
-        if (active && rows?.[0] && rows[0].status !== 'DISCONNECTED') setTiktokConnection(rows[0]);
+        setHydration((state) => ({ ...state, fallback: 'complete', fallbackCount: String(rows?.length || 0), fallbackFound: String(Boolean(rows?.[0] && rows[0].status !== 'DISCONNECTED')) }));
+        if (active && rows?.[0] && rows[0].status !== 'DISCONNECTED') { setTiktokConnection(rows[0]); setHydration((state) => ({ ...state, final: 'connected' })); }
       } catch { /* leave the explicit unconnected state; no secrets are exposed */ }
-      finally { if (active) setConnectionStatusLoading(false); }
+      finally { if (active) { setConnectionStatusLoading(false); setHydration((state) => ({ ...state, final: state.final === 'unknown' ? 'unconnected' : state.final })); } }
     })();
     return () => { active = false; };
-  }, [membership, user]);
+  }, [membership, membershipTenant, user]);
   async function connectTikTok() {
     setConnection('starting');
     setErrorMessage('');
@@ -124,6 +134,7 @@ function Home() {
   return <Shell title="Social publishing with permission at the center.">
     <p className="ns-lede">Nexus Social Publisher helps businesses create, review, manage, and publish approved social content to accounts they have explicitly authorized.</p>
     <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a>{!authLoading && !user ? <a className="ns-button" href="/goclear/login?returnTo=%2Fnexus-social">Sign in to Nexus</a> : connectionStatusLoading || authLoading || membership === 'checking' ? <span className="ns-note">Checking TikTok connection…</span> : !tiktokConnection ? <button className="ns-button" type="button" onClick={connectTikTok} disabled={connection === 'starting' || membership !== 'present'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button> : null}<a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
+    {user && membership === 'present' && !connectionStatusLoading && <details className="ns-diagnostics"><summary>Connection lookup details</summary><p>Auth: {hydration.auth} · membership: {hydration.membership}</p><p>Status fetch: {hydration.fetch} · HTTP {hydration.fetchStatus || '—'} · {hydration.fetchType || '—'}</p><p>Connected response: {hydration.fetchConnected} · environment: {hydration.fetchEnvironment || '—'}</p><p>RLS fallback: {hydration.fallback} · rows: {hydration.fallbackCount} · connection found: {hydration.fallbackFound}</p><p>Final UI state: {hydration.final}</p></details>}
     <p className="ns-note" role="status">{errorMessage || status} {connection === 'unavailable' && !errorMessage ? 'No token or account data was stored.' : ''}</p>
     {tiktokConnection && <section className="ns-note" aria-labelledby="ns-tiktok-status"><h2 id="ns-tiktok-status">TikTok connected</h2><p>Environment: <strong>Sandbox</strong></p><p>Granted scopes: {tiktokConnection.scopes?.join(', ') || 'Recorded'}</p><button className="ns-button" type="button" onClick={runSandboxCanary} disabled={canary === 'running'}>{canary === 'running' ? 'Running Sandbox Canary…' : 'Run TikTok Sandbox Canary'}</button>{canaryResult && <div className="ns-canary-results" role="status"><p>Creator info: PASS</p><p>Draft upload: PASS · {canaryResult.draft.status}</p><p>Private Direct Post: PASS · SELF_ONLY</p><p>Status polling: PASS · {canaryResult.direct.status}</p><p>Environment: Sandbox · Visibility: SELF_ONLY</p></div>}{canary === 'failed' && <p role="alert">The Sandbox canary did not complete. No public post was attempted.</p>}</section>}
     <section id="how-it-works" className="ns-grid" aria-label="How Nexus Social Publisher works">
