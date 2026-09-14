@@ -49,7 +49,14 @@ def _safe_env() -> Dict[str, str]:
     # Homebrew's current Python dylib is broken on this host; prefer the
     # system interpreter for Python subprocesses while retaining the Node
     # toolchain used by npm scripts.
-    env["PATH"] = "/usr/bin:/bin:" + env.get("PATH", "")
+    # launchd and isolated Python workers do not reliably inherit the
+    # interactive nvm PATH. Preserve the safe system directories while
+    # adding the installed Nexus-controlled Node bins for npm-backed,
+    # allowlisted capabilities. This is path recovery, not shell access.
+    node_bins = sorted(Path("/Users/raymonddavis/.nvm/versions/node").glob("v*/bin"))
+    discovered = next((str(path) for path in reversed(node_bins)
+                       if (path / "node").is_file() and (path / "npm").is_file()), "")
+    env["PATH"] = ":".join(part for part in (discovered, "/usr/bin", "/bin", env.get("PATH", "")) if part)
     env["NEXUS_ARBITRARY_SHELL"] = "PROHIBITED"
     return env
 
@@ -154,7 +161,11 @@ def run_safe_canaries(*, manifest: Optional[Dict[str, Any]] = None,
             rows.append({"capability_id": spec["capability_id"], "registered": True,
                          "health": "GATED", "canary": "NOT_RUN", "ready_tonight": False})
             continue
-        receipt = run_capability(spec["capability_id"], {}, manifest=loaded, receipt_dir=receipt_dir)
+        # Preflight is a bounded executor canary, not an implicit full
+        # regression run. The full suite remains available through an
+        # explicit typed test_path request.
+        canary_args = {"test_path": "tests/nexus_telegram_inbound_router.test.ts"} if spec["capability_id"] == "tests.run" else {}
+        receipt = run_capability(spec["capability_id"], canary_args, manifest=loaded, receipt_dir=receipt_dir)
         passed = receipt.get("status") == "PASS"
         rows.append({"capability_id": spec["capability_id"], "registered": True,
                      "health": "PASS" if passed else "FAIL", "canary": receipt.get("status"),

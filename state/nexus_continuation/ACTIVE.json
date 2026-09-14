@@ -7,8 +7,8 @@
   "current_status": "IN_PROGRESS",
   "current_workstream": "capability_gap_closure",
   "current_task": "Close safe TikTok/Webull/provider and second-loop gaps while preserving approval and live-trading boundaries.",
-  "last_real_action": "Provisioned synthetic Admin/Persona A/B identities, verified the deployed client gateway directly, and ran a second OANDA Practice GBP_USD:H1 bounded paper-research loop.",
-  "last_real_action_result": "Synthetic auth provisioning passed; gateway returned POLICY_ALLOW with NEXT_STEP and a tenant-scoped answer; OANDA second loop produced NO_VALID_SETUP and zero orders.",
+  "last_real_action": "Executed the explicitly approved bounded scheduler recovery, repaired safe Node PATH propagation for allowlisted workers, and verified one post-restart kernel dispatch.",
+  "last_real_action_result": "Launchd continuous-loop restarted successfully; scheduler health is HEALTHY with a current heartbeat and persisted next dispatch. Recovery dry-run reports no conditions.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
     "supabase/functions/client-ai-gateway/index.ts",
@@ -101,9 +101,8 @@
     "TikTok/Webull integration preparation only; external setup remains gated",
     "real SEO and affiliate evidence artifacts"
   ],
-  "blocked_work": ["scheduler mutation approval", "TikTok developer authorization/review", "Webull sandbox account/application and secret issuance"],
+  "blocked_work": ["TikTok developer authorization/review", "Webull sandbox account/application and secret issuance"],
   "ray_decision_queue": [
-    {"decision_id":"scheduler-health-recovery-approval","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"continuous_loop_health","question":"Approve the governed scheduler recovery/mutation work order if runtime ownership should repair the stale scheduler artifact.","why_ray_is_required":"Scheduler mutation is APPROVAL_REQUIRED.","status":"OPEN","unrelated_work_can_continue":true},
     {"decision_id":"tiktok-developer-authorization","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"social.tiktok","question":"Configure and authorize a TikTok developer app for controlled private testing, then complete required review before public posting.","why_ray_is_required":"External account/app ownership, OAuth authorization, and platform review are outside Nexus control.","status":"OPEN","unrelated_work_can_continue":true},
     {"decision_id":"webull-sandbox-provisioning","phase":"COMPANYWIDE_REAL_WORLD_LOOP_CERTIFICATION","objective":"trading.webull_sandbox","question":"Create a Webull sandbox OpenAPI application and place credentials in the canonical secret store; do not provide live credentials.","why_ray_is_required":"External sandbox account/application ownership and secret issuance are outside Nexus control.","status":"OPEN","unrelated_work_can_continue":true}
   ],
