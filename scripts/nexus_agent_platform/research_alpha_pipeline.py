@@ -38,7 +38,9 @@ def _score(claim: dict[str, Any]) -> tuple[int, str, str, str]:
         return score, "QUALIFIED", "Evidence score meets the bounded qualification threshold and the claim has recorded support.", "MEDIUM"
     if score >= 40 or verification in {"PARTIALLY_SUPPORTED", "MIXED"}:
         return score, "FOLLOW_UP_RESEARCH", "The item has a research signal but lacks sufficient independent or verified evidence for qualification.", "LOW"
-    return score, "REJECTED", "The persisted evidence is unverified or too weak for downstream qualification; retain it as research evidence and do not create department work.", "HIGH"
+    # Weak or unverified evidence is a reason to design the next investigation,
+    # not an Alpha veto. Ray remains the final business rejection authority.
+    return score, "FOLLOW_UP_RESEARCH", "Evidence is currently weak or unverified; preserve the candidate, widen the source search, and design the cheapest useful test.", "HIGH"
 
 
 def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
