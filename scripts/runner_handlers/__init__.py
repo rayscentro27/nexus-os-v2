@@ -39,6 +39,9 @@ REGISTRY = {
     "design_extract_patterns": (D.extract_patterns, False),
     "design_create_feature_packet": (D.create_feature_packet, False),
     "design_review_ui_quality": (D.review_ui_quality, False),
+    "creative_create_design_project": (D.create_design_project_request, False),
+    "creative_route_design_request": (D.route_creative_request, False),
+    "creative_create_codex_handoff": (D.create_codex_handoff, False),
     # publish readiness (Day 10 — no real publish)
     "creative_create_publish_package": (D.create_publish_package, False),
     "creative_review_publish_package": (D.review_publish_package, False),

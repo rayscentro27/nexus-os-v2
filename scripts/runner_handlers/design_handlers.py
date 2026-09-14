@@ -3,6 +3,7 @@ to the Day 9 scripts. No external image/model calls, no publishing."""
 from __future__ import annotations
 
 from ._base import run_script, ok, fail
+from scripts.creative.design_engine import create_design_project, implementation_contract, route_department_request
 
 
 def _run(rel, args, label):
@@ -52,6 +53,31 @@ def review_ui_quality(job, ctx):
     inp = job.get("input") or {}
     args = ["--title", str(inp["title"])] if inp.get("title") else ["--sample"]
     return _run("scripts/design/review_ui_quality.py", args, "review_ui_quality")
+
+
+def create_design_project_request(job, ctx):
+    """Create a durable-shaped design project; specialist artifact creation remains gated."""
+    inp = job.get("input") or {}
+    title = str(inp.get("title") or job.get("title") or "Untitled Creative request")
+    objective = str(inp.get("business_objective") or inp.get("objective") or title)
+    request = str(inp.get("request") or objective)
+    project = create_design_project(title, objective, request, requested_by=str(job.get("department", "department")),
+                                    surface_type=inp.get("surface_type"), audience=inp.get("audience"),
+                                    source_goal_id=inp.get("source_goal_id"), source_campaign_id=inp.get("source_campaign_id"),
+                                    source_work_order_id=job.get("work_order_id"))
+    return ok({"design_project": project, "artifact_creation": "specialist_worker_required", "ray_approval": "PENDING"})
+
+
+def route_creative_request(job, ctx):
+    return ok({"design_project": route_department_request(job), "ray_approval": "PENDING"})
+
+
+def create_codex_handoff(job, ctx):
+    project = (job.get("input") or {}).get("design_project") or {}
+    try:
+        return ok({"implementation_contract": implementation_contract(project)})
+    except ValueError as exc:
+        return fail(str(exc), {"implementation_started": False})
 
 
 # ── Day 10: manual publish readiness (no real publish) ──

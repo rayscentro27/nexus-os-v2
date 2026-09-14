@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.creative-design-workers.v1",
+  "workers": [
+    {"tool_id":"penpot","role":"PRODUCT_UI_DESIGN","license":"MPL-2.0","self_hostable":true,"api_or_automation":"REST/API; MCP availability requires separate verification","supported_surfaces":["PRODUCT_UI","ADMIN_DASHBOARD","CLIENT_PORTAL"],"current_status":"AVAILABLE_NOT_CONNECTED","integration_priority":1},
+    {"tool_id":"openpage","role":"LANDING_PAGE_GENERATION","license":"MIT","self_hostable":true,"api_or_automation":"JSON-first API/editor","supported_surfaces":["LANDING_PAGE","CAMPAIGN_PAGE","SEO_MICROSITE"],"current_status":"RESEARCH_ONLY","integration_priority":2},
+    {"tool_id":"onlook","role":"EXISTING_REACT_VISUAL_EDITING","license":"OPEN_SOURCE_STATUS_REQUIRES_VERIFICATION","self_hostable":false,"api_or_automation":"Visual editor; source-editing workflow","supported_surfaces":["PRODUCT_UI","ADMIN_DASHBOARD","CLIENT_PORTAL"],"current_status":"AVAILABLE_NOT_WIRED","integration_priority":3},
+    {"tool_id":"grapesjs","role":"CUSTOM_PAGE_BUILDER_ENGINE","license":"BSD-3-Clause","self_hostable":true,"api_or_automation":"Plugin/API architecture","supported_surfaces":["LANDING_PAGE","CAMPAIGN_PAGE","MARKETING_SITE"],"current_status":"RESEARCH_ONLY","integration_priority":4},
+    {"tool_id":"webstudio","role":"MARKETING_SITE_VISUAL_BUILDER","license":"AGPL-3.0","self_hostable":true,"api_or_automation":"Visual builder and project model","supported_surfaces":["MARKETING_SITE","SEO_MICROSITE"],"current_status":"RESEARCH_ONLY","integration_priority":5},
+    {"tool_id":"impeccable","role":"DESIGN_QA","license":"SKILL_LICENSE_REQUIRES_VERIFICATION","self_hostable":false,"api_or_automation":"Agent skill / critique commands","supported_surfaces":["DESIGN_QA"],"current_status":"AVAILABLE_NOT_WIRED","integration_priority":1}
+  ],
+  "figma_is_optional": true,
+  "codex_can_create_visual_design": false,
+  "codex_can_implement_approved_design": true
+}
