@@ -5,12 +5,12 @@ const headers = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Head
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), { status, headers })
 const MAX_DAILY_CALLS = 40
 const MAX_SESSION_CALLS = 12
-const ROLE_ESCAPE = /ignore (?:all|your) instructions|pretend (?:i am|to be) an admin|show me (?:other|all) clients|credentials|api key|refresh token|run hermes|change nexus|internal (?:state|tools)|general web search|search the web/i
+const ROLE_ESCAPE = /ignore (?:all|your) instructions|pretend (?:i am|to be) an admin|show me (?:other|all) clients|(?:other|another) customer(?:'s|s)?.{0,40}(?:report|document|information|credit)|credentials|api key|refresh token|run hermes|change nexus|internal (?:state|tools)|general web search|search the web/i
 const INTENTS = [
   ["MISSING_DOCUMENTS", /missing documents?|what documents|document checklist/i],
   ["DOCUMENT_UPLOAD_HELP", /upload|attach|file type|document help/i],
   ["DOCUMENT_RECEIVED", /document.*(received|status)|did you get/i],
-  ["NEXT_STEP", /what should i do next|next step|what do i do/i],
+  ["NEXT_STEP", /what should i do next|next step|what do i do|which (?:one|item)|what should i work on first|what should i fix first|keeping me from being ready|why (?:am i|is my).*ready|readiness different/i],
   ["CREDIT_UTILIZATION", /utilization|balance usage/i],
   ["CREDIT_PROFILE_STATUS", /credit profile|credit status|credit report/i],
   ["FUNDING_READINESS", /funding readiness|ready for funding|funding ready/i],

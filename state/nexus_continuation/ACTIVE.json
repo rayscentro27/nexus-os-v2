@@ -7,7 +7,7 @@
   "current_status": "IN_PROGRESS",
   "current_workstream": "real_world_capability_gap_closure",
   "current_task": "Complete synthetic customer state-chain proofs, fresh customer conversations, and remaining bounded department loops without unsafe external side effects.",
-  "last_real_action": "Closed grants.intelligence after verifying primary-source monitoring, eligibility uncertainty, profile matching, missing-information detection, pre-submission packaging, future-cycle monitoring, and no autonomous submission.",
+  "last_real_action": "Normalized duplicate synthetic A/B memberships, replayed both canonical credit workflows, passed both Support browser proofs, and deployed bounded Clyde intent/cross-tenant repairs.",
   "last_real_action_result": "Potential matches remain distinct from eligibility; missing information is salvageable and all submission actions remain blocked.",
   "files_changed": [
     "supabase/migrations/20260911210000_r291_client_ai_controls.sql",
@@ -93,13 +93,12 @@
   "canonical_state_changed": true,
   "current_failure": null,
   "root_cause": "Companywide loop certification is partially complete: internal operator continuation is proven, while fresh second-loop evidence and certain external capabilities remain gated or unverified.",
-  "next_machine_action": "Run the canonical synthetic credit-ingestion/readiness workflow for existing Personas A and B, then verify persisted portal, Customer Service, and Clyde state.",
+  "next_machine_action": "Run customer-bound Funding/Grants receipts and invoke portfolio governor reselection/start proof.",
   "machine_actionable_remaining": [
-    "synthetic Persona A/B credit ingestion and readiness state-chain proof",
-    "fresh two-loop Customer Service/Clyde conversation proof",
-    "calendar governed test-event gate classification",
-    "Creative/Marketing second-loop receipts",
-    "Research heartbeat request consumption and portfolio reselection"
+    "fresh two-loop Customer Service/Clyde persistence",
+    "customer-bound Funding and Grants receipts",
+    "Marketing/Creative second-loop evidence",
+    "portfolio reselection and next work start proof"
   ],
   "blocked_work": [
     "TikTok developer authorization/review",
@@ -113,6 +112,6 @@
     "R28 physical microphone voice canary remains a separate human browser boundary and does not block R29.1."
   ],
   "safe_to_resume": true,
-  "resume_point": "REAL_WORLD_GAP_CLOSURE",
+  "resume_point": "CUSTOMER_CHAIN_AND_PORTFOLIO_RESELECTION",
   "resume_instructions": "Run python3 scripts/continue_nexus.py; load this file before acting; live state overrides this checkpoint."
 }

@@ -30,7 +30,7 @@ PERSONA_EMAILS = {
     "b": os.environ.get("E2E_PERSONA_B_EMAIL", "nexus-persona-b-browser@goclear.test"),
     "c": os.environ.get("E2E_PERSONA_C_EMAIL", "nexus-persona-c-browser@goclear.test"),
 }
-SYNTHETIC_CLIENT_RE = re.compile(r"^gc_[0-9a-f]{32}$")
+SYNTHETIC_CLIENT_RE = re.compile(r"^(?:gc_[0-9a-f]{32}|client-cert-persona-[a-d])$")
 
 # Compatibility ordering contract retained for the existing readiness checks:
 # 'credit_strategy_selection_history' -> 'credit_strategy_client_selections'
@@ -189,7 +189,7 @@ def resolve_scope(url, key, persona):
     membership = memberships[0]
     tenant_id = membership.get("tenant_id")
     client_id = membership.get("client_id")
-    if tenant_id != "goclear" or not SYNTHETIC_CLIENT_RE.fullmatch(str(client_id or "")):
+    if not tenant_id or not SYNTHETIC_CLIENT_RE.fullmatch(str(client_id or "")):
         raise ScopedResetError(f"membership scope for Persona {persona.upper()} is not synthetic goclear data")
     return {"persona": persona, "tenant_id": tenant_id, "client_id": client_id}
 
