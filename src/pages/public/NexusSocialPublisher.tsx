@@ -31,6 +31,7 @@ function Home() {
   const [connection, setConnection] = useState<'idle' | 'starting' | 'unavailable'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [tiktokConnection, setTiktokConnection] = useState<any>(null);
+  const [connectionStatusLoading, setConnectionStatusLoading] = useState(true);
   const [canary, setCanary] = useState<'idle' | 'running' | 'complete' | 'failed'>('idle');
   const [canaryResult, setCanaryResult] = useState<any>(null);
   useEffect(() => {
@@ -46,15 +47,23 @@ function Home() {
   }, [authLoading, user]);
   useEffect(() => {
     let active = true;
-    if (!user || membership !== 'present' || !supabase) { setTiktokConnection(null); return () => { active = false; }; }
-    supabase.auth.getSession().then(({ data }) => {
-      const token = data.session?.access_token;
-      if (!token) return;
-      fetch('/.netlify/functions/tiktok-connection-status', { headers: { Authorization: `Bearer ${token}` } })
-        .then((response) => response.json())
-        .then((body) => { if (active && body.connected) setTiktokConnection(body.connection); })
-        .catch(() => undefined);
-    });
+    setConnectionStatusLoading(true);
+    if (!user || membership !== 'present' || !supabase) { setTiktokConnection(null); setConnectionStatusLoading(false); return () => { active = false; }; }
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+        const response = await fetch('/.netlify/functions/tiktok-connection-status', { headers: { Authorization: `Bearer ${token}` } });
+        const body = await response.json().catch(() => ({}));
+        if (active && body.connected && body.connection) { setTiktokConnection(body.connection); return; }
+        // Safe fallback: only non-secret columns, with RLS enforcing the current
+        // user's membership and tenant boundary in Supabase.
+        const { data: rows } = await supabase.from('nexus_tiktok_connections').select('id,open_id,environment,scopes,status,access_token_expires_at,refresh_token_expires_at,created_at,updated_at,revoked_at').eq('user_id', user.id).eq('environment', 'sandbox').order('updated_at', { ascending: false }).limit(1);
+        if (active && rows?.[0] && rows[0].status !== 'DISCONNECTED') setTiktokConnection(rows[0]);
+      } catch { /* leave the explicit unconnected state; no secrets are exposed */ }
+      finally { if (active) setConnectionStatusLoading(false); }
+    })();
     return () => { active = false; };
   }, [membership, user]);
   async function connectTikTok() {
@@ -114,7 +123,7 @@ function Home() {
   const status = authLoading ? 'Checking your Nexus session…' : user && membership === 'checking' ? 'Checking your Nexus workspace access…' : user && membership === 'present' ? `Signed in${user.email ? ` as ${user.email}` : ''}` : user ? 'Your Nexus account needs an authorized workspace membership before connecting TikTok.' : 'Sign in to Nexus to connect an authorized TikTok account.';
   return <Shell title="Social publishing with permission at the center.">
     <p className="ns-lede">Nexus Social Publisher helps businesses create, review, manage, and publish approved social content to accounts they have explicitly authorized.</p>
-    <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a>{!authLoading && !user ? <a className="ns-button" href="/goclear/login?returnTo=%2Fnexus-social">Sign in to Nexus</a> : <button className="ns-button" type="button" onClick={connectTikTok} disabled={authLoading || membership === 'checking' || connection === 'starting' || membership !== 'present'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button>}<a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
+    <div className="ns-actions"><a className="ns-button" href="#how-it-works">Learn how it works</a>{!authLoading && !user ? <a className="ns-button" href="/goclear/login?returnTo=%2Fnexus-social">Sign in to Nexus</a> : connectionStatusLoading || authLoading || membership === 'checking' ? <span className="ns-note">Checking TikTok connection…</span> : !tiktokConnection ? <button className="ns-button" type="button" onClick={connectTikTok} disabled={connection === 'starting' || membership !== 'present'}>{connection === 'starting' ? 'Connecting…' : 'Connect TikTok'}</button> : null}<a className="ns-text-link" href="/nexus-social/privacy">Read our privacy policy <span aria-hidden="true">→</span></a></div>
     <p className="ns-note" role="status">{errorMessage || status} {connection === 'unavailable' && !errorMessage ? 'No token or account data was stored.' : ''}</p>
     {tiktokConnection && <section className="ns-note" aria-labelledby="ns-tiktok-status"><h2 id="ns-tiktok-status">TikTok connected</h2><p>Environment: <strong>Sandbox</strong></p><p>Granted scopes: {tiktokConnection.scopes?.join(', ') || 'Recorded'}</p><button className="ns-button" type="button" onClick={runSandboxCanary} disabled={canary === 'running'}>{canary === 'running' ? 'Running Sandbox Canary…' : 'Run TikTok Sandbox Canary'}</button>{canaryResult && <div className="ns-canary-results" role="status"><p>Creator info: PASS</p><p>Draft upload: PASS · {canaryResult.draft.status}</p><p>Private Direct Post: PASS · SELF_ONLY</p><p>Status polling: PASS · {canaryResult.direct.status}</p><p>Environment: Sandbox · Visibility: SELF_ONLY</p></div>}{canary === 'failed' && <p role="alert">The Sandbox canary did not complete. No public post was attempted.</p>}</section>}
     <section id="how-it-works" className="ns-grid" aria-label="How Nexus Social Publisher works">
