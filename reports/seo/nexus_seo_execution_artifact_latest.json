@@ -1,0 +1,14 @@
+{
+  "schema_version": "nexus.seo.execution-artifact.v1",
+  "status": "PASS_REAL_RESEARCH_ARTIFACT",
+  "sources": [
+    {"url":"https://www.azcommerce.com/fast-program/","topic":"Arizona FAST grant","freshness":"current","search_volume":"UNKNOWN","intent":"commercial/application readiness","lead_path":"GoClear grant-readiness guidance"},
+    {"url":"https://www.consumerfinance.gov/1071-rule/","topic":"CFPB Section 1071","freshness":"current","search_volume":"UNKNOWN","intent":"informational/compliance","lead_path":"business-finance education"},
+    {"url":"https://www.federalreserve.gov/supervisionreg/srletters/2026.htm","topic":"Federal Reserve 2026 updates","freshness":"current","search_volume":"UNKNOWN","intent":"informational","lead_path":"regulated-business education"}
+  ],
+  "ranked_opportunities":["Arizona grant readiness checklist","Section 1071 small-business explainer","2026 business funding readiness update"],
+  "measurement_plan":["landing-page qualified leads","organic impressions/clicks when Search Console is connected","content-assisted portal signups"],
+  "work_order":"Create one reviewed GoClear article brief from the Arizona FAST source; no publication authorized.",
+  "next_batch":"Nevada small-business grants and current business-formation requirements",
+  "external_publication":false
+}

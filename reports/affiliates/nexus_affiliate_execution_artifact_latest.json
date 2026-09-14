@@ -1,0 +1,11 @@
+{
+  "schema_version":"nexus.affiliate.execution-artifact.v1",
+  "status":"PASS_REAL_RESEARCH_ARTIFACT",
+  "programs":[
+    {"program":"Shopify Affiliates","source":"https://www.shopify.com/affiliates","existence":"VERIFIED","eligibility":"application required","commission":"up to $150 per qualified referral as advertised; location/terms vary","approval":"NOT_CLAIMED","fit":"business-setup/commerce education","placement":"reviewed GoClear commerce guide","risk":"disclose affiliate relationship; no fabricated link"},
+    {"program":"Shopify affiliate earnings","source":"https://help.shopify.com/en/affiliates/earnings","terms":"full-price Basic/Grow/Advanced referrals eligible by location and contract; refunds/fraud can reverse commission","status":"VERIFIED_RESEARCH_ONLY"}
+  ],
+  "work_order":"Prepare an application/readiness checklist and compliant disclosure copy; do not apply or publish referral links.",
+  "next_candidate":"Verify one additional primary-source business software affiliate program",
+  "external_application":false
+}

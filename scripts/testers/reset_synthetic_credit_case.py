@@ -24,9 +24,11 @@ import certifi
 ROOT = Path(__file__).resolve().parents[2]
 SSL = ssl.create_default_context(cafile=certifi.where())
 PERSONA_EMAILS = {
-    "a": "nexus-persona-a-browser@goclear.test",
-    "b": "nexus-persona-b-browser@goclear.test",
-    "c": "nexus-persona-c-browser@goclear.test",
+    # Prefer the canonical provisioned certification identities when present;
+    # retain the historical aliases for older controlled fixtures.
+    "a": os.environ.get("E2E_PERSONA_A_EMAIL", "nexus-persona-a-browser@goclear.test"),
+    "b": os.environ.get("E2E_PERSONA_B_EMAIL", "nexus-persona-b-browser@goclear.test"),
+    "c": os.environ.get("E2E_PERSONA_C_EMAIL", "nexus-persona-c-browser@goclear.test"),
 }
 SYNTHETIC_CLIENT_RE = re.compile(r"^gc_[0-9a-f]{32}$")
 
@@ -163,7 +165,7 @@ def delete_pair(url, key, table, canonical_id, tradeline_id):
 
 
 def resolve_scope(url, key, persona):
-    email = PERSONA_EMAILS[persona]
+    email = os.environ.get(f"E2E_PERSONA_{persona.upper()}_EMAIL", PERSONA_EMAILS[persona])
     users_response = rest(url, key, "/auth/v1/admin/users?per_page=1000")
     users = users_response.get("users", []) if isinstance(users_response, dict) else []
     matches = [user for user in users if str(user.get("email", "")).lower() == email]
