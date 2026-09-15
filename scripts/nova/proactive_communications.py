@@ -168,6 +168,35 @@ def _digest_message() -> str:
             "Need Ray: Nothing.")
 
 
+def _morning_digest_due(state: dict[str, Any]) -> bool:
+    """Return true once per Phoenix morning; the existing worker supplies cadence."""
+    local = datetime.now(ZoneInfo("America/Phoenix"))
+    if local.hour < 6 or local.hour >= 12:
+        return False
+    return state.get("last_morning_digest_local_date") != local.date().isoformat()
+
+
+def _morning_digest_message() -> str:
+    """Bounded executive digest from current durable state, not a template count."""
+    heartbeat = _read(HEARTBEAT_PATH, {})
+    operator = _read(OPERATOR_PATH, {})
+    campaign = _read(ROOT / "data/runtime/research_campaign_state.json", {})
+    youtube = _read(ROOT / "reports/runtime/youtube_portfolio_recovery_20260914T181652Z.json", {})
+    research = str(heartbeat.get("result_status") or "UNKNOWN").upper()
+    last = heartbeat.get("last_real_output") or heartbeat.get("last_success") or "UNKNOWN"
+    next_action = heartbeat.get("next_action") or "UNKNOWN"
+    next_wake = heartbeat.get("next_wake") or "UNKNOWN"
+    operator_status = str(operator.get("operator_health") or "UNKNOWN").upper()
+    return ("Ray — Nexus morning operating digest.\n\n"
+            f"What Nexus did overnight: Research heartbeat and scheduled operator checks ran; latest research state is {research}.\n"
+            f"What Nexus learned: latest durable research output at {last}.\n"
+            f"What moved toward revenue: {campaign.get('last_completed_campaign') or 'No newly completed revenue campaign recorded.'}.\n"
+            f"What completed: {youtube.get('backfill_mode', {}).get('enabled', False) and 'YouTube watch/backfill remains enabled' or 'No completion recorded'}.\n"
+            f"What failed or recovered: Active Operator is {operator_status}; retry policy remains governed.\n"
+            "What needs Ray: no external action is implied by this digest.\n"
+            f"What Nexus will do next: {next_action}; next wake {next_wake}.")
+
+
 def _message(event: dict[str, Any], severity: str) -> str:
     if event.get("test"):
         return ("Nexus proactive communication test.\n\n"
@@ -240,6 +269,16 @@ def process_once(*, force_test: bool = False, force_digest: bool = False,
             ids = tg_send_message(chat, text)
             state["events"][digest_key] = {"event_id": digest_key, "severity": "ROUTINE", "status": "SENT" if ids else "FAILED", "message_hash": _hash(text), "message_ids": ids, "created_at": now()}
             state["last_digest_at"] = now()
+            _write(state)
+            results.append({"event": digest_key, "severity": "ROUTINE", "status": "SENT" if ids else "FAILED", "message_ids": ids})
+    if terminal_event is None and not force_test and _morning_digest_due(state):
+        local_date = datetime.now(ZoneInfo("America/Phoenix")).date().isoformat()
+        digest_key = _hash({"kind": "MORNING_DIGEST", "local_date": local_date})
+        if digest_key not in state["events"]:
+            text = _morning_digest_message()
+            ids = tg_send_message(chat, text)
+            state["events"][digest_key] = {"event_id": digest_key, "severity": "ROUTINE", "status": "SENT" if ids else "FAILED", "message_hash": _hash(text), "message_ids": ids, "created_at": now()}
+            state["last_morning_digest_local_date"] = local_date
             _write(state)
             results.append({"event": digest_key, "severity": "ROUTINE", "status": "SENT" if ids else "FAILED", "message_ids": ids})
     try:

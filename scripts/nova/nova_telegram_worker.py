@@ -1060,6 +1060,58 @@ def _process_message_inner(update, message, chat, user, chat_id, user_id, userna
         update_mission(mission, "AUTHORIZED")
         _update_status_field("last_incoming_message", datetime.now(timezone.utc).isoformat())
 
+        # Source lifecycle commands are handled by the same canonical
+        # Hermes/operator contract before generic model conversation.  This
+        # preserves natural conversation for all other messages and prevents
+        # Nova from silently bypassing source identity, deduplication, cadence,
+        # and receipts.
+        try:
+            from nexus_agent_platform.department_router import execute as execute_department_route
+            from research.natural_language_source_intake import parse_source_intent
+            if parse_source_intent(text):
+                source_response, source_meta = execute_department_route(text, input_source="telegram")
+                update_mission(mission, "RESPONSE_COMPOSED", {
+                    "response_mode": "canonical_source_intake",
+                    "source_route": source_meta,
+                })
+                delivery = _deliver_response(update_id, chat_id, source_response, mission_id=mission["mission_id"])
+                msg_ids = delivery.get("message_ids", [])
+                update_mission(mission, "DELIVERED" if delivery.get("state") == "DELIVERED" else "DELIVERY_FAILED", {
+                    "response_mode": "canonical_source_intake",
+                    "telegram_send_count": len(msg_ids),
+                    "source_route": source_meta,
+                })
+                return True
+        except (ImportError, OSError, ValueError, RuntimeError) as exc:
+            _log(f"Canonical source intake unavailable; continuing normal Hermes path: {type(exc).__name__}")
+
+        # Company-level objectives are planned before the generic Hermes
+        # conversation path. This keeps Nova responsible for department
+        # selection and preserves the objective across governed handoffs.
+        try:
+            from nexus_agent_platform.company_objective_router import route_company_objective
+            company_plan = route_company_objective(text)
+            if company_plan.get("intent_class") in {"OPPORTUNITY_INTAKE", "TRADING_PREMARKET", "RESEARCH"} or len(company_plan.get("steps", [])) > 1:
+                update_mission(mission, "RESPONSE_COMPOSED", {
+                    "response_mode": "company_objective_plan",
+                    "company_objective": company_plan,
+                })
+                owners = " → ".join(company_plan.get("handoff_order", []))
+                response = (f"Nexus objective accepted.\n\nObjective: {company_plan.get('objective')}\n"
+                            f"Departments selected: {owners}\n\n"
+                            "The objective remains governed across these handoffs. "
+                            "Ray approval is requested only at the listed consequential boundary.\n\n"
+                            f"Next: {company_plan.get('steps', [{}])[-1].get('action', 'review the objective plan')}")
+                delivery = _deliver_response(update_id, chat_id, response, mission_id=mission["mission_id"])
+                update_mission(mission, "DELIVERED" if delivery.get("state") == "DELIVERED" else "DELIVERY_FAILED", {
+                    "response_mode": "company_objective_plan",
+                    "company_objective": company_plan,
+                    "telegram_send_count": len(delivery.get("message_ids", [])),
+                })
+                return True
+        except (ImportError, OSError, ValueError, RuntimeError) as exc:
+            _log(f"Company objective route unavailable; continuing normal Hermes path: {type(exc).__name__}")
+
         primary_runtime = _primary_runtime()
 
         # In certification mode the shadow observes every authorized request
@@ -1395,17 +1447,11 @@ def run_once():
         if recovered_missions:
             _log(f"Nova worker: resumed {recovered_missions} authorized missions")
 
-        offset = load_offset()
-        result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
-
-        if not result or not result.get("ok"):
-            _log_error(f"getUpdates failed: {result}")
-            write_status(os.getpid(), "API_ERROR")
-            return "API_ERROR"
-
-        # Proactive operational communication shares this worker's trusted
-        # token, destination resolution, retry path, and launchd cadence.  A
-        # failure here never interrupts inbound Nova processing.
+        # Proactive operational communication must not depend on a successful
+        # inbound getUpdates call.  A slow/reset Telegram poll used to delay
+        # useful Research and decision notifications until the next cycle.
+        # This still shares the trusted token, destination resolution, retry
+        # path, deduplication, and launchd cadence.
         try:
             from proactive_communications import process_once
             proactive = process_once()
@@ -1413,6 +1459,14 @@ def run_once():
                 _log(f"Nova worker: proactive communication {proactive.get('status')}")
         except Exception as exc:
             _log_error(f"Proactive communication unavailable: {type(exc).__name__}")
+
+        offset = load_offset()
+        result = _tg_api("getUpdates", {"offset": offset + 1, "limit": 10, "timeout": 0})
+
+        if not result or not result.get("ok"):
+            _log_error(f"getUpdates failed: {result}")
+            write_status(os.getpid(), "API_ERROR")
+            return "API_ERROR"
 
         updates = result.get("result", [])
         if not updates:
