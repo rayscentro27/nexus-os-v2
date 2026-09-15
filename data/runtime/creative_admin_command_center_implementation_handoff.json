@@ -11,11 +11,11 @@
     "frame_name": "Nexus Admin Command Center — High Fidelity 1440 v2",
     "dimensions": "1440x900",
     "editable": true,
-    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center-v8.png",
+    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center-v9.png",
     "editable_child_shapes": 242,
     "editable_text_nodes": 149,
     "visual_refinement_pass": "brand, mountain imagery, typography, icon rhythm, card polish",
-    "penpot_readback": "frame and image layers verified in the v2 editable frame"
+    "penpot_readback": "frame, logo vector, and three image layers verified in the v2 editable frame"
   },
   "page_purpose": "Give Ray a calm, scannable view of current Nexus activity, recent change, progress toward revenue, blocked work, decisions, and the next machine action.",
   "component_inventory": [
@@ -86,7 +86,7 @@
     "panels": "#08243C / #082B46 / #0B3553",
     "accent_colors": ["#16D5E9", "#19D7B0", "#8F5CF6", "#F5A94A"],
     "hierarchy": ["brand and utility", "executive metrics", "hero and priorities", "activity/actions/pipeline", "opportunities/departments/Ray queue"],
-    "comparison": {"pass_1": "rejected: incomplete and font validation interrupted", "pass_2": "semantic high-fidelity composition exported and read back", "pass_3": "mountain image layers, logo mark, opacity, z-order, and typography polish applied", "pass_4": "exported v8 and visually compared against the registered canonical reference", "major_defects_remaining": "none observed in the requested refinement layer"},
+    "comparison": {"pass_1": "rejected: incomplete and font validation interrupted", "pass_2": "semantic high-fidelity composition exported and read back", "pass_3": "mountain image layers, logo mark, opacity, z-order, and typography polish applied", "pass_4": "exported v8 and visually compared against the registered canonical reference", "pass_5": "corrected top-strip stacking and replaced hero crop with clean mountain-only asset; exported v9", "major_defects_remaining": "none observed in the requested refinement layer"},
     "hero_image_treatment": "approved mountain image layers behind editable text; clean mountain crop used for main hero",
     "brand_treatment": "real GoClear mark vector inserted plus GoClear/Nexus OS label",
     "icon_treatment": "consistent semantic icon mapping with editable circular accent containers"
