@@ -263,6 +263,13 @@ def _asr_python() -> str | None:
     return None
 
 
+def _whisper_cpp_runtime() -> tuple[str, str] | None:
+    """Use the already-provisioned Nexus whisper.cpp runtime as a local fallback."""
+    binary = ROOT / "tools" / "voice" / "runtime" / "whisper.cpp" / "build" / "bin" / "whisper-cli"
+    model = ROOT / "tools" / "voice" / "models" / "ggml-base.en.bin"
+    return (str(binary), str(model)) if binary.is_file() and model.is_file() else None
+
+
 def _normalize_caption_text(value: str) -> str:
     """Remove caption container noise and rolling duplicate lines."""
     lines = []
@@ -279,7 +286,8 @@ def _normalize_caption_text(value: str) -> str:
 def _local_asr_fallback(*, url: str, video_id: str, caption_failure_type: str, timeout: int) -> dict[str, Any]:
     """Recover transcript after caption failure using the certified local ASR ladder."""
     asr_python = _asr_python()
-    if not asr_python:
+    whisper_cpp = _whisper_cpp_runtime()
+    if not asr_python and not whisper_cpp:
         return {"ok": False, "video_id": video_id, "status": "ASR_UNAVAILABLE", "caption_failure_type": caption_failure_type, "asr_failure": "certified_runtime_not_found"}
     with tempfile.TemporaryDirectory(prefix="nexus-alpha-youtube-media-") as tmp:
         media = Path(tmp) / "media.%(ext)s"
@@ -311,14 +319,40 @@ segments, info = model.transcribe(sys.argv[1], language="en", beam_size=1, vad_f
 rows = [{"start": round(s.start, 2), "end": round(s.end, 2), "text": (s.text or "").strip()} for s in segments if (s.text or "").strip()]
 print(json.dumps({"segments": rows}, ensure_ascii=False))
 '''
-        asr_proc = subprocess.run([asr_python, "-c", script, str(wav)], capture_output=True, text=True, timeout=min(max(timeout, 120), 300), check=False)
-        if asr_proc.returncode != 0:
-            return {"ok": False, "video_id": video_id, "status": "ASR_FAILED", "caption_failure_type": caption_failure_type, "media_format_selected": selected.get("format_id"), "asr_failure": "faster_whisper_failed"}
-        try:
-            decoded = json.loads(asr_proc.stdout)
-            segments = decoded.get("segments") or []
-        except json.JSONDecodeError:
-            segments = []
+        if asr_python:
+            asr_proc = subprocess.run([asr_python, "-c", script, str(wav)], capture_output=True, text=True, timeout=min(max(timeout, 120), 300), check=False)
+            if asr_proc.returncode != 0:
+                return {"ok": False, "video_id": video_id, "status": "ASR_FAILED", "caption_failure_type": caption_failure_type, "media_format_selected": selected.get("format_id"), "asr_failure": "faster_whisper_failed"}
+            try:
+                decoded = json.loads(asr_proc.stdout)
+                segments = decoded.get("segments") or []
+            except json.JSONDecodeError:
+                segments = []
+            asr_engine, asr_version, asr_model = "faster-whisper", "1.2.1", "tiny.en"
+        else:
+            binary, model = whisper_cpp
+            output_base = Path(tmp) / "whisper_result"
+            asr_proc = subprocess.run([binary, "-m", model, "-f", str(wav), "-l", "en", "--no-prints", "--output-json-full", "--output-file", str(output_base)], capture_output=True, text=True, timeout=min(max(timeout, 120), 300), check=False)
+            json_path = output_base.with_suffix(".json")
+            if asr_proc.returncode != 0 or not json_path.exists():
+                return {"ok": False, "video_id": video_id, "status": "ASR_FAILED", "caption_failure_type": caption_failure_type, "media_format_selected": selected.get("format_id"), "asr_failure": "whisper_cpp_failed"}
+            try:
+                decoded = json.loads(json_path.read_text(encoding="utf-8"))
+                segments = decoded.get("transcription") or decoded.get("segments") or []
+            except (OSError, json.JSONDecodeError):
+                segments = []
+            normalized = []
+            for item in segments:
+                stamp = item.get("timestamps") or {}
+                def seconds(value: Any) -> float:
+                    try:
+                        if isinstance(value, (int, float)): return float(value)
+                        parts = str(value).replace(",", ".").split(":")
+                        return sum(float(part) * (60 ** (len(parts) - index - 1)) for index, part in enumerate(parts))
+                    except (TypeError, ValueError): return 0.0
+                normalized.append({"start": seconds(stamp.get("from", 0)), "end": seconds(stamp.get("to", 0)), "text": str(item.get("text") or "").strip()})
+            segments = [item for item in normalized if item["text"]]
+            asr_engine, asr_version, asr_model = "whisper.cpp", "repository-runtime", Path(model).name
         text = re.sub(r"\s+", " ", " ".join(x.get("text", "") for x in segments)).strip()
         if not text:
             return {"ok": False, "video_id": video_id, "status": "ASR_EMPTY", "caption_failure_type": caption_failure_type, "media_format_selected": selected.get("format_id")}
@@ -328,7 +362,7 @@ print(json.dumps({"segments": rows}, ensure_ascii=False))
         artifact.write_text(text + "\n", encoding="utf-8")
         timestamped = artifact_dir / f"{video_id}_local_asr_timestamped.txt"
         timestamped.write_text("\n".join(f"[{x['start']:.2f} - {x['end']:.2f}] {x['text']}" for x in segments) + "\n", encoding="utf-8")
-        return {"ok": True, "video_id": video_id, "status": "TRANSCRIPT_RETRIEVED", "language": "en", "transcript_hash": hashlib.sha256(text.encode()).hexdigest(), "transcript": text, "excerpt": text[:2400], "transcript_artifact": str(artifact), "timestamped_artifact": str(timestamped), "retrieved_at": now(), "media_downloaded": True, "audio_downloaded": True, "media_format_selected": selected.get("format_id"), "media_format_kind": "AUDIO_ONLY" if selected in audio_only else "PROGRESSIVE_VIDEO_AUDIO", "ffmpeg_audio_extraction": "PASS_REAL", "transcript_method": "LOCAL_ASR", "asr_engine": "faster-whisper", "asr_version": "1.2.1", "asr_model": "tiny.en", "caption_failure_type": caption_failure_type}
+        return {"ok": True, "video_id": video_id, "status": "TRANSCRIPT_RETRIEVED", "language": "en", "transcript_hash": hashlib.sha256(text.encode()).hexdigest(), "transcript": text, "excerpt": text[:2400], "transcript_artifact": str(artifact), "timestamped_artifact": str(timestamped), "retrieved_at": now(), "media_downloaded": True, "audio_downloaded": True, "media_format_selected": selected.get("format_id"), "media_format_kind": "AUDIO_ONLY" if selected in audio_only else "PROGRESSIVE_VIDEO_AUDIO", "ffmpeg_audio_extraction": "PASS_REAL", "transcript_method": "LOCAL_ASR", "asr_engine": asr_engine, "asr_version": asr_version, "asr_model": asr_model, "caption_failure_type": caption_failure_type}
 
 
 def youtube_transcript(url: str, timeout: int = 90) -> dict[str, Any]:
