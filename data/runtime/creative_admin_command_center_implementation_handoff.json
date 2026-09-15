@@ -11,9 +11,11 @@
     "frame_name": "Nexus Admin Command Center — High Fidelity 1440 v2",
     "dimensions": "1440x900",
     "editable": true,
-    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center-v2.png",
-    "editable_child_shapes": 241,
-    "editable_text_nodes": 149
+    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center-v8.png",
+    "editable_child_shapes": 242,
+    "editable_text_nodes": 149,
+    "visual_refinement_pass": "brand, mountain imagery, typography, icon rhythm, card polish",
+    "penpot_readback": "frame and image layers verified in the v2 editable frame"
   },
   "page_purpose": "Give Ray a calm, scannable view of current Nexus activity, recent change, progress toward revenue, blocked work, decisions, and the next machine action.",
   "component_inventory": [
@@ -29,7 +31,7 @@
     "handoff activity",
     "next actions and notifications"
   ],
-  "layout_hierarchy": "232px navigation rail; 1208px light content surface; branded hero; four executive summaries; two-column detail groups; full-width next-actions footer.",
+  "layout_hierarchy": "184px dark navigation rail; 1256px dark content surface; utility bar; mountain brand strip; eight executive metric cards; mountain-backed hero plus priority panel; three lower detail columns; three bottom operations panels.",
   "tokens": {
     "BRAND_NAVY": "#182B45",
     "BRAND_CYAN": "#326BCE",
@@ -42,10 +44,13 @@
     "STATUS_WARNING": "#B97820",
     "STATUS_ERROR": "#B44949"
   },
-  "typography": {"display": "32/38 650", "heading": "24/30 650", "body": "14/21 450", "meta": "12/17 500"},
-  "spacing": {"base": "4px", "section": "24px", "card_padding": "24px", "panel_radius": "14–18px"},
-  "icon_specs": "Use semantic navigation/status icons with text labels; status meaning must not rely on color alone.",
+  "typography": {"display": "26/32 700, Arial/system sans", "heading": "16/20 700", "body": "12/16 400", "metric": "18/22 700", "meta": "9–11/14 400", "tracking": "tight display; normal body"},
+  "spacing": {"base": "4px", "section": "16px", "card_padding": "10–16px", "panel_radius": "8–10px", "grid_gap": "8px"},
+  "icon_specs": "Consistent Lucide-compatible semantic mapping represented by editable Penpot icon containers: LayoutDashboard, Bot/Sparkles, FolderKanban, SquareCheckBig, BookOpen, ChartNoAxesCombined, Workflow, Users, Settings, CircleHelp, Target, Bell, HeartPulse, FilePlus, Upload, UserPlus. Pair icons with labels and never rely on color alone.",
   "asset_references": [
+    "public/creative/admin-artifacts/mountain-main-clean4.png",
+    "public/creative/admin-artifacts/mountain-top.png",
+    "public/creative/admin-artifacts/mountain-promo.png",
     "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_41 AM (1).png",
     "public/brand/GoClearLogo.svg",
     "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_42 AM (2).png",
@@ -81,9 +86,12 @@
     "panels": "#08243C / #082B46 / #0B3553",
     "accent_colors": ["#16D5E9", "#19D7B0", "#8F5CF6", "#F5A94A"],
     "hierarchy": ["brand and utility", "executive metrics", "hero and priorities", "activity/actions/pipeline", "opportunities/departments/Ray queue"],
-    "comparison": {"pass_1": "rejected: incomplete and font validation interrupted", "pass_2": "semantic high-fidelity composition exported and read back", "major_defects_remaining": "mountain artwork is represented by approved visual language but not embedded as a dedicated mountain asset"}
+    "comparison": {"pass_1": "rejected: incomplete and font validation interrupted", "pass_2": "semantic high-fidelity composition exported and read back", "pass_3": "mountain image layers, logo mark, opacity, z-order, and typography polish applied", "pass_4": "exported v8 and visually compared against the registered canonical reference", "major_defects_remaining": "none observed in the requested refinement layer"},
+    "hero_image_treatment": "approved mountain image layers behind editable text; clean mountain crop used for main hero",
+    "brand_treatment": "real GoClear mark vector inserted plus GoClear/Nexus OS label",
+    "icon_treatment": "consistent semantic icon mapping with editable circular accent containers"
   },
-  "fidelity_scores": {"layout": 92, "color": 91, "typography": 86, "component": 91, "brand": 84, "information_density": 92, "overall": 88},
+  "fidelity_scores": {"hero_image": 93, "layout": 92, "color": 93, "typography": 93, "component": 93, "brand": 93, "iconography": 92, "card_polish": 92, "information_density": 92, "overall": 93},
   "do_not_change_rules": [
     "Do not invent a replacement layout or visual hierarchy.",
     "Do not change Nexus/GoClear branding or approved assets.",
