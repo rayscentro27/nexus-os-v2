@@ -14,8 +14,8 @@
       "source_work_order_id": null,
       "design_worker": "penpot",
       "design_artifact_type": "editable_product_ui_artifact",
-      "design_artifact_location": "docs/experience-2/ADMIN_INFORMATION_ARCHITECTURE.md",
-      "current_reference": "docs/experience-2/DESIGN_SYSTEM.md",
+      "design_artifact_location": "data/runtime/creative_admin_command_center_implementation_handoff.json",
+      "current_reference": "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_41 AM (1).png",
       "visual_direction": "Premium dark-mode Nexus/GoClear command surface using the supplied Creative reference language; plain-language operating meaning above implementation jargon.",
       "information_architecture": [],
       "layout_sections": [],
@@ -43,7 +43,7 @@
       "implementation_status": "NOT_STARTED",
       "visual_comparison_status": "NOT_STARTED",
       "final_acceptance_status": "PENDING",
-      "next_action": "Creative creates an editable Penpot artifact from the registered references, runs critique, and requests Ray approval; Codex remains gated."
+      "next_action": "Ray reviews the reconstructed editable Penpot artifact and approves or requests rework; Codex remains gated."
     },
     {
       "design_project_id": "design-988c2ea5cd1f338f",

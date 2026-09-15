@@ -59,6 +59,10 @@
     "preferred": true,
     "runtime_connection": "NOT_AVAILABLE_TO_THIS_SESSION",
     "mcp_connection": "NOT_PROVEN",
-    "artifact_created": false
+    "artifact_created": true,
+    "old_artifact_status": "VISUAL_FIDELITY_REJECTED",
+    "new_artifact_status": "VISUAL_FIDELITY_RECONSTRUCTION_PENDING_RAY",
+    "new_frame_id": "c5ed51bf-41ed-8040-8008-a4d4597e6b07",
+    "new_frame_dimensions": "1440x900"
   }
 }

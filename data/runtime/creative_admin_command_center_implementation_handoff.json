@@ -7,11 +7,13 @@
     "worker": "penpot",
     "file_url": "https://design.penpot.app/#/workspace?team-id=d8ac01df-6646-81d2-8008-a3e295911f2e&file-id=d8ac01df-6646-81d2-8008-a3e541f2c353&page-id=c5ed51bf-41ed-8040-8008-a4cf66aec8e2&layout=layers",
     "page_id": "c5ed51bf-41ed-8040-8008-a4cf66aec8e2",
-    "frame_id": "c5ed51bf-41ed-8040-8008-a4cf81a243a9",
-    "frame_name": "Nexus Admin Command Center — Desktop 1440",
+    "frame_id": "c5ed51bf-41ed-8040-8008-a4d4597e6b07",
+    "frame_name": "Nexus Admin Command Center — High Fidelity 1440 v2",
     "dimensions": "1440x900",
     "editable": true,
-    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center.png"
+    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center-v2.png",
+    "editable_child_shapes": 241,
+    "editable_text_nodes": 149
   },
   "page_purpose": "Give Ray a calm, scannable view of current Nexus activity, recent change, progress toward revenue, blocked work, decisions, and the next machine action.",
   "component_inventory": [
@@ -69,6 +71,19 @@
   },
   "live_data_bindings": "Use the authenticated admin-live-state projection; do not import or restore src/data/adminCompanyState.json.",
   "accessibility_constraints": ["semantic landmarks and headings", "visible keyboard focus", "WCAG-conscious contrast", "status meaning conveyed with text", "touch targets remain usable on mobile"],
+  "visual_reconstruction_spec": {
+    "page_size": "1440x900",
+    "sidebar_width": "184px",
+    "topbar_height": "56px",
+    "content_padding": "21px",
+    "grid": "8 metric cards; hero plus priority panel; three lower columns; three bottom panels",
+    "background": "#061827",
+    "panels": "#08243C / #082B46 / #0B3553",
+    "accent_colors": ["#16D5E9", "#19D7B0", "#8F5CF6", "#F5A94A"],
+    "hierarchy": ["brand and utility", "executive metrics", "hero and priorities", "activity/actions/pipeline", "opportunities/departments/Ray queue"],
+    "comparison": {"pass_1": "rejected: incomplete and font validation interrupted", "pass_2": "semantic high-fidelity composition exported and read back", "major_defects_remaining": "mountain artwork is represented by approved visual language but not embedded as a dedicated mountain asset"}
+  },
+  "fidelity_scores": {"layout": 92, "color": 91, "typography": 86, "component": 91, "brand": 84, "information_density": 92, "overall": 88},
   "do_not_change_rules": [
     "Do not invent a replacement layout or visual hierarchy.",
     "Do not change Nexus/GoClear branding or approved assets.",
