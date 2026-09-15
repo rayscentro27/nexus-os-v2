@@ -16,7 +16,7 @@ from alpha.alpha_discovery import (bounded_budget, claim_record, content_record,
                                    extract_forum_thread, source_adapter_for_url)
 from nexus_agent_platform.governed.persistence import append_record, read_records
 from nexus_agent_platform.research_alpha_pipeline import evaluate_pending
-from alpha.youtube_provenance import persist_transcript_artifact, persist_validation
+from alpha.youtube_provenance import persist_asr_required, persist_transcript_artifact, persist_validation
 
 def run(theme: str, question: str, youtube_url: str | None, page_urls: list[str], forum_urls: list[str], github_urls: list[str], support_urls: list[str], contrary_urls: list[str], window: str) -> dict:
     persist_registry(); contents=[]; claims=[]; retrieval=[]
@@ -27,6 +27,8 @@ def run(theme: str, question: str, youtube_url: str | None, page_urls: list[str]
     for url, kind in urls[:bounded_budget()["MAX_DISCOVERY_RESULTS"]]:
         if kind == "YOUTUBE":
             result = youtube_transcript(url); retrieval.append({"kind": kind, "url": url, **{k:v for k,v in result.items() if k != "excerpt"}})
+            if kind == "YOUTUBE" and not result.get("ok"):
+                persist_asr_required(video={"video_id": result.get("video_id"), "video_url": url, "channel_name": result.get("channel"), "created_at": result.get("retrieved_at"), "next_attempt_at": result.get("retrieved_at")}, failure_reason=str(result.get("status") or "CAPTION_UNAVAILABLE"))
             if not result.get("ok"): continue
             source_id = digest(url, "source")
             video_text = result.get("transcript") or result.get("excerpt", "")

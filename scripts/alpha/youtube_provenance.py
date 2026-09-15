@@ -5,7 +5,18 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from nexus_agent_platform.governed.persistence import append_record, new_id
+from nexus_agent_platform.governed.persistence import append_record, new_id, read_records
+
+
+def persist_asr_required(*, video: dict[str, Any], failure_reason: str, attempts: int = 1, priority: str = "P1") -> dict[str, Any]:
+    """Queue caption failures without blocking other portfolio work."""
+    video_id = str(video.get("video_id") or "")
+    record = {"schema_version": "nexus.youtube-asr-job.v1", "asr_job_id": new_id("youtube_asr"),
+              "video_id": video_id, "video_url": video.get("video_url"), "channel": video.get("channel_name"),
+              "failure_reason": failure_reason, "attempts": attempts, "created_at": video.get("created_at"),
+              "priority": priority, "status": "ASR_REQUIRED", "next_attempt_at": video.get("next_attempt_at")}
+    append_record("youtube_asr_jobs", record)
+    return record
 
 
 def persist_transcript_artifact(root: Path, *, video: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
@@ -62,13 +73,21 @@ def persist_validation(*, claim: dict[str, Any], video: dict[str, Any], supporti
               "contradicting_sources": contradicting, **result}
     append_record("youtube_claim_validations", record)
     if result["validation_result"] in {"UNVERIFIED", "PARTIALLY_SUPPORTED", "VALIDATION_FAILED"}:
-        append_record("youtube_follow_ups", {"schema_version": "nexus.youtube-follow-up.v1",
+        follow_up = {"schema_version": "nexus.youtube-follow-up.v1",
             "follow_up_id": new_id("youtube_followup"), "claim_id": claim["claim_id"],
             "video_id": video.get("video_id"),
             "exact_missing_evidence": "Independent primary evidence for the extracted claim",
             "next_search_question": f"What current primary evidence verifies: {claim.get('claim', '')}?",
             "suggested_source_types": ["official documentation", "government/regulator", "primary company page"],
-            "priority": "P1", "retry_after": at})
+            "priority": "P1", "retry_after": at, "status": "OPEN"}
+        if not any(row.get("claim_id") == follow_up["claim_id"] and row.get("status") == "OPEN" for row in read_records("youtube_follow_ups")):
+            append_record("youtube_follow_ups", follow_up)
+        queue_item = {"schema_version": "nexus.research-question.v1", "question_id": new_id("youtube_followup_question"),
+                      "claim_id": claim["claim_id"], "video_id": video.get("video_id"),
+                      "question": follow_up["next_search_question"], "priority": "P1", "status": "OPEN",
+                      "next_attempt_at": at, "source": "youtube_validation", "created_at": at}
+        if not any(row.get("claim_id") == queue_item["claim_id"] and row.get("status") == "OPEN" for row in read_records("research_questions")):
+            append_record("research_questions", queue_item)
     return result
 
 
