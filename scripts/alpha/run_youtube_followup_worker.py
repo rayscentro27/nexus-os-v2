@@ -40,11 +40,15 @@ def execute(limit: int = 2) -> dict:
     completed_claims = {row.get("claim_id") for row in read_records("youtube_follow_up_executions") if row.get("claim_id") and row.get("status") == "COMPLETED"}
     now = datetime.now(timezone.utc)
     followups = []
+    latest_followups = {}
     for row in read_records("youtube_follow_ups"):
+        if row.get("claim_id") and row["claim_id"] not in latest_followups:
+            latest_followups[row["claim_id"]] = row
+    for row in latest_followups.values():
         if not row.get("claim_id") or row.get("status") not in {None, "OPEN", "PARTIALLY_SUPPORTED", "UNVERIFIED", "FAILED_RETRYABLE"}:
             continue
         retry_after = row.get("retry_after")
-        if row.get("claim_id") in completed_claims and (not retry_after or datetime.fromisoformat(retry_after.replace("Z", "+00:00")) > now):
+        if retry_after and datetime.fromisoformat(retry_after.replace("Z", "+00:00")) > now:
             continue
         followups.append(row)
     followups.sort(key=lambda row: (0 if row.get("video_id") in TARGETS else 1, str(row.get("retry_after") or "")))

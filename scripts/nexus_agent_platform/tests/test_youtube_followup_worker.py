@@ -35,6 +35,15 @@ class YouTubeFollowupWorkerTests(unittest.TestCase):
                 second = worker.execute(limit=1)
             self.assertEqual(second["executed"], 0)
 
+    def test_newest_retry_row_wins_over_legacy_row(self):
+        with tempfile.TemporaryDirectory() as root:
+            worker = self._load(root)
+            self._seed(worker)
+            worker.append_record("youtube_follow_ups", {"follow_up_id": "followup_test", "claim_id": "claim_test", "video_id": "A5vj0ZJiVl0", "status": "PARTIALLY_SUPPORTED", "retry_after": "2999-01-01T00:00:00+00:00"})
+            with patch.object(worker, "retrieve_page", return_value={"ok": True, "content_length": 10}):
+                result = worker.execute(limit=1)
+            self.assertEqual(result["executed"], 0)
+
     def test_source_failure_is_retryable_and_does_not_raise(self):
         with tempfile.TemporaryDirectory() as root:
             worker = self._load(root,)
