@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.nexus.youtube-followup-worker</string>
+  <key>ProgramArguments</key><array>
+    <string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/alpha/run_youtube_followup_worker.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>EnvironmentVariables</key><dict><key>PYTHONPATH</key><string>/Users/raymonddavis/nexus-os-v2/scripts</string></dict>
+  <key>RunAtLoad</key><true/><key>StartInterval</key><integer>900</integer>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/youtube_followup_worker.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/youtube_followup_worker_error.log</string>
+</dict></plist>
