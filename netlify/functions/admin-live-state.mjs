@@ -27,6 +27,7 @@ export function liveProjection() {
   const states = Object.fromEntries(['READY', 'CLAIMED', 'RUNNING', 'COMPLETED', 'FAILED_RETRYABLE', 'WAITING_APPROVAL', 'BLOCKED', 'SUPERSEDED'].map(state => [state, queue.filter(row => String(row.status || '').toUpperCase() === state).length]))
   const supervisorLast = supervisorHeartbeat?.generated_at || supervisor?.generated_at || null
   const currentLane = research?.selected_lane_name || research?.selected_lane_id || snapshot.research.current_lane
+  const goals = readJson('data/runtime/company_goal_portfolio.json')
   return {
     ...snapshot,
     generated_at: new Date().toISOString(),
@@ -40,7 +41,7 @@ export function liveProjection() {
     notifications: { status: 'launchd-scheduled', latest: null, morning_digest: 'scheduler-managed' },
     runtime: { supervisor_status: supervisor?.supervisor_status || 'UNKNOWN', supervisor_last_heartbeat: supervisorLast, active_operator: 'launchd-supervised', scheduler: research?.scheduler || 'UNKNOWN', next_wake: research?.next_wake || snapshot.next_wake_at, next_machine_action: research?.next_action || snapshot.next_machine_action },
     queue_metrics: { total_historical_records: queue.length, executable_queue_depth: states.READY + states.CLAIMED + states.RUNNING + states.FAILED_RETRYABLE, ...states },
-    active_goals: readJson('data/runtime/company_goal_portfolio.json'),
+    active_goals: { count: Array.isArray(goals) ? goals.length : (Array.isArray(goals?.goals) ? goals.goals.length : null), source: 'canonical runtime aggregate' },
     human_gated_work: states.WAITING_APPROVAL,
     blocked_work: states.BLOCKED,
     ray_decision_count: snapshot.ray_decisions?.count || 0,
