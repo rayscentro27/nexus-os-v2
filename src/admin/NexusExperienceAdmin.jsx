@@ -23,6 +23,7 @@ import AdminOperatingCenter from '../components/AdminOperatingCenter'
 import { ResearchNotebookWorkspace } from '../components/ResearchNotebookWorkspace'
 import R28AdminOperationsPanel from './R28AdminOperationsPanel'
 import LiveCompanyIntelligence from './LiveCompanyIntelligence'
+import AdminSurfacePage from './AdminSurfacePage'
 
 const nav = [
   { id: 'command', label: 'Command', icon: Sparkles },
@@ -36,6 +37,8 @@ const nav = [
   { id: 'system', label: 'System', icon: Network },
   { id: 'access', label: 'Access & Comms', icon: UsersRound },
 ]
+
+const controlSurfaces = ['ai-command', 'projects', 'tasks', 'knowledge', 'analytics', 'automation', 'team', 'settings', 'support']
 
 const agentMeta = {
   hermes: { label: 'Nexus / Hermes', role: 'Operator · COO · Chief of Staff', icon: 'N', tone: 'hermes' },
@@ -55,7 +58,7 @@ function routeFromLocation() {
   const subpageMap = { 'work-detail': ['work', 'detail'], 'ray-review': ['work', 'approvals'], 'business-clients': ['business', 'clients'], 'business-credit': ['business', 'credit'], 'business-opportunities': ['business', 'opportunities'], 'business-funding': ['business', 'funding'], 'studio-review': ['studio', 'review'], 'studio-research': ['studio', 'research'], 'studio-campaigns': ['studio', 'campaigns'], 'system-mission-control': ['system', 'mission-control'], 'system-workers': ['system', 'workers'] }
   const oldMap = { hermes: 'agents', nova: 'agents', alpha: 'agents', 'mission-control-v2': 'system', operations: 'work', rayreview: 'work', reports: 'studio', clients: 'business', credit: 'business', 'credit-specialist': 'business', research: 'studio', creative: 'studio', health: 'system', automation: 'system' }
   const mapped = subpageMap[hash]
-  return { area: mapped?.[0] || oldMap[hash] || (nav.some(item => item.id === hash) ? hash : 'command'), subpage: mapped?.[1] || null, agent: hash === 'nova' ? 'nova' : hash === 'alpha' ? 'alpha' : getStoredAgent(), conversationId: null, legacyHash: hash }
+  return { area: mapped?.[0] || (controlSurfaces.includes(hash) ? 'surface' : oldMap[hash] || (nav.some(item => item.id === hash) ? hash : 'command')), subpage: mapped?.[1] || (controlSurfaces.includes(hash) ? hash : null), agent: hash === 'nova' ? 'nova' : hash === 'alpha' ? 'alpha' : getStoredAgent(), conversationId: null, legacyHash: hash }
 }
 
 function statusPill(value, tone = 'blue') { return <span className={`nx2-status nx2-status-${tone}`}>{value}</span> }
@@ -67,7 +70,7 @@ const secondaryNav = {
   studio: [['Overview', 'studio'], ['Review', 'studio-review'], ['Research', 'studio-research'], ['Creative', 'studio'], ['Campaigns', 'studio-campaigns'], ['Artifacts', 'studio'], ['Reports', 'studio']],
   system: [['Overview', 'system'], ['Mission Control', 'system-mission-control'], ['Workers', 'system-workers'], ['Integrations', 'system'], ['Costs', 'system'], ['Runtime', 'system'], ['Diagnostics', 'system']],
 }
-const areaNames = { work: 'Work', 'live-intelligence': 'Live Intelligence', business: 'Business', studio: 'Studio', 'trading-lab': 'Trading Lab', system: 'System', access: 'Access & Comms' }
+const areaNames = { work: 'Work', 'live-intelligence': 'Live Intelligence', business: 'Business', studio: 'Studio', 'trading-lab': 'Trading Lab', system: 'System', access: 'Access & Comms', surface: 'Admin Control Center' }
 const subpageNames = { detail: 'Work Item', approvals: 'Ray Review', clients: 'Clients', credit: 'Credit & Funding', opportunities: 'Opportunities', funding: 'Funding Readiness', review: 'Review Center', research: 'Research Notebook', campaigns: 'Campaigns', 'mission-control': 'Mission Control', workers: 'Workers' }
 function NavigationContext({ area, subpage, onNavigate }) {
   if (!areaNames[area]) return null
@@ -123,7 +126,7 @@ export default function NexusExperienceAdmin({ email, initialPage = 'command' })
     const target = next || 'command'
     if (target.startsWith('agent-')) { const agent = target.replace('agent-', ''); openAgent(agent); return }
     const mapped = { 'work-detail': ['work', 'detail'], 'ray-review': ['work', 'approvals'], 'business-clients': ['business', 'clients'], 'business-credit': ['business', 'credit'], 'business-opportunities': ['business', 'opportunities'], 'business-funding': ['business', 'funding'], 'studio-review': ['studio', 'review'], 'studio-research': ['studio', 'research'], 'studio-campaigns': ['studio', 'campaigns'], 'system-mission-control': ['system', 'mission-control'], 'system-workers': ['system', 'workers'] }[target]
-    const [nextArea, nextSubpage] = mapped || (target === 'research' ? ['studio', 'research'] : [target, null])
+    const [nextArea, nextSubpage] = mapped || (controlSurfaces.includes(target) ? ['surface', target] : target === 'research' ? ['studio', 'research'] : [target, null])
     setArea(nextArea); setSubpage(nextSubpage); setConversationId(null); setMobileOpen(false)
     const hash = nextSubpage ? `${nextArea}-${nextSubpage}` : nextArea
     window.history.pushState({}, '', `/admin#${hash}`); window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -143,6 +146,7 @@ export default function NexusExperienceAdmin({ email, initialPage = 'command' })
   else if (area === 'agents') page = conversationId || window.location.pathname.includes('/agents/') ? <NexusAgentConversation agent={selectedAgent} conversationId={conversationId} initialPrompt={pendingPrompt} onConversationChange={onConversationChange} context="Current Admin surface" /> : <AgentsPage onOpenAgent={askAgent} />
   else if (area === 'business') page = <BusinessPage subpage={subpage} onNavigate={navigate} />
   else if (area === 'live-intelligence') page = <ErrorBoundary panelName="Live Company Intelligence"><LiveCompanyIntelligence /></ErrorBoundary>
+  else if (area === 'surface') page = <ErrorBoundary panelName="Admin Control Center"><AdminSurfacePage surface={subpage || 'projects'} /></ErrorBoundary>
   else if (area === 'studio') page = <StudioPage subpage={subpage} onNavigate={navigate} email={email} />
   else if (area === 'trading-lab') page = <TradingLabPanel />
   else if (area === 'access') page = <R28AdminOperationsPanel />
