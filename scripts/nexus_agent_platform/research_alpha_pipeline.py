@@ -81,7 +81,10 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
             "status": decision,
             "no_external_action": True,
         }
-        if decision == "QUALIFIED" and research.get("research_id"):
+        # Normal business routing requires the durable provenance validator to
+        # have completed successfully.  A score alone cannot turn an
+        # unvalidated transcript claim into a department handoff.
+        if decision == "QUALIFIED" and claim.get("validation_result") == "VALIDATED" and research.get("research_id"):
             from alpha.alpha_discovery import route_finding
             route = route_finding(str(research.get("theme") or "AI_NEXUS"), str(research["research_id"]), str(claim.get("claim") or content.get("title") or "Research output"))
             evaluation["next_route"] = route
