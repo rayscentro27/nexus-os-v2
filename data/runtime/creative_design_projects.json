@@ -16,7 +16,7 @@
       "design_artifact_type": "editable_product_ui_artifact",
       "design_artifact_location": "docs/experience-2/ADMIN_INFORMATION_ARCHITECTURE.md",
       "current_reference": "docs/experience-2/DESIGN_SYSTEM.md",
-      "visual_direction": {},
+      "visual_direction": "Premium dark-mode Nexus/GoClear command surface using the supplied Creative reference language; plain-language operating meaning above implementation jargon.",
       "information_architecture": [],
       "layout_sections": [],
       "component_requirements": [],
@@ -26,9 +26,13 @@
       "spacing_tokens_ref": "docs/experience-2/DESIGN_SYSTEM.md",
       "radius_tokens_ref": "docs/experience-2/DESIGN_SYSTEM.md",
       "icon_rules": {},
-      "asset_requirements": [],
-      "asset_references": [],
-      "responsive_rules": [],
+      "asset_requirements": [
+        {"type": "PRIMARY_ADMIN_REFERENCE", "source": "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_41 AM (1).png"},
+        {"type": "SUPPORTING_PAGE_REFERENCE", "source": "public/creative/admin-references/*.png"},
+        {"type": "LOGO_OR_BRAND_ASSET", "source": "public/brand/GoClearLogo.svg"}
+      ],
+      "asset_references": ["data/runtime/creative_admin_command_center_reference_manifest.json"],
+      "responsive_rules": ["1440: persistent navigation and two-column command surface", "1024: stacked detail groups with readable widths", "390: single-column vertical flow with collapsed navigation and no horizontal overflow"],
       "interaction_rules": [],
       "accessibility_requirements": [],
       "state": "READY_FOR_RAY",
@@ -39,7 +43,7 @@
       "implementation_status": "NOT_STARTED",
       "visual_comparison_status": "NOT_STARTED",
       "final_acceptance_status": "PENDING",
-      "next_action": "Creative creates an editable Penpot or Figma artifact, runs critique, and requests Ray approval."
+      "next_action": "Creative creates an editable Penpot artifact from the registered references, runs critique, and requests Ray approval; Codex remains gated."
     },
     {
       "design_project_id": "design-988c2ea5cd1f338f",

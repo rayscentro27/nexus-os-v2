@@ -1,0 +1,64 @@
+{
+  "schema_version": "nexus.creative-admin-reference-manifest.v1",
+  "design_project_id": "design-d34d4d5c50a632b4",
+  "design_project_type": "admin_command_center",
+  "surface": "admin",
+  "source_of_truth": "Creative artifact",
+  "implementation_target": "current Nexus Admin shell",
+  "data_source": "existing live authenticated runtime projection",
+  "design_authority": "Creative",
+  "code_implementation_authority": "Codex after approved handoff",
+  "reference_package": {
+    "source": "~/Downloads/images.zip",
+    "extracted_to": "public/creative/admin-references",
+    "files": [
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_41 AM (1).png", "classification": "PRIMARY_ADMIN_REFERENCE", "sha256": "5af41bf730239727c26fdca750209bc7a0e0bab47f0f55e7207b304612d23b7d", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_42 AM (2).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "4fce03e0343acccb7ad882b4dbe4466203de5d6319de2d572d44fface6b2d93d", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_43 AM (3).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "36b060447ef45b19ab15202df7defc6a3171cc995b52990b45bf3d3e86b362c2", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_43 AM (4).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "ea17d6334b897445c578b2bdf80219395456113fa3fa15017dc68ebbb72c3b0c", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_44 AM (5).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "a3bdd41405b8ec3bc10584a6e2fd5dea696ff7c16af962a20d1faa6e5abc674b", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_44 AM (6).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "0d48f634b91cd3e32a297300373556899a4a5ca5c2c80dbcd5ed11c5042cef", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_44 AM (7).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "f5d9c2ee5a2ddab98175c7375e01c86352c183a74f48f3fcb0f8adfca6b1bc77", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_44 AM (8).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "3a38b71a43712f8dbd33876480dc579d34d8bf145a3f596d9a7e13bc50fc1f1e", "dimensions": "1672x941"},
+      {"file": "ChatGPT Image Sep 15, 2026, 10_15_45 AM (9).png", "classification": "SUPPORTING_PAGE_REFERENCE", "sha256": "b10581b7eb8dc7038fbc32a829da39cc9d8ef35604d672d27a053a69beff4082", "dimensions": "1672x941"},
+      {"file": "GoClear Nexus OS Trading Dashboard(1).png", "classification": "TRADING_REFERENCE", "sha256": "639421bf3c921a5c5c65751b688be674b9f63f9c09b45609fc21a45e30f2fa7c", "dimensions": "1536x1024"}
+    ]
+  },
+  "page_goals": [
+    "What is happening in Nexus right now?",
+    "What work is active?",
+    "What changed recently?",
+    "What requires Ray attention?",
+    "What is blocked versus healthy?",
+    "Where should Ray go next for opportunities, research, handoffs, or departments?"
+  ],
+  "summary_block_contract": "Every summary block includes plain-language meaning, value, why it matters, and a canonical click-through destination.",
+  "live_data_bindings": ["supervisor", "research", "youtube", "follow_up_research", "departments", "opportunities", "handoffs", "ray_decision_queue", "notifications", "system_health", "next_machine_action"],
+  "responsive_contract": {
+    "desktop": "Persistent navigation, branded command summary, two-column detail groups, explicit page scroll.",
+    "tablet": "Narrow navigation or collapse, stacked groups, readable card widths, no clipped tables.",
+    "mobile": "Single-column flow, collapsed navigation, cards stack, vertical page scroll, no horizontal overflow."
+  },
+  "visual_direction": "Premium dark-mode Nexus/GoClear command surface using the supplied reference language, with strong hierarchy, clear section separation, meaningful iconography, and calm branded mountain/clearer-tomorrow visual treatment.",
+  "do_not_change": [
+    "Creative owns visual design.",
+    "Ray owns final visual approval.",
+    "Do not use raster references as a substitute for an editable approved artifact.",
+    "Do not revert the authenticated live Admin read model to src/data/adminCompanyState.json.",
+    "Do not expose secrets, tokens, tenant identifiers, or raw PII.",
+    "Do not begin Codex implementation until an editable Creative artifact is approved and frozen."
+  ],
+  "implementation_gate": {
+    "reference_manifest": "REGISTERED",
+    "editable_creative_artifact": "REQUIRED",
+    "ray_approval": "PENDING",
+    "codex_implementation": "BLOCKED_UNTIL_APPROVED_FROZEN_ARTIFACT",
+    "current_project_state": "READY_FOR_RAY"
+  },
+  "penpot": {
+    "preferred": true,
+    "runtime_connection": "NOT_AVAILABLE_TO_THIS_SESSION",
+    "mcp_connection": "NOT_PROVEN",
+    "artifact_created": false
+  }
+}
