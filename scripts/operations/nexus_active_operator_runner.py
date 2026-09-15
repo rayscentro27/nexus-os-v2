@@ -810,7 +810,27 @@ def _stable_work_order_id(dedupe_key: str) -> str:
 
 def _load_operator_work_orders() -> List[Dict[str, Any]]:
     value = load_json(ROOT / "data/runtime/active_operator_work_orders.json", [])
-    return value if isinstance(value, list) else []
+    if not isinstance(value, list):
+        return []
+    # A prior cadence token made the same open parent-goal repair appear to
+    # be new every hour (…:YYYYMMDDHH). Preserve those records for audit, but
+    # leave only the oldest open representative eligible for execution.
+    # Future findings use the stable parent key below, so this is a one-way
+    # migration rather than a recurring cleanup loop.
+    periodic = {}
+    for item in value:
+        if str(item.get("status", "")).upper() != "READY":
+            continue
+        dedupe = str(item.get("dedupe_key") or "")
+        match = re.match(r"^(continuous_kernel:[^:]+):\d{10}$", dedupe)
+        if match:
+            periodic.setdefault(match.group(1), []).append(item)
+    for items in periodic.values():
+        for duplicate in sorted(items, key=lambda x: str(x.get("created_at") or ""))[1:]:
+            duplicate["status"] = "SUPERSEDED"
+            duplicate["superseded_reason"] = "duplicate periodic parent-goal work order"
+            duplicate["last_updated"] = utc_now()
+    return value
 
 
 def _save_operator_work_orders(orders: List[Dict[str, Any]]) -> None:
@@ -1131,7 +1151,9 @@ def discover_attention(registry: Iterable[Dict[str, Any]], scheduler_health: Dic
                 "reason": research_state.get("empty_queue_next_action", "OPEN_GOAL_MISSING_SUCCESS_CRITERION"),
                 "proposed_action": dispatch["action"], "productive_action": dispatch.get("productive_action"), "approval_required": False,
                 "action_class": "INTERNAL_AUTONOMOUS", "capability": {"Trading": "trading.paper_research", "Portal/Product": "ai.workforce.internal_planning", "Systems": "ai.workforce.internal_planning", "Finance": "ai.workforce.internal_planning", "Finance/Opportunity": "ai.workforce.internal_planning", "Marketing/Creative": "ai.workforce.internal_planning", "Marketing": "ai.workforce.internal_planning", "Creative": "ai.workforce.internal_planning", "Opportunity": "ai.workforce.internal_planning", "Grants": "ai.workforce.internal_planning", "Clyde": "ai.workforce.internal_planning", "Customer Service": "ai.workforce.internal_planning", "Documents": "ai.workforce.internal_planning", "Nexus/Systems": "ai.workforce.internal_planning", "Nexus/Product": "ai.workforce.internal_planning", "Funding": "funding.fixture_review", "Funding/Product": "funding.fixture_review"}.get(dispatch["department"], "searxng.research"),
-                "dedupe_key": f"{dispatch['work_item_id']}:{datetime.now(timezone.utc).strftime('%Y%m%d%H')}",
+                # Parent-goal work is durable until completed or superseded;
+                # cadence belongs to scheduling, not identity.
+                "dedupe_key": str(dispatch["work_item_id"]),
                 "source_record_id": cycle_work_item, "question": dispatch["question"],
                 "parent_goal": dispatch["goal_id"], "department": dispatch["department"],
                 "criterion": dispatch.get("criterion"),
