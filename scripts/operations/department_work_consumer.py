@@ -60,6 +60,13 @@ def _save(value: list[dict]) -> None:
 def _department(order: dict) -> str:
     text = f"{order.get('title','')} {order.get('description','')} {order.get('source','')}".lower()
     action = str(order.get("recommended_action") or "")
+    source = str(order.get("source") or "").lower()
+    if action == "measurement_gap.report":
+        if "growth" in source:
+            return "Growth"
+        if "revenue" in source or "finance" in source:
+            return "Finance"
+        return "Growth"
     if action in {"research.refresh", "research.alternate_public", "department.research_handoff"} or "research" in text:
         return "Research"
     if "grant" in text:
