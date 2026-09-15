@@ -1,0 +1,80 @@
+{
+  "schema_version": "nexus.creative-implementation-handoff.v1",
+  "design_project_id": "design-d34d4d5c50a632b4",
+  "status": "PENDING_RAY_VISUAL_APPROVAL",
+  "approved_design_is_source_of_truth": true,
+  "artifact": {
+    "worker": "penpot",
+    "file_url": "https://design.penpot.app/#/workspace?team-id=d8ac01df-6646-81d2-8008-a3e295911f2e&file-id=d8ac01df-6646-81d2-8008-a3e541f2c353&page-id=c5ed51bf-41ed-8040-8008-a4cf66aec8e2&layout=layers",
+    "page_id": "c5ed51bf-41ed-8040-8008-a4cf66aec8e2",
+    "frame_id": "c5ed51bf-41ed-8040-8008-a4cf81a243a9",
+    "frame_name": "Nexus Admin Command Center — Desktop 1440",
+    "dimensions": "1440x900",
+    "editable": true,
+    "preview_reference": "public/creative/admin-artifacts/nexus-admin-command-center.png"
+  },
+  "page_purpose": "Give Ray a calm, scannable view of current Nexus activity, recent change, progress toward revenue, blocked work, decisions, and the next machine action.",
+  "component_inventory": [
+    "persistent operations navigation",
+    "branded command header",
+    "active work summary",
+    "recent change summary",
+    "Ray decision summary",
+    "next machine action summary",
+    "Research pulse",
+    "revenue/opportunity progress",
+    "department activity",
+    "handoff activity",
+    "next actions and notifications"
+  ],
+  "layout_hierarchy": "232px navigation rail; 1208px light content surface; branded hero; four executive summaries; two-column detail groups; full-width next-actions footer.",
+  "tokens": {
+    "BRAND_NAVY": "#182B45",
+    "BRAND_CYAN": "#326BCE",
+    "BRAND_TEAL": "#2D8057",
+    "SURFACE_DARK": "#101318",
+    "SURFACE_LIGHT": "#F7F8FA",
+    "TEXT_PRIMARY": "#101318",
+    "TEXT_SECONDARY": "#697483",
+    "STATUS_SUCCESS": "#2D8057",
+    "STATUS_WARNING": "#B97820",
+    "STATUS_ERROR": "#B44949"
+  },
+  "typography": {"display": "32/38 650", "heading": "24/30 650", "body": "14/21 450", "meta": "12/17 500"},
+  "spacing": {"base": "4px", "section": "24px", "card_padding": "24px", "panel_radius": "14–18px"},
+  "icon_specs": "Use semantic navigation/status icons with text labels; status meaning must not rely on color alone.",
+  "asset_references": [
+    "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_41 AM (1).png",
+    "public/brand/GoClearLogo.svg",
+    "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_42 AM (2).png",
+    "public/creative/admin-references/ChatGPT Image Sep 15, 2026, 10_15_43 AM (3).png"
+  ],
+  "responsive_rules": {
+    "1440": "Persistent navigation and two-column command surface.",
+    "1024": "Collapse or narrow navigation; stack detail groups while preserving readable widths.",
+    "390": "Single-column flow; collapsed navigation; cards stack; page scrolls vertically; no horizontal overflow."
+  },
+  "scroll_behavior": "The page is vertically scrollable; no content is clipped or hidden behind fixed panels.",
+  "interaction_rules": {
+    "summary_cards": "Link only when a canonical detail route exists.",
+    "destinations": {
+      "Research pulse": "#/research",
+      "Progress toward revenue": "#/opportunities",
+      "Department activity": "#/departments",
+      "Handoff activity": "#/handoffs",
+      "YouTube intelligence": "#/youtube",
+      "SEO/current demand": "#/seo",
+      "Campaigns": "#/campaigns"
+    }
+  },
+  "live_data_bindings": "Use the authenticated admin-live-state projection; do not import or restore src/data/adminCompanyState.json.",
+  "accessibility_constraints": ["semantic landmarks and headings", "visible keyboard focus", "WCAG-conscious contrast", "status meaning conveyed with text", "touch targets remain usable on mobile"],
+  "do_not_change_rules": [
+    "Do not invent a replacement layout or visual hierarchy.",
+    "Do not change Nexus/GoClear branding or approved assets.",
+    "Do not replace the React/Vite/Admin route or authentication contract.",
+    "Do not expose secrets, tokens, tenant identifiers, or raw PII.",
+    "Only bounded accessibility, responsive, and functional corrections are allowed after approval."
+  ],
+  "approval_gate": {"ray_approval": "PENDING", "freeze_required_before_codex": true, "codex_implementation": "NOT_STARTED"}
+}
