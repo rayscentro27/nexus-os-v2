@@ -65,14 +65,14 @@ export default function LiveCompanyIntelligence() {
     ['opportunity', 'Opportunities', s.opportunities.active, `${s.opportunities.alpha_reviews} Alpha reviews`, 'cyan'],
     ['automation', 'Handoffs', s.handoffs.active, `${s.handoffs.waiting} waiting · ${s.handoffs.completed} completed`, 'teal'],
     ['team', 'Departments', s.departments.active, `${s.departments.ready} ready · ${s.departments.legitimately_idle} idle`, 'purple'],
-    ['notifications', 'Ray decisions', s.ray_decisions.count, 'routine machine work excluded', 'amber'],
+    ['notifications', 'Ray decisions', s.ray_decisions.count, 'routine machine work excluded', s.ray_decisions.count ? 'orange' : 'amber'],
     ['research', 'YouTube', `${s.youtube.active_monitored}/${s.youtube.total_channels}`, `${s.youtube.older_videos_reviewed} older videos reviewed`, 'cyan'],
     ['analytics', 'SEO signals', s.seo.signals_found, `${s.seo.opportunities_created} opportunities · ${s.seo.experiments_created} experiments`, 'purple'],
   ]
 
   return <main className="live-command-page">
     <aside className="live-command-sidebar">
-      <div className="live-command-brand"><img src="/brand/GoClearLogo.svg" alt="GoClear" /><span>NEXUS OS</span></div>
+      <div className="live-command-brand"><div className="live-command-brand-lockup"><img className="live-command-brand-mark" src="/brand/GoClearMark.svg" alt="" /><span className="live-command-brand-wordmark"><img src="/brand/GoClearLogo.svg" alt="GoClear" /></span></div><span>NEXUS OS</span></div>
       <nav aria-label="Admin navigation">
         <a className="active" href="#/live-intelligence"><Icon name="dashboard" />Dashboard</a>
         <a href="#/alpha"><Icon name="ai" />AI Command</a><a href="#/projects"><Icon name="projects" />Projects</a>
