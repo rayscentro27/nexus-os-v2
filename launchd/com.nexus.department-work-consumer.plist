@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.nexus.department-work-consumer</string>
+  <key>ProgramArguments</key><array>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/ops/run_with_nexus_runtime_env.sh</string>
+    <string>/Users/raymonddavis/nexus-os-v2/.venv-agent-platform/bin/python3</string>
+    <string>/Users/raymonddavis/nexus-os-v2/scripts/operations/department_work_consumer.py</string>
+  </array>
+  <key>WorkingDirectory</key><string>/Users/raymonddavis/nexus-os-v2</string>
+  <key>EnvironmentVariables</key><dict><key>PYTHONPATH</key><string>/Users/raymonddavis/nexus-os-v2/scripts</string></dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/department_work_consumer.log</string>
+  <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/department_work_consumer_error.log</string>
+</dict></plist>
