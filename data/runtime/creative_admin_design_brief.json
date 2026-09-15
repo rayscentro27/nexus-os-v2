@@ -4,7 +4,7 @@
   "title": "Nexus Admin Executive Command Center",
   "surface_type": "ADMIN_DASHBOARD",
   "worker": "penpot",
-  "status": "READY_FOR_SPECIALIST_WORKER",
+  "status": "READY_FOR_REMOTE_DESIGN",
   "questions_answered": {
     "page_purpose": "Give Ray a calm, scannable operating view of what Nexus is doing, what changed, revenue progress, blockers, decisions, and the next machine action.",
     "ray_needs_to_learn": [
