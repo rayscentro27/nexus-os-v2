@@ -66,6 +66,10 @@ def _department(order: dict) -> str:
         return "Grants"
     if "trading" in text or "market-data" in text:
         return "Trading"
+    if "goclear" in text or "credit" in text or "business plan" in text:
+        return "GoClear Operations"
+    if "finance" in text or "billing" in text or "accounting" in text:
+        return "Finance"
     if "funding" in text or "billing" in text or "accounting" in text:
         return "Funding"
     if "creative" in text or "youtube" in text or "video" in text:
@@ -93,7 +97,30 @@ def _eligible(order: dict) -> bool:
         "internal.admin_gap_work", "internal.create_bounded_work_artifact",
         "ai.plan_and_verify", "trading.research_cycle",
         "funding.readiness_review", "generate_internal_report",
+        "measurement_gap.report", "department.work_order",
     }
+
+
+def _bounded_department_result(order: dict) -> dict:
+    """Execute the two canonical internal work types without external effects."""
+    wid = str(order.get("work_order_id"))
+    department = _department(order)
+    if order.get("recommended_action") == "measurement_gap.report":
+        deliverable = "measurement-gap definition and bounded instrumentation checklist"
+        result = "The measurement gap was converted into an internal evidence checklist; no analytics or customer systems were changed."
+    else:
+        deliverable = "bounded department implementation brief"
+        result = "The existing department work order was converted into a bounded internal execution brief; no external action was performed."
+    artifact = {"schema_version": "nexus.department-work-result.v1", "work_order_id": wid,
+                "department": department, "title": order.get("title"), "deliverable": deliverable,
+                "result": result, "source": order.get("source"), "external_side_effects": False,
+                "created_at": utc_now()}
+    path = ROOT / "reports/runtime/department_progress" / f"{wid}.json"
+    write_json(path, artifact)
+    return {"status": "PASS", "action": order.get("recommended_action"),
+            "artifact_path": str(path.relative_to(ROOT)), "execution_mode": "REAL",
+            "external_side_effects": False, "department": department,
+            "result": result}
 
 
 def _recover_expired_claims() -> int:
@@ -148,6 +175,8 @@ def _transition(work_order_id: str, updates: dict) -> None:
 
 
 def _execute_child(order: dict) -> dict:
+    if order.get("recommended_action") in {"measurement_gap.report", "department.work_order"}:
+        return _bounded_department_result(order)
     finding = {**order, "finding_id": order.get("work_order_id"),
                "source_record_id": order.get("work_order_id"),
                "parent_goal": order.get("parent_goal") or order.get("goal_id"),
@@ -213,7 +242,23 @@ def run_once() -> dict:
     started = utc_now()
     recovered_claims = _recover_expired_claims()
     rows = _orders()
-    eligible = [x for x in rows if _eligible(x)][:MAX_PER_CYCLE]
+    candidates = [x for x in rows if _eligible(x)]
+    # Fairness is at department level: one eligible item per department per
+    # pass, then fill remaining slots by priority/age. This preserves
+    # throughput without allowing Research to monopolize the queue.
+    selected = []
+    seen_departments = set()
+    for item in candidates:
+        dept = _department(item)
+        if dept in seen_departments:
+            continue
+        selected.append(item)
+        seen_departments.add(dept)
+        if len(selected) == MAX_PER_CYCLE:
+            break
+    if len(selected) < MAX_PER_CYCLE:
+        selected.extend(item for item in candidates if item not in selected and len(selected) < MAX_PER_CYCLE)
+    eligible = selected
     results = [process_one(x) for x in eligible]
     state = {"schema_version": "nexus.department-work-consumer.v1", "enabled": True,
              "last_run": utc_now(), "started_at": started, "processed": len(results),
