@@ -10,8 +10,12 @@ from __future__ import annotations
 
 import hashlib
 import re
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Iterable
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 KNOWLEDGE_MATURITIES = ("EARLY", "DEVELOPING", "MATURE")
 INTENTS = (
@@ -158,3 +162,74 @@ def productivity_metrics(items: list[dict[str, Any]]) -> dict[str, Any]:
     full = [x for x in items if x.get("processing_status") == "FULLY_PROCESSED" and x.get("substantive_findings")]
     return {"sources_discovered": len(items), "sources_acquired": sum(bool(x.get("acquired")) for x in items), "sources_fully_processed": len(full), "duplicates_skipped": sum(x.get("processing_status") == "DUPLICATE_UNCHANGED" for x in items), "summaries_created": sum(bool(x.get("summary_created")) for x in items), "structured_extractions_created": sum(bool(x.get("extraction_created")) for x in items), "substantive_findings_created": len(full), "follow_up_questions_created": sum(len(x.get("follow_up_questions", [])) for x in items), "deep_research_items_created": sum(x.get("disposition") == "DEEP_RESEARCH" for x in items), "processing_failures": sum(str(x.get("processing_status", "")).startswith("FAILED") for x in items), "useful_output_rate": round(len(full) / len(items), 3) if items else 0.0}
 
+
+SOURCE_CLASS_BY_INTENT = {
+    "PRODUCT_VERIFICATION": ("official_provider_source", "product_terms"),
+    "REGULATORY_RESEARCH": ("regulator_or_statute", "current_rule"),
+    "SOFTWARE_CAPABILITY": ("official_docs_or_source_code", "reproducible_test"),
+    "BUSINESS_OPPORTUNITY": ("competitor_and_market_sources", "pricing_demand_regulation"),
+    "BUSINESS_MODEL_RESEARCH": ("operator_and_competitor_sources", "model_economics"),
+    "MARKETING_STRATEGY": ("funnel_examples_and_platform_docs", "method_benchmark"),
+    "SEO_RESEARCH": ("search_and_content_sources", "demand_content_gap"),
+}
+
+
+def select_source_requirements(question: str, intent: str) -> dict[str, Any]:
+    source_class, answer_type = SOURCE_CLASS_BY_INTENT.get(intent, ("authoritative_public_web", "factual_context"))
+    query = re.sub(r"\s+", " ", f"{question} {answer_type}").strip()[:240]
+    return {"question": question, "intent": intent, "what_information_is_missing": question, "source_class": source_class, "query": query, "bounded_max_sources": 3}
+
+
+def persist_v2_records(records: dict[str, list[dict[str, Any]]]) -> dict[str, int]:
+    """Append V2 records to the existing governed JSONL store."""
+    scripts_root = str(REPO_ROOT / "scripts")
+    if scripts_root not in sys.path:
+        sys.path.insert(0, scripts_root)
+    from nexus_agent_platform.governed.persistence import append_record
+    counts = {}
+    for kind, rows in records.items():
+        collection = f"research_v2_{kind}"
+        counts[kind] = 0
+        for row in rows:
+            append_record(collection, {"schema_version": "nexus.research-v2.1", "recorded_at": _now(), **row})
+            counts[kind] += 1
+    return counts
+
+
+def research_package(*, source: dict[str, Any], claims: list[dict[str, Any]], evidence: list[dict[str, Any]], questions: list[dict[str, Any]], alpha_review: dict[str, Any] | None = None, opportunity: dict[str, Any] | None = None, strategy: dict[str, Any] | None = None) -> dict[str, Any]:
+    unknowns = [q.get("question") for q in questions if q.get("status", "OPEN") != "RESOLVED"]
+    package = {"research_package_id": _id("package", source.get("source_id")), "source": source, "claims": claims, "evidence": evidence, "questions": questions, "facts": [x.get("claim_text") for x in claims if x.get("verification_status") == "SUPPORTED"], "assumptions": ["observed source evidence may not represent market-wide demand"], "unknowns": unknowns or ["Nexus outcome data is not yet available"], "risks": ["pricing, demand, compliance, and operating constraints require bounded validation"], "opportunity_thesis": opportunity, "strategy_thesis": strategy, "alpha_review": alpha_review, "status": "MATERIAL_UNKNOWNS_REMAIN" if unknowns else "ENOUGH_FOR_PRELIMINARY_PLAN"}
+    return package
+
+
+def synthesize_plan(package: dict[str, Any], *, owner: str = "EXECUTIVE_PLANNING") -> dict[str, Any]:
+    thesis = package.get("opportunity_thesis") or {}
+    plan = {"plan_id": _id("plan", package.get("research_package_id")), "plan_type": "PRELIMINARY_RESEARCH_PLAN", "plan_status": "DRAFT_REVIEW_REQUIRED", "objective": package.get("source", {}).get("source_title", "Research subject"), "customer": thesis.get("customer", "UNKNOWN"), "offer": thesis.get("value_proposition", "UNKNOWN"), "revenue_model": thesis.get("revenue_model", "UNKNOWN"), "market_entry": "bounded no-spend validation", "go_to_market": "local search, referrals, and partnerships are hypotheses; performance UNKNOWN", "operating_model": "UNKNOWN_UNTIL_TESTED", "technology_requirements": "UNKNOWN", "automation_opportunities": ["lead intake and scheduling candidate"], "human_requirements": ["operator and customer support requirements UNKNOWN"], "regulatory_requirements": ["identify applicable local/state requirements before execution"], "estimated_costs": "UNKNOWN_UNTIL_VALIDATION", "estimated_revenue_mechanism": thesis.get("revenue_model", "UNKNOWN"), "validation_steps": thesis.get("validation_ideas", []), "key_assumptions": package.get("assumptions", []), "risks": package.get("risks", []), "success_criteria": ["qualified interest and measured unit-economics inputs"], "next_actions": ["resolve highest-value unknowns", "prepare internal validation brief"], "primary_owner": owner}
+    plan["score"] = score_plan({"assumptions": plan["key_assumptions"], "market_demand": "UNKNOWN", "market_demand_basis": "no direct demand data", "market_demand_evidence": package.get("evidence", [])})
+    return plan
+
+
+def outcome_record(*, entity_id: str, outcome_type: str, metrics: dict[str, Any], evidence: list[Any] | None = None) -> dict[str, Any]:
+    return {"outcome_id": _id("outcome", (entity_id, outcome_type, metrics)), "entity_id": entity_id, "outcome_type": outcome_type, "evidence_class": "NEXUS_OBSERVED_OUTCOME", "metrics": metrics, "evidence": evidence or [], "status": "OBSERVED"}
+
+
+def integrate_scheduled_result(item: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
+    """Project a completed source artifact into V2's governed records.
+
+    The source processor remains authoritative for acquisition and artifact
+    formats.  This projection is intentionally additive and skips shallow
+    metadata-only results as substantive intelligence.
+    """
+    source = {"source_id": item.get("source_id"), "source_type": item.get("source_type"), "source_url": item.get("source_url"), "source_title": item.get("title") or result.get("title"), "source_author_or_channel": item.get("author") or result.get("channel"), "processing_status": result.get("processing_status"), "source_observation": True}
+    substantive = result.get("transcript_acquired") or result.get("summary_created") or result.get("key_findings") or result.get("structured_data")
+    source["source_observation"] = not bool(substantive)
+    evidence_text = " ".join(str(x) for x in (result.get("key_findings") or result.get("executive_summary") or result.get("title") or "") if x)
+    claims = extract_claims(evidence_text, source) if substantive and len(evidence_text) >= 35 else []
+    intent_text = f"{item.get('category', '')} {item.get('title', '')}"
+    intents = classify_intents(intent_text, source_type=str(item.get("source_type", "")))
+    questions = []
+    for intent in intents[:3]:
+        requirements = select_source_requirements("Which material claims or unknowns require additional evidence?", intent)
+        questions.append({"question_id": _id("question", (source["source_id"], intent)), "source_id": source["source_id"], "question": requirements["question"], "intent": intent, "source_class": requirements["source_class"], "query": requirements["query"], "status": "OPEN"})
+    records = {"sources": [{**source, "research_intents": intents}], "claims": claims, "questions": questions, "investigations": [{"investigation_id": _id("investigation", source["source_id"]), "source_id": source["source_id"], "decision": "KNOWLEDGE_CAPTURE" if not substantive else "RESEARCH_MORE", "research_intents": intents, "source_requirements": [select_source_requirements(q["question"], q["intent"]) for q in questions], "research_continues": True}], "follow_ups": []}
+    return {"v2_integrated": True, "substantive_intelligence": bool(substantive), "research_intents": intents, "claims_created": len(claims), "questions_created": len(questions), "record_counts": persist_v2_records(records)}

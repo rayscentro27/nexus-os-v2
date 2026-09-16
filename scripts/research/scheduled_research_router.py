@@ -11,6 +11,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from research_document_pipeline import fetch, process_document
+from research_v2 import integrate_scheduled_result
 from youtube_full_pipeline import process_youtube_video
 
 
@@ -70,7 +71,8 @@ def process_scheduled_item(item: dict[str, Any]) -> dict[str, Any]:
             result = _web_item(item, source_type)
         status = result.get("processing_status", "FULLY_PROCESSED")
         duplicate = status == "DUPLICATE_UNCHANGED"
-        return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": True, "summary_created": not duplicate, "extraction_created": not duplicate, "scored": not duplicate, "provenance_created": True, "stored": True, "disposition": result.get("research_disposition", "DUPLICATE" if duplicate else "MONITOR"), "final_status": status, "result": result, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+        v2 = integrate_scheduled_result(item, result) if not duplicate else {"v2_integrated": True, "duplicate": True, "claims_created": 0, "questions_created": 0}
+        return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": True, "summary_created": not duplicate, "extraction_created": not duplicate, "scored": not duplicate, "provenance_created": True, "stored": True, "disposition": result.get("research_disposition", "DUPLICATE" if duplicate else "MONITOR"), "final_status": status, "result": result, "v2": v2, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
     except Exception as exc:
         return {"source_type": source_type, "source": item.get("source_url"), "normal_scheduler_selected": True, "processor": processor, "raw_acquired": False, "summary_created": False, "extraction_created": False, "scored": False, "provenance_created": False, "stored": False, "disposition": "INSUFFICIENT_SOURCE", "final_status": "FAILED_RETRYABLE", "error": str(exc), "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
 

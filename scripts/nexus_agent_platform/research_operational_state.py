@@ -48,6 +48,13 @@ def build_research_operational_state() -> dict[str, Any]:
     work_orders = _jsonl(ROOT / "data/governed/work_orders.jsonl")
     metadata = _json(metadata_path, [])
     transcripts = _json(transcript_path, [])
+    v2_sources = _jsonl(ROOT / "data/governed/research_v2_sources.jsonl")
+    v2_questions = _jsonl(ROOT / "data/governed/research_v2_questions.jsonl")
+    v2_follow_ups = _jsonl(ROOT / "data/governed/research_v2_follow_ups.jsonl")
+    v2_alpha_reviews = _jsonl(ROOT / "data/governed/research_v2_alpha_reviews.jsonl")
+    v2_plans = _jsonl(ROOT / "data/governed/research_v2_plans.jsonl")
+    v2_handoffs = _jsonl(ROOT / "data/governed/research_v2_handoffs.jsonl")
+    v2_reputations = _jsonl(ROOT / "data/governed/research_v2_reputations.jsonl")
     scheduler_plist = Path.home() / "Library/LaunchAgents/com.nexus.continuous-loop.plist"
     scheduler_loaded = False
     try:
@@ -119,6 +126,21 @@ def build_research_operational_state() -> dict[str, Any]:
                 }
                 for row in latest_research.values()
             ],
+        },
+        "research_v2_metrics": {
+            "knowledge_items_acquired": sum(1 for row in v2_sources if row.get("source_type") != "EXISTING_IDEA"),
+            "active_investigations": sum(1 for row in v2_questions if row.get("status") == "OPEN"),
+            "follow_up_research_requests": len(v2_follow_ups),
+            "follow_up_research_completed": sum(1 for row in v2_follow_ups if row.get("status") == "COMPLETED"),
+            "opportunity_theses": sum(1 for row in v2_sources if row.get("source_type") == "EXISTING_IDEA"),
+            "strategy_theses": 0,
+            "alpha_reviews": len(v2_alpha_reviews),
+            "plans_created": len(v2_plans),
+            "handoff_drafts": len(v2_handoffs),
+            "source_reputation_warnings": sum(1 for row in v2_reputations if row.get("source_trust_status") in {"CAUTION", "UNRELIABLE", "QUARANTINED"}),
+            "scam_risk_items": sum(1 for row in v2_reputations if row.get("scam_risk_findings", 0)),
+            "process_alive": scheduler_loaded,
+            "productive_research": bool(v2_sources or v2_alpha_reviews or v2_plans),
         },
         "last_successful_research_activity": latest.get("updated_at") or latest.get("created_at") or "UNKNOWN",
         "current_research_objective": latest.get("question") or latest.get("theme") or "UNKNOWN",
