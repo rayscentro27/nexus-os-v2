@@ -169,7 +169,7 @@
   .live-command-promo-overlay strong { font-size: 18px; }
   .live-command-promo-overlay small { margin-top: 5px; font-size: 9px; }
   .live-command-promo-overlay a { margin-top: 7px; }
-  .live-command-content { display: flex; flex-direction: column; gap: 0; overflow: hidden; padding: 12px 20px 14px; }
+  .live-command-content { display: flex; flex-direction: column; gap: 0; overflow: auto; padding: 12px 20px 14px; }
   .live-command-brand-strip { min-height: 40px; height: 40px; padding-inline: 14px; }
   .live-command-brand-strip strong { font-size: 14px; }.live-command-brand-strip span { font-size: 9px; }.live-command-brand-strip b { font-size: 8px; }
   .live-command-heading { flex: none; padding: 10px 2px 8px; }.live-command-heading h1 { font-size: 28px; }.live-command-heading p { font-size: 10px; }.live-command-heading > small { font-size: 9px; }
@@ -177,6 +177,23 @@
   .live-command-hero-grid { flex: none; height: 172px; margin-top: 8px; }.live-command-hero, .live-command-priorities { min-height: 172px; height: 172px; scroll-margin-top: 12px; }.live-command-hero-copy { padding: 17px 20px 7px; }.live-command-hero h2 { margin: 4px 0 6px; font-size: 28px; }.live-command-hero p { max-width: 390px; font-size: 9px; line-height: 1.4; }.live-command-primary { margin-top: 9px; padding: 7px 10px; font-size: 9px; }.live-command-hero-bullets { gap: 12px; padding: 0 20px 11px; font-size: 8px; }.live-command-priorities { padding: 11px 12px; }.live-command-priorities ol { gap: 3px; margin-top: 6px; }.live-command-priorities li { padding: 4px 6px; }.live-command-priorities li > b { width: 19px; height: 19px; font-size: 9px; }.live-command-priorities strong { font-size: 9px; }.live-command-priorities small { font-size: 7px; }
   .live-command-three-grid, .live-command-footer-grid { flex: none; height: 124px; margin-top: 8px; gap: 8px; }.live-command-three-grid .live-command-panel { overflow-y: auto; }.live-command-footer-grid { height: 80px; }.live-command-panel { height: 100%; padding: 9px 11px; }.live-command-panel-head { margin-bottom: 5px; }.live-command-panel-head h3 { font-size: 11px; }.live-command-eyebrow { font-size: 7px; }.live-command-panel-head a { font-size: 7px; }.live-command-detail-row { padding: 5px 0; grid-template-columns: 21px minmax(0,1fr) auto; gap: 6px; }.live-command-detail-row strong { font-size: 8px; }.live-command-detail-row small { font-size: 7px; }.live-command-detail-row em { font-size: 7px; }.live-command-row-icon { width: 21px; height: 21px; }.live-command-actions { gap: 4px; }.live-command-actions a { padding: 5px; gap: 5px; font-size: 8px; }.live-command-actions a > svg { width: 13px; }.live-command-actions small { font-size: 6px; }.live-command-pipeline-stats { gap: 3px; margin-bottom: 5px; }.live-command-pipeline-stats b { padding: 4px 2px; font-size: 11px; }.live-command-pipeline-stats small { font-size: 6px; }.live-command-bars { gap: 4px; }.live-command-bars > div { grid-template-columns: 65px minmax(0,1fr); gap: 5px; }.live-command-bars span, .live-command-bars small { font-size: 7px; }.live-command-bars i { height: 4px; }.live-command-bars.departments > div { grid-template-columns: 55px minmax(0,1fr) 40px; }.live-command-bars.departments small { font-size: 6px; }.live-command-ring { width: 58px; height: 58px; border-width: 4px; }.live-command-opportunity { grid-template-columns: 64px minmax(0,1fr); gap: 7px; }.live-command-ring strong { font-size: 15px; }.live-command-ring small { font-size: 6px; }.live-command-legend { gap: 4px; }.live-command-legend span { font-size: 7px; }.live-command-legend i { width: 5px; height: 5px; }.live-command-value { padding-top: 5px; }.live-command-value strong { font-size: 12px; }.live-command-value small, .live-command-copy { font-size: 7px; }.live-command-empty { gap: 3px; padding: 8px 2px; }.live-command-empty strong { font-size: 8px; }.live-command-empty span { font-size: 7px; }.live-command-mini-grid { gap: 4px; }.live-command-mini-grid > div { padding: 5px; }.live-command-mini-grid strong { font-size: 8px; }.live-command-mini-grid small { font-size: 6px; }.live-command-next { flex: none; height: 52px; margin-top: 8px; padding: 8px 11px; scroll-margin-top: 12px; }.live-command-next p { margin: 3px 0 4px; font-size: 9px; }.live-command-next > span { font-size: 7px; }
 }
+
+.live-decision-continuation { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; padding: 9px 12px; border: 1px solid rgba(33,209,170,.22); border-radius: 8px; color: #9ff0c9; background: rgba(33,209,170,.08); font-size: 10px; }
+.live-decision-continuation span { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+.live-decision-continuation i { width: 7px; height: 7px; border-radius: 50%; background: var(--live-teal); box-shadow: 0 0 10px rgba(33,209,170,.7); }
+.live-decision-continuation small { color: #93b8ae; font-size: 9px; }
+.live-decision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.live-decision-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
+.live-decision-meta .live-surface-stat { padding: 8px; }
+.live-decision-meta .live-surface-stat strong { font-size: 10px; }
+.live-decision-detail { display: grid; gap: 4px; padding: 9px 0; border-top: 1px solid rgba(133,177,214,.12); border-bottom: 1px solid rgba(133,177,214,.12); font-size: 10px; }
+.live-decision-detail strong { color: #dff6ff; }
+.live-decision-detail span { color: var(--live-muted); line-height: 1.4; }
+.live-decision-options { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.live-decision-options span { padding: 5px 7px; border: 1px solid rgba(255,179,92,.25); border-radius: 5px; color: var(--live-amber); background: rgba(255,179,92,.08); font-size: 9px; text-transform: capitalize; }
+.live-decision-safety { display: grid; gap: 3px; margin-top: 10px; color: #9ff0c9; font-size: 9px; font-weight: 700; }
+.live-decision-safety small { color: var(--live-muted); font-size: 8px; font-weight: 400; line-height: 1.35; }
+@media (max-width: 600px) { .live-decision-grid { grid-template-columns: 1fr; }.live-decision-continuation { align-items: flex-start; flex-direction: column; }.live-decision-meta { grid-template-columns: 1fr; } }
 
 /* Canonical control-surface extensions. They reuse the Command Center's
    colors, artwork, borders, and density so every Admin destination remains

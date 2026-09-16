@@ -1,0 +1,24 @@
+[
+  {
+    "review_item_id": "review-mobile-detailing-plan-c103e5cd51eb06efe",
+    "type": "PRELIMINARY_PLAN",
+    "title": "Phoenix mobile detailing business preliminary plan",
+    "source_object": "plan_c103e5cd51eb89b06efe",
+    "status": "DRAFT_REVIEW_REQUIRED",
+    "why_human_review_required": "The plan crosses from Research into a possible new venture and any validation activity would be external/customer-facing.",
+    "what_ray_is_deciding": "Whether to authorize preparation of a bounded no-spend validation brief and choose acceptable operating assumptions.",
+    "options": ["approve draft for internal test preparation", "request more Research", "decline or hold"],
+    "external_action_if_approved": "Potential future customer-facing validation; separate approval remains required before execution."
+  },
+  {
+    "review_item_id": "review-affiliate-test-strategy-test-affiliate-20260916",
+    "type": "STRATEGY_TEST_DESIGN",
+    "title": "Affiliate content-to-commission bounded test design",
+    "source_object": "strategy-test-affiliate-20260916",
+    "status": "DRAFT_REVIEW_REQUIRED",
+    "why_human_review_required": "Any public publishing, affiliate enrollment, disclosure, tracking, or external measurement requires Ray approval.",
+    "what_ray_is_deciding": "Whether to authorize internal preparation of the zero-spend test brief and measurement/disclosure checklist.",
+    "options": ["approve internal test-brief preparation", "request more Research", "decline or hold"],
+    "external_action_if_approved": "Potential future public content or affiliate activity only after a separate explicit approval."
+  }
+]

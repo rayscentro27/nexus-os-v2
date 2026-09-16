@@ -26,7 +26,8 @@ import OperatorConsole from '../operator/OperatorConsole';
 import NexusSocialPublisher from '../pages/public/NexusSocialPublisher';
 
 const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/funding-readiness', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
-const CANONICAL_ADMIN_SURFACES = ['live-intelligence', 'ai-command', 'projects', 'tasks', 'research', 'knowledge', 'analytics', 'automation', 'campaigns', 'decisions', 'team', 'trading', 'settings', 'support'];
+const CANONICAL_ADMIN_SURFACES = ['live-intelligence', 'ai-command', 'projects', 'tasks', 'research', 'knowledge', 'analytics', 'automation', 'campaigns', 'decisions', 'departments', 'trading', 'settings', 'support'];
+const DIRECT_ADMIN_SURFACES: Record<string, string> = { research: 'research', campaigns: 'campaigns', decisions: 'decisions', trading: 'trading', team: 'departments' };
 
 function GoClearScrollUnlock() {
   useEffect(() => {
@@ -132,7 +133,9 @@ export function App() {
   }
   if (path === '/client' || path.startsWith('/client/')) return <ClientV2Gate />;
   if (isAdmin) {
-    const adminHash = window.location.hash.replace(/^#\/?/, '') || 'live-intelligence';
+    const hashSurface = window.location.hash.replace(/^#\/?/, '');
+    const directSurface = !hashSurface && DIRECT_ADMIN_SURFACES[path.replace(/^\/admin\/?/, '')];
+    const adminHash = (directSurface || hashSurface || 'live-intelligence') === 'team' ? 'departments' : (directSurface || hashSurface || 'live-intelligence');
     if (CANONICAL_ADMIN_SURFACES.includes(adminHash)) {
       const canonicalAdmin = <LiveCompanyIntelligence surface={adminHash === 'live-intelligence' ? null : adminHash} />;
       if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') return canonicalAdmin;

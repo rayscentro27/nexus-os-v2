@@ -20,6 +20,11 @@ export function liveProjection() {
   const executions = readJsonl('data/governed/youtube_follow_up_executions.jsonl')
   const youtubeQueue = readJson('data/runtime/youtube_backfill_queue.json')
   const workOrders = readJson('data/runtime/active_operator_work_orders.json')
+  const researchV2Sources = readJsonl('data/governed/research_v2_sources.jsonl')
+  const researchV2Questions = readJsonl('data/governed/research_v2_questions.jsonl')
+  const researchV2FollowUps = readJsonl('data/governed/research_v2_follow_ups.jsonl')
+  const researchV2Strategies = readJsonl('data/governed/research_v2_strategies.jsonl')
+  const researchV2Reviews = readJsonl('data/governed/research_v2_review_queue.jsonl')
   const latest = new Map(); for (const row of [...followups].reverse()) if (row.claim_id && !latest.has(row.claim_id)) latest.set(row.claim_id, row)
   const cutoff = now - 24 * 60 * 60 * 1000
   const executions24h = executions.filter(row => Date.parse(row.completed_at || row.started_at || '') >= cutoff)
@@ -28,6 +33,19 @@ export function liveProjection() {
   const supervisorLast = supervisorHeartbeat?.generated_at || supervisor?.generated_at || null
   const currentLane = research?.selected_lane_name || research?.selected_lane_id || snapshot.research.current_lane
   const goals = readJson('data/runtime/company_goal_portfolio.json')
+  const latestReviews = new Map(); for (const row of [...researchV2Reviews].reverse()) if (row.review_item_id && !latestReviews.has(row.review_item_id)) latestReviews.set(row.review_item_id, row)
+  const reviewItems = [...latestReviews.values()].filter(row => row.status === 'DRAFT_REVIEW_REQUIRED')
+  const openQuestions = researchV2Questions.filter(row => row.status === 'OPEN').length
+  const researchV2 = {
+    sources: researchV2Sources.length,
+    open_questions: openQuestions,
+    follow_ups: researchV2FollowUps.length,
+    strategy_theses: researchV2Strategies.length,
+    human_review_queue_count: reviewItems.length,
+    productive_research: Boolean(researchV2Sources.length || researchV2FollowUps.length),
+    machine_work_remains: Boolean(openQuestions || researchV2FollowUps.length || researchV2Sources.length),
+    global_stop_required: false,
+  }
   return {
     ...snapshot,
     generated_at: new Date().toISOString(),
@@ -36,6 +54,7 @@ export function liveProjection() {
     provenance: 'authenticated server-side projection of canonical runtime state',
     system_health: supervisorHeartbeat?.status === 'ACTIVE' ? 'HEALTHY' : 'DEGRADED',
     research: { ...snapshot.research, health: research?.heartbeat === 'ACTIVE' ? 'ACTIVE' : 'DEGRADED', process_health: research?.worker_state || 'UNKNOWN', productivity_health: research?.result_status || 'UNKNOWN', current_lane: currentLane, next_lane: research?.next_action || snapshot.research.next_lane, last_real_run: research?.last_real_output || snapshot.research.last_real_run, next_research_action: research?.next_action || 'Inspect research queue' },
+    research_v2: researchV2,
     youtube: { ...snapshot.youtube, status: youtubeQueue?.status || 'UNKNOWN', videos_processed_24h: 0, follow_ups_pending: [...latest.values()].filter(row => ['UNVERIFIED', 'PARTIALLY_SUPPORTED', 'FAILED_RETRYABLE', null].includes(row.status)).length, follow_ups_executed_24h: executions24h.length, validated_claims_24h: executions24h.filter(row => row.revalidation_result === 'VALIDATED').length },
     departments: { ...snapshot.departments, consumer_status: department ? 'ACTIVE' : 'UNKNOWN', executable_queue_depth: states.READY + states.CLAIMED + states.RUNNING + states.FAILED_RETRYABLE, running_work: states.RUNNING, completions_24h: states.COMPLETED },
     notifications: { status: 'launchd-scheduled', latest: null, morning_digest: 'scheduler-managed' },
@@ -44,7 +63,8 @@ export function liveProjection() {
     active_goals: { count: Array.isArray(goals) ? goals.length : (Array.isArray(goals?.goals) ? goals.goals.length : null), source: 'canonical runtime aggregate' },
     human_gated_work: states.WAITING_APPROVAL,
     blocked_work: states.BLOCKED,
-    ray_decision_count: snapshot.ray_decisions?.count || 0,
+    ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewItems.length, items: reviewItems },
+    ray_decision_count: reviewItems.length,
   }
 }
 
