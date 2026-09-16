@@ -105,6 +105,14 @@ def _execution_events(path: Path) -> list[dict]:
     return events[-100:]
 
 
+def _latest_incidents(path: Path) -> list[dict]:
+    latest = {}
+    for row in _execution_events(path):
+        if row.get("incident_id"):
+            latest[row["incident_id"]] = row
+    return list(latest.values())
+
+
 def _last_output(data):
     if not isinstance(data, dict): return None
     for key in ("last_real_output", "last_success", "last_successful_run", "completed_at", "last_run", "updated_at"):
@@ -115,7 +123,7 @@ def _last_output(data):
 def snapshot() -> dict:
     launched = _launchd(); processes = _processes(); generated = _now(); workers = []
     research_eval = None
-    incidents = _execution_events(ROOT / "data/runtime/nexus_supervisor_incidents.jsonl")
+    incidents = _latest_incidents(ROOT / "data/runtime/nexus_supervisor_incidents.jsonl")
     for spec in WORKERS:
         label_rows = [(label, launched.get(label)) for label in spec["labels"] if label in launched]
         pids = []
