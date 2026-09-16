@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { AdminLoginPage, AuthGate } from '../components/auth';
 import { AdminGuard } from '../components/auth/AdminGuard';
-import NexusAdminUI from '../admin/NexusAdminUI';
 import LiveCompanyIntelligence from '../admin/LiveCompanyIntelligence';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
 import ClientOnboardingPage from '../pages/client/ClientOnboardingPage';
@@ -135,7 +134,8 @@ export function App() {
   if (isAdmin) {
     const hashSurface = window.location.hash.replace(/^#\/?/, '');
     const directSurface = !hashSurface && DIRECT_ADMIN_SURFACES[path.replace(/^\/admin\/?/, '')];
-    const adminHash = (directSurface || hashSurface || 'live-intelligence') === 'team' ? 'departments' : (directSurface || hashSurface || 'live-intelligence');
+    const requestedAdminSurface = directSurface || hashSurface || 'live-intelligence';
+    const adminHash = requestedAdminSurface === 'team' || requestedAdminSurface === 'dashboard' ? (requestedAdminSurface === 'team' ? 'departments' : 'live-intelligence') : requestedAdminSurface;
     if (CANONICAL_ADMIN_SURFACES.includes(adminHash)) {
       const canonicalAdmin = <LiveCompanyIntelligence surface={adminHash === 'live-intelligence' ? null : adminHash} />;
       if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') return canonicalAdmin;
@@ -149,18 +149,9 @@ export function App() {
         </AdminGuard>
       );
     }
-    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') {
-      return <NexusAdminUI email="local-ui-smoke@nexus.invalid" initialPage={path === '/admin/command-center-v2' ? 'mission-control-v2' : 'command'} />;
-    }
-    return (
-      <AdminGuard>
-        {() => (
-          <AuthGate>
-            {(user) => <NexusAdminUI email={user.email} initialPage={path === '/admin/command-center-v2' ? 'mission-control-v2' : 'command'} />}
-          </AuthGate>
-        )}
-      </AdminGuard>
-    );
+    const canonicalFallback = <LiveCompanyIntelligence />;
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') return canonicalFallback;
+    return <AdminGuard>{() => <AuthGate>{() => canonicalFallback}</AuthGate>}</AdminGuard>;
   }
   window.location.replace('/');
   return null;

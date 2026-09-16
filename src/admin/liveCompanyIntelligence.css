@@ -183,6 +183,21 @@
 .live-decision-continuation i { width: 7px; height: 7px; border-radius: 50%; background: var(--live-teal); box-shadow: 0 0 10px rgba(33,209,170,.7); }
 .live-decision-continuation small { color: #93b8ae; font-size: 9px; }
 .live-review-source { color: var(--live-muted); font-size: 9px; letter-spacing: .04em; margin: 8px 0 0; }
+.live-trading-safety { display: inline-flex; align-items: center; gap: 7px; margin: 10px 0; padding: 8px 10px; border: 1px solid rgba(33,209,170,.22); border-radius: 8px; color: #9ff0c9; background: rgba(33,209,170,.08); font-size: 10px; }
+.live-trading-safety span { color: var(--live-muted); }
+.live-trading-tabs { margin: 10px 0; }
+.live-trading-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(260px, .8fr); gap: 10px; }
+.live-trading-list { display: grid; gap: 7px; }
+.live-trading-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(133,177,214,.12); }
+.live-trading-row span, .live-trading-row small { color: var(--live-muted); font-size: 9px; }
+.live-trading-row strong { color: #e9f7ff; font-size: 11px; }
+.live-trading-row em { color: var(--live-amber); font-size: 9px; font-style: normal; }
+.live-trading-row small { grid-column: 2 / 3; }
+.live-trading-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.live-trading-facts div { display: grid; gap: 3px; padding: 8px; border: 1px solid rgba(133,177,214,.12); border-radius: 7px; }
+.live-trading-facts span { color: var(--live-muted); font-size: 9px; }
+.live-trading-facts strong { font-size: 10px; }
+@media (max-width: 800px) { .live-trading-grid { grid-template-columns: 1fr; } .live-trading-row { grid-template-columns: 1fr auto; } .live-trading-row small { grid-column: 1 / -1; } }
 .live-decision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .live-decision-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
 .live-decision-meta .live-surface-stat { padding: 8px; }

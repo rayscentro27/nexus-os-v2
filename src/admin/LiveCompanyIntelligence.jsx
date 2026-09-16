@@ -3,14 +3,14 @@ import {
   Activity, ArrowUpRight, BarChart3, Bell, BookOpen, Bot, CheckSquare, ChevronRight,
   Clock3, FolderKanban, FolderPlus, LayoutDashboard, LifeBuoy, ListTodo,
   MessageSquare, Radar, Search, Settings, Sparkles, Target, Upload, UserPlus,
-  Users, TrendingUp, Layers3,
+  Users, TrendingUp, Layers3, ShieldCheck,
 } from 'lucide-react'
 import snapshot from '../data/adminCompanyState.json'
 import reviewQueue from '../data/adminResearchReviewQueue.json'
 import { supabase } from '../lib/supabaseClient'
 import AdminSurfacePage from './AdminSurfacePage'
 import NexusAgentConversation from '../components/NexusAgentConversation'
-import TradingLabPanel from '../components/TradingLabPanel'
+import { tradingLabData } from '../data/tradingLabData'
 import './liveCompanyIntelligence.css'
 
 const iconMap = {
@@ -74,6 +74,18 @@ function CampaignsSurface({ state }) {
   return <div className="live-surface-page"><SurfaceHeader eyebrow="STUDIO / CREATIVE REVIEW" title="Campaigns" description="Review campaigns, videos, images, landing pages, social posts, and email content." quote="Make the work visible." /><div className="live-surface-toolbar"><div className="live-surface-tabs">{['All', 'Campaigns', 'Videos', 'Images', 'Landing Pages', 'Social', 'Email', 'Needs Review', 'Approved'].map((tab, i) => <button className={i === 0 ? 'active' : ''} key={tab}>{tab}</button>)}</div></div><div className="live-asset-grid">{campaigns.map(item => <article className="live-asset-card" key={item.name}><div className="live-asset-preview"><Layers3 size={22} /><span>{item.status || 'STATUS UNAVAILABLE'}</span></div><div className="live-asset-copy"><span>Campaign · {item.department || 'Unavailable'}</span><h3>{item.name}</h3><p>{item.next || 'Creative detail is not currently available.'}</p><footer><small>Approval · Unavailable</small><small>Performance · Unavailable</small></footer><div className="live-asset-actions"><button>View</button><button>Open</button></div></div></article>)}</div>{!campaigns.length && <div className="live-honest-empty"><Layers3 size={20} /><strong>No campaign assets currently available</strong><span>Unsupported approval and publishing actions are not fabricated.</span></div>}</div>
 }
 
+function TradingSurface() {
+  const [tab, setTab] = React.useState('Overview')
+  const tabs = ['Overview', 'Strategies', 'Experiments', 'Backtests', 'Paper', 'Replay', 'Learning']
+  const selected = tradingLabData.experiments?.[0]
+  return <div className="live-surface-page"><SurfaceHeader eyebrow="TRADING / RESEARCH REVIEW" title="Trading" description="Review strategies, experiments, backtests, paper research, and replay evidence." quote="Evidence before authority." /><div className="live-trading-safety"><ShieldCheck size={15} /><strong>PAPER / REPLAY ONLY</strong><span>Live trading authority: NONE</span></div><div className="live-surface-tabs live-trading-tabs">{tabs.map(item => <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>{item}</button>)}</div><div className="live-trading-grid"><CommandPanel title={tab === 'Replay' ? 'Experiment replay' : 'Research evidence'} eyebrow={tab.toUpperCase()}><div className="live-trading-list">{(tradingLabData.experiments || []).map(item => <div className="live-trading-row" key={item.id}><span>{item.family?.replaceAll('_', ' ') || 'Strategy'}</span><strong>{item.strategy || 'Unavailable'}</strong><small>{item.params || 'Parameters unavailable'} · OOS trades {item.oos?.trades ?? '—'}</small><em>{item.decision || 'READ / RESEARCH'}</em></div>)}</div>{!tradingLabData.experiments?.length && <div className="live-honest-empty">No trading research records currently available.</div>}</CommandPanel><CommandPanel title="Research controls" eyebrow="GOVERNANCE"><div className="live-trading-facts"><div><span>Market</span><strong>FOREX / EUR_USD</strong></div><div><span>Timeframe</span><strong>H1</strong></div><div><span>Data bars</span><strong>{tradingLabData.bars ?? '—'}</strong></div><div><span>Live authority</span><strong>NONE</strong></div></div><p className="live-surface-copy">{selected?.id ? `Selected evidence: ${selected.id}. OOS samples remain research evidence and do not establish profitability.` : 'Trading evidence is unavailable.'}</p></CommandPanel></div></div>
+}
+
+function canonicalSurfaceFromHash() {
+  const value = window.location.hash.replace(/^#\/?/, '')
+  return value === 'dashboard' || !value ? 'live-intelligence' : value
+}
+
 function DecisionsSurface({ state }) {
   const items = state.ray_decisions?.items || []
   return <div className="live-surface-page"><SurfaceHeader eyebrow="GOVERNANCE / HUMAN GATE" title="Ray Decision Queue" description="Review decisions that require Ray before Nexus can continue." quote="Clarity at the right moment." /><div className="live-decision-continuation"><span><i /> Global machine work remains active</span><small>Human review is item-level; pending decisions do not stop Research.</small></div><div className="live-review-source">{state.review_data_source === 'GOVERNED_LIVE_READ_MODEL' ? 'Authenticated governed read model' : 'Local development fallback — live review data unavailable'}</div><div className="live-surface-toolbar"><div className="live-surface-tabs">{['Needs Review', 'Approved', 'Rejected', 'Deferred', 'Completed'].map((tab, i) => <button className={i === 0 ? 'active' : ''} key={tab}>{tab}</button>)}</div></div><div className="live-decision-grid">{items.map((item, i) => <CommandPanel key={item.review_item_id || item.id || i} title={item.title || 'Decision item'} eyebrow={item.type || 'REVIEW'}><div className="live-decision-meta"><SurfaceStat label="Review item" value={item.review_item_id || item.id || '—'} /><SurfaceStat label="Source object" value={item.source_object || '—'} tone="purple" /><SurfaceStat label="Status" value={item.status || 'DRAFT_REVIEW_REQUIRED'} tone="amber" /></div><p className="live-surface-copy">{item.why_human_review_required || item.reason || 'Ray review is required for this item.'}</p><div className="live-decision-detail"><strong>Ray is deciding</strong><span>{item.what_ray_is_deciding || item.recommended_next_step || 'Review available options.'}</span></div><div className="live-decision-options">{(item.options || ['approve','modify','decline','defer']).map(option => <span key={option}>{option.replaceAll('_',' ')}</span>)}</div><div className="live-decision-safety"><span>External execution frozen: YES</span><small>{item.external_action_if_approved || 'No external action is wired from this surface.'}</small></div></CommandPanel>)}{!items.length && <CommandPanel title="No decisions waiting" eyebrow="CURRENT QUEUE"><div className="live-honest-empty"><CheckSquare size={20} /><strong>No decisions waiting</strong><span>Routine machine work is continuing; no Ray action is currently reported.</span></div></CommandPanel>}</div></div>
@@ -87,7 +99,7 @@ export default function LiveCompanyIntelligence({ surface = null }) {
   const fallbackState = { ...snapshot, review_data_source: 'LOCAL_DEV_FALLBACK', ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewQueue.length, items: reviewQueue }, research_v2: { human_review_queue_count: reviewQueue.length, machine_work_remains: true, global_stop_required: false } }
   const [state, setState] = useState(fallbackState)
   const [refreshed, setRefreshed] = useState(snapshot.generated_at)
-  const [activeSurface, setActiveSurface] = useState(surface || (window.location.hash.replace(/^#\/?/, '') || 'live-intelligence'))
+  const [activeSurface, setActiveSurface] = useState(surface || canonicalSurfaceFromHash())
 
   useEffect(() => {
     let cancelled = false
@@ -101,7 +113,7 @@ export default function LiveCompanyIntelligence({ surface = null }) {
     const timer = window.setInterval(load, 30000)
     return () => { cancelled = true; window.clearInterval(timer) }
   }, [])
-  useEffect(() => { const onHash = () => setActiveSurface(window.location.hash.replace(/^#\/?/, '') || 'live-intelligence'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash) }, [])
+  useEffect(() => { const onHash = () => setActiveSurface(canonicalSurfaceFromHash()); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash) }, [])
 
   const s = state
   const route = (path) => ({ href: `#/` + path, label: 'View all' })
@@ -129,7 +141,7 @@ export default function LiveCompanyIntelligence({ surface = null }) {
       <header className="live-command-topbar"><div className="live-command-search"><Icon name="search" size={14} /><span>Search projects, knowledge, people, or anything</span></div><div className="live-command-system"><i />All Systems Operational</div><span className="live-command-market">S&amp;P 5,472.83&nbsp;&nbsp;↗ +1.26%</span><button className="live-command-avatar" aria-label="Ray profile">R</button></header>
 
       <div className="live-command-content">
-        {activeSurface !== 'live-intelligence' ? <div className="live-command-surface">{activeSurface === 'ai-command' ? <AiCommandSurface state={s} /> : activeSurface === 'projects' ? <ProjectSurface state={s} /> : activeSurface === 'research' ? <ResearchSurface state={s} /> : activeSurface === 'campaigns' ? <CampaignsSurface state={s} /> : activeSurface === 'decisions' ? <DecisionsSurface state={s} /> : activeSurface === 'trading' ? <TradingLabPanel /> : <AdminSurfacePage surface={activeSurface === 'team' ? 'departments' : activeSurface} />}</div> : <>
+        {activeSurface !== 'live-intelligence' ? <div className="live-command-surface">{activeSurface === 'ai-command' ? <AiCommandSurface state={s} /> : activeSurface === 'projects' ? <ProjectSurface state={s} /> : activeSurface === 'research' ? <ResearchSurface state={s} /> : activeSurface === 'campaigns' ? <CampaignsSurface state={s} /> : activeSurface === 'decisions' ? <DecisionsSurface state={s} /> : activeSurface === 'trading' ? <TradingSurface /> : <AdminSurfacePage surface={activeSurface === 'team' ? 'departments' : activeSurface} />}</div> : <>
         <section className="live-dashboard-header"><div className="live-dashboard-greeting"><span className="live-command-eyebrow">NEXUS / ADMIN COMMAND CENTER</span><h1>Good morning, Ray</h1><p>Clear insights. Stronger decisions. A clearer tomorrow.</p><small>Live read model · refreshed {refreshed}</small></div><div className="live-dashboard-quote"><strong>Discipline today.<br />A clearer tomorrow.</strong><span>— GoClear Nexus OS</span></div><div className="live-dashboard-art"><img src="/creative/admin-artifacts/mountain-top.png" alt="Mountain landscape" /><b>SMARTER BUSINESS.<br />A CLEARER TOMORROW.</b></div></section>
 
         <div className="live-command-metrics">{metrics.map(([icon, label, value, note, tone]) => <CommandMetric key={label} icon={icon} label={label} value={value} note={note} tone={tone} />)}</div>
