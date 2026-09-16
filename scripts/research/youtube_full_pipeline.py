@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -26,8 +27,11 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _run(command: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+def _run(command: list[str], timeout: int = 180) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        return subprocess.CompletedProcess(command, 124, exc.stdout or "", f"command timed out after {timeout}s")
 
 
 def _sentences(text: str) -> list[str]:
@@ -92,9 +96,11 @@ def _write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=False) + "\n")
 
 
-def _metadata(url: str) -> dict[str, Any]:
+def _metadata(url: str, provided: dict[str, Any] | None = None) -> dict[str, Any]:
     result = _run(["yt-dlp", "--no-update", "--no-warnings", "--skip-download", "--dump-single-json", url])
     if result.returncode != 0:
+        if provided and provided.get("title"):
+            return {"id": provided.get("video_id"), "title": provided.get("title"), "channel": provided.get("channel", "UNKNOWN"), "description": provided.get("description", ""), "duration": provided.get("duration")}
         raise RuntimeError(f"metadata acquisition failed: {result.stderr[-500:].strip()}")
     return json.loads(result.stdout)
 
@@ -113,6 +119,32 @@ def acquire_captions(url: str, video_id: str) -> tuple[str, list[dict[str, str]]
         return (*_caption_text(caption_files[0].read_text(errors="ignore")), "public_youtube_captions")
 
 
+def acquire_audio_asr(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str]:
+    """Acquire temporary audio and transcribe with the declared local ASR backend."""
+    try:
+        from faster_whisper import WhisperModel
+    except ImportError as exc:
+        raise RuntimeError("ASR fallback unavailable: faster-whisper is not installed in the active worker") from exc
+    model_name = os.environ.get("NEXUS_WHISPER_MODEL", "tiny.en")
+    with tempfile.TemporaryDirectory(prefix="nexus-youtube-asr-") as temp:
+        source = Path(temp) / f"{video_id}.source"
+        audio = Path(temp) / f"{video_id}.wav"
+        download = _run(["yt-dlp", "--no-update", "--no-warnings", "-f", "bestaudio/best", "-o", str(source), url])
+        source_files = [p for p in Path(temp).glob(f"{video_id}.source*") if p.is_file()]
+        if download.returncode != 0 or not source_files:
+            raise RuntimeError(f"audio acquisition failed: {(download.stderr or download.stdout)[-700:].strip()}")
+        normalize = _run(["ffmpeg", "-y", "-i", str(source_files[0]), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(audio)])
+        if normalize.returncode != 0 or not audio.exists():
+            raise RuntimeError(f"ffmpeg normalization failed: {normalize.stderr[-700:].strip()}")
+        model = WhisperModel(model_name, device="cpu", compute_type="int8")
+        parts, _info = model.transcribe(str(audio), vad_filter=True)
+        segments = [{"timestamp": f"{segment.start:.2f}-{segment.end:.2f}", "text": re.sub(r"\s+", " ", segment.text).strip()} for segment in parts if segment.text.strip()]
+        transcript = re.sub(r"\s+", " ", " ".join(segment["text"] for segment in segments)).strip()
+        if not transcript:
+            raise RuntimeError("local ASR returned an empty transcript")
+        return transcript, segments, "local_faster_whisper", model_name
+
+
 def _topic(metadata: dict[str, Any], transcript: str) -> str:
     blob = f"{metadata.get('title', '')} {metadata.get('description', '')} {transcript[:3000]}".lower()
     if any(x in blob for x in ["crypto", "forex", "backtest", "drawdown", "trading system"]):
@@ -122,22 +154,35 @@ def _topic(metadata: dict[str, Any], transcript: str) -> str:
     return "ai automation and online business"
 
 
-def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL_ROOT) -> dict[str, Any]:
+def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL_ROOT, force_asr: bool = False, metadata_override: dict[str, Any] | None = None) -> dict[str, Any]:
     artifact_root.mkdir(parents=True, exist_ok=True)
     url = video["url"]
     video_id = video["video_id"]
     base = artifact_root / video_id
-    metadata = _metadata(url)
+    metadata = metadata_override or _metadata(url, video)
     title = metadata.get("title") or video.get("title") or video_id
     channel = metadata.get("channel") or metadata.get("uploader") or video.get("channel") or "UNKNOWN"
     content_hash = hashlib.sha256(json.dumps({k: metadata.get(k) for k in ("id", "title", "description", "duration", "upload_date")}, sort_keys=True, default=str).encode()).hexdigest()
     existing = base.with_suffix(".metadata.json")
+    asr_backend = "NONE"
+    audio_acquired = False
+    ffmpeg_normalized = False
     try:
-        transcript, segments, transcript_source = acquire_captions(url, video_id)
-    except Exception as exc:
-        failure = {"video_id": video_id, "url": url, "title": title, "channel": channel, "content_hash": content_hash, "transcript_status": "FAILED_RETRYABLE", "failure_reason": str(exc), "processing_status": "FAILED_RETRYABLE", "last_processed_at": _now(), "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
-        _write_json(existing, failure)
-        return failure
+        if force_asr:
+            transcript, segments, transcript_source, asr_backend = acquire_audio_asr(url, video_id)
+            audio_acquired = True
+            ffmpeg_normalized = True
+        else:
+            transcript, segments, transcript_source = acquire_captions(url, video_id)
+    except Exception as caption_error:
+        try:
+            transcript, segments, transcript_source, asr_backend = acquire_audio_asr(url, video_id)
+            audio_acquired = True
+            ffmpeg_normalized = True
+        except Exception as asr_error:
+            failure = {"video_id": video_id, "url": url, "title": title, "channel": channel, "content_hash": content_hash, "transcript_status": "FAILED_RETRYABLE", "failure_reason": str(asr_error), "caption_failure_reason": str(caption_error), "processing_status": "FAILED_RETRYABLE", "last_processed_at": _now(), "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+            _write_json(existing, failure)
+            return failure
     if not transcript:
         raise RuntimeError("caption acquisition returned empty transcript")
     transcript_hash = hashlib.sha256(transcript.encode()).hexdigest()
@@ -163,13 +208,13 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
     transcript_path = base.with_suffix(".transcript.txt")
     transcript_path.write_text(transcript + "\n")
     provenance = [{"source_video_id": video_id, "transcript_reference": str(transcript_path.relative_to(ROOT)), "timestamp_or_segment": segment["timestamp"], "extracted_text_or_paraphrase": segment["text"][:500]} for segment in segments[:8]]
-    metadata_record = {"video_id": video_id, "url": url, "channel": channel, "title": title, "source": "yt-dlp public captions", "content_hash": content_hash, "transcript_status": "ACQUIRED", "transcript_source": transcript_source, "transcript_hash": transcript_hash, "summary_status": "CREATED", "extraction_status": "CREATED", "scoring_status": "SCORED", "processing_status": "FULLY_PROCESSED", "last_processed_at": _now(), "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+    metadata_record = {"video_id": video_id, "url": url, "channel": channel, "title": title, "source": "yt-dlp public captions" if transcript_source == "public_youtube_captions" else "yt-dlp temporary audio + local ASR", "content_hash": content_hash, "transcript_status": "ACQUIRED", "transcript_source": transcript_source, "transcript_hash": transcript_hash, "summary_status": "CREATED", "extraction_status": "CREATED", "scoring_status": "SCORED", "processing_status": "FULLY_PROCESSED", "last_processed_at": _now(), "audio_acquired": audio_acquired, "ffmpeg_normalized": ffmpeg_normalized, "asr_backend": asr_backend, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
     _write_json(existing, metadata_record)
     (base.with_suffix(".summary.md")).write_text("\n".join([f"# {title}", "", f"Executive summary: {summary['executive_summary']}", f"Main topic: {summary['main_topic']}", f"Key themes: {', '.join(summary['key_themes'])}", "", "Key points:", *[f"- {x}" for x in summary["key_points"]], "", "Risks or caveats:", *[f"- {x}" for x in summary["risks_or_caveats"]], "", "Unanswered questions:", *[f"- {x}" for x in summary["unanswered_questions"]]]) + "\n")
     _write_json(base.with_suffix(".structured-extraction.json"), extraction)
     _write_json(base.with_suffix(".provenance.json"), {"items": provenance})
     _write_json(base.with_suffix(".scores.json"), score_record)
-    return {"video_id": video_id, "title": title, "channel": channel, "duplicate_unchanged": False, "new_artifact_set_created": True, "transcript_acquired": True, "summary_created": True, "structured_extraction_created": True, "scored": True, "processing_status": "FULLY_PROCESSED", "artifact_root": str(artifact_root.relative_to(ROOT)), "transcript_path": str(transcript_path.relative_to(ROOT)), "summary_path": str(base.with_suffix('.summary.md').relative_to(ROOT)), "structured_extraction_path": str(base.with_suffix('.structured-extraction.json').relative_to(ROOT)), "scores_path": str(base.with_suffix('.scores.json').relative_to(ROOT)), "content_hash": content_hash, "transcript_hash": transcript_hash, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
+    return {"video_id": video_id, "title": title, "channel": channel, "duplicate_unchanged": False, "new_artifact_set_created": True, "transcript_acquired": True, "transcript_word_count": len(transcript.split()), "transcript_source": transcript_source, "summary_created": True, "structured_extraction_created": True, "scored": True, "audio_acquired": audio_acquired, "ffmpeg_normalized": ffmpeg_normalized, "asr_backend": asr_backend, "processing_status": "FULLY_PROCESSED", "artifact_root": str(artifact_root.relative_to(ROOT)), "transcript_path": str(transcript_path.relative_to(ROOT)), "summary_path": str(base.with_suffix('.summary.md').relative_to(ROOT)), "structured_extraction_path": str(base.with_suffix('.structured-extraction.json').relative_to(ROOT)), "scores_path": str(base.with_suffix('.scores.json').relative_to(ROOT)), "content_hash": content_hash, "transcript_hash": transcript_hash, "alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0}
 
 
 def select_channel_videos(channel_url: str, limit: int) -> list[dict[str, str]]:
