@@ -146,11 +146,16 @@ export default function NexusExperienceAdmin({ email, initialPage = 'command' })
   else if (area === 'agents') page = conversationId || window.location.pathname.includes('/agents/') ? <NexusAgentConversation agent={selectedAgent} conversationId={conversationId} initialPrompt={pendingPrompt} onConversationChange={onConversationChange} context="Current Admin surface" /> : <AgentsPage onOpenAgent={askAgent} />
   else if (area === 'business') page = <BusinessPage subpage={subpage} onNavigate={navigate} />
   else if (area === 'live-intelligence') page = <ErrorBoundary panelName="Live Company Intelligence"><LiveCompanyIntelligence /></ErrorBoundary>
-  else if (area === 'surface') page = <ErrorBoundary panelName="Admin Control Center"><AdminSurfacePage surface={subpage || 'projects'} /></ErrorBoundary>
+  else if (area === 'surface') page = <ErrorBoundary panelName="Admin Control Center"><LiveCompanyIntelligence surface={subpage || 'projects'} /></ErrorBoundary>
   else if (area === 'studio') page = <StudioPage subpage={subpage} onNavigate={navigate} email={email} />
   else if (area === 'trading-lab') page = <TradingLabPanel />
   else if (area === 'access') page = <R28AdminOperationsPanel />
   else page = <SystemPage subpage={subpage} email={email} onNavigate={navigate} />
+
+  // The GoClear/Nexus OS shell is the canonical owner of the ten Admin
+  // control-center surfaces. Legacy areas remain below this boundary.
+  if (area === 'live-intelligence') return <LiveCompanyIntelligence />
+  if (area === 'surface') return <LiveCompanyIntelligence surface={subpage || 'projects'} />
 
   return <div className="nx2-root"><header className="nx2-top-banner"><span> NEXUS </span><small>Operating system</small></header><div className="nx2-shell"><aside className={`nx2-sidebar ${mobileOpen ? 'open' : ''}`}><div className="nx2-brand"><span className="nx2-brand-mark">N</span><div><strong>NEXUS</strong><small>Founder mode</small></div></div><button className="nx2-mobile-close" onClick={() => setMobileOpen(false)} aria-label="Close navigation"><X size={20} /></button><nav aria-label="Primary navigation">{nav.map(item => { const Icon = item.icon; const active = area === item.id || (item.id === 'research' && area === 'studio' && subpage === 'research'); return <button key={item.id} className={`nx2-nav-item ${active ? 'active' : ''}`} onClick={() => navigate(item.id)}><Icon size={18} /><span>{item.label}</span>{item.id === 'work' && <em>3</em>}</button> })}</nav><div className="nx2-sidebar-footer"><div className="nx2-ray-avatar">R</div><div><strong>{email || 'Ray'}</strong><small>Admin · governed</small></div></div></aside><main className="nx2-main"><header className="nx2-header"><button className="nx2-menu" onClick={() => setMobileOpen(true)} aria-label="Open navigation"><Menu size={20} /></button><div className="nx2-breadcrumb">NEXUS / {area.toUpperCase()}{subpage ? ` / ${subpageNames[subpage] || subpage}` : ''}</div><div className="nx2-header-actions"><button className="nx2-search"><Search size={17} /> Search Nexus <kbd>⌘K</kbd></button><a href="/client">View Client Portal</a><span className="nx2-live-dot" /> <small>Authenticated</small></div></header><NexusWakeVoice /><div className="nx2-content">{page}</div><GlobalAskNexus /></main></div></div>
 }

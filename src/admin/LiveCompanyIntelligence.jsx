@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import snapshot from '../data/adminCompanyState.json'
 import { supabase } from '../lib/supabaseClient'
+import AdminSurfacePage from './AdminSurfacePage'
 import './liveCompanyIntelligence.css'
 
 const iconMap = {
@@ -40,7 +41,7 @@ function DetailRow({ icon, title, detail, meta, tone = 'cyan' }) {
   return <div className="live-command-detail-row"><span className={`live-command-row-icon tone-${tone}`}><Icon name={icon} size={14} /></span><div><strong>{title}</strong><small>{detail}</small></div>{meta && <em>{meta}</em>}</div>
 }
 
-export default function LiveCompanyIntelligence() {
+export default function LiveCompanyIntelligence({ surface = null }) {
   const [state, setState] = useState(snapshot)
   const [refreshed, setRefreshed] = useState(snapshot.generated_at)
 
@@ -74,12 +75,12 @@ export default function LiveCompanyIntelligence() {
     <aside className="live-command-sidebar">
       <div className="live-command-brand"><div className="live-command-brand-lockup"><img className="live-command-brand-mark" src="/brand/GoClearMark.svg" alt="" /><span className="live-command-brand-wordmark"><img src="/brand/GoClearLogo.svg" alt="GoClear" /></span></div><span>NEXUS OS</span></div>
       <nav aria-label="Admin navigation">
-        <a className="active" href="#/live-intelligence"><Icon name="dashboard" />Dashboard</a>
-        <a href="#/ai-command"><Icon name="ai" />AI Command</a><a href="#/projects"><Icon name="projects" />Projects</a>
-        <a href="#/tasks"><Icon name="tasks" />Tasks</a><a href="#/knowledge"><Icon name="knowledge" />Knowledge</a>
-        <a href="#/analytics"><Icon name="analytics" />Analytics</a><a href="#/automation"><Icon name="automation" />Automation</a>
-        <a href="#/team"><Icon name="team" />Team</a><a href="#/settings"><Icon name="settings" />Settings</a>
-        <a href="#/support"><Icon name="support" />Support</a>
+        <a className={!surface ? 'active' : ''} href="#/live-intelligence"><Icon name="dashboard" />Dashboard</a>
+        <a className={surface === 'ai-command' ? 'active' : ''} href="#/ai-command"><Icon name="ai" />AI Command</a><a className={surface === 'projects' ? 'active' : ''} href="#/projects"><Icon name="projects" />Projects</a>
+        <a className={surface === 'tasks' ? 'active' : ''} href="#/tasks"><Icon name="tasks" />Tasks</a><a className={surface === 'knowledge' ? 'active' : ''} href="#/knowledge"><Icon name="knowledge" />Knowledge</a>
+        <a className={surface === 'analytics' ? 'active' : ''} href="#/analytics"><Icon name="analytics" />Analytics</a><a className={surface === 'automation' ? 'active' : ''} href="#/automation"><Icon name="automation" />Automation</a>
+        <a className={surface === 'team' ? 'active' : ''} href="#/team"><Icon name="team" />Team</a><a className={surface === 'settings' ? 'active' : ''} href="#/settings"><Icon name="settings" />Settings</a>
+        <a className={surface === 'support' ? 'active' : ''} href="#/support"><Icon name="support" />Support</a>
       </nav>
       <div className="live-command-promo"><img src="/creative/admin-artifacts/mountain-promo.png" alt="Mountain landscape" /><div className="live-command-promo-overlay"><strong>A clearer<br />tomorrow.</strong><small>Smarter tools. Clearer decisions.</small><a href="#/live-intelligence">View now <ChevronRight size={13} /></a></div></div>
     </aside>
@@ -89,6 +90,7 @@ export default function LiveCompanyIntelligence() {
 
       <div className="live-command-content">
         <section className="live-command-brand-strip"><img src="/creative/admin-artifacts/mountain-top.png" alt="Mountain landscape" /><div><span>Discipline today.</span><strong>A clearer tomorrow.</strong></div><b>SMARTER BUSINESS. A CLEARER TOMORROW.</b></section>
+        {surface ? <div className="live-command-surface"><AdminSurfacePage surface={surface} /></div> : <>
         <div className="live-command-heading"><div><span className="live-command-eyebrow">NEXUS / ADMIN COMMAND CENTER</span><h1>Good morning, Ray</h1><p>Clear insights. Stronger decisions. A clearer tomorrow.</p></div><small>Live read model · refreshed {refreshed}</small></div>
 
         <div className="live-command-metrics">{metrics.map(([icon, label, value, note, tone]) => <CommandMetric key={label} icon={icon} label={label} value={value} note={note} tone={tone} />)}</div>
@@ -101,6 +103,7 @@ export default function LiveCompanyIntelligence() {
 
         <div className="live-command-footer-grid"><CommandPanel title="Handoffs & Campaigns" action={route('campaigns')}><div className="live-command-mini-grid">{(s.campaign_list || []).slice(0, 4).map(item => <div key={item.name}><strong>{item.name}</strong><small>{item.status} · {item.department}</small></div>)}</div></CommandPanel><CommandPanel title="YouTube Intelligence" action={route('youtube')}><p className="live-command-copy">{s.youtube.active_monitored}/{s.youtube.total_channels} channels monitored. {s.youtube.transcripts_reviewed} transcripts reviewed and {s.youtube.claims_validated} claims validated.</p></CommandPanel><CommandPanel title="SEO / Current Intelligence" action={route('seo')}><p className="live-command-copy">{s.seo.status} · {s.seo.signals_found} signals found · {s.seo.search_volume || 'Current demand'}.</p></CommandPanel></div>
         <CommandPanel title="Next machine action" eyebrow="AUTONOMOUS CONTINUATION" className="live-command-next"><p>{s.next_machine_action}</p><span><Clock3 size={13} /> Nexus continues independently; Ray decisions are shown only when required.</span></CommandPanel>
+        </>}
       </div>
     </div>
   </main>
