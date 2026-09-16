@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { AdminLoginPage, AuthGate } from '../components/auth';
 import { AdminGuard } from '../components/auth/AdminGuard';
 import NexusAdminUI from '../admin/NexusAdminUI';
+import LiveCompanyIntelligence from '../admin/LiveCompanyIntelligence';
 import ClientLoginPage from '../pages/client/ClientLoginPage';
 import ClientOnboardingPage from '../pages/client/ClientOnboardingPage';
 import ClientPreviewPage from '../pages/client/ClientPreviewPage';
@@ -25,6 +26,7 @@ import OperatorConsole from '../operator/OperatorConsole';
 import NexusSocialPublisher from '../pages/public/NexusSocialPublisher';
 
 const GOCLEAR_ROUTES = ['/goclear', '/goclear/signup', '/goclear/login', '/goclear/pricing', '/pricing', '/funding-readiness', '/readiness-review', '/readiness-action-plan', '/funding-readiness-concierge', '/checkout/success', '/checkout/pending', '/checkout/cancelled', '/checkout/failed'];
+const CANONICAL_ADMIN_SURFACES = ['live-intelligence', 'ai-command', 'projects', 'tasks', 'research', 'knowledge', 'analytics', 'automation', 'campaigns', 'decisions', 'team', 'trading', 'settings', 'support'];
 
 function GoClearScrollUnlock() {
   useEffect(() => {
@@ -130,6 +132,20 @@ export function App() {
   }
   if (path === '/client' || path.startsWith('/client/')) return <ClientV2Gate />;
   if (isAdmin) {
+    const adminHash = window.location.hash.replace(/^#\/?/, '') || 'live-intelligence';
+    if (CANONICAL_ADMIN_SURFACES.includes(adminHash)) {
+      const canonicalAdmin = <LiveCompanyIntelligence surface={adminHash === 'live-intelligence' ? null : adminHash} />;
+      if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') return canonicalAdmin;
+      return (
+        <AdminGuard>
+          {() => (
+            <AuthGate>
+              {() => canonicalAdmin}
+            </AuthGate>
+          )}
+        </AdminGuard>
+      );
+    }
     if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('ui-smoke') === '1') {
       return <NexusAdminUI email="local-ui-smoke@nexus.invalid" initialPage={path === '/admin/command-center-v2' ? 'mission-control-v2' : 'command'} />;
     }
