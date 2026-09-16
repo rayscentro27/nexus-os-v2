@@ -28,19 +28,25 @@ def _latest(rows: list[dict[str, Any]], key: str) -> dict[str, dict[str, Any]]:
 
 
 def _score(claim: dict[str, Any]) -> tuple[int, str, str, str]:
+    """Return an action-dependent Alpha assessment, never a research veto.
+
+    The numeric value is retained for backward-compatible reporting only.  It
+    is no longer used as a universal pass/reject gate; immature claims remain
+    durable and receive a bounded Research request.
+    """
     raw = claim.get("evidence_score")
     try:
         score = max(0, min(100, round(float(raw) * 100)))
     except (TypeError, ValueError):
         score = 0
     verification = str(claim.get("verification_status") or claim.get("evidence_status") or "UNKNOWN").upper()
-    if score >= 70 and verification in {"SUPPORTED", "PARTIALLY_SUPPORTED"}:
-        return score, "QUALIFIED", "Evidence score meets the bounded qualification threshold and the claim has recorded support.", "MEDIUM"
-    if score >= 40 or verification in {"PARTIALLY_SUPPORTED", "MIXED"}:
-        return score, "FOLLOW_UP_RESEARCH", "The item has a research signal but lacks sufficient independent or verified evidence for qualification.", "LOW"
+    if verification == "CONTRADICTED":
+        return score, "MATERIAL_CONTRADICTION", "Preserve the claim and evidence, identify the contradiction, and ask Research to resolve it before relying on the claim.", "HIGH"
+    if verification in {"SUPPORTED", "PARTIALLY_SUPPORTED"}:
+        return score, "SUFFICIENT_FOR_PRELIMINARY_PLAN", "The available evidence is sufficient for a preliminary plan; Alpha should still record assumptions and missing information.", "MEDIUM"
     # Weak or unverified evidence is a reason to design the next investigation,
     # not an Alpha veto. Ray remains the final business rejection authority.
-    return score, "FOLLOW_UP_RESEARCH", "Evidence is currently weak or unverified; preserve the candidate, widen the source search, and design the cheapest useful test.", "HIGH"
+    return score, "MORE_RESEARCH_USEFUL", "Evidence is weak or unverified; preserve the candidate, select the best next source class, and design the cheapest useful test.", "HIGH"
 
 
 def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
@@ -84,7 +90,7 @@ def evaluate_pending(*, max_items: int = 20) -> dict[str, Any]:
         # Normal business routing requires the durable provenance validator to
         # have completed successfully.  A score alone cannot turn an
         # unvalidated transcript claim into a department handoff.
-        if decision == "QUALIFIED" and claim.get("validation_result") == "VALIDATED" and research.get("research_id"):
+        if decision == "SUFFICIENT_FOR_PRELIMINARY_PLAN" and claim.get("validation_result") == "VALIDATED" and research.get("research_id"):
             from alpha.alpha_discovery import route_finding
             route = route_finding(str(research.get("theme") or "AI_NEXUS"), str(research["research_id"]), str(claim.get("claim") or content.get("title") or "Research output"))
             evaluation["next_route"] = route
