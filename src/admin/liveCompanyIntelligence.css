@@ -195,6 +195,13 @@
 .live-decision-safety small { color: var(--live-muted); font-size: 8px; font-weight: 400; line-height: 1.35; }
 @media (max-width: 600px) { .live-decision-grid { grid-template-columns: 1fr; }.live-decision-continuation { align-items: flex-start; flex-direction: column; }.live-decision-meta { grid-template-columns: 1fr; } }
 
+@media (min-width: 1281px) {
+  .live-ai-page { min-height: 0; }
+  .live-ai-workspace { height: 300px; min-height: 300px; }
+  .live-ai-chat { min-height: 0; }
+  .live-ai-chat .nx2-agent-thread { height: 298px; min-height: 0; overflow: hidden; }
+}
+
 /* Canonical control-surface extensions. They reuse the Command Center's
    colors, artwork, borders, and density so every Admin destination remains
    one GoClear shell. */

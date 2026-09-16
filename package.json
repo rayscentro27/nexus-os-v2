@@ -6,8 +6,8 @@
   "description": "Nexus OS v2 — Supabase-first operating system for Communication, Monetization, Automation.",
   "scripts": {
     "tailwind:v2": "tailwindcss -c tailwind.v2.config.cjs -i src/client-v2/styles/v2-tailwind.src.css -o src/client-v2/styles/v2-tailwind.generated.css --minify",
-    "dev": "npm run tailwind:v2 && vite",
-    "build": "npm run tailwind:v2 && tsc --noEmit && vite build",
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
     "test": "vitest run --exclude 'tests/e2e/**'",
     "preview": "vite preview",
     "test:e2e": "playwright test",
