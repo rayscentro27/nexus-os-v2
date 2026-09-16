@@ -7,6 +7,9 @@ import json
 import os
 import sys
 import time
+import multiprocessing
+import subprocess
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +22,117 @@ from nexus_agent_platform.continuous_operating_kernel import (build_program_regi
     run_cycle)
 from nexus_agent_platform.knowledge_freshness import refresh_due, refresh_once  # noqa: E402
 from nexus_agent_platform.research_alpha_pipeline import evaluate_pending  # noqa: E402
+from nexus_agent_platform.research_lane_scheduler import select_lane  # noqa: E402
+
+WAKE_TIMEOUT_SECONDS = int(os.environ.get("NEXUS_WAKE_TIMEOUT_SECONDS", "45"))
+PROGRESS_PATH = ROOT / "reports/runtime/nexus_research_wake_progress.json"
+EXECUTION_JOBS_PATH = ROOT / "data/runtime/research_execution_jobs.jsonl"
+
+
+def _append_execution_event(execution_id: str, status: str, **values) -> None:
+    """Persist scheduler/worker handoff state without making it a second queue."""
+    EXECUTION_JOBS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    event = {"execution_id": execution_id, "status": status, "at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(), **values}
+    with EXECUTION_JOBS_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True) + "\n")
+        handle.flush()
+
+
+def _write_wake_progress(stage: str, **values) -> None:
+    """Write sparse parent-side wake telemetry; never make it a new failure."""
+    try:
+        PROGRESS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        PROGRESS_PATH.write_text(json.dumps({
+            "schema_version": "nexus.research-wake-progress.v1",
+            "stage": stage,
+            "updated_at": time.time(),
+            **values,
+        }, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        pass
+
+
+def _invoke_research_callback(callback, result_queue):
+    """Run one wake callback in a killable child process.
+
+    A thread timeout cannot stop a blocking provider/operator call.  The fork
+    boundary is deliberately local to the existing callback and keeps the
+    canonical operator/Alpha path unchanged.
+    """
+    try:
+        result_queue.put({"ok": True, "result": callback()})
+    except BaseException as exc:  # child must always return a classified result
+        result_queue.put({"ok": False, "failure_class": type(exc).__name__, "exact_failure": str(exc)[:500]})
+
+
+def bounded_wake(callback, timeout_seconds=WAKE_TIMEOUT_SECONDS, command=None, env=None):
+    """Dispatch a worker and return; long research is never a scheduler wait."""
+    if command:
+        started = time.monotonic()
+        execution_id = (env or {}).get("NEXUS_EXECUTION_ID") or f"research_exec_{uuid.uuid4().hex[:20]}"
+        log_dir = ROOT / "reports/runtime/research_dispatch"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / f"{execution_id}.log"
+        try:
+            _append_execution_event(execution_id, "QUEUED", worker="research_operator_worker", timeout_seconds=timeout_seconds, log_path=str(log_path))
+            with log_path.open("w", encoding="utf-8") as log:
+                process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, text=True, start_new_session=True)
+            _append_execution_event(execution_id, "DISPATCHED", pid=process.pid, worker="research_operator_worker")
+            _write_wake_progress("WORK_DISPATCHED", execution_id=execution_id, pid=process.pid)
+            return {"status": "DISPATCHED", "execution_mode": "REAL", "task_processing": "DELEGATED",
+                    "execution_id": execution_id, "worker_pid": process.pid,
+                    "selected_lane_id": (env or {}).get("NEXUS_SELECTED_LANE_ID"),
+                    "selected_lane_name": (env or {}).get("NEXUS_SELECTED_LANE_NAME"),
+                    "selection_reason": (env or {}).get("NEXUS_SELECTED_LANE_REASON"),
+                    "scheduler_wait_seconds": round(time.monotonic() - started, 3),
+                    "next_action": "worker persists evidence and Alpha result asynchronously"}
+        except OSError as exc:
+            _append_execution_event(execution_id, "FAILED_RETRYABLE", error=str(exc)[:500], failure_class="DISPATCH_FAILURE")
+            return {"status": "DEGRADED", "failure_class": "OPERATOR_START_FAILURE",
+                    "exact_failure": str(exc), "recovery_attempt": "operator start classified",
+                    "recovery_result": "CONTINUE_NEXT_WAKE",
+                    "next_action": "preserve work and select another due lane"}
+    context = multiprocessing.get_context("fork")
+    result_queue = context.Queue(maxsize=1)
+    process = context.Process(target=_invoke_research_callback, args=(callback, result_queue))
+    started = time.monotonic()
+    process.start()
+    process.join(timeout_seconds)
+    if process.is_alive():
+        process.terminate()
+        process.join(5)
+        return {
+            "status": "DEGRADED",
+            "failure_class": "WAKE_TIMEOUT",
+            "exact_failure": f"wake exceeded {timeout_seconds}s operator/Alpha boundary",
+            "recovery_attempt": "terminated isolated callback; preserve work for next wake",
+            "recovery_result": "CONTINUE_NEXT_WAKE",
+            "next_action": "defer timed-out work and select another due lane",
+            "duration_seconds": round(time.monotonic() - started, 3),
+        }
+    if not result_queue.empty():
+        payload = result_queue.get()
+        if payload.get("ok"):
+            result = payload.get("result") or {}
+            result.setdefault("status", "PASS")
+            result["wake_boundary_seconds"] = round(time.monotonic() - started, 3)
+            return result
+        return {
+            "status": "DEGRADED",
+            "failure_class": payload.get("failure_class", "CALLBACK_FAILURE"),
+            "exact_failure": payload.get("exact_failure", "isolated callback failed"),
+            "recovery_attempt": "callback failure classified",
+            "recovery_result": "CONTINUE_NEXT_WAKE",
+            "next_action": "preserve work and select another due lane",
+        }
+    return {
+        "status": "DEGRADED",
+        "failure_class": "CALLBACK_NO_RESULT",
+        "exact_failure": f"isolated callback exited without a result (exit={process.exitcode})",
+        "recovery_attempt": "callback boundary closed",
+        "recovery_result": "CONTINUE_NEXT_WAKE",
+        "next_action": "preserve work and select another due lane",
+    }
 
 
 def main() -> int:
@@ -29,8 +143,8 @@ def main() -> int:
     parser.add_argument("--max-cycles", type=int, default=0)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    if not args.daemon and not 1 <= args.cycles <= 3:
-        print(json.dumps({"ok": False, "error": "cycles must be 1..3"})); return 2
+    if not args.daemon and not 1 <= args.cycles <= 6:
+        print(json.dumps({"ok": False, "error": "cycles must be 1..6"})); return 2
     if args.interval_seconds < 30:
         print(json.dumps({"ok": False, "error": "interval-seconds must be >= 30"})); return 2
     sources = build_source_registry()
@@ -55,6 +169,23 @@ def main() -> int:
                 result["execution_mode"] = "REAL"
                 result["task_processing"] = "COMPLETED"
                 result["last_real_output"] = operator.get("completed_at")
+                # A department action must not suppress the Research
+                # heartbeat. If this wake served another department, run one
+                # bounded public-research cycle as the intelligence step for
+                # the same wake and persist both results in the receipt.
+                if not any(str(action).startswith("research.") for action in operator.get("actions_executed", [])):
+                    research = alpha_run(
+                        "AI_NEXUS" if index % 2 == 0 else "BUSINESS",
+                        "Identify one current, evidence-backed Nexus capability or business question that should be investigated next.",
+                        None,
+                        ["https://modelcontextprotocol.io/specification/2025-06-18"], [], [], [], [], "LAST_30_DAYS",
+                    )
+                    result["heartbeat_research"] = {
+                        "status": "PASS" if research.get("ok") else "DEGRADED",
+                        "research_id": research.get("research", {}).get("research_id"),
+                        "content_count": research.get("content_count", 0),
+                    }
+                    result["status"] = "PASS" if result.get("status") not in {"FAILED", "DEGRADED"} and research.get("ok") else result.get("status", "DEGRADED")
                 return result
             refresh = None
             if stale_records:
@@ -68,15 +199,26 @@ def main() -> int:
             alpha_result = evaluate_pending(max_items=20)
             return {"status": "PASS" if result.get("ok") else "DEGRADED", "research_id": result.get("research", {}).get("research_id"),
                     "content_count": result.get("content_count", 0), "alpha_evaluations_created": alpha_result.get("evaluated_count", 0), "stale_refresh": refresh, "no_external_action": True}
-        receipts.append(run_cycle(real_research, cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
+        execution_id = f"research_exec_{uuid.uuid4().hex[:20]}"
+        operator_command = [sys.executable, str(ROOT / "scripts/research/run_dispatched_research_job.py"), "--execution-id", execution_id, "--timeout-seconds", str(int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")))]
+        lane = select_lane(reason="due_fairness_rotation")
+        operator_env = {**os.environ, "NEXUS_SELECTED_LANE_ID": lane["lane_id"],
+                        "NEXUS_SELECTED_LANE_NAME": lane["name"],
+                        "NEXUS_SELECTED_LANE_REASON": lane["selection_reason"],
+                        "NEXUS_EXECUTION_ID": execution_id}
+        _write_wake_progress("WORK_SELECTED", cycle_id=f"kernel_cycle_{index + 1}", selected_lane_id=lane["lane_id"])
+        receipt = run_cycle(lambda: bounded_wake(real_research, command=operator_command, timeout_seconds=int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")), env=operator_env), cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
                                   incomplete_objectives=1, stale_claims=len(stale_records), interval_seconds=args.interval_seconds,
-                                  scheduler="ACTIVE_DAEMON" if args.daemon else "ACTIVE_IN_PROCESS_CYCLE"))
+                                  scheduler="ACTIVE_DAEMON" if args.daemon else "ACTIVE_IN_PROCESS_CYCLE")
+        _write_wake_progress("WAKE_FINALIZING", cycle_id=f"kernel_cycle_{index + 1}", result_status=receipt["result"].get("status"))
+        receipts.append(receipt)
         index += 1
         if args.daemon and (limit is None or index < limit):
             time.sleep(args.interval_seconds)
-        elif not args.daemon:
-            break
-    output = {"ok": bool(receipts) and all(r["result"].get("status") == "PASS" for r in receipts), "cycles": len(receipts),
+        # Non-daemon invocations intentionally honor --cycles. The previous
+        # unconditional break made a requested second wake unreachable.
+    successful_statuses = {"PASS", "COMPLETED", "COMPLETED_WITH_FINDINGS", "NO_ACTION_REQUIRED"}
+    output = {"ok": bool(receipts) and all(r["result"].get("status") in successful_statuses for r in receipts), "cycles": len(receipts),
               "programs": len(programs), "sources": len(sources), "receipts": receipts,
               "no_external_action": True}
     print(json.dumps(output, indent=2) if args.json else f"Continuous kernel {'PASS' if output['ok'] else 'DEGRADED'}: {len(receipts)} cycles")
