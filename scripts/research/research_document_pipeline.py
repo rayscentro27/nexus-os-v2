@@ -143,8 +143,8 @@ def github_deep(repo: str) -> dict[str, Any]:
             files.append({"path": item["path"], "sha": item.get("sha"), "content": raw[:18000]})
         except Exception as exc:
             files.append({"path": item["path"], "sha": item.get("sha"), "error": str(exc)})
-    raw = json.dumps({"metadata": meta, "tree_count": len(tree), "important_files": [{k: v for k, v in x.items() if k != "content"} for x in files], "files": files}, indent=2)
-    return process_document("github", repo.replace("/", "__"), f"https://github.com/{repo}", meta.get("full_name", repo), raw, author=meta.get("owner", {}).get("login", ""), published_at=meta.get("created_at"), extra={"repo_tree_summary": {"file_count": len(tree), "default_branch": branch}, "important_files_selected": [x["path"] for x in files], "repo_commit_sha": meta.get("pushed_at")})
+    raw = "\n".join([f"Repository: {meta.get('full_name', repo)}", f"Description: {meta.get('description', '')}", f"Default branch: {branch}", f"Tree files: {len(tree)}", "", "Selected files and contents:", *[f"\n## {x['path']} (sha {x.get('sha')})\n{x.get('content', x.get('error', ''))}" for x in files]])
+    return process_document("github", repo.replace("/", "__"), f"https://github.com/{repo}", meta.get("full_name", repo), raw, author=meta.get("owner", {}).get("login", ""), published_at=meta.get("created_at"), extra={"repo_tree_summary": {"file_count": len(tree), "default_branch": branch, "description": meta.get("description")}, "important_files_selected": [x["path"] for x in files], "file_hashes": {x["path"]: x.get("sha") for x in files}, "repo_commit_sha": meta.get("pushed_at")})
 
 
 def web_page(url: str, source_id: str) -> dict[str, Any]:
