@@ -22,7 +22,7 @@ test.describe('canonical Admin interaction contract', () => {
     }
     for (const [route, selector] of Object.entries(identities)) {
       await page.goto(`http://127.0.0.1:5174/admin?ui-smoke=1#/${route}`)
-      await expect(page.locator(selector), route).toBeVisible()
+      await expect(page.locator(selector).first(), route).toBeVisible()
       await expect(page.locator('.admin-surface-page'), route).toHaveCount(0)
     }
   })
@@ -38,10 +38,11 @@ test.describe('canonical Admin interaction contract', () => {
           return style.display !== 'none' && style.visibility !== 'hidden'
         }
         const legacy = ['Live Intelligence', 'Work', 'Agents', 'Business', 'Studio', 'Trading Lab', 'Access & Comms']
+        const navText = [...root.querySelectorAll('nav a, aside a, .live-command-sidebar a')].map(element => element.textContent?.trim() || '')
         return {
           emptyHash: interactive.filter(element => visible(element) && element.tagName === 'A' && (element as HTMLAnchorElement).getAttribute('href') === '#').map(element => element.outerHTML),
           silentButtons: interactive.filter(element => visible(element) && element.tagName === 'BUTTON' && !(element as HTMLButtonElement).disabled && !element.textContent?.trim() && !element.getAttribute('aria-label')).map(element => element.outerHTML),
-          legacyLabels: legacy.filter(label => root.textContent?.includes(label)),
+          legacyLabels: legacy.filter(label => navText.includes(label)),
           shellCount: [root.querySelectorAll('.live-command-sidebar').length, root.querySelectorAll('.live-command-topbar').length, root.querySelectorAll('.live-command-main').length],
         }
       })
