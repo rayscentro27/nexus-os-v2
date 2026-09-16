@@ -32,7 +32,8 @@ def main() -> int:
     parser.add_argument("--no-media-download", action="store_true", default=True)
     parser.add_argument("--no-external-ai", action="store_true", default=True)
     parser.add_argument("--json", action="store_true")
-    parser.add_argument("--process-supported", action="store_true", help="run approved non-YouTube sources through the canonical Research processor")
+    parser.add_argument("--process-supported", dest="process_supported", action="store_true", default=True, help="run approved non-YouTube sources through the canonical Research processor")
+    parser.add_argument("--no-process-supported", dest="process_supported", action="store_false", help="retain legacy dry-run observation behavior")
     parser.add_argument("--report-path", default="")
     args = parser.parse_args()
     if not args.no_external_ai:
