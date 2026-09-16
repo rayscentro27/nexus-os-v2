@@ -29,7 +29,7 @@ def main() -> int:
         "audio_acquired": result.get("audio_acquired", False),
         "asr_backend": result.get("asr_backend", "NONE"),
         "asr_completed": result.get("audio_acquired", False) and result.get("transcript_acquired", False),
-        "transcript_word_count": None,
+        "transcript_word_count": result.get("transcript_word_count"),
         "summary_created": result.get("summary_created", False),
         "structured_extraction_created": result.get("structured_extraction_created", False),
         "scored": result.get("scored", False),
