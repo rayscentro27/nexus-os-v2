@@ -123,8 +123,12 @@ def process_document(source_type: str, source_id: str, url: str, title: str, raw
     _write(provenance_path, {"references": provenance})
     document = {"research_item_id": f"{source_type.lower()}:{source_id}", "source_type": source_type, "source_id": source_id, "source_url": url, "source_title": title, "source_author_or_channel": author, "published_at": published_at, "discovered_at": retrieved, "retrieved_at": retrieved, "processed_at": retrieved, "raw_content_path": str(raw_path.relative_to(ROOT)), "raw_content_hash": raw_hash, "normalized_content_path": str(normalized_path.relative_to(ROOT)), "normalized_content_hash": normalized_hash, "processing_status": "FULLY_PROCESSED", "processing_version": VERSION, "executive_summary": summary["executive_summary"], "main_topic": topic, "key_themes": summary["key_themes"], "key_findings": summary["key_findings"], "structured_data": extraction, "classification": topic, "scores": scores, "priority": priority, "research_disposition": disposition, "evidence_references": provenance, "provenance": provenance, "risks": extraction["risks"], "limitations": ["Deterministic bounded synthesis; no external AI invoked."], "unknowns": ["Independent validation not performed."], "follow_up_questions": extraction["follow_up_questions"], "novelty_status": "UNASSESSED", "duplicate_status": "NEW", **(extra or {})}
     document_path = base.with_suffix(".document.json")
+    follow_up_path = base.with_suffix(".follow-ups.json")
+    if disposition in {"FOLLOW_UP_RESEARCH", "DEEP_RESEARCH"}:
+        _write(follow_up_path, {"parent_research_item_id": f"{source_type.lower()}:{source_id}", "status": "OPEN", "questions": extraction["follow_up_questions"], "created_at": retrieved, "alpha_invoked": False, "department_handoff": False})
     _write(document_path, document)
-    state = {"research_item_id": document["research_item_id"], "raw_content_hash": raw_hash, "normalized_content_hash": normalized_hash, "processing_status": "FULLY_PROCESSED", "processed_at": retrieved, "artifacts": [str(x.relative_to(ROOT)) for x in (raw_path, normalized_path, summary_path, extraction_path, score_path, provenance_path, document_path)]}
+    artifacts = (raw_path, normalized_path, summary_path, extraction_path, score_path, provenance_path, document_path) + ((follow_up_path,) if follow_up_path.exists() else ())
+    state = {"research_item_id": document["research_item_id"], "raw_content_hash": raw_hash, "normalized_content_hash": normalized_hash, "processing_status": "FULLY_PROCESSED", "processed_at": retrieved, "artifacts": [str(x.relative_to(ROOT)) for x in artifacts]}
     _write(state_path, state)
     return {**document, "new_artifact_set_created": True, "artifact_paths": state["artifacts"]}
 

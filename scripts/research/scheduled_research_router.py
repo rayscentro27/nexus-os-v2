@@ -33,7 +33,22 @@ def processor_for(source_type: str, category: str = "") -> str:
 
 def _web_item(item: dict[str, Any], source_type: str) -> dict[str, Any]:
     url = item["source_url"]
-    raw, headers = fetch(url)
+    if "LAST_30" in source_type.upper() and "github.com/" in url:
+        repo = url.rstrip("/").split("github.com/", 1)[1]
+        raw, headers = fetch(f"https://api.github.com/repos/{repo}/commits?per_page=30", "application/vnd.github+json")
+        payload = json.loads(raw)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        recent = []
+        for commit in payload if isinstance(payload, list) else []:
+            stamp = commit.get("commit", {}).get("committer", {}).get("date")
+            try:
+                if stamp and datetime.fromisoformat(stamp.replace("Z", "+00:00")) >= cutoff:
+                    recent.append({"sha": commit.get("sha"), "published_at": stamp, "message": commit.get("commit", {}).get("message", "").splitlines()[0]})
+            except ValueError:
+                continue
+        raw = json.dumps({"repository": repo, "cutoff_utc": cutoff.isoformat(), "date_filter": "committer.date >= cutoff", "recent_items": recent}, indent=2)
+    else:
+        raw, headers = fetch(url)
     extra = {"provider": "urllib", "provider_content_type": headers.get("content_type"), "raw_source_truncated": False}
     if "LAST_30" in source_type.upper():
         cutoff = datetime.now(timezone.utc) - timedelta(days=30)
