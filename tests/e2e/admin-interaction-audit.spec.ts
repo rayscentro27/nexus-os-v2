@@ -3,6 +3,30 @@ import { expect, test } from 'playwright/test'
 const routes = ['live-intelligence', 'ai-command', 'projects', 'tasks', 'research', 'knowledge', 'analytics', 'automation', 'campaigns', 'decisions', 'departments', 'trading', 'settings', 'support']
 
 test.describe('canonical Admin interaction contract', () => {
+  test('every canonical route has distinct page identity', async ({ page }) => {
+    const identities = {
+      'live-intelligence': '.live-command-page',
+      'ai-command': '.live-ai-page',
+      projects: '.live-project-grid',
+      tasks: '.canonical-tasks-page',
+      research: '.live-review-grid',
+      knowledge: '.canonical-knowledge-page',
+      analytics: '.canonical-analytics-page',
+      automation: '.canonical-automation-page',
+      campaigns: '.live-asset-grid',
+      decisions: '.live-decision-grid',
+      departments: '.canonical-departments-page',
+      trading: '.live-trading-grid',
+      settings: '.canonical-settings-page',
+      support: '.canonical-support-page',
+    }
+    for (const [route, selector] of Object.entries(identities)) {
+      await page.goto(`http://127.0.0.1:5174/admin?ui-smoke=1#/${route}`)
+      await expect(page.locator(selector), route).toBeVisible()
+      await expect(page.locator('.admin-surface-page'), route).toHaveCount(0)
+    }
+  })
+
   test('canonical controls have destinations, handlers, or explicit disabled state', async ({ page }) => {
     for (const route of routes) {
       await page.goto(`http://127.0.0.1:5174/admin?ui-smoke=1#/${route}`)
