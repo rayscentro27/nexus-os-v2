@@ -24,6 +24,8 @@ from research_scoring import scoring_profile
 CANONICAL_ROOT = ROOT / "reports" / "runtime" / "youtube_artifacts"
 YT_DLP_MAX_ATTEMPTS = 2
 YT_DLP_TIMEOUT_SECONDS = 45
+WHISPER_CPP_BINARY = ROOT / ".runtime" / "whisper.cpp" / "build-native" / "bin" / "whisper-cli"
+WHISPER_CPP_MODEL = ROOT / ".runtime" / "whisper.cpp" / "models" / "ggml-tiny.en.bin"
 
 
 def _now() -> str:
@@ -136,23 +138,60 @@ def acquire_captions(url: str, video_id: str) -> tuple[str, list[dict[str, str]]
         return (*_caption_text(caption_files[0].read_text(errors="ignore")), "public_youtube_captions")
 
 
+def _acquire_audio_wav(url: str, video_id: str, temp: str) -> tuple[Path, Path]:
+    temp_path = Path(temp)
+    source = temp_path / f"{video_id}.source"
+    audio = temp_path / f"{video_id}.wav"
+    download = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "-f", "bestaudio/best", "-o", str(source), url])
+    source_files = [p for p in temp_path.glob(f"{video_id}.source*") if p.is_file()]
+    if download.returncode != 0 or not source_files:
+        raise RuntimeError(f"audio acquisition failed: {(download.stderr or download.stdout)[-700:].strip()}")
+    normalize = _run(["ffmpeg", "-y", "-i", str(source_files[0]), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(audio)])
+    if normalize.returncode != 0 or not audio.exists():
+        raise RuntimeError(f"ffmpeg normalization failed: {normalize.stderr[-700:].strip()}")
+    return audio, source_files[0]
+
+
+def _acquire_audio_whisper_cpp(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str]:
+    """Use only the durable native backend when its binary and model exist."""
+    if not WHISPER_CPP_BINARY.is_file() or not WHISPER_CPP_MODEL.is_file():
+        raise RuntimeError("whisper.cpp unavailable: durable binary or tiny.en model is missing")
+    with tempfile.TemporaryDirectory(prefix="nexus-youtube-asr-") as temp:
+        audio, _source = _acquire_audio_wav(url, video_id, temp)
+        output_base = Path(temp) / video_id
+        result = _run([str(WHISPER_CPP_BINARY), "-m", str(WHISPER_CPP_MODEL), "-f", str(audio), "-l", "en", "-otxt", "-oj", "-of", str(output_base), "-np", "-nt"], timeout=900)
+        txt_path = output_base.with_suffix(".txt")
+        json_path = output_base.with_suffix(".json")
+        if result.returncode != 0 or not txt_path.exists():
+            raise RuntimeError(f"whisper.cpp failed (exit {result.returncode}): {(result.stderr or result.stdout)[-900:].strip()}")
+        transcript = re.sub(r"\s+", " ", txt_path.read_text(errors="ignore")).strip()
+        segments: list[dict[str, str]] = []
+        if json_path.exists():
+            try:
+                payload = json.loads(json_path.read_text(errors="ignore"))
+                for item in payload.get("transcription", []):
+                    text = re.sub(r"\s+", " ", str(item.get("text", ""))).strip()
+                    offsets = item.get("offsets", {})
+                    if text:
+                        segments.append({"timestamp": f"{int(offsets.get('from', 0)) / 1000:.2f}-{int(offsets.get('to', 0)) / 1000:.2f}", "text": text})
+            except (ValueError, TypeError):
+                segments = []
+        if not transcript:
+            raise RuntimeError("whisper.cpp returned an empty transcript")
+        return transcript, segments, "local_whisper_cpp", "tiny.en"
+
+
 def acquire_audio_asr(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str, str]:
-    """Acquire temporary audio and transcribe with the declared local ASR backend."""
+    """Acquire audio and choose the first independently available local backend."""
+    if WHISPER_CPP_BINARY.is_file() and WHISPER_CPP_MODEL.is_file():
+        return _acquire_audio_whisper_cpp(url, video_id)
     try:
         from faster_whisper import WhisperModel
     except ImportError as exc:
         raise RuntimeError("ASR fallback unavailable: faster-whisper is not installed in the active worker") from exc
     model_name = os.environ.get("NEXUS_WHISPER_MODEL", "tiny.en")
     with tempfile.TemporaryDirectory(prefix="nexus-youtube-asr-") as temp:
-        source = Path(temp) / f"{video_id}.source"
-        audio = Path(temp) / f"{video_id}.wav"
-        download = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "-f", "bestaudio/best", "-o", str(source), url])
-        source_files = [p for p in Path(temp).glob(f"{video_id}.source*") if p.is_file()]
-        if download.returncode != 0 or not source_files:
-            raise RuntimeError(f"audio acquisition failed: {(download.stderr or download.stdout)[-700:].strip()}")
-        normalize = _run(["ffmpeg", "-y", "-i", str(source_files[0]), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(audio)])
-        if normalize.returncode != 0 or not audio.exists():
-            raise RuntimeError(f"ffmpeg normalization failed: {normalize.stderr[-700:].strip()}")
+        audio, _source = _acquire_audio_wav(url, video_id, temp)
         model = WhisperModel(model_name, device="cpu", compute_type="int8")
         parts, _info = model.transcribe(str(audio), vad_filter=True)
         segments = [{"timestamp": f"{segment.start:.2f}-{segment.end:.2f}", "text": re.sub(r"\s+", " ", segment.text).strip()} for segment in parts if segment.text.strip()]
