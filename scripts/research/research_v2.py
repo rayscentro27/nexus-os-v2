@@ -213,6 +213,16 @@ def outcome_record(*, entity_id: str, outcome_type: str, metrics: dict[str, Any]
     return {"outcome_id": _id("outcome", (entity_id, outcome_type, metrics)), "entity_id": entity_id, "outcome_type": outcome_type, "evidence_class": "NEXUS_OBSERVED_OUTCOME", "metrics": metrics, "evidence": evidence or [], "status": "OBSERVED"}
 
 
+def compare_knowledge(*, new_item: dict[str, Any], prior_items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Create a qualitative comparison; never invents a novelty number."""
+    prior_text = " ".join(str(x.get("text") or x.get("summary") or x.get("title") or "") for x in prior_items).lower()
+    new_text = str(new_item.get("text") or new_item.get("summary") or new_item.get("title") or "")
+    terms = [x for x in re.findall(r"[a-z][a-z0-9-]{4,}", new_text.lower()) if x not in {"about", "which", "there", "their", "these", "would", "could"}]
+    shared = sorted(set(terms) & set(re.findall(r"[a-z][a-z0-9-]{4,}", prior_text)))[:20]
+    status = "BASELINE_FIRST_OBSERVATION" if not prior_items else "ADDS_NEW_INFORMATION" if len(shared) < max(2, len(set(terms)) // 5) else "OVERLAPPING"
+    return {"comparison_id": _id("comparison", (new_item.get("source_id"), [x.get("source_id") for x in prior_items])), "new_item": new_item.get("source_id") or new_item.get("title"), "prior_items": [x.get("source_id") or x.get("title") for x in prior_items], "shared_facts": shared, "new_facts": [x for x in terms if x not in shared][:20], "shared_methods": [], "new_methods": [], "contradictions": [], "different_assumptions": [], "source_quality_differences": [], "temporal_differences": [], "updated_understanding": "New source is compared qualitatively against retained Research text; numeric novelty is intentionally not assigned.", "novelty_status": status, "no_novelty_number": True}
+
+
 def integrate_scheduled_result(item: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     """Project a completed source artifact into V2's governed records.
 
