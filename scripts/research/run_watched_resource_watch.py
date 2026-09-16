@@ -11,6 +11,7 @@ from pathlib import Path
 
 from common import ROOT, candidate, now, read_json, write_live_tasks, write_report
 from youtube_full_pipeline import run_scheduled_youtube_pipeline
+from scheduled_research_router import process_scheduled_batch
 
 FIXTURE = ROOT / "tests" / "fixtures" / "research" / "sample_watched_resources.json"
 RAY_YOUTUBE_FIXTURE = ROOT / "tests" / "fixtures" / "research" / "ray_watched_youtube_channels.json"
@@ -31,6 +32,7 @@ def main() -> int:
     parser.add_argument("--no-media-download", action="store_true", default=True)
     parser.add_argument("--no-external-ai", action="store_true", default=True)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--process-supported", action="store_true", help="run approved non-YouTube sources through the canonical Research processor")
     parser.add_argument("--report-path", default="")
     args = parser.parse_args()
     if not args.no_external_ai:
@@ -43,6 +45,14 @@ def main() -> int:
         input_path = ROOT / input_path
     resources = [r for r in read_json(input_path) if not args.resource_type or r["resource_type"] == args.resource_type]
     resources = resources[: max(1, min(args.limit, 10))]
+
+    supported_types = {"WEB_PAGE", "SEO_PAGE", "SEO_RESEARCH", "GITHUB_REPO", "LAST_30_DAYS"}
+    if args.process_supported and resources and all(str(r.get("resource_type", "")).upper() in supported_types for r in resources):
+        batch = process_scheduled_batch([{"source_type": r["resource_type"], "source_id": r.get("resource_id", r["resource_url"]), "source_url": r["resource_url"], "title": r.get("resource_name", r["resource_url"]), "category": r.get("category", "")} for r in resources if r.get("enabled") is True and r.get("approved_by_ray") is True])
+        report = {"ok": not any(x["final_status"].startswith("FAILED") for x in batch["results"]), "title": "Watched Resource Watch", "generated_at": now(), "dry_run": args.dry_run, "scheduled_path_used": True, "pipeline": "discover -> acquire -> normalize -> summarize -> extract -> score -> provenance -> store -> disposition", "items": batch["results"], "counts": batch["metrics"], "artifact_root": "reports/runtime/research_artifacts", "safety": {"alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0, "supabase_persistence": False, "external_ai_called": False}, "summary": "Approved supported sources were processed through the canonical local Research document processor."}
+        write_report(report, RUNTIME, MANUAL, args.report_path)
+        print(json.dumps(report, indent=2))
+        return 0 if report["ok"] else 1
 
     # Approved YouTube resources use the full local transcript pipeline. This remains
     # report-only: it never creates opportunities, department work orders, or Supabase rows.
