@@ -32,6 +32,7 @@ from nexus_agent_platform.control_object_resolver import resolve_control_object 
 from nexus_agent_platform.human_gate_router import route_response  # noqa: E402
 from nexus_agent_platform.department_router import execute as execute_department_route  # noqa: E402
 from nexus_agent_platform.loop_certification_campaign import campaign_control_intent, completion_text, handle_control as handle_loop_certification_control, load_campaign, notification_already_sent, observe_runtime_event, record_campaign_message, record_notification  # noqa: E402
+from operations.productivity_monitor import deliver_pending  # noqa: E402
 
 RUNTIME_ENV = Path("/Users/raymonddavis/.config/nexus/runtime.env")
 OFFSET_PATH = ROOT / "data/runtime/telegram_last_update_id.json"
@@ -654,6 +655,10 @@ def run_once(*, dry_run: bool = False, api: Any = telegram_call) -> Dict[str, An
     if not token or not allowed:
         result.update(status="DEGRADED", outcome="CONFIGURATION_UNAVAILABLE")
         return result
+    if not dry_run:
+        result["supervisor_notifications"] = deliver_pending(
+            lambda chat_id, text: send_message(token, chat_id, text), allowed
+        )
     bot = api(token, "getMe", {})
     if not bot.get("ok"):
         result.update(status="DEGRADED", outcome="TELEGRAM_API_UNAVAILABLE")
