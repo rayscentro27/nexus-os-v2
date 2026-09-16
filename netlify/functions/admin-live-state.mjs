@@ -65,6 +65,7 @@ export function liveProjection() {
     blocked_work: states.BLOCKED,
     ray_decisions: { ...(snapshot.ray_decisions || {}), count: reviewItems.length, items: reviewItems },
     ray_decision_count: reviewItems.length,
+    review_data_source: 'GOVERNED_LIVE_READ_MODEL',
   }
 }
 

@@ -182,6 +182,7 @@
 .live-decision-continuation span { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
 .live-decision-continuation i { width: 7px; height: 7px; border-radius: 50%; background: var(--live-teal); box-shadow: 0 0 10px rgba(33,209,170,.7); }
 .live-decision-continuation small { color: #93b8ae; font-size: 9px; }
+.live-review-source { color: var(--live-muted); font-size: 9px; letter-spacing: .04em; margin: 8px 0 0; }
 .live-decision-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .live-decision-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
 .live-decision-meta .live-surface-stat { padding: 8px; }
