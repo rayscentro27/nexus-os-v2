@@ -11,7 +11,11 @@ from common import score_research_text
 def scoring_profile(text: str, topic: str) -> dict:
     blob = f"{text} {topic}".lower()
     base = score_research_text(text, topic)
-    if any(x in blob for x in ("trading", "strategy", "market", "backtest", "drawdown")):
+    # Domain phrases outrank ambiguous words such as "strategy" or "market".
+    # Credit/funding videos often discuss a business strategy without being trading research.
+    credit_domain = sum(x in blob for x in ("credit repair", "business credit", "business funding", "funding company", "loan", "lender")) >= 2
+    trading_domain = any(x in blob for x in ("crypto", "forex", "backtest", "drawdown", "trading system", "broker execution", "open positions"))
+    if trading_domain and not credit_domain:
         return {
             "profile": "trading_paper_research",
             "paper_strategy_potential": base["money_potential"],
@@ -26,7 +30,7 @@ def scoring_profile(text: str, topic: str) -> dict:
             "paper_only": True,
             "live_trading_blocked": True,
         }
-    if any(x in blob for x in ("ai", "automation", "online business", "marketing", "product", "offer")):
+    if any(x in blob for x in ("ai", "automation", "online business", "marketing", "product", "offer")) and not credit_domain:
         return {
             "profile": "ai_online_business_marketing",
             "offer_potential": base["money_potential"],

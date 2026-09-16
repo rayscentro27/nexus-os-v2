@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 
 from common import ROOT, candidate, now, read_json, write_live_tasks, write_report
+from youtube_full_pipeline import run_scheduled_youtube_pipeline
 
 FIXTURE = ROOT / "tests" / "fixtures" / "research" / "sample_watched_resources.json"
 RAY_YOUTUBE_FIXTURE = ROOT / "tests" / "fixtures" / "research" / "ray_watched_youtube_channels.json"
@@ -42,6 +43,24 @@ def main() -> int:
         input_path = ROOT / input_path
     resources = [r for r in read_json(input_path) if not args.resource_type or r["resource_type"] == args.resource_type]
     resources = resources[: max(1, min(args.limit, 10))]
+
+    # Approved YouTube resources use the full local transcript pipeline. This remains
+    # report-only: it never creates opportunities, department work orders, or Supabase rows.
+    if args.resource_type == "youtube_channel" and input_path == RAY_YOUTUBE_FIXTURE:
+        pipeline = run_scheduled_youtube_pipeline(resources, args.items_per_resource)
+        report = {
+            "ok": not pipeline["errors"], "title": "Watched Resource Watch", "generated_at": now(), "dry_run": args.dry_run,
+            "scheduled_path_used": True, "pipeline": "metadata -> captions -> transcript -> summary -> structured extraction -> score -> local store",
+            "resources_checked": len(resources), "resources_enabled": sum(1 for r in resources if r.get("enabled") is True),
+            "items": pipeline["results"], "errors": pipeline["errors"], "artifact_root": pipeline["artifact_root"],
+            "counts": {"resources_checked": len(resources), "videos_processed": len(pipeline["results"]), "transcripts_acquired": sum(1 for x in pipeline["results"] if x.get("transcript_acquired")), "summaries_created": sum(1 for x in pipeline["results"] if x.get("summary_created")), "structured_extractions_created": sum(1 for x in pipeline["results"] if x.get("structured_extraction_created")), "videos_scored": sum(1 for x in pipeline["results"] if x.get("scored")), "opportunities_created": 0, "work_orders_created": 0},
+            "safety": {"alpha_invoked": False, "opportunities_created": 0, "work_orders_created": 0, "supabase_persistence": False, "media_downloaded": False, "audio_downloaded": False, "external_ai_called": False},
+            "summary": "Approved YouTube resources were processed through the full local caption-derived Research pipeline. Downstream business routing remains disabled.",
+        }
+        write_report(report, RUNTIME, MANUAL, args.report_path)
+        print(json.dumps(report, indent=2))
+        return 0
+
     items = []
     unsupported = []
     for row in resources:
