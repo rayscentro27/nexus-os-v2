@@ -13,6 +13,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,8 @@ from common import ROOT
 from research_scoring import scoring_profile
 
 CANONICAL_ROOT = ROOT / "reports" / "runtime" / "youtube_artifacts"
+YT_DLP_MAX_ATTEMPTS = 2
+YT_DLP_TIMEOUT_SECONDS = 45
 
 
 def _now() -> str:
@@ -32,6 +35,20 @@ def _run(command: list[str], timeout: int = 180) -> subprocess.CompletedProcess[
         return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         return subprocess.CompletedProcess(command, 124, exc.stdout or "", f"command timed out after {timeout}s")
+
+
+def _run_ytdlp(command: list[str]) -> subprocess.CompletedProcess[str]:
+    """Retry only transient yt-dlp acquisition failures, with a hard bound."""
+    if "--socket-timeout" not in command:
+        command = [command[0], "--socket-timeout", "10", *command[1:]]
+    last = subprocess.CompletedProcess(command, 1, "", "yt-dlp did not run")
+    for attempt in range(1, YT_DLP_MAX_ATTEMPTS + 1):
+        last = _run(command, timeout=YT_DLP_TIMEOUT_SECONDS)
+        if last.returncode == 0:
+            return last
+        if attempt < YT_DLP_MAX_ATTEMPTS:
+            time.sleep(1)
+    return last
 
 
 def _sentences(text: str) -> list[str]:
@@ -97,7 +114,7 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def _metadata(url: str, provided: dict[str, Any] | None = None) -> dict[str, Any]:
-    result = _run(["yt-dlp", "--no-update", "--no-warnings", "--skip-download", "--dump-single-json", url])
+    result = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "--skip-download", "--dump-single-json", url])
     if result.returncode != 0:
         if provided and provided.get("title"):
             return {"id": provided.get("video_id"), "title": provided.get("title"), "channel": provided.get("channel", "UNKNOWN"), "description": provided.get("description", ""), "duration": provided.get("duration")}
@@ -107,7 +124,7 @@ def _metadata(url: str, provided: dict[str, Any] | None = None) -> dict[str, Any
 
 def acquire_captions(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str]:
     with tempfile.TemporaryDirectory(prefix="nexus-youtube-captions-") as temp:
-        result = _run([
+        result = _run_ytdlp([
             "yt-dlp", "--no-update", "--no-warnings", "--skip-download",
             "--write-subs", "--write-auto-subs", "--sub-langs", "en.*",
             "--sub-format", "vtt", "--output", str(Path(temp) / "%(id)s.%(ext)s"), url,
@@ -129,7 +146,7 @@ def acquire_audio_asr(url: str, video_id: str) -> tuple[str, list[dict[str, str]
     with tempfile.TemporaryDirectory(prefix="nexus-youtube-asr-") as temp:
         source = Path(temp) / f"{video_id}.source"
         audio = Path(temp) / f"{video_id}.wav"
-        download = _run(["yt-dlp", "--no-update", "--no-warnings", "-f", "bestaudio/best", "-o", str(source), url])
+        download = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "-f", "bestaudio/best", "-o", str(source), url])
         source_files = [p for p in Path(temp).glob(f"{video_id}.source*") if p.is_file()]
         if download.returncode != 0 or not source_files:
             raise RuntimeError(f"audio acquisition failed: {(download.stderr or download.stdout)[-700:].strip()}")
@@ -218,7 +235,7 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
 
 
 def select_channel_videos(channel_url: str, limit: int) -> list[dict[str, str]]:
-    result = _run(["yt-dlp", "--no-update", "--no-warnings", "--flat-playlist", "--playlist-end", str(limit), "--dump-single-json", f"{channel_url.rstrip('/')}/videos"])
+    result = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "--flat-playlist", "--playlist-end", str(limit), "--dump-single-json", f"{channel_url.rstrip('/')}/videos"])
     if result.returncode != 0:
         raise RuntimeError(f"scheduled selection failed: {result.stderr[-500:].strip()}")
     payload = json.loads(result.stdout)
