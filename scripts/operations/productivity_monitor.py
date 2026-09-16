@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -63,7 +63,9 @@ def evaluate_research(*, process_running: bool, heartbeat: dict[str, Any] | None
     wake_failures = [e for e in events if e.get("status") in {"FAILED", "FAILED_RETRYABLE", "TIMEOUT", "ERROR"}]
     successes = [e for e in events if e.get("status") in {"EVIDENCE_READY", "COMPLETED"}]
     last_hb = _as_dt(heartbeat.get("last_real_output") or heartbeat.get("generated_at") or heartbeat.get("updated_at"))
-    stale = not last_hb or (current - last_hb).total_seconds() > heartbeat_stale_seconds
+    next_wake = _as_dt(heartbeat.get("next_wake"))
+    overdue = next_wake is not None and current > next_wake + timedelta(seconds=heartbeat_stale_seconds)
+    stale = not last_hb or ((current - last_hb).total_seconds() > heartbeat_stale_seconds and (next_wake is None or overdue))
     consecutive_failures = 0
     for event in reversed(events):
         status = str(event.get("status", "")).upper()

@@ -17,6 +17,17 @@ def test_process_alive_with_repeated_wakes_is_degraded_or_stalled():
     assert result["classification"] == "SCHEDULED_WAKE_FAILED"
 
 
+def test_future_scheduled_wake_is_not_stale():
+    hb = {"last_real_output": "2026-09-16T02:01:18+00:00", "next_wake": "2026-09-16T02:21:18+00:00"}
+    result = monitor.evaluate_research(
+        process_running=True,
+        heartbeat=hb,
+        now_dt=datetime(2026, 9, 16, 2, 14, tzinfo=timezone.utc),
+    )
+    assert result["process_health"] == "HEALTHY"
+    assert result["productivity_health"] == "IDLE_LEGITIMATE"
+
+
 def test_healthy_output_is_not_incident(tmp_path, monkeypatch):
     monkeypatch.setattr(monitor, "INCIDENTS", tmp_path / "incidents.jsonl")
     monkeypatch.setattr(monitor, "NOTIFICATIONS", tmp_path / "notifications.jsonl")
