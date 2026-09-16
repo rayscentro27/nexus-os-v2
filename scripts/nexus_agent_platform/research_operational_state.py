@@ -56,6 +56,7 @@ def build_research_operational_state() -> dict[str, Any]:
     v2_strategies = _jsonl(ROOT / "data/governed/research_v2_strategies.jsonl")
     v2_handoffs = _jsonl(ROOT / "data/governed/research_v2_handoffs.jsonl")
     v2_reputations = _jsonl(ROOT / "data/governed/research_v2_reputations.jsonl")
+    v2_review_queue = _jsonl(ROOT / "data/governed/research_v2_review_queue.jsonl")
     scheduler_plist = Path.home() / "Library/LaunchAgents/com.nexus.continuous-loop.plist"
     scheduler_loaded = False
     try:
@@ -84,6 +85,9 @@ def build_research_operational_state() -> dict[str, Any]:
     blocked_jobs = sum(1 for row in list(latest_research.values()) + list(latest_queue.values()) if str(row.get("status", row.get("state", ""))).upper() in {"BLOCKED", "FAILED", "REJECTED"})
     open_objectives = len(latest_research)
     latest = max((row for row in alpha_records if row.get("updated_at") or row.get("created_at")), key=lambda row: str(row.get("updated_at") or row.get("created_at")), default={})
+    latest_reviews = latest_by("review_item_id", v2_review_queue)
+    human_review_count = sum(1 for row in latest_reviews.values() if row.get("status") == "DRAFT_REVIEW_REQUIRED")
+    machine_work_remains = bool(sum(1 for row in v2_questions if row.get("status") == "OPEN") or v2_follow_ups or v2_sources)
     alpha_available = alpha_status_path.exists()
     web_ready = bool((ROOT / "scripts/alpha/alpha_discovery.py").exists())
     health = "HEALTHY" if web_ready and alpha_available else "DEGRADED" if web_ready else "UNKNOWN"
@@ -140,12 +144,18 @@ def build_research_operational_state() -> dict[str, Any]:
             "handoff_drafts": len(v2_handoffs),
             "source_reputation_warnings": sum(1 for row in v2_reputations if row.get("source_trust_status") in {"CAUTION", "UNRELIABLE", "QUARANTINED"}),
             "scam_risk_items": sum(1 for row in v2_reputations if row.get("scam_risk_findings", 0)),
+            "human_review_queue_count": human_review_count,
+            "machine_work_remains": machine_work_remains,
+            "global_stop_required": False,
             "process_alive": scheduler_loaded,
             "productive_research": bool(v2_sources or v2_alpha_reviews or v2_plans),
         },
         "last_successful_research_activity": latest.get("updated_at") or latest.get("created_at") or "UNKNOWN",
         "current_research_objective": latest.get("question") or latest.get("theme") or "UNKNOWN",
         "research_needs_ray": False,
+        "human_review_queue_count": human_review_count,
+        "global_machine_work_remains": machine_work_remains,
+        "global_stop_required": False,
         "youtube": {"approved_targets": 5, "metadata_records": len(metadata) if isinstance(metadata, list) else 0, "transcripts_imported": len(transcripts) if isinstance(transcripts, list) else 0, "source": str(metadata_path.relative_to(ROOT))},
         "invariants": {"idle_is_not_unavailable": True, "available_is_not_active": True, "queue_empty_is_not_unavailable": True},
         "scheduler": {"owner": "com.nexus.continuous-loop", "plist_present": scheduler_plist.exists(), "loaded": scheduler_loaded, "source": str(scheduler_plist)},
