@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import signal
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,7 +15,6 @@ ROOT = Path(__file__).resolve().parents[2]
 JOBS = ROOT / "data/runtime/research_execution_jobs.jsonl"
 sys.path.insert(0, str(ROOT / "scripts"))
 from alpha.run_alpha_discovery_cycle import run as alpha_run  # noqa: E402
-from nexus_agent_platform.research_alpha_pipeline import evaluate_pending  # noqa: E402
 
 
 def event(execution_id: str, status: str, **values) -> None:
@@ -47,7 +47,6 @@ def main() -> int:
             None,
             ["https://modelcontextprotocol.io/specification/2025-06-18"], [], [], [], [], "LAST_30_DAYS",
         )
-        alpha_result = evaluate_pending(max_items=20)
         signal.alarm(0)
     except TimeoutError as exc:
         signal.alarm(0)
@@ -58,9 +57,10 @@ def main() -> int:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error=str(exc)[:500], failure_class="RESEARCH_WORKER_FAILURE", retry_after="next scheduled wake")
         return 1
     event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker", result_status="PASS" if result.get("ok") else "DEGRADED", research_id=result.get("research", {}).get("research_id"), content_count=result.get("content_count", 0))
-    event(execution_id, "ALPHA_PENDING", worker_id="alpha_validation_worker", next_action="evaluate persisted evidence asynchronously")
-    event(execution_id, "ALPHA_RUNNING", worker_id="alpha_validation_worker", evaluations_created=alpha_result.get("evaluated_count", 0))
-    event(execution_id, "COMPLETED" if result.get("ok") else "FAILED_RETRYABLE", worker_id="alpha_validation_worker", alpha_status="COMPLETED", evaluations_created=alpha_result.get("evaluated_count", 0), next_action="continue next scheduled research wake")
+    alpha_command = [sys.executable, str(ROOT / "scripts/research/run_alpha_validation_job.py"), "--execution-id", execution_id]
+    alpha_process = subprocess.Popen(alpha_command, cwd=ROOT, env=os.environ.copy(), start_new_session=True)
+    event(execution_id, "ALPHA_PENDING", worker_id="alpha_validation_worker", alpha_pid=alpha_process.pid, next_action="Alpha evaluates persisted evidence asynchronously")
+    event(execution_id, "COMPLETED" if result.get("ok") else "FAILED_RETRYABLE", worker_id="research_operator_worker", alpha_status="DISPATCHED", next_action="continue next scheduled research wake")
     return 0
 
 
