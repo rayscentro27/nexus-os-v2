@@ -16,6 +16,7 @@ JOBS = ROOT / "data/runtime/research_execution_jobs.jsonl"
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
+from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff  # noqa: E402
 
 
 # Bounded, read-only scheduled source selection.  These are existing public
@@ -96,6 +97,7 @@ def main() -> int:
           provenance_created=result.get("provenance_created", False), stored=result.get("stored", False),
           disposition=result.get("disposition"), research_id=(result.get("result") or {}).get("research_item_id"))
     if final_status.startswith("FAILED"):
+        mark_lane_backoff(lane_id, result.get("error", "scheduled processor failed"))
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
               error=result.get("error", "scheduled processor failed"), failure_class="SCHEDULED_PROCESSOR_FAILURE",
               retry_after="next scheduled wake")

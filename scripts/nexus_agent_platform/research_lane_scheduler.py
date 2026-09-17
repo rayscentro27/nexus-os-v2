@@ -171,3 +171,15 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
     selected["last_selection_reason"] = reason
     REGISTRY_PATH.write_text(json.dumps([selected if row["lane_id"] == selected["lane_id"] else row for row in rows], indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return selected
+
+
+def mark_lane_backoff(lane_id: str, reason: str, *, seconds: int = 1200) -> None:
+    """Temporarily remove a failed lane from competition after a retryable error."""
+    rows = ensure_registry()
+    until = (_now() + timedelta(seconds=max(30, seconds))).isoformat()
+    for row in rows:
+        if row.get("lane_id") == lane_id:
+            row["backoff_until"] = until
+            row["last_failure_reason"] = str(reason)[:500]
+            row["last_failure_at"] = _now().isoformat()
+    REGISTRY_PATH.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
