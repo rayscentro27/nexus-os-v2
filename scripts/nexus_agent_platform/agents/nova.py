@@ -4293,7 +4293,12 @@ def _build_context(state: AgentState) -> AgentState:
     # conversation remains lightweight and does not receive operational data.
     company_terms = ("nexus", "company", "business", "ray", "research", "report", "finding", "mission", "department", "capability", "project", "what happened", "today", "focus", "onboarding", "worth pursuing", "overnight")
     history_trigger = " ".join(str(item.get("content", "")) for item in history[-6:] if isinstance(item, dict)).lower()
-    if any(term in (state.user_message.lower() + " " + history_trigger) for term in company_terms) or state.metadata.get("question_type") in {"ADVISORY", "ANALYTICAL", "RESEARCH", "OPERATIONAL"}:
+    retrieval_intent = selected_knowledge.get("intent")
+    # Do not add the broad daily/company brief to questions whose exact source
+    # is already selected.  It can contain stale narrative that competes with
+    # architecture traces, governed entities, or current capability truth.
+    source_specific_intent = retrieval_intent in {"ARCHITECTURE_HISTORY", "DEVELOPMENT_HISTORY", "GOVERNED_ENTITY", "DEPARTMENT", "CAPABILITY"}
+    if not source_specific_intent and (any(term in (state.user_message.lower() + " " + history_trigger) for term in company_terms) or state.metadata.get("question_type") in {"ADVISORY", "ANALYTICAL", "RESEARCH", "OPERATIONAL"}):
         from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
         company_context = build_company_context()
         state.metadata["company_context"] = company_context
