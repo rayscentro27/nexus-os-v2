@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
 from youtube_full_pipeline import select_channel_videos  # noqa: E402
-from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff  # noqa: E402
+from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark_source_result  # noqa: E402
 
 
 # Bounded, read-only scheduled source selection.  These are existing public
@@ -105,6 +105,15 @@ def main() -> int:
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error=str(exc)[:500], failure_class="RESEARCH_WORKER_FAILURE", retry_after="next scheduled wake")
         return 1
     final_status = result.get("final_status", "FAILED_RETRYABLE")
+    # Refresh bookkeeping is advisory scheduling state.  A serialization or
+    # filesystem fault here must never turn a completed Research result into a
+    # dead worker; the next selector wake can recover the state from this
+    # execution ledger.
+    try:
+        mark_source_result(lane_id, item.get("source_id", ""), final_status, source_class=item.get("source_type", ""))
+    except Exception as exc:
+        event(execution_id, "SOURCE_REFRESH_STATE_DEGRADED", worker_id="research_operator_worker",
+              error=str(exc)[:500], next_action="continue; hydrate refresh state from execution history")
     event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker",
           result_status="PASS" if final_status in {"FULLY_PROCESSED", "DUPLICATE_UNCHANGED"} else "DEGRADED",
           content_count=1 if result.get("raw_acquired") else 0, final_status=final_status,

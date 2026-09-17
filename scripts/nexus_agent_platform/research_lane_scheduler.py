@@ -8,6 +8,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 REGISTRY_PATH = ROOT / "data/runtime/research_lane_registry.json"
+SOURCE_REFRESH_STATE_PATH = ROOT / "data/runtime/research_source_refresh_state.json"
+EXECUTION_JOBS_PATH = ROOT / "data/runtime/research_execution_jobs.jsonl"
 LANES = (
     ("BUSINESS_MARKET", "Business Market", "P1"),
     ("FUNDING_LENDER", "Funding and Lender", "P1"),
@@ -48,6 +50,159 @@ def _read() -> list[dict[str, Any]]:
         return value if isinstance(value, list) else []
     except (OSError, ValueError, TypeError):
         return []
+
+
+def _read_source_refresh_state() -> dict[str, dict[str, Any]]:
+    """Read durable per-source refresh state used by the lane selector.
+
+    This is intentionally separate from governed Research records: those are
+    append-only knowledge/provenance records, while this file is operational
+    scheduling state.  A failed or unchanged refresh must not create another
+    source artifact or change the meaning of the canonical record.
+    """
+    try:
+        value = json.loads(SOURCE_REFRESH_STATE_PATH.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except (OSError, ValueError, TypeError):
+        return {}
+
+
+def _write_source_refresh_state(value: dict[str, dict[str, Any]]) -> None:
+    SOURCE_REFRESH_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SOURCE_REFRESH_STATE_PATH.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def _hydrate_refresh_state_from_history() -> None:
+    """Migrate real duplicate outcomes into the new scheduler state once."""
+    if SOURCE_REFRESH_STATE_PATH.exists() or not EXECUTION_JOBS_PATH.exists():
+        return
+    selected: dict[str, dict[str, Any]] = {}
+    state: dict[str, dict[str, Any]] = {}
+    try:
+        lines = EXECUTION_JOBS_PATH.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return
+    for line in lines:
+        try:
+            event = json.loads(line)
+        except (ValueError, TypeError):
+            continue
+        execution_id = str(event.get("execution_id", ""))
+        status = str(event.get("status", ""))
+        if status == "SOURCE_SELECTED" and event.get("lane_id") and event.get("source_id"):
+            selected[execution_id] = event
+            continue
+        if status != "EVIDENCE_READY" or event.get("final_status") != "DUPLICATE_UNCHANGED":
+            if status == "EVIDENCE_READY" and execution_id in selected and event.get("final_status") != "DUPLICATE_UNCHANGED":
+                item = selected[execution_id]
+                state[_source_state_key(str(item["lane_id"]), str(item["source_id"]))] = {
+                    "lane_id": str(item["lane_id"]), "source_id": str(item["source_id"]),
+                    "consecutive_duplicate_count": 0, "last_status": str(event.get("final_status", "FULLY_PROCESSED")),
+                    "last_changed_at": event.get("at"), "next_eligible_refresh_at": None,
+                    "source_class": str(item.get("source_type", "")),
+                }
+            continue
+        item = selected.get(execution_id)
+        if not item:
+            continue
+        lane_id, source_id = str(item["lane_id"]), str(item["source_id"])
+        key = _source_state_key(lane_id, source_id)
+        previous = state.get(key, {})
+        count = int(previous.get("consecutive_duplicate_count", 0) or 0) + 1
+        try:
+            event_at = datetime.fromisoformat(str(event.get("at")).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            event_at = datetime.now(timezone.utc)
+        cooldown = min(_refresh_seconds(lane_id, source_id) * max(1, min(count, 4)), 86400)
+        state[key] = {"lane_id": lane_id, "source_id": source_id,
+                      "last_duplicate_at": event.get("at"), "consecutive_duplicate_count": count,
+                      "next_eligible_refresh_at": (event_at + timedelta(seconds=cooldown)).isoformat(),
+                      "last_status": "DUPLICATE_UNCHANGED", "source_class": str(item.get("source_type", ""))}
+    if state:
+        _write_source_refresh_state(state)
+
+
+def _source_state_key(lane_id: str, source_id: str) -> str:
+    return f"{lane_id}:{source_id}"
+
+
+def _refresh_seconds(lane_id: str, source_id: str) -> int:
+    """Bounded refresh intervals by source behavior, not one global delay."""
+    source = source_id.lower()
+    if lane_id == "YOUTUBE_CONTENT":
+        return 3600
+    if lane_id in {"GITHUB_TECHNOLOGY", "PLATFORM_CAPABILITY_INTELLIGENCE"} or "/" in source:
+        return 21600
+    if lane_id in {"GRANTS_GOVERNMENT", "TRADING_MARKETS", "FUNDING_LENDER"}:
+        return 14400
+    return 7200
+
+
+def _source_refresh_snapshot(lane_id: str, source_id: str, now: datetime) -> dict[str, Any]:
+    state = _read_source_refresh_state().get(_source_state_key(lane_id, source_id), {})
+    next_at = state.get("next_eligible_refresh_at")
+    cooling = bool(next_at and _parse_age(next_at, now) == 0.0)
+    return {**state, "cooling_down": cooling}
+
+
+def _latest_source_for_lane(lane_id: str) -> str:
+    """Recover concrete source identity for registry rows predating v2."""
+    matching = [value for value in _read_source_refresh_state().values()
+                if value.get("lane_id") == lane_id and value.get("source_id")]
+    if not matching:
+        return ""
+    latest = max(matching, key=lambda value: str(value.get("last_duplicate_at") or value.get("last_changed_at") or ""))
+    return str(latest.get("source_id", ""))
+
+
+def mark_source_result(lane_id: str, source_id: str, status: str, *, source_class: str = "") -> dict[str, Any]:
+    """Record the result that controls the next normal source refresh.
+
+    DUPLICATE_UNCHANGED is a successful idempotent result, but it is not useful
+    new Research.  Consecutive duplicates therefore receive an escalating,
+    source-class-aware cooldown.  Material follow-up work can still override
+    this at selection time; cooldown never deletes or hides source history.
+    """
+    now = _now().isoformat()
+    state = _read_source_refresh_state()
+    key = _source_state_key(lane_id, source_id)
+    prior = state.get(key, {})
+    duplicate = str(status).upper() == "DUPLICATE_UNCHANGED"
+    if duplicate:
+        consecutive = int(prior.get("consecutive_duplicate_count", 0) or 0) + 1
+        # Escalate only within a bounded ceiling so a source can return after
+        # a meaningful refresh window or an explicit investigation override.
+        cooldown = min(_refresh_seconds(lane_id, source_id) * max(1, min(consecutive, 4)), 86400)
+        updated = {**prior, "lane_id": lane_id, "source_id": source_id,
+                   "last_duplicate_at": now, "consecutive_duplicate_count": consecutive,
+                   "next_eligible_refresh_at": (datetime.now(timezone.utc) + timedelta(seconds=cooldown)).isoformat(),
+                   "last_status": "DUPLICATE_UNCHANGED", "source_class": source_class or prior.get("source_class", "")}
+    else:
+        # A successful refresh also establishes a quiet period.  Some
+        # processors return FULLY_PROCESSED for an idempotent web read rather
+        # than DUPLICATE_UNCHANGED, so waiting for the processor's duplicate
+        # label alone is insufficient to prevent rapid replay.  This is a
+        # refresh cooldown, not a rejection and it never removes history.
+        refresh_due = None
+        if str(status).upper() == "FULLY_PROCESSED":
+            refresh_due = (datetime.now(timezone.utc) + timedelta(seconds=_refresh_seconds(lane_id, source_id))).isoformat()
+        updated = {**prior, "lane_id": lane_id, "source_id": source_id,
+                   "last_changed_at": now, "consecutive_duplicate_count": 0,
+                   "next_eligible_refresh_at": refresh_due, "last_status": str(status),
+                   "source_class": source_class or prior.get("source_class", "")}
+    state[key] = updated
+    _write_source_refresh_state(state)
+    # Keep the lane registry explainable: the next selector wake can identify
+    # which concrete source produced the duplicate/change result without
+    # scanning processor artifacts or treating governed history as a queue.
+    rows = ensure_registry()
+    for row in rows:
+        if row.get("lane_id") == lane_id:
+            row["last_source_id"] = source_id
+            row["last_source_status"] = str(status)
+            row["last_source_result_at"] = now
+    REGISTRY_PATH.write_text(json.dumps(rows, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return updated
 
 
 def _read_governed(name: str) -> list[dict[str, Any]]:
@@ -128,6 +283,7 @@ def ensure_registry() -> list[dict[str, Any]]:
 
 
 def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
+    _hydrate_refresh_state_from_history()
     rows = [row for row in ensure_registry() if row.get("enabled")]
     now = _now()
 
@@ -155,29 +311,48 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
         # channels therefore contribute up to 60 points, bounded like the
         # materiality signal, while fairness debt still prevents lane capture.
         monitored_source_signal = min(60.0, context.get("watched_sources", 0) * 15.0)
-        candidates.append((row, context, materiality_signal + monitored_source_signal + progression_signal + age_signal,
-                           materiality_signal + monitored_source_signal, progression_signal, age_signal))
+        # The current worker has one normal source per lane.  The source id is
+        # recorded after the first real execution and then participates in
+        # future eligibility.  Explicit high materiality or follow-up work
+        # can justify a refresh; a generic thesis count alone cannot repeatedly
+        # bypass the source cooldown when the lane has only one fixed source.
+        source_id = str(row.get("last_source_id") or _latest_source_for_lane(str(row["lane_id"])))
+        refresh = _source_refresh_snapshot(str(row["lane_id"]), source_id, now) if source_id else {}
+        progression_override = bool(context["high"] or context["followups"])
+        duplicate_penalty = 0.0
+        if refresh.get("cooling_down") and not progression_override:
+            duplicate_penalty = min(90.0, 35.0 + 10.0 * int(refresh.get("consecutive_duplicate_count", 1) or 1))
+        candidates.append((row, context, source_id, refresh,
+                           materiality_signal + monitored_source_signal + progression_signal + age_signal - duplicate_penalty,
+                           materiality_signal + monitored_source_signal, progression_signal, age_signal, duplicate_penalty))
     if not candidates:
-        candidates = [(row, _lane_context(str(row["lane_id"]), now), 0.0, 0.0, 0.0, 0.0) for row in rows]
+        candidates = [(row, _lane_context(str(row["lane_id"]), now), "", {}, 0.0, 0.0, 0.0, 0.0, 0.0) for row in rows]
     max_count = max(int(row.get("selection_count", 0)) for row, *_ in candidates)
     scored = []
-    for row, context, base_score, materiality_signal, progression_signal, age_signal in candidates:
+    for row, context, source_id, refresh, base_score, materiality_signal, progression_signal, age_signal, duplicate_penalty in candidates:
         fairness_debt = min(40.0, max(0, max_count - int(row.get("selection_count", 0))) * 8.0)
         priority_signal = max(0.0, 30.0 - PRIORITY.get(str(row.get("priority", "P4")), 4) * 6.0)
         score = base_score + fairness_debt + priority_signal
-        scored.append((score, row, context, materiality_signal, progression_signal, age_signal, fairness_debt))
-    score, selected_row, context, materiality_signal, progression_signal, age_signal, fairness_debt = max(
+        scored.append((score, row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty))
+    score, selected_row, context, source_id, refresh, materiality_signal, progression_signal, age_signal, fairness_debt, duplicate_penalty = max(
         scored, key=lambda x: (x[0], -int(x[1].get("selection_count", 0)), str(x[1]["lane_id"])))
     selected = dict(selected_row)
     selected["selection_reason"] = reason
-    selected["selected_work_class"] = "FOLLOW_UP_OR_THESIS" if context["followups"] or context["theses"] else "EVIDENCE_GAP" if context["high"] or context["medium"] or context["questions"] else "MONITORED_SOURCE" if context.get("watched_sources") else "DISCOVERY"
+    selected["selected_work_class"] = "ACTIVE_FOLLOWUP" if context["followups"] else "THESIS_MATURATION" if context["theses"] else "EVIDENCE_GAP" if context["high"] or context["medium"] or context["questions"] else "MONITORED_SOURCE" if context.get("watched_sources") else "DISCOVERY"
     selected["materiality_basis"] = {"high_items": context["high"], "medium_items": context["medium"], "open_questions": context["questions"], "watched_sources": context.get("watched_sources", 0)}
     selected["progression_basis"] = {"active_investigations": context["investigations"], "open_followups": context["followups"], "active_theses": context["theses"]}
     selected["age_basis"] = {"lane_age_seconds": round(age(selected), 3), "oldest_matching_item_seconds": round(context["oldest_age_seconds"], 3)}
     selected["fairness_basis"] = {"selection_count": int(selected.get("selection_count", 0)), "fairness_debt": round(fairness_debt, 3)}
+    selected["duplicate_basis"] = {"source_id": source_id or None, "cooling_down": bool(refresh.get("cooling_down")), "consecutive_duplicate_count": int(refresh.get("consecutive_duplicate_count", 0) or 0), "duplicate_penalty": round(duplicate_penalty, 3), "override": bool(context["high"] or context["followups"])}
     selected["alternatives_considered"] = [{"lane_id": row["lane_id"], "score": round(item_score, 3)} for item_score, row, *_ in sorted(scored, reverse=True, key=lambda x: x[0])[1:4]]
     selected["starvation_age_seconds"] = age(selected)
     selected["selection_score"] = round(score, 3)
+    selected["last_source_id"] = source_id or selected.get("last_source_id")
+    selected["selection_explanation"] = {
+        "why_selected": "highest explainable materiality/progression/age score after bounded fairness and duplicate cooldown",
+        "materiality_basis": selected["materiality_basis"], "progression_basis": selected["progression_basis"],
+        "age_basis": selected["age_basis"], "fairness_basis": selected["fairness_basis"], "duplicate_basis": selected["duplicate_basis"],
+    }
     selected["selected_at"] = now.isoformat()
     selected["selection_count"] = int(selected.get("selection_count", 0)) + 1
     selected["last_run_at"] = selected["selected_at"]

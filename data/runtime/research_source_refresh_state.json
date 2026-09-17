@@ -1,0 +1,128 @@
+{
+  "AFFILIATE_REVENUE:hubspot-affiliate": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "AFFILIATE_REVENUE",
+    "last_changed_at": "2026-09-17T11:27:07.813461+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "WEB_PAGE",
+    "source_id": "hubspot-affiliate"
+  },
+  "BUSINESS_MARKET:mobile-detailing-academy-phoenix": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "BUSINESS_MARKET",
+    "last_changed_at": "2026-09-17T03:43:24.597978+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "WEB_PAGE",
+    "source_id": "mobile-detailing-academy-phoenix"
+  },
+  "BUSINESS_MARKET:sba-business-guide": {
+    "consecutive_duplicate_count": 6,
+    "lane_id": "BUSINESS_MARKET",
+    "last_duplicate_at": "2026-09-17T11:07:09.097384+00:00",
+    "last_status": "DUPLICATE_UNCHANGED",
+    "next_eligible_refresh_at": "2026-09-17T19:07:09.097384+00:00",
+    "source_class": "WEB_PAGE",
+    "source_id": "sba-business-guide"
+  },
+  "FUNDING_LENDER:sba-loans": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "FUNDING_LENDER",
+    "last_changed_at": "2026-09-17T02:34:31.001839+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "WEB_PAGE",
+    "source_id": "sba-loans"
+  },
+  "GITHUB_TECHNOLOGY:mvanhorn/last30days-skill": {
+    "consecutive_duplicate_count": 2,
+    "lane_id": "GITHUB_TECHNOLOGY",
+    "last_duplicate_at": "2026-09-17T13:27:31.883733+00:00",
+    "last_status": "DUPLICATE_UNCHANGED",
+    "next_eligible_refresh_at": "2026-09-18T01:27:31.883733+00:00",
+    "source_class": "GITHUB_REPO",
+    "source_id": "mvanhorn/last30days-skill"
+  },
+  "GRANTS_GOVERNMENT:sba-grants": {
+    "consecutive_duplicate_count": 8,
+    "lane_id": "GRANTS_GOVERNMENT",
+    "last_duplicate_at": "2026-09-17T12:27:14.903115+00:00",
+    "last_status": "DUPLICATE_UNCHANGED",
+    "next_eligible_refresh_at": "2026-09-18T04:27:14.903115+00:00",
+    "source_class": "WEB_PAGE",
+    "source_id": "sba-grants"
+  },
+  "PLATFORM_CAPABILITY_INTELLIGENCE:sushantkarn/SEO-engine": {
+    "consecutive_duplicate_count": 8,
+    "lane_id": "PLATFORM_CAPABILITY_INTELLIGENCE",
+    "last_duplicate_at": "2026-09-17T13:47:25.827737+00:00",
+    "last_status": "DUPLICATE_UNCHANGED",
+    "next_eligible_refresh_at": "2026-09-18T13:47:25.827737+00:00",
+    "source_class": "GITHUB_REPO",
+    "source_id": "sushantkarn/SEO-engine"
+  },
+  "SEO_SEARCH_DEMAND:google-seo-starter": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "SEO_SEARCH_DEMAND",
+    "last_changed_at": "2026-09-17T12:07:11.880076+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "SEO_RESEARCH",
+    "source_id": "google-seo-starter"
+  },
+  "SOCIAL_CONTENT:reddit-smallbusiness": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "SOCIAL_CONTENT",
+    "last_changed_at": "2026-09-17T02:33:36.762105+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "WEB_PAGE",
+    "source_id": "reddit-smallbusiness"
+  },
+  "TRADING_MARKETS:investor-investing-basics": {
+    "consecutive_duplicate_count": 1,
+    "lane_id": "TRADING_MARKETS",
+    "last_duplicate_at": "2026-09-17T10:07:05.176063+00:00",
+    "last_status": "DUPLICATE_UNCHANGED",
+    "next_eligible_refresh_at": "2026-09-17T14:07:05.176063+00:00",
+    "source_class": "WEB_PAGE",
+    "source_id": "investor-investing-basics"
+  },
+  "YOUTUBE_CONTENT:LdDr2viNh2w": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "YOUTUBE_CONTENT",
+    "last_changed_at": "2026-09-17T08:26:34.453233+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "YOUTUBE_VIDEO",
+    "source_id": "LdDr2viNh2w"
+  },
+  "YOUTUBE_CONTENT:PVdS3r1EjrU": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "YOUTUBE_CONTENT",
+    "last_changed_at": "2026-09-17T04:25:42.781728+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "YOUTUBE_VIDEO",
+    "source_id": "PVdS3r1EjrU"
+  },
+  "YOUTUBE_CONTENT:TlpJdvFQLeY": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "YOUTUBE_CONTENT",
+    "last_changed_at": "2026-09-17T12:47:26.910266+00:00",
+    "last_status": "FULLY_PROCESSED",
+    "next_eligible_refresh_at": null,
+    "source_class": "YOUTUBE_VIDEO",
+    "source_id": "TlpJdvFQLeY"
+  },
+  "YOUTUBE_CONTENT:zbAmmnMh5ew": {
+    "consecutive_duplicate_count": 0,
+    "lane_id": "YOUTUBE_CONTENT",
+    "last_changed_at": "2026-09-17T02:33:54.997941+00:00",
+    "last_status": "FAILED_RETRYABLE",
+    "next_eligible_refresh_at": null,
+    "source_class": "YOUTUBE_VIDEO",
+    "source_id": "zbAmmnMh5ew"
+  }
+}
