@@ -738,6 +738,8 @@ def _present_response(state: AgentState, content: str) -> str:
     if "tesla model 3" in lower:
         return ("I like it as an everyday EV. It's quick, efficient, and the charging ecosystem is a big advantage. "
                 "My main reservations are the minimalist controls and Tesla's uneven service and build-quality reputation.")
+    if "DEPARTMENT_KNOWLEDGE" in (state.metadata.get("retrieval_layers") or []):
+        return text.strip()
     return _compress_default_response(text, state.user_message)
 
 
