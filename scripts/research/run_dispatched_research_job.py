@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import signal
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,7 +14,34 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 JOBS = ROOT / "data/runtime/research_execution_jobs.jsonl"
 sys.path.insert(0, str(ROOT / "scripts"))
-from alpha.run_alpha_discovery_cycle import run as alpha_run  # noqa: E402
+sys.path.insert(0, str(ROOT / "scripts" / "research"))
+from scheduled_research_router import process_scheduled_item  # noqa: E402
+
+
+# Bounded, read-only scheduled source selection.  These are existing public
+# research sources; the scheduler still owns lane fairness and this worker
+# only resolves the selected lane to one real item for the canonical router.
+SOURCE_POOLS = {
+    "BUSINESS_MARKET": [("WEB_PAGE", "sba-business-guide", "https://www.sba.gov/business-guide", "SBA business guide")],
+    "FUNDING_LENDER": [("WEB_PAGE", "sba-loans", "https://www.sba.gov/loans", "SBA loans and funding")],
+    "GRANTS_GOVERNMENT": [("WEB_PAGE", "sba-grants", "https://www.sba.gov/funding-programs/grants", "SBA grants")],
+    "AFFILIATE_REVENUE": [("WEB_PAGE", "hubspot-affiliate", "https://www.hubspot.com/partners/affiliates", "HubSpot affiliate program")],
+    "SEO_SEARCH_DEMAND": [("SEO_RESEARCH", "google-seo-starter", "https://developers.google.com/search/docs/fundamentals/seo-starter-guide", "Google SEO Starter Guide")],
+    "SOCIAL_CONTENT": [("WEB_PAGE", "reddit-smallbusiness", "https://www.reddit.com/r/smallbusiness/", "Small business community signals")],
+    "YOUTUBE_CONTENT": [("YOUTUBE_VIDEO", "zbAmmnMh5ew", "https://www.youtube.com/watch?v=zbAmmnMh5ew", "Ray-approved YouTube research video")],
+    "COMPETITOR_INTELLIGENCE": [("WEB_PAGE", "shopify-partners", "https://www.shopify.com/partners", "Shopify partner ecosystem")],
+    "TRADING_MARKETS": [("WEB_PAGE", "investor-investing-basics", "https://www.investor.gov/introduction-investing", "Investor.gov investing basics")],
+    "GITHUB_TECHNOLOGY": [("GITHUB_REPO", "mvanhorn/last30days-skill", "https://github.com/mvanhorn/last30days-skill", "last30days-skill repository")],
+    "PLATFORM_CAPABILITY_INTELLIGENCE": [("GITHUB_REPO", "sushantkarn/SEO-engine", "https://github.com/sushantkarn/SEO-engine", "SEO-engine repository")],
+}
+
+
+def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
+    pool = SOURCE_POOLS.get(lane_id) or SOURCE_POOLS["BUSINESS_MARKET"]
+    index = int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(pool)
+    source_type, source_id, source_url, title = pool[index]
+    return {"source_type": source_type, "source_id": source_id, "source_url": source_url,
+            "title": title, "category": lane_id, "selection_reason": "scheduled_lane_source_pool"}
 
 
 def event(execution_id: str, status: str, **values) -> None:
@@ -33,20 +60,20 @@ def main() -> int:
     execution_id = args.execution_id
     event(execution_id, "CLAIMED", worker_id="research_operator_worker", attempt_count=1)
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
+    lane_id = os.environ.get("NEXUS_SELECTED_LANE_ID", "BUSINESS_MARKET")
+    item = select_scheduled_item(lane_id, execution_id)
+    event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
+          source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
+          selection_reason=item["selection_reason"])
     def timeout_handler(signum, frame):
         raise TimeoutError(f"per-job timeout after {args.timeout_seconds}s")
     try:
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(args.timeout_seconds)
-        # This is the existing bounded, read-only Alpha reader. It is
-        # deliberately independent of the Active Operator singleton so the
-        # scheduler's delegation path cannot be blocked by operator overlap.
-        result = alpha_run(
-            os.environ.get("NEXUS_SELECTED_LANE_ID", "AI_NEXUS"),
-            "Find current public evidence about safe bounded agent operations and identify the next internal improvement test.",
-            None,
-            ["https://modelcontextprotocol.io/specification/2025-06-18"], [], [], [], [], "LAST_30_DAYS",
-        )
+        # The normal worker must use the same unified source router as the
+        # proven scheduled Research path. Alpha is intentionally not part of
+        # base acquisition; it is reserved for mature packages/requested review.
+        result = process_scheduled_item(item)
         signal.alarm(0)
     except TimeoutError as exc:
         signal.alarm(0)
@@ -56,11 +83,21 @@ def main() -> int:
         signal.alarm(0)
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error=str(exc)[:500], failure_class="RESEARCH_WORKER_FAILURE", retry_after="next scheduled wake")
         return 1
-    event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker", result_status="PASS" if result.get("ok") else "DEGRADED", research_id=result.get("research", {}).get("research_id"), content_count=result.get("content_count", 0))
-    alpha_command = [sys.executable, str(ROOT / "scripts/research/run_alpha_validation_job.py"), "--execution-id", execution_id]
-    alpha_process = subprocess.Popen(alpha_command, cwd=ROOT, env=os.environ.copy(), start_new_session=True)
-    event(execution_id, "ALPHA_PENDING", worker_id="alpha_validation_worker", alpha_pid=alpha_process.pid, next_action="Alpha evaluates persisted evidence asynchronously")
-    event(execution_id, "COMPLETED" if result.get("ok") else "FAILED_RETRYABLE", worker_id="research_operator_worker", alpha_status="DISPATCHED", next_action="continue next scheduled research wake")
+    final_status = result.get("final_status", "FAILED_RETRYABLE")
+    event(execution_id, "EVIDENCE_READY", worker_id="research_operator_worker",
+          result_status="PASS" if final_status in {"FULLY_PROCESSED", "DUPLICATE_UNCHANGED"} else "DEGRADED",
+          content_count=1 if result.get("raw_acquired") else 0, final_status=final_status,
+          processor=result.get("processor"), summary_created=result.get("summary_created", False),
+          extraction_created=result.get("extraction_created", False), scored=result.get("scored", False),
+          provenance_created=result.get("provenance_created", False), stored=result.get("stored", False),
+          disposition=result.get("disposition"), research_id=(result.get("result") or {}).get("research_item_id"))
+    if final_status.startswith("FAILED"):
+        event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
+              error=result.get("error", "scheduled processor failed"), failure_class="SCHEDULED_PROCESSOR_FAILURE",
+              retry_after="next scheduled wake")
+        return 1
+    event(execution_id, "COMPLETED", worker_id="research_operator_worker", alpha_status="NOT_INVOKED",
+          next_action="continue next scheduled research wake")
     return 0
 
 
