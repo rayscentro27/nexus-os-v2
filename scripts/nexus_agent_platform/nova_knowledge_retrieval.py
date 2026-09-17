@@ -64,20 +64,27 @@ def repository_search(query: str, *, max_results: int = MAX_REPO_RESULTS) -> dic
         return {"status": "NO_QUERY", "results": [], "source": "repository_rg_search"}
     pattern = "|".join(re.escape(term) for term in terms)
     roots = ["README.md", "docs", "config", "configs", "architecture", "scripts/nexus_agent_platform", "scripts/nova", "src/admin", "src/components", "reports/hermes_modernization", "reports/runtime"]
+    candidates: list[tuple[int, str]] = []
     try:
-        result = subprocess.run(
-            ["git", "grep", "-n", "-i", "-E", pattern, "--", *roots],
-            cwd=ROOT, capture_output=True, text=True, timeout=12, check=False,
-        )
+        for root in ["scripts/nova", "scripts/nexus_agent_platform", "src/components", "src/admin", "config", "configs", "docs", "README.md", "reports/hermes_modernization", "reports/runtime"]:
+            result = subprocess.run(["git", "grep", "-n", "-i", "-E", pattern, "--", root], cwd=ROOT, capture_output=True, text=True, timeout=3, check=False)
+            for line in result.stdout.splitlines()[:120]:
+                path = line.split(":", 1)[0]
+                if _safe_path(path):
+                    score = sum(3 for term in terms if term in path.lower())
+                    if path.startswith("scripts/nova/"):
+                        score += 12
+                    elif path.startswith("scripts/nexus_agent_platform/"):
+                        score += 8
+                    elif path.startswith("src/components/") or path.startswith("src/admin/"):
+                        score += 5
+                    candidates.append((score, _redact(line[:900])))
+            if len(candidates) >= 600:
+                break
     except (OSError, subprocess.TimeoutExpired):
-        return {"status": "UNAVAILABLE", "results": [], "source": "repository_rg_search"}
-    results: list[str] = []
-    for line in result.stdout.splitlines():
-        path = line.split(":", 1)[0]
-        if _safe_path(path):
-            results.append(_redact(line[:900]))
-        if len(results) >= max_results:
-            break
+        if not candidates:
+            return {"status": "UNAVAILABLE", "results": [], "source": "repository_rg_search"}
+    results = [line for _, line in sorted(candidates, key=lambda item: item[0], reverse=True)[:max_results]]
     return {"status": "OK", "results": results, "source": "repository_rg_search", "terms": terms}
 
 
@@ -124,4 +131,6 @@ def format_knowledge_for_prompt(retrieval: dict[str, Any]) -> str:
     if history.get("commits"):
         rows = [f"- {item['commit'][:12]} {item['date']} {item['subject']} | files: {', '.join(item['files'])}" for item in history["commits"]]
         blocks.append("DEVELOPMENT HISTORY (Git summaries; historical):\n" + "\n".join(rows))
+    if repo.get("results") and "REPOSITORY_ARCHITECTURE" in (retrieval.get("layers") or []):
+        blocks.append("ARCHITECTURE READING RULE: Attribute runtime behavior to the exact imports/calls shown in the excerpts. Do not say the Admin path uses Hermes Agent CLI/profile unless the evidence shows that call; distinguish the direct Nova graph from the separate Hermes bridge.")
     return "\n\n".join(blocks)[:MAX_REPO_CONTEXT_CHARS + MAX_HISTORY_CONTEXT_CHARS]
