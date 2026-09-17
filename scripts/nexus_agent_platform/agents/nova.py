@@ -4246,6 +4246,12 @@ def _build_context(state: AgentState) -> AgentState:
 
     # Build messages for the model
     messages = [{"role": "system", "content": SOUL}]
+    from nexus_agent_platform.nova_knowledge_retrieval import classify_question_layers, format_knowledge_for_prompt, retrieve_knowledge
+    retrieval_layers = classify_question_layers(state.user_message, history)
+    selected_knowledge = retrieve_knowledge(state.user_message, retrieval_layers)
+    knowledge_context = format_knowledge_for_prompt(selected_knowledge)
+    state.metadata["retrieval_layers"] = retrieval_layers
+    state.metadata["knowledge_retrieval"] = selected_knowledge
 
     from nexus_agent_platform.nova_capability_broker import capability_catalog
     information_plan = state.metadata.get("information_plan")
@@ -4359,6 +4365,12 @@ def _build_context(state: AgentState) -> AgentState:
             "KNOWS, CAN_READ, CAN_ROUTE, CURRENTLY_RUNNING, COMPLETED, BLOCKED, "
             "REQUIRES_APPROVAL, and UNAVAILABLE."
         )
+    if knowledge_context:
+        user_content += (
+            "\n\nSELECTED NEXUS KNOWLEDGE PLANE:\n" + knowledge_context
+            + "\nClassify these as repository structure or historical development evidence; "
+            "they do not override newer live or governed state."
+        )
 
     if _wants_detail(state.user_message):
         user_content += "\n\nPresentation: the user explicitly requested depth; provide the detailed structure requested."
@@ -4378,7 +4390,9 @@ def _build_context(state: AgentState) -> AgentState:
     state.metadata["context_metrics"] = {
         "system_chars": len(SOUL),
         "nexus_context_chars": len(user_company_context),
-        "retrieved_knowledge_chars": verified_context_chars,
+        "retrieved_knowledge_chars": verified_context_chars + len(knowledge_context),
+        "repository_knowledge_chars": sum(len(str(item)) for item in ((selected_knowledge.get("repository") or {}).get("results", []))),
+        "development_history_chars": sum(len(json.dumps(item, default=str)) for item in ((selected_knowledge.get("development_history") or {}).get("commits", []))),
         "history_chars": sum(len(str(message.get("content", ""))) for message in history),
         "current_message_chars": len(state.user_message),
         "total_input_chars": context_chars,
