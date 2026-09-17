@@ -64,7 +64,8 @@ def main() -> int:
     item = select_scheduled_item(lane_id, execution_id)
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
-          selection_reason=item["selection_reason"])
+          selection_reason=item["selection_reason"], selected_work_class=os.environ.get("NEXUS_SELECTED_WORK_CLASS", "DISCOVERY"),
+          why_selected=os.environ.get("NEXUS_SELECTED_LANE_WHY", ""))
     def timeout_handler(signum, frame):
         raise TimeoutError(f"per-job timeout after {args.timeout_seconds}s")
     try:

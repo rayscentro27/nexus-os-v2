@@ -210,6 +210,14 @@ def main() -> int:
         operator_env = {**os.environ, "NEXUS_SELECTED_LANE_ID": lane["lane_id"],
                         "NEXUS_SELECTED_LANE_NAME": lane["name"],
                         "NEXUS_SELECTED_LANE_REASON": lane["selection_reason"],
+                        "NEXUS_SELECTED_WORK_CLASS": lane.get("selected_work_class", "DISCOVERY"),
+                        "NEXUS_SELECTED_LANE_WHY": json.dumps({
+                            "materiality": lane.get("materiality_basis", {}),
+                            "age": lane.get("age_basis", {}),
+                            "progression": lane.get("progression_basis", {}),
+                            "fairness": lane.get("fairness_basis", {}),
+                            "alternatives": lane.get("alternatives_considered", []),
+                        }, sort_keys=True),
                         "NEXUS_EXECUTION_ID": execution_id}
         _write_wake_progress("WORK_SELECTED", cycle_id=f"kernel_cycle_{index + 1}", selected_lane_id=lane["lane_id"])
         receipt = run_cycle(lambda: bounded_wake(real_research, command=operator_command, timeout_seconds=int(os.environ.get("NEXUS_RESEARCH_JOB_TIMEOUT_SECONDS", "180")), env=operator_env), cycle_id=f"kernel_cycle_{index + 1}", queue_empty=True,
