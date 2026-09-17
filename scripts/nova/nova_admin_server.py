@@ -64,6 +64,10 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8790); args = parser.parse_args()
     if args.host != "127.0.0.1": raise SystemExit("Nova Admin server must remain bound to 127.0.0.1")
+    # Build the canonical graph before accepting HTTP traffic.  Lazy graph
+    # construction in the first request can make the single-request limiter
+    # appear permanently busy while optional runtime modules import.
+    get_nova_graph()
     server = ThreadingHTTPServer((args.host, args.port), NovaAdminHandler); server.limiter = NovaAdminLimiter(); server.serve_forever(); return 0
 
 if __name__ == "__main__": raise SystemExit(main())
