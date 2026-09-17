@@ -87,14 +87,25 @@ def create_mission(*, title: str, description: str, source_type: str, items: Ite
 
 
 def next_mission_item(*, source_type: str = "") -> dict[str, Any] | None:
+    now = datetime.now(timezone.utc)
+    rank = {"PENDING": 0, "READY": 1, "ASR_REQUIRED": 2, "WAITING_ON_EVIDENCE": 3, "FAILED_RETRYABLE": 4}
+    candidates = []
     for mission in read_records("research_v2_missions"):
         if str(mission.get("status")) not in {"PENDING", "ACTIVE"}:
             continue
         for item in _latest_items(str(mission["mission_id"])):
-            if str(item.get("status", "PENDING")) in {"PENDING", "READY", "FAILED_RETRYABLE", "ASR_REQUIRED", "WAITING_ON_EVIDENCE"}:
-                if not source_type or str(mission.get("source_type")) == source_type:
-                    return item
-    return None
+            status = str(item.get("status", "PENDING"))
+            if status not in {"PENDING", "READY", "FAILED_RETRYABLE", "ASR_REQUIRED", "WAITING_ON_EVIDENCE"}:
+                continue
+            if status == "FAILED_RETRYABLE" and item.get("next_eligible_at"):
+                try:
+                    if datetime.fromisoformat(str(item["next_eligible_at"])) > now:
+                        continue
+                except ValueError:
+                    pass
+            if not source_type or str(mission.get("source_type")) == source_type:
+                candidates.append((rank.get(status, 9), item))
+    return min(candidates, key=lambda pair: (pair[0], pair[1].get("last_attempt_at") or ""))[1] if candidates else None
 
 
 def claim_item(item_id: str, *, worker_id: str) -> dict[str, Any] | None:
@@ -112,7 +123,12 @@ def record_item_result(item_id: str, *, status: str, result: Any, next_action: s
     current = next((x for x in read_records("research_v2_mission_items") if str(x.get("item_id")) == item_id), None)
     if not current or str(status).upper() not in NONTERMINAL | TERMINAL:
         return None
-    updated = {**current, "status": str(status).upper(), "last_result": result, "next_action": next_action or current.get("next_action")}
+    normalized_status = str(status).upper()
+    updated = {**current, "status": normalized_status, "last_result": result, "next_action": next_action or current.get("next_action")}
+    if normalized_status == "FAILED_RETRYABLE":
+        updated["next_eligible_at"] = (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat()
+    else:
+        updated.pop("next_eligible_at", None)
     if updated["status"] in TERMINAL:
         updated["completed_at"] = _now()
     append_record("research_v2_mission_items", updated)

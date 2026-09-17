@@ -9,6 +9,7 @@ import sys
 import time
 import multiprocessing
 import subprocess
+import threading
 import uuid
 from pathlib import Path
 
@@ -52,6 +53,14 @@ def _write_wake_progress(stage: str, **values) -> None:
         pass
 
 
+def _reap_worker(process: subprocess.Popen) -> None:
+    """Reap detached Research workers without making the kernel wait for them."""
+    try:
+        process.wait()
+    except (OSError, ChildProcessError):
+        pass
+
+
 def _invoke_research_callback(callback, result_queue):
     """Run one wake callback in a killable child process.
 
@@ -83,6 +92,11 @@ def bounded_wake(callback, timeout_seconds=WAKE_TIMEOUT_SECONDS, command=None, e
                 process = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
                                            stdout=log, stderr=subprocess.STDOUT, text=True, start_new_session=True)
             _append_execution_event(execution_id, "DISPATCHED", pid=process.pid, worker="research_operator_worker")
+            # The worker is intentionally detached from stdin/session, but it
+            # remains a child of this daemon. Reap it asynchronously so a
+            # completed or failed job cannot accumulate as a zombie.
+            threading.Thread(target=_reap_worker, args=(process,), daemon=True,
+                             name=f"reap-{execution_id}").start()
             _write_wake_progress("WORK_DISPATCHED", execution_id=execution_id, pid=process.pid)
             return {"status": "DISPATCHED", "execution_mode": "REAL", "task_processing": "DELEGATED",
                     "execution_id": execution_id, "worker_pid": process.pid,

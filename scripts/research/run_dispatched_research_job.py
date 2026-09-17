@@ -92,12 +92,35 @@ def main() -> int:
             event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error="mission item already claimed or terminal", failure_class="MISSION_ITEM_ALREADY_CLAIMED", retry_after="next scheduled wake")
             return 1
         os.environ["NEXUS_MISSION_TARGET_ID"] = str(mission_item.get("target_id", ""))
-    item = select_scheduled_item(lane_id, execution_id)
+    # Selection is part of the bounded mission attempt.  A discovery timeout
+    # must settle the claimed item instead of leaving it IN_PROGRESS forever.
+    try:
+        item = select_scheduled_item(lane_id, execution_id)
+    except TimeoutError as exc:
+        event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
+              error=str(exc)[:500], failure_class="SOURCE_SELECTION_TIMEOUT",
+              retry_after="next scheduled wake")
+        if mission_item:
+            record_item_result(mission_item_id, status="FAILED_RETRYABLE",
+                               result={"error": str(exc)[:500], "failure_class": "SOURCE_SELECTION_TIMEOUT"},
+                               next_action="retry after bounded source backoff")
+        return 124
+    except Exception as exc:
+        event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker",
+              error=str(exc)[:500], failure_class="SOURCE_SELECTION_FAILURE",
+              retry_after="next scheduled wake")
+        if mission_item:
+            record_item_result(mission_item_id, status="FAILED_RETRYABLE",
+                               result={"error": str(exc)[:500], "failure_class": "SOURCE_SELECTION_FAILURE"},
+                               next_action="retry after bounded source backoff")
+        return 1
     item["v2_parent_links"] = parent_links_for_item(item)
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
           channel_id=item.get("channel_id"), channel_url=item.get("channel_url"),
           selection_reason=item["selection_reason"], selected_work_class=os.environ.get("NEXUS_SELECTED_WORK_CLASS", "DISCOVERY"),
+          mission_id=mission_item.get("mission_id") if mission_item else None,
+          mission_item_id=mission_item_id or None,
           v2_parent_links=item["v2_parent_links"],
           why_selected=os.environ.get("NEXUS_SELECTED_LANE_WHY", ""))
     def timeout_handler(signum, frame):
