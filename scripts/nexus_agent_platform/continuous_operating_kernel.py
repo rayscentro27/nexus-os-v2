@@ -46,7 +46,12 @@ def fingerprint(value: Any) -> str:
 
 def _write(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    # A killed/overlapping cycle must never leave the durable heartbeat
+    # truncated. Replace the completed JSON atomically so readers see either
+    # the previous valid state or the new valid state.
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    temporary.write_text(json.dumps(value, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
 
 
 def _read(path: Path, default: Any) -> Any:
@@ -111,6 +116,8 @@ def build_source_registry() -> list[dict[str, Any]]:
             "source_id": source_id,
             "source_type": kind,
             "name": target.get("name") or target.get("channel_name") or target.get("video_id") or url,
+            "channel_id": target.get("channel_id"),
+            "handle": target.get("handle"),
             "url_or_safe_identifier": url.split("&", 1)[0],
             "owner_department": "RESEARCH",
             "parent_objective": "ray_curated_youtube_intelligence",
@@ -228,12 +235,20 @@ def run_cycle(cycle_fn: Callable[[], dict[str, Any]], *, cycle_id: str | None = 
         "last_real_output": result.get("last_real_output") or result.get("completed_at") or finished if result.get("execution_mode", "REAL") == "REAL" else None,
         "latest_parent_goal_advanced": result.get("parent_goal"),
         "last_department_served": result.get("department"),
+        # Additive lane telemetry.  The scheduler is authoritative; do not
+        # derive a lane from a goal title, department, or free text.
+        "selected_lane_id": result.get("selected_lane_id"),
+        "selected_lane_name": result.get("selected_lane_name"),
         "objective_owner": "RESEARCH",
         "objective_has_durable_owner": True, "queue_empty_does_not_stop": True,
     }
     _write(HEARTBEAT_PATH, heartbeat)
     receipt = {"schema_version": "nexus.continuous-kernel-receipt.v1", "cycle_id": cycle_id,
                "started_at": started, "completed_at": finished, "heartbeat": heartbeat,
+               "selected_lane_id": result.get("selected_lane_id"),
+               "selected_lane_name": result.get("selected_lane_name"),
+               "selection_reason": result.get("selection_reason"),
+               "lane_identity_status": "PRESENT" if result.get("selected_lane_id") else "NOT_EMITTED_BY_UPSTREAM_SCHEDULER",
                "result": result, "single_final_outcome": True}
     _write(RECEIPT_PATH, receipt)
     return receipt

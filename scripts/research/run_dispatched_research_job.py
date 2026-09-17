@@ -16,6 +16,7 @@ JOBS = ROOT / "data/runtime/research_execution_jobs.jsonl"
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
+from youtube_full_pipeline import select_channel_videos  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff  # noqa: E402
 
 
@@ -41,6 +42,20 @@ SOURCE_POOLS = {
 
 
 def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
+    if lane_id == "YOUTUBE_CONTENT":
+        config = json.loads((ROOT / "configs/youtube_research_channels.json").read_text(encoding="utf-8"))
+        channels = [row for row in config.get("channels", []) if row.get("enabled") and row.get("approved_by_ray")]
+        if not channels:
+            raise RuntimeError("approved YouTube channel watchlist is empty")
+        channel = channels[int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(channels)]
+        videos = select_channel_videos(channel["url"], 1)
+        if not videos:
+            raise RuntimeError(f"no eligible videos discovered for channel {channel['name']}")
+        video = videos[0]
+        return {"source_type": "YOUTUBE_VIDEO", "source_id": video["video_id"], "source_url": video["url"],
+                "title": video.get("title", video["video_id"]), "author": channel["name"],
+                "channel_id": channel.get("channel_id"), "channel_url": channel["url"],
+                "category": "YOUTUBE_CONTENT", "selection_reason": "approved_channel_watchlist"}
     pool = SOURCE_POOLS.get(lane_id) or SOURCE_POOLS["BUSINESS_MARKET"]
     index = int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(pool)
     source_type, source_id, source_url, title = pool[index]
@@ -68,6 +83,7 @@ def main() -> int:
     item = select_scheduled_item(lane_id, execution_id)
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
+          channel_id=item.get("channel_id"), channel_url=item.get("channel_url"),
           selection_reason=item["selection_reason"], selected_work_class=os.environ.get("NEXUS_SELECTED_WORK_CLASS", "DISCOVERY"),
           why_selected=os.environ.get("NEXUS_SELECTED_LANE_WHY", ""))
     def timeout_handler(signum, frame):

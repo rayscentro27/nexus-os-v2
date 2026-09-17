@@ -11,6 +11,7 @@ import html
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import time
@@ -28,6 +29,16 @@ WHISPER_CPP_BINARY = ROOT / ".runtime" / "whisper.cpp" / "build-native" / "bin" 
 WHISPER_CPP_MODEL = ROOT / ".runtime" / "whisper.cpp" / "models" / "ggml-tiny.en.bin"
 
 
+def _runtime_binary(name: str) -> str:
+    """Resolve host tools explicitly because launchd does not inherit shell PATH."""
+    configured = os.environ.get(f"NEXUS_{name.upper().replace('-', '_')}_PATH")
+    candidates = [configured, shutil.which(name), f"/usr/local/bin/{name}", f"/opt/homebrew/bin/{name}"]
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return candidate
+    return name
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -41,6 +52,7 @@ def _run(command: list[str], timeout: int = 180) -> subprocess.CompletedProcess[
 
 def _run_ytdlp(command: list[str]) -> subprocess.CompletedProcess[str]:
     """Retry only transient yt-dlp acquisition failures, with a hard bound."""
+    command = [_runtime_binary("yt-dlp") if part == "yt-dlp" else part for part in command]
     if "--socket-timeout" not in command:
         command = [command[0], "--socket-timeout", "10", *command[1:]]
     last = subprocess.CompletedProcess(command, 1, "", "yt-dlp did not run")
@@ -146,7 +158,7 @@ def _acquire_audio_wav(url: str, video_id: str, temp: str) -> tuple[Path, Path]:
     source_files = [p for p in temp_path.glob(f"{video_id}.source*") if p.is_file()]
     if download.returncode != 0 or not source_files:
         raise RuntimeError(f"audio acquisition failed: {(download.stderr or download.stdout)[-700:].strip()}")
-    normalize = _run(["ffmpeg", "-y", "-i", str(source_files[0]), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(audio)])
+    normalize = _run([_runtime_binary("ffmpeg"), "-y", "-i", str(source_files[0]), "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(audio)])
     if normalize.returncode != 0 or not audio.exists():
         raise RuntimeError(f"ffmpeg normalization failed: {normalize.stderr[-700:].strip()}")
     return audio, source_files[0]

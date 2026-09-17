@@ -78,6 +78,14 @@ def _parse_age(value: Any, now: datetime) -> float:
 def _lane_context(lane_id: str, now: datetime) -> dict[str, Any]:
     """Read only current V2 work; legacy research_questions is not used."""
     terms = LANE_TERMS.get(lane_id, ())
+    watched_sources = 0
+    if lane_id == "YOUTUBE_CONTENT":
+        try:
+            config = json.loads((ROOT / "configs/youtube_research_channels.json").read_text(encoding="utf-8"))
+            watched_sources = sum(1 for row in config.get("channels", [])
+                                  if isinstance(row, dict) and row.get("enabled") and row.get("approved_by_ray"))
+        except (OSError, ValueError, TypeError):
+            watched_sources = 0
 
     def matches(row: dict[str, Any]) -> bool:
         text = " ".join(str(row.get(k, "")) for k in ("source_id", "title", "domain", "intent", "question", "research_intents")) .lower()
@@ -98,7 +106,8 @@ def _lane_context(lane_id: str, now: datetime) -> dict[str, Any]:
     timestamps = [r.get("last_activity") or r.get("updated_at") or r.get("recorded_at") for r in questions + investigations + followups + theses]
     oldest_age = max((_parse_age(x, now) for x in timestamps), default=0.0)
     return {"high": high, "medium": medium, "questions": len(questions), "investigations": len(investigations),
-            "followups": len(followups), "theses": len(theses), "oldest_age_seconds": oldest_age}
+            "followups": len(followups), "theses": len(theses), "oldest_age_seconds": oldest_age,
+            "watched_sources": watched_sources}
 
 
 def ensure_registry() -> list[dict[str, Any]]:
@@ -141,8 +150,13 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
         age_signal = min(35.0, (last_age if last_age < 10**12 else 86400.0) / 3600.0 * 5.0)
         materiality_signal = min(60.0, context["high"] * 30.0 + context["medium"] * 15.0 + context["questions"] * 4.0)
         progression_signal = min(40.0, context["followups"] * 25.0 + context["theses"] * 20.0 + context["investigations"] * 5.0)
-        candidates.append((row, context, materiality_signal + progression_signal + age_signal,
-                           materiality_signal, progression_signal, age_signal))
+        # An approved monitored source is real scheduled work even before a
+        # V2 question is attached to its next item. Four approved watchlist
+        # channels therefore contribute up to 60 points, bounded like the
+        # materiality signal, while fairness debt still prevents lane capture.
+        monitored_source_signal = min(60.0, context.get("watched_sources", 0) * 15.0)
+        candidates.append((row, context, materiality_signal + monitored_source_signal + progression_signal + age_signal,
+                           materiality_signal + monitored_source_signal, progression_signal, age_signal))
     if not candidates:
         candidates = [(row, _lane_context(str(row["lane_id"]), now), 0.0, 0.0, 0.0, 0.0) for row in rows]
     max_count = max(int(row.get("selection_count", 0)) for row, *_ in candidates)
@@ -156,8 +170,8 @@ def select_lane(*, reason: str = "due_fairness_rotation") -> dict[str, Any]:
         scored, key=lambda x: (x[0], -int(x[1].get("selection_count", 0)), str(x[1]["lane_id"])))
     selected = dict(selected_row)
     selected["selection_reason"] = reason
-    selected["selected_work_class"] = "FOLLOW_UP_OR_THESIS" if context["followups"] or context["theses"] else "EVIDENCE_GAP" if context["high"] or context["medium"] or context["questions"] else "DISCOVERY"
-    selected["materiality_basis"] = {"high_items": context["high"], "medium_items": context["medium"], "open_questions": context["questions"]}
+    selected["selected_work_class"] = "FOLLOW_UP_OR_THESIS" if context["followups"] or context["theses"] else "EVIDENCE_GAP" if context["high"] or context["medium"] or context["questions"] else "MONITORED_SOURCE" if context.get("watched_sources") else "DISCOVERY"
+    selected["materiality_basis"] = {"high_items": context["high"], "medium_items": context["medium"], "open_questions": context["questions"], "watched_sources": context.get("watched_sources", 0)}
     selected["progression_basis"] = {"active_investigations": context["investigations"], "open_followups": context["followups"], "active_theses": context["theses"]}
     selected["age_basis"] = {"lane_age_seconds": round(age(selected), 3), "oldest_matching_item_seconds": round(context["oldest_age_seconds"], 3)}
     selected["fairness_basis"] = {"selection_count": int(selected.get("selection_count", 0)), "fairness_debt": round(fairness_debt, 3)}
