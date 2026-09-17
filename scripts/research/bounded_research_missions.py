@@ -127,6 +127,11 @@ def record_item_result(item_id: str, *, status: str, result: Any, next_action: s
     updated = {**current, "status": normalized_status, "last_result": result, "next_action": next_action or current.get("next_action")}
     if isinstance(result, dict) and isinstance(result.get("completion_evidence"), dict):
         updated["completion_evidence"] = {**(current.get("completion_evidence") or {}), **result["completion_evidence"]}
+    if normalized_status == "BLOCKED_EXTERNAL_FINAL" and isinstance(result, dict):
+        if result.get("block_reason"):
+            updated["block_reason"] = result["block_reason"]
+        if result.get("retry_triggers"):
+            updated["retry_triggers"] = list(result["retry_triggers"])
     if normalized_status == "FAILED_RETRYABLE":
         updated["next_eligible_at"] = (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat()
     else:
