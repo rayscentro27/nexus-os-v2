@@ -6,8 +6,8 @@ def test_department_retrieval_uses_canonical_registry():
     query = "What departments does Nexus currently have and what is each responsible for?"
     result = retrieve_knowledge(query, classify_question_layers(query))
     rows = (result.get("governed") or {}).get("candidates", [])
-    assert rows and rows[0]["source_type"] == "DEPARTMENT_REGISTRY"
-    assert "purpose" in format_knowledge_for_prompt(result)
+    assert len(rows) == 12 and rows[0]["source_type"] == "DEPARTMENT_CANONICAL_PROJECTION"
+    assert "responsibility" in format_knowledge_for_prompt(result)
 
 
 def test_architecture_retrieval_prioritizes_runtime_trace():

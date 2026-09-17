@@ -17,6 +17,7 @@ MAX_REPO_RESULTS = 6
 MAX_REPO_CONTEXT_CHARS = 9000
 MAX_HISTORY_COMMITS = 6
 MAX_GOVERNED_RESULTS = 5
+MAX_DEPARTMENT_RESULTS = 12
 _STOP = {"what", "does", "have", "with", "that", "this", "from", "are", "can", "the", "and", "for", "you", "why", "how", "was"}
 _SENSITIVE = {".env", ".env.local", ".env.production", "credentials", "secrets", "private", "node_modules"}
 _SECRET = re.compile(r"(?i)(api[_-]?key|access[_-]?token|refresh[_-]?token|password|secret|cookie)\s*[:=]\s*[^\s,;]+")
@@ -93,29 +94,62 @@ def _governed_search(query: str) -> list[dict[str, Any]]:
 
 
 def _department_search() -> list[dict[str, Any]]:
-    """Project the canonical department registry without relying on nav labels."""
-    path = ROOT / "data/runtime/nexus_department_registry.json"
+    """Project the canonical logical departments from the audited report.
+
+    The durable route registry remains useful for execution routing, but its
+    seven route groups are not the organizational identity map.
+    """
+    path = ROOT / "reports/rebuild/NEXUS_FULL_COMPANY_DEPARTMENT_READINESS_R1_REPORT.md"
     if not path.exists():
         return []
     try:
-        payload = json.loads(path.read_text())
-    except (OSError, json.JSONDecodeError):
+        text = path.read_text(errors="ignore")
+    except OSError:
         return []
-    rows = payload.get("departments", []) if isinstance(payload, dict) else []
-    result = []
-    for row in rows:
-        if not isinstance(row, dict):
+    readiness: dict[str, str] = {}
+    in_map = False
+    for line in text.splitlines():
+        if line.startswith("### Canonical logical map"):
+            in_map = True
             continue
-        projection = {key: row.get(key) for key in ("department_id", "name", "purpose", "status", "authority_class", "human_review_policy")}
-        result.append(_candidate("data/runtime/nexus_department_registry.json", json.dumps(projection, ensure_ascii=False), "GOVERNED_BUSINESS_STATE", "DEPARTMENT_REGISTRY", 42, "CURRENT"))
-    report = ROOT / "reports/rebuild/NEXUS_DEPARTMENT_INTELLIGENCE_FABRIC_R1_REPORT.md"
-    if report.exists():
-        try:
-            text = report.read_text(errors="ignore")
-            result.append(_candidate(str(report.relative_to(ROOT)), "Canonical department fabric report: " + " ".join(text.splitlines()[145:158]), "REPOSITORY_KNOWLEDGE", "REPOSITORY_EXCERPT", 34, "HISTORICAL"))
-        except OSError:
-            pass
-    return result[:MAX_GOVERNED_RESULTS + 1]
+        if in_map and line.startswith("### "):
+            break
+        if in_map and line.startswith("|") and "---" not in line and "Canonical department" not in line:
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            if len(cells) >= 3:
+                name = cells[0]
+                department_id = re.sub(r"[^A-Z0-9]+", "_", name.upper()).strip("_")
+                readiness[department_id] = cells[2].split(":", 1)[0].strip().upper()
+
+    result: list[dict[str, Any]] = []
+    in_audit = False
+    for line in text.splitlines():
+        if line.startswith("## Department-by-Department Audit"):
+            in_audit = True
+            continue
+        if in_audit and line.startswith("## "):
+            break
+        if not (in_audit and line.startswith("|") and "---" not in line and "Department |" not in line):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) < 5:
+            continue
+        name, agents, inputs_outputs, runtime, limits = cells[:5]
+        department_id = re.sub(r"[^A-Z0-9]+", "_", name.upper()).strip("_")
+        projection = {
+            "department_id": department_id,
+            "display_name": name,
+            "responsibility": f"{agents}; {inputs_outputs}",
+            "current_state": readiness.get(department_id, "UNKNOWN"),
+            "capabilities": runtime,
+            "limitations": limits,
+            "source": str(path.relative_to(ROOT)),
+            "source_freshness": "historical_canonical_readiness_report",
+        }
+        result.append(_candidate(str(path.relative_to(ROOT)), json.dumps(projection, ensure_ascii=False), "GOVERNED_BUSINESS_STATE", "DEPARTMENT_CANONICAL_PROJECTION", 60, "CURRENT"))
+    # The audit table intentionally contains Research and Alpha as separate
+    # rows, preserving the architecture's distinction.
+    return result[:MAX_DEPARTMENT_RESULTS]
 
 
 def repository_search(query: str, *, max_results: int = MAX_REPO_RESULTS) -> dict[str, Any]:
@@ -175,7 +209,7 @@ def development_history_search(query: str, *, max_commits: int = MAX_HISTORY_COM
 def retrieve_knowledge(query: str, layers: list[str]) -> dict[str, Any]:
     intent = _intent(query); result: dict[str, Any] = {"layers": layers, "intent": intent, "repository": None, "development_history": None, "governed": None, "source_planes_used": [], "conflicts": []}
     if "DEPARTMENT_KNOWLEDGE" in layers or intent == "DEPARTMENT":
-        result["governed"] = {"status": "OK", "candidates": _department_search(), "source": "department_registry"}
+        result["governed"] = {"status": "OK", "candidates": _department_search(), "source": "canonical_department_projection"}
     elif any(x in layers for x in ("GOVERNED_BUSINESS_STATE",)) or intent == "GOVERNED_ENTITY":
         result["governed"] = {"status": "OK", "candidates": _governed_search(query), "source": "governed_jsonl"}
     if "DEPARTMENT_KNOWLEDGE" in layers or intent in {"DEPARTMENT", "ARCHITECTURE_HISTORY", "DEVELOPMENT_HISTORY"}: result["repository"] = repository_search(query)
