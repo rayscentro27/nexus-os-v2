@@ -9,6 +9,12 @@ function requireClient() {
   return supabase
 }
 
+async function currentUserId(client: any) {
+  const { data, error } = await client.auth.getUser()
+  if (error || !data.user) throw new Error('Authenticated Admin session is required to save conversations.')
+  return data.user.id
+}
+
 function mapConversation(row: any): AdminAiConversation {
   return { id: row.id, agent: row.agent, title: row.title, createdAt: row.created_at, updatedAt: row.updated_at }
 }
@@ -36,14 +42,16 @@ export async function loadAdminAiConversation(id: string) {
 
 export async function createAdminAiConversation(id: string, agent = 'nova') {
   const client = requireClient()
-  const { data, error } = await client.from('admin_ai_conversations').insert({ id, agent, title: 'New conversation' }).select('id,agent,title,created_at,updated_at').single()
+  const userId = await currentUserId(client)
+  const { data, error } = await client.from('admin_ai_conversations').insert({ id, user_id: userId, agent, title: 'New conversation' }).select('id,agent,title,created_at,updated_at').single()
   if (error) throw new Error(`New chat could not be created: ${error.message}`)
   return mapConversation(data)
 }
 
 export async function appendAdminAiMessage(conversationId: string, role: AdminAiRole, text: string) {
   const client = requireClient()
-  const inserted = await client.from('admin_ai_messages').insert({ conversation_id: conversationId, role, content: text }).select('id,role,content,created_at').single()
+  const userId = await currentUserId(client)
+  const inserted = await client.from('admin_ai_messages').insert({ conversation_id: conversationId, user_id: userId, role, content: text }).select('id,role,content,created_at').single()
   if (inserted.error) throw new Error(`Message could not be saved: ${inserted.error.message}`)
   const updated = await client.from('admin_ai_conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
   if (updated.error) throw new Error(`Conversation timestamp could not be saved: ${updated.error.message}`)
