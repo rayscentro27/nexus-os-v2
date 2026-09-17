@@ -623,12 +623,7 @@ def _compress_default_response(text: str, user_message: str) -> str:
 
 def _selective_canonical_response(state: AgentState) -> Optional[str]:
     """Render the smallest useful answer for a simple canonical read."""
-    department_inventory = "DEPARTMENT_KNOWLEDGE" in retrieval_layers and bool((selected_knowledge.get("governed") or {}).get("candidates"))
-    if department_inventory:
-        user_content += (
-            "\n\nPresentation: this is a canonical department inventory question. Enumerate every department in the supplied projection, preserving each stable identity and responsibility. Include readiness limitations where supplied; do not collapse entities into broad groups or stop after a representative sample."
-        )
-    elif _wants_detail(state.user_message):
+    if _wants_detail(state.user_message):
         return None
     result = state.metadata.get("capability_result") or {}
     capability = result.get("query_type")
@@ -4408,7 +4403,12 @@ def _build_context(state: AgentState) -> AgentState:
             + "If unavailable, say so plainly; do not add access claims based on documentation."
         )
 
-    if _wants_detail(state.user_message):
+    department_inventory = "DEPARTMENT_KNOWLEDGE" in retrieval_layers and bool((selected_knowledge.get("governed") or {}).get("candidates"))
+    if department_inventory:
+        user_content += (
+            "\n\nPresentation: this is a canonical department inventory question. Enumerate every department in the supplied projection, preserving each stable identity and responsibility. Include readiness limitations where supplied; do not collapse entities into broad groups or stop after a representative sample."
+        )
+    elif _wants_detail(state.user_message):
         user_content += "\n\nPresentation: the user explicitly requested depth; provide the detailed structure requested."
     else:
         user_content += (
