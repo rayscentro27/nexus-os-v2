@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -40,6 +41,8 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
 def build_research_operational_state() -> dict[str, Any]:
     """Return the current bounded Research/Alpha operational contract."""
     now = datetime.now(timezone.utc).isoformat()
+    local_zone = ZoneInfo("America/Phoenix")
+    local_today = datetime.now(local_zone).date().isoformat()
     alpha_status_path = ROOT / "data/runtime/alpha_telegram_status.json"
     metadata_path = ROOT / "reports/runtime/supabase_ready/youtube_video_metadata_latest.json"
     transcript_path = ROOT / "reports/runtime/supabase_ready/youtube_transcript_imports_latest.json"
@@ -85,6 +88,14 @@ def build_research_operational_state() -> dict[str, Any]:
     blocked_jobs = sum(1 for row in list(latest_research.values()) + list(latest_queue.values()) if str(row.get("status", row.get("state", ""))).upper() in {"BLOCKED", "FAILED", "REJECTED"})
     open_objectives = len(latest_research)
     latest = max((row for row in alpha_records if row.get("updated_at") or row.get("created_at")), key=lambda row: str(row.get("updated_at") or row.get("created_at")), default={})
+    today_records = []
+    for row in alpha_records:
+        stamp = row.get("updated_at") or row.get("created_at")
+        try:
+            if datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).astimezone(local_zone).date().isoformat() == local_today:
+                today_records.append(row)
+        except (TypeError, ValueError):
+            continue
     latest_reviews = latest_by("review_item_id", v2_review_queue)
     human_review_count = sum(1 for row in latest_reviews.values() if row.get("status") == "DRAFT_REVIEW_REQUIRED")
     machine_work_remains = bool(sum(1 for row in v2_questions if row.get("status") == "OPEN") or v2_follow_ups or v2_sources)
@@ -151,6 +162,12 @@ def build_research_operational_state() -> dict[str, Any]:
             "productive_research": bool(v2_sources or v2_alpha_reviews or v2_plans),
         },
         "last_successful_research_activity": latest.get("updated_at") or latest.get("created_at") or "UNKNOWN",
+        "today_activity": {
+            "local_date": local_today,
+            "records_observed": len(today_records),
+            "completed_or_updated_records": sum(1 for row in today_records if str(row.get("status", "")).upper() in {"COMPLETED", "CHALLENGED", "SCREENED", "SUCCEEDED"}),
+            "source": "data/governed/alpha_research.jsonl",
+        },
         "current_research_objective": latest.get("question") or latest.get("theme") or "UNKNOWN",
         "research_needs_ray": False,
         "human_review_queue_count": human_review_count,

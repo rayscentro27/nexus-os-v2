@@ -124,10 +124,54 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
     """Return a compact, non-secret prompt projection."""
     status = context.get("current_status", {})
     business = context.get("business", {})
+    research_state = context.get("research_operational_state", {})
     return json.dumps({
         "current_status": status,
         "operations": context.get("operations", {}),
         "research": context.get("research", {}),
+        "research_operational_state": {
+            key: research_state.get(key)
+            for key in (
+                "research_department_operational_state",
+                "alpha_primary_agent_activity",
+                "alpha_specialist_availability",
+                "research_background_process_state",
+                "research_work_state",
+                "research_health",
+                "research_effective_readiness",
+                "active_research_jobs",
+                "queued_research_jobs",
+                "blocked_research_jobs",
+                "open_research_objectives",
+                "last_successful_research_activity",
+                "current_research_objective",
+                "today_activity",
+                "human_review_queue_count",
+                "global_machine_work_remains",
+                "youtube",
+                "research_v2_metrics",
+                "scheduler",
+            )
+            if key in research_state
+        },
+        "capability_awareness": {
+            "youtube_research": {
+                "status": "CAN_ROUTE",
+                "description": "Nexus can route a YouTube URL into bounded Research V2 processing.",
+                "limitations": [
+                    "source accessibility and captions/transcript availability determine the result",
+                    "processing must complete before findings can be claimed",
+                ],
+            },
+            "bounded_research_missions": {
+                "status": "CAN_ROUTE_WITH_GOVERNANCE",
+                "description": "Bounded Research requests use the approved intake and remain subject to evidence and routing controls.",
+            },
+            "read_only_boundary": "Nova may read approved context and submit bounded requests; it cannot claim arbitrary execution or invent completed findings.",
+        },
+        "active_work": context.get("active_work", [])[:8],
+        "completed_work": context.get("completed_work", [])[:8],
+        "capability_discovery": context.get("capability_discovery", {}),
         "ray_attention": context.get("ray_attention", {}),
         "top_priority": business.get("top_priority", {}),
         "blockers": context.get("blockers", [])[:5],
