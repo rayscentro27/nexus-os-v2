@@ -4484,6 +4484,10 @@ def _generate_response(state: AgentState) -> AgentState:
             state.metadata["model_usage"] = usage
             state.metadata["model_provider"] = "openrouter"
             state.metadata["provider_latency_ms"] = result.get("latency_ms", 0)
+            if result.get("error"):
+                state.metadata["provider_error_type"] = result.get("error")
+                state.metadata["provider_http_status"] = result.get("http_status")
+                state.metadata["provider_error_detail"] = result.get("error_detail")
             if content:
                 break
         except Exception as exc:
@@ -4495,8 +4499,8 @@ def _generate_response(state: AgentState) -> AgentState:
             state.metadata["model_error"] = str(last_error)
             state.metadata["model_error_type"] = last_error.__class__.__name__
         else:
-            state.metadata["model_error"] = "empty model response"
-            state.metadata["model_error_type"] = "EmptyResponse"
+            state.metadata["model_error"] = state.metadata.get("provider_error_detail", "empty model response")
+            state.metadata["model_error_type"] = state.metadata.get("provider_error_type", "EmptyResponse")
         content = _advisory_fallback(state.user_message)
 
     # Keep tool execution inside the existing generation stage.  This is not a

@@ -99,9 +99,12 @@ class LlmGatewayAdapter:
             import httpx
             api_key = os.getenv("OPENROUTER_API_KEY", "")
             timeout = kwargs.get("timeout") or kwargs.get("request_timeout") or 60
+            if not api_key:
+                return {"content": "", "model": model, "usage": {}, "tool_calls": [], "error": "AUTH_FAILURE", "error_detail": "OPENROUTER_API_KEY is not present in the service environment"}
+            base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
             async with httpx.AsyncClient(timeout=timeout) as client:
                 resp = await client.post(
-                    "https://openrouter.ai/api/v1/chat/completions",
+                    f"{base_url}/chat/completions",
                     headers={
                         "Authorization": f"Bearer {api_key}",
                         "Content-Type": "application/json",
@@ -113,7 +116,26 @@ class LlmGatewayAdapter:
                         "max_tokens": max_tokens,
                     },
                 )
-                data = resp.json()
+                try:
+                    data = resp.json()
+                except ValueError:
+                    data = {}
+                if resp.status_code >= 400:
+                    error_payload = data.get("error") if isinstance(data, dict) else None
+                    if isinstance(error_payload, dict):
+                        detail = str(error_payload.get("message") or error_payload.get("code") or "provider rejected request")[:240]
+                    else:
+                        detail = "provider rejected request"
+                    if resp.status_code in (401, 403):
+                        error_type = "AUTH_FAILURE"
+                    elif resp.status_code == 429:
+                        error_type = "RATE_LIMIT"
+                    elif resp.status_code >= 500:
+                        error_type = "UPSTREAM_PROVIDER_ERROR"
+                    else:
+                        error_type = "INVALID_REQUEST"
+                    log.error("OpenRouter completion failed for %s: status=%s type=%s detail=%s", self.agent_id, resp.status_code, error_type, detail)
+                    return {"content": "", "model": model, "usage": {}, "tool_calls": [], "error": error_type, "http_status": resp.status_code, "error_detail": detail}
                 return {
                     "content": data["choices"][0]["message"]["content"],
                     "model": data.get("model", model),
@@ -125,7 +147,8 @@ class LlmGatewayAdapter:
             # caller must be able to distinguish provider failure and invoke
             # its governed deterministic advisory fallback.
             log.error("Fallback completion failed for %s: %s", self.agent_id, exc)
-            return {"content": "", "model": model, "usage": {}, "tool_calls": [], "error": type(exc).__name__}
+            error_type = "PROVIDER_TIMEOUT" if exc.__class__.__name__ in {"TimeoutException", "ReadTimeout", "ConnectTimeout"} else ("NETWORK_FAILURE" if exc.__class__.__name__ in {"ConnectError", "NetworkError", "RequestError"} else type(exc).__name__)
+            return {"content": "", "model": model, "usage": {}, "tool_calls": [], "error": error_type, "error_detail": str(exc)[:240]}
 
     @property
     def is_enabled(self) -> bool:

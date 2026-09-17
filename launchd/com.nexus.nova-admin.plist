@@ -7,5 +7,5 @@
 <key>RunAtLoad</key><true/><key>KeepAlive</key><true/><key>ThrottleInterval</key><integer>10</integer>
 <key>StandardOutPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/nova_admin_launchd.log</string>
 <key>StandardErrorPath</key><string>/Users/raymonddavis/nexus-os-v2/reports/runtime/nova_admin_launchd_error.log</string>
-<key>EnvironmentVariables</key><dict><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin</string></dict>
+<key>EnvironmentVariables</key><dict><key>HOME</key><string>/Users/raymonddavis</string><key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/usr/sbin:/sbin</string></dict>
 </dict></plist>

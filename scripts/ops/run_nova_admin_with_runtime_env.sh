@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-RUNTIME_ENV="$HOME/.config/nexus/runtime.env"
+RUNTIME_HOME="${HOME:-/Users/raymonddavis}"
+RUNTIME_ENV="${NEXUS_RUNTIME_ENV_PATH:-$RUNTIME_HOME/.config/nexus/runtime.env}"
 PYTHON="$REPO_ROOT/.venv-agent-platform/bin/python3"
 if [ ! -x "$PYTHON" ]; then PYTHON="$(command -v python3)"; fi
 if [ -f "$RUNTIME_ENV" ]; then set -a; source "$RUNTIME_ENV"; set +a; fi
