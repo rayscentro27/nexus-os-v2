@@ -76,7 +76,12 @@ def bounded_wake(callback, timeout_seconds=WAKE_TIMEOUT_SECONDS, command=None, e
         try:
             _append_execution_event(execution_id, "QUEUED", worker="research_operator_worker", timeout_seconds=timeout_seconds, log_path=str(log_path))
             with log_path.open("w", encoding="utf-8") as log:
-                process = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, text=True, start_new_session=True)
+                # Workers are autonomous children, never interactive command
+                # sessions.  Detach stdin explicitly so launch contexts with
+                # a closed/invalid fd 0 cannot abort Python before the worker
+                # reaches its bounded Research handler.
+                process = subprocess.Popen(command, cwd=ROOT, env=env, stdin=subprocess.DEVNULL,
+                                           stdout=log, stderr=subprocess.STDOUT, text=True, start_new_session=True)
             _append_execution_event(execution_id, "DISPATCHED", pid=process.pid, worker="research_operator_worker")
             _write_wake_progress("WORK_DISPATCHED", execution_id=execution_id, pid=process.pid)
             return {"status": "DISPATCHED", "execution_mode": "REAL", "task_processing": "DELEGATED",
