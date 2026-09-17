@@ -22,7 +22,10 @@ from scheduled_research_router import process_scheduled_item  # noqa: E402
 # research sources; the scheduler still owns lane fairness and this worker
 # only resolves the selected lane to one real item for the canonical router.
 SOURCE_POOLS = {
-    "BUSINESS_MARKET": [("WEB_PAGE", "sba-business-guide", "https://www.sba.gov/business-guide", "SBA business guide")],
+    "BUSINESS_MARKET": [
+        ("WEB_PAGE", "sba-business-guide", "https://www.sba.gov/business-guide", "SBA business guide"),
+        ("WEB_PAGE", "mobile-detailing-academy-phoenix", "https://mobiledetailingacademy.com/mobile-detailing/phoenix-az", "Phoenix mobile detailing market example"),
+    ],
     "FUNDING_LENDER": [("WEB_PAGE", "sba-loans", "https://www.sba.gov/loans", "SBA loans and funding")],
     "GRANTS_GOVERNMENT": [("WEB_PAGE", "sba-grants", "https://www.sba.gov/funding-programs/grants", "SBA grants")],
     "AFFILIATE_REVENUE": [("WEB_PAGE", "hubspot-affiliate", "https://www.hubspot.com/partners/affiliates", "HubSpot affiliate program")],
