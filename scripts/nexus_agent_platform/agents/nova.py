@@ -4252,6 +4252,26 @@ def _build_context(state: AgentState) -> AgentState:
     knowledge_context = format_knowledge_for_prompt(selected_knowledge)
     state.metadata["retrieval_layers"] = retrieval_layers
     state.metadata["knowledge_retrieval"] = selected_knowledge
+    if "CURRENT_CAPABILITY_STATE" in retrieval_layers:
+        from nexus_agent_platform.nova_capability_truth import build_admin_runtime_capability_truth, capability_truth_for_prompt
+        state.metadata["capability_truth"] = build_admin_runtime_capability_truth()
+        user_capability_truth = capability_truth_for_prompt()
+    else:
+        user_capability_truth = ""
+
+    # Put selected evidence in a system-level, provenance-labeled block so a
+    # generic company brief cannot outrank an exact governed/runtime result.
+    # The block remains bounded by the retrieval formatter above.
+    if knowledge_context:
+        messages.append({
+            "role": "system",
+            "content": (
+                "VERIFIED NEXUS RETRIEVAL FOR THIS TURN:\n" + knowledge_context
+                + "\nUse this evidence according to its source precedence. Exact governed records and current runtime traces are authoritative for the question; historical documentation explains architecture but does not prove active tools."
+            ),
+        })
+    if user_capability_truth:
+        messages.append({"role": "system", "content": user_capability_truth})
 
     from nexus_agent_platform.nova_capability_broker import capability_catalog
     information_plan = state.metadata.get("information_plan")
@@ -4371,6 +4391,12 @@ def _build_context(state: AgentState) -> AgentState:
             + "\nClassify these as repository structure or historical development evidence; "
             "they do not override newer live or governed state."
         )
+    if user_capability_truth:
+        user_content += (
+            "\n\n" + user_capability_truth
+            + "\nAnswer MCP, Google, Gmail, Calendar, and Drive questions only from this current runtime projection. "
+            + "If unavailable, say so plainly; do not add access claims based on documentation."
+        )
 
     if _wants_detail(state.user_message):
         user_content += "\n\nPresentation: the user explicitly requested depth; provide the detailed structure requested."
@@ -4397,6 +4423,9 @@ def _build_context(state: AgentState) -> AgentState:
         "current_message_chars": len(state.user_message),
         "total_input_chars": context_chars,
         "estimated_tokens": context_chars // 4,
+        "retrieval_items": sum(len((selected_knowledge.get(key) or {}).get("candidates", [])) for key in ("governed", "repository")) + len((selected_knowledge.get("development_history") or {}).get("commits", [])),
+        "retrieval_source_planes": selected_knowledge.get("source_planes_used", []),
+        "capability_truth_chars": len(user_capability_truth),
     }
     if capability_result and capability_result.get("query_type") == "nexus_system":
         capability_data = capability_result.get("data", {})
