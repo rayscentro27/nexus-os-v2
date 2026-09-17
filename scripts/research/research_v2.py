@@ -181,17 +181,38 @@ def select_source_requirements(question: str, intent: str) -> dict[str, Any]:
 
 
 def persist_v2_records(records: dict[str, list[dict[str, Any]]]) -> dict[str, int]:
-    """Append V2 records to the existing governed JSONL store."""
+    """Append only new V2 identities to the existing governed JSONL store.
+
+    V2 records are immutable projections, but scheduled source processing is
+    intentionally repeatable.  Replaying an unchanged source must not inflate
+    the question/investigation backlog with the same deterministic IDs.
+    """
     scripts_root = str(REPO_ROOT / "scripts")
     if scripts_root not in sys.path:
         sys.path.insert(0, scripts_root)
-    from nexus_agent_platform.governed.persistence import append_record
+    from nexus_agent_platform.governed.persistence import append_record, read_records
+    identity_keys = {
+        "sources": "source_id", "claims": "claim_id", "methods": "method_id",
+        "opportunities": "opportunity_id", "questions": "question_id",
+        "investigations": "investigation_id", "follow_ups": "follow_up_id",
+        "alpha_reviews": "alpha_review_id", "plans": "plan_id",
+        "reputations": "source_id", "handoffs": "handoff_id",
+    }
     counts = {}
     for kind, rows in records.items():
         collection = f"research_v2_{kind}"
         counts[kind] = 0
+        identity_key = identity_keys.get(kind)
+        existing = set()
+        if identity_key:
+            existing = {str(row.get(identity_key)) for row in read_records(collection) if row.get(identity_key) is not None}
         for row in rows:
+            identity = str(row.get(identity_key)) if identity_key and row.get(identity_key) is not None else None
+            if identity and identity in existing:
+                continue
             append_record(collection, {"schema_version": "nexus.research-v2.1", "recorded_at": _now(), **row})
+            if identity:
+                existing.add(identity)
             counts[kind] += 1
     return counts
 
