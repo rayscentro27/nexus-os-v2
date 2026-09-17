@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
 from youtube_full_pipeline import select_channel_videos  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark_source_result  # noqa: E402
+from research_v2 import parent_links_for_item  # noqa: E402
 
 
 # Bounded, read-only scheduled source selection.  These are existing public
@@ -81,10 +82,12 @@ def main() -> int:
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
     lane_id = os.environ.get("NEXUS_SELECTED_LANE_ID", "BUSINESS_MARKET")
     item = select_scheduled_item(lane_id, execution_id)
+    item["v2_parent_links"] = parent_links_for_item(item)
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
           source_type=item["source_type"], source_id=item["source_id"], source_url=item["source_url"],
           channel_id=item.get("channel_id"), channel_url=item.get("channel_url"),
           selection_reason=item["selection_reason"], selected_work_class=os.environ.get("NEXUS_SELECTED_WORK_CLASS", "DISCOVERY"),
+          v2_parent_links=item["v2_parent_links"],
           why_selected=os.environ.get("NEXUS_SELECTED_LANE_WHY", ""))
     def timeout_handler(signum, frame):
         raise TimeoutError(f"per-job timeout after {args.timeout_seconds}s")

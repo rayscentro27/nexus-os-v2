@@ -244,6 +244,80 @@ def compare_knowledge(*, new_item: dict[str, Any], prior_items: list[dict[str, A
     return {"comparison_id": _id("comparison", (new_item.get("source_id"), [x.get("source_id") for x in prior_items])), "new_item": new_item.get("source_id") or new_item.get("title"), "prior_items": [x.get("source_id") or x.get("title") for x in prior_items], "shared_facts": shared, "new_facts": [x for x in terms if x not in shared][:20], "shared_methods": [], "new_methods": [], "contradictions": [], "different_assumptions": [], "source_quality_differences": [], "temporal_differences": [], "updated_understanding": "New source is compared qualitatively against retained Research text; numeric novelty is intentionally not assigned.", "novelty_status": status, "no_novelty_number": True}
 
 
+def parent_links_for_item(item: dict[str, Any]) -> dict[str, list[str]]:
+    """Resolve the current V2 objects that requested evidence for a source.
+
+    Source processors remain unaware of this relationship.  The worker adds
+    these exact links after choosing its concrete source, and the shared V2
+    integration uses them for idempotent state progression.
+    """
+    source_id = str(item.get("source_id") or "")
+    links = {"question_ids": [], "followup_ids": [], "investigation_ids": [], "thesis_ids": []}
+    if not source_id:
+        return links
+    try:
+        from nexus_agent_platform.governed.persistence import read_records
+        for collection, key, output in (
+            ("research_v2_questions", "question_id", "question_ids"),
+            ("research_v2_follow_ups", "follow_up_id", "followup_ids"),
+            ("research_v2_investigations", "investigation_id", "investigation_ids"),
+            ("research_v2_opportunities", "opportunity_id", "thesis_ids"),
+            ("research_v2_strategies", "strategy_id", "thesis_ids"),
+        ):
+            for row in read_records(collection):
+                if str(row.get("source_id") or "") == source_id and row.get(key) is not None:
+                    if str(row.get("status", "")).upper() not in {"COMPLETED", "RESOLVED", "ARCHIVED", "REJECTED"}:
+                        value = str(row[key])
+                        if value not in links[output]:
+                            links[output].append(value)
+    except Exception:
+        # Missing optional governed state must not stop source acquisition.
+        pass
+    return links
+
+
+def _append_progression_state(collection: str, identity_key: str, identity: str, package_id: str, payload: dict[str, Any]) -> bool:
+    from nexus_agent_platform.governed.persistence import append_record, get_record
+    latest = get_record(collection, identity, key=identity_key)
+    if latest and latest.get("last_evidence_package_id") == package_id:
+        return False
+    append_record(collection, {"schema_version": "nexus.research-v2.1", "recorded_at": _now(), identity_key: identity, "last_evidence_package_id": package_id, **payload})
+    return True
+
+
+def progress_after_package(item: dict[str, Any], package: dict[str, Any], result: dict[str, Any], links: dict[str, list[str]]) -> dict[str, Any]:
+    """Advance evidence-requesting objects after package storage.
+
+    Updates are append-only projections and keyed by package ID, so retries
+    cannot resolve, advance, or compare the same package twice.
+    """
+    from nexus_agent_platform.governed.persistence import append_record, get_record, read_records
+    package_id = str(package["research_package_id"])
+    status = str(result.get("processing_status", "FULLY_PROCESSED"))
+    evidence_state = "MORE_RESEARCH_REQUIRED" if status == "FULLY_PROCESSED" else "INSUFFICIENT"
+    changed = {"questions": 0, "follow_ups": 0, "investigations": 0, "theses": 0, "comparisons": 0}
+    for question_id in links.get("question_ids", []):
+        if _append_progression_state("research_v2_questions", "question_id", question_id, package_id, {"status": evidence_state, "source_id": item.get("source_id"), "evidence_found": bool(result.get("summary_created") or result.get("structured_data")), "sufficient_to_resolve": False, "next_action": "select independent authoritative evidence"}):
+            changed["questions"] += 1
+    for followup_id in links.get("followup_ids", []):
+        if _append_progression_state("research_v2_follow_ups", "follow_up_id", followup_id, package_id, {"status": "MORE_RESEARCH_REQUIRED", "source_id": item.get("source_id"), "result": evidence_state, "remaining_unknowns": package.get("unknowns", [])}):
+            changed["follow_ups"] += 1
+    for investigation_id in links.get("investigation_ids", []):
+        if _append_progression_state("research_v2_investigations", "investigation_id", investigation_id, package_id, {"status": "RESEARCH_MORE", "source_id": item.get("source_id"), "progression_event": "EVIDENCE_ATTACHED", "open_gaps_after": package.get("unknowns", []), "next_action": "select independent evidence for remaining gaps"}):
+            changed["investigations"] += 1
+    for thesis_id in links.get("thesis_ids", []):
+        if _append_progression_state("research_v2_opportunities", "opportunity_id", thesis_id, package_id, {"status": "THESIS_ONLY_NO_EXECUTION", "source_id": item.get("source_id"), "progression_event": "EVIDENCE_ATTACHED", "next_action": "evaluate evidence against thesis gaps"}):
+            changed["theses"] += 1
+    # Compare against retained V2 source text when a real prior item exists.
+    prior = [row for row in read_records("research_v2_sources") if str(row.get("source_id")) != str(item.get("source_id"))]
+    if prior:
+        comparison = compare_knowledge(new_item={"source_id": item.get("source_id"), "title": item.get("title"), "text": " ".join(str(x) for x in (result.get("key_findings") or result.get("executive_summary") or result.get("title") or "") if x)}, prior_items=prior[:20])
+        if not get_record("research_v2_comparisons", comparison["comparison_id"], key="comparison_id"):
+            append_record("research_v2_comparisons", {"schema_version": "nexus.research-v2.1", "recorded_at": _now(), **comparison, "evidence_package_id": package_id})
+            changed["comparisons"] += 1
+    return {"package_id": package_id, "linked": links, "state_changes": changed}
+
+
 def integrate_scheduled_result(item: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     """Project a completed source artifact into V2's governed records.
 
@@ -253,8 +327,9 @@ def integrate_scheduled_result(item: dict[str, Any], result: dict[str, Any]) -> 
     """
     source = {"source_id": item.get("source_id"), "source_type": item.get("source_type"), "source_url": item.get("source_url"), "source_title": item.get("title") or result.get("title"), "source_author_or_channel": item.get("author") or result.get("channel"), "processing_status": result.get("processing_status"), "source_observation": True}
     substantive = result.get("transcript_acquired") or result.get("summary_created") or result.get("key_findings") or result.get("structured_data")
-    source["source_observation"] = not bool(substantive)
     evidence_text = " ".join(str(x) for x in (result.get("key_findings") or result.get("executive_summary") or result.get("title") or "") if x)
+    source["source_observation"] = not bool(substantive)
+    source["text"] = evidence_text
     claims = extract_claims(evidence_text, source) if substantive and len(evidence_text) >= 35 else []
     intent_text = f"{item.get('category', '')} {item.get('title', '')}"
     intents = classify_intents(intent_text, source_type=str(item.get("source_type", "")))
@@ -263,4 +338,8 @@ def integrate_scheduled_result(item: dict[str, Any], result: dict[str, Any]) -> 
         requirements = select_source_requirements("Which material claims or unknowns require additional evidence?", intent)
         questions.append({"question_id": _id("question", (source["source_id"], intent)), "source_id": source["source_id"], "question": requirements["question"], "intent": intent, "source_class": requirements["source_class"], "query": requirements["query"], "status": "OPEN"})
     records = {"sources": [{**source, "research_intents": intents}], "claims": claims, "questions": questions, "investigations": [{"investigation_id": _id("investigation", source["source_id"]), "source_id": source["source_id"], "status": "ACTIVE" if substantive else "ENOUGH_FOR_KNOWLEDGE", "decision": "KNOWLEDGE_CAPTURE" if not substantive else "RESEARCH_MORE", "materiality": "MEDIUM" if substantive else "LOW", "last_activity": _now(), "next_action": "answer_source_requirements" if substantive else "retain_knowledge", "research_intents": intents, "source_requirements": [select_source_requirements(q["question"], q["intent"]) for q in questions], "research_continues": bool(substantive)}], "follow_ups": []}
-    return {"v2_integrated": True, "substantive_intelligence": bool(substantive), "research_intents": intents, "claims_created": len(claims), "questions_created": len(questions), "record_counts": persist_v2_records(records)}
+    counts = persist_v2_records(records)
+    package = research_package(source=source, claims=claims, evidence=[{"source_id": source.get("source_id"), "text": evidence_text, "status": result.get("processing_status")}], questions=questions)
+    links = item.get("v2_parent_links") or parent_links_for_item(item)
+    progression = progress_after_package(item, package, result, links) if not bool(result.get("duplicate_unchanged")) else {"package_id": package["research_package_id"], "linked": links, "state_changes": {}}
+    return {"v2_integrated": True, "substantive_intelligence": bool(substantive), "research_intents": intents, "claims_created": len(claims), "questions_created": len(questions), "record_counts": counts, "research_package_id": package["research_package_id"], "progression": progression, "comparison_created": progression["state_changes"].get("comparisons", 0)}
