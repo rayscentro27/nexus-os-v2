@@ -16,7 +16,7 @@ JOBS = ROOT / "data/runtime/research_execution_jobs.jsonl"
 sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "scripts" / "research"))
 from scheduled_research_router import process_scheduled_item  # noqa: E402
-from youtube_full_pipeline import select_channel_videos  # noqa: E402
+from youtube_full_pipeline import _http_caption_tracks, select_channel_videos  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark_source_result  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
 from bounded_research_missions import claim_item, record_item_result  # noqa: E402
@@ -52,13 +52,29 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
         mission_target = os.environ.get("NEXUS_MISSION_TARGET_ID", "")
         channel = next((row for row in channels if str(row.get("channel_id")) == mission_target), None)
         channel = channel or channels[int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(channels)]
-        videos = select_channel_videos(channel["url"], 1)
+        # Use the durable channel id for the bounded RSS fallback.  Handle
+        # pages remain the canonical display URL but are not required for
+        # metadata discovery.
+        discovery_url = f"https://www.youtube.com/channel/{channel['channel_id']}"
+        videos = select_channel_videos(discovery_url, 3)
         if not videos:
             raise RuntimeError(f"no eligible videos discovered for channel {channel['name']}")
         video = videos[0]
+        # Prefer a recent captioned candidate.  A no-caption video is an
+        # item-level ASR_REQUIRED/FAILED_RETRYABLE result, not a reason to
+        # stop the bounded channel mission when another recent candidate is
+        # processable.
+        for candidate in videos:
+            try:
+                _http_caption_tracks(candidate["url"], candidate["video_id"])
+                video = candidate
+                break
+            except Exception:
+                continue
         return {"source_type": "YOUTUBE_VIDEO", "source_id": video["video_id"], "source_url": video["url"],
                 "title": video.get("title", video["video_id"]), "author": channel["name"],
                 "channel_id": channel.get("channel_id"), "channel_url": channel["url"],
+                "discovery_method": video.get("discovery_method", "YOUTUBE_RSS"),
                 "category": "YOUTUBE_CONTENT", "selection_reason": "approved_channel_watchlist"}
     pool = SOURCE_POOLS.get(lane_id) or SOURCE_POOLS["BUSINESS_MARKET"]
     index = int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(pool)

@@ -125,6 +125,8 @@ def record_item_result(item_id: str, *, status: str, result: Any, next_action: s
         return None
     normalized_status = str(status).upper()
     updated = {**current, "status": normalized_status, "last_result": result, "next_action": next_action or current.get("next_action")}
+    if isinstance(result, dict) and isinstance(result.get("completion_evidence"), dict):
+        updated["completion_evidence"] = {**(current.get("completion_evidence") or {}), **result["completion_evidence"]}
     if normalized_status == "FAILED_RETRYABLE":
         updated["next_eligible_at"] = (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat()
     else:

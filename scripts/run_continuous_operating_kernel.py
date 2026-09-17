@@ -172,7 +172,13 @@ def main() -> int:
     limit = args.max_cycles if args.daemon and args.max_cycles > 0 else (args.cycles if not args.daemon else None)
     index = 0
     while limit is None or index < limit:
-        stale_records = [r for r in persistence.read_records("alpha_content") if refresh_due(r)]
+        # Do not scan the append-only Alpha content ledger on every unattended
+        # wake.  It is an optional maintenance input and can grow independently
+        # of the Research heartbeat; a full-file read here previously held the
+        # operating kernel in I/O before it could dispatch Research.  Scheduled
+        # Research remains the liveness-critical path.  The bounded foreground
+        # mode retains the existing freshness refresh behavior.
+        stale_records = [] if args.daemon else [r for r in persistence.read_records("alpha_content") if refresh_due(r)]
         def real_research() -> dict:
             # Active Operator is the canonical goal-to-work dispatcher.  The
             # continuous supervisor must invoke it; a heartbeat-only cycle is

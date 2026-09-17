@@ -15,6 +15,9 @@ import shutil
 import subprocess
 import tempfile
 import time
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -23,8 +26,8 @@ from common import ROOT
 from research_scoring import scoring_profile
 
 CANONICAL_ROOT = ROOT / "reports" / "runtime" / "youtube_artifacts"
-YT_DLP_MAX_ATTEMPTS = 2
-YT_DLP_TIMEOUT_SECONDS = 45
+YT_DLP_MAX_ATTEMPTS = 1
+YT_DLP_TIMEOUT_SECONDS = 20
 WHISPER_CPP_BINARY = ROOT / ".runtime" / "whisper.cpp" / "build-native" / "bin" / "whisper-cli"
 WHISPER_CPP_MODEL = ROOT / ".runtime" / "whisper.cpp" / "models" / "ggml-tiny.en.bin"
 
@@ -63,6 +66,74 @@ def _run_ytdlp(command: list[str]) -> subprocess.CompletedProcess[str]:
         if attempt < YT_DLP_MAX_ATTEMPTS:
             time.sleep(1)
     return last
+
+
+def _http_get(url: str, timeout: int = 15) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 Nexus Research/2.0"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read()
+
+
+def _rss_channel_videos(channel_url: str, limit: int) -> list[dict[str, str]]:
+    """Bounded metadata-only fallback when the yt-dlp Python runtime hangs."""
+    parsed = urllib.parse.urlparse(channel_url)
+    channel_id = ""
+    if "/channel/" in parsed.path:
+        channel_id = parsed.path.split("/channel/", 1)[1].split("/", 1)[0]
+    if not channel_id:
+        raise RuntimeError("RSS fallback requires a canonical YouTube channel id")
+    root = ET.fromstring(_http_get(f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"))
+    ns = {"atom": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
+    videos = []
+    for entry in root.findall("atom:entry", ns)[:max(1, min(limit, 3))]:
+        video_id = entry.findtext("yt:videoId", default="", namespaces=ns)
+        title = entry.findtext("atom:title", default=video_id, namespaces=ns)
+        published = entry.findtext("atom:published", default="", namespaces=ns)
+        if video_id:
+            videos.append({"video_id": video_id, "title": title, "url": f"https://www.youtube.com/watch?v={video_id}",
+                           "published_at": published, "discovery_method": "YOUTUBE_RSS"})
+    return videos
+
+
+def _http_caption_tracks(url: str, video_id: str) -> tuple[str, list[dict[str, str]], str]:
+    """Read public caption tracks from the video page without downloading media."""
+    page = _http_get(url)
+    text = page.decode("utf-8", errors="ignore")
+    marker = '"captionTracks":'
+    start = text.find(marker)
+    if start < 0:
+        raise RuntimeError("no public caption tracks exposed in video page")
+    start = text.find("[", start + len(marker))
+    if start < 0:
+        raise RuntimeError("caption track payload is malformed")
+    depth = 0
+    end = None
+    for index in range(start, len(text)):
+        if text[index] == "[": depth += 1
+        elif text[index] == "]":
+            depth -= 1
+            if depth == 0:
+                end = index + 1
+                break
+    if end is None:
+        raise RuntimeError("caption track payload is incomplete")
+    tracks = json.loads(text[start:end])
+    track = next((x for x in tracks if str(x.get("languageCode", "")).startswith("en")), tracks[0] if tracks else None)
+    if not track or not track.get("baseUrl"):
+        raise RuntimeError("no English public caption track")
+    caption_xml = _http_get(track["baseUrl"])
+    root = ET.fromstring(caption_xml)
+    segments = []
+    for node in root.findall("text"):
+        value = html.unescape(re.sub(r"<[^>]+>", "", node.text or ""))
+        value = re.sub(r"\s+", " ", value).strip()
+        if value:
+            seconds = float(node.get("start", "0"))
+            segments.append({"timestamp": f"{seconds:.2f}", "text": value})
+    transcript = re.sub(r"\s+", " ", " ".join(x["text"] for x in segments)).strip()
+    if not transcript:
+        raise RuntimeError(f"empty public caption track for {video_id}")
+    return transcript, segments, "public_youtube_captions_http"
 
 
 def _sentences(text: str) -> list[str]:
@@ -128,6 +199,10 @@ def _write_json(path: Path, value: Any) -> None:
 
 
 def _metadata(url: str, provided: dict[str, Any] | None = None) -> dict[str, Any]:
+    if provided and provided.get("discovery_method") == "YOUTUBE_RSS":
+        return {"id": provided.get("video_id"), "title": provided.get("title"),
+                "channel": provided.get("channel", "UNKNOWN"), "description": provided.get("description", ""),
+                "duration": provided.get("duration"), "upload_date": provided.get("published_at", "")}
     result = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "--skip-download", "--dump-single-json", url])
     if result.returncode != 0:
         if provided and provided.get("title"):
@@ -146,7 +221,7 @@ def acquire_captions(url: str, video_id: str) -> tuple[str, list[dict[str, str]]
         caption_files = sorted(Path(temp).glob(f"{video_id}*.vtt"))
         if result.returncode != 0 or not caption_files:
             detail = (result.stderr or result.stdout)[-700:].strip()
-            raise RuntimeError(f"captions unavailable: {detail or 'no English VTT returned'}")
+            return _http_caption_tracks(url, video_id)
         return (*_caption_text(caption_files[0].read_text(errors="ignore")), "public_youtube_captions")
 
 
@@ -241,7 +316,10 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
             audio_acquired = True
             ffmpeg_normalized = True
         else:
-            transcript, segments, transcript_source = acquire_captions(url, video_id)
+            if video.get("discovery_method") == "YOUTUBE_RSS":
+                transcript, segments, transcript_source = _http_caption_tracks(url, video_id)
+            else:
+                transcript, segments, transcript_source = acquire_captions(url, video_id)
     except Exception as caption_error:
         try:
             transcript, segments, transcript_source, asr_backend = acquire_audio_asr(url, video_id)
@@ -286,9 +364,14 @@ def process_youtube_video(video: dict[str, Any], artifact_root: Path = CANONICAL
 
 
 def select_channel_videos(channel_url: str, limit: int) -> list[dict[str, str]]:
-    result = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "--flat-playlist", "--playlist-end", str(limit), "--dump-single-json", f"{channel_url.rstrip('/')}/videos"])
-    if result.returncode != 0:
-        raise RuntimeError(f"scheduled selection failed: {result.stderr[-500:].strip()}")
+    # RSS is the bounded, metadata-only channel path.  It avoids the known
+    # yt-dlp Python startup/network hang and never enumerates channel history.
+    try:
+        return _rss_channel_videos(channel_url, limit)
+    except Exception as rss_error:
+        result = _run_ytdlp(["yt-dlp", "--no-update", "--no-warnings", "--flat-playlist", "--playlist-end", str(limit), "--dump-single-json", f"{channel_url.rstrip('/')}/videos"])
+        if result.returncode != 0:
+            raise RuntimeError(f"scheduled selection failed: RSS={rss_error}; yt-dlp={result.stderr[-300:].strip()}") from rss_error
     payload = json.loads(result.stdout)
     return [{"video_id": entry.get("id"), "title": entry.get("title") or entry.get("id"), "url": entry.get("url") or f"https://www.youtube.com/watch?v={entry.get('id')}"} for entry in payload.get("entries", []) if entry.get("id")]
 

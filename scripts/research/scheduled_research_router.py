@@ -63,7 +63,7 @@ def process_scheduled_item(item: dict[str, Any]) -> dict[str, Any]:
     processor = processor_for(source_type, category)
     try:
         if "YOUTUBE" in source_type:
-            result = process_youtube_video({"video_id": item["source_id"], "url": item["source_url"], "title": item.get("title", item["source_id"]), "channel": item.get("author", "")})
+            result = process_youtube_video({"video_id": item["source_id"], "url": item["source_url"], "title": item.get("title", item["source_id"]), "channel": item.get("author", ""), "discovery_method": item.get("discovery_method", "")})
         elif "GITHUB" in source_type:
             from research_document_pipeline import github_deep
             result = github_deep(item["source_id"])
