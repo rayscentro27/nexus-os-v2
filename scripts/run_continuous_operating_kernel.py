@@ -211,6 +211,8 @@ def main() -> int:
                         "NEXUS_SELECTED_LANE_NAME": lane["name"],
                         "NEXUS_SELECTED_LANE_REASON": lane["selection_reason"],
                         "NEXUS_SELECTED_WORK_CLASS": lane.get("selected_work_class", "DISCOVERY"),
+                        "NEXUS_MISSION_ID": str((lane.get("mission_item") or {}).get("mission_id", "")),
+                        "NEXUS_MISSION_ITEM_ID": str((lane.get("mission_item") or {}).get("item_id", "")),
                         "NEXUS_SELECTED_LANE_WHY": json.dumps({
                             "materiality": lane.get("materiality_basis", {}),
                             "age": lane.get("age_basis", {}),

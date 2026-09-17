@@ -19,6 +19,7 @@ from scheduled_research_router import process_scheduled_item  # noqa: E402
 from youtube_full_pipeline import select_channel_videos  # noqa: E402
 from nexus_agent_platform.research_lane_scheduler import mark_lane_backoff, mark_source_result  # noqa: E402
 from research_v2 import parent_links_for_item  # noqa: E402
+from bounded_research_missions import claim_item, record_item_result  # noqa: E402
 
 
 # Bounded, read-only scheduled source selection.  These are existing public
@@ -48,7 +49,9 @@ def select_scheduled_item(lane_id: str, execution_id: str) -> dict:
         channels = [row for row in config.get("channels", []) if row.get("enabled") and row.get("approved_by_ray")]
         if not channels:
             raise RuntimeError("approved YouTube channel watchlist is empty")
-        channel = channels[int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(channels)]
+        mission_target = os.environ.get("NEXUS_MISSION_TARGET_ID", "")
+        channel = next((row for row in channels if str(row.get("channel_id")) == mission_target), None)
+        channel = channel or channels[int(hashlib.sha256(execution_id.encode("utf-8")).hexdigest()[:8], 16) % len(channels)]
         videos = select_channel_videos(channel["url"], 1)
         if not videos:
             raise RuntimeError(f"no eligible videos discovered for channel {channel['name']}")
@@ -81,6 +84,14 @@ def main() -> int:
     event(execution_id, "CLAIMED", worker_id="research_operator_worker", attempt_count=1)
     event(execution_id, "RUNNING", worker_id="research_operator_worker", timeout_seconds=args.timeout_seconds)
     lane_id = os.environ.get("NEXUS_SELECTED_LANE_ID", "BUSINESS_MARKET")
+    mission_item_id = os.environ.get("NEXUS_MISSION_ITEM_ID", "")
+    mission_item = None
+    if mission_item_id:
+        mission_item = claim_item(mission_item_id, worker_id="research_operator_worker")
+        if mission_item is None:
+            event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error="mission item already claimed or terminal", failure_class="MISSION_ITEM_ALREADY_CLAIMED", retry_after="next scheduled wake")
+            return 1
+        os.environ["NEXUS_MISSION_TARGET_ID"] = str(mission_item.get("target_id", ""))
     item = select_scheduled_item(lane_id, execution_id)
     item["v2_parent_links"] = parent_links_for_item(item)
     event(execution_id, "SOURCE_SELECTED", worker_id="research_operator_worker", lane_id=lane_id,
@@ -106,8 +117,13 @@ def main() -> int:
     except Exception as exc:
         signal.alarm(0)
         event(execution_id, "FAILED_RETRYABLE", worker_id="research_operator_worker", error=str(exc)[:500], failure_class="RESEARCH_WORKER_FAILURE", retry_after="next scheduled wake")
+        if mission_item:
+            record_item_result(mission_item_id, status="FAILED_RETRYABLE", result={"error": str(exc)[:500]}, next_action="retry bounded mission item")
         return 1
     final_status = result.get("final_status", "FAILED_RETRYABLE")
+    if mission_item:
+        mission_status = "COMPLETED" if final_status in {"FULLY_PROCESSED", "DUPLICATE_UNCHANGED"} else "FAILED_RETRYABLE"
+        record_item_result(mission_item_id, status=mission_status, result={"final_status": final_status, "source_id": item.get("source_id"), "research_package_id": (result.get("v2") or {}).get("research_package_id")}, next_action="continue next mission item" if mission_status == "COMPLETED" else "retry after backoff")
     # Refresh bookkeeping is advisory scheduling state.  A serialization or
     # filesystem fault here must never turn a completed Research result into a
     # dead worker; the next selector wake can recover the state from this
