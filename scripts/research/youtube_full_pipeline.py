@@ -99,25 +99,28 @@ def _http_caption_tracks(url: str, video_id: str) -> tuple[str, list[dict[str, s
     """Read public caption tracks from the video page without downloading media."""
     page = _http_get(url)
     text = page.decode("utf-8", errors="ignore")
-    marker = '"captionTracks":'
-    start = text.find(marker)
-    if start < 0:
-        raise RuntimeError("no public caption tracks exposed in video page")
-    start = text.find("[", start + len(marker))
-    if start < 0:
-        raise RuntimeError("caption track payload is malformed")
-    depth = 0
-    end = None
-    for index in range(start, len(text)):
-        if text[index] == "[": depth += 1
-        elif text[index] == "]":
-            depth -= 1
-            if depth == 0:
-                end = index + 1
-                break
-    if end is None:
-        raise RuntimeError("caption track payload is incomplete")
-    tracks = json.loads(text[start:end])
+    player_match = re.search(r"var ytInitialPlayerResponse\s*=\s*(\{.*?\});", text)
+    if player_match:
+        player = json.loads(player_match.group(1))
+        tracks = player.get("captions", {}).get("playerCaptionsTracklistRenderer", {}).get("captionTracks", [])
+    else:
+        marker = '"captionTracks":'
+        start = text.find(marker)
+        start = text.find("[", start + len(marker)) if start >= 0 else -1
+        if start < 0:
+            raise RuntimeError("no public caption tracks exposed in video page")
+        depth = 0
+        end = None
+        for index in range(start, len(text)):
+            if text[index] == "[": depth += 1
+            elif text[index] == "]":
+                depth -= 1
+                if depth == 0:
+                    end = index + 1
+                    break
+        if end is None:
+            raise RuntimeError("caption track payload is incomplete")
+        tracks = json.loads(text[start:end])
     track = next((x for x in tracks if str(x.get("languageCode", "")).startswith("en")), tracks[0] if tracks else None)
     if not track or not track.get("baseUrl"):
         raise RuntimeError("no English public caption track")
