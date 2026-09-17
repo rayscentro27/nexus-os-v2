@@ -125,6 +125,7 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
     status = context.get("current_status", {})
     business = context.get("business", {})
     research_state = context.get("research_operational_state", {})
+    today_activity = research_state.get("today_activity", {})
     return json.dumps({
         "current_status": status,
         "operations": context.get("operations", {}),
@@ -146,6 +147,7 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
                 "last_successful_research_activity",
                 "current_research_objective",
                 "today_activity",
+                "mission_state",
                 "human_review_queue_count",
                 "global_machine_work_remains",
                 "youtube",
@@ -169,6 +171,13 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
             },
             "read_only_boundary": "Nova may read approved context and submit bounded requests; it cannot claim arbitrary execution or invent completed findings.",
         },
+        "research_authority": "For current Research answers, research_operational_state, today_activity, mission_state, and canonical_alpha are authoritative. The daily brief is historical context only and must not override these current reads.",
+        "current_research_answer_rule": (
+            f"Phoenix-local date is {today_activity.get('local_date', 'UNKNOWN')}. "
+            f"The canonical Research ledger observed {today_activity.get('records_observed', 'UNKNOWN')} records on that date. "
+            "If that count is zero, say that no Research records/findings were observed today and give the latest dated activity if useful; "
+            "never convert that into a generic 'I do not have access' disclaimer."
+        ),
         "active_work": context.get("active_work", [])[:8],
         "completed_work": context.get("completed_work", [])[:8],
         "capability_discovery": context.get("capability_discovery", {}),
@@ -178,4 +187,5 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
         "unknown": context.get("unknown", []),
         "authority": context.get("authority"),
         "data_quality": context.get("data_quality", {}),
+        "final_context_rule": "Use current canonical Research state supplied above. Historical daily-brief staleness does not mean current Research state is unavailable.",
     }, sort_keys=True, default=str)

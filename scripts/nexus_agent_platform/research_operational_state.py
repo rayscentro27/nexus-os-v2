@@ -96,6 +96,14 @@ def build_research_operational_state() -> dict[str, Any]:
                 today_records.append(row)
         except (TypeError, ValueError):
             continue
+    mission_rows = list(latest_research.values())
+    mission_state = {
+        "active": [row.get("research_id") for row in mission_rows if str(row.get("status", "")).upper() in {"RUNNING", "IN_PROGRESS", "QUEUED", "ROUTED", "ASSIGNED"}],
+        "completed": [row.get("research_id") for row in mission_rows if str(row.get("status", "")).upper() in {"COMPLETED", "SUCCEEDED", "CHALLENGED"}],
+        "blocked": [row.get("research_id") for row in mission_rows if str(row.get("status", "")).upper() in {"BLOCKED", "FAILED", "REJECTED"}],
+        "other": [row.get("research_id") for row in mission_rows if str(row.get("status", "")).upper() not in {"RUNNING", "IN_PROGRESS", "QUEUED", "ROUTED", "ASSIGNED", "COMPLETED", "SUCCEEDED", "CHALLENGED", "BLOCKED", "FAILED", "REJECTED"}],
+        "source": "data/governed/alpha_research.jsonl",
+    }
     latest_reviews = latest_by("review_item_id", v2_review_queue)
     human_review_count = sum(1 for row in latest_reviews.values() if row.get("status") == "DRAFT_REVIEW_REQUIRED")
     machine_work_remains = bool(sum(1 for row in v2_questions if row.get("status") == "OPEN") or v2_follow_ups or v2_sources)
@@ -167,6 +175,16 @@ def build_research_operational_state() -> dict[str, Any]:
             "records_observed": len(today_records),
             "completed_or_updated_records": sum(1 for row in today_records if str(row.get("status", "")).upper() in {"COMPLETED", "CHALLENGED", "SCREENED", "SUCCEEDED"}),
             "source": "data/governed/alpha_research.jsonl",
+        },
+        "mission_state": {
+            "active_count": len(mission_state["active"]),
+            "completed_count": len(mission_state["completed"]),
+            "blocked_count": len(mission_state["blocked"]),
+            "other_count": len(mission_state["other"]),
+            "active_ids": mission_state["active"][:8],
+            "completed_ids": mission_state["completed"][:8],
+            "blocked_ids": mission_state["blocked"][:8],
+            "source": mission_state["source"],
         },
         "current_research_objective": latest.get("question") or latest.get("theme") or "UNKNOWN",
         "research_needs_ray": False,

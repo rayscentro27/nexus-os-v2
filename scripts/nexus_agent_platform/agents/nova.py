@@ -157,6 +157,10 @@ Nexus system awareness:
 - You know what's configured vs. what's actually running.
 - You know what's mock/unavailable vs. what's live.
 - When describing Nexus, use verified data from the knowledge registry — not model memory.
+- Nexus supplies a bounded current operational context for company and Research
+  questions. When that supplied context contains the answer, use it and identify
+  the result as current Nexus state; do not say you lack access to a fact present
+  in the context. If a field is UNKNOWN or stale, say that specifically.
 - When the user asks a generic non-Nexus reasoning question, answer it generically.
   Do not import Nexus terms like process, telemetry, runtime_state, or capability unless
   the user asks about Nexus or verified Nexus data has been injected into the turn.
@@ -909,10 +913,15 @@ def _detect_write_request(text: str) -> Optional[Dict[str, Any]]:
         r'\b(?:user|account|profile|record|client)\b',
         re.I,
     )
-    if write_patterns.search(text) or re.search(r'\b(?:arbitrary\s+sql|(?:modify|change|write|update|delete)\s+arbitrary\s+supabase|run\s+(?:raw\s+)?sql)\b', text, re.I):
+    research_mission_request = re.search(
+        r"\b(?:create|start|launch|open)\b.*\b(?:research\s+mission|mission)\b",
+        text,
+        re.I,
+    )
+    if research_mission_request or write_patterns.search(text) or re.search(r'\b(?:arbitrary\s+sql|(?:modify|change|write|update|delete)\s+arbitrary\s+supabase|run\s+(?:raw\s+)?sql)\b', text, re.I):
         email = _extract_email(text)
         return {
-            "requested_action": "create_test_user",
+            "requested_action": "create_research_mission" if research_mission_request else "create_test_user",
             "arguments": {"email": email},
             "execution_allowed": False,
         }
@@ -3690,6 +3699,9 @@ def _capability_gate(state: AgentState) -> AgentState:
             "query_type": "write_denied",
             "status": "denied",
             "message": (
+                "I can read current Research state, but I cannot directly create a research mission from this chat. "
+                "A bounded mission must use the approved Research intake and governance path; I will not claim it was created."
+                if write_request.get("requested_action") == "create_research_mission" else
                 "Write operations are not permitted. I have read-only access. "
                 "I can look up existing information but cannot create, modify, or delete anything."
             ),
@@ -4251,14 +4263,6 @@ def _build_context(state: AgentState) -> AgentState:
     for msg in history[-MEMORY_MAX_TURNS * 2:]:
         messages.append(msg)
 
-    # Build the user message, potentially with verified operational data
-    if user_company_context:
-        user_content += (
-            "\n\nBounded company context (context only, not factual authority):\n"
-            + user_company_context
-            + "\nRevalidate consequential operational claims through the governed capability result."
-        )
-
     capability_result = state.metadata.get("capability_result")
     if capability_result:
         query_type = capability_result.get("query_type", "")
@@ -4326,6 +4330,19 @@ def _build_context(state: AgentState) -> AgentState:
                 f"Do not fabricate alternative values. "
                 f"Do not deny access to data that was successfully retrieved."
             )
+
+    # Capability-specific formatting above may rebuild user_content. Append the
+    # current projection afterward so production provider requests retain both
+    # governed evidence and the bounded Nexus/Research state view.
+    if user_company_context:
+        user_content += (
+            "\n\nCURRENT NEXUS OPERATIONAL CONTEXT (bounded read-only projection):\n"
+            + user_company_context
+            + "\nUse this supplied current Nexus state when it answers the question. "
+            "Do not claim you lack access to a fact present above. Distinguish "
+            "KNOWS, CAN_READ, CAN_ROUTE, CURRENTLY_RUNNING, COMPLETED, BLOCKED, "
+            "REQUIRES_APPROVAL, and UNAVAILABLE."
+        )
 
     if _wants_detail(state.user_message):
         user_content += "\n\nPresentation: the user explicitly requested depth; provide the detailed structure requested."
