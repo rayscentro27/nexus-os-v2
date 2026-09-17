@@ -58,6 +58,27 @@ def _processes() -> str:
         return ""
 
 
+def _matching_worker_pids(processes: str, patterns: list[str]) -> list[int]:
+    """Return real worker PIDs, not shells/search commands containing a pattern.
+
+    The previous substring-only check could classify an audit shell (whose
+    command text happened to mention the worker script) as the worker itself.
+    This keeps the existing observation model but ignores command wrappers and
+    requires the pattern to occur in an executable process command.
+    """
+    matches = []
+    for line in processes.splitlines():
+        parts = line.strip().split(" ", 1)
+        if len(parts) != 2 or not parts[0].isdigit():
+            continue
+        pid = int(parts[0]); command = parts[1].strip()
+        if command.startswith(("/bin/zsh -c", "/bin/bash -c", "/bin/sh -c", "rg ")):
+            continue
+        if any(pattern in command for pattern in patterns):
+            matches.append(pid)
+    return matches
+
+
 def _read(path: Path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -127,10 +148,7 @@ def snapshot() -> dict:
     for spec in WORKERS:
         label_rows = [(label, launched.get(label)) for label in spec["labels"] if label in launched]
         pids = []
-        for line in processes.splitlines():
-            if any(pattern in line for pattern in spec["patterns"]):
-                pid = line.strip().split(" ", 1)[0]
-                if pid.isdigit(): pids.append(int(pid))
+        pids = _matching_worker_pids(processes, spec["patterns"])
         hb_path = ROOT / spec["heartbeat"]; hb = _read(hb_path)
         queue_metrics = _work_order_metrics(ROOT / spec["queue"]) if spec["name"] == "Department Work Consumer" else None
         queue_depth = (queue_metrics["READY"] + queue_metrics["FAILED_RETRYABLE"] + queue_metrics["CLAIMED"] + queue_metrics["RUNNING"]) if queue_metrics else _queue_depth(ROOT / spec["queue"])
