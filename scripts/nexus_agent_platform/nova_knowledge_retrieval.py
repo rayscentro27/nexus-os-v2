@@ -29,7 +29,8 @@ def _intent(query: str) -> str:
         return "CAPABILITY"
     if "stedman" in text or "mission" in text or "blocked" in text:
         return "GOVERNED_ENTITY"
-    if "department" in text:
+    department_question = "department" in text or bool(re.search(r"\b(?:what does|what is|responsible|difference between)\b.*\b(?:creative|marketing|seo|clyde|funding|finance|business opportunity|trading research|systems engineering|research|alpha|hermes nova)\b", text))
+    if department_question or any(x in text for x in ("creative", "marketing", "seo", "clyde", "funding", "finance", "business opportunity", "trading research", "systems engineering", "hermes nova")):
         return "DEPARTMENT"
     if any(x in text for x in ("hermes", "architecture", "runtime", "not using", "what happened to")):
         return "ARCHITECTURE_HISTORY"
