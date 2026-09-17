@@ -277,7 +277,7 @@ Style:
 # not learn a long list of broad negative capability beliefs.
 SOUL = """You are Hermes Nova, Ray Davis's conversational assistant.
 
-Speak naturally, clearly, and plainly. Understand the user's question, use conversation history, think, and answer. Share an opinion when one is requested. Ordinary conversation, reflection, disagreement, and follow-ups are not operator workflows; do not turn them into status audits, reports, data pulls, plans, or action menus.
+Speak naturally, clearly, and plainly. Understand the user's question, use conversation history, think, and answer. Share an opinion when one is requested. When a short affirmative follow-up such as "yes, I'm interested" clearly refers to the immediately preceding offer or topic, resolve that referent from the preceding turns and continue it directly; do not ask the user to restate an unambiguous topic. Ordinary conversation, reflection, disagreement, and follow-ups are not operator workflows; do not turn them into status audits, reports, data pulls, plans, or action menus.
 
 Use a resource only when the question genuinely needs external information or governed state. Do not present memory, general knowledge, or judgment as freshly verified current evidence. Never claim a fact, research step, tool call, delivery, or action that did not occur.
 
@@ -451,6 +451,21 @@ def load_memory(chat_id: int) -> List[Dict[str, str]]:
         return messages[-MEMORY_MAX_TURNS * 2:]
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
         return []
+
+
+def _conversation_history(state: AgentState) -> List[Dict[str, str]]:
+    """Prefer the canonical Admin/Supabase history supplied for this turn."""
+    supplied = (state.metadata or {}).get("conversation_history")
+    if not isinstance(supplied, list):
+        return load_memory(state.metadata.get("chat_id", 0))
+    history: List[Dict[str, str]] = []
+    for message in supplied[-MEMORY_MAX_TURNS * 2:]:
+        if not isinstance(message, dict) or message.get("role") not in ("user", "assistant"):
+            continue
+        content = str(message.get("content", "")).strip()
+        if content:
+            history.append({"role": message["role"], "content": content[:2400]})
+    return history
 
 
 def _contains_stale_capability_belief(content: str) -> bool:
@@ -2876,7 +2891,7 @@ def _build_planner_context(state: AgentState) -> Optional[str]:
     chat_id = state.metadata.get("chat_id", 0)
 
     if chat_id:
-        history = load_memory(chat_id)
+        history = _conversation_history(state)
         bounded_history = history[-6:]
         if bounded_history:
             parts.append("Recent bounded conversation:")
@@ -3853,7 +3868,7 @@ def _capability_gate(state: AgentState) -> AgentState:
     # governed recommendation record. Nexus remains responsible for approval,
     # eligibility, queueing, execution, and receipts.
     if re.search(r"\b(?:send|pass|hand|route)\s+(?:that|it|this)(?:\s+over)?\s+to\s+nexus\b|\bhave\s+nexus\s+handle\s+(?:that|it|this)\b", text, re.I):
-        history = load_memory(chat_id)
+        history = _conversation_history(state)
         prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
         if prior:
             from nexus_agent_platform.capabilities.shared import execute_shared_capability
@@ -3876,7 +3891,7 @@ def _capability_gate(state: AgentState) -> AgentState:
     # Alpha handoff is bounded intake, not research execution.  Keep the
     # request conversational: Nova resolves the topic, Alpha owns research.
     if re.search(r"\b(?:have|ask|let)\s+(?:alpha|research)\s+(?:investigate|research|look\s+into|check|review)\b", text, re.I):
-        history = load_memory(chat_id)
+        history = _conversation_history(state)
         prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
         objective = re.sub(r"^.*?\b(?:investigate|research|look\s+into|check|review)\b\s*", "", text, flags=re.I).strip(" .") or text
         if prior and re.search(r"\b(?:this|that|it|the idea|the one|your recommendation)\b", text, re.I):
@@ -3902,7 +3917,7 @@ def _capability_gate(state: AgentState) -> AgentState:
     # capability first. It is deliberately read-only and carries the prior
     # assistant turn only as a research topic, never as authority or fact.
     if question_type == "RESEARCH" and any(term in text.lower() for term in ("free way", "research this further", "look into this", "check this further")):
-        history = load_memory(chat_id)
+        history = _conversation_history(state)
         prior = next((m.get("content", "") for m in reversed(history) if m.get("role") == "assistant"), "")
         if prior:
             from nexus_agent_platform.capabilities.shared import execute_shared_capability
@@ -4226,7 +4241,7 @@ def _build_context(state: AgentState) -> AgentState:
     verified_context_chars = 0
 
     # Load conversation history
-    history = load_memory(chat_id)
+    history = _conversation_history(state)
     state.metadata["conversation_turns"] = len(history) // 2
 
     # Build messages for the model
@@ -4250,8 +4265,9 @@ def _build_context(state: AgentState) -> AgentState:
     # Company context is a bounded read-only view over canonical reports and
     # runtime state. It is injected only for company/Nexus questions; ordinary
     # conversation remains lightweight and does not receive operational data.
-    company_terms = ("nexus", "company", "business", "ray", "research", "report", "client", "what happened", "today", "focus", "onboarding", "worth pursuing", "overnight")
-    if any(term in state.user_message.lower() for term in company_terms) or state.metadata.get("question_type") in {"ADVISORY", "ANALYTICAL", "RESEARCH", "OPERATIONAL"}:
+    company_terms = ("nexus", "company", "business", "ray", "research", "report", "finding", "mission", "department", "capability", "project", "what happened", "today", "focus", "onboarding", "worth pursuing", "overnight")
+    history_trigger = " ".join(str(item.get("content", "")) for item in history[-6:] if isinstance(item, dict)).lower()
+    if any(term in (state.user_message.lower() + " " + history_trigger) for term in company_terms) or state.metadata.get("question_type") in {"ADVISORY", "ANALYTICAL", "RESEARCH", "OPERATIONAL"}:
         from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
         company_context = build_company_context()
         state.metadata["company_context"] = company_context
@@ -4358,6 +4374,16 @@ def _build_context(state: AgentState) -> AgentState:
 
     state.metadata["model_messages"] = messages
     state.metadata["model_received_verified_context"] = capability_result is not None
+    context_chars = sum(len(str(message.get("content", ""))) for message in messages)
+    state.metadata["context_metrics"] = {
+        "system_chars": len(SOUL),
+        "nexus_context_chars": len(user_company_context),
+        "retrieved_knowledge_chars": verified_context_chars,
+        "history_chars": sum(len(str(message.get("content", ""))) for message in history),
+        "current_message_chars": len(state.user_message),
+        "total_input_chars": context_chars,
+        "estimated_tokens": context_chars // 4,
+    }
     if capability_result and capability_result.get("query_type") == "nexus_system":
         capability_data = capability_result.get("data", {})
         capability_chars = len(json.dumps(capability_data, default=str))

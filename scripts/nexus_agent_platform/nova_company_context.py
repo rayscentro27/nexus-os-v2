@@ -147,6 +147,8 @@ def context_for_prompt(context: Dict[str, Any]) -> str:
                 "last_successful_research_activity",
                 "current_research_objective",
                 "today_activity",
+                "current_work",
+                "recent_findings",
                 "mission_state",
                 "human_review_queue_count",
                 "global_machine_work_remains",

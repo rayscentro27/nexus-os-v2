@@ -1,14 +1,16 @@
 """Loopback-only bounded adapter for the canonical Nova graph."""
 from __future__ import annotations
-import argparse, json, os, re, threading, time, uuid
+import argparse, hashlib, json, os, re, threading, time, uuid
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from nexus_agent_platform.adapters.state_adapter import AgentState
 from nexus_agent_platform.agents.nova import get_nova_graph
 
 ALLOWED_ORIGIN = "https://goclearonline.cc"
-MAX_BODY_BYTES = 8 * 1024
+MAX_BODY_BYTES = 32 * 1024
 MAX_MESSAGE_CHARS = 4000
+MAX_HISTORY_MESSAGES = 12
+MAX_HISTORY_CHARS = 14000
 ADMIN_CHAT_ID = 0  # Browser memory is deliberately separate from Telegram.
 SENSITIVE_CLIENT_INPUT = re.compile(r"(?:\b\d{3}-\d{2}-\d{4}\b|\b(?:ssn|social security|bank account|routing number|date of birth|credit report)\b|\b[^\s@]+@[^\s@]+\.[^\s@]+\b)", re.I)
 
@@ -25,12 +27,20 @@ class NovaAdminLimiter:
     def release(self):
         with self.lock: self.active = max(0, self.active - 1)
 
-def invoke_nova(message):
+def _conversation_chat_id(conversation_id):
+    """Return a stable non-identifying runtime key for this Admin thread."""
+    digest = hashlib.sha256(str(conversation_id).encode("utf-8")).hexdigest()[:15]
+    return int(digest, 16)
+
+
+def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
     if SENSITIVE_CLIENT_INPUT.search(message): raise ValueError("client-sensitive-input-not-available-in-nova-browser")
-    result = get_nova_graph().invoke(AgentState(agent_id="hermes_nova", mission_id=f"nova_admin_{uuid.uuid4().hex}", thread_id="nova_admin_browser", user_message=message, metadata={"chat_id": ADMIN_CHAT_ID, "channel": "admin_browser", "execution_authority": "NONE"}))
+    recent_history = recent_history if isinstance(recent_history, list) else []
+    runtime_chat_id = _conversation_chat_id(conversation_id)
+    result = get_nova_graph().invoke(AgentState(agent_id="hermes_nova", mission_id=f"nova_admin_{uuid.uuid4().hex}", thread_id=str(conversation_id), user_message=message, metadata={"chat_id": runtime_chat_id, "conversation_id": str(conversation_id), "conversation_history": recent_history, "channel": "admin_browser", "execution_authority": "NONE"}))
     state = result if isinstance(result, AgentState) else AgentState.from_dict(result)
     metadata = state.metadata or {}
-    return {"schema_version": "nexus.nova-response.v1", "text": state.assistant_response, "provider": metadata.get("model_provider", "openrouter"), "model": metadata.get("model_used") or os.environ.get("HERMES_NOVA_MODEL", "unknown"), "role": "strategic_adviser", "execution_authority": "NONE", "conversation_scope": "admin_browser", "memory_scope": "nova_admin_channel"}
+    return {"schema_version": "nexus.nova-response.v1", "text": state.assistant_response, "provider": metadata.get("model_provider", "openrouter"), "model": metadata.get("model_used") or os.environ.get("HERMES_NOVA_MODEL", "unknown"), "role": "strategic_adviser", "execution_authority": "NONE", "conversation_scope": "admin_browser", "memory_scope": "nova_admin_channel", "session_id": str(conversation_id)}
 
 class NovaAdminHandler(BaseHTTPRequestHandler):
     server_version = "NexusNovaAdminLocal/1"
@@ -59,7 +69,19 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
             except (json.JSONDecodeError, UnicodeDecodeError): self._send(400, {"error": "invalid-json"}); return
             message = payload.get("message") if isinstance(payload, dict) else None
             if not isinstance(message, str) or not message.strip() or len(message) > MAX_MESSAGE_CHARS: self._send(400, {"error": "message-bounded"}); return
-            self._send(200, invoke_nova(message.strip()))
+            conversation_id = payload.get("conversation_id")
+            if not isinstance(conversation_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,120}", conversation_id): self._send(400, {"error": "conversation-id-bounded"}); return
+            supplied_history = payload.get("recent_history", [])
+            if not isinstance(supplied_history, list) or len(supplied_history) > MAX_HISTORY_MESSAGES: self._send(400, {"error": "history-bounded"}); return
+            recent_history = []
+            history_chars = 0
+            for item in supplied_history:
+                if not isinstance(item, dict) or item.get("role") not in ("user", "assistant") or not isinstance(item.get("content"), str): self._send(400, {"error": "history-contract-invalid"}); return
+                content = item["content"].strip()[:2400]
+                history_chars += len(content)
+                if content: recent_history.append({"role": item["role"], "content": content})
+            if history_chars > MAX_HISTORY_CHARS: self._send(413, {"error": "history-size-bounded"}); return
+            self._send(200, invoke_nova(message.strip(), conversation_id, recent_history))
         except ValueError as exc: self._send(400, {"error": str(exc)})
         except Exception: self._send(503, {"error": "nova-unavailable"})
         finally: self.server.limiter.release()

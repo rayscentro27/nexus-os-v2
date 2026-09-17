@@ -26,7 +26,7 @@ export async function sendAgentMessage({ agent, conversationId, text, recentHist
     return { role: 'assistant', text: result.text, meta: `${result.evidenceState || 'UNKNOWN'} · canonical Hermes`, response: result }
   }
   if (agent === 'nova') {
-    const result = await fetch(NOVA_ENDPOINT, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Nexus-Nova-Session': conversationId }, body: JSON.stringify({ message: text, conversation_id: conversationId, channel: 'admin_browser' }) })
+    const result = await fetch(NOVA_ENDPOINT, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-Nexus-Nova-Session': conversationId }, body: JSON.stringify({ message: text, conversation_id: conversationId, channel: 'admin_browser', recent_history: recentHistory.slice(-12) }) })
     if (result.redirected || result.url.includes('cloudflareaccess.com')) throw new Error('Nova Access authentication required. Open nova.goclearonline.cc once, complete Ray Admin sign-in, then retry.')
     let payload: any = {}; try { payload = await result.json() } catch { /* handled below */ }
     if (!result.ok) throw new Error(payload.error || (result.status === 302 ? 'Nova Access authentication required' : 'Nova browser transport unavailable'))

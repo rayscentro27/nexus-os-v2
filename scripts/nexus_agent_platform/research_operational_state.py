@@ -81,6 +81,13 @@ def build_research_operational_state() -> dict[str, Any]:
                 latest[str(value)] = row
         return latest
 
+    def local_date_for(row: dict[str, Any]) -> str | None:
+        stamp = next((row.get(key) for key in ("recorded_at", "updated_at", "created_at", "completed_at") if row.get(key)), None)
+        try:
+            return datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).astimezone(local_zone).date().isoformat()
+        except (TypeError, ValueError):
+            return None
+
     latest_queue = latest_by("content_id", queue_records)
     latest_research = latest_by("research_id", alpha_records)
     active_jobs = sum(1 for row in latest_research.values() if str(row.get("status", "")).upper() in {"RUNNING", "IN_PROGRESS"})
@@ -106,10 +113,6 @@ def build_research_operational_state() -> dict[str, Any]:
     }
     latest_reviews = latest_by("review_item_id", v2_review_queue)
     human_review_count = sum(1 for row in latest_reviews.values() if row.get("status") == "DRAFT_REVIEW_REQUIRED")
-    machine_work_remains = bool(sum(1 for row in v2_questions if row.get("status") == "OPEN") or v2_follow_ups or v2_sources)
-    alpha_available = alpha_status_path.exists()
-    web_ready = bool((ROOT / "scripts/alpha/alpha_discovery.py").exists())
-    health = "HEALTHY" if web_ready and alpha_available else "DEGRADED" if web_ready else "UNKNOWN"
     if active_jobs:
         work_state = "WORKING"
     elif queued_jobs:
@@ -118,6 +121,33 @@ def build_research_operational_state() -> dict[str, Any]:
         work_state = "BLOCKED"
     else:
         work_state = "NO_CURRENT_WORK"
+    if work_state == "NO_CURRENT_WORK" and any(row.get("status") == "OPEN" for row in v2_questions):
+        work_state = "WORKING_V2_INVESTIGATIONS"
+    v2_today_sources = [row for row in v2_sources if local_date_for(row) == local_today]
+    v2_today_reviews = [row for row in v2_alpha_reviews if local_date_for(row) == local_today]
+    v2_today_questions = [row for row in v2_questions if local_date_for(row) == local_today]
+    v2_findings: list[dict[str, Any]] = []
+    for row in sorted(v2_today_reviews, key=lambda item: str(item.get("recorded_at", "")), reverse=True):
+        for fact in (row.get("facts") or []):
+            if fact:
+                v2_findings.append({"finding": str(fact), "assessment": row.get("alpha_assessment", "UNKNOWN"), "recorded_at": row.get("recorded_at"), "source": "research_v2_alpha_reviews"})
+    for row in sorted(v2_strategies, key=lambda item: str(item.get("recorded_at", "")), reverse=True):
+        if row.get("title"):
+            v2_findings.append({"finding": row.get("title"), "evidence": (row.get("known_evidence") or [])[:2], "status": row.get("status", "UNKNOWN"), "recorded_at": row.get("recorded_at"), "source": "research_v2_strategies"})
+    v2_findings = v2_findings[:8]
+    current_work = {
+        "state": work_state,
+        "legacy_active_jobs": active_jobs,
+        "open_research_v2_investigations": sum(1 for row in v2_questions if row.get("status") == "OPEN"),
+        "today_sources": [{"title": row.get("source_title"), "source_type": row.get("source_type"), "processing_status": row.get("processing_status"), "recorded_at": row.get("recorded_at")} for row in v2_today_sources[:8]],
+        "today_questions": len(v2_today_questions),
+        "next_action": "Continue bounded evidence selection for open Research V2 investigations." if v2_questions else "No open Research V2 investigations are recorded.",
+        "source": "research_v2_sources.jsonl + research_v2_questions.jsonl + research_v2_alpha_reviews.jsonl",
+    }
+    machine_work_remains = bool(sum(1 for row in v2_questions if row.get("status") == "OPEN") or v2_follow_ups or v2_sources)
+    alpha_available = alpha_status_path.exists()
+    web_ready = bool((ROOT / "scripts/alpha/alpha_discovery.py").exists())
+    health = "HEALTHY" if web_ready and alpha_available else "DEGRADED" if web_ready else "UNKNOWN"
     return {
         "generated_at": now,
         "department": "RESEARCH",
@@ -175,7 +205,13 @@ def build_research_operational_state() -> dict[str, Any]:
             "records_observed": len(today_records),
             "completed_or_updated_records": sum(1 for row in today_records if str(row.get("status", "")).upper() in {"COMPLETED", "CHALLENGED", "SCREENED", "SUCCEEDED"}),
             "source": "data/governed/alpha_research.jsonl",
+            "research_v2_sources_observed": len(v2_today_sources),
+            "research_v2_reviews_observed": len(v2_today_reviews),
+            "research_v2_questions_observed": len(v2_today_questions),
+            "research_v2_processed_sources": sum(1 for row in v2_today_sources if row.get("processing_status") == "FULLY_PROCESSED"),
         },
+        "current_work": current_work,
+        "recent_findings": v2_findings,
         "mission_state": {
             "active_count": len(mission_state["active"]),
             "completed_count": len(mission_state["completed"]),
@@ -186,7 +222,7 @@ def build_research_operational_state() -> dict[str, Any]:
             "blocked_ids": mission_state["blocked"][:8],
             "source": mission_state["source"],
         },
-        "current_research_objective": latest.get("question") or latest.get("theme") or "UNKNOWN",
+        "current_research_objective": latest.get("question") or latest.get("theme") or (v2_today_sources[0].get("source_title") if v2_today_sources else "Continue bounded Research V2 evidence selection"),
         "research_needs_ray": False,
         "human_review_queue_count": human_review_count,
         "global_machine_work_remains": machine_work_remains,
