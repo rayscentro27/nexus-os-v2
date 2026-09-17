@@ -42,6 +42,10 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         if self.headers.get("Origin") != ALLOWED_ORIGIN: self._send(403, {"error": "origin-not-allowed"}); return
         self.send_response(204); self._cors(); self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS"); self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Nexus-Nova-Session"); self.send_header("Access-Control-Max-Age", "300"); self.end_headers()
+    def do_GET(self):
+        if self.path not in ("/", "/health"):
+            self._send(404, {"error": "not-found"}); return
+        self._send(200, {"service": "nova-admin", "status": "healthy", "chat_route": "/v1/nova/chat"})
     def do_POST(self):
         if self.path != "/v1/nova/chat": self._send(404, {"error": "not-found"}); return
         if self.headers.get("Origin") != ALLOWED_ORIGIN: self._send(403, {"error": "origin-not-allowed"}); return
