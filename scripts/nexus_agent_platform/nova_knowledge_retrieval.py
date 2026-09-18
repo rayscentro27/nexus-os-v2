@@ -227,6 +227,12 @@ def format_knowledge_for_prompt(retrieval: dict[str, Any]) -> str:
     if repo.get("candidates"): blocks.append("REPOSITORY KNOWLEDGE (architecture/documentation; structural, not live state):\n" + "\n".join(f"- {x['path']}: {x['excerpt']}" for x in repo["candidates"]))
     if history.get("commits"): blocks.append("DEVELOPMENT HISTORY (Git summaries; historical):\n" + "\n".join(f"- {x['commit'][:12]} {x['date']} {x['subject']} | files: {', '.join(x['files'])}" for x in history["commits"]))
     if retrieval.get("intent") == "ARCHITECTURE_HISTORY" and repo.get("candidates"):
-        blocks.append("RUNTIME ARCHITECTURE READING: The Admin HTTP handler calls get_nova_graph(). The Nova graph calls LlmGatewayAdapter and the configured OpenRouter model. No Hermes Agent CLI/profile invocation appears in this Admin request path; the separate Hermes runtime must not be substituted for this direct path.")
+        blocks.append(
+            "RUNTIME ARCHITECTURE READING: The canonical Admin path is the authenticated "
+            "Admin HTTP transport to Hermes Agent 0.20.6, profile nova_nexus, with the "
+            "current model/provider selected beneath Hermes. The former direct "
+            "get_nova_graph -> LlmGatewayAdapter path is retained only as a rollback "
+            "legacy runtime and must not be treated as the canonical Admin brain."
+        )
     if blocks: blocks.append("SOURCE PRECEDENCE: exact governed records outrank generic summaries; current runtime truth outranks repository/history; repository architecture and Git explain historical behavior. Documented or historical capability never implies active runtime connectivity.")
     return "\n\n".join(blocks)[:MAX_REPO_CONTEXT_CHARS + 6000]

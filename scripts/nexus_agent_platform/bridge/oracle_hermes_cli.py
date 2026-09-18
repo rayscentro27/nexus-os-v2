@@ -279,7 +279,7 @@ def _conversation_correction_prompt(message: str, response: str) -> str:
 
 
 def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float = 180.0,
-                      request_id: str | None = None) -> OracleHermesResult:
+                      request_id: str | None = None, pre_context: str | None = None) -> OracleHermesResult:
     if not isinstance(message, str) or not message.strip():
         raise OracleHermesUnavailable("empty_message")
     if not SESSION_RE.fullmatch(session_id or ""):
@@ -303,7 +303,10 @@ def run_oracle_hermes(message: str, session_id: str, *, timeout_seconds: float =
         )
         return completed, round((time.monotonic() - started) * 1000, 1)
     try:
-        completed, elapsed = invoke(_executive_prompt(message), ORACLE_TOOLSET)
+        prompt = _executive_prompt(message)
+        if pre_context:
+            prompt += "\n\n" + pre_context[:26000]
+        completed, elapsed = invoke(prompt, ORACLE_TOOLSET)
     except subprocess.TimeoutExpired:
         return OracleHermesResult(None, "UNAVAILABLE", "oracle_timeout", round((time.monotonic() - started) * 1000, 1))
     except OSError as exc:

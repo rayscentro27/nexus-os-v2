@@ -1,10 +1,17 @@
-"""Loopback-only bounded adapter for the canonical Nova graph."""
+"""Loopback-only bounded Admin transport for canonical Hermes Nova.
+
+The Admin server owns HTTP validation and the browser contract. Hermes Agent
+0.20.6 owns Nova execution, sessions, tool routing, and model orchestration.
+The old direct graph remains available only through the explicit
+NEXUS_ADMIN_NOVA_RUNTIME=direct rollback switch.
+"""
 from __future__ import annotations
 import argparse, hashlib, json, os, re, threading, time, uuid
 from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from nexus_agent_platform.adapters.state_adapter import AgentState
 from nexus_agent_platform.agents.nova import get_nova_graph
+from nexus_agent_platform.bridge.oracle_hermes_cli import run_oracle_hermes
 
 ALLOWED_ORIGIN = "https://goclearonline.cc"
 MAX_BODY_BYTES = 32 * 1024
@@ -33,7 +40,53 @@ def _conversation_chat_id(conversation_id):
     return int(digest, 16)
 
 
-def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
+def _hermes_context(message, recent_history):
+    """Build bounded Nexus pre-context for Hermes without becoming an agent.
+
+    Hermes remains the execution owner. These projections are read-only
+    evidence supplied by the Mac control plane so the profile can answer from
+    current Nexus state rather than a stale generic brief.
+    """
+    try:
+        from nexus_agent_platform.nova_company_context import build_company_context, context_for_prompt
+        from nexus_agent_platform.nova_knowledge_retrieval import (
+            classify_question_layers, format_knowledge_for_prompt, retrieve_knowledge,
+        )
+        context = context_for_prompt(build_company_context())
+        layers = classify_question_layers(message, recent_history)
+        retrieval = format_knowledge_for_prompt(retrieve_knowledge(message, layers))
+    except Exception as exc:
+        context = json.dumps({"status": "UNAVAILABLE", "reason": type(exc).__name__})
+        retrieval = ""
+    history = []
+    for item in (recent_history or [])[-8:]:
+        if isinstance(item, dict) and item.get("role") in {"user", "assistant"}:
+            content = str(item.get("content", "")).strip()[:1800]
+            if content:
+                history.append({"role": item["role"], "content": content})
+    capability = (
+        "CURRENT HERMES NOVA RUNTIME CAPABILITY TRUTH (authoritative):\n"
+        "- Hermes Agent: 0.20.6 on Oracle, profile nova_nexus.\n"
+        "- Nexus MCP: active through the configured nexus_mcp_remote profile toolset; "
+        "read-only Nexus checks are available to this Hermes turn.\n"
+        "- Google MCP: not configured in nova_nexus and unavailable to this turn.\n"
+        "- Gmail, Calendar, Drive: unavailable unless a separately proven Google tool appears in this turn.\n"
+        "- Never infer active access from repository documentation or historical Hermes reports.\n"
+    )
+    return (
+        "[NEXUS HERMES ADMIN CONTEXT]\n"
+        "Use this bounded read-only context as evidence. Current governed/runtime facts outrank repository/history; "
+        "exact entity records outrank generic summaries; historical documents explain architecture but do not override live state. "
+        "Conversation history supports continuity but never overrides verified current state. Do not claim a tool action or result "
+        "unless it occurred in this Hermes turn.\n"
+        + capability
+        + "CURRENT NEXUS CONTEXT:\n" + context[:12000]
+        + ("\nRELEVANT KNOWLEDGE:\n" + retrieval[:12000] if retrieval else "")
+        + ("\nRECENT ADMIN CONVERSATION:\n" + json.dumps(history, ensure_ascii=False) if history else "")
+    )
+
+
+def _invoke_direct_nova(message, conversation_id="admin-browser", recent_history=None):
     if SENSITIVE_CLIENT_INPUT.search(message): raise ValueError("client-sensitive-input-not-available-in-nova-browser")
     recent_history = recent_history if isinstance(recent_history, list) else []
     runtime_chat_id = _conversation_chat_id(conversation_id)
@@ -41,6 +94,44 @@ def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
     state = result if isinstance(result, AgentState) else AgentState.from_dict(result)
     metadata = state.metadata or {}
     return {"schema_version": "nexus.nova-response.v1", "text": state.assistant_response, "provider": metadata.get("model_provider", "openrouter"), "model": metadata.get("model_used") or os.environ.get("HERMES_NOVA_MODEL", "unknown"), "role": "strategic_adviser", "execution_authority": "NONE", "conversation_scope": "admin_browser", "memory_scope": "nova_admin_channel", "session_id": str(conversation_id)}
+
+
+def invoke_nova(message, conversation_id="admin-browser", recent_history=None):
+    """Invoke canonical Hermes by default; retain direct graph as rollback only."""
+    if SENSITIVE_CLIENT_INPUT.search(message):
+        raise ValueError("client-sensitive-input-not-available-in-nova-browser")
+    runtime = os.environ.get("NEXUS_ADMIN_NOVA_RUNTIME", "hermes").strip().lower()
+    if runtime == "direct":
+        result = _invoke_direct_nova(message, conversation_id, recent_history)
+        result["executor"] = "legacy_direct_nova_graph"
+        result["runtime"] = "direct"
+        return result
+    if runtime != "hermes":
+        raise RuntimeError("unsupported-admin-nova-runtime")
+    result = run_oracle_hermes(
+        message,
+        str(conversation_id),
+        timeout_seconds=180.0,
+        pre_context=_hermes_context(message, recent_history),
+    )
+    if result.status != "SUCCEEDED" or not result.response:
+        raise RuntimeError(result.error or "hermes-nova-unavailable")
+    return {
+        "schema_version": "nexus.nova-response.v1",
+        "text": result.response,
+        "provider": result.provider,
+        "model": result.model,
+        "executor": "hermes_agent_0.20.6",
+        "runtime": "hermes",
+        "runtime_host": result.runtime_host,
+        "profile": result.profile,
+        "toolset": result.toolset,
+        "latency_ms": result.latency_ms,
+        "execution_authority": "NONE",
+        "conversation_scope": "admin_browser",
+        "memory_scope": "nova_admin_channel",
+        "session_id": str(conversation_id),
+    }
 
 class NovaAdminHandler(BaseHTTPRequestHandler):
     server_version = "NexusNovaAdminLocal/1"
@@ -90,10 +181,10 @@ class NovaAdminHandler(BaseHTTPRequestHandler):
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument("--host", default="127.0.0.1"); parser.add_argument("--port", type=int, default=8790); args = parser.parse_args()
     if args.host != "127.0.0.1": raise SystemExit("Nova Admin server must remain bound to 127.0.0.1")
-    # Build the canonical graph before accepting HTTP traffic.  Lazy graph
-    # construction in the first request can make the single-request limiter
-    # appear permanently busy while optional runtime modules import.
-    get_nova_graph()
+    # Only initialize the legacy graph when the explicit rollback runtime is
+    # selected. Hermes is the canonical Admin execution runtime by default.
+    if os.environ.get("NEXUS_ADMIN_NOVA_RUNTIME", "hermes").strip().lower() == "direct":
+        get_nova_graph()
     server = ThreadingHTTPServer((args.host, args.port), NovaAdminHandler); server.limiter = NovaAdminLimiter(); server.serve_forever(); return 0
 
 if __name__ == "__main__": raise SystemExit(main())
