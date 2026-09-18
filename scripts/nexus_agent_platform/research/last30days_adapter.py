@@ -27,6 +27,13 @@ RUN_SNAPSHOT = ROOT / "data" / "runtime" / "last30days_demand_radar_latest.json"
 RUN_LOG = ROOT / "data" / "runtime" / "last30days_demand_radar_runs.jsonl"
 WINDOW_DAYS = {"LAST_24_HOURS": 1, "LAST_7_DAYS": 7, "LAST_30_DAYS": 30, "LAST_90_DAYS": 90, "EVERGREEN": 3650}
 WORK_CLASSES = {"DEMAND_DISCOVERY", "GENERAL_DISCOVERY", "MONITORED"}
+SOURCE_TIMEOUTS = {
+    "hackernews": 60,
+    "github": 60,
+    "reddit": 45,
+    "grounding": 45,
+    "youtube": 90,
+}
 
 
 def _now() -> str:
@@ -68,6 +75,23 @@ def _source_status(value: Any) -> str:
 
 def _source_type(result: dict[str, Any]) -> str:
     return str(result.get("source") or "UNKNOWN").upper()
+
+
+def _runtime_ssl_environment(environment: dict[str, str]) -> None:
+    """Give the pinned stdlib HTTP clients a verified CA bundle on macOS.
+
+    The production Mac Python installation has certifi available, while its
+    interpreter default CA lookup is incomplete.  This is process-scoped and
+    does not weaken TLS verification or add credentials.
+    """
+    try:
+        import certifi
+        bundle = certifi.where()
+        if bundle and Path(bundle).exists():
+            environment.setdefault("SSL_CERT_FILE", bundle)
+            environment.setdefault("REQUESTS_CA_BUNDLE", bundle)
+    except Exception:
+        pass
 
 
 def _engagement(result: dict[str, Any]) -> dict[str, Any]:
@@ -204,6 +228,7 @@ def run_demand_radar(request: dict[str, Any], *, timeout_seconds: int | None = N
     if requested_sources:
         command.extend(["--search", ",".join(requested_sources)])
     environment = os.environ.copy()
+    _runtime_ssl_environment(environment)
     environment["LAST30DAYS_MEMORY_DIR"] = str(cache_dir)
     environment["LAST30DAYS_BROWSER_COOKIES"] = "0"
     environment.pop("LAST30DAYS_PUBLISH_PASSWORD", None)
@@ -212,14 +237,28 @@ def run_demand_radar(request: dict[str, Any], *, timeout_seconds: int | None = N
     try:
         process = subprocess.Popen(command, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True)
         stdout, stderr = process.communicate(timeout=limit)
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as exc:
+        partial_stdout = exc.stdout or ""
+        partial_stderr = exc.stderr or ""
         if process is not None:
             os.killpg(process.pid, signal.SIGTERM)
             try:
-                process.communicate(timeout=5)
+                tail_stdout, tail_stderr = process.communicate(timeout=5)
+                partial_stdout = partial_stdout or tail_stdout or ""
+                partial_stderr = partial_stderr or tail_stderr or ""
             except subprocess.TimeoutExpired:
                 os.killpg(process.pid, signal.SIGKILL)
-        result = {"status": "TIMEOUT", "run_id": run_id, "source_status": {}, "stderr": "bounded Last30Days timeout"}
+        if isinstance(partial_stdout, bytes):
+            partial_stdout = partial_stdout.decode(errors="replace")
+        if isinstance(partial_stderr, bytes):
+            partial_stderr = partial_stderr.decode(errors="replace")
+        result = {
+            "status": "TIMEOUT", "run_id": run_id, "source_status": {},
+            "sources_attempted": requested_sources,
+            "stdout_tail": str(partial_stdout)[-1200:],
+            "stderr": (str(partial_stderr)[-1800:] or "bounded Last30Days timeout"),
+            "timeout_seconds": limit,
+        }
         _write_run(result)
         return result
     except OSError as exc:
@@ -251,6 +290,76 @@ def run_demand_radar(request: dict[str, Any], *, timeout_seconds: int | None = N
     }
     _write_run(result)
     return result
+
+
+def run_demand_radar_sources(request: dict[str, Any], *, source_timeouts: dict[str, int] | None = None) -> dict[str, Any]:
+    """Run requested sources independently and merge usable partial results.
+
+    The upstream CLI emits its JSON document only after the whole invocation
+    completes. Independent bounded invocations prevent one stalled source from
+    discarding evidence already returned by another source.
+    """
+    requested = [str(item).lower() for item in (request.get("requested_sources") or []) if item]
+    if not requested:
+        requested = ["reddit", "youtube", "hackernews", "github", "grounding"]
+    limits = dict(SOURCE_TIMEOUTS)
+    limits.update({str(key).lower(): int(value) for key, value in (source_timeouts or {}).items()})
+    runs: list[dict[str, Any]] = []
+    for source in requested:
+        child = dict(request)
+        child["request_id"] = f"{request.get('request_id') or 'last30days'}:{source}"
+        child["requested_sources"] = [source]
+        child["max_runtime_seconds"] = limits.get(source, int(request.get("max_runtime_seconds", 90)))
+        runs.append(run_demand_radar(child, timeout_seconds=limits.get(source)))
+
+    signals: list[dict[str, Any]] = []
+    clusters: list[dict[str, Any]] = []
+    source_status: dict[str, str] = {}
+    successful: list[str] = []
+    errors: list[dict[str, Any]] = []
+    for run in runs:
+        source_status.update({str(key): str(value) for key, value in (run.get("source_status") or {}).items()})
+        signals.extend(run.get("signals") or [])
+        clusters.extend(run.get("clusters") or [])
+        successful.extend(run.get("sources_successful") or [])
+        if run.get("status") in {"TIMEOUT", "ERROR", "UNAVAILABLE"}:
+            source = (run.get("sources_attempted") or [])
+            source = source[0] if source else str(requested[len(errors)]) if len(errors) < len(requested) else "UNKNOWN"
+            errors.append({"source": source, "status": run.get("status"), "stderr": run.get("stderr", "")})
+    deduped: dict[str, dict[str, Any]] = {}
+    for signal in signals:
+        deduped[str(signal.get("source_url") or signal.get("signal_id"))] = signal
+    signals = list(deduped.values())
+    source_types = sorted({str(item.get("source_type")) for item in signals if item.get("source_type")})
+    if len(source_types) >= 2 and len(signals) >= 2:
+        clusters.append({
+            "demand_cluster_id": _stable("cluster", f"{request.get('query')}:{':'.join(source_types)}"),
+            "cluster_title": str(request.get("query") or "cross-source demand"),
+            "audience": "unknown until Research verifies the signal",
+            "problem": "Cross-source human signals require Research verification.",
+            "question": request.get("query"), "source_types": source_types,
+            "source_refs": [item.get("source_url") for item in signals if item.get("source_url")],
+            "signal_count": len(signals),
+            "engagement_summary": {"items": [_engagement(item) for item in signals]},
+            "freshness": "CURRENT", "customer_language_examples": [item.get("customer_language", "")[:300] for item in signals[:4]],
+            "complaint_signals": [], "desired_outcomes": [], "commercial_intent": "UNKNOWN",
+            "contradictions": [], "evidence_strength": "DISCOVERY_ONLY",
+        })
+    status = "PASS" if signals else "DEGRADED" if errors or any(value not in {"NO_RESULTS", "OK"} for value in source_status.values()) else "NO_RESULTS"
+    merged = {
+        "status": status, "run_id": str(request.get("request_id") or _stable("last30days", f"merged:{_now()}")),
+        "request_id": request.get("request_id"), "work_id": request.get("work_id"), "objective_id": request.get("objective_id"),
+        "query": request.get("query"), "time_window": request.get("time_window", "LAST_30_DAYS"),
+        "work_class": str(request.get("work_class") or "DEMAND_DISCOVERY").upper(), "completed_at": _now(),
+        "source_status": source_status, "sources_attempted": requested, "sources_successful": sorted(set(successful)),
+        "signals": signals, "clusters": clusters, "result_count": len(signals), "cluster_count": len(clusters),
+        "new_evidence_count": sum(int(run.get("new_evidence_count") or 0) for run in runs),
+        "existing_source_links": sum(int(run.get("existing_source_links") or 0) for run in runs),
+        "partial_runs": [{"run_id": run.get("run_id"), "status": run.get("status"), "result_count": run.get("result_count", 0), "source_status": run.get("source_status", {}), "stderr": run.get("stderr", "")} for run in runs],
+        "errors": errors, "browser_cookies_enabled": False, "publication_enabled": False, "external_mutations": False,
+    }
+    _write_run(merged)
+    return merged
 
 
 def health() -> dict[str, Any]:

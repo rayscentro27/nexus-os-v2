@@ -204,3 +204,149 @@ These are isolated acquisition/coverage limitations. They do not alter the
 proven Research scheduler, queue priority, leases, concurrency, YouTube
 monitor, Alpha model path, department handoff system, Hermes runtime, or
 Resource Governor.
+
+## Live source certification and performance tuning
+
+The initial combined run was not sufficient evidence because one stalled source
+discarded the upstream CLI's final JSON document. The adapter now supports
+source-specific bounded invocations and merges valid completed results. This is
+implemented in `last30days_adapter.py`; it does not change scheduler priority,
+Research work classes, Alpha, or the upstream skill.
+
+The first source-specific probes exposed a Mac runtime compatibility issue. HN
+and GitHub were failing with Python's
+`CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate`. The Mac
+runtime already has `certifi`; the adapter now passes that CA bundle to the
+pinned subprocess using process-scoped `SSL_CERT_FILE` and
+`REQUESTS_CA_BUNDLE`. TLS verification remains enabled and no credentials or
+cookies are added.
+
+### Timing baseline
+
+```text
+PYTHON_STARTUP_SECONDS=0.05
+MODULE_IMPORT_STARTUP_SECONDS=0.09
+ADAPTER_SETUP_SECONDS=0.19
+PLAN_SETUP_SECONDS=<sub-second local file write>
+```
+
+Observed real source wall times after the CA-bundle repair:
+
+```text
+HACKERNEWS=4.39s, 3 results, OK
+GITHUB=8.91s, 1 result, OK
+REDDIT=17.80s, 2 results, OK
+YOUTUBE=21.24s, 1 metadata result, OK; 0 transcripts, degraded quality
+GROUNDING=2.65s, 0 results, NO_RESULTS
+```
+
+The previous 20-second monolithic bound was therefore too short for some
+healthy sources, especially Reddit and YouTube. Source-aware bounds are now:
+
+```text
+FAST_SOURCE_TIMEOUT=60s (Hacker News, GitHub)
+MEDIUM_SOURCE_TIMEOUT=45s (Reddit, grounding/web)
+SLOW_SOURCE_TIMEOUT=90s (YouTube)
+DISCOVERY_CONCURRENCY=1
+```
+
+The adapter hard cap remains 180 seconds. Child process groups are terminated
+and escalated to SIGKILL after the bounded grace period.
+
+### Source certification
+
+```text
+HN_CERTIFICATION=PASS_REAL
+HN_SOURCE_STATUS=OK
+HN_RESULTS=3
+HN_BACKEND=Algolia Hacker News API
+
+GITHUB_CERTIFICATION=PASS_REAL
+GITHUB_SOURCE_STATUS=OK
+GITHUB_RESULTS=1
+GITHUB_BACKEND=GitHub search API / existing gh-auth availability
+
+REDDIT_CERTIFICATION=PASS_REAL
+REDDIT_SOURCE_STATUS=OK
+REDDIT_RESULTS=2
+REDDIT_BACKEND=keyless RSS plus arctic-shift supplement
+
+YOUTUBE_CERTIFICATION=PASS_REAL_METADATA_DEGRADED_TRANSCRIPT
+YOUTUBE_METADATA_RESULTS=1
+YOUTUBE_TRANSCRIPT_STATUS=0 captured; yt-dlp/caption coverage degraded
+YOUTUBE_FAILURE_BOUNDARY=transcript enrichment, not metadata search
+
+WEB_CERTIFICATION=DEGRADED_NO_RESULTS
+WEB_BACKEND=upstream grounding backend
+WEB_RESULTS=0
+WEB_FAILURE_REASON=no usable result/credential-backed grounding in this runtime
+```
+
+The Reddit result is a genuine improvement over the prior direct probe: the
+upstream keyless path used RSS and arctic-shift without browser cookies. The
+existing direct Nexus Reddit blocker remains isolated; Last30Days does not read
+browser cookies and does not bypass access controls.
+
+The pinned preflight returned `status=ready`, available source families for
+Reddit, YouTube, Hacker News, GitHub, and grounding, `gh` and `yt-dlp`
+available, browser-cookie mode off, and no publication writes. Preflight did
+not predict the Mac CA-bundle defect, so the HN/GitHub preflight/live mismatch
+is recorded as a runtime compatibility defect repaired in the adapter.
+
+### Partial-result proof
+
+The real source-specific merge was exercised with HN at 60 seconds and YouTube
+at an intentionally bounded 5-second test timeout. HN returned 3 real rows;
+YouTube timed out during search initialization. The merged result remained
+`PASS` with HN evidence, retained the YouTube timeout diagnostic, and did not
+report a zero-result total. This proves source-specific execution and partial
+result preservation.
+
+### Cross-source run
+
+After certification, an independent-source run for `business funding for new
+LLC` returned 9 real signals across Hacker News, GitHub, Reddit, and YouTube in
+56.8 seconds. The adapter produced a bounded cross-source cluster candidate:
+
+```text
+CROSS_SOURCE_CLUSTER_TEST=PASS_REAL_CANDIDATE
+DEMAND_CLUSTER_ID=cluster_e2768598144ff5e9de9d
+CLUSTER_SOURCE_TYPES=GITHUB,HACKERNEWS,REDDIT,YOUTUBE
+CLUSTER_SIGNAL_COUNT=9
+```
+
+The candidate remains `DISCOVERY_ONLY`, not Alpha-promoted: several HN/GitHub
+items were semantically weak for the funding question. The relevant current
+signals include two Reddit business-banking/LLC items and one YouTube new-LLC
+funding item. This is sufficient to prove acquisition and clustering, but not
+to claim a validated business need or to create a duplicate of
+`need_f527d1db8c4d1e5de721`. No Last30Days Alpha review or department handoff was
+run on the mixed-quality candidate.
+
+```text
+EXISTING_NEED_MATCH=NOT_PROMOTED_MIXED_RELEVANCE
+EXISTING_NEED_ID=need_f527d1db8c4d1e5de721
+EXISTING_NEED_ENRICHED=NO
+ALPHA_HANDOFF=NOT_RUN_EMPTY_QUALIFICATION_THRESHOLD
+DEPARTMENT_HANDOFF=NOT_RUN
+```
+
+### Current certification summary
+
+```text
+HEALTHY_SOURCE_TYPES=HACKERNEWS,GITHUB,REDDIT,YOUTUBE_METADATA
+DEGRADED_SOURCE_TYPES=YOUTUBE_TRANSCRIPTS,GROUNDING_WEB
+UNAVAILABLE_SOURCE_TYPES=NONE_AFTER_CA_BUNDLE_REPAIR
+SOURCE_SPECIFIC_EXECUTION=PASS_REAL
+PARTIAL_RESULT_PRESERVATION=PASS_REAL
+PROCESS_GROUP_CLEANUP=PASS_REAL
+RUNAWAY_PROCESSES=NONE_OBSERVED
+MAC_RESULT=PASS_WITH_PROCESS_SCOPED_CA_BUNDLE
+ORACLE_RESULT=NOT_RUN
+HOST_RUNTIME_BOUNDARY=MAC_RUNTIME_CA_LOOKUP_REPAIRED
+```
+
+The integration is therefore `PASS_REAL` for bounded source acquisition and
+partial-result preservation, while remaining `PARTIAL` for the broader Demand
+Radar business objective because the live candidate did not meet the quality
+threshold for existing-need enrichment, Alpha review, or department handoff.
