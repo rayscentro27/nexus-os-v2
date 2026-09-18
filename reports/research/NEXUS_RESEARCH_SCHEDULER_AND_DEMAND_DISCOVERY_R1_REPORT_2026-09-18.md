@@ -171,6 +171,96 @@ were not changed as part of this scheduler repair.
 4. A live concurrency run should be performed during an approved maintenance
    window because it can invoke real network acquisition and provider calls.
 
+## Production certification window
+
+The existing launchd owner was verified as:
+
+```text
+com.nexus.continuous-loop
+  -> scripts/ops/run_with_nexus_runtime_env.sh
+  -> .venv-agent-platform/bin/python3 scripts/run_continuous_operating_kernel.py --daemon --interval-seconds 1200
+```
+
+No competing Research daemon was started. The service was safely kickstarted to
+load the repaired runtime. Initial queue state was 12 queued assigned items,
+zero active leases, and zero monitored/discovery queue items.
+
+Observed real production dispatches included:
+
+- assigned V2 investigation `investigation:investigation_8905027434994d81db93`,
+  completed with `FULLY_PROCESSED`;
+- assigned Alpha follow-up
+  `alpha-followup:alpha_eval_a4a3517b35a34fd383a72c86b238e129`, completed with
+  `FULLY_PROCESSED` and a new Research package;
+- assigned mission items for approved YouTube channels, with external
+  acquisition failures preserved as retryable rather than stopping other work;
+- concurrent workers `research_exec_248b85b083604995addb`,
+  `research_exec_811efb859b9240dd9135`, and
+  `research_exec_63c81efc49a44c608f77` claimed at approximately
+  `2026-09-18T15:32:26Z` and ran concurrently. They represented YouTube,
+  assigned follow-up web research, and monitored web work respectively. The
+  observed total was 3, within the configured cap.
+
+The queue moved from 12 initial assigned items to a changing live queue because
+fresh Alpha `MORE_RESEARCH_USEFUL` decisions also created three new priority-2
+follow-ups. At the latest observation, two assigned items were complete, three
+were retryable failures caused by external YouTube acquisition/provider limits,
+and the remaining assigned work stayed queued or was actively leased. This is
+real progression, not a claim that the entire queue drained in one window.
+
+The first three production batches selected assigned work before generic lane
+work. A monitored SBA item was allowed only after the YouTube and web class
+slots were occupied; it did not preempt an available assigned slot.
+
+## YouTube monitor certification
+
+The real approved-channel monitor path checked all four approved channels:
+
+| Channel | Monitor | Candidate | Result |
+|---|---:|---|---|
+| Credit Plug | PASS | `MJDeOEJ_kio` | monitoring |
+| Michael Ionita | PASS | `TlpJdvFQLeY` | monitoring; acquisition failed externally |
+| Alec Delpuech | PASS | `6XngV5NQgMg` | monitoring; acquisition failed externally |
+| Stedman Waiters | PASS | `CiGQ7to-5J4` | remains externally blocked |
+
+No CAPTCHA or anti-bot bypass was attempted. The queue/mission state prevents
+completed one-time jobs from re-entering. The follow-up patch also preserves
+`ONE_TIME` lifecycle on mission-backed YouTube video refresh records rather than
+misclassifying them as generic monitored sources.
+
+## Fresh demand and Alpha result
+
+A bounded public-demand attempt used two current public Reddit URLs about LLC
+funding and business-credit denial. The fetcher reached Reddit, but received a
+JavaScript challenge page with zero posts and zero evidence spans. The evidence
+quality was therefore `UNVERIFIED`; no customer need was promoted and no
+commercial claim was made.
+
+Alpha’s real governed evaluator returned `MORE_RESEARCH_USEFUL` with confidence
+`HIGH`, created a durable Alpha receipt/evaluation record, and automatically
+created priority-2 Research follow-up work. The follow-up executed through the
+production Research worker and produced an updated Research package. The
+evaluator used in this path recorded `MODEL_CALLS=0`; this certification does
+not falsely call a model-backed Alpha review proven for this new demand item.
+
+## Current certification classification
+
+```text
+PRODUCTION_RUNTIME_TEST=PASS_REAL_BOUNDED
+ASSIGNED_QUEUE_DRAINING=PASS_REAL_PROGRESS
+PARALLEL_WORK_PROOF=PASS_REAL
+YOUTUBE_MONITORING=PASS_REAL_MONITOR_CHECKS; acquisition partially blocked externally
+FRESH_DEMAND_DISCOVERY=PARTIAL_UNVERIFIED_SOURCE_ACCESS
+ALPHA_FOLLOWUP_LOOP=PASS_REAL
+OVERALL=PARTIAL
+```
+
+The remaining blockers are external source access for fresh community evidence,
+YouTube media acquisition failures (`HTTP 403`/caption or audio unavailable),
+and a model-backed Alpha review receipt for the new demand item. The scheduler,
+leases, priority ordering, bounded overlap, queue visibility, and follow-up
+return path are production-proven.
+
 ## Changed implementation
 
 - `scripts/nexus_agent_platform/research_work_queue.py`
