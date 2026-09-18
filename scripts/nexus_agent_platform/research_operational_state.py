@@ -73,9 +73,11 @@ def build_research_operational_state() -> dict[str, Any]:
     queue_projection = _queue_projection()
     alpha_status_path = ROOT / "data/runtime/alpha_telegram_status.json"
     last30days_path = ROOT / "data/runtime/last30days_demand_radar_latest.json"
+    seo_state_path = ROOT / "data/runtime/seo_operational_state_latest.json"
     metadata_path = ROOT / "reports/runtime/supabase_ready/youtube_video_metadata_latest.json"
     transcript_path = ROOT / "reports/runtime/supabase_ready/youtube_transcript_imports_latest.json"
     last30days = _json(last30days_path, {})
+    seo_state = _json(seo_state_path, {})
     alpha_records = _jsonl(ROOT / "data/governed/alpha_research.jsonl")
     queue_records = _jsonl(ROOT / "data/governed/alpha_discovery_queue.jsonl")
     work_orders = _jsonl(ROOT / "data/governed/work_orders.jsonl")
@@ -292,6 +294,19 @@ def build_research_operational_state() -> dict[str, Any]:
             "existing_source_links": last30days.get("existing_source_links", 0),
             "next_action": "Promote only evidence-supported clusters through the existing customer-need and Alpha paths.",
             "source": "data/runtime/last30days_demand_radar_latest.json",
+        },
+        "seo": {
+            "status": seo_state.get("status", "NOT_RUN"),
+            "installed": bool(seo_state_path.exists()),
+            "version": "0.2.40",
+            "last_run": seo_state.get("last_run"),
+            "site_url": seo_state.get("site_url"),
+            "pages_crawled": seo_state.get("pages_crawled", 0),
+            "finding_count": seo_state.get("finding_count", 0),
+            "severity_counts": seo_state.get("severity_counts", {}),
+            "coverage_state": seo_state.get("coverage_state", "UNKNOWN"),
+            "last_error": seo_state.get("last_error"),
+            "source": "data/runtime/seo_operational_state_latest.json",
         },
         "research_needs_ray": False,
         "human_review_queue_count": human_review_count,
